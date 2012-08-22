@@ -11,6 +11,7 @@
 #include <llvm/Instruction.h>
 
 #include "llvm/Support/Host.h"
+#include "llvm/Support/PassNameParser.h"
 
 #include "llvm/PassManager.h"
 
@@ -44,6 +45,9 @@ int main(int argc, const char** argv) {
 	vector<const char *> args(argv + 1, argv + argc);
 	//args.push_back(inputPath.c_str());
 	args.push_back("-g");
+	auto cargs = args;
+	auto newend = std::remove_if(cargs.begin(), cargs.end(), [](const StringRef& ref) { return ref.startswith("-pass"); } );
+	cargs.resize(cargs.end() - newend,"");
 
 	// The compiler invocation needs a DiagnosticsEngine so it can report problems
 	TextDiagnosticPrinter *DiagClient = new TextDiagnosticPrinter(llvm::errs(),
@@ -54,8 +58,8 @@ int main(int argc, const char** argv) {
 	// Create the compiler invocation
 	llvm::OwningPtr<clang::CompilerInvocation> CI(
 			new clang::CompilerInvocation);
-	clang::CompilerInvocation::CreateFromArgs(*CI, &args[0],
-			&args[0] + args.size(), Diags);
+	clang::CompilerInvocation::CreateFromArgs(*CI, &cargs[0],
+			&cargs[0] + cargs.size(), Diags);
 
 	// Print the argument list, which the compiler invocation has extended
 	errs() << "clang ";
@@ -151,6 +155,8 @@ int main(int argc, const char** argv) {
 		errs() << pass << endl;
 	});
 
+	PassNameParser pnm;
+
 	// Initialize passes
 	PassRegistry &reg = *PassRegistry::getPassRegistry();
 	initializeCore(reg);
@@ -163,9 +169,23 @@ int main(int argc, const char** argv) {
 	initializeInstrumentation(reg);
 	initializeTarget(reg);
 
-	for_each(passes2run, [reg](const StringRef& pass) {
-		errs() << (long)reg.getPassInfo(pass);
-	});
+	if(!passes2run.empty()) {
+		for_each(passes2run, [&](const StringRef& pass) {
+			auto passInfo = reg.getPassInfo(pass);
 
+			errs() << pass << ":"
+				   << passInfo->getPassName() << endl;
+			pm.add(passInfo->createPass());
+		});
+
+		errs() << "Module before passes:" << endl
+			   << *module << endl;
+		pm.run(*module);
+		errs() << "Module after passes:" << endl
+			   << *module << endl;
+
+	}
+//
+//	errs() << "Hi!" << endl;
 	return 0;
 }
