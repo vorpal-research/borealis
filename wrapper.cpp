@@ -13,6 +13,8 @@
 
 #include "llvm/Support/Host.h"
 
+#include "llvm/PassManager.h"
+
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/FileManager.h"
@@ -35,14 +37,10 @@ using llvm::raw_ostream;
 using streams::endl;
 using util::for_each;
 
-
-
 int main(int argc, const char** argv)
 {
 	using namespace llvm;
 	using namespace clang;
-	// Path to the C file
-	string inputPath = "test.c";
 	
 	// Arguments to pass to the clang frontend
 	vector<const char *> args(argv+1, argv+argc);
@@ -63,7 +61,7 @@ int main(int argc, const char** argv)
 	vector<string> argsFromInvocation;
 	CI->toArgs(argsFromInvocation);
 	for (vector<string>::iterator i = argsFromInvocation.begin(); i != argsFromInvocation.end(); ++i)
-		errs() << *i;
+		errs() << ' ' << *i;
 	errs() << endl;
 	
 	// Create the compiler instance
@@ -119,7 +117,7 @@ int main(int argc, const char** argv)
 	// Print all functions in the module
 
 	for_each(module->getGlobalList(), [&](const Value& glob){
-		errs() << glob << '\n';
+		errs() << glob << endl;
 	});
 	for_each(module->getFunctionList(), [&](const Function& func){
 		errs() << func.getName() << ":\n";
@@ -133,5 +131,23 @@ int main(int argc, const char** argv)
 		}
 	});
 	
+	PassManager pm;
+
+	vector<StringRef> passes2run;
+
+	for_each(args,[&passes2run](const StringRef& mes){
+		if( mes.startswith("-pass") ) passes2run.push_back(mes.drop_front(5));
+	});
+
+	for_each(passes2run,[](const StringRef& pass){
+		errs() << pass << endl;
+	});
+
+	PassRegistry& reg = *PassRegistry::getPassRegistry();
+	for_each(passes2run,[reg](const StringRef& pass){
+		errs() << (long)reg.getPassInfo(pass);
+	});
+
+
 	return 0;
 }
