@@ -21,12 +21,12 @@ CLANGLIBS = \
     -lclangEdit \
     -lclangAST \
     -lclangLex \
-    -lclangBasic \
+    -lclangBasic
 
 all: $(OBJECTS) $(EXES)
 
 wrapper: wrapper.o comments.o util.o
-	$(CXX) -o $@ wrapper.o comments.o util.o $(CLANGLIBS) $(LLVMLDFLAGS)
+	$(CXX) -o $@ -rdynamic wrapper.o comments.o util.o $(CLANGLIBS) $(LLVMLDFLAGS)
 
 clean:
 	-rm -f $(EXES) $(OBJECTS) *~

@@ -12,6 +12,7 @@
 
 #include "llvm/Support/Host.h"
 #include "llvm/Support/PassNameParser.h"
+#include "llvm/Support/PluginLoader.h"
 
 #include "llvm/PassManager.h"
 
@@ -26,6 +27,45 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Parse/Parser.h"
 
+#include "llvm/LLVMContext.h"
+#include "llvm/Module.h"
+#include "llvm/PassManager.h"
+#include "llvm/CallGraphSCCPass.h"
+#include "llvm/Bitcode/ReaderWriter.h"
+#include "llvm/Assembly/PrintModulePass.h"
+#include "llvm/Analysis/DebugInfo.h"
+#include "llvm/Analysis/Verifier.h"
+#include "llvm/Analysis/LoopPass.h"
+#include "llvm/Analysis/RegionPass.h"
+#include "llvm/Analysis/CallGraph.h"
+#include "llvm/Target/TargetData.h"
+#include "llvm/Target/TargetLibraryInfo.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/ADT/StringSet.h"
+#include "llvm/ADT/Triple.h"
+#include "llvm/Support/PassNameParser.h"
+#include "llvm/Support/Signals.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/IRReader.h"
+#include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/PluginLoader.h"
+#include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/Support/SystemUtils.h"
+#include "llvm/Support/ToolOutputFile.h"
+#include "llvm/LinkAllPasses.h"
+#include "llvm/LinkAllVMCore.h"
+
+class LoadableFunctionPass: public llvm::FunctionPass {
+	char pid = 'A';
+public:
+  LoadableFunctionPass(): FunctionPass(pid) {};
+  virtual bool runOnFunction(llvm::Function &F){ return false; };
+  virtual bool doFinalization(llvm::Module &m) { return FunctionPass::doFinalization(m); }
+} ForcingLoader;
+
+#include "llvm/Support/CommandLine.h"
+
+
 #include "comments.h"
 using comments::CommentKeeper;
 
@@ -37,17 +77,27 @@ using llvm::raw_ostream;
 using streams::endl;
 using util::for_each;
 
+template<class T>
+void print(const T& val) {
+	llvm::errs() << val << " ";
+}
+
 int main(int argc, const char** argv) {
 	using namespace llvm;
 	using namespace clang;
 
 	// Arguments to pass to the clang frontend
-	vector<const char *> args(argv + 1, argv + argc);
-	//args.push_back(inputPath.c_str());
+	vector<const char *> args(argv, argv + argc);
+	// remove the program name
+	args.erase(args.begin());
 	args.push_back("-g");
-	auto cargs = args;
-	auto newend = std::remove_if(cargs.begin(), cargs.end(), [](const StringRef& ref) { return ref.startswith("-pass"); } );
-	cargs.resize(cargs.end() - newend,"");
+	auto cargs = args; // the args we supply to the compiler itself, ignoring those used by us
+	auto newend = std::remove_if(
+			cargs.begin(),
+			cargs.end(),
+			[](const StringRef& ref) { return ref.startswith("-pass") || ref.startswith("-load"); }
+	);
+	cargs.erase(newend, cargs.end());
 
 	// The compiler invocation needs a DiagnosticsEngine so it can report problems
 	TextDiagnosticPrinter *DiagClient = new TextDiagnosticPrinter(llvm::errs(),
@@ -74,9 +124,11 @@ int main(int argc, const char** argv) {
 	// there must be a better way than creating two separate CompilerInstances
 	CompilerInstance AnnotationCompiler;
 
+
+
 	AnnotationCompiler.createDiagnostics(0, NULL);
 
-	TargetOptions to;
+	clang::TargetOptions to;
 	to.Triple = llvm::sys::getDefaultTargetTriple();
 	TargetInfo *pti = TargetInfo::CreateTargetInfo(
 			AnnotationCompiler.getDiagnostics(), to);
@@ -92,8 +144,9 @@ int main(int argc, const char** argv) {
 	AnnotationCompiler.createASTContext();
 	AnnotationCompiler.createSema(clang::TU_Complete, NULL);
 
-	const FileEntry *pFile = AnnotationCompiler.getFileManager().getFile(
-			argv[1]);
+
+
+	const FileEntry *pFile = AnnotationCompiler.getFileManager().getFile(args[0]);
 	AnnotationCompiler.getSourceManager().createMainFileID(pFile);
 	CommentKeeper ck;
 
@@ -107,9 +160,12 @@ int main(int argc, const char** argv) {
 	parser.ParseTranslationUnit();
 	AnnotationCompiler.getDiagnosticClient().EndSourceFile();
 
+
+
 	CompilerInstance Clang;
 
 	Clang.setInvocation(CI.take());
+
 
 	// Get ready to report problems
 	Clang.createDiagnostics(args.size(), &args[0]);
@@ -118,13 +174,17 @@ int main(int argc, const char** argv) {
 
 	// Create an action and make the compiler instance carry it out
 	llvm::OwningPtr<clang::CodeGenAction> Act(new clang::EmitLLVMOnlyAction());
+
 	if (!Clang.ExecuteAction(*Act))
 		return 1;
+
 
 	// Grab the module built by the EmitLLVMOnlyAction
 	llvm::Module *module = Act->takeModule();
 
 	// Print all functions in the module
+
+
 
 	for_each(module->getGlobalList(), [&](const Value& glob) {
 		errs() << glob << endl;
@@ -145,17 +205,38 @@ int main(int argc, const char** argv) {
 	PassManager pm;
 
 	vector<StringRef> passes2run;
+	vector<StringRef> libs2load;
+
+	for_each(args,
+			[&libs2load](const StringRef& mes) {
+				if( mes.startswith("-load") ) libs2load.push_back(mes.drop_front(5));
+			});
 
 	for_each(args,
 			[&passes2run](const StringRef& mes) {
 				if( mes.startswith("-pass") ) passes2run.push_back(mes.drop_front(5));
 			});
 
+	errs() << "Passes:" << endl;
+	if(passes2run.empty()) errs() << "None" << endl;
 	for_each(passes2run, [](const StringRef& pass) {
+		errs().indent(2);
 		errs() << pass << endl;
 	});
 
-	PassNameParser pnm;
+	errs() << "Dynamic libraries:" << endl;
+	if(libs2load.empty()) errs() << "None" << endl;
+	for_each(libs2load, [](const StringRef& lib) {
+		errs().indent(2);
+		errs() << lib << endl;
+	});
+
+	PluginLoader pl;
+
+	for_each(libs2load, [&](const StringRef& lib) {
+		pl = lib;
+	});
+
 
 	// Initialize passes
 	PassRegistry &reg = *PassRegistry::getPassRegistry();
@@ -175,7 +256,13 @@ int main(int argc, const char** argv) {
 
 			errs() << pass << ":"
 				   << passInfo->getPassName() << endl;
-			pm.add(passInfo->createPass());
+
+			if(passInfo->getNormalCtor()) {
+				auto thePass = passInfo->getNormalCtor()();
+				pm.add(thePass);
+			} else {
+				errs() << "Could not create pass " << passInfo->getPassName() << " " << endl;
+			}
 		});
 
 		errs() << "Module before passes:" << endl
