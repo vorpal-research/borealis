@@ -5,7 +5,7 @@ RTTIFLAG := -fno-rtti
 CXXFLAGS := $(shell llvm-config --cxxflags) $(RTTIFLAG) -std=c++11
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 DDD := $(shell echo $(LLVMLDFLAGS))
-SOURCES = $(shell ls *.cpp)
+SOURCES = $(shell ls *.cpp) $(shell find $(PWD)/lib -type f | grep "\.cpp")
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = wrapper
@@ -25,8 +25,8 @@ CLANGLIBS = \
 
 all: $(OBJECTS) $(EXES)
 
-wrapper: wrapper.o comments.o util.o
-	$(CXX) -o $@ -rdynamic wrapper.o comments.o util.o $(CLANGLIBS) $(LLVMLDFLAGS)
+wrapper: $(OBJECTS)
+	$(CXX) -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
 
 clean:
 	-rm -f $(EXES) $(OBJECTS) *~

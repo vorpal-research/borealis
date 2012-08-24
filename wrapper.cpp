@@ -55,16 +55,25 @@
 #include "llvm/LinkAllPasses.h"
 #include "llvm/LinkAllVMCore.h"
 
+#include "clang/Frontend/HeaderSearchOptions.h"
+
 class LoadableFunctionPass: public llvm::FunctionPass {
 	char pid = 'A';
 public:
-  LoadableFunctionPass(): FunctionPass(pid) {};
-  virtual bool runOnFunction(llvm::Function &F){ return false; };
-  virtual bool doFinalization(llvm::Module &m) { return FunctionPass::doFinalization(m); }
+	LoadableFunctionPass() :
+			FunctionPass(pid) {
+	}
+	;
+	virtual bool runOnFunction(llvm::Function &F) {
+		return false;
+	}
+	;
+	virtual bool doFinalization(llvm::Module &m) {
+		return FunctionPass::doFinalization(m);
+	}
 } ForcingLoader;
 
 #include "llvm/Support/CommandLine.h"
-
 
 #include "comments.h"
 using comments::CommentKeeper;
@@ -92,11 +101,9 @@ int main(int argc, const char** argv) {
 	args.erase(args.begin());
 	args.push_back("-g");
 	auto cargs = args; // the args we supply to the compiler itself, ignoring those used by us
-	auto newend = std::remove_if(
-			cargs.begin(),
-			cargs.end(),
-			[](const StringRef& ref) { return ref.startswith("-pass") || ref.startswith("-load"); }
-	);
+	auto newend =
+			std::remove_if(cargs.begin(), cargs.end(),
+					[](const StringRef& ref) {return ref.startswith("-pass") || ref.startswith("-load");});
 	cargs.erase(newend, cargs.end());
 
 	// The compiler invocation needs a DiagnosticsEngine so it can report problems
@@ -111,6 +118,10 @@ int main(int argc, const char** argv) {
 	clang::CompilerInvocation::CreateFromArgs(*CI, &cargs[0],
 			&cargs[0] + cargs.size(), Diags);
 
+	HeaderSearchOptions opts;
+
+	CI->
+
 	// Print the argument list, which the compiler invocation has extended
 	errs() << "clang ";
 	vector<string> argsFromInvocation;
@@ -123,8 +134,6 @@ int main(int argc, const char** argv) {
 	// Create the compiler instance
 	// there must be a better way than creating two separate CompilerInstances
 	CompilerInstance AnnotationCompiler;
-
-
 
 	AnnotationCompiler.createDiagnostics(0, NULL);
 
@@ -144,9 +153,8 @@ int main(int argc, const char** argv) {
 	AnnotationCompiler.createASTContext();
 	AnnotationCompiler.createSema(clang::TU_Complete, NULL);
 
-
-
-	const FileEntry *pFile = AnnotationCompiler.getFileManager().getFile(args[0]);
+	const FileEntry *pFile = AnnotationCompiler.getFileManager().getFile(
+			args[0]);
 	AnnotationCompiler.getSourceManager().createMainFileID(pFile);
 	CommentKeeper ck;
 
@@ -160,12 +168,9 @@ int main(int argc, const char** argv) {
 	parser.ParseTranslationUnit();
 	AnnotationCompiler.getDiagnosticClient().EndSourceFile();
 
-
-
 	CompilerInstance Clang;
 
 	Clang.setInvocation(CI.take());
-
 
 	// Get ready to report problems
 	Clang.createDiagnostics(args.size(), &args[0]);
@@ -178,29 +183,8 @@ int main(int argc, const char** argv) {
 	if (!Clang.ExecuteAction(*Act))
 		return 1;
 
-
 	// Grab the module built by the EmitLLVMOnlyAction
 	llvm::Module *module = Act->takeModule();
-
-	// Print all functions in the module
-
-
-
-	for_each(module->getGlobalList(), [&](const Value& glob) {
-		errs() << glob << endl;
-	});
-	for_each(module->getFunctionList(),
-			[&](const Function& func) {
-				errs() << func.getName() << ":\n";
-				if(!func.isDeclaration()) {
-					for_each(func, [&] (const BasicBlock& bb) {
-								for_each(bb, [&] (const Instruction& inst) {
-											errs() << "(" << inst.getDebugLoc().getLine() << ',' << inst.getDebugLoc().getCol() << ')' << ' '
-											<< inst << endl;
-										});
-							});
-				}
-			});
 
 	PassManager pm;
 
@@ -218,14 +202,16 @@ int main(int argc, const char** argv) {
 			});
 
 	errs() << "Passes:" << endl;
-	if(passes2run.empty()) errs() << "None" << endl;
+	if (passes2run.empty())
+		errs() << "None" << endl;
 	for_each(passes2run, [](const StringRef& pass) {
 		errs().indent(2);
 		errs() << pass << endl;
 	});
 
 	errs() << "Dynamic libraries:" << endl;
-	if(libs2load.empty()) errs() << "None" << endl;
+	if (libs2load.empty())
+		errs() << "None" << endl;
 	for_each(libs2load, [](const StringRef& lib) {
 		errs().indent(2);
 		errs() << lib << endl;
@@ -236,7 +222,6 @@ int main(int argc, const char** argv) {
 	for_each(libs2load, [&](const StringRef& lib) {
 		pl = lib;
 	});
-
 
 	// Initialize passes
 	PassRegistry &reg = *PassRegistry::getPassRegistry();
@@ -250,26 +235,30 @@ int main(int argc, const char** argv) {
 	initializeInstrumentation(reg);
 	initializeTarget(reg);
 
-	if(!passes2run.empty()) {
-		for_each(passes2run, [&](const StringRef& pass) {
-			auto passInfo = reg.getPassInfo(pass);
+	if (!passes2run.empty()) {
+		for_each(passes2run,
+				[&](const StringRef& pass) {
+					auto passInfo = reg.getPassInfo(pass);
 
-			errs() << pass << ":"
-				   << passInfo->getPassName() << endl;
+					if(passInfo == nullptr) {
+						errs () << "Pass " << pass << " cannot be found" << endl;
+						return;
+					}
 
-			if(passInfo->getNormalCtor()) {
-				auto thePass = passInfo->getNormalCtor()();
-				pm.add(thePass);
-			} else {
-				errs() << "Could not create pass " << passInfo->getPassName() << " " << endl;
-			}
-		});
+					errs() << pass << ":"
+					<< passInfo->getPassName() << endl;
 
-		errs() << "Module before passes:" << endl
-			   << *module << endl;
+					if(passInfo->getNormalCtor()) {
+						auto thePass = passInfo->getNormalCtor()();
+						pm.add(thePass);
+					} else {
+						errs() << "Could not create pass " << passInfo->getPassName() << " " << endl;
+					}
+				});
+
+		errs() << "Module before passes:" << endl << *module << endl;
 		pm.run(*module);
-		errs() << "Module after passes:" << endl
-			   << *module << endl;
+		errs() << "Module after passes:" << endl << *module << endl;
 
 	}
 //
