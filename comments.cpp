@@ -6,13 +6,19 @@
 
 #include <utility>
 
-#include "comments.h"
+
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include "comments.h"
+
+#include "util.h"
+using llvm::errs;
+using streams::endl;
 
 namespace comments {
 
@@ -44,12 +50,11 @@ llvm::StringRef getRawTextSlow(const clang::SourceManager &SourceMgr, clang::Sou
 }
 
 
-bool CommentKeeper::HandleComment(clang::Preprocessor &PP, clang::SourceRange Comment){
+bool GatherCommentsAction::CommentKeeper::HandleComment(clang::Preprocessor &PP, clang::SourceRange Comment){
     clang::SourceManager& sm = PP.getSourceManager();
     auto raw = getRawTextSlow(sm, Comment);
-    llvm::errs() << "Handling a comment:\n"
-                 << raw << '\n';
-    comments.push_back(std::make_pair(Comment, raw));
+    //errs() << raw << endl;
+    comments[Comment] = raw;
     return false;
 }
 
