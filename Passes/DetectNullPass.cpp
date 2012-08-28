@@ -16,6 +16,8 @@
 
 #include "DetectNullPass.h"
 
+using util::contains;
+
 namespace borealis {
 
 DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {

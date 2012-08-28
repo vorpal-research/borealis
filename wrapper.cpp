@@ -97,6 +97,7 @@ using llvm::raw_ostream;
 using streams::endl;
 using util::for_each;
 
+
 template<class T>
 void print(const T& val) {
 	llvm::errs() << val << " ";
@@ -130,12 +131,13 @@ int main(int argc, const char** argv)
 	cargs.erase(newend, cargs.end());
 
 	for_each(cargs, print<StringRef>);
+	errs() << endl;
 
     DiagnosticOptions DiagOpts;
     auto diags = CompilerInstance::createDiagnostics(DiagOpts, cargs.size(),
-                                                &*args.begin());
+                                                &*cargs.begin());
 
-	OwningPtr<CompilerInvocation> invoke(createInvocationFromCommandLine(args,diags));
+	OwningPtr<CompilerInvocation> invoke(createInvocationFromCommandLine(cargs,diags));
 
 
 	// Print the argument list, which the compiler invocation has extended
@@ -168,8 +170,12 @@ int main(int argc, const char** argv)
 	auto& module = *Act->takeModule();
 
 	PassManager pm;
+	// Explicitly schedule the TargetData pass as the first pass to run; note that M.get() gets a pointer or reference
+	// to the module to analyze
+	pm.add(new TargetData(&module));
 
 	vector<StringRef> passes2run;
+
 	vector<StringRef> libs2load;
 
 	for_each(args,
@@ -236,10 +242,24 @@ int main(int argc, const char** argv)
 						errs() << "Could not create pass " << passInfo->getPassName() << " " << endl;
 					}
 				});
+		struct ColorChanger {
+			~ColorChanger() {
+				errs().resetColor();
+			}
+		} colorChanger;
 
-		errs() << "Module before passes:" << endl << module << endl;
+
+		//errs().reverseColor();
+		errs().changeColor(errs().RED);
+
+		errs() << "Module before passes:" << endl << module << endl << endl;
 		pm.run(module);
-		errs() << "Module after passes:" << endl << module << endl;
+
+		//errs().reverseColor();
+
+		errs() << "Module after passes:" << endl << module << endl << endl;
+
+		errs().resetColor();
 
 	}
 

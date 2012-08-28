@@ -19,7 +19,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "util.hpp"
+#include "../util.hpp"
 
 namespace borealis {
 
@@ -65,7 +65,7 @@ struct NullInfo {
 			NullStatus status;
 			tie(idxs, status) = pair;
 
-			if (!contains(this->offsetInfoMap, idxs)) {
+			if (!util::contains(this->offsetInfoMap, idxs)) {
 				this->offsetInfoMap[idxs] = status;
 			} else {
 				this->offsetInfoMap[idxs] = mergeStatus(this->offsetInfoMap[idxs], status);

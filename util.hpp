@@ -33,10 +33,34 @@ std::list<T> filter_not(const std::list<T>& lst, Pred pred) {
 	return filter_not(copy(lst), pred);
 }
 
-
-
+template<class K, class V>
+bool contains(const std::map<K, V>& map, const K& k) {
+	if (map.find(k) != map.end()) return true;
+	else return false;
+}
 
 } // namespace util
 
+
+
+namespace std {
+
+template<class T>
+llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T>& v) {
+	using namespace::std;
+
+	s << "[";
+	if (!v.empty()) {
+		s << v.at(0);
+		for_each(v.begin() + 1, v.end(), [&s](const T& e){
+			s << "," << e;
+		});
+	}
+	s << "]";
+
+	return s;
+}
+
+} /* namespace std */
 
 #endif /* UTIL_HPP_ */

@@ -5,7 +5,9 @@ RTTIFLAG := -fno-rtti
 CXXFLAGS := $(shell llvm-config --cxxflags) $(RTTIFLAG) -std=c++11 -g
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 DDD := $(shell echo $(LLVMLDFLAGS))
-SOURCES = $(shell ls *.cpp) #$(shell find $(PWD)/lib -type f | grep "\.cpp")
+ADDITIONAL_SOURCE_DIRS = $(PWD)/Passes $(PWD)/lib/range-analysis/src $(PWD)/lib/poolalloc/src
+SOURCES = $(shell ls *.cpp) \
+    $(shell find $(ADDITIONAL_SOURCE_DIRS) -type f | grep "\.cpp")
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = wrapper
