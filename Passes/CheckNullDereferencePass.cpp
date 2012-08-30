@@ -69,13 +69,32 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 
 	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			errs() << "Possible NULL dereference in "
-					<< I
-					<< " from "
-					<< *nullValue
-					<< "\n";
+			this->reportNullDereference(I, *nullValue);
 		}
 	});
+}
+
+void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
+	using namespace::std;
+	using namespace::llvm;
+
+	auto ptr = I.getPointerOperand();
+
+	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
+		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+			this->reportNullDereference(I, *nullValue);
+		}
+	});
+}
+
+void CheckNullDereferencePass::reportNullDereference(const llvm::Value& in, const llvm::Value& from) {
+	using namespace::llvm;
+
+	errs() << "Possible NULL dereference in "
+			<< in
+			<< " from "
+			<< from
+			<< "\n";
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {
