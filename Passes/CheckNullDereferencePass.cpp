@@ -71,18 +71,34 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 	auto ptr = I.getPointerOperand();
 	errs() << I << endl;
 
-	for_each(NullSet->begin(), NullSet->end(), [&](const Value* nullValue){
-		errs() << "Hi!" << endl;
-		errs() << *nullValue << endl;
-		errs() << AA->ID << endl;
-		if (AA->alias(ptr, nullValue) == AliasAnalysis::AliasResult::MustAlias) {
-			errs() << "Possible NULL dereference in "
-					<< I
-					<< " from "
-					<< *nullValue
-					<< "\n";
+	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
+		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+			this->reportNullDereference(I, *nullValue);
 		}
 	});
+}
+
+void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
+	using namespace::std;
+	using namespace::llvm;
+
+	auto ptr = I.getPointerOperand();
+
+	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
+		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+			this->reportNullDereference(I, *nullValue);
+		}
+	});
+}
+
+void CheckNullDereferencePass::reportNullDereference(const llvm::Value& in, const llvm::Value& from) {
+	using namespace::llvm;
+
+	errs() << "Possible NULL dereference in "
+			<< in
+			<< " from "
+			<< from
+			<< "\n";
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {

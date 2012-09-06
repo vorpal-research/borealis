@@ -35,6 +35,9 @@ private:
 
 	void processInst(const llvm::Instruction& I);
 	void process(const llvm::LoadInst& I);
+	void process(const llvm::StoreInst& I);
+
+	void reportNullDereference(const llvm::Value& in, const llvm::Value& from);
 };
 
 } /* namespace borealis */
