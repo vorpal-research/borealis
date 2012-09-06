@@ -16,9 +16,10 @@
 
 #include "DetectNullPass.h"
 
-using util::contains;
+
 
 namespace borealis {
+using util::contains;
 
 DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -89,7 +90,7 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 
 	if (!I.getType()->isPointerTy()) return;
 
-	for (int i = 0; i < I.getNumIncomingValues(); i++) {
+	for (unsigned i = 0; i < I.getNumIncomingValues(); i++) {
 		auto incoming = I.getIncomingValue(i);
 		if (isa<Instruction>(incoming)) {
 			auto inst = cast<Instruction>(incoming);
@@ -102,7 +103,7 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 	}
 
 	auto nullInfo = NullInfo();
-	for (int i = 0; i < I.getNumIncomingValues(); i++) {
+	for (unsigned i = 0; i < I.getNumIncomingValues(); i++) {
 		auto incoming = I.getIncomingValue(i);
 		if (this->containsInfoForValue(*incoming)) {
 			nullInfo = nullInfo.merge(this->nullInfoMap[incoming]);
@@ -143,6 +144,6 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 
 } /* namespace borealis */
 
-char borealis::DetectNullPass::ID = 17;
+char borealis::DetectNullPass::ID;
 static llvm::RegisterPass<borealis::DetectNullPass>
 X("detectnull", "Explicit NULL assignment detector", false, false);

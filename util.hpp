@@ -10,6 +10,9 @@
 
 #include <algorithm>
 #include <list>
+#include <map>
+
+namespace borealis {
 
 namespace util {
 
@@ -39,9 +42,41 @@ bool contains(const std::map<K, V>& map, const K& k) {
 	else return false;
 }
 
-} // namespace util
 
 
+
+namespace streams {
+
+template<class T>
+struct error_printer {
+	const T& val;
+	error_printer(const T& v): val(v) {}
+};
+
+template<class T>
+llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const error_printer<T>& v) {
+	using namespace::std;
+
+	s.changeColor(s.RED);
+
+	s << v.val;
+
+	s.resetColor();
+
+	return s;
+}
+
+// prints value in red
+// used as
+// errs() << error(22) << endl;
+template<class T>
+error_printer<T> error(const T& val) { return error_printer<T>(val); }
+
+} /* namespace streams */
+
+} /* namespace util */
+
+} /* namespace borealis */
 
 namespace std {
 
@@ -62,5 +97,8 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T>& v) {
 }
 
 } /* namespace std */
+
+
+
 
 #endif /* UTIL_HPP_ */

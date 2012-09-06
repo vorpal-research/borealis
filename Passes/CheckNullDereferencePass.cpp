@@ -15,9 +15,12 @@
 #include <set>
 #include <unordered_set>
 
+#include "../util.h"
 #include "CheckNullDereferencePass.h"
 
 namespace borealis {
+
+using util::streams::endl;
 
 CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -66,9 +69,13 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 	using namespace::llvm;
 
 	auto ptr = I.getPointerOperand();
+	errs() << I << endl;
 
-	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
-		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+	for_each(NullSet->begin(), NullSet->end(), [&](const Value* nullValue){
+		errs() << "Hi!" << endl;
+		errs() << *nullValue << endl;
+		errs() << AA->ID << endl;
+		if (AA->alias(ptr, nullValue) == AliasAnalysis::AliasResult::MustAlias) {
 			errs() << "Possible NULL dereference in "
 					<< I
 					<< " from "
@@ -84,6 +91,6 @@ CheckNullDereferencePass::~CheckNullDereferencePass() {
 
 } /* namespace borealis */
 
-char borealis::CheckNullDereferencePass::ID = 18;
+char borealis::CheckNullDereferencePass::ID;
 static llvm::RegisterPass<borealis::CheckNullDereferencePass>
 X("checknullderef", "NULL dereference checker", false, false);

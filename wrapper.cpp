@@ -88,15 +88,19 @@
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendActions.h"
 
+
 #include "comments.h"
 using namespace std;
 
 using llvm::raw_ostream;
 
 #include "util.h"
-using streams::endl;
+using namespace borealis;
+
+using util::streams::endl;
 using util::for_each;
 
+using util::streams::error;
 
 template<class T>
 void print(const T& val) {
@@ -118,6 +122,7 @@ int main(int argc, const char** argv)
 	//args.push_back(inputPath.c_str());
 	args.erase(args.begin());
 	args.push_back("-g");
+	args.push_back("-I/usr/lib/clang/3.1/include");
 
 	//	// Arguments to pass to the clang frontend
 	//	vector<const char *> args(argv, argv + argc);
@@ -138,6 +143,7 @@ int main(int argc, const char** argv)
                                                 &*cargs.begin());
 
 	OwningPtr<CompilerInvocation> invoke(createInvocationFromCommandLine(cargs,diags));
+
 
 
 	// Print the argument list, which the compiler invocation has extended
@@ -161,11 +167,11 @@ int main(int argc, const char** argv)
 	// Create an action and make the compiler instance carry it out
 	OwningPtr<comments::GatherCommentsAction> Proc(new comments::GatherCommentsAction());
 
-	if(!Clang.ExecuteAction(*Proc)){ errs() << "Fucked up, sorry :(" << endl; return 1; }
+	if(!Clang.ExecuteAction(*Proc)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
 
 	OwningPtr<CodeGenAction> Act(new EmitLLVMOnlyAction());
 
-	if(!Clang.ExecuteAction(*Act)){ errs() << "Fucked up, sorry :(" << endl; return 1; }
+	if(!Clang.ExecuteAction(*Act)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
 
 	auto& module = *Act->takeModule();
 
@@ -190,7 +196,7 @@ int main(int argc, const char** argv)
 
 	errs() << "Passes:" << endl;
 	if (passes2run.empty())
-		errs() << "None" << endl;
+		errs() << error("None") << endl;
 	for_each(passes2run, [](const StringRef& pass) {
 		errs().indent(2);
 		errs() << pass << endl;
@@ -198,7 +204,7 @@ int main(int argc, const char** argv)
 
 	errs() << "Dynamic libraries:" << endl;
 	if (libs2load.empty())
-		errs() << "None" << endl;
+		errs() << error("None") << endl;
 	for_each(libs2load, [](const StringRef& lib) {
 		errs().indent(2);
 		errs() << lib << endl;
@@ -242,22 +248,24 @@ int main(int argc, const char** argv)
 						errs() << "Could not create pass " << passInfo->getPassName() << " " << endl;
 					}
 				});
-		struct ColorChanger {
-			~ColorChanger() {
-				errs().resetColor();
-			}
-		} colorChanger;
+//		struct ColorChanger {
+//			~ColorChanger() {
+//				errs().resetColor();
+//			}
+//		} colorChanger;
 
 
 		//errs().reverseColor();
-		errs().changeColor(errs().RED);
+		//errs().changeColor(errs().RED);
 
-		errs() << "Module before passes:" << endl << module << endl << endl;
+		//errs() << "Module before passes:" << endl << module << endl << endl;
 		pm.run(module);
 
+		verifyModule(module, PrintMessageAction);
+
 		//errs().reverseColor();
 
-		errs() << "Module after passes:" << endl << module << endl << endl;
+		//errs() << "Module after passes:" << endl << module << endl << endl;
 
 		errs().resetColor();
 

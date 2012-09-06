@@ -16,7 +16,8 @@
 
 #include <map>
 
-namespace comments{
+namespace borealis {
+namespace comments {
 
 // comparator needed for map<SourceRange,...>
 struct CommentRangeCompare: public std::binary_function<clang::SourceRange, clang::SourceRange, bool> {
@@ -24,6 +25,8 @@ struct CommentRangeCompare: public std::binary_function<clang::SourceRange, clan
 		return r1.getBegin() < r2.getBegin();
 	}
 };
+
+
 
 class GatherCommentsAction: public clang::PreprocessOnlyAction {
 
@@ -73,6 +76,7 @@ protected:
 };
 
 
-}
+} // namespace comments
+} // namespace borealis
 
 #endif /* COMMENTS_H_ */
