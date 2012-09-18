@@ -41,4 +41,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* CHECKNULLDEREFERENCEPASS_H_ */

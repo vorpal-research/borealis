@@ -13,9 +13,11 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <set>
-#include <unordered_set>
 
 #include "CheckNullDereferencePass.h"
+
+using streams::ENDL;
+using util::for_each;
 
 namespace borealis {
 
@@ -37,17 +39,13 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
 	AA = &getAnalysis<AliasAnalysis>();
 	DNP = &getAnalysis<DetectNullPass>();
+	NullSet = &DNP->getNullSet();
 
-	auto ptr = DNP->getNullSet();
-	NullSet = ptr.get();
-
-	for_each(F.begin(), F.end(), [this](const BasicBlock& BB){
-		for_each(BB.begin(), BB.end(), [this](const Instruction& I){
-			this->processInst(I);
+	for_each(F, [this](const BasicBlock& BB){
+		for_each(BB, [this](const Instruction& I){
+			processInst(I);
 		});
 	});
-
-	NullSet = nullptr;
 
 	return false;
 }
@@ -55,21 +53,19 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 void CheckNullDereferencePass::processInst(const llvm::Instruction& I) {
 	using namespace::llvm;
 
-	if (isa<LoadInst>(I)) {
-		this->process(cast<LoadInst>(I));
-
-	}
+	if (isa<LoadInst>(I))
+		{ process(cast<LoadInst>(I)); }
 }
 
 void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 	using namespace::std;
 	using namespace::llvm;
 
-	auto ptr = I.getPointerOperand();
+	const Value* ptr = I.getPointerOperand();
 
-	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
+	for_each(NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			this->reportNullDereference(I, *nullValue);
+			reportNullDereference(I, *nullValue);
 		}
 	});
 }
@@ -78,23 +74,25 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
 	using namespace::std;
 	using namespace::llvm;
 
-	auto ptr = I.getPointerOperand();
+	const Value* ptr = I.getPointerOperand();
 
-	for_each(NullSet->begin(), NullSet->end(), [this, &I, ptr](const Value* nullValue){
+	for_each(NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			this->reportNullDereference(I, *nullValue);
+			reportNullDereference(I, *nullValue);
 		}
 	});
 }
 
-void CheckNullDereferencePass::reportNullDereference(const llvm::Value& in, const llvm::Value& from) {
+void CheckNullDereferencePass::reportNullDereference(
+		const llvm::Value& in,
+		const llvm::Value& from) {
 	using namespace::llvm;
 
-	errs() << "Possible NULL dereference in "
+	errs() << "Possible NULL dereference in\n\t"
 			<< in
-			<< " from "
+			<< "\nfrom\n\t"
 			<< from
-			<< "\n";
+			<< ENDL;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {
@@ -105,4 +103,4 @@ CheckNullDereferencePass::~CheckNullDereferencePass() {
 
 char borealis::CheckNullDereferencePass::ID = 18;
 static llvm::RegisterPass<borealis::CheckNullDereferencePass>
-X("checknullderef", "NULL dereference checker", false, false);
+X("check-null-deref", "NULL dereference checker", false, false);
