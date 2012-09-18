@@ -16,7 +16,10 @@
 
 #include "DetectNullPass.h"
 
+using streams::endl;
+using streams::ENDL;
 using util::contains;
+using util::for_each;
 
 namespace borealis {
 
@@ -34,11 +37,11 @@ bool DetectNullPass::runOnFunction(llvm::Function& F) {
 	using namespace::std;
 	using namespace::llvm;
 
-	this->nullInfoMap.clear();
+	nullInfoMap.clear();
 
-	for_each(F.begin(), F.end(), [this](const BasicBlock& BB){
-		for_each(BB.begin(), BB.end(), [this](const Instruction& I){
-			this->processInst(I);
+	for_each(F, [this](const BasicBlock& BB){
+		for_each(BB, [this](const Instruction& I){
+			processInst(I);
 		});
 	});
 
@@ -48,39 +51,36 @@ bool DetectNullPass::runOnFunction(llvm::Function& F) {
 void DetectNullPass::processInst(const llvm::Instruction& I) {
 	using namespace::llvm;
 
-	if (this->containsInfoForValue(I)) return;
+	if (containsKey(I)) return;
 
-	if (isa<CallInst>(I)) {
-		this->process(cast<CallInst>(I));
+	if (isa<CallInst>(I))
+		{ process(cast<CallInst>(I)); }
 
-	} else if (isa<StoreInst>(I)) {
-		this->process(cast<StoreInst>(I));
+	else if (isa<StoreInst>(I))
+		{ process(cast<StoreInst>(I)); }
 
-	} else if (isa<PHINode>(I)) {
-		this->process(cast<PHINode>(I));
+	else if (isa<PHINode>(I))
+		{ process(cast<PHINode>(I)); }
 
-	} else if (isa<InsertValueInst>(I)) {
-		this->process(cast<InsertValueInst>(I));
-	}
+	else if (isa<InsertValueInst>(I))
+		{ process(cast<InsertValueInst>(I)); }
 }
 
 
 void DetectNullPass::process(const llvm::CallInst& I) {
 	if (!I.getType()->isPointerTy()) return;
 
-	this->nullInfoMap[&I] = NullInfo().setStatus(Maybe_Null);
+	nullInfoMap[&I] = NullInfo().setStatus(Maybe_Null);
 }
 
-void DetectNullPass::process(const llvm::StoreInst& I) {
+void DetectNullPass::process(const llvm::InsertValueInst& I) {
+	using namespace::std;
 	using namespace::llvm;
 
-	auto ptr = I.getPointerOperand();
-	auto value = I.getValueOperand();
-
-	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
-
+	const Value* value = I.getInsertedValueOperand();
 	if (isa<ConstantPointerNull>(value)) {
-		this->nullInfoMap[&I] = NullInfo().setStatus(Null);
+		const vector<unsigned> idxs = I.getIndices().vec();
+		nullInfoMap[&I] = NullInfo().setStatus(idxs, Null);
 	}
 }
 
@@ -90,41 +90,46 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 	if (!I.getType()->isPointerTy()) return;
 
 	for (int i = 0; i < I.getNumIncomingValues(); i++) {
-		auto incoming = I.getIncomingValue(i);
-		if (isa<Instruction>(incoming)) {
-			auto inst = cast<Instruction>(incoming);
-			this->processInst(*inst);
+		const Value* incoming = I.getIncomingValue(i);
+		if (isa<Instruction>(*incoming)) {
+			processInst(cast<Instruction>(*incoming));
 		} else {
 			errs() << "Encountered non-instruction incoming value in PHINode: "
 					<< *incoming
-					<< "\n";
+					<< ENDL;
 		}
 	}
 
-	auto nullInfo = NullInfo();
+	NullInfo nullInfo = NullInfo();
 	for (int i = 0; i < I.getNumIncomingValues(); i++) {
-		auto incoming = I.getIncomingValue(i);
-		if (this->containsInfoForValue(*incoming)) {
-			nullInfo = nullInfo.merge(this->nullInfoMap[incoming]);
-		} else {
-			nullInfo = nullInfo.merge(Not_Null);
+		const Value* incoming = I.getIncomingValue(i);
+		if (isa<Instruction>(*incoming)) {
+			const Instruction& II = cast<Instruction>(*incoming);
+			if (containsKey(II)) {
+				nullInfo = nullInfo.merge(nullInfoMap[&II]);
+			} else {
+				nullInfo = nullInfo.merge(Not_Null);
+			}
 		}
 	}
 	this->nullInfoMap[&I] = nullInfo;
 }
 
-void DetectNullPass::process(const llvm::InsertValueInst& I) {
+void DetectNullPass::process(const llvm::StoreInst& I) {
 	using namespace::llvm;
 
-	auto value = I.getInsertedValueOperand();
-	if (isa<ConstantPointerNull>(value)) {
-		auto idxs = I.getIndices().vec();
-		this->nullInfoMap[&I] = NullInfo().setStatus(idxs, Null);
+	const Value* ptr = I.getPointerOperand();
+	const Value* value = I.getValueOperand();
+
+	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
+
+	if (isa<ConstantPointerNull>(*value)) {
+		nullInfoMap[&I] = NullInfo().setStatus(Null);
 	}
 }
 
-bool DetectNullPass::containsInfoForValue(const llvm::Value& value) {
-	return contains(this->nullInfoMap, &value);
+bool DetectNullPass::containsKey(const llvm::Value& value) {
+	return util::containsKey(nullInfoMap, &value);
 }
 
 DetectNullPass::~DetectNullPass() {
@@ -134,8 +139,8 @@ DetectNullPass::~DetectNullPass() {
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 	using namespace::std;
 
-	for_each(info.offsetInfoMap.begin(), info.offsetInfoMap.end(), [&s](const NullInfo::OffsetInfoMapEntry& pair){
-		s << pair.first << "->" << pair.second << "\n";
+	for_each(info.offsetInfoMap, [&s](const NullInfo::OffsetInfoMapEntry& pair){
+		s << pair.first << "->" << pair.second << ENDL;
 	});
 
 	return s;
@@ -145,4 +150,4 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 
 char borealis::DetectNullPass::ID = 17;
 static llvm::RegisterPass<borealis::DetectNullPass>
-X("detectnull", "Explicit NULL assignment detector", false, false);
+X("detect-null", "Explicit NULL assignment detector", false, false);

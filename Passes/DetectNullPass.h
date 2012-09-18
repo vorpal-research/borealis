@@ -15,11 +15,14 @@
 #include <map>
 #include <set>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
+#include "../util.h"
 #include "../util.hpp"
+
+using util::contains;
+using util::containsKey;
+using util::for_each;
 
 namespace borealis {
 
@@ -34,20 +37,27 @@ struct NullInfo {
 
 	OffsetInfoMap offsetInfoMap;
 
-	inline NullInfo& setStatus(const NullStatus& status) {
+	inline NullInfo& setStatus(
+			const NullStatus& status) {
 		return setStatus(0, status);
 	}
 
-	inline NullInfo& setStatus(unsigned idx, const NullStatus& status) {
+	inline NullInfo& setStatus(
+			unsigned idx,
+			const NullStatus& status) {
 		return setStatus(std::vector<unsigned> { idx }, status);
 	}
 
-	inline NullInfo& setStatus(const std::vector<unsigned>& v, const NullStatus& status) {
-		this->offsetInfoMap[v] = status;
+	inline NullInfo& setStatus(
+			const std::vector<unsigned>& v,
+			const NullStatus& status) {
+		offsetInfoMap[v] = status;
 		return *this;
 	}
 
-	static NullStatus mergeStatus(const NullStatus& one, const NullStatus& two) {
+	static NullStatus mergeStatus(
+			const NullStatus& one,
+			const NullStatus& two) {
 		if (one == Null && two == Null) {
 			return Null;
 		} else if (one == Not_Null && two == Not_Null) {
@@ -60,15 +70,14 @@ struct NullInfo {
 	NullInfo& merge(const NullInfo& other) {
 		using namespace::std;
 
-		for_each(other.offsetInfoMap.begin(), other.offsetInfoMap.end(), [this](const OffsetInfoMapEntry& pair){
-			vector<unsigned> idxs;
-			NullStatus status;
-			tie(idxs, status) = pair;
+		for_each(other.offsetInfoMap, [this](const OffsetInfoMapEntry& pair){
+			vector<unsigned> idxs = pair.first;
+			NullStatus status = pair.second;
 
-			if (!util::contains(this->offsetInfoMap, idxs)) {
-				this->offsetInfoMap[idxs] = status;
+			if (!containsKey(offsetInfoMap, idxs)) {
+				offsetInfoMap[idxs] = status;
 			} else {
-				this->offsetInfoMap[idxs] = mergeStatus(this->offsetInfoMap[idxs], status);
+				offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
 			}
 		});
 
@@ -78,10 +87,9 @@ struct NullInfo {
 	NullInfo& merge(const NullStatus& status) {
 		using namespace::std;
 
-		for_each(this->offsetInfoMap.begin(), this->offsetInfoMap.end(), [this, &status](const OffsetInfoMapEntry& pair){
-			vector<unsigned> idxs;
-			tie(idxs, ignore) = pair;
-			this->offsetInfoMap[idxs] = mergeStatus(this->offsetInfoMap[idxs], status);
+		for_each(offsetInfoMap, [this, &status](const OffsetInfoMapEntry& pair){
+			vector<unsigned> idxs = pair.first;
+			offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
 		});
 
 		return *this;
@@ -104,36 +112,37 @@ public:
 	virtual ~DetectNullPass();
 
 	const NullInfoMap& getNullInfoMap() {
-		return this->nullInfoMap;
+		return nullInfoMap;
 	}
 
-	std::auto_ptr<NullPtrSet> getNullSet() {
+	NullPtrSet getNullSet() {
 		using namespace::std;
 		using namespace::llvm;
 
-		auto res = new NullPtrSet();
-		for_each(this->nullInfoMap.begin(), this->nullInfoMap.end(), [&res](const NullInfoMapEntry& pair){
-			const Value* value;
-			tie(value, ignore) = pair;
-			res->insert(value);
+		NullPtrSet res = NullPtrSet();
+		for_each(nullInfoMap, [&res](const NullInfoMapEntry& pair){
+			const Value* value = pair.first;
+			res.insert(value);
 		});
-		return std::auto_ptr<NullPtrSet>(res);
+		return res;
 	}
 
 private:
+
 	NullInfoMap nullInfoMap;
 
 	void processInst(const llvm::Instruction& I);
 
 	void process(const llvm::CallInst& I);
-	void process(const llvm::StoreInst& I);
-	void process(const llvm::PHINode& I);
 	void process(const llvm::InsertValueInst& I);
+	void process(const llvm::PHINode& I);
+	void process(const llvm::StoreInst& I);
 
-	bool containsInfoForValue(const llvm::Value& value);
+	bool containsKey(const llvm::Value& value);
 };
 
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info);
 
 } /* namespace borealis */
+
 #endif /* DETECTNULLPASS_H_ */
