@@ -7,21 +7,20 @@
 
 #include "llvm/Support/raw_ostream.h"
 
-using llvm::raw_ostream;
-
-// copy the standard ostream behaviour with funcs
-raw_ostream& operator<<(raw_ostream& ost, raw_ostream& (*op)(raw_ostream&)) {
+// copy the standard ostream behavior with functions
+llvm::raw_ostream& operator<<(
+		llvm::raw_ostream& ost,
+		llvm::raw_ostream& (*op)(llvm::raw_ostream&)) {
 	return op(ost);
 }
 
 namespace streams {
+
 // copy the standard ostream endl
-raw_ostream& endl(raw_ostream& ost) {
+llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
 	ost << '\n';
 	ost.flush();
 	return ost;
 }
 
 } // namespace streams
-
-
