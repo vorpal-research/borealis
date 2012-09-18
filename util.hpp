@@ -37,7 +37,7 @@ std::list<T> filter_not(const std::list<T>& lst, const Pred pred) {
 }
 
 template<class K, class _>
-bool contains(const std::map<K, _>& map, const K& k) {
+bool containsKey(const std::map<K, _>& map, const K& k) {
 	if (map.find(k) != map.end()) return true;
 	else return false;
 }
