@@ -17,9 +17,11 @@
 #include "comments.h"
 
 #include "util.h"
+using namespace borealis;
 using llvm::errs;
-using streams::endl;
+using util::streams::endl;
 
+namespace borealis {
 namespace comments {
 
 llvm::StringRef getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
@@ -59,7 +61,8 @@ bool GatherCommentsAction::CommentKeeper::HandleComment(clang::Preprocessor &PP,
 }
 
 
-}
+} // namespace comments
+} // namespace borealis
 
 
 

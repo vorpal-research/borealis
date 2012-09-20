@@ -10,9 +10,14 @@
 
 #include <algorithm>
 #include <list>
+#include <map>
 #include <sstream>
 #include <type_traits>
 #include <vector>
+
+namespace borealis {
+
+
 
 namespace util {
 
@@ -55,9 +60,35 @@ std::string toString(const T& t) {
 	return oss.str();
 }
 
-} // namespace util
 
 
+namespace streams {
+
+template<class T>
+struct error_printer {
+	const T& val;
+	error_printer(const T& v): val(v) {}
+};
+
+template<class T>
+llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const error_printer<T>& v) {
+	using namespace::std;
+
+	s.changeColor(s.RED);
+	s << v.val;
+	s.resetColor();
+
+	return s;
+}
+
+// prints values in red:
+//   errs() << error(42) << endl;
+template<class T>
+error_printer<T> error(const T& val) { return error_printer<T>(val); }
+
+} /* namespace streams */
+} /* namespace util */
+} /* namespace borealis */
 
 namespace std {
 

@@ -7,13 +7,17 @@
 
 #include "llvm/Support/raw_ostream.h"
 
+using llvm::raw_ostream;
+
+namespace llvm {
 // copy the standard ostream behavior with functions
-llvm::raw_ostream& operator<<(
-		llvm::raw_ostream& ost,
-		llvm::raw_ostream& (*op)(llvm::raw_ostream&)) {
+raw_ostream& operator<<(raw_ostream& ost, raw_ostream& (*op)(raw_ostream&)) {
 	return op(ost);
 }
+}
 
+namespace borealis {
+namespace util {
 namespace streams {
 
 // copy the standard ostream endl
@@ -24,3 +28,5 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
 }
 
 } // namespace streams
+} // namespace util
+} // namespace borealis

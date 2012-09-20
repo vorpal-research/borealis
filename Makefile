@@ -7,7 +7,7 @@ RTTIFLAG := -fno-rtti
 
 DEFS = -DDEBUG_PRINT=true
 
-CXXFLAGS := $(shell llvm-config --cxxflags) $(RTTIFLAG) -std=c++11 -g $(DEFS)
+CXXFLAGS := -Wall -DNDEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O0 -fno-exceptions -fPIC -Woverloaded-virtual -Wcast-qual -std=c++11 -g $(DEFS)
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 
 DDD := $(shell echo $(LLVMLDFLAGS))

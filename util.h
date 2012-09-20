@@ -10,11 +10,13 @@
 
 #include "llvm/Support/raw_ostream.h"
 
+namespace llvm {
 // copy the standard ostream behavior with functions
-llvm::raw_ostream& operator<<(
-		llvm::raw_ostream& ost,
-		llvm::raw_ostream& (*op)(llvm::raw_ostream&));
+llvm::raw_ostream& operator<<(llvm::raw_ostream& ost, llvm::raw_ostream& (*op)(llvm::raw_ostream&));
+}
 
+namespace borealis {
+namespace util {
 namespace streams {
 
 const char ENDL = '\n';
@@ -23,6 +25,8 @@ const char ENDL = '\n';
 llvm::raw_ostream& endl(llvm::raw_ostream& ost);
 
 } // namespace streams
+} // namespace util
+} // namespace borealis
 
 #include "util.hpp"
 
