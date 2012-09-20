@@ -16,12 +16,11 @@
 
 #include "DetectNullPass.h"
 
-using streams::endl;
-using streams::ENDL;
+namespace borealis {
+
 using util::contains;
 using util::for_each;
-
-namespace borealis {
+using util::streams::endl;
 
 DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -96,7 +95,7 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 		} else {
 			errs() << "Encountered non-instruction incoming value in PHINode: "
 					<< *incoming
-					<< ENDL;
+					<< endl;
 		}
 	}
 
@@ -140,7 +139,7 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 	using namespace::std;
 
 	for_each(info.offsetInfoMap, [&s](const NullInfo::OffsetInfoMapEntry& pair){
-		s << pair.first << "->" << pair.second << ENDL;
+		s << pair.first << "->" << pair.second << endl;
 	});
 
 	return s;

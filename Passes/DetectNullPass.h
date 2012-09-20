@@ -20,11 +20,11 @@
 #include "../util.h"
 #include "../util.hpp"
 
+namespace borealis {
+
 using util::contains;
 using util::containsKey;
 using util::for_each;
-
-namespace borealis {
 
 enum NullStatus {
 	Null, Maybe_Null, Not_Null

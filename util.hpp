@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <list>
 #include <map>
+#include <set>
 #include <sstream>
 #include <type_traits>
 #include <vector>

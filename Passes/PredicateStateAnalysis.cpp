@@ -13,12 +13,12 @@
 
 #include "PredicateStateAnalysis.h"
 
+namespace borealis {
+
 using util::contains;
 using util::containsKey;
 using util::for_each;
 using util::toString;
-
-namespace borealis {
 
 typedef PredicateAnalysis::PredicateMap PM;
 typedef PredicateStateAnalysis::PredicateState PS;
@@ -44,11 +44,11 @@ std::pair<PSV, bool> mergePSV(const PSV& to, const PSV& from) {
 
 	for (auto t = to.begin(); t != to.end(); ++t)
 	{
-		PS& TO = *t;
+		const PS& TO = *t;
 
 		for (auto f = from.begin(); f != from.end(); ++f)
 		{
-			PS& FROM = *f;
+			const PS& FROM = *f;
 
 			auto R = vector<string*>(TO.size() + FROM.size());
 			merge(TO.begin(), TO.end(), FROM.begin(), FROM.end(), R.begin());
@@ -109,7 +109,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 	PM& pm = PA->getPredicateMap();
 
 	const BasicBlock& bb = *(wqe.first);
-	PSV& inStateVec = wqe.second;
+	PSV inStateVec = wqe.second;
 	bool changed = false;
 
 	for (auto inst = bb.begin(); inst != bb.end(); ++inst) {

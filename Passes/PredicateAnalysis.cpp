@@ -16,10 +16,10 @@
 
 #include "PredicateAnalysis.h"
 
+namespace borealis {
+
 using util::for_each;
 using util::toString;
-
-namespace borealis {
 
 std::string getValueName(const llvm::Value& v, const bool isSigned = false) {
 	using namespace::llvm;

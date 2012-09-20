@@ -19,8 +19,6 @@ namespace borealis {
 namespace util {
 namespace streams {
 
-const char ENDL = '\n';
-
 // copy the standard ostream endl
 llvm::raw_ostream& endl(llvm::raw_ostream& ost);
 

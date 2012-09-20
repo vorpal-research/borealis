@@ -16,10 +16,10 @@
 
 #include "CheckNullDereferencePass.h"
 
-using streams::ENDL;
-using util::for_each;
-
 namespace borealis {
+
+using util::for_each;
+using util::streams::endl;
 
 CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -39,7 +39,9 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
 	AA = &getAnalysis<AliasAnalysis>();
 	DNP = &getAnalysis<DetectNullPass>();
-	NullSet = &DNP->getNullSet();
+
+	auto tmp = DNP->getNullSet();
+	NullSet = &tmp;
 
 	for_each(F, [this](const BasicBlock& BB){
 		for_each(BB, [this](const Instruction& I){
@@ -63,7 +65,7 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 
 	const Value* ptr = I.getPointerOperand();
 
-	for_each(NullSet, [this, &I, ptr](const Value* nullValue){
+	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
 			reportNullDereference(I, *nullValue);
 		}
@@ -76,7 +78,7 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
 
 	const Value* ptr = I.getPointerOperand();
 
-	for_each(NullSet, [this, &I, ptr](const Value* nullValue){
+	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
 			reportNullDereference(I, *nullValue);
 		}
@@ -92,7 +94,7 @@ void CheckNullDereferencePass::reportNullDereference(
 			<< in
 			<< "\nfrom\n\t"
 			<< from
-			<< ENDL;
+			<< endl;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {
