@@ -21,26 +21,6 @@ namespace borealis {
 using util::for_each;
 using util::toString;
 
-std::string getValueName(const llvm::Value& v, const bool isSigned = false) {
-	using namespace::llvm;
-
-	if (isa<ConstantPointerNull>(v)) {
-		return "<null>";
-	} else if (isa<ConstantInt>(v)) {
-		ConstantInt& cInt = cast<ConstantInt>(v);
-		return isSigned
-				? toString(cInt.getValue().getSExtValue())
-	            : toString(cInt.getValue().getZExtValue());
-	} else if (isa<ConstantFP>(v)) {
-		ConstantFP& cFP = cast<ConstantFP>(v);
-		return toString(cFP.getValueAPF().convertToDouble());
-	}
-
-	return v.hasName() ? v.getName().str() : toString(&v);
-}
-
-
-
 PredicateAnalysis::PredicateAnalysis() : llvm::FunctionPass(ID) {
 	// TODO
 }
@@ -57,11 +37,13 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 
 	predicateMap.clear();
 
+	st = createSlotTracker(&F);
 	for_each(F, [this](const BasicBlock& BB){
 		for_each(BB, [this](const Instruction& I){
 			processInst(I);
 		});
 	});
+	delete st;
 
 	return false;
 }
@@ -74,9 +56,6 @@ void PredicateAnalysis::processInst(const llvm::Instruction& I) {
 
 	else if (isa<StoreInst>(I))
 		{ process(cast<StoreInst>(I)); }
-
-	else if (isa<BranchInst>(I))
-		{ process(cast<BranchInst>(I)); }
 
 	else if (isa<ICmpInst>(I))
 		{ process(cast<ICmpInst>(I)); }
@@ -104,18 +83,6 @@ void PredicateAnalysis::process(const llvm::StoreInst& I) {
 			"*" + getValueName(*lhv) + " = " + getValueName(*rhv);
 }
 
-void PredicateAnalysis::process(const llvm::BranchInst& I) {
-	using namespace::std;
-	using namespace::llvm;
-
-	if (I.isUnconditional()) return;
-
-	Value* cond = I.getCondition();
-
-	predicateMap[&I] =
-			getValueName(*cond)  + " is true";
-}
-
 void PredicateAnalysis::process(const llvm::ICmpInst& I) {
 	using namespace::std;
 	using namespace::llvm;
@@ -127,6 +94,24 @@ void PredicateAnalysis::process(const llvm::ICmpInst& I) {
 
 	predicateMap[&I] =
 			getValueName(*op1, isSigned) + " " + toString(pred) + " " + getValueName(*op2, isSigned);
+}
+
+std::string PredicateAnalysis::getValueName(const llvm::Value& v, const bool isSigned) {
+	using namespace::llvm;
+
+	if (isa<ConstantPointerNull>(v)) {
+		return "<null>";
+	} else if (isa<ConstantInt>(v)) {
+		ConstantInt& cInt = cast<ConstantInt>(v);
+		return isSigned
+				? toString(cInt.getValue().getSExtValue())
+	            : toString(cInt.getValue().getZExtValue());
+	} else if (isa<ConstantFP>(v)) {
+		ConstantFP& cFP = cast<ConstantFP>(v);
+		return toString(cFP.getValueAPF().convertToDouble());
+	}
+
+	return v.hasName() ? v.getName().str() : "%"+toString(st->getLocalSlot(&v));
 }
 
 PredicateAnalysis::~PredicateAnalysis() {

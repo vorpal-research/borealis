@@ -16,7 +16,8 @@
 #include <set>
 #include <vector>
 
-#include "../util.hpp"
+#include "../slottracker.hpp"
+#include "../util.h"
 
 namespace borealis {
 
@@ -42,11 +43,14 @@ private:
 
 	PredicateMap predicateMap;
 
+	SlotTracker* st;
+
 	void processInst(const llvm::Instruction& I);
-	void process(const llvm::BranchInst& I);
 	void process(const llvm::ICmpInst& I);
 	void process(const llvm::LoadInst& I);
 	void process(const llvm::StoreInst& I);
+
+	std::string getValueName(const llvm::Value& v, const bool isSigned = false);
 
 };
 
