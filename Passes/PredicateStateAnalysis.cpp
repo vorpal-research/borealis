@@ -18,6 +18,7 @@ namespace borealis {
 using util::contains;
 using util::containsKey;
 using util::for_each;
+using util::streams::endl;
 using util::toString;
 
 typedef PredicateAnalysis::PredicateMap PM;
@@ -26,6 +27,18 @@ typedef PredicateStateAnalysis::PredicateStateVector PSV;
 
 PSV createPSV() {
 	return PSV();
+}
+
+PSV addToPSV(const PSV& to, std::string& pred) {
+	using namespace::std;
+
+	PSV res = createPSV();
+	for_each(to, [&pred, &res](const PS& state){
+		PS ps = PS(state.begin(), state.end());
+		ps.insert(&pred);
+		res.push_back(ps);
+	});
+	return res;
 }
 
 std::pair<PSV, bool> mergePSV(const PSV& to, const PSV& from) {
@@ -146,26 +159,61 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 	}
 
 	if (changed) {
-		const Instruction& ender = *(--bb.end());
-		if (isa<BranchInst>(ender)) {
-			BranchInst& br = cast<BranchInst>(ender);
-			for (int i = 0; i < br.getNumSuccessors(); i++) {
-				BasicBlock* succ = br.getSuccessor(i);
-				workQueue.push(make_pair(succ, inStateVec));
-			}
-		}
+		processTerminator(*bb.getTerminator(), inStateVec);
 	}
 }
 
-void PredicateStateAnalysis::processInst(const llvm::Instruction& I) {
+void PredicateStateAnalysis::processTerminator(
+		const llvm::TerminatorInst& I,
+		const PSV& state) {
 	using namespace::llvm;
 
 	if (isa<BranchInst>(I))
-		{ process(cast<BranchInst>(I)); }
+		{ process(cast<BranchInst>(I), state); }
 }
 
-void PredicateStateAnalysis::process(const llvm::BranchInst& I) {
-	// TODO
+void PredicateStateAnalysis::process(
+		const llvm::BranchInst& I,
+		const PSV& state) {
+	using namespace::llvm;
+
+	PM& pm = PA->getPredicateMap();
+
+	if (I.isUnconditional()) {
+		BasicBlock* succ = I.getSuccessor(0);
+		workQueue.push(make_pair(succ, state));
+	} else {
+		const Value* cond = I.getCondition();
+
+		if (isa<Instruction>(*cond)) {
+			const Instruction& condi = cast<Instruction>(*cond);
+			if (containsKey(pm, &condi)) {
+				std::string& pred = pm[&condi];
+
+				std::string& truePred = pred;
+				BasicBlock* trueSucc = I.getSuccessor(0);
+				workQueue.push(make_pair(trueSucc, addToPSV(state, truePred)));
+
+				std::string& falsePred = pred;
+				BasicBlock* falseSucc = I.getSuccessor(1);
+				workQueue.push(make_pair(falseSucc, addToPSV(state, falsePred)));
+			} else {
+				errs() << "Terminator does not introduce any predicate information: "
+						<< I
+						<< endl;
+				BasicBlock* trueSucc = I.getSuccessor(0);
+				workQueue.push(make_pair(trueSucc, state));
+				BasicBlock* falseSucc = I.getSuccessor(1);
+				workQueue.push(make_pair(falseSucc, state));
+			}
+		} else {
+			errs() << "Terminator depends on non-instruction value: "
+									<< I
+									<< endl
+									<< *cond
+									<< endl;
+		}
+	}
 }
 
 PredicateStateAnalysis::~PredicateStateAnalysis() {

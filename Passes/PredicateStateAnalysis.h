@@ -53,8 +53,8 @@ private:
 
 	void processQueue();
 	void processBasicBlock(const WorkQueueEntry& wqe);
-	void processInst(const llvm::Instruction& I);
-	void process(const llvm::BranchInst& I);
+	void processTerminator(const llvm::TerminatorInst& I, const PredicateStateVector& state);
+	void process(const llvm::BranchInst& I, const PredicateStateVector& state);
 
 };
 
