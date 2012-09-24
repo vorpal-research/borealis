@@ -93,7 +93,7 @@ void PredicateAnalysis::process(const llvm::ICmpInst& I) {
 	bool isSigned = I.isSigned();
 
 	predicateMap[&I] =
-			getValueName(*op1, isSigned) + " " + toString(pred) + " " + getValueName(*op2, isSigned);
+			getValueName(I) + " = " + getValueName(*op1, isSigned) + " " + toString(pred) + " " + getValueName(*op2, isSigned);
 }
 
 std::string PredicateAnalysis::getValueName(const llvm::Value& v, const bool isSigned) {
