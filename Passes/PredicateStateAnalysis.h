@@ -15,6 +15,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "PredicateAnalysis.h"
@@ -25,7 +26,7 @@ class PredicateStateAnalysis: public llvm::FunctionPass {
 
 public:
 
-	typedef std::set<std::string*> PredicateState;
+	typedef std::set<std::string> PredicateState;
 	typedef std::vector<PredicateState> PredicateStateVector;
 	typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
 	typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;

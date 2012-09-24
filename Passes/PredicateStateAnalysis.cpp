@@ -35,7 +35,7 @@ PSV addToPSV(const PSV& to, std::string& pred) {
 	PSV res = createPSV();
 	for_each(to, [&pred, &res](const PS& state){
 		PS ps = PS(state.begin(), state.end());
-		ps.insert(&pred);
+		ps.insert(pred);
 		res.push_back(ps);
 	});
 	return res;
@@ -63,7 +63,7 @@ std::pair<PSV, bool> mergePSV(const PSV& to, const PSV& from) {
 		{
 			const PS& FROM = *f;
 
-			auto R = vector<string*>(TO.size() + FROM.size());
+			auto R = vector<string>(TO.size() + FROM.size());
 			merge(TO.begin(), TO.end(), FROM.begin(), FROM.end(), R.begin());
 
 			PS S = PS(R.begin(), R.end());
@@ -138,7 +138,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 			} else {
 				stateVec = createPSV();
 				PS state = PredicateState();
-				state.insert(&pm[&I]);
+				state.insert(pm[&I]);
 				stateVec.push_back(state);
 				changed = true;
 			}
@@ -190,11 +190,11 @@ void PredicateStateAnalysis::process(
 			if (containsKey(pm, &condi)) {
 				std::string& pred = pm[&condi];
 
-				std::string& truePred = pred;
+				std::string truePred = pred + " is true";
 				BasicBlock* trueSucc = I.getSuccessor(0);
 				workQueue.push(make_pair(trueSucc, addToPSV(state, truePred)));
 
-				std::string& falsePred = pred;
+				std::string falsePred = pred + " is false";
 				BasicBlock* falseSucc = I.getSuccessor(1);
 				workQueue.push(make_pair(falseSucc, addToPSV(state, falsePred)));
 			} else {
