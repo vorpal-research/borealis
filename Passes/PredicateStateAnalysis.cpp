@@ -26,13 +26,15 @@ typedef PredicateStateAnalysis::PredicateState PS;
 typedef PredicateStateAnalysis::PredicateStateVector PSV;
 
 PSV createPSV() {
-	return PSV();
+	PSV res = PSV();
+	res.push_back(PS());
+	return res;
 }
 
 PSV addToPSV(const PSV& to, std::string& pred) {
 	using namespace::std;
 
-	PSV res = createPSV();
+	PSV res = PSV();
 	for_each(to, [&pred, &res](const PS& state){
 		PS ps = PS(state.begin(), state.end());
 		ps.insert(pred);
@@ -45,31 +47,23 @@ std::pair<PSV, bool> mergePSV(const PSV& to, const PSV& from) {
 	using namespace::std;
 	using namespace::llvm;
 
-	PSV res = createPSV();
+	PSV res = PSV();
 	bool changed = false;
-
-	if (from.empty()) {
-		for_each(to, [&res](const PS& state) {
-			res.push_back(PS(state.begin(), state.end()));
-		});
-		return make_pair(res, changed);
-	}
 
 	for (auto t = to.begin(); t != to.end(); ++t)
 	{
 		const PS& TO = *t;
+		res.push_back(TO);
+	}
 
-		for (auto f = from.begin(); f != from.end(); ++f)
-		{
-			const PS& FROM = *f;
-
-			auto R = vector<string>(TO.size() + FROM.size());
-			merge(TO.begin(), TO.end(), FROM.begin(), FROM.end(), R.begin());
-
-			PS S = PS(R.begin(), R.end());
-			res.push_back(S);
-
-			changed = changed || S.size() > TO.size();
+	for (auto f = from.begin(); f != from.end(); ++f)
+	{
+		const PS& FROM = *f;
+		if (contains(res, FROM)) {
+			// DO NOTHING
+		} else {
+			res.push_back(FROM);
+			changed = true;
 		}
 	}
 
@@ -136,17 +130,15 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 			if (hasState) {
 				stateVec = predicateStateMap[&I];
 			} else {
-				stateVec = createPSV();
-				PS state = PredicateState();
-				state.insert(pm[&I]);
-				stateVec.push_back(state);
+				stateVec = PSV();
 				changed = true;
 			}
 		} else {
 			continue;
 		}
 
-		pair<PSV, bool> merged = mergePSV(stateVec, inStateVec);
+		PSV modifiedInStateVec = addToPSV(inStateVec, pm[&I]);
+		pair<PSV, bool> merged = mergePSV(stateVec, modifiedInStateVec);
 
 		predicateStateMap[&I] = merged.first;
 		changed = changed || merged.second;
