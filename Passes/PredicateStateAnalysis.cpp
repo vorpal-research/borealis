@@ -11,6 +11,8 @@
 #include <llvm/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <utility>
+
 #include "PredicateStateAnalysis.h"
 
 namespace borealis {
@@ -22,6 +24,7 @@ using util::streams::endl;
 using util::toString;
 
 typedef PredicateAnalysis::PredicateMap PM;
+typedef PredicateAnalysis::TerminatorPredicateMap TPM;
 typedef PredicateStateAnalysis::PredicateState PS;
 typedef PredicateStateAnalysis::PredicateStateVector PSV;
 
@@ -31,7 +34,7 @@ PSV createPSV() {
 	return res;
 }
 
-PSV addToPSV(const PSV& to, std::string& pred) {
+PSV addToPSV(const PSV& to, const Predicate* pred) {
 	using namespace::std;
 
 	PSV res = PSV();
@@ -169,42 +172,20 @@ void PredicateStateAnalysis::process(
 		const PSV& state) {
 	using namespace::llvm;
 
-	PM& pm = PA->getPredicateMap();
+	TPM& tpm = PA->getTerminatorPredicateMap();
 
 	if (I.isUnconditional()) {
 		BasicBlock* succ = I.getSuccessor(0);
 		workQueue.push(make_pair(succ, state));
 	} else {
-		const Value* cond = I.getCondition();
+		const BasicBlock* trueSucc = I.getSuccessor(0);
+		const BasicBlock* falseSucc = I.getSuccessor(1);
 
-		if (isa<Instruction>(*cond)) {
-			const Instruction& condi = cast<Instruction>(*cond);
-			if (containsKey(pm, &condi)) {
-				std::string& pred = pm[&condi];
+		const Predicate* truePred = tpm[std::make_pair(&I, trueSucc)];
+		const Predicate* falsePred = tpm[std::make_pair(&I, falseSucc)];
 
-				std::string truePred = pred + " is true";
-				BasicBlock* trueSucc = I.getSuccessor(0);
-				workQueue.push(make_pair(trueSucc, addToPSV(state, truePred)));
-
-				std::string falsePred = pred + " is false";
-				BasicBlock* falseSucc = I.getSuccessor(1);
-				workQueue.push(make_pair(falseSucc, addToPSV(state, falsePred)));
-			} else {
-				errs() << "Terminator does not introduce any predicate information: "
-						<< I
-						<< endl;
-				BasicBlock* trueSucc = I.getSuccessor(0);
-				workQueue.push(make_pair(trueSucc, state));
-				BasicBlock* falseSucc = I.getSuccessor(1);
-				workQueue.push(make_pair(falseSucc, state));
-			}
-		} else {
-			errs() << "Terminator depends on non-instruction value: "
-									<< I
-									<< endl
-									<< *cond
-									<< endl;
-		}
+		workQueue.push(std::make_pair(trueSucc, addToPSV(state, truePred)));
+		workQueue.push(std::make_pair(falseSucc, addToPSV(state, falsePred)));
 	}
 }
 

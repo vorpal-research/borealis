@@ -16,7 +16,9 @@
 #include <set>
 #include <vector>
 
-#include "../slottracker.hpp"
+#include "../Predicate/Predicate.h"
+
+#include "../slottracker.h"
 #include "../util.h"
 
 namespace borealis {
@@ -25,8 +27,12 @@ class PredicateAnalysis: public llvm::FunctionPass {
 
 public:
 
-	typedef std::map<const llvm::Instruction*, std::string> PredicateMap;
-	typedef std::pair<const llvm::Instruction*, std::string> PredicateMapEntry;
+	typedef std::map<const llvm::Instruction*, Predicate*> PredicateMap;
+	typedef std::pair<const llvm::Instruction*, Predicate*> PredicateMapEntry;
+
+	typedef std::pair<const llvm::TerminatorInst*, const llvm::BasicBlock*> TerminatorBranch;
+	typedef std::map<TerminatorBranch, Predicate*> TerminatorPredicateMap;
+	typedef std::pair<TerminatorBranch, Predicate*> TerminatorPredicateMapEntry;
 
 	static char ID;
 
@@ -39,9 +45,14 @@ public:
 		return predicateMap;
 	}
 
+	TerminatorPredicateMap& getTerminatorPredicateMap() {
+		return terminatorPredicateMap;
+	}
+
 private:
 
 	PredicateMap predicateMap;
+	TerminatorPredicateMap terminatorPredicateMap;
 
 	SlotTracker* st;
 
@@ -49,8 +60,7 @@ private:
 	void process(const llvm::ICmpInst& I);
 	void process(const llvm::LoadInst& I);
 	void process(const llvm::StoreInst& I);
-
-	std::string getValueName(const llvm::Value& v, const bool isSigned = false);
+	void process(const llvm::BranchInst& I);
 
 };
 

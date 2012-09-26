@@ -16,6 +16,13 @@
 
 #include "PredicateAnalysis.h"
 
+#include "../Predicate/Predicate.h"
+#include "../Predicate/LoadPredicate.h"
+#include "../Predicate/StorePredicate.h"
+#include "../Predicate/ICmpPredicate.h"
+#include "../Predicate/TruePredicate.h"
+#include "../Predicate/FalsePredicate.h"
+
 namespace borealis {
 
 using util::for_each;
@@ -59,6 +66,9 @@ void PredicateAnalysis::processInst(const llvm::Instruction& I) {
 
 	else if (isa<ICmpInst>(I))
 		{ process(cast<ICmpInst>(I)); }
+
+	else if (isa<BranchInst>(I))
+		{ process(cast<BranchInst>(I)); }
 }
 
 void PredicateAnalysis::process(const llvm::LoadInst& I) {
@@ -68,8 +78,7 @@ void PredicateAnalysis::process(const llvm::LoadInst& I) {
 	const LoadInst* lhv = &I;
 	const Value* rhv = I.getPointerOperand();
 
-	predicateMap[&I] =
-			getValueName(*lhv) + " = *" + getValueName(*rhv);
+	predicateMap[&I] = new LoadPredicate(lhv, rhv, st);
 }
 
 void PredicateAnalysis::process(const llvm::StoreInst& I) {
@@ -79,43 +88,44 @@ void PredicateAnalysis::process(const llvm::StoreInst& I) {
 	const Value* lhv = I.getPointerOperand();
 	const Value* rhv = I.getValueOperand();
 
-	predicateMap[&I] =
-			"*" + getValueName(*lhv) + " = " + getValueName(*rhv);
+	predicateMap[&I] = new StorePredicate(lhv, rhv, st);
 }
 
 void PredicateAnalysis::process(const llvm::ICmpInst& I) {
 	using namespace::std;
 	using namespace::llvm;
 
-	int pred = I.getPredicate();
 	const Value* op1 = I.getOperand(0);
 	const Value* op2 = I.getOperand(1);
-	bool isSigned = I.isSigned();
+	int pred = I.getPredicate();
 
-	predicateMap[&I] =
-			getValueName(I) + " = " + getValueName(*op1, isSigned) + " " + toString(pred) + " " + getValueName(*op2, isSigned);
+	predicateMap[&I] = new ICmpPredicate(&I, op1, op2, pred, st);
 }
 
-std::string PredicateAnalysis::getValueName(const llvm::Value& v, const bool isSigned) {
+void PredicateAnalysis::process(const llvm::BranchInst& I) {
+	using namespace::std;
 	using namespace::llvm;
 
-	if (isa<ConstantPointerNull>(v)) {
-		return "<null>";
-	} else if (isa<ConstantInt>(v)) {
-		ConstantInt& cInt = cast<ConstantInt>(v);
-		return isSigned
-				? toString(cInt.getValue().getSExtValue())
-	            : toString(cInt.getValue().getZExtValue());
-	} else if (isa<ConstantFP>(v)) {
-		ConstantFP& cFP = cast<ConstantFP>(v);
-		return toString(cFP.getValueAPF().convertToDouble());
-	}
+	if (I.isUnconditional()) return;
 
-	return v.hasName() ? v.getName().str() : "%"+toString(st->getLocalSlot(&v));
+	const Value* cond = I.getCondition();
+	const BasicBlock* trueSucc = I.getSuccessor(0);
+	const BasicBlock* falseSucc = I.getSuccessor(1);
+
+	terminatorPredicateMap[make_pair(&I, trueSucc)] =
+			new TruePredicate(cond, st);
+	terminatorPredicateMap[make_pair(&I, falseSucc)] =
+			new FalsePredicate(cond, st);
 }
 
 PredicateAnalysis::~PredicateAnalysis() {
-	// TODO
+	for_each(predicateMap, [this](const PredicateMapEntry& entry){
+		delete entry.second;
+	});
+
+	for_each(terminatorPredicateMap, [this](const TerminatorPredicateMapEntry& entry){
+		delete entry.second;
+	});
 }
 
 } /* namespace borealis */

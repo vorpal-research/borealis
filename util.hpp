@@ -152,9 +152,10 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T*>& vec)
 	if (!vec.empty()) {
 		ConstIter iter = vec.begin();
 		const T* el = *iter++;
-		s << (el == NULL ? NULL_REPR : *el);
+		(el == NULL ? s << NULL_REPR : s << *el);
 		for_each(iter, vec.end(), [&s](const T* e){
-			s << ELEMENT_DELIMITER << (e == NULL ? NULL_REPR : *e);
+			s << ELEMENT_DELIMITER;
+			(e == NULL ? s << NULL_REPR : s << *e);
 		});
 	}
 	s << VECTOR_RIGHT_BRACE;
@@ -172,9 +173,10 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::set<T*>& set) {
 	if (!set.empty()) {
 		ConstIter iter = set.begin();
 		const T* el = *iter++;
-		s << (el == NULL ? NULL_REPR : *el);
+		(el == NULL ? s << NULL_REPR : s << *el);
 		for_each(iter, set.end(), [&s](const T* e){
-			s << ELEMENT_DELIMITER << (e == NULL ? NULL_REPR : *e);
+			s << ELEMENT_DELIMITER;
+			(e == NULL ? s << NULL_REPR : s << *e);
 		});
 	}
 	s << SET_RIGHT_BRACE;

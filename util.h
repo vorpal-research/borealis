@@ -10,9 +10,13 @@
 
 #include "llvm/Support/raw_ostream.h"
 
+#include <string>
+
 namespace llvm {
 // copy the standard ostream behavior with functions
 llvm::raw_ostream& operator<<(llvm::raw_ostream& ost, llvm::raw_ostream& (*op)(llvm::raw_ostream&));
+
+std::string conditionToString(const int cond);
 }
 
 namespace borealis {

@@ -13,6 +13,7 @@ LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 DDD := $(shell echo $(LLVMLDFLAGS))
 
 ADDITIONAL_SOURCE_DIRS = $(PWD)/Passes \
+	$(PWD)/Predicate \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
 SOURCES = $(shell ls *.cpp) \
