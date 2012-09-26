@@ -17,7 +17,7 @@ StorePredicate::StorePredicate(
 				rhv(rhv),
 				lhvs(st->getLocalName(lhv)),
 				rhvs(st->getLocalName(rhv)),
-				asString(lhvs + "=*" + rhvs){
+				asString("*" + lhvs + "=" + rhvs){
 }
 
 std::string StorePredicate::toString() const {
