@@ -1,3 +1,7 @@
+################################################################################
+# Defs
+################################################################################
+
 CXX := clang++
 
 LLVMCOMPONENTS := all
@@ -5,25 +9,42 @@ LLVMCOMPONENTS := all
 RTTIFLAG := -fno-rtti
 #RTTIFLAG :=
 
-DEFS = -DDEBUG_PRINT=true
+DEFS :=
 
-CXXFLAGS := -Wall -DNDEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O0 -fno-exceptions -fPIC -Woverloaded-virtual -Wcast-qual -std=c++11 -g $(DEFS)
+CXXFLAGS := \
+	-Wall \
+	-Woverloaded-virtual \
+	-Wcast-qual \
+	-DNDEBUG \
+	-D_GNU_SOURCE \
+	-D__STDC_CONSTANT_MACROS \
+	-D__STDC_FORMAT_MACROS \
+	-D__STDC_LIMIT_MACROS \
+	-O0 \
+	-fno-exceptions \
+	-fPIC \
+	-std=c++11 \
+	-g \
+	$(DEFS)
+
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 
-DDD := $(shell echo $(LLVMLDFLAGS))
-
-ADDITIONAL_SOURCE_DIRS = $(PWD)/Passes \
+ADDITIONAL_SOURCE_DIRS := \
+	$(PWD)/Passes \
 	$(PWD)/Predicate \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
-SOURCES = $(shell ls *.cpp) \
-    $(shell find $(ADDITIONAL_SOURCE_DIRS) -type f | grep "\.cpp")
 
-OBJECTS = $(SOURCES:.cpp=.o)
-HEADERS = $(shell ls *.hpp)
-EXES = wrapper
+SOURCES := \
+	$(shell ls *.cpp) \
+    $(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
 
-CLANGLIBS = \
+OBJECTS := $(SOURCES:.cpp=.o)
+HEADERS := $(SOURCES:.cpp=.h)
+
+EXES := wrapper
+
+CLANGLIBS := \
     -lclangCodeGen \
     -lclangFrontend \
     -lclangDriver \
@@ -37,10 +58,27 @@ CLANGLIBS = \
     -lclangLex \
     -lclangBasic
 
-all: $(OBJECTS) $(HEADERS) $(EXES)
+default: all
 
-wrapper: $(OBJECTS) $(HEADERS)
-	$(CXX) -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -g
+################################################################################
+# Deps management
+################################################################################
+deps: .DEPS
+
+.DEPS: $(SOURCES)
+		$(CXX) $(CXXFLAGS) -MM $^ > .DEPS
+################################################################################
+# Rules
+################################################################################
+
+all: $(EXES)
+
+wrapper: $(OBJECTS)
+	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
 
 clean:
-	-rm -f $(EXES) $(OBJECTS) *~
+	-rm -f $(EXES) $(OBJECTS)
+
+################################################################################
+-include .DEPS
+################################################################################
