@@ -7,6 +7,8 @@
 
 #include "slottracker.h"
 
+#include "util.h"
+
 namespace borealis {
 
 SlotTracker *createSlotTracker(const Value *V) {
@@ -248,13 +250,13 @@ void SlotTracker::CreateMetadataSlot(const MDNode *N) {
 ////////////////////////////////////////////////////////////////////////////////
 
 std::string SlotTracker::getLocalName(const Value *V) {
-	using borealis::util::toString;
+	using util::toString;
 
 	if (isa<ConstantPointerNull>(V)) {
 		return "<null>";
 	} else if (isa<ConstantInt>(V)) {
 		const ConstantInt* cInt = cast<ConstantInt>(V);
-		return toString(cInt->getValue().getSExtValue());
+		return toString(cInt->getValue().getZExtValue());
 	} else if (isa<ConstantFP>(V)) {
 		const ConstantFP* cFP = cast<ConstantFP>(V);
 		return toString(cFP->getValueAPF().convertToDouble());

@@ -36,8 +36,6 @@
 #include <algorithm>
 #include <cctype>
 
-#include "util.h"
-
 using namespace::llvm;
 
 //===----------------------------------------------------------------------===//

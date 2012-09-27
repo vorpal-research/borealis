@@ -5,16 +5,15 @@
  *      Author: belyaev
  */
 
-#include "llvm/InstrTypes.h"
-#include "llvm/Support/raw_ostream.h"
-
 #include "util.h"
 
-using llvm::raw_ostream;
+#include "llvm/InstrTypes.h"
 
 namespace llvm {
 // copy the standard ostream behavior with functions
-raw_ostream& operator<<(raw_ostream& ost, raw_ostream& (*op)(raw_ostream&)) {
+llvm::raw_ostream& operator<<(
+		llvm::raw_ostream& ost,
+		llvm::raw_ostream& (*op)(llvm::raw_ostream&)) {
 	return op(ost);
 }
 
