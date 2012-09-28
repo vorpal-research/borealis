@@ -37,10 +37,11 @@ ADDITIONAL_SOURCE_DIRS := \
 
 SOURCES := \
 	$(shell ls *.cpp) \
-    $(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
+	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
 
 OBJECTS := $(SOURCES:.cpp=.o)
 HEADERS := $(SOURCES:.cpp=.h)
+DEPS := $(SOURCES:.cpp=.d)
 
 EXES := wrapper
 
@@ -60,13 +61,18 @@ CLANGLIBS := \
 
 default: all
 
+.PHONY: all clean
+
 ################################################################################
 # Deps management
 ################################################################################
-deps: .DEPS
-
-.DEPS: $(SOURCES)
-		$(CXX) $(CXXFLAGS) -MM $^ > .DEPS
+%.d: %.cpp
+	$(CXX) $(CXXFLAGS) -MM $*.cpp > $*.d
+	@mv -f $*.d $*.dd
+	@sed -e 's|.*:|$*.o:|' < $*.dd > $*.d
+	@sed -e 's|.*:||' -e 's|\\$$||' < $*.dd | fmt -1 | \
+	  sed -e 's|^\s*||' -e 's|$$|:|' >> $*.d
+	@rm -f $*.dd
 ################################################################################
 # Rules
 ################################################################################
@@ -77,8 +83,8 @@ wrapper: $(OBJECTS)
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
 
 clean:
-	-rm -f $(EXES) $(OBJECTS)
+	rm -f $(EXES) $(OBJECTS) $(DEPS)
 
 ################################################################################
--include .DEPS
+-include $(DEPS)
 ################################################################################
