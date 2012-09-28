@@ -13,7 +13,6 @@ FalsePredicate::FalsePredicate(const llvm::Value* v, SlotTracker* st):
 	v(v),
 	vs(st->getLocalName(v)),
 	asString(vs + "=FALSE") {
-
 }
 
 std::string FalsePredicate::toString() const {

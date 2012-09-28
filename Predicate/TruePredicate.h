@@ -8,15 +8,15 @@
 #ifndef TRUEPREDICATE_H_
 #define TRUEPREDICATE_H_
 
-#include "llvm/Value.h"
-
 #include "Predicate.h"
+
+#include "llvm/Value.h"
 
 #include "../slottracker.h"
 
 namespace borealis {
 
-class TruePredicate: public borealis::Predicate {
+class TruePredicate: public Predicate {
 
 public:
 
@@ -32,4 +32,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* TRUEPREDICATE_H_ */

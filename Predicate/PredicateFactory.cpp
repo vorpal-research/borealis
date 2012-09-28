@@ -10,12 +10,11 @@
 namespace borealis {
 
 PredicateFactory::PredicateFactory() {
-	// TODO Auto-generated constructor stub
-
+	// TODO
 }
 
 PredicateFactory::~PredicateFactory() {
-	// TODO Auto-generated destructor stub
+	// TODO
 }
 
 } /* namespace borealis */

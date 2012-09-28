@@ -8,15 +8,15 @@
 #ifndef FALSEPREDICATE_H_
 #define FALSEPREDICATE_H_
 
-#include "llvm/Value.h"
-
 #include "Predicate.h"
+
+#include "llvm/Value.h"
 
 #include "../slottracker.h"
 
 namespace borealis {
 
-class FalsePredicate: public borealis::Predicate {
+class FalsePredicate: public Predicate {
 
 public:
 
@@ -32,4 +32,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* FALSEPREDICATE_H_ */

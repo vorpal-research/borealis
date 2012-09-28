@@ -13,7 +13,6 @@ TruePredicate::TruePredicate(const llvm::Value* v, SlotTracker* st):
 	v(v),
 	vs(st->getLocalName(v)),
 	asString(vs + "=TRUE") {
-
 }
 
 std::string TruePredicate::toString() const {

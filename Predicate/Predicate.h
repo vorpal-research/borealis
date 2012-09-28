@@ -10,8 +10,6 @@
 
 #include "llvm/Support/raw_ostream.h"
 
-#include <string>
-
 namespace borealis {
 
 class Predicate {

@@ -8,15 +8,15 @@
 #ifndef ICMPPREDICATE_H_
 #define ICMPPREDICATE_H_
 
-#include "llvm/Value.h"
-
 #include "Predicate.h"
+
+#include "llvm/Value.h"
 
 #include "../slottracker.h"
 
 namespace borealis {
 
-class ICmpPredicate: public borealis::Predicate {
+class ICmpPredicate: public Predicate {
 
 public:
 
@@ -45,4 +45,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* ICMPPREDICATE_H_ */

@@ -8,9 +8,9 @@
 #ifndef LOADPREDICATE_H_
 #define LOADPREDICATE_H_
 
-#include "llvm/Value.h"
-
 #include "Predicate.h"
+
+#include "llvm/Value.h"
 
 #include "../slottracker.h"
 
@@ -39,4 +39,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* LOADPREDICATE_H_ */

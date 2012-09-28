@@ -17,4 +17,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* PREDICATEFACTORY_H_ */

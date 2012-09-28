@@ -8,9 +8,9 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
-#include "llvm/Value.h"
-
 #include "Predicate.h"
+
+#include "llvm/Value.h"
 
 #include "../slottracker.h"
 
@@ -39,4 +39,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* STOREPREDICATE_H_ */

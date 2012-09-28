@@ -8,7 +8,7 @@
 #include "Predicate.h"
 
 namespace llvm {
-raw_ostream& operator<<(raw_ostream& s, const borealis::Predicate& p) {
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p) {
 	s << p.toString();
 	return s;
 }
