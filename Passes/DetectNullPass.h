@@ -9,6 +9,7 @@
 #define DETECTNULLPASS_H_
 
 #include <llvm/Function.h>
+#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -18,7 +19,6 @@
 #include <utility>
 
 #include "../util.h"
-#include "../util.hpp"
 
 namespace borealis {
 
@@ -70,9 +70,9 @@ struct NullInfo {
 	NullInfo& merge(const NullInfo& other) {
 		using namespace::std;
 
-		for_each(other.offsetInfoMap, [this](const OffsetInfoMapEntry& pair){
-			vector<unsigned> idxs = pair.first;
-			NullStatus status = pair.second;
+		for_each(other.offsetInfoMap, [this](const OffsetInfoMapEntry& entry){
+			vector<unsigned> idxs = entry.first;
+			NullStatus status = entry.second;
 
 			if (!containsKey(offsetInfoMap, idxs)) {
 				offsetInfoMap[idxs] = status;
@@ -87,8 +87,8 @@ struct NullInfo {
 	NullInfo& merge(const NullStatus& status) {
 		using namespace::std;
 
-		for_each(offsetInfoMap, [this, &status](const OffsetInfoMapEntry& pair){
-			vector<unsigned> idxs = pair.first;
+		for_each(offsetInfoMap, [this, &status](const OffsetInfoMapEntry& entry){
+			vector<unsigned> idxs = entry.first;
 			offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
 		});
 
@@ -120,8 +120,8 @@ public:
 		using namespace::llvm;
 
 		NullPtrSet res = NullPtrSet();
-		for_each(nullInfoMap, [&res](const NullInfoMapEntry& pair){
-			const Value* value = pair.first;
+		for_each(nullInfoMap, [&res](const NullInfoMapEntry& entry){
+			const Value* value = entry.first;
 			res.insert(value);
 		});
 		return res;
@@ -134,9 +134,9 @@ private:
 	void processInst(const llvm::Instruction& I);
 
 	void process(const llvm::CallInst& I);
-	void process(const llvm::InsertValueInst& I);
-	void process(const llvm::PHINode& I);
 	void process(const llvm::StoreInst& I);
+	void process(const llvm::PHINode& I);
+	void process(const llvm::InsertValueInst& I);
 
 	bool containsKey(const llvm::Value& value);
 };

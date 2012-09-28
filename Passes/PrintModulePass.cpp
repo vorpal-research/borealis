@@ -5,47 +5,39 @@
  *      Author: belyaev
  */
 
-
-#include <llvm/Analysis/AliasAnalysis.h>
-#include <llvm/BasicBlock.h>
-#include <llvm/Constants.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/Module.h>
 #include <llvm/Function.h>
-#include <llvm/BasicBlock.h>
-#include <llvm/Instruction.h>
-#include <llvm/Target/TargetData.h>
-
+#include <llvm/Module.h>
+#include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include "../util.h"
 
-using namespace llvm;
-using namespace borealis::util::streams;
+using namespace::borealis::util::streams;
 
 namespace {
 
 struct PrintModulePass: public llvm::ModulePass {
+
 	static char ID;
 
-	PrintModulePass(): ModulePass(ID) {}
-	virtual bool runOnModule(llvm::Module& F) {
+	PrintModulePass(): llvm::ModulePass(ID) {}
+
+	virtual bool runOnModule(llvm::Module& M) {
+		using namespace::llvm;
 		errs() << "Dumping module:" << endl
-		       << F << endl;
+		       << M << endl;
 		return false;
 	}
+
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 		Info.setPreservesAll();
 	}
+
 	virtual ~PrintModulePass() {}
 };
 
-
 char PrintModulePass::ID;
 static llvm::RegisterPass<PrintModulePass>
-X("module-printer", "Pass that prints the module to standard output");
+X("module-printer", "Pass that prints a module to cout");
 
 }
-

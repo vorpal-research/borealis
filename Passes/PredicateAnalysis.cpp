@@ -5,16 +5,11 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/ADT/StringMap.h>
-#include <llvm/Assembly/Writer.h>
+#include "PredicateAnalysis.h"
+
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
-#include <llvm/InstrTypes.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
-
-#include "PredicateAnalysis.h"
 
 #include "../Predicate/Predicate.h"
 #include "../Predicate/LoadPredicate.h"

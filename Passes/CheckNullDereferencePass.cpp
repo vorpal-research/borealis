@@ -5,16 +5,10 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Analysis/AliasAnalysis.h>
+#include "CheckNullDereferencePass.h"
+
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
-#include <llvm/Support/raw_ostream.h>
-
-#include <set>
-
-#include "CheckNullDereferencePass.h"
 
 namespace borealis {
 
@@ -57,6 +51,9 @@ void CheckNullDereferencePass::processInst(const llvm::Instruction& I) {
 
 	if (isa<LoadInst>(I))
 		{ process(cast<LoadInst>(I)); }
+
+	else if (isa<StoreInst>(I))
+		{ process(cast<StoreInst>(I)); }
 }
 
 void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
@@ -90,11 +87,10 @@ void CheckNullDereferencePass::reportNullDereference(
 		const llvm::Value& from) {
 	using namespace::llvm;
 
-	errs() << "Possible NULL dereference in\n\t"
-			<< in
-			<< "\nfrom\n\t"
-			<< from
-			<< endl;
+	errs() << "Possible NULL dereference in" << endl
+			<< "\t" << in << endl
+			<< "from" << endl
+			<< "\t" << from << endl;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {

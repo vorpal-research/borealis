@@ -5,16 +5,10 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Analysis/AliasAnalysis.h>
+#include "DetectNullPass.h"
+
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
-#include <llvm/Support/raw_ostream.h>
-
-#include <algorithm>
-
-#include "DetectNullPass.h"
 
 namespace borealis {
 
@@ -65,21 +59,22 @@ void DetectNullPass::processInst(const llvm::Instruction& I) {
 		{ process(cast<InsertValueInst>(I)); }
 }
 
-
 void DetectNullPass::process(const llvm::CallInst& I) {
 	if (!I.getType()->isPointerTy()) return;
 
 	nullInfoMap[&I] = NullInfo().setStatus(Maybe_Null);
 }
 
-void DetectNullPass::process(const llvm::InsertValueInst& I) {
-	using namespace::std;
+void DetectNullPass::process(const llvm::StoreInst& I) {
 	using namespace::llvm;
 
-	const Value* value = I.getInsertedValueOperand();
-	if (isa<ConstantPointerNull>(value)) {
-		const vector<unsigned> idxs = I.getIndices().vec();
-		nullInfoMap[&I] = NullInfo().setStatus(idxs, Null);
+	const Value* ptr = I.getPointerOperand();
+	const Value* value = I.getValueOperand();
+
+	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
+
+	if (isa<ConstantPointerNull>(*value)) {
+		nullInfoMap[&I] = NullInfo().setStatus(Null);
 	}
 }
 
@@ -111,19 +106,17 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 			}
 		}
 	}
-	this->nullInfoMap[&I] = nullInfo;
+	nullInfoMap[&I] = nullInfo;
 }
 
-void DetectNullPass::process(const llvm::StoreInst& I) {
+void DetectNullPass::process(const llvm::InsertValueInst& I) {
+	using namespace::std;
 	using namespace::llvm;
 
-	const Value* ptr = I.getPointerOperand();
-	const Value* value = I.getValueOperand();
-
-	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
-
-	if (isa<ConstantPointerNull>(*value)) {
-		nullInfoMap[&I] = NullInfo().setStatus(Null);
+	const Value* value = I.getInsertedValueOperand();
+	if (isa<ConstantPointerNull>(value)) {
+		const vector<unsigned> idxs = I.getIndices().vec();
+		nullInfoMap[&I] = NullInfo().setStatus(idxs, Null);
 	}
 }
 
@@ -138,8 +131,8 @@ DetectNullPass::~DetectNullPass() {
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 	using namespace::std;
 
-	for_each(info.offsetInfoMap, [&s](const NullInfo::OffsetInfoMapEntry& pair){
-		s << pair.first << "->" << pair.second << endl;
+	for_each(info.offsetInfoMap, [&s](const NullInfo::OffsetInfoMapEntry& entry){
+		s << entry.first << "->" << entry.second << endl;
 	});
 
 	return s;

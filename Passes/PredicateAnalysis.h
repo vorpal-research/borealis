@@ -5,11 +5,12 @@
  *      Author: ice-phoenix
  */
 
+
 #ifndef PREDICATEANALYSIS_H_
 #define PREDICATEANALYSIS_H_
 
-#include <llvm/Instructions.h>
 #include <llvm/Function.h>
+#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <map>
@@ -57,9 +58,9 @@ private:
 	SlotTracker* st;
 
 	void processInst(const llvm::Instruction& I);
-	void process(const llvm::ICmpInst& I);
 	void process(const llvm::LoadInst& I);
 	void process(const llvm::StoreInst& I);
+	void process(const llvm::ICmpInst& I);
 	void process(const llvm::BranchInst& I);
 
 };

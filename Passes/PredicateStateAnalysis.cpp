@@ -5,15 +5,11 @@
  *      Author: ice-phoenix
  */
 
+#include "PredicateStateAnalysis.h"
+
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
-
-#include <utility>
-
-#include "PredicateStateAnalysis.h"
 
 namespace borealis {
 
@@ -93,14 +89,12 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 	workQueue.push(make_pair(&F.getEntryBlock(), createPSV()));
 	processQueue();
 
-	PA = nullptr;
-
-	errs() << "\nPSA results:\n";
+	errs() << endl << "PSA results:" << endl;
 	for_each(predicateStateMap, [this](const PredicateStateMapEntry& entry) {
-		errs() << *entry.first << "\n";
-		errs() << entry.second << "\n";
+		errs() << *entry.first << endl;
+		errs() << entry.second << endl;
 	});
-	errs() << "\nEnd of PSA results:\n";
+	errs() << endl << "End of PSA results" << endl;
 
 	return false;
 }
@@ -170,22 +164,23 @@ void PredicateStateAnalysis::processTerminator(
 void PredicateStateAnalysis::process(
 		const llvm::BranchInst& I,
 		const PSV& state) {
+	using namespace::std;
 	using namespace::llvm;
 
 	TPM& tpm = PA->getTerminatorPredicateMap();
 
 	if (I.isUnconditional()) {
-		BasicBlock* succ = I.getSuccessor(0);
+		const BasicBlock* succ = I.getSuccessor(0);
 		workQueue.push(make_pair(succ, state));
 	} else {
 		const BasicBlock* trueSucc = I.getSuccessor(0);
 		const BasicBlock* falseSucc = I.getSuccessor(1);
 
-		const Predicate* truePred = tpm[std::make_pair(&I, trueSucc)];
-		const Predicate* falsePred = tpm[std::make_pair(&I, falseSucc)];
+		const Predicate* truePred = tpm[make_pair(&I, trueSucc)];
+		const Predicate* falsePred = tpm[make_pair(&I, falseSucc)];
 
-		workQueue.push(std::make_pair(trueSucc, addToPSV(state, truePred)));
-		workQueue.push(std::make_pair(falseSucc, addToPSV(state, falsePred)));
+		workQueue.push(make_pair(trueSucc, addToPSV(state, truePred)));
+		workQueue.push(make_pair(falseSucc, addToPSV(state, falsePred)));
 	}
 }
 

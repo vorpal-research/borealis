@@ -8,14 +8,13 @@
 #ifndef PREDICATESTATEANALYSIS_H_
 #define PREDICATESTATEANALYSIS_H_
 
-#include <llvm/Instructions.h>
 #include <llvm/Function.h>
+#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <map>
 #include <queue>
 #include <set>
-#include <string>
 #include <vector>
 
 #include "PredicateAnalysis.h"

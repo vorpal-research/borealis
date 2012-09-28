@@ -9,17 +9,9 @@
 #define PASSVALIDATORPASS_H_
 
 #include <llvm/Function.h>
+#include <llvm/Module.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
-
-#include <map>
-#include <set>
-#include <tuple>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-
-#include "../util.hpp"
 
 namespace borealis {
 
@@ -32,8 +24,6 @@ struct PassValidatorPass: public llvm::ModulePass {
 	virtual ~PassValidatorPass();
 };
 
-
 } /* namespace borealis */
-
 
 #endif /* PASSVALIDATORPASS_H_ */
