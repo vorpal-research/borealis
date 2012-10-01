@@ -87,7 +87,7 @@
 #include "clang/Frontend/Utils.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendActions.h"
-
+#include "clang/Basic/Version.h"
 
 #include "comments.h"
 using namespace std;
@@ -122,7 +122,9 @@ int main(int argc, const char** argv)
 	//args.push_back(inputPath.c_str());
 	args.erase(args.begin());
 	args.push_back("-g");
-	args.push_back("-I/usr/lib/clang/3.1/include");
+
+	// this is generally fucked up
+	args.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
 
 	//	// Arguments to pass to the clang frontend
 	//	vector<const char *> args(argv, argv + argc);

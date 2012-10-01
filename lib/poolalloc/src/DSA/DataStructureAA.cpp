@@ -40,35 +40,26 @@ DSGraph *DSAA::getGraphForValue(const Value *V) {
 
 AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
                                        const Location& LocB) {
-	errs() << "Running DS_AA::alias\n";
-	errs().flush();
-
 	const Value *V1 = LocA.Ptr;
 	unsigned long long V1Size = LocA.Size;
 	const Value *V2 = LocB.Ptr;
 	unsigned long long V2Size = LocB.Size;
-
-	errs() << *V1 << "\n"; errs().flush();
-	errs() << *V2 << "\n"; errs().flush();
 
   if (V1 == V2) return MustAlias;
 
   if(!V1->getType()->isPointerTy() || !V2->getType()->isPointerTy()) return NoAlias;
 
   DSGraph *G1 = getGraphForValue(V1);
-  errs() << "Graph 1: " << G1 << "\n"; errs().flush();
   DSGraph *G2 = getGraphForValue(V2);
-  errs() << "Graph 2: " << G2 << "\n"; errs().flush();
 
   assert((!G1 || !G2 || G1 == G2) && "Alias query for 2 different functions?");
-  if(G1 && G2 && G1 != G2) errs() << "Alias query for 2 different functions?" << "\n"; errs().flush();
+  if(G1 && G2 && G1 != G2) {
+	  // << "Alias query for 2 different functions?" << "\n"; .flush();
+	  return NoAlias;
+  }
 
   // Get the graph to use...
   DSGraph* G = G1 ? G1 : (G2 ? G2 : TD->getGlobalsGraph());
-
-  errs() << "Graph: " << G << "\n"; errs().flush();
-
-  G->print(errs());
 
   const DSGraph::ScalarMapTy &GSM = G->getScalarMap();
 
@@ -105,7 +96,7 @@ AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
 
   // FIXME: we could improve on this by checking the globals graph for aliased
   // global queries...
-  return AliasAnalysis::alias(V1, V1Size, V2, V2Size);
+  return AliasAnalysis::alias(LocA,LocB);
 }
 
 /// getModRefInfo - does a callsite modify or reference a value?

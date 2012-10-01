@@ -85,7 +85,6 @@ public:
   }
   const_iterator find(const Value *V) const {
     assert(V);
-    errs() << V << "\n"; errs().flush();
     const_iterator I = ValueMap.find(V);
     if (I != ValueMap.end()) return I;
 

@@ -52,10 +52,12 @@ namespace {
 	void for_each_value(llvm::Module& M, Callable c) {
 		for_each(M.getGlobalList(), c);
 		for_each(M, [&](ITER_TYPE(M) F){
-			for_each(F.getArgumentList(), c);
-			for_each(F, [&](ITER_TYPE(F) BB){
-				for_each(BB, c);
-			});
+			if(!F.isDeclaration()) {
+				for_each(F.getArgumentList(), c);
+				for_each(F, [&](ITER_TYPE(F) BB){
+					for_each(BB, c);
+				});
+			}
 		});
 	}
 }
@@ -81,10 +83,19 @@ bool PassValidatorPass::runOnModule(llvm::Module& M) {
 	for_each_value(M, [&](const Value& v1){
 		if (v1.getType()->isMetadataTy() || v1.getType()->isVoidTy())
 			return;
+
 		for_each_value(M, [&](const Value& v2){
 			if (v2.getType()->isMetadataTy() || v2.getType()->isVoidTy())
 				return;
-			printAARes(aa.alias(&v1,0,&v2,0));
+			auto aliases = aa.alias(&v1,0,&v2,0);
+			// only interesting cases
+			if(&v1 != &v2 && (aliases == AliasAnalysis::MustAlias || aliases == AliasAnalysis::MayAlias)){
+				errs() << v1 << endl;
+				errs() << v2 << endl;
+				printAARes(aliases);
+				errs() << endl;
+			}
+
 		});
 	});
 
