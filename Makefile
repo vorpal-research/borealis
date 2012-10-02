@@ -25,6 +25,7 @@ CXXFLAGS := \
 	-fPIC \
 	-std=c++11 \
 	-g \
+	-I$(PWD) \
 	$(DEFS)
 
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
@@ -38,12 +39,28 @@ ADDITIONAL_SOURCE_DIRS := \
 SOURCES := \
 	$(shell ls *.cpp) \
 	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
+	
+# sources containing function main
+MAIN_SOURCES := wrapper.cpp
+	
+TEST_DIRS := $(PWD)/test
+TEST_SOURCES := \
+	$(shell find $(TEST_DIRS) -name "*.cpp" -type f)
 
 OBJECTS := $(SOURCES:.cpp=.o)
 HEADERS := $(SOURCES:.cpp=.h)
 DEPS := $(SOURCES:.cpp=.d)
 
+SOURCES_WITHOUT_MAIN := $(filter-out $(MAIN_SOURCES),$(SOURCES)) 
+
+TEST_OBJECTS := $(SOURCES_WITHOUT_MAIN:.cpp=.o) $(TEST_SOURCES:.cpp=.o)
+TEST_HEADERS := $(TEST_SOURCES:.cpp=.h)
+TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
+
+
+
 EXES := wrapper
+TEST_EXES := run-tests
 
 CLANGLIBS := \
     -lclangCodeGen \
@@ -67,7 +84,7 @@ default: all
 # Deps management
 ################################################################################
 %.d: %.cpp
-	$(CXX) $(CXXFLAGS) -MM $*.cpp > $*.d
+	@$(CXX) $(CXXFLAGS) -MM $*.cpp > $*.d
 	@mv -f $*.d $*.dd
 	@sed -e 's|.*:|$*.o:|' < $*.dd > $*.d
 	@sed -e 's|.*:||' -e 's|\\$$||' < $*.dd | fmt -1 | \
@@ -79,12 +96,21 @@ default: all
 
 all: $(EXES)
 
+$(TEST_EXES): $(TEST_OBJECTS)
+	$(CXX) -o $(TEST_EXES) $(TEST_OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -lgtest
+
+tests: $(TEST_EXES)
+
+test-run: tests
+	$(PWD)/$(TEST_EXES)
+
 wrapper: $(OBJECTS)
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
 
 clean:
-	rm -f $(EXES) $(OBJECTS) $(DEPS)
+	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES)
 
 ################################################################################
 -include $(DEPS)
+-include $(TEST_DEPS)
 ################################################################################

@@ -16,6 +16,9 @@
 #include <type_traits>
 #include <vector>
 
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/Casting.h>
+
 namespace borealis {
 
 
@@ -55,10 +58,40 @@ bool contains(const Container& con, const T& t) {
 }
 
 template<class T>
+struct Stringifier {
+	static std::string toString(const T& t) {
+		std::ostringstream oss;
+		oss << t;
+		return oss.str();
+	}
+};
+
+// special cases
+template<>
+struct Stringifier<bool> {
+	static std::string toString(bool t) {
+		return t?"true":"false";
+	}
+};
+
+template<>
+struct Stringifier<std::string> {
+	static std::string toString(const std::string& t) {
+		return t;
+	}
+};
+
+template<>
+struct Stringifier<const char*> {
+	static std::string toString(const char* t) {
+		return t;
+	}
+};
+
+
+template<class T>
 std::string toString(const T& t) {
-	std::ostringstream oss;
-	oss << t;
-	return oss.str();
+	return Stringifier<T>::toString(t);
 }
 
 
