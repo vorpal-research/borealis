@@ -109,7 +109,7 @@ $(EXES): $(OBJECTS)
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
 
 $(TEST_EXES): $(TEST_OBJECTS)
-	$(CXX) -o $(TEST_OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -lgtest
+	$(CXX) -o $@ $(TEST_OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -lgtest
 
 tests: $(TEST_EXES)
 
