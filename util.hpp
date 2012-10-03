@@ -25,10 +25,40 @@ namespace borealis {
 
 namespace util {
 
+// stupid straightforward collection view
+// cannot be used after any operation with begin or end
+// should be used in-place only, like this:
+// int arr[] = { 0,1,2,3,4,5,6,7,8,9,10 };
+// for_each(CollectionView<int*>(arr, arr+10), [](const Elem& el){ ... });
+template<class ContainerIter>
+class CollectionView {
+	ContainerIter begin_;
+	ContainerIter end_;
+public:
+	CollectionView(ContainerIter begin, ContainerIter end): begin_(begin), end_(end) {
+	}
+
+	ContainerIter begin() const { return begin_; }
+	ContainerIter end() const { return end_; }
+	bool empty() const { return begin_ == end_;}
+};
+
 template<class Container>
 inline auto head(const Container& con) -> decltype(*con.begin()) {
 	return *con.begin();
 }
+
+template<class Iter>
+inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
+	return CollectionView<Iter>(b, e);
+}
+
+template<class Container>
+inline auto tail(const Container& con) -> CollectionView<decltype(con.begin())> {
+	return view(++con.begin(), con.end());
+}
+
+
 
 template<class Container, class Callable>
 inline void for_each(const Container& con, const Callable cl) {
