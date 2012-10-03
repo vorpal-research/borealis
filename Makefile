@@ -30,6 +30,10 @@ CXXFLAGS := \
 
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 
+################################################################################
+# Sources
+################################################################################
+
 ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
@@ -40,24 +44,29 @@ SOURCES := \
 	$(shell ls *.cpp) \
 	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
 	
-# sources containing function main
-MAIN_SOURCES := wrapper.cpp
-	
-TEST_DIRS := $(PWD)/test
-TEST_SOURCES := \
-	$(shell find $(TEST_DIRS) -name "*.cpp" -type f)
+SOURCES_WITH_MAIN := wrapper.cpp
+
+SOURCES_WITHOUT_MAIN := $(filter-out $(SOURCES_WITH_MAIN),$(SOURCES))
 
 OBJECTS := $(SOURCES:.cpp=.o)
 HEADERS := $(SOURCES:.cpp=.h)
 DEPS := $(SOURCES:.cpp=.d)
 
-SOURCES_WITHOUT_MAIN := $(filter-out $(MAIN_SOURCES),$(SOURCES)) 
+################################################################################
+# Tests
+################################################################################
+
+TEST_DIRS := $(PWD)/test
+TEST_SOURCES := \
+	$(shell find $(TEST_DIRS) -name "*.cpp" -type f)
 
 TEST_OBJECTS := $(SOURCES_WITHOUT_MAIN:.cpp=.o) $(TEST_SOURCES:.cpp=.o)
 TEST_HEADERS := $(TEST_SOURCES:.cpp=.h)
 TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
 
-
+################################################################################
+# Exes
+################################################################################
 
 EXES := wrapper
 TEST_EXES := run-tests
@@ -96,16 +105,16 @@ default: all
 
 all: $(EXES)
 
+$(EXES): $(OBJECTS)
+	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
+
 $(TEST_EXES): $(TEST_OBJECTS)
-	$(CXX) -o $(TEST_EXES) $(TEST_OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -lgtest
+	$(CXX) -o $@ $(TEST_OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -lgtest
 
 tests: $(TEST_EXES)
 
-test-run: tests
+check: tests
 	$(PWD)/$(TEST_EXES)
-
-wrapper: $(OBJECTS)
-	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
 
 clean:
 	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES)
