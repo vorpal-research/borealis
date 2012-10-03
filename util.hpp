@@ -25,8 +25,13 @@ namespace borealis {
 
 namespace util {
 
+template<class Container>
+inline auto head(const Container& con) -> decltype(*con.begin()) {
+	return *con.begin();
+}
+
 template<class Container, class Callable>
-void for_each(const Container& con, const Callable cl) {
+inline void for_each(const Container& con, const Callable cl) {
 	std::for_each(con.begin(), con.end(), cl);
 }
 
@@ -58,9 +63,27 @@ bool contains(const Container& con, const T& t) {
 }
 
 template<class T>
-struct Stringifier {
+struct UseLLVMOstreams {
+	enum{ value = false };
+};
+
+template<class T, bool UseLLVMOstream = false>
+struct Stringifier;
+
+template<class T>
+struct Stringifier<T, false> {
 	static std::string toString(const T& t) {
 		std::ostringstream oss;
+		oss << t;
+		return oss.str();
+	}
+};
+
+template<class T>
+struct Stringifier<T, true> {
+	static std::string toString(const T& t) {
+		std::string buf;
+		llvm::raw_string_ostream oss(buf);
 		oss << t;
 		return oss.str();
 	}
@@ -88,10 +111,9 @@ struct Stringifier<const char*> {
 	}
 };
 
-
 template<class T>
-std::string toString(const T& t) {
-	return Stringifier<T>::toString(t);
+inline std::string toString(const T& t) {
+	return Stringifier<T, UseLLVMOstreams<T>::value>::toString(t);
 }
 
 
@@ -127,16 +149,15 @@ error_printer<T> error(const T& val) { return error_printer<T>(val); }
 namespace std {
 
 // Custom output routines and such...
+const auto VECTOR_LEFT_BRACE = "[";
+const auto VECTOR_RIGHT_BRACE = "]";
+const auto SET_LEFT_BRACE = "(";
+const auto SET_RIGHT_BRACE = ")";
+const auto ELEMENT_DELIMITER = ", ";
+const auto NULL_REPR = "<NULL>";
 
-const std::string VECTOR_LEFT_BRACE = "[";
-const std::string VECTOR_RIGHT_BRACE = "]";
-const std::string SET_LEFT_BRACE = "(";
-const std::string SET_RIGHT_BRACE = ")";
-const std::string ELEMENT_DELIMITER = ", ";
-const std::string NULL_REPR = "<NULL>";
-
-template<typename T>
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T>& vec) {
+template<typename T, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::vector<T>& vec) {
 	typedef typename std::vector<T>::const_iterator ConstIter;
 
 	using namespace::std;
@@ -155,8 +176,8 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T>& vec) 
 	return s;
 }
 
-template<typename T>
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::set<T>& set) {
+template<typename T, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::set<T>& set) {
 	typedef typename std::set<T>::const_iterator ConstIter;
 
 	using namespace::std;
@@ -175,8 +196,8 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::set<T>& set) {
 	return s;
 }
 
-template<typename T>
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T*>& vec) {
+template<typename T, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::vector<T*>& vec) {
 	typedef typename std::vector<T*>::const_iterator ConstIter;
 
 	using namespace::std;
@@ -196,8 +217,8 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::vector<T*>& vec)
 	return s;
 }
 
-template<typename T>
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const std::set<T*>& set) {
+template<typename T, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::set<T*>& set) {
 	typedef typename std::set<T*>::const_iterator ConstIter;
 
 	using namespace::std;
