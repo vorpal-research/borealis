@@ -23,8 +23,12 @@ public:
 
 	struct KeyHash {
 	public:
-		size_t operator()(Key k) const {
+		static size_t hash(Key k) {
 			return k.first ^ (size_t)k.second;
+		}
+
+		size_t operator()(Key k) const {
+			return hash(k);
 		}
 	};
 
