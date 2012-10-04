@@ -14,26 +14,24 @@
 namespace {
 
 using namespace borealis::util;
-
 using namespace borealis::util::streams;
 
 TEST(Util, views) {
+
 	{
 		std::vector<int> f{1,2,3,4};
-
-		EXPECT_EQ(head(f),1);
+		EXPECT_EQ(head(f), 1);
 
 		std::ostringstream ost;
-		for_each(tail(f),[&](int v) { ost << v; });
-		EXPECT_EQ(ost.str(),"234");
+		for_each(tail(f), [&](int v){ ost << v; });
+		EXPECT_EQ(ost.str(), "234");
 	}
 
 	{
 		int arr[] = {22,23,24,25};
 		std::ostringstream ost;
-		for_each(view(arr,arr+4),[&](int v) { ost << v; });
-
-		EXPECT_EQ(ost.str(),"22232425");
+		for_each(view(arr,arr+4), [&](int v){ ost << v; });
+		EXPECT_EQ(ost.str(), "22232425");
 	}
 
 	{
@@ -45,7 +43,7 @@ TEST(Util, views) {
 				if(numcopies > 2) ADD_FAILURE() << "The copy func copies more than once!";
 			}
 		};
-		std::vector<fail_on_copy> checker { fail_on_copy(), fail_on_copy(), fail_on_copy()};
+		std::vector<fail_on_copy> checker { fail_on_copy(), fail_on_copy(), fail_on_copy() };
 		std::vector<fail_on_copy> cp = copy(checker);
 	}
 
@@ -58,7 +56,7 @@ TEST(Util, views) {
 
 		EXPECT_EQ(v1[0], 42);
 		EXPECT_NE(v1[0], v2[0]);
-		EXPECT_NE(v1,v2);
+		EXPECT_NE(v1, v2);
 	}
 
 }
@@ -72,13 +70,10 @@ TEST(Util, toString) {
 	EXPECT_EQ(toString(ptr),"0xdeadbeef");
 
 	std::vector<int> vec{1,2,3,4};
-
 	EXPECT_EQ(toString(vec),"[1, 2, 3, 4]");
 
 	std::set<int> st{1,2,3,4};
-
 	EXPECT_EQ(toString(st),"(1, 2, 3, 4)");
-
 }
 
 TEST(Util, ltlt) {
@@ -86,9 +81,7 @@ TEST(Util, ltlt) {
 		std::string fill;
 		llvm::raw_string_ostream ost(fill);
 
-
 		ost << "Hello!" << endl;
-
 		EXPECT_EQ(ost.str(),"Hello!\n");
 	}
 
@@ -96,9 +89,7 @@ TEST(Util, ltlt) {
 		std::string fill;
 		llvm::raw_string_ostream ost(fill);
 
-
 		std::vector<int> vec{1,2,3,4};
-
 		ost << vec;
 		EXPECT_EQ(ost.str(),"[1, 2, 3, 4]");
 	}
@@ -106,15 +97,10 @@ TEST(Util, ltlt) {
 	{
 		std::ostringstream ost;
 
-
 		std::vector<int> vec{1,2,3,4};
-
 		ost << vec;
 		EXPECT_EQ(ost.str(),"[1, 2, 3, 4]");
 	}
-
-
 }
 
 }
-

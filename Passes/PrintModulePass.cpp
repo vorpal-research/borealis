@@ -14,7 +14,7 @@
 
 using namespace::borealis::util::streams;
 
-namespace {
+namespace borealis {
 
 struct PrintModulePass: public llvm::ModulePass {
 

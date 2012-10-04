@@ -5,14 +5,13 @@
  *      Author: belyaev
  */
 
-
 #ifndef COMMENTS_H_
 #define COMMENTS_H_
 
 #include "clang/Basic/SourceManager.h"
-#include "clang/Lex/Preprocessor.h"
-#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendActions.h"
+#include "clang/Lex/Preprocessor.h"
 
 #include <map>
 
@@ -38,7 +37,7 @@ class GatherCommentsAction: public clang::PreprocessOnlyAction {
 		bool attached;
 
 	public:
-		CommentKeeper(clang::Preprocessor& ppi): pp(ppi), attached(false){};
+		CommentKeeper(clang::Preprocessor& ppi): pp(ppi), attached(false) {};
 
 		virtual bool HandleComment(clang::Preprocessor &PP, clang::SourceRange Comment);
 		virtual ~CommentKeeper(){ detach(); };
@@ -74,7 +73,6 @@ protected:
 		allComments[currentFile] = keeper->detach();
 	}
 };
-
 
 } // namespace comments
 } // namespace borealis

@@ -99,6 +99,6 @@ CheckNullDereferencePass::~CheckNullDereferencePass() {
 
 } /* namespace borealis */
 
-char borealis::CheckNullDereferencePass::ID = 18;
+char borealis::CheckNullDereferencePass::ID;
 static llvm::RegisterPass<borealis::CheckNullDereferencePass>
 X("check-null-deref", "NULL dereference checker", false, false);

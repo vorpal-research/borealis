@@ -33,11 +33,9 @@ PSV createPSV() {
 PSV addToPSV(const PSV& to, const Predicate* pred) {
 	using namespace::std;
 
-	PSV res = PSV();
-	for_each(to, [&pred, &res](const PS& state){
-		PS ps = PS(state.begin(), state.end());
-		ps.insert(pred);
-		res.push_back(ps);
+	PSV res = to;
+	for_each(res, [&pred](PS& state){
+		state.insert(pred);
 	});
 	return res;
 }
@@ -190,6 +188,6 @@ PredicateStateAnalysis::~PredicateStateAnalysis() {
 
 } /* namespace borealis */
 
-char borealis::PredicateStateAnalysis::ID = 20;
+char borealis::PredicateStateAnalysis::ID;
 static llvm::RegisterPass<borealis::PredicateStateAnalysis>
 X("predicate-state", "Predicate state analysis", false, false);

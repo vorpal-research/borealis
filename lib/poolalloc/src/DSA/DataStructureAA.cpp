@@ -54,8 +54,8 @@ AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
 
   assert((!G1 || !G2 || G1 == G2) && "Alias query for 2 different functions?");
   if(G1 && G2 && G1 != G2) {
-	  // << "Alias query for 2 different functions?" << "\n"; .flush();
-	  return NoAlias;
+	  // FIXME: alias query for two different function
+	  return AliasAnalysis::alias(LocA,LocB);
   }
 
   // Get the graph to use...
@@ -73,7 +73,7 @@ AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
   unsigned O1 = I->second.getOffset(), O2 = J->second.getOffset();
   if (N1 == 0 || N2 == 0)
     // Can't tell whether anything aliases null.
-    return AliasAnalysis::alias(V1, V1Size, V2, V2Size);
+	return AliasAnalysis::alias(LocA,LocB);
 
   // We can only make a judgment if one of the nodes is complete.
   if (N1->isCompleteNode() || N2->isCompleteNode()) {

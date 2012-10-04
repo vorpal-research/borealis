@@ -140,6 +140,6 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 
 } /* namespace borealis */
 
-char borealis::DetectNullPass::ID = 17;
+char borealis::DetectNullPass::ID;
 static llvm::RegisterPass<borealis::DetectNullPass>
 X("detect-null", "Explicit NULL assignment detector", false, false);
