@@ -13,8 +13,11 @@
 #include <unordered_map>
 
 #include "../Predicate/Predicate.h"
+#include "../util.h"
 
 namespace borealis {
+
+using util::for_each;
 
 class PredicateState {
 
@@ -22,8 +25,8 @@ public:
 
 	PredicateState(const PredicateState& state);
 
-	PredicateState addPredicate(const Predicate* pred);
-	PredicateState merge(const PredicateState& state);
+	PredicateState addPredicate(const Predicate* pred) const;
+	PredicateState merge(const PredicateState& state) const;
 
 	virtual ~PredicateState();
 
@@ -33,6 +36,21 @@ public:
 
 	DataIterator begin() const { return data.begin(); }
 	DataIterator end() const { return data.end(); }
+
+	bool operator==(const PredicateState& other) const {
+		return data == other.data;
+	}
+
+	struct Hash {
+	public:
+		size_t operator()(const PredicateState& ps) const {
+			size_t res = 17;
+			for_each(ps, [&res](const DataEntry& entry){
+				res = res * Predicate::KeyHash::hash(entry.first) + 33;
+			});
+			return res;
+		}
+	};
 
 private:
 

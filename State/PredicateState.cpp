@@ -17,16 +17,16 @@ PredicateState::PredicateState(const PredicateState& state) :
 	data(state.data) {
 }
 
-PredicateState PredicateState::addPredicate(const Predicate* pred) {
+PredicateState PredicateState::addPredicate(const Predicate* pred) const {
 	PredicateState res = PredicateState(*this);
-	data[pred->getKey()] = pred;
+	res.data[pred->getKey()] = pred;
 	return res;
 }
 
-PredicateState PredicateState::merge(const PredicateState& state) {
+PredicateState PredicateState::merge(const PredicateState& state) const {
 	PredicateState res = PredicateState(*this);
 	for_each(state, [this, &res](const DataEntry& entry){
-		data[entry.first] = entry.second;
+		res.data[entry.first] = entry.second;
 	});
 	return res;
 }
