@@ -6,6 +6,7 @@
  */
 
 #include "PredicateAnalysis.h"
+#include "SlotTrackerPass.h"
 
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
@@ -31,6 +32,7 @@ void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	using namespace::llvm;
 
 	Info.setPreservesAll();
+	Info.addRequiredTransitive<SlotTrackerPass>();
 }
 
 bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
@@ -39,13 +41,12 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 
 	predicateMap.clear();
 
-	st = createSlotTracker(&F);
+	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 	for_each(F, [this](const BasicBlock& BB){
 		for_each(BB, [this](const Instruction& I){
 			processInst(I);
 		});
 	});
-	delete st;
 
 	return false;
 }
@@ -125,6 +126,6 @@ PredicateAnalysis::~PredicateAnalysis() {
 
 } /* namespace borealis */
 
-char borealis::PredicateAnalysis::ID = 19;
+char borealis::PredicateAnalysis::ID;
 static llvm::RegisterPass<borealis::PredicateAnalysis>
 X("predicate", "Instruction predicate analysis", false, false);
