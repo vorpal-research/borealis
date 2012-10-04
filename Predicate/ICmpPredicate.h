@@ -27,6 +27,7 @@ public:
 			const int cond,
 			SlotTracker* st);
 	virtual std::string toString() const;
+	virtual Predicate::Key getKey() const;
 
 private:
 

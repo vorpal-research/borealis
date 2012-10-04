@@ -25,6 +25,7 @@ public:
 			const llvm::Value* rhv,
 			SlotTracker* st);
 	virtual std::string toString() const;
+	virtual Predicate::Key getKey() const;
 
 private:
 

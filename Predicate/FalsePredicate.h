@@ -22,6 +22,7 @@ public:
 
 	FalsePredicate(const llvm::Value* v, SlotTracker* st);
 	virtual std::string toString() const;
+	virtual Predicate::Key getKey() const;
 
 private:
 

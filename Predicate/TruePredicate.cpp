@@ -19,4 +19,8 @@ std::string TruePredicate::toString() const {
 	return asString;
 }
 
+Predicate::Key TruePredicate::getKey() const {
+	return std::make_pair(std::type_index(typeid(*this)).hash_code(), v);
+}
+
 } /* namespace borealis */
