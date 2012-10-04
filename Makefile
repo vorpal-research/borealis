@@ -37,6 +37,7 @@ LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
+	$(PWD)/State \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
 
