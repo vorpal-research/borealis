@@ -4,11 +4,11 @@
  *  Created on: Aug 22, 2012
  */
 
-#include "llvm/ADT/IntrusiveRefCntPtr.h"
-#include "llvm/ADT/OwningPtr.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/Support/Host.h"
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <llvm/ADT/OwningPtr.h>
+#include <llvm/ADT/STLExtras.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <utility>
 

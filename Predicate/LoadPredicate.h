@@ -8,9 +8,10 @@
 #ifndef LOADPREDICATE_H_
 #define LOADPREDICATE_H_
 
-#include "Predicate.h"
 
-#include "llvm/Value.h"
+#include <llvm/Value.h>
+
+#include "Predicate.h"
 
 #include "../slottracker.h"
 

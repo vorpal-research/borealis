@@ -7,7 +7,7 @@
 
 #include "util.h"
 
-#include "llvm/InstrTypes.h"
+#include <llvm/InstrTypes.h>
 
 namespace llvm {
 // copy the standard ostream behavior with functions

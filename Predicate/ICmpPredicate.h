@@ -8,9 +8,9 @@
 #ifndef ICMPPREDICATE_H_
 #define ICMPPREDICATE_H_
 
-#include "Predicate.h"
+#include <llvm/Value.h>
 
-#include "llvm/Value.h"
+#include "Predicate.h"
 
 #include "../slottracker.h"
 

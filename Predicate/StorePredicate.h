@@ -8,9 +8,10 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
-#include "Predicate.h"
 
-#include "llvm/Value.h"
+#include <llvm/Value.h>
+
+#include "Predicate.h"
 
 #include "../slottracker.h"
 

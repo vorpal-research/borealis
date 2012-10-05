@@ -8,9 +8,9 @@
 #ifndef FALSEPREDICATE_H_
 #define FALSEPREDICATE_H_
 
-#include "Predicate.h"
+#include <llvm/Value.h>
 
-#include "llvm/Value.h"
+#include "Predicate.h"
 
 #include "../slottracker.h"
 
