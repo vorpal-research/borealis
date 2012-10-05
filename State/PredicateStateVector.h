@@ -20,6 +20,7 @@ class PredicateStateVector {
 public:
 
 	PredicateStateVector();
+	PredicateStateVector(bool _);
 	PredicateStateVector(const PredicateStateVector& psv);
 
 	PredicateStateVector addPredicate(const Predicate* pred) const;
@@ -33,9 +34,14 @@ public:
 
 	DataIterator begin() const { return data.begin(); }
 	DataIterator end() const { return data.end(); }
+	bool empty() const { return data.empty(); }
 
 	bool operator==(const PredicateStateVector& other) const {
 		return data == other.data;
+	}
+
+	bool operator!=(const PredicateStateVector& other) const {
+		return data != other.data;
 	}
 
 private:
@@ -43,6 +49,8 @@ private:
 	Data data;
 
 };
+
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& vec);
 
 } /* namespace borealis */
 
