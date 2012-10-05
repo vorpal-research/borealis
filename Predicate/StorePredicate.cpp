@@ -24,4 +24,8 @@ std::string StorePredicate::toString() const {
 	return asString;
 }
 
+Predicate::Key StorePredicate::getKey() const {
+	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
+}
+
 } /* namespace borealis */

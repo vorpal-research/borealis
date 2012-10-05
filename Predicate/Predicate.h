@@ -9,13 +9,32 @@
 #define PREDICATE_H_
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Value.h"
+
+#include <typeindex>
+#include <tuple>
 
 namespace borealis {
 
 class Predicate {
 public:
+
+	typedef std::pair<size_t, const llvm::Value*> Key;
+
+	struct KeyHash {
+	public:
+		static size_t hash(const Key& k) {
+			return k.first ^ (size_t)k.second;
+		}
+
+		size_t operator()(const Key& k) const {
+			return hash(k);
+		}
+	};
+
 	virtual ~Predicate() {};
 	virtual std::string toString() const = 0;
+	virtual Key getKey() const = 0;
 };
 
 } /* namespace borealis */
