@@ -43,9 +43,14 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 	processQueue();
 
 	errs() << endl << "PSA results:" << endl;
-	for_each(predicateStateMap, [this](const PredicateStateMapEntry& entry) {
-		errs() << *entry.first << endl;
-		errs() << entry.second << endl;
+	for_each(F, [this](const BasicBlock& BB) {
+		for_each(BB, [this](const Instruction& I) {
+			if (containsKey(this->predicateStateMap, &I)) {
+				auto vec = predicateStateMap[&I];
+				errs() << I << endl;
+				errs() << vec << endl;
+			}
+		});
 	});
 	errs() << endl << "End of PSA results" << endl;
 
@@ -69,6 +74,8 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 	PredicateStateVector inStateVec = wqe.second;
 	bool shouldScheduleTerminator = true;
 
+	errs() << &bb << " <- " << endl << inStateVec << endl;
+
 	for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
 		const Instruction& I = *inst;
 		PredicateStateVector stateVec;
@@ -84,16 +91,15 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 		PredicateStateVector merged =
 				stateVec.merge(modifiedInStateVec);
 
-		predicateStateMap[&I] = merged;
-		bool changed = stateVec != merged;
-
-		if (!changed) {
+		if (stateVec == merged) {
 			shouldScheduleTerminator = false;
 			break;
 		}
 
-		inStateVec = merged;
+		predicateStateMap[&I] = inStateVec = merged;
 	}
+
+	errs() << &bb << " -> " << endl << inStateVec << endl;
 
 	if (shouldScheduleTerminator) {
 		processTerminator(*bb.getTerminator(), inStateVec);
