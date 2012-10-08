@@ -11,6 +11,12 @@ RTTIFLAG := -fno-rtti
 
 DEFS :=
 
+INCLUDE_DIRS := \
+	$(PWD) \
+	/usr/include/z3 
+
+INCLUDES := $(foreach d, $(INCLUDE_DIRS), -I$d)
+
 CXXFLAGS := \
 	-Wall \
 	-Woverloaded-virtual \
@@ -25,7 +31,7 @@ CXXFLAGS := \
 	-fPIC \
 	-std=c++11 \
 	-g \
-	-I$(PWD) \
+	$(INCLUDES) \
 	$(DEFS)
 
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
@@ -86,6 +92,10 @@ CLANGLIBS := \
     -lclangLex \
     -lclangBasic
 
+LIBS := \
+	$(CLANGLIBS) \
+	-lz3
+
 default: all
 
 .PHONY: all clean
@@ -107,10 +117,10 @@ default: all
 all: $(EXES)
 
 $(EXES): $(OBJECTS)
-	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS)
+	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS)
 
 $(TEST_EXES): $(TEST_OBJECTS)
-	$(CXX) -o $@ $(TEST_OBJECTS) $(CLANGLIBS) $(LLVMLDFLAGS) -lgtest
+	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) -lgtest
 
 tests: $(TEST_EXES)
 
