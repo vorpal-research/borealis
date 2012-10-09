@@ -15,9 +15,9 @@ StorePredicate::StorePredicate(
 		SlotTracker* st) :
 				lhv(lhv),
 				rhv(rhv),
-				lhvs(st->getLocalName(lhv)),
+				lhvs("*" + st->getLocalName(lhv)),
 				rhvs(st->getLocalName(rhv)),
-				asString("*" + lhvs + "=" + rhvs){
+				asString(lhvs + "=" + rhvs){
 }
 
 std::string StorePredicate::toString() const {
@@ -31,7 +31,7 @@ Predicate::Key StorePredicate::getKey() const {
 z3::expr StorePredicate::toZ3(z3::context& ctx) const {
 	using namespace::z3;
 
-	expr l = valueToExpr(ctx, *rhv, "*" + lhvs);
+	expr l = derefValueToExpr(ctx, *lhv, lhvs);
 	expr r = valueToExpr(ctx, *rhv, rhvs);
 	return l == r;
 }
