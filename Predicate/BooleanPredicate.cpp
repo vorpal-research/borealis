@@ -28,4 +28,12 @@ Predicate::Key BooleanPredicate::getKey() const {
 	return std::make_pair(std::type_index(typeid(*this)).hash_code(), v);
 }
 
+z3::expr BooleanPredicate::toZ3(z3::context& ctx) const {
+	using namespace::z3;
+
+	expr var = ctx.bool_const(vs.c_str());
+	expr val = ctx.bool_val(b);
+	return var == val;
+}
+
 } /* namespace borealis */
