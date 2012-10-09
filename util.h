@@ -13,6 +13,9 @@
 
 #include <z3/z3++.h>
 
+#include <string>
+
+
 namespace llvm {
 // copy the standard ostream behavior with functions
 llvm::raw_ostream& operator<<(
@@ -64,6 +67,10 @@ z3::expr derefValueToExpr(
 
 namespace borealis {
 namespace util {
+
+std::string nospaces(const std::string& v);
+std::string nospaces(std::string&& v);
+
 namespace streams {
 
 // copy the standard ostream endl

@@ -58,6 +58,8 @@
 #include "comments.h"
 #include "util.h"
 
+#include "Passes/DataProvider.hpp"
+
 using namespace std;
 using llvm::raw_ostream;
 
@@ -182,6 +184,9 @@ int main(int argc, const char** argv)
 	initializeInstCombine(reg);
 	initializeInstrumentation(reg);
 	initializeTarget(reg);
+
+	using borealis::provideAsPass;
+    pm.add(provideAsPass(Proc.get()));
 
 	if (!passes2run.empty()) {
 		for_each(passes2run,
