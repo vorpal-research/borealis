@@ -12,6 +12,10 @@ namespace borealis {
 PredicateStateVector::PredicateStateVector() {
 }
 
+PredicateStateVector::PredicateStateVector(bool _) {
+	data.insert(PredicateState());
+}
+
 PredicateStateVector::PredicateStateVector(const PredicateStateVector& psv) :
 		data(psv.data) {
 }
@@ -34,6 +38,20 @@ PredicateStateVector PredicateStateVector::merge(const PredicateStateVector& psv
 
 PredicateStateVector::~PredicateStateVector() {
 	// TODO
+}
+
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& vec) {
+	s << '[';
+	if (!vec.empty()) {
+		auto iter = vec.begin();
+		const PredicateState& el = *iter++;
+		s << el;
+		std::for_each(iter, vec.end(), [&s](const PredicateState& e){
+			s << ',' << e;
+		});
+	}
+	s << ']';
+	return s;
 }
 
 } /* namespace borealis */

@@ -1,12 +1,12 @@
 /*
- * FalsePredicate.h
+ * BooleanPredicate.h
  *
  *  Created on: Sep 26, 2012
  *      Author: ice-phoenix
  */
 
-#ifndef FALSEPREDICATE_H_
-#define FALSEPREDICATE_H_
+#ifndef BOOLEANPREDICATE_H_
+#define BOOLEANPREDICATE_H_
 
 #include <llvm/Value.h>
 
@@ -16,22 +16,25 @@
 
 namespace borealis {
 
-class FalsePredicate: public Predicate {
+class BooleanPredicate: public Predicate {
 
 public:
 
-	FalsePredicate(const llvm::Value* v, SlotTracker* st);
+	BooleanPredicate(const llvm::Value* v, const bool b, SlotTracker* st);
 	virtual std::string toString() const;
 	virtual Predicate::Key getKey() const;
+	virtual z3::expr toZ3(z3::context& ctx) const;
 
 private:
 
 	const llvm::Value* v;
+	const bool b;
 	const std::string vs;
+	const std::string bs;
 	const std::string asString;
 
 };
 
 } /* namespace borealis */
 
-#endif /* FALSEPREDICATE_H_ */
+#endif /* BOOLEANPREDICATE_H_ */

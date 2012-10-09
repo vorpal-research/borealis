@@ -8,7 +8,8 @@
 #ifndef PREDICATESTATE_H_
 #define PREDICATESTATE_H_
 
-#include "llvm/Value.h"
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Value.h>
 
 #include <unordered_map>
 
@@ -23,6 +24,7 @@ class PredicateState {
 
 public:
 
+	PredicateState();
 	PredicateState(const PredicateState& state);
 
 	PredicateState addPredicate(const Predicate* pred) const;
@@ -36,6 +38,7 @@ public:
 
 	DataIterator begin() const { return data.begin(); }
 	DataIterator end() const { return data.end(); }
+	bool empty() const { return data.empty(); }
 
 	bool operator==(const PredicateState& other) const {
 		return data == other.data;
@@ -57,6 +60,8 @@ private:
 	Data data;
 
 };
+
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state);
 
 } /* namespace borealis */
 

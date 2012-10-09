@@ -28,4 +28,12 @@ Predicate::Key LoadPredicate::getKey() const {
 	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
 }
 
+z3::expr LoadPredicate::toZ3(z3::context& ctx) const {
+	using namespace::z3;
+
+	expr l = valueToExpr(ctx, *lhv, lhvs);
+	expr r = valueToExpr(ctx, *lhv, "*" + rhvs);
+	return l == r;
+}
+
 } /* namespace borealis */

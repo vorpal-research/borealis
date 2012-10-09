@@ -16,8 +16,7 @@
 #include "../Predicate/LoadPredicate.h"
 #include "../Predicate/StorePredicate.h"
 #include "../Predicate/ICmpPredicate.h"
-#include "../Predicate/TruePredicate.h"
-#include "../Predicate/FalsePredicate.h"
+#include "../Predicate/BooleanPredicate.h"
 
 namespace borealis {
 
@@ -109,9 +108,9 @@ void PredicateAnalysis::process(const llvm::BranchInst& I) {
 	const BasicBlock* falseSucc = I.getSuccessor(1);
 
 	terminatorPredicateMap[make_pair(&I, trueSucc)] =
-			new TruePredicate(cond, st);
+			new BooleanPredicate(cond, true, st);
 	terminatorPredicateMap[make_pair(&I, falseSucc)] =
-			new FalsePredicate(cond, st);
+			new BooleanPredicate(cond, false, st);
 }
 
 PredicateAnalysis::~PredicateAnalysis() {

@@ -10,9 +10,12 @@
 
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Value.h"
+#include "z3/z3++.h"
 
 #include <typeindex>
 #include <tuple>
+
+#include "../util.h"
 
 namespace borealis {
 
@@ -35,6 +38,9 @@ public:
 	virtual ~Predicate() {};
 	virtual std::string toString() const = 0;
 	virtual Key getKey() const = 0;
+
+	virtual z3::expr toZ3(z3::context& ctx) const = 0;
+
 };
 
 } /* namespace borealis */

@@ -17,6 +17,8 @@
 #include <set>
 #include <vector>
 
+#include "../State/PredicateState.h"
+#include "../State/PredicateStateVector.h"
 #include "PredicateAnalysis.h"
 
 namespace borealis {
@@ -25,8 +27,6 @@ class PredicateStateAnalysis: public llvm::FunctionPass {
 
 public:
 
-	typedef std::set<const Predicate*> PredicateState;
-	typedef std::vector<PredicateState> PredicateStateVector;
 	typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
 	typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;
 

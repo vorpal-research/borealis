@@ -21,51 +21,6 @@ using util::toString;
 
 typedef PredicateAnalysis::PredicateMap PM;
 typedef PredicateAnalysis::TerminatorPredicateMap TPM;
-typedef PredicateStateAnalysis::PredicateState PS;
-typedef PredicateStateAnalysis::PredicateStateVector PSV;
-
-PSV createPSV() {
-	PSV res = PSV();
-	res.push_back(PS());
-	return res;
-}
-
-PSV addToPSV(const PSV& to, const Predicate* pred) {
-	using namespace::std;
-
-	PSV res = to;
-	for_each(res, [&pred](PS& state){
-		state.insert(pred);
-	});
-	return res;
-}
-
-std::pair<PSV, bool> mergePSV(const PSV& to, const PSV& from) {
-	using namespace::std;
-	using namespace::llvm;
-
-	PSV res = PSV();
-	bool changed = false;
-
-	for (auto t = to.begin(); t != to.end(); ++t)
-	{
-		const PS& TO = *t;
-		res.push_back(TO);
-	}
-
-	for (auto f = from.begin(); f != from.end(); ++f)
-	{
-		const PS& FROM = *f;
-		if (contains(res, FROM)) {
-			// DO NOTHING
-		} else {
-			res.push_back(FROM);
-			changed = true;
-		}
-	}
-
-	return make_pair(res, changed);
-}
 
 PredicateStateAnalysis::PredicateStateAnalysis() : llvm::FunctionPass(ID) {
 	// TODO
@@ -84,13 +39,18 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 
 	PA = &getAnalysis<PredicateAnalysis>();
 
-	workQueue.push(make_pair(&F.getEntryBlock(), createPSV()));
+	workQueue.push(make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
 	processQueue();
 
 	errs() << endl << "PSA results:" << endl;
-	for_each(predicateStateMap, [this](const PredicateStateMapEntry& entry) {
-		errs() << *entry.first << endl;
-		errs() << entry.second << endl;
+	for_each(F, [this](const BasicBlock& BB) {
+		for_each(BB, [this](const Instruction& I) {
+			if (containsKey(this->predicateStateMap, &I)) {
+				auto vec = predicateStateMap[&I];
+				errs() << I << endl;
+				errs() << vec << endl;
+			}
+		});
 	});
 	errs() << endl << "End of PSA results" << endl;
 
@@ -111,48 +71,44 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 	PM& pm = PA->getPredicateMap();
 
 	const BasicBlock& bb = *(wqe.first);
-	PSV inStateVec = wqe.second;
-	bool changed = false;
+	PredicateStateVector inStateVec = wqe.second;
+	bool shouldScheduleTerminator = true;
+
+	errs() << &bb << " <- " << endl << inStateVec << endl;
 
 	for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
 		const Instruction& I = *inst;
-		PSV stateVec;
+		PredicateStateVector stateVec;
 
 		bool hasPredicate = containsKey(pm, &I);
 		bool hasState = containsKey(predicateStateMap, &I);
 
-		if (hasPredicate) {
-			if (hasState) {
-				stateVec = predicateStateMap[&I];
-			} else {
-				stateVec = PSV();
-				changed = true;
-			}
-		} else {
-			continue;
-		}
+		if (!hasPredicate) continue;
+		if (hasState) stateVec = predicateStateMap[&I];
 
-		PSV modifiedInStateVec = addToPSV(inStateVec, pm[&I]);
-		pair<PSV, bool> merged = mergePSV(stateVec, modifiedInStateVec);
+		PredicateStateVector modifiedInStateVec =
+				inStateVec.addPredicate(pm[&I]);
+		PredicateStateVector merged =
+				stateVec.merge(modifiedInStateVec);
 
-		predicateStateMap[&I] = merged.first;
-		changed = changed || merged.second;
-
-		if (!changed) {
+		if (stateVec == merged) {
+			shouldScheduleTerminator = false;
 			break;
 		}
 
-		inStateVec = merged.first;
+		predicateStateMap[&I] = inStateVec = merged;
 	}
 
-	if (changed) {
+	errs() << &bb << " -> " << endl << inStateVec << endl;
+
+	if (shouldScheduleTerminator) {
 		processTerminator(*bb.getTerminator(), inStateVec);
 	}
 }
 
 void PredicateStateAnalysis::processTerminator(
 		const llvm::TerminatorInst& I,
-		const PSV& state) {
+		const PredicateStateVector& state) {
 	using namespace::llvm;
 
 	if (isa<BranchInst>(I))
@@ -161,7 +117,7 @@ void PredicateStateAnalysis::processTerminator(
 
 void PredicateStateAnalysis::process(
 		const llvm::BranchInst& I,
-		const PSV& state) {
+		const PredicateStateVector& state) {
 	using namespace::std;
 	using namespace::llvm;
 
@@ -177,8 +133,8 @@ void PredicateStateAnalysis::process(
 		const Predicate* truePred = tpm[make_pair(&I, trueSucc)];
 		const Predicate* falsePred = tpm[make_pair(&I, falseSucc)];
 
-		workQueue.push(make_pair(trueSucc, addToPSV(state, truePred)));
-		workQueue.push(make_pair(falseSucc, addToPSV(state, falsePred)));
+		workQueue.push(make_pair(trueSucc, state.addPredicate(truePred)));
+		workQueue.push(make_pair(falseSucc, state.addPredicate(falsePred)));
 	}
 }
 
