@@ -48,10 +48,15 @@ enum ValueType {
 };
 
 ValueType valueType(const llvm::Value& value);
+ValueType derefValueType(const llvm::Value& value);
 } // namespace llvm
 
 namespace z3 {
 z3::expr valueToExpr(
+		z3::context& ctx,
+		const llvm::Value& value,
+		const std::string& valueName);
+z3::expr derefValueToExpr(
 		z3::context& ctx,
 		const llvm::Value& value,
 		const std::string& valueName);
