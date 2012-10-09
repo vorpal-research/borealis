@@ -9,7 +9,14 @@
 
 #include <z3/z3++.h>
 
+#include "PredicateStateAnalysis.h"
+
 namespace borealis {
+
+using util::streams::endl;
+
+typedef PredicateState PS;
+typedef PredicateStateAnalysis::PredicateStateMapEntry PSME;
 
 Z3Pass::Z3Pass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -19,6 +26,7 @@ void Z3Pass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	using namespace::llvm;
 
 	Info.setPreservesAll();
+	Info.addRequiredTransitive<PredicateStateAnalysis>();
 }
 
 bool Z3Pass::runOnFunction(llvm::Function& F) {
@@ -26,7 +34,23 @@ bool Z3Pass::runOnFunction(llvm::Function& F) {
 	using namespace::llvm;
 	using namespace::z3;
 
-    // TODO: Implement
+    auto PSA = &getAnalysis<PredicateStateAnalysis>();
+
+    for_each(PSA->getPredicateStateMap(), [this](const PSME& psme) {
+    	auto psv = psme.second;
+    	for_each(psv, [this](const PS& ps){
+    	    context ctx;
+    		solver s(ctx);
+
+    		auto z3s = ps.toZ3(ctx);
+    		for_each(z3s, [this, &s](const expr& e) {
+    			s.add(e);
+    		});
+
+    		errs() << ps << endl;
+    		errs() << s.check() << endl;
+    	});
+    });
 
 	return false;
 }
