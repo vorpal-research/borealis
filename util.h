@@ -10,6 +10,9 @@
 
 #include <llvm/Support/raw_ostream.h>
 
+#include <string>
+
+
 namespace llvm {
 // copy the standard ostream behavior with functions
 llvm::raw_ostream& operator<<(
@@ -21,6 +24,10 @@ std::string conditionToString(const int cond);
 
 namespace borealis {
 namespace util {
+
+std::string nospaces(const std::string& v);
+std::string nospaces(std::string&& v);
+
 namespace streams {
 
 // copy the standard ostream endl

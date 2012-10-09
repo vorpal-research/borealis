@@ -78,6 +78,18 @@ std::string conditionToString(const int cond) {
 
 namespace borealis {
 namespace util {
+
+std::string nospaces(const std::string& v) {
+	return nospaces(std::string(v));
+}
+
+using std::remove_if;
+
+std::string nospaces(std::string&& v) {
+	v.erase(remove_if(v.begin(), v.end(), isspace), v.end());
+	return v;
+}
+
 namespace streams {
 
 // copy the standard ostream endl

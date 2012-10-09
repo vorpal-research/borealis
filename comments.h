@@ -18,6 +18,8 @@
 namespace borealis {
 namespace comments {
 
+using llvm::StringRef;
+
 // comparator needed for map<SourceRange,...>
 struct CommentRangeCompare: public std::binary_function<clang::SourceRange, clang::SourceRange, bool> {
 	bool operator()(const clang::SourceRange& r1, const clang::SourceRange& r2) const {
@@ -28,7 +30,7 @@ struct CommentRangeCompare: public std::binary_function<clang::SourceRange, clan
 
 
 class GatherCommentsAction: public clang::PreprocessOnlyAction {
-
+private:
 	typedef std::map<clang::SourceRange, llvm::StringRef, CommentRangeCompare>  comment_container;
 
 	class CommentKeeper: public virtual clang::CommentHandler {
@@ -58,6 +60,11 @@ class GatherCommentsAction: public clang::PreprocessOnlyAction {
 	llvm::StringRef currentFile = "";
 
 	std::map<llvm::StringRef, comment_container> allComments;
+
+public:
+	comment_container& getCommentsForFile(StringRef file) {
+		return allComments[file];
+	}
 
 protected:
 	virtual bool BeginSourceFileAction(clang::CompilerInstance &CI,

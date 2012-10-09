@@ -21,11 +21,9 @@ CXXFLAGS := \
 	-D__STDC_FORMAT_MACROS \
 	-D__STDC_LIMIT_MACROS \
 	-O0 \
-	-fno-exceptions \
 	-fPIC \
 	-std=c++11 \
 	-g \
-	-I$(PWD) \
 	$(DEFS)
 
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
@@ -38,8 +36,15 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
 	$(PWD)/State \
+	$(PWD)/Anno \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
+	
+ADDITIONAL_INCLUDE_DIRS := \
+	$(PWD) \
+	$(PWD)/lib/pegtl/include
+	
+CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 
 SOURCES := \
 	$(shell ls *.cpp) \

@@ -177,6 +177,21 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const error_printer<T>& v) 
 template<class T>
 error_printer<T> error(const T& val) { return error_printer<T>(val); }
 
+template<class Func>
+std::string with_stream(Func f) {
+	std::ostringstream ost;
+	f(ost);
+	return ost.str();
+}
+
+template<class Func>
+std::string with_llvm_stream(Func f) {
+	std::string buf;
+	llvm::raw_string_ostream ost(buf);
+	f(ost);
+	return ost.str();
+}
+
 } /* namespace streams */
 } /* namespace util */
 } /* namespace borealis */
