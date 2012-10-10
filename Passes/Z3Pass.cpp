@@ -14,6 +14,7 @@
 namespace borealis {
 
 using util::streams::endl;
+using util::toString;
 
 typedef PredicateState PS;
 typedef PredicateStateAnalysis::PredicateStateMapEntry PSME;
@@ -46,7 +47,8 @@ bool Z3Pass::runOnFunction(llvm::Function& F) {
 			s.add(z3);
 
     		errs() << ps << endl;
-    		errs() << s.check() << endl;
+    		errs() << toString(z3) << endl;
+    		errs() << (s.check() == sat ? "SAT" : "UNSAT") << endl;
     	});
     });
 
