@@ -42,10 +42,8 @@ bool Z3Pass::runOnFunction(llvm::Function& F) {
     	    context ctx;
     		solver s(ctx);
 
-    		auto z3s = ps.toZ3(ctx);
-    		for_each(z3s, [this, &s](const expr& e) {
-    			s.add(e);
-    		});
+    		auto z3 = ps.toZ3(ctx);
+			s.add(z3);
 
     		errs() << ps << endl;
     		errs() << s.check() << endl;
