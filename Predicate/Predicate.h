@@ -19,7 +19,13 @@
 
 namespace borealis {
 
+enum PredicateType {
+	PATH,
+	STATE
+};
+
 class Predicate {
+
 public:
 
 	typedef std::pair<size_t, const llvm::Value*> Key;
@@ -35,11 +41,25 @@ public:
 		}
 	};
 
+	Predicate();
+	Predicate(const PredicateType type);
 	virtual ~Predicate() {};
-	virtual std::string toString() const = 0;
 	virtual Key getKey() const = 0;
 
+	std::string toString() const {
+		return asString;
+	}
+
+	PredicateType getType() const {
+		return type;
+	}
+
 	virtual z3::expr toZ3(z3::context& ctx) const = 0;
+
+protected:
+
+	std::string asString;
+	PredicateType type;
 
 };
 

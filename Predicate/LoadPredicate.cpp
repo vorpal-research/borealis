@@ -16,12 +16,8 @@ LoadPredicate::LoadPredicate(
 				lhv(lhv),
 				rhv(rhv),
 				lhvs(st->getLocalName(lhv)),
-				rhvs("*" + st->getLocalName(rhv)),
-				asString(lhvs + "=" + rhvs) {
-}
-
-std::string LoadPredicate::toString() const {
-	return asString;
+				rhvs("*" + st->getLocalName(rhv)) {
+	this->asString = lhvs + "=" + rhvs;
 }
 
 Predicate::Key LoadPredicate::getKey() const {

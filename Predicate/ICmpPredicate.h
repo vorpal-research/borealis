@@ -26,7 +26,6 @@ public:
 			const llvm::Value* op2,
 			const int cond,
 			SlotTracker* st);
-	virtual std::string toString() const;
 	virtual Predicate::Key getKey() const;
 	virtual z3::expr toZ3(z3::context& ctx) const;
 
@@ -41,8 +40,6 @@ private:
 	const std::string op1s;
 	const std::string op2s;
 	const std::string conds;
-
-	const std::string asString;
 
 };
 

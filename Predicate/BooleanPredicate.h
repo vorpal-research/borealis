@@ -20,8 +20,15 @@ class BooleanPredicate: public Predicate {
 
 public:
 
-	BooleanPredicate(const llvm::Value* v, const bool b, SlotTracker* st);
-	virtual std::string toString() const;
+	BooleanPredicate(
+			const llvm::Value* v,
+			const bool b,
+			SlotTracker* st);
+	BooleanPredicate(
+			const PredicateType type,
+			const llvm::Value* v,
+			const bool b,
+			SlotTracker* st);
 	virtual Predicate::Key getKey() const;
 	virtual z3::expr toZ3(z3::context& ctx) const;
 
@@ -31,7 +38,6 @@ private:
 	const bool b;
 	const std::string vs;
 	const std::string bs;
-	const std::string asString;
 
 };
 
