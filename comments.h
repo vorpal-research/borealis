@@ -15,23 +15,24 @@
 
 #include <map>
 
+#include "locations.h"
+#include "Anno/anno.h"
+
 namespace borealis {
 namespace comments {
 
 using llvm::StringRef;
-
-// comparator needed for map<SourceRange,...>
-struct CommentRangeCompare: public std::binary_function<clang::SourceRange, clang::SourceRange, bool> {
-	bool operator()(const clang::SourceRange& r1, const clang::SourceRange& r2) const {
-		return r1.getBegin() < r2.getBegin();
-	}
-};
-
-
+using borealis::Locus;
+typedef borealis::anno::calculator::command_type command;
 
 class GatherCommentsAction: public clang::PreprocessOnlyAction {
 private:
-	typedef std::map<clang::SourceRange, llvm::StringRef, CommentRangeCompare>  comment_container;
+
+	// std::map is here not because it's associative, but 'cos it is sorted and easy-to-use
+	// std::set<pair> may seem more applicable, but requires more boilerplate
+	typedef std::multimap<Locus, command>  comment_container;
+	typedef comment_container::iterator iterator;
+	typedef std::pair<iterator,iterator> range;
 
 	class CommentKeeper: public virtual clang::CommentHandler {
 		clang::Preprocessor& pp;
@@ -59,16 +60,18 @@ private:
 	std::auto_ptr<CommentKeeper> keeper;
 	llvm::StringRef currentFile = "";
 
-	std::map<llvm::StringRef, comment_container> allComments;
+	comment_container allComments;
 
 public:
-	comment_container& getCommentsForFile(StringRef file) {
-		return allComments[file];
+	const comment_container& getComments() const {
+		return allComments;
 	}
 
 protected:
 	virtual bool BeginSourceFileAction(clang::CompilerInstance &CI,
 			llvm::StringRef Filename) {
+		llvm::errs() << Filename << "\n";
+
 		auto& PP = CI.getPreprocessor();
 		currentFile = Filename;
 		keeper.reset(new CommentKeeper(PP));
@@ -77,7 +80,8 @@ protected:
 	}
 
 	virtual void EndSourceFileAction() {
-		allComments[currentFile] = keeper->detach();
+		auto fl = keeper->detach();
+		allComments.insert(fl.begin(), fl.end());
 	}
 };
 

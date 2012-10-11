@@ -15,19 +15,20 @@
 #include <llvm/Analysis/DebugInfo.h>
 
 #include "../util.h"
-
+#include "SourceLocationTracker/location_container.hpp"
 
 #include <map>
 #include <tuple>
 
 namespace borealis {
 
+using llvm::Value;
+
 class SourceLocationTracker: public llvm::ModulePass {
 
 public:
-	typedef std::tuple<std::string, unsigned, unsigned> location_t;
-	typedef std::map<const llvm::Value*, location_t> valueDebugMap;
-	typedef valueDebugMap::value_type valueDebugMapEntry;
+	typedef Locus location_t;
+	typedef location_container<Value*> valueDebugMap;
 private:
 	valueDebugMap valueDebugInfo;
 
@@ -38,9 +39,13 @@ public:
 
 	virtual void print(llvm::raw_ostream &O, const llvm::Module *M) const;
 	virtual bool runOnModule(llvm::Module& M);
-	const std::string& getFilenameFor(const llvm::Value* val) const;
-	unsigned getLineFor(const llvm::Value* val) const;
-	unsigned getColumnFor(const llvm::Value* val) const;
+	const std::string& getFilenameFor(llvm::Value* val) const;
+	unsigned getLineFor(llvm::Value* val) const;
+	unsigned getColumnFor(llvm::Value* val) const;
+	const Locus& getLocFor(llvm::Value* val) const;
+
+	valueDebugMap::const_range getRangeFor(const Locus& loc) const;
+
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
 
 	virtual ~SourceLocationTracker() {}
