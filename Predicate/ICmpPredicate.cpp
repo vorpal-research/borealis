@@ -24,12 +24,8 @@ ICmpPredicate::ICmpPredicate(
 				lhvs(st->getLocalName(lhv)),
 				op1s(st->getLocalName(op1)),
 				op2s(st->getLocalName(op2)),
-				conds(conditionToString(cond)),
-				asString(lhvs + "=" + op1s + conds + op2s){
-}
-
-std::string ICmpPredicate::toString() const {
-	return asString;
+				conds(conditionToString(cond)) {
+	this->asString = lhvs + "=" + op1s + conds + op2s;
 }
 
 Predicate::Key ICmpPredicate::getKey() const {

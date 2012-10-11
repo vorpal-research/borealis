@@ -16,12 +16,8 @@ LoadPredicate::LoadPredicate(
 				lhv(lhv),
 				rhv(rhv),
 				lhvs(st->getLocalName(lhv)),
-				rhvs(st->getLocalName(rhv)),
-				asString(lhvs + "=*" + rhvs) {
-}
-
-std::string LoadPredicate::toString() const {
-	return asString;
+				rhvs("*" + st->getLocalName(rhv)) {
+	this->asString = lhvs + "=" + rhvs;
 }
 
 Predicate::Key LoadPredicate::getKey() const {
@@ -32,7 +28,7 @@ z3::expr LoadPredicate::toZ3(z3::context& ctx) const {
 	using namespace::z3;
 
 	expr l = valueToExpr(ctx, *lhv, lhvs);
-	expr r = valueToExpr(ctx, *lhv, "*" + rhvs);
+	expr r = derefValueToExpr(ctx, *rhv, rhvs);
 	return l == r;
 }
 

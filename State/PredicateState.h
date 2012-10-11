@@ -30,6 +30,8 @@ public:
 	PredicateState addPredicate(const Predicate* pred) const;
 	PredicateState merge(const PredicateState& state) const;
 
+	z3::expr toZ3(z3::context& ctx) const;
+
 	virtual ~PredicateState();
 
 	typedef std::unordered_map<Predicate::Key, const Predicate*, Predicate::KeyHash> Data;

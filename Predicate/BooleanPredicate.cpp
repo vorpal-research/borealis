@@ -12,16 +12,21 @@ namespace borealis {
 BooleanPredicate::BooleanPredicate(
 		const llvm::Value* v,
 		const bool b,
-		SlotTracker* st):
+		SlotTracker* st) :
 	v(v),
 	vs(st->getLocalName(v)),
 	b(b),
-	bs(b ? "TRUE" : "FALSE"),
-	asString(vs + "=" + bs) {
+	bs(b ? "TRUE" : "FALSE") {
+	this->asString = vs + "=" + bs;
 }
 
-std::string BooleanPredicate::toString() const {
-	return asString;
+BooleanPredicate::BooleanPredicate(
+		const PredicateType type,
+		const llvm::Value* v,
+		const bool b,
+		SlotTracker* st) :
+				BooleanPredicate(v, b, st) {
+	this-> type = type;
 }
 
 Predicate::Key BooleanPredicate::getKey() const {

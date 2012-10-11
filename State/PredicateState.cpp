@@ -34,6 +34,35 @@ PredicateState PredicateState::merge(const PredicateState& state) const {
 	return res;
 }
 
+z3::expr PredicateState::toZ3(z3::context& ctx) const {
+	using namespace::std;
+	using namespace::z3;
+
+	auto from = vector<expr>();
+	auto to = vector<expr>();
+
+	for_each(data, [&ctx, &from, &to](const DataEntry& entry) {
+		auto v = entry.second;
+		if (v->getType() == PATH) {
+			from.push_back(v->toZ3(ctx));
+		} else if (v->getType() == STATE) {
+			to.push_back(v->toZ3(ctx));
+		}
+	});
+
+	auto f = ctx.bool_val(true);
+	for_each(from, [&ctx, &f](const expr& e){
+		f = f && e;
+	});
+
+	auto t = ctx.bool_val(true);
+	for_each(to, [&ctx, &t](const expr& e){
+		t = t && e;
+	});
+
+	return implies(f, t);
+}
+
 PredicateState::~PredicateState() {
 	// TODO
 }

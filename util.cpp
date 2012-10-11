@@ -116,16 +116,30 @@ ValueType valueType(const llvm::Value& value) {
 	}
 }
 
+ValueType derefValueType(const llvm::Value& value) {
+	using namespace::llvm;
+
+	Type* type = value.getType()->getPointerElementType();
+	if (type->isIntegerTy()) {
+		return INT_VAR;
+	} else if (type->isFloatingPointTy()) {
+		return REAL_VAR;
+	} else if (type->isPointerTy()) {
+		return PTR_VAR;
+	} else {
+		return UNKNOWN;
+	}
+}
+
 } // namespace llvm
 
 namespace z3 {
-z3::expr valueToExpr(
+z3::expr valueByTypeToExpr(
 		z3::context& ctx,
-		const llvm::Value& value,
+		const llvm::ValueType& vt,
 		const std::string& valueName) {
 	using namespace::llvm;
 
-	ValueType vt = valueType(value);
 	switch(vt) {
 	case INT_CONST:
 		return ctx.int_val(valueName.c_str());
@@ -148,6 +162,26 @@ z3::expr valueToExpr(
 	case UNKNOWN:
 		return *((z3::expr*)0);
 	}
+}
+
+z3::expr valueToExpr(
+		z3::context& ctx,
+		const llvm::Value& value,
+		const std::string& valueName) {
+	using namespace::llvm;
+
+	ValueType vt = valueType(value);
+	return valueByTypeToExpr(ctx, vt, valueName);
+}
+
+z3::expr derefValueToExpr(
+		z3::context& ctx,
+		const llvm::Value& value,
+		const std::string& valueName) {
+	using namespace::llvm;
+
+	ValueType vt = derefValueType(value);
+	return valueByTypeToExpr(ctx, vt, valueName);
 }
 } // namespace z3
 

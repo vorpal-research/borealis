@@ -13,3 +13,11 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p
 	return s;
 }
 } /* namespace llvm */
+
+namespace borealis {
+
+Predicate::Predicate(const PredicateType type) : type(type) {}
+
+Predicate::Predicate() : Predicate(STATE) {}
+
+} /* namespace borealis */

@@ -9,7 +9,15 @@
 
 #include <z3/z3++.h>
 
+#include "PredicateStateAnalysis.h"
+
 namespace borealis {
+
+using util::streams::endl;
+using util::toString;
+
+typedef PredicateState PS;
+typedef PredicateStateAnalysis::PredicateStateMapEntry PSME;
 
 Z3Pass::Z3Pass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -19,6 +27,7 @@ void Z3Pass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	using namespace::llvm;
 
 	Info.setPreservesAll();
+	Info.addRequiredTransitive<PredicateStateAnalysis>();
 }
 
 bool Z3Pass::runOnFunction(llvm::Function& F) {
@@ -26,7 +35,22 @@ bool Z3Pass::runOnFunction(llvm::Function& F) {
 	using namespace::llvm;
 	using namespace::z3;
 
-    // TODO: Implement
+    auto PSA = &getAnalysis<PredicateStateAnalysis>();
+
+    for_each(PSA->getPredicateStateMap(), [this](const PSME& psme) {
+    	auto psv = psme.second;
+    	for_each(psv, [this](const PS& ps){
+    	    context ctx;
+    		solver s(ctx);
+
+    		auto z3 = ps.toZ3(ctx);
+			s.add(z3);
+
+    		errs() << ps << endl;
+    		errs() << toString(z3) << endl;
+    		errs() << (s.check() == sat ? "SAT" : "UNSAT") << endl;
+    	});
+    });
 
 	return false;
 }
