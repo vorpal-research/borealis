@@ -112,7 +112,7 @@ const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
 	const static Locus empty;
 
 	if(val && valueDebugInfo.contains(val)) {
-		return valueDebugInfo[val].loc;
+		return valueDebugInfo[val];
 	} else return empty;
 }
 

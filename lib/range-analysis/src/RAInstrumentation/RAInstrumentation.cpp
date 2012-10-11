@@ -13,6 +13,8 @@ STATISTIC(raInstrumentationNumInstructions, "Number of instructions instrumented
 
 static RegisterPass<RAInstrumentation> X("ra-instrumentation", "Range Analysis Instrumentation Pass");
 
+char RAInstrumentation::ID = 0;
+
 bool RAInstrumentation::isValidInst(Instruction *I)
 {
 	// Only i32 instructions are valid

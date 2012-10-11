@@ -37,6 +37,8 @@ class CollectionView {
 public:
 	CollectionView(ContainerIter begin, ContainerIter end): begin_(begin), end_(end) {
 	}
+	CollectionView(std::pair<ContainerIter, ContainerIter> iters): begin_(iters.first), end_(iters.second) {
+	}
 
 	ContainerIter begin() const { return begin_; }
 	ContainerIter end() const { return end_; }
@@ -51,6 +53,11 @@ inline auto head(const Container& con) -> decltype(*con.begin()) {
 template<class Iter>
 inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
 	return CollectionView<Iter>(b, e);
+}
+
+template<class Iter>
+inline auto view(const std::pair<Iter,Iter>& is) -> CollectionView<Iter> {
+	return CollectionView<Iter>(is);
 }
 
 template<class Container>

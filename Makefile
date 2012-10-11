@@ -21,6 +21,8 @@ CXXFLAGS := \
 	-Wall \
 	-Woverloaded-virtual \
 	-Wcast-qual \
+	-Wno-reorder \
+	-Wno-unused-variable \
 	-DNDEBUG \
 	-D_GNU_SOURCE \
 	-D__STDC_CONSTANT_MACROS \
