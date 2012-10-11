@@ -107,8 +107,8 @@ struct Locus {
 	Locus():loc(), filename(UNKNOWN_NAME) {};
 	Locus(const Locus& that): filename(that.filename), loc(that.loc) {};
 	Locus(Locus&& that): filename(move(that.filename)), loc(move(that.loc)) {};
-	Locus(const LocalLocus& that): filename(UNKNOWN_NAME), loc(that) {};
-	Locus(LocalLocus&& that): filename(UNKNOWN_NAME), loc(move(that)) {};
+	explicit Locus(const LocalLocus& that): filename(UNKNOWN_NAME), loc(that) {};
+	explicit Locus(LocalLocus&& that): filename(UNKNOWN_NAME), loc(move(that)) {};
 	Locus(const clang::PresumedLoc& that): filename(that.getFilename()), loc(that.getLine(), that.getColumn()) {};
 	Locus(const std::string& filename, const LocalLocus& loc): filename(filename), loc(loc) {};
 	Locus(const std::string& filename, unsigned line, unsigned col): filename(filename), loc(line,col) {};
@@ -159,6 +159,17 @@ public:
         size_t h1 = std::hash<unsigned>()(l.line);
         size_t h2 = std::hash<unsigned>()(l.col);
         return h2 + (h1 << 16);
+    }
+};
+
+template<>
+class hash<borealis::Locus> {
+public:
+    size_t operator()(const borealis::Locus &l) const
+    {
+        size_t h1 = std::hash<borealis::LocalLocus>()(l.loc);
+        size_t h2 = std::hash<std::string>()(l.filename);
+        return h1 + (h2 << 16);
     }
 };
 }

@@ -23,6 +23,7 @@ CXXFLAGS := \
 	-Wcast-qual \
 	-Wno-reorder \
 	-Wno-unused-variable \
+	-Werror-return-stack-address \
 	-DNDEBUG \
 	-D_GNU_SOURCE \
 	-D__STDC_CONSTANT_MACROS \
