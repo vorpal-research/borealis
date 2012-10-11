@@ -12,6 +12,7 @@
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
+#include "PredicateStateAnalysis.h"
 #include "../util.h"
 
 namespace borealis {
@@ -20,12 +21,16 @@ class Z3Pass : public llvm::FunctionPass {
 
 public:
 
-	static char ID;
+    static char ID;
 
-	Z3Pass();
-	virtual bool runOnFunction(llvm::Function& F);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-	virtual ~Z3Pass();
+    Z3Pass();
+    virtual bool runOnFunction(llvm::Function& F);
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual ~Z3Pass();
+
+private:
+
+    PredicateStateAnalysis* PSA;
 
 };
 
