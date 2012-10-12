@@ -8,6 +8,7 @@
 #ifndef PREDICATESTATEVECTOR_H_
 #define PREDICATESTATEVECTOR_H_
 
+#include <algorithm>
 #include <unordered_set>
 
 #include "PredicateState.h"
@@ -43,6 +44,22 @@ public:
 	bool operator!=(const PredicateStateVector& other) const {
 		return data != other.data;
 	}
+
+    template<class Condition>
+    PredicateStateVector remove_if(Condition cond) const {
+        PredicateStateVector res = PredicateStateVector(*this);
+
+        for(auto iter = res.data.begin(); iter != res.data.end(); )
+        {
+            if (cond(*iter)) {
+                iter = res.data.erase(iter);
+            } else {
+                ++iter;
+            }
+        }
+
+        return res;
+    }
 
 private:
 

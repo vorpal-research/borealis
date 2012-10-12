@@ -42,6 +42,8 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     workQueue.push(make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
     processQueue();
 
+    removeUnreachableStates();
+
     errs() << endl << "PSA results:" << endl;
     for_each(F, [this](const BasicBlock& BB) {
         for_each(BB, [this](const Instruction& I) {
@@ -135,6 +137,33 @@ void PredicateStateAnalysis::process(
 
         workQueue.push(make_pair(trueSucc, state.addPredicate(truePred)));
         workQueue.push(make_pair(falseSucc, state.addPredicate(falsePred)));
+    }
+}
+
+bool isUnreachable(const PredicateState& ps) {
+    using namespace::std;
+    using namespace::z3;
+
+    context ctx;
+
+    auto z3 = ps.toZ3(ctx);
+    auto& pathPredicate = z3.first;
+    auto& statePredicate = z3.second;
+
+    return checkAssertion(
+                    !pathPredicate,
+                    vector<z3::expr> {statePredicate},
+                    ctx);
+}
+
+void PredicateStateAnalysis::removeUnreachableStates() {
+    using namespace::std;
+    using namespace::z3;
+
+    for(auto& psme : predicateStateMap){
+        auto I = psme.first;
+        PredicateStateVector psv = psme.second;
+        predicateStateMap[I] = psv.remove_if(isUnreachable);
     }
 }
 

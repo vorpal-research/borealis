@@ -26,6 +26,10 @@ public:
 
 	PredicateState();
 	PredicateState(const PredicateState& state);
+	PredicateState(PredicateState&& state);
+
+	const PredicateState& operator=(const PredicateState& state);
+	const PredicateState& operator=(PredicateState&& state);
 
 	PredicateState addPredicate(const Predicate* pred) const;
 	PredicateState merge(const PredicateState& state) const;
