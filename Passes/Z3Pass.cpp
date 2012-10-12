@@ -9,7 +9,7 @@
 
 #include <z3/z3++.h>
 
-#include "PredicateStateAnalysis.h"
+#include "../Solver/util.h"
 
 namespace borealis {
 
@@ -20,43 +20,52 @@ typedef PredicateState PS;
 typedef PredicateStateAnalysis::PredicateStateMapEntry PSME;
 
 Z3Pass::Z3Pass() : llvm::FunctionPass(ID) {
-	// TODO
+    // TODO
 }
 
 void Z3Pass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	Info.setPreservesAll();
-	Info.addRequiredTransitive<PredicateStateAnalysis>();
+    Info.setPreservesAll();
+    Info.addRequiredTransitive<PredicateStateAnalysis>();
 }
 
 bool Z3Pass::runOnFunction(llvm::Function& F) {
-	using namespace::std;
-	using namespace::llvm;
-	using namespace::z3;
+    using namespace::std;
+    using namespace::llvm;
+    using namespace::z3;
 
-    auto PSA = &getAnalysis<PredicateStateAnalysis>();
+    PSA = &getAnalysis<PredicateStateAnalysis>();
 
     for_each(PSA->getPredicateStateMap(), [this](const PSME& psme) {
-    	auto psv = psme.second;
-    	for_each(psv, [this](const PS& ps){
-    	    context ctx;
-    		solver s(ctx);
+        auto psv = psme.second;
+        for(auto& ps : psv) {
+            context ctx;
 
-    		auto z3 = ps.toZ3(ctx);
-			s.add(z3);
+            auto z3 = ps.toZ3(ctx);
+            auto& pathPredicate = z3.first;
+            auto& statePredicate = z3.second;
 
-    		errs() << ps << endl;
-    		errs() << toString(z3) << endl;
-    		errs() << (s.check() == sat ? "SAT" : "UNSAT") << endl;
-    	});
+            errs() << ps << endl;
+
+            bool isReachable =
+                    checkAssertion(
+                            pathPredicate,
+                            vector<z3::expr> {statePredicate},
+                            ctx);
+            if (isReachable) {
+                errs() << "State is reachable" << endl;
+            } else {
+                errs() << "State is unreachable" << endl;
+            }
+        }
     });
 
-	return false;
+    return false;
 }
 
 Z3Pass::~Z3Pass() {
-	// TODO
+    // TODO
 }
 
 } /* namespace borealis */

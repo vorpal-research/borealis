@@ -49,6 +49,8 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Predicate \
 	$(PWD)/State \
 	$(PWD)/Anno \
+	$(PWD)/Query \
+	$(PWD)/Solver \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
 	
