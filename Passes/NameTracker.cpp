@@ -9,6 +9,10 @@
 
 namespace borealis {
 
+static void addName(llvm::Value& V, NameTracker::nameResolver_t& resolver) {
+    if(V.hasName()) resolver[V.getName()] = &V;
+}
+
 bool NameTracker::runOnModule(llvm::Module& M) {
 	using llvm::Module;
 	using llvm::Function;
@@ -18,16 +22,16 @@ bool NameTracker::runOnModule(llvm::Module& M) {
 	using llvm::Instruction;
 
 	for(auto& G : M.getGlobalList()) {
-		if(G.hasName()) globalResolver[G.getName()] = &G;
+	    addName(G, globalResolver);
 	}
 	for(auto& F : M) {
-		if(F.hasName()) globalResolver[F.getName()] = &F;
-		for(auto& A: F.getArgumentList()) {
-			if(A.hasName()) localResolvers[&F][A.getName()] = &A;
+	    addName(F, globalResolver);
+		for(auto& A : F.getArgumentList()) {
+		    addName(A, globalResolver);
 		}
-		for(auto& BB: F) {
+		for(auto& BB : F) {
 			for(auto& I: BB) {
-				if(I.hasName()) localResolvers[&F][I.getName()] = &I;
+			    addName(I, globalResolver);
 			}
 		}
 	}
