@@ -15,15 +15,33 @@
 #include "comments.h"
 #include "util.h"
 
+#include "locations.h"
+#include "Anno/anno.h"
+
+namespace borealis {
+namespace comments {
+
 using llvm::errs;
 
 using namespace borealis;
 using util::streams::endl;
 
-namespace borealis {
-namespace comments {
+using std::pair;
+using std::make_pair;
 
-llvm::StringRef getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
+typedef borealis::anno::calculator::command_type command;
+typedef std::multimap<Locus, command>  comment_container;
+
+comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
+	using std::cerr;
+	using std::endl;
+	using borealis::Locus;
+	using borealis::LocalLocus;
+
+	if(SourceMgr.isInSystemHeader(Range.getBegin())) {
+		return comment_container();
+	}
+
    clang::FileID BeginFileID;
    clang::FileID EndFileID;
    unsigned BeginOffset;
@@ -36,7 +54,7 @@ llvm::StringRef getRawTextSlow(const clang::SourceManager &SourceMgr, clang::Sou
 
    const unsigned Length = EndOffset - BeginOffset;
    if (Length < 2)
-     return llvm::StringRef();
+     return comment_container();
 
    // A comment can't begin in one file and end in another one
    assert(BeginFileID == EndFileID);
@@ -45,15 +63,29 @@ llvm::StringRef getRawTextSlow(const clang::SourceManager &SourceMgr, clang::Sou
    const char *BufferStart = SourceMgr.getBufferData(BeginFileID,
                                                      &Invalid).data();
    if (Invalid)
-     return llvm::StringRef();
+     return comment_container();
 
-   return llvm::StringRef(BufferStart + BeginOffset, Length);
+   using borealis::anno::calculator::parse_command;
+   using borealis::anno::calculator::command_type;
+   using borealis::util::for_each;
+   // FIXME: get rid of intermediate StringRef, pass pointers to parse_command
+   auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
+   auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
+   auto commands = parse_command(comment.str());
+
+   auto ret = comment_container();
+   for_each(commands, [&](command&  cmd){
+	   auto pr = make_pair(move(locus), move(cmd));
+	   ret.insert(pr);
+   });
+
+   return ret;
 }
 
 bool GatherCommentsAction::CommentKeeper::HandleComment(clang::Preprocessor &PP, clang::SourceRange Comment) {
     clang::SourceManager& sm = PP.getSourceManager();
     auto raw = getRawTextSlow(sm, Comment);
-    comments[Comment] = raw;
+    comments.insert(raw.begin(), raw.end());
     return false;
 }
 

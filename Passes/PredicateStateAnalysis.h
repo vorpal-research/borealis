@@ -27,34 +27,34 @@ class PredicateStateAnalysis: public llvm::FunctionPass {
 
 public:
 
-	typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
-	typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;
+    typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
+    typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;
 
-	typedef std::pair<const llvm::BasicBlock*, PredicateStateVector> WorkQueueEntry;
-	typedef std::queue<WorkQueueEntry> WorkQueue;
+    typedef std::pair<const llvm::BasicBlock*, PredicateStateVector> WorkQueueEntry;
+    typedef std::queue<WorkQueueEntry> WorkQueue;
 
-	static char ID;
+    static char ID;
 
-	PredicateStateAnalysis();
-	virtual bool runOnFunction(llvm::Function& F);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-	virtual ~PredicateStateAnalysis();
+    PredicateStateAnalysis();
+    virtual bool runOnFunction(llvm::Function& F);
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual ~PredicateStateAnalysis();
 
-	PredicateStateMap& getPredicateStateMap() {
-		return predicateStateMap;
-	}
+    PredicateStateMap& getPredicateStateMap() {
+        return predicateStateMap;
+    }
 
 private:
 
-	PredicateStateMap predicateStateMap;
-	WorkQueue workQueue;
+    PredicateStateMap predicateStateMap;
+    WorkQueue workQueue;
 
-	PredicateAnalysis* PA;
+    PredicateAnalysis* PA;
 
-	void processQueue();
-	void processBasicBlock(const WorkQueueEntry& wqe);
-	void processTerminator(const llvm::TerminatorInst& I, const PredicateStateVector& state);
-	void process(const llvm::BranchInst& I, const PredicateStateVector& state);
+    void processQueue();
+    void processBasicBlock(const WorkQueueEntry& wqe);
+    void processTerminator(const llvm::TerminatorInst& I, const PredicateStateVector& state);
+    void process(const llvm::BranchInst& I, const PredicateStateVector& state);
 
 };
 

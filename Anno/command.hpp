@@ -19,6 +19,8 @@ using std::basic_ostream;
 namespace borealis{
 namespace anno{
 
+using std::move;
+
 struct command {
 	std::string name_;
 	std::list<prod_t> args_;
@@ -26,12 +28,12 @@ struct command {
 
 template<class Char>
 basic_ostream<Char>& operator<<(basic_ostream<Char>& ost, const command& com) {
-	   ost << com.name_ << "(";
-	   for_each(com.args_.begin(), --com.args_.end(),[&ost](const prod_t& args){
-		   ost << *args << ",";
-	   });
-	   ost << *(com.args_.back()) << ")";
-	   return ost;
+	ost << com.name_ << "(";
+	for_each(com.args_.begin(), --com.args_.end(),[&ost](const prod_t& args){
+		ost << *args << ",";
+	});
+	ost << *(com.args_.back()) << ")";
+	return ost;
 }
 
 } //namespace anno

@@ -8,7 +8,6 @@
 #include "production.h"
 #include "command.hpp"
 #include "locator.hpp"
-
 #include "../util.h"
 
 #include <stack>
@@ -180,7 +179,7 @@ namespace calculator {
 using namespace pegtl;
 
 // The state for the arithmetics.
-typedef unique_ptr< production > expression_type;
+typedef prod_t expression_type;
 typedef std::stack< expression_type > expr_stack;
 typedef command command_type;
 typedef vector<command> commands_t;
@@ -625,9 +624,9 @@ vector< command_type > parse_command(const string& command) {
     if(cp.success) {
     	return std::move(commands);
     }else {
-    	for(auto i = 0U; i < cp.str.size(); ++i) {
-    		std::cerr << i << "." << cp.str[i] << std::endl;
-    	}
+//    	for(auto i = 0U; i < cp.str.size(); ++i) {
+//    		std::cerr << i << "." << cp.str[i] << std::endl;
+//    	}
     	return vector< command_type >();
     }
 }

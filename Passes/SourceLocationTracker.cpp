@@ -7,6 +7,7 @@
 
 #include "SourceLocationTracker.h"
 
+
 namespace borealis {
 
 char SourceLocationTracker::ID;
@@ -29,7 +30,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 			continue;
 
 		DISubprogram subProg(mdnode);
-		valueDebugInfo[subProg.getFunction()] = make_tuple(subProg.getFilename().str(), subProg.getLineNumber(), 0U);
+		valueDebugInfo.put(Locus(subProg.getFilename().str(), subProg.getLineNumber(), 0U), subProg.getFunction());
 	}
 
 	for (auto it = dif.global_variable_begin(); it != dif.global_variable_end(); ++it) {
@@ -39,7 +40,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 			continue;
 
 		DIGlobalVariable glob(mdnode);
-		valueDebugInfo[glob.getGlobal()] = make_tuple(glob.getFilename().str(), glob.getLineNumber(), 0U);
+		valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
 	}
 
 	using namespace llvm;
@@ -53,18 +54,18 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 			for_each(BB, [this](Instruction& Inst) {
 				string fname;
 				auto& _ = std::ignore;
-				const Value* func = Inst.getParent()->getParent();
-				if(containsKey(valueDebugInfo, func)) {
-					tie(fname, _, _) = valueDebugInfo[Inst.getParent()->getParent()];
+				Value* func = Inst.getParent()->getParent();
+				if(valueDebugInfo.contains(func)) {
+					fname = valueDebugInfo[Inst.getParent()->getParent()].filename;
 
 					const auto& loc = Inst.getDebugLoc();
 
 					if(!loc.isUnknown()) {
-						valueDebugInfo[&Inst] = make_tuple(
-													fname,
-													Inst.getDebugLoc().getLine(),
-													Inst.getDebugLoc().getCol()
-												);
+						valueDebugInfo.put(Locus(
+								fname,
+								Inst.getDebugLoc().getLine(),
+								Inst.getDebugLoc().getCol()
+							), &Inst);
 					}
 				}
 			});
@@ -76,35 +77,48 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 	return false;
 }
 
-const std::string& SourceLocationTracker::getFilenameFor(const llvm::Value* val) const {
+const std::string& SourceLocationTracker::getFilenameFor(llvm::Value* val) const {
 	using namespace borealis::util;
 	using namespace std;
 
 	static std::string empty_string = "";
 
-	if(val && containsKey(valueDebugInfo,val)) {
-		return get<0>(valueDebugInfo.at(val));
+	if(val && valueDebugInfo.contains(val)) {
+		return valueDebugInfo[val].filename;
 	} else return empty_string;
 }
 
-unsigned SourceLocationTracker::getLineFor(const llvm::Value* val) const {
+unsigned SourceLocationTracker::getLineFor(llvm::Value* val) const {
 	using namespace borealis::util;
 	using namespace std;
 
-	if(val && containsKey(valueDebugInfo,val)) {
-		return get<1>(valueDebugInfo.at(val));
+	if(val && valueDebugInfo.contains(val)) {
+		return valueDebugInfo[val].loc.line;
 	} else return unsigned(-1);
 }
 
-unsigned SourceLocationTracker::getColumnFor(const llvm::Value* val) const {
+unsigned SourceLocationTracker::getColumnFor(llvm::Value* val) const {
 	using namespace borealis::util;
 	using namespace std;
 
-	if(val && containsKey(valueDebugInfo,val)) {
-		return get<2>(valueDebugInfo.at(val));
+	if(val && valueDebugInfo.contains(val)) {
+		return valueDebugInfo[val].loc.col;
 	} else return unsigned(-1);
 }
 
+const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
+	using namespace borealis::util;
+	using namespace std;
+	const static Locus empty;
+
+	if(val && valueDebugInfo.contains(val)) {
+		return valueDebugInfo[val];
+	} else return empty;
+}
+
+SourceLocationTracker::valueDebugMap::const_range SourceLocationTracker::getRangeFor(const Locus& loc) const {
+	return valueDebugInfo.range_after(loc);
+}
 
 void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	Info.setPreservesAll();
@@ -115,7 +129,9 @@ void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module *M)
 	using borealis::util::for_each;
 	using borealis::util::streams::endl;
 
-	for_each(valueDebugInfo, [&](const valueDebugMapEntry& val){
+	typedef std::pair<Value*, Locus> valueDebugMapEntry;
+
+	for_each(valueDebugInfo.getTo(), [&](const valueDebugMapEntry& val){
 		ost << *val.first << endl;
 		ost.indent(2) << getFilenameFor(val.first)
 			   << ":" << getLineFor(val.first)

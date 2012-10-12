@@ -3,6 +3,7 @@
 #include <ostream>
 using std::ostream;
 using std::boolalpha;
+using std::make_shared;
 
 productionVisitor::~productionVisitor(){};
 void productionVisitor::onDoubleConstant(double){ unimplement(); }
@@ -13,8 +14,8 @@ void productionVisitor::onVariable(const std::string&){ unimplement(); }
 void productionVisitor::onBuiltin(const std::string&){ unimplement(); }
 void productionVisitor::onMask(const std::string&){ unimplement(); }
 
-void productionVisitor::onBinary(bin_opcode op, const unique_ptr<production>&, const unique_ptr<production>&){ unimplement(); }
-void productionVisitor::onUnary(un_opcode op, const unique_ptr<production>&){ unimplement(); }
+void productionVisitor::onBinary(bin_opcode op, const prod_t&, const prod_t&){ unimplement(); }
+void productionVisitor::onUnary(un_opcode op, const prod_t&){ unimplement(); }
 
 
 void production::accept(productionVisitor&) const { unimplement(); }
@@ -66,69 +67,68 @@ void mask::accept(productionVisitor& pv) const {
     pv.onMask(mask_);
 };
 
-binary::binary(bin_opcode code, ptr_t&& op0, ptr_t&& op1): code_(code), op0_(move(op0)), op1_(move(op1)){};
+binary::binary(bin_opcode code, prod_t&& op0, prod_t&& op1): code_(code), op0_(move(op0)), op1_(move(op1)){};
 
 void binary::accept(productionVisitor& pv) const {
 	pv.onBinary(code_, op0_, op1_);
 };
 
 
-unary::unary(un_opcode code, ptr_t&& op): code_(code), op_(move(op)){};
+unary::unary(un_opcode code, prod_t&& op): code_(code), op_(move(op)){};
 
 void unary::accept(productionVisitor& pv) const {
 	pv.onUnary(code_, op_);
 };
 
-template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args)
-{
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
+//template<typename T, typename... Args>
+//std::unique_ptr<T> make_unique(Args&&... args)
+//{
+//    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+//}
 
-typedef productionFactory::ptr_t ptr_t;
 
-ptr_t productionFactory::bind(double v) {
+prod_t productionFactory::bind(double v) {
 	return createDouble(v);
 }
-ptr_t productionFactory::bind(long long v) {
+prod_t productionFactory::bind(long long v) {
 	return createInt(v);
 }
-ptr_t productionFactory::bind(bool v) {
+prod_t productionFactory::bind(bool v) {
 	return createBool(v);
 }
 	// solving ambiguity that results into bind("") being bind(true) instead of bind(string(""))
-ptr_t productionFactory::bind(const char* v) {
+prod_t productionFactory::bind(const char* v) {
 	return createVar(v);
 }
-ptr_t productionFactory::bind(string v) {
+prod_t productionFactory::bind(string v) {
 	if(v.size() > 0 && v[0] == '\\') return createBuiltin(v.substr(1,string::npos));
 	else return createVar(v);
 }
 
 
-ptr_t productionFactory::createDouble(double v) {
-	return make_unique<doubleConstant>(v);
+prod_t productionFactory::createDouble(double v) {
+	return make_shared<doubleConstant>(v);
 }
-ptr_t productionFactory::createInt(int v) {
-	return make_unique<intConstant>(v);
+prod_t productionFactory::createInt(int v) {
+	return make_shared<intConstant>(v);
 }
-ptr_t productionFactory::createBool(bool v) {
-	return make_unique<boolConstant>(v);
+prod_t productionFactory::createBool(bool v) {
+	return make_shared<boolConstant>(v);
 }
-ptr_t productionFactory::createVar(string v) {
-	return make_unique<variable>(v);
+prod_t productionFactory::createVar(string v) {
+	return make_shared<variable>(v);
 }
-ptr_t productionFactory::createMask(string v) {
-    return make_unique<mask>(v);
+prod_t productionFactory::createMask(string v) {
+    return make_shared<mask>(v);
 }
-ptr_t productionFactory::createBuiltin(string v) {
-	return make_unique<builtin>(v);
+prod_t productionFactory::createBuiltin(string v) {
+	return make_shared<builtin>(v);
 }
-ptr_t productionFactory::createBinary(bin_opcode code, ptr_t&& op0, ptr_t&& op1) {
-	return make_unique<binary>(code, move(op0), move(op1));
+prod_t productionFactory::createBinary(bin_opcode code, prod_t&& op0, prod_t&& op1) {
+	return make_shared<binary>(code, move(op0), move(op1));
 }
-ptr_t productionFactory::createUnary(un_opcode code, ptr_t&& op) {
-	return make_unique<unary>(code, move(op));
+prod_t productionFactory::createUnary(un_opcode code, prod_t&& op) {
+	return make_shared<unary>(code, move(op));
 }
 
 
@@ -154,7 +154,7 @@ void printingVisitor::onMask(const std::string& mask) {
     ost_ << mask;
 }
 
-void printingVisitor::onBinary(bin_opcode opc, const unique_ptr<production>& op0, const unique_ptr<production>& op1) {
+void printingVisitor::onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1) {
 	string ops;
 	switch(opc) {
 	case OPCODE_PLUS:
@@ -204,7 +204,7 @@ void printingVisitor::onBinary(bin_opcode opc, const unique_ptr<production>& op0
 	ost_ << ")";
 }
 
-void printingVisitor::onUnary(un_opcode opc, const unique_ptr<production>& op0) {
+void printingVisitor::onUnary(un_opcode opc, const prod_t& op0) {
 	string ops = (opc == OPCODE_NEG) ? "-" :
 				 (opc == OPCODE_NOT)? "!" :
 				 (opc == OPCODE_BNOT)? "~" :

@@ -19,8 +19,13 @@ INCLUDES := $(foreach d, $(INCLUDE_DIRS), -I$d)
 
 CXXFLAGS := \
 	-Wall \
-	-Woverloaded-virtual \
+	-Wextra \
+	-Werror-overloaded-virtual \
 	-Wcast-qual \
+	-Wno-reorder \
+	-Wno-unused-variable \
+	-Wno-unused-parameter \
+	-Werror-return-stack-address \
 	-DNDEBUG \
 	-D_GNU_SOURCE \
 	-D__STDC_CONSTANT_MACROS \

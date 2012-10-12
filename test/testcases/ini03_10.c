@@ -1,5 +1,12 @@
 #include <stdlib.h>
 
+// Hi, i am a comment!
+
+// Yep.
+
+#include "test_include.h"
+
+// @requires 2+2
 int main(void)
 {
     int a[5] = {0, 1, 2, 3, 4};

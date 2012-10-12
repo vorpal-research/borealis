@@ -83,7 +83,7 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 
 	if (!I.getType()->isPointerTy()) return;
 
-	for (int i = 0; i < I.getNumIncomingValues(); i++) {
+	for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
 		const Value* incoming = I.getIncomingValue(i);
 		if (isa<Instruction>(*incoming)) {
 			processInst(cast<Instruction>(*incoming));
@@ -95,7 +95,7 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 	}
 
 	NullInfo nullInfo = NullInfo();
-	for (int i = 0; i < I.getNumIncomingValues(); i++) {
+	for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
 		const Value* incoming = I.getIncomingValue(i);
 		if (isa<Instruction>(*incoming)) {
 			const Instruction& II = cast<Instruction>(*incoming);

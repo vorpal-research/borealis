@@ -7,6 +7,8 @@
 #ifndef ANNOTATOR_H
 #define ANNOTATOR_H
 
+#include <unordered_map>
+
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
@@ -15,53 +17,29 @@
 #include "../Anno/anno.h"
 #include "DataProvider.hpp"
 #include "SourceLocationTracker.h"
+#include "NameTracker.h"
 #include "../comments.h"
 
 namespace borealis {
 
 class AnnotatorPass: public llvm::ModulePass {
 public:
-	static char ID;
+    static char ID;
 
-	AnnotatorPass(): llvm::ModulePass(ID) {};
+    AnnotatorPass(): llvm::ModulePass(ID) {};
 
-	typedef borealis::DataProvider<borealis::comments::GatherCommentsAction> comments;
-	typedef borealis::SourceLocationTracker locs;
+    typedef borealis::DataProvider<borealis::comments::GatherCommentsAction> comments;
+    typedef borealis::SourceLocationTracker locs;
+    typedef borealis::NameTracker names;
+    typedef unordered_map<Value*, borealis::anno::command> annotations_t;
 
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const{
-		using borealis::DataProvider;
-		using borealis::comments::GatherCommentsAction;
+private:
+    annotations_t annotations;
+public:
 
-		Info.addRequiredTransitive< comments >();
-		Info.addRequiredTransitive< locs >();
-	}
-
-	virtual bool runOnModule(llvm::Module&) {
-		using borealis::DataProvider;
-		using borealis::comments::GatherCommentsAction;
-
-		auto& commentsPass = getAnalysis< comments >();
-		auto& locPass = getAnalysis< locs >();
-
-		locPass.print(llvm::errs(), nullptr);
-
-
-		using borealis::anno::calculator::parse_command;
-
-		auto parsed = parse_command("/* @ensures (2+x*3) \n" \
-				" @stack-depth   25   */");
-
-		if(!parsed.empty()) {
-			for(auto i = 0U; i < parsed.size(); ++i) {
-				std::cerr << parsed[i] << std::endl;
-			}
-
-		} else {
-			std::cerr << "Fucked up, sorry :(" << std::endl;
-		}
-
-		return false;
-	}
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual bool runOnModule(llvm::Module&);
+    virtual void print(llvm::raw_ostream& O, const llvm::Module*) const;
 
 };
 

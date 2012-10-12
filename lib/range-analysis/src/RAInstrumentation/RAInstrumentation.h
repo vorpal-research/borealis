@@ -27,37 +27,28 @@
 
 using namespace llvm;
 
+struct RAInstrumentation : public ModulePass {
+    static char ID;
+    RAInstrumentation() : ModulePass(ID) {};
 
-namespace {
+    void printValueInfo(const Value *V);
+    void MarkAsNotOriginal(Instruction& inst);
+    void PrintInstructionIdentifier(std::string M, std::string F, const Value *V);
 
-	struct RAInstrumentation : public ModulePass {
-		static char ID;
-		RAInstrumentation() : ModulePass(ID) {};
+    bool IsNotOriginal(Instruction& inst);
+    static bool isValidInst(Instruction *I);
+    virtual bool runOnModule(Module &M);
 
-        void printValueInfo(const Value *V);
-		void MarkAsNotOriginal(Instruction& inst);
-        void PrintInstructionIdentifier(std::string M, std::string F, const Value *V);
+    Function& GetSetCurrentMinMaxFunction();
+    Function& GetPrintHashFunction();
+    Instruction* GetNextInstruction(Instruction& i);
 
-        bool IsNotOriginal(Instruction& inst);
-        static bool isValidInst(Instruction *I);
-        virtual bool runOnModule(Module &M);
+    void InstrumentMainFunction(Function* F, std::string mIdentifier);
 
-        Function& GetSetCurrentMinMaxFunction();
-        Function& GetPrintHashFunction();
-        Instruction* GetNextInstruction(Instruction& i);
+    Module* module;
+    LLVMContext* context;
 
-        void InstrumentMainFunction(Function* F, std::string mIdentifier);
-
-        Module* module;
-        LLVMContext* context;
-
-	};
-}
-
-char RAInstrumentation::ID = 0;
-
-
-
+};
 
 
 #endif /* RAINSTRUMENTATION_H_ */
