@@ -9,6 +9,8 @@
 
 #include <z3/z3++.h>
 
+#include "../Solver/util.h"
+
 namespace borealis {
 
 using util::streams::endl;
@@ -39,23 +41,18 @@ bool Z3Pass::runOnFunction(llvm::Function& F) {
         auto psv = psme.second;
         for(auto& ps : psv) {
             context ctx;
-            solver s(ctx);
 
             auto z3 = ps.toZ3(ctx);
             auto& pathPredicate = z3.first;
             auto& statePredicate = z3.second;
-            s.add(statePredicate);
 
             errs() << ps << endl;
-            errs() << "Path predicates:" << endl <<
-                    toString(pathPredicate) << endl;
-            errs() << "State predicates:" << endl <<
-                    toString(statePredicate) << endl;
 
-            expr reachabilityPredicate = ctx.bool_const("$isReachable$");
-            s.add(implies(reachabilityPredicate, pathPredicate));
-
-            bool isReachable = s.check(1, &reachabilityPredicate);
+            bool isReachable =
+                    checkAssertion(
+                            pathPredicate,
+                            vector<z3::expr> {statePredicate},
+                            ctx);
             if (isReachable) {
                 errs() << "State is reachable" << endl;
             } else {
