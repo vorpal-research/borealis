@@ -15,6 +15,8 @@
 #include "util.h"
 
 
+#pragma GCC diagnostic warning "-Wswitch-enum"
+
 namespace borealis {
 
 class z3Visitor: public productionVisitor {
@@ -145,27 +147,28 @@ public:
             }
 
             switch(op) {
+            typedef bin_opcode op;
             // cases supported by Z3 api
-            case OPCODE_PLUS:  assign( left.get() +  right.get() ); break;
-            case OPCODE_MINUS: assign( left.get() -  right.get() ); break;
-            case OPCODE_MULT:  assign( left.get() *  right.get() ); break;
-            case OPCODE_DIV:   assign( left.get() /  right.get() ); break;
-            case OPCODE_EQ:    assign( left.get() == right.get() ); break;
-            case OPCODE_NE:    assign( left.get() != right.get() ); break;
-            case OPCODE_GT:    assign( left.get() >  right.get() ); break;
-            case OPCODE_LT:    assign( left.get() <  right.get() ); break;
-            case OPCODE_GE:    assign( left.get() >= right.get() ); break;
-            case OPCODE_LE:    assign( left.get() <= right.get() ); break;
-            case OPCODE_LAND:  assign( left.get() && right.get() ); break;
-            case OPCODE_LOR:   assign( left.get() || right.get() ); break;
-            case OPCODE_BAND:  assign( left.get() &  right.get() );break;
-            case OPCODE_BOR:   assign( left.get() |  right.get() );break;
-            case OPCODE_XOR:   assign( left.get() ^  right.get() );break;
+            case op::OPCODE_PLUS:  assign( left.get() +  right.get() ); break;
+            case op::OPCODE_MINUS: assign( left.get() -  right.get() ); break;
+            case op::OPCODE_MULT:  assign( left.get() *  right.get() ); break;
+            case op::OPCODE_DIV:   assign( left.get() /  right.get() ); break;
+            case op::OPCODE_EQ:    assign( left.get() == right.get() ); break;
+            case op::OPCODE_NE:    assign( left.get() != right.get() ); break;
+            case op::OPCODE_GT:    assign( left.get() >  right.get() ); break;
+            case op::OPCODE_LT:    assign( left.get() <  right.get() ); break;
+            case op::OPCODE_GE:    assign( left.get() >= right.get() ); break;
+            case op::OPCODE_LE:    assign( left.get() <= right.get() ); break;
+            case op::OPCODE_LAND:  assign( left.get() && right.get() ); break;
+            case op::OPCODE_LOR:   assign( left.get() || right.get() ); break;
+            case op::OPCODE_BAND:  assign( left.get() &  right.get() ); break;
+            case op::OPCODE_BOR:   assign( left.get() |  right.get() ); break;
+            case op::OPCODE_XOR:   assign( left.get() ^  right.get() ); break;
             // cases not supported:
 
-            case OPCODE_MOD:   assign( make_mod_expr(left.get(), right.get()) ); break;
-            case OPCODE_LSH:   assign( make_lsh_expr(left.get(), right.get()) ); break;
-            case OPCODE_RSH:   assign( make_rsh_expr(left.get(), right.get()) ); break;
+            case op::OPCODE_MOD:   assign( make_mod_expr(left.get(), right.get()) ); break;
+            case op::OPCODE_LSH:   assign( make_lsh_expr(left.get(), right.get()) ); break;
+            case op::OPCODE_RSH:   assign( make_rsh_expr(left.get(), right.get()) ); break;
             }
         }
     }
@@ -183,9 +186,10 @@ public:
 
 
             switch(op) {
-            case OPCODE_NEG:  assign( -operand.get() ); break;
-            case OPCODE_NOT:  assign( !operand.get() ); break;
-            case OPCODE_BNOT: assign( ~operand.get() ); break;
+            typedef un_opcode op;
+            case op::OPCODE_NEG:  assign( -operand.get() ); break;
+            case op::OPCODE_NOT:  assign( !operand.get() ); break;
+            case op::OPCODE_BNOT: assign( ~operand.get() ); break;
             }
         }
     }

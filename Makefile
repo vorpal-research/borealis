@@ -37,11 +37,16 @@ LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 ################################################################################
 
 # warnings to show
-WARNINGS_ON := all extra cast-qual
+WARNINGS_ON := all extra cast-qual float-equal switch \
+	undef init-self pointer-arith cast-align effc++ \
+	strict-prototypes strict-overflow=5 write-strings \
+	aggregate-return super-class-method-mismatch
 # warnings to hide
 WARNINGS_OFF := reorder unused-parameter unused-variable
 # warnings to treat as errors
-WARNINGS_TAE := overloaded-virtual return-stack-address
+WARNINGS_TAE := overloaded-virtual return-stack-address \
+	implicit-function-declaration address-of-temporary \
+	delete-non-virtual-dtor
 
 CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
 	$(foreach w,$(WARNINGS_OFF),-Wno-$(w)) \

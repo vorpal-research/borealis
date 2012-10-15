@@ -28,7 +28,7 @@ public:
 
 typedef shared_ptr<production> prod_t;
 
-enum bin_opcode {
+enum class bin_opcode {
 	OPCODE_PLUS,
 	OPCODE_MINUS,
 	OPCODE_MULT,
@@ -49,13 +49,13 @@ enum bin_opcode {
 	OPCODE_RSH
 };
 
-enum un_opcode {
+enum class un_opcode {
 	OPCODE_NEG,
 	OPCODE_NOT,
 	OPCODE_BNOT
 };
 
-enum type {
+enum class type {
 	INTEGER,
 	FLOATING,
 	BOOLEAN,

@@ -98,6 +98,18 @@ bool containsKey(const std::map<K, _>& map, const K& k) {
 	else return false;
 }
 
+template<class K, class V>
+void removeFromMultimap(std::multimap<K,V>& map, const K& k, const V& v) {
+    auto range = map.equal_range(k);
+
+    for(auto it = range.first; it != range.second; ++it) {
+        if(it->second == v) {
+            map.erase(it);
+            break;
+        }
+    }
+}
+
 template<class Container, class T>
 bool contains(const Container& con, const T& t) {
 	if (std::find(con.begin(), con.end(), t) != con.end()) return true;

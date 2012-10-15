@@ -156,42 +156,43 @@ void printingVisitor::onMask(const std::string& mask) {
 
 void printingVisitor::onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1) {
 	string ops;
+	typedef bin_opcode op;
 	switch(opc) {
-	case OPCODE_PLUS:
+	case op::OPCODE_PLUS:
 		ops = "+"; break;
-	case OPCODE_MINUS:
+	case op::OPCODE_MINUS:
 		ops = "-"; break;
-	case OPCODE_DIV:
+	case op::OPCODE_DIV:
 		ops = "/"; break;
-	case OPCODE_MULT:
+	case op::OPCODE_MULT:
 		ops = "*"; break;
-	case OPCODE_MOD:
+	case op::OPCODE_MOD:
 		ops = "%"; break;
-	case OPCODE_LAND:
+	case op::OPCODE_LAND:
 		ops = "&&"; break;
-	case OPCODE_LOR:
+	case op::OPCODE_LOR:
 		ops = "||"; break;
-	case OPCODE_EQ:
+	case op::OPCODE_EQ:
 		ops = "=="; break;
-	case OPCODE_NE:
+	case op::OPCODE_NE:
 		ops = "!="; break;
-	case OPCODE_GT:
+	case op::OPCODE_GT:
 		ops = ">"; break;
-	case OPCODE_LT:
+	case op::OPCODE_LT:
 		ops = "<"; break;
-	case OPCODE_GE:
+	case op::OPCODE_GE:
 		ops = ">="; break;
-	case OPCODE_LE:
+	case op::OPCODE_LE:
 		ops = "<="; break;
-	case OPCODE_BAND:
+	case op::OPCODE_BAND:
 		ops = "&"; break;
-	case OPCODE_BOR:
+	case op::OPCODE_BOR:
 		ops = "|"; break;
-	case OPCODE_XOR:
+	case op::OPCODE_XOR:
 		ops = "^"; break;
-	case OPCODE_LSH:
+	case op::OPCODE_LSH:
 		ops = "<<"; break;
-	case OPCODE_RSH:
+	case op::OPCODE_RSH:
 		ops = ">>"; break;
 	default:
 		ops = "???"; break;
@@ -205,9 +206,10 @@ void printingVisitor::onBinary(bin_opcode opc, const prod_t& op0, const prod_t& 
 }
 
 void printingVisitor::onUnary(un_opcode opc, const prod_t& op0) {
-	string ops = (opc == OPCODE_NEG) ? "-" :
-				 (opc == OPCODE_NOT)? "!" :
-				 (opc == OPCODE_BNOT)? "~" :
+    typedef un_opcode op;
+	string ops = (opc == op::OPCODE_NEG) ? "-" :
+				 (opc == op::OPCODE_NOT)? "!" :
+				 (opc == op::OPCODE_BNOT)? "~" :
 				 "???";
 
 	ost_ << ops;
@@ -223,87 +225,87 @@ std::ostream& operator<<( std::ostream& ost, const production& prod) {
 }
 
 prod_t operator+(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_PLUS, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_PLUS, move(op0), move(op1));
 }
 
 prod_t operator-(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_MINUS, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_MINUS, move(op0), move(op1));
 }
 
 prod_t operator*(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_MULT, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_MULT, move(op0), move(op1));
 }
 
 prod_t operator/(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_DIV, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_DIV, move(op0), move(op1));
 }
 
 prod_t operator%(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_MOD, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_MOD, move(op0), move(op1));
 }
 
 prod_t operator==(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_EQ, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_EQ, move(op0), move(op1));
 }
 
 prod_t operator!=(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_NE, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_NE, move(op0), move(op1));
 }
 
 prod_t operator>(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_GT, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_GT, move(op0), move(op1));
 }
 
 prod_t operator<(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_LT, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_LT, move(op0), move(op1));
 }
 
 prod_t operator>=(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_GE, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_GE, move(op0), move(op1));
 }
 
 prod_t operator<=(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_LE, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_LE, move(op0), move(op1));
 }
 
 prod_t operator&&(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_LAND, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_LAND, move(op0), move(op1));
 }
 
 prod_t operator||(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_LOR, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_LOR, move(op0), move(op1));
 }
 
 prod_t operator&(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_BAND, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_BAND, move(op0), move(op1));
 }
 
 prod_t operator|(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_BOR, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_BOR, move(op0), move(op1));
 }
 
 prod_t operator^(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_XOR, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_XOR, move(op0), move(op1));
 }
 
 prod_t operator<<(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_LSH, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_LSH, move(op0), move(op1));
 }
 
 prod_t operator>>(prod_t&& op0, prod_t&& op1) {
-	return productionFactory::createBinary(OPCODE_RSH, move(op0), move(op1));
+	return productionFactory::createBinary(bin_opcode::OPCODE_RSH, move(op0), move(op1));
 }
 
 prod_t operator!(prod_t&& op0) {
-	return productionFactory::createUnary(OPCODE_NOT, move(op0));
+	return productionFactory::createUnary(un_opcode::OPCODE_NOT, move(op0));
 }
 
 prod_t operator-(prod_t&& op0) {
-	return productionFactory::createUnary(OPCODE_NEG, move(op0));
+	return productionFactory::createUnary(un_opcode::OPCODE_NEG, move(op0));
 }
 
 prod_t operator~(prod_t&& op0) {
-	return productionFactory::createUnary(OPCODE_BNOT, move(op0));
+	return productionFactory::createUnary(un_opcode::OPCODE_BNOT, move(op0));
 }
 
 

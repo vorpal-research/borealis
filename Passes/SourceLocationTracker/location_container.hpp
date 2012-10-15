@@ -37,6 +37,11 @@ private:
 
 public:
     void put(const Locus& loc, T val) {
+        using borealis::util::removeFromMultimap;
+
+        if(t2l.count(val)) {
+            removeFromMultimap(l2t, loc, val);
+        }
         t2l[val] = loc;
         l2t.insert(make_pair(loc, val));
     }
