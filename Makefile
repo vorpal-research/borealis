@@ -18,14 +18,6 @@ INCLUDE_DIRS := \
 INCLUDES := $(foreach d, $(INCLUDE_DIRS), -I$d)
 
 CXXFLAGS := \
-	-Wall \
-	-Wextra \
-	-Werror-overloaded-virtual \
-	-Wcast-qual \
-	-Wno-reorder \
-	-Wno-unused-variable \
-	-Wno-unused-parameter \
-	-Werror-return-stack-address \
 	-DNDEBUG \
 	-D_GNU_SOURCE \
 	-D__STDC_CONSTANT_MACROS \
@@ -39,6 +31,21 @@ CXXFLAGS := \
 	$(DEFS)
 
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
+
+################################################################################
+# Compilation tweaking
+################################################################################
+
+# warnings to show
+WARNINGS_ON := all extra cast-qual
+# warnings to hide
+WARNINGS_OFF := reorder unused-parameter unused-variable
+# warnings to treat as errors
+WARNINGS_TAE := overloaded-virtual return-stack-address
+
+CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
+	$(foreach w,$(WARNINGS_OFF),-Wno-$(w)) \
+	$(foreach w,$(WARNINGS_TAE),-Werror-$(w))
 
 ################################################################################
 # Sources

@@ -9,6 +9,7 @@
 #include <llvm/Value.h>
 
 #include <unordered_map>
+#include <sstream>
 
 #include "Anno/anno.hpp"
 #include "util.h"
@@ -29,34 +30,55 @@ private:
     const name_context& names;
     std::unique_ptr<expr> retVal;
 
+    bool fucked_up;
+    std::ostringstream errors;
+
     void assign(const expr& exp) { retVal.reset(new expr(exp)); }
 
+    bool ok() { return !fucked_up; }
+    std::string error_message() { return errors.str(); }
+
 public:
-    z3Visitor(z3_context& z3, const name_context& names):z3(z3), names(names), retVal(nullptr) {}
+    z3Visitor(z3_context& z3, const name_context& names):z3(z3), names(names), retVal(nullptr), fucked_up(false) {}
     virtual ~z3Visitor(){}
 
     const expr& get() { return *retVal; }
 
     virtual void onDoubleConstant(double v) {
+        if(fucked_up) return;
+
         using borealis::util::toString;
         assign( z3.real_val(toString(v).c_str()) );
     }
     virtual void onIntConstant(int v) {
+        if(fucked_up) return;
+
         assign( z3.int_val(v) );
     }
     virtual void onBoolConstant(bool v) {
+        if(fucked_up) return;
+
         assign( z3.bool_val(v) );
     }
 
     virtual void onVariable(const std::string& str) {
+        if(fucked_up) return;
+
         using z3::valueToExpr;
         if(!!names.count(str)) {
             auto v = names.at(str);
             assign( valueToExpr(z3, *v, str) );
+        } else {
+            fucked_up = true;
+            errors << "Could not find the desired variable: " << str;
         }
-        // FIXME
     }
     virtual void onBuiltin(const std::string&) {
+        if(fucked_up) return;
+
+        fucked_up = true;
+        errors  << "Builtins are not supported yet";
+
         // FIXME
     }
     virtual void onMask(const std::string&) {
@@ -69,7 +91,9 @@ public:
         } else if(lhv.is_bv() && rhv.is_bv()){
             return expr(z3, Z3_mk_bvsrem(z3, lhv, rhv));
         } else {
-            // FIXME: do smth?
+            fucked_up = true;
+            errors << "Used mod operation on incompatible expressions: "
+                   << lhv << " and " << rhv;
             return expr(z3);
         }
     }
@@ -80,7 +104,9 @@ public:
         } else if(lhv.is_arith() && rhv.is_arith()) {
             return lhv * pw(2, rhv);
         } else {
-            // FIXME: do smth?
+            fucked_up = true;
+            errors << "Used left shift operation on incompatible expressions: "
+                   << lhv << " and " << rhv;
             return expr(z3);
         }
     }
@@ -92,49 +118,75 @@ public:
             return lhv / pw(2, rhv);
         } else
         {
-            // FIXME: do smth?
+            fucked_up = true;
+            errors << "Used right shift operation on incompatible expressions: "
+                   << lhv << " and " << rhv;
             return expr(z3);
         }
     }
 
     virtual void onBinary(bin_opcode op, const prod_t& lhv, const prod_t& rhv) {
-        z3Visitor left(z3, names);
-        z3Visitor right(z3, names);
-        lhv->accept(left);
-        rhv->accept(right);
+        if(fucked_up) return;
+        else {
+            z3Visitor left(z3, names);
+            lhv->accept(left);
+            if(left.fucked_up) {
+                errors << left.error_message();
+                fucked_up = true;
+                return;
+            }
 
-        switch(op) {
-        // cases supported by Z3 api
-        case OPCODE_PLUS:  assign( left.get() +  right.get() ); break;
-        case OPCODE_MINUS: assign( left.get() -  right.get() ); break;
-        case OPCODE_MULT:  assign( left.get() *  right.get() ); break;
-        case OPCODE_DIV:   assign( left.get() /  right.get() ); break;
-        case OPCODE_EQ:    assign( left.get() == right.get() ); break;
-        case OPCODE_NE:    assign( left.get() != right.get() ); break;
-        case OPCODE_GT:    assign( left.get() >  right.get() ); break;
-        case OPCODE_LT:    assign( left.get() <  right.get() ); break;
-        case OPCODE_GE:    assign( left.get() >= right.get() ); break;
-        case OPCODE_LE:    assign( left.get() <= right.get() ); break;
-        case OPCODE_LAND:  assign( left.get() && right.get() ); break;
-        case OPCODE_LOR:   assign( left.get() || right.get() ); break;
-        case OPCODE_BAND:  assign( left.get() &  right.get() );break;
-        case OPCODE_BOR:   assign( left.get() |  right.get() );break;
-        case OPCODE_XOR:   assign( left.get() ^  right.get() );break;
-        // cases not supported:
+            z3Visitor right(z3, names);
+            rhv->accept(right);
+            if(right.fucked_up) {
+                errors << right.error_message();
+                fucked_up = true;
+                return;
+            }
 
-        case OPCODE_MOD:   assign( make_mod_expr(left.get(), right.get()) ); break;
-        case OPCODE_LSH:   assign( make_lsh_expr(left.get(), right.get()) ); break;
-        case OPCODE_RSH:   assign( make_rsh_expr(left.get(), right.get()) ); break;
+            switch(op) {
+            // cases supported by Z3 api
+            case OPCODE_PLUS:  assign( left.get() +  right.get() ); break;
+            case OPCODE_MINUS: assign( left.get() -  right.get() ); break;
+            case OPCODE_MULT:  assign( left.get() *  right.get() ); break;
+            case OPCODE_DIV:   assign( left.get() /  right.get() ); break;
+            case OPCODE_EQ:    assign( left.get() == right.get() ); break;
+            case OPCODE_NE:    assign( left.get() != right.get() ); break;
+            case OPCODE_GT:    assign( left.get() >  right.get() ); break;
+            case OPCODE_LT:    assign( left.get() <  right.get() ); break;
+            case OPCODE_GE:    assign( left.get() >= right.get() ); break;
+            case OPCODE_LE:    assign( left.get() <= right.get() ); break;
+            case OPCODE_LAND:  assign( left.get() && right.get() ); break;
+            case OPCODE_LOR:   assign( left.get() || right.get() ); break;
+            case OPCODE_BAND:  assign( left.get() &  right.get() );break;
+            case OPCODE_BOR:   assign( left.get() |  right.get() );break;
+            case OPCODE_XOR:   assign( left.get() ^  right.get() );break;
+            // cases not supported:
+
+            case OPCODE_MOD:   assign( make_mod_expr(left.get(), right.get()) ); break;
+            case OPCODE_LSH:   assign( make_lsh_expr(left.get(), right.get()) ); break;
+            case OPCODE_RSH:   assign( make_rsh_expr(left.get(), right.get()) ); break;
+            }
         }
-
     }
-    virtual void onUnary(un_opcode op, const prod_t&) {
-        z3Visitor operand(z3, names);
+    virtual void onUnary(un_opcode op, const prod_t& p) {
+        if(fucked_up) return;
+        else {
+            z3Visitor operand(z3, names);
+            p->accept(operand);
 
-        switch(op) {
-        case OPCODE_NEG:  assign( -operand.get() ); break;
-        case OPCODE_NOT:  assign( !operand.get() ); break;
-        case OPCODE_BNOT: assign( ~operand.get() ); break;
+            if(operand.fucked_up) {
+                errors << operand.error_message();
+                fucked_up = true;
+                return;
+            }
+
+
+            switch(op) {
+            case OPCODE_NEG:  assign( -operand.get() ); break;
+            case OPCODE_NOT:  assign( !operand.get() ); break;
+            case OPCODE_BNOT: assign( ~operand.get() ); break;
+            }
         }
     }
 
