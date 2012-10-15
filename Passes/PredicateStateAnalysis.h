@@ -12,11 +12,13 @@
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
+#include <algorithm>
 #include <map>
 #include <queue>
 #include <set>
 #include <vector>
 
+#include "../Solver/util.h"
 #include "../State/PredicateState.h"
 #include "../State/PredicateStateVector.h"
 #include "PredicateAnalysis.h"
@@ -55,6 +57,8 @@ private:
     void processBasicBlock(const WorkQueueEntry& wqe);
     void processTerminator(const llvm::TerminatorInst& I, const PredicateStateVector& state);
     void process(const llvm::BranchInst& I, const PredicateStateVector& state);
+
+    void removeUnreachableStates();
 
 };
 

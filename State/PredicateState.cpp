@@ -20,6 +20,20 @@ PredicateState::PredicateState(const PredicateState& state) :
     data(state.data) {
 }
 
+PredicateState::PredicateState(PredicateState&& state) :
+    data(std::move(state.data)) {
+}
+
+const PredicateState& PredicateState::operator=(const PredicateState& state) {
+    data = state.data;
+    return *this;
+}
+
+const PredicateState& PredicateState::operator=(PredicateState&& state) {
+    data = std::move(state.data);
+    return *this;
+}
+
 PredicateState PredicateState::addPredicate(const Predicate* pred) const {
     PredicateState res = PredicateState(*this);
     res.data[pred->getKey()] = pred;
