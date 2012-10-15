@@ -23,59 +23,60 @@ std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
 	using namespace::std;
 
 	typedef CmpInst::Predicate P;
+	typedef ConditionType CT;
 
 	switch (cond) {
 	case P::ICMP_EQ:
 	case P::FCMP_OEQ:
-		return make_pair("=", EQ);
+		return make_pair("=", CT::EQ);
 	case P::FCMP_UEQ:
-		return make_pair("?=", EQ);
+		return make_pair("?=", CT::EQ);
 
 	case P::ICMP_NE:
 	case P::FCMP_ONE:
-		return make_pair("~=", NEQ);
+		return make_pair("~=", CT::NEQ);
 	case P::FCMP_UNE:
-		return make_pair("?~=", NEQ);
+		return make_pair("?~=", CT::NEQ);
 
 	case P::ICMP_SGE:
 	case P::FCMP_OGE:
-		return make_pair(">=", GTE);
+		return make_pair(">=", CT::GTE);
 	case P::ICMP_UGE:
-		return make_pair("+>=", GTE);
+		return make_pair("+>=", CT::GTE);
 	case P::FCMP_UGE:
-		return make_pair("?>=", GTE);
+		return make_pair("?>=", CT::GTE);
 
 	case P::ICMP_SGT:
 	case P::FCMP_OGT:
-		return make_pair(">", GT);
+		return make_pair(">", CT::GT);
 	case P::ICMP_UGT:
-		return make_pair("+>", GT);
+		return make_pair("+>", CT::GT);
 	case P::FCMP_UGT:
-		return make_pair("?>", GT);
+		return make_pair("?>", CT::GT);
 
 	case P::ICMP_SLE:
 	case P::FCMP_OLE:
-		return make_pair("<=", LTE);
+		return make_pair("<=", CT::LTE);
 	case P::ICMP_ULE:
-		return make_pair("+<=", LTE);
+		return make_pair("+<=", CT::LTE);
 	case P::FCMP_ULE:
-		return make_pair("?<=", LTE);
+		return make_pair("?<=", CT::LTE);
 
 	case P::ICMP_SLT:
 	case P::FCMP_OLT:
-		return make_pair("<", LT);
+		return make_pair("<", CT::LT);
 	case P::ICMP_ULT:
-		return make_pair("+<", LT);
+		return make_pair("+<", CT::LT);
 	case P::FCMP_ULT:
-		return make_pair("?<", LT);
+		return make_pair("?<", CT::LT);
 
 	case P::FCMP_TRUE:
-		return make_pair("true", TRUE);
+		return make_pair("true", CT::TRUE);
 	case P::FCMP_FALSE:
-		return make_pair("false", FALSE);
+		return make_pair("false", CT::FALSE);
 
 	default:
-		return make_pair("???", WTF);
+		return make_pair("???", CT::WTF);
 	}
 }
 
@@ -90,44 +91,47 @@ ConditionType conditionToType(const int cond) {
 ValueType valueType(const llvm::Value& value) {
 	using namespace::llvm;
 
+	typedef ValueType VT;
+
 	Type* type = value.getType();
 	if (isa<Constant>(value)) {
 		if (type->isIntegerTy()) {
-			return INT_CONST;
+			return VT::INT_CONST;
 		} else if (type->isFloatingPointTy()) {
-			return REAL_CONST;
+			return VT::REAL_CONST;
 		} else if (isa<ConstantPointerNull>(value)) {
-			return NULL_PTR_CONST;
+			return VT::NULL_PTR_CONST;
 		} else if (type->isPointerTy()) {
-			return PTR_CONST;
+			return VT::PTR_CONST;
 		} else {
-			return UNKNOWN;
+			return VT::UNKNOWN;
 		}
 	} else {
 		if (type->isIntegerTy()) {
-			return INT_VAR;
+			return VT::INT_VAR;
 		} else if (type->isFloatingPointTy()) {
-			return REAL_VAR;
+			return VT::REAL_VAR;
 		} else if (type->isPointerTy()) {
-			return PTR_VAR;
+			return VT::PTR_VAR;
 		} else {
-			return UNKNOWN;
+			return VT::UNKNOWN;
 		}
 	}
 }
 
 ValueType derefValueType(const llvm::Value& value) {
-	using namespace::llvm;
+    using namespace::llvm;
+    typedef ValueType VT;
 
 	Type* type = value.getType()->getPointerElementType();
 	if (type->isIntegerTy()) {
-		return INT_VAR;
+		return VT::INT_VAR;
 	} else if (type->isFloatingPointTy()) {
-		return REAL_VAR;
+		return VT::REAL_VAR;
 	} else if (type->isPointerTy()) {
-		return PTR_VAR;
+		return VT::PTR_VAR;
 	} else {
-		return UNKNOWN;
+		return VT::UNKNOWN;
 	}
 }
 
@@ -139,27 +143,28 @@ z3::expr valueByTypeToExpr(
 		const llvm::ValueType& vt,
 		const std::string& valueName) {
 	using namespace::llvm;
+	typedef ValueType VT;
 
 	switch(vt) {
-	case INT_CONST:
+	case VT::INT_CONST:
 		return ctx.int_val(valueName.c_str());
-	case INT_VAR:
+	case VT::INT_VAR:
 		return ctx.int_const(valueName.c_str());
-	case REAL_CONST:
+	case VT::REAL_CONST:
 		return ctx.real_val(valueName.c_str());
-	case REAL_VAR:
+	case VT::REAL_VAR:
 		return ctx.real_const(valueName.c_str());
-	case BOOL_CONST:
+	case VT::BOOL_CONST:
 		return ctx.bool_val(valueName.c_str());
-	case BOOL_VAR:
+	case VT::BOOL_VAR:
 		return ctx.bool_const(valueName.c_str());
-	case NULL_PTR_CONST:
+	case VT::NULL_PTR_CONST:
 		return ctx.int_val(0);
-	case PTR_CONST:
+	case VT::PTR_CONST:
 		return ctx.int_val(valueName.c_str());
-	case PTR_VAR:
+	case VT::PTR_VAR:
 		return ctx.int_const(valueName.c_str());
-	case UNKNOWN:
+	case VT::UNKNOWN:
 		return *((z3::expr*)0);
 	}
 }

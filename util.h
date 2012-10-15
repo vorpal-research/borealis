@@ -23,7 +23,7 @@ llvm::raw_ostream& operator<<(
 		llvm::raw_ostream& ost,
 		llvm::raw_ostream& (*op)(llvm::raw_ostream&));
 
-enum ConditionType {
+enum class ConditionType {
 	EQ,
 	NEQ,
 	GT,
@@ -38,7 +38,7 @@ enum ConditionType {
 std::string conditionToString(const int cond);
 ConditionType conditionToType(const int cond);
 
-enum ValueType {
+enum class ValueType {
 	INT_CONST,
 	INT_VAR,
 	BOOL_CONST,

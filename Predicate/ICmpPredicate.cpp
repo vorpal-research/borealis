@@ -41,15 +41,15 @@ z3::expr ICmpPredicate::toZ3(z3::context& ctx) const {
 
 	ConditionType ct = conditionToType(cond);
 	switch(ct) {
-	case EQ: return l == (o1 == o2);
-	case NEQ: return l == (o1 != o2);
-	case LT: return l == (o1 < o2);
-	case LTE: return l == (o1 <= o2);
-	case GT: return l == (o1 > o2);
-	case GTE: return l == (o1 >= o2);
-	case TRUE: return l == ctx.bool_val(true);
-	case FALSE: return l == ctx.bool_val(false);
-	case WTF: return *((z3::expr*)0);
+	case ConditionType::EQ: return l == (o1 == o2);
+	case ConditionType::NEQ: return l == (o1 != o2);
+	case ConditionType::LT: return l == (o1 < o2);
+	case ConditionType::LTE: return l == (o1 <= o2);
+	case ConditionType::GT: return l == (o1 > o2);
+	case ConditionType::GTE: return l == (o1 >= o2);
+	case ConditionType::TRUE: return l == ctx.bool_val(true);
+	case ConditionType::FALSE: return l == ctx.bool_val(false);
+	case ConditionType::WTF: return *((z3::expr*)0);
 	}
 }
 
