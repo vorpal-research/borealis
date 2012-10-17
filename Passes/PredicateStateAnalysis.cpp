@@ -150,8 +150,8 @@ bool isUnreachable(const PredicateState& ps) {
     auto& pathPredicate = z3.first;
     auto& statePredicate = z3.second;
 
-    return checkAssertion(
-                    !pathPredicate,
+    return checkUnsat(
+                    pathPredicate,
                     vector<z3::expr> {statePredicate},
                     ctx);
 }
