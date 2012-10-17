@@ -57,9 +57,9 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(z3::context& ctx) const {
 
     for(auto& entry : data) {
         auto v = entry.second;
-        if (v->getType() == PATH) {
+        if (v->getType() == PredicateType::PATH) {
             from.push_back(v->toZ3(ctx));
-        } else if (v->getType() == STATE) {
+        } else if (v->getType() == PredicateType::STATE) {
             to.push_back(v->toZ3(ctx));
         }
     }
