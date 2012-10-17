@@ -32,6 +32,17 @@ Predicate::Key ICmpPredicate::getKey() const {
 	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
 }
 
+Predicate::Dependee ICmpPredicate::getDependee() const {
+    return std::make_pair(DependeeType::VALUE, lhv);
+}
+
+Predicate::DependeeSet ICmpPredicate::getDependees() const {
+    DependeeSet res = DependeeSet();
+    res.insert(std::make_pair(DependeeType::VALUE, op1));
+    res.insert(std::make_pair(DependeeType::VALUE, op2));
+    return res;
+}
+
 z3::expr ICmpPredicate::toZ3(z3::context& ctx) const {
 	using namespace::z3;
 

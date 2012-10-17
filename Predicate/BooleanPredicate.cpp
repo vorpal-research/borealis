@@ -25,12 +25,22 @@ BooleanPredicate::BooleanPredicate(
 		const llvm::Value* v,
 		const bool b,
 		SlotTracker* st) :
-				BooleanPredicate(v, b, st) {
+		        BooleanPredicate(v, b, st) {
 	this-> type = type;
 }
 
 Predicate::Key BooleanPredicate::getKey() const {
 	return std::make_pair(std::type_index(typeid(*this)).hash_code(), v);
+}
+
+Predicate::Dependee BooleanPredicate::getDependee() const {
+    return std::make_pair(DependeeType::NONE, nullptr);
+}
+
+Predicate::DependeeSet BooleanPredicate::getDependees() const {
+    DependeeSet res = DependeeSet();
+    res.insert(std::make_pair(DependeeType::VALUE, v));
+    return res;
 }
 
 z3::expr BooleanPredicate::toZ3(z3::context& ctx) const {
