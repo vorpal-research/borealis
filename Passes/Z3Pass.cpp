@@ -49,7 +49,7 @@ bool Z3Pass::runOnFunction(llvm::Function& F) {
             errs() << ps << endl;
 
             bool isReachable =
-                    checkAssertion(
+                    checkSatOrUnknown(
                             pathPredicate,
                             vector<z3::expr> {statePredicate},
                             ctx);

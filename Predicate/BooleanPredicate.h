@@ -30,6 +30,10 @@ public:
 			const bool b,
 			SlotTracker* st);
 	virtual Predicate::Key getKey() const;
+
+    virtual Dependee getDependee() const;
+    virtual DependeeSet getDependees() const;
+
 	virtual z3::expr toZ3(z3::context& ctx) const;
 
 private:

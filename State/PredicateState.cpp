@@ -11,6 +11,7 @@
 
 namespace borealis {
 
+using util::contains;
 using util::for_each;
 
 PredicateState::PredicateState() {
@@ -36,12 +37,24 @@ const PredicateState& PredicateState::operator=(PredicateState&& state) {
 
 PredicateState PredicateState::addPredicate(const Predicate* pred) const {
     PredicateState res = PredicateState(*this);
+
+    auto ds = Predicate::DependeeSet();
+    ds.insert(pred->getDependee());
+    res.removeDependants(ds);
+
     res.data[pred->getKey()] = pred;
     return res;
 }
 
 PredicateState PredicateState::merge(const PredicateState& state) const {
     PredicateState res = PredicateState(*this);
+
+    auto ds = Predicate::DependeeSet();
+    for(auto& p : state) {
+        ds.insert(p.second->getDependee());
+    }
+    res.removeDependants(ds);
+
     for_each(state, [this, &res](const DataEntry& entry){
         res.data[entry.first] = entry.second;
     });
@@ -57,9 +70,9 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(z3::context& ctx) const {
 
     for(auto& entry : data) {
         auto v = entry.second;
-        if (v->getType() == PATH) {
+        if (v->getType() == PredicateType::PATH) {
             from.push_back(v->toZ3(ctx));
-        } else if (v->getType() == STATE) {
+        } else if (v->getType() == PredicateType::STATE) {
             to.push_back(v->toZ3(ctx));
         }
     }
@@ -75,6 +88,22 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(z3::context& ctx) const {
     }
 
     return make_pair(f, t);
+}
+
+void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
+    for(auto iter = data.begin(); iter != data.end(); )
+    {
+next:
+        auto e = *iter;
+        auto ds = e.second->getDependees();
+        for(auto& d : ds) {
+            if (contains(dependees, d)) {
+                iter = data.erase(iter);
+                goto next;
+            }
+        }
+        ++iter;
+    }
 }
 
 PredicateState::~PredicateState() {

@@ -18,6 +18,6 @@ namespace borealis {
 
 Predicate::Predicate(const PredicateType type) : type(type) {}
 
-Predicate::Predicate() : Predicate(STATE) {}
+Predicate::Predicate() : Predicate(PredicateType::STATE) {}
 
 } /* namespace borealis */

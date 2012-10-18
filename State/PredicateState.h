@@ -65,6 +65,8 @@ private:
 
 	Data data;
 
+	void removeDependants(Predicate::DependeeSet dependees);
+
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state);

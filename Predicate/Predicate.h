@@ -14,22 +14,28 @@
 
 #include <typeindex>
 #include <tuple>
+#include <unordered_set>
 
 #include "../util.h"
 
 namespace borealis {
 
-enum PredicateType {
+enum class PredicateType {
 	PATH,
 	STATE
+};
+
+enum class DependeeType {
+    NONE = 3,
+    VALUE = 5,
+    DEREF_VALUE = 7
 };
 
 class Predicate {
 
 public:
 
-	typedef std::pair<size_t, const llvm::Value*> Key;
-
+    typedef std::pair<size_t, const llvm::Value*> Key;
 	struct KeyHash {
 	public:
 		static size_t hash(const Key& k) {
@@ -41,10 +47,26 @@ public:
 		}
 	};
 
+    typedef std::pair<DependeeType, const llvm::Value*> Dependee;
+    struct DependeeHash {
+    public:
+        static size_t hash(const Dependee& k) {
+            return static_cast<size_t>(k.first) ^ (size_t)k.second;
+        }
+
+        size_t operator()(const Dependee& k) const {
+            return hash(k);
+        }
+    };
+    typedef std::unordered_set<Dependee, DependeeHash> DependeeSet;
+
 	Predicate();
 	Predicate(const PredicateType type);
 	virtual ~Predicate() {};
 	virtual Key getKey() const = 0;
+
+	virtual Dependee getDependee() const = 0;
+	virtual DependeeSet getDependees() const = 0;
 
 	std::string toString() const {
 		return asString;

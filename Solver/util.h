@@ -14,7 +14,17 @@
 
 namespace borealis {
 
-bool checkAssertion(
+bool checkSat(
+        const z3::expr& assertion,
+        const std::vector<z3::expr>& state,
+        z3::context& ctx);
+
+bool checkUnsat(
+        const z3::expr& assertion,
+        const std::vector<z3::expr>& state,
+        z3::context& ctx);
+
+bool checkSatOrUnknown(
         const z3::expr& assertion,
         const std::vector<z3::expr>& state,
         z3::context& ctx);

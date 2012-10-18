@@ -108,9 +108,9 @@ void PredicateAnalysis::process(const llvm::BranchInst& I) {
 	const BasicBlock* falseSucc = I.getSuccessor(1);
 
 	terminatorPredicateMap[make_pair(&I, trueSucc)] =
-			new BooleanPredicate(PATH, cond, true, st);
+			new BooleanPredicate(PredicateType::PATH, cond, true, st);
 	terminatorPredicateMap[make_pair(&I, falseSucc)] =
-			new BooleanPredicate(PATH, cond, false, st);
+			new BooleanPredicate(PredicateType::PATH, cond, false, st);
 }
 
 PredicateAnalysis::~PredicateAnalysis() {

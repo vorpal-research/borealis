@@ -24,6 +24,16 @@ Predicate::Key LoadPredicate::getKey() const {
 	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
 }
 
+Predicate::Dependee LoadPredicate::getDependee() const {
+    return std::make_pair(DependeeType::VALUE, lhv);
+}
+
+Predicate::DependeeSet LoadPredicate::getDependees() const {
+    DependeeSet res = DependeeSet();
+    res.insert(std::make_pair(DependeeType::DEREF_VALUE, rhv));
+    return res;
+}
+
 z3::expr LoadPredicate::toZ3(z3::context& ctx) const {
 	using namespace::z3;
 
