@@ -98,9 +98,10 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
 }
 
 void ptrssa::StoreLoadInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
-    AU.addRequiredTransitive<DominatorTree>();
-    AU.addRequiredTransitive<SlotTrackerPass>();
-    AU.addRequired<PhiInjectionPass>();
+    AU.addRequiredTransitive<DominatorTree>()
+      .addRequiredTransitive<SlotTrackerPass>()
+      .addRequiredTransitive<PhiInjectionPass>()
+      .addPreserved<PhiInjectionPass>();
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
@@ -110,6 +111,7 @@ bool ptrssa::StoreLoadInjectionPass::runOnBasicBlock(BasicBlock& bb) {
     DT_ = &getAnalysis<DominatorTree>();
 
     if(origins.empty()) mergeOriginInfoFrom(getAnalysis<PhiInjectionPass>());
+
 
     createNewDefs(bb);
     return false;

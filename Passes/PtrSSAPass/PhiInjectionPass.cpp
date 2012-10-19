@@ -7,6 +7,8 @@
 
 #include "PhiInjectionPass.h"
 
+#include "SLInjectionPass.h"
+
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/CFG.h>
@@ -32,6 +34,7 @@ using std::make_pair;
 void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequiredTransitive<DominatorTree>();
     AU.addRequiredTransitive<SlotTrackerPass>();
+    //AU.addRequiredTransitive<StoreLoadInjectionPass>();
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
@@ -77,6 +80,7 @@ void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, 
 
 bool PhiInjectionPass::runOnFunction(Function &F) {
     DT_ = &getAnalysis<DominatorTree>();
+    //if(origins.empty()) mergeOriginInfoFrom(getAnalysis<StoreLoadInjectionPass>());
 
     phi_tracker track;
 
