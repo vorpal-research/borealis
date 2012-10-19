@@ -10,6 +10,9 @@
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 
+#include "../Query/NullPtrQuery.h"
+#include "../Solver/util.h"
+
 namespace borealis {
 
 using util::for_each;
@@ -25,6 +28,8 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const
 	Info.setPreservesAll();
 	Info.addRequiredTransitive<AliasAnalysis>();
 	Info.addRequiredTransitive<DetectNullPass>();
+	Info.addRequiredTransitive<PredicateStateAnalysis>();
+	Info.addRequiredTransitive<SlotTrackerPass>();
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
@@ -33,6 +38,8 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
 	AA = &getAnalysis<AliasAnalysis>();
 	DNP = &getAnalysis<DetectNullPass>();
+	PSA = &getAnalysis<PredicateStateAnalysis>();
+	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
 	auto tmp = DNP->getNullSet();
 	NullSet = &tmp;
@@ -64,7 +71,9 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 
 	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			reportNullDereference(I, *nullValue);
+		    if (checkNullDereference(I, *ptr)) {
+                reportNullDereference(I, *nullValue);
+            }
 		}
 	});
 }
@@ -77,7 +86,9 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
 
 	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			reportNullDereference(I, *nullValue);
+		    if (checkNullDereference(I, *ptr)) {
+		        reportNullDereference(I, *nullValue);
+		    }
 		}
 	});
 }
@@ -91,6 +102,35 @@ void CheckNullDereferencePass::reportNullDereference(
 			<< "\t" << in << endl
 			<< "from" << endl
 			<< "\t" << from << endl;
+}
+
+bool CheckNullDereferencePass::checkNullDereference(
+        const llvm::Instruction& where,
+        const llvm::Value& what) {
+    using namespace::std;
+    using namespace::llvm;
+    using namespace::z3;
+
+    NullPtrQuery q = NullPtrQuery(&what, st);
+
+    PredicateStateVector psv = PSA->getPredicateStateMap()[&where];
+    for (const auto& ps : psv) {
+        context ctx;
+
+        expr assertion = q.toZ3(ctx);
+        pair<expr, expr> state = ps.toZ3(ctx);
+
+        if (
+                checkSatOrUnknown(
+                        assertion,
+                        vector<expr> { state.first, state.second },
+                        ctx)
+        ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {

@@ -15,6 +15,8 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "DetectNullPass.h"
+#include "PredicateStateAnalysis.h"
+#include "SlotTrackerPass.h"
 
 namespace borealis {
 
@@ -34,12 +36,18 @@ private:
 	llvm::AliasAnalysis* AA;
 	DetectNullPass* DNP;
 	DetectNullPass::NullPtrSet* NullSet;
+	PredicateStateAnalysis* PSA;
+	SlotTracker* st;
 
 	void processInst(const llvm::Instruction& I);
 	void process(const llvm::LoadInst& I);
 	void process(const llvm::StoreInst& I);
 
 	void reportNullDereference(const llvm::Value& in, const llvm::Value& from);
+
+	bool checkNullDereference(
+	        const llvm::Instruction& where,
+	        const llvm::Value& what);
 };
 
 } /* namespace borealis */
