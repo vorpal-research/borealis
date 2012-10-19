@@ -22,8 +22,8 @@ using namespace borealis::ptrssa;
 
 using borealis::util::view;
 using std::set;
-using std::tuple;
-using std::make_tuple;
+using std::pair;
+using std::make_pair;
 }
 
 #include "intrinsics.h"
@@ -41,27 +41,34 @@ SlotTracker& PhiInjectionPass::getSlotTracker(const Function* F) {
     return *getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 }
 
+static bool PhiContainsSource(PHINode* phi, BasicBlock* source) {
+    return phi->getBasicBlockIndex(source) != -1;
+}
+
 void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, phi_tracker& track) {
     auto parent = from.getParent();
     auto BB = to.getParent();
-    if(parent == BB) return;
-
     auto orig = getOriginOrSelf(&from);
+
     for(auto succ : view(succ_begin(parent), succ_end(parent))){
-        if(track.count(make_tuple(parent, succ, orig))) continue;
+        auto key = make_pair(succ, orig);
+        if(track.count(key) && PhiContainsSource(track.at(key), parent)) continue;
 
-        auto& BBnext = *succ;
+        PHINode* phi = nullptr;
+        if(track.count(key)) {
+            phi = track.at(key);
+        } else {
+            auto& BBnext = *succ;
 
-        std::string name;
-        if(orig->hasName()) name = orig->getName();
+            std::string name;
+            if(orig->hasName()) name = orig->getName();
 
-        auto phi = PHINode::Create(from.getType(), 0, name, &BBnext.front());
+            phi = PHINode::Create(from.getType(), 0, name, &BBnext.front());
+        }
         phi->addIncoming(&from, from.getParent());
 
-        track.insert(make_tuple(parent, succ, orig));
+        track.insert(make_pair(key, phi));
         setOrigin(phi, orig);
-
-        to.replaceUsesOfWith(&from, phi);
 
         propagateInstruction(*phi, to, track);
     }
@@ -76,10 +83,14 @@ bool PhiInjectionPass::runOnFunction(Function &F) {
     // Iterate over all Basic Blocks of the Function, calling the function that creates sigma functions, if needed
     for (auto& BB : F) {
         for(auto& I : BB) {
-            for(auto U : view(I.use_begin(), I.use_end())) {
-                if(auto Ch = dyn_cast<Instruction>(U) ) {
-                    if(Ch->getParent() != &BB) {
-                        propagateInstruction(I, *Ch, track);
+            std::vector<User*> uses(I.use_begin(), I.use_end());
+            for(User* U : uses) {
+                if(auto IUse = dyn_cast<Instruction>(U) ) {
+                    if(IUse->getParent() != &BB && !isa<PHINode>(IUse)) {
+                        errs () << "propagating: " << *IUse << "\n";
+                        propagateInstruction(I, *IUse, track);
+                        auto key = make_pair(IUse->getParent(), getOriginOrSelf(&I));
+                        IUse->replaceUsesOfWith(&I, track.at(key));
                     }
                 }
             }

@@ -349,6 +349,14 @@ struct hash<std::tuple<types...>> {
     }
 };
 
+template<class T, class U>
+struct hash<std::pair<T, U>> {
+    size_t operator()(const std::pair<T, U >& t) const {
+        const size_t begin = 1;
+        return borealis::util::hash_impl<begin, T, U>()(1, t); //1 should be some largervalue
+    }
+};
+
 
 } /* namespace std */
 

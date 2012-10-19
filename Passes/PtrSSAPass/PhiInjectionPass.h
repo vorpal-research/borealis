@@ -58,7 +58,7 @@ public:
     void createNewDefs(BasicBlock &BB);
     void renameNewDefs(Instruction *newdef, Instruction* olddef, Value* ptr);
 
-    typedef unordered_set<tuple<BasicBlock*, BasicBlock*, Value*>> phi_tracker;
+    typedef unordered_map<pair<BasicBlock*, Value*>, PHINode*> phi_tracker;
     void propagateInstruction(Instruction& from, Instruction& to, phi_tracker&);
 
 private:

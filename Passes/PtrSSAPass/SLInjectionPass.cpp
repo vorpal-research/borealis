@@ -1,6 +1,8 @@
 
 #include "SLInjectionPass.h"
 
+#include "PhiInjectionPass.h"
+
 #include "intrinsics.h"
 
 #include <iterator>
@@ -98,6 +100,7 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
 void ptrssa::StoreLoadInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequiredTransitive<DominatorTree>();
     AU.addRequiredTransitive<SlotTrackerPass>();
+    AU.addRequired<PhiInjectionPass>();
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
@@ -105,6 +108,9 @@ void ptrssa::StoreLoadInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool ptrssa::StoreLoadInjectionPass::runOnBasicBlock(BasicBlock& bb) {
     DT_ = &getAnalysis<DominatorTree>();
+
+    if(origins.empty()) mergeOriginInfoFrom(getAnalysis<PhiInjectionPass>());
+
     createNewDefs(bb);
     return false;
 }
