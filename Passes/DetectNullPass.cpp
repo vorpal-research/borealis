@@ -74,7 +74,7 @@ void DetectNullPass::process(const llvm::StoreInst& I) {
 	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
 
 	if (isa<ConstantPointerNull>(*value)) {
-		nullInfoMap[&I] = NullInfo().setStatus(Null);
+		nullInfoMap[ptr] = NullInfo().setStatus(Null);
 	}
 }
 

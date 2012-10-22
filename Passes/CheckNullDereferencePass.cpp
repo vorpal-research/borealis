@@ -10,6 +10,7 @@
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 
+#include "../lib/poolalloc/src/DSA/DataStructureAA.h"
 #include "../Query/NullPtrQuery.h"
 #include "../Solver/util.h"
 
@@ -26,7 +27,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const
 	using namespace::llvm;
 
 	Info.setPreservesAll();
-	Info.addRequiredTransitive<AliasAnalysis>();
+	Info.addRequiredTransitive<DSAA>();
 	Info.addRequiredTransitive<DetectNullPass>();
 	Info.addRequiredTransitive<PredicateStateAnalysis>();
 	Info.addRequiredTransitive<SlotTrackerPass>();
@@ -36,7 +37,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 	using namespace::std;
 	using namespace::llvm;
 
-	AA = &getAnalysis<AliasAnalysis>();
+	AA = &getAnalysis<DSAA>();
 	DNP = &getAnalysis<DetectNullPass>();
 	PSA = &getAnalysis<PredicateStateAnalysis>();
 	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
