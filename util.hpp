@@ -116,9 +116,22 @@ bool contains(const Container& con, const T& t) {
 	else return false;
 }
 
+
+
+namespace enums {
+
+template<typename Enum>
+typename std::underlying_type<Enum>::type asInteger(const Enum& e) {
+    return static_cast<typename std::underlying_type<Enum>::type>(e);
+}
+
+} // namespace enums
+
+
+
 template<class T>
 struct UseLLVMOstreams {
-	enum{ value = false };
+	enum { value = false };
 };
 
 template<class T, bool UseLLVMOstream = false>
