@@ -69,6 +69,8 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 
 	const Value* ptr = I.getPointerOperand();
 
+	if (ptr->isDereferenceablePointer()) return;
+
 	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
 		    if (checkNullDereference(I, *ptr)) {
@@ -83,6 +85,8 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
 	using namespace::llvm;
 
 	const Value* ptr = I.getPointerOperand();
+
+	if (ptr->isDereferenceablePointer()) return;
 
 	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
