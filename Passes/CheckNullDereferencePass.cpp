@@ -42,7 +42,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 	PSA = &getAnalysis<PredicateStateAnalysis>();
 	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
-	auto tmp = DNP->getNullSet();
+	auto tmp = DNP->getNullSet(NullType::VALUE);
 	NullSet = &tmp;
 
 	for_each(F, [this](const BasicBlock& BB){

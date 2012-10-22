@@ -13,8 +13,10 @@
 namespace borealis {
 
 using util::contains;
+using util::enums::asInteger;
 using util::for_each;
 using util::streams::endl;
+using util::toString;
 
 DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -30,7 +32,7 @@ bool DetectNullPass::runOnFunction(llvm::Function& F) {
 	using namespace::std;
 	using namespace::llvm;
 
-	nullInfoMap.clear();
+	init();
 
 	for_each(F, [this](const BasicBlock& BB){
 		for_each(BB, [this](const Instruction& I){
@@ -62,7 +64,7 @@ void DetectNullPass::processInst(const llvm::Instruction& I) {
 void DetectNullPass::process(const llvm::CallInst& I) {
 	if (!I.getType()->isPointerTy()) return;
 
-	nullInfoMap[&I] = NullInfo().setStatus(Maybe_Null);
+	data[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
 }
 
 void DetectNullPass::process(const llvm::StoreInst& I) {
@@ -74,7 +76,7 @@ void DetectNullPass::process(const llvm::StoreInst& I) {
 	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
 
 	if (isa<ConstantPointerNull>(*value)) {
-		nullInfoMap[ptr] = NullInfo().setStatus(Null);
+		data[ptr] = NullInfo().setType(NullType::DEREF).setStatus(NullStatus::Null);
 	}
 }
 
@@ -100,13 +102,13 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 		if (isa<Instruction>(*incoming)) {
 			const Instruction& II = cast<Instruction>(*incoming);
 			if (containsKey(II)) {
-				nullInfo = nullInfo.merge(nullInfoMap[&II]);
+				nullInfo = nullInfo.merge(data[&II]);
 			} else {
-				nullInfo = nullInfo.merge(Not_Null);
+				nullInfo = nullInfo.merge(NullStatus::Not_Null);
 			}
 		}
 	}
-	nullInfoMap[&I] = nullInfo;
+	data[&I] = nullInfo;
 }
 
 void DetectNullPass::process(const llvm::InsertValueInst& I) {
@@ -116,12 +118,12 @@ void DetectNullPass::process(const llvm::InsertValueInst& I) {
 	const Value* value = I.getInsertedValueOperand();
 	if (isa<ConstantPointerNull>(value)) {
 		const vector<unsigned> idxs = I.getIndices().vec();
-		nullInfoMap[&I] = NullInfo().setStatus(idxs, Null);
+		data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
 	}
 }
 
 bool DetectNullPass::containsKey(const llvm::Value& value) {
-	return util::containsKey(nullInfoMap, &value);
+	return util::containsKey(data, &value);
 }
 
 DetectNullPass::~DetectNullPass() {
@@ -131,8 +133,9 @@ DetectNullPass::~DetectNullPass() {
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 	using namespace::std;
 
+    s << asInteger(info.type) << ":" << endl;
 	for_each(info.offsetInfoMap, [&s](const NullInfo::OffsetInfoMapEntry& entry){
-		s << entry.first << "->" << entry.second << endl;
+		s << entry.first << "->" << asInteger(entry.second) << endl;
 	});
 
 	return s;
