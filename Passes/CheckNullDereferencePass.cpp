@@ -20,38 +20,38 @@ using util::for_each;
 using util::streams::endl;
 
 CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
-	// TODO
+    // TODO
 }
 
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	Info.setPreservesAll();
-	Info.addRequiredTransitive<DSAA>();
-	Info.addRequiredTransitive<DetectNullPass>();
-	Info.addRequiredTransitive<PredicateStateAnalysis>();
-	Info.addRequiredTransitive<SlotTrackerPass>();
+    Info.setPreservesAll();
+    Info.addRequiredTransitive<DSAA>();
+    Info.addRequiredTransitive<DetectNullPass>();
+    Info.addRequiredTransitive<PredicateStateAnalysis>();
+    Info.addRequiredTransitive<SlotTrackerPass>();
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
-	using namespace::std;
-	using namespace::llvm;
+    using namespace::std;
+    using namespace::llvm;
 
-	AA = &getAnalysis<DSAA>();
-	DNP = &getAnalysis<DetectNullPass>();
-	PSA = &getAnalysis<PredicateStateAnalysis>();
-	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
+    AA = &getAnalysis<DSAA>();
+    DNP = &getAnalysis<DetectNullPass>();
+    PSA = &getAnalysis<PredicateStateAnalysis>();
+    st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
-	auto valueSet = DNP->getNullSet(NullType::VALUE);
-	auto derefSet = DNP->getNullSet(NullType::DEREF);
+    auto valueSet = DNP->getNullSet(NullType::VALUE);
+    auto derefSet = DNP->getNullSet(NullType::DEREF);
 
-	ValueNullSet = &valueSet;
-	DerefNullSet = &derefSet;
+    ValueNullSet = &valueSet;
+    DerefNullSet = &derefSet;
 
-	processDerefNullSet(F);
+    processDerefNullSet(F);
     processValueNullSet(F);
 
-	return false;
+    return false;
 }
 
 void CheckNullDereferencePass::processDerefNullSet(llvm::Function& F) {
@@ -66,7 +66,7 @@ void CheckNullDereferencePass::derefProcessInst(const llvm::Instruction& I) {
     using namespace::llvm;
 
     if (isa<LoadInst>(I))
-        { derefProcess(cast<LoadInst>(I)); }
+    { derefProcess(cast<LoadInst>(I)); }
 }
 
 void CheckNullDereferencePass::derefProcess(const llvm::LoadInst& I) {
@@ -93,58 +93,58 @@ void CheckNullDereferencePass::processValueNullSet(llvm::Function& F) {
 }
 
 void CheckNullDereferencePass::processInst(const llvm::Instruction& I) {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	if (isa<LoadInst>(I))
-		{ process(cast<LoadInst>(I)); }
+    if (isa<LoadInst>(I))
+    { process(cast<LoadInst>(I)); }
 
-	else if (isa<StoreInst>(I))
-		{ process(cast<StoreInst>(I)); }
+    else if (isa<StoreInst>(I))
+    { process(cast<StoreInst>(I)); }
 }
 
 void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
-	using namespace::std;
-	using namespace::llvm;
+    using namespace::std;
+    using namespace::llvm;
 
-	const Value* ptr = I.getPointerOperand();
+    const Value* ptr = I.getPointerOperand();
 
-	if (ptr->isDereferenceablePointer()) return;
+    if (ptr->isDereferenceablePointer()) return;
 
-	for (const auto nullValue : *ValueNullSet) {
-		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-		    if (checkNullDereference(I, *ptr)) {
+    for (const auto nullValue : *ValueNullSet) {
+        if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+            if (checkNullDereference(I, *ptr)) {
                 reportNullDereference(I, *nullValue);
             }
-		}
-	}
+        }
+    }
 }
 
 void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
-	using namespace::std;
-	using namespace::llvm;
+    using namespace::std;
+    using namespace::llvm;
 
-	const Value* ptr = I.getPointerOperand();
+    const Value* ptr = I.getPointerOperand();
 
-	if (ptr->isDereferenceablePointer()) return;
+    if (ptr->isDereferenceablePointer()) return;
 
-	for (const auto nullValue : *ValueNullSet) {
-		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-		    if (checkNullDereference(I, *ptr)) {
-		        reportNullDereference(I, *nullValue);
-		    }
-		}
-	}
+    for (const auto nullValue : *ValueNullSet) {
+        if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+            if (checkNullDereference(I, *ptr)) {
+                reportNullDereference(I, *nullValue);
+            }
+        }
+    }
 }
 
 void CheckNullDereferencePass::reportNullDereference(
-		const llvm::Value& in,
-		const llvm::Value& from) {
-	using namespace::llvm;
+        const llvm::Value& in,
+        const llvm::Value& from) {
+    using namespace::llvm;
 
-	errs() << "Possible NULL dereference in" << endl
-			<< "\t" << in << endl
-			<< "from" << endl
-			<< "\t" << from << endl;
+    errs() << "Possible NULL dereference in" << endl
+            << "\t" << in << endl
+            << "from" << endl
+            << "\t" << from << endl;
 }
 
 bool CheckNullDereferencePass::checkNullDereference(
@@ -177,7 +177,7 @@ bool CheckNullDereferencePass::checkNullDereference(
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {
-	// TODO
+    // TODO
 }
 
 } /* namespace borealis */
