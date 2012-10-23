@@ -71,6 +71,8 @@ namespace util {
 
 std::string nospaces(const std::string& v);
 std::string nospaces(std::string&& v);
+bool endsWith (std::string const &fullString, std::string const &ending);
+
 
 namespace streams {
 

@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include "SlotTrackerPass.h"
+
 namespace borealis {
 
 using namespace llvm;
@@ -32,6 +34,10 @@ public:
 	void getAnalysisUsage(AnalysisUsage &AU) const;
 	bool runOnFunction(Function&);
 	
+	SlotTracker& getSlotTracker(const Function*);
+	Value* getOriginal(Value*);
+	void setOriginal(Value*, Value*);
+
 	Function* createNuevoFunc(Type* pointed, Module* daModule);
 
 	void createNewDefs(BasicBlock &BB);
@@ -39,6 +45,7 @@ public:
 
 private:
 	unordered_map<Type*, Function*> nuevo_funcs;
+	unordered_map<Value*, Value*> originals;
 
 	// Variables always live
 	DominatorTree *DT_;
