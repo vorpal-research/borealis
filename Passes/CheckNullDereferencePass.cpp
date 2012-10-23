@@ -43,11 +43,45 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
 	auto valueSet = DNP->getNullSet(NullType::VALUE);
-	ValueNullSet = &valueSet;
+	auto derefSet = DNP->getNullSet(NullType::DEREF);
 
+	ValueNullSet = &valueSet;
+	DerefNullSet = &derefSet;
+
+	processDerefNullSet(F);
     processValueNullSet(F);
 
 	return false;
+}
+
+void CheckNullDereferencePass::processDerefNullSet(llvm::Function& F) {
+    for (const auto& BB : F) {
+        for (const auto& I : BB) {
+            derefProcessInst(I);
+        }
+    }
+}
+
+void CheckNullDereferencePass::derefProcessInst(const llvm::Instruction& I) {
+    using namespace::llvm;
+
+    if (isa<LoadInst>(I))
+        { derefProcess(cast<LoadInst>(I)); }
+}
+
+void CheckNullDereferencePass::derefProcess(const llvm::LoadInst& I) {
+    using namespace::std;
+    using namespace::llvm;
+
+    const Value* ptr = I.getPointerOperand();
+
+    if (ptr->isDereferenceablePointer()) return;
+
+    for (const auto derefNullValue : *DerefNullSet) {
+        if (AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
+            ValueNullSet->insert(&I);
+        }
+    }
 }
 
 void CheckNullDereferencePass::processValueNullSet(llvm::Function& F) {
