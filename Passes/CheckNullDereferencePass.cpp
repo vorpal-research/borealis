@@ -42,16 +42,20 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 	PSA = &getAnalysis<PredicateStateAnalysis>();
 	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
-	auto tmp = DNP->getNullSet(NullType::VALUE);
-	NullSet = &tmp;
+	auto valueSet = DNP->getNullSet(NullType::VALUE);
+	ValueNullSet = &valueSet;
 
-	for_each(F, [this](const BasicBlock& BB){
-		for_each(BB, [this](const Instruction& I){
-			processInst(I);
-		});
-	});
+    processValueNullSet(F);
 
 	return false;
+}
+
+void CheckNullDereferencePass::processValueNullSet(llvm::Function& F) {
+    for (const auto& BB : F) {
+        for (const auto& I : BB) {
+            processInst(I);
+        }
+    }
 }
 
 void CheckNullDereferencePass::processInst(const llvm::Instruction& I) {
@@ -72,13 +76,13 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
 
 	if (ptr->isDereferenceablePointer()) return;
 
-	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
+	for (const auto nullValue : *ValueNullSet) {
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
 		    if (checkNullDereference(I, *ptr)) {
                 reportNullDereference(I, *nullValue);
             }
 		}
-	});
+	}
 }
 
 void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
@@ -89,13 +93,13 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
 
 	if (ptr->isDereferenceablePointer()) return;
 
-	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
+	for (const auto nullValue : *ValueNullSet) {
 		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
 		    if (checkNullDereference(I, *ptr)) {
 		        reportNullDereference(I, *nullValue);
 		    }
 		}
-	});
+	}
 }
 
 void CheckNullDereferencePass::reportNullDereference(

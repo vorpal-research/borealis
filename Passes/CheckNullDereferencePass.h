@@ -35,9 +35,12 @@ private:
 
 	llvm::AliasAnalysis* AA;
 	DetectNullPass* DNP;
-	DetectNullPass::NullPtrSet* NullSet;
 	PredicateStateAnalysis* PSA;
 	SlotTracker* st;
+
+    DetectNullPass::NullPtrSet* ValueNullSet;
+
+	void processValueNullSet(llvm::Function& F);
 
 	void processInst(const llvm::Instruction& I);
 	void process(const llvm::LoadInst& I);
