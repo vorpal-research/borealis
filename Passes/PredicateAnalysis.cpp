@@ -12,11 +12,12 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "../Predicate/Predicate.h"
-#include "../Predicate/LoadPredicate.h"
-#include "../Predicate/StorePredicate.h"
-#include "../Predicate/ICmpPredicate.h"
-#include "../Predicate/BooleanPredicate.h"
+#include "Predicate/Predicate.h"
+#include "Predicate/LoadPredicate.h"
+#include "Predicate/StorePredicate.h"
+#include "Predicate/ICmpPredicate.h"
+#include "Predicate/BooleanPredicate.h"
+#include "Predicate/GEPPredicate.h"
 
 namespace borealis {
 
@@ -41,7 +42,7 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 
 	predicateMap.clear();
 
-	TD = &getAnalysis<TargetData>(F);
+	TD = &getAnalysis<TargetData>();
 	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
 	for_each(F, [this](const BasicBlock& BB){
@@ -141,6 +142,11 @@ void PredicateAnalysis::process(const llvm::GetElementPtrInst& I) {
             type = type->getStructElementType(fieldIdx);
         }
     }
+
+    const Value* lhv = &I;
+    const Value* rhv = I.getPointerOperand();
+
+    predicateMap[&I] = new GEPPredicate(lhv, rhv, shifts, st);
 }
 
 PredicateAnalysis::~PredicateAnalysis() {
