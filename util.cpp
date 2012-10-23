@@ -204,15 +204,13 @@ std::string nospaces(std::string&& v) {
 	return v;
 }
 
-bool endsWith (std::string const &fullString, std::string const &ending)
-{
+bool endsWith(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
-        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+        return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
     } else {
         return false;
     }
 }
-
 
 namespace streams {
 

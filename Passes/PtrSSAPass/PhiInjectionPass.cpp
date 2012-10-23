@@ -34,10 +34,11 @@ using std::make_pair;
 void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequiredTransitive<DominatorTree>();
     AU.addRequiredTransitive<SlotTrackerPass>();
-    //AU.addRequiredTransitive<StoreLoadInjectionPass>();
+    AU.addPreserved<StoreLoadInjectionPass>();
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
+    //AU.setPreservesAll(); // a lie
 }
 
 SlotTracker& PhiInjectionPass::getSlotTracker(const Function* F) {
@@ -80,6 +81,11 @@ void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, 
 
 bool PhiInjectionPass::runOnFunction(Function &F) {
     DT_ = &getAnalysis<DominatorTree>();
+
+    auto sli = getAnalysisIfAvailable<StoreLoadInjectionPass>();
+
+    if(origins.empty() && sli) mergeOriginInfoFrom(*sli);
+
     //if(origins.empty()) mergeOriginInfoFrom(getAnalysis<StoreLoadInjectionPass>());
 
     phi_tracker track;
@@ -91,7 +97,6 @@ bool PhiInjectionPass::runOnFunction(Function &F) {
             for(User* U : uses) {
                 if(auto IUse = dyn_cast<Instruction>(U) ) {
                     if(IUse->getParent() != &BB && !isa<PHINode>(IUse)) {
-                        errs () << "propagating: " << *IUse << "\n";
                         propagateInstruction(I, *IUse, track);
                         auto key = make_pair(IUse->getParent(), getOriginOrSelf(&I));
                         IUse->replaceUsesOfWith(&I, track.at(key));
@@ -105,10 +110,10 @@ bool PhiInjectionPass::runOnFunction(Function &F) {
     return false;
 }
 
-
-char PhiInjectionPass::ID = 0;
-static RegisterPass<PhiInjectionPass> X("phi-injection",
+char PhiInjectionPass::ID;
+namespace {
+RegisterPass<PhiInjectionPass> X("phi-injection",
         "The pass that places an intrinsic mark on every pointer before every use");
-
+}
 
 

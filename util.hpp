@@ -115,6 +115,31 @@ bool contains(const Container& con, const T& t) {
 	if (std::find(con.begin(), con.end(), t) != con.end()) return true;
 	else return false;
 }
+namespace impl_ {
+namespace {
+
+template<class Tup, class Op, size_t N = std::tuple_size<Tup>::value>
+struct tuple_for_each_helper {
+    enum{ tsize = std::tuple_size<Tup>::value };
+    inline static void apply(Tup& tup, Op op) {
+        op(std::get<tsize-N>(tup));
+        tuple_for_each_helper<Tup, Op, N-1>::apply(tup, op);
+    }
+};
+
+template<class Tup, class Op>
+struct tuple_for_each_helper<Tup, Op, 0> {
+    inline static void apply(Tup&, Op) {};
+};
+
+} //namespace
+} //namespace impl_
+
+template<class Tup, class Op>
+void tuple_for_each(Tup& tup, Op op) {
+    typedef impl_::tuple_for_each_helper<Tup, Op> delegate;
+    return delegate::apply(tup, op);
+}
 
 template<class T>
 struct UseLLVMOstreams {
@@ -170,7 +195,7 @@ inline std::string toString(const T& t) {
 	return Stringifier<T, UseLLVMOstreams<T>::value>::toString(t);
 }
 
-// generalised hash for enum classes
+// generalized hash for enum classes
 template<class Enum>
 struct enum_hash {
     typedef typename std::underlying_type<Enum>::type raw;
@@ -181,8 +206,8 @@ struct enum_hash {
     }
 };
 
-inline static size_t hash_combiner(size_t left, size_t right) //replacable
-{ return left^right;}
+inline static size_t hash_combiner(size_t left, size_t right) // replaceable
+{ return left^right; }
 
 template<int index, class...types>
 struct hash_impl {

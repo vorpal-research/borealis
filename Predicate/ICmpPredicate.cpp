@@ -9,6 +9,8 @@
 
 #include "../util.h"
 
+#include "typeindex.hpp"
+
 namespace borealis {
 
 ICmpPredicate::ICmpPredicate(
@@ -29,7 +31,7 @@ ICmpPredicate::ICmpPredicate(
 }
 
 Predicate::Key ICmpPredicate::getKey() const {
-	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
+	return std::make_pair(borealis::type_id(*this), lhv);
 }
 
 Predicate::Dependee ICmpPredicate::getDependee() const {

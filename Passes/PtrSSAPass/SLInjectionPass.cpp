@@ -50,8 +50,8 @@ void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB)
 
 void ptrssa::StoreLoadInjectionPass::renameNewDefs(
         Instruction *newdef,
-        Instruction* olddef,
-        Value* Op){
+        Instruction *olddef,
+        Value *Op){
     // This vector of Instruction* points to the uses of V.
     // This auxiliary vector of pointers is used because the use_iterators
     // are invalidated when we do the renaming
@@ -70,8 +70,6 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
         if (usepointers[i] == newdef) {
             continue;
         }
-
-
 
         BasicBlock *BB_user = usepointers[i]->getParent();
         BasicBlock::iterator newdefit(newdef);
@@ -98,29 +96,31 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
 }
 
 void ptrssa::StoreLoadInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
-    AU.addRequiredTransitive<DominatorTree>()
-      .addRequiredTransitive<SlotTrackerPass>()
-      .addRequiredTransitive<PhiInjectionPass>()
-      .addPreserved<PhiInjectionPass>();
+    AU.addRequiredTransitive<DominatorTree>();
+    AU.addRequiredTransitive<SlotTrackerPass>();
+    AU.addPreserved<PhiInjectionPass>();
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
+    //AU.setPreservesAll(); // a lie
 }
 
 bool ptrssa::StoreLoadInjectionPass::runOnBasicBlock(BasicBlock& bb) {
     DT_ = &getAnalysis<DominatorTree>();
 
-    if(origins.empty()) mergeOriginInfoFrom(getAnalysis<PhiInjectionPass>());
+    auto phii = getAnalysisIfAvailable<PhiInjectionPass>();
 
-
+    if(origins.empty() && phii) mergeOriginInfoFrom(*phii);
     createNewDefs(bb);
     return false;
 }
 
 
 
-char borealis::ptrssa::StoreLoadInjectionPass::ID = 0;
-static llvm::RegisterPass<borealis::ptrssa::StoreLoadInjectionPass> X("sl-injection",
-        "Inject an intrinsic for every store and load");
+char borealis::ptrssa::StoreLoadInjectionPass::ID;
 
+namespace {
+llvm::RegisterPass<borealis::ptrssa::StoreLoadInjectionPass> X("sl-injection",
+        "Inject an intrinsic for every store and load");
+}
 

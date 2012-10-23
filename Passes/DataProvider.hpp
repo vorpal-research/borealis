@@ -13,7 +13,7 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include <typeindex>
+#include "typeindex.hpp"
 
 namespace borealis {
 
@@ -21,7 +21,7 @@ template<class T>
 class DataProvider: public llvm::ImmutablePass {
 	struct static_ {
 		static_() {
-			static std::string Tname = std::type_index(typeid(T)).name();
+			static std::string Tname = borealis::util::toString(borealis::type_id<T>());
 			static std::string Passname = std::string("data-provider-") + Tname;
 			static std::string Passdesc = std::string("Provider of ") + Tname;
 

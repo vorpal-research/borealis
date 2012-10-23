@@ -144,8 +144,8 @@ Streamer& operator<<(Streamer& ost, const Locus& ll) {
 }
 
 struct LocusRange {
+    Locus lhv;
 	Locus rhv;
-	Locus lhv;
 };
 
 } // namespace borealis

@@ -4,8 +4,7 @@
 
 CXX := clang++
 
-LLVMCOMPONENTS := all
-
+LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine executionengine instcombine instrumentation interpreter ipa ipo jit linker mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld scalaropts selectiondag support tablegen target transformutils vectorize linker
 RTTIFLAG := -fno-rtti
 #RTTIFLAG :=
 
@@ -18,7 +17,6 @@ INCLUDE_DIRS := \
 INCLUDES := $(foreach d, $(INCLUDE_DIRS), -I$d)
 
 CXXFLAGS := \
-	-DNDEBUG \
 	-D_GNU_SOURCE \
 	-D__STDC_CONSTANT_MACROS \
 	-D__STDC_FORMAT_MACROS \
@@ -27,6 +25,7 @@ CXXFLAGS := \
 	-fPIC \
 	-std=c++11 \
 	-g \
+	$(RTTIFLAG) \
 	$(INCLUDES) \
 	$(DEFS)
 
@@ -36,7 +35,7 @@ LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 # Compilation tweaking
 ################################################################################
 
-# warnings to show
+# warnings to show 
 WARNINGS_ON := all extra cast-qual float-equal switch \
 	undef init-self pointer-arith cast-align effc++ \
 	strict-prototypes strict-overflow=5 write-strings \
@@ -115,11 +114,12 @@ CLANGLIBS := \
     -lclangEdit \
     -lclangAST \
     -lclangLex \
-    -lclangBasic
+    -lclangBasic 
 
 LIBS := \
 	$(CLANGLIBS) \
-	-lz3
+	-lz3 \
+	-ldl
 
 default: all
 
@@ -142,10 +142,10 @@ default: all
 all: $(EXES)
 
 $(EXES): $(OBJECTS)
-	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS)
+	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
 
 $(TEST_EXES): $(TEST_OBJECTS)
-	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) -lgtest
+	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) -lgtest
 
 tests: $(TEST_EXES)
 

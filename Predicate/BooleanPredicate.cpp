@@ -7,6 +7,8 @@
 
 #include "BooleanPredicate.h"
 
+#include "typeindex.hpp"
+
 namespace borealis {
 
 BooleanPredicate::BooleanPredicate(
@@ -30,7 +32,7 @@ BooleanPredicate::BooleanPredicate(
 }
 
 Predicate::Key BooleanPredicate::getKey() const {
-	return std::make_pair(std::type_index(typeid(*this)).hash_code(), v);
+	return std::make_pair(borealis::type_id(*this), v);
 }
 
 Predicate::Dependee BooleanPredicate::getDependee() const {

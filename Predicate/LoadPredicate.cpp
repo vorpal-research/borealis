@@ -7,6 +7,8 @@
 
 #include "LoadPredicate.h"
 
+#include "typeindex.hpp"
+
 namespace borealis {
 
 LoadPredicate::LoadPredicate(
@@ -21,7 +23,7 @@ LoadPredicate::LoadPredicate(
 }
 
 Predicate::Key LoadPredicate::getKey() const {
-	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
+	return std::make_pair(type_id(*this), lhv);
 }
 
 Predicate::Dependee LoadPredicate::getDependee() const {

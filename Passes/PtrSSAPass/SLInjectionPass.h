@@ -26,6 +26,7 @@ namespace borealis {
 namespace ptrssa {
 
 namespace {
+    using llvm::FunctionPass;
     using llvm::BasicBlockPass;
     using llvm::RegisterPass;
     using llvm::BasicBlock;
@@ -41,13 +42,19 @@ namespace {
     using llvm::dyn_cast;
 }
 
-class StoreLoadInjectionPass: public llvm::BasicBlockPass, public origin_tracker {
+class StoreLoadInjectionPass: public llvm::FunctionPass, public origin_tracker {
 public:
     static char ID;
     typedef llvm::Value* value;
 
-    StoreLoadInjectionPass(): BasicBlockPass(ID), DT_(nullptr) {};
+    StoreLoadInjectionPass(): FunctionPass(ID), DT_(nullptr) {};
 
+    virtual bool runOnFunction(Function& F) {
+        for(auto& bb: F) {
+            runOnBasicBlock(bb);
+        }
+        return false;
+    }
     virtual bool runOnBasicBlock(BasicBlock& bb);
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;

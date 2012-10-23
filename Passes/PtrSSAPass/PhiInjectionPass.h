@@ -53,11 +53,6 @@ public:
 
     SlotTracker& getSlotTracker(const Function*);
 
-    Function* createNuevoFunc(Type* pointed, Module* daModule);
-
-    void createNewDefs(BasicBlock &BB);
-    void renameNewDefs(Instruction *newdef, Instruction* olddef, Value* ptr);
-
     typedef unordered_map<pair<BasicBlock*, Value*>, PHINode*> phi_tracker;
     void propagateInstruction(Instruction& from, Instruction& to, phi_tracker&);
 

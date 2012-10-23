@@ -21,37 +21,23 @@
 #include <unordered_map>
 
 #include "SlotTrackerPass.h"
+#include "PtrSSAPass/PhiInjectionPass.h"
+#include "PtrSSAPass/SLInjectionPass.h"
 
 namespace borealis {
 
 using namespace llvm;
 using namespace std;
 
-class PtrSSAPass : public FunctionPass {
+class PtrSSAPass : public llvm::FunctionPass {
 public:
-	static char ID; // Pass identification, replacement for typeid.
-	PtrSSAPass() : FunctionPass(ID), DT_(nullptr), DF_(nullptr) {}
-	void getAnalysisUsage(AnalysisUsage &AU) const;
-	bool runOnFunction(Function&);
-	
-	SlotTracker& getSlotTracker(const Function*);
-	Value* getOriginal(Value*);
-	void setOriginal(Value*, Value*);
+	static char ID;
+	PtrSSAPass() : FunctionPass(ID) {}
 
-	Function* createNuevoFunc(Type* pointed, Module* daModule);
-
-	void createNewDefs(BasicBlock &BB);
-	void renameNewDefs(Instruction *newdef, Instruction* olddef, Value* ptr);
-
-private:
-	unordered_map<Type*, Function*> nuevo_funcs;
-	unordered_map<Value*, Value*> originals;
-
-	// Variables always live
-	DominatorTree *DT_;
-	DominanceFrontier *DF_;
+	virtual bool runOnFunction(Function& F) {
+	    return false;
+	}
 };
 
 }
 
-bool getTruncInstrumentation();
