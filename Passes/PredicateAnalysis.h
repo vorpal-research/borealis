@@ -12,6 +12,7 @@
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
+#include <llvm/Target/TargetData.h>
 
 #include <map>
 #include <set>
@@ -55,6 +56,7 @@ private:
 	PredicateMap predicateMap;
 	TerminatorPredicateMap terminatorPredicateMap;
 
+	TargetData* TD;
 	SlotTracker* st;
 
 	void processInst(const llvm::Instruction& I);
@@ -62,6 +64,7 @@ private:
 	void process(const llvm::StoreInst& I);
 	void process(const llvm::ICmpInst& I);
 	void process(const llvm::BranchInst& I);
+	void process(const llvm::GetElementPtrInst& I);
 
 };
 
