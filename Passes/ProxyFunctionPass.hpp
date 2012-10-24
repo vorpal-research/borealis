@@ -23,6 +23,8 @@ using llvm::AnalysisID;
 
 }
 
+namespace borealis {
+
 template<class Master>
 class ProxyFunctionPass : public llvm::FunctionPass {
     FunctionPass* delegate;
@@ -107,5 +109,6 @@ public:
     virtual ~ProxyFunctionPass() {};
 };
 
+} // namespace borealis
 
 #endif /* PROXYFUNCTIONPASS_HPP_ */

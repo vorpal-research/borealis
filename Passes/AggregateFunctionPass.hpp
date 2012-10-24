@@ -23,6 +23,7 @@ namespace {
 }
 
 
+namespace borealis {
 
 // This is purely a base class.
 // Will not work as an actual pass.
@@ -79,6 +80,6 @@ public:
     }
 };
 
-
+} // namespace borealis
 
 #endif /* AGGREGATEFUNCTIONPASS_HPP_ */
