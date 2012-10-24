@@ -197,7 +197,11 @@ namespace pegtl
    template< typename T >
    std::string demangle()
    {
+#ifdef __GXX_RTTI
       return demangle_impl( typeid( T ).name() );
+#else
+      return "demangled";
+#endif
    }
 
    template< typename T >

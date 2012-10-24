@@ -24,19 +24,39 @@
 #include "PtrSSAPass/PhiInjectionPass.h"
 #include "PtrSSAPass/SLInjectionPass.h"
 
+#include "AggregateFunctionPass.hpp"
+
 namespace borealis {
 
 using namespace llvm;
 using namespace std;
 
-class PtrSSAPass : public llvm::FunctionPass {
+class PtrSSAPass : public AggregateFunctionPass<
+                                ptrssa::PhiInjectionPass,
+                                ptrssa::StoreLoadInjectionPass
+                          > {
+
+    typedef AggregateFunctionPass<
+            ptrssa::PhiInjectionPass,
+            ptrssa::StoreLoadInjectionPass
+      > base;
+
 public:
 	static char ID;
-	PtrSSAPass() : FunctionPass(ID) {}
+	PtrSSAPass() : base(ID) {}
 
-	virtual bool runOnFunction(Function& F) {
-	    return false;
-	}
+    virtual bool runOnFunction(Function& F) {
+        auto& phis = getChildAnalysis<ptrssa::PhiInjectionPass>();
+        auto& sls = getChildAnalysis<ptrssa::StoreLoadInjectionPass>();
+
+        phis.runOnFunction(F);
+
+        sls.mergeOriginInfoFrom(phis);
+
+        sls.runOnFunction(F);
+
+        return false;
+    }
 };
 
 }

@@ -21,6 +21,7 @@
 #include "origin_tracker.h"
 #include "../SlotTrackerPass.h"
 
+#include "../ProxyFunctionPass.hpp"
 
 namespace borealis {
 namespace ptrssa {
@@ -42,12 +43,16 @@ namespace {
     using llvm::dyn_cast;
 }
 
-class StoreLoadInjectionPass: public llvm::FunctionPass, public origin_tracker {
+class StoreLoadInjectionPass:
+        public ProxyFunctionPass<StoreLoadInjectionPass>,
+        public origin_tracker {
+    typedef ProxyFunctionPass<StoreLoadInjectionPass> base;
 public:
     static char ID;
     typedef llvm::Value* value;
 
-    StoreLoadInjectionPass(): FunctionPass(ID), DT_(nullptr) {};
+    StoreLoadInjectionPass(): base(), DT_(nullptr) {};
+    StoreLoadInjectionPass(FunctionPass* del): base(del), DT_(nullptr) {};
 
     virtual bool runOnFunction(Function& F) {
         for(auto& bb: F) {
@@ -58,6 +63,8 @@ public:
     virtual bool runOnBasicBlock(BasicBlock& bb);
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;
+
+    virtual ~StoreLoadInjectionPass(){}
 
 
 private:
@@ -77,9 +84,9 @@ private:
             if(!isa<Constant>(op)) {
                 string name;
                 if(Value * orig = getOrigin(op)) {
-                    if(orig->hasName()) name = orig->getName();
+                    if(orig->hasName()) name = (orig->getName() + ".").str();
                 } else {
-                    if(op->hasName()) name = op->getName();
+                    if(op->hasName()) name = (op->getName() + ".").str();
                 }
 
                 CallInst *newdef = CallInst::Create(

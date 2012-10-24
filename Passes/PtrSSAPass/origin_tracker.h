@@ -26,9 +26,11 @@ public:
 
     inline const value_resolver& getResolver() const { return origins; }
 
+    void mergeOriginInfoFrom(const origin_tracker& other) ;
+
 protected:
     void setOrigin(value k, value v);
-    void mergeOriginInfoFrom(const origin_tracker& other) ;
+
     value_resolver origins;
 };
 

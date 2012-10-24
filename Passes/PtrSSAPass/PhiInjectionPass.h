@@ -8,14 +8,14 @@
 #ifndef PHIINJECTIONPASS_H_
 #define PHIINJECTIONPASS_H_
 
-#include "llvm/Pass.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Analysis/Dominators.h"
-#include "llvm/ADT/DenseMap.h"
-#include "llvm/Support/CFG.h"
-#include "llvm/Instructions.h"
-#include "llvm/Analysis/DominanceFrontier.h"
-#include "llvm/Constants.h"
+#include <llvm/Pass.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Analysis/Dominators.h>
+#include <llvm/ADT/DenseMap.h>
+#include <llvm/Support/CFG.h>
+#include <llvm/Instructions.h>
+#include <llvm/Analysis/DominanceFrontier.h>
+#include <llvm/Constants.h>
 #include <deque>
 #include <algorithm>
 #include <unordered_set>
@@ -23,6 +23,7 @@
 
 #include "../SlotTrackerPass.h"
 #include "origin_tracker.h"
+#include "../ProxyFunctionPass.hpp"
 
 namespace borealis {
 namespace ptrssa {
@@ -44,10 +45,15 @@ namespace {
     using namespace std;
 }
 
-class PhiInjectionPass : public FunctionPass, public origin_tracker {
+class PhiInjectionPass :
+    public ProxyFunctionPass<PhiInjectionPass>,
+    public origin_tracker {
+    typedef ProxyFunctionPass<PhiInjectionPass> base;
 public:
     static char ID; // Pass identification, replacement for typeid.
-    PhiInjectionPass() : FunctionPass(ID), DT_(nullptr), DF_(nullptr) {}
+    PhiInjectionPass() : base(), DT_(nullptr), DF_(nullptr) {}
+    PhiInjectionPass(FunctionPass* del) : base(del), DT_(nullptr), DF_(nullptr) {}
+
     void getAnalysisUsage(AnalysisUsage &AU) const;
     bool runOnFunction(Function&);
 
@@ -55,6 +61,8 @@ public:
 
     typedef unordered_map<pair<BasicBlock*, Value*>, PHINode*> phi_tracker;
     void propagateInstruction(Instruction& from, Instruction& to, phi_tracker&);
+
+    virtual ~PhiInjectionPass(){}
 
 private:
     // Variables always live

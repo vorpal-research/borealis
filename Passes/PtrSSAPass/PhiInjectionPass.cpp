@@ -5,6 +5,8 @@
  *      Author: belyaev
  */
 
+
+
 #include "PhiInjectionPass.h"
 
 #include "SLInjectionPass.h"
@@ -65,7 +67,7 @@ void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, 
             auto& BBnext = *succ;
 
             std::string name;
-            if(orig->hasName()) name = orig->getName();
+            if(orig->hasName()) name = (orig->getName() + ".").str();
 
             phi = PHINode::Create(from.getType(), 0, name, &BBnext.front());
         }

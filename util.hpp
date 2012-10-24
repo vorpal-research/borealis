@@ -227,7 +227,19 @@ struct hash_impl<0, types...> {
     }
 };
 
+template<class T, class ...List>
+struct get_index_of_T_in;
 
+template<class T, class ...Tail>
+struct get_index_of_T_in<T, T, Tail...> {
+    enum{ value = 0 };
+};
+
+// Head != T
+template<class T, class Head, class ...Tail>
+struct get_index_of_T_in<T, Head, Tail...> {
+    enum{ value = get_index_of_T_in<T, Tail...>::value + 1 };
+};
 
 namespace streams {
 
