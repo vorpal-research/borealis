@@ -45,6 +45,7 @@ void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB)
     for (auto it = BB.begin(); it != BB.end() ; ++it) {
         checkAndUpdatePtrs<StoreInst>(it);
         checkAndUpdatePtrs<LoadInst>(it);
+        checkAndUpdatePtrs<CallInst>(it);
     }
 }
 
