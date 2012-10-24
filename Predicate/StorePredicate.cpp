@@ -7,6 +7,8 @@
 
 #include "StorePredicate.h"
 
+#include "typeindex.hpp"
+
 namespace borealis {
 
 StorePredicate::StorePredicate(
@@ -21,7 +23,7 @@ StorePredicate::StorePredicate(
 }
 
 Predicate::Key StorePredicate::getKey() const {
-	return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
+	return std::make_pair(borealis::type_id(*this), lhv);
 }
 
 Predicate::Dependee StorePredicate::getDependee() const {

@@ -21,11 +21,13 @@
 #include "origin_tracker.h"
 #include "../SlotTrackerPass.h"
 
+#include "../ProxyFunctionPass.hpp"
 
 namespace borealis {
 namespace ptrssa {
 
 namespace {
+    using llvm::FunctionPass;
     using llvm::BasicBlockPass;
     using llvm::RegisterPass;
     using llvm::BasicBlock;
@@ -41,16 +43,28 @@ namespace {
     using llvm::dyn_cast;
 }
 
-class StoreLoadInjectionPass: public llvm::BasicBlockPass, public origin_tracker {
+class StoreLoadInjectionPass:
+        public ProxyFunctionPass<StoreLoadInjectionPass>,
+        public origin_tracker {
+    typedef ProxyFunctionPass<StoreLoadInjectionPass> base;
 public:
     static char ID;
     typedef llvm::Value* value;
 
-    StoreLoadInjectionPass(): BasicBlockPass(ID), DT_(nullptr) {};
+    StoreLoadInjectionPass(): base(), DT_(nullptr) {};
+    StoreLoadInjectionPass(FunctionPass* del): base(del), DT_(nullptr) {};
 
+    virtual bool runOnFunction(Function& F) {
+        for(auto& bb: F) {
+            runOnBasicBlock(bb);
+        }
+        return false;
+    }
     virtual bool runOnBasicBlock(BasicBlock& bb);
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;
+
+    virtual ~StoreLoadInjectionPass(){}
 
 
 private:
@@ -59,36 +73,63 @@ private:
     void createNewDefs(BasicBlock &BB);
     void renameNewDefs(Instruction *newdef, Instruction* olddef, Value* ptr);
 
+    std::vector<llvm::Value*> getPointerOperands(StoreInst* store) {
+        return std::vector<llvm::Value*>{ store->getPointerOperand() };
+    }
+
+    std::vector<llvm::Value*> getPointerOperands(LoadInst* load) {
+        return std::vector<llvm::Value*>{ load->getPointerOperand() };
+    }
+
+    std::vector<llvm::Value*> getPointerOperands(CallInst* call) {
+
+        if(call->doesNotAccessMemory()) return std::vector<llvm::Value*>();
+
+        std::vector<llvm::Value*> ret;
+
+        for(auto i = 0U; i< call->getNumArgOperands(); ++i) {
+            auto op = call->getArgOperand(i);
+            errs() << *op << endl;
+            if(op->getType()->isPointerTy()) ret.push_back(op);
+        }
+        return ret;
+    }
+
     template<class InstType>
     inline void checkAndUpdatePtrs(Instruction* inst) {
         if(isa<InstType>(inst)) {
             auto resolve = dyn_cast<InstType>(inst);
             auto F = inst->getParent()->getParent();
             auto M = F->getParent();
-            auto op = resolve->getPointerOperand();
+            auto ops = getPointerOperands(resolve);
 
-            if(!isa<Constant>(op)) {
-                string name;
-                if(Value * orig = getOrigin(op)) {
-                    if(orig->hasName()) name = orig->getName();
-                } else {
-                    if(op->hasName()) name = op->getName();
-                }
+            for(Value* op: ops) {
+                if(!isa<Constant>(op)) {
+                    string name;
 
-                CallInst *newdef = CallInst::Create(
-                    createNuevoFunc(op->getType()->getPointerElementType(), M),
-                    op,
-                    name,
-                    resolve
-                );
-                newdef->setDebugLoc(resolve->getDebugLoc());
+                    if(Value * orig = getOrigin(op)) {
+                        if(orig->hasName()) name = (orig->getName() + ".").str();
+                    } else {
+                        if(op->hasName()) name = (op->getName() + ".").str();
+                    }
 
-                renameNewDefs(newdef, resolve, op);
 
-                if(Value * orig = getOrigin(op)) {
-                    setOrigin(newdef, orig);
-                } else {
-                    setOrigin(newdef, op);
+
+                    CallInst *newdef = CallInst::Create(
+                        createNuevoFunc(op->getType()->getPointerElementType(), M),
+                        op,
+                        name,
+                        inst
+                    );
+                    newdef->setDebugLoc(resolve->getDebugLoc());
+
+                    renameNewDefs(newdef, resolve, op);
+
+                    if(Value * orig = getOrigin(op)) {
+                        setOrigin(newdef, orig);
+                    } else {
+                        setOrigin(newdef, op);
+                    }
                 }
             }
         }

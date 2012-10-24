@@ -21,37 +21,45 @@
 #include <unordered_map>
 
 #include "SlotTrackerPass.h"
+#include "PtrSSAPass/PhiInjectionPass.h"
+#include "PtrSSAPass/SLInjectionPass.h"
+
+#include "AggregateFunctionPass.hpp"
 
 namespace borealis {
 
 using namespace llvm;
 using namespace std;
 
-class PtrSSAPass : public FunctionPass {
+class PtrSSAPass : public AggregateFunctionPass<
+                                ptrssa::PhiInjectionPass,
+                                ptrssa::StoreLoadInjectionPass
+                          > {
+
+    typedef ptrssa::PhiInjectionPass phis_t;
+    typedef ptrssa::StoreLoadInjectionPass sls_t;
+
+    typedef AggregateFunctionPass< phis_t, sls_t > base;
+
 public:
-	static char ID; // Pass identification, replacement for typeid.
-	PtrSSAPass() : FunctionPass(ID), DT_(nullptr), DF_(nullptr) {}
-	void getAnalysisUsage(AnalysisUsage &AU) const;
-	bool runOnFunction(Function&);
-	
-	SlotTracker& getSlotTracker(const Function*);
-	Value* getOriginal(Value*);
-	void setOriginal(Value*, Value*);
+	static char ID;
+	PtrSSAPass() : base(ID) {}
 
-	Function* createNuevoFunc(Type* pointed, Module* daModule);
+    virtual bool runOnFunction(Function& F) {
+        auto& phis = getChildAnalysis<phis_t>();
+        auto& sls = getChildAnalysis<sls_t>();
 
-	void createNewDefs(BasicBlock &BB);
-	void renameNewDefs(Instruction *newdef, Instruction* olddef, Value* ptr);
+        phis.runOnFunction(F);
 
-private:
-	unordered_map<Type*, Function*> nuevo_funcs;
-	unordered_map<Value*, Value*> originals;
+        sls.mergeOriginInfoFrom(phis);
 
-	// Variables always live
-	DominatorTree *DT_;
-	DominanceFrontier *DF_;
+        sls.runOnFunction(F);
+
+        return false;
+    }
+
+    virtual ~PtrSSAPass(){};
 };
 
 }
 
-bool getTruncInstrumentation();

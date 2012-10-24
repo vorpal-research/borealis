@@ -41,7 +41,11 @@ namespace pegtl
       template< typename Rule >
       static const char* key()
       {
+#ifdef __GXX_RTTI
 	 return typeid( typename Rule::key_type ).name();
+#else
+	 return "rule#";
+#endif //_GXX_RTTI
       }
 
       template< typename Rule >
