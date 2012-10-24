@@ -16,8 +16,8 @@ LoadPredicate::LoadPredicate(
 				lhv(lhv),
 				rhv(rhv),
 				lhvs(st->getLocalName(lhv)),
-				rhvs("*" + st->getLocalName(rhv)) {
-	this->asString = lhvs + "=" + rhvs;
+				rhvs(st->getLocalName(rhv)) {
+	this->asString = lhvs + "=*(" + rhvs + ")";
 }
 
 Predicate::Key LoadPredicate::getKey() const {
@@ -37,9 +37,12 @@ Predicate::DependeeSet LoadPredicate::getDependees() const {
 z3::expr LoadPredicate::toZ3(z3::context& ctx) const {
 	using namespace::z3;
 
-	expr l = valueToExpr(ctx, *lhv, lhvs);
-	expr r = derefValueToExpr(ctx, *rhv, rhvs);
-	return l == r;
+    expr l = valueToExpr(ctx, *lhv, lhvs);
+    expr r = valueToExpr(ctx, *rhv, rhvs);
+
+    func_decl deref = ctx.function("*", r.get_sort(), l.get_sort());
+
+	return l == deref(r);
 }
 
 } /* namespace borealis */

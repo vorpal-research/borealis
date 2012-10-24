@@ -161,11 +161,10 @@ z3::expr valueByTypeToExpr(
 	case VT::NULL_PTR_CONST:
 		return ctx.int_val(0);
 	case VT::PTR_CONST:
-		return ctx.int_val(valueName.c_str());
-	case VT::PTR_VAR:
+    case VT::PTR_VAR:
 		return ctx.int_const(valueName.c_str());
 	case VT::UNKNOWN:
-		return *((z3::expr*)0);
+		return *((z3::expr*)0); // TODO: Sayonara
 	}
 }
 

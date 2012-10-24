@@ -54,11 +54,10 @@ Predicate::DependeeSet GEPPredicate::getDependees() const {
 z3::expr GEPPredicate::toZ3(z3::context& ctx) const {
     using namespace::z3;
 
-    sort I = ctx.int_sort();
-    func_decl gep = ctx.function("gep", I, I);
-
     expr l = valueToExpr(ctx, *lhv, _lhv);
     expr r = valueToExpr(ctx, *rhv, _rhv);
+
+    func_decl gep = ctx.function("gep", r.get_sort(), l.get_sort());
 
     for (const auto& s : shifts) {
         expr by = valueToExpr(ctx, *std::get<0>(s), std::get<1>(s));
