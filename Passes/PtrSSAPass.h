@@ -36,18 +36,18 @@ class PtrSSAPass : public AggregateFunctionPass<
                                 ptrssa::StoreLoadInjectionPass
                           > {
 
-    typedef AggregateFunctionPass<
-            ptrssa::PhiInjectionPass,
-            ptrssa::StoreLoadInjectionPass
-      > base;
+    typedef ptrssa::PhiInjectionPass phis_t;
+    typedef ptrssa::StoreLoadInjectionPass sls_t;
+
+    typedef AggregateFunctionPass< phis_t, sls_t > base;
 
 public:
 	static char ID;
 	PtrSSAPass() : base(ID) {}
 
     virtual bool runOnFunction(Function& F) {
-        auto& phis = getChildAnalysis<ptrssa::PhiInjectionPass>();
-        auto& sls = getChildAnalysis<ptrssa::StoreLoadInjectionPass>();
+        auto& phis = getChildAnalysis<phis_t>();
+        auto& sls = getChildAnalysis<sls_t>();
 
         phis.runOnFunction(F);
 
@@ -57,6 +57,8 @@ public:
 
         return false;
     }
+
+    virtual ~PtrSSAPass(){};
 };
 
 }
