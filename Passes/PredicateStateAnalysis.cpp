@@ -76,7 +76,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     PredicateStateVector inStateVec = wqe.second;
     bool shouldScheduleTerminator = true;
 
-    errs() << &bb << " <- " << endl << inStateVec << endl;
+    // errs() << &bb << " <- " << endl << inStateVec << endl;
 
     for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
         const Instruction& I = *inst;
@@ -101,7 +101,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
         predicateStateMap[&I] = inStateVec = merged;
     }
 
-    errs() << &bb << " -> " << endl << inStateVec << endl;
+    // errs() << &bb << " -> " << endl << inStateVec << endl;
 
     if (shouldScheduleTerminator) {
         processTerminator(*bb.getTerminator(), inStateVec);
