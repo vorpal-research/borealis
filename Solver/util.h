@@ -8,6 +8,7 @@
 #ifndef SOLVER_UTIL_H_
 #define SOLVER_UTIL_H_
 
+#include <z3/z3.h>
 #include <z3/z3++.h>
 
 #include <vector>

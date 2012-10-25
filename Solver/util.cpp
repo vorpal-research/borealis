@@ -6,8 +6,46 @@
  */
 
 #include "util.h"
+#include "../util.h"
 
 namespace borealis {
+
+using util::streams::endl;
+using util::toString;
+
+void addAxiomsForGEP(
+        z3::func_decl& gep,
+        z3::context& ctx,
+        z3::solver& s) {
+    using namespace::z3;
+
+    auto ptr = to_expr(ctx, Z3_mk_bound(ctx, 0, ctx.int_sort()));
+    auto freevar = to_expr(ctx, Z3_mk_bound(ctx, 1, ctx.int_sort()));
+    auto null = ctx.int_val(0);
+
+    auto body = implies(
+            ptr != null,
+            gep(ptr, freevar) != null);
+
+    Z3_sort sort_array[] = {Z3_sort(ctx.int_sort()), Z3_sort(ctx.int_sort())};
+    Z3_symbol name_array[] = {Z3_symbol(ctx.str_symbol("freevar")), Z3_symbol(ctx.str_symbol("ptr"))};
+
+    auto axiom = to_expr(
+            ctx,
+            Z3_mk_forall(
+                    ctx,
+                    0,
+                    0,
+                    nullptr,
+                    2,
+                    sort_array,
+                    name_array,
+                    body));
+
+    s.add(axiom);
+}
+
+
 
 z3::check_result check(
         const z3::expr& assertion,
@@ -21,10 +59,33 @@ z3::check_result check(
         s.add(ss);
     }
 
+    // GEP processing
+    sort domain[] = {ctx.int_sort(), ctx.int_sort()};
+    func_decl gep = ctx.function("gep", 2, domain, ctx.int_sort());
+    addAxiomsForGEP(gep, ctx, s);
+
     expr assertionPredicate = ctx.bool_const("$isTrue$");
     s.add(implies(assertionPredicate, assertion));
 
-    return s.check(1, &assertionPredicate);
+    check_result res = s.check(1, &assertionPredicate);
+
+    llvm::errs() << toString(assertion) << endl;
+    switch (res) {
+    case sat:
+        llvm::errs() << "SAT" << endl;
+        llvm::errs() << toString(s.get_model()) << endl;
+        break;
+    case unsat:
+        llvm::errs() << "UNSAT" << endl;
+        llvm::errs() << toString(s.unsat_core()) << endl;
+        break;
+    case unknown:
+        llvm::errs() << "UNKNOWN" << endl;
+        llvm::errs() << toString(s.reason_unknown()) << endl;
+        break;
+    }
+
+    return res;
 }
 
 bool checkSat(

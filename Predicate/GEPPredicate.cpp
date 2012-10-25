@@ -21,7 +21,7 @@ GEPPredicate::GEPPredicate(
                 _lhv(st->getLocalName(lhv)),
                 _rhv(st->getLocalName(rhv)) {
 
-    std::string a = _rhv;
+    std::string a = "0";
     for (const auto& shift : shifts) {
         std::string by = st->getLocalName(shift.first);
         std::string size = util::toString(shift.second);
@@ -34,7 +34,7 @@ GEPPredicate::GEPPredicate(
         a = a + "+" + by + "*" + size;
     }
 
-    this->asString = _lhv + "=gep(" + a + ")";
+    this->asString = _lhv + "=gep(" + _rhv + "," + a + ")";
 }
 
 Predicate::Key GEPPredicate::getKey() const {
@@ -57,15 +57,17 @@ z3::expr GEPPredicate::toZ3(z3::context& ctx) const {
     expr l = valueToExpr(ctx, *lhv, _lhv);
     expr r = valueToExpr(ctx, *rhv, _rhv);
 
-    func_decl gep = ctx.function("gep", r.get_sort(), l.get_sort());
+    sort domain[] = {r.get_sort(), r.get_sort()};
+    func_decl gep = ctx.function("gep", 2, domain, l.get_sort());
 
+    expr shift = ctx.int_val(0);
     for (const auto& s : shifts) {
         expr by = valueToExpr(ctx, *std::get<0>(s), std::get<1>(s));
         expr size = ctx.int_val((__uint64)std::get<2>(s));
         r = r + by * size;
     }
 
-    return l == gep(r);
+    return l == gep(r, shift);
 }
 
 } /* namespace borealis */
