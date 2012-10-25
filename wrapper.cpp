@@ -45,6 +45,7 @@
 #include <llvm/Target/TargetData.h>
 #include <llvm/Target/TargetLibraryInfo.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/IRReader.h>
 #include <llvm/Support/ManagedStatic.h>
@@ -57,6 +58,7 @@
 
 #include "comments.h"
 #include "util.h"
+#include "config.h"
 
 #include "Passes/DataProvider.hpp"
 
@@ -67,6 +69,8 @@ using namespace borealis;
 using util::for_each;
 using util::streams::error;
 using util::streams::endl;
+
+using config::Config;
 
 template<class T>
 void print(const T& val) {
@@ -137,19 +141,36 @@ int main(int argc, const char** argv)
 	// note that M.get() gets a pointer or reference to the module to analyze
 	pm.add(new TargetData(&module));
 
+	Config cfg("wrapper.conf");
+
 	vector<StringRef> passes2run;
 
-	vector<StringRef> libs2load;
+	const vector<string> empty;
+	auto prePasses = cfg.getValue< std::vector<std::string> >("passes", "pre").getOrElse(empty);
+	for(StringRef p: prePasses) {
+	    passes2run.push_back(p);
+	}
 
-	for_each(args,
-			[&libs2load](const StringRef& mes) {
-				if( mes.startswith("-load") ) libs2load.push_back(mes.drop_front(5));
-			});
+	for(StringRef p: args) {
+        if( p.startswith("-pass") ) passes2run.push_back(p.drop_front(5));
+	}
 
-	for_each(args,
-			[&passes2run](const StringRef& mes) {
-				if( mes.startswith("-pass") ) passes2run.push_back(mes.drop_front(5));
-			});
+    auto postPasses = cfg.getValue< std::vector<std::string> >("passes", "post").getOrElse(empty);
+
+    for(StringRef p: postPasses) {
+        passes2run.push_back(p);
+    }
+
+    vector<StringRef> libs2load;
+
+    auto libs = cfg.getValue< std::vector<std::string> >("libs", "load").getOrElse(empty);
+    for(StringRef l: libs) {
+        libs2load.push_back(l);
+    }
+
+    for(StringRef arg: args) {
+        if( arg.startswith("-load") ) libs2load.push_back(arg.drop_front(5));
+    }
 
 	errs() << "Passes:" << endl;
 	if (passes2run.empty())
@@ -187,6 +208,20 @@ int main(int argc, const char** argv)
 
 	using borealis::provideAsPass;
     pm.add(provideAsPass(Proc.get()));
+
+    // args to supply to opt
+    auto opt_args = cfg.getValue< std::vector<std::string> >("opt", "load").getOrElse(empty);
+
+    size_t virt_argc = opt_args.size();
+    {
+
+        unique_ptr<const char*[]> virt_argv(new const char*[virt_argc]);
+        for(size_t i = 0U; i < virt_argc; ++i) {
+            virt_argv[i] = opt_args[i].c_str();
+        }
+
+        llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.get());
+    }
 
 	if (!passes2run.empty()) {
 		for_each(passes2run,
