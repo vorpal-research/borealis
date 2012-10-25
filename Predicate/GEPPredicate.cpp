@@ -7,7 +7,7 @@
 
 #include "GEPPredicate.h"
 
-#include "util.h"
+#include "typeindex.hpp"
 
 namespace borealis {
 
@@ -38,7 +38,7 @@ GEPPredicate::GEPPredicate(
 }
 
 Predicate::Key GEPPredicate::getKey() const {
-    return std::make_pair(std::type_index(typeid(*this)).hash_code(), lhv);
+    return std::make_pair(type_id(*this), lhv);
 }
 
 Predicate::Dependee GEPPredicate::getDependee() const {

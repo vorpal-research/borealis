@@ -113,7 +113,7 @@ void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
     for (const auto nullValue : *ValueNullSet) {
         if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
             if (checkNullDereference(I, *ptr)) {
-                reportNullDereference(I, *nullValue);
+                reportNullDereference(I, *ptr, *nullValue);
             }
         }
     }
@@ -130,7 +130,7 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
     for (const auto nullValue : *ValueNullSet) {
         if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
             if (checkNullDereference(I, *ptr)) {
-                reportNullDereference(I, *nullValue);
+                reportNullDereference(I, *ptr, *nullValue);
             }
         }
     }
@@ -138,13 +138,16 @@ void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
 
 void CheckNullDereferencePass::reportNullDereference(
         const llvm::Value& in,
+        const llvm::Value& what,
         const llvm::Value& from) {
     using namespace::llvm;
 
     errs() << "Possible NULL dereference in" << endl
             << "\t" << in << endl
             << "from" << endl
-            << "\t" << from << endl;
+            << "\t" << from << endl
+            << "with" << endl
+            << "\t" << what << endl;
 }
 
 bool CheckNullDereferencePass::checkNullDereference(

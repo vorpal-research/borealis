@@ -19,7 +19,7 @@ LoadPredicate::LoadPredicate(
 				rhv(rhv),
 				lhvs(st->getLocalName(lhv)),
 				rhvs(st->getLocalName(rhv)) {
-	this->asString = lhvs + "=*(" + rhvs + ")";
+	this->asString = lhvs + "=*" + rhvs;
 }
 
 Predicate::Key LoadPredicate::getKey() const {

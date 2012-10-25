@@ -51,7 +51,10 @@ private:
 	void derefProcessInst(const llvm::Instruction& I);
 	void derefProcess(const llvm::LoadInst& I);
 
-	void reportNullDereference(const llvm::Value& in, const llvm::Value& from);
+	void reportNullDereference(
+	        const llvm::Value& in,
+	        const llvm::Value& what,
+	        const llvm::Value& from);
 
 	bool checkNullDereference(
 	        const llvm::Instruction& where,
