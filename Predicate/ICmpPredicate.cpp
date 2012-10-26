@@ -7,7 +7,7 @@
 
 #include "ICmpPredicate.h"
 
-#include "../util.h"
+#include "util.h"
 
 #include "typeindex.hpp"
 

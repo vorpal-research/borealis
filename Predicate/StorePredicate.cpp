@@ -17,9 +17,9 @@ StorePredicate::StorePredicate(
 		SlotTracker* st) :
 				lhv(lhv),
 				rhv(rhv),
-				lhvs("*" + st->getLocalName(lhv)),
+				lhvs(st->getLocalName(lhv)),
 				rhvs(st->getLocalName(rhv)) {
-	this->asString = lhvs + "=" + rhvs;
+	this->asString = "*" + lhvs + "=" + rhvs;
 }
 
 Predicate::Key StorePredicate::getKey() const {
@@ -39,9 +39,12 @@ Predicate::DependeeSet StorePredicate::getDependees() const {
 z3::expr StorePredicate::toZ3(z3::context& ctx) const {
 	using namespace::z3;
 
-	expr l = derefValueToExpr(ctx, *lhv, lhvs);
-	expr r = valueToExpr(ctx, *rhv, rhvs);
-	return l == r;
+    expr l = valueToExpr(ctx, *lhv, lhvs);
+    expr r = valueToExpr(ctx, *rhv, rhvs);
+
+    func_decl deref = ctx.function("*", l.get_sort(), r.get_sort());
+
+	return deref(l) == r;
 }
 
 } /* namespace borealis */

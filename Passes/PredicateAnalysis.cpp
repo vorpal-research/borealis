@@ -12,11 +12,13 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "../Predicate/Predicate.h"
-#include "../Predicate/LoadPredicate.h"
-#include "../Predicate/StorePredicate.h"
-#include "../Predicate/ICmpPredicate.h"
-#include "../Predicate/BooleanPredicate.h"
+#include "Predicate/Predicate.h"
+#include "Predicate/LoadPredicate.h"
+#include "Predicate/StorePredicate.h"
+#include "Predicate/ICmpPredicate.h"
+#include "Predicate/BooleanPredicate.h"
+#include "Predicate/GEPPredicate.h"
+#include "Predicate/EqualityPredicate.h"
 
 namespace borealis {
 
@@ -32,6 +34,7 @@ void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 
 	Info.setPreservesAll();
 	Info.addRequiredTransitive<SlotTrackerPass>();
+	Info.addRequiredTransitive<TargetData>();
 }
 
 bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
@@ -40,7 +43,9 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 
 	predicateMap.clear();
 
+	TD = &getAnalysis<TargetData>();
 	st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
+
 	for_each(F, [this](const BasicBlock& BB){
 		for_each(BB, [this](const Instruction& I){
 			processInst(I);
@@ -64,6 +69,12 @@ void PredicateAnalysis::processInst(const llvm::Instruction& I) {
 
 	else if (isa<BranchInst>(I))
 		{ process(cast<BranchInst>(I)); }
+
+    else if (isa<GetElementPtrInst>(I))
+        { process(cast<GetElementPtrInst>(I)); }
+
+    else if (isa<SExtInst>(I))
+        { process(cast<SExtInst>(I)); }
 }
 
 void PredicateAnalysis::process(const llvm::LoadInst& I) {
@@ -111,6 +122,45 @@ void PredicateAnalysis::process(const llvm::BranchInst& I) {
 			new BooleanPredicate(PredicateType::PATH, cond, true, st);
 	terminatorPredicateMap[make_pair(&I, falseSucc)] =
 			new BooleanPredicate(PredicateType::PATH, cond, false, st);
+}
+
+void PredicateAnalysis::process(const llvm::GetElementPtrInst& I) {
+    using namespace::std;
+    using namespace::llvm;
+
+    Type* type = I.getPointerOperandType();
+
+    vector< pair<const Value*, uint64_t> > shifts;
+    for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
+        const Value* v = *it;
+        const uint64_t size = TD->getTypeAllocSize(type);
+        shifts.push_back(make_pair(v, size));
+
+        if (type->isArrayTy()) type = type->getArrayElementType();
+        else if (type->isStructTy()) {
+            if (!isa<ConstantInt>(v)) {
+                errs() << "ACHTUNG!!!" << endl; // TODO: Sayonara
+                return;
+            }
+            auto fieldIdx = cast<ConstantInt>(v)->getZExtValue();
+            type = type->getStructElementType(fieldIdx);
+        }
+    }
+
+    const Value* lhv = &I;
+    const Value* rhv = I.getPointerOperand();
+
+    predicateMap[&I] = new GEPPredicate(lhv, rhv, shifts, st);
+}
+
+void PredicateAnalysis::process(const llvm::SExtInst& I) {
+    using namespace::std;
+    using namespace::llvm;
+
+    const Value* lhv = &I;
+    const Value* rhv = I.getOperand(0);
+
+    predicateMap[&I] = new EqualityPredicate(lhv, rhv, st);
 }
 
 PredicateAnalysis::~PredicateAnalysis() {

@@ -26,8 +26,12 @@ using util::contains;
 using util::containsKey;
 using util::for_each;
 
-enum NullStatus {
+enum class NullStatus {
 	Null, Maybe_Null, Not_Null
+};
+
+enum class NullType {
+    VALUE, DEREF
 };
 
 struct NullInfo {
@@ -35,7 +39,14 @@ struct NullInfo {
 	typedef std::map<std::vector<unsigned>, NullStatus> OffsetInfoMap;
 	typedef std::pair<std::vector<unsigned>, NullStatus> OffsetInfoMapEntry;
 
+	NullType type = NullType::VALUE;
 	OffsetInfoMap offsetInfoMap;
+
+	inline NullInfo& setType(
+	        const NullType& type) {
+	    this->type = type;
+	    return *this;
+	}
 
 	inline NullInfo& setStatus(
 			const NullStatus& status) {
@@ -58,17 +69,21 @@ struct NullInfo {
 	static NullStatus mergeStatus(
 			const NullStatus& one,
 			const NullStatus& two) {
-		if (one == Null && two == Null) {
-			return Null;
-		} else if (one == Not_Null && two == Not_Null) {
-			return Not_Null;
+		if (one == NullStatus::Null && two == NullStatus::Null) {
+			return NullStatus::Null;
+		} else if (one == NullStatus::Not_Null && two == NullStatus::Not_Null) {
+			return NullStatus::Not_Null;
 		} else {
-			return Maybe_Null;
+			return NullStatus::Maybe_Null;
 		}
 	}
 
 	NullInfo& merge(const NullInfo& other) {
 		using namespace::std;
+
+		if (type != other.type) {
+		    // DO SOMETHING
+		}
 
 		for_each(other.offsetInfoMap, [this](const OffsetInfoMapEntry& entry){
 			vector<unsigned> idxs = entry.first;
@@ -101,6 +116,7 @@ class DetectNullPass: public llvm::FunctionPass {
 public:
 
 	typedef std::set<const llvm::Value*> NullPtrSet;
+
 	typedef std::map<const llvm::Value*, NullInfo> NullInfoMap;
 	typedef std::pair<const llvm::Value*, NullInfo> NullInfoMapEntry;
 
@@ -112,24 +128,30 @@ public:
 	virtual ~DetectNullPass();
 
 	const NullInfoMap& getNullInfoMap() {
-		return nullInfoMap;
+		return data;
 	}
 
-	NullPtrSet getNullSet() {
+	NullPtrSet getNullSet(const NullType& type) {
 		using namespace::std;
 		using namespace::llvm;
 
 		NullPtrSet res = NullPtrSet();
-		for_each(nullInfoMap, [&res](const NullInfoMapEntry& entry){
-			const Value* value = entry.first;
-			res.insert(value);
-		});
+		for(auto& entry : data) {
+			const NullInfo info = entry.second;
+			if (info.type == type) {
+			    res.insert(entry.first);
+			}
+		}
 		return res;
 	}
 
 private:
 
-	NullInfoMap nullInfoMap;
+	NullInfoMap data;
+
+	void init() {
+	    data.clear();
+	}
 
 	void processInst(const llvm::Instruction& I);
 
@@ -137,6 +159,10 @@ private:
 	void process(const llvm::StoreInst& I);
 	void process(const llvm::PHINode& I);
 	void process(const llvm::InsertValueInst& I);
+
+	std::set<const llvm::Instruction*> collectIncomingInsts(
+	        const llvm::PHINode& I,
+	        std::set<const llvm::PHINode*>& visited);
 
 	bool containsKey(const llvm::Value& value);
 };

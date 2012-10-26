@@ -10,91 +10,177 @@
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 
+#include "../lib/poolalloc/src/DSA/DataStructureAA.h"
+#include "../Query/NullPtrQuery.h"
+#include "../Solver/util.h"
+
 namespace borealis {
 
 using util::for_each;
 using util::streams::endl;
 
 CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
-	// TODO
+    // TODO
 }
 
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	Info.setPreservesAll();
-	Info.addRequiredTransitive<AliasAnalysis>();
-	Info.addRequiredTransitive<DetectNullPass>();
+    Info.setPreservesAll();
+    Info.addRequiredTransitive<DSAA>();
+    Info.addRequiredTransitive<DetectNullPass>();
+    Info.addRequiredTransitive<PredicateStateAnalysis>();
+    Info.addRequiredTransitive<SlotTrackerPass>();
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
-	using namespace::std;
-	using namespace::llvm;
+    using namespace::std;
+    using namespace::llvm;
 
-	AA = &getAnalysis<AliasAnalysis>();
-	DNP = &getAnalysis<DetectNullPass>();
+    AA = &getAnalysis<DSAA>();
+    DNP = &getAnalysis<DetectNullPass>();
+    PSA = &getAnalysis<PredicateStateAnalysis>();
+    st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
-	auto tmp = DNP->getNullSet();
-	NullSet = &tmp;
+    auto valueSet = DNP->getNullSet(NullType::VALUE);
+    auto derefSet = DNP->getNullSet(NullType::DEREF);
 
-	for_each(F, [this](const BasicBlock& BB){
-		for_each(BB, [this](const Instruction& I){
-			processInst(I);
-		});
-	});
+    ValueNullSet = &valueSet;
+    DerefNullSet = &derefSet;
 
-	return false;
+    processDerefNullSet(F);
+    processValueNullSet(F);
+
+    return false;
+}
+
+void CheckNullDereferencePass::processDerefNullSet(llvm::Function& F) {
+    for (const auto& BB : F) {
+        for (const auto& I : BB) {
+            derefProcessInst(I);
+        }
+    }
+}
+
+void CheckNullDereferencePass::derefProcessInst(const llvm::Instruction& I) {
+    using namespace::llvm;
+
+    if (isa<LoadInst>(I))
+    { derefProcess(cast<LoadInst>(I)); }
+}
+
+void CheckNullDereferencePass::derefProcess(const llvm::LoadInst& I) {
+    using namespace::std;
+    using namespace::llvm;
+
+    const Value* ptr = I.getPointerOperand();
+
+    if (ptr->isDereferenceablePointer()) return;
+
+    for (const auto derefNullValue : *DerefNullSet) {
+        if (AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
+            ValueNullSet->insert(&I);
+        }
+    }
+}
+
+void CheckNullDereferencePass::processValueNullSet(llvm::Function& F) {
+    for (const auto& BB : F) {
+        for (const auto& I : BB) {
+            processInst(I);
+        }
+    }
 }
 
 void CheckNullDereferencePass::processInst(const llvm::Instruction& I) {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	if (isa<LoadInst>(I))
-		{ process(cast<LoadInst>(I)); }
+    if (isa<LoadInst>(I))
+    { process(cast<LoadInst>(I)); }
 
-	else if (isa<StoreInst>(I))
-		{ process(cast<StoreInst>(I)); }
+    else if (isa<StoreInst>(I))
+    { process(cast<StoreInst>(I)); }
 }
 
 void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
-	using namespace::std;
-	using namespace::llvm;
+    using namespace::std;
+    using namespace::llvm;
 
-	const Value* ptr = I.getPointerOperand();
+    const Value* ptr = I.getPointerOperand();
 
-	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
-		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			reportNullDereference(I, *nullValue);
-		}
-	});
+    if (ptr->isDereferenceablePointer()) return;
+
+    for (const auto nullValue : *ValueNullSet) {
+        if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+            if (checkNullDereference(I, *ptr)) {
+                reportNullDereference(I, *ptr, *nullValue);
+            }
+        }
+    }
 }
 
 void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
-	using namespace::std;
-	using namespace::llvm;
+    using namespace::std;
+    using namespace::llvm;
 
-	const Value* ptr = I.getPointerOperand();
+    const Value* ptr = I.getPointerOperand();
 
-	for_each(*NullSet, [this, &I, ptr](const Value* nullValue){
-		if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-			reportNullDereference(I, *nullValue);
-		}
-	});
+    if (ptr->isDereferenceablePointer()) return;
+
+    for (const auto nullValue : *ValueNullSet) {
+        if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+            if (checkNullDereference(I, *ptr)) {
+                reportNullDereference(I, *ptr, *nullValue);
+            }
+        }
+    }
 }
 
 void CheckNullDereferencePass::reportNullDereference(
-		const llvm::Value& in,
-		const llvm::Value& from) {
-	using namespace::llvm;
+        const llvm::Value& in,
+        const llvm::Value& what,
+        const llvm::Value& from) {
+    using namespace::llvm;
 
-	errs() << "Possible NULL dereference in" << endl
-			<< "\t" << in << endl
-			<< "from" << endl
-			<< "\t" << from << endl;
+    errs() << "Possible NULL dereference in" << endl
+            << "\t" << in << endl
+            << "from" << endl
+            << "\t" << from << endl
+            << "with" << endl
+            << "\t" << what << endl;
+}
+
+bool CheckNullDereferencePass::checkNullDereference(
+        const llvm::Instruction& where,
+        const llvm::Value& what) {
+    using namespace::std;
+    using namespace::llvm;
+    using namespace::z3;
+
+    NullPtrQuery q = NullPtrQuery(&what, st);
+
+    PredicateStateVector psv = PSA->getPredicateStateMap()[&where];
+    for (const auto& ps : psv) {
+        context ctx;
+
+        expr assertion = q.toZ3(ctx);
+        pair<expr, expr> state = ps.toZ3(ctx);
+
+        if (
+                checkSatOrUnknown(
+                        assertion,
+                        vector<expr> { state.first, state.second },
+                        ctx)
+        ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {
-	// TODO
+    // TODO
 }
 
 } /* namespace borealis */

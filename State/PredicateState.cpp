@@ -91,9 +91,11 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(z3::context& ctx) const {
 }
 
 void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
-    for(auto iter = data.begin(); iter != data.end(); )
+    auto iter = data.begin();
+    while (true)
     {
 next:
+        if (iter == data.end()) break;
         auto e = *iter;
         auto ds = e.second->getDependees();
         for(auto& d : ds) {

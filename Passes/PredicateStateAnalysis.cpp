@@ -44,18 +44,6 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 
     removeUnreachableStates();
 
-    errs() << endl << "PSA results:" << endl;
-    for_each(F, [this](const BasicBlock& BB) {
-        for_each(BB, [this](const Instruction& I) {
-            if (containsKey(this->predicateStateMap, &I)) {
-                auto vec = predicateStateMap[&I];
-                errs() << I << endl;
-                errs() << vec << endl;
-            }
-        });
-    });
-    errs() << endl << "End of PSA results" << endl;
-
     return false;
 }
 
@@ -76,7 +64,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     PredicateStateVector inStateVec = wqe.second;
     bool shouldScheduleTerminator = true;
 
-    errs() << &bb << " <- " << endl << inStateVec << endl;
+    // errs() << &bb << " <- " << endl << inStateVec << endl;
 
     for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
         const Instruction& I = *inst;
@@ -101,7 +89,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
         predicateStateMap[&I] = inStateVec = merged;
     }
 
-    errs() << &bb << " -> " << endl << inStateVec << endl;
+    // errs() << &bb << " -> " << endl << inStateVec << endl;
 
     if (shouldScheduleTerminator) {
         processTerminator(*bb.getTerminator(), inStateVec);

@@ -141,9 +141,22 @@ void tuple_for_each(Tup& tup, Op op) {
     return delegate::apply(tup, op);
 }
 
+
+
+namespace enums {
+
+template<typename Enum>
+typename std::underlying_type<Enum>::type asInteger(const Enum& e) {
+    return static_cast<typename std::underlying_type<Enum>::type>(e);
+}
+
+} // namespace enums
+
+
+
 template<class T>
 struct UseLLVMOstreams {
-	enum{ value = false };
+	enum { value = false };
 };
 
 template<class T, bool UseLLVMOstream = false>
