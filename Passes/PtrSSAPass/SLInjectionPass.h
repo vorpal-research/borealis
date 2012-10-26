@@ -89,7 +89,6 @@ private:
 
         for(auto i = 0U; i< call->getNumArgOperands(); ++i) {
             auto op = call->getArgOperand(i);
-            errs() << *op << endl;
             if(op->getType()->isPointerTy()) ret.push_back(op);
         }
         return ret;

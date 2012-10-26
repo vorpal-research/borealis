@@ -120,7 +120,8 @@ CLANGLIBS := \
 LIBS := \
 	$(CLANGLIBS) \
 	-lz3 \
-	-ldl
+	-ldl \
+	-lcfgparser
 
 default: all
 
