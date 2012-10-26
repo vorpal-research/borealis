@@ -66,6 +66,8 @@ private:
 	void process(const llvm::BranchInst& I);
 	void process(const llvm::GetElementPtrInst& I);
 
+	void process(const llvm::SExtInst& I);
+
 };
 
 } /* namespace borealis */

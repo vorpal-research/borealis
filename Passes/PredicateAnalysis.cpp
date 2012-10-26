@@ -18,6 +18,7 @@
 #include "Predicate/ICmpPredicate.h"
 #include "Predicate/BooleanPredicate.h"
 #include "Predicate/GEPPredicate.h"
+#include "Predicate/EqualityPredicate.h"
 
 namespace borealis {
 
@@ -71,6 +72,9 @@ void PredicateAnalysis::processInst(const llvm::Instruction& I) {
 
     else if (isa<GetElementPtrInst>(I))
         { process(cast<GetElementPtrInst>(I)); }
+
+    else if (isa<SExtInst>(I))
+        { process(cast<SExtInst>(I)); }
 }
 
 void PredicateAnalysis::process(const llvm::LoadInst& I) {
@@ -147,6 +151,16 @@ void PredicateAnalysis::process(const llvm::GetElementPtrInst& I) {
     const Value* rhv = I.getPointerOperand();
 
     predicateMap[&I] = new GEPPredicate(lhv, rhv, shifts, st);
+}
+
+void PredicateAnalysis::process(const llvm::SExtInst& I) {
+    using namespace::std;
+    using namespace::llvm;
+
+    const Value* lhv = &I;
+    const Value* rhv = I.getOperand(0);
+
+    predicateMap[&I] = new EqualityPredicate(lhv, rhv, st);
 }
 
 PredicateAnalysis::~PredicateAnalysis() {
