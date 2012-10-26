@@ -64,7 +64,7 @@ z3::expr GEPPredicate::toZ3(z3::context& ctx) const {
     for (const auto& s : shifts) {
         expr by = valueToExpr(ctx, *std::get<0>(s), std::get<1>(s));
         expr size = ctx.int_val((__uint64)std::get<2>(s));
-        r = r + by * size;
+        shift = shift + by * size;
     }
 
     return l == gep(r, shift);
