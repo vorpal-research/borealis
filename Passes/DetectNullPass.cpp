@@ -90,6 +90,9 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 
 	NullInfo nullInfo = NullInfo();
 	for (auto* II : collectedDependees) {
+
+	    processInst(*II);
+
         if (containsKey(*II)) {
             nullInfo = nullInfo.merge(data[II]);
         } else {
