@@ -85,30 +85,48 @@ void DetectNullPass::process(const llvm::PHINode& I) {
 
 	if (!I.getType()->isPointerTy()) return;
 
-	for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
-		const Value* incoming = I.getIncomingValue(i);
-		if (isa<Instruction>(*incoming)) {
-			processInst(cast<Instruction>(*incoming));
-		} else {
-			errs() << "Encountered non-instruction incoming value in PHINode: "
-					<< *incoming
-					<< endl;
-		}
-	}
+	std::set<const PHINode*> visited;
+	auto collectedDependees = collectIncomingInsts(I, visited);
 
 	NullInfo nullInfo = NullInfo();
-	for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
-		const Value* incoming = I.getIncomingValue(i);
-		if (isa<Instruction>(*incoming)) {
-			const Instruction& II = cast<Instruction>(*incoming);
-			if (containsKey(II)) {
-				nullInfo = nullInfo.merge(data[&II]);
-			} else {
-				nullInfo = nullInfo.merge(NullStatus::Not_Null);
-			}
-		}
+	for (auto* II : collectedDependees) {
+        if (containsKey(*II)) {
+            nullInfo = nullInfo.merge(data[II]);
+        } else {
+            nullInfo = nullInfo.merge(NullStatus::Not_Null);
+        }
 	}
 	data[&I] = nullInfo;
+}
+
+std::set<const llvm::Instruction*> DetectNullPass::collectIncomingInsts(
+        const llvm::PHINode& I,
+        std::set<const llvm::PHINode*>& visited) {
+    using namespace::llvm;
+    std::set<const llvm::Instruction*> res;
+
+    if (contains(visited, &I)) return res;
+    else visited.insert(&I);
+
+    for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
+        const Value* incoming = I.getIncomingValue(i);
+        if (isa<Instruction>(incoming)) {
+            if (isa<PHINode>(incoming)) {
+                auto sub = collectIncomingInsts(
+                        *cast<PHINode>(incoming),
+                        visited);
+                res.insert(sub.begin(), sub.end());
+            } else {
+                res.insert(cast<Instruction>(incoming));
+            }
+        } else {
+            errs() << "Encountered non-instruction incoming value in PHINode: "
+                    << *incoming
+                    << endl;
+        }
+    }
+
+    return res;
 }
 
 void DetectNullPass::process(const llvm::InsertValueInst& I) {

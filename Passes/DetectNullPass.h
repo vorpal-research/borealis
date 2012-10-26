@@ -160,6 +160,10 @@ private:
 	void process(const llvm::PHINode& I);
 	void process(const llvm::InsertValueInst& I);
 
+	std::set<const llvm::Instruction*> collectIncomingInsts(
+	        const llvm::PHINode& I,
+	        std::set<const llvm::PHINode*>& visited);
+
 	bool containsKey(const llvm::Value& value);
 };
 
