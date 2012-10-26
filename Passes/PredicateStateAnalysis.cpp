@@ -44,18 +44,6 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 
     removeUnreachableStates();
 
-    errs() << endl << "PSA results:" << endl;
-    for_each(F, [this](const BasicBlock& BB) {
-        for_each(BB, [this](const Instruction& I) {
-            if (containsKey(this->predicateStateMap, &I)) {
-                auto vec = predicateStateMap[&I];
-                errs() << I << endl;
-                errs() << vec << endl;
-            }
-        });
-    });
-    errs() << endl << "End of PSA results" << endl;
-
     return false;
 }
 

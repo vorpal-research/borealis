@@ -67,25 +67,7 @@ z3::check_result check(
     expr assertionPredicate = ctx.bool_const("$isTrue$");
     s.add(implies(assertionPredicate, assertion));
 
-    check_result res = s.check(1, &assertionPredicate);
-
-    llvm::errs() << toString(assertion) << endl;
-    switch (res) {
-    case sat:
-        llvm::errs() << "SAT" << endl;
-        llvm::errs() << toString(s.get_model()) << endl;
-        break;
-    case unsat:
-        llvm::errs() << "UNSAT" << endl;
-        llvm::errs() << toString(s.unsat_core()) << endl;
-        break;
-    case unknown:
-        llvm::errs() << "UNKNOWN" << endl;
-        llvm::errs() << toString(s.reason_unknown()) << endl;
-        break;
-    }
-
-    return res;
+    return s.check(1, &assertionPredicate);;
 }
 
 bool checkSat(
