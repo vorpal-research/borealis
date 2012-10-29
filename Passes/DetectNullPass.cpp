@@ -7,16 +7,144 @@
 
 #include "DetectNullPass.h"
 
-#include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
+#include <llvm/Support/InstVisitor.h>
 
 namespace borealis {
 
 using util::contains;
+using util::containsKey;
 using util::enums::asInteger;
-using util::for_each;
 using util::streams::endl;
 using util::toString;
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Regular instruction visitor
+//
+////////////////////////////////////////////////////////////////////////////////
+
+class RegularDetectNullInstVisitor :
+        public llvm::InstVisitor<RegularDetectNullInstVisitor> {
+
+public:
+
+    using llvm::InstVisitor<RegularDetectNullInstVisitor>::visit;
+
+    RegularDetectNullInstVisitor(DetectNullPass::NullInfoMap& NIM) : NIM(NIM) {
+    }
+
+    void visit(llvm::Instruction& I) {
+        using llvm::Value;
+
+        const Value* ptr = &I;
+        if (containsKey(NIM, ptr)) return;
+
+        InstVisitor::visit(I);
+    }
+
+    void visitCallInst(llvm::CallInst& I) {
+        if (!I.getType()->isPointerTy()) return;
+
+        NIM[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
+    }
+
+    void visitStoreInst(llvm::StoreInst& I) {
+        using namespace::llvm;
+
+        const Value* ptr = I.getPointerOperand();
+        const Value* value = I.getValueOperand();
+
+        if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
+
+        if (isa<ConstantPointerNull>(*value)) {
+            NIM[ptr] = NullInfo().setType(NullType::DEREF).setStatus(NullStatus::Null);
+        }
+    }
+
+    void visitInsertValueInst(llvm::InsertValueInst& I) {
+        using namespace::llvm;
+
+        const Value* value = I.getInsertedValueOperand();
+        if (isa<ConstantPointerNull>(value)) {
+            const std::vector<unsigned> idxs = I.getIndices().vec();
+            NIM[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
+        }
+    }
+
+private:
+
+    DetectNullPass::NullInfoMap& NIM;
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// PHINode instruction visitor
+//
+////////////////////////////////////////////////////////////////////////////////
+
+class PHIDetectNullInstVisitor :
+        public llvm::InstVisitor<PHIDetectNullInstVisitor> {
+
+public:
+
+    PHIDetectNullInstVisitor(DetectNullPass::NullInfoMap& NIM) : NIM(NIM) {
+    }
+
+    void visitPHINode(llvm::PHINode& I) {
+        using namespace::llvm;
+
+        if (!I.getType()->isPointerTy()) return;
+
+        std::set<const PHINode*> visited;
+        auto incomingValues = getIncomingValues(I, visited);
+
+        NullInfo nullInfo = NullInfo();
+        for (const Value* II : incomingValues) {
+            if (containsKey(NIM, II)) {
+                nullInfo = nullInfo.merge(NIM[II]);
+            } else {
+                nullInfo = nullInfo.merge(NullStatus::Not_Null);
+            }
+        }
+        NIM[&I] = nullInfo;
+    }
+
+private:
+
+    DetectNullPass::NullInfoMap& NIM;
+
+    std::set<const llvm::Value*> getIncomingValues(
+            const llvm::PHINode& I,
+            std::set<const llvm::PHINode*>& visited) {
+        using namespace::llvm;
+
+        std::set<const Value*> res;
+
+        if (contains(visited, &I)) return res;
+        else visited.insert(&I);
+
+        for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
+            const Value* incoming = I.getIncomingValue(i);
+            if (isa<Value>(incoming)) {
+                if (isa<PHINode>(incoming)) {
+                    auto sub = getIncomingValues(
+                            *cast<PHINode>(incoming),
+                            visited);
+                    res.insert(sub.begin(), sub.end());
+                } else {
+                    res.insert(cast<Value>(incoming));
+                }
+            }
+        }
+
+        return res;
+    }
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
 
 DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {
 	// TODO
@@ -29,122 +157,16 @@ void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
-	using namespace::std;
-	using namespace::llvm;
 
 	init();
 
-	for_each(F, [this](const BasicBlock& BB){
-		for_each(BB, [this](const Instruction& I){
-			processInst(I);
-		});
-	});
+	RegularDetectNullInstVisitor regularVisitor(data);
+	regularVisitor.visit(F);
+
+	PHIDetectNullInstVisitor phiVisitor(data);
+	phiVisitor.visit(F);
 
 	return false;
-}
-
-void DetectNullPass::processInst(const llvm::Instruction& I) {
-	using namespace::llvm;
-
-	if (containsKey(I)) return;
-
-	if (isa<CallInst>(I))
-		{ process(cast<CallInst>(I)); }
-
-	else if (isa<StoreInst>(I))
-		{ process(cast<StoreInst>(I)); }
-
-	else if (isa<PHINode>(I))
-		{ process(cast<PHINode>(I)); }
-
-	else if (isa<InsertValueInst>(I))
-		{ process(cast<InsertValueInst>(I)); }
-}
-
-void DetectNullPass::process(const llvm::CallInst& I) {
-	if (!I.getType()->isPointerTy()) return;
-
-	data[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
-}
-
-void DetectNullPass::process(const llvm::StoreInst& I) {
-	using namespace::llvm;
-
-	const Value* ptr = I.getPointerOperand();
-	const Value* value = I.getValueOperand();
-
-	if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
-
-	if (isa<ConstantPointerNull>(*value)) {
-		data[ptr] = NullInfo().setType(NullType::DEREF).setStatus(NullStatus::Null);
-	}
-}
-
-void DetectNullPass::process(const llvm::PHINode& I) {
-	using namespace::llvm;
-
-	if (!I.getType()->isPointerTy()) return;
-
-	std::set<const PHINode*> visited;
-	auto collectedDependees = collectIncomingInsts(I, visited);
-
-	NullInfo nullInfo = NullInfo();
-	for (auto* II : collectedDependees) {
-
-	    processInst(*II);
-
-        if (containsKey(*II)) {
-            nullInfo = nullInfo.merge(data[II]);
-        } else {
-            nullInfo = nullInfo.merge(NullStatus::Not_Null);
-        }
-	}
-	data[&I] = nullInfo;
-}
-
-std::set<const llvm::Instruction*> DetectNullPass::collectIncomingInsts(
-        const llvm::PHINode& I,
-        std::set<const llvm::PHINode*>& visited) {
-    using namespace::llvm;
-    std::set<const llvm::Instruction*> res;
-
-    if (contains(visited, &I)) return res;
-    else visited.insert(&I);
-
-    for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
-        const Value* incoming = I.getIncomingValue(i);
-        if (isa<Instruction>(incoming)) {
-            if (isa<PHINode>(incoming)) {
-                auto sub = collectIncomingInsts(
-                        *cast<PHINode>(incoming),
-                        visited);
-                res.insert(sub.begin(), sub.end());
-            } else {
-                res.insert(cast<Instruction>(incoming));
-            }
-        } else {
-            errs() << "Encountered non-instruction incoming value in PHINode: "
-                    << *incoming
-                    << endl;
-        }
-    }
-
-    return res;
-}
-
-void DetectNullPass::process(const llvm::InsertValueInst& I) {
-	using namespace::std;
-	using namespace::llvm;
-
-	const Value* value = I.getInsertedValueOperand();
-	if (isa<ConstantPointerNull>(value)) {
-		const vector<unsigned> idxs = I.getIndices().vec();
-		data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
-	}
-}
-
-bool DetectNullPass::containsKey(const llvm::Value& value) {
-	return util::containsKey(data, &value);
 }
 
 DetectNullPass::~DetectNullPass() {
@@ -155,9 +177,9 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 	using namespace::std;
 
     s << asInteger(info.type) << ":" << endl;
-	for_each(info.offsetInfoMap, [&s](const NullInfo::OffsetInfoMapEntry& entry){
+	for(const auto& entry : info.offsetInfoMap) {
 		s << entry.first << "->" << asInteger(entry.second) << endl;
-	});
+	}
 
 	return s;
 }
