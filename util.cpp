@@ -5,11 +5,13 @@
  *      Author: belyaev
  */
 
-#include "util.h"
-
 #include <llvm/Constants.h>
 #include <llvm/InstrTypes.h>
 #include <llvm/Instructions.h>
+
+#include <cstdlib>
+
+#include "util.h"
 
 namespace llvm {
 // copy the standard ostream behavior with functions
@@ -209,6 +211,12 @@ bool endsWith(std::string const &fullString, std::string const &ending) {
     } else {
         return false;
     }
+}
+
+void sayonara(std::string file, int line, std::string reason) {
+   llvm::errs() << file << ":" << toString(line) << " "
+           << reason << streams::endl;
+   std::exit(EXIT_FAILURE);
 }
 
 namespace streams {

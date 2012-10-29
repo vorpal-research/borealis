@@ -5,23 +5,24 @@
  *      Author: ice-phoenix
  */
 
-
 #ifndef PREDICATEANALYSIS_H_
 #define PREDICATEANALYSIS_H_
 
+#include <llvm/Constants.h>
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
+#include <llvm/Support/InstVisitor.h>
 #include <llvm/Target/TargetData.h>
 
 #include <map>
 #include <set>
 #include <vector>
 
-#include "../Predicate/Predicate.h"
+#include "Predicate/PredicateFactory.h"
 
-#include "../slottracker.h"
-#include "../util.h"
+#include "slottracker.h"
+#include "util.h"
 
 namespace borealis {
 
@@ -44,29 +45,25 @@ public:
 	virtual ~PredicateAnalysis();
 
 	PredicateMap& getPredicateMap() {
-		return predicateMap;
+		return PM;
 	}
 
 	TerminatorPredicateMap& getTerminatorPredicateMap() {
-		return terminatorPredicateMap;
+		return TPM;
+	}
+
+	void init() {
+	    PM.clear();
+	    TPM.clear();
 	}
 
 private:
 
-	PredicateMap predicateMap;
-	TerminatorPredicateMap terminatorPredicateMap;
+	PredicateMap PM;
+	TerminatorPredicateMap TPM;
 
+	std::shared_ptr<PredicateFactory> PF;
 	TargetData* TD;
-	SlotTracker* st;
-
-	void processInst(const llvm::Instruction& I);
-	void process(const llvm::LoadInst& I);
-	void process(const llvm::StoreInst& I);
-	void process(const llvm::ICmpInst& I);
-	void process(const llvm::BranchInst& I);
-	void process(const llvm::GetElementPtrInst& I);
-
-	void process(const llvm::SExtInst& I);
 
 };
 
