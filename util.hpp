@@ -21,6 +21,7 @@
 #include <llvm/Value.h>
 #include <llvm/Type.h>
 #include <llvm/Module.h>
+#include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/Casting.h>
 
@@ -160,11 +161,24 @@ typename std::underlying_type<Enum>::type asInteger(const Enum& e) {
 
 
 template<class T>
-struct UseLLVMOstreams {
-	enum { value = false };
+struct is_using_llvm_output {
+    enum{ value =
+            std::is_base_of<llvm::Value, T>::value ||
+            std::is_base_of<llvm::Type, T>::value ||
+            std::is_base_of<llvm::StringRef, T> :: value ||
+            std::is_base_of<llvm::Twine, T>::value ||
+            std::is_base_of<llvm::Module, T>::value ||
+            std::is_base_of<llvm::Pass, T>::value
+    };
 };
 
-template<class T, bool UseLLVMOstream = false>
+template<class T>
+struct UseLLVMOstreams {
+	enum { value = is_using_llvm_output<T>::value };
+};
+
+template<class T,
+bool UseLLVMOstream = false >
 struct Stringifier;
 
 template<class T>
@@ -270,6 +284,8 @@ struct is_T_in<T,H,Tail...> : is_T_in<T, Tail...>{};
 
 template<class T>
 struct is_T_in<T> : std::false_type {};
+
+
 
 namespace streams {
 
@@ -440,10 +456,7 @@ struct hash<std::pair<T, U>> {
 
 namespace llvm {
     template<class T, class Check = typename std::enable_if<
-            std::is_base_of<llvm::Value, T>::value ||
-            std::is_base_of<llvm::Type, T>::value ||
-            std::is_base_of<llvm::Module, T>::value ||
-            std::is_base_of<llvm::StringRef, T>::value
+            borealis::util::is_using_llvm_output<T>::value
     >::type >
     std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
 
