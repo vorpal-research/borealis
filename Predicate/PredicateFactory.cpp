@@ -9,12 +9,8 @@
 
 namespace borealis {
 
-PredicateFactory::PredicateFactory() {
-	// TODO
-}
-
-PredicateFactory::~PredicateFactory() {
-	// TODO
+PredicateFactory::PredicateFactory(SlotTracker* slotTracker) {
+    this->slotTracker = slotTracker;
 }
 
 } /* namespace borealis */
