@@ -5,30 +5,37 @@
  *      Author: belyaev
  */
 
-#include <z3/z3++.h>
 #include <llvm/Value.h>
 
-#include <unordered_map>
+#include <z3/z3++.h>
+
 #include <sstream>
+#include <unordered_map>
 
 #include "Anno/anno.hpp"
+#include "Solver/Z3ExprFactory.h"
 #include "util.h"
 
 
 #pragma GCC diagnostic warning "-Wswitch-enum"
+
 
 namespace borealis {
 
 class z3Visitor: public productionVisitor {
 
 public:
+
     typedef std::unordered_map<std::string, llvm::Value*> name_context;
     typedef z3::context z3_context;
 
     typedef z3::expr expr;
 
 private:
+
     z3_context& z3;
+    Z3ExprFactory z3ef;
+
     const name_context& names;
     std::unique_ptr<expr> retVal;
 
@@ -41,7 +48,8 @@ private:
     std::string error_message() { return errors.str(); }
 
 public:
-    z3Visitor(z3_context& z3, const name_context& names):z3(z3), names(names), retVal(nullptr), fucked_up(false) {}
+
+    z3Visitor(z3_context& z3, const name_context& names): z3(z3), z3ef(z3), names(names), retVal(nullptr), fucked_up(false) {}
     virtual ~z3Visitor(){}
 
     const expr& get() { return *retVal; }
@@ -49,27 +57,25 @@ public:
     virtual void onDoubleConstant(double v) {
         if(fucked_up) return;
 
-        using borealis::util::toString;
-        assign( z3.real_val(toString(v).c_str()) );
+        assign( z3ef.getRealConst(v) );
     }
     virtual void onIntConstant(int v) {
         if(fucked_up) return;
 
-        assign( z3.int_val(v) );
+        assign( z3ef.getIntConst(v) );
     }
     virtual void onBoolConstant(bool v) {
         if(fucked_up) return;
 
-        assign( z3.bool_val(v) );
+        assign( z3ef.getBoolConst(v) );
     }
 
     virtual void onVariable(const std::string& str) {
         if(fucked_up) return;
 
-        using z3::valueToExpr;
         if(!!names.count(str)) {
             auto v = names.at(str);
-            assign( valueToExpr(z3, *v, str) );
+            assign( z3ef.getExprForValue(*v, str) );
         } else {
             fucked_up = true;
             errors << "Could not find the desired variable: " << str;
@@ -165,25 +171,23 @@ public:
             case op::OPCODE_BOR:   assign( left.get() |  right.get() ); break;
             case op::OPCODE_XOR:   assign( left.get() ^  right.get() ); break;
             // cases not supported:
-
             case op::OPCODE_MOD:   assign( make_mod_expr(left.get(), right.get()) ); break;
             case op::OPCODE_LSH:   assign( make_lsh_expr(left.get(), right.get()) ); break;
             case op::OPCODE_RSH:   assign( make_rsh_expr(left.get(), right.get()) ); break;
             }
         }
     }
+
     virtual void onUnary(un_opcode op, const prod_t& p) {
         if(fucked_up) return;
         else {
             z3Visitor operand(z3, names);
             p->accept(operand);
-
             if(operand.fucked_up) {
                 errors << operand.error_message();
                 fucked_up = true;
                 return;
             }
-
 
             switch(op) {
             typedef un_opcode op;
@@ -197,5 +201,3 @@ public:
 };
 
 } // namespace borealis
-
-

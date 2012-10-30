@@ -14,6 +14,7 @@
 #include "util.h"
 
 namespace llvm {
+
 // copy the standard ostream behavior with functions
 llvm::raw_ostream& operator<<(
 		llvm::raw_ostream& ost,
@@ -82,11 +83,11 @@ std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
 	}
 }
 
-std::string conditionToString(const int cond) {
+std::string conditionString(const int cond) {
 	return analyzeCondition(cond).first;
 }
 
-ConditionType conditionToType(const int cond) {
+ConditionType conditionType(const int cond) {
 	return analyzeCondition(cond).second;
 }
 
@@ -121,75 +122,7 @@ ValueType valueType(const llvm::Value& value) {
 	}
 }
 
-ValueType derefValueType(const llvm::Value& value) {
-    using namespace::llvm;
-    typedef ValueType VT;
-
-	Type* type = value.getType()->getPointerElementType();
-	if (type->isIntegerTy()) {
-		return VT::INT_VAR;
-	} else if (type->isFloatingPointTy()) {
-		return VT::REAL_VAR;
-	} else if (type->isPointerTy()) {
-		return VT::PTR_VAR;
-	} else {
-		return VT::UNKNOWN;
-	}
-}
-
 } // namespace llvm
-
-namespace z3 {
-z3::expr valueByTypeToExpr(
-		z3::context& ctx,
-		const llvm::ValueType& vt,
-		const std::string& valueName) {
-	using namespace::llvm;
-	typedef ValueType VT;
-
-	switch(vt) {
-	case VT::INT_CONST:
-		return ctx.int_val(valueName.c_str());
-	case VT::INT_VAR:
-		return ctx.int_const(valueName.c_str());
-	case VT::REAL_CONST:
-		return ctx.real_val(valueName.c_str());
-	case VT::REAL_VAR:
-		return ctx.real_const(valueName.c_str());
-	case VT::BOOL_CONST:
-		return ctx.bool_val(valueName.c_str());
-	case VT::BOOL_VAR:
-		return ctx.bool_const(valueName.c_str());
-	case VT::NULL_PTR_CONST:
-		return ctx.int_val(0);
-	case VT::PTR_CONST:
-    case VT::PTR_VAR:
-		return ctx.int_const(valueName.c_str());
-	case VT::UNKNOWN:
-		return *((z3::expr*)0); // TODO: Sayonara
-	}
-}
-
-z3::expr valueToExpr(
-		z3::context& ctx,
-		const llvm::Value& value,
-		const std::string& valueName) {
-	using namespace::llvm;
-
-	ValueType vt = valueType(value);
-	return valueByTypeToExpr(ctx, vt, valueName);
-}
-
-z3::expr derefValueToExpr(
-		z3::context& ctx,
-		const llvm::Value& value,
-		const std::string& valueName) {
-	using namespace::llvm;
-
-	ValueType vt = derefValueType(value);
-	return valueByTypeToExpr(ctx, vt, valueName);
-}
-} // namespace z3
 
 namespace borealis {
 namespace util {
@@ -211,12 +144,6 @@ bool endsWith(std::string const &fullString, std::string const &ending) {
     } else {
         return false;
     }
-}
-
-void sayonara(std::string file, int line, std::string reason) {
-   llvm::errs() << file << ":" << toString(line) << " "
-           << reason << streams::endl;
-   std::exit(EXIT_FAILURE);
 }
 
 namespace streams {

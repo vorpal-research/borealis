@@ -5,8 +5,9 @@
  *      Author: ice-phoenix
  */
 
+#include "Solver/util.h"
 #include "util.h"
-#include "../util.h"
+#include "Z3ExprFactory.h"
 
 namespace borealis {
 
@@ -19,15 +20,17 @@ void addAxiomsForGEP(
         z3::solver& s) {
     using namespace::z3;
 
-    auto ptr = to_expr(ctx, Z3_mk_bound(ctx, 0, ctx.int_sort()));
+    Z3ExprFactory z3ef(ctx);
+
+    auto ptr = to_expr(ctx, Z3_mk_bound(ctx, 0, ctx.bv_sort(32)));
     auto freevar = to_expr(ctx, Z3_mk_bound(ctx, 1, ctx.int_sort()));
-    auto null = ctx.int_val(0);
+    auto null = z3ef.getNullPtr();
 
     auto body = implies(
             ptr != null,
             gep(ptr, freevar) != null);
 
-    Z3_sort sort_array[] = {Z3_sort(ctx.int_sort()), Z3_sort(ctx.int_sort())};
+    Z3_sort sort_array[] = {Z3_sort(ctx.int_sort()), Z3_sort(ctx.bv_sort(32))};
     Z3_symbol name_array[] = {Z3_symbol(ctx.str_symbol("freevar")), Z3_symbol(ctx.str_symbol("ptr"))};
 
     auto axiom = to_expr(
@@ -60,14 +63,14 @@ z3::check_result check(
     }
 
     // GEP processing
-    sort domain[] = {ctx.int_sort(), ctx.int_sort()};
-    func_decl gep = ctx.function("gep", 2, domain, ctx.int_sort());
+    sort domain[] = {ctx.bv_sort(32), ctx.int_sort()};
+    func_decl gep = ctx.function("gep", 2, domain, ctx.bv_sort(32));
     addAxiomsForGEP(gep, ctx, s);
 
     expr assertionPredicate = ctx.bool_const("$isTrue$");
     s.add(implies(assertionPredicate, assertion));
 
-    return s.check(1, &assertionPredicate);;
+    return s.check(1, &assertionPredicate);
 }
 
 bool checkSat(

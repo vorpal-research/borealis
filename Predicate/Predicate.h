@@ -12,10 +12,11 @@
 #include "llvm/Value.h"
 #include "z3/z3++.h"
 
-#include <typeindex>
 #include <tuple>
 #include <unordered_set>
 
+#include "Solver/Z3ExprFactory.h"
+#include "typeindex.hpp"
 #include "util.h"
 
 namespace borealis {
@@ -41,7 +42,6 @@ public:
 		static size_t hash(const Key& k) {
 			return k.first ^ (size_t)k.second;
 		}
-
 		size_t operator()(const Key& k) const {
 			return hash(k);
 		}
@@ -53,7 +53,6 @@ public:
         static size_t hash(const Dependee& k) {
             return static_cast<size_t>(k.first) ^ (size_t)k.second;
         }
-
         size_t operator()(const Dependee& k) const {
             return hash(k);
         }
@@ -76,7 +75,7 @@ public:
 		return type;
 	}
 
-	virtual z3::expr toZ3(z3::context& ctx) const = 0;
+	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
 
 protected:
 

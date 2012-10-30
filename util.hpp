@@ -16,18 +16,19 @@
 #include <type_traits>
 #include <vector>
 
-#include <type_traits>
-
-#include <llvm/Value.h>
-#include <llvm/Type.h>
 #include <llvm/Module.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/Casting.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Type.h>
+#include <llvm/Value.h>
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// borealis::util
+//
+////////////////////////////////////////////////////////////////////////////////
 
 namespace borealis {
-
-
-
 namespace util {
 
 // stupid straightforward collection view
@@ -69,8 +70,6 @@ template<class Container>
 inline auto tail(const Container& con) -> CollectionView<decltype(con.begin())> {
 	return view(++con.begin(), con.end());
 }
-
-
 
 template<class Container, class Callable>
 inline void for_each(const Container& con, const Callable cl) {
@@ -120,6 +119,7 @@ bool contains(const Container& con, const T& t) {
 	if (std::find(con.begin(), con.end(), t) != con.end()) return true;
 	else return false;
 }
+
 namespace impl_ {
 namespace {
 
@@ -137,8 +137,8 @@ struct tuple_for_each_helper<Tup, Op, 0> {
     inline static void apply(Tup&, Op) {};
 };
 
-} //namespace
-} //namespace impl_
+} // namespace
+} // namespace impl_
 
 template<class Tup, class Op>
 void tuple_for_each(Tup& tup, Op op) {
@@ -146,7 +146,11 @@ void tuple_for_each(Tup& tup, Op op) {
     return delegate::apply(tup, op);
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+//
+// borealis::util::enums
+//
+////////////////////////////////////////////////////////////////////////////////
 
 namespace enums {
 
@@ -157,7 +161,11 @@ typename std::underlying_type<Enum>::type asInteger(const Enum& e) {
 
 } // namespace enums
 
-
+////////////////////////////////////////////////////////////////////////////////
+//
+// borealis::util
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
 struct UseLLVMOstreams {
@@ -213,6 +221,14 @@ inline std::string toString(const T& t) {
 	return Stringifier<T, UseLLVMOstreams<T>::value>::toString(t);
 }
 
+template<typename RetTy = void>
+RetTy sayonara(std::string file, int line, std::string reason) {
+   llvm::errs() << file << ":" << toString(line) << " "
+           << reason << streams::endl;
+   std::exit(EXIT_FAILURE);
+   return *((RetTy*)nullptr);
+}
+
 // generalized hash for enum classes
 template<class Enum>
 struct enum_hash {
@@ -236,6 +252,7 @@ struct hash_impl {
         return next(hash_combiner(a, b), t);
     }
 };
+
 template<class...types>
 struct hash_impl<0, types...> {
     size_t operator()(size_t a, const std::tuple<types...>& t) const {
@@ -270,6 +287,12 @@ struct is_T_in<T,H,Tail...> : is_T_in<T, Tail...>{};
 
 template<class T>
 struct is_T_in<T> : std::false_type {};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// borealis::util::streams
+//
+////////////////////////////////////////////////////////////////////////////////
 
 namespace streams {
 
@@ -321,11 +344,15 @@ std::string with_llvm_stream(Func f) {
 	return ost.str();
 }
 
+} // namespace streams
+} // namespace util
+} // namespace borealis
 
-
-} /* namespace streams */
-} /* namespace util */
-} /* namespace borealis */
+////////////////////////////////////////////////////////////////////////////////
+//
+// std
+//
+////////////////////////////////////////////////////////////////////////////////
 
 namespace std {
 
@@ -435,8 +462,13 @@ struct hash<std::pair<T, U>> {
     }
 };
 
+} // namespace std
 
-} /* namespace std */
+////////////////////////////////////////////////////////////////////////////////
+//
+// llvm
+//
+////////////////////////////////////////////////////////////////////////////////
 
 namespace llvm {
     template<class T, class Check = std::enable_if<
@@ -451,6 +483,6 @@ namespace llvm {
         ostt << llvm_val;
         return std::operator<<(ost, ostt.str());
     }
-}
+} // namespace llvm
 
 #endif /* UTIL_HPP_ */

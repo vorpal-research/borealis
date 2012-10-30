@@ -68,12 +68,14 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(z3::context& ctx) const {
     auto from = vector<expr>();
     auto to = vector<expr>();
 
+    Z3ExprFactory z3ef(ctx);
+
     for(auto& entry : data) {
         auto v = entry.second;
         if (v->getType() == PredicateType::PATH) {
-            from.push_back(v->toZ3(ctx));
+            from.push_back(v->toZ3(z3ef));
         } else if (v->getType() == PredicateType::STATE) {
-            to.push_back(v->toZ3(ctx));
+            to.push_back(v->toZ3(z3ef));
         }
     }
 

@@ -7,8 +7,6 @@
 
 #include "StorePredicate.h"
 
-#include "typeindex.hpp"
-
 namespace borealis {
 
 StorePredicate::StorePredicate(
@@ -17,9 +15,9 @@ StorePredicate::StorePredicate(
 		SlotTracker* st) :
 				lhv(lhv),
 				rhv(rhv),
-				lhvs(st->getLocalName(lhv)),
-				rhvs(st->getLocalName(rhv)) {
-	this->asString = "*" + lhvs + "=" + rhvs;
+				_lhv(st->getLocalName(lhv)),
+				_rhv(st->getLocalName(rhv)) {
+	this->asString = "*" + _lhv + "=" + _rhv;
 }
 
 Predicate::Key StorePredicate::getKey() const {
@@ -36,13 +34,15 @@ Predicate::DependeeSet StorePredicate::getDependees() const {
     return res;
 }
 
-z3::expr StorePredicate::toZ3(z3::context& ctx) const {
+z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef) const {
 	using namespace::z3;
 
-    expr l = valueToExpr(ctx, *lhv, lhvs);
-    expr r = valueToExpr(ctx, *rhv, rhvs);
+    expr l = z3ef.getExprForValue(*lhv, _lhv);
+    expr r = z3ef.getExprForValue(*rhv, _rhv);
 
-    func_decl deref = ctx.function("*", l.get_sort(), r.get_sort());
+    sort domain = l.get_sort();
+    sort range = r.get_sort();
+    func_decl deref = z3ef.getDerefFunction(domain, range);
 
 	return deref(l) == r;
 }

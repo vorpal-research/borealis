@@ -11,8 +11,7 @@
 #include <llvm/Value.h>
 
 #include "Predicate.h"
-
-#include "../slottracker.h"
+#include "slottracker.h"
 
 namespace borealis {
 
@@ -31,7 +30,7 @@ public:
     virtual Dependee getDependee() const;
     virtual DependeeSet getDependees() const;
 
-	virtual z3::expr toZ3(z3::context& ctx) const;
+	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
 private:
 
@@ -40,10 +39,10 @@ private:
 	const llvm::Value* op2;
 	const int cond;
 
-	const std::string lhvs;
-	const std::string op1s;
-	const std::string op2s;
-	const std::string conds;
+	const std::string _lhv;
+	const std::string _op1;
+	const std::string _op2;
+	const std::string _cond;
 
 };
 

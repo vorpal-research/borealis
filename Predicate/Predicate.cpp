@@ -12,7 +12,7 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p
 	s << p.toString();
 	return s;
 }
-} /* namespace llvm */
+} // namespace llvm
 
 namespace borealis {
 
@@ -20,4 +20,4 @@ Predicate::Predicate(const PredicateType type) : type(type) {}
 
 Predicate::Predicate() : Predicate(PredicateType::STATE) {}
 
-} /* namespace borealis */
+} // namespace borealis

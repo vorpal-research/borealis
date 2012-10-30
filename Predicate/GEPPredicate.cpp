@@ -7,8 +7,6 @@
 
 #include "GEPPredicate.h"
 
-#include "typeindex.hpp"
-
 namespace borealis {
 
 GEPPredicate::GEPPredicate(
@@ -51,19 +49,18 @@ Predicate::DependeeSet GEPPredicate::getDependees() const {
     return res;
 }
 
-z3::expr GEPPredicate::toZ3(z3::context& ctx) const {
+z3::expr GEPPredicate::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
-    expr l = valueToExpr(ctx, *lhv, _lhv);
-    expr r = valueToExpr(ctx, *rhv, _rhv);
+    expr l = z3ef.getExprForValue(*lhv, _lhv);
+    expr r = z3ef.getExprForValue(*rhv, _rhv);
 
-    sort domain[] = {r.get_sort(), r.get_sort()};
-    func_decl gep = ctx.function("gep", 2, domain, l.get_sort());
+    func_decl gep = z3ef.getGEPFunction();
 
-    expr shift = ctx.int_val(0);
+    expr shift = z3ef.getIntConst(0);
     for (const auto& s : shifts) {
-        expr by = valueToExpr(ctx, *std::get<0>(s), std::get<1>(s));
-        expr size = ctx.int_val((__uint64)std::get<2>(s));
+        expr by = z3ef.getExprForValue(*std::get<0>(s), std::get<1>(s));
+        expr size = z3ef.getIntConst(std::get<2>(s));
         shift = shift + by * size;
     }
 

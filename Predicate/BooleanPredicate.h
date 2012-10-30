@@ -33,14 +33,14 @@ public:
     virtual Dependee getDependee() const;
     virtual DependeeSet getDependees() const;
 
-	virtual z3::expr toZ3(z3::context& ctx) const;
+	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
 private:
 
 	const llvm::Value* v;
 	const bool b;
-	const std::string vs;
-	const std::string bs;
+	const std::string _v;
+	const std::string _b;
 
 };
 

@@ -24,7 +24,6 @@ bool AnnotatorPass::runOnModule(llvm::Module& M) {
     using borealis::util::view;
     using borealis::logging::endl;
 
-
     auto& commentsPass = getAnalysis< comments >();
     auto& locPass = getAnalysis< locs >();
 
