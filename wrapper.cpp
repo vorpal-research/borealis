@@ -56,6 +56,11 @@
 #include <llvm/Support/SystemUtils.h>
 #include <llvm/Support/ToolOutputFile.h>
 
+#define LOG4CPP_FIX_ERROR_COLLISION 1
+#include <log4cpp/PropertyConfigurator.hh>
+
+#include "Logging/logger.hpp"
+
 #include "comments.h"
 #include "util.h"
 #include "config.h"
@@ -74,7 +79,7 @@ using config::Config;
 
 template<class T>
 void print(const T& val) {
-	llvm::errs() << val << " ";
+	borealis::infos() << val << " ";
 }
 
 
@@ -83,6 +88,14 @@ int main(int argc, const char** argv)
 {
 	using namespace clang;
 	using namespace llvm;
+	using borealis::errs;
+	using borealis::endl;
+
+    Config cfg("wrapper.conf");
+    auto logCFG = cfg.getValue<std::string>("logging", "ini");
+    if(!logCFG.empty()) {
+        borealis::logging::configureLoggingFacility(*logCFG.get());
+    }
 
 	// arguments to pass to the clang front-end
 	vector<const char *> args(argv,argv+argc);
@@ -99,8 +112,13 @@ int main(int argc, const char** argv)
 					[](const StringRef& ref) {return ref.startswith("-pass") || ref.startswith("-load");});
 	cargs.erase(newend, cargs.end());
 
-	for_each(cargs, print<StringRef>);
-	errs() << endl;
+
+	{
+        auto out = borealis::logging::log_entry(infos());
+        for(auto& arg : cargs) {
+            out << arg << " ";
+        }
+	}
 
     DiagnosticOptions DiagOpts;
     auto diags = CompilerInstance::createDiagnostics(DiagOpts, cargs.size(), &*cargs.begin());
@@ -110,12 +128,16 @@ int main(int argc, const char** argv)
 
 
 	// Print the argument list from the "real" compiler invocation
-	errs() << ("clang ");
 	vector<string> argsFromInvocation;
 	invoke->toArgs(argsFromInvocation);
-	for (auto i = argsFromInvocation.begin(); i != argsFromInvocation.end(); ++i)
-		errs() << (*i) << " ";
-	errs() << endl;
+
+    {
+        auto out = borealis::logging::log_entry(infos());
+        out << "clang ";
+        for(auto& arg : argsFromInvocation) {
+           out << arg << " ";
+        }
+    }
 
 	clang::CompilerInstance Clang;
 	Clang.setInvocation(invoke.take());
@@ -141,7 +163,7 @@ int main(int argc, const char** argv)
 	// note that M.get() gets a pointer or reference to the module to analyze
 	pm.add(new TargetData(&module));
 
-	Config cfg("wrapper.conf");
+
 
 	vector<StringRef> passes2run;
 
@@ -172,21 +194,28 @@ int main(int argc, const char** argv)
         if( arg.startswith("-load") ) libs2load.push_back(arg.drop_front(5));
     }
 
-	errs() << "Passes:" << endl;
-	if (passes2run.empty())
-		errs() << error("None") << endl;
-	for_each(passes2run, [](const StringRef& pass) {
-		errs().indent(2);
-		errs() << pass << endl;
-	});
+    {
+        borealis::logging::log_entry out(infos());
+        out << "Passes:" << endl;
+        if (passes2run.empty())
+            out << "  " << error("None") << endl;
+        for(auto& pass: passes2run) {
+            out << "  ";
+            out << pass << endl;
+        }
+    }
 
-	errs() << "Dynamic libraries:" << endl;
-	if (libs2load.empty())
-		errs() << error("None") << endl;
-	for_each(libs2load, [](const StringRef& lib) {
-		errs().indent(2);
-		errs() << lib << endl;
-	});
+
+    {
+        borealis::logging::log_entry out(infos());
+        out << "Dynamic libraries:" << endl;
+        if (libs2load.empty())
+            out << "  " << error("None") << endl;
+        for(auto& lib: libs2load) {
+            out << "  ";
+            out << lib << endl;
+        }
+    }
 
 	PluginLoader pl;
 
@@ -233,7 +262,7 @@ int main(int argc, const char** argv)
 						return;
 					}
 
-					errs() << pass << ":" << passInfo->getPassName() << endl;
+					infos() << pass << ": " << passInfo->getPassName() << endl;
 
 					if(passInfo->getNormalCtor()) {
 						auto thePass = passInfo->getNormalCtor()();
@@ -247,7 +276,6 @@ int main(int argc, const char** argv)
 
 		verifyModule(module, PrintMessageAction);
 
-		errs().resetColor();
 	}
 
 	return 0;

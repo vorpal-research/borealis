@@ -20,11 +20,18 @@
 #include "NameTracker.h"
 #include "../comments.h"
 
+#include "../Logging/logger.hpp"
+
+#include <log4cpp/FileAppender.hh>
+#include <log4cpp/PatternLayout.hh>
+
 namespace borealis {
 
-class AnnotatorPass: public llvm::ModulePass {
+class AnnotatorPass: public llvm::ModulePass, public
+    borealis::logging::ClassLevelLogging<AnnotatorPass> {
 public:
     static char ID;
+    static constexpr decltype("annotator") loggerDomain() { return "annotator"; }
 
     AnnotatorPass(): llvm::ModulePass(ID) {};
 
