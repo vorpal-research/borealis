@@ -439,11 +439,12 @@ struct hash<std::pair<T, U>> {
 } /* namespace std */
 
 namespace llvm {
-    template<class T, class Check = std::enable_if<
+    template<class T, class Check = typename std::enable_if<
             std::is_base_of<llvm::Value, T>::value ||
             std::is_base_of<llvm::Type, T>::value ||
-            std::is_base_of<llvm::Module, T>::value
-    > >
+            std::is_base_of<llvm::Module, T>::value ||
+            std::is_base_of<llvm::StringRef, T>::value
+    >::type >
     std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
 
         std::string buf;
