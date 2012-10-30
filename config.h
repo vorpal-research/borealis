@@ -44,6 +44,12 @@ public:
         } else return nothing<T>();
     }
 
+    std::multimap<std::string, std::string> optionsFor(const std::string& name) {
+        return parser.getOptions(name);
+    }
+
+
+
     inline bool ok() {
         return valid;
     }

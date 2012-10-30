@@ -21,9 +21,7 @@ using std::nullptr_t;
 
 #include <iostream>
 
-
-namespace borealis {
-namespace util{
+namespace borealis { namespace util {
 
 template<class T>
 class option {

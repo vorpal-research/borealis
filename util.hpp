@@ -16,6 +16,11 @@
 #include <type_traits>
 #include <vector>
 
+#include <type_traits>
+
+#include <llvm/Value.h>
+#include <llvm/Type.h>
+#include <llvm/Module.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/Casting.h>
 
@@ -285,6 +290,17 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const error_printer<T>& v) 
 	return s;
 }
 
+template<class T>
+std::ostream& operator <<(std::ostream& s, const error_printer<T>& v) {
+    using namespace::std;
+
+    s << "!";
+    s << v.val;
+    s << "!";
+
+    return s;
+}
+
 // prints values in red:
 //   errs() << error(42) << endl;
 template<class T>
@@ -421,5 +437,20 @@ struct hash<std::pair<T, U>> {
 
 
 } /* namespace std */
+
+namespace llvm {
+    template<class T, class Check = std::enable_if<
+            std::is_base_of<llvm::Value, T>::value ||
+            std::is_base_of<llvm::Type, T>::value ||
+            std::is_base_of<llvm::Module, T>::value
+    > >
+    std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
+
+        std::string buf;
+        llvm::raw_string_ostream ostt(buf);
+        ostt << llvm_val;
+        return std::operator<<(ost, ostt.str());
+    }
+}
 
 #endif /* UTIL_HPP_ */

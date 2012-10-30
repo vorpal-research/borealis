@@ -62,6 +62,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Anno \
 	$(PWD)/Query \
 	$(PWD)/Solver \
+	$(PWD)/Logging \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
 	
@@ -120,7 +121,8 @@ LIBS := \
 	$(CLANGLIBS) \
 	-lz3 \
 	-ldl \
-	-lcfgparser
+	-lcfgparser \
+	-llog4cpp
 
 default: all
 

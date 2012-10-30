@@ -18,19 +18,15 @@ void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     Info.addRequiredTransitive< locs >();
 }
 
-bool AnnotatorPass::runOnModule(llvm::Module&) {
+bool AnnotatorPass::runOnModule(llvm::Module& M) {
     using borealis::DataProvider;
     using borealis::comments::GatherCommentsAction;
-
-    using llvm::errs;
-    using borealis::util::streams::endl;
-    using borealis::util::toString;
     using borealis::util::view;
+    using borealis::logging::endl;
 
 
     auto& commentsPass = getAnalysis< comments >();
     auto& locPass = getAnalysis< locs >();
-
 
     for(const auto & Comment: commentsPass.provide().getComments()) {
         const auto & loc = Comment.first;
@@ -41,7 +37,6 @@ bool AnnotatorPass::runOnModule(llvm::Module&) {
             annotations[it.second] = cmd;
         }
     }
-
 
     return false;
 }
