@@ -34,12 +34,12 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace::std;
-    using namespace::llvm;
+
+    init();
 
     PA = &getAnalysis<PredicateAnalysis>();
 
-    workQueue.push(make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
+    workQueue.push(std::make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
     processQueue();
 
     removeUnreachableStates();
