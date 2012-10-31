@@ -16,8 +16,8 @@ BooleanPredicate::BooleanPredicate(
 		const bool b,
 		SlotTracker* st) :
 	v(v),
-	vs(st->getLocalName(v)),
 	b(b),
+	vs(st->getLocalName(v)),
 	bs(b ? "TRUE" : "FALSE") {
 	this->asString = vs + "=" + bs;
 }

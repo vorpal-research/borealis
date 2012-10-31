@@ -33,11 +33,11 @@ public:
 
 private:
 
+    const llvm::Value* lhv;
+    const llvm::Value* rhv;
+
 	const std::string lhvs;
 	const std::string rhvs;
-
-	const llvm::Value* lhv;
-	const llvm::Value* rhv;
 
 };
 

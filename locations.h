@@ -104,7 +104,7 @@ struct Locus {
 	std::string filename;
 	LocalLocus loc;
 
-	Locus():loc(), filename(UNKNOWN_NAME) {};
+	Locus(): filename(UNKNOWN_NAME), loc() {};
 	Locus(const Locus& that): filename(that.filename), loc(that.loc) {};
 	Locus(Locus&& that): filename(move(that.filename)), loc(move(that.loc)) {};
 	explicit Locus(const LocalLocus& that): filename(UNKNOWN_NAME), loc(that) {};

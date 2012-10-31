@@ -16,7 +16,7 @@ StorePredicate::StorePredicate(
 		const llvm::Value* rhv,
 		SlotTracker* st) :
 				lhv(lhv),
-				rhv(rhv),
+                rhv(rhv),
 				lhvs(st->getLocalName(lhv)),
 				rhvs(st->getLocalName(rhv)) {
 	this->asString = "*" + lhvs + "=" + rhvs;

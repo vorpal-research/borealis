@@ -122,7 +122,7 @@ protected:
 struct anno_debug: public pegtl::debug_base {
 	template<typename TopRule>
 	explicit anno_debug(const pegtl::tag<TopRule> & help) :
-			m_printer(help), unrecover(false) {
+	    unrecover(false), m_printer(help)  {
 	}
 
 	std::vector<std::string> trace;
