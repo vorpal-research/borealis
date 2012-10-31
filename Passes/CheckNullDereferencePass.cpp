@@ -22,9 +22,110 @@ using util::streams::endl;
 
 class DerefInstVisitor : public InstVisitor<DerefInstVisitor> {
 
+public:
+
+    DerefInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {
+    }
+
+    void visitLoadInst(llvm::LoadInst& I) {
+        using llvm::Value;
+
+        const Value* ptr = I.getPointerOperand();
+        if (ptr->isDereferenceablePointer()) return;
+
+        for (const auto* derefNullValue : *(pass->DerefNullSet)) {
+            if (pass->AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
+                pass->ValueNullSet->insert(&I);
+            }
+        }
+    }
+
 private:
 
-    AliasAnalysis* AA;
+    CheckNullDereferencePass* pass;
+
+};
+
+class ValueInstVisitor : public InstVisitor<ValueInstVisitor> {
+
+public:
+
+    ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {
+    }
+
+    void visitLoadInst(llvm::LoadInst& I) {
+        using llvm::Value;
+
+        const Value* ptr = I.getPointerOperand();
+        if (ptr->isDereferenceablePointer()) return;
+
+        for (const auto* nullValue : *(pass->ValueNullSet)) {
+            if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+                if (checkNullDereference(I, *ptr)) {
+                    reportNullDereference(I, *ptr, *nullValue);
+                }
+            }
+        }
+    }
+
+    void visitStoreInst(llvm::StoreInst& I) {
+        using llvm::Value;
+
+        const Value* ptr = I.getPointerOperand();
+        if (ptr->isDereferenceablePointer()) return;
+
+        for (const auto nullValue : *(pass->ValueNullSet)) {
+            if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
+                if (checkNullDereference(I, *ptr)) {
+                    reportNullDereference(I, *ptr, *nullValue);
+                }
+            }
+        }
+    }
+
+    bool checkNullDereference(
+            const llvm::Instruction& where,
+            const llvm::Value& what) {
+        using namespace::z3;
+
+        NullPtrQuery q = NullPtrQuery(&what, pass->slotTracker);
+
+        PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
+        for (const auto& ps : psv) {
+            context ctx;
+            Z3ExprFactory z3ef(ctx);
+
+            expr assertion = q.toZ3(z3ef);
+            std::pair<expr, expr> state = ps.toZ3(z3ef);
+
+            if (
+                    checkSatOrUnknown(
+                            assertion,
+                            std::vector<expr> { state.first, state.second },
+                            ctx)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void reportNullDereference(
+            const llvm::Value& in,
+            const llvm::Value& what,
+            const llvm::Value& from) {
+        llvm::errs() << "Possible NULL dereference in" << endl
+                << "\t" << in << endl
+                << "from" << endl
+                << "\t" << from << endl
+                << "with" << endl
+                << "\t" << what << endl;
+    }
+
+private:
+
+    CheckNullDereferencePass* pass;
 
 };
 
@@ -49,7 +150,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     AA = &getAnalysis<DSAA>();
     DNP = &getAnalysis<DetectNullPass>();
     PSA = &getAnalysis<PredicateStateAnalysis>();
-    st = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
+    slotTracker = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);
@@ -57,134 +158,11 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     ValueNullSet = &valueSet;
     DerefNullSet = &derefSet;
 
-    processDerefNullSet(F);
-    processValueNullSet(F);
+    DerefInstVisitor div(this);
+    div.visit(F);
 
-    return false;
-}
-
-void CheckNullDereferencePass::processDerefNullSet(llvm::Function& F) {
-    for (const auto& BB : F) {
-        for (const auto& I : BB) {
-            derefProcessInst(I);
-        }
-    }
-}
-
-void CheckNullDereferencePass::derefProcessInst(const llvm::Instruction& I) {
-    using namespace::llvm;
-
-    if (isa<LoadInst>(I))
-    { derefProcess(cast<LoadInst>(I)); }
-}
-
-void CheckNullDereferencePass::derefProcess(const llvm::LoadInst& I) {
-    using namespace::std;
-    using namespace::llvm;
-
-    const Value* ptr = I.getPointerOperand();
-
-    if (ptr->isDereferenceablePointer()) return;
-
-    for (const auto derefNullValue : *DerefNullSet) {
-        if (AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
-            ValueNullSet->insert(&I);
-        }
-    }
-}
-
-void CheckNullDereferencePass::processValueNullSet(llvm::Function& F) {
-    for (const auto& BB : F) {
-        for (const auto& I : BB) {
-            processInst(I);
-        }
-    }
-}
-
-void CheckNullDereferencePass::processInst(const llvm::Instruction& I) {
-    using namespace::llvm;
-
-    if (isa<LoadInst>(I))
-    { process(cast<LoadInst>(I)); }
-
-    else if (isa<StoreInst>(I))
-    { process(cast<StoreInst>(I)); }
-}
-
-void CheckNullDereferencePass::process(const llvm::LoadInst& I) {
-    using namespace::std;
-    using namespace::llvm;
-
-    const Value* ptr = I.getPointerOperand();
-
-    if (ptr->isDereferenceablePointer()) return;
-
-    for (const auto nullValue : *ValueNullSet) {
-        if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-            if (checkNullDereference(I, *ptr)) {
-                reportNullDereference(I, *ptr, *nullValue);
-            }
-        }
-    }
-}
-
-void CheckNullDereferencePass::process(const llvm::StoreInst& I) {
-    using namespace::std;
-    using namespace::llvm;
-
-    const Value* ptr = I.getPointerOperand();
-
-    if (ptr->isDereferenceablePointer()) return;
-
-    for (const auto nullValue : *ValueNullSet) {
-        if (AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-            if (checkNullDereference(I, *ptr)) {
-                reportNullDereference(I, *ptr, *nullValue);
-            }
-        }
-    }
-}
-
-void CheckNullDereferencePass::reportNullDereference(
-        const llvm::Value& in,
-        const llvm::Value& what,
-        const llvm::Value& from) {
-    using namespace::llvm;
-
-    errs() << "Possible NULL dereference in" << endl
-            << "\t" << in << endl
-            << "from" << endl
-            << "\t" << from << endl
-            << "with" << endl
-            << "\t" << what << endl;
-}
-
-bool CheckNullDereferencePass::checkNullDereference(
-        const llvm::Instruction& where,
-        const llvm::Value& what) {
-    using namespace::std;
-    using namespace::llvm;
-    using namespace::z3;
-
-    NullPtrQuery q = NullPtrQuery(&what, st);
-
-    PredicateStateVector psv = PSA->getPredicateStateMap()[&where];
-    for (const auto& ps : psv) {
-        context ctx;
-        Z3ExprFactory z3ef(ctx);
-
-        expr assertion = q.toZ3(z3ef);
-        pair<expr, expr> state = ps.toZ3(z3ef);
-
-        if (
-                checkSatOrUnknown(
-                        assertion,
-                        vector<expr> { state.first, state.second },
-                        ctx)
-        ) {
-            return true;
-        }
-    }
+    ValueInstVisitor viv(this);
+    viv.visit(F);
 
     return false;
 }

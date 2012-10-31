@@ -20,7 +20,13 @@
 
 namespace borealis {
 
+class DerefInstVisitor;
+class ValueInstVisitor;
+
 class CheckNullDereferencePass: public llvm::FunctionPass {
+
+    friend class DerefInstVisitor;
+    friend class ValueInstVisitor;
 
 public:
 
@@ -36,29 +42,11 @@ private:
 	llvm::AliasAnalysis* AA;
 	DetectNullPass* DNP;
 	PredicateStateAnalysis* PSA;
-	SlotTracker* st;
+	SlotTracker* slotTracker;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;
 
-	void processValueNullSet(llvm::Function& F);
-	void processDerefNullSet(llvm::Function& F);
-
-	void processInst(const llvm::Instruction& I);
-	void process(const llvm::LoadInst& I);
-	void process(const llvm::StoreInst& I);
-
-	void derefProcessInst(const llvm::Instruction& I);
-	void derefProcess(const llvm::LoadInst& I);
-
-	void reportNullDereference(
-	        const llvm::Value& in,
-	        const llvm::Value& what,
-	        const llvm::Value& from);
-
-	bool checkNullDereference(
-	        const llvm::Instruction& where,
-	        const llvm::Value& what);
 };
 
 } /* namespace borealis */
