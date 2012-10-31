@@ -40,9 +40,15 @@ public:
         return *this;
     }
 
-    ~log_entry() {
-        log << buf->str();
+    void flush() {
+        if(buf) {
+            log << buf->str();
+            log.flush();
+            buf.release();
+        }
     }
+
+    ~log_entry() { flush(); }
 
 };
 

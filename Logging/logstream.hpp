@@ -8,6 +8,7 @@
 #ifndef LOGSTREAM_HPP_
 #define LOGSTREAM_HPP_
 
+#define LOG4CPP_FIX_ERROR_COLLISION 1
 #include <log4cpp/CategoryStream.hh>
 
 namespace borealis {

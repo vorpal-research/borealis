@@ -168,11 +168,24 @@ typename std::underlying_type<Enum>::type asInteger(const Enum& e) {
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-struct UseLLVMOstreams {
-	enum { value = false };
+struct is_using_llvm_output {
+    enum { value =
+            std::is_base_of<llvm::Value, T>::value ||
+            std::is_base_of<llvm::Type, T>::value ||
+            std::is_base_of<llvm::StringRef, T> :: value ||
+            std::is_base_of<llvm::Twine, T>::value ||
+            std::is_base_of<llvm::Module, T>::value ||
+            std::is_base_of<llvm::Pass, T>::value
+    };
 };
 
-template<class T, bool UseLLVMOstream = false>
+template<class T>
+struct UseLLVMOstreams {
+	enum { value = is_using_llvm_output<T>::value };
+};
+
+template<class T,
+bool UseLLVMOstream = false>
 struct Stringifier;
 
 template<class T>
@@ -471,11 +484,9 @@ struct hash<std::pair<T, U>> {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace llvm {
-    template<class T, class Check = std::enable_if<
-            std::is_base_of<llvm::Value, T>::value ||
-            std::is_base_of<llvm::Type, T>::value ||
-            std::is_base_of<llvm::Module, T>::value
-    > >
+    template<class T, class Check = typename std::enable_if<
+            borealis::util::is_using_llvm_output<T>::value
+    >::type >
     std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
 
         std::string buf;

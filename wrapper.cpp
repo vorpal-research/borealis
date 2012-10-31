@@ -56,9 +56,6 @@
 #include <llvm/Support/SystemUtils.h>
 #include <llvm/Support/ToolOutputFile.h>
 
-#define LOG4CPP_FIX_ERROR_COLLISION 1
-#include <log4cpp/PropertyConfigurator.hh>
-
 #include "Logging/logger.hpp"
 
 #include "comments.h"
@@ -76,13 +73,6 @@ using util::streams::error;
 using util::streams::endl;
 
 using config::Config;
-
-template<class T>
-void print(const T& val) {
-	borealis::infos() << val << " ";
-}
-
-
 
 int main(int argc, const char** argv)
 {
