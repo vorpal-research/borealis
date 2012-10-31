@@ -137,7 +137,7 @@ static std::string getCaption(const DSNode *N, const DSGraph *G) {
 namespace llvm {
 template<>
 struct DOTGraphTraits<const DSGraph*> : public DefaultDOTGraphTraits {
-  DOTGraphTraits(bool& b) {}
+  DOTGraphTraits(bool&) {}
   DOTGraphTraits() {}
   static std::string getGraphName(const DSGraph *G) {
     switch (G->getReturnNodes().size()) {
@@ -152,11 +152,11 @@ struct DOTGraphTraits<const DSGraph*> : public DefaultDOTGraphTraits {
     return getCaption(Node, Graph);
   }
 
-  static std::string getNodeAttributes(const DSNode *N, const DSGraph *Graph) {
+  static std::string getNodeAttributes(const DSNode*, const DSGraph*) {
     return "shape=Mrecord";
   }
 
-  static bool edgeTargetsEdgeSource(const void *Node,
+  static bool edgeTargetsEdgeSource(const void *,
                                     DSNode::const_iterator I) {
     if (I.getOffset() < I->getSize()) {
       if (I->hasLink (I.getOffset())) {
@@ -170,7 +170,7 @@ struct DOTGraphTraits<const DSGraph*> : public DefaultDOTGraphTraits {
     }
   }
 
-  static std::string getEdgeSourceLabel(const void* Node,
+  static std::string getEdgeSourceLabel(const void*,
                                         DSNode::const_iterator I) {
     std::string S;
     llvm::raw_string_ostream O(S);
@@ -178,7 +178,7 @@ struct DOTGraphTraits<const DSGraph*> : public DefaultDOTGraphTraits {
     return O.str();
   }
 
-  static DSNode::const_iterator getEdgeTarget(const DSNode *Node,
+  static DSNode::const_iterator getEdgeTarget(const DSNode *,
                                               DSNode::const_iterator I) {
     unsigned O = I->getLink(I.getOffset()).getOffset();
     unsigned LinkNo = O;

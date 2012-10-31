@@ -18,7 +18,7 @@ void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     Info.addRequiredTransitive< locs >();
 }
 
-bool AnnotatorPass::runOnModule(llvm::Module& M) {
+bool AnnotatorPass::runOnModule(llvm::Module&) {
     using borealis::DataProvider;
     using borealis::comments::GatherCommentsAction;
     using borealis::util::view;

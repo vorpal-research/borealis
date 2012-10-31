@@ -53,7 +53,6 @@ static bool PhiContainsSource(PHINode* phi, BasicBlock* source) {
 
 void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, phi_tracker& track) {
     auto parent = from.getParent();
-    auto BB = to.getParent();
     auto orig = getOriginOrSelf(&from);
 
     for(auto succ : view(succ_begin(parent), succ_end(parent))){

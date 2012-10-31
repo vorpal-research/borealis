@@ -124,7 +124,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-    static void initialize(llvm::TargetData* TD) {
+    static void initialize(llvm::TargetData* /*TD*/) {
         // pointerSize = TD->getPointerSizeInBits();
     }
 

@@ -51,7 +51,7 @@ public:
 	// run - Build up the result graph, representing the pointer graph for the
 	// program.
 	//
-	bool runOnModule(Module &M) {
+	bool runOnModule(Module &) {
 		InitializeAliasAnalysis(this);
 		TD = &getAnalysis<TDDataStructures>();
 		BU = &getAnalysis<BUDataStructures>();

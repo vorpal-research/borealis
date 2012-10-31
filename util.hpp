@@ -16,12 +16,15 @@
 #include <type_traits>
 #include <vector>
 
+#include <llvm/Support/ManagedStatic.h>
 #include <llvm/Module.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Type.h>
 #include <llvm/Value.h>
+
+#include "Logging/logger.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -237,8 +240,10 @@ inline std::string toString(const T& t) {
 
 template<typename RetTy = void>
 RetTy sayonara(std::string file, int line, std::string reason) {
-   llvm::errs() << file << ":" << toString(line) << " "
-           << reason << streams::endl;
+   logging::errs() << file << ":" << toString(line) << " "
+           << reason << logging::endl;
+
+   llvm::llvm_shutdown();
    std::exit(EXIT_FAILURE);
    return *((RetTy*)nullptr);
 }

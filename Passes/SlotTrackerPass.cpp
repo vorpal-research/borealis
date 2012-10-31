@@ -31,7 +31,7 @@ SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function* func) const{
 	}
 }
 
-SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module* _) const{
+SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module*) const{
 	return globals.get();
 }
 
@@ -51,7 +51,7 @@ SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function& func) const{
 	return getSlotTracker(&func);
 }
 
-SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module& _) const{
+SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module&) const{
 	return globals.get();
 }
 

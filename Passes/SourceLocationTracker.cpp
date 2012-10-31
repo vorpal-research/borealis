@@ -53,7 +53,6 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 		for_each(F, [this](BasicBlock& BB) {
 			for_each(BB, [this](Instruction& Inst) {
 				string fname;
-				auto& _ = std::ignore;
 				Value* func = Inst.getParent()->getParent();
 				if(valueDebugInfo.contains(func)) {
 					fname = valueDebugInfo[Inst.getParent()->getParent()].filename;
@@ -125,7 +124,7 @@ void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 }
 
 
-void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module *M) const {
+void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module*) const {
 	using borealis::util::for_each;
 	using borealis::util::streams::endl;
 

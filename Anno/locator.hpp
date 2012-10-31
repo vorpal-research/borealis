@@ -101,10 +101,7 @@ struct anno_guard
 		m_counter.leave();
 	}
 
-	bool operator() ( const bool result, const bool must ) const {
-//		if ( ( ! result ) && must ) {
-//			except<Location>( m_location );
-//		}
+	bool operator() ( const bool result, const bool) const {
 		return result;
 	}
 
@@ -122,7 +119,7 @@ protected:
 struct anno_debug: public pegtl::debug_base {
 	template<typename TopRule>
 	explicit anno_debug(const pegtl::tag<TopRule> & help) :
-			m_printer(help), unrecover(false) {
+	    unrecover(false), m_printer(help)  {
 	}
 
 	std::vector<std::string> trace;
@@ -137,8 +134,6 @@ struct anno_debug: public pegtl::debug_base {
 		if(!unrecover) {
 			res = d( Rule::template match< Must >( in, * this, std::forward< States >( st ) ... ), Must);
 		} else return false;
-
-		auto nest = m_counter.nest() + 1;
 
 		if(unrecover) {
 			trace.push_back(streamify([&](ostream& oss){

@@ -130,7 +130,7 @@ void CallTargetFinder<dsa>::findIndTargets(Module &M)
 }
 
   template<class dsa>
-void CallTargetFinder<dsa>::print(llvm::raw_ostream &O, const Module *M) const
+void CallTargetFinder<dsa>::print(llvm::raw_ostream &O, const Module*) const
 {
   O << "[* = incomplete] CS: func list\n";
   for (std::map<CallSite, std::vector<const Function*> >::const_iterator ii =

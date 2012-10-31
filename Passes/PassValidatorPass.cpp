@@ -66,13 +66,13 @@ bool PassValidatorPass::runOnModule(llvm::Module& M) {
 	auto paa = getAnalysisIfAvailable<DSAA>();
 	auto ds = getAnalysisIfAvailable<TDDataStructures>();
 
-	errs() << "Globals:" << endl;
-	ds->getGlobalsGraph()->print(errs());
-	errs() << endl;
+	llvm::errs() << "Globals:" << endl;
+	ds->getGlobalsGraph()->print(llvm::errs());
+	llvm::errs() << endl;
 
 	for_each(M, [&](ITER_TYPE(M) F){
 		errs() << "Function " << F.getName() << ":" << endl;
-		if(!F.isDeclaration()) ds->getDSGraph(F)->print(errs());
+		if(!F.isDeclaration()) ds->getDSGraph(F)->print(llvm::errs());
 		else errs() << "External => No graph available!" << endl;
 		errs() << endl;
 	});

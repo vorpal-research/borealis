@@ -71,7 +71,7 @@ private:
     Function* createNuevoFunc(Type* pointed, Module* daModule);
 
     void createNewDefs(BasicBlock &BB);
-    void renameNewDefs(Instruction *newdef, Instruction* olddef, Value* ptr);
+    void renameNewDefs(Instruction *newdef, Value* ptr);
 
     std::vector<llvm::Value*> getPointerOperands(StoreInst* store) {
         return std::vector<llvm::Value*>{ store->getPointerOperand() };
@@ -122,7 +122,7 @@ private:
                     );
                     newdef->setDebugLoc(resolve->getDebugLoc());
 
-                    renameNewDefs(newdef, resolve, op);
+                    renameNewDefs(newdef, op);
 
                     if(Value * orig = getOrigin(op)) {
                         setOrigin(newdef, orig);

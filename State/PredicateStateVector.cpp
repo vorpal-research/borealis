@@ -12,7 +12,7 @@ namespace borealis {
 PredicateStateVector::PredicateStateVector() {
 }
 
-PredicateStateVector::PredicateStateVector(bool _) {
+PredicateStateVector::PredicateStateVector(bool) {
 	data.insert(PredicateState());
 }
 

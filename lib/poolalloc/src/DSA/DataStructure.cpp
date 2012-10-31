@@ -272,7 +272,7 @@ bool DSNode::isNodeCompletelyFolded() const {
   return isCollapsedNode();
 }
 
-void DSNode::addValueList(std::vector<const Value*> &List) const {
+void DSNode::addValueList(std::vector<const Value*> &) const {
   DSScalarMap &SN = getParentGraph()->getScalarMap();
   for(DSScalarMap::const_iterator I = SN.begin(), E = SN.end(); I!= E; I++) {
     if(SN[I->first].getNode() == this){
