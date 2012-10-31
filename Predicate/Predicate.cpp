@@ -16,8 +16,8 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p
 
 namespace borealis {
 
-Predicate::Predicate(const PredicateType type) : type(type) {}
-
 Predicate::Predicate() : Predicate(PredicateType::STATE) {}
+
+Predicate::Predicate(const PredicateType type) : type(type) {}
 
 } // namespace borealis

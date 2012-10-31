@@ -13,8 +13,9 @@
 
 #include <unordered_map>
 
-#include "../Predicate/Predicate.h"
-#include "../util.h"
+#include "Predicate/Predicate.h"
+#include "Solver/Z3ExprFactory.h"
+#include "util.h"
 
 namespace borealis {
 
@@ -34,7 +35,7 @@ public:
 	PredicateState addPredicate(const Predicate* pred) const;
 	PredicateState merge(const PredicateState& state) const;
 
-	std::pair<z3::expr, z3::expr> toZ3(z3::context& ctx) const;
+	std::pair<z3::expr, z3::expr> toZ3(Z3ExprFactory& z3ef) const;
 
 	virtual ~PredicateState();
 

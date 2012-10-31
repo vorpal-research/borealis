@@ -11,6 +11,8 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Solver/Z3ExprFactory.h"
+
 namespace borealis {
 
 using util::contains;
@@ -129,8 +131,9 @@ bool isUnreachable(const PredicateState& ps) {
     using namespace::z3;
 
     context ctx;
+    Z3ExprFactory z3ef(ctx);
 
-    auto z3 = ps.toZ3(ctx);
+    auto z3 = ps.toZ3(z3ef);
     auto& pathPredicate = z3.first;
     auto& statePredicate = z3.second;
 

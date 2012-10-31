@@ -162,9 +162,10 @@ bool CheckNullDereferencePass::checkNullDereference(
     PredicateStateVector psv = PSA->getPredicateStateMap()[&where];
     for (const auto& ps : psv) {
         context ctx;
+        Z3ExprFactory z3ef(ctx);
 
-        expr assertion = q.toZ3(ctx);
-        pair<expr, expr> state = ps.toZ3(ctx);
+        expr assertion = q.toZ3(z3ef);
+        pair<expr, expr> state = ps.toZ3(z3ef);
 
         if (
                 checkSatOrUnknown(

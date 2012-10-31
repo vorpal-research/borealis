@@ -70,7 +70,8 @@ z3::check_result check(
     expr assertionPredicate = ctx.bool_const("$isTrue$");
     s.add(implies(assertionPredicate, assertion));
 
-    return s.check(1, &assertionPredicate);
+    check_result r = s.check(1, &assertionPredicate);
+    return r;
 }
 
 bool checkSat(
