@@ -1106,7 +1106,7 @@ int64_t maxXOR(int64_t a, int64_t b, int64_t c, int64_t d)
  * 	We don't have a xor implementation yet.
  * 	To be in safe side, we just give maxrange as result.
  */
-Range Range::Xor(const Range& other) {
+Range Range::Xor(const Range&) {
 	return Range(Min, Max);
 }
 
@@ -1439,7 +1439,7 @@ Range ControlDep::eval() const {
 	return Range(Min, Max);
 }
 
-void ControlDep::print(raw_ostream& OS) const {
+void ControlDep::print(raw_ostream&) const {
 }
 
 // ========================================================================== //
@@ -2559,7 +2559,7 @@ void CropDFS::storeAbstractStates(const SmallPtrSet<VarNode*, 32> *component) {
 	}
 }
 
-bool Meet::fixed(BasicOp* op, const SmallVector<APInt, 2> *constantvector){
+bool Meet::fixed(BasicOp* op, const SmallVector<APInt, 2> *){
 	Range oldInterval = op->getSink()->getRange();
 	Range newInterval = op->eval();
 	
@@ -2610,7 +2610,7 @@ bool Meet::widen(BasicOp* op, const SmallVector<APInt, 2> *constantvector) {
 	return oldInterval != sinkInterval;
 }
 
-bool Meet::growth(BasicOp* op, const SmallVector<APInt, 2> *constantvector) {
+bool Meet::growth(BasicOp* op, const SmallVector<APInt, 2> *) {
 	Range oldInterval = op->getSink()->getRange();
 	Range newInterval = op->eval();
 
@@ -2638,7 +2638,7 @@ bool Meet::growth(BasicOp* op, const SmallVector<APInt, 2> *constantvector) {
 /// analysis expands the bounds of each variable, regardless of intersections
 /// in the constraint graph, the cropping analysis shrinks these bounds back
 /// to ranges that respect the intersections.
-bool Meet::narrow(BasicOp* op, const SmallVector<APInt, 2> *constantvector) {
+bool Meet::narrow(BasicOp* op, const SmallVector<APInt, 2> *) {
 	
 	APInt oLower = op->getSink()->getRange().getLower();
 	APInt oUpper = op->getSink()->getRange().getUpper();
@@ -2676,7 +2676,7 @@ bool Meet::narrow(BasicOp* op, const SmallVector<APInt, 2> *constantvector) {
 	return hasChanged;
 }
 
-bool Meet::crop(BasicOp* op, const SmallVector<APInt, 2> *constantvector) {
+bool Meet::crop(BasicOp* op, const SmallVector<APInt, 2> *) {
 	Range oldInterval = op->getSink()->getRange();
 	Range newInterval = op->eval();
 
@@ -2709,7 +2709,7 @@ void Cousot::preUpdate(const UseMap &compUseMap,
 
 void Cousot::posUpdate(const UseMap &compUseMap,
 		SmallPtrSet<const Value*, 6>& entryPoints,
-		const SmallPtrSet<VarNode*, 32> *component) {
+		const SmallPtrSet<VarNode*, 32> *) {
 	update(compUseMap, entryPoints, Meet::narrow);
 }
 
@@ -2719,7 +2719,7 @@ void CropDFS::preUpdate(const UseMap &compUseMap,
 }
 
 void CropDFS::posUpdate(const UseMap &compUseMap,
-		SmallPtrSet<const Value*, 6>& entryPoints,
+		SmallPtrSet<const Value*, 6>&,
 		const SmallPtrSet<VarNode*, 32> *component) {
 	storeAbstractStates(component);
 	GenOprs::iterator obgn = oprs.begin(), oend = oprs.end();

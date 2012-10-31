@@ -14,8 +14,8 @@ void productionVisitor::onVariable(const std::string&){ unimplement(); }
 void productionVisitor::onBuiltin(const std::string&){ unimplement(); }
 void productionVisitor::onMask(const std::string&){ unimplement(); }
 
-void productionVisitor::onBinary(bin_opcode op, const prod_t&, const prod_t&){ unimplement(); }
-void productionVisitor::onUnary(un_opcode op, const prod_t&){ unimplement(); }
+void productionVisitor::onBinary(bin_opcode, const prod_t&, const prod_t&){ unimplement(); }
+void productionVisitor::onUnary(un_opcode, const prod_t&){ unimplement(); }
 
 
 void production::accept(productionVisitor&) const { unimplement(); }

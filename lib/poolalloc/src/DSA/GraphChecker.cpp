@@ -68,7 +68,7 @@ namespace {
       }
       AU.setPreservesAll();
     }
-    void print(llvm::raw_ostream &O, const Module *M) const {}
+    void print(llvm::raw_ostream &, const Module *) const {}
 
   private:
     void verify(const DSGraph* G);
@@ -96,7 +96,7 @@ DSGC::DSGC() : FunctionPass(ID) {
 
 /// doFinalization - Verify that the globals graph is in good shape...
 ///
-bool DSGC::doFinalization(Module &M) {
+bool DSGC::doFinalization(Module&) {
   switch (DSPass) {
   case local:verify(getAnalysis<LocalDataStructures>().getGlobalsGraph());break;
   case bu:   verify(getAnalysis<BUDataStructures>().getGlobalsGraph()); break;

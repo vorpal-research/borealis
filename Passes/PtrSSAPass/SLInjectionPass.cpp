@@ -41,7 +41,6 @@ Function* ptrssa::StoreLoadInjectionPass::createNuevoFunc(
 void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB)
 {
     using util::view;
-    Module* M = BB.getParent()->getParent();
     for (auto it = BB.begin(); it != BB.end() ; ++it) {
         checkAndUpdatePtrs<StoreInst>(it);
         checkAndUpdatePtrs<LoadInst>(it);
@@ -51,7 +50,6 @@ void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB)
 
 void ptrssa::StoreLoadInjectionPass::renameNewDefs(
         Instruction *newdef,
-        Instruction *olddef,
         Value *Op){
     // This vector of Instruction* points to the uses of V.
     // This auxiliary vector of pointers is used because the use_iterators

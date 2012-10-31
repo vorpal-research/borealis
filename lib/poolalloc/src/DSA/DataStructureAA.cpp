@@ -238,4 +238,6 @@ DSAA::getModRefInfo(ImmutableCallSite ICS, const Location& Loc) {
 
   N = NI->second.getNode();
   goto HaveMappingInfo;
+
+  return AliasAnalysis::getModRefInfo(CS, P, Size);
 }

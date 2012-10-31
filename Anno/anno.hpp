@@ -254,7 +254,7 @@ struct op_uaction :
 
 struct ask_keyword :
         action_base< ask_keyword > {
-    static void apply(const std::string & value, const expr_stack & s, command_type & comm, commands_t& ) {
+    static void apply(const std::string & value, const expr_stack &, command_type & comm, commands_t& ) {
         comm.name_ = nospaces(stdstring(value));
     }
 };

@@ -30,7 +30,7 @@ void Z3Pass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
     Info.addRequiredTransitive<PredicateStateAnalysis>();
 }
 
-bool Z3Pass::runOnFunction(llvm::Function& F) {
+bool Z3Pass::runOnFunction(llvm::Function&) {
     using namespace::std;
     using namespace::llvm;
     using namespace::z3;

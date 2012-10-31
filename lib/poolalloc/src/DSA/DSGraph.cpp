@@ -159,7 +159,7 @@ void DSGraph::removeFunctionCalls(Function& F) {
 /// objects to the graph.  This can be used when updating DSGraphs due to the
 /// introduction of new temporary objects.  The new object is not pointed to
 /// and does not point to any other objects in the graph.
-DSNode *DSGraph::addObjectToGraph(Value *Ptr, bool UseDeclaredType) {
+DSNode *DSGraph::addObjectToGraph(Value *Ptr, bool) {
   assert(isa<PointerType>(Ptr->getType()) && "Ptr is not a pointer!");
   DSNode *N = new DSNode(this);
   assert(ScalarMap[Ptr].isNull() && "Object already in this graph!");
@@ -1558,7 +1558,7 @@ llvm::functionIsCallable (ImmutableCallSite CS, const Function* F) {
 //  The parameter 'filter' determines if we should attempt to prune callees
 //  that are illegal to be called from the callsite.
 //
-void DSGraph::buildCallGraph(DSCallGraph& DCG, std::vector<const Function*>& GlobalFunctionList, bool filter) const {
+void DSGraph::buildCallGraph(DSCallGraph& DCG, std::vector<const Function*>&, bool filter) const {
   //
   // Get the list of unresolved call sites.
   //

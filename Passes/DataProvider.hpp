@@ -31,7 +31,7 @@ class DataProvider: public llvm::ImmutablePass {
 
 	static static_ st;
 
-	virtual void enforce_static(static_& st) {}
+	virtual void enforce_static(static_&) {}
 
 	const T* value;
 public:

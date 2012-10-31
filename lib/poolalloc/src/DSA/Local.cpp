@@ -600,7 +600,7 @@ void GraphBuilder::visitBitCastInst(BitCastInst &I) {
   setDestTo(I, Ptr);
 }
 
-void GraphBuilder::visitCmpInst(CmpInst &I) {
+void GraphBuilder::visitCmpInst(CmpInst &) {
   //Address can escape through cmps
 }
 

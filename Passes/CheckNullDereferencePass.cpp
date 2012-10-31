@@ -19,7 +19,7 @@ namespace borealis {
 using util::for_each;
 using util::streams::endl;
 
-CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
+CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID), AA(), DNP(), PSA(), st() {
     // TODO
 }
 

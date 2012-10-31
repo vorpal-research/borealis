@@ -435,7 +435,7 @@ static bool printNodes(llvm::raw_ostream &O, const Module *M,
 /// should be merged, is in fact merged.
 /// Returns true iff the user specified any nodes for this option.
 ///
-static bool checkIfNodesAreSame(llvm::raw_ostream &O, const Module *M,
+static bool checkIfNodesAreSame(llvm::raw_ostream &, const Module *M,
                                 const DataStructures *DS) {
 
   // Verify all nodes listed in "CheckNodesSame" belong to the same node.
@@ -461,7 +461,7 @@ static bool checkIfNodesAreSame(llvm::raw_ostream &O, const Module *M,
 /// shouldn't be merged, wasn't merged
 /// Returns true iff the user specified any nodes for this option.
 ///
-static bool checkIfNodesAreNotSame(llvm::raw_ostream &O, const Module *M,
+static bool checkIfNodesAreNotSame(llvm::raw_ostream &, const Module *M,
                                    const DataStructures *DS) {
 
   // Verify all nodes listed in "CheckNodesNotSame" belong to distinct nodes.
@@ -496,7 +496,7 @@ static bool checkIfNodesAreNotSame(llvm::raw_ostream &O, const Module *M,
 /// Returns true iff the user specified anything for this option
 ///
 
-static bool checkTypes(llvm::raw_ostream &O, const Module *M,
+static bool checkTypes(llvm::raw_ostream &, const Module *M,
                        const DataStructures *DS) {
 
   // Verify all nodes listed in "CheckType" have the same Type
@@ -539,7 +539,7 @@ static bool checkTypes(llvm::raw_ostream &O, const Module *M,
 /// Where +flags means 'this node should have these flags'
 /// And -flags means 'this node should NOT have these flags'
 ///
-static bool verifyFlags(llvm::raw_ostream &O, const Module *M,
+static bool verifyFlags(llvm::raw_ostream &, const Module *M,
                         const DataStructures *DS) {
   cl::list<std::string>::iterator I = VerifyFlags.begin(),
                                   E = VerifyFlags.end();
@@ -598,7 +598,7 @@ static bool verifyFlags(llvm::raw_ostream &O, const Module *M,
 ///
 /// checks that the first function does not callsthe rest of the
 /// functions in the list
-static bool checkNotCallees(llvm::raw_ostream &O, const Module *M,
+static bool checkNotCallees(llvm::raw_ostream &, const Module *M,
                          const DataStructures *DS) {
   //Mangled names must be provided for C++
   cl::list<std::string>::iterator I = CheckNotCallees.begin(),
@@ -646,7 +646,7 @@ static bool checkNotCallees(llvm::raw_ostream &O, const Module *M,
 ///
 /// checks that the first function calls the rest of the
 /// functions in the list
-static bool checkCallees(llvm::raw_ostream &O, const Module *M,
+static bool checkCallees(llvm::raw_ostream &, const Module *M,
                          const DataStructures *DS) {
 
   //Mangled names must be provided for C++

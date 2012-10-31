@@ -88,7 +88,7 @@ namespace {
     void visitStore(StoreInst &SI);
 
     /// Debugging support methods
-    void print(llvm::raw_ostream &O, const Module* = 0) const { }
+    void print(llvm::raw_ostream &, const Module* = 0) const { }
   };
 
   static RegisterPass<DSGraphStats> Z("dsstats", "DS Graph Statistics");
