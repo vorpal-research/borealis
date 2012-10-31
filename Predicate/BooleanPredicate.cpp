@@ -7,8 +7,6 @@
 
 #include "BooleanPredicate.h"
 
-#include "typeindex.hpp"
-
 namespace borealis {
 
 BooleanPredicate::BooleanPredicate(
@@ -16,10 +14,10 @@ BooleanPredicate::BooleanPredicate(
 		const bool b,
 		SlotTracker* st) :
 	v(v),
-	b(b),
-	vs(st->getLocalName(v)),
-	bs(b ? "TRUE" : "FALSE") {
-	this->asString = vs + "=" + bs;
+    b(b),
+	_v(st->getLocalName(v)),
+	_b(b ? "TRUE" : "FALSE") {
+	this->asString = _v + "=" + _b;
 }
 
 BooleanPredicate::BooleanPredicate(
@@ -28,7 +26,7 @@ BooleanPredicate::BooleanPredicate(
 		const bool b,
 		SlotTracker* st) :
 		        BooleanPredicate(v, b, st) {
-	this-> type = type;
+	this->type = type;
 }
 
 Predicate::Key BooleanPredicate::getKey() const {
@@ -45,11 +43,11 @@ Predicate::DependeeSet BooleanPredicate::getDependees() const {
     return res;
 }
 
-z3::expr BooleanPredicate::toZ3(z3::context& ctx) const {
+z3::expr BooleanPredicate::toZ3(Z3ExprFactory& z3ef) const {
 	using namespace::z3;
 
-	expr var = ctx.bool_const(vs.c_str());
-	expr val = ctx.bool_val(b);
+	expr var = z3ef.getBoolVar(_v);
+	expr val = z3ef.getBoolConst(b);
 	return var == val;
 }
 

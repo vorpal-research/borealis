@@ -18,13 +18,13 @@
 #include <tuple>
 #include <utility>
 
-#include "../util.h"
+#include "util.h"
 
 namespace borealis {
 
 using util::contains;
 using util::containsKey;
-using util::for_each;
+using util::sayonara;
 
 enum class NullStatus {
 	Null, Maybe_Null, Not_Null
@@ -79,14 +79,13 @@ struct NullInfo {
 	}
 
 	NullInfo& merge(const NullInfo& other) {
-		using namespace::std;
-
 		if (type != other.type) {
-		    // DO SOMETHING
+		    sayonara(__FILE__, __LINE__,
+		            "Different NullInfo types in merge");
 		}
 
-		for_each(other.offsetInfoMap, [this](const OffsetInfoMapEntry& entry){
-			vector<unsigned> idxs = entry.first;
+		for (const auto& entry : other.offsetInfoMap){
+			std::vector<unsigned> idxs = entry.first;
 			NullStatus status = entry.second;
 
 			if (!containsKey(offsetInfoMap, idxs)) {
@@ -94,19 +93,16 @@ struct NullInfo {
 			} else {
 				offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
 			}
-		});
+		}
 
 		return *this;
 	}
 
 	NullInfo& merge(const NullStatus& status) {
-		using namespace::std;
-
-		for_each(offsetInfoMap, [this, &status](const OffsetInfoMapEntry& entry){
-			vector<unsigned> idxs = entry.first;
+		for (const auto& entry : offsetInfoMap) {
+			std::vector<unsigned> idxs = entry.first;
 			offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
-		});
-
+		}
 		return *this;
 	}
 };
@@ -132,11 +128,8 @@ public:
 	}
 
 	NullPtrSet getNullSet(const NullType& type) {
-		using namespace::std;
-		using namespace::llvm;
-
 		NullPtrSet res = NullPtrSet();
-		for(auto& entry : data) {
+		for (const auto& entry : data) {
 			const NullInfo info = entry.second;
 			if (info.type == type) {
 			    res.insert(entry.first);
@@ -152,19 +145,6 @@ private:
 	void init() {
 	    data.clear();
 	}
-
-	void processInst(const llvm::Instruction& I);
-
-	void process(const llvm::CallInst& I);
-	void process(const llvm::StoreInst& I);
-	void process(const llvm::PHINode& I);
-	void process(const llvm::InsertValueInst& I);
-
-	std::set<const llvm::Instruction*> collectIncomingInsts(
-	        const llvm::PHINode& I,
-	        std::set<const llvm::PHINode*>& visited);
-
-	bool containsKey(const llvm::Value& value);
 };
 
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info);

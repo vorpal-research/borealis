@@ -11,6 +11,8 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Solver/Z3ExprFactory.h"
+
 namespace borealis {
 
 using util::contains;
@@ -34,12 +36,12 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace::std;
-    using namespace::llvm;
+
+    init();
 
     PA = &getAnalysis<PredicateAnalysis>();
 
-    workQueue.push(make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
+    workQueue.push(std::make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
     processQueue();
 
     removeUnreachableStates();
@@ -64,8 +66,6 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     PredicateStateVector inStateVec = wqe.second;
     bool shouldScheduleTerminator = true;
 
-    // errs() << &bb << " <- " << endl << inStateVec << endl;
-
     for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
         const Instruction& I = *inst;
         PredicateStateVector stateVec;
@@ -88,8 +88,6 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
         predicateStateMap[&I] = inStateVec = merged;
     }
-
-    // errs() << &bb << " -> " << endl << inStateVec << endl;
 
     if (shouldScheduleTerminator) {
         processTerminator(*bb.getTerminator(), inStateVec);
@@ -133,8 +131,9 @@ bool isUnreachable(const PredicateState& ps) {
     using namespace::z3;
 
     context ctx;
+    Z3ExprFactory z3ef(ctx);
 
-    auto z3 = ps.toZ3(ctx);
+    auto z3 = ps.toZ3(z3ef);
     auto& pathPredicate = z3.first;
     auto& statePredicate = z3.second;
 

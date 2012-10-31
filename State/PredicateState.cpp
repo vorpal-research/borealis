@@ -61,33 +61,33 @@ PredicateState PredicateState::merge(const PredicateState& state) const {
     return res;
 }
 
-std::pair<z3::expr, z3::expr> PredicateState::toZ3(z3::context& ctx) const {
+std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::std;
     using namespace::z3;
 
-    auto from = vector<expr>();
-    auto to = vector<expr>();
+    auto path = vector<expr>();
+    auto state = vector<expr>();
 
     for(auto& entry : data) {
         auto v = entry.second;
         if (v->getType() == PredicateType::PATH) {
-            from.push_back(v->toZ3(ctx));
+            path.push_back(v->toZ3(z3ef));
         } else if (v->getType() == PredicateType::STATE) {
-            to.push_back(v->toZ3(ctx));
+            state.push_back(v->toZ3(z3ef));
         }
     }
 
-    auto f = ctx.bool_val(true);
-    for(auto& e : from) {
-        f = f && e;
+    auto p = z3ef.getBoolConst(true);
+    for(auto& e : path) {
+        p = p && e;
     }
 
-    auto t = ctx.bool_val(true);
-    for(auto& e : to) {
-        t = t && e;
+    auto s = z3ef.getBoolConst(true);;
+    for(auto& e : state) {
+        s = s && e;
     }
 
-    return make_pair(f, t);
+    return make_pair(p, s);
 }
 
 void PredicateState::removeDependants(Predicate::DependeeSet dependees) {

@@ -18,10 +18,10 @@
 #include <set>
 #include <vector>
 
-#include "../Solver/util.h"
-#include "../State/PredicateState.h"
-#include "../State/PredicateStateVector.h"
 #include "PredicateAnalysis.h"
+#include "Solver/util.h"
+#include "State/PredicateState.h"
+#include "State/PredicateStateVector.h"
 
 namespace borealis {
 
@@ -47,6 +47,13 @@ public:
     }
 
 private:
+
+    void init() {
+        predicateStateMap.clear();
+
+        WorkQueue q;
+        std::swap(workQueue, q);
+    }
 
     PredicateStateMap predicateStateMap;
     WorkQueue workQueue;

@@ -8,12 +8,10 @@
 #ifndef LOADPREDICATE_H_
 #define LOADPREDICATE_H_
 
-
 #include <llvm/Value.h>
 
 #include "Predicate.h"
-
-#include "../slottracker.h"
+#include "slottracker.h"
 
 namespace borealis {
 
@@ -30,17 +28,15 @@ public:
     virtual Dependee getDependee() const;
     virtual DependeeSet getDependees() const;
 
-	virtual z3::expr toZ3(z3::context& ctx) const;
+	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
 private:
 
     const llvm::Value* lhv;
     const llvm::Value* rhv;
 
-	const std::string lhvs;
-	const std::string rhvs;
-
-
+	const std::string _lhv;
+	const std::string _rhv;
 
 };
 

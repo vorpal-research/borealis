@@ -10,8 +10,8 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "../Logging/logger.hpp"
-#include "../util.h"
+#include "Logging/logger.hpp"
+#include "util.h"
 
 using namespace::borealis::util::streams;
 
@@ -38,6 +38,6 @@ struct PrintModulePass: public llvm::ModulePass,
 
 char PrintModulePass::ID;
 static llvm::RegisterPass<PrintModulePass>
-X("module-printer", "Pass that prints a module to cout");
+X("module-printer", "Pass that prints a module");
 
 }

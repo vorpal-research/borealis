@@ -11,13 +11,10 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Value.h>
 
-#include <z3/z3++.h>
-
 #include <string>
 
-
-
 namespace llvm {
+
 // copy the standard ostream behavior with functions
 llvm::raw_ostream& operator<<(
 		llvm::raw_ostream& ost,
@@ -34,9 +31,8 @@ enum class ConditionType {
 	FALSE,
 	WTF
 };
-
-std::string conditionToString(const int cond);
-ConditionType conditionToType(const int cond);
+std::string conditionString(const int cond);
+ConditionType conditionType(const int cond);
 
 enum class ValueType {
 	INT_CONST,
@@ -50,21 +46,9 @@ enum class ValueType {
 	PTR_VAR,
 	UNKNOWN
 };
-
 ValueType valueType(const llvm::Value& value);
-ValueType derefValueType(const llvm::Value& value);
-} // namespace llvm
 
-namespace z3 {
-z3::expr valueToExpr(
-		z3::context& ctx,
-		const llvm::Value& value,
-		const std::string& valueName);
-z3::expr derefValueToExpr(
-		z3::context& ctx,
-		const llvm::Value& value,
-		const std::string& valueName);
-} // namespace z3
+} // namespace llvm
 
 namespace borealis {
 namespace util {
@@ -72,8 +56,6 @@ namespace util {
 std::string nospaces(const std::string& v);
 std::string nospaces(std::string&& v);
 bool endsWith (std::string const &fullString, std::string const &ending);
-
-void sayonara(std::string file, int line, std::string reason);
 
 namespace streams {
 

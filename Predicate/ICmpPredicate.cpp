@@ -7,11 +7,9 @@
 
 #include "ICmpPredicate.h"
 
-#include "util.h"
-
-#include "typeindex.hpp"
-
 namespace borealis {
+
+using util::sayonara;
 
 ICmpPredicate::ICmpPredicate(
 		const Value* lhv,
@@ -23,11 +21,11 @@ ICmpPredicate::ICmpPredicate(
 				op1(op1),
 				op2(op2),
 				cond(cond),
-				lhvs(st->getLocalName(lhv)),
-				op1s(st->getLocalName(op1)),
-				op2s(st->getLocalName(op2)),
-				conds(conditionToString(cond)) {
-	this->asString = lhvs + "=" + op1s + conds + op2s;
+				_lhv(st->getLocalName(lhv)),
+				_op1(st->getLocalName(op1)),
+				_op2(st->getLocalName(op2)),
+				_cond(conditionString(cond)) {
+	this->asString = _lhv + "=" + _op1 + _cond + _op2;
 }
 
 Predicate::Key ICmpPredicate::getKey() const {
@@ -45,14 +43,14 @@ Predicate::DependeeSet ICmpPredicate::getDependees() const {
     return res;
 }
 
-z3::expr ICmpPredicate::toZ3(z3::context& ctx) const {
+z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef) const {
 	using namespace::z3;
 
-	expr l = ctx.bool_const(lhvs.c_str());
-	expr o1 = valueToExpr(ctx, *op1, op1s);
-	expr o2 = valueToExpr(ctx, *op2, op2s);
+	expr l = z3ef.getBoolVar(_lhv);
+	expr o1 = z3ef.getExprForValue(*op1, _op1);
+	expr o2 = z3ef.getExprForValue(*op2, _op2);
 
-	ConditionType ct = conditionToType(cond);
+	ConditionType ct = conditionType(cond);
 	switch(ct) {
 	case ConditionType::EQ: return l == (o1 == o2);
 	case ConditionType::NEQ: return l == (o1 != o2);
@@ -60,9 +58,10 @@ z3::expr ICmpPredicate::toZ3(z3::context& ctx) const {
 	case ConditionType::LTE: return l == (o1 <= o2);
 	case ConditionType::GT: return l == (o1 > o2);
 	case ConditionType::GTE: return l == (o1 >= o2);
-	case ConditionType::TRUE: return l == ctx.bool_val(true);
-	case ConditionType::FALSE: return l == ctx.bool_val(false);
-	case ConditionType::WTF: return *((z3::expr*)0);
+	case ConditionType::TRUE: return l == z3ef.getBoolConst(true);
+	case ConditionType::FALSE: return l == z3ef.getBoolConst(false);
+	case ConditionType::WTF: return sayonara<z3::expr>(__FILE__, __LINE__,
+	        "<ICmpPredicate> Unknown condition type in Z3 conversion");
 	}
 }
 

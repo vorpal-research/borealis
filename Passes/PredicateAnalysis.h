@@ -52,12 +52,12 @@ public:
 		return TPM;
 	}
 
-	void init() {
-	    PM.clear();
-	    TPM.clear();
-	}
-
 private:
+
+    void init() {
+        PM.clear();
+        TPM.clear();
+    }
 
 	PredicateMap PM;
 	TerminatorPredicateMap TPM;

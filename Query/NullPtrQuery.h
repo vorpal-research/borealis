@@ -11,7 +11,7 @@
 #include <llvm/Value.h>
 
 #include "Query.h"
-#include "../slottracker.h"
+#include "slottracker.h"
 
 namespace borealis {
 
@@ -21,12 +21,12 @@ public:
 
 	NullPtrQuery(const llvm::Value* ptr, SlotTracker* st);
 	virtual ~NullPtrQuery();
-	virtual z3::expr toZ3(z3::context& ctx) const;
+	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
 private:
 
 	const llvm::Value* ptr;
-	const std::string ptrs;
+	const std::string _ptr;
 
 };
 

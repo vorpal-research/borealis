@@ -9,17 +9,26 @@
 
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
+#include <llvm/Support/InstVisitor.h>
 
-#include "../lib/poolalloc/src/DSA/DataStructureAA.h"
-#include "../Query/NullPtrQuery.h"
-#include "../Solver/util.h"
+#include "lib/poolalloc/src/DSA/DataStructureAA.h"
+#include "Query/NullPtrQuery.h"
+#include "Solver/util.h"
 
 namespace borealis {
 
 using util::for_each;
 using util::streams::endl;
 
-CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID), AA(), DNP(), PSA(), st() {
+class DerefInstVisitor : public InstVisitor<DerefInstVisitor> {
+
+private:
+
+    AliasAnalysis* AA;
+
+};
+
+CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
     // TODO
 }
 
@@ -162,9 +171,10 @@ bool CheckNullDereferencePass::checkNullDereference(
     PredicateStateVector psv = PSA->getPredicateStateMap()[&where];
     for (const auto& ps : psv) {
         context ctx;
+        Z3ExprFactory z3ef(ctx);
 
-        expr assertion = q.toZ3(ctx);
-        pair<expr, expr> state = ps.toZ3(ctx);
+        expr assertion = q.toZ3(z3ef);
+        pair<expr, expr> state = ps.toZ3(z3ef);
 
         if (
                 checkSatOrUnknown(

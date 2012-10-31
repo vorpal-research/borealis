@@ -7,8 +7,6 @@
 
 #include "EqualityPredicate.h"
 
-#include "typeindex.hpp"
-
 namespace borealis {
 
 EqualityPredicate::EqualityPredicate(
@@ -36,11 +34,11 @@ Predicate::DependeeSet EqualityPredicate::getDependees() const {
     return res;
 }
 
-z3::expr EqualityPredicate::toZ3(z3::context& ctx) const {
+z3::expr EqualityPredicate::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
-    expr l = valueToExpr(ctx, *lhv, _lhv);
-    expr r = valueToExpr(ctx, *rhv, _rhv);
+    expr l = z3ef.getExprForValue(*lhv, _lhv);
+    expr r = z3ef.getExprForValue(*rhv, _rhv);
 
     return l == r;
 }

@@ -10,6 +10,8 @@
 
 #include <z3/z3++.h>
 
+#include "Solver/Z3ExprFactory.h"
+
 namespace borealis {
 
 class Query {
@@ -17,7 +19,7 @@ class Query {
 public:
 
 	virtual ~Query();
-	virtual z3::expr toZ3(z3::context& ctx) const = 0;
+	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
 
 };
 
