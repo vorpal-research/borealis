@@ -9,15 +9,24 @@
 
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
+#include <llvm/Support/InstVisitor.h>
 
-#include "../lib/poolalloc/src/DSA/DataStructureAA.h"
-#include "../Query/NullPtrQuery.h"
-#include "../Solver/util.h"
+#include "lib/poolalloc/src/DSA/DataStructureAA.h"
+#include "Query/NullPtrQuery.h"
+#include "Solver/util.h"
 
 namespace borealis {
 
 using util::for_each;
 using util::streams::endl;
+
+class DerefInstVisitor : public InstVisitor<DerefInstVisitor> {
+
+private:
+
+    AliasAnalysis* AA;
+
+};
 
 CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
     // TODO

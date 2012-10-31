@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <llvm/Module.h>
+#include <llvm/Pass.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Type.h>
