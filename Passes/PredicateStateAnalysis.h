@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "PredicateAnalysis.h"
-#include "Solver/util.h"
 #include "State/PredicateState.h"
 #include "State/PredicateStateVector.h"
 

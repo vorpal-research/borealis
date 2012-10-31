@@ -12,6 +12,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "Solver/Z3ExprFactory.h"
+#include "Solver/Z3Solver.h"
 
 namespace borealis {
 
@@ -127,20 +128,13 @@ void PredicateStateAnalysis::process(
 }
 
 bool isUnreachable(const PredicateState& ps) {
-    using namespace::std;
     using namespace::z3;
 
     context ctx;
     Z3ExprFactory z3ef(ctx);
+    Z3Solver s(z3ef);
 
-    auto z3 = ps.toZ3(z3ef);
-    auto& pathPredicate = z3.first;
-    auto& statePredicate = z3.second;
-
-    return checkUnsat(
-                    pathPredicate,
-                    vector<z3::expr> {statePredicate},
-                    ctx);
+    return !s.checkPathPredicates(ps);
 }
 
 void PredicateStateAnalysis::removeUnreachableStates() {

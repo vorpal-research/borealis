@@ -13,7 +13,7 @@
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 #include "Query/NullPtrQuery.h"
-#include "Solver/util.h"
+#include "Solver/Z3Solver.h"
 
 namespace borealis {
 
@@ -94,16 +94,9 @@ public:
         for (const auto& ps : psv) {
             context ctx;
             Z3ExprFactory z3ef(ctx);
+            Z3Solver s(z3ef);
 
-            expr assertion = q.toZ3(z3ef);
-            std::pair<expr, expr> state = ps.toZ3(z3ef);
-
-            if (
-                    checkSatOrUnknown(
-                            assertion,
-                            std::vector<expr> { state.first, state.second },
-                            ctx)
-            ) {
+            if (s.checkSatOrUnknown(q, ps)) {
                 return true;
             }
         }
