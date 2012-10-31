@@ -10,20 +10,19 @@
 namespace borealis {
 
 NullPtrQuery::NullPtrQuery(const llvm::Value* ptr, SlotTracker* st) :
-        ptr(ptr),
-        ptrs(st->getLocalName(ptr)) {
+        ptr(ptr), _ptr(st->getLocalName(ptr)) {
 }
 
-z3::expr NullPtrQuery::toZ3(z3::context& ctx) const {
+z3::expr NullPtrQuery::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
-    expr p = ctx.int_const(ptrs.c_str());
-    expr zero = ctx.int_val(0);
-    return p == zero;
+    expr p = z3ef.getPtr(_ptr);
+    expr null = z3ef.getNullPtr();
+    return p == null;
 }
 
 NullPtrQuery::~NullPtrQuery() {
     // TODO
 }
 
-} /* namespace borealis */
+} // namespace borealis
