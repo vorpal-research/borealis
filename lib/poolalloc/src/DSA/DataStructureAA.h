@@ -52,9 +52,6 @@ public:
 	// program.
 	//
 	bool runOnModule(Module &M) {
-
-		errs() << "Running DS_AA\n";
-		errs().flush();
 		InitializeAliasAnalysis(this);
 		TD = &getAnalysis<TDDataStructures>();
 		BU = &getAnalysis<BUDataStructures>();
