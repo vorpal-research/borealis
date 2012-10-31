@@ -72,7 +72,7 @@ public:
         TPM[make_pair(&I, falseSucc)] = PF->getPathBooleanPredicate(cond, false);
     }
 
-    void visitGetElementPointerInst(llvm::GetElementPtrInst& I) {
+    void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace::std;
         using namespace::llvm;
         using borealis::util::sayonara;
