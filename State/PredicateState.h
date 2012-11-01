@@ -19,8 +19,6 @@
 
 namespace borealis {
 
-using util::for_each;
-
 class PredicateState {
 
 public:
@@ -36,8 +34,6 @@ public:
 	PredicateState merge(const PredicateState& state) const;
 
 	std::pair<z3::expr, z3::expr> toZ3(Z3ExprFactory& z3ef) const;
-
-	virtual ~PredicateState();
 
 	typedef std::unordered_map<Predicate::Key, const Predicate*, Predicate::KeyHash> Data;
 	typedef Data::value_type DataEntry;
@@ -55,9 +51,9 @@ public:
 	public:
 		size_t operator()(const PredicateState& ps) const {
 			size_t res = 17;
-			for_each(ps, [&res](const DataEntry& entry){
+			for (const auto& entry : ps) {
 				res = res * Predicate::KeyHash::hash(entry.first) + 33;
-			});
+			}
 			return res;
 		}
 	};

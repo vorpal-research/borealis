@@ -19,7 +19,7 @@ class Query {
 
 public:
 
-	virtual ~Query();
+	virtual ~Query() = 0;
 	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
 
 };

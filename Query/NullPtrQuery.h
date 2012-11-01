@@ -12,7 +12,6 @@
 
 #include "Query.h"
 
-
 namespace borealis {
 
 class NullPtrQuery : public Query {

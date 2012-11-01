@@ -15,15 +15,11 @@
 
 namespace borealis {
 
-using util::sayonara;
-using util::toString;
-
 class Z3ExprFactory {
 
 public:
 
     Z3ExprFactory(z3::context& ctx);
-    ~Z3ExprFactory();
 
     z3::context& unwrap() {
         return ctx;
@@ -72,7 +68,7 @@ public:
     }
 
     z3::expr getRealConst(double v) {
-        return getRealConst(toString(v));
+        return getRealConst(util::toString(v));
     }
 
     z3::expr getRealConst(const std::string& v) {
@@ -102,7 +98,7 @@ public:
         case ValueType::PTR_VAR:
             return getPtr(name);
         case ValueType::UNKNOWN:
-            return sayonara<z3::expr>(__FILE__, __LINE__,
+            return util::sayonara<z3::expr>(__FILE__, __LINE__,
                     "<Z3ExprFactory> Unknown value type for Z3 conversion");
         }
     }
@@ -123,6 +119,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
     static void initialize(llvm::TargetData* /*TD*/) {
+        // TODO akhin
         // pointerSize = TD->getPointerSizeInBits();
     }
 

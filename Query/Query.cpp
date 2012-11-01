@@ -9,8 +9,6 @@
 
 namespace borealis {
 
-Query::~Query() {
-    // TODO
-}
+Query::~Query() {}
 
-} /* namespace borealis */
+} // namespace borealis

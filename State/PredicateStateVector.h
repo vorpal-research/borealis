@@ -12,7 +12,7 @@
 #include <unordered_set>
 
 #include "PredicateState.h"
-#include "../Predicate/Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
@@ -26,8 +26,6 @@ public:
 
 	PredicateStateVector addPredicate(const Predicate* pred) const;
 	PredicateStateVector merge(const PredicateStateVector& psv) const;
-
-	virtual ~PredicateStateVector();
 
 	typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;
 	typedef Data::value_type DataEntry;
@@ -48,8 +46,7 @@ public:
     template<class Condition>
     PredicateStateVector remove_if(Condition cond) const {
         PredicateStateVector res = PredicateStateVector(*this);
-
-        for(auto iter = res.data.begin(); iter != res.data.end(); )
+        for (auto iter = res.data.begin(); iter != res.data.end(); )
         {
             if (cond(*iter)) {
                 iter = res.data.erase(iter);
@@ -57,7 +54,6 @@ public:
                 ++iter;
             }
         }
-
         return res;
     }
 

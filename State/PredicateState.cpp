@@ -10,7 +10,7 @@
 namespace borealis {
 
 using util::contains;
-using util::for_each;
+using util::view;
 
 PredicateState::PredicateState() {
 }
@@ -48,23 +48,22 @@ PredicateState PredicateState::merge(const PredicateState& state) const {
     PredicateState res = PredicateState(*this);
 
     auto ds = Predicate::DependeeSet();
-    for(auto& p : state) {
+    for (const auto& p : state) {
         ds.insert(p.second->getDependee());
     }
     res.removeDependants(ds);
 
-    for_each(state, [this, &res](const DataEntry& entry){
+    for (const auto& entry : state) {
         res.data[entry.first] = entry.second;
-    });
+    }
     return res;
 }
 
 std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
-    using namespace::std;
     using namespace::z3;
 
-    auto path = vector<expr>();
-    auto state = vector<expr>();
+    auto path = std::vector<expr>();
+    auto state = std::vector<expr>();
 
     for(auto& entry : data) {
         auto v = entry.second;
@@ -76,16 +75,16 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     }
 
     auto p = z3ef.getBoolConst(true);
-    for(auto& e : path) {
+    for (const auto& e : path) {
         p = p && e;
     }
 
     auto s = z3ef.getBoolConst(true);;
-    for(auto& e : state) {
+    for (const auto& e : state) {
         s = s && e;
     }
 
-    return make_pair(p, s);
+    return std::make_pair(p, s);
 }
 
 void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
@@ -96,7 +95,7 @@ next:
         if (iter == data.end()) break;
         auto e = *iter;
         auto ds = e.second->getDependees();
-        for(auto& d : ds) {
+        for (const auto& d : ds) {
             if (contains(dependees, d)) {
                 iter = data.erase(iter);
                 goto next;
@@ -106,19 +105,15 @@ next:
     }
 }
 
-PredicateState::~PredicateState() {
-    // TODO
-}
-
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
     s << '(';
     if (!state.empty()) {
         auto iter = state.begin();
         const PredicateState::DataEntry& el = *iter++;
         s << *(el.second);
-        std::for_each(iter, state.end(), [&s](const PredicateState::DataEntry& e){
+        for (const auto& e : view(iter, state.end())) {
             s << ',' << *(e.second);
-        });
+        }
     }
     s << ')';
     return s;
