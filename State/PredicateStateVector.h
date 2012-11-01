@@ -20,28 +20,28 @@ class PredicateStateVector {
 
 public:
 
-	PredicateStateVector();
-	PredicateStateVector(bool _);
-	PredicateStateVector(const PredicateStateVector& psv);
+    PredicateStateVector();
+    PredicateStateVector(bool _);
+    PredicateStateVector(const PredicateStateVector& psv);
 
-	PredicateStateVector addPredicate(const Predicate* pred) const;
-	PredicateStateVector merge(const PredicateStateVector& psv) const;
+    PredicateStateVector addPredicate(const Predicate* pred) const;
+    PredicateStateVector merge(const PredicateStateVector& psv) const;
 
-	typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;
-	typedef Data::value_type DataEntry;
-	typedef Data::const_iterator DataIterator;
+    typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;
+    typedef Data::value_type DataEntry;
+    typedef Data::const_iterator DataIterator;
 
-	DataIterator begin() const { return data.begin(); }
-	DataIterator end() const { return data.end(); }
-	bool empty() const { return data.empty(); }
+    DataIterator begin() const { return data.begin(); }
+    DataIterator end() const { return data.end(); }
+    bool empty() const { return data.empty(); }
 
-	bool operator==(const PredicateStateVector& other) const {
-		return data == other.data;
-	}
+    bool operator==(const PredicateStateVector& other) const {
+        return data == other.data;
+    }
 
-	bool operator!=(const PredicateStateVector& other) const {
-		return data != other.data;
-	}
+    bool operator!=(const PredicateStateVector& other) const {
+        return data != other.data;
+    }
 
     template<class Condition>
     PredicateStateVector remove_if(Condition cond) const {
@@ -59,7 +59,7 @@ public:
 
 private:
 
-	Data data;
+    Data data;
 
 };
 

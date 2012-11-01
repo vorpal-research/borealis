@@ -13,10 +13,10 @@ EqualityPredicate::EqualityPredicate(
         const llvm::Value* lhv,
         const llvm::Value* rhv,
         SlotTracker* st) :
-            lhv(lhv),
-            rhv(rhv),
-            _lhv(st->getLocalName(lhv)),
-            _rhv(st->getLocalName(rhv)) {
+                    lhv(lhv),
+                    rhv(rhv),
+                    _lhv(st->getLocalName(lhv)),
+                    _rhv(st->getLocalName(rhv)) {
     this->asString = _lhv + "=" + _rhv;
 }
 

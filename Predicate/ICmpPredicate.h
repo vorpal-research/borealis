@@ -18,30 +18,30 @@ class ICmpPredicate: public Predicate {
 
 public:
 
-	ICmpPredicate(
-			const llvm::Value* lhv,
-			const llvm::Value* op1,
-			const llvm::Value* op2,
-			const int cond,
-			SlotTracker* st);
-	virtual Predicate::Key getKey() const;
+    ICmpPredicate(
+            const llvm::Value* lhv,
+            const llvm::Value* op1,
+            const llvm::Value* op2,
+            const int cond,
+            SlotTracker* st);
+    virtual Predicate::Key getKey() const;
 
     virtual Dependee getDependee() const;
     virtual DependeeSet getDependees() const;
 
-	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
+    virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
 private:
 
-	const llvm::Value* lhv;
-	const llvm::Value* op1;
-	const llvm::Value* op2;
-	const int cond;
+    const llvm::Value* lhv;
+    const llvm::Value* op1;
+    const llvm::Value* op2;
+    const int cond;
 
-	const std::string _lhv;
-	const std::string _op1;
-	const std::string _op2;
-	const std::string _cond;
+    const std::string _lhv;
+    const std::string _op1;
+    const std::string _op2;
+    const std::string _cond;
 
 };
 

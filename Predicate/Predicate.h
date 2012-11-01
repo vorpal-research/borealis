@@ -16,15 +16,15 @@
 #include <unordered_set>
 
 #include "Solver/Z3ExprFactory.h"
+#include "Util/slottracker.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
-#include "Util/slottracker.h"
 
 namespace borealis {
 
 enum class PredicateType {
-	PATH,
-	STATE
+    PATH,
+    STATE
 };
 
 enum class DependeeType {
@@ -38,15 +38,15 @@ class Predicate {
 public:
 
     typedef std::pair<size_t, const llvm::Value*> Key;
-	struct KeyHash {
-	public:
-		static size_t hash(const Key& k) {
-			return k.first ^ (size_t)k.second;
-		}
-		size_t operator()(const Key& k) const {
-			return hash(k);
-		}
-	};
+    struct KeyHash {
+    public:
+        static size_t hash(const Key& k) {
+            return k.first ^ (size_t)k.second;
+        }
+        size_t operator()(const Key& k) const {
+            return hash(k);
+        }
+    };
 
     typedef std::pair<DependeeType, const llvm::Value*> Dependee;
     struct DependeeHash {
@@ -60,35 +60,33 @@ public:
     };
     typedef std::unordered_set<Dependee, DependeeHash> DependeeSet;
 
-	Predicate();
-	Predicate(const PredicateType type);
-	virtual ~Predicate() {};
-	virtual Key getKey() const = 0;
+    Predicate();
+    Predicate(const PredicateType type);
+    virtual ~Predicate() = 0;
+    virtual Key getKey() const = 0;
 
-	virtual Dependee getDependee() const = 0;
-	virtual DependeeSet getDependees() const = 0;
+    virtual Dependee getDependee() const = 0;
+    virtual DependeeSet getDependees() const = 0;
 
-	std::string toString() const {
-		return asString;
-	}
+    std::string toString() const {
+        return asString;
+    }
 
-	PredicateType getType() const {
-		return type;
-	}
+    PredicateType getType() const {
+        return type;
+    }
 
-	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
+    virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
 
 protected:
 
-	std::string asString;
-	PredicateType type;
+    std::string asString;
+    PredicateType type;
 
 };
 
-} /* namespace borealis */
-
-namespace llvm {
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p);
-}
+
+} /* namespace borealis */
 
 #endif /* PREDICATE_H_ */

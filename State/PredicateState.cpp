@@ -16,11 +16,11 @@ PredicateState::PredicateState() {
 }
 
 PredicateState::PredicateState(const PredicateState& state) :
-    data(state.data) {
+            data(state.data) {
 }
 
 PredicateState::PredicateState(PredicateState&& state) :
-    data(std::move(state.data)) {
+            data(std::move(state.data)) {
 }
 
 const PredicateState& PredicateState::operator=(const PredicateState& state) {
@@ -91,7 +91,7 @@ void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
     auto iter = data.begin();
     while (true)
     {
-next:
+        next:
         if (iter == data.end()) break;
         auto e = *iter;
         auto ds = e.second->getDependees();

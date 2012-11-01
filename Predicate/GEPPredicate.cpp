@@ -14,10 +14,10 @@ GEPPredicate::GEPPredicate(
         const llvm::Value* rhv,
         const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts,
         SlotTracker* st) :
-                lhv(lhv),
-                rhv(rhv),
-                _lhv(st->getLocalName(lhv)),
-                _rhv(st->getLocalName(rhv)) {
+                        lhv(lhv),
+                        rhv(rhv),
+                        _lhv(st->getLocalName(lhv)),
+                        _rhv(st->getLocalName(rhv)) {
 
     std::string a = "0";
     for (const auto& shift : shifts) {
@@ -45,7 +45,7 @@ Predicate::Dependee GEPPredicate::getDependee() const {
 
 Predicate::DependeeSet GEPPredicate::getDependees() const {
     DependeeSet res = DependeeSet();
-    // TODO: ...
+    // TODO akhin
     return res;
 }
 

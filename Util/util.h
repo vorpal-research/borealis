@@ -36,7 +36,7 @@ enum class ConditionType {
 	LTE,
 	TRUE,
 	FALSE,
-	WTF
+	UNKNOWN
 };
 std::string conditionString(const int cond);
 ConditionType conditionType(const int cond);

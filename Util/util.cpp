@@ -79,7 +79,7 @@ std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
 		return make_pair("false", CT::FALSE);
 
 	default:
-		return make_pair("???", CT::WTF);
+		return make_pair("???", CT::UNKNOWN);
 	}
 }
 

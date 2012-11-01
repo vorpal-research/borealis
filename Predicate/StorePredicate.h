@@ -18,24 +18,24 @@ class StorePredicate: public Predicate {
 
 public:
 
-	StorePredicate(
-			const llvm::Value* lhv,
-			const llvm::Value* rhv,
-			SlotTracker* st);
-	virtual Predicate::Key getKey() const;
+    StorePredicate(
+            const llvm::Value* lhv,
+            const llvm::Value* rhv,
+            SlotTracker* st);
+    virtual Predicate::Key getKey() const;
 
     virtual Dependee getDependee() const;
     virtual DependeeSet getDependees() const;
 
-	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
+    virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
 private:
 
     const llvm::Value* lhv;
     const llvm::Value* rhv;
 
-	const std::string _lhv;
-	const std::string _rhv;
+    const std::string _lhv;
+    const std::string _rhv;
 
 };
 
