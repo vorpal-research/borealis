@@ -28,6 +28,7 @@ class Config {
     bool valid;
 
 public:
+
     Config(const std::string& file): parser(), valid(parser.readFile(file) == 0) {}
     Config(const Config&) = default;
     Config(Config&&) = default;
@@ -36,19 +37,16 @@ public:
     borealis::util::option<T> getValue(const std::string& section, const std::string& option) {
         using borealis::util::just;
         using borealis::util::nothing;
-        using std::move;
 
         T ret;
         if(valid && parser.getValue(section, option, &ret)) {
-            return just(move(ret));
+            return just(std::move(ret));
         } else return nothing<T>();
     }
 
     std::multimap<std::string, std::string> optionsFor(const std::string& name) {
         return parser.getOptions(name);
     }
-
-
 
     inline bool ok() {
         return valid;

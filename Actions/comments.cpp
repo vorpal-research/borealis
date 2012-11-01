@@ -18,23 +18,14 @@
 namespace borealis {
 namespace comments {
 
-using llvm::errs;
+using borealis::errs;
+using borealis::endl;
+using borealis::Locus;
+using borealis::LocalLocus;
 
-using namespace borealis;
-using util::streams::endl;
-
-using std::pair;
-using std::make_pair;
-
-typedef borealis::anno::calculator::command_type command;
-typedef std::multimap<Locus, command>  comment_container;
+typedef GatherCommentsAction::comment_container comment_container;
 
 static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
-	using std::cerr;
-	using std::endl;
-	using borealis::Locus;
-	using borealis::LocalLocus;
-
 	if(SourceMgr.isInSystemHeader(Range.getBegin())) {
 		return comment_container();
 	}
@@ -57,24 +48,23 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
    assert(BeginFileID == EndFileID);
 
    bool Invalid = false;
-   const char *BufferStart = SourceMgr.getBufferData(BeginFileID,
-                                                     &Invalid).data();
+   const char *BufferStart =
+           SourceMgr.getBufferData(BeginFileID, &Invalid).data();
    if (Invalid)
      return comment_container();
 
    using borealis::anno::calculator::parse_command;
-   using borealis::anno::calculator::command_type;
-   using borealis::util::for_each;
-   // FIXME: get rid of intermediate StringRef, pass pointers to parse_command
+
+   // FIXME belyaev: get rid of intermediate StringRef, pass pointers to parse_command
    auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
    auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
    auto commands = parse_command(comment.str());
 
    auto ret = comment_container();
-   for_each(commands, [&](command&  cmd){
-	   auto pr = make_pair(std::move(locus), std::move(cmd));
+   for (command& cmd : commands) {
+	   auto pr = std::make_pair(std::move(locus), std::move(cmd));
 	   ret.insert(pr);
-   });
+   }
 
    return ret;
 }

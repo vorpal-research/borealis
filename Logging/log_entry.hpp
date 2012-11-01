@@ -8,9 +8,11 @@
 #ifndef LOG_ENTRY_HPP_
 #define LOG_ENTRY_HPP_
 
-#include "logger.hpp"
-#include <sstream>
 #include <memory>
+#include <sstream>
+
+#include "logger.hpp"
+#include "logstream.hpp"
 
 namespace borealis {
 namespace logging {
@@ -25,16 +27,16 @@ public:
     log_entry(logstream log): buf(new std::ostringstream), log(log) {}
 
     template<class T>
-    log_entry& operator << (const T& val) {
+    log_entry& operator<<(const T& val) {
         *buf << val;
         return *this;
     }
 
-    log_entry& operator << (log_entry&(*val)(log_entry&)) {
+    log_entry& operator<<(log_entry&(*val)(log_entry&)) {
         return val(*this);
     }
 
-    log_entry& operator << (logstream&(*val)(logstream&)) {
+    log_entry& operator<<(logstream&(*val)(logstream&)) {
         if(val == &endl) {
             *buf << "\n";
         } else if (val == &end) {
@@ -52,12 +54,11 @@ public:
         }
     }
 
-    ~log_entry() { flush(); }
+    ~log_entry() {flush();}
 
 };
 
-}
-}
-
+} // namespace logging
+} // namespace borealis
 
 #endif /* LOG_ENTRY_HPP_ */

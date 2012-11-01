@@ -88,7 +88,7 @@ private:
 
             for (Value* op : ops) {
                 if(!isa<Constant>(op)) {
-                    string name;
+                    std::string name;
 
                     if(Value * orig = getOrigin(op)) {
                         if(orig->hasName()) name = (orig->getName() + ".").str();

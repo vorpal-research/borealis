@@ -15,8 +15,8 @@
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Lex/Preprocessor.h>
 
-#include "Util/locations.h"
 #include "Anno/anno.h"
+#include "Util/locations.h"
 
 namespace borealis {
 namespace comments {
@@ -24,13 +24,16 @@ namespace comments {
 typedef borealis::anno::calculator::command_type command;
 
 class GatherCommentsAction: public clang::PreprocessOnlyAction {
-private:
+
+public:
 
 	// std::map is here not because it's associative, but 'cos it is sorted and easy-to-use
 	// std::set<pair> may seem more applicable, but requires more boilerplate
-	typedef std::multimap<borealis::Locus, command>  comment_container;
+	typedef std::multimap<borealis::Locus, command> comment_container;
 	typedef comment_container::iterator iterator;
-	typedef std::pair<iterator,iterator> range;
+	typedef std::pair<iterator, iterator> range;
+
+private:
 
 	class CommentKeeper: public virtual clang::CommentHandler {
 		clang::Preprocessor& pp;
@@ -41,7 +44,7 @@ private:
 		CommentKeeper(clang::Preprocessor& ppi): pp(ppi), attached(false) {};
 
 		virtual bool HandleComment(clang::Preprocessor &PP, clang::SourceRange Comment);
-		virtual ~CommentKeeper(){ detach(); };
+		virtual ~CommentKeeper() { detach(); };
 
 		void attach() {
 			if(!attached) pp.AddCommentHandler(this);
@@ -66,9 +69,9 @@ public:
 	}
 
 protected:
-	virtual bool BeginSourceFileAction(clang::CompilerInstance &CI,
+	virtual bool BeginSourceFileAction(
+	        clang::CompilerInstance &CI,
 			llvm::StringRef Filename) {
-
 		auto& PP = CI.getPreprocessor();
 		currentFile = Filename;
 		keeper.reset(new CommentKeeper(PP));

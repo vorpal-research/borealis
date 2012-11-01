@@ -11,21 +11,19 @@
 #include <string>
 #include <unordered_map>
 
-#include <llvm/Type.h>
 #include <llvm/Function.h>
 #include <llvm/Module.h>
+#include <llvm/Type.h>
 
 #include "Util/util.h"
 
 namespace borealis {
 
-using std::string;
-
 enum class intrinsic {
     PTR_VERSION,
 };
 
-const string getFuncName(intrinsic, llvm::Type*);
+const std::string getFuncName(intrinsic, llvm::Type*);
 llvm::Function* createIntrinsic(
         intrinsic, llvm::Module*, llvm::FunctionType*, llvm::Type*
 );
@@ -40,6 +38,5 @@ template<>
 struct hash<borealis::intrinsic>: public borealis::util::enums::enum_hash<borealis::intrinsic> {};
 
 }
-
 
 #endif /* INTRINSICS_H_ */

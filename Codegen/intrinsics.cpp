@@ -5,41 +5,36 @@
  *      Author: belyaev
  */
 
-#include "intrinsics.h"
-
 #include <unordered_map>
 
-using namespace borealis;
-using std::unordered_map;
-
 #include <llvm/Module.h>
-using llvm::Module;
 #include <llvm/Function.h>
-using llvm::Function;
-using llvm::FunctionType;
-#include <llvm/Type.h>
-using llvm::Type;
 #include <llvm/Support/raw_ostream.h>
-using llvm::raw_string_ostream;
+#include <llvm/Type.h>
 
-const string borealis::getFuncName(intrinsic intr, llvm::Type* type) {
-    static unordered_map<intrinsic, string> names {
+#include "intrinsics.h"
+
+using namespace borealis;
+
+const std::string borealis::getFuncName(intrinsic intr, llvm::Type* type) {
+    static std::unordered_map<intrinsic, std::string> names {
         { intrinsic::PTR_VERSION, "ptrver" },
     };
 
-    string buf;
+    std::string buf;
     llvm::raw_string_ostream oss(buf);
 
     oss << "borealis." << names[intr] << "." << *type;
     return oss.str();
 }
 
-Function* borealis::createIntrinsic(
+llvm::Function* borealis::createIntrinsic(
         intrinsic intr,
-        Module* module,
-        FunctionType* funtype,
-        Type* param) {
+        llvm::Module* module,
+        llvm::FunctionType* funtype,
+        llvm::Type* param) {
     using llvm::GlobalValue;
+    using llvm::Function;
 
     return Function::Create(
             funtype,

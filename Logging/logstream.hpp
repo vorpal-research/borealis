@@ -14,10 +14,9 @@
 namespace borealis {
 namespace logging {
 
-namespace impl {
-    typedef log4cpp::CategoryStream stream_t;
+namespace impl_ {
+typedef log4cpp::CategoryStream stream_t;
 }
-
 
 enum class PriorityLevel {
     EMERG  = 0,
@@ -33,10 +32,12 @@ enum class PriorityLevel {
 };
 
 class logstream {
-    impl::stream_t inner;
+    impl_::stream_t inner;
 
-    logstream(impl::stream_t inner): inner(inner) {};
+    logstream(impl_::stream_t inner) : inner(inner) {};
+
 public:
+
     template<class T>
     logstream& operator<<(const T& val) {
         inner << val;
@@ -71,8 +72,7 @@ logstream& end(logstream&);
 
 void configureLoggingFacility(const std::string filename);
 
-}
-}
-
+} // namespace logging
+} // namespace borealis
 
 #endif /* LOGSTREAM_HPP_ */

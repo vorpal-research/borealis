@@ -7,13 +7,12 @@
 
 #include "logstream.hpp"
 
-
 #include <log4cpp/Category.hh>
 #include <log4cpp/CategoryStream.hh>
 #include <log4cpp/Priority.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 
-inline log4cpp::Priority::PriorityLevel mapPriorities(borealis::logging::PriorityLevel pli) {
+inline static log4cpp::Priority::PriorityLevel mapPriorities(borealis::logging::PriorityLevel pli) {
     typedef borealis::logging::PriorityLevel pl;
     typedef log4cpp::Priority::PriorityLevel rpl;
 
@@ -30,11 +29,13 @@ inline log4cpp::Priority::PriorityLevel mapPriorities(borealis::logging::Priorit
     }
 }
 
-namespace borealis { namespace logging {
+namespace borealis {
+namespace logging {
 
 using log4cpp::Category;
 using log4cpp::CategoryStream;
 using log4cpp::PropertyConfigurator;
+
 typedef logstream stream_t;
 
 inline Category& getCat(const std::string& cname) {
@@ -76,5 +77,5 @@ stream_t& end(stream_t& st) {
     return st;
 }
 
-}
-}
+} // namespace logging
+} // namespace borealis

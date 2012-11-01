@@ -10,8 +10,8 @@
 
 #include <type_traits>
 
-#include "logstream.hpp"
 #include "log_entry.hpp"
+#include "logstream.hpp"
 
 namespace borealis {
 namespace logging {
@@ -19,15 +19,9 @@ namespace logging {
 typedef logstream stream_t;
 typedef PriorityLevel priority_t;
 
-
-
 template<class T>
 class ClassLevelLogging {
-public:
-//    static_assert(
-//            std::is_base_of<ClassLevelLogging<T>, T >::value,
-//            "Class level logger must only be used as mixin-style base class"
-//    );
+
 private:
     static std::string logger;
 
@@ -54,17 +48,12 @@ std::string ClassLevelLogging<T>::logger = T::loggerDomain();
 
 template<class T>
 class ObjectLevelLogging {
-public:
 
-
-//    static_assert(
-//            std::is_base_of<ObjectLevelLogging<T>, T >::value,
-//            "Object level logger must only be used as mixin-style base class"
-//    );
 private:
     mutable std::string logger;
 
 protected:
+
     void assignLogger(const std::string& domain) {
         logger = domain;
     }
@@ -94,8 +83,6 @@ inline stream_t logs(priority_t ll = priority_t::DEBUG) {
     return logsFor(ll, "");
 }
 
-
-
 } // namespace logging
 
 using logging::errs;
@@ -107,8 +94,6 @@ using logging::logs;
 using logging::endl;
 using logging::end;
 
-}
-
-
+} // namespace borealis
 
 #endif /* LOGGER_HPP_ */
