@@ -10,6 +10,7 @@
 
 #include "logger.hpp"
 #include <sstream>
+#include <memory>
 
 namespace borealis {
 namespace logging {
@@ -34,8 +35,11 @@ public:
     }
 
     log_entry& operator << (logstream&(*val)(logstream&)) {
-        if(val == &endl || val == &end) {
+        if(val == &endl) {
             *buf << "\n";
+        } else if (val == &end) {
+            *buf << "\n";
+            flush();
         }
         return *this;
     }

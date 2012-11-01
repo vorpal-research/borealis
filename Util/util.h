@@ -13,6 +13,13 @@
 
 #include <string>
 
+#include "util.hpp"
+#include "collections.hpp"
+#include "enums.hpp"
+#include "meta.hpp"
+#include "option.hpp"
+#include "streams.hpp"
+
 namespace llvm {
 
 // copy the standard ostream behavior with functions
@@ -66,6 +73,7 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost);
 } // namespace util
 } // namespace borealis
 
-#include "util.hpp"
+
+
 
 #endif /* UTIL_H_ */

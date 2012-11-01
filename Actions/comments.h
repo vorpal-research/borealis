@@ -8,12 +8,12 @@
 #ifndef COMMENTS_H_
 #define COMMENTS_H_
 
+#include <map>
+
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Lex/Preprocessor.h>
-
-#include <map>
 
 #include "Util/locations.h"
 #include "Anno/anno.h"
@@ -21,8 +21,6 @@
 namespace borealis {
 namespace comments {
 
-using llvm::StringRef;
-using borealis::Locus;
 typedef borealis::anno::calculator::command_type command;
 
 class GatherCommentsAction: public clang::PreprocessOnlyAction {
@@ -30,7 +28,7 @@ private:
 
 	// std::map is here not because it's associative, but 'cos it is sorted and easy-to-use
 	// std::set<pair> may seem more applicable, but requires more boilerplate
-	typedef std::multimap<Locus, command>  comment_container;
+	typedef std::multimap<borealis::Locus, command>  comment_container;
 	typedef comment_container::iterator iterator;
 	typedef std::pair<iterator,iterator> range;
 

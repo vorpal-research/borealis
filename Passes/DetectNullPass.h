@@ -22,9 +22,11 @@
 
 namespace borealis {
 
+namespace __detectnullpass_h__ {
 using util::contains;
 using util::containsKey;
 using util::sayonara;
+}
 
 enum class NullStatus {
 	Null, Maybe_Null, Not_Null
@@ -79,6 +81,8 @@ struct NullInfo {
 	}
 
 	NullInfo& merge(const NullInfo& other) {
+	    using namespace __detectnullpass_h__;
+
 		if (type != other.type) {
 		    sayonara(__FILE__, __LINE__,
 		            "Different NullInfo types in merge");

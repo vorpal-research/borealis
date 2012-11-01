@@ -29,7 +29,7 @@ using std::make_pair;
 typedef borealis::anno::calculator::command_type command;
 typedef std::multimap<Locus, command>  comment_container;
 
-comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
+static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
 	using std::cerr;
 	using std::endl;
 	using borealis::Locus;
