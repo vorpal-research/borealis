@@ -25,7 +25,7 @@ public:
             PredicateAnalysis::PredicateMap& PM,
             PredicateAnalysis::TerminatorPredicateMap& TPM,
             PredicateFactory* PF,
-            TargetData* TD) : PM(PM), TPM(TPM), PF(PF), TD(TD) {
+            llvm::TargetData* TD) : PM(PM), TPM(TPM), PF(PF), TD(TD) {
     }
 
     void visitLoadInst(llvm::LoadInst& I) {
@@ -117,7 +117,7 @@ private:
     PredicateAnalysis::TerminatorPredicateMap& TPM;
 
     PredicateFactory* PF;
-    TargetData* TD;
+    llvm::TargetData* TD;
 
 };
 

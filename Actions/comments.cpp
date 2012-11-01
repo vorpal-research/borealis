@@ -72,7 +72,7 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
 
    auto ret = comment_container();
    for_each(commands, [&](command&  cmd){
-	   auto pr = make_pair(move(locus), move(cmd));
+	   auto pr = make_pair(std::move(locus), std::move(cmd));
 	   ret.insert(pr);
    });
 

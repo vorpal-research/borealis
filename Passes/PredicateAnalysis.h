@@ -63,7 +63,7 @@ private:
 	TerminatorPredicateMap TPM;
 
 	std::shared_ptr<PredicateFactory> PF;
-	TargetData* TD;
+	llvm::TargetData* TD;
 
 };
 

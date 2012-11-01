@@ -9,12 +9,16 @@
 
 namespace borealis {
 
+using llvm::ConditionType;
+using llvm::conditionString;
+using llvm::conditionType;
+
 using util::sayonara;
 
 ICmpPredicate::ICmpPredicate(
-		const Value* lhv,
-		const Value* op1,
-		const Value* op2,
+		const llvm::Value* lhv,
+		const llvm::Value* op1,
+		const llvm::Value* op2,
 		const int cond,
 		SlotTracker* st) :
 				lhv(lhv),

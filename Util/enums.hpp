@@ -24,15 +24,12 @@ struct enum_hash {
     std::hash<raw> delegate;
 
     inline size_t operator()( Enum e ) const {
-      return delegate(asInteger(e));
+        return delegate(asInteger(e));
     }
 };
 
-
-
 } // namespace enums
-} // naemspace util
-} // naemspace borealis
-
+} // namespace util
+} // namespace borealis
 
 #endif /* ENUMS_HPP_ */

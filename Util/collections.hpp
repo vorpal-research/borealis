@@ -8,12 +8,12 @@
 #ifndef COLLECTIONS_HPP_
 #define COLLECTIONS_HPP_
 
-#include <tuple>
-#include <vector>
-#include <set>
+#include <algorithm>
 #include <list>
 #include <map>
-#include <algorithm>
+#include <set>
+#include <tuple>
+#include <vector>
 
 namespace borealis {
 namespace util {
@@ -112,7 +112,7 @@ namespace {
 
 template<class Tup, class Op, size_t N = std::tuple_size<Tup>::value>
 struct tuple_for_each_helper {
-    enum{ tsize = std::tuple_size<Tup>::value };
+    enum { tsize = std::tuple_size<Tup>::value };
     inline static void apply(Tup& tup, Op op) {
         op(std::get<tsize-N>(tup));
         tuple_for_each_helper<Tup, Op, N-1>::apply(tup, op);
@@ -161,9 +161,9 @@ struct hash_impl<0, types...> {
 } // namespace
 } // namespace impl_
 
-
 } // namespace util
 } // namespace borealis
+
 
 
 namespace std {

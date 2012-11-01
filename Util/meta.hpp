@@ -39,8 +39,7 @@ struct is_T_in<T,H,Tail...> : is_T_in<T, Tail...> {};
 template<class T>
 struct is_T_in<T> : std::false_type {};
 
-}
-}
-
+} // namespace util
+} // namespace borealis
 
 #endif /* META_HPP_ */

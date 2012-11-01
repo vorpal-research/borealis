@@ -12,7 +12,7 @@ RTTIFLAG := -fno-rtti
 DEFS :=
 
 INCLUDE_DIRS := \
-	/usr/include/z3 
+	/usr/include/z3
 
 INCLUDES := $(foreach dir, $(INCLUDE_DIRS), -I"$(dir)")
 
@@ -56,17 +56,17 @@ CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
 ################################################################################
 
 ADDITIONAL_SOURCE_DIRS := \
+	$(PWD)/Actions \
+	$(PWD)/Anno \
+	$(PWD)/Codegen \
+	$(PWD)/Config \
+	$(PWD)/Logging \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
-	$(PWD)/State \
-	$(PWD)/Anno \
 	$(PWD)/Query \
 	$(PWD)/Solver \
-	$(PWD)/Logging \
-	$(PWD)/Config \
-	$(PWD)/Codegen \
+	$(PWD)/State \
 	$(PWD)/Util \
-	$(PWD)/Actions \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
 	

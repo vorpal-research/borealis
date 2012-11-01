@@ -5,33 +5,27 @@
  *      Author: belyaev
  */
 
-
-
-#include "PhiInjectionPass.h"
-
-#include "SLInjectionPass.h"
-
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/CFG.h>
-
 
 #include <set>
 #include <tuple>
 
 #include "Codegen/intrinsics.h"
 
-namespace {
+#include "PhiInjectionPass.h"
+#include "SLInjectionPass.h"
+
+namespace borealis {
+namespace ptrssa {
+
 using namespace llvm;
-using namespace borealis;
-using namespace borealis::ptrssa;
 
 using borealis::util::view;
 using std::set;
 using std::pair;
 using std::make_pair;
-}
-
 
 void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequiredTransitive<DominatorTree>();
@@ -117,4 +111,5 @@ RegisterPass<PhiInjectionPass> X("phi-injection",
         "The pass that places an intrinsic mark on every pointer before every use");
 }
 
-
+} // namespace ptrssa
+} // namespace borealis

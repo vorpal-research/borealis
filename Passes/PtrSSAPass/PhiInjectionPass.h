@@ -28,23 +28,6 @@
 namespace borealis {
 namespace ptrssa {
 
-namespace {
-    using llvm::BasicBlockPass;
-    using llvm::RegisterPass;
-    using llvm::BasicBlock;
-    using llvm::Function;
-    using llvm::Module;
-    using llvm::Value;
-    using llvm::Constant;
-    using llvm::Type;
-    using llvm::Instruction;
-    using llvm::isa;
-    using llvm::CallInst;
-    using llvm::AnalysisUsage;
-    using llvm::dyn_cast;
-    using namespace std;
-}
-
 class PhiInjectionPass :
     public ProxyFunctionPass<PhiInjectionPass>,
     public origin_tracker {
@@ -54,26 +37,23 @@ public:
     PhiInjectionPass() : base(), DT_(nullptr), DF_(nullptr) {}
     PhiInjectionPass(FunctionPass* del) : base(del), DT_(nullptr), DF_(nullptr) {}
 
-    void getAnalysisUsage(AnalysisUsage &AU) const;
-    bool runOnFunction(Function&);
+    void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
+    bool runOnFunction(llvm::Function&);
 
-    SlotTracker& getSlotTracker(const Function*);
+    SlotTracker& getSlotTracker(const llvm::Function*);
 
-    typedef unordered_map<pair<BasicBlock*, Value*>, PHINode*> phi_tracker;
-    void propagateInstruction(Instruction& from, Instruction& to, phi_tracker&);
+    typedef std::unordered_map<std::pair<llvm::BasicBlock*, llvm::Value*>, llvm::PHINode*> phi_tracker;
+    void propagateInstruction(llvm::Instruction& from, llvm::Instruction& to, phi_tracker&);
 
     virtual ~PhiInjectionPass(){}
 
 private:
     // Variables always live
-    DominatorTree *DT_;
-    DominanceFrontier *DF_;
+    llvm::DominatorTree *DT_;
+    llvm::DominanceFrontier *DF_;
 };
-
 
 } // namespace ptrssa
 } // namespace borealis
-
-
 
 #endif /* PHIINJECTIONPASS_H_ */

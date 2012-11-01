@@ -73,7 +73,4 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost);
 } // namespace util
 } // namespace borealis
 
-
-
-
 #endif /* UTIL_H_ */

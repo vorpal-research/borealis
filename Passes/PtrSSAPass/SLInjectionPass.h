@@ -25,23 +25,6 @@
 namespace borealis {
 namespace ptrssa {
 
-namespace {
-    using llvm::FunctionPass;
-    using llvm::BasicBlockPass;
-    using llvm::RegisterPass;
-    using llvm::BasicBlock;
-    using llvm::Function;
-    using llvm::Module;
-    using llvm::Value;
-    using llvm::Constant;
-    using llvm::Type;
-    using llvm::Instruction;
-    using llvm::isa;
-    using llvm::CallInst;
-    using llvm::AnalysisUsage;
-    using llvm::dyn_cast;
-}
-
 class StoreLoadInjectionPass:
         public ProxyFunctionPass<StoreLoadInjectionPass>,
         public origin_tracker {
@@ -51,36 +34,36 @@ public:
     typedef llvm::Value* value;
 
     StoreLoadInjectionPass(): base(), DT_(nullptr) {};
-    StoreLoadInjectionPass(FunctionPass* del): base(del), DT_(nullptr) {};
+    StoreLoadInjectionPass(llvm::FunctionPass* del): base(del), DT_(nullptr) {};
 
-    virtual bool runOnFunction(Function& F) {
-        for(auto& bb: F) {
+    virtual bool runOnFunction(llvm::Function& F) {
+        for (auto& bb : F) {
             runOnBasicBlock(bb);
         }
         return false;
     }
-    virtual bool runOnBasicBlock(BasicBlock& bb);
+    virtual bool runOnBasicBlock(llvm::BasicBlock& bb);
 
-    virtual void getAnalysisUsage(AnalysisUsage &AU) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
 
     virtual ~StoreLoadInjectionPass(){}
 
 
 private:
-    Function* createNuevoFunc(Type* pointed, Module* daModule);
+    Function* createNuevoFunc(llvm::Type* pointed, llvm::Module* daModule);
 
-    void createNewDefs(BasicBlock &BB);
-    void renameNewDefs(Instruction *newdef, Value* ptr);
+    void createNewDefs(llvm::BasicBlock &BB);
+    void renameNewDefs(llvm::Instruction *newdef, llvm::Value* ptr);
 
-    std::vector<llvm::Value*> getPointerOperands(StoreInst* store) {
+    std::vector<llvm::Value*> getPointerOperands(llvm::StoreInst* store) {
         return std::vector<llvm::Value*>{ store->getPointerOperand() };
     }
 
-    std::vector<llvm::Value*> getPointerOperands(LoadInst* load) {
+    std::vector<llvm::Value*> getPointerOperands(llvm::LoadInst* load) {
         return std::vector<llvm::Value*>{ load->getPointerOperand() };
     }
 
-    std::vector<llvm::Value*> getPointerOperands(CallInst* call) {
+    std::vector<llvm::Value*> getPointerOperands(llvm::CallInst* call) {
 
         if(call->doesNotAccessMemory()) return std::vector<llvm::Value*>();
 
@@ -94,14 +77,16 @@ private:
     }
 
     template<class InstType>
-    inline void checkAndUpdatePtrs(Instruction* inst) {
+    inline void checkAndUpdatePtrs(llvm::Instruction* inst) {
+        using namespace llvm;
+
         if(isa<InstType>(inst)) {
             auto resolve = dyn_cast<InstType>(inst);
             auto F = inst->getParent()->getParent();
             auto M = F->getParent();
             auto ops = getPointerOperands(resolve);
 
-            for(Value* op: ops) {
+            for (Value* op : ops) {
                 if(!isa<Constant>(op)) {
                     string name;
 
@@ -138,13 +123,7 @@ private:
     llvm::DominatorTree* DT_;
 };
 
-
-}
-}
-
-
-
-
-
+} // namespace ptrssa
+} // namespace borealis
 
 #endif /* SLINJECTIONPASS_H_ */

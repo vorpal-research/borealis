@@ -4,6 +4,7 @@
  *  Created on: Nov 1, 2012
  *      Author: belyaev
  */
+
 #ifndef STREAMS_HPP_
 #define STREAMS_HPP_
 
@@ -98,7 +99,7 @@ namespace streams {
 template<class T>
 struct error_printer {
     const T& val;
-    error_printer(const T& v): val(v) {}
+    error_printer(const T& v) : val(v) {}
 };
 
 template<class T>
@@ -261,7 +262,5 @@ namespace llvm {
         return std::operator<<(ost, ostt.str());
     }
 } // namespace llvm
-
-
 
 #endif /* STREAMS_HPP_ */

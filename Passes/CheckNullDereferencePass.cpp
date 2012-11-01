@@ -20,7 +20,7 @@ namespace borealis {
 using util::for_each;
 using util::streams::endl;
 
-class DerefInstVisitor : public InstVisitor<DerefInstVisitor> {
+class DerefInstVisitor : public llvm::InstVisitor<DerefInstVisitor> {
 
 public:
 
@@ -28,6 +28,7 @@ public:
     }
 
     void visitLoadInst(llvm::LoadInst& I) {
+        using llvm::AliasAnalysis;
         using llvm::Value;
 
         const Value* ptr = I.getPointerOperand();
@@ -46,7 +47,7 @@ private:
 
 };
 
-class ValueInstVisitor : public InstVisitor<ValueInstVisitor> {
+class ValueInstVisitor : public llvm::InstVisitor<ValueInstVisitor> {
 
 public:
 
@@ -54,6 +55,7 @@ public:
     }
 
     void visitLoadInst(llvm::LoadInst& I) {
+        using llvm::AliasAnalysis;
         using llvm::Value;
 
         const Value* ptr = I.getPointerOperand();
@@ -69,6 +71,7 @@ public:
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
+        using llvm::AliasAnalysis;
         using llvm::Value;
 
         const Value* ptr = I.getPointerOperand();

@@ -1,3 +1,10 @@
+/*
+ * demangle.h
+ *
+ *  Created on: Nov 1, 2012
+ *      Author: belyaev
+ */
+
 #ifndef DEMANGLE_H
 #define DEMANGLE_H
 
@@ -22,8 +29,8 @@ inline std::string demangle(const char* mangled) {
     int status = -1;
 
     const std::shared_ptr< const char > demangled(
-        abi::__cxa_demangle( mangled, 0, 0, & status ),
-        [](const char* buf) { free(static_cast<void*>(buf)); }
+            abi::__cxa_demangle( mangled, 0, 0, & status ),
+            [](const char* buf) { free(static_cast<void*>(buf)); }
     );
 
     if ( ! demangled.get() ) {
@@ -71,6 +78,7 @@ std::string type_name(const T& v) {
 #endif // #if defined(compiler trash)
 
 
+
 namespace borealis {
 namespace util{
 
@@ -90,9 +98,7 @@ std::string clean_type_name(const T& v) {
     return full;
 }
 
-
 } // namespace util
 } // namespace borealis
-
 
 #endif // DEMANGLE_H

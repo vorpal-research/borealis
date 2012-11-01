@@ -6,7 +6,3 @@
  */
 
 #include "locations.h"
-
-
-
-

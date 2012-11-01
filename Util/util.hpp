@@ -8,8 +8,9 @@
 #ifndef UTIL_HPP_
 #define UTIL_HPP_
 
-#include <cstddef>
 #include <llvm/Support/ManagedStatic.h>
+
+#include <cstddef>
 
 #include "Logging/logger.hpp"
 #include "streams.hpp"

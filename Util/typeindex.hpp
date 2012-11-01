@@ -8,8 +8,8 @@
 #ifndef TYPEINDEX_HPP_
 #define TYPEINDEX_HPP_
 
-#include <utility>
 #include <unordered_map>
+#include <utility>
 
 namespace borealis {
 
@@ -32,9 +32,7 @@ constexpr id_t type_id() { return type_index<T>::id(); }
 
 } // namespace borealis
 
-
 namespace std{
-
     template<class T>
     struct hash<borealis::type_index<T>> {
         size_t operator()(const borealis::type_index<T>&) {
@@ -42,6 +40,5 @@ namespace std{
         }
     };
 }
-
 
 #endif /* TYPEINDEX_HPP_ */

@@ -44,14 +44,14 @@ public:
         children = {{ new Passes(this)... }};
     }
 
-    virtual bool doInitialization(Module& M) {
+    virtual bool doInitialization(llvm::Module& M) {
         for(FunctionPass* child: children) {
             child->doInitialization(M);
         }
         return false;
     }
 
-    virtual bool doFinalization(Module& M) {
+    virtual bool doFinalization(llvm::Module& M) {
         for(FunctionPass* child: view(children.rbegin(), children.rend())) {
             child->doFinalization(M);
         }

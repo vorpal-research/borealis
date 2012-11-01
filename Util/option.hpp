@@ -8,70 +8,62 @@
 #ifndef OPTION_HPP_
 #define OPTION_HPP_
 
-#include <utility>
-using std::move;
-
-#include <memory>
-using std::shared_ptr;
-
 #include <functional>
-using std::function;
-
-using std::nullptr_t;
-
 #include <iostream>
+#include <memory>
+#include <utility>
 
-namespace borealis { namespace util {
+namespace borealis {
+namespace util {
 
 template<class T>
 class option {
     typedef T* pointer;
     typedef option<T> self;
 
-    shared_ptr<T> holder;
+    std::shared_ptr<T> holder;
 
 public:
     option() : holder(nullptr) {}
-    explicit option(const T& val) : holder(new T(val)) { }
-    explicit option(const function<shared_ptr<T>()>& generator) :
-                    holder(generator()) {}
+    explicit option(const T& val) : holder(new T(val)) {}
+    explicit option(const std::function<std::shared_ptr<T>()>& generator) : holder(generator()) {}
     option(const self& that) {
-            if (that.empty()) {
-                holder.reset();
-            } else {
-                const auto& val = *(that.holder);
-                holder.reset(new T(val));
-            }
+        if (that.empty()) {
+            holder.reset();
+        } else {
+            const auto& val = *(that.holder);
+            holder.reset(new T(val));
+        }
     }
-    option(self&& that) : holder(move(that.holder)) {}
+    option(self&& that) : holder(std::move(that.holder)) {}
 
     bool empty() const { return holder == nullptr; }
 
     void swap(const self& that ) {
-            holder.swap(that.holder);
+        holder.swap(that.holder);
     }
 
     self& operator=(const self& that) {
-            self temp(that); // exception safety
-            swap(temp);
-            return *this;
+        self temp(that); // exception safety
+        swap(temp);
+        return *this;
     }
     self& operator=(self&& that) {
-            holder = move(that.holder);
-            return *this;
+        holder = std::move(that.holder);
+        return *this;
     }
 
     bool operator==(const self& that) const {
-            if( empty() ) {
-                    return that.empty() ? true : false;
-            }
-            else if( that.empty() ) return false;
-            else return *holder == *(that.holder);
+        if( empty() ) {
+            return that.empty() ? true : false;
+        }
+        else if( that.empty() ) return false;
+        else return *holder == *(that.holder);
     }
 
     bool operator==(const T& that) const {
-            if( empty() ) return false;
-            else return *holder == that;
+        if( empty() ) return false;
+        else return *holder == that;
     }
 
     const T* get() const {
@@ -83,26 +75,26 @@ public:
     }
 
     const T& getOrElse(const T& def) const {
-        auto ptr = holder.get();
-        return ptr? *ptr : def;
+        auto* ptr = holder.get();
+        return ptr ? *ptr : def;
     }
 
     T& getOrElse(T& def) {
-        auto ptr = holder.get();
-        return ptr? *ptr : def;
+        auto* ptr = holder.get();
+        return ptr ? *ptr : def;
     }
 
     struct option_iterator {
         const self* opt;
-        option_iterator(const self* opt): opt(opt){};
+        option_iterator(const self* opt) : opt(opt){};
         option_iterator(const option_iterator&) = default;
-        option_iterator& operator= (const option_iterator&) = default;
+        option_iterator& operator=(const option_iterator&) = default;
 
-        option_iterator& operator== (const option_iterator& that) {
+        option_iterator& operator==(const option_iterator& that) {
             return opt == that.opt;
         }
 
-        option_iterator& operator!= (const option_iterator& that) {
+        option_iterator& operator!=(const option_iterator& that) {
             return opt != that.opt;
         }
 
@@ -112,7 +104,7 @@ public:
         }
 
         option_iterator operator++(int) {
-            auto tmp = opt;
+            auto* tmp = opt;
             opt = nullptr;
             return option_iterator(tmp);
         }
