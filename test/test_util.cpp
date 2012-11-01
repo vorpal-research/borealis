@@ -7,9 +7,9 @@
 
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-#include "util.h"
+#include "Util/util.h"
 
 namespace {
 

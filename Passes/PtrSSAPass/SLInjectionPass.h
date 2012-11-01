@@ -16,12 +16,11 @@
 
 #include <unordered_map>
 
-#include "intrinsics.h"
+#include "Codegen/intrinsics.h"
 
 #include "origin_tracker.h"
-#include "../SlotTrackerPass.h"
-
-#include "../ProxyFunctionPass.hpp"
+#include "Passes/SlotTrackerPass.h"
+#include "Passes/ProxyFunctionPass.hpp"
 
 namespace borealis {
 namespace ptrssa {

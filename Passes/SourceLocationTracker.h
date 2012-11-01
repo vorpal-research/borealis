@@ -14,7 +14,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Analysis/DebugInfo.h>
 
-#include "../util.h"
+#include "Util/util.h"
 #include "SourceLocationTracker/location_container.hpp"
 
 #include <map>

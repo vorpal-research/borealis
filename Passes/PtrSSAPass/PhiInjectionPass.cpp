@@ -19,6 +19,8 @@
 #include <set>
 #include <tuple>
 
+#include "Codegen/intrinsics.h"
+
 namespace {
 using namespace llvm;
 using namespace borealis;
@@ -29,8 +31,6 @@ using std::set;
 using std::pair;
 using std::make_pair;
 }
-
-#include "intrinsics.h"
 
 
 void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {

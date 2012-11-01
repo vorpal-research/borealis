@@ -15,7 +15,7 @@
 
 #include <map>
 
-#include "locations.h"
+#include "Util/locations.h"
 #include "Anno/anno.h"
 
 namespace borealis {
@@ -70,7 +70,6 @@ public:
 protected:
 	virtual bool BeginSourceFileAction(clang::CompilerInstance &CI,
 			llvm::StringRef Filename) {
-		llvm::errs() << Filename << "\n";
 
 		auto& PP = CI.getPreprocessor();
 		currentFile = Filename;

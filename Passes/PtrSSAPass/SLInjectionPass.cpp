@@ -3,8 +3,6 @@
 
 #include "PhiInjectionPass.h"
 
-#include "intrinsics.h"
-
 #include <iterator>
 
 #include <llvm/Pass.h>

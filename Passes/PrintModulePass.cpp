@@ -11,7 +11,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "Logging/logger.hpp"
-#include "util.h"
+#include "Util/util.h"
 
 using namespace::borealis::util::streams;
 

@@ -8,16 +8,17 @@
 #ifndef PREDICATE_H_
 #define PREDICATE_H_
 
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Value.h"
-#include "z3/z3++.h"
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Value.h>
+#include <z3/z3++.h>
 
 #include <tuple>
 #include <unordered_set>
 
 #include "Solver/Z3ExprFactory.h"
-#include "typeindex.hpp"
-#include "util.h"
+#include "Util/typeindex.hpp"
+#include "Util/util.h"
+#include "Util/slottracker.h"
 
 namespace borealis {
 

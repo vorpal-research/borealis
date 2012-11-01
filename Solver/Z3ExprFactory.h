@@ -9,11 +9,9 @@
 #define Z3EXPRFACTORY_H_
 
 #include <llvm/Target/TargetData.h>
+#include <z3/z3++.h>
 
-#include "z3/z3++.h"
-
-#include "util.h"
-#include "../util.h"
+#include "Util/util.h"
 
 namespace borealis {
 

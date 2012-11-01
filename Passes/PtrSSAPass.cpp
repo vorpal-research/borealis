@@ -12,7 +12,7 @@ using llvm::ArrayRef;
 using namespace llvm;
 using namespace borealis;
 
-#include "intrinsics.h"
+#include "Codegen/intrinsics.h"
 #include "PtrSSAPass/SLInjectionPass.h"
 #include "PtrSSAPass/PhiInjectionPass.h"
 

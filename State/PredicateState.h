@@ -15,7 +15,7 @@
 
 #include "Predicate/Predicate.h"
 #include "Solver/Z3ExprFactory.h"
-#include "util.h"
+#include "Util/util.h"
 
 namespace borealis {
 

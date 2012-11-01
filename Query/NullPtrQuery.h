@@ -11,7 +11,7 @@
 #include <llvm/Value.h>
 
 #include "Query.h"
-#include "slottracker.h"
+
 
 namespace borealis {
 

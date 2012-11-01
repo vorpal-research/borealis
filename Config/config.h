@@ -13,7 +13,7 @@
 #include <cfgparser.h>
 #include <configwrapper.h>
 
-#include "util.h"
+#include "Util/util.h"
 #include "Util/option.hpp"
 
 namespace borealis {

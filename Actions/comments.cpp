@@ -13,10 +13,7 @@
 #include <utility>
 
 #include "comments.h"
-#include "util.h"
-
-#include "locations.h"
-#include "Anno/anno.h"
+#include "Util/util.h"
 
 namespace borealis {
 namespace comments {

@@ -12,7 +12,7 @@
 
 #include <llvm/Pass.h>
 
-#include "util.h"
+#include "Util/util.h"
 
 namespace {
     using llvm::Function;

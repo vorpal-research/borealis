@@ -11,7 +11,6 @@
 #include <llvm/Value.h>
 
 #include "Predicate.h"
-#include "slottracker.h"
 
 namespace borealis {
 

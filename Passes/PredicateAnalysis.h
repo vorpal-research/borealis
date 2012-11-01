@@ -21,8 +21,8 @@
 
 #include "Predicate/PredicateFactory.h"
 
-#include "slottracker.h"
-#include "util.h"
+#include "Util/slottracker.h"
+#include "Util/util.h"
 
 namespace borealis {
 

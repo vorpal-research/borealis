@@ -7,8 +7,6 @@
 
 #include "PredicateState.h"
 
-#include "../util.h"
-
 namespace borealis {
 
 using util::contains;

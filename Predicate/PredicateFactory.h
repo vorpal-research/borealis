@@ -19,8 +19,6 @@
 #include "Predicate/GEPPredicate.h"
 #include "Predicate/EqualityPredicate.h"
 
-#include "slottracker.h"
-
 namespace borealis {
 
 class PredicateFactory {

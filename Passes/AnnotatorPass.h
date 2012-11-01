@@ -14,16 +14,13 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "../Anno/anno.h"
+#include "Anno/anno.h"
 #include "DataProvider.hpp"
 #include "SourceLocationTracker.h"
 #include "NameTracker.h"
-#include "../comments.h"
+#include "Actions/comments.h"
 
-#include "../Logging/logger.hpp"
-
-#include <log4cpp/FileAppender.hh>
-#include <log4cpp/PatternLayout.hh>
+#include "Logging/logger.hpp"
 
 namespace borealis {
 

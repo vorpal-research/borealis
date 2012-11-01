@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <functional>
 #include <utility>
-#include "locations.h"
+#include "Util/locations.h"
 
 namespace borealis {
 

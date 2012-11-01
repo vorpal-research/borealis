@@ -21,9 +21,9 @@
 #include <unordered_set>
 #include <tuple>
 
-#include "../SlotTrackerPass.h"
+#include "Passes/SlotTrackerPass.h"
 #include "origin_tracker.h"
-#include "../ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.hpp"
 
 namespace borealis {
 namespace ptrssa {

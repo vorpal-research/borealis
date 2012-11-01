@@ -58,9 +58,9 @@
 
 #include "Logging/logger.hpp"
 
-#include "comments.h"
-#include "util.h"
-#include "config.h"
+#include "Actions/comments.h"
+#include "Util/util.h"
+#include "Config/config.h"
 
 #include "Passes/DataProvider.hpp"
 

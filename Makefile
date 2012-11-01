@@ -5,16 +5,16 @@
 CXX := clang++
 
 LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine executionengine instcombine instrumentation interpreter ipa ipo jit linker mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld scalaropts selectiondag support tablegen target transformutils vectorize linker
+
 RTTIFLAG := -fno-rtti
 #RTTIFLAG :=
 
 DEFS :=
 
 INCLUDE_DIRS := \
-	$(PWD) \
 	/usr/include/z3 
 
-INCLUDES := $(foreach d, $(INCLUDE_DIRS), -I$d)
+INCLUDES := $(foreach dir, $(INCLUDE_DIRS), -I"$(dir)")
 
 CXXFLAGS := \
 	-D_GNU_SOURCE \
@@ -63,6 +63,10 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Query \
 	$(PWD)/Solver \
 	$(PWD)/Logging \
+	$(PWD)/Config \
+	$(PWD)/Codegen \
+	$(PWD)/Util \
+	$(PWD)/Actions \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
 	

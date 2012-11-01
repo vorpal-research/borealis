@@ -11,7 +11,6 @@
 #include <tuple>
 
 #include "Predicate.h"
-#include "slottracker.h"
 
 namespace borealis {
 
