@@ -1,52 +1,49 @@
-#pragma once
+/*
+ * anno.hpp
+ *
+ *  Created on: Nov 1, 2012
+ *      Author: belyaev
+ */
 
 #ifndef ANNO_HPP
 #define ANNO_HPP
 
 #include <pegtl.hh>
 
-#include "production.h"
 #include "command.hpp"
 #include "locator.hpp"
+#include "production.h"
 #include "Util/util.h"
 
-#include <stack>
+#include <algorithm>
 #include <memory>
 #include <sstream>
-#include <algorithm>
+#include <stack>
 
 namespace borealis {
 namespace anno {
 
-using std::unique_ptr;
-using std::istringstream;
-using std::vector;
-using std::for_each;
-
-using borealis::util::nospaces;
-
-// designate between std::string and pegtl::string
+// distinguish between std::string and pegtl::string
 // std::string -> stdstring
 typedef std::string stdstring;
 // pegtl::string -> pstring
 template<int ...Chars>
-struct pstring :
-        pegtl::string< Chars... > {
-};
+struct pstring : pegtl::string< Chars... > {};
 
 // bad string cast exception, no additional info provided, sorry
 class bad_string_cast :
         public std::exception {
 };
+
 // an utility class used to cast string to anything
 // it is generally NOT exception-safe iff T is not a POD
 // T also needs to have a default constructor
 template<class T>
 struct string_caster {
     // default is to read it using sstreams
-    inline static T apply(const string& sexpr) {
+    inline static T apply(const std::string& sexpr) {
         try {
-            istringstream is(sexpr);
+            std::istringstream is(sexpr);
             T val;
             is >> val;
             if (!is) throw 0; // will be caught by catch
@@ -57,20 +54,22 @@ struct string_caster {
         return T(); // is never reached
     }
 };
-// string instance is just an id and, consequently, exception-safe
+
+// string instance is just an id and, consequently, is exception-safe
 // can create dangling references though
 template<>
-struct string_caster< string > {
-    inline static const string& apply(const string& sexpr) {
+struct string_caster< std::string > {
+    inline static const std::string& apply(const std::string& sexpr) {
         return sexpr;
     }
 };
+
 // bool instance needs boolalpha OR can be done manually
 // the value MUST be either 'true' or 'false' or it will destroy the program
 // (unless u use the catch(...), of course)
 template<>
 struct string_caster< bool > {
-    inline static bool apply(const string& sexpr) {
+    inline static bool apply(const std::string& sexpr) {
         if (sexpr == "true")
             return true;
         else if (sexpr == "false")
@@ -79,12 +78,13 @@ struct string_caster< bool > {
             throw bad_string_cast();
     }
 };
+
 // we use long long as a spec 'cos it is used in the parser
-// for a general use, it must be an int
+// for general use, it must be an int
 // this version checks the full C numeric literal grammar with hex or oct qualifiers
 template<>
 struct string_caster< long long > {
-    inline static long long apply(const string& sexpr) {
+    inline static long long apply(const std::string& sexpr) {
         try {
             auto mod = std::dec;
             auto shift = 0;
@@ -98,7 +98,7 @@ struct string_caster< long long > {
                 shift = 1;
             }
             // we rely on shift being 0 if the string is empty
-            istringstream is(sexpr.c_str() + shift);
+            std::istringstream is(sexpr.c_str() + shift);
             long long val;
             is >> mod >> val;
             if (!is) throw 0;  // will be caught by catch
@@ -113,7 +113,7 @@ struct string_caster< long long > {
 // the casting function itself
 // throws bad_string_cast
 template<class T>
-T string_cast(const string& sexpr) {
+T string_cast(const std::string& sexpr) {
     return string_caster< T >::apply(sexpr);
 }
 
@@ -123,119 +123,120 @@ template<class T>
 struct negate :
         std::unary_function< T, T > {
     T operator()(T&& x) const
-    {   return -move(x);}
+    { return -move(x); }
 };
 
 template<class T>
 struct bit_not :
         std::unary_function< T, T > {
     T operator()(T&& x) const
-    {   return ~move(x);}
+    { return ~move(x); }
 };
 
 template<class T>
 struct logical_not :
         std::unary_function< T, T > {
     T operator()(T&& x) const
-    {   return !move(x);}
+    { return !move(x); }
 };
+
 // binary
 #define DEFBINARY(NAME, OP) \
-	template <class T> \
-	struct NAME : std::binary_function <T,T,T> { \
-	  T operator() (T&& x, T&& y) const \
-		{return move(x) OP move(y);} \
-	};
+    template <class T> \
+    struct NAME : std::binary_function <T,T,T> { \
+      T operator() (T&& x, T&& y) const \
+      { return move(x) OP move(y); } \
+    };
 
-DEFBINARY( pluss, +)
-DEFBINARY( minus, -)
-DEFBINARY( multiplies, *)
-DEFBINARY( divides, /)
-DEFBINARY( modulus, %)
-DEFBINARY( left_shift, <<)
-DEFBINARY( right_shift, >>)
-DEFBINARY( greater, >)
-DEFBINARY( less, <)
-DEFBINARY( greater_or_equal, >=)
-DEFBINARY( less_or_equal, <=)
-DEFBINARY( equal, ==)
-DEFBINARY( nequal, !=)
-DEFBINARY( bit_and, &)
-DEFBINARY( bit_xor, ^)
-DEFBINARY( bit_or, |)
-DEFBINARY( logical_and, &&)
-DEFBINARY( logical_or, ||)
+DEFBINARY( pluss, + )
+DEFBINARY( minus, - )
+DEFBINARY( multiplies, * )
+DEFBINARY( divides, / )
+DEFBINARY( modulus, % )
+DEFBINARY( left_shift, << )
+DEFBINARY( right_shift, >> )
+DEFBINARY( greater, > )
+DEFBINARY( less, < )
+DEFBINARY( greater_or_equal, >= )
+DEFBINARY( less_or_equal, <= )
+DEFBINARY( equal, == )
+DEFBINARY( nequal, != )
+DEFBINARY( bit_and, & )
+DEFBINARY( bit_xor, ^ )
+DEFBINARY( bit_or, | )
+DEFBINARY( logical_and, && )
+DEFBINARY( logical_or, || )
 
 #undef DEFBINARY // good housekeeping
+
 namespace calculator {
-// The first program used during development and debugging
-// of the library that uses actions. It evaluates each command
-// line argument as arithmetic expression consisting of
-// - integers with optional sign,
-// - the four basic arithmetic operations,
-// - grouping brackets.
-// For example input "3 * ( -7 + 9)" yields result 6.
 
-using namespace pegtl;
-
-// The state for the arithmetics.
-typedef prod_t expression_type;
-typedef std::stack< expression_type > expr_stack;
 typedef command command_type;
-typedef vector<command> commands_t;
+typedef prod_t expression_type;
+// The state for the arithmetics
+typedef std::stack< expression_type > expr_stack;
+typedef std::vector< command > commands_t;
+
+using pegtl::action_base;
+using pegtl::alpha;
+using pegtl::digit;
+using pegtl::identifier;
+using pegtl::ifapply;
+using pegtl::ifmust;
+using pegtl::one;
+using pegtl::opt;
+using pegtl::pad;
+using pegtl::plus;
+using pegtl::seq;
+using pegtl::sor;
+using pegtl::space;
+using pegtl::space_until_eof;
+using pegtl::star;
+using pegtl::range;
+using pegtl::xdigit;
 
 template<typename ExprType>
 ExprType pull(std::stack< ExprType >& s) {
-    assert( ! s.empty());
-    ExprType nrv(move(s.top()));
+    assert( ! s.empty() );
+    ExprType nrv(std::move(s.top()));
     s.pop();
     return nrv;
 }
 
-// The actions.
-
-// This action converts the matched sub-string to an integer and pushes it on
-// the stack, which must be its only additional state argument.
-
-// Deriving from action_base<> is necessary since version 0.26; the base class
-// takes care of the pretty-printing for diagnostic messages; this is necessary
-// for all action classes (that do not derive from a rule class).
-
 template<class Prim>
 struct push :
         action_base< push< Prim > > {
-    static void apply(const std::string & m, expr_stack & s, command_type &, commands_t& ) {
+    static void apply(const std::string & m, expr_stack & s, command_type &, commands_t &) {
         s.push(productionFactory::bind(string_cast< Prim >(m)));
     }
 };
 
 struct mask_push :
         action_base< mask_push > {
-    static void apply(const std::string & m, expr_stack & s, command_type &, commands_t& ) {
+    static void apply(const std::string & m, expr_stack & s, command_type &, commands_t &) {
         s.push(productionFactory::createMask(m));
     }
 };
 
 struct store_command :
-		action_base< store_command > {
-	static void apply(const std::string &, expr_stack & s, command_type & com, commands_t& coms) {
-		while(!s.empty()) s.pop();
-		coms.push_back(std::move(com));
-	}
+        action_base< store_command > {
+    static void apply(const std::string &, expr_stack & s, command_type & com, commands_t & coms) {
+        while(!s.empty()) s.pop();
+        coms.push_back(std::move(com));
+    }
 };
 
 // Class op_baction performs an operation on the two top-most elements of
 // the evaluation stack. This should always be possible in the sense that
 // the grammar must make sure to only apply this action when sufficiently
 // many operands are on the stack.
-
 template<typename Operation>
 struct op_baction :
         action_base< op_baction< Operation > > {
-    static void apply(const std::string &, expr_stack & s, command_type &, commands_t& ) {
+    static void apply(const std::string &, expr_stack & s, command_type &, commands_t &) {
         auto rhs = pull(s);
         auto lhs = pull(s);
-        s.push(Operation()(move(lhs), move(rhs)));
+        s.push(Operation()(std::move(lhs), std::move(rhs)));
     }
 };
 
@@ -246,34 +247,32 @@ struct op_baction :
 template<typename Operation>
 struct op_uaction :
         action_base< op_uaction< Operation > > {
-    static void apply(const std::string &, expr_stack & s, command_type &, commands_t& ) {
+    static void apply(const std::string &, expr_stack & s, command_type &, commands_t &) {
         auto arg = pull(s);
-        s.push(Operation()(move(arg)));
+        s.push(Operation()(std::move(arg)));
     }
 };
 
 struct ask_keyword :
         action_base< ask_keyword > {
-    static void apply(const std::string & value, const expr_stack &, command_type & comm, commands_t& ) {
-        comm.name_ = nospaces(stdstring(value));
+    static void apply(const std::string & value, const expr_stack &, command_type & comm, commands_t &) {
+        comm.name_ = borealis::util::nospaces(stdstring(value));
     }
 };
 
 struct ask_arguments :
         action_base< ask_arguments > {
-    static void apply(const std::string &, expr_stack & s, command_type & comm, commands_t& ) {
-        using std::cerr;
-        using std::endl;
+    static void apply(const std::string &, expr_stack & s, command_type & comm, commands_t &) {
         if (comm.name_ == "requires" || comm.name_ == "ensures" || comm.name_ == "assigns"
                 || comm.name_ == "assert" || comm.name_ == "stack-depth") {
             assert(s.size() == 1);
-            comm.args_.push_front(move(s.top()));
+            comm.args_.push_front(std::move(s.top()));
             s.pop();
         } else if (comm.name_ == "ignore" || comm.name_ == "skip" || comm.name_ == "endmask") {
             assert(s.size() == 0);
         } else if (comm.name_ == "mask") {
             while (!s.empty()) {
-                comm.args_.push_front(move(s.top()));
+                comm.args_.push_front(std::move(s.top()));
                 s.pop();
             }
         }
@@ -283,8 +282,8 @@ struct ask_arguments :
 // integer grammar
 struct integer :
         sor< ifmust< seq< one< '0' >, one< 'x', 'X' > >, plus< xdigit > >, // hex
-                ifmust< one< '0' >, star< range< '0', '7' > > >,        // oct
-                seq< range< '1', '9' >, star< digit > >               // dec
+                ifmust< one< '0' >, star< range< '0', '7' > > >,           // oct
+                seq< range< '1', '9' >, star< digit > >                    // dec
         > {
 };
 // --//-- with action applied
@@ -332,6 +331,7 @@ struct push_floating :
 struct push_variable :
         pad< ifapply< identifier, push< stdstring > >, space > {
 };
+
 // builtin is just an identifier prefixed with '\'
 struct push_builtin :
         pad< ifapply< seq< one< '\\' >, identifier >, push< stdstring > >, space > {
@@ -435,7 +435,6 @@ struct read_mod :
 struct read_prod :
         seq< read_unary, star< sor< read_mul, read_div, read_mod > > > {
 };
-
 // add := '+' prod
 struct read_add :
         read_bop< '+', read_prod, pluss< expression_type > > {
@@ -448,7 +447,6 @@ struct read_sub :
 struct read_sum :
         seq< read_prod, star< sor< read_add, read_sub > > > {
 };
-
 // lsh := '<<' sum
 struct read_lsh :
         read_bop_m< pstring< '<', '<' >, read_sum, left_shift< expression_type > > {
@@ -482,7 +480,6 @@ struct read_le :
 struct read_inequality :
         seq< read_shift, star< sor< read_ge, read_gt, read_le, read_lt > > > {
 };
-
 // eq = '==' inequality
 struct read_eq :
         read_bop_m< pstring< '=', '=' >, read_inequality, equal< expression_type > > {
@@ -540,9 +537,8 @@ struct read_lor :
 struct read_lor2 :
         seq< read_land2, star< read_lor > > {
 };
-
 // lor2 is the root of all expressions (as we don't consider even less bound ones)
-// TODO: do we need to implement ternary operator? if we do, it will be right below lor2
+// TODO: do we need to implement ternary operator (?) if we do, it will be right below lor2
 struct read_expr :
         read_lor2 {
 };
@@ -551,7 +547,7 @@ struct read_expr :
 struct mask :
         seq< plus< alpha >, star< digit > > {
 };
-// variable is just an identifier, can push it right away
+// mask is just an identifier, can push it right away
 struct push_mask :
         pad< ifapply< mask, mask_push >, space > {
 };
@@ -568,19 +564,15 @@ struct keyword :
 struct requires_c :
         ifapply< ifmust< keyword< 'r', 'e', 'q', 'u', 'i', 'r', 'e', 's' >, read_expr >, ask_arguments > {
 };
-
 struct ensures_c :
         ifapply< ifmust< keyword< 'e', 'n', 's', 'u', 'r', 'e', 's' >, read_expr >, ask_arguments > {
 };
-
 struct assigns_c :
         ifapply< ifmust< keyword< 'a', 's', 's', 'i', 'g', 'n', 's' >, read_expr >, ask_arguments > {
 };
-
 struct assert_c :
         ifapply< ifmust< keyword< 'a', 's', 's', 'e', 'r', 't' >, read_expr >, ask_arguments > {
 };
-
 struct skip_c :
         ifapply< keyword< 's', 'k', 'i', 'p' >, ask_arguments > {
 };
@@ -602,32 +594,28 @@ struct commands :
 };
 
 struct acom :
-		seq< one< '@' >, commands > {};
-
+        seq< one< '@' >, commands > {};
 struct acom_c :
-		ifapply< acom, store_command > {};
+        ifapply< acom, store_command > {};
 struct annotated_commentary :
-	    sor< seq< pstring< '/', '/' >, plus< literal< acom_c > > >, seq< pstring< '/', '*' >, plus< literal< acom_c > >, pstring< '*', '/' > > > {};
+        sor< seq< pstring< '/', '/' >, plus< literal< acom_c > > >, seq< pstring< '/', '*' >, plus< literal< acom_c > >, pstring< '*', '/' > > > {};
 
 struct read_calc :
         seq< commands, space_until_eof > {
 };
 
 template<class Location = pegtl::ascii_location>
-vector< command_type > parse_command(const string& command) {
+std::vector< command_type > parse_command(const std::string& command) {
 
-    unique_ptr < command_type > ret(new command_type());
+    std::unique_ptr < command_type > ret(new command_type());
     expr_stack stack;
-    vector< command_type > commands;
+    std::vector< command_type > commands;
     auto cp = anno::calc_parse_string< annotated_commentary, Location >(command, stack, *ret, commands);
 
     if(cp.success) {
-    	return std::move(commands);
+        return std::move(commands);
     }else {
-//    	for(auto i = 0U; i < cp.str.size(); ++i) {
-//    		std::cerr << i << "." << cp.str[i] << std::endl;
-//    	}
-    	return vector< command_type >();
+        return std::vector< command_type >();
     }
 }
 

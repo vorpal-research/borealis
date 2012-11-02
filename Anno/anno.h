@@ -8,11 +8,9 @@
 #ifndef ANNO_H_
 #define ANNO_H_
 
-
 #include "anno.hpp"
 
 #include <iostream>
-using std::ostream;
 
 namespace borealis{
 namespace anno{
@@ -24,13 +22,14 @@ struct expanded_location {
 };
 
 class location{
-	unique_ptr<expanded_location> inner_;
+	std::unique_ptr<expanded_location> inner_;
 
 	void swap(location& that) {
 		inner_.swap(that.inner_);
 	}
 
 public:
+
 	location(const expanded_location& loc): inner_(new expanded_location(loc)){}
 	location(const location& loc): inner_(new expanded_location(*loc.inner_)){}
 	location(): inner_(new expanded_location()){}
@@ -57,15 +56,15 @@ public:
 	}
 
 	template<class Char>
-	friend basic_ostream<Char>& operator<<(basic_ostream<Char>& ost, const location& loc);
+	friend std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& ost, const location& loc);
 };
 
 template<class Char>
-basic_ostream<Char>& operator<<(basic_ostream<Char>& ost, const location& loc){
+std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& ost, const location& loc){
 	auto file = loc.inner_->file ? loc.inner_->file : "unknown";
-	ost << "file: " << file <<
+	ost << "file: \"" << file <<
 			"\", line: " << loc.inner_->line <<
-			", column:" << loc.inner_->column;
+			", column: " << loc.inner_->column;
 	return ost;
 }
 
@@ -78,53 +77,49 @@ class empty_visitor: public productionVisitor {
 	virtual void onBuiltin(const std::string&){}
 	virtual void onMask(const std::string&){}
 
-	virtual void onBinary(bin_opcode, const shared_ptr<production>& op0, const shared_ptr<production>& op1){
+	virtual void onBinary(bin_opcode, const std::shared_ptr<production>& op0, const std::shared_ptr<production>& op1){
 		(*op0).accept(*this);
 		(*op1).accept(*this);
 	}
-	virtual void onUnary(un_opcode, const shared_ptr<production>& op0){
+	virtual void onUnary(un_opcode, const std::shared_ptr<production>& op0){
 		(*op0).accept(*this);
 	}
 };
 
 class collector{
 public:
-	static list<string> collect_vars(const command& com) {
+	static std::list<std::string> collect_vars(const command& com) {
 		class var_visitor: public empty_visitor {
-			list<string> vars_;
-
+			std::list<std::string> vars_;
 			virtual void onVariable(const std::string& name){
 				vars_.push_back(name);
 			}
-
 		public:
-			const list<string>& vars() { return vars_; }
+			const std::list<std::string>& vars() { return vars_; }
 		};
 
 		var_visitor v;
-		for_each(com.args_.begin(), com.args_.end(),[&v](const prod_t& pr){
+		for (const prod_t& pr : com.args_) {
 			pr->accept(v);
-		});
+		}
 
 		return v.vars();
 	}
 
-	static list<string> collect_builtins(const command& com) {
+	static std::list<std::string> collect_builtins(const command& com) {
 		class builtin_visitor: public empty_visitor {
-			list<string> bs_;
-
+			std::list<std::string> bs_;
 			virtual void onBuiltin(const std::string& name){
 				bs_.push_back(name);
 			}
-
 		public:
-			const list<string>& builtins() { return bs_; }
+			const std::list<std::string>& builtins() { return bs_; }
 		};
 
 		builtin_visitor v;
-		for_each(com.args_.begin(), com.args_.end(),[&v](const prod_t& pr){
-			pr->accept(v);
-		});
+        for (const prod_t& pr : com.args_) {
+            pr->accept(v);
+        }
 
 		return v.builtins();
 	}

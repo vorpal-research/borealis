@@ -116,7 +116,7 @@ int main(int argc, const char** argv)
 
 
     // Print the argument list from the "real" compiler invocation
-    std::vector<string> argsFromInvocation;
+    std::vector<std::string> argsFromInvocation;
     invoke->toArgs(argsFromInvocation);
 
     {
@@ -152,7 +152,7 @@ int main(int argc, const char** argv)
     pm.add(new TargetData(&module));
 
 
-    const std::vector<string> empty;
+    const std::vector<std::string> empty;
     std::vector<StringRef> passes2run;
 
     auto prePasses = cfg.getValue< std::vector<std::string> >("passes", "pre").getOrElse(empty);

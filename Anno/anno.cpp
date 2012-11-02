@@ -9,17 +9,15 @@
 #include "command.hpp"
 
 namespace borealis {
-namespace anno{
+namespace anno {
 
+using anno::calculator::parse_command;
 using anno::command;
 using anno::location;
-using anno::calculator::parse_command;
 
 std::vector<command> parse(std::string v) {
 	return parse_command<location>(v);
 }
 
-}
-}
-
-
+} // namespace anno
+} // namespace borealis

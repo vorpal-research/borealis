@@ -9,17 +9,15 @@
 #define COMMAND_HPP_
 
 #include "production.h"
-#include <string>
-#include <list>
+#include "Util/util.h"
+
 #include <algorithm>
-using std::for_each;
 #include <iostream>
-using std::basic_ostream;
+#include <list>
+#include <string>
 
-namespace borealis{
-namespace anno{
-
-using std::move;
+namespace borealis {
+namespace anno {
 
 struct command {
 	std::string name_;
@@ -27,11 +25,11 @@ struct command {
 };
 
 template<class Char>
-basic_ostream<Char>& operator<<(basic_ostream<Char>& ost, const command& com) {
+std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& ost, const command& com) {
 	ost << com.name_ << "(";
-	for_each(com.args_.begin(), --com.args_.end(),[&ost](const prod_t& args){
+	for(const prod_t& args : borealis::util::view(com.args_.begin(), --com.args_.end())) {
 		ost << *args << ",";
-	});
+	}
 	ost << *(com.args_.back()) << ")";
 	return ost;
 }

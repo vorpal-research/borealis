@@ -10,34 +10,21 @@
 
 #include <pegtl.hh>
 
-#include <memory>
-#include <string>
 #include <list>
-#include <sstream>
-#include <utility>
+#include <memory>
 #include <queue>
+#include <sstream>
+#include <string>
+#include <utility>
 
 namespace borealis{
 namespace anno{
-using std::endl;
-using std::unique_ptr;
-using std::string;
-using std::pair;
-using std::list;
-using std::move;
-using std::ostringstream;
-using std::ostream;
-using pegtl::to_string;
-
-using std::shared_ptr;
-using std::make_shared;
-using std::make_pair;
 
 template<class T> T some();
 
 template<class Callable>
-string streamify(Callable fun){
-	ostringstream oss;
+std::string streamify(Callable fun){
+	std::ostringstream oss;
 	fun(oss);
 	return oss.str();
 }
@@ -45,20 +32,20 @@ string streamify(Callable fun){
 template< typename Location = pegtl::ascii_location >
 class calc_exception
  : public std::exception {
-	 typedef list<pair<Location, string>> rule_stack;
+	 typedef std::list<std::pair<Location, std::string>> rule_stack;
 	 Location loc_;
 	 // using shared ptrs for satisfying
 	 // all the conditions of base, ostringstream and list
-	 shared_ptr<ostringstream> str_rep;
-	 shared_ptr<rule_stack> rule_stack_trace;
+	 std::shared_ptr<std::ostringstream> str_rep;
+	 std::shared_ptr<rule_stack> rule_stack_trace;
 public:
 	 // this is (logically) a move constructor, but who cares
 	 calc_exception(const calc_exception&) = default;
 
 	 explicit calc_exception(const Location& loc): loc_(loc){
-		 str_rep = make_shared<ostringstream>();
-		 rule_stack_trace = make_shared<rule_stack>();
-		 *str_rep << loc << endl;
+		 str_rep = std::make_shared<std::ostringstream>();
+		 rule_stack_trace = std::make_shared<rule_stack>();
+		 *str_rep << loc <<std::endl;
 	 }
 
 	 virtual const char* what() const throw() {
@@ -69,9 +56,9 @@ public:
 		 return loc_;
 	 }
 
-	 calc_exception& push_rule(const Location& loc, const string& rule_rep) {
-		 rule_stack_trace->push_back(make_pair(loc,rule_rep));
-		 *str_rep << loc << ":" << rule_rep << endl;
+	 calc_exception& push_rule(const Location& loc, const std::string& rule_rep) {
+		 rule_stack_trace->push_back(std::make_pair(loc,rule_rep));
+		 *str_rep << loc << ":" << rule_rep << std::endl;
 		 return *this;
 	 }
 
@@ -86,8 +73,7 @@ inline void except(const Location& loc) {
 }
 
 template< typename Rule, typename Input, typename Debug >
-struct anno_guard
-: private pegtl::nocopy< anno_guard< Rule, Input, Debug > >
+struct anno_guard : private pegtl::nocopy< anno_guard< Rule, Input, Debug > >
 {
 	typedef typename Input::location_type Location;
 
@@ -101,12 +87,11 @@ struct anno_guard
 		m_counter.leave();
 	}
 
-	bool operator() ( const bool result, const bool) const {
+	bool operator() (const bool result, const bool) const {
 		return result;
 	}
 
-	const Location & location() const
-	{
+	const Location & location() const {
 		return m_location;
 	}
 
@@ -114,7 +99,6 @@ protected:
 	const Location m_location;
 	pegtl::counter & m_counter;
 };
-
 
 struct anno_debug: public pegtl::debug_base {
 	template<typename TopRule>
@@ -126,17 +110,16 @@ struct anno_debug: public pegtl::debug_base {
 	bool unrecover;
 
 	template<bool Must, typename Rule, typename Input, typename ... States>
-	bool match(Input & in, States && ... st )
-	{
+	bool match(Input & in, States && ... st) {
 		const anno_guard< Rule, Input, anno_debug > d( in.location(), m_counter );
 		bool res;
 
 		if(!unrecover) {
-			res = d( Rule::template match< Must >( in, * this, std::forward< States >( st ) ... ), Must);
+			res = d( Rule::template match< Must >( in, * this, std::forward< States >( st ) ... ), Must );
 		} else return false;
 
 		if(unrecover) {
-			trace.push_back(streamify([&](ostream& oss){
+			trace.push_back(streamify([&](std::ostream& oss){
 					oss << d.location() << ":"
 						<< m_counter.nest() << ": expected "
 						<< m_printer.template rule< Rule >();
@@ -144,7 +127,7 @@ struct anno_debug: public pegtl::debug_base {
 			return false;
 		}
 		if(!res && Must) {
-			trace.push_back(streamify([&](ostream& oss){
+			trace.push_back(streamify([&](std::ostream& oss){
 					oss << d.location() << ":"
 						<< m_counter.nest() << ": expected "
 						<< m_printer.template rule< Rule >();
@@ -161,8 +144,7 @@ protected:
 };
 
 template< typename TopRule, typename Input, typename ... States >
-struct calc_parser
-{
+struct calc_parser {
 	bool success;
 	std::vector<std::string> str;
 
@@ -183,8 +165,8 @@ calc_parser<TopRule, Input, States...> make_calc_parser( Input & in, States && .
 }
 
 template< typename TopRule, typename Location = pegtl::ascii_location, typename ... States >
-calc_parser< TopRule, pegtl::string_input< Location >, States... > calc_parse_string( const std::string & string, States && ... st )
-{
+calc_parser< TopRule, pegtl::string_input< Location >, States... >
+calc_parse_string( const std::string & string, States && ... st ) {
    pegtl::string_input< Location > in( string );
    calc_parser< TopRule, decltype(in), States... > cp( in, std::forward< States >( st ) ... );
    return cp;
