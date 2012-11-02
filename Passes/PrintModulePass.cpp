@@ -13,8 +13,6 @@
 #include "Logging/logger.hpp"
 #include "Util/util.h"
 
-using namespace::borealis::util::streams;
-
 namespace borealis {
 
 struct PrintModulePass: public llvm::ModulePass,
@@ -40,4 +38,4 @@ char PrintModulePass::ID;
 static llvm::RegisterPass<PrintModulePass>
 X("module-printer", "Pass that prints a module");
 
-}
+} // namespace borealis

@@ -13,7 +13,6 @@
 #include <tuple>
 
 #include "Codegen/intrinsics.h"
-
 #include "PhiInjectionPass.h"
 #include "SLInjectionPass.h"
 
@@ -22,11 +21,6 @@ namespace ptrssa {
 
 using namespace llvm;
 
-using borealis::util::view;
-using std::set;
-using std::pair;
-using std::make_pair;
-
 void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
     AU.addRequiredTransitive<DominatorTree>();
     AU.addRequiredTransitive<SlotTrackerPass>();
@@ -34,11 +28,6 @@ void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
-    //AU.setPreservesAll(); // a lie
-}
-
-SlotTracker& PhiInjectionPass::getSlotTracker(const Function* F) {
-    return *getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 }
 
 static bool PhiContainsSource(PHINode* phi, BasicBlock* source) {
@@ -46,11 +35,13 @@ static bool PhiContainsSource(PHINode* phi, BasicBlock* source) {
 }
 
 void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, phi_tracker& track) {
+    using borealis::util::view;
+
     auto parent = from.getParent();
     auto orig = getOriginOrSelf(&from);
 
     for(auto succ : view(succ_begin(parent), succ_end(parent))){
-        auto key = make_pair(succ, orig);
+        auto key = std::make_pair(succ, orig);
         if(track.count(key) && PhiContainsSource(track.at(key), parent)) continue;
 
         PHINode* phi = nullptr;
@@ -71,45 +62,36 @@ void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, 
 
         propagateInstruction(*phi, to, track);
     }
-
 }
 
 bool PhiInjectionPass::runOnFunction(Function &F) {
     DT_ = &getAnalysis<DominatorTree>();
 
     auto sli = getAnalysisIfAvailable<StoreLoadInjectionPass>();
-
     if(origins.empty() && sli) mergeOriginInfoFrom(*sli);
 
-    //if(origins.empty()) mergeOriginInfoFrom(getAnalysis<StoreLoadInjectionPass>());
-
     phi_tracker track;
-
-    // Iterate over all Basic Blocks of the Function, calling the function that creates sigma functions, if needed
     for (auto& BB : F) {
-        for(auto& I : BB) {
+        for (auto& I : BB) {
             std::vector<User*> uses(I.use_begin(), I.use_end());
-            for(User* U : uses) {
-                if(auto IUse = dyn_cast<Instruction>(U) ) {
+            for (User* U : uses) {
+                if (auto IUse = dyn_cast<Instruction>(U) ) {
                     if(IUse->getParent() != &BB && !isa<PHINode>(IUse)) {
                         propagateInstruction(I, *IUse, track);
-                        auto key = make_pair(IUse->getParent(), getOriginOrSelf(&I));
+                        auto key = std::make_pair(IUse->getParent(), getOriginOrSelf(&I));
                         IUse->replaceUsesOfWith(&I, track.at(key));
                     }
                 }
             }
         }
-//        createNewDefs(BB);
     }
 
     return false;
 }
 
 char PhiInjectionPass::ID;
-namespace {
-RegisterPass<PhiInjectionPass> X("phi-injection",
-        "The pass that places an intrinsic mark on every pointer before every use");
-}
+static RegisterPass<PhiInjectionPass>
+X("phi-injection", "A pass that injects PHI functions for intrinsically marked pointers");
 
 } // namespace ptrssa
 } // namespace borealis

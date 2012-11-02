@@ -15,14 +15,6 @@
 // Handling the usual pass routines is a clear derived classes' responsibility.
 // Thanx.
 
-namespace {
-
-using llvm::Function;
-using llvm::AnalysisID;
-
-
-}
-
 namespace borealis {
 
 template<class Master>
@@ -30,6 +22,7 @@ class ProxyFunctionPass : public llvm::FunctionPass {
     FunctionPass* delegate;
 
 public:
+
     ProxyFunctionPass(FunctionPass* delegate = nullptr):
         FunctionPass(Master::ID), delegate(delegate) {};
 
@@ -43,8 +36,8 @@ public:
     /// transformation APIs to update analysis results for a pass automatically as
     /// the transform is performed.
     ///
-    template<typename AnalysisType> inline AnalysisType *
-      getAnalysisIfAvailable() const {
+    template<typename AnalysisType>
+    inline AnalysisType* getAnalysisIfAvailable() const {
         if(delegate) {
             return delegate->getAnalysisIfAvailable<AnalysisType>();
         } else {
@@ -80,7 +73,7 @@ public:
     }
 
     template<typename AnalysisType>
-    inline AnalysisType &getAnalysis(Function &F) {
+    inline AnalysisType &getAnalysis(llvm::Function &F) {
         if(delegate) {
             return delegate->getAnalysis<AnalysisType>(F);
         } else {
@@ -89,7 +82,7 @@ public:
     }
 
     template<typename AnalysisType>
-    inline AnalysisType &getAnalysisID(AnalysisID PI) const {
+    inline AnalysisType &getAnalysisID(llvm::AnalysisID PI) const {
         if(delegate) {
             return delegate->getAnalysisID<AnalysisType>(PI);
         } else {
@@ -98,7 +91,7 @@ public:
     }
 
     template<typename AnalysisType>
-    inline AnalysisType &getAnalysisID(AnalysisID PI, Function &F) {
+    inline AnalysisType &getAnalysisID(llvm::AnalysisID PI, llvm::Function &F) {
         if(delegate) {
             return delegate->getAnalysisID<AnalysisType>(PI, F);
         } else {

@@ -12,20 +12,18 @@
 #include <llvm/Support/InstVisitor.h>
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
+
+#include "Logging/logger.hpp"
 #include "Query/NullPtrQuery.h"
 #include "Solver/Z3Solver.h"
 
 namespace borealis {
 
-using util::for_each;
-using util::streams::endl;
-
 class DerefInstVisitor : public llvm::InstVisitor<DerefInstVisitor> {
 
 public:
 
-    DerefInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {
-    }
+    DerefInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
 
     void visitLoadInst(llvm::LoadInst& I) {
         using llvm::AliasAnalysis;
@@ -47,12 +45,15 @@ private:
 
 };
 
-class ValueInstVisitor : public llvm::InstVisitor<ValueInstVisitor> {
+class ValueInstVisitor :
+    public llvm::InstVisitor<ValueInstVisitor>,
+    public borealis::logging::ClassLevelLogging<ValueInstVisitor> {
 
 public:
 
-    ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {
-    }
+    static constexpr decltype("null-deref") loggerDomain() { return "null-deref"; }
+
+    ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
 
     void visitLoadInst(llvm::LoadInst& I) {
         using llvm::AliasAnalysis;
@@ -111,7 +112,7 @@ public:
             const llvm::Value& in,
             const llvm::Value& what,
             const llvm::Value& from) {
-        llvm::errs() << "Possible NULL dereference in" << endl
+        infos() << "Possible NULL dereference in" << endl
                 << "\t" << in << endl
                 << "from" << endl
                 << "\t" << from << endl
@@ -125,9 +126,7 @@ private:
 
 };
 
-CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {
-    // TODO
-}
+CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {}
 
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
     using namespace::llvm;
@@ -140,7 +139,6 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
-    using namespace::std;
     using namespace::llvm;
 
     AA = &getAnalysis<DSAA>();
@@ -163,12 +161,10 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     return false;
 }
 
-CheckNullDereferencePass::~CheckNullDereferencePass() {
-    // TODO
-}
+CheckNullDereferencePass::~CheckNullDereferencePass() {}
+
+char CheckNullDereferencePass::ID;
+static llvm::RegisterPass<CheckNullDereferencePass>
+X("check-null-deref", "NULL dereference checker");
 
 } /* namespace borealis */
-
-char borealis::CheckNullDereferencePass::ID;
-static llvm::RegisterPass<borealis::CheckNullDereferencePass>
-X("check-null-deref", "NULL dereference checker", false, false);

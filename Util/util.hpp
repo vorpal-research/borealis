@@ -26,12 +26,11 @@ namespace util {
 
 template<typename RetTy = void>
 RetTy sayonara(std::string file, int line, std::string reason) {
-   logging::errs() << file << ":" << toString(line) << " "
-           << reason << logging::endl;
+    logging::errs() << file << ":" << toString(line) << " "
+            << reason << logging::endl;
 
-   llvm::llvm_shutdown();
-   std::exit(EXIT_FAILURE);
-   return *((RetTy*)nullptr);
+    llvm::llvm_shutdown();
+    std::exit(EXIT_FAILURE);
 }
 
 } // naemspace util

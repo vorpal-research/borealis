@@ -21,7 +21,7 @@ public:
     value getOrigin(value other) const;
     inline value getOriginOrSelf(value other) const {
         auto orig = getOrigin(other);
-        return orig? orig : other;
+        return orig ? orig : other;
     }
 
     inline const value_resolver& getResolver() const { return origins; }
@@ -34,7 +34,6 @@ protected:
     value_resolver origins;
 };
 
-}
-
+} // namespace borealis
 
 #endif /* ORIGIN_TRACKER_H_ */

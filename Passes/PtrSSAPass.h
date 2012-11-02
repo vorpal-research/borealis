@@ -1,22 +1,19 @@
 /*
- *	This pass creates new definitions for variables used as operands
- *	of specifific instructions: add, sub, mul, trunc.
+ * PtrSSAPass.h
  *
- *	These new definitions are inserted right after the use site, and
- *	all remaining uses dominated by this new definition are renamed
- *	properly.
-*/
+ *  Created on: Nov 1, 2012
+ *      Author: belyaev
+ */
 
-
-#include "llvm/Pass.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Analysis/Dominators.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/Support/CFG.h"
-#include "llvm/Instructions.h"
+#include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/DominanceFrontier.h"
+#include "llvm/Analysis/Dominators.h"
 #include "llvm/Constants.h"
-#include <deque>
+#include "llvm/Instructions.h"
+#include "llvm/Pass.h"
+#include "llvm/Support/CFG.h"
+
 #include <algorithm>
 #include <unordered_map>
 
@@ -27,9 +24,6 @@
 #include "AggregateFunctionPass.hpp"
 
 namespace borealis {
-
-using namespace llvm;
-using namespace std;
 
 class PtrSSAPass : public AggregateFunctionPass<
                                 ptrssa::PhiInjectionPass,
@@ -42,17 +36,17 @@ class PtrSSAPass : public AggregateFunctionPass<
     typedef AggregateFunctionPass< phis_t, sls_t > base;
 
 public:
+
 	static char ID;
+
 	PtrSSAPass() : base(ID) {}
 
-    virtual bool runOnFunction(Function& F) {
+    virtual bool runOnFunction(llvm::Function& F) {
         auto& phis = getChildAnalysis<phis_t>();
         auto& sls = getChildAnalysis<sls_t>();
 
         phis.runOnFunction(F);
-
         sls.mergeOriginInfoFrom(phis);
-
         sls.runOnFunction(F);
 
         return false;
@@ -61,5 +55,4 @@ public:
     virtual ~PtrSSAPass(){};
 };
 
-}
-
+} // namespace borealis

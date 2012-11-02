@@ -21,12 +21,7 @@ class PredicateAnalysisInstVisitor :
 
 public:
 
-    PredicateAnalysisInstVisitor(
-            PredicateAnalysis::PredicateMap& PM,
-            PredicateAnalysis::TerminatorPredicateMap& TPM,
-            PredicateFactory* PF,
-            llvm::TargetData* TD) : PM(PM), TPM(TPM), PF(PF), TD(TD) {
-    }
+    PredicateAnalysisInstVisitor(PredicateAnalysis* pass) : pass(pass) {}
 
     void visitLoadInst(llvm::LoadInst& I) {
         using llvm::Value;
@@ -34,7 +29,7 @@ public:
         const Value* lhv = &I;
         const Value* rhv = I.getPointerOperand();
 
-        PM[&I] = PF->getLoadPredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getLoadPredicate(lhv, rhv);
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
@@ -43,7 +38,7 @@ public:
         const Value* lhv = I.getPointerOperand();
         const Value* rhv = I.getValueOperand();
 
-        PM[&I] = PF->getStorePredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getStorePredicate(lhv, rhv);
     }
 
     void visitICmpInst(llvm::ICmpInst& I) {
@@ -54,11 +49,10 @@ public:
         const Value* op2 = I.getOperand(1);
         int pred = I.getPredicate();
 
-        PM[&I] = PF->getICmpPredicate(lhv, op1, op2, pred);
+        pass->PM[&I] = pass->PF->getICmpPredicate(lhv, op1, op2, pred);
     }
 
     void visitBranchInst(llvm::BranchInst& I) {
-        using namespace::std;
         using llvm::BasicBlock;
         using llvm::Value;
 
@@ -68,28 +62,29 @@ public:
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        TPM[make_pair(&I, trueSucc)] = PF->getPathBooleanPredicate(cond, true);
-        TPM[make_pair(&I, falseSucc)] = PF->getPathBooleanPredicate(cond, false);
+        pass->TPM[std::make_pair(&I, trueSucc)] =
+                pass->PF->getPathBooleanPredicate(cond, true);
+        pass->TPM[std::make_pair(&I, falseSucc)] =
+                pass->PF->getPathBooleanPredicate(cond, false);
     }
 
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
-        using namespace::std;
-        using namespace::llvm;
+        using namespace llvm;
         using borealis::util::sayonara;
 
         Type* type = I.getPointerOperandType();
 
-        vector< pair<const Value*, uint64_t> > shifts;
+        std::vector< std::pair<const Value*, uint64_t> > shifts;
         for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
             const Value* v = *it;
-            const uint64_t size = TD->getTypeAllocSize(type);
-            shifts.push_back(make_pair(v, size));
+            const uint64_t size = pass->TD->getTypeAllocSize(type);
+            shifts.push_back(std::make_pair(v, size));
 
             if (type->isArrayTy()) type = type->getArrayElementType();
             else if (type->isStructTy()) {
                 if (!isa<ConstantInt>(v)) {
                     sayonara(__FILE__, __LINE__,
-                            "<GetElementPtrInstStruct> Field shift not ConstantInt");
+                            "<PredicateAnalysisInstVisitor> Field shift not ConstantInt in visitGetElementPtrInst");
                 }
                 auto fieldIdx = cast<ConstantInt>(v)->getZExtValue();
                 type = type->getStructElementType(fieldIdx);
@@ -99,7 +94,7 @@ public:
         const Value* lhv = &I;
         const Value* rhv = I.getPointerOperand();
 
-        PM[&I] = PF->getGEPPredicate(lhv, rhv, shifts);
+        pass->PM[&I] = pass->PF->getGEPPredicate(lhv, rhv, shifts);
     }
 
     void visitSExtInst(llvm::SExtInst& I) {
@@ -108,24 +103,18 @@ public:
         const Value* lhv = &I;
         const Value* rhv = I.getOperand(0);
 
-        PM[&I] = PF->getEqualityPredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getEqualityPredicate(lhv, rhv);
     }
 
 private:
 
-    PredicateAnalysis::PredicateMap& PM;
-    PredicateAnalysis::TerminatorPredicateMap& TPM;
-
-    PredicateFactory* PF;
-    llvm::TargetData* TD;
+    PredicateAnalysis* pass;
 
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PredicateAnalysis::PredicateAnalysis() : llvm::FunctionPass(ID) {
-	// TODO
-}
+PredicateAnalysis::PredicateAnalysis() : llvm::FunctionPass(ID) {}
 
 void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	using namespace::llvm;
@@ -136,7 +125,6 @@ void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 }
 
 bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
-	using namespace::std;
 	using namespace::llvm;
 
 	init();
@@ -144,7 +132,7 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 	PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TD = &getAnalysis<TargetData>();
 
-    PredicateAnalysisInstVisitor visitor(PM, TPM, PF.get(), TD);
+    PredicateAnalysisInstVisitor visitor(this);
     visitor.visit(F);
 
 	return false;
@@ -160,8 +148,8 @@ PredicateAnalysis::~PredicateAnalysis() {
     }
 }
 
-} /* namespace borealis */
+char PredicateAnalysis::ID;
+static llvm::RegisterPass<PredicateAnalysis>
+X("predicate", "Instruction predicate analysis");
 
-char borealis::PredicateAnalysis::ID;
-static llvm::RegisterPass<borealis::PredicateAnalysis>
-X("predicate", "Instruction predicate analysis", false, false);
+} /* namespace borealis */

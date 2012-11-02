@@ -34,7 +34,9 @@ class DataProvider: public llvm::ImmutablePass {
 	virtual void enforce_static(static_&) {}
 
 	const T* value;
+
 public:
+
 	static char ID;
 
 	DataProvider(): llvm::ImmutablePass(ID), value(nullptr){ enforce_static(st); }
@@ -47,25 +49,19 @@ public:
 	}
 
 	friend DataProvider<T>* provideAsPass(const T* value);
-
 };
 
 template<class T>
-char DataProvider<T>::ID = 0;
+char DataProvider<T>::ID;
 
 template<class T>
 typename DataProvider<T>::static_ DataProvider<T>::st;
 
-
-
 template<class T>
 DataProvider<T>* provideAsPass(const T* value) {
-//	llvm::errs() << "Pass name:" << DataProvider<T>::stPassname << "\n";
-//	llvm::errs() << "Pass desc:" << DataProvider<T>::Passdesc << "\n";
-
 	return new DataProvider<T>(value);
 }
 
-}
+} // namespace borealis
 
 #endif /* DATAPROVIDER_HPP_ */

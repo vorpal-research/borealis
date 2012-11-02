@@ -12,11 +12,7 @@
 
 namespace borealis {
 
-using util::contains;
-using util::containsKey;
-using util::enums::asInteger;
-using util::streams::endl;
-using util::toString;
+using namespace borealis::util;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -31,14 +27,14 @@ public:
 
     using llvm::InstVisitor<RegularDetectNullInstVisitor>::visit;
 
-    RegularDetectNullInstVisitor(DetectNullPass::NullInfoMap& NIM) : NIM(NIM) {
+    RegularDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {
     }
 
     void visit(llvm::Instruction& I) {
         using llvm::Value;
 
         const Value* ptr = &I;
-        if (containsKey(NIM, ptr)) return;
+        if (containsKey(pass->data, ptr)) return;
 
         InstVisitor::visit(I);
     }
@@ -46,11 +42,11 @@ public:
     void visitCallInst(llvm::CallInst& I) {
         if (!I.getType()->isPointerTy()) return;
 
-        NIM[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
+        pass->data[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
-        using namespace::llvm;
+        using namespace llvm;
 
         const Value* ptr = I.getPointerOperand();
         const Value* value = I.getValueOperand();
@@ -58,23 +54,23 @@ public:
         if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
 
         if (isa<ConstantPointerNull>(*value)) {
-            NIM[ptr] = NullInfo().setType(NullType::DEREF).setStatus(NullStatus::Null);
+            pass->data[ptr] = NullInfo().setType(NullType::DEREF).setStatus(NullStatus::Null);
         }
     }
 
     void visitInsertValueInst(llvm::InsertValueInst& I) {
-        using namespace::llvm;
+        using namespace llvm;
 
         const Value* value = I.getInsertedValueOperand();
         if (isa<ConstantPointerNull>(value)) {
             const std::vector<unsigned> idxs = I.getIndices().vec();
-            NIM[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
+            pass->data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
         }
     }
 
 private:
 
-    DetectNullPass::NullInfoMap& NIM;
+    DetectNullPass* pass;
 
 };
 
@@ -89,11 +85,10 @@ class PHIDetectNullInstVisitor :
 
 public:
 
-    PHIDetectNullInstVisitor(DetectNullPass::NullInfoMap& NIM) : NIM(NIM) {
-    }
+    PHIDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {}
 
     void visitPHINode(llvm::PHINode& I) {
-        using namespace::llvm;
+        using namespace llvm;
 
         if (!I.getType()->isPointerTy()) return;
 
@@ -102,23 +97,23 @@ public:
 
         NullInfo nullInfo = NullInfo();
         for (const Value* II : incomingValues) {
-            if (containsKey(NIM, II)) {
-                nullInfo = nullInfo.merge(NIM[II]);
+            if (containsKey(pass->data, II)) {
+                nullInfo = nullInfo.merge(pass->data[II]);
             } else {
                 nullInfo = nullInfo.merge(NullStatus::Not_Null);
             }
         }
-        NIM[&I] = nullInfo;
+        pass->data[&I] = nullInfo;
     }
 
 private:
 
-    DetectNullPass::NullInfoMap& NIM;
+    DetectNullPass* pass;
 
     std::set<const llvm::Value*> getIncomingValues(
             const llvm::PHINode& I,
             std::set<const llvm::PHINode*>& visited) {
-        using namespace::llvm;
+        using namespace llvm;
 
         std::set<const Value*> res;
 
@@ -141,40 +136,33 @@ private:
 
         return res;
     }
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {
-	// TODO
-}
+DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {}
 
 void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	using namespace::llvm;
-
 	Info.setPreservesAll();
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
-
 	init();
 
-	RegularDetectNullInstVisitor regularVisitor(data);
+	RegularDetectNullInstVisitor regularVisitor(this);
 	regularVisitor.visit(F);
 
-	PHIDetectNullInstVisitor phiVisitor(data);
+	PHIDetectNullInstVisitor phiVisitor(this);
 	phiVisitor.visit(F);
 
 	return false;
 }
 
-DetectNullPass::~DetectNullPass() {
-	// TODO
-}
+DetectNullPass::~DetectNullPass() {}
 
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
-	using namespace::std;
+	using borealis::util::enums::asInteger;
+	using borealis::util::streams::endl;
 
     s << asInteger(info.type) << ":" << endl;
 	for(const auto& entry : info.offsetInfoMap) {
@@ -184,8 +172,8 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 	return s;
 }
 
-} /* namespace borealis */
+char DetectNullPass::ID;
+static llvm::RegisterPass<DetectNullPass>
+X("detect-null", "Explicit NULL assignment detector");
 
-char borealis::DetectNullPass::ID;
-static llvm::RegisterPass<borealis::DetectNullPass>
-X("detect-null", "Explicit NULL assignment detector", false, false);
+} /* namespace borealis */

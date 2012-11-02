@@ -16,18 +16,10 @@
 
 namespace borealis {
 
-using util::contains;
-using util::containsKey;
-using util::for_each;
-using util::streams::endl;
-using util::toString;
-
 typedef PredicateAnalysis::PredicateMap PM;
 typedef PredicateAnalysis::TerminatorPredicateMap TPM;
 
-PredicateStateAnalysis::PredicateStateAnalysis() : llvm::FunctionPass(ID) {
-    // TODO
-}
+PredicateStateAnalysis::PredicateStateAnalysis() : llvm::FunctionPass(ID) {}
 
 void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     using namespace::llvm;
@@ -37,7 +29,6 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
-
     init();
 
     PA = &getAnalysis<PredicateAnalysis>();
@@ -58,8 +49,8 @@ void PredicateStateAnalysis::processQueue() {
 }
 
 void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
-    using namespace::std;
-    using namespace::llvm;
+    using namespace llvm;
+    using borealis::util::containsKey;
 
     PM& pm = PA->getPredicateMap();
 
@@ -67,8 +58,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     PredicateStateVector inStateVec = wqe.second;
     bool shouldScheduleTerminator = true;
 
-    for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
-        const Instruction& I = *inst;
+    for (auto& I : bb) {
         PredicateStateVector stateVec;
 
         bool hasPredicate = containsKey(pm, &I);
@@ -107,23 +97,22 @@ void PredicateStateAnalysis::processTerminator(
 void PredicateStateAnalysis::process(
         const llvm::BranchInst& I,
         const PredicateStateVector& state) {
-    using namespace::std;
     using namespace::llvm;
 
     TPM& tpm = PA->getTerminatorPredicateMap();
 
     if (I.isUnconditional()) {
         const BasicBlock* succ = I.getSuccessor(0);
-        workQueue.push(make_pair(succ, state));
+        workQueue.push(std::make_pair(succ, state));
     } else {
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        const Predicate* truePred = tpm[make_pair(&I, trueSucc)];
-        const Predicate* falsePred = tpm[make_pair(&I, falseSucc)];
+        const Predicate* truePred = tpm[std::make_pair(&I, trueSucc)];
+        const Predicate* falsePred = tpm[std::make_pair(&I, falseSucc)];
 
-        workQueue.push(make_pair(trueSucc, state.addPredicate(truePred)));
-        workQueue.push(make_pair(falseSucc, state.addPredicate(falsePred)));
+        workQueue.push(std::make_pair(trueSucc, state.addPredicate(truePred)));
+        workQueue.push(std::make_pair(falseSucc, state.addPredicate(falsePred)));
     }
 }
 
@@ -138,22 +127,17 @@ bool isUnreachable(const PredicateState& ps) {
 }
 
 void PredicateStateAnalysis::removeUnreachableStates() {
-    using namespace::std;
-    using namespace::z3;
-
-    for(auto& psme : predicateStateMap){
+    for (auto& psme : predicateStateMap){
         auto I = psme.first;
         PredicateStateVector psv = psme.second;
         predicateStateMap[I] = psv.remove_if(isUnreachable);
     }
 }
 
-PredicateStateAnalysis::~PredicateStateAnalysis() {
-    // TODO
-}
+PredicateStateAnalysis::~PredicateStateAnalysis() {}
+
+char PredicateStateAnalysis::ID;
+static llvm::RegisterPass<PredicateStateAnalysis>
+X("predicate-state", "Predicate state analysis");
 
 } /* namespace borealis */
-
-char borealis::PredicateStateAnalysis::ID;
-static llvm::RegisterPass<borealis::PredicateStateAnalysis>
-X("predicate-state", "Predicate state analysis", false, false);

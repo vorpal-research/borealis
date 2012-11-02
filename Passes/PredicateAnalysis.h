@@ -20,11 +20,12 @@
 #include <vector>
 
 #include "Predicate/PredicateFactory.h"
-
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
 namespace borealis {
+
+class PredicateAnalysisInstVisitor;
 
 class PredicateAnalysis: public llvm::FunctionPass {
 
@@ -65,6 +66,7 @@ private:
 	std::shared_ptr<PredicateFactory> PF;
 	llvm::TargetData* TD;
 
+	friend class PredicateAnalysisInstVisitor;
 };
 
 } /* namespace borealis */

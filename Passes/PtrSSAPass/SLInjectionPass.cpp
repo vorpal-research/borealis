@@ -1,28 +1,31 @@
+/*
+ * SLInjectionPass.cpp
+ *
+ *  Created on: Oct 18, 2012
+ *      Author: belyaev
+ */
 
 #include "SLInjectionPass.h"
 
-#include "PhiInjectionPass.h"
-
 #include <iterator>
 
-#include <llvm/Pass.h>
 #include <llvm/BasicBlock.h>
-#include <llvm/Function.h>
-#include <llvm/Type.h>
 #include <llvm/DerivedTypes.h>
+#include <llvm/Function.h>
 #include <llvm/Module.h>
+#include <llvm/Pass.h>
+#include <llvm/Type.h>
 
-
+#include "PhiInjectionPass.h"
 
 namespace {
 using namespace borealis;
 using namespace llvm;
 }
 
-
 static Function* createDummyPtrFunction(Type* pointed, Module* where) {
     auto ptr = PointerType::getUnqual(pointed);
-    auto ftype = FunctionType::get(ptr, ptr, false /* isVarArg*/);
+    auto ftype = FunctionType::get(ptr, ptr, false /* isVarArg */);
     return createIntrinsic(intrinsic::PTR_VERSION, where, ftype, pointed);
 }
 
@@ -36,21 +39,19 @@ Function* ptrssa::StoreLoadInjectionPass::createNuevoFunc(
     }
 }
 
-void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB)
-{
-    using util::view;
-    for (auto it = BB.begin(); it != BB.end() ; ++it) {
-        checkAndUpdatePtrs<StoreInst>(it);
-        checkAndUpdatePtrs<LoadInst>(it);
-        checkAndUpdatePtrs<CallInst>(it);
+void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB) {
+    for (auto& it : BB) {
+        checkAndUpdatePtrs<StoreInst>(&it);
+        checkAndUpdatePtrs<LoadInst>(&it);
+        checkAndUpdatePtrs<CallInst>(&it);
     }
 }
 
 void ptrssa::StoreLoadInjectionPass::renameNewDefs(
         Instruction *newdef,
-        Value *Op){
+        Value *Op) {
     // This vector of Instruction* points to the uses of V.
-    // This auxiliary vector of pointers is used because the use_iterators
+    // It is used because the use_iterators
     // are invalidated when we do the renaming
     SmallVector<Instruction*, 25> usepointers;
     unsigned i = 0, n = Op->getNumUses();
@@ -61,7 +62,7 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
         usepointers[i] = dyn_cast<Instruction>(*uit);
 
     for (i = 0; i < n; ++i) {
-        if (usepointers[i] ==  NULL) {
+        if (usepointers[i] == nullptr) {
             continue;
         }
         if (usepointers[i] == newdef) {
@@ -74,7 +75,7 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
 
         // Check if the use is in the dominator tree of newdef(V)
         if (DT_->dominates(BB, BB_user)) {
-            // If in the same basicblock, only rename if the use is posterior to the newdef
+            // If in the same basic block, rename only if the use is after the newdef
             if (BB_user == BB) {
                 int dist1 = std::distance(BB->begin(), useit);
                 int dist2 = std::distance(BB->begin(), newdefit);
@@ -83,13 +84,11 @@ void ptrssa::StoreLoadInjectionPass::renameNewDefs(
                 if (offset > 0) {
                     usepointers[i]->replaceUsesOfWith(Op, newdef);
                 }
-            }
-            else {
+            } else {
                 usepointers[i]->replaceUsesOfWith(Op, newdef);
             }
         }
     }
-
 }
 
 void ptrssa::StoreLoadInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
@@ -99,7 +98,6 @@ void ptrssa::StoreLoadInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
-    //AU.setPreservesAll(); // a lie
 }
 
 bool ptrssa::StoreLoadInjectionPass::runOnBasicBlock(BasicBlock& bb) {
@@ -107,17 +105,11 @@ bool ptrssa::StoreLoadInjectionPass::runOnBasicBlock(BasicBlock& bb) {
 
     auto phii = getAnalysisIfAvailable<PhiInjectionPass>();
 
-    if(origins.empty() && phii) mergeOriginInfoFrom(*phii);
+    if (origins.empty() && phii) mergeOriginInfoFrom(*phii);
     createNewDefs(bb);
     return false;
 }
 
-
-
 char borealis::ptrssa::StoreLoadInjectionPass::ID;
-
-namespace {
-llvm::RegisterPass<borealis::ptrssa::StoreLoadInjectionPass> X("sl-injection",
-        "Inject an intrinsic for every store and load");
-}
-
+static llvm::RegisterPass<borealis::ptrssa::StoreLoadInjectionPass>
+X("sl-injection", "Inject an intrinsic for every store and load");

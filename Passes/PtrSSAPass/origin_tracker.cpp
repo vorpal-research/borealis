@@ -17,7 +17,6 @@ void origin_tracker::setOrigin(origin_tracker::value k, origin_tracker::value v)
 }
 
 void origin_tracker::mergeOriginInfoFrom(const origin_tracker& other) {
-    const auto & that = other.getResolver();
+    const auto& that = other.getResolver();
     origins.insert(that.begin(), that.end());
 }
-

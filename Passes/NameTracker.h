@@ -5,17 +5,17 @@
  *      Author: belyaev
  */
 
-#include <llvm/Pass.h>
-#include <llvm/Value.h>
-#include <llvm/Module.h>
-#include <llvm/Function.h>
-#include <llvm/BasicBlock.h>
-#include <llvm/Instruction.h>
-
-#include <unordered_map>
-
 #ifndef NAMETRACKER_H_
 #define NAMETRACKER_H_
+
+#include <llvm/BasicBlock.h>
+#include <llvm/Function.h>
+#include <llvm/Instruction.h>
+#include <llvm/Module.h>
+#include <llvm/Pass.h>
+#include <llvm/Value.h>
+
+#include <unordered_map>
 
 namespace borealis {
 
@@ -27,7 +27,6 @@ public:
 private:
 	nameResolver_t globalResolver;
 	localNameResolvers_t localResolvers;
-
 public:
 	static char ID;
 
@@ -45,19 +44,16 @@ public:
 	}
 
 	llvm::Value* resolve(const std::string& name) {
-		if(globalResolver.count(name)) return globalResolver[name];
+		if (globalResolver.count(name)) return globalResolver[name];
 		else return nullptr;
 	}
 
 	llvm::Value* resolve(const std::string& name, llvm::Function* context) {
-		if(localResolvers.count(context) && localResolvers[context].count(name)) return localResolvers[context][name];
+		if (localResolvers.count(context) && localResolvers[context].count(name)) return localResolvers[context][name];
 		else return nullptr;
 	}
-
-
 };
 
 } // namespace borealis
-
 
 #endif /* NAMETRACKER_H_ */

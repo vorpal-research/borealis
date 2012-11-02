@@ -22,11 +22,8 @@
 
 namespace borealis {
 
-namespace __detectnullpass_h__ {
-using util::contains;
-using util::containsKey;
-using util::sayonara;
-}
+class RegularDetectNullInstVisitor;
+class PHIDetectNullInstVisitor;
 
 enum class NullStatus {
 	Null, Maybe_Null, Not_Null
@@ -81,11 +78,12 @@ struct NullInfo {
 	}
 
 	NullInfo& merge(const NullInfo& other) {
-	    using namespace __detectnullpass_h__;
+	    using borealis::util::containsKey;
+	    using borealis::util::sayonara;
 
 		if (type != other.type) {
-		    sayonara(__FILE__, __LINE__,
-		            "Different NullInfo types in merge");
+		    return sayonara<NullInfo&>(__FILE__, __LINE__,
+		            "<NullInfo> Different NullInfo types in merge");
 		}
 
 		for (const auto& entry : other.offsetInfoMap){
@@ -149,6 +147,9 @@ private:
 	void init() {
 	    data.clear();
 	}
+
+	friend class RegularDetectNullInstVisitor;
+	friend class PHIDetectNullInstVisitor;
 };
 
 llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info);

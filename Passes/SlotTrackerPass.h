@@ -16,22 +16,17 @@
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
-using namespace::borealis::util::streams;
-using std::unique_ptr;
-using std::map;
-
-using borealis::util::containsKey;
-
 namespace borealis {
 
 class SlotTrackerPass: public llvm::FunctionPass {
 
-	typedef unique_ptr<borealis::SlotTracker> ptr_t;
+	typedef std::unique_ptr<borealis::SlotTracker> ptr_t;
 
 	ptr_t globals;
-	map<const llvm::Function*,ptr_t> funcs;
+	std::map<const llvm::Function*, ptr_t> funcs;
 
 public:
+
 	static char ID;
 
 	SlotTrackerPass(): llvm::FunctionPass(ID) {}
@@ -54,7 +49,6 @@ public:
 	virtual ~SlotTrackerPass() {}
 };
 
-}
-
+} // namespace borealis
 
 #endif /* SLOTTRACKERPASS_H_ */

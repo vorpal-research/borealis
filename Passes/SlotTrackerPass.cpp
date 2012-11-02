@@ -24,7 +24,7 @@ void SlotTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function* func) const{
-	if(func && containsKey(funcs, func)) {
+	if(func && borealis::util::containsKey(funcs, func)) {
 		return funcs.at(func).get();
 	} else {
 		return nullptr;
@@ -71,6 +71,4 @@ char SlotTrackerPass::ID;
 static llvm::RegisterPass<SlotTrackerPass>
 X("slot-tracker", "Provides slot tracker functionality for other passes");
 
-}
-
-
+} // namespace borealis

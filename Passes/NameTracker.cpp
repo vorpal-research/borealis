@@ -14,13 +14,6 @@ static void addName(llvm::Value& V, NameTracker::nameResolver_t& resolver) {
 }
 
 bool NameTracker::runOnModule(llvm::Module& M) {
-	using llvm::Module;
-	using llvm::Function;
-	using llvm::BasicBlock;
-	using llvm::GlobalVariable;
-	using llvm::Argument;
-	using llvm::Instruction;
-
 	for(auto& G : M.getGlobalList()) {
 	    addName(G, globalResolver);
 	}
@@ -42,9 +35,8 @@ void NameTracker::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	Info.setPreservesAll();
 }
 
+char NameTracker::ID = 0;
+static llvm::RegisterPass<NameTracker>
+X("name-tracker", "Pass used to track value names in LLVM IR", false, false);
+
 } // namespace borealis
-
-char borealis::NameTracker::ID = 0;
-static llvm::RegisterPass<borealis::NameTracker>
-X("name_tracker", "Pass used to track value names in llvm IR", false, false);
-
