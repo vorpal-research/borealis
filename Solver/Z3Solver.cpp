@@ -44,7 +44,7 @@ bool Z3Solver::checkPathPredicates(
     s.add(implies(pred, ss.first));
 
     check_result r = s.check(1, &pred);
-    return r == z3::unsat;
+    return r != z3::unsat;
 }
 
 bool Z3Solver::checkSat(
