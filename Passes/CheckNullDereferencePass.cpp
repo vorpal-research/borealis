@@ -14,6 +14,8 @@
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
 #include "Logging/logger.hpp"
+#include "Query/AndQuery.h"
+#include "Query/EqualityQuery.h"
 #include "Query/NullPtrQuery.h"
 #include "Solver/Z3Solver.h"
 
@@ -61,7 +63,7 @@ public:
 
         for (const auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                if (checkNullDereference(I, *ptr)) {
+                if (checkNullDereference(I, *ptr, *nullValue)) {
                     reportNullDereference(I, *ptr, *nullValue);
                 }
             }
@@ -77,7 +79,7 @@ public:
 
         for (const auto nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                if (checkNullDereference(I, *ptr)) {
+                if (checkNullDereference(I, *ptr, *nullValue)) {
                     reportNullDereference(I, *ptr, *nullValue);
                 }
             }
@@ -86,10 +88,13 @@ public:
 
     bool checkNullDereference(
             const llvm::Instruction& where,
-            const llvm::Value& what) {
+            const llvm::Value& what,
+            const llvm::Value& why) {
         using namespace::z3;
 
-        NullPtrQuery q = NullPtrQuery(&what, pass->slotTracker);
+        NullPtrQuery npq = NullPtrQuery(&what, pass->slotTracker);
+        EqualityQuery eq = EqualityQuery(&what, &why, pass->slotTracker);
+        AndQuery q = AndQuery({&npq, &eq});
 
         pass->infos() << "Query: " << q.toString() << endl;
 
