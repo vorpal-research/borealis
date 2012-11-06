@@ -12,7 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 #include "DataStructureAA.h"
 using namespace llvm;
 
@@ -40,10 +39,10 @@ DSGraph *DSAA::getGraphForValue(const Value *V) {
 
 AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
                                        const Location& LocB) {
-	const Value *V1 = LocA.Ptr;
-	unsigned long long V1Size = LocA.Size;
-	const Value *V2 = LocB.Ptr;
-	unsigned long long V2Size = LocB.Size;
+  const Value *V1 = LocA.Ptr;
+  unsigned long long V1Size = LocA.Size;
+  const Value *V2 = LocB.Ptr;
+  unsigned long long V2Size = LocB.Size;
 
   if (V1 == V2) return MustAlias;
 
@@ -54,8 +53,8 @@ AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
 
   assert((!G1 || !G2 || G1 == G2) && "Alias query for 2 different functions?");
   if(G1 && G2 && G1 != G2) {
-	  // FIXME: alias query for two different function
-	  return AliasAnalysis::alias(LocA,LocB);
+    // FIXME: alias query for two different function
+    return AliasAnalysis::alias(LocA,LocB);
   }
 
   // Get the graph to use...
@@ -73,7 +72,7 @@ AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
   unsigned O1 = I->second.getOffset(), O2 = J->second.getOffset();
   if (N1 == 0 || N2 == 0)
     // Can't tell whether anything aliases null.
-	return AliasAnalysis::alias(LocA,LocB);
+    return AliasAnalysis::alias(LocA,LocB);
 
   // We can only make a judgment if one of the nodes is complete.
   if (N1->isCompleteNode() || N2->isCompleteNode()) {
@@ -103,12 +102,12 @@ AliasAnalysis::AliasResult DSAA::alias(const Location& LocA,
 ///
 AliasAnalysis::ModRefResult
 DSAA::getModRefInfo(ImmutableCallSite ICS, const Location& Loc) {
-	// FIXME: this is black magic. Mikhail Belyaev
-	CallSite CS(const_cast<Instruction*>(ICS.getInstruction()));
-	// black magic ends here
+  // FIXME: this is black magic. Mikhail Belyaev
+  CallSite CS(const_cast<Instruction*>(ICS.getInstruction()));
+  // black magic ends here
 
-	auto& P = Loc.Ptr;
-	auto& Size = Loc.Size;
+  auto& P = Loc.Ptr;
+  auto& Size = Loc.Size;
   DSNode *N = 0;
   // First step, check our cache.
   if (CS.getInstruction() == MapCS.getInstruction()) {
@@ -199,7 +198,7 @@ DSAA::getModRefInfo(ImmutableCallSite ICS, const Location& Loc) {
       return NoModRef;                 // null is never modified :)
     else {
       assert(isa<GlobalVariable>(P) &&
-    cast<GlobalVariable>(P)->getType()->getElementType()->isFirstClassType() &&
+        cast<GlobalVariable>(P)->getType()->getElementType()->isFirstClassType() &&
              "This isn't a global that DSA inconsiderately dropped "
              "from the graph?");
 
