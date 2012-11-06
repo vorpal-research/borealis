@@ -21,6 +21,7 @@ public:
 
 	virtual ~Query() = 0;
 	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
+	virtual std::string toString() const = 0;
 
 };
 

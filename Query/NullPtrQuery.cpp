@@ -21,8 +21,10 @@ z3::expr NullPtrQuery::toZ3(Z3ExprFactory& z3ef) const {
     return p == null;
 }
 
-NullPtrQuery::~NullPtrQuery() {
-    // TODO
+std::string NullPtrQuery::toString() const {
+    return _ptr + "=<null>";
 }
+
+NullPtrQuery::~NullPtrQuery() {}
 
 } // namespace borealis

@@ -46,12 +46,9 @@ private:
 };
 
 class ValueInstVisitor :
-    public llvm::InstVisitor<ValueInstVisitor>,
-    public borealis::logging::ClassLevelLogging<ValueInstVisitor> {
+    public llvm::InstVisitor<ValueInstVisitor> {
 
 public:
-
-    static constexpr decltype("null-deref") loggerDomain() { return "null-deref"; }
 
     ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
 
@@ -94,17 +91,24 @@ public:
 
         NullPtrQuery q = NullPtrQuery(&what, pass->slotTracker);
 
+        pass->infos() << "Query: " << q.toString() << endl;
+
         PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
         for (const auto& ps : psv) {
+
+            pass->infos() << "Checking state: " << ps << endl;
+
             context ctx;
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 
             if (s.checkSatOrUnknown(q, ps)) {
+                pass->infos() << "SAT" << endl;
                 return true;
             }
         }
 
+        pass->infos() << "UNSAT" << endl;
         return false;
     }
 
@@ -112,7 +116,7 @@ public:
             const llvm::Value& in,
             const llvm::Value& what,
             const llvm::Value& from) {
-        infos() << "Possible NULL dereference in" << endl
+        pass->infos() << "Possible NULL dereference in" << endl
                 << "\t" << in << endl
                 << "from" << endl
                 << "\t" << from << endl

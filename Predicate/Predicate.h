@@ -15,6 +15,7 @@
 #include <tuple>
 #include <unordered_set>
 
+#include "Logging/logger.hpp"
 #include "Solver/Z3ExprFactory.h"
 #include "Util/slottracker.h"
 #include "Util/typeindex.hpp"
@@ -86,6 +87,7 @@ protected:
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p);
+logging::stream_t& operator<<(logging::stream_t& s, const borealis::Predicate& p);
 
 } /* namespace borealis */
 

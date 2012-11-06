@@ -15,6 +15,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "DetectNullPass.h"
+#include "Logging/logger.hpp"
 #include "PredicateStateAnalysis.h"
 #include "SlotTrackerPass.h"
 
@@ -23,7 +24,9 @@ namespace borealis {
 class DerefInstVisitor;
 class ValueInstVisitor;
 
-class CheckNullDereferencePass: public llvm::FunctionPass {
+class CheckNullDereferencePass:
+        public llvm::FunctionPass,
+        public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
 
     friend class DerefInstVisitor;
     friend class ValueInstVisitor;
@@ -31,6 +34,7 @@ class CheckNullDereferencePass: public llvm::FunctionPass {
 public:
 
 	static char ID;
+	static constexpr decltype("check-null") loggerDomain() { return "check-null"; }
 
 	CheckNullDereferencePass();
 	virtual bool runOnFunction(llvm::Function& F);

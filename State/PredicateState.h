@@ -13,6 +13,7 @@
 
 #include <unordered_map>
 
+#include "Logging/logger.hpp"
 #include "Predicate/Predicate.h"
 #include "Solver/Z3ExprFactory.h"
 #include "Util/util.h"
@@ -67,6 +68,7 @@ private:
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state);
+logging::stream_t& operator<<(logging::stream_t& s, const PredicateState& state);
 
 } /* namespace borealis */
 

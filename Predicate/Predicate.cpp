@@ -20,4 +20,9 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p
     return s;
 }
 
+logging::stream_t& operator<<(logging::stream_t& s, const borealis::Predicate& p) {
+    s << p.toString();
+    return s;
+}
+
 } // namespace borealis

@@ -21,6 +21,7 @@ public:
 	NullPtrQuery(const llvm::Value* ptr, SlotTracker* st);
 	virtual ~NullPtrQuery();
 	virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
+	virtual std::string toString() const;
 
 private:
 
