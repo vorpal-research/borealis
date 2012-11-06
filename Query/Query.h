@@ -12,6 +12,7 @@
 
 #include "Solver/Z3ExprFactory.h"
 #include "Util/slottracker.h"
+#include "Util/util.h"
 
 namespace borealis {
 
