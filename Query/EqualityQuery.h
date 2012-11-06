@@ -15,7 +15,7 @@
 
 namespace borealis {
 
-class EqualityQuery {
+class EqualityQuery : public Query {
 
 public:
 
