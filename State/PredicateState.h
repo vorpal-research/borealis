@@ -52,12 +52,15 @@ public:
 
     struct Hash {
     public:
-        size_t operator()(const PredicateState& ps) const {
+        static size_t hash(const PredicateState& ps) {
             size_t res = 17;
             for (const auto& entry : ps) {
-                res = res * Predicate::KeyHash::hash(entry.first) + 33;
+                res = res ^ Predicate::KeyHash::hash(entry.first);
             }
             return res;
+        }
+        size_t operator()(const PredicateState& ps) const {
+            return hash(ps);
         }
     };
 
