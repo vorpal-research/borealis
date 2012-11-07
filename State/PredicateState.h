@@ -40,6 +40,8 @@ public:
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
 
+    typedef std::set<std::string> SortedData;
+
     DataIterator begin() const { return data.begin(); }
     DataIterator end() const { return data.end(); }
     bool empty() const { return data.empty(); }
@@ -58,6 +60,14 @@ public:
             return res;
         }
     };
+
+    SortedData sorted() const {
+        SortedData res;
+        for (auto& e : data) {
+            res.insert(e.second->toString());
+        }
+        return res;
+    }
 
 private:
 
