@@ -106,16 +106,17 @@ void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
 }
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
+    using borealis::util::streams::endl;
     s << '(';
     if (!state.empty()) {
         auto iter = state.begin();
         const PredicateState::DataEntry& el = *iter++;
-        s << *(el.second);
+        s << endl << "  " << *(el.second);
         for (const auto& e : view(iter, state.end())) {
-            s << ',' << *(e.second);
+            s << ',' << endl << "  " << *(e.second);
         }
     }
-    s << ')';
+    s << endl << ')';
     return s;
 }
 
@@ -124,12 +125,12 @@ logging::stream_t& operator<<(logging::stream_t& s, const PredicateState& state)
     if (!state.empty()) {
         auto iter = state.begin();
         const PredicateState::DataEntry& el = *iter++;
-        s << *(el.second);
+        s << endl << "  " << *(el.second);
         for (const auto& e : view(iter, state.end())) {
-            s << ',' << *(e.second);
+            s << ',' << endl << "  " << *(e.second);
         }
     }
-    s << ')';
+    s << endl << ')';
     return s;
 }
 

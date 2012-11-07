@@ -38,16 +38,17 @@ PredicateStateVector PredicateStateVector::merge(const PredicateStateVector& psv
 }
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& vec) {
+    using borealis::util::streams::endl;
     s << '[';
     if (!vec.empty()) {
         auto iter = vec.begin();
         const PredicateState& el = *iter++;
-        s << el;
+        s << endl << "  " << el;
         for (const auto& e : view(iter, vec.end())) {
-            s << ',' << e;
+            s << ',' << endl << "  " << e;
         }
     }
-    s << ']';
+    s << endl << ']';
     return s;
 }
 
@@ -56,12 +57,12 @@ logging::stream_t& operator<<(logging::stream_t& s, const PredicateStateVector& 
     if (!vec.empty()) {
         auto iter = vec.begin();
         const PredicateState& el = *iter++;
-        s << el;
+        s << endl << "  " << el;
         for (const auto& e : view(iter, vec.end())) {
-            s << ',' << e;
+            s << ',' << endl << "  " << e;
         }
     }
-    s << ']';
+    s << endl << ']';
     return s;
 }
 
