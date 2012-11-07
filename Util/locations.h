@@ -8,6 +8,7 @@
 #ifndef LOCATIONS_H_
 #define LOCATIONS_H_
 
+#include <iostream>
 #include <utility>
 
 #include <clang/Basic/SourceManager.h>
@@ -134,11 +135,14 @@ struct Locus {
     }
 };
 
-template<class Streamer>
-Streamer& operator<<(Streamer& ost, const Locus& ll) {
-    // file.txt:1:2
-    return ost << ll.filename << ":" << ll.loc;
-}
+// TODO akhin Fix template specialization
+//template<class Streamer>
+//Streamer& operator<<(Streamer& ost, const Locus& ll) {
+//    // file.txt:1:2
+//    return ost << ll.filename << ":" << ll.loc;
+//}
+
+std::ostream& operator<<(std::ostream& ost, const Locus& ll);
 
 struct LocusRange {
     Locus lhv;

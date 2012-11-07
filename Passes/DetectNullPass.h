@@ -113,10 +113,10 @@ class DetectNullPass: public llvm::FunctionPass {
 
 public:
 
-	typedef std::set<const llvm::Value*> NullPtrSet;
+	typedef std::set<llvm::Value*> NullPtrSet;
 
-	typedef std::map<const llvm::Value*, NullInfo> NullInfoMap;
-	typedef std::pair<const llvm::Value*, NullInfo> NullInfoMapEntry;
+	typedef std::map<llvm::Value*, NullInfo> NullInfoMap;
+	typedef std::pair<llvm::Value*, NullInfo> NullInfoMapEntry;
 
 	static char ID;
 

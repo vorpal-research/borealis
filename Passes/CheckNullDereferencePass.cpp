@@ -31,10 +31,10 @@ public:
         using llvm::AliasAnalysis;
         using llvm::Value;
 
-        const Value* ptr = I.getPointerOperand();
+        Value* ptr = I.getPointerOperand();
         if (ptr->isDereferenceablePointer()) return;
 
-        for (const auto* derefNullValue : *(pass->DerefNullSet)) {
+        for (auto* derefNullValue : *(pass->DerefNullSet)) {
             if (pass->AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 pass->ValueNullSet->insert(&I);
             }
@@ -58,10 +58,10 @@ public:
         using llvm::AliasAnalysis;
         using llvm::Value;
 
-        const Value* ptr = I.getPointerOperand();
+        Value* ptr = I.getPointerOperand();
         if (ptr->isDereferenceablePointer()) return;
 
-        for (const auto* nullValue : *(pass->ValueNullSet)) {
+        for (auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 if (checkNullDereference(I, *ptr, *nullValue)) {
                     reportNullDereference(I, *ptr, *nullValue);
@@ -74,10 +74,10 @@ public:
         using llvm::AliasAnalysis;
         using llvm::Value;
 
-        const Value* ptr = I.getPointerOperand();
+        Value* ptr = I.getPointerOperand();
         if (ptr->isDereferenceablePointer()) return;
 
-        for (const auto nullValue : *(pass->ValueNullSet)) {
+        for (auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 if (checkNullDereference(I, *ptr, *nullValue)) {
                     reportNullDereference(I, *ptr, *nullValue);
@@ -87,9 +87,9 @@ public:
     }
 
     bool checkNullDereference(
-            const llvm::Instruction& where,
-            const llvm::Value& what,
-            const llvm::Value& why) {
+            llvm::Instruction& where,
+            llvm::Value& what,
+            llvm::Value& why) {
         using namespace::z3;
 
         NullPtrQuery npq = NullPtrQuery(&what, pass->slotTracker);
@@ -118,15 +118,15 @@ public:
     }
 
     void reportNullDereference(
-            const llvm::Value& in,
-            const llvm::Value& what,
-            const llvm::Value& from) {
+            llvm::Value& in,
+            llvm::Value& what,
+            llvm::Value& from) {
         pass->infos() << "Possible NULL dereference in" << endl
-                << "\t" << in << endl
+                << "\t" << pass->sourceLocationTracker->getLocFor(&in) << "\t" << in << endl
                 << "from" << endl
-                << "\t" << from << endl
+                << "\t" << pass->sourceLocationTracker->getLocFor(&from) << "\t" << from << endl
                 << "with" << endl
-                << "\t" << what << endl;
+                << "\t" << pass->sourceLocationTracker->getLocFor(&what) << "\t" << what << endl;
     }
 
 private:
@@ -145,6 +145,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const
     Info.addRequiredTransitive<DetectNullPass>();
     Info.addRequiredTransitive<PredicateStateAnalysis>();
     Info.addRequiredTransitive<SlotTrackerPass>();
+    Info.addRequiredTransitive<SourceLocationTracker>();
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
@@ -154,6 +155,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     DNP = &getAnalysis<DetectNullPass>();
     PSA = &getAnalysis<PredicateStateAnalysis>();
     slotTracker = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
+    sourceLocationTracker = &getAnalysis<SourceLocationTracker>();
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);

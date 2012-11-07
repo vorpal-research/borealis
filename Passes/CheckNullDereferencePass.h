@@ -18,6 +18,7 @@
 #include "Logging/logger.hpp"
 #include "PredicateStateAnalysis.h"
 #include "SlotTrackerPass.h"
+#include "SourceLocationTracker.h"
 
 namespace borealis {
 
@@ -47,6 +48,7 @@ private:
 	DetectNullPass* DNP;
 	PredicateStateAnalysis* PSA;
 	SlotTracker* slotTracker;
+	SourceLocationTracker* sourceLocationTracker;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;

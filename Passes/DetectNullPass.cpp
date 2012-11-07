@@ -33,7 +33,7 @@ public:
     void visit(llvm::Instruction& I) {
         using llvm::Value;
 
-        const Value* ptr = &I;
+        Value* ptr = &I;
         if (containsKey(pass->data, ptr)) return;
 
         InstVisitor::visit(I);
@@ -48,8 +48,8 @@ public:
     void visitStoreInst(llvm::StoreInst& I) {
         using namespace llvm;
 
-        const Value* ptr = I.getPointerOperand();
-        const Value* value = I.getValueOperand();
+        Value* ptr = I.getPointerOperand();
+        Value* value = I.getValueOperand();
 
         if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
 
@@ -61,7 +61,7 @@ public:
     void visitInsertValueInst(llvm::InsertValueInst& I) {
         using namespace llvm;
 
-        const Value* value = I.getInsertedValueOperand();
+        Value* value = I.getInsertedValueOperand();
         if (isa<ConstantPointerNull>(value)) {
             const std::vector<unsigned> idxs = I.getIndices().vec();
             pass->data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
@@ -92,11 +92,11 @@ public:
 
         if (!I.getType()->isPointerTy()) return;
 
-        std::set<const PHINode*> visited;
+        std::set<PHINode*> visited;
         auto incomingValues = getIncomingValues(I, visited);
 
         NullInfo nullInfo = NullInfo();
-        for (const Value* II : incomingValues) {
+        for (Value* II : incomingValues) {
             if (containsKey(pass->data, II)) {
                 nullInfo = nullInfo.merge(pass->data[II]);
             } else {
@@ -110,18 +110,18 @@ private:
 
     DetectNullPass* pass;
 
-    std::set<const llvm::Value*> getIncomingValues(
-            const llvm::PHINode& I,
-            std::set<const llvm::PHINode*>& visited) {
+    std::set<llvm::Value*> getIncomingValues(
+            llvm::PHINode& I,
+            std::set<llvm::PHINode*>& visited) {
         using namespace llvm;
 
-        std::set<const Value*> res;
+        std::set<Value*> res;
 
         if (contains(visited, &I)) return res;
         else visited.insert(&I);
 
         for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
-            const Value* incoming = I.getIncomingValue(i);
+            Value* incoming = I.getIncomingValue(i);
             if (isa<Value>(incoming)) {
                 if (isa<PHINode>(incoming)) {
                     auto sub = getIncomingValues(
