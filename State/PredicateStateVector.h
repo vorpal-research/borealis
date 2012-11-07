@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <unordered_set>
 
+#include "Logging/logstream.hpp"
 #include "PredicateState.h"
 #include "Predicate/Predicate.h"
 
@@ -64,6 +65,7 @@ private:
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& vec);
+logging::stream_t& operator<<(logging::stream_t& s, const PredicateStateVector& vec);
 
 } /* namespace borealis */
 

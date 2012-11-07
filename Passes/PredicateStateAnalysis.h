@@ -18,13 +18,16 @@
 #include <set>
 #include <vector>
 
+#include "Logging/logger.hpp"
 #include "PredicateAnalysis.h"
 #include "State/PredicateState.h"
 #include "State/PredicateStateVector.h"
 
 namespace borealis {
 
-class PredicateStateAnalysis: public llvm::FunctionPass {
+class PredicateStateAnalysis:
+        public llvm::FunctionPass,
+        public borealis::logging::ClassLevelLogging<PredicateStateAnalysis> {
 
 public:
 
@@ -35,6 +38,7 @@ public:
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     static char ID;
+    static constexpr decltype("psa") loggerDomain() { return "psa"; }
 
     PredicateStateAnalysis();
     virtual bool runOnFunction(llvm::Function& F);

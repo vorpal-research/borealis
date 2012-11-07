@@ -51,4 +51,18 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& 
     return s;
 }
 
+logging::stream_t& operator<<(logging::stream_t& s, const PredicateStateVector& vec) {
+    s << '[';
+    if (!vec.empty()) {
+        auto iter = vec.begin();
+        const PredicateState& el = *iter++;
+        s << el;
+        for (const auto& e : view(iter, vec.end())) {
+            s << ',' << e;
+        }
+    }
+    s << ']';
+    return s;
+}
+
 } /* namespace borealis */

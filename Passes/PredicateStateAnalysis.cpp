@@ -38,6 +38,13 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 
     removeUnreachableStates();
 
+    infos() << "= Predicate state analysis results =" << endl;
+    for (auto& e : predicateStateMap) {
+        infos() << *e.first << endl
+                << e.second << endl;
+    }
+    infos() << "= Done =" << endl;
+
     return false;
 }
 
