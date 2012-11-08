@@ -106,6 +106,15 @@ public:
         pass->PM[&I] = pass->PF->getEqualityPredicate(lhv, rhv);
     }
 
+    void visitBitCastInst(llvm::BitCastInst& I) {
+        using llvm::Value;
+
+        const Value* lhv = &I;
+        const Value* rhv = I.getOperand(0);
+
+        pass->PM[&I] = pass->PF->getEqualityPredicate(lhv, rhv);
+    }
+
 private:
 
     PredicateAnalysis* pass;
