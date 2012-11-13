@@ -36,6 +36,7 @@ struct LocalLocus {
         return *this;
     }
 
+
     bool operator==(const LocalLocus& that) const {
         return (line == that.line) && (col == that.col);
     }
