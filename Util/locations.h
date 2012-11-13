@@ -94,7 +94,8 @@ struct LocalLocus {
 template<class Streamer>
 Streamer& operator<<(Streamer& ost, const LocalLocus& ll) {
     // 1:1
-    return ost << ll.line << ":" << ll.col;
+    // this is generally fucked up
+    return static_cast<Streamer&>(ost << ll.line << ":" << ll.col);
 }
 
 struct Locus {
