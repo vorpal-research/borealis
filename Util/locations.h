@@ -135,14 +135,12 @@ struct Locus {
     }
 };
 
-// TODO akhin Fix template specialization
-//template<class Streamer>
-//Streamer& operator<<(Streamer& ost, const Locus& ll) {
-//    // file.txt:1:2
-//    return ost << ll.filename << ":" << ll.loc;
-//}
-
-std::ostream& operator<<(std::ostream& ost, const Locus& ll);
+template<class Streamer>
+Streamer& operator<<(Streamer& ost, const Locus& ll) {
+    // file.txt:1:2
+    // this is generally fucked up
+    return static_cast<Streamer&>(ost << ll.filename << ":" << ll.loc);
+}
 
 struct LocusRange {
     Locus lhv;
