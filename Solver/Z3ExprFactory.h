@@ -118,16 +118,21 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
 
-    static void initialize(llvm::TargetData* /*TD*/) {
-        // TODO akhin
-        // pointerSize = TD->getPointerSizeInBits();
+    z3::sort getPtrSort() {
+        return ctx.bv_sort(pointerSize);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    static void initialize(llvm::TargetData* TD) {
+        pointerSize = TD->getPointerSizeInBits();
     }
 
 private:
 
     z3::context& ctx;
 
-    static const unsigned int pointerSize = 32;
+    static unsigned int pointerSize;
 
 };
 

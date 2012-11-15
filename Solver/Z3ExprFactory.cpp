@@ -11,4 +11,6 @@ namespace borealis {
 
 Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {}
 
+unsigned int Z3ExprFactory::pointerSize = 32;
+
 } /* namespace borealis */

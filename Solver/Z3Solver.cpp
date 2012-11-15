@@ -71,7 +71,9 @@ void Z3Solver::addGEPAxioms(z3::solver& s) {
     auto& ctx = z3ef.unwrap();
 
     auto gep = z3ef.getGEPFunction();
-    auto ptr = to_expr(ctx, Z3_mk_bound(ctx, 0, ctx.bv_sort(32)));
+    auto ptr_sort = z3ef.getPtrSort();
+
+    auto ptr = to_expr(ctx, Z3_mk_bound(ctx, 0, ptr_sort));
     auto freevar = to_expr(ctx, Z3_mk_bound(ctx, 1, ctx.int_sort()));
     auto null = z3ef.getNullPtr();
 
@@ -79,7 +81,7 @@ void Z3Solver::addGEPAxioms(z3::solver& s) {
             ptr != null,
             gep(ptr, freevar) != null);
 
-    Z3_sort sort_array[] = {Z3_sort(ctx.int_sort()), Z3_sort(ctx.bv_sort(32))};
+    Z3_sort sort_array[] = {Z3_sort(ctx.int_sort()), Z3_sort(ptr_sort)};
     Z3_symbol name_array[] = {Z3_symbol(ctx.str_symbol("freevar")), Z3_symbol(ctx.str_symbol("ptr"))};
 
     auto axiom = to_expr(
