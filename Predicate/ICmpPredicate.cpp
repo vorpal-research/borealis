@@ -64,8 +64,8 @@ z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef) const {
     case ConditionType::GTE: return l == (o1 >= o2);
     case ConditionType::TRUE: return l == z3ef.getBoolConst(true);
     case ConditionType::FALSE: return l == z3ef.getBoolConst(false);
-    case ConditionType::UNKNOWN: return sayonara<z3::expr>(__FILE__, __LINE__,
-            "<ICmpPredicate> Unknown condition type in Z3 conversion");
+    case ConditionType::UNKNOWN: return sayonara<z3::expr>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+            "Unknown condition type in Z3 conversion");
     }
 }
 

@@ -82,8 +82,8 @@ struct NullInfo {
 	    using borealis::util::sayonara;
 
 		if (type != other.type) {
-		    return sayonara<NullInfo&>(__FILE__, __LINE__,
-		            "<NullInfo> Different NullInfo types in merge");
+		    return sayonara<NullInfo&>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+		            "Different NullInfo types in merge");
 		}
 
 		for (const auto& entry : other.offsetInfoMap){

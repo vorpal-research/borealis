@@ -83,8 +83,8 @@ public:
             if (type->isArrayTy()) type = type->getArrayElementType();
             else if (type->isStructTy()) {
                 if (!isa<ConstantInt>(v)) {
-                    sayonara(__FILE__, __LINE__,
-                            "<PredicateAnalysisInstVisitor> Field shift not ConstantInt in visitGetElementPtrInst");
+                    sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                            "Field shift not ConstantInt in visitGetElementPtrInst");
                 }
                 auto fieldIdx = cast<ConstantInt>(v)->getZExtValue();
                 type = type->getStructElementType(fieldIdx);

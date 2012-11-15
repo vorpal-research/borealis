@@ -21,12 +21,10 @@ namespace borealis {
 
 enum class intrinsic {
     PTR_VERSION,
+    NOT_INTRINSIC
 };
 
 const std::string getFuncName(intrinsic, llvm::Type*);
-llvm::Function* createIntrinsic(
-        intrinsic, llvm::Module*, llvm::FunctionType*, llvm::Type*
-);
 
 typedef std::unordered_map<llvm::Type*, llvm::Function*> typed_intrinsics_cache;
 

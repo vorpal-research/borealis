@@ -26,7 +26,8 @@ using namespace llvm;
 static Function* createDummyPtrFunction(Type* pointed, Module* where) {
     auto ptr = PointerType::getUnqual(pointed);
     auto ftype = FunctionType::get(ptr, ptr, false /* isVarArg */);
-    return createIntrinsic(intrinsic::PTR_VERSION, where, ftype, pointed);
+    return IntrinsicsManager::getInstance()
+    .createIntrinsic(intrinsic::PTR_VERSION, where, ftype, pointed);
 }
 
 Function* ptrssa::StoreLoadInjectionPass::createNuevoFunc(

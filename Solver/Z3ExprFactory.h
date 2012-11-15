@@ -98,8 +98,8 @@ public:
         case ValueType::PTR_VAR:
             return getPtr(name);
         case ValueType::UNKNOWN:
-            return util::sayonara<z3::expr>(__FILE__, __LINE__,
-                    "<Z3ExprFactory> Unknown value type for Z3 conversion");
+            return util::sayonara<z3::expr>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                    "Unknown value type for Z3 conversion");
         }
     }
 

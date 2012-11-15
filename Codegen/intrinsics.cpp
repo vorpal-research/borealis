@@ -27,19 +27,3 @@ const std::string borealis::getFuncName(intrinsic intr, llvm::Type* type) {
     oss << "borealis." << names[intr] << "." << *type;
     return oss.str();
 }
-
-llvm::Function* borealis::createIntrinsic(
-        intrinsic intr,
-        llvm::Module* module,
-        llvm::FunctionType* funtype,
-        llvm::Type* param) {
-    using llvm::GlobalValue;
-    using llvm::Function;
-
-    return Function::Create(
-            funtype,
-            GlobalValue::ExternalLinkage,
-            getFuncName(intr, param),
-            module
-    );
-}

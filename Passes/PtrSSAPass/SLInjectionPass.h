@@ -18,6 +18,7 @@
 
 #include "origin_tracker.h"
 #include "Codegen/intrinsics.h"
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Passes/ProxyFunctionPass.hpp"
 
