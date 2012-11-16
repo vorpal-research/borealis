@@ -21,6 +21,7 @@ class IntrinsicsManager {
 public:
 
     typedef std::unordered_map<llvm::Function*, intrinsic> intrinsics_type_cache;
+    typedef std::unordered_map<llvm::Function*, PredicateState> intrinsics_state_cache;
 
     // TODO Make this shit also cache all intrinsic instances
     llvm::Function* createIntrinsic(
@@ -66,6 +67,7 @@ private:
     IntrinsicsManager() {};
 
     intrinsics_type_cache type_cache;
+    intrinsics_state_cache state_cache;
 
 };
 

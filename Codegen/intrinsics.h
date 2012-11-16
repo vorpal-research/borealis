@@ -14,7 +14,10 @@
 #include <llvm/Function.h>
 #include <llvm/Module.h>
 #include <llvm/Type.h>
+#include <llvm/Value.h>
 
+#include "Predicate/PredicateFactory.h"
+#include "State/PredicateState.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -26,15 +29,19 @@ enum class intrinsic {
 
 const std::string getFuncName(intrinsic, llvm::Type*);
 
+PredicateState getPredicateState(intrinsic, llvm::Function*, PredicateFactory*);
+
+llvm::Value* getReturnValue(llvm::Function*);
+
 typedef std::unordered_map<llvm::Type*, llvm::Function*> typed_intrinsics_cache;
 
-}
+} // namespace borealis
 
 namespace std {
 
 template<>
 struct hash<borealis::intrinsic>: public borealis::util::enums::enum_hash<borealis::intrinsic> {};
 
-}
+} // namespace std
 
 #endif /* INTRINSICS_H_ */
