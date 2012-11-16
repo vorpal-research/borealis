@@ -19,7 +19,7 @@ public:
     typedef size_t id_t;
     typedef std::unique_ptr<Term> Ptr;
 
-    Term(id_t id, llvm::ValueType type, std::string name) :
+    Term(id_t id, llvm::ValueType type, const std::string& name) :
         id(id), type(type), name(name)
     {}
 
@@ -31,7 +31,7 @@ public:
         return type;
     }
 
-    virtual std::string getName() const {
+    virtual const std::string& getName() const {
         return name;
     }
 
