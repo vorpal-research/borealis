@@ -99,7 +99,11 @@ ValueType valueType(const llvm::Value& value) {
 	Type* type = value.getType();
 	if (isa<Constant>(value)) {
 		if (type->isIntegerTy()) {
-			return VT::INT_CONST;
+		    if (type->getPrimitiveSizeInBits() == 1) {
+		        return VT::BOOL_CONST;
+		    } else {
+		        return VT::INT_CONST;
+		    }
 		} else if (type->isFloatingPointTy()) {
 			return VT::REAL_CONST;
 		} else if (isa<ConstantPointerNull>(value)) {
@@ -111,7 +115,11 @@ ValueType valueType(const llvm::Value& value) {
 		}
 	} else {
 		if (type->isIntegerTy()) {
-			return VT::INT_VAR;
+		    if (type->getPrimitiveSizeInBits() == 1) {
+		        return VT::BOOL_VAR;
+		    } else {
+		        return VT::INT_VAR;
+		    }
 		} else if (type->isFloatingPointTy()) {
 			return VT::REAL_VAR;
 		} else if (type->isPointerTy()) {
