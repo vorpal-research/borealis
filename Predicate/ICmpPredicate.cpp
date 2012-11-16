@@ -7,6 +7,8 @@
 
 #include "ICmpPredicate.h"
 
+#include "ValueTerm.h"
+
 namespace borealis {
 
 using llvm::ConditionType;
@@ -21,38 +23,36 @@ ICmpPredicate::ICmpPredicate(
         const llvm::Value* op2,
         const int cond,
         SlotTracker* st) :
-				        lhv(lhv),
-				        op1(op1),
-				        op2(op2),
+				        lhv(new ValueTerm(lhv, st)),
+				        op1(new ValueTerm(op1, st)),
+				        op2(new ValueTerm(op2, st)),
 				        cond(cond),
-				        _lhv(st->getLocalName(lhv)),
-				        _op1(st->getLocalName(op1)),
-				        _op2(st->getLocalName(op2)),
 				        _cond(conditionString(cond)) {
-    this->asString = _lhv + "=" + _op1 + _cond + _op2;
+    this->asString =
+            this->lhv->getName() + "=" + this->op1->getName() + _cond + this->op2->getName();
 }
 
 Predicate::Key ICmpPredicate::getKey() const {
-    return std::make_pair(borealis::type_id(*this), lhv);
+    return std::make_pair(borealis::type_id(*this), lhv->getId());
 }
 
 Predicate::Dependee ICmpPredicate::getDependee() const {
-    return std::make_pair(DependeeType::VALUE, lhv);
+    return std::make_pair(DependeeType::VALUE, lhv->getId());
 }
 
 Predicate::DependeeSet ICmpPredicate::getDependees() const {
     DependeeSet res = DependeeSet();
-    res.insert(std::make_pair(DependeeType::VALUE, op1));
-    res.insert(std::make_pair(DependeeType::VALUE, op2));
+    res.insert(std::make_pair(DependeeType::VALUE, op1->getId()));
+    res.insert(std::make_pair(DependeeType::VALUE, op2->getId()));
     return res;
 }
 
 z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
-    expr l = z3ef.getBoolVar(_lhv);
-    expr o1 = z3ef.getExprForValue(*op1, _op1);
-    expr o2 = z3ef.getExprForValue(*op2, _op2);
+    expr l = z3ef.getExprForTerm(*lhv);
+    expr o1 = z3ef.getExprForTerm(*op1);
+    expr o2 = z3ef.getExprForTerm(*op2);
 
     ConditionType ct = conditionType(cond);
     switch(ct) {

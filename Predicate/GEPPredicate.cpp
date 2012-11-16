@@ -7,6 +7,9 @@
 
 #include "GEPPredicate.h"
 
+#include "ConstTerm.h"
+#include "ValueTerm.h"
+
 namespace borealis {
 
 GEPPredicate::GEPPredicate(
@@ -14,33 +17,30 @@ GEPPredicate::GEPPredicate(
         const llvm::Value* rhv,
         const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts,
         SlotTracker* st) :
-                        lhv(lhv),
-                        rhv(rhv),
-                        _lhv(st->getLocalName(lhv)),
-                        _rhv(st->getLocalName(rhv)) {
+                        lhv(new ValueTerm(lhv, st)),
+                        rhv(new ValueTerm(rhv, st)) {
 
     std::string a = "0";
     for (const auto& shift : shifts) {
-        std::string by = st->getLocalName(shift.first);
-        std::string size = util::toString(shift.second);
+        ValueTerm* by = new ValueTerm(shift.first, st);
+        ConstTerm* size = new ConstTerm(llvm::ValueType::INT_CONST, util::toString(shift.second));
         this->shifts.push_back(
-                std::make_tuple(
-                        shift.first,
-                        by,
-                        shift.second)
+                std::make_pair(Term::Ptr(by), Term::Ptr(size))
         );
-        a = a + "+" + by + "*" + size;
+
+        a = a + "+" + by->getName() + "*" + size->getName();
     }
 
-    this->asString = _lhv + "=gep(" + _rhv + "," + a + ")";
+    this->asString =
+            this->lhv->getName() + "=gep(" + this->rhv->getName() + "," + a + ")";
 }
 
 Predicate::Key GEPPredicate::getKey() const {
-    return std::make_pair(type_id(*this), lhv);
+    return std::make_pair(type_id(*this), lhv->getId());
 }
 
 Predicate::Dependee GEPPredicate::getDependee() const {
-    return std::make_pair(DependeeType::VALUE, lhv);
+    return std::make_pair(DependeeType::VALUE, lhv->getId());
 }
 
 Predicate::DependeeSet GEPPredicate::getDependees() const {
@@ -52,15 +52,15 @@ Predicate::DependeeSet GEPPredicate::getDependees() const {
 z3::expr GEPPredicate::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
-    expr l = z3ef.getExprForValue(*lhv, _lhv);
-    expr r = z3ef.getExprForValue(*rhv, _rhv);
+    expr l = z3ef.getExprForTerm(*lhv);
+    expr r = z3ef.getExprForTerm(*rhv);
 
     func_decl gep = z3ef.getGEPFunction();
 
     expr shift = z3ef.getIntConst(0);
     for (const auto& s : shifts) {
-        expr by = z3ef.getExprForValue(*std::get<0>(s), std::get<1>(s));
-        expr size = z3ef.getIntConst(std::get<2>(s));
+        expr by = z3ef.getExprForTerm(*s.first);
+        expr size = z3ef.getExprForTerm(*s.second);;
         shift = shift + by * size;
     }
 

@@ -36,10 +36,8 @@ public:
 
 private:
 
-	const llvm::Value* v;
-	const bool b;
-	const std::string _v;
-	const std::string _b;
+	const Term::Ptr v;
+	const Term::Ptr b;
 
 };
 

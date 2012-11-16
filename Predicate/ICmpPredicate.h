@@ -33,14 +33,11 @@ public:
 
 private:
 
-    const llvm::Value* lhv;
-    const llvm::Value* op1;
-    const llvm::Value* op2;
-    const int cond;
+    const Term::Ptr lhv;
+    const Term::Ptr op1;
+    const Term::Ptr op2;
 
-    const std::string _lhv;
-    const std::string _op1;
-    const std::string _op2;
+    const int cond;
     const std::string _cond;
 
 };

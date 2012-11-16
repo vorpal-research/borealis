@@ -12,11 +12,13 @@
 #include <llvm/Value.h>
 #include <z3/z3++.h>
 
+#include <memory>
 #include <tuple>
 #include <unordered_set>
 
 #include "Logging/logger.hpp"
 #include "Solver/Z3ExprFactory.h"
+#include "Term.h"
 #include "Util/slottracker.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
@@ -38,7 +40,7 @@ class Predicate {
 
 public:
 
-    typedef std::pair<size_t, const llvm::Value*> Key;
+    typedef std::pair<size_t, Term::id_t> Key;
     struct KeyHash {
     public:
         static size_t hash(const Key& k) {
@@ -49,7 +51,7 @@ public:
         }
     };
 
-    typedef std::pair<DependeeType, const llvm::Value*> Dependee;
+    typedef std::pair<DependeeType, Term::id_t> Dependee;
     struct DependeeHash {
     public:
         static size_t hash(const Dependee& k) {

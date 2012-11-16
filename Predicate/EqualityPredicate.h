@@ -31,10 +31,8 @@ public:
 
 private:
 
-    const llvm::Value* lhv;
-    const llvm::Value* rhv;
-    const std::string _lhv;
-    const std::string _rhv;
+    const Term::Ptr lhv;
+    const Term::Ptr rhv;
 
 };
 

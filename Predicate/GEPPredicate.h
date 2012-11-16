@@ -33,12 +33,9 @@ public:
 
 private:
 
-    const llvm::Value* lhv;
-    const llvm::Value* rhv;
-    std::vector< std::tuple<const llvm::Value*, std::string, uint64_t> > shifts;
-
-    const std::string _lhv;
-    const std::string _rhv;
+    const Term::Ptr lhv;
+    const Term::Ptr rhv;
+    std::vector< std::pair< Term::Ptr, Term::Ptr > > shifts;
 
 };
 

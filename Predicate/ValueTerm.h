@@ -19,8 +19,8 @@ class ValueTerm: public borealis::Term {
 
 public:
 
-    ValueTerm(llvm::Value* v, SlotTracker* st) :
-        Term(llvm::valueType(*v), st->getLocalName(v))
+    ValueTerm(const llvm::Value* v, SlotTracker* st) :
+        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v))
     {}
     virtual ~ValueTerm() {};
 

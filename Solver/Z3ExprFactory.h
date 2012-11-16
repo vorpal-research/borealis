@@ -11,6 +11,7 @@
 #include <llvm/Target/TargetData.h>
 #include <z3/z3++.h>
 
+#include "Predicate/Term.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -75,11 +76,25 @@ public:
         return ctx.real_val(v.c_str());
     }
 
-    z3::expr getExprForValue(const llvm::Value& value, const std::string& name) {
+    z3::expr getExprForTerm(
+            const Term& term) {
+        return getExprByTypeAndName(term.getType(), term.getName());
+    }
+
+    z3::expr getExprForValue(
+            const llvm::Value& value,
+            const std::string& name) {
+        return getExprByTypeAndName(valueType(value), name);
+    }
+
+private:
+
+    z3::expr getExprByTypeAndName(
+            const llvm::ValueType type,
+            const std::string& name) {
         using llvm::ValueType;
 
-        ValueType vt = valueType(value);
-        switch(vt) {
+        switch(type) {
         case ValueType::INT_CONST:
             return getIntConst(name);
         case ValueType::INT_VAR:
@@ -102,6 +117,8 @@ public:
                     "Unknown value type for Z3 conversion");
         }
     }
+
+public:
 
     ////////////////////////////////////////////////////////////////////////////
 
