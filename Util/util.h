@@ -41,6 +41,11 @@ enum class ConditionType {
 std::string conditionString(const int cond);
 ConditionType conditionType(const int cond);
 
+enum class TypeInfo {
+    VARIABLE,
+    CONSTANT,
+    CONSTANT_POINTER_NULL
+};
 enum class ValueType {
 	INT_CONST,
 	INT_VAR,
@@ -54,6 +59,7 @@ enum class ValueType {
 	UNKNOWN
 };
 ValueType valueType(const llvm::Value& value);
+ValueType type2type(const llvm::Type& type, TypeInfo info = TypeInfo::VARIABLE);
 
 } // namespace llvm
 

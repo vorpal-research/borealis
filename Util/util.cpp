@@ -92,42 +92,57 @@ ConditionType conditionType(const int cond) {
 }
 
 ValueType valueType(const llvm::Value& value) {
-	using namespace::llvm;
+	return type2type(*value.getType(),
+	        isa<llvm::ConstantPointerNull>(value) ? TypeInfo::CONSTANT_POINTER_NULL :
+	        isa<llvm::Constant>(value) ? TypeInfo::CONSTANT :
+	        TypeInfo::VARIABLE);
+}
 
-	typedef ValueType VT;
+ValueType type2type(const llvm::Type& type, TypeInfo info) {
+    using namespace::llvm;
 
-	Type* type = value.getType();
-	if (isa<Constant>(value)) {
-		if (type->isIntegerTy()) {
-		    if (type->getPrimitiveSizeInBits() == 1) {
-		        return VT::BOOL_CONST;
-		    } else {
-		        return VT::INT_CONST;
-		    }
-		} else if (type->isFloatingPointTy()) {
-			return VT::REAL_CONST;
-		} else if (isa<ConstantPointerNull>(value)) {
-			return VT::NULL_PTR_CONST;
-		} else if (type->isPointerTy()) {
-			return VT::PTR_CONST;
-		} else {
-			return VT::UNKNOWN;
-		}
-	} else {
-		if (type->isIntegerTy()) {
-		    if (type->getPrimitiveSizeInBits() == 1) {
-		        return VT::BOOL_VAR;
-		    } else {
-		        return VT::INT_VAR;
-		    }
-		} else if (type->isFloatingPointTy()) {
-			return VT::REAL_VAR;
-		} else if (type->isPointerTy()) {
-			return VT::PTR_VAR;
-		} else {
-			return VT::UNKNOWN;
-		}
-	}
+    typedef ValueType VT;
+
+    switch(info) {
+    case TypeInfo::VARIABLE:
+        {
+            if (type.isIntegerTy()) {
+                if (type.getPrimitiveSizeInBits() == 1) {
+                    return VT::BOOL_VAR;
+                } else {
+                    return VT::INT_VAR;
+                }
+            } else if (type.isFloatingPointTy()) {
+                return VT::REAL_VAR;
+            } else if (type.isPointerTy()) {
+                return VT::PTR_VAR;
+            } else {
+                return VT::UNKNOWN;
+            }
+        }
+    case TypeInfo::CONSTANT:
+        {
+            if (type.isIntegerTy()) {
+                if (type.getPrimitiveSizeInBits() == 1) {
+                    return VT::BOOL_CONST;
+                } else {
+                    return VT::INT_CONST;
+                }
+            } else if (type.isFloatingPointTy()) {
+                return VT::REAL_CONST;
+            } else if (type.isPointerTy()) {
+                return VT::PTR_CONST;
+            } else {
+                return VT::UNKNOWN;
+            }
+        }
+    case TypeInfo::CONSTANT_POINTER_NULL:
+        {
+            return VT::NULL_PTR_CONST;
+        }
+    default:
+        return VT::UNKNOWN;
+    }
 }
 
 } // namespace llvm
