@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "Predicate/PredicateFactory.h"
+#include "Term/TermFactory.h"
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
@@ -63,7 +64,8 @@ private:
 	PredicateMap PM;
 	TerminatorPredicateMap TPM;
 
-	std::shared_ptr<PredicateFactory> PF;
+	std::unique_ptr<PredicateFactory> PF;
+	std::unique_ptr<TermFactory> TF;
 	llvm::TargetData* TD;
 
 	friend class PredicateAnalysisInstVisitor;

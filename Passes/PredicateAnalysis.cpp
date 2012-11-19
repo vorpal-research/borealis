@@ -26,30 +26,41 @@ public:
     void visitLoadInst(llvm::LoadInst& I) {
         using llvm::Value;
 
-        const Value* lhv = &I;
-        const Value* rhv = I.getPointerOperand();
+        Value* lhv = &I;
+        Value* rhv = I.getPointerOperand();
 
-        pass->PM[&I] = pass->PF->getLoadPredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getLoadPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(rhv)
+        );
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
         using llvm::Value;
 
-        const Value* lhv = I.getPointerOperand();
-        const Value* rhv = I.getValueOperand();
+        Value* lhv = I.getPointerOperand();
+        Value* rhv = I.getValueOperand();
 
-        pass->PM[&I] = pass->PF->getStorePredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getStorePredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(rhv)
+        );
     }
 
     void visitICmpInst(llvm::ICmpInst& I) {
         using llvm::Value;
 
-        const Value* lhv = &I;
-        const Value* op1 = I.getOperand(0);
-        const Value* op2 = I.getOperand(1);
+        Value* lhv = &I;
+        Value* op1 = I.getOperand(0);
+        Value* op2 = I.getOperand(1);
         int pred = I.getPredicate();
 
-        pass->PM[&I] = pass->PF->getICmpPredicate(lhv, op1, op2, pred);
+        pass->PM[&I] = pass->PF->getICmpPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(op1),
+                pass->TF->getValueTerm(op2),
+                pred
+        );
     }
 
     void visitBranchInst(llvm::BranchInst& I) {
@@ -58,14 +69,20 @@ public:
 
         if (I.isUnconditional()) return;
 
-        const Value* cond = I.getCondition();
+        Value* cond = I.getCondition();
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
         pass->TPM[std::make_pair(&I, trueSucc)] =
-                pass->PF->getPathBooleanPredicate(cond, true);
+                pass->PF->getPathBooleanPredicate(
+                        pass->TF->getValueTerm(cond),
+                        true
+                );
         pass->TPM[std::make_pair(&I, falseSucc)] =
-                pass->PF->getPathBooleanPredicate(cond, false);
+                pass->PF->getPathBooleanPredicate(
+                        pass->TF->getValueTerm(cond),
+                        false
+                );
     }
 
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
@@ -91,28 +108,38 @@ public:
             }
         }
 
-        const Value* lhv = &I;
-        const Value* rhv = I.getPointerOperand();
+        Value* lhv = &I;
+        Value* rhv = I.getPointerOperand();
 
-        pass->PM[&I] = pass->PF->getGEPPredicate(lhv, rhv, shifts);
+        pass->PM[&I] = pass->PF->getGEPPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(rhv),
+                shifts
+        );
     }
 
     void visitSExtInst(llvm::SExtInst& I) {
         using llvm::Value;
 
-        const Value* lhv = &I;
-        const Value* rhv = I.getOperand(0);
+        Value* lhv = &I;
+        Value* rhv = I.getOperand(0);
 
-        pass->PM[&I] = pass->PF->getEqualityPredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getEqualityPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(rhv)
+        );
     }
 
     void visitBitCastInst(llvm::BitCastInst& I) {
         using llvm::Value;
 
-        const Value* lhv = &I;
-        const Value* rhv = I.getOperand(0);
+        Value* lhv = &I;
+        Value* rhv = I.getOperand(0);
 
-        pass->PM[&I] = pass->PF->getEqualityPredicate(lhv, rhv);
+        pass->PM[&I] = pass->PF->getEqualityPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(rhv)
+        );
     }
 
 private:
@@ -139,6 +166,7 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 	init();
 
 	PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
+	TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TD = &getAnalysis<TargetData>();
 
     PredicateAnalysisInstVisitor visitor(this);

@@ -11,6 +11,7 @@
 #include <llvm/Value.h>
 
 #include "Predicate.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
@@ -19,13 +20,13 @@ class BooleanPredicate: public Predicate {
 public:
 
 	BooleanPredicate(
-			const llvm::Value* v,
-			const bool b,
+			Term::Ptr v,
+			bool b,
 			SlotTracker* st);
 	BooleanPredicate(
-			const PredicateType type,
-			const llvm::Value* v,
-			const bool b,
+			PredicateType type,
+			Term::Ptr v,
+			bool b,
 			SlotTracker* st);
 	virtual Predicate::Key getKey() const;
 

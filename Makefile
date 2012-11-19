@@ -66,6 +66,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Query \
 	$(PWD)/Solver \
 	$(PWD)/State \
+	$(PWD)/Term \
 	$(PWD)/Util \
 	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src

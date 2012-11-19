@@ -19,8 +19,8 @@ class GEPPredicate: public Predicate {
 public:
 
     GEPPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv,
+            Term::Ptr lhv,
+            Term::Ptr rhv,
             const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts,
             SlotTracker* st);
 

@@ -19,10 +19,10 @@ class ICmpPredicate: public Predicate {
 public:
 
     ICmpPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* op1,
-            const llvm::Value* op2,
-            const int cond,
+            Term::Ptr lhv,
+            Term::Ptr op1,
+            Term::Ptr op2,
+            int cond,
             SlotTracker* st);
     virtual Predicate::Key getKey() const;
 

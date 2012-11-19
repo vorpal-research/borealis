@@ -13,12 +13,12 @@
 namespace borealis {
 
 GEPPredicate::GEPPredicate(
-        const llvm::Value* lhv,
-        const llvm::Value* rhv,
+        Term::Ptr lhv,
+        Term::Ptr rhv,
         const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts,
         SlotTracker* st) :
-                        lhv(new ValueTerm(lhv, st)),
-                        rhv(new ValueTerm(rhv, st)) {
+                        lhv(std::move(lhv)),
+                        rhv(std::move(rhv)) {
 
     std::string a = "0";
     for (const auto& shift : shifts) {

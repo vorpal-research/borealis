@@ -26,42 +26,42 @@ class PredicateFactory {
 public:
 
     Predicate* getLoadPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv) {
-        return new LoadPredicate(lhv, rhv, slotTracker);
+            Term::Ptr lhv,
+            Term::Ptr rhv) {
+        return new LoadPredicate(std::move(lhv), std::move(rhv), slotTracker);
     }
 
     Predicate* getStorePredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv) {
-        return new StorePredicate(lhv, rhv, slotTracker);
+            Term::Ptr lhv,
+            Term::Ptr rhv) {
+        return new StorePredicate(std::move(lhv), std::move(rhv), slotTracker);
     }
 
     Predicate* getICmpPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* op1,
-            const llvm::Value* op2,
+            Term::Ptr lhv,
+            Term::Ptr op1,
+            Term::Ptr op2,
             int cond) {
-        return new ICmpPredicate(lhv, op1, op2, cond, slotTracker);
+        return new ICmpPredicate(std::move(lhv), std::move(op1), std::move(op2), cond, slotTracker);
     }
 
     Predicate* getPathBooleanPredicate(
-            const llvm::Value* v,
+            Term::Ptr v,
             bool b) {
-        return new BooleanPredicate(PredicateType::PATH, v, b, slotTracker);
+        return new BooleanPredicate(PredicateType::PATH, std::move(v), b, slotTracker);
     }
 
     Predicate* getGEPPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv,
+            Term::Ptr lhv,
+            Term::Ptr rhv,
             const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts) {
-        return new GEPPredicate(lhv, rhv, shifts, slotTracker);
+        return new GEPPredicate(std::move(lhv), std::move(rhv), shifts, slotTracker);
     }
 
     Predicate* getEqualityPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv) {
-        return new EqualityPredicate(lhv, rhv, slotTracker);
+            Term::Ptr lhv,
+            Term::Ptr rhv) {
+        return new EqualityPredicate(std::move(lhv), std::move(rhv), slotTracker);
     }
 
     static std::unique_ptr<PredicateFactory> get(SlotTracker* slotTracker) {

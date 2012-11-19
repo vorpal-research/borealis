@@ -19,8 +19,8 @@ class StorePredicate: public Predicate {
 public:
 
     StorePredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv,
+            Term::Ptr lhv,
+            Term::Ptr rhv,
             SlotTracker* st);
     virtual Predicate::Key getKey() const;
 

@@ -12,11 +12,11 @@
 namespace borealis {
 
 EqualityPredicate::EqualityPredicate(
-        const llvm::Value* lhv,
-        const llvm::Value* rhv,
+        Term::Ptr lhv,
+        Term::Ptr rhv,
         SlotTracker* st) :
-                    lhv(new ValueTerm(lhv, st)),
-                    rhv(new ValueTerm(rhv, st)) {
+                    lhv(std::move(lhv)),
+                    rhv(std::move(rhv)) {
     this->asString = this->lhv->getName() + "=" + this->rhv->getName();
 }
 

@@ -18,14 +18,14 @@ using llvm::conditionType;
 using util::sayonara;
 
 ICmpPredicate::ICmpPredicate(
-        const llvm::Value* lhv,
-        const llvm::Value* op1,
-        const llvm::Value* op2,
-        const int cond,
+        Term::Ptr lhv,
+        Term::Ptr op1,
+        Term::Ptr op2,
+        int cond,
         SlotTracker* st) :
-				        lhv(new ValueTerm(lhv, st)),
-				        op1(new ValueTerm(op1, st)),
-				        op2(new ValueTerm(op2, st)),
+				        lhv(std::move(lhv)),
+				        op1(std::move(op1)),
+				        op2(std::move(op2)),
 				        cond(cond),
 				        _cond(conditionString(cond)) {
     this->asString =

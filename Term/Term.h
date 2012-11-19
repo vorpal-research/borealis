@@ -18,7 +18,7 @@ class Term {
 public:
 
     typedef size_t id_t;
-    typedef std::unique_ptr<Term> Ptr;
+    typedef std::unique_ptr<const Term> Ptr;
 
     Term(id_t id, llvm::ValueType type, const std::string& name, borealis::id_t term_type_id) :
         id(id), type(type), name(name), term_type_id(term_type_id)

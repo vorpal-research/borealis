@@ -19,8 +19,8 @@ class EqualityPredicate: public Predicate {
 public:
 
     EqualityPredicate(
-            const llvm::Value* lhv,
-            const llvm::Value* rhv,
+            Term::Ptr lhv,
+            Term::Ptr rhv,
             SlotTracker* st);
     virtual Predicate::Key getKey() const;
 
@@ -37,4 +37,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* EQUALITYPREDICATE_H_ */

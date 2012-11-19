@@ -18,6 +18,7 @@
 
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateState.h"
+#include "Term/TermFactory.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -29,7 +30,7 @@ enum class intrinsic {
 
 const std::string getFuncName(intrinsic, llvm::Type*);
 
-PredicateState getPredicateState(intrinsic, llvm::Function*, PredicateFactory*);
+PredicateState getPredicateState(intrinsic, llvm::Function*, PredicateFactory*, TermFactory*);
 
 llvm::Value* getReturnValue(llvm::Function*);
 

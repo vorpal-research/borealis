@@ -13,19 +13,19 @@
 namespace borealis {
 
 BooleanPredicate::BooleanPredicate(
-        const llvm::Value* v,
-        const bool b,
+        Term::Ptr v,
+        bool b,
         SlotTracker* st) :
-	        v(new ValueTerm(v, st)),
+	        v(std::move(v)),
 	        b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
     this->asString = this->v->getName() + "=" + this->b->getName();
 }
 
 BooleanPredicate::BooleanPredicate(
-        const PredicateType type,
-        const llvm::Value* v,
-        const bool b,
-        SlotTracker* st) : BooleanPredicate(v, b, st) {
+        PredicateType type,
+        Term::Ptr v,
+        bool b,
+        SlotTracker* st) : BooleanPredicate(std::move(v), b, st) {
     this->type = type;
 }
 
