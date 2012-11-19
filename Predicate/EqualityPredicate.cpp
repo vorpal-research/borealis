@@ -7,7 +7,7 @@
 
 #include "EqualityPredicate.h"
 
-#include "ValueTerm.h"
+#include "Term/ValueTerm.h"
 
 namespace borealis {
 

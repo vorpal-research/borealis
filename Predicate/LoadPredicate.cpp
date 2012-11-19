@@ -7,7 +7,7 @@
 
 #include "LoadPredicate.h"
 
-#include "ValueTerm.h"
+#include "Term/ValueTerm.h"
 
 namespace borealis {
 

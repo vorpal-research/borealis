@@ -18,7 +18,7 @@
 
 #include "Logging/logger.hpp"
 #include "Solver/Z3ExprFactory.h"
-#include "Term.h"
+#include "Term/Term.h"
 #include "Util/slottracker.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"

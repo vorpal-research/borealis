@@ -7,8 +7,8 @@
 
 #include "BooleanPredicate.h"
 
-#include "ConstTerm.h"
-#include "ValueTerm.h"
+#include "Term/ConstTerm.h"
+#include "Term/ValueTerm.h"
 
 namespace borealis {
 

@@ -11,7 +11,7 @@
 #include <llvm/Target/TargetData.h>
 #include <z3/z3++.h>
 
-#include "Predicate/Term.h"
+#include "Term/Term.h"
 #include "Util/util.h"
 
 namespace borealis {
