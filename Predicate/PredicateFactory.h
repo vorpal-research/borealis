@@ -25,8 +25,6 @@ class PredicateFactory {
 
 public:
 
-    PredicateFactory(SlotTracker* slotTracker);
-
     Predicate* getLoadPredicate(
             const llvm::Value* lhv,
             const llvm::Value* rhv) {
@@ -73,6 +71,8 @@ public:
 private:
 
     SlotTracker* slotTracker;
+
+    PredicateFactory(SlotTracker* slotTracker);
 
 };
 
