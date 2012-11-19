@@ -17,7 +17,7 @@ class ConstTerm: public borealis::Term {
 public:
 
     ConstTerm(llvm::ValueType type, const std::string& name) :
-        Term(0, type, name)
+        Term(0, type, name, type_id(*this))
     {}
     virtual ~ConstTerm() {};
 

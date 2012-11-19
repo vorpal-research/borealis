@@ -20,7 +20,12 @@ class ReturnValueTerm: public borealis::Term {
 public:
 
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
-        Term((id_t)F, llvm::type2type(*F->getFunctionType()->getReturnType()), "\\result")
+        Term(
+                (id_t)F,
+                llvm::type2type(*F->getFunctionType()->getReturnType()),
+                "\\result",
+                type_id(*this)
+            )
     {}
     virtual ~ReturnValueTerm() {};
 
