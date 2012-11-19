@@ -21,6 +21,14 @@ public:
     {}
     virtual ~ConstTerm() {};
 
+    static bool classof(Term* t) {
+        return t->getTermTypeId() == type_id<ConstTerm>();
+    }
+
+    static bool classof(ConstTerm* /* t */) {
+        return true;
+    }
+
 };
 
 } /* namespace borealis */

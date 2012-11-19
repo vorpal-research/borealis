@@ -22,6 +22,14 @@ public:
     {}
     virtual ~ArgumentTerm() {};
 
+    static bool classof(Term* t) {
+        return t->getTermTypeId() == type_id<ArgumentTerm>();
+    }
+
+    static bool classof(ArgumentTerm* /* t */) {
+        return true;
+    }
+
 };
 
 } /* namespace borealis */

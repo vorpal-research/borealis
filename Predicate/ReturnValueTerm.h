@@ -29,6 +29,14 @@ public:
     {}
     virtual ~ReturnValueTerm() {};
 
+    static bool classof(Term* t) {
+        return t->getTermTypeId() == type_id<ReturnValueTerm>();
+    }
+
+    static bool classof(ReturnValueTerm* /* t */) {
+        return true;
+    }
+
 };
 
 } /* namespace borealis */
