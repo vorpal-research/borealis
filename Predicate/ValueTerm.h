@@ -24,11 +24,11 @@ public:
     {}
     virtual ~ValueTerm() {};
 
-    static bool classof(Term* t) {
+    static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ValueTerm>();
     }
 
-    static bool classof(ValueTerm* /* t */) {
+    static bool classof(const ValueTerm* /* t */) {
         return true;
     }
 

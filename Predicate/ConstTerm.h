@@ -21,11 +21,11 @@ public:
     {}
     virtual ~ConstTerm() {};
 
-    static bool classof(Term* t) {
+    static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ConstTerm>();
     }
 
-    static bool classof(ConstTerm* /* t */) {
+    static bool classof(const ConstTerm* /* t */) {
         return true;
     }
 

@@ -36,13 +36,13 @@ public:
         return name;
     }
 
-    static bool classof(Term* /* t */) {
+    static bool classof(const Term* /* t */) {
         return true;
     }
 
     virtual ~Term() {};
 
-    inline borealis::id_t getTermTypeId() {
+    inline borealis::id_t getTermTypeId() const {
         return term_type_id;
     }
 
