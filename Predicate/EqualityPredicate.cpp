@@ -14,7 +14,7 @@ namespace borealis {
 EqualityPredicate::EqualityPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* st) :
+        SlotTracker* /* st */) :
                     lhv(std::move(lhv)),
                     rhv(std::move(rhv)) {
     this->asString = this->lhv->getName() + "=" + this->rhv->getName();

@@ -22,7 +22,7 @@ ICmpPredicate::ICmpPredicate(
         Term::Ptr op1,
         Term::Ptr op2,
         int cond,
-        SlotTracker* st) :
+        SlotTracker* /* st */) :
 				        lhv(std::move(lhv)),
 				        op1(std::move(op1)),
 				        op2(std::move(op2)),
