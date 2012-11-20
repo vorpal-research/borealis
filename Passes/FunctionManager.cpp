@@ -6,7 +6,10 @@
  */
 
 #include "FunctionManager.h"
+
 #include "AnnotatorPass.h"
+#include "Codegen/intrinsics.h"
+#include "Codegen/intrinsics_manager.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -29,7 +32,15 @@ void FunctionManager::addFunction(llvm::Function& F, PredicateState state) {
     data[&F] = state;
 }
 
-PredicateState FunctionManager::get(llvm::Function& F) {
+PredicateState FunctionManager::get(
+        llvm::Function& F,
+        PredicateFactory* PF,
+        TermFactory* TF) {
+
+    intrinsic intr = IntrinsicsManager::getInstance().getIntrinsicType(F);
+    if (intr != intrinsic::NOT_INTRINSIC) {
+        return getPredicateState(intr, &F, PF, TF);
+    }
 
     if (data.count(&F) == 0) {
         sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,

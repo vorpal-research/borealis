@@ -12,7 +12,9 @@
 
 #include <unordered_map>
 
+#include "Predicate/PredicateFactory.h"
 #include "State/PredicateState.h"
+#include "Term/TermFactory.h"
 
 namespace borealis {
 
@@ -32,7 +34,7 @@ public:
     virtual ~FunctionManager() {};
 
     void addFunction(llvm::Function& F, PredicateState state);
-    PredicateState get(llvm::Function& F);
+    PredicateState get(llvm::Function& F, PredicateFactory* PF, TermFactory* TF);
 
 private:
 
