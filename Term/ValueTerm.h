@@ -15,13 +15,13 @@
 
 namespace borealis {
 
+class TermFactory;
+class GEPPredicate;
+
 class ValueTerm: public borealis::Term {
 
 public:
 
-    ValueTerm(const llvm::Value* v, SlotTracker* st) :
-        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
-    {}
     virtual ~ValueTerm() {};
 
     static bool classof(const Term* t) {
@@ -31,6 +31,15 @@ public:
     static bool classof(const ValueTerm* /* t */) {
         return true;
     }
+
+    friend class TermFactory;
+    friend class GEPPredicate;
+
+private:
+
+    ValueTerm(const llvm::Value* v, SlotTracker* st) :
+        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
+    {}
 
 };
 

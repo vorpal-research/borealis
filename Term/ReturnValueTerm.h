@@ -15,18 +15,12 @@
 
 namespace borealis {
 
+class TermFactory;
+
 class ReturnValueTerm: public borealis::Term {
 
 public:
 
-    ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
-        Term(
-                (id_t)F,
-                llvm::type2type(*F->getFunctionType()->getReturnType()),
-                "\\result",
-                type_id(*this)
-            )
-    {}
     virtual ~ReturnValueTerm() {};
 
     static bool classof(const Term* t) {
@@ -36,6 +30,19 @@ public:
     static bool classof(const ReturnValueTerm* /* t */) {
         return true;
     }
+
+    friend class TermFactory;
+
+private:
+
+    ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
+        Term(
+                (id_t)F,
+                llvm::type2type(*F->getFunctionType()->getReturnType()),
+                "\\result",
+                type_id(*this)
+            )
+    {}
 
 };
 

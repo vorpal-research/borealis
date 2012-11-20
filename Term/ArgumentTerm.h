@@ -13,13 +13,12 @@
 
 namespace borealis {
 
+class TermFactory;
+
 class ArgumentTerm: public borealis::Term {
 
 public:
 
-    ArgumentTerm(const llvm::Value* v, SlotTracker* st) :
-        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
-    {}
     virtual ~ArgumentTerm() {};
 
     static bool classof(const Term* t) {
@@ -29,6 +28,14 @@ public:
     static bool classof(const ArgumentTerm* /* t */) {
         return true;
     }
+
+    friend class TermFactory;
+
+private:
+
+    ArgumentTerm(const llvm::Value* v, SlotTracker* st) :
+        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
+    {}
 
 };
 

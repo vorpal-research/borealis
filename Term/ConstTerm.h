@@ -12,13 +12,14 @@
 
 namespace borealis {
 
+class TermFactory;
+class BooleanPredicate;
+class GEPPredicate;
+
 class ConstTerm: public borealis::Term {
 
 public:
 
-    ConstTerm(llvm::ValueType type, const std::string& name) :
-        Term(0, type, name, type_id(*this))
-    {}
     virtual ~ConstTerm() {};
 
     static bool classof(const Term* t) {
@@ -28,6 +29,16 @@ public:
     static bool classof(const ConstTerm* /* t */) {
         return true;
     }
+
+    friend class TermFactory;
+    friend class BooleanPredicate;
+    friend class GEPPredicate;
+
+private:
+
+    ConstTerm(llvm::ValueType type, const std::string& name) :
+        Term(0, type, name, type_id(*this))
+    {}
 
 };
 
