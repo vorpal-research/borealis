@@ -7,11 +7,11 @@
 
 #include <gtest/gtest.h>
 
-#include "Predicate/ArgumentTerm.h"
-#include "Predicate/ConstTerm.h"
-#include "Predicate/ReturnValueTerm.h"
-#include "Predicate/Term.h"
-#include "Predicate/ValueTerm.h"
+#include "Term/ArgumentTerm.h"
+#include "Term/ConstTerm.h"
+#include "Term/ReturnValueTerm.h"
+#include "Term/Term.h"
+#include "Term/ValueTerm.h"
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
