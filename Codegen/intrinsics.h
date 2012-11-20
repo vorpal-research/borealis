@@ -32,8 +32,6 @@ const std::string getFuncName(intrinsic, llvm::Type*);
 
 PredicateState getPredicateState(intrinsic, llvm::Function*, PredicateFactory*, TermFactory*);
 
-llvm::Value* getReturnValue(llvm::Function*);
-
 typedef std::unordered_map<llvm::Type*, llvm::Function*> typed_intrinsics_cache;
 
 } // namespace borealis

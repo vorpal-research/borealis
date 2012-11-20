@@ -60,16 +60,3 @@ PredicateState borealis::getPredicateState(
         }
     }
 }
-
-llvm::Value* borealis::getReturnValue(llvm::Function* F) {
-    using namespace llvm;
-
-    for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-        if (isa<ReturnInst>(*I)) {
-            ReturnInst& ret = cast<ReturnInst>(*I);
-            return ret.getReturnValue();
-        }
-    }
-
-    return nullptr;
-}
