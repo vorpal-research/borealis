@@ -76,6 +76,89 @@ public:
         return ctx.real_val(v.c_str());
     }
 
+    z3::expr getEmptyMemoryArray(const std::string& name) {
+        using z3::sort;
+
+        sort ptr_s = getPtrSort();
+        sort byte_s = ctx.bv_sort(8);
+        sort array_s = ctx.array_sort(ptr_s, byte_s);
+
+
+
+        return ctx.constant(name.c_str(), array_s);
+    }
+
+    z3::expr getMemoryArray(
+            const std::string& name,
+            const std::vector<std::pair<z3::expr, z3::expr>>& contents) {
+        using z3::sort;
+
+        z3::expr arr = getEmptyMemoryArray(name);
+
+        for(const auto& iv: contents) {
+            arr = z3::store(arr, iv.first, iv.second);
+        }
+
+        return arr;
+    }
+
+    std::vector<z3::expr> splitBytes(z3::expr bv) {
+        size_t bits = bv.get_sort().bv_size();
+        std::vector<z3::expr> ret;
+
+        for(size_t ix = 0; ix < bits; ix+=8) {
+            ret.push_back( z3::to_expr(ctx, Z3_mk_extract(ctx, ix+8, ix, bv)) );
+        }
+
+        return ret;
+    }
+
+    // a hack: CopyAssignable reference to non-CopyAssignable object
+    // (z3::expr is CopyConstructible, but not CopyAssignable, so no
+    // accumulator-like shit is possible with it)
+    struct z3ExprRef{
+        std::unique_ptr<z3::expr> inner;
+        z3ExprRef(z3::expr e): inner(new z3::expr(e)) {};
+        z3ExprRef(const z3ExprRef& ref): inner(new z3::expr(*ref.inner)) {};
+
+        z3ExprRef& operator=(const z3ExprRef& ref) {
+            inner.reset(new z3::expr(*ref.inner));
+            return *this;
+        }
+        z3ExprRef& operator=(z3::expr e) {
+            inner.reset(new z3::expr(e));
+            return *this;
+        }
+
+        z3::expr get() const { return *inner; }
+
+        operator z3::expr() { return get(); }
+    };
+
+    z3::expr concatBytes(const std::vector<z3::expr>& bytes) {
+        if(bytes.empty()) return ctx.bv_val(0,0);
+
+        z3ExprRef head = bytes[0];
+        for(size_t i = 1; i < bytes.size(); ++i) {
+            head = z3::expr(ctx, Z3_mk_concat(ctx, head.get(), bytes[i]));
+        }
+
+        return head.get();
+    }
+
+    z3::expr byteArrayInsert(z3::expr arr, z3::expr ix, z3::expr bv) {
+        auto bytes = splitBytes(bv);
+        z3ExprRef ret = arr;
+        z3ExprRef ixs = ix;
+
+        for(z3ExprRef byte: bytes) {
+            ret = z3::store(ret, ixs, byte);
+            ixs = ixs.get() + 1;
+        }
+
+        return ret;
+    }
+
     z3::expr getExprForTerm(
             const Term& term) {
         return getExprByTypeAndName(term.getType(), term.getName());
