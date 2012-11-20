@@ -43,7 +43,7 @@ public:
     PredicateStateAnalysis();
     virtual bool runOnFunction(llvm::Function& F);
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-    virtual ~PredicateStateAnalysis();
+    virtual ~PredicateStateAnalysis() {};
 
     PredicateStateMap& getPredicateStateMap() {
         return predicateStateMap;

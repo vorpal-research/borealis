@@ -32,19 +32,19 @@ class PredicateAnalysis: public llvm::FunctionPass {
 
 public:
 
-	typedef std::map<const llvm::Instruction*, Predicate*> PredicateMap;
-	typedef std::pair<const llvm::Instruction*, Predicate*> PredicateMapEntry;
+	typedef std::map<const llvm::Instruction*, Predicate::Ptr> PredicateMap;
+	typedef std::pair<const llvm::Instruction*, Predicate::Ptr> PredicateMapEntry;
 
 	typedef std::pair<const llvm::TerminatorInst*, const llvm::BasicBlock*> TerminatorBranch;
-	typedef std::map<TerminatorBranch, Predicate*> TerminatorPredicateMap;
-	typedef std::pair<TerminatorBranch, Predicate*> TerminatorPredicateMapEntry;
+	typedef std::map<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMap;
+	typedef std::pair<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMapEntry;
 
 	static char ID;
 
 	PredicateAnalysis();
 	virtual bool runOnFunction(llvm::Function& F);
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-	virtual ~PredicateAnalysis();
+	virtual ~PredicateAnalysis() {};
 
 	PredicateMap& getPredicateMap() {
 		return PM;

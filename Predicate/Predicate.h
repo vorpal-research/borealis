@@ -40,6 +40,8 @@ class Predicate {
 
 public:
 
+    typedef std::shared_ptr<const Predicate> Ptr;
+
     typedef std::pair<size_t, Term::id_t> Key;
     struct KeyHash {
     public:

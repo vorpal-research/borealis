@@ -31,12 +31,12 @@ public:
     const PredicateState& operator=(const PredicateState& state);
     const PredicateState& operator=(PredicateState&& state);
 
-    PredicateState addPredicate(const Predicate* pred) const;
+    PredicateState addPredicate(Predicate::Ptr pred) const;
     PredicateState merge(const PredicateState& state) const;
 
     std::pair<z3::expr, z3::expr> toZ3(Z3ExprFactory& z3ef) const;
 
-    typedef std::unordered_map<Predicate::Key, const Predicate*, Predicate::KeyHash> Data;
+    typedef std::unordered_map<Predicate::Key, Predicate::Ptr, Predicate::KeyHash> Data;
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
 

@@ -115,8 +115,8 @@ void PredicateStateAnalysis::process(
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        const Predicate* truePred = tpm[std::make_pair(&I, trueSucc)];
-        const Predicate* falsePred = tpm[std::make_pair(&I, falseSucc)];
+        Predicate::Ptr truePred = tpm[std::make_pair(&I, trueSucc)];
+        Predicate::Ptr falsePred = tpm[std::make_pair(&I, falseSucc)];
 
         workQueue.push(std::make_pair(trueSucc, state.addPredicate(truePred)));
         workQueue.push(std::make_pair(falseSucc, state.addPredicate(falsePred)));
@@ -140,8 +140,6 @@ void PredicateStateAnalysis::removeUnreachableStates() {
         predicateStateMap[I] = psv.remove_if(isUnreachable);
     }
 }
-
-PredicateStateAnalysis::~PredicateStateAnalysis() {}
 
 char PredicateStateAnalysis::ID;
 static llvm::RegisterPass<PredicateStateAnalysis>

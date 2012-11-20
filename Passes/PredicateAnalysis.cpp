@@ -175,16 +175,6 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 	return false;
 }
 
-PredicateAnalysis::~PredicateAnalysis() {
-    for (const auto& entry : PM) {
-        delete entry.second;
-    }
-
-    for (const auto& entry : TPM) {
-        delete entry.second;
-    }
-}
-
 char PredicateAnalysis::ID;
 static llvm::RegisterPass<PredicateAnalysis>
 X("predicate", "Instruction predicate analysis");

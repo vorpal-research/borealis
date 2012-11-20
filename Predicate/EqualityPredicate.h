@@ -14,14 +14,12 @@
 
 namespace borealis {
 
+class PredicateFactory;
+
 class EqualityPredicate: public Predicate {
 
 public:
 
-    EqualityPredicate(
-            Term::Ptr lhv,
-            Term::Ptr rhv,
-            SlotTracker* st);
     virtual Predicate::Key getKey() const;
 
     virtual Dependee getDependee() const;
@@ -29,10 +27,17 @@ public:
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
+    friend class PredicateFactory;
+
 private:
 
     const Term::Ptr lhv;
     const Term::Ptr rhv;
+
+    EqualityPredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv,
+            SlotTracker* st);
 
 };
 

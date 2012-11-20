@@ -33,7 +33,7 @@ const PredicateState& PredicateState::operator=(PredicateState&& state) {
     return *this;
 }
 
-PredicateState PredicateState::addPredicate(const Predicate* pred) const {
+PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
     PredicateState res = PredicateState(*this);
 
     auto ds = Predicate::DependeeSet();

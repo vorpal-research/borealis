@@ -25,7 +25,7 @@ public:
     PredicateStateVector(bool _);
     PredicateStateVector(const PredicateStateVector& psv);
 
-    PredicateStateVector addPredicate(const Predicate* pred) const;
+    PredicateStateVector addPredicate(Predicate::Ptr pred) const;
     PredicateStateVector merge(const PredicateStateVector& psv) const;
 
     typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;

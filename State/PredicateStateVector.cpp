@@ -21,7 +21,7 @@ PredicateStateVector::PredicateStateVector(bool) {
 PredicateStateVector::PredicateStateVector(const PredicateStateVector& psv) : data(psv.data) {
 }
 
-PredicateStateVector PredicateStateVector::addPredicate(const Predicate* pred) const {
+PredicateStateVector PredicateStateVector::addPredicate(Predicate::Ptr pred) const {
     PredicateStateVector res = PredicateStateVector();
     for (const auto& state : this->data) {
         res.data.insert(state.addPredicate(pred));
