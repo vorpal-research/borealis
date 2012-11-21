@@ -27,6 +27,23 @@ public:
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
+    static bool classof(const Predicate* p) {
+        return p->getPredicateTypeId() == type_id<ICmpPredicate>();
+    }
+
+    static bool classof(const ICmpPredicate* /* p */) {
+        return true;
+    }
+
+    template<class SubClass>
+    const ICmpPredicate* accept(Transformer<SubClass>* t) {
+        return new ICmpPredicate(
+                t->transform(lhv),
+                t->transform(op1),
+                t->transform(op2),
+                cond);
+    }
+
     friend class PredicateFactory;
 
 private:
@@ -37,6 +54,12 @@ private:
 
     const int cond;
     const std::string _cond;
+
+    ICmpPredicate(
+            Term::Ptr lhv,
+            Term::Ptr op1,
+            Term::Ptr op2,
+            int cond);
 
     ICmpPredicate(
             Term::Ptr lhv,

@@ -9,9 +9,12 @@
 
 namespace borealis {
 
-Predicate::Predicate() : Predicate(PredicateType::STATE) {}
+Predicate::Predicate(borealis::id_t predicate_type_id) :
+        Predicate(predicate_type_id, PredicateType::STATE) {}
 
-Predicate::Predicate(const PredicateType type) : type(type) {}
+Predicate::Predicate(borealis::id_t predicate_type_id, PredicateType type) :
+        predicate_type_id(predicate_type_id),
+        type(type) {}
 
 Predicate::~Predicate() {}
 

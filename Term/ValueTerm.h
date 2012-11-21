@@ -32,14 +32,20 @@ public:
         return true;
     }
 
+    llvm::Value* getValue() const {
+        return v;
+    }
+
     friend class TermFactory;
     friend class GEPPredicate;
 
 private:
 
-    ValueTerm(const llvm::Value* v, SlotTracker* st) :
+    ValueTerm(llvm::Value* v, SlotTracker* st) :
         Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
-    {}
+    { this->v = v; }
+
+    llvm::Value* v;
 
 };
 

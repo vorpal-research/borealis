@@ -31,6 +31,10 @@ public:
         return true;
     }
 
+    llvm::Function* getFunction() const {
+        return F;
+    }
+
     friend class TermFactory;
 
 private:
@@ -42,7 +46,9 @@ private:
                 "\\result",
                 type_id(*this)
             )
-    {}
+    { this->F = F; }
+
+    llvm::Function* F;
 
 };
 

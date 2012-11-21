@@ -1,0 +1,12 @@
+#ifndef HANDLE_TERM
+#define HANDLE_TERM(NAME, CLASS)
+#endif
+
+HANDLE_TERM(Argument, ArgumentTerm)
+HANDLE_TERM(Const, ConstTerm)
+HANDLE_TERM(ReturnValue, ReturnValueTerm)
+HANDLE_TERM(Value, ValueTerm)
+
+#ifdef HANDLE_TERM
+#undef HANDLE_TERM
+#endif

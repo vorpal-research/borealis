@@ -8,6 +8,8 @@
 #ifndef ARGUMENTTERM_H_
 #define ARGUMENTTERM_H_
 
+#include <llvm/Argument.h>
+
 #include "Term.h"
 #include "Util/slottracker.h"
 
@@ -29,13 +31,19 @@ public:
         return true;
     }
 
+    llvm::Argument* getArgument() const {
+        return a;
+    }
+
     friend class TermFactory;
 
 private:
 
-    ArgumentTerm(const llvm::Value* v, SlotTracker* st) :
-        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
-    {}
+    ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
+        Term((id_t)a, llvm::valueType(*a), st->getLocalName(a), type_id(*this))
+    { this->a = a; }
+
+    llvm::Argument* a;
 
 };
 

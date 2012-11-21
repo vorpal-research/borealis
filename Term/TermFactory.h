@@ -24,7 +24,7 @@ class TermFactory {
 
 public:
 
-    Term::Ptr getArgumentTerm(llvm::Value* v) {
+    Term::Ptr getArgumentTerm(llvm::Argument* v) {
         return Term::Ptr(new ArgumentTerm(v, slotTracker));
     }
 

@@ -15,10 +15,27 @@ namespace borealis {
 GEPPredicate::GEPPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts,
-        SlotTracker* st) :
-                        lhv(std::move(lhv)),
-                        rhv(std::move(rhv)) {
+        std::vector< std::pair< Term::Ptr, Term::Ptr > >&& shifts) : Predicate(type_id(*this)),
+            lhv(std::move(lhv)),
+            rhv(std::move(rhv)),
+            shifts(std::move(shifts)) {
+
+    std::string a = "0";
+    for (const auto& shift : shifts) {
+        a = a + "+" + shift.first->getName() + "*" + shift.second->getName();
+    }
+
+    this->asString =
+            this->lhv->getName() + "=gep(" + this->rhv->getName() + "," + a + ")";
+}
+
+GEPPredicate::GEPPredicate(
+        Term::Ptr lhv,
+        Term::Ptr rhv,
+        std::vector< std::pair<llvm::Value*, uint64_t> > shifts,
+        SlotTracker* st) : Predicate(type_id(*this)),
+            lhv(std::move(lhv)),
+            rhv(std::move(rhv)) {
 
     std::string a = "0";
     for (const auto& shift : shifts) {

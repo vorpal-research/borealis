@@ -13,10 +13,18 @@ namespace borealis {
 
 StorePredicate::StorePredicate(
         Term::Ptr lhv,
+        Term::Ptr rhv) : Predicate(type_id(*this)),
+            lhv(std::move(lhv)),
+            rhv(std::move(rhv)) {
+    this->asString = "*" + this->lhv->getName() + "=" + this->rhv->getName();
+}
+
+StorePredicate::StorePredicate(
+        Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* /* st */) :
-				        lhv(std::move(lhv)),
-				        rhv(std::move(rhv)) {
+        SlotTracker* /* st */) : Predicate(type_id(*this)),
+            lhv(std::move(lhv)),
+            rhv(std::move(rhv)) {
     this->asString = "*" + this->lhv->getName() + "=" + this->rhv->getName();
 }
 

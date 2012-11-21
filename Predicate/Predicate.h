@@ -65,8 +65,8 @@ public:
     };
     typedef std::unordered_set<Dependee, DependeeHash> DependeeSet;
 
-    Predicate();
-    Predicate(const PredicateType type);
+    Predicate(borealis::id_t predicate_type_id);
+    Predicate(borealis::id_t predicate_type_id, PredicateType type);
     virtual ~Predicate() = 0;
     virtual Key getKey() const = 0;
 
@@ -83,10 +83,19 @@ public:
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef) const = 0;
 
+    static bool classof(const Predicate* /* t */) {
+        return true;
+    }
+
+    inline borealis::id_t getPredicateTypeId() const {
+        return predicate_type_id;
+    }
+
 protected:
 
-    std::string asString;
+    borealis::id_t predicate_type_id;
     PredicateType type;
+    std::string asString;
 
 };
 

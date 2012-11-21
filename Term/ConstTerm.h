@@ -30,6 +30,14 @@ public:
         return true;
     }
 
+    llvm::ValueType getType() const {
+        return type;
+    }
+
+    const std::string& getName() const {
+        return name;
+    }
+
     friend class TermFactory;
     friend class BooleanPredicate;
     friend class GEPPredicate;
@@ -37,8 +45,12 @@ public:
 private:
 
     ConstTerm(llvm::ValueType type, const std::string& name) :
-        Term(0, type, name, type_id(*this))
-    {}
+        Term(0, type, name, type_id(*this)),
+        name(name)
+    { this->type = type; }
+
+    llvm::ValueType type;
+    const std::string name;
 
 };
 

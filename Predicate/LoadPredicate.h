@@ -27,12 +27,31 @@ public:
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
+    static bool classof(const Predicate* p) {
+        return p->getPredicateTypeId() == type_id<LoadPredicate>();
+    }
+
+    static bool classof(const LoadPredicate* /* p */) {
+        return true;
+    }
+
+    template<class SubClass>
+    const LoadPredicate* accept(Transformer<SubClass>* t) {
+        return new LoadPredicate(
+                t->transform(lhv),
+                t->transform(rhv));
+    }
+
     friend class PredicateFactory;
 
 private:
 
     const Term::Ptr lhv;
     const Term::Ptr rhv;
+
+    LoadPredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv);
 
     LoadPredicate(
             Term::Ptr lhv,

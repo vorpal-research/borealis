@@ -27,12 +27,31 @@ public:
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
 
+    static bool classof(const Predicate* p) {
+        return p->getPredicateTypeId() == type_id<EqualityPredicate>();
+    }
+
+    static bool classof(const EqualityPredicate* /* p */) {
+        return true;
+    }
+
+    template<class SubClass>
+    const EqualityPredicate* accept(Transformer<SubClass>* t) {
+        return new EqualityPredicate(
+                t->transform(lhv),
+                t->transform(rhv));
+    }
+
     friend class PredicateFactory;
 
 private:
 
     const Term::Ptr lhv;
     const Term::Ptr rhv;
+
+    EqualityPredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv);
 
     EqualityPredicate(
             Term::Ptr lhv,

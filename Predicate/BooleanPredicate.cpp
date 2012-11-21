@@ -14,8 +14,16 @@ namespace borealis {
 
 BooleanPredicate::BooleanPredicate(
         Term::Ptr v,
+        Term::Ptr b) : Predicate(type_id(*this)),
+            v(std::move(v)),
+            b(std::move(b)) {
+    this->asString = this->v->getName() + "=" + this->b->getName();
+}
+
+BooleanPredicate::BooleanPredicate(
+        Term::Ptr v,
         bool b,
-        SlotTracker* /* st */) :
+        SlotTracker* /* st */) : Predicate(type_id(*this)),
 	        v(std::move(v)),
 	        b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
     this->asString = this->v->getName() + "=" + this->b->getName();

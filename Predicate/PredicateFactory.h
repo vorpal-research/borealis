@@ -58,7 +58,7 @@ public:
     Predicate::Ptr getGEPPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            const std::vector< std::pair<const llvm::Value*, uint64_t> > shifts) {
+            std::vector< std::pair<llvm::Value*, uint64_t> > shifts) {
         return Predicate::Ptr(
                 new GEPPredicate(std::move(lhv), std::move(rhv), shifts, slotTracker));
     }

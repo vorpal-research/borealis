@@ -21,13 +21,29 @@ ICmpPredicate::ICmpPredicate(
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
+        int cond) : Predicate(type_id(*this)),
+            lhv(std::move(lhv)),
+            op1(std::move(op1)),
+            op2(std::move(op2)),
+            cond(cond),
+            _cond(conditionString(cond)) {
+
+    this->asString =
+            this->lhv->getName() + "=" + this->op1->getName() + _cond + this->op2->getName();
+}
+
+ICmpPredicate::ICmpPredicate(
+        Term::Ptr lhv,
+        Term::Ptr op1,
+        Term::Ptr op2,
         int cond,
-        SlotTracker* /* st */) :
-				        lhv(std::move(lhv)),
-				        op1(std::move(op1)),
-				        op2(std::move(op2)),
-				        cond(cond),
-				        _cond(conditionString(cond)) {
+        SlotTracker* /* st */) : Predicate(type_id(*this)),
+            lhv(std::move(lhv)),
+            op1(std::move(op1)),
+            op2(std::move(op2)),
+            cond(cond),
+            _cond(conditionString(cond)) {
+
     this->asString =
             this->lhv->getName() + "=" + this->op1->getName() + _cond + this->op2->getName();
 }
