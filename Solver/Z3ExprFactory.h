@@ -76,24 +76,19 @@ public:
         return ctx.real_val(v.c_str());
     }
 
-    z3::expr getEmptyMemoryArray(const std::string& name) {
+    z3::expr getEmptyMemoryArray() {
         using z3::sort;
 
         sort ptr_s = getPtrSort();
-        sort byte_s = ctx.bv_sort(8);
-        sort array_s = ctx.array_sort(ptr_s, byte_s);
 
-
-
-        return ctx.constant(name.c_str(), array_s);
+        return z3::const_array(ptr_s, ctx.bv_val(0xff, 8));
     }
 
     z3::expr getMemoryArray(
-            const std::string& name,
             const std::vector<std::pair<z3::expr, z3::expr>>& contents) {
         using z3::sort;
 
-        z3::expr arr = getEmptyMemoryArray(name);
+        z3::expr arr = getEmptyMemoryArray();
 
         for(const auto& iv: contents) {
             arr = z3::store(arr, iv.first, iv.second);
@@ -107,7 +102,8 @@ public:
         std::vector<z3::expr> ret;
 
         for(size_t ix = 0; ix < bits; ix+=8) {
-            ret.push_back( z3::to_expr(ctx, Z3_mk_extract(ctx, ix+8, ix, bv)) );
+            z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+7, ix, bv));
+            ret.push_back(e);
         }
 
         return ret;
@@ -136,11 +132,11 @@ public:
     };
 
     z3::expr concatBytes(const std::vector<z3::expr>& bytes) {
-        if(bytes.empty()) return ctx.bv_val(0,0);
+        if(bytes.empty()) return ctx.bv_val(0,1);
 
         z3ExprRef head = bytes[0];
         for(size_t i = 1; i < bytes.size(); ++i) {
-            head = z3::expr(ctx, Z3_mk_concat(ctx, head.get(), bytes[i]));
+            head = z3::expr(ctx, Z3_mk_concat(ctx, bytes[i], head.get()));
         }
 
         return head.get();
@@ -150,13 +146,23 @@ public:
         auto bytes = splitBytes(bv);
         z3ExprRef ret = arr;
         z3ExprRef ixs = ix;
+        int sh = 0;
 
         for(z3ExprRef byte: bytes) {
-            ret = z3::store(ret, ixs, byte);
-            ixs = ixs.get() + 1;
+            ret = z3::store(ret, ixs.get() + sh, byte);
+            sh++;
         }
 
         return ret;
+    }
+
+    z3::expr byteArrayExtract(z3::expr arr, z3::expr ix, unsigned sz) {
+        std::vector<z3::expr> ret;
+
+        for(unsigned i = 0; i < sz; ++i) {
+            ret.push_back(z3::select(arr, ix+i));
+        }
+        return concatBytes(ret);
     }
 
     z3::expr getExprForTerm(
