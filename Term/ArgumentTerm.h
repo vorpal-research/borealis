@@ -21,8 +21,6 @@ class ArgumentTerm: public borealis::Term {
 
 public:
 
-    virtual ~ArgumentTerm() {};
-
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ArgumentTerm>();
     }

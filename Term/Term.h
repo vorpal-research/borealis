@@ -24,23 +24,21 @@ public:
         id(id), type(type), name(name), term_type_id(term_type_id)
     {}
 
-    virtual id_t getId() const {
+    id_t getId() const {
         return id;
     }
 
-    virtual llvm::ValueType getType() const {
+    llvm::ValueType getType() const {
         return type;
     }
 
-    virtual const std::string& getName() const {
+    const std::string& getName() const {
         return name;
     }
 
     static bool classof(const Term* /* t */) {
         return true;
     }
-
-    virtual ~Term() {};
 
     inline borealis::id_t getTermTypeId() const {
         return term_type_id;

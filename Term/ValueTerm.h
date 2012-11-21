@@ -22,8 +22,6 @@ class ValueTerm: public borealis::Term {
 
 public:
 
-    virtual ~ValueTerm() {};
-
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ValueTerm>();
     }

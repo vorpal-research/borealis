@@ -20,8 +20,6 @@ class ConstTerm: public borealis::Term {
 
 public:
 
-    virtual ~ConstTerm() {};
-
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ConstTerm>();
     }

@@ -36,6 +36,10 @@ enum class DependeeType {
     DEREF_VALUE = 7
 };
 
+// Forward declaration
+template<class SubClass>
+class Transformer;
+
 class Predicate {
 
 public:
