@@ -27,8 +27,7 @@ public:
 
     using llvm::InstVisitor<RegularDetectNullInstVisitor>::visit;
 
-    RegularDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {
-    }
+    RegularDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {}
 
     void visit(llvm::Instruction& I) {
         using llvm::Value;
