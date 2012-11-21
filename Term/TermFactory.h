@@ -24,16 +24,16 @@ class TermFactory {
 
 public:
 
-    Term::Ptr getArgumentTerm(llvm::Argument* v) {
-        return Term::Ptr(new ArgumentTerm(v, slotTracker));
+    Term::Ptr getArgumentTerm(llvm::Argument* a) {
+        return Term::Ptr(new ArgumentTerm(a, slotTracker));
     }
 
     Term::Ptr getConstTerm(llvm::ValueType type, const std::string& name) {
         return Term::Ptr(new ConstTerm(type, name));
     }
 
-    Term::Ptr getReturnValueTerm(llvm::Function* f) {
-        return Term::Ptr(new ReturnValueTerm(f, slotTracker));
+    Term::Ptr getReturnValueTerm(llvm::Function* F) {
+        return Term::Ptr(new ReturnValueTerm(F, slotTracker));
     }
 
     Term::Ptr getValueTerm(llvm::Value* v) {
