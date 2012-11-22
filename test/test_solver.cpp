@@ -14,9 +14,9 @@
 namespace {
 
 using namespace borealis;
+using namespace borealis::logging;
 using namespace borealis::util;
 using namespace borealis::util::streams;
-using namespace borealis::logging;
 
 static stream_t infos() {
     return infosFor("test");
@@ -27,7 +27,7 @@ TEST(Z3ExprFactory, getMemoryArray) {
     {
         z3::context con;
         borealis::Z3ExprFactory factory(con);
-        auto mkbyte = [&con](int val){ return con.bv_val(val, 8); };
+        auto mkbyte = [&](int val){ return con.bv_val(val, 8); };
         auto mkptr = [&](int val){ return con.bv_val(val, factory.getPtrSort().bv_size()); };
         auto check_expr = [&](z3::expr e)->bool {
             z3::solver solver(e.ctx());
@@ -35,14 +35,13 @@ TEST(Z3ExprFactory, getMemoryArray) {
             return solver.check() == z3::unsat;
         };
 
-
         EXPECT_NO_THROW(factory.getEmptyMemoryArray());
         EXPECT_NO_FATAL_FAILURE(factory.getEmptyMemoryArray());
 
         auto arr = factory.getEmptyMemoryArray();
 
         // empty mem is filled with 0xff's
-        for(int i = 0; i < 152; i+=7) {
+        for (int i = 0; i < 153; i+=7) {
             EXPECT_TRUE(check_expr(z3::select(arr, i) == mkbyte(0xff)));
         }
 
@@ -57,18 +56,16 @@ TEST(Z3ExprFactory, getMemoryArray) {
         EXPECT_TRUE(check_expr(z3::select(filled, 33) == mkbyte(0xbf)));
         EXPECT_TRUE(check_expr(z3::select(filled, 988) == mkbyte(0xba)));
         EXPECT_TRUE(check_expr(z3::select(filled, 529) == mkbyte(0xff)));
-
     }
 
 }
 
 TEST(Z3ExprFactory, byteFucking) {
 
-
     {
         z3::context con;
         borealis::Z3ExprFactory factory(con);
-        auto mkbyte = [&con](int val){ return con.bv_val(val, 8); };
+        auto mkbyte = [&](int val){ return con.bv_val(val, 8); };
         auto mkptr = [&](int val){ return con.bv_val(val, factory.getPtrSort().bv_size()); };
         auto check_expr = [&](z3::expr e)->bool {
             z3::solver solver(e.ctx());
@@ -103,7 +100,7 @@ TEST(Z3ExprFactory, byteFucking) {
         }
 
         {
-            // concating an empty vector results in 1-bit zero bv
+            // concatenating an empty vector results in 1-bit zero bv
             auto single = factory.concatBytes(std::vector<z3::expr>());
             EXPECT_TRUE(check_expr(single == con.bv_val(0,1)));
         }
@@ -114,9 +111,7 @@ TEST(Z3ExprFactory, byteFucking) {
             EXPECT_TRUE(check_expr(mem != filled));
 
             auto extr = factory.byteArrayExtract(filled, mkptr(26), 4);
-
             EXPECT_TRUE(check_expr(extr == con.bv_val(0xcafebabe, 32)));
-
         }
     }
 

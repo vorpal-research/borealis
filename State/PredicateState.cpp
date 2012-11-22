@@ -7,6 +7,8 @@
 
 #include "PredicateState.h"
 
+#include "Solver/Z3Context.h"
+
 namespace borealis {
 
 using util::contains;
@@ -36,41 +38,29 @@ const PredicateState& PredicateState::operator=(PredicateState&& state) {
 PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
     PredicateState res = PredicateState(*this);
 
+    if(contains(data, pred)) return res;
+
     auto ds = Predicate::DependeeSet();
     ds.insert(pred->getDependee());
     res.removeDependants(ds);
 
-    res.data[pred->getKey()] = pred;
-    return res;
-}
-
-PredicateState PredicateState::merge(const PredicateState& state) const {
-    PredicateState res = PredicateState(*this);
-
-    auto ds = Predicate::DependeeSet();
-    for (const auto& p : state) {
-        ds.insert(p.second->getDependee());
-    }
-    res.removeDependants(ds);
-
-    for (const auto& entry : state) {
-        res.data[entry.first] = entry.second;
-    }
+    res.data.push_back(pred);
     return res;
 }
 
 std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
+    Z3Context ctx(z3ef);
+
     auto path = std::vector<expr>();
     auto state = std::vector<expr>();
 
-    for(auto& entry : data) {
-        auto v = entry.second;
+    for(auto& v : data) {
         if (v->getType() == PredicateType::PATH) {
-            path.push_back(v->toZ3(z3ef));
+            path.push_back(v->toZ3(z3ef, &ctx));
         } else if (v->getType() == PredicateType::STATE) {
-            state.push_back(v->toZ3(z3ef));
+            state.push_back(v->toZ3(z3ef, &ctx));
         }
     }
 
@@ -79,7 +69,7 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
         p = p && e;
     }
 
-    auto s = z3ef.getBoolConst(true);;
+    auto s = z3ef.getBoolConst(true);
     for (const auto& e : state) {
         s = s && e;
     }
@@ -94,7 +84,7 @@ void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
         next:
         if (iter == data.end()) break;
         auto e = *iter;
-        auto ds = e.second->getDependees();
+        auto ds = e->getDependees();
         for (const auto& d : ds) {
             if (contains(dependees, d)) {
                 iter = data.erase(iter);

@@ -61,7 +61,7 @@ public:
     virtual void onIntConstant(int v) {
         if(fucked_up) return;
 
-        assign( z3ef.getIntConst(v) );
+        assign( z3ef.getIntConst(v, 64) ); // FIXME
     }
     virtual void onBoolConstant(bool v) {
         if(fucked_up) return;

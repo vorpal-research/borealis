@@ -63,7 +63,7 @@ Predicate::DependeeSet ICmpPredicate::getDependees() const {
     return res;
 }
 
-z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef) const {
+z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context*) const {
     using namespace::z3;
 
     expr l = z3ef.getExprForTerm(*lhv);

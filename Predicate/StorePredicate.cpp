@@ -8,6 +8,7 @@
 #include "StorePredicate.h"
 
 #include "Term/ValueTerm.h"
+#include "Logging/logger.hpp"
 
 namespace borealis {
 
@@ -42,17 +43,20 @@ Predicate::DependeeSet StorePredicate::getDependees() const {
     return res;
 }
 
-z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef) const {
+z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
     using namespace::z3;
 
     expr l = z3ef.getExprForTerm(*lhv);
     expr r = z3ef.getExprForTerm(*rhv);
+    infos() << " | " << l << " => " << l.simplify() << endl;
+    infos() << " | " << r << " => " << r.simplify() << endl;
 
-    sort domain = l.get_sort();
-    sort range = r.get_sort();
-    func_decl deref = z3ef.getDerefFunction(domain, range);
-
-    return deref(l) == r;
+    if(z3ctx) {
+        z3ctx->mutateMemory([&](expr mem){
+            return z3ef.byteArrayInsert(mem, l, r);
+        });
+    }
+    return z3ef.getBoolConst(true);
 }
 
 } /* namespace borealis */

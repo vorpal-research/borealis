@@ -66,22 +66,23 @@ Predicate::DependeeSet GEPPredicate::getDependees() const {
     return res;
 }
 
-z3::expr GEPPredicate::toZ3(Z3ExprFactory& z3ef) const {
+z3::expr GEPPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context*) const {
     using namespace::z3;
 
     expr l = z3ef.getExprForTerm(*lhv);
     expr r = z3ef.getExprForTerm(*rhv);
 
-    func_decl gep = z3ef.getGEPFunction();
+    size_t ptrsize = z3ef.getPtrSort().bv_size();
 
-    expr shift = z3ef.getIntConst(0);
+    expr shift = z3ef.getIntConst(0, ptrsize);
+
     for (const auto& s : shifts) {
-        expr by = z3ef.getExprForTerm(*s.first);
-        expr size = z3ef.getExprForTerm(*s.second);;
+        expr by = z3ef.getExprForTerm(*s.first, ptrsize);
+        expr size = z3ef.getExprForTerm(*s.second, ptrsize);
         shift = shift + by * size;
     }
 
-    return l == gep(r, shift);
+    return l == (r + shift);
 }
 
 } /* namespace borealis */

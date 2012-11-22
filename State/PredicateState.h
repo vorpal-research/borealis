@@ -32,13 +32,26 @@ public:
     const PredicateState& operator=(PredicateState&& state);
 
     PredicateState addPredicate(Predicate::Ptr pred) const;
-    PredicateState merge(const PredicateState& state) const;
 
     std::pair<z3::expr, z3::expr> toZ3(Z3ExprFactory& z3ef) const;
 
-    typedef std::unordered_map<Predicate::Key, Predicate::Ptr, Predicate::KeyHash> Data;
+    typedef std::list<Predicate::Ptr> Data;
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
+
+    struct Hash {
+        static size_t hash(const PredicateState& state) {
+            size_t h = 17;
+            for (const auto& e : state) {
+                h = 3 * (size_t)e.get() + h;
+            }
+            return h;
+        }
+
+        size_t operator()(const PredicateState& state) const {
+            return hash(state);
+        }
+    };
 
     typedef std::set<std::string> SortedData;
 
@@ -50,24 +63,10 @@ public:
         return data == other.data;
     }
 
-    struct Hash {
-    public:
-        static size_t hash(const PredicateState& ps) {
-            size_t res = 17;
-            for (const auto& entry : ps) {
-                res = res ^ Predicate::KeyHash::hash(entry.first);
-            }
-            return res;
-        }
-        size_t operator()(const PredicateState& ps) const {
-            return hash(ps);
-        }
-    };
-
     SortedData sorted() const {
         SortedData res;
         for (auto& e : data) {
-            res.insert(e.second->toString());
+            res.insert(e->toString());
         }
         return res;
     }

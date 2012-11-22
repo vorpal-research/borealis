@@ -42,17 +42,18 @@ Predicate::DependeeSet LoadPredicate::getDependees() const {
     return res;
 }
 
-z3::expr LoadPredicate::toZ3(Z3ExprFactory& z3ef) const {
+z3::expr LoadPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
     using namespace::z3;
 
     expr l = z3ef.getExprForTerm(*lhv);
     expr r = z3ef.getExprForTerm(*rhv);
 
-    sort domain = r.get_sort();
-    sort range = l.get_sort();
-    func_decl deref = z3ef.getDerefFunction(domain, range);
+    if(z3ctx) {
+        z3::expr mem = z3ctx->getCurrentMemoryContents();
+        return z3ef.byteArrayExtract(mem, r, l.get_sort().bv_size()/8) == l;
+    }
 
-    return l == deref(r);
+    return z3ef.getBoolConst(true);
 }
 
 } /* namespace borealis */

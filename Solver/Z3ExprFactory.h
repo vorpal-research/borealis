@@ -48,49 +48,49 @@ public:
         return ctx.bool_val(v.c_str());
     }
 
-    z3::expr getIntVar(const std::string& name) {
-        return ctx.int_const(name.c_str());
+    z3::expr getIntVar(const std::string& name, size_t bits) {
+        return ctx.bv_const(name.c_str(), bits);
     }
 
-    z3::expr getIntConst(int v) {
-        return ctx.int_val(v);
+    z3::expr getIntConst(int v, size_t bits) {
+        return ctx.bv_val(v, bits);
     }
 
-    z3::expr getIntConst(const std::string& v) {
-        return ctx.int_val(v.c_str());
+    z3::expr getIntConst(const std::string& v, size_t bits) {
+        return ctx.bv_val(v.c_str(), bits);
     }
 
+
+    // FIXME: do smth with reals
     z3::expr getRealVar(const std::string& name) {
-        return ctx.real_const(name.c_str());
+        return ctx.bv_const(name.c_str(), 64);
     }
 
     z3::expr getRealConst(int v) {
-        return ctx.real_val(v);
+        return ctx.bv_val(v, 64);
     }
 
     z3::expr getRealConst(double v) {
-        return getRealConst(util::toString(v));
+        return ctx.bv_val((long long)v, 64);
     }
 
     z3::expr getRealConst(const std::string& v) {
-        return ctx.real_val(v.c_str());
+        std::istringstream buf(v);
+        double dbl;
+        buf >> dbl;
+
+        return getRealConst(dbl);
     }
 
     z3::expr getEmptyMemoryArray() {
-        using z3::sort;
-
-        sort ptr_s = getPtrSort();
-
-        return z3::const_array(ptr_s, ctx.bv_val(0xff, 8));
+        return z3::const_array(getPtrSort(), ctx.bv_val(0xff, 8));
     }
 
     z3::expr getMemoryArray(
             const std::vector<std::pair<z3::expr, z3::expr>>& contents) {
-        using z3::sort;
-
         z3::expr arr = getEmptyMemoryArray();
 
-        for(const auto& iv: contents) {
+        for(const auto& iv : contents) {
             arr = z3::store(arr, iv.first, iv.second);
         }
 
@@ -101,7 +101,7 @@ public:
         size_t bits = bv.get_sort().bv_size();
         std::vector<z3::expr> ret;
 
-        for(size_t ix = 0; ix < bits; ix+=8) {
+        for (size_t ix = 0; ix < bits; ix+=8) {
             z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+7, ix, bv));
             ret.push_back(e);
         }
@@ -112,10 +112,10 @@ public:
     // a hack: CopyAssignable reference to non-CopyAssignable object
     // (z3::expr is CopyConstructible, but not CopyAssignable, so no
     // accumulator-like shit is possible with it)
-    struct z3ExprRef{
+    struct z3ExprRef {
         std::unique_ptr<z3::expr> inner;
-        z3ExprRef(z3::expr e): inner(new z3::expr(e)) {};
-        z3ExprRef(const z3ExprRef& ref): inner(new z3::expr(*ref.inner)) {};
+        z3ExprRef(z3::expr e) : inner(new z3::expr(e)) {};
+        z3ExprRef(const z3ExprRef& ref) : inner(new z3::expr(*ref.inner)) {};
 
         z3ExprRef& operator=(const z3ExprRef& ref) {
             inner.reset(new z3::expr(*ref.inner));
@@ -132,10 +132,10 @@ public:
     };
 
     z3::expr concatBytes(const std::vector<z3::expr>& bytes) {
-        if(bytes.empty()) return ctx.bv_val(0,1);
+        if (bytes.empty()) return ctx.bv_val(0,1);
 
         z3ExprRef head = bytes[0];
-        for(size_t i = 1; i < bytes.size(); ++i) {
+        for (size_t i = 1; i < bytes.size(); ++i) {
             head = z3::expr(ctx, Z3_mk_concat(ctx, bytes[i], head.get()));
         }
 
@@ -148,7 +148,7 @@ public:
         z3ExprRef ixs = ix;
         int sh = 0;
 
-        for(z3ExprRef byte: bytes) {
+        for (z3ExprRef byte : bytes) {
             ret = z3::store(ret, ixs.get() + sh, byte);
             sh++;
         }
@@ -160,14 +160,15 @@ public:
         std::vector<z3::expr> ret;
 
         for(unsigned i = 0; i < sz; ++i) {
-            ret.push_back(z3::select(arr, ix+i));
+            ret.push_back(z3::select(arr, ix + i));
         }
+
         return concatBytes(ret);
     }
 
     z3::expr getExprForTerm(
-            const Term& term) {
-        return getExprByTypeAndName(term.getType(), term.getName());
+            const Term& term, size_t bits = 0) {
+        return getExprByTypeAndName(term.getType(), term.getName(), bits);
     }
 
     z3::expr getExprForValue(
@@ -180,14 +181,15 @@ private:
 
     z3::expr getExprByTypeAndName(
             const llvm::ValueType type,
-            const std::string& name) {
+            const std::string& name,
+            size_t bitsize = 0) {
         using llvm::ValueType;
 
         switch(type) {
         case ValueType::INT_CONST:
-            return getIntConst(name);
+            return getIntConst(name, (!bitsize)?32:bitsize); // FIXME
         case ValueType::INT_VAR:
-            return getIntVar(name);
+            return getIntVar(name, (!bitsize)?32:bitsize); // FIXME
         case ValueType::REAL_CONST:
             return getRealConst(name);
         case ValueType::REAL_VAR:
