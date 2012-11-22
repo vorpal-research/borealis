@@ -15,7 +15,7 @@ namespace borealis {
 GEPPredicate::GEPPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        std::vector< std::pair< Term::Ptr, Term::Ptr > >&& shifts) : Predicate(type_id(*this)),
+        std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts) : Predicate(type_id(*this)),
             lhv(std::move(lhv)),
             rhv(std::move(rhv)),
             shifts(std::move(shifts)) {

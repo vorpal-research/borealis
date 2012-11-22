@@ -36,11 +36,11 @@ public:
     }
 
     template<class SubClass>
-    const ICmpPredicate* accept(Transformer<SubClass>* t) {
+    const ICmpPredicate* accept(Transformer<SubClass>* t) const {
         return new ICmpPredicate(
-                t->transform(lhv),
-                t->transform(op1),
-                t->transform(op2),
+                Term::Ptr(t->transform(lhv.get())),
+                Term::Ptr(t->transform(op1.get())),
+                Term::Ptr(t->transform(op2.get())),
                 cond);
     }
 

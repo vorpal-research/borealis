@@ -36,10 +36,10 @@ public:
     }
 
     template<class SubClass>
-    const LoadPredicate* accept(Transformer<SubClass>* t) {
+    const LoadPredicate* accept(Transformer<SubClass>* t) const {
         return new LoadPredicate(
-                t->transform(lhv),
-                t->transform(rhv));
+                Term::Ptr(t->transform(lhv.get())),
+                Term::Ptr(t->transform(rhv.get())));
     }
 
     friend class PredicateFactory;

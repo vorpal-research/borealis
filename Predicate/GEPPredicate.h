@@ -37,19 +37,19 @@ public:
     }
 
     template<class SubClass>
-    const GEPPredicate* accept(Transformer<SubClass>* t) {
+    const GEPPredicate* accept(Transformer<SubClass>* t) const {
 
         std::vector< std::pair< Term::Ptr, Term::Ptr > > new_shifts(shifts.size());
         std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
-        [t](std::pair< Term::Ptr, Term::Ptr > e) {
+        [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
             return std::make_pair(
-                    t->transform(e.first),
-                    t->transform(e.second));
+                    Term::Ptr(t->transform(e.first.get())),
+                    Term::Ptr(t->transform(e.second.get())));
         });
 
         return new GEPPredicate(
-                t->transform(lhv),
-                t->transform(rhv),
+                Term::Ptr(t->transform(lhv.get())),
+                Term::Ptr(t->transform(rhv.get())),
                 new_shifts);
     }
 
@@ -64,7 +64,7 @@ private:
     GEPPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            std::vector< std::pair< Term::Ptr, Term::Ptr > >&& shifts);
+            std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts);
 
     GEPPredicate(
             Term::Ptr lhv,

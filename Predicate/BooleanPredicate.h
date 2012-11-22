@@ -37,10 +37,10 @@ public:
     }
 
     template<class SubClass>
-    const BooleanPredicate* accept(Transformer<SubClass>* t) {
+    const BooleanPredicate* accept(Transformer<SubClass>* t) const {
         return new BooleanPredicate(
-                t->transform(v),
-                t->transform(b));
+                Term::Ptr(t->transform(v.get())),
+                Term::Ptr(t->transform(b.get())));
     }
 
 	friend class PredicateFactory;

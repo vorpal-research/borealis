@@ -24,14 +24,12 @@ namespace borealis {
 
 #define DELEGATE(CLASS, WHAT) \
     return static_cast<SubClass*>(this)-> \
-        transform##CLASS(llvm::cast<const CLASS>(WHAT))
+        transform##CLASS(static_cast<const CLASS*>(WHAT))
 
 
 
 template<class SubClass>
 class Transformer {
-
-public:
 
     ////////////////////////////////////////////////////////////////////////////
     //
@@ -39,18 +37,22 @@ public:
     //
     ////////////////////////////////////////////////////////////////////////////
 
+public:
+
     Predicate::Ptr transform(Predicate::Ptr pred) {
         return Predicate::Ptr(transform(pred.get()));
     }
+
+protected:
 
     const Predicate* transform(const Predicate* pred) {
 #define HANDLE_PREDICATE(NAME, CLASS) \
         if (llvm::isa<CLASS>(pred)) { \
             return static_cast<SubClass*>(this)-> \
-                transform##NAME(llvm::cast<const CLASS>(pred)); \
+                transform##NAME(static_cast<const CLASS*>(pred)); \
         }
 #include "Predicate/Predicate.def"
-        return borealis::util::sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+        return borealis::util::sayonara<const Predicate*>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                 "Unsupported predicate type");
     }
 
@@ -73,18 +75,22 @@ public:
     //
     ////////////////////////////////////////////////////////////////////////////
 
+public:
+
     Term::Ptr transform(Term::Ptr term) {
         return Term::Ptr(transform(term.get()));
     }
+
+protected:
 
     const Term* transform(const Term* term) {
 #define HANDLE_TERM(NAME, CLASS) \
         if (llvm::isa<CLASS>(term)) { \
             return static_cast<SubClass*>(this)-> \
-                transform##NAME(llvm::cast<const CLASS>(term)); \
+                transform##NAME(static_cast<const CLASS*>(term)); \
         }
 #include "Term/Term.def"
-        return borealis::util::sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+        return borealis::util::sayonara<const Term*>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                 "Unsupported term type");
     }
 
@@ -96,10 +102,19 @@ public:
 
 #define HANDLE_TERM(NAME, CLASS) \
     const Term* transform##CLASS(const CLASS* /* t */) { \
-        return borealis::util::sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__, \
+        return borealis::util::sayonara<const Term*>(__FILE__, __LINE__, __PRETTY_FUNCTION__, \
             "transform" #CLASS " has to be overridden"); \
     }
 #include "Term/Term.def"
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Friends
+    //
+    ////////////////////////////////////////////////////////////////////////////
+
+#define HANDLE_PREDICATE(NAME, CLASS) friend class CLASS;
+#include "Predicate/Predicate.def"
 
 };
 
