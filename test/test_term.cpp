@@ -5,6 +5,15 @@
  *      Author: ice-phoenix
  */
 
+#include <llvm/LLVMContext.h>
+#include <llvm/Argument.h>
+#include <llvm/Function.h>
+#include <llvm/Instruction.h>
+#include <llvm/Instructions.h>
+#include <llvm/Module.h>
+#include <llvm/Type.h>
+#include <llvm/Value.h>
+
 #include <gtest/gtest.h>
 
 #include "Term/ArgumentTerm.h"
@@ -25,18 +34,7 @@ TEST(Term, classof) {
 
     {
         using namespace borealis;
-
-        using llvm::LLVMContext;
-        using llvm::Argument;
-        using llvm::ArrayRef;
-        using llvm::Function;
-        using llvm::FunctionType;
-        using llvm::GlobalValue;
-        using llvm::Module;
-        using llvm::Type;
-        using llvm::Value;
-        using llvm::dyn_cast;
-        using llvm::isa;
+        using namespace llvm;
 
         LLVMContext& ctx = llvm::getGlobalContext();
         Module m("mock-module", ctx);
