@@ -28,7 +28,6 @@ public:
 
     CallSiteInitializer(
             llvm::CallInst& I,
-            PredicateFactory* PF,
             TermFactory* TF) {
         using llvm::Argument;
         using llvm::Value;
@@ -42,7 +41,6 @@ public:
             callSiteArguments[&formal] = actual;
         }
 
-        this->PF = PF;
         this->TF = TF;
     }
 
@@ -75,7 +73,6 @@ private:
     llvm::Value* returnValue;
     CallSiteArguments callSiteArguments;
 
-    PredicateFactory* PF;
     TermFactory* TF;
 
 };
