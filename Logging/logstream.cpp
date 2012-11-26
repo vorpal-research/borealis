@@ -12,6 +12,8 @@
 #include <log4cpp/Priority.hh>
 #include <log4cpp/PropertyConfigurator.hh>
 
+#include <z3/z3++.h>
+
 inline static log4cpp::Priority::PriorityLevel mapPriorities(borealis::logging::PriorityLevel pli) {
     typedef borealis::logging::PriorityLevel pl;
     typedef log4cpp::Priority::PriorityLevel rpl;
@@ -59,12 +61,17 @@ stream_t criticalsFor(const std::string& category) {
     return stream_t(getCat(category).critStream());
 }
 
+
 stream_t logsFor(PriorityLevel lvl, const std::string& category) {
     return stream_t(getCat(category) << mapPriorities(lvl));
 }
 
-void configureLoggingFacility(const std::string filename) {
+void configureLoggingFacility(const std::string& filename) {
     PropertyConfigurator::configure(filename);
+}
+
+void configureZ3Log(const std::string& filename) {
+    Z3_open_log(filename.c_str());
 }
 
 stream_t& endl(stream_t& st) {

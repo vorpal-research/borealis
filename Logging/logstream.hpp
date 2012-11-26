@@ -70,7 +70,8 @@ logstream logsFor(PriorityLevel lv, const std::string& category);
 logstream& endl(logstream&);
 logstream& end(logstream&);
 
-void configureLoggingFacility(const std::string filename);
+void configureLoggingFacility(const std::string& filename);
+void configureZ3Log(const std::string& filename);
 
 } // namespace logging
 } // namespace borealis

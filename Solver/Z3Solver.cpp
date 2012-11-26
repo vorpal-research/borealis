@@ -7,6 +7,9 @@
 
 #include "Z3Solver.h"
 
+#include "Logging/logger.hpp"
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 Z3Solver::Z3Solver(Z3ExprFactory& z3ef) : z3ef(z3ef) {}
@@ -14,59 +17,81 @@ Z3Solver::Z3Solver(Z3ExprFactory& z3ef) : z3ef(z3ef) {}
 z3::check_result Z3Solver::check(
         const Query& q,
         const PredicateState& state) {
+
+    TRACE_FUNC;
+
     using namespace::z3;
 
     solver s(z3ef.unwrap());
     addGEPAxioms(s);
 
     auto ss = state.toZ3(z3ef);
-    s.add(ss.first);
-    s.add(ss.second);
+    s.add(ss.first.simplify());
+    s.add(ss.second.simplify());
+
+    dbgs() << "  Path predicates: " << endl << ss.first.simplify() << endl;
+    dbgs() << "  State predicates: " << endl << ss.second.simplify() << endl;
 
     expr pred = z3ef.getBoolVar("$CHECK$");
     s.add(implies(pred, q.toZ3(z3ef)));
 
-    check_result r = s.check(1, &pred);
-    return r;
+    {
+        TRACE_BLOCK("Calling Z3 check");
+        check_result r = s.check(1, &pred);
+        return r;
+    }
 }
 
 bool Z3Solver::checkPathPredicates(
         const PredicateState& state) {
     using namespace::z3;
 
+    TRACE_FUNC;
+
     solver s(z3ef.unwrap());
     addGEPAxioms(s);
 
     auto ss = state.toZ3(z3ef);
-    s.add(ss.second);
+    s.add(ss.second.simplify());
+
+    dbgs() << "  Path predicates: " << endl << ss.first.simplify() << endl;
+    dbgs() << "  State predicates: " << endl << ss.second.simplify() << endl;
 
     expr pred = z3ef.getBoolVar("$CHECK$");
     s.add(implies(pred, ss.first));
 
-    check_result r = s.check(1, &pred);
-    return r != z3::unsat;
+    {
+        TRACE_BLOCK("Calling Z3 check");
+        check_result r = s.check(1, &pred);
+        return r != z3::unsat;
+    }
 }
 
 bool Z3Solver::checkSat(
         const Query& q,
         const PredicateState& state) {
+    TRACE_FUNC;
     return check(q, state) == z3::sat;
 }
 
 bool Z3Solver::checkUnsat(
         const Query& q,
         const PredicateState& state) {
+    TRACE_FUNC;
     return check(q, state) == z3::unsat;
 }
 
 bool Z3Solver::checkSatOrUnknown(
         const Query& q,
         const PredicateState& state) {
+    TRACE_FUNC;
     return check(q, state) != z3::unsat;
 }
 
 void Z3Solver::addGEPAxioms(z3::solver& s) {
     using namespace::z3;
+
+    TRACE_FUNC;
 
     auto& ctx = z3ef.unwrap();
 

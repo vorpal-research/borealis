@@ -86,6 +86,11 @@ int main(int argc, const char** argv)
         borealis::logging::configureLoggingFacility(*logCFG.get());
     }
 
+    auto z3log = cfg.getValue<std::string>("logging", "z3log");
+    if(!z3log.empty()) {
+        borealis::logging::configureZ3Log(*z3log.get());
+    }
+
     // arguments to pass to the clang front-end
     std::vector<const char *> args(argv,argv+argc);
 

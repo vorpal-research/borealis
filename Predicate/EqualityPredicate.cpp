@@ -45,6 +45,8 @@ Predicate::DependeeSet EqualityPredicate::getDependees() const {
 z3::expr EqualityPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context*) const {
     using namespace::z3;
 
+    TRACE_FUNC;
+
     expr l = z3ef.getExprForTerm(*lhv);
     expr r = z3ef.getExprForTerm(*rhv);
 

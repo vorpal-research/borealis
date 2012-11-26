@@ -28,15 +28,20 @@ private:
 protected:
 
     static stream_t dbgs() {
-        return dbgsFor(logger); }
+        return dbgsFor(logger);
+    }
     static stream_t infos() {
-        return infosFor(logger); }
+        return infosFor(logger);
+    }
     static stream_t warns() {
-        return warnsFor(logger); }
+        return warnsFor(logger);
+    }
     static stream_t errs() {
-        return errsFor(logger); }
+        return errsFor(logger);
+    }
     static stream_t criticals() {
-        return criticalsFor(logger); }
+        return criticalsFor(logger);
+    }
 
     static stream_t logs(priority_t ll = PriorityLevel::DEBUG) {
         return logsFor(ll, logger);

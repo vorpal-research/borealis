@@ -46,10 +46,10 @@ Predicate::DependeeSet StorePredicate::getDependees() const {
 z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
     using namespace::z3;
 
+    TRACE_FUNC;
+
     expr l = z3ef.getExprForTerm(*lhv);
     expr r = z3ef.getExprForTerm(*rhv);
-    infos() << " | " << l << " => " << l.simplify() << endl;
-    infos() << " | " << r << " => " << r.simplify() << endl;
 
     if(z3ctx) {
         z3ctx->mutateMemory([&](expr mem){

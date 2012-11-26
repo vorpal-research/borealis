@@ -2,7 +2,7 @@
 # Defs
 ################################################################################
 
-CXX := clang++
+CXX := clang++ # -stdlib=libc++
 
 LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine executionengine instcombine instrumentation interpreter ipa ipo jit linker mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld scalaropts selectiondag support tablegen target transformutils vectorize linker
 

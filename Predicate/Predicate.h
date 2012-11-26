@@ -17,6 +17,7 @@
 #include <unordered_set>
 
 #include "Logging/logger.hpp"
+#include "Logging/tracer.hpp"
 #include "Solver/Z3Context.h"
 #include "Solver/Z3ExprFactory.h"
 #include "Term/Term.h"
