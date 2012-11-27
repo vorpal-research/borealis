@@ -52,7 +52,7 @@ z3::expr LoadPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
 
     if(z3ctx) {
         z3::expr mem = z3ctx->getCurrentMemoryContents();
-        return z3ef.byteArrayExtract(mem, r, l.get_sort().bv_size()/8) == l;
+        return l == z3ef.byteArrayExtract(mem, r, l.get_sort().bv_size()/8);
     }
 
     return z3ef.getBoolConst(true);
