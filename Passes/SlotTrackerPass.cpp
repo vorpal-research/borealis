@@ -7,6 +7,8 @@
 
 #include "SlotTrackerPass.h"
 
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 bool SlotTrackerPass::doInitialization(llvm::Module& M) {
@@ -15,6 +17,7 @@ bool SlotTrackerPass::doInitialization(llvm::Module& M) {
 }
 
 bool SlotTrackerPass::runOnFunction(llvm::Function& F) {
+    TRACE_FUNC;
 	funcs[&F] = ptr_t(new SlotTracker(&F));
 	return false;
 }

@@ -8,6 +8,8 @@
 #include "PredicateAnalysis.h"
 #include "SlotTrackerPass.h"
 
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,6 +164,8 @@ void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 
 bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
 	using namespace::llvm;
+
+	TRACE_FUNC;
 
 	init();
 

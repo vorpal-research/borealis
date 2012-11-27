@@ -80,6 +80,8 @@ int main(int argc, const char** argv)
     using borealis::logging::log_entry;
     using borealis::util::streams::error;
 
+    const std::vector<std::string> empty;
+
     Config cfg("wrapper.conf");
     auto logCFG = cfg.getValue<std::string>("logging", "ini");
     if(!logCFG.empty()) {
@@ -89,6 +91,20 @@ int main(int argc, const char** argv)
     auto z3log = cfg.getValue<std::string>("logging", "z3log");
     if(!z3log.empty()) {
         borealis::logging::configureZ3Log(*z3log.get());
+    }
+
+    // args to supply to opt
+    auto opt_args = cfg.getValue< std::vector<std::string> >("opt", "load").getOrElse(empty);
+
+    size_t virt_argc = opt_args.size();
+    {
+
+        std::unique_ptr<const char*[]> virt_argv(new const char*[virt_argc]);
+        for(size_t i = 0U; i < virt_argc; ++i) {
+            virt_argv[i] = opt_args[i].c_str();
+        }
+
+        llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.get());
     }
 
     // arguments to pass to the clang front-end
@@ -157,7 +173,6 @@ int main(int argc, const char** argv)
     pm.add(new TargetData(&module));
 
 
-    const std::vector<std::string> empty;
     std::vector<StringRef> passes2run;
 
     auto prePasses = cfg.getValue< std::vector<std::string> >("passes", "pre").getOrElse(empty);
@@ -226,20 +241,6 @@ int main(int argc, const char** argv)
 
     using borealis::provideAsPass;
     pm.add(provideAsPass(Proc.get()));
-
-    // args to supply to opt
-    auto opt_args = cfg.getValue< std::vector<std::string> >("opt", "load").getOrElse(empty);
-
-    size_t virt_argc = opt_args.size();
-    {
-
-        std::unique_ptr<const char*[]> virt_argv(new const char*[virt_argc]);
-        for(size_t i = 0U; i < virt_argc; ++i) {
-            virt_argv[i] = opt_args[i].c_str();
-        }
-
-        llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.get());
-    }
 
     if (!passes2run.empty()) {
         for (const auto& pass : passes2run) {

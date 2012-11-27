@@ -14,6 +14,8 @@
 #include "Solver/Z3ExprFactory.h"
 #include "Solver/Z3Solver.h"
 
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 typedef PredicateAnalysis::PredicateMap PM;
@@ -29,6 +31,8 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
+    TRACE_FUNC;
+
     init();
 
     PA = &getAnalysis<PredicateAnalysis>();

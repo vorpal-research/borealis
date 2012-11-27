@@ -7,10 +7,14 @@
 
 #include "SourceLocationTracker.h"
 
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 	using namespace::llvm;
+
+	TRACE_FUNC;
 
 	// Get metadata about functions (subprograms)
 	llvm::DebugInfoFinder dif;

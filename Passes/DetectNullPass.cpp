@@ -10,6 +10,8 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/InstVisitor.h>
 
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 using namespace borealis::util;
@@ -146,6 +148,8 @@ void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
+    TRACE_FUNC;
+
 	init();
 
 	RegularDetectNullInstVisitor regularVisitor(this);
