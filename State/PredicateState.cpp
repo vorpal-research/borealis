@@ -39,7 +39,7 @@ const PredicateState& PredicateState::operator=(PredicateState&& state) {
 PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
     PredicateState res = PredicateState(*this);
 
-    if(contains(data, pred)) return res;
+    if (contains(data, pred)) return res;
 
     auto ds = Predicate::DependeeSet();
     ds.insert(pred->getDependee());
@@ -59,7 +59,7 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     auto path = std::vector<expr>();
     auto state = std::vector<expr>();
 
-    for(auto& v : data) {
+    for (auto& v : data) {
         if (v->getType() == PredicateType::PATH) {
             path.push_back(v->toZ3(z3ef, &ctx));
         } else if (v->getType() == PredicateType::STATE) {
