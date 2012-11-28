@@ -21,6 +21,12 @@ public:
     Z3Context(Z3ExprFactory& factory): factory(factory), memory(factory.getEmptyMemoryArray()){};
 
     z3::expr getCurrentMemoryContents() { return memory; }
+    z3::expr readExprFromMemory(z3::expr ix, size_t sz) {
+        return factory.byteArrayExtract(memory, ix, sz);
+    }
+    void writeExprToMemory(z3::expr ix, z3::expr val) {
+        memory = factory.byteArrayInsert(memory, ix, val);
+    }
 
     void mutateMemory( const std::function<z3::expr(z3::expr)>& );
 
