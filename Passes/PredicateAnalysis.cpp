@@ -157,6 +157,22 @@ public:
         );
     }
 
+    void visitPHINode(llvm::PHINode& I) {
+        using llvm::BasicBlock;
+        using llvm::PHINode;
+        using llvm::Value;
+
+        for (unsigned int i = 0; i < I.getNumIncomingValues(); i++) {
+            const BasicBlock* from = I.getIncomingBlock(i);
+            Value* v = I.getIncomingValue(i);
+
+            pass->PPM[std::make_pair(from, &I)] = pass->PF->getEqualityPredicate(
+                    pass->TF->getValueTerm(&I),
+                    pass->TF->getValueTerm(v)
+            );
+        }
+    }
+
 private:
 
     PredicateAnalysis* pass;
@@ -168,28 +184,28 @@ private:
 PredicateAnalysis::PredicateAnalysis() : llvm::FunctionPass(ID) {}
 
 void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	Info.setPreservesAll();
-	Info.addRequiredTransitive<SlotTrackerPass>();
-	Info.addRequiredTransitive<TargetData>();
+    Info.setPreservesAll();
+    Info.addRequiredTransitive<SlotTrackerPass>();
+    Info.addRequiredTransitive<TargetData>();
 }
 
 bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	TRACE_FUNC;
+    TRACE_FUNC;
 
-	init();
+    init();
 
-	PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
-	TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
+    PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
+    TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TD = &getAnalysis<TargetData>();
 
     PredicateAnalysisInstVisitor visitor(this);
     visitor.visit(F);
 
-	return false;
+    return false;
 }
 
 char PredicateAnalysis::ID;
