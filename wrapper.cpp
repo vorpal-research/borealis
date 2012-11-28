@@ -96,12 +96,12 @@ int main(int argc, const char** argv)
     // args to supply to opt
     auto opt_args = cfg.getValue< std::vector<std::string> >("opt", "load").getOrElse(empty);
 
-    size_t virt_argc = opt_args.size();
+    size_t virt_argc = opt_args.size() + 1;
     {
-
         std::unique_ptr<const char*[]> virt_argv(new const char*[virt_argc]);
-        for(size_t i = 0U; i < virt_argc; ++i) {
-            virt_argv[i] = opt_args[i].c_str();
+        virt_argv[0] = "wrapper";
+        for(size_t i = 1U; i < virt_argc; ++i) {
+            virt_argv[i] = opt_args[i-1].c_str();
         }
 
         llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.get());
