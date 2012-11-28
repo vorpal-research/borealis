@@ -171,28 +171,28 @@ private:
 PredicateAnalysis::PredicateAnalysis() : llvm::FunctionPass(ID) {}
 
 void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	Info.setPreservesAll();
-	Info.addRequiredTransitive<SlotTrackerPass>();
-	Info.addRequiredTransitive<TargetData>();
+    Info.setPreservesAll();
+    Info.addRequiredTransitive<SlotTrackerPass>();
+    Info.addRequiredTransitive<TargetData>();
 }
 
 bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
-	using namespace::llvm;
+    using namespace::llvm;
 
-	TRACE_FUNC;
+    TRACE_FUNC;
 
-	init();
+    init();
 
-	PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
-	TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
+    PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
+    TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TD = &getAnalysis<TargetData>();
 
     PredicateAnalysisInstVisitor visitor(this);
     visitor.visit(F);
 
-	return false;
+    return false;
 }
 
 char PredicateAnalysis::ID;

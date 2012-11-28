@@ -33,35 +33,35 @@ class PredicateAnalysis: public llvm::FunctionPass {
 
 public:
 
-	typedef std::map<const llvm::Instruction*, Predicate::Ptr> PredicateMap;
-	typedef std::pair<const llvm::Instruction*, Predicate::Ptr> PredicateMapEntry;
+    typedef std::map<const llvm::Instruction*, Predicate::Ptr> PredicateMap;
+    typedef std::pair<const llvm::Instruction*, Predicate::Ptr> PredicateMapEntry;
 
-	typedef std::pair<const llvm::TerminatorInst*, const llvm::BasicBlock*> TerminatorBranch;
-	typedef std::map<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMap;
-	typedef std::pair<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMapEntry;
+    typedef std::pair<const llvm::TerminatorInst*, const llvm::BasicBlock*> TerminatorBranch;
+    typedef std::map<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMap;
+    typedef std::pair<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMapEntry;
 
     typedef std::pair<const llvm::BasicBlock*, const llvm::PHINode*> PhiBranch;
     typedef std::map<PhiBranch, Predicate::Ptr> PhiPredicateMap;
     typedef std::pair<PhiBranch, Predicate::Ptr> PhiPredicateMapEntry;
 
-	static char ID;
+    static char ID;
 
-	PredicateAnalysis();
-	virtual bool runOnFunction(llvm::Function& F);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-	virtual ~PredicateAnalysis() {};
+    PredicateAnalysis();
+    virtual bool runOnFunction(llvm::Function& F);
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual ~PredicateAnalysis() {};
 
-	PredicateMap& getPredicateMap() {
-		return PM;
-	}
+    PredicateMap& getPredicateMap() {
+        return PM;
+    }
 
-	TerminatorPredicateMap& getTerminatorPredicateMap() {
-		return TPM;
-	}
+    TerminatorPredicateMap& getTerminatorPredicateMap() {
+        return TPM;
+    }
 
-	PhiPredicateMap& getPhiPredicateMap() {
-	    return PPM;
-	}
+    PhiPredicateMap& getPhiPredicateMap() {
+        return PPM;
+    }
 
 private:
 
@@ -71,15 +71,15 @@ private:
         PPM.clear();
     }
 
-	PredicateMap PM;
-	TerminatorPredicateMap TPM;
-	PhiPredicateMap PPM;
+    PredicateMap PM;
+    TerminatorPredicateMap TPM;
+    PhiPredicateMap PPM;
 
-	std::unique_ptr<PredicateFactory> PF;
-	std::unique_ptr<TermFactory> TF;
-	llvm::TargetData* TD;
+    std::unique_ptr<PredicateFactory> PF;
+    std::unique_ptr<TermFactory> TF;
+    llvm::TargetData* TD;
 
-	friend class PredicateAnalysisInstVisitor;
+    friend class PredicateAnalysisInstVisitor;
 };
 
 } /* namespace borealis */
