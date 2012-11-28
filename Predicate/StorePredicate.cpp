@@ -52,9 +52,7 @@ z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
     expr r = z3ef.getExprForTerm(*rhv);
 
     if(z3ctx) {
-        z3ctx->mutateMemory([&](expr mem){
-            return z3ef.byteArrayInsert(mem, l, r);
-        });
+        z3ctx->writeExprToMemory(l, r);
     }
     return z3ef.getBoolConst(true);
 }
