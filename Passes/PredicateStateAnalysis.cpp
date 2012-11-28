@@ -24,21 +24,31 @@ typedef PredicateAnalysis::TerminatorPredicateMap TPM;
 PredicateStateAnalysis::PredicateStateAnalysis() : llvm::FunctionPass(ID) {}
 
 void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
-    using namespace::llvm;
+    using namespace llvm;
 
     Info.setPreservesAll();
     Info.addRequiredTransitive<PredicateAnalysis>();
+    Info.addRequiredTransitive<LoopInfo>();
+    Info.addRequiredTransitive<ScalarEvolution>();
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
+    using namespace llvm;
+
     TRACE_FUNC;
 
     init();
 
     PA = &getAnalysis<PredicateAnalysis>();
+    LI = &getAnalysis<LoopInfo>();
+    SE = &getAnalysis<ScalarEvolution>();
 
-    workQueue.push(std::make_pair(&F.getEntryBlock(), PredicateStateVector(true)));
+    workQueue.push(std::make_tuple(nullptr, &F.getEntryBlock(), PredicateStateVector(true)));
     processQueue();
+
+    for (auto* L : getAllLoops(&F, LI)) {
+        processLoop(L);
+    }
 
     removeUnreachableStates();
 
@@ -65,8 +75,10 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     PM& pm = PA->getPredicateMap();
 
-    const BasicBlock& bb = *(wqe.first);
-    PredicateStateVector inStateVec = wqe.second;
+    const BasicBlock& from = *std::get<0>(wqe);
+    const BasicBlock& bb = *std::get<1>(wqe);
+    PredicateStateVector inStateVec = std::get<2>(wqe);
+
     bool shouldScheduleTerminator = true;
 
     for (auto& I : bb) {
@@ -114,7 +126,7 @@ void PredicateStateAnalysis::process(
 
     if (I.isUnconditional()) {
         const BasicBlock* succ = I.getSuccessor(0);
-        workQueue.push(std::make_pair(succ, state));
+        workQueue.push(std::make_tuple(I.getParent(), succ, state));
     } else {
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
@@ -122,8 +134,8 @@ void PredicateStateAnalysis::process(
         Predicate::Ptr truePred = tpm[std::make_pair(&I, trueSucc)];
         Predicate::Ptr falsePred = tpm[std::make_pair(&I, falseSucc)];
 
-        workQueue.push(std::make_pair(trueSucc, state.addPredicate(truePred)));
-        workQueue.push(std::make_pair(falseSucc, state.addPredicate(falsePred)));
+        workQueue.push(std::make_tuple(I.getParent(), trueSucc, state.addPredicate(truePred)));
+        workQueue.push(std::make_tuple(I.getParent(), falseSucc, state.addPredicate(falsePred)));
     }
 }
 
@@ -142,6 +154,18 @@ void PredicateStateAnalysis::removeUnreachableStates() {
         auto I = psme.first;
         PredicateStateVector psv = psme.second;
         predicateStateMap[I] = psv.remove_if(isUnreachable);
+    }
+}
+
+void PredicateStateAnalysis::processLoop(llvm::Loop* L) {
+    using namespace llvm;
+
+    unsigned TripCount = 0;
+    unsigned TripMultiple = 1;
+    BasicBlock *LatchBlock = L->getLoopLatch();
+    if (LatchBlock) {
+      TripCount = SE->getSmallConstantTripCount(L, LatchBlock);
+      TripMultiple = SE->getSmallConstantTripMultiple(L, LatchBlock);
     }
 }
 

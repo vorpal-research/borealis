@@ -8,9 +8,12 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Function.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Value.h>
 
+#include <list>
 #include <string>
 
 #include "util.hpp"
@@ -60,6 +63,8 @@ enum class ValueType {
 };
 ValueType valueType(const llvm::Value& value);
 ValueType type2type(const llvm::Type& type, TypeInfo info = TypeInfo::VARIABLE);
+
+std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
 
 } // namespace llvm
 

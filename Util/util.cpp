@@ -10,6 +10,7 @@
 #include <llvm/Instructions.h>
 
 #include <cstdlib>
+#include <unordered_set>
 
 #include "util.h"
 
@@ -143,6 +144,17 @@ ValueType type2type(const llvm::Type& type, TypeInfo info) {
     default:
         return VT::UNKNOWN;
     }
+}
+
+std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
+    std::unordered_set<Loop*> loops;
+
+    for (const auto& BB : *F) {
+        loops.insert(LI->getLoopFor(&BB));
+    }
+    loops.erase(nullptr);
+
+    return std::list<Loop*>(loops.begin(), loops.end());
 }
 
 } // namespace llvm

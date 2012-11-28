@@ -8,6 +8,8 @@
 #ifndef PREDICATESTATEANALYSIS_H_
 #define PREDICATESTATEANALYSIS_H_
 
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
@@ -16,6 +18,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <tuple>
 #include <vector>
 
 #include "Logging/logger.hpp"
@@ -34,7 +37,11 @@ public:
     typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
     typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;
 
-    typedef std::pair<const llvm::BasicBlock*, PredicateStateVector> WorkQueueEntry;
+    typedef std::tuple<
+            const llvm::BasicBlock*,
+            const llvm::BasicBlock*,
+            PredicateStateVector>
+    WorkQueueEntry;
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     static char ID;
@@ -62,11 +69,15 @@ private:
     WorkQueue workQueue;
 
     PredicateAnalysis* PA;
+    llvm::LoopInfo* LI;
+    llvm::ScalarEvolution* SE;
 
     void processQueue();
     void processBasicBlock(const WorkQueueEntry& wqe);
     void processTerminator(const llvm::TerminatorInst& I, const PredicateStateVector& state);
     void process(const llvm::BranchInst& I, const PredicateStateVector& state);
+
+    void processLoop(llvm::Loop* L);
 
     void removeUnreachableStates();
 
