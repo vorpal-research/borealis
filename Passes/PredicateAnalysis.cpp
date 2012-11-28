@@ -87,6 +87,19 @@ public:
                 );
     }
 
+    void visitAllocaInst(llvm::AllocaInst& I) {
+        using llvm::BasicBlock;
+        using llvm::Value;
+
+        Value* lhv = &I;
+        Value* numElems = I.getArraySize();
+
+        pass->PM[&I] = pass->PF->getAllocaPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getValueTerm(numElems)
+        );
+    }
+
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace llvm;
         using borealis::util::sayonara;

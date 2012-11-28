@@ -18,6 +18,7 @@
 #include "Predicate/ICmpPredicate.h"
 #include "Predicate/LoadPredicate.h"
 #include "Predicate/StorePredicate.h"
+#include "Predicate/AllocaPredicate.h"
 
 namespace borealis {
 
@@ -37,6 +38,13 @@ public:
             Term::Ptr rhv) {
         return Predicate::Ptr(
                 new StorePredicate(std::move(lhv), std::move(rhv), slotTracker));
+    }
+
+    Predicate::Ptr getAllocaPredicate(
+             Term::Ptr lhv,
+             Term::Ptr numElements) {
+        return Predicate::Ptr(
+                new AllocaPredicate(std::move(lhv), std::move(numElements), slotTracker));
     }
 
     Predicate::Ptr getICmpPredicate(

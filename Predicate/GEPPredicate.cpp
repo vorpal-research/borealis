@@ -81,10 +81,11 @@ z3::expr GEPPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context*) const {
     for (const auto& s : shifts) {
         expr by = z3ef.getExprForTerm(*s.first, ptrsize);
         expr size = z3ef.getExprForTerm(*s.second, ptrsize);
+
         shift = shift + by * size;
     }
 
-    return l == (r + shift);
+    return l == z3ef.if_(z3ef.isInvalidPtrExpr(r)).then_(z3ef.getInvalidPtr()).else_(r+shift);
 }
 
 } /* namespace borealis */

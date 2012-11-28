@@ -177,6 +177,35 @@ public:
         return getExprByTypeAndName(valueType(value), name);
     }
 
+    z3::expr getInvalidPtr() {
+        return getNullPtr();
+    }
+
+    z3::expr isInvalidPtrExpr(z3::expr ptr) {
+        return (ptr == getInvalidPtr() || ptr == getNullPtr()).simplify();
+    }
+
+    struct then_tmp {
+        z3::expr cmd;
+        z3::expr branch;
+
+        z3::expr else_(z3::expr elsebranch) {
+            return z3::to_expr(cmd.ctx(), Z3_mk_ite(cmd.ctx(), cmd, branch, elsebranch));
+        }
+    };
+
+    struct if_tmp {
+        z3::expr cond;
+
+        then_tmp then_(z3::expr branch) {
+            return then_tmp{ cond, branch };
+        }
+    };
+
+    if_tmp if_(z3::expr cond) {
+        return if_tmp{ cond };
+    }
+
 private:
 
     z3::expr getExprByTypeAndName(
