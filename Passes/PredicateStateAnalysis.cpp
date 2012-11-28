@@ -20,6 +20,7 @@ namespace borealis {
 
 typedef PredicateAnalysis::PredicateMap PM;
 typedef PredicateAnalysis::TerminatorPredicateMap TPM;
+typedef PredicateAnalysis::PhiPredicateMap PPM;
 
 PredicateStateAnalysis::PredicateStateAnalysis() : llvm::FunctionPass(ID) {}
 
@@ -72,16 +73,27 @@ void PredicateStateAnalysis::processQueue() {
 void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     using namespace llvm;
     using borealis::util::containsKey;
+    using borealis::util::view;
 
     PM& pm = PA->getPredicateMap();
+    PPM& ppm = PA->getPhiPredicateMap();
 
-    const BasicBlock& from = *std::get<0>(wqe);
-    const BasicBlock& bb = *std::get<1>(wqe);
+    const BasicBlock* from = std::get<0>(wqe);
+    const BasicBlock* bb = std::get<1>(wqe);
     PredicateStateVector inStateVec = std::get<2>(wqe);
 
     bool shouldScheduleTerminator = true;
 
-    for (auto& I : bb) {
+    auto iter = bb->begin();
+
+    if (from) {
+        for ( ; isa<PHINode>(iter); ++iter) {
+            inStateVec = inStateVec.addPredicate(
+                    ppm[std::make_pair(from, cast<PHINode>(iter))]);
+        }
+    }
+
+    for (auto& I : view(iter, bb->end())) {
         PredicateStateVector stateVec;
 
         bool hasPredicate = containsKey(pm, &I);
@@ -104,7 +116,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     }
 
     if (shouldScheduleTerminator) {
-        processTerminator(*bb.getTerminator(), inStateVec);
+        processTerminator(*bb->getTerminator(), inStateVec);
     }
 }
 

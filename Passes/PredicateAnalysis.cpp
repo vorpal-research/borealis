@@ -144,6 +144,22 @@ public:
         );
     }
 
+    void visitPHINode(llvm::PHINode& I) {
+        using llvm::BasicBlock;
+        using llvm::PHINode;
+        using llvm::Value;
+
+        for (unsigned int i = 0; i < I.getNumIncomingValues(); i++) {
+            const BasicBlock* from = I.getIncomingBlock(i);
+            Value* v = I.getIncomingValue(i);
+
+            pass->PPM[std::make_pair(from, &I)] = pass->PF->getEqualityPredicate(
+                    pass->TF->getValueTerm(&I),
+                    pass->TF->getValueTerm(v)
+            );
+        }
+    }
+
 private:
 
     PredicateAnalysis* pass;

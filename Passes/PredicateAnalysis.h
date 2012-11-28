@@ -8,6 +8,7 @@
 #ifndef PREDICATEANALYSIS_H_
 #define PREDICATEANALYSIS_H_
 
+#include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
@@ -39,6 +40,10 @@ public:
 	typedef std::map<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMap;
 	typedef std::pair<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMapEntry;
 
+    typedef std::pair<const llvm::BasicBlock*, const llvm::PHINode*> PhiBranch;
+    typedef std::map<PhiBranch, Predicate::Ptr> PhiPredicateMap;
+    typedef std::pair<PhiBranch, Predicate::Ptr> PhiPredicateMapEntry;
+
 	static char ID;
 
 	PredicateAnalysis();
@@ -54,15 +59,21 @@ public:
 		return TPM;
 	}
 
+	PhiPredicateMap& getPhiPredicateMap() {
+	    return PPM;
+	}
+
 private:
 
     void init() {
         PM.clear();
         TPM.clear();
+        PPM.clear();
     }
 
 	PredicateMap PM;
 	TerminatorPredicateMap TPM;
+	PhiPredicateMap PPM;
 
 	std::unique_ptr<PredicateFactory> PF;
 	std::unique_ptr<TermFactory> TF;
