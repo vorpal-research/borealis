@@ -65,6 +65,17 @@ struct NullInfo {
 		return *this;
 	}
 
+	NullStatus getStatus() const {
+	    if (offsetInfoMap.empty()) return NullStatus::Not_Null;
+
+	    NullStatus res = (*offsetInfoMap.begin()).second;
+	    for (const auto& e : offsetInfoMap) {
+	        res = mergeStatus(res, e.second);
+	    }
+
+	    return res;
+	}
+
 	static NullStatus mergeStatus(
 			const NullStatus& one,
 			const NullStatus& two) {
@@ -101,11 +112,15 @@ struct NullInfo {
 	}
 
 	NullInfo& merge(const NullStatus& status) {
-		for (const auto& entry : offsetInfoMap) {
-			std::vector<unsigned> idxs = entry.first;
-			offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
-		}
-		return *this;
+	    if (offsetInfoMap.empty()) {
+	        return setStatus(status);
+	    } else {
+            for (const auto& entry : offsetInfoMap) {
+                std::vector<unsigned> idxs = entry.first;
+                offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
+            }
+            return *this;
+	    }
 	}
 };
 
@@ -134,7 +149,10 @@ public:
 		for (const auto& entry : data) {
 			const NullInfo info = entry.second;
 			if (info.type == type) {
-			    res.insert(entry.first);
+			    NullStatus ns = info.getStatus();
+			    if (ns != NullStatus::Not_Null) {
+			        res.insert(entry.first);
+			    }
 			}
 		}
 		return res;

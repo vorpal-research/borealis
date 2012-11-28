@@ -96,7 +96,7 @@ public:
         std::set<PHINode*> visited;
         auto incomingValues = getIncomingValues(I, visited);
 
-        NullInfo nullInfo = NullInfo();
+        NullInfo nullInfo;
         for (Value* II : incomingValues) {
             if (containsKey(pass->data, II)) {
                 nullInfo = nullInfo.merge(pass->data[II]);
