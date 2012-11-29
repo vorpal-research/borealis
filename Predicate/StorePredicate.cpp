@@ -53,11 +53,13 @@ z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
 
     if(z3ctx) {
         z3ctx->mutateMemory([&](z3::expr mem){
-            return z3ef.if_(z3ef.isInvalidPtrExpr(r)).
+            return z3ef.if_(z3ef.isInvalidPtrExpr(l)).
                             then_(mem).
                             else_(z3ef.byteArrayInsert(mem, l, r));
         });
-        return z3ef.isInvalidPtrExpr(r);
+        return z3ef.if_(z3ef.isInvalidPtrExpr(l)).
+                        then_(z3ef.getBoolConst(false)).
+                        else_(z3ef.getBoolConst(true));
     }
     return z3ef.getBoolConst(true);
 }

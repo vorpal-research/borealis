@@ -6,8 +6,7 @@
  */
 
 #include "AllocaPredicate.h"
-#include "Term/ValueTerm.h"
-
+#include "Logging/tracer.hpp"
 
 namespace borealis {
 AllocaPredicate::AllocaPredicate(
@@ -41,10 +40,15 @@ Predicate::DependeeSet AllocaPredicate::getDependees() const {
     return res;
 }
 
-z3::expr AllocaPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context*) const {
-    z3::expr lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
+z3::expr AllocaPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* ctx) const {
+    TRACE_FUNC;
 
-    return lhve != z3ef.getNullPtr() && lhve != z3ef.getInvalidPtr();
+    z3::expr lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
+    if(ctx) {
+        ctx->registerDistinctPtr(lhve);
+    }
+
+    return !z3ef.isInvalidPtrExpr(lhve);
 }
 
 
