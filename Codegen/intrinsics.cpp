@@ -34,8 +34,8 @@ const std::string borealis::getFuncName(intrinsic intr, llvm::Type* type) {
 PredicateState borealis::getPredicateState(
         intrinsic intr,
         llvm::Function* F,
-        PredicateFactory* pf,
-        TermFactory* tf) {
+        PredicateFactory* PF,
+        TermFactory* TF) {
     using namespace llvm;
 
     switch (intr) {
@@ -45,9 +45,9 @@ PredicateState borealis::getPredicateState(
             // `p = prtver(q)` => p == q
             PredicateState res;
             res.addPredicate(
-                pf->getEqualityPredicate(
-                    tf->getReturnValueTerm(F),
-                    tf->getArgumentTerm(&*F->getArgumentList().begin())
+                PF->getEqualityPredicate(
+                    TF->getReturnValueTerm(F),
+                    TF->getArgumentTerm(&*F->getArgumentList().begin())
                 )
             );
             return res;
