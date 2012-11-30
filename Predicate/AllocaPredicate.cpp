@@ -9,6 +9,7 @@
 #include "Logging/tracer.hpp"
 
 namespace borealis {
+
 AllocaPredicate::AllocaPredicate(
         Term::Ptr lhv,
         Term::Ptr numElements):
@@ -50,7 +51,5 @@ z3::expr AllocaPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* ctx) const {
 
     return !z3ef.isInvalidPtrExpr(lhve);
 }
-
-
 
 } /* namespace borealis */

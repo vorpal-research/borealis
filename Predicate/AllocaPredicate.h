@@ -1,12 +1,12 @@
-#ifndef ALLOCAPREDICATE_H_
-#define ALLOCAPREDICATE_H_
-
 /*
  * AllocaPredicate.h
  *
  *  Created on: Nov 28, 2012
  *      Author: belyaev
  */
+
+#ifndef ALLOCAPREDICATE_H_
+#define ALLOCAPREDICATE_H_
 
 #include "Predicate.h"
 
