@@ -10,6 +10,7 @@
 namespace borealis {
 
 void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
+    Info.setPreservesAll();
     Info.addRequiredTransitive< comments >();
     Info.addRequiredTransitive< names >();
     Info.addRequiredTransitive< locs >();

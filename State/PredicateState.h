@@ -11,6 +11,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Value.h>
 
+#include <functional>
 #include <unordered_map>
 
 #include "Logging/logger.hpp"
@@ -58,6 +59,14 @@ public:
     DataIterator begin() const { return data.begin(); }
     DataIterator end() const { return data.end(); }
     bool empty() const { return data.empty(); }
+
+    PredicateState map(std::function<Predicate::Ptr(Predicate::Ptr)> f) {
+        PredicateState res;
+        for (auto& p : data) {
+            res.addPredicate(f(p));
+        }
+        return res;
+    }
 
     bool operator==(const PredicateState& other) const {
         return data == other.data;

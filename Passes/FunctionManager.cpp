@@ -8,17 +8,19 @@
 #include "FunctionManager.h"
 
 #include "AnnotatorPass.h"
+#include "Codegen/builtins.h"
 #include "Codegen/intrinsics.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Util/util.h"
 
 namespace borealis {
 
-using util::sayonara;
+using borealis::util::sayonara;
 
 FunctionManager::FunctionManager() : llvm::ModulePass(ID) {}
 
 void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+    AU.setPreservesAll();
     AU.addRequiredTransitive<AnnotatorPass>();
 }
 
@@ -42,8 +44,13 @@ PredicateState FunctionManager::get(
         return getPredicateState(intr, &F, PF, TF);
     }
 
+    builtin bi = getBuiltInType(F);
+    if (bi != builtin::NOT_BUILTIN) {
+        return getPredicateState(bi, &F, PF, TF);
+    }
+
     if (data.count(&F) == 0) {
-        sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+        return sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                 "Attempt to get unregistered function " + F.getName().str());
     }
 

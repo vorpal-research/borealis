@@ -27,6 +27,8 @@ class PredicateFactory {
 
 public:
 
+    typedef std::unique_ptr<PredicateFactory> Ptr;
+
     Predicate::Ptr getLoadPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv) {
@@ -85,8 +87,8 @@ public:
                 new EqualityPredicate(std::move(lhv), std::move(rhv), slotTracker));
     }
 
-    static std::unique_ptr<PredicateFactory> get(SlotTracker* slotTracker) {
-        return std::unique_ptr<PredicateFactory>(new PredicateFactory(slotTracker));
+    static Ptr get(SlotTracker* slotTracker) {
+        return Ptr(new PredicateFactory(slotTracker));
     }
 
 private:

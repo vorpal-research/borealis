@@ -16,6 +16,8 @@ class PredicateFactory;
 
 class AllocaPredicate: public Predicate {
 
+public:
+
     virtual Predicate::Key getKey() const;
 
     virtual Dependee getDependee() const;
