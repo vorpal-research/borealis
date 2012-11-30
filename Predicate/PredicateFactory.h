@@ -19,6 +19,7 @@
 #include "Predicate/LoadPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/AllocaPredicate.h"
+#include "Predicate/MallocPredicate.h"
 
 namespace borealis {
 
@@ -45,6 +46,12 @@ public:
              Term::Ptr numElements) {
         return Predicate::Ptr(
                 new AllocaPredicate(std::move(lhv), std::move(numElements), slotTracker));
+    }
+
+    Predicate::Ptr getMallocPredicate(
+                 Term::Ptr lhv) {
+        return Predicate::Ptr(
+                new MallocPredicate(std::move(lhv), slotTracker));
     }
 
     Predicate::Ptr getICmpPredicate(
