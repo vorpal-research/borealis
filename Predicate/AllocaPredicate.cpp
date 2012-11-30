@@ -35,6 +35,7 @@ Predicate::Key AllocaPredicate::getKey() const {
 Predicate::Dependee AllocaPredicate::getDependee() const {
     return std::make_pair(DependeeType::VALUE, lhv->getId());
 }
+
 Predicate::DependeeSet AllocaPredicate::getDependees() const {
     DependeeSet res = DependeeSet();
     res.insert(std::make_pair(DependeeType::VALUE, numElements->getId()));

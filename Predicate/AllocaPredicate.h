@@ -12,6 +12,8 @@
 
 namespace borealis {
 
+class PredicateFactory;
+
 class AllocaPredicate: public Predicate {
 
     virtual Predicate::Key getKey() const;
