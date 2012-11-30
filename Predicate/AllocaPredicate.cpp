@@ -16,7 +16,7 @@ AllocaPredicate::AllocaPredicate(
                 Predicate(type_id(*this)),
                 lhv(std::move(lhv)),
                 numElements(std::move(numElements)) {
-    this->asString = this->lhv->getName() + "= alloca(" + this->numElements->getName() + ")";
+    this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
 }
 
 AllocaPredicate::AllocaPredicate(
@@ -25,7 +25,7 @@ AllocaPredicate::AllocaPredicate(
         SlotTracker* /*st*/): Predicate(type_id(*this)),
                 lhv(std::move(lhv)),
                 numElements(std::move(numElements)) {
-    this->asString = this->lhv->getName() + "= alloca(" + this->numElements->getName() + ")";
+    this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
 }
 
 Predicate::Key AllocaPredicate::getKey() const {
