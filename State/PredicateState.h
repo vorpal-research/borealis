@@ -83,14 +83,6 @@ public:
         return __i1 == __end1 && __i2 == __end2;
     }
 
-    SortedData sorted() const {
-        SortedData res;
-        for (auto& e : data) {
-            res.insert(e->toString());
-        }
-        return res;
-    }
-
 private:
 
     Data data;

@@ -101,14 +101,13 @@ void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
     using borealis::util::streams::endl;
-    auto sorted = state.sorted();
     s << '(';
-    if (!sorted.empty()) {
-        auto iter = sorted.begin();
+    if (!state.empty()) {
+        auto iter = state.begin();
         const auto& el = *iter++;
-        s << endl << "  " << el;
-        for (const auto& e : view(iter, sorted.end())) {
-            s << ',' << endl << "  " << e;
+        s << endl << "  " << el->toString();
+        for (const auto& e : view(iter, state.end())) {
+            s << ',' << endl << "  " << e->toString();
         }
     }
     s << endl << ')';
@@ -116,14 +115,13 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state)
 }
 
 std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
-    auto sorted = state.sorted();
     s << '(';
-    if (!sorted.empty()) {
-        auto iter = sorted.begin();
+    if (!state.empty()) {
+        auto iter = state.begin();
         const auto& el = *iter++;
-        s << std::endl << "  " << el;
-        for (const auto& e : view(iter, sorted.end())) {
-            s << ',' << std::endl << "  " << e;
+        s << std::endl << "  " << el->toString();
+        for (const auto& e : view(iter, state.end())) {
+            s << ',' << std::endl << "  " << e->toString();
         }
     }
     s << std::endl << ')';
