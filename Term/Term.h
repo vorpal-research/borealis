@@ -8,6 +8,8 @@
 #ifndef TERM_H_
 #define TERM_H_
 
+#include <string>
+
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
@@ -34,6 +36,17 @@ public:
 
     const std::string& getName() const {
         return name;
+    }
+
+    bool equals(const Term* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        return this->id == other->id &&
+                this->term_type_id == other->term_type_id;
+    }
+
+    bool operator==(const Term& other) const {
+        return this->equals(&other);
     }
 
     static bool classof(const Term* /* t */) {

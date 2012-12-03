@@ -6,3 +6,5 @@
  */
 
 #include "ConstTerm.h"
+
+std::hash<std::string> borealis::ConstTerm::h;
