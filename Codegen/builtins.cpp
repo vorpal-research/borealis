@@ -38,12 +38,11 @@ PredicateState getPredicateState(
     case builtin::MALLOC:
         {
             PredicateState res;
-            res.addPredicate(
+            return res.addPredicate(
                     PF->getMallocPredicate(
                             TF->getReturnValueTerm(F)
                     )
             );
-            return res;
         }
 
     default:

@@ -44,13 +44,12 @@ PredicateState borealis::getPredicateState(
         {
             // `p = prtver(q)` => p == q
             PredicateState res;
-            res.addPredicate(
+            return res.addPredicate(
                 PF->getEqualityPredicate(
                     TF->getReturnValueTerm(F),
                     TF->getArgumentTerm(&*F->getArgumentList().begin())
                 )
             );
-            return res;
         }
 
     default:
