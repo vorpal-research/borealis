@@ -44,8 +44,8 @@ public:
         if (other == nullptr) return false;
         if (this == other) return true;
         if (const AllocaPredicate* o = llvm::dyn_cast<AllocaPredicate>(other)) {
-            return this->lhv == o->lhv &&
-                    this->numElements == o->numElements;
+            return *this->lhv == *o->lhv &&
+                    *this->numElements == *o->numElements;
         } else {
             return false;
         }

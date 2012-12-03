@@ -46,8 +46,8 @@ public:
         if (other == nullptr) return false;
         if (this == other) return true;
         if (const LoadPredicate* o = llvm::dyn_cast<LoadPredicate>(other)) {
-            return this->lhv == o->lhv &&
-                    this->rhv == o->rhv;
+            return *this->lhv == *o->lhv &&
+                    *this->rhv == *o->rhv;
         } else {
             return false;
         }

@@ -48,9 +48,9 @@ public:
         if (other == nullptr) return false;
         if (this == other) return true;
         if (const ICmpPredicate* o = llvm::dyn_cast<ICmpPredicate>(other)) {
-            return this->lhv == o->lhv &&
-                    this->op1 == o->op1 &&
-                    this->op2 == o->op2 &&
+            return *this->lhv == *o->lhv &&
+                    *this->op1 == *o->op1 &&
+                    *this->op2 == *o->op2 &&
                     this->cond == o->cond;
         } else {
             return false;

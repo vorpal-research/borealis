@@ -46,8 +46,8 @@ public:
         if (other == nullptr) return false;
         if (this == other) return true;
         if (const EqualityPredicate* o = llvm::dyn_cast<EqualityPredicate>(other)) {
-            return this->lhv == o->lhv &&
-                    this->rhv == o->rhv;
+            return *this->lhv == *o->lhv &&
+                    *this->rhv == *o->rhv;
         } else {
             return false;
         }
