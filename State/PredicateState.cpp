@@ -115,15 +115,15 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state)
     return s;
 }
 
-logging::stream_t& operator<<(logging::stream_t& s, const PredicateState& state) {
+std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
     auto sorted = state.sorted();
     s << '(';
     if (!sorted.empty()) {
         auto iter = sorted.begin();
         const auto& el = *iter++;
-        s << endl << "  " << el;
+        s << std::endl << "  " << el;
         for (const auto& e : view(iter, sorted.end())) {
-            s << ',' << endl << "  " << e;
+            s << ',' << std::endl << "  " << e;
         }
     }
     s << endl << ')';

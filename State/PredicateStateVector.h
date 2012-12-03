@@ -65,7 +65,7 @@ private:
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& vec);
-logging::stream_t& operator<<(logging::stream_t& s, const PredicateStateVector& vec);
+std::ostream& operator<<(std::ostream& s, const PredicateStateVector& vec);
 
 } /* namespace borealis */
 
