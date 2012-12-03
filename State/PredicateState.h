@@ -63,7 +63,7 @@ public:
     PredicateState map(std::function<Predicate::Ptr(Predicate::Ptr)> f) {
         PredicateState res;
         for (auto& p : data) {
-            res.addPredicate(f(p));
+            res = res.addPredicate(f(p));
         }
         return res;
     }
