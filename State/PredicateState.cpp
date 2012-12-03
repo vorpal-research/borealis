@@ -126,7 +126,7 @@ std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
             s << ',' << std::endl << "  " << e;
         }
     }
-    s << endl << ')';
+    s << std::endl << ')';
     return s;
 }
 
