@@ -24,37 +24,41 @@ void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.addRequiredTransitive<AnnotatorPass>();
 }
 
-void FunctionManager::addFunction(llvm::Function& F, PredicateState state) {
+void FunctionManager::addFunction(llvm::CallInst& CI, PredicateState state) {
 
-    if (data.count(&F) > 0) {
+    llvm::Function* F = CI.getCalledFunction();
+
+    if (data.count(F) > 0) {
         sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Attempt to register function " + F.getName().str() + " twice");
+                "Attempt to register function " + F->getName().str() + " twice");
     }
 
-    data[&F] = state;
+    data[F] = state;
 }
 
 PredicateState FunctionManager::get(
-        llvm::Function& F,
+        llvm::CallInst& CI,
         PredicateFactory* PF,
         TermFactory* TF) {
 
+    llvm::Function* F = CI.getCalledFunction();
+
     intrinsic intr = IntrinsicsManager::getInstance().getIntrinsicType(F);
     if (intr != intrinsic::NOT_INTRINSIC) {
-        return getPredicateState(intr, &F, PF, TF);
+        return getPredicateState(intr, F, PF, TF);
     }
 
-    builtin bi = getBuiltInType(F);
+    builtin bi = getBuiltInType(CI);
     if (bi != builtin::NOT_BUILTIN) {
-        return getPredicateState(bi, &F, PF, TF);
+        return getPredicateState(bi, CI, PF, TF);
     }
 
-    if (data.count(&F) == 0) {
+    if (data.count(F) == 0) {
         return sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Attempt to get unregistered function " + F.getName().str());
+                "Attempt to get unregistered function " + F->getName().str());
     }
 
-    return data[&F];
+    return data[F];
 }
 
 char FunctionManager::ID;

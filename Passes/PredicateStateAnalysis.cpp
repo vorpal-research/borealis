@@ -93,6 +93,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     auto iter = bb->begin();
 
+    // Add incoming predicates from PHI nodes
     if (from) {
         for ( ; isa<PHINode>(iter); ++iter) {
             inStateVec = inStateVec.addPredicate(
@@ -110,7 +111,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
             CallInst& CI = cast<CallInst>(I);
 
             PredicateState callState = FM->get(
-                    *CI.getCalledFunction(),
+                    CI,
                     PF.get(),
                     TF.get());
             CallSiteInitializer csi(CI, TF.get());

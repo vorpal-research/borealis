@@ -15,10 +15,10 @@ namespace borealis {
 
 using borealis::util::sayonara;
 
-builtin getBuiltInType(llvm::Function& F) {
+builtin getBuiltInType(llvm::CallInst& CI) {
     using namespace llvm;
 
-    if (isMalloc(&F)) {
+    if (isMalloc(&CI)) {
         return builtin::MALLOC;
     }
 
@@ -27,10 +27,11 @@ builtin getBuiltInType(llvm::Function& F) {
 
 PredicateState getPredicateState(
         builtin bi,
-        llvm::Function* F,
+        llvm::CallInst& CI,
         PredicateFactory* PF,
         TermFactory* TF) {
-    using namespace borealis;
+
+    llvm::Function* F = CI.getCalledFunction();
 
     switch (bi) {
 

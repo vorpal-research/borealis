@@ -22,10 +22,10 @@ enum class builtin {
     NOT_BUILTIN
 };
 
-builtin getBuiltInType(llvm::Function&);
+builtin getBuiltInType(llvm::CallInst&);
 
 PredicateState getPredicateState(builtin,
-        llvm::Function*,
+        llvm::CallInst&,
         PredicateFactory*,
         TermFactory*);
 
