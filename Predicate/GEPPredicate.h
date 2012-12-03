@@ -53,6 +53,18 @@ public:
                 new_shifts);
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const GEPPredicate* o = llvm::dyn_cast<GEPPredicate>(other)) {
+            return this->lhv == o->lhv &&
+                    this->rhv == o->rhv &&
+                    this->shifts == o->shifts;
+        } else {
+            return false;
+        }
+    }
+
     friend class PredicateFactory;
 
 private:

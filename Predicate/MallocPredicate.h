@@ -38,6 +38,16 @@ public:
         );
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const MallocPredicate* o = llvm::dyn_cast<MallocPredicate>(other)) {
+            return this->lhv == o->lhv;
+        } else {
+            return false;
+        }
+    }
+
     friend class PredicateFactory;
 
 private:

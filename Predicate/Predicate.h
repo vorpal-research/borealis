@@ -79,12 +79,12 @@ public:
     virtual Dependee getDependee() const = 0;
     virtual DependeeSet getDependees() const = 0;
 
-    std::string toString() const {
-        return asString;
-    }
-
     PredicateType getType() const {
         return type;
+    }
+
+    std::string toString() const {
+        return asString;
     }
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef, Z3Context* = nullptr) const = 0;
@@ -95,6 +95,11 @@ public:
 
     inline borealis::id_t getPredicateTypeId() const {
         return predicate_type_id;
+    }
+
+    virtual bool equals(const Predicate* other) const = 0;
+    bool operator==(const Predicate& other) const {
+        return this->equals(&other);
     }
 
 protected:

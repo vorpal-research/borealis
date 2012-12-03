@@ -43,6 +43,17 @@ public:
                 Term::Ptr(t->transform(rhv.get())));
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const StorePredicate* o = llvm::dyn_cast<StorePredicate>(other)) {
+            return this->lhv == o->lhv &&
+                    this->rhv == o->rhv;
+        } else {
+            return false;
+        }
+    }
+
     friend class PredicateFactory;
 
 private:

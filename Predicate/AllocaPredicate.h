@@ -40,6 +40,17 @@ public:
                 Term::Ptr(t->transform(numElements.get())));
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const AllocaPredicate* o = llvm::dyn_cast<AllocaPredicate>(other)) {
+            return this->lhv == o->lhv &&
+                    this->numElements == o->numElements;
+        } else {
+            return false;
+        }
+    }
+
     friend class PredicateFactory;
 
 private:
