@@ -49,6 +49,10 @@ public:
         return this->equals(&other);
     }
 
+    size_t hashCode() const {
+        return (size_t)id;
+    }
+
     static bool classof(const Term* /* t */) {
         return true;
     }

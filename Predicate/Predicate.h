@@ -102,6 +102,10 @@ public:
         return this->equals(&other);
     }
 
+    virtual size_t hashCode() const {
+        return (size_t)this;
+    }
+
 protected:
 
     borealis::id_t predicate_type_id;

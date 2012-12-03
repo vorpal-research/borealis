@@ -44,7 +44,7 @@ public:
         static size_t hash(const PredicateState& state) {
             size_t h = 17;
             for (const auto& e : state) {
-                h = 3 * (size_t)e.get() + h;
+                h = 3 * h + e->hashCode();
             }
             return h;
         }

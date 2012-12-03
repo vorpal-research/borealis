@@ -51,6 +51,13 @@ public:
         }
     }
 
+    virtual size_t hashCode() const {
+        size_t hash = 3;
+        hash = 17 * hash + lhv->hashCode();
+        hash = 17 * hash + numElements->hashCode();
+        return hash;
+    }
+
     friend class PredicateFactory;
 
 private:
