@@ -26,8 +26,9 @@ namespace util {
 
 template<typename RetTy = void>
 RetTy sayonara(std::string file, int line, std::string where, std::string reason) {
-    logging::errs() << file << ":" << toString(line) << " |" << where << "| "
-            << reason << logging::endl;
+    logging::errs() << file << ":" << toString(line) << logging::endl
+            << "\t" << where << logging::endl
+            << "\t" << reason << logging::endl;
 
     llvm::llvm_shutdown();
     std::exit(EXIT_FAILURE);
