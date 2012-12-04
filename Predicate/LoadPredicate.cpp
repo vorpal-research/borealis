@@ -42,7 +42,7 @@ Predicate::DependeeSet LoadPredicate::getDependees() const {
     return res;
 }
 
-z3::expr LoadPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
+z3::expr LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* z3ctx) const {
     using namespace::z3;
 
     TRACE_FUNC;

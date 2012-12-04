@@ -8,7 +8,7 @@
 #include "PredicateState.h"
 
 #include "Logging/tracer.hpp"
-#include "Solver/Z3Context.h"
+#include "Solver/ExecutionContext.h"
 
 namespace borealis {
 
@@ -54,7 +54,7 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
 
     TRACE_FUNC;
 
-    Z3Context ctx(z3ef);
+    ExecutionContext ctx(z3ef);
 
     auto path = std::vector<expr>();
     auto state = std::vector<expr>();

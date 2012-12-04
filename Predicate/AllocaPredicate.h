@@ -19,7 +19,7 @@ class AllocaPredicate: public Predicate {
     virtual Dependee getDependee() const;
     virtual DependeeSet getDependees() const;
 
-    virtual z3::expr toZ3(Z3ExprFactory& z3ef, Z3Context* = nullptr) const;
+    virtual z3::expr toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<AllocaPredicate>();

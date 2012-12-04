@@ -43,7 +43,7 @@ Predicate::DependeeSet StorePredicate::getDependees() const {
     return res;
 }
 
-z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
+z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* z3ctx) const {
     using namespace::z3;
 
     TRACE_FUNC;
@@ -52,14 +52,7 @@ z3::expr StorePredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* z3ctx) const {
     expr r = z3ef.getExprForTerm(*rhv);
 
     if(z3ctx) {
-        z3ctx->mutateMemory([&](z3::expr mem){
-            return z3ef.if_(z3ef.isInvalidPtrExpr(l)).
-                            then_(mem).
-                            else_(z3ef.byteArrayInsert(mem, l, r));
-        });
-        return z3ef.if_(z3ef.isInvalidPtrExpr(l)).
-                        then_(z3ef.getBoolConst(false)).
-                        else_(z3ef.getBoolConst(true));
+        z3ctx->writeExprToMemory(l, r);
     }
     return z3ef.getBoolConst(true);
 }

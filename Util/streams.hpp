@@ -158,6 +158,8 @@ const auto VECTOR_RIGHT_BRACE = "]";
 const auto SET_LEFT_BRACE = "(";
 const auto SET_RIGHT_BRACE = ")";
 const auto ELEMENT_DELIMITER = ", ";
+const auto TUPLE_LEFT_BRACE = "{";
+const auto TUPLE_RIGHT_BRACE = "}";
 const auto NULL_REPR = "<NULL>";
 
 template<typename T, typename Streamer>
@@ -176,6 +178,19 @@ Streamer& operator <<(Streamer& s, const std::vector<T>& vec) {
         });
     }
     s << VECTOR_RIGHT_BRACE;
+
+    return s;
+}
+
+template<typename T, typename U, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::pair<T, U>& pp) {
+    using namespace::std;
+
+    s << TUPLE_LEFT_BRACE
+      << pp.first
+      << ELEMENT_DELIMITER
+      << pp.second
+      << TUPLE_RIGHT_BRACE;
 
     return s;
 }

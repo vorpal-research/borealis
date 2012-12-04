@@ -18,7 +18,7 @@
 
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
-#include "Solver/Z3Context.h"
+#include "Solver/ExecutionContext.h"
 #include "Solver/Z3ExprFactory.h"
 #include "Term/Term.h"
 #include "Util/slottracker.h"
@@ -87,7 +87,7 @@ public:
         return type;
     }
 
-    virtual z3::expr toZ3(Z3ExprFactory& z3ef, Z3Context* = nullptr) const = 0;
+    virtual z3::expr toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const = 0;
 
     static bool classof(const Predicate* /* t */) {
         return true;

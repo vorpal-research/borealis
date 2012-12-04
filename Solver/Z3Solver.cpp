@@ -38,6 +38,9 @@ z3::check_result Z3Solver::check(
     {
         TRACE_BLOCK("Calling Z3 check");
         check_result r = s.check(1, &pred);
+        dbgs() << "Acquired result: "
+               << ((r == z3::sat)? "sat" : (r == z3::unsat)? "unsat" : "unknown")
+               << endl;
         return r;
     }
 }
@@ -63,6 +66,19 @@ bool Z3Solver::checkPathPredicates(
     {
         TRACE_BLOCK("Calling Z3 check");
         check_result r = s.check(1, &pred);
+
+        dbgs() << "Acquired result: "
+               << ((r == z3::sat)? "sat" : (r == z3::unsat)? "unsat" : "unknown")
+               << endl;
+
+        auto dbg = dbgs();
+        dbg << "With:" << endl;
+        if(r == z3::sat) dbg << s.get_model() << endl;
+        else{
+            auto core = s.unsat_core();
+            for(size_t i = 0U; i < core.size(); ++i ) dbg << core[i] << endl;
+        }
+
         return r != z3::unsat;
     }
 }

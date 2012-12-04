@@ -51,7 +51,7 @@ Predicate::DependeeSet BooleanPredicate::getDependees() const {
     return res;
 }
 
-z3::expr BooleanPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context*) const {
+z3::expr BooleanPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     using namespace::z3;
 
     TRACE_FUNC;
