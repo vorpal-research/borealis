@@ -26,7 +26,6 @@ z3::expr ExecutionContext::readExprFromMemory(z3::expr ix, size_t sz) {
 }
 void ExecutionContext::writeExprToMemory(z3::expr ix, z3::expr val) {
     TRACE_FUNC;
-    dbgs() << ix << "->" << val << endl;
 
     auto sh = factory.byteArrayInsert(memory, ix, val);
     memory = sh.first;

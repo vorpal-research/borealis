@@ -112,8 +112,6 @@ expr Z3ExprFactory::getForAll(
     ) {
     TRACE_FUNC;
 
-    dbgs() << "sorts:" << sorts << endl;
-
     using borealis::util::toString;
     using borealis::util::view;
 
@@ -123,8 +121,6 @@ expr Z3ExprFactory::getForAll(
     for(size_t i = 0U; i < numBounds; ++i) {
         args.push_back(to_expr(Z3_mk_bound(ctx, i, sorts[i])));
     }
-
-    dbgs() << "args:" << args << endl;
 
     auto body = func(args);
 
@@ -167,7 +163,6 @@ function Z3ExprFactory::createFreshFunction(
 
 std::pair<array, expr> Z3ExprFactory::byteArrayInsert(array arr, expr ix, expr bv) {
     TRACE_FUNC;
-    dbgs() << arr << "(" << ix << ")" << "=" << bv << endl;
 
     auto bytes = splitBytes(bv);
 
