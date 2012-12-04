@@ -19,12 +19,15 @@
 #include "Predicate/LoadPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/AllocaPredicate.h"
+#include "Predicate/MallocPredicate.h"
 
 namespace borealis {
 
 class PredicateFactory {
 
 public:
+
+    typedef std::unique_ptr<PredicateFactory> Ptr;
 
     Predicate::Ptr getLoadPredicate(
             Term::Ptr lhv,
@@ -45,6 +48,12 @@ public:
              Term::Ptr numElements) {
         return Predicate::Ptr(
                 new AllocaPredicate(std::move(lhv), std::move(numElements), slotTracker));
+    }
+
+    Predicate::Ptr getMallocPredicate(
+                 Term::Ptr lhv) {
+        return Predicate::Ptr(
+                new MallocPredicate(std::move(lhv), slotTracker));
     }
 
     Predicate::Ptr getICmpPredicate(
@@ -78,8 +87,8 @@ public:
                 new EqualityPredicate(std::move(lhv), std::move(rhv), slotTracker));
     }
 
-    static std::unique_ptr<PredicateFactory> get(SlotTracker* slotTracker) {
-        return std::unique_ptr<PredicateFactory>(new PredicateFactory(slotTracker));
+    static Ptr get(SlotTracker* slotTracker) {
+        return Ptr(new PredicateFactory(slotTracker));
     }
 
 private:

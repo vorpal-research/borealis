@@ -75,8 +75,8 @@ private:
     TerminatorPredicateMap TPM;
     PhiPredicateMap PPM;
 
-    std::unique_ptr<PredicateFactory> PF;
-    std::unique_ptr<TermFactory> TF;
+    PredicateFactory::Ptr PF;
+    TermFactory::Ptr TF;
     llvm::TargetData* TD;
 
     friend class PredicateAnalysisInstVisitor;

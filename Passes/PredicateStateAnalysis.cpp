@@ -13,6 +13,7 @@
 
 #include "Solver/Z3ExprFactory.h"
 #include "Solver/Z3Solver.h"
+#include "State/CallSiteInitializer.h"
 
 #include "Logging/tracer.hpp"
 
@@ -28,7 +29,9 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     using namespace llvm;
 
     Info.setPreservesAll();
+    Info.addRequiredTransitive<FunctionManager>();
     Info.addRequiredTransitive<PredicateAnalysis>();
+    Info.addRequiredTransitive<SlotTrackerPass>();
     Info.addRequiredTransitive<LoopInfo>();
     Info.addRequiredTransitive<ScalarEvolution>();
 }
@@ -40,9 +43,13 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 
     init();
 
+    FM = &getAnalysis<FunctionManager>();
     PA = &getAnalysis<PredicateAnalysis>();
     LI = &getAnalysis<LoopInfo>();
     SE = &getAnalysis<ScalarEvolution>();
+
+    PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
+    TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
 
     workQueue.push(std::make_tuple(nullptr, &F.getEntryBlock(), PredicateStateVector(true)));
     processQueue();
@@ -86,6 +93,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     auto iter = bb->begin();
 
+    // Add incoming predicates from PHI nodes
     if (from) {
         for ( ; isa<PHINode>(iter); ++iter) {
             inStateVec = inStateVec.addPredicate(
@@ -94,13 +102,44 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     }
 
     for (auto& I : view(iter, bb->end())) {
+
         PredicateStateVector stateVec;
+        bool hasState = containsKey(predicateStateMap, &I);
+        if (hasState) stateVec = predicateStateMap[&I];
+
+        if (isa<CallInst>(I)) {
+            CallInst& CI = cast<CallInst>(I);
+
+            PredicateState callState = FM->get(
+                    CI,
+                    PF.get(),
+                    TF.get());
+            CallSiteInitializer csi(CI, TF.get());
+
+            PredicateState state = callState.map([&csi](Predicate::Ptr p) {
+                return csi.transform(p);
+            });
+
+            PredicateStateVector modifiedInStateVec = inStateVec;
+            for (auto& p : state) {
+                modifiedInStateVec = modifiedInStateVec.addPredicate(p);
+            }
+
+            PredicateStateVector merged =
+                    stateVec.merge(modifiedInStateVec);
+
+            if (stateVec == merged) {
+                shouldScheduleTerminator = false;
+                break;
+            }
+
+            predicateStateMap[&I] = inStateVec = merged;
+
+            continue;
+        }
 
         bool hasPredicate = containsKey(pm, &I);
-        bool hasState = containsKey(predicateStateMap, &I);
-
         if (!hasPredicate) continue;
-        if (hasState) stateVec = predicateStateMap[&I];
 
         PredicateStateVector modifiedInStateVec =
                 inStateVec.addPredicate(pm[&I]);
@@ -176,8 +215,8 @@ void PredicateStateAnalysis::processLoop(llvm::Loop* L) {
     unsigned TripMultiple = 1;
     BasicBlock *LatchBlock = L->getLoopLatch();
     if (LatchBlock) {
-      TripCount = SE->getSmallConstantTripCount(L, LatchBlock);
-      TripMultiple = SE->getSmallConstantTripMultiple(L, LatchBlock);
+        TripCount = SE->getSmallConstantTripCount(L, LatchBlock);
+        TripMultiple = SE->getSmallConstantTripMultiple(L, LatchBlock);
     }
 }
 

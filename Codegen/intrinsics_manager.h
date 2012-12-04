@@ -48,8 +48,8 @@ public:
         return type_cache.count(&F) > 0;
     }
 
-    intrinsic getIntrinsicType(llvm::Function& F) {
-        auto iter = type_cache.find(&F);
+    intrinsic getIntrinsicType(llvm::Function* F) {
+        auto iter = type_cache.find(F);
         if (iter != type_cache.end()) {
             return (*iter).second;
         } else {

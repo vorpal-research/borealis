@@ -1,6 +1,3 @@
-#ifndef ALLOCAPREDICATE_H_
-#define ALLOCAPREDICATE_H_
-
 /*
  * AllocaPredicate.h
  *
@@ -8,11 +5,18 @@
  *      Author: belyaev
  */
 
+#ifndef ALLOCAPREDICATE_H_
+#define ALLOCAPREDICATE_H_
+
 #include "Predicate.h"
 
 namespace borealis {
 
+class PredicateFactory;
+
 class AllocaPredicate: public Predicate {
+
+public:
 
     virtual Predicate::Key getKey() const;
 
@@ -34,6 +38,24 @@ class AllocaPredicate: public Predicate {
         return new AllocaPredicate(
                 Term::Ptr(t->transform(lhv.get())),
                 Term::Ptr(t->transform(numElements.get())));
+    }
+
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const AllocaPredicate* o = llvm::dyn_cast<AllocaPredicate>(other)) {
+            return *this->lhv == *o->lhv &&
+                    *this->numElements == *o->numElements;
+        } else {
+            return false;
+        }
+    }
+
+    virtual size_t hashCode() const {
+        size_t hash = 3;
+        hash = 17 * hash + lhv->hashCode();
+        hash = 17 * hash + numElements->hashCode();
+        return hash;
     }
 
     friend class PredicateFactory;

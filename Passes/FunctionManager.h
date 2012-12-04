@@ -8,6 +8,7 @@
 #ifndef FUNCTIONMANAGER_H_
 #define FUNCTIONMANAGER_H_
 
+#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <unordered_map>
@@ -33,8 +34,8 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~FunctionManager() {};
 
-    void addFunction(llvm::Function& F, PredicateState state);
-    PredicateState get(llvm::Function& F, PredicateFactory* PF, TermFactory* TF);
+    void addFunction(llvm::CallInst& CI, PredicateState state);
+    PredicateState get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
 
 private:
 

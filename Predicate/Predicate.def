@@ -9,6 +9,7 @@ HANDLE_PREDICATE(ICmp, ICmpPredicate)
 HANDLE_PREDICATE(Load, LoadPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
+HANDLE_PREDICATE(Malloc, MallocPredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE

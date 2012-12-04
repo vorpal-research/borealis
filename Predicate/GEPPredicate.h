@@ -53,6 +53,26 @@ public:
                 new_shifts);
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const GEPPredicate* o = llvm::dyn_cast<GEPPredicate>(other)) {
+            return *this->lhv == *o->lhv &&
+                    *this->rhv == *o->rhv;
+            // FIXME: akhin Compare this->shifts and other->shifts
+        } else {
+            return false;
+        }
+    }
+
+    virtual size_t hashCode() const {
+        size_t hash = 3;
+        hash = 17 * hash + lhv->hashCode();
+        hash = 17 * hash + rhv->hashCode();
+        // FIXME: akhin Hash this->shifts as well
+        return hash;
+    }
+
     friend class PredicateFactory;
 
 private:

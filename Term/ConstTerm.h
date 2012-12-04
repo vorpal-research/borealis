@@ -43,12 +43,14 @@ public:
 private:
 
     ConstTerm(llvm::ValueType type, const std::string& name) :
-        Term(0, type, name, type_id(*this)),
+        Term((id_t)h(name), type, name, type_id(*this)),
         name(name)
     { this->type = type; }
 
     llvm::ValueType type;
     const std::string name;
+
+    static std::hash<std::string> h;
 
 };
 

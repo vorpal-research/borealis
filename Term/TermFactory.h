@@ -10,6 +10,8 @@
 
 #include <llvm/Value.h>
 
+#include <memory>
+
 #include "Term/ArgumentTerm.h"
 #include "Term/ConstTerm.h"
 #include "Term/ReturnValueTerm.h"
@@ -23,6 +25,8 @@ namespace borealis {
 class TermFactory {
 
 public:
+
+    typedef std::unique_ptr<TermFactory> Ptr;
 
     Term::Ptr getArgumentTerm(llvm::Argument* a) {
         return Term::Ptr(new ArgumentTerm(a, slotTracker));
@@ -40,8 +44,8 @@ public:
         return Term::Ptr(new ValueTerm(v, slotTracker));
     }
 
-    static std::unique_ptr<TermFactory> get(SlotTracker* slotTracker) {
-        return std::unique_ptr<TermFactory>(new TermFactory(slotTracker));
+    static Ptr get(SlotTracker* slotTracker) {
+        return Ptr(new TermFactory(slotTracker));
     }
 
 private:

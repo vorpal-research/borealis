@@ -21,10 +21,15 @@
 #include <tuple>
 #include <vector>
 
-#include "Logging/logger.hpp"
+#include "FunctionManager.h"
 #include "PredicateAnalysis.h"
+#include "SlotTrackerPass.h"
+
+#include "Logging/logger.hpp"
+#include "Predicate/PredicateFactory.h"
 #include "State/PredicateState.h"
 #include "State/PredicateStateVector.h"
+#include "Term/TermFactory.h"
 
 namespace borealis {
 
@@ -68,9 +73,13 @@ private:
     PredicateStateMap predicateStateMap;
     WorkQueue workQueue;
 
+    FunctionManager* FM;
     PredicateAnalysis* PA;
     llvm::LoopInfo* LI;
     llvm::ScalarEvolution* SE;
+
+    PredicateFactory::Ptr PF;
+    TermFactory::Ptr TF;
 
     void processQueue();
     void processBasicBlock(const WorkQueueEntry& wqe);

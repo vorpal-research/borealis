@@ -15,10 +15,11 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "DetectNullPass.h"
-#include "Logging/logger.hpp"
 #include "PredicateStateAnalysis.h"
 #include "SlotTrackerPass.h"
 #include "SourceLocationTracker.h"
+
+#include "Logging/logger.hpp"
 
 namespace borealis {
 

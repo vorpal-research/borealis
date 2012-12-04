@@ -52,17 +52,17 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& 
     return s;
 }
 
-logging::stream_t& operator<<(logging::stream_t& s, const PredicateStateVector& vec) {
+std::ostream& operator<<(std::ostream& s, const PredicateStateVector& vec) {
     s << '[';
     if (!vec.empty()) {
         auto iter = vec.begin();
         const PredicateState& el = *iter++;
-        s << endl << "  " << el;
+        s << std::endl << "  " << el;
         for (const auto& e : view(iter, vec.end())) {
-            s << ',' << endl << "  " << e;
+            s << ',' << std::endl << "  " << e;
         }
     }
-    s << endl << ']';
+    s << std::endl << ']';
     return s;
 }
 

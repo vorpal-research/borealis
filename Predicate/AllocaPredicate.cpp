@@ -9,13 +9,14 @@
 #include "Logging/tracer.hpp"
 
 namespace borealis {
+
 AllocaPredicate::AllocaPredicate(
         Term::Ptr lhv,
         Term::Ptr numElements):
                 Predicate(type_id(*this)),
                 lhv(std::move(lhv)),
                 numElements(std::move(numElements)) {
-    this->asString = this->lhv->getName() + "= alloca(" + this->numElements->getName() + ")";
+    this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
 }
 
 AllocaPredicate::AllocaPredicate(
@@ -24,7 +25,7 @@ AllocaPredicate::AllocaPredicate(
         SlotTracker* /*st*/): Predicate(type_id(*this)),
                 lhv(std::move(lhv)),
                 numElements(std::move(numElements)) {
-    this->asString = this->lhv->getName() + "= alloca(" + this->numElements->getName() + ")";
+    this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
 }
 
 Predicate::Key AllocaPredicate::getKey() const {
@@ -34,6 +35,7 @@ Predicate::Key AllocaPredicate::getKey() const {
 Predicate::Dependee AllocaPredicate::getDependee() const {
     return std::make_pair(DependeeType::VALUE, lhv->getId());
 }
+
 Predicate::DependeeSet AllocaPredicate::getDependees() const {
     DependeeSet res = DependeeSet();
     res.insert(std::make_pair(DependeeType::VALUE, numElements->getId()));
@@ -50,7 +52,5 @@ z3::expr AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const
 
     return !z3ef.isInvalidPtrExpr(lhve);
 }
-
-
 
 } /* namespace borealis */

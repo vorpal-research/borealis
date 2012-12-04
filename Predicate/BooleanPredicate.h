@@ -43,6 +43,24 @@ public:
                 Term::Ptr(t->transform(b.get())));
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const BooleanPredicate* o = llvm::dyn_cast<BooleanPredicate>(other)) {
+            return *this->v == *o->v &&
+                    *this->b == *o->b;
+        } else {
+            return false;
+        }
+    }
+
+    virtual size_t hashCode() const {
+        size_t hash = 3;
+        hash = 17 * hash + v->hashCode();
+        hash = 17 * hash + b->hashCode();
+        return hash;
+    }
+
 	friend class PredicateFactory;
 
 private:

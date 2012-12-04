@@ -44,6 +44,28 @@ public:
                 cond);
     }
 
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        if (this == other) return true;
+        if (const ICmpPredicate* o = llvm::dyn_cast<ICmpPredicate>(other)) {
+            return *this->lhv == *o->lhv &&
+                    *this->op1 == *o->op1 &&
+                    *this->op2 == *o->op2 &&
+                    this->cond == o->cond;
+        } else {
+            return false;
+        }
+    }
+
+    virtual size_t hashCode() const {
+        size_t hash = 3;
+        hash = 17 * hash + lhv->hashCode();
+        hash = 17 * hash + op1->hashCode();
+        hash = 17 * hash + op2->hashCode();
+        hash = 17 * hash + cond;
+        return hash;
+    }
+
     friend class PredicateFactory;
 
 private:
