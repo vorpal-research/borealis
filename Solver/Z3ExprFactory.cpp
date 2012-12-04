@@ -170,7 +170,7 @@ std::pair<array, expr> Z3ExprFactory::byteArrayInsert(array arr, expr ix, expr b
     exprRef ixs = ix;
 
     std::vector<std::pair<z3::expr, z3::expr>> baseCases;
-    for(int sh = 0; sh < bytes.size(); ++sh) {
+    for(unsigned sh = 0; sh < bytes.size(); ++sh) {
         z3::expr shift = ixs + getIntConst(sh, pointerSize);
         auto p = std::make_pair(shift, bytes[sh]);
         baseCases.push_back( p );
@@ -178,7 +178,7 @@ std::pair<array, expr> Z3ExprFactory::byteArrayInsert(array arr, expr ix, expr b
 
     // need to capture everything by val :(
     auto axiom = getForAll({ ixs.get().get_sort() },
-            [this, arr, new_arr, baseCases](const std::vector<z3::expr>& vs){
+            [this, arr, new_arr, baseCases](const expr_vector& vs)->expr{
         TRACE_FUNC;
         // forall x. new_arr[x] = if(x == 0) ... else arr[x]
         return new_arr(vs[0]) ==

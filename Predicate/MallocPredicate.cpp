@@ -37,7 +37,7 @@ Predicate::DependeeSet MallocPredicate::getDependees() const {
     return res;
 }
 
-z3::expr MallocPredicate::toZ3(Z3ExprFactory& z3ef, Z3Context* ctx) const {
+z3::expr MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
     z3::expr lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
