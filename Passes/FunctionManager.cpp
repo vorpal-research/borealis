@@ -54,8 +54,9 @@ PredicateState FunctionManager::get(
     }
 
     if (data.count(F) == 0) {
-        return sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Attempt to get unregistered function " + F->getName().str());
+        return PredicateState();
+        // return sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+        //         "Attempt to get unregistered function " + F->getName().str());
     }
 
     return data[F];
