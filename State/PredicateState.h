@@ -54,8 +54,6 @@ public:
         }
     };
 
-    typedef std::set<std::string> SortedData;
-
     DataIterator begin() const { return data.begin(); }
     DataIterator end() const { return data.end(); }
     bool empty() const { return data.empty(); }
@@ -75,8 +73,7 @@ public:
 
         DataIterator __i1 = data.begin();
         DataIterator __i2 = other.data.begin();
-        while (__i1 != __end1 && __i2 != __end2 && **__i1 == **__i2)
-        {
+        while (__i1 != __end1 && __i2 != __end2 && **__i1 == **__i2) {
             ++__i1;
             ++__i2;
         }
