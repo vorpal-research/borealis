@@ -30,24 +30,7 @@ public:
     // a hack: CopyAssignable reference to non-CopyAssignable object
     // (z3::expr is CopyConstructible, but not CopyAssignable, so no
     // accumulator-like shit is possible with it)
-    struct exprRef {
-        std::unique_ptr<z3::expr> inner;
-        exprRef(expr e) : inner(new z3::expr(e)) {};
-        exprRef(const exprRef& ref) : inner(new expr(*ref.inner)) {};
-
-        exprRef& operator=(const exprRef& ref) {
-            inner.reset(new z3::expr(*ref.inner));
-            return *this;
-        }
-        exprRef& operator=(expr e) {
-            inner.reset(new z3::expr(e));
-            return *this;
-        }
-
-        expr get() const { return *inner; }
-
-        operator expr() { return get(); }
-    };
+    typedef borealis::util::copyref<expr> exprRef;
 
     Z3ExprFactory(z3::context& ctx);
 
@@ -62,31 +45,35 @@ public:
     expr getBoolVar(const std::string& name);
     expr getBoolConst(bool v);
     expr getBoolConst(const std::string& v);
+    expr getTrue();
+    expr getFalse();
     expr getIntVar(const std::string& name, size_t bits);
+    expr getFreshIntVar(const std::string& name, size_t bits);
     expr getIntConst(int v, size_t bits);
     expr getIntConst(const std::string& v, size_t bits);
     expr getRealVar(const std::string& name);
+    expr getFreshRealVar(const std::string& name);
     expr getRealConst(int v);
     expr getRealConst(double v);
     expr getRealConst(const std::string& v);
     array getNoMemoryArray();
     expr getNoMemoryArrayAxiom(array mem);
     expr_vector splitBytes(expr bv);
-    expr concatBytes(const std::vector<z3::expr>& bytes);
+    expr concatBytes(const expr_vector& bytes);
     expr getForAll(
-            const std::vector<z3::sort>& sorts,
-            std::function<z3::expr(const std::vector<z3::expr>&)> func
-        );
-    function createFreshFunction(const std::string& name, const std::vector<z3::sort>& domain, z3::sort range);
+        const std::vector<sort>& sorts,
+        std::function<expr(const expr_vector&)> func
+    );
+    function createFreshFunction(const std::string& name, const std::vector<sort>& domain, sort range);
     std::pair<array, expr> byteArrayInsert(array arr, expr ix, expr bv);
-    expr byteArrayExtract(array arr, z3::expr ix, unsigned sz);
+    expr byteArrayExtract(array arr, expr ix, unsigned sz);
     expr getExprForTerm(const Term& term, size_t bits = 0);
     expr getExprForValue(
             const llvm::Value& value,
             const std::string& name);
     expr getInvalidPtr();
-    expr isInvalidPtrExpr(z3::expr ptr);
-    expr getDistinct(const std::vector<expr>& exprs);
+    expr isInvalidPtrExpr(expr ptr);
+    expr getDistinct(const expr_vector& exprs);
 
     struct then_tmp {
         expr cmd;
@@ -105,26 +92,14 @@ public:
         }
     };
 
-    if_tmp if_(z3::expr cond) {
+    if_tmp if_(expr cond) {
         return if_tmp{ cond };
     }
 
     expr switch_(
-            z3::expr val,
-            const std::vector<std::pair<z3::expr, z3::expr>>& cases,
-            z3::expr default_) {
-        TRACE_FUNC;
-
-        using borealis::util::view;
-
-        auto mkIte = [&]( z3::expr b, const std::pair<z3::expr, z3::expr>& a) {
-            return if_(val == a.first).
-                    then_(a.second).
-                    else_(b);
-        };
-
-        return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
-    }
+            expr val,
+            const std::vector<std::pair<expr, expr>>& cases,
+            expr default_);
 
 private:
 

@@ -9,7 +9,9 @@
 
 namespace borealis {
 
-Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {}
+Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {
+    //Z3_update_param_value(ctx, "MACRO_FINDER", "true");
+}
 
 unsigned int Z3ExprFactory::pointerSize = 32;
 
@@ -34,12 +36,24 @@ expr Z3ExprFactory::getBoolConst(bool v) {
     return ctx.bool_val(v);
 }
 
+expr Z3ExprFactory::getTrue() {
+    return getBoolConst(true);
+}
+
+expr Z3ExprFactory::getFalse() {
+    return getBoolConst(false);
+}
+
 expr Z3ExprFactory::getBoolConst(const std::string& v) {
     return ctx.bool_val(v.c_str());
 }
 
 expr Z3ExprFactory::getIntVar(const std::string& name, size_t bits) {
     return ctx.bv_const(name.c_str(), bits);
+}
+
+expr Z3ExprFactory::getFreshIntVar(const std::string& name, size_t bits) {
+    return to_expr(Z3_mk_fresh_const(ctx, name.c_str(), ctx.bv_sort(bits)));
 }
 
 expr Z3ExprFactory::getIntConst(int v, size_t bits) {
@@ -53,6 +67,10 @@ expr Z3ExprFactory::getIntConst(const std::string& v, size_t bits) {
 // FIXME: do smth with reals
 expr Z3ExprFactory::getRealVar(const std::string& name) {
     return ctx.bv_const(name.c_str(), 64);
+}
+
+expr Z3ExprFactory::getFreshRealVar(const std::string& name) {
+    return to_expr(Z3_mk_fresh_const(ctx, name.c_str(), ctx.bv_sort(64)));
 }
 
 expr Z3ExprFactory::getRealConst(int v) {
@@ -77,7 +95,7 @@ array Z3ExprFactory::getNoMemoryArray() {
 
 expr Z3ExprFactory::getNoMemoryArrayAxiom(array mem) {
     return getForAll({ getPtrSort() }, [&mem](const std::vector<z3::expr>& args){
-                return mem(args[0]) == 0xff;
+        return mem(args[0]) == 0xff;
     });
 }
 
@@ -103,8 +121,6 @@ expr Z3ExprFactory::concatBytes(const std::vector<z3::expr>& bytes) {
 
     return head.get();
 }
-
-
 
 expr Z3ExprFactory::getForAll(
         const std::vector<z3::sort>& sorts,
@@ -218,11 +234,28 @@ expr Z3ExprFactory::isInvalidPtrExpr(z3::expr ptr) {
     return (ptr == getInvalidPtr() || ptr == getNullPtr()).simplify();
 }
 
-expr Z3ExprFactory::getDistinct(const std::vector<expr>& exprs) {
+expr Z3ExprFactory::getDistinct(const expr_vector& exprs) {
     if(exprs.empty()) return getBoolConst(true);
 
     std::vector<Z3_ast> cast(exprs.begin(), exprs.end());
     return to_expr(Z3_mk_distinct(ctx, cast.size(), &cast[0]));
+}
+
+expr Z3ExprFactory::switch_(
+        expr val,
+        const std::vector<std::pair<expr, expr>>& cases,
+        expr default_) {
+    TRACE_FUNC;
+
+    using borealis::util::view;
+
+    auto mkIte = [this, val](expr b, const std::pair<expr, expr>& a) {
+        return if_(val == a.first).
+                then_(a.second).
+                else_(b);
+    };
+
+    return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
 }
 
 expr Z3ExprFactory::to_expr(Z3_ast ast) {
