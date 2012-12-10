@@ -45,7 +45,6 @@ public:
     expr getNullPtr();
     // Bools
     expr getBoolVar(const std::string& name);
-    expr getBoolConst(const std::string& v);
     expr getBoolConst(bool b);
     expr getTrue();
     expr getFalse();
