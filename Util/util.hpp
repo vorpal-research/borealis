@@ -14,6 +14,7 @@
 
 #include "Logging/logger.hpp"
 #include "streams.hpp"
+#include "meta.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -79,6 +80,21 @@ public:
     operator T() { return get(); }
 
 };
+
+#include "macros.h"
+
+namespace impl {
+template<class Tuple, class Callable, size_t ...N>
+auto apply_packed_step_1(const Tuple& tp, Callable c, util::indexer<N...>)
+QUICK_RETURN(c(std::get<N>(tp)...))
+} // namespace impl
+
+// apply a function taking N parameters to an N-tuple
+template<class Callable, class ...Args>
+auto apply_packed(Callable c, const std::tuple<Args...>& tp)
+QUICK_RETURN(impl::apply_packed_step_1(tp, c, typename util::make_indexer<Args...>::type()))
+
+#include "unmacros.h"
 
 } // naemspace util
 } // naemspace borealis
