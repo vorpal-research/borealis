@@ -35,6 +35,7 @@ BooleanPredicate::BooleanPredicate(
         SlotTracker* /* st */) : Predicate(type_id(*this), type),
             v(std::move(v)),
             b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
+    this->asString = this->v->getName() + "=" + this->b->getName();
 }
 
 Predicate::Key BooleanPredicate::getKey() const {
