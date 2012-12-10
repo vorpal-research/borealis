@@ -12,7 +12,7 @@
 #include <llvm/Value.h>
 
 #include <functional>
-#include <unordered_map>
+#include <list>
 
 #include "Logging/logger.hpp"
 #include "Predicate/Predicate.h"
@@ -83,8 +83,6 @@ public:
 private:
 
     Data data;
-
-    void removeDependants(Predicate::DependeeSet dependees);
 
 };
 

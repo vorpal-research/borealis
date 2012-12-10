@@ -17,13 +17,11 @@ Z3Solver::Z3Solver(Z3ExprFactory& z3ef) : z3ef(z3ef) {}
 z3::check_result Z3Solver::check(
         const Query& q,
         const PredicateState& state) {
+    using namespace::z3;
 
     TRACE_FUNC;
 
-    using namespace::z3;
-
     solver s(z3ef.unwrap());
-    addGEPAxioms(s);
 
     auto ss = state.toZ3(z3ef);
     s.add(ss.first.simplify());
@@ -52,7 +50,6 @@ bool Z3Solver::checkPathPredicates(
     TRACE_FUNC;
 
     solver s(z3ef.unwrap());
-    addGEPAxioms(s);
 
     auto ss = state.toZ3(z3ef);
     s.add(ss.second.simplify());
@@ -68,15 +65,15 @@ bool Z3Solver::checkPathPredicates(
         check_result r = s.check(1, &pred);
 
         dbgs() << "Acquired result: "
-               << ((r == z3::sat)? "sat" : (r == z3::unsat)? "unsat" : "unknown")
+               << ((r == z3::sat) ? "sat" : (r == z3::unsat) ? "unsat" : "unknown")
                << endl;
 
         auto dbg = dbgs();
         dbg << "With:" << endl;
-        if(r == z3::sat) dbg << s.get_model() << endl;
-        else{
+        if (r == z3::sat) dbg << s.get_model() << endl;
+        else {
             auto core = s.unsat_core();
-            for(size_t i = 0U; i < core.size(); ++i ) dbg << core[i] << endl;
+            for (size_t i = 0U; i < core.size(); ++i ) dbg << core[i] << endl;
         }
 
         return r != z3::unsat;
@@ -102,42 +99,6 @@ bool Z3Solver::checkSatOrUnknown(
         const PredicateState& state) {
     TRACE_FUNC;
     return check(q, state) != z3::unsat;
-}
-
-void Z3Solver::addGEPAxioms(z3::solver& s) {
-    using namespace::z3;
-
-    TRACE_FUNC;
-
-    auto& ctx = z3ef.unwrap();
-
-    auto gep = z3ef.getGEPFunction();
-    auto ptr_sort = z3ef.getPtrSort();
-
-    auto ptr = to_expr(ctx, Z3_mk_bound(ctx, 0, ptr_sort));
-    auto freevar = to_expr(ctx, Z3_mk_bound(ctx, 1, ctx.int_sort()));
-    auto null = z3ef.getNullPtr();
-
-    auto body = implies(
-            ptr != null,
-            gep(ptr, freevar) != null);
-
-    Z3_sort sort_array[] = {Z3_sort(ctx.int_sort()), Z3_sort(ptr_sort)};
-    Z3_symbol name_array[] = {Z3_symbol(ctx.str_symbol("freevar")), Z3_symbol(ctx.str_symbol("ptr"))};
-
-    auto axiom = to_expr(
-            ctx,
-            Z3_mk_forall(
-                    ctx,
-                    0,
-                    0,
-                    nullptr,
-                    2,
-                    sort_array,
-                    name_array,
-                    body));
-
-    s.add(axiom);
 }
 
 } /* namespace borealis */

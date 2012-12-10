@@ -7,8 +7,6 @@
 
 #include "ICmpPredicate.h"
 
-#include "Term/ValueTerm.h"
-
 namespace borealis {
 
 using llvm::ConditionType;
@@ -52,25 +50,12 @@ Predicate::Key ICmpPredicate::getKey() const {
     return std::make_pair(borealis::type_id(*this), lhv->getId());
 }
 
-Predicate::Dependee ICmpPredicate::getDependee() const {
-    return std::make_pair(DependeeType::VALUE, lhv->getId());
-}
-
-Predicate::DependeeSet ICmpPredicate::getDependees() const {
-    DependeeSet res = DependeeSet();
-    res.insert(std::make_pair(DependeeType::VALUE, op1->getId()));
-    res.insert(std::make_pair(DependeeType::VALUE, op2->getId()));
-    return res;
-}
-
 z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
-    using namespace::z3;
-
     TRACE_FUNC;
 
-    expr l = z3ef.getExprForTerm(*lhv);
-    expr o1 = z3ef.getExprForTerm(*op1);
-    expr o2 = z3ef.getExprForTerm(*op2);
+    z3::expr l = z3ef.getExprForTerm(*lhv);
+    z3::expr o1 = z3ef.getExprForTerm(*op1);
+    z3::expr o2 = z3ef.getExprForTerm(*op2);
 
     ConditionType ct = conditionType(cond);
     switch(ct) {
@@ -85,6 +70,28 @@ z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     case ConditionType::UNKNOWN: return sayonara<z3::expr>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
             "Unknown condition type in Z3 conversion");
     }
+}
+
+bool ICmpPredicate::equals(const Predicate* other) const {
+    if (other == nullptr) return false;
+    if (this == other) return true;
+    if (const ICmpPredicate* o = llvm::dyn_cast<ICmpPredicate>(other)) {
+        return *this->lhv == *o->lhv &&
+                *this->op1 == *o->op1 &&
+                *this->op2 == *o->op2 &&
+                this->cond == o->cond;
+    } else {
+        return false;
+    }
+}
+
+size_t ICmpPredicate::hashCode() const {
+    size_t hash = 3;
+    hash = 17 * hash + lhv->hashCode();
+    hash = 17 * hash + op1->hashCode();
+    hash = 17 * hash + op2->hashCode();
+    hash = 17 * hash + cond;
+    return hash;
 }
 
 } /* namespace borealis */

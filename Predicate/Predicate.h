@@ -32,12 +32,6 @@ enum class PredicateType {
     STATE
 };
 
-enum class DependeeType {
-    NONE = 3,
-    VALUE = 5,
-    DEREF_VALUE = 7
-};
-
 // Forward declaration
 template<class SubClass>
 class Transformer;
@@ -48,53 +42,38 @@ public:
 
     typedef std::shared_ptr<const Predicate> Ptr;
 
-    typedef std::pair<size_t, Term::id_t> Key;
+    typedef std::pair<borealis::id_t, Term::id_t> Key;
     struct KeyHash {
     public:
         static size_t hash(const Key& k) {
-            return k.first ^ (size_t)k.second;
+            return (size_t)k.first ^ (size_t)k.second;
         }
         size_t operator()(const Key& k) const {
             return hash(k);
         }
     };
 
-    typedef std::pair<DependeeType, Term::id_t> Dependee;
-    struct DependeeHash {
-    public:
-        static size_t hash(const Dependee& k) {
-            return static_cast<size_t>(k.first) ^ (size_t)k.second;
-        }
-        size_t operator()(const Dependee& k) const {
-            return hash(k);
-        }
-    };
-    typedef std::unordered_set<Dependee, DependeeHash> DependeeSet;
-
     Predicate(borealis::id_t predicate_type_id);
     Predicate(borealis::id_t predicate_type_id, PredicateType type);
     virtual ~Predicate() = 0;
     virtual Key getKey() const = 0;
 
-    virtual Dependee getDependee() const = 0;
-    virtual DependeeSet getDependees() const = 0;
+    inline borealis::id_t getPredicateTypeId() const {
+        return predicate_type_id;
+    }
 
-    PredicateType getType() const {
+    inline PredicateType getType() const {
         return type;
     }
 
-    std::string toString() const {
+    inline std::string toString() const {
         return asString;
     }
 
-    virtual z3::expr toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const = 0;
+    virtual z3::expr toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const = 0;
 
     static bool classof(const Predicate* /* t */) {
         return true;
-    }
-
-    inline borealis::id_t getPredicateTypeId() const {
-        return predicate_type_id;
     }
 
     virtual bool equals(const Predicate* other) const = 0;
@@ -102,9 +81,7 @@ public:
         return this->equals(&other);
     }
 
-    virtual size_t hashCode() const {
-        return (size_t)this;
-    }
+    virtual size_t hashCode() const = 0;
 
 protected:
 
@@ -115,7 +92,7 @@ protected:
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p);
-logging::stream_t& operator<<(logging::stream_t& s, const borealis::Predicate& p);
+std::ostream& operator<<(std::ostream& s, const borealis::Predicate& p);
 
 } /* namespace borealis */
 

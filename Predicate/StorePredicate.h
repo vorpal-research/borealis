@@ -8,9 +8,6 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
-#include <llvm/Value.h>
-
-
 #include "Predicate.h"
 
 namespace borealis {
@@ -22,9 +19,6 @@ class StorePredicate: public Predicate {
 public:
 
     virtual Predicate::Key getKey() const;
-
-    virtual Dependee getDependee() const;
-    virtual DependeeSet getDependees() const;
 
     virtual z3::expr toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
@@ -43,23 +37,8 @@ public:
                 Term::Ptr(t->transform(rhv.get())));
     }
 
-    virtual bool equals(const Predicate* other) const {
-        if (other == nullptr) return false;
-        if (this == other) return true;
-        if (const StorePredicate* o = llvm::dyn_cast<StorePredicate>(other)) {
-            return *this->lhv == *o->lhv &&
-                    *this->rhv == *o->rhv;
-        } else {
-            return false;
-        }
-    }
-
-    virtual size_t hashCode() const {
-        size_t hash = 3;
-        hash = 17 * hash + lhv->hashCode();
-        hash = 17 * hash + rhv->hashCode();
-        return hash;
-    }
+    virtual bool equals(const Predicate* other) const;
+    virtual size_t hashCode() const;
 
     friend class PredicateFactory;
 

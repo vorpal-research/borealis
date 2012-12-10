@@ -10,7 +10,7 @@
 namespace borealis {
 
 Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {
-    //Z3_update_param_value(ctx, "MACRO_FINDER", "true");
+    // Z3_update_param_value(ctx, "MACRO_FINDER", "true");
 }
 
 unsigned int Z3ExprFactory::pointerSize = 32;
@@ -32,6 +32,10 @@ expr Z3ExprFactory::getBoolVar(const std::string& name) {
     return ctx.bool_const(name.c_str());
 }
 
+expr Z3ExprFactory::getBoolConst(const std::string& v) {
+    return ctx.bool_val(v.c_str());
+}
+
 expr Z3ExprFactory::getBoolConst(bool v) {
     return ctx.bool_val(v);
 }
@@ -42,10 +46,6 @@ expr Z3ExprFactory::getTrue() {
 
 expr Z3ExprFactory::getFalse() {
     return getBoolConst(false);
-}
-
-expr Z3ExprFactory::getBoolConst(const std::string& v) {
-    return ctx.bool_val(v.c_str());
 }
 
 expr Z3ExprFactory::getIntVar(const std::string& name, size_t bits) {
@@ -64,7 +64,7 @@ expr Z3ExprFactory::getIntConst(const std::string& v, size_t bits) {
     return ctx.bv_val(v.c_str(), bits);
 }
 
-// FIXME: do smth with reals
+// FIXME: belyaev Do smth with reals
 expr Z3ExprFactory::getRealVar(const std::string& name) {
     return ctx.bv_const(name.c_str(), 64);
 }
@@ -85,7 +85,6 @@ expr Z3ExprFactory::getRealConst(const std::string& v) {
     std::istringstream buf(v);
     double dbl;
     buf >> dbl;
-
     return getRealConst(dbl);
 }
 
@@ -94,7 +93,7 @@ array Z3ExprFactory::getNoMemoryArray() {
 }
 
 expr Z3ExprFactory::getNoMemoryArrayAxiom(array mem) {
-    return getForAll({ getPtrSort() }, [&mem](const std::vector<z3::expr>& args){
+    return getForAll({ getPtrSort() }, [&mem](const std::vector<z3::expr>& args) {
         return mem(args[0]) == 0xff;
     });
 }
@@ -103,7 +102,7 @@ std::vector<expr> Z3ExprFactory::splitBytes(expr bv) {
     size_t bits = bv.get_sort().bv_size();
     std::vector<z3::expr> ret;
 
-    for (size_t ix = 0; ix < bits; ix+=8) {
+    for (size_t ix = 0; ix < bits; ix += 8) {
         z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+7, ix, bv));
         ret.push_back(e);
     }
@@ -122,6 +121,45 @@ expr Z3ExprFactory::concatBytes(const std::vector<z3::expr>& bytes) {
     return head.get();
 }
 
+std::pair<array, expr> Z3ExprFactory::byteArrayInsert(array arr, expr ix, expr bv) {
+    TRACE_FUNC;
+
+    auto bytes = splitBytes(bv);
+
+    array new_arr = createFreshFunction("mem", { arr.domain(0) }, arr.range());
+    exprRef ixs = ix;
+
+    std::vector<std::pair<z3::expr, z3::expr>> baseCases;
+    for (unsigned sh = 0; sh < bytes.size(); ++sh) {
+        z3::expr shift = ixs + getIntConst(sh, pointerSize);
+        auto p = std::make_pair(shift, bytes[sh]);
+        baseCases.push_back( p );
+    }
+
+    // need to capture everything by val :(
+    auto axiom = getForAll({ ixs.get().get_sort() },
+            [this, arr, new_arr, baseCases](const expr_vector& vs)->expr {
+        TRACE_FUNC;
+        // forall x. new_arr[x] = if(x == 0) ... else arr[x]
+        return new_arr(vs[0]) ==
+                if_(isInvalidPtrExpr(vs[0]))
+                    .then_(arr(vs[0]))
+                    .else_(switch_(vs[0], baseCases, arr(vs[0])));
+    });
+
+    return std::make_pair(new_arr, axiom.simplify());
+}
+
+expr Z3ExprFactory::byteArrayExtract(array arr, z3::expr ix, unsigned sz) {
+    std::vector<z3::expr> ret;
+
+    for (unsigned i = 0; i < sz; ++i) {
+        ret.push_back(arr(ix + getIntConst(i, pointerSize)));
+    }
+
+    return concatBytes(ret);
+}
+
 expr Z3ExprFactory::getForAll(
         const std::vector<z3::sort>& sorts,
         std::function<z3::expr(const std::vector<z3::expr>&)> func
@@ -134,21 +172,21 @@ expr Z3ExprFactory::getForAll(
     size_t numBounds = sorts.size();
     std::vector<z3::expr> args;
 
-    for(size_t i = 0U; i < numBounds; ++i) {
+    for (size_t i = 0U; i < numBounds; ++i) {
         args.push_back(to_expr(Z3_mk_bound(ctx, i, sorts[i])));
     }
 
-    auto body = func(args);
+    z3::expr body = func(args);
 
     std::vector<Z3_sort> sort_array(sorts.rbegin(), sorts.rend());
 
     std::vector<Z3_symbol> name_array;
-    for(size_t i = 0U; i < numBounds; ++i) {
-        std::string name = "forall_bound_" + toString(numBounds - i -1);
+    for (size_t i = 0U; i < numBounds; ++i) {
+        std::string name = "forall_bound_" + toString(numBounds - i - 1);
         name_array.push_back(ctx.str_symbol(name.c_str()));
     }
 
-    auto axiom = to_expr(
+    z3::expr axiom = to_expr(
             Z3_mk_forall(
                     ctx,
                     0,
@@ -164,7 +202,8 @@ expr Z3ExprFactory::getForAll(
 function Z3ExprFactory::createFreshFunction(
         const std::string& name,
         const std::vector<z3::sort>& domain,
-        z3::sort range) {
+        z3::sort range
+    ) {
 
     std::vector< Z3_sort > resolve( domain.begin(), domain.end() );
 
@@ -175,45 +214,6 @@ function Z3ExprFactory::createFreshFunction(
                     resolve.size(),
                     &resolve[0],
                     range));
-}
-
-std::pair<array, expr> Z3ExprFactory::byteArrayInsert(array arr, expr ix, expr bv) {
-    TRACE_FUNC;
-
-    auto bytes = splitBytes(bv);
-
-    array new_arr = createFreshFunction("mem", { arr.domain(0) }, arr.range());
-    exprRef ixs = ix;
-
-    std::vector<std::pair<z3::expr, z3::expr>> baseCases;
-    for(unsigned sh = 0; sh < bytes.size(); ++sh) {
-        z3::expr shift = ixs + getIntConst(sh, pointerSize);
-        auto p = std::make_pair(shift, bytes[sh]);
-        baseCases.push_back( p );
-    }
-
-    // need to capture everything by val :(
-    auto axiom = getForAll({ ixs.get().get_sort() },
-            [this, arr, new_arr, baseCases](const expr_vector& vs)->expr{
-        TRACE_FUNC;
-        // forall x. new_arr[x] = if(x == 0) ... else arr[x]
-        return new_arr(vs[0]) ==
-                if_(isInvalidPtrExpr(vs[0])).
-                    then_(arr(vs[0])).
-                    else_(switch_(vs[0], baseCases, arr(vs[0])));
-    });
-
-    return std::make_pair(new_arr, axiom.simplify());
-}
-
-expr Z3ExprFactory::byteArrayExtract(array arr, z3::expr ix, unsigned sz) {
-    std::vector<z3::expr> ret;
-
-    for(unsigned i = 0; i < sz; ++i) {
-        ret.push_back(arr(ix + getIntConst(i, pointerSize)));
-    }
-
-    return concatBytes(ret);
 }
 
 expr Z3ExprFactory::getExprForTerm(const Term& term, size_t bits) {
@@ -235,24 +235,27 @@ expr Z3ExprFactory::isInvalidPtrExpr(z3::expr ptr) {
 }
 
 expr Z3ExprFactory::getDistinct(const expr_vector& exprs) {
-    if(exprs.empty()) return getBoolConst(true);
+    if (exprs.empty()) return getTrue();
 
     std::vector<Z3_ast> cast(exprs.begin(), exprs.end());
     return to_expr(Z3_mk_distinct(ctx, cast.size(), &cast[0]));
 }
 
+sort Z3ExprFactory::getPtrSort() {
+    return ctx.bv_sort(pointerSize);
+}
+
 expr Z3ExprFactory::switch_(
         expr val,
         const std::vector<std::pair<expr, expr>>& cases,
-        expr default_) {
+        expr default_
+    ) {
     TRACE_FUNC;
 
-    using borealis::util::view;
-
     auto mkIte = [this, val](expr b, const std::pair<expr, expr>& a) {
-        return if_(val == a.first).
-                then_(a.second).
-                else_(b);
+        return if_(val == a.first)
+               .then_(a.second)
+               .else_(b);
     };
 
     return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
@@ -292,26 +295,7 @@ expr Z3ExprFactory::getExprByTypeAndName(
     }
 }
 
-////////////////////////////////////////////////////////////////////////////
-
-function Z3ExprFactory::getDerefFunction(sort& domain, sort& range) {
-    return ctx.function("*", domain, range);
-}
-
-function Z3ExprFactory::getGEPFunction() {
-    using namespace::z3;
-
-    sort domain[] = {ctx.bv_sort(pointerSize), ctx.int_sort()};
-    return ctx.function("gep", 2, domain, ctx.bv_sort(pointerSize));
-}
-
-////////////////////////////////////////////////////////////////////////////
-
-sort Z3ExprFactory::getPtrSort() {
-    return ctx.bv_sort(pointerSize);
-}
-
-////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void Z3ExprFactory::initialize(llvm::TargetData* TD) {
     pointerSize = TD->getPointerSizeInBits();

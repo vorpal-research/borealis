@@ -8,7 +8,6 @@
 #include "BooleanPredicate.h"
 
 #include "Term/ConstTerm.h"
-#include "Term/ValueTerm.h"
 
 namespace borealis {
 
@@ -33,32 +32,39 @@ BooleanPredicate::BooleanPredicate(
         PredicateType type,
         Term::Ptr v,
         bool b,
-        SlotTracker* st) : BooleanPredicate(std::move(v), b, st) {
-    this->type = type;
+        SlotTracker* /* st */) : Predicate(type_id(*this), type),
+            v(std::move(v)),
+            b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
 }
 
 Predicate::Key BooleanPredicate::getKey() const {
     return std::make_pair(borealis::type_id(*this), v->getId());
 }
 
-Predicate::Dependee BooleanPredicate::getDependee() const {
-    return std::make_pair(DependeeType::NONE, 0);
-}
-
-Predicate::DependeeSet BooleanPredicate::getDependees() const {
-    DependeeSet res = DependeeSet();
-    res.insert(std::make_pair(DependeeType::VALUE, v->getId()));
-    return res;
-}
-
 z3::expr BooleanPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
-    using namespace::z3;
-
     TRACE_FUNC;
 
-    expr var = z3ef.getExprForTerm(*v);
-    expr val = z3ef.getExprForTerm(*b);
+    z3::expr var = z3ef.getExprForTerm(*v);
+    z3::expr val = z3ef.getExprForTerm(*b);
     return var == val;
+}
+
+bool BooleanPredicate::equals(const Predicate* other) const {
+    if (other == nullptr) return false;
+    if (this == other) return true;
+    if (const BooleanPredicate* o = llvm::dyn_cast<BooleanPredicate>(other)) {
+        return *this->v == *o->v &&
+                *this->b == *o->b;
+    } else {
+        return false;
+    }
+}
+
+size_t BooleanPredicate::hashCode() const {
+    size_t hash = 3;
+    hash = 17 * hash + v->hashCode();
+    hash = 17 * hash + b->hashCode();
+    return hash;
 }
 
 } /* namespace borealis */

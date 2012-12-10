@@ -21,6 +21,7 @@ namespace borealis {
 class Z3ExprFactory {
 
 public:
+
     typedef z3::func_decl function;
     typedef function array;
     typedef z3::expr expr;
@@ -39,41 +40,55 @@ public:
     }
 
     ////////////////////////////////////////////////////////////////////////////
-
+    // Pointers
     expr getPtr(const std::string& name);
     expr getNullPtr();
+    // Bools
     expr getBoolVar(const std::string& name);
-    expr getBoolConst(bool v);
     expr getBoolConst(const std::string& v);
+    expr getBoolConst(bool b);
     expr getTrue();
     expr getFalse();
+    // Integers
     expr getIntVar(const std::string& name, size_t bits);
     expr getFreshIntVar(const std::string& name, size_t bits);
     expr getIntConst(int v, size_t bits);
     expr getIntConst(const std::string& v, size_t bits);
+    // Reals
     expr getRealVar(const std::string& name);
     expr getFreshRealVar(const std::string& name);
     expr getRealConst(int v);
     expr getRealConst(double v);
     expr getRealConst(const std::string& v);
+    // Memory
     array getNoMemoryArray();
     expr getNoMemoryArrayAxiom(array mem);
     expr_vector splitBytes(expr bv);
     expr concatBytes(const expr_vector& bytes);
+    std::pair<array, expr> byteArrayInsert(array arr, expr ix, expr bv);
+    expr byteArrayExtract(array arr, expr ix, unsigned sz);
+    // Functions
     expr getForAll(
         const std::vector<sort>& sorts,
         std::function<expr(const expr_vector&)> func
     );
-    function createFreshFunction(const std::string& name, const std::vector<sort>& domain, sort range);
-    std::pair<array, expr> byteArrayInsert(array arr, expr ix, expr bv);
-    expr byteArrayExtract(array arr, expr ix, unsigned sz);
+    function createFreshFunction(
+        const std::string& name,
+        const std::vector<sort>& domain,
+        sort range
+    );
+    // Generic functions
     expr getExprForTerm(const Term& term, size_t bits = 0);
     expr getExprForValue(
-            const llvm::Value& value,
-            const std::string& name);
+        const llvm::Value& value,
+        const std::string& name
+    );
+    // Valid/invalid pointers
     expr getInvalidPtr();
     expr isInvalidPtrExpr(expr ptr);
     expr getDistinct(const expr_vector& exprs);
+    // Misc pointer stuff
+    sort getPtrSort();
 
     struct then_tmp {
         expr cmd;
@@ -88,18 +103,18 @@ public:
         expr cond;
 
         then_tmp then_(expr branch) {
-            return then_tmp{ cond, branch };
+            return then_tmp { cond, branch };
         }
     };
 
     if_tmp if_(expr cond) {
-        return if_tmp{ cond };
+        return if_tmp { cond };
     }
 
     expr switch_(
-            expr val,
-            const std::vector<std::pair<expr, expr>>& cases,
-            expr default_);
+        expr val,
+        const std::vector<std::pair<expr, expr>>& cases,
+        expr default_);
 
 private:
 
@@ -110,17 +125,6 @@ private:
             size_t bitsize = 0);
 
 public:
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    function getDerefFunction(sort& domain, sort& range);
-    function getGEPFunction();
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    sort getPtrSort();
-
-    ////////////////////////////////////////////////////////////////////////////
 
     static void initialize(llvm::TargetData* TD);
 

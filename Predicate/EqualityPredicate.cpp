@@ -7,8 +7,6 @@
 
 #include "EqualityPredicate.h"
 
-#include "Term/ValueTerm.h"
-
 namespace borealis {
 
 EqualityPredicate::EqualityPredicate(
@@ -32,25 +30,31 @@ Predicate::Key EqualityPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-Predicate::Dependee EqualityPredicate::getDependee() const {
-    return std::make_pair(DependeeType::VALUE, lhv->getId());
-}
-
-Predicate::DependeeSet EqualityPredicate::getDependees() const {
-    DependeeSet res = DependeeSet();
-    res.insert(std::make_pair(DependeeType::VALUE, rhv->getId()));
-    return res;
-}
-
 z3::expr EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
-    using namespace::z3;
-
     TRACE_FUNC;
 
-    expr l = z3ef.getExprForTerm(*lhv);
-    expr r = z3ef.getExprForTerm(*rhv);
+    z3::expr l = z3ef.getExprForTerm(*lhv);
+    z3::expr r = z3ef.getExprForTerm(*rhv);
 
     return l == r;
+}
+
+bool EqualityPredicate::equals(const Predicate* other) const {
+    if (other == nullptr) return false;
+    if (this == other) return true;
+    if (const EqualityPredicate* o = llvm::dyn_cast<EqualityPredicate>(other)) {
+        return *this->lhv == *o->lhv &&
+                *this->rhv == *o->rhv;
+    } else {
+        return false;
+    }
+}
+
+size_t EqualityPredicate::hashCode() const {
+    size_t hash = 3;
+    hash = 17 * hash + lhv->hashCode();
+    hash = 17 * hash + rhv->hashCode();
+    return hash;
 }
 
 } /* namespace borealis */

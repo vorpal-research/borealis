@@ -23,9 +23,6 @@ public:
 
     virtual Predicate::Key getKey() const;
 
-    virtual Dependee getDependee() const;
-    virtual DependeeSet getDependees() const;
-
     virtual z3::expr toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
     static bool classof(const Predicate* p) {
@@ -53,25 +50,8 @@ public:
                 new_shifts);
     }
 
-    virtual bool equals(const Predicate* other) const {
-        if (other == nullptr) return false;
-        if (this == other) return true;
-        if (const GEPPredicate* o = llvm::dyn_cast<GEPPredicate>(other)) {
-            return *this->lhv == *o->lhv &&
-                    *this->rhv == *o->rhv;
-            // FIXME: akhin Compare this->shifts and other->shifts
-        } else {
-            return false;
-        }
-    }
-
-    virtual size_t hashCode() const {
-        size_t hash = 3;
-        hash = 17 * hash + lhv->hashCode();
-        hash = 17 * hash + rhv->hashCode();
-        // FIXME: akhin Hash this->shifts as well
-        return hash;
-    }
+    virtual bool equals(const Predicate* other) const;
+    virtual size_t hashCode() const;
 
     friend class PredicateFactory;
 
@@ -89,7 +69,7 @@ private:
     GEPPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            std::vector< std::pair<llvm::Value*, uint64_t> > shifts,
+            std::vector< std::pair<llvm::Value*, uint64_t> >& shifts,
             SlotTracker* st);
 
 };

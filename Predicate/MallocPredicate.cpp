@@ -12,14 +12,14 @@ namespace borealis {
 
 MallocPredicate::MallocPredicate(
         Term::Ptr lhv) : Predicate(type_id(*this)),
-                lhv(std::move(lhv)) {
+            lhv(std::move(lhv)) {
     this->asString = this->lhv->getName() + "=malloc()";
 }
 
 MallocPredicate::MallocPredicate(
         Term::Ptr lhv,
         SlotTracker* /*st*/) : Predicate(type_id(*this)),
-                lhv(std::move(lhv)) {
+            lhv(std::move(lhv)) {
     this->asString = this->lhv->getName() + "=malloc()";
 }
 
@@ -27,25 +27,31 @@ Predicate::Key MallocPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-Predicate::Dependee MallocPredicate::getDependee() const {
-    return std::make_pair(DependeeType::VALUE, lhv->getId());
-}
-
-Predicate::DependeeSet MallocPredicate::getDependees() const {
-    DependeeSet res = DependeeSet();
-    // FIXME akhin
-    return res;
-}
-
 z3::expr MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
     z3::expr lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
-    if(ctx) {
+    if (ctx) {
         ctx->registerDistinctPtr(lhve);
     }
 
     return z3ef.getBoolConst(true);
+}
+
+bool MallocPredicate::equals(const Predicate* other) const {
+    if (other == nullptr) return false;
+    if (this == other) return true;
+    if (const MallocPredicate* o = llvm::dyn_cast<MallocPredicate>(other)) {
+        return *this->lhv == *o->lhv;
+    } else {
+        return false;
+    }
+}
+
+size_t MallocPredicate::hashCode() const {
+    size_t hash = 3;
+    hash = 17 * hash + lhv->hashCode();
+    return hash;
 }
 
 } /* namespace borealis */

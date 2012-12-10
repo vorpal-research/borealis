@@ -39,8 +39,6 @@ private:
 
     Z3ExprFactory& z3ef;
 
-    void addGEPAxioms(z3::solver& s);
-
     z3::check_result check(
             const Query& q,
             const PredicateState& state);

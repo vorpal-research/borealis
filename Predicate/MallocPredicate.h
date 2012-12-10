@@ -18,9 +18,6 @@ public:
 
     virtual Predicate::Key getKey() const;
 
-    virtual Dependee getDependee() const;
-    virtual DependeeSet getDependees() const;
-
     virtual z3::expr toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
     static bool classof(const Predicate* p) {
@@ -38,21 +35,8 @@ public:
         );
     }
 
-    virtual bool equals(const Predicate* other) const {
-        if (other == nullptr) return false;
-        if (this == other) return true;
-        if (const MallocPredicate* o = llvm::dyn_cast<MallocPredicate>(other)) {
-            return *this->lhv == *o->lhv;
-        } else {
-            return false;
-        }
-    }
-
-    virtual size_t hashCode() const {
-        size_t hash = 3;
-        hash = 17 * hash + lhv->hashCode();
-        return hash;
-    }
+    virtual bool equals(const Predicate* other) const;
+    virtual size_t hashCode() const;
 
     friend class PredicateFactory;
 

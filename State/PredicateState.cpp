@@ -38,13 +38,6 @@ const PredicateState& PredicateState::operator=(PredicateState&& state) {
 
 PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
     PredicateState res = PredicateState(*this);
-
-    if (contains(data, pred)) return res;
-
-    auto ds = Predicate::DependeeSet();
-    ds.insert(pred->getDependee());
-    res.removeDependants(ds);
-
     res.data.push_back(pred);
     return res;
 }
@@ -67,36 +60,18 @@ std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
         }
     }
 
-    auto p = z3ef.getBoolConst(true);
+    auto p = z3ef.getTrue();
     for (const auto& e : path) {
         p = p && e;
     }
 
-    auto s = z3ef.getBoolConst(true);
+    auto s = z3ef.getTrue();
     for (const auto& e : state) {
         s = s && e;
     }
     s = s && ctx.toZ3();
 
     return std::make_pair(p, s);
-}
-
-void PredicateState::removeDependants(Predicate::DependeeSet dependees) {
-    auto iter = data.begin();
-    while (true)
-    {
-        next:
-        if (iter == data.end()) break;
-        auto e = *iter;
-        auto ds = e->getDependees();
-        for (const auto& d : ds) {
-            if (contains(dependees, d)) {
-                iter = data.erase(iter);
-                goto next;
-            }
-        }
-        ++iter;
-    }
 }
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
