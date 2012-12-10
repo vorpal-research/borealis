@@ -12,8 +12,9 @@
 #include <unordered_set>
 
 #include "Logging/logstream.hpp"
-#include "PredicateState.h"
 #include "Predicate/Predicate.h"
+
+#include "PredicateState.h"
 
 namespace borealis {
 

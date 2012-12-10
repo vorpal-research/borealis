@@ -11,14 +11,14 @@ namespace borealis {
 
 using util::view;
 
-PredicateStateVector::PredicateStateVector() {
-}
+PredicateStateVector::PredicateStateVector() {}
 
 PredicateStateVector::PredicateStateVector(bool) {
     data.insert(PredicateState());
 }
 
-PredicateStateVector::PredicateStateVector(const PredicateStateVector& psv) : data(psv.data) {
+PredicateStateVector::PredicateStateVector(const PredicateStateVector& psv) :
+    data(psv.data) {
 }
 
 PredicateStateVector PredicateStateVector::addPredicate(Predicate::Ptr pred) const {
@@ -53,16 +53,17 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& 
 }
 
 std::ostream& operator<<(std::ostream& s, const PredicateStateVector& vec) {
+    using std::endl;
     s << '[';
     if (!vec.empty()) {
         auto iter = vec.begin();
         const PredicateState& el = *iter++;
-        s << std::endl << "  " << el;
+        s << endl << "  " << el;
         for (const auto& e : view(iter, vec.end())) {
-            s << ',' << std::endl << "  " << e;
+            s << ',' << endl << "  " << e;
         }
     }
-    s << std::endl << ']';
+    s << endl << ']';
     return s;
 }
 

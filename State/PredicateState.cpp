@@ -90,16 +90,17 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state)
 }
 
 std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
+    using std::endl;
     s << '(';
     if (!state.empty()) {
         auto iter = state.begin();
         const auto& el = *iter++;
-        s << std::endl << "  " << el->toString();
+        s << endl << "  " << el->toString();
         for (const auto& e : view(iter, state.end())) {
-            s << ',' << std::endl << "  " << e->toString();
+            s << ',' << endl << "  " << e->toString();
         }
     }
-    s << std::endl << ')';
+    s << endl << ')';
     return s;
 }
 
