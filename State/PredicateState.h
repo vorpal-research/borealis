@@ -33,6 +33,7 @@ public:
     const PredicateState& operator=(PredicateState&& state);
 
     PredicateState addPredicate(Predicate::Ptr pred) const;
+    PredicateState addAll(const PredicateState& state) const;
 
     std::pair<z3::expr, z3::expr> toZ3(Z3ExprFactory& z3ef) const;
 

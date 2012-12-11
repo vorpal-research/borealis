@@ -42,6 +42,14 @@ PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
     return res;
 }
 
+PredicateState PredicateState::addAll(const PredicateState& state) const {
+    PredicateState res = PredicateState(*this);
+    for (auto& p : state) {
+        res.data.push_back(p);
+    }
+    return res;
+}
+
 std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
