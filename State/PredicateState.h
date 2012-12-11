@@ -67,6 +67,8 @@ public:
     }
 
     bool operator==(const PredicateState& other) const {
+        if (this == &other) return true;
+
         // Workaround for std::shared_ptr::operator==
         DataIterator __end1 = data.end();
         DataIterator __end2 = other.data.end();
