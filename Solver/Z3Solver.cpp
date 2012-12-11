@@ -70,10 +70,13 @@ bool Z3Solver::checkPathPredicates(
 
         auto dbg = dbgs();
         dbg << "With:" << endl;
-        if (r == z3::sat) dbg << s.get_model() << endl;
-        else {
+        if (r == z3::sat) {
+            dbg << s.get_model() << endl;
+        } else if (r == z3::unsat) {
             auto core = s.unsat_core();
-            for (size_t i = 0U; i < core.size(); ++i ) dbg << core[i] << endl;
+            for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+        } else {
+            dbg << s.reason_unknown() << endl;
         }
 
         return r != z3::unsat;
