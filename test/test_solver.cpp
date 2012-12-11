@@ -156,7 +156,7 @@ TEST(Z3ExprFactory, logic) {
 
     {
         auto id = [](BitVector<32> bv){ return bv; };
-        auto f = Function<BitVector<32>(BitVector<32>)>(ctx,"f", id);
+        auto f = Function<BitVector<32>(BitVector<32>)>(ctx, "f", id);
 
         auto e = BitVector<32>::mkConst(ctx, 0x0f);
 
@@ -165,7 +165,7 @@ TEST(Z3ExprFactory, logic) {
 
     {
         auto id = [&ctx](BitVector<32> bv){ return (bv == BitVector<16>::mkConst(ctx, 0x0f)); };
-        auto f = Function<Bool(BitVector<32>)>(ctx,"f", id);
+        auto f = Function<Bool(BitVector<32>)>(ctx, "f", id);
         auto v0x0f = BitVector<32>::mkVar(ctx, "v0x0f", [&ctx](BitVector<32> v){
             return v == BitVector<32>::mkConst(ctx, 0x0f);
         });
