@@ -132,11 +132,8 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
             modifiedInState = modifiedInState.addAll(transformedCallState);
 
         } else {
-            bool hasPredicate = containsKey(pm, &I);
-            if (!hasPredicate) continue;
-
-            PredicateState modifiedInState =
-                    inState.addPredicate(pm[&I]);
+            if (!containsKey(pm, &I)) continue;
+            modifiedInState = inState.addPredicate(pm[&I]);
         }
 
         if (!containsKey(predicateStateMap, &I)) {
