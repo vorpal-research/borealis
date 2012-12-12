@@ -23,6 +23,20 @@ typedef PredicateAnalysis::PredicateMap PM;
 typedef PredicateAnalysis::TerminatorPredicateMap TPM;
 typedef PredicateAnalysis::PhiPredicateMap PPM;
 
+
+
+bool isUnreachable(const PredicateState& ps) {
+    using namespace::z3;
+
+    context ctx;
+    Z3ExprFactory z3ef(ctx);
+    Z3Solver s(z3ef);
+
+    return !s.checkPathPredicates(ps);
+}
+
+
+
 PredicateStateAnalysis::PredicateStateAnalysis() : llvm::FunctionPass(ID) {}
 
 void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
@@ -33,7 +47,6 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     Info.addRequiredTransitive<PredicateAnalysis>();
     Info.addRequiredTransitive<SlotTrackerPass>();
     Info.addRequiredTransitive<LoopInfo>();
-    Info.addRequiredTransitive<ScalarEvolution>();
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
@@ -46,19 +59,17 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     FM = &getAnalysis<FunctionManager>();
     PA = &getAnalysis<PredicateAnalysis>();
     LI = &getAnalysis<LoopInfo>();
-    SE = &getAnalysis<ScalarEvolution>();
 
     PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
 
-    workQueue.push(std::make_tuple(nullptr, &F.getEntryBlock(), PredicateStateVector(true)));
-    processQueue();
-
-    for (auto* L : getAllLoops(&F, LI)) {
-        processLoop(L);
+    if (!getAllLoops(&F, LI).empty()) {
+        return util::sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                "Cannot analyze predicates when loops are present");
     }
 
-    removeUnreachableStates();
+    workQueue.push(std::make_tuple(nullptr, &F.getEntryBlock(), PredicateState()));
+    processQueue();
 
     infos() << "= Predicate state analysis results =" << endl;
     for (auto& e : predicateStateMap) {
@@ -87,25 +98,21 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     const BasicBlock* from = std::get<0>(wqe);
     const BasicBlock* bb = std::get<1>(wqe);
-    PredicateStateVector inStateVec = std::get<2>(wqe);
+    PredicateState inState = std::get<2>(wqe);
 
-    bool shouldScheduleTerminator = true;
+    if (isUnreachable(inState)) return;
 
     auto iter = bb->begin();
 
     // Add incoming predicates from PHI nodes
-    if (from) {
-        for ( ; isa<PHINode>(iter); ++iter) {
-            inStateVec = inStateVec.addPredicate(
-                    ppm[std::make_pair(from, cast<PHINode>(iter))]);
-        }
+    for ( ; isa<PHINode>(iter); ++iter) {
+        inState = inState.addPredicate(
+                ppm[std::make_pair(from, cast<PHINode>(iter))]);
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateStateVector stateVec;
-        bool hasState = containsKey(predicateStateMap, &I);
-        if (hasState) stateVec = predicateStateMap[&I];
+        PredicateState modifiedInState = inState;
 
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
@@ -116,52 +123,36 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
                     TF.get());
             CallSiteInitializer csi(CI, TF.get());
 
-            PredicateState state = callState.map([&csi](Predicate::Ptr p) {
-                return csi.transform(p);
-            });
+            PredicateState transformedCallState = callState.map(
+                [&csi](Predicate::Ptr p) {
+                    return csi.transform(p);
+                }
+            );
 
-            PredicateStateVector modifiedInStateVec = inStateVec;
-            for (auto& p : state) {
-                modifiedInStateVec = modifiedInStateVec.addPredicate(p);
-            }
+            modifiedInState = modifiedInState.addAll(transformedCallState);
 
-            PredicateStateVector merged =
-                    stateVec.merge(modifiedInStateVec);
+        } else {
+            bool hasPredicate = containsKey(pm, &I);
+            if (!hasPredicate) continue;
 
-            if (stateVec == merged) {
-                shouldScheduleTerminator = false;
-                break;
-            }
-
-            predicateStateMap[&I] = inStateVec = merged;
-
-            continue;
+            PredicateState modifiedInState =
+                    inState.addPredicate(pm[&I]);
         }
 
-        bool hasPredicate = containsKey(pm, &I);
-        if (!hasPredicate) continue;
-
-        PredicateStateVector modifiedInStateVec =
-                inStateVec.addPredicate(pm[&I]);
-        PredicateStateVector merged =
-                stateVec.merge(modifiedInStateVec);
-
-        if (stateVec == merged) {
-            shouldScheduleTerminator = false;
-            break;
+        if (!containsKey(predicateStateMap, &I)) {
+            predicateStateMap[&I] = PredicateStateVector();
         }
+        predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
-        predicateStateMap[&I] = inStateVec = merged;
+        inState = modifiedInState;
     }
 
-    if (shouldScheduleTerminator) {
-        processTerminator(*bb->getTerminator(), inStateVec);
-    }
+    processTerminator(*bb->getTerminator(), inState);
 }
 
 void PredicateStateAnalysis::processTerminator(
         const llvm::TerminatorInst& I,
-        const PredicateStateVector& state) {
+        const PredicateState& state) {
     using namespace::llvm;
 
     if (isa<BranchInst>(I))
@@ -170,7 +161,7 @@ void PredicateStateAnalysis::processTerminator(
 
 void PredicateStateAnalysis::process(
         const llvm::BranchInst& I,
-        const PredicateStateVector& state) {
+        const PredicateState& state) {
     using namespace::llvm;
 
     TPM& tpm = PA->getTerminatorPredicateMap();
@@ -187,36 +178,6 @@ void PredicateStateAnalysis::process(
 
         workQueue.push(std::make_tuple(I.getParent(), trueSucc, state.addPredicate(truePred)));
         workQueue.push(std::make_tuple(I.getParent(), falseSucc, state.addPredicate(falsePred)));
-    }
-}
-
-bool isUnreachable(const PredicateState& ps) {
-    using namespace::z3;
-
-    context ctx;
-    Z3ExprFactory z3ef(ctx);
-    Z3Solver s(z3ef);
-
-    return !s.checkPathPredicates(ps);
-}
-
-void PredicateStateAnalysis::removeUnreachableStates() {
-    for (auto& psme : predicateStateMap){
-        auto I = psme.first;
-        PredicateStateVector psv = psme.second;
-        predicateStateMap[I] = psv.remove_if(isUnreachable);
-    }
-}
-
-void PredicateStateAnalysis::processLoop(llvm::Loop* L) {
-    using namespace llvm;
-
-    unsigned TripCount = 0;
-    unsigned TripMultiple = 1;
-    BasicBlock *LatchBlock = L->getLoopLatch();
-    if (LatchBlock) {
-        TripCount = SE->getSmallConstantTripCount(L, LatchBlock);
-        TripMultiple = SE->getSmallConstantTripMultiple(L, LatchBlock);
     }
 }
 

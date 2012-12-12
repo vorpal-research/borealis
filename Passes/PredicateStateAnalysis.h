@@ -9,7 +9,6 @@
 #define PREDICATESTATEANALYSIS_H_
 
 #include <llvm/Analysis/LoopInfo.h>
-#include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
@@ -45,7 +44,7 @@ public:
     typedef std::tuple<
             const llvm::BasicBlock*,
             const llvm::BasicBlock*,
-            PredicateStateVector>
+            PredicateState>
     WorkQueueEntry;
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
@@ -76,19 +75,14 @@ private:
     FunctionManager* FM;
     PredicateAnalysis* PA;
     llvm::LoopInfo* LI;
-    llvm::ScalarEvolution* SE;
 
     PredicateFactory::Ptr PF;
     TermFactory::Ptr TF;
 
     void processQueue();
     void processBasicBlock(const WorkQueueEntry& wqe);
-    void processTerminator(const llvm::TerminatorInst& I, const PredicateStateVector& state);
-    void process(const llvm::BranchInst& I, const PredicateStateVector& state);
-
-    void processLoop(llvm::Loop* L);
-
-    void removeUnreachableStates();
+    void processTerminator(const llvm::TerminatorInst& I, const PredicateState& state);
+    void process(const llvm::BranchInst& I, const PredicateState& state);
 
 };
 
