@@ -6,6 +6,7 @@
  */
 
 #include <llvm/Analysis/Dominators.h>
+#include <llvm/Support/CommandLine.h>
 
 #include "LoopUnroll.h"
 
@@ -14,6 +15,10 @@
 namespace borealis {
 
 using borealis::util::sayonara;
+
+static llvm::cl::opt<unsigned>
+DerollCount("deroll-count", llvm::cl::init(3), llvm::cl::NotHidden,
+  llvm::cl::desc("Set loop derolling count (default = 3)"));
 
 LoopUnroll::LoopUnroll() : llvm::LoopPass(ID) {}
 
@@ -130,7 +135,7 @@ bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     LoopBlocksDFS::RPOIterator BlockBegin = DFS.beginRPO();
     LoopBlocksDFS::RPOIterator BlockEnd = DFS.endRPO();
 
-    for (unsigned UnrollIter = 0; UnrollIter != unrollCount; UnrollIter++) {
+    for (unsigned UnrollIter = 0; UnrollIter != DerollCount; UnrollIter++) {
         std::vector<BasicBlock*> NewBlocks;
 
         for (LoopBlocksDFS::RPOIterator BB = BlockBegin; BB != BlockEnd; ++BB) {

@@ -28,8 +28,6 @@ public:
 
 private:
 
-    unsigned int unrollCount = 3;
-
     llvm::LoopInfo* LI;
 
 };
