@@ -15,6 +15,7 @@
 #include "Util/util.h"
 
 #include "Logging/tracer.hpp"
+#include "Logic.hpp"
 
 namespace borealis {
 
@@ -33,6 +34,14 @@ public:
     // accumulator-like shit is possible with it)
     typedef borealis::util::copyref<expr> exprRef;
 
+    typedef borealis::logic::Bool Bool;
+    typedef borealis::logic::BitVector<32> Pointer;
+    typedef borealis::logic::BitVector<32> Integer;
+    typedef borealis::logic::BitVector<32> Real;
+    typedef borealis::logic::BitVector<8> Byte;
+    typedef borealis::logic::ScatterArray<Pointer> MemArray;
+    typedef borealis::logic::SomeExpr Dynamic;
+
     Z3ExprFactory(z3::context& ctx);
 
     z3::context& unwrap() {
@@ -41,85 +50,59 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     // Pointers
-    expr getPtr(const std::string& name);
-    expr getNullPtr();
+    Pointer getPtr(const std::string& name);
+    Pointer getNullPtr();
     // Bools
-    expr getBoolVar(const std::string& name);
-    expr getBoolConst(const std::string& v);
-    expr getBoolConst(bool b);
-    expr getTrue();
-    expr getFalse();
+    Bool getBoolVar(const std::string& name);
+    Bool getBoolConst(const std::string& v);
+    Bool getBoolConst(bool b);
+    Bool getTrue();
+    Bool getFalse();
     // Integers
-    expr getIntVar(const std::string& name, size_t bits);
-    expr getFreshIntVar(const std::string& name, size_t bits);
-    expr getIntConst(int v, size_t bits);
-    expr getIntConst(const std::string& v, size_t bits);
+    Integer getIntVar(const std::string& name, size_t bits);
+    Integer getFreshIntVar(const std::string& name, size_t bits);
+    Integer getIntConst(int v, size_t bits);
+    Integer getIntConst(const std::string& v, size_t bits);
     // Reals
-    expr getRealVar(const std::string& name);
-    expr getFreshRealVar(const std::string& name);
-    expr getRealConst(int v);
-    expr getRealConst(double v);
-    expr getRealConst(const std::string& v);
+    Real getRealVar(const std::string& name);
+    Real getFreshRealVar(const std::string& name);
+    Real getRealConst(int v);
+    Real getRealConst(double v);
+    Real getRealConst(const std::string& v);
     // Memory
-    array getNoMemoryArray();
-    expr getNoMemoryArrayAxiom(array mem);
-    expr_vector splitBytes(expr bv);
-    expr concatBytes(const expr_vector& bytes);
-    std::pair<array, expr> byteArrayInsert(array arr, expr ix, expr bv);
-    expr byteArrayExtract(array arr, expr ix, unsigned sz);
-    // Functions
-    expr getForAll(
-        const std::vector<sort>& sorts,
-        std::function<expr(const expr_vector&)> func
-    );
-    function createFreshFunction(
-        const std::string& name,
-        const std::vector<sort>& domain,
-        sort range
-    );
+    MemArray getNoMemoryArray();
+
     // Generic functions
-    expr getExprForTerm(const Term& term, size_t bits = 0);
-    expr getExprForValue(
+    Dynamic getExprForTerm(const Term& term, size_t bits = 0);
+    Dynamic getExprForValue(
         const llvm::Value& value,
         const std::string& name
     );
     // Valid/invalid pointers
-    expr getInvalidPtr();
-    expr isInvalidPtrExpr(expr ptr);
-    expr getDistinct(const expr_vector& exprs);
+    Pointer getInvalidPtr();
+    Bool isInvalidPtrExpr(Pointer ptr);
+    Bool getDistinct(const std::vector<Pointer>& exprs);
     // Misc pointer stuff
     sort getPtrSort();
 
-    struct then_tmp {
-        expr cmd;
-        expr branch;
-
-        expr else_(expr elsebranch) {
-            return z3::to_expr(cmd.ctx(), Z3_mk_ite(cmd.ctx(), cmd, branch, elsebranch));
-        }
-    };
-
-    struct if_tmp {
-        expr cond;
-
-        then_tmp then_(expr branch) {
-            return then_tmp { cond, branch };
-        }
-    };
-
-    if_tmp if_(expr cond) {
-        return if_tmp { cond };
+    auto if_(Bool cond) -> decltype(logic::if_(cond)) {
+        return logic::if_(cond);
     }
 
-    expr switch_(
-        expr val,
-        const std::vector<std::pair<expr, expr>>& cases,
-        expr default_);
+    template<class T, class U>
+    T switch_(
+        U val,
+        const std::vector<std::pair<U, T>>& cases,
+        T default_) {
+        return logic::switch_(val, cases, default_);
+    }
 
 private:
 
     expr to_expr(Z3_ast ast);
-    expr getExprByTypeAndName(
+
+
+    Dynamic getExprByTypeAndName(
             const llvm::ValueType type,
             const std::string& name,
             size_t bitsize = 0);

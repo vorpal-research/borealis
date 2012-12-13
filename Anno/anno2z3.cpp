@@ -56,17 +56,17 @@ public:
     virtual void onDoubleConstant(double v) {
         if(fucked_up) return;
 
-        assign( z3ef.getRealConst(v) );
+        assign( z3ef.getRealConst(v).get() );
     }
     virtual void onIntConstant(int v) {
         if(fucked_up) return;
 
-        assign( z3ef.getIntConst(v, 64) ); // FIXME
+        assign( z3ef.getIntConst(v, 64).get() ); // FIXME
     }
     virtual void onBoolConstant(bool v) {
         if(fucked_up) return;
 
-        assign( z3ef.getBoolConst(v) );
+        assign( z3ef.getBoolConst(v).get() );
     }
 
     virtual void onVariable(const std::string& str) {
@@ -74,7 +74,7 @@ public:
 
         if(!!names.count(str)) {
             auto v = names.at(str);
-            assign( z3ef.getExprForValue(*v, str) );
+            assign( z3ef.getExprForValue(*v, str).get() );
         } else {
             fucked_up = true;
             errors << "Could not find the desired variable: " << str;

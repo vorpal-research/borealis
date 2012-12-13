@@ -84,6 +84,10 @@ public:
         return ptr ? *ptr : def;
     }
 
+    T& getUnsafe() {
+        return *holder.get();
+    }
+
     struct option_iterator {
         const self* opt;
         option_iterator(const self* opt) : opt(opt){};

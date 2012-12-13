@@ -13,11 +13,11 @@ NullPtrQuery::NullPtrQuery(const llvm::Value* ptr, SlotTracker* st) :
         ptr(ptr), _ptr(st->getLocalName(ptr)) {
 }
 
-z3::expr NullPtrQuery::toZ3(Z3ExprFactory& z3ef) const {
+logic::Bool NullPtrQuery::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
-    expr p = z3ef.getPtr(_ptr);
-    expr null = z3ef.getNullPtr();
+    auto p = z3ef.getPtr(_ptr);
+    auto null = z3ef.getNullPtr();
     return p == null;
 }
 

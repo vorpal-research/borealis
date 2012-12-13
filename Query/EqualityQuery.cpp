@@ -17,11 +17,11 @@ EqualityQuery::EqualityQuery(const llvm::Value* v1,
                 _v1(st->getLocalName(v1)),
                 _v2(st->getLocalName(v2)) {}
 
-z3::expr EqualityQuery::toZ3(Z3ExprFactory& z3ef) const {
+logic::Bool EqualityQuery::toZ3(Z3ExprFactory& z3ef) const {
     using namespace z3;
 
-    expr l = z3ef.getExprForValue(*v1, _v1);
-    expr r = z3ef.getExprForValue(*v2, _v2);
+    auto l = z3ef.getExprForValue(*v1, _v1);
+    auto r = z3ef.getExprForValue(*v2, _v2);
     return l == r;
 }
 

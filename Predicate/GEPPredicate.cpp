@@ -56,25 +56,37 @@ Predicate::Key GEPPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-z3::expr GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
-    z3::expr l = z3ef.getExprForTerm(*lhv);
-    z3::expr r = z3ef.getExprForTerm(*rhv);
+    typedef Z3ExprFactory::Pointer Pointer;
+    typedef Z3ExprFactory::Dynamic Dynamic;
+    typedef Z3ExprFactory::Integer Integer;
 
-    size_t ptrsize = z3ef.getPtrSort().bv_size();
+    Dynamic l = z3ef.getExprForTerm(*lhv);
+    Dynamic r = z3ef.getExprForTerm(*rhv);
 
-    z3::expr shift = z3ef.getIntConst(0, ptrsize);
+    if(!l.is<Pointer>() || !r.is<Pointer>()) {
+        return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                "Encountered a GEP predicate non-pointer operand");
+    }
+
+    Pointer lp = l.to<Pointer>().getUnsafe();
+    Pointer rp = r.to<Pointer>().getUnsafe();
+
+    const size_t ptrsize = Pointer::bitsize;
+
+    Integer shift = z3ef.getIntConst(0, ptrsize);
     for (const auto& s : shifts) {
-        z3::expr by = z3ef.getExprForTerm(*s.first, ptrsize);
-        z3::expr size = z3ef.getExprForTerm(*s.second, ptrsize);
+        Pointer by = z3ef.getExprForTerm(*s.first, ptrsize).to<Pointer>().getUnsafe();
+        Pointer size = z3ef.getExprForTerm(*s.second, ptrsize).to<Pointer>().getUnsafe();
 
         shift = shift + by * size;
     }
 
-    return l == z3ef.if_(z3ef.isInvalidPtrExpr(r))
+    return l == z3ef.if_(z3ef.isInvalidPtrExpr(rp))
                     .then_(z3ef.getInvalidPtr())
-                    .else_(r+shift);
+                    .else_(rp+shift);
 }
 
 bool GEPPredicate::equals(const Predicate* other) const {

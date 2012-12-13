@@ -34,7 +34,7 @@ public:
 
     PredicateState addPredicate(Predicate::Ptr pred) const;
 
-    std::pair<z3::expr, z3::expr> toZ3(Z3ExprFactory& z3ef) const;
+    std::pair<logic::Bool, logic::Bool> toZ3(Z3ExprFactory& z3ef) const;
 
     typedef std::list<Predicate::Ptr> Data;
     typedef Data::value_type DataEntry;

@@ -13,10 +13,11 @@ using borealis::util::view;
 
 AndQuery::AndQuery(std::initializer_list<Query*> qs) : qs(qs) {}
 
-z3::expr AndQuery::toZ3(Z3ExprFactory& z3ef) const {
+logic::Bool AndQuery::toZ3(Z3ExprFactory& z3ef) const {
     using namespace z3;
+    using logic::Bool;
 
-    expr e(z3ef.unwrap());
+    Bool e = Bool::mkConst(z3ef.unwrap(), true);
     if (!qs.empty()) {
         auto it = qs.begin();
         e = (*it++)->toZ3(z3ef);

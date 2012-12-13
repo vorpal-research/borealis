@@ -30,17 +30,23 @@ Predicate::Key LoadPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-z3::expr LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+logic::Bool LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
+    typedef Z3ExprFactory::Pointer Pointer;
+    typedef Z3ExprFactory::Dynamic Dynamic;
 
-    z3::expr l = z3ef.getExprForTerm(*lhv);
-    z3::expr r = z3ef.getExprForTerm(*rhv);
+    Dynamic l = z3ef.getExprForTerm(*lhv);
+    Dynamic r = z3ef.getExprForTerm(*rhv);
+    if(!r.is<Pointer>())
+        return util::sayonara<logic::Bool>(__FILE__,__LINE__,__PRETTY_FUNCTION__,
+                "Encountered load predicate with non-pointer right side");
 
+    auto rp = r.to<Pointer>().getUnsafe();
 
     if (ctx) {
-        return z3ef.if_(z3ef.isInvalidPtrExpr(r))
+        return z3ef.if_(z3ef.isInvalidPtrExpr(rp))
                    .then_(z3ef.getFalse())
-                   .else_(l == ctx->readExprFromMemory(r, l.get_sort().bv_size()/8));
+                   .else_(l == ctx->readExprFromMemory(rp, l.get_sort().bv_size()));
     }
 
     return z3ef.getTrue();

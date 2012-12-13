@@ -30,11 +30,11 @@ Predicate::Key EqualityPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-z3::expr EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
-    z3::expr l = z3ef.getExprForTerm(*lhv);
-    z3::expr r = z3ef.getExprForTerm(*rhv);
+    auto l = z3ef.getExprForTerm(*lhv);
+    auto r = z3ef.getExprForTerm(*rhv);
 
     return l == r;
 }
