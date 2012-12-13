@@ -28,6 +28,7 @@ public:
 
     PredicateStateVector addPredicate(Predicate::Ptr pred) const;
     PredicateStateVector merge(const PredicateStateVector& psv) const;
+    PredicateStateVector merge(const PredicateState& state) const;
 
     typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;
     typedef Data::value_type DataEntry;

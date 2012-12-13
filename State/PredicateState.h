@@ -33,6 +33,7 @@ public:
     const PredicateState& operator=(PredicateState&& state);
 
     PredicateState addPredicate(Predicate::Ptr pred) const;
+    PredicateState addAll(const PredicateState& state) const;
 
     std::pair<logic::Bool, logic::Bool> toZ3(Z3ExprFactory& z3ef) const;
 
@@ -67,6 +68,8 @@ public:
     }
 
     bool operator==(const PredicateState& other) const {
+        if (this == &other) return true;
+
         // Workaround for std::shared_ptr::operator==
         DataIterator __end1 = data.end();
         DataIterator __end2 = other.data.end();

@@ -31,12 +31,13 @@ z3::check_result Z3Solver::check(
     dbgs() << "  Path predicates: " << endl << ss.first << endl;
     dbgs() << "  State predicates: " << endl << ss.second << endl;
 
-    expr pred = z3ef.getBoolVar("$CHECK$").toAxiom();
-    s.add(implies(pred, q.toZ3(z3ef).toAxiom()));
+    Bool pred = z3ef.getBoolVar("$CHECK$");
+    s.add(pred.implies(q.toZ3(z3ef)).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");
-        check_result r = s.check(1, &pred);
+        expr pred_e = pred.get();
+        check_result r = s.check(1, &pred_e);
         dbgs() << "Acquired result: "
                << ((r == z3::sat)? "sat" : (r == z3::unsat)? "unsat" : "unknown")
                << endl;
@@ -47,6 +48,7 @@ z3::check_result Z3Solver::check(
 bool Z3Solver::checkPathPredicates(
         const PredicateState& state) {
     using namespace::z3;
+    using logic::Bool;
 
     TRACE_FUNC;
 
@@ -58,12 +60,13 @@ bool Z3Solver::checkPathPredicates(
     dbgs() << "  Path predicates: " << endl << ss.first << endl;
     dbgs() << "  State predicates: " << endl << ss.second << endl;
 
-    expr pred = z3ef.getBoolVar("$CHECK$").toAxiom();
-    s.add(implies(pred, ss.first.toAxiom()));
+    Bool pred = z3ef.getBoolVar("$CHECK$");
+    s.add(pred.implies(ss.first).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");
-        check_result r = s.check(1, &pred);
+        expr pred_e = pred.get();
+        check_result r = s.check(1, &pred_e);
 
         dbgs() << "Acquired result: "
                << ((r == z3::sat) ? "sat" : (r == z3::unsat) ? "unsat" : "unknown")
@@ -71,10 +74,13 @@ bool Z3Solver::checkPathPredicates(
 
         auto dbg = dbgs();
         dbg << "With:" << endl;
-        if (r == z3::sat) dbg << s.get_model() << endl;
-        else {
+        if (r == z3::sat) {
+            dbg << s.get_model() << endl;
+        } else if (r == z3::unsat) {
             auto core = s.unsat_core();
-            for (size_t i = 0U; i < core.size(); ++i ) dbg << core[i] << endl;
+            for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+        } else {
+            dbg << s.reason_unknown() << endl;
         }
 
         return r != z3::unsat;

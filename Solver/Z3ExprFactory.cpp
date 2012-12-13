@@ -43,10 +43,6 @@ Bool Z3ExprFactory::getBoolVar(const std::string& name) {
     return Bool::mkVar(ctx, name);
 }
 
-Bool Z3ExprFactory::getBoolConst(const std::string& v) {
-    return Bool::mkConst(ctx, v == "true");
-}
-
 Bool Z3ExprFactory::getBoolConst(bool v) {
     return Bool::mkConst(ctx, v);
 }
@@ -153,7 +149,7 @@ Dynamic Z3ExprFactory::getExprByTypeAndName(
     case ValueType::REAL_VAR:
         return getRealVar(name);
     case ValueType::BOOL_CONST:
-        return getBoolConst(name);
+        return getBoolConst(name == "TRUE" || name == "true"); // FIXME
     case ValueType::BOOL_VAR:
         return getBoolVar(name);
     case ValueType::NULL_PTR_CONST:

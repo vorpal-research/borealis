@@ -836,13 +836,17 @@ class ScatterArray {
     ScatterArray(InnerArray<Byte, Index> inner): inner(inner){};
 
 public:
+    ScatterArray(const ScatterArray&) = default;
+    ScatterArray(ScatterArray&&) = default;
+    ScatterArray& operator=(const ScatterArray&) = default;
+
     template<class Elem>
     Elem select (Index i) {
         enum { elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
         for(int j = 0; j < elemBitSize; j+=8) {
-            bytes.push_back(inner[i+j]);
+            bytes.push_back(inner[i+j/8]);
         }
         return concatBytes<elemBitSize>(bytes);
     }
@@ -851,32 +855,32 @@ public:
     Elem select (Index i, size_t elemBitSize) {
         std::vector<Byte> bytes;
         for(size_t j = 0; j < elemBitSize; j+=8) {
-            bytes.push_back(inner[i+j]);
+            bytes.push_back(inner[i+j/8]);
         }
         return concatBytesDynamic(bytes);
     }
 
     template<class Elem>
-    ScatterArray<Index> store(Index i, Elem e) {
+    ScatterArray<Index, InnerArray> store(Index i, Elem e) {
         enum { elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes = splitBytes(e);
 
         std::vector<std::pair<Index, Byte>> cases;
         for(int j = 0; j < elemBitSize/8; ++j) {
-            cases.push_back({ i+(j*8), bytes[j] });
+            cases.push_back({ i+j, bytes[j] });
         }
 
         return inner.store(cases);
     }
 
-    ScatterArray<Index> store(Index i, SomeExpr e) {
+    ScatterArray<Index, InnerArray> store(Index i, SomeExpr e) {
         std::vector<Byte> bytes = splitBytes(e);
         size_t elemBitSize = e.get().get_sort().bv_size();
 
         std::vector<std::pair<Index, Byte>> cases;
         for(size_t j = 0; j < elemBitSize/8; ++j) {
-            cases.push_back({ i+(j*8), bytes[j] });
+            cases.push_back({ i+j, bytes[j] });
         }
 
         return inner.store(cases);

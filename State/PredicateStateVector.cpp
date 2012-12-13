@@ -30,10 +30,16 @@ PredicateStateVector PredicateStateVector::addPredicate(Predicate::Ptr pred) con
 }
 
 PredicateStateVector PredicateStateVector::merge(const PredicateStateVector& psv) const {
-    PredicateStateVector res = PredicateStateVector(psv);
-    for (const auto& state : this->data) {
+    PredicateStateVector res = PredicateStateVector(*this);
+    for (const auto& state : psv.data) {
         res.data.insert(state);
     }
+    return res;
+}
+
+PredicateStateVector PredicateStateVector::merge(const PredicateState& state) const {
+    PredicateStateVector res = PredicateStateVector(*this);
+    res.data.insert(state);
     return res;
 }
 

@@ -54,7 +54,6 @@ public:
     Pointer getNullPtr();
     // Bools
     Bool getBoolVar(const std::string& name);
-    Bool getBoolConst(const std::string& v);
     Bool getBoolConst(bool b);
     Bool getTrue();
     Bool getFalse();
