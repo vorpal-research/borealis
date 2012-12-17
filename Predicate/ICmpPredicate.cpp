@@ -65,30 +65,32 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     ConditionType ct = conditionType(cond);
     // these cases assume nothing about operands
     switch(ct) {
-    case ConditionType::EQ: return l == (o1 == o2);
-    case ConditionType::NEQ: return l == (o1 != o2);
-    case ConditionType::TRUE: return l == z3ef.getBoolConst(true);
-    case ConditionType::FALSE: return l == z3ef.getBoolConst(false);
-    case ConditionType::UNKNOWN: return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-            "Unknown condition type in Z3 conversion");
-    default: break;
+        case ConditionType::EQ: return l == (o1 == o2);
+        case ConditionType::NEQ: return l == (o1 != o2);
+        case ConditionType::TRUE: return l == z3ef.getTrue();
+        case ConditionType::FALSE: return l == z3ef.getFalse();
+        default: break;
     }
 
     // these cases assume operands are comparable
     if(!o1.isComparable() || !o2.isComparable()) {
         return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "Encountered ICmpPredicate with uncomparable operands");
+                    "Encountered ICmpPredicate with incomparable operands");
     }
 
     auto co1 = o1.toComparable().getUnsafe();
     auto co2 = o2.toComparable().getUnsafe();
     switch(ct) {
-    case ConditionType::LT: return l == (co1 < co2);
-    case ConditionType::LTE: return l == (co1 <= co2);
-    case ConditionType::GT: return l == (co1 > co2);
-    case ConditionType::GTE: return l == (co1 >= co2);
-    case ConditionType::UNKNOWN: return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-            "Unknown condition type in Z3 conversion");
+        case ConditionType::LT: return l == (co1 < co2);
+        case ConditionType::LTE: return l == (co1 <= co2);
+        case ConditionType::GT: return l == (co1 > co2);
+        case ConditionType::GTE: return l == (co1 >= co2);
+        case ConditionType::UNKNOWN:
+            return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                "Unknown condition type in Z3 conversion");
+        default:
+            return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                    "Unreachable");
     }
 }
 

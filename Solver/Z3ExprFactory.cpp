@@ -55,19 +55,19 @@ Bool Z3ExprFactory::getFalse() {
     return getBoolConst(false);
 }
 
-Integer Z3ExprFactory::getIntVar(const std::string& name, size_t bits) {
+Integer Z3ExprFactory::getIntVar(const std::string& name, size_t /* bits */) {
     return Integer::mkVar(ctx, name);
 }
 
-Integer Z3ExprFactory::getFreshIntVar(const std::string& name, size_t bits) {
+Integer Z3ExprFactory::getFreshIntVar(const std::string& name, size_t /* bits */ ) {
     return Integer::mkFreshVar(ctx, name);
 }
 
-Integer Z3ExprFactory::getIntConst(int v, size_t bits) {
+Integer Z3ExprFactory::getIntConst(int v, size_t /* bits */) {
     return Integer::mkConst(ctx, v);
 }
 
-Integer Z3ExprFactory::getIntConst(const std::string& v, size_t bits) {
+Integer Z3ExprFactory::getIntConst(const std::string& v, size_t /* bits */) {
     std::istringstream ost(v);
     unsigned long long ull;
     ost >> ull;
