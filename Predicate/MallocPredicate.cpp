@@ -27,12 +27,20 @@ Predicate::Key MallocPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-z3::expr MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
-    z3::expr lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
+    typedef Z3ExprFactory::Pointer Pointer;
+
+    auto lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
+    if(!lhve.is<Pointer>()) return util::sayonara<logic::Bool>(
+        __FILE__, __LINE__, __PRETTY_FUNCTION__,
+        "Malloc predicate produces non-pointer"
+    );
+    Pointer lhvp = lhve.to<Pointer>().getUnsafe();
+
     if (ctx) {
-        ctx->registerDistinctPtr(lhve);
+        ctx->registerDistinctPtr(lhvp);
     }
 
     return z3ef.getBoolConst(true);

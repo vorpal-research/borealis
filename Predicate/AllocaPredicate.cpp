@@ -31,15 +31,22 @@ Predicate::Key AllocaPredicate::getKey() const {
     return std::make_pair(type_id(*this), lhv->getId());
 }
 
-z3::expr AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
+    typedef Z3ExprFactory::Pointer Pointer;
 
-    z3::expr lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
+    auto lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
+    if(!lhve.is<Pointer>())
+        return util::sayonara<logic::Bool>(__FILE__,__LINE__,__PRETTY_FUNCTION__,
+                "Encountered alloca predicate with non-pointer left side");
+
+
+    auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {
-        ctx->registerDistinctPtr(lhve);
+        ctx->registerDistinctPtr(lhvp);
     }
 
-    return !z3ef.isInvalidPtrExpr(lhve);
+    return !z3ef.isInvalidPtrExpr(lhvp);
 }
 
 bool AllocaPredicate::equals(const Predicate* other) const {

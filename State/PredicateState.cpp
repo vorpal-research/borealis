@@ -50,15 +50,15 @@ PredicateState PredicateState::addAll(const PredicateState& state) const {
     return res;
 }
 
-std::pair<z3::expr, z3::expr> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
+std::pair<logic::Bool, logic::Bool> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
     TRACE_FUNC;
 
     ExecutionContext ctx(z3ef);
 
-    auto path = std::vector<expr>();
-    auto state = std::vector<expr>();
+    auto path = std::vector<logic::Bool>();
+    auto state = std::vector<logic::Bool>();
 
     for (auto& v : data) {
         if (v->getType() == PredicateType::PATH) {

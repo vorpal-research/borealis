@@ -50,24 +50,44 @@ Predicate::Key ICmpPredicate::getKey() const {
     return std::make_pair(borealis::type_id(*this), lhv->getId());
 }
 
-z3::expr ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
-    z3::expr l = z3ef.getExprForTerm(*lhv);
-    z3::expr o1 = z3ef.getExprForTerm(*op1);
-    z3::expr o2 = z3ef.getExprForTerm(*op2);
+    auto le = z3ef.getExprForTerm(*lhv).toBool();
+    if(le.empty()) return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+            "Encountered ICmpPredicate with non-bool condition");
+
+    auto l = le.getUnsafe();
+
+    auto o1 = z3ef.getExprForTerm(*op1);
+    auto o2 = z3ef.getExprForTerm(*op2);
 
     ConditionType ct = conditionType(cond);
+    // these cases assume nothing about operands
     switch(ct) {
     case ConditionType::EQ: return l == (o1 == o2);
     case ConditionType::NEQ: return l == (o1 != o2);
-    case ConditionType::LT: return l == (o1 < o2);
-    case ConditionType::LTE: return l == (o1 <= o2);
-    case ConditionType::GT: return l == (o1 > o2);
-    case ConditionType::GTE: return l == (o1 >= o2);
     case ConditionType::TRUE: return l == z3ef.getBoolConst(true);
     case ConditionType::FALSE: return l == z3ef.getBoolConst(false);
-    case ConditionType::UNKNOWN: return sayonara<z3::expr>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+    case ConditionType::UNKNOWN: return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+            "Unknown condition type in Z3 conversion");
+    default: break;
+    }
+
+    // these cases assume operands are comparable
+    if(!o1.isComparable() || !o2.isComparable()) {
+        return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                    "Encountered ICmpPredicate with uncomparable operands");
+    }
+
+    auto co1 = o1.toComparable().getUnsafe();
+    auto co2 = o2.toComparable().getUnsafe();
+    switch(ct) {
+    case ConditionType::LT: return l == (co1 < co2);
+    case ConditionType::LTE: return l == (co1 <= co2);
+    case ConditionType::GT: return l == (co1 > co2);
+    case ConditionType::GTE: return l == (co1 >= co2);
+    case ConditionType::UNKNOWN: return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
             "Unknown condition type in Z3 conversion");
     }
 }

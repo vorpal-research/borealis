@@ -42,11 +42,11 @@ Predicate::Key BooleanPredicate::getKey() const {
     return std::make_pair(borealis::type_id(*this), v->getId());
 }
 
-z3::expr BooleanPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool BooleanPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
-    z3::expr var = z3ef.getExprForTerm(*v);
-    z3::expr val = z3ef.getExprForTerm(*b);
+    auto var = z3ef.getExprForTerm(*v);
+    auto val = z3ef.getExprForTerm(*b);
     return var == val;
 }
 

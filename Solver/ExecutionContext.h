@@ -17,27 +17,48 @@
 namespace borealis {
 
 class ExecutionContext {
+public:
+    typedef Z3ExprFactory::Pointer Pointer;
+    typedef Z3ExprFactory::Dynamic Dynamic;
+    typedef Z3ExprFactory::MemArray MemArray;
+
+private:
     typedef Z3ExprFactory::expr expr;
     typedef Z3ExprFactory::array array;
 
     Z3ExprFactory& factory;
-    array memory;
-    Z3ExprFactory::exprRef axiom;
+    MemArray memory;
+    std::vector<Z3ExprFactory::Pointer> allocated_pointers;
 
-    std::vector<expr> allocated_pointers;
 public:
     ExecutionContext(Z3ExprFactory& factory);
 
-    array getCurrentMemoryContents() { return memory; }
+    MemArray getCurrentMemoryContents() { return memory; }
 
-    inline void registerDistinctPtr(expr ptr) {
+    inline void registerDistinctPtr(Z3ExprFactory::Pointer ptr) {
         allocated_pointers.push_back(ptr);
     }
 
-    expr readExprFromMemory(expr ix, size_t sz);
-    void writeExprToMemory(expr ix, expr val);
-    void mutateMemory( const std::function<array(array)>& );
-    expr toZ3();
+    Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
+        TRACE_FUNC;
+        return memory.select<Dynamic>(ix, bitSize);
+    }
+
+    template<class ExprClass>
+    ExprClass readExprFromMemory(Pointer ix) {
+        TRACE_FUNC;
+        return memory.select<ExprClass>(ix);
+    }
+
+
+
+    template<class ExprClass>
+    void writeExprToMemory(Pointer ix, ExprClass val) {
+        TRACE_FUNC;
+        memory = memory.store(ix, val);
+    }
+
+    logic::Bool toZ3();
 };
 
 } /* namespace borealis */

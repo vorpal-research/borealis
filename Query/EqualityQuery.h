@@ -23,7 +23,7 @@ public:
             const llvm::Value* v2,
             SlotTracker* st);
     virtual ~EqualityQuery();
-    virtual z3::expr toZ3(Z3ExprFactory& z3ef) const;
+    virtual logic::Bool toZ3(Z3ExprFactory& z3ef) const;
     virtual std::string toString() const;
 
 private:

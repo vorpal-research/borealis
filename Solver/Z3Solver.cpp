@@ -18,24 +18,26 @@ z3::check_result Z3Solver::check(
         const Query& q,
         const PredicateState& state) {
     using namespace::z3;
+    using logic::Bool;
 
     TRACE_FUNC;
 
     solver s(z3ef.unwrap());
 
     auto ss = state.toZ3(z3ef);
-    s.add(ss.first.simplify());
-    s.add(ss.second.simplify());
+    s.add(ss.first.toAxiom());
+    s.add(ss.second.toAxiom());
 
-    dbgs() << "  Path predicates: " << endl << ss.first.simplify() << endl;
-    dbgs() << "  State predicates: " << endl << ss.second.simplify() << endl;
+    dbgs() << "  Path predicates: " << endl << ss.first << endl;
+    dbgs() << "  State predicates: " << endl << ss.second << endl;
 
-    expr pred = z3ef.getBoolVar("$CHECK$");
-    s.add(implies(pred, q.toZ3(z3ef)));
+    Bool pred = z3ef.getBoolVar("$CHECK$");
+    s.add(pred.implies(q.toZ3(z3ef)).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");
-        check_result r = s.check(1, &pred);
+        expr pred_e = pred.get();
+        check_result r = s.check(1, &pred_e);
         dbgs() << "Acquired result: "
                << ((r == z3::sat)? "sat" : (r == z3::unsat)? "unsat" : "unknown")
                << endl;
@@ -46,23 +48,25 @@ z3::check_result Z3Solver::check(
 bool Z3Solver::checkPathPredicates(
         const PredicateState& state) {
     using namespace::z3;
+    using logic::Bool;
 
     TRACE_FUNC;
 
     solver s(z3ef.unwrap());
 
     auto ss = state.toZ3(z3ef);
-    s.add(ss.second.simplify());
+    s.add(ss.second.toAxiom());
 
-    dbgs() << "  Path predicates: " << endl << ss.first.simplify() << endl;
-    dbgs() << "  State predicates: " << endl << ss.second.simplify() << endl;
+    dbgs() << "  Path predicates: " << endl << ss.first << endl;
+    dbgs() << "  State predicates: " << endl << ss.second << endl;
 
-    expr pred = z3ef.getBoolVar("$CHECK$");
-    s.add(implies(pred, ss.first));
+    Bool pred = z3ef.getBoolVar("$CHECK$");
+    s.add(pred.implies(ss.first).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");
-        check_result r = s.check(1, &pred);
+        expr pred_e = pred.get();
+        check_result r = s.check(1, &pred_e);
 
         dbgs() << "Acquired result: "
                << ((r == z3::sat) ? "sat" : (r == z3::unsat) ? "unsat" : "unknown")

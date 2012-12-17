@@ -70,7 +70,7 @@ public:
         return asString;
     }
 
-    virtual z3::expr toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const = 0;
+    virtual logic::Bool toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const = 0;
 
     static bool classof(const Predicate* /* t */) {
         return true;
