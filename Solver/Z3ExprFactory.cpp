@@ -102,7 +102,6 @@ MemArray Z3ExprFactory::getNoMemoryArray() {
     return MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
 }
 
-
 Dynamic Z3ExprFactory::getExprForTerm(const Term& term, size_t bits) {
     return getExprByTypeAndName(term.getType(), term.getName(), bits);
 }
@@ -123,10 +122,6 @@ Bool Z3ExprFactory::isInvalidPtrExpr(Pointer ptr) {
 
 Bool Z3ExprFactory::getDistinct(const std::vector<Pointer>& exprs) {
     return logic::distinct(ctx, exprs);
-}
-
-sort Z3ExprFactory::getPtrSort() {
-    return Pointer::sort(ctx);
 }
 
 expr Z3ExprFactory::to_expr(Z3_ast ast) {

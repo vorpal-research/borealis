@@ -54,7 +54,7 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
     auto le = z3ef.getExprForTerm(*lhv).toBool();
-    if(le.empty()) return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+    if (le.empty()) return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
             "Encountered ICmpPredicate with non-bool condition");
 
     auto l = le.getUnsafe();
@@ -75,7 +75,7 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     // these cases assume operands are comparable
     if(!o1.isComparable() || !o2.isComparable()) {
         return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "Encountered ICmpPredicate with incomparable operands");
+                    "Encountered ICmpPredicate with non-comparable operands");
     }
 
     auto co1 = o1.toComparable().getUnsafe();

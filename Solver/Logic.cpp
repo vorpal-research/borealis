@@ -7,76 +7,79 @@
 
 #include "Logic.hpp"
 
-
 namespace borealis {
-namespace logic{
+namespace logic {
 
-ConversionException::ConversionException(const std::string& mes):
-        std::exception(), message(mes) {}
+ConversionException::ConversionException(const std::string& msg):
+        std::exception(), message(msg) {}
 
 const char* ConversionException::what() const throw() {
     return message.c_str();
 }
 
-struct LogicExprExpr::Impl {
+struct ValueExpr::Impl {
     z3::expr inner;
     z3::expr axiomatic;
 };
 
-LogicExprExpr::LogicExprExpr(const LogicExprExpr& that):
+ValueExpr::ValueExpr(const ValueExpr& that):
     pimpl(new Impl(*that.pimpl)) {}
 
-LogicExprExpr::LogicExprExpr(LogicExprExpr&& that):
+ValueExpr::ValueExpr(ValueExpr&& that):
     pimpl((that.pimpl)) {}
 
-LogicExprExpr::LogicExprExpr(z3::expr e, z3::expr axiom):
+ValueExpr::ValueExpr(z3::expr e, z3::expr axiom):
     pimpl(new Impl{e, axiom}) {}
 
-LogicExprExpr::LogicExprExpr(z3::expr e):
+ValueExpr::ValueExpr(z3::expr e):
     pimpl(new Impl{e, z3impl::defaultAxiom(e)}) {}
 
-LogicExprExpr::~LogicExprExpr() {
+ValueExpr::~ValueExpr() {
     delete pimpl;
 }
 
-void LogicExprExpr::swap(LogicExprExpr& that) {
+void ValueExpr::swap(ValueExpr& that) {
     std::swap(pimpl, that.pimpl);
 }
 
-LogicExprExpr& LogicExprExpr::operator=(const LogicExprExpr& that) {
-    LogicExprExpr e(that);
+ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
+    ValueExpr e(that);
     swap(e);
     return *this;
 }
 
-z3::expr LogicExprExpr::get() const {
+z3::expr ValueExpr::get() const {
     return pimpl->inner;
 }
 
-z3::expr LogicExprExpr::axiom() const {
+z3::expr ValueExpr::axiom() const {
     return pimpl->axiomatic;
 }
 
-z3::sort LogicExprExpr::get_sort() const {
+z3::sort ValueExpr::get_sort() const {
     return pimpl->inner.get_sort();
+}
+
+z3::context& ValueExpr::ctx() const {
+    return pimpl->inner.ctx();
 }
 
 Bool::Bool(const Bool&) = default;
 
 Bool::Bool(z3::expr e, z3::expr axiom) :
-        LogicExprExpr(e, axiom) {
+        ValueExpr(e, axiom) {
     if (!(e.is_bool())) {
         throw ConversionException(
-                "Trying to construct bool from not-bool: "
+                "Trying to construct Bool from non-bool: "
                         + borealis::util::toString(e));
     }
 }
 
 Bool::Bool(z3::expr e) :
-        LogicExprExpr(e) {
+        ValueExpr(e) {
     if (!(e.is_bool())) {
         throw ConversionException(
-                "Trying to construct bool from not-bool: "
+                "Trying to construct Bool from non-bool: "
                         + borealis::util::toString(e));
     }
 }
@@ -86,15 +89,13 @@ Bool::Bool(z3::context& ctx, Z3_ast ast): Bool(z3::to_expr(ctx, ast)){};
 Bool Bool::implies(Bool that) const{
     z3::expr lhv = get();
     z3::expr rhv = that.get();
-    return self(to_expr(lhv.ctx(), Z3_mk_implies(lhv.ctx(), lhv, rhv)),
-            spliceAxioms(*this, that));
+    return self(to_expr(lhv.ctx(), Z3_mk_implies(lhv.ctx(), lhv, rhv)), spliceAxioms(*this, that));
 }
 
 Bool Bool::iff(Bool that) const{
     z3::expr lhv = get();
     z3::expr rhv = that.get();
-    return self(to_expr(lhv.ctx(), Z3_mk_iff(lhv.ctx(), lhv, rhv)),
-            spliceAxioms(*this, that));
+    return self(to_expr(lhv.ctx(), Z3_mk_iff(lhv.ctx(), lhv, rhv)), spliceAxioms(*this, that));
 }
 
 z3::expr Bool::toAxiom() const{
@@ -120,9 +121,8 @@ Bool Bool::mkVar(z3::context& ctx, const std::string& name) {
 Bool Bool::mkVar(z3::context& ctx, const std::string& name,
         std::function<Bool(Bool)> daAxiom) {
     // first construct the no-axiom version
-    self cnst = mkVar(ctx, name);
-    return self(cnst.get(),
-            z3impl::spliceAxioms(cnst.axiom(), daAxiom(cnst).toAxiom()));
+    self nav = mkVar(ctx, name);
+    return self(nav.get(), z3impl::spliceAxioms(nav.axiom(), daAxiom(nav).toAxiom()));
 }
 
 Bool Bool::mkFreshVar(z3::context& ctx, const std::string& name) {
@@ -132,12 +132,11 @@ Bool Bool::mkFreshVar(z3::context& ctx, const std::string& name) {
 Bool Bool::mkFreshVar(z3::context& ctx, const std::string& name,
         std::function<Bool(Bool)> daAxiom) {
     // first construct the no-axiom version
-    self cnst = mkFreshVar(ctx, name);
-    return self(cnst.get(),
-            z3impl::spliceAxioms(cnst.axiom(), daAxiom(cnst).toAxiom()));
+    self nav = mkFreshVar(ctx, name);
+    return self(nav.get(), z3impl::spliceAxioms(nav.axiom(), daAxiom(nav).toAxiom()));
 }
 
-std::ostream& operator << (std::ostream& ost, Bool b) {
+std::ostream& operator<<(std::ostream& ost, Bool b) {
     return ost << b.get().simplify() << " assuming " << b.axiom().simplify();
 }
 
@@ -190,10 +189,9 @@ REDEF_BOOL_BOOL_OP(||)
 
 #undef REDEF_BOOL_BOOL_OP
 
-Bool operator !(Bool bv0) {
+Bool operator!(Bool bv0) {
     return Bool(!bv0.get(), bv0.axiom());
 }
-
 
 } // namespace logic
 } // namespace borealis

@@ -23,9 +23,6 @@ public:
     typedef Z3ExprFactory::MemArray MemArray;
 
 private:
-    typedef Z3ExprFactory::expr expr;
-    typedef Z3ExprFactory::array array;
-
     Z3ExprFactory& factory;
     MemArray memory;
     std::vector<Z3ExprFactory::Pointer> allocated_pointers;
@@ -41,7 +38,7 @@ public:
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
         TRACE_FUNC;
-        return memory.select<Dynamic>(ix, bitSize);
+        return memory.select(ix, bitSize);
     }
 
     template<class ExprClass>
@@ -49,8 +46,6 @@ public:
         TRACE_FUNC;
         return memory.select<ExprClass>(ix);
     }
-
-
 
     template<class ExprClass>
     void writeExprToMemory(Pointer ix, ExprClass val) {
@@ -62,4 +57,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* Z3CONTEXT_H_ */

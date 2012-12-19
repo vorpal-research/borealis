@@ -32,18 +32,18 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
 
     typedef Z3ExprFactory::Pointer Pointer;
 
-    auto lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
-    if(!lhve.is<Pointer>()) return util::sayonara<logic::Bool>(
-        __FILE__, __LINE__, __PRETTY_FUNCTION__,
-        "Malloc predicate produces non-pointer"
-    );
+    auto lhve = z3ef.getExprForTerm(*lhv, Pointer::bitsize);
+    if (!lhve.is<Pointer>())
+        return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                "Malloc predicate produces a non-pointer");
+
     Pointer lhvp = lhve.to<Pointer>().getUnsafe();
 
     if (ctx) {
         ctx->registerDistinctPtr(lhvp);
     }
 
-    return z3ef.getBoolConst(true);
+    return z3ef.getTrue();
 }
 
 bool MallocPredicate::equals(const Predicate* other) const {

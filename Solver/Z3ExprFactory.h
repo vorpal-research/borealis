@@ -80,13 +80,12 @@ public:
     // Valid/invalid pointers
     Pointer getInvalidPtr();
     Bool isInvalidPtrExpr(Pointer ptr);
-    Bool getDistinct(const std::vector<Pointer>& exprs);
     // Misc pointer stuff
-    sort getPtrSort();
+    Bool getDistinct(const std::vector<Pointer>& exprs);
 
-    auto if_(Bool cond) -> decltype(logic::if_(cond)) {
-        return logic::if_(cond);
-    }
+#include "Util/macros.h"
+    auto if_(Bool cond) QUICK_RETURN(logic::if_(cond))
+#include "Util/unmacros.h"
 
     template<class T, class U>
     T switch_(
@@ -99,7 +98,6 @@ public:
 private:
 
     expr to_expr(Z3_ast ast);
-
 
     Dynamic getExprByTypeAndName(
             const llvm::ValueType type,

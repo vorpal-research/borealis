@@ -35,8 +35,8 @@ logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     TRACE_FUNC;
     typedef Z3ExprFactory::Pointer Pointer;
 
-    auto lhve = z3ef.getExprForTerm(*lhv, z3ef.getPtrSort().bv_size());
-    if(!lhve.is<Pointer>())
+    auto lhve = z3ef.getExprForTerm(*lhv, Pointer::bitsize);
+    if (!lhve.is<Pointer>())
         return util::sayonara<logic::Bool>(__FILE__,__LINE__,__PRETTY_FUNCTION__,
                 "Encountered alloca predicate with non-pointer left side");
 

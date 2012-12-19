@@ -17,11 +17,10 @@ ExecutionContext::ExecutionContext(Z3ExprFactory& factory):
 logic::Bool ExecutionContext::toZ3() {
     TRACE_FUNC;
 
-    if(allocated_pointers.empty() || allocated_pointers.size() == 1)
-        return logic::Bool::mkConst(factory.unwrap(), true);
+    if (allocated_pointers.size() < 2)
+        return factory.getTrue();
 
     return factory.getDistinct(allocated_pointers);
 }
-
 
 } // namespace borealis

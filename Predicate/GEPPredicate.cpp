@@ -66,9 +66,9 @@ logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     Dynamic l = z3ef.getExprForTerm(*lhv);
     Dynamic r = z3ef.getExprForTerm(*rhv);
 
-    if(!l.is<Pointer>() || !r.is<Pointer>()) {
+    if (!l.is<Pointer>() || !r.is<Pointer>()) {
         return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Encountered a GEP predicate non-pointer operand");
+                "Encountered a GEP predicate with non-pointer operand");
     }
 
     Pointer lp = l.to<Pointer>().getUnsafe();
@@ -84,9 +84,9 @@ logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
         shift = shift + by * size;
     }
 
-    return l == z3ef.if_(z3ef.isInvalidPtrExpr(rp))
-                    .then_(z3ef.getInvalidPtr())
-                    .else_(rp+shift);
+    return lp == z3ef.if_(z3ef.isInvalidPtrExpr(rp))
+                     .then_(z3ef.getInvalidPtr())
+                     .else_(rp+shift);
 }
 
 bool GEPPredicate::equals(const Predicate* other) const {

@@ -35,7 +35,6 @@ logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) cons
 
     auto l = z3ef.getExprForTerm(*lhv);
     auto r = z3ef.getExprForTerm(*rhv);
-
     return l == r;
 }
 

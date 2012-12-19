@@ -32,12 +32,13 @@ Predicate::Key LoadPredicate::getKey() const {
 
 logic::Bool LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
+
     typedef Z3ExprFactory::Pointer Pointer;
     typedef Z3ExprFactory::Dynamic Dynamic;
 
     Dynamic l = z3ef.getExprForTerm(*lhv);
     Dynamic r = z3ef.getExprForTerm(*rhv);
-    if(!r.is<Pointer>())
+    if (!r.is<Pointer>())
         return util::sayonara<logic::Bool>(__FILE__,__LINE__,__PRETTY_FUNCTION__,
                 "Encountered load predicate with non-pointer right side");
 

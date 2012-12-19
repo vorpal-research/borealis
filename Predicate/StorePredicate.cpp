@@ -42,12 +42,13 @@ logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) con
     if (ctx) {
         auto lptr = l.to<Z3ExprFactory::Pointer>();
 
-        if(lptr.empty()) {
+        if (lptr.empty()) {
             return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                     "StorePredicate dealing with a non-pointer value");
         }
-        ctx->writeExprToMemory(*lptr.get(), r);
+        ctx->writeExprToMemory(lptr.getUnsafe(), r);
     }
+
     return z3ef.getTrue();
 }
 
