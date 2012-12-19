@@ -91,7 +91,7 @@ bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
         return sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                 "Cannot unroll a loop with multiple latches");
     }
-    if (Latch == nullptr) {
+    if (LoopPredecessor == nullptr) {
         return sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                 "Cannot unroll a loop with multiple predecessors");
     }
