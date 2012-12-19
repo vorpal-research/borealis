@@ -50,7 +50,7 @@ public:
     }
 
     size_t hashCode() const {
-        return (size_t)id;
+        return static_cast<size_t>(id) ^ static_cast<size_t>(term_type_id);
     }
 
     static bool classof(const Term* /* t */) {
