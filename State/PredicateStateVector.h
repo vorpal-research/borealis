@@ -23,7 +23,6 @@ class PredicateStateVector {
 public:
 
     PredicateStateVector();
-    PredicateStateVector(bool _);
     PredicateStateVector(const PredicateStateVector& psv);
 
     PredicateStateVector addPredicate(Predicate::Ptr pred) const;

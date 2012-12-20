@@ -13,10 +13,6 @@ using util::view;
 
 PredicateStateVector::PredicateStateVector() {}
 
-PredicateStateVector::PredicateStateVector(bool) {
-    data.insert(PredicateState());
-}
-
 PredicateStateVector::PredicateStateVector(const PredicateStateVector& psv) :
     data(psv.data) {
 }
