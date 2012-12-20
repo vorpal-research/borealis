@@ -83,11 +83,20 @@ public:
 
     virtual size_t hashCode() const = 0;
 
+    const llvm::Instruction* getLocation() const {
+        return location;
+    }
+
+    void setLocation(const llvm::Instruction* location) {
+        this->location = location;
+    }
+
 protected:
 
     borealis::id_t predicate_type_id;
     PredicateType type;
     std::string asString;
+    const llvm::Instruction* location;
 
 };
 

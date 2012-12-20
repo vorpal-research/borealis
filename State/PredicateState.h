@@ -13,6 +13,7 @@
 
 #include <functional>
 #include <list>
+#include <unordered_set>
 
 #include "Logging/logger.hpp"
 #include "Predicate/Predicate.h"
@@ -40,6 +41,8 @@ public:
     typedef std::list<Predicate::Ptr> Data;
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
+
+    typedef std::unordered_set<const llvm::Instruction*> Locations;
 
     struct Hash {
         static size_t hash(const PredicateState& state) {
@@ -86,6 +89,8 @@ public:
 private:
 
     Data data;
+
+    Locations visited;
 
 };
 
