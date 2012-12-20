@@ -90,7 +90,9 @@ public:
             llvm::Instruction& where,
             llvm::Value& what,
             llvm::Value& why) {
-        using namespace::z3;
+
+        using llvm::dyn_cast;
+        using llvm::Instruction;
 
         NullPtrQuery npq = NullPtrQuery(&what, pass->slotTracker);
         EqualityQuery eq = EqualityQuery(&what, &why, pass->slotTracker);
@@ -103,7 +105,13 @@ public:
 
             pass->infos() << "Checking state: " << ps << endl;
 
-            context ctx;
+            if (!ps.hasVisited({
+                    &where,
+                    dyn_cast<const Instruction>(&what),
+                    dyn_cast<const Instruction>(&why)
+            })) continue;
+
+            z3::context ctx;
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 

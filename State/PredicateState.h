@@ -12,6 +12,7 @@
 #include <llvm/Value.h>
 
 #include <functional>
+#include <initializer_list>
 #include <list>
 #include <unordered_set>
 
@@ -37,6 +38,7 @@ public:
     PredicateState addAll(const PredicateState& state) const;
 
     PredicateState addVisited(const llvm::Instruction* location) const;
+    bool hasVisited(std::initializer_list<const llvm::Instruction*> locations) const;
 
     std::pair<logic::Bool, logic::Bool> toZ3(Z3ExprFactory& z3ef) const;
 

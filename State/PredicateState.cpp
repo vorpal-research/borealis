@@ -60,6 +60,12 @@ PredicateState PredicateState::addVisited(const llvm::Instruction* location) con
     return res;
 }
 
+bool PredicateState::hasVisited(std::initializer_list<const llvm::Instruction*> locations) const {
+    for (auto l : locations)
+        if (!contains(visited, l)) return false;
+    return true;
+}
+
 std::pair<logic::Bool, logic::Bool> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
