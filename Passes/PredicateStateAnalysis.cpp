@@ -106,13 +106,14 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     // Add incoming predicates from PHI nodes
     for ( ; isa<PHINode>(iter); ++iter) {
-        inState = inState.addPredicate(
-                ppm[std::make_pair(from, cast<PHINode>(iter))]);
+        inState = inState
+            .addPredicate(ppm[std::make_pair(from, cast<PHINode>(iter))])
+            .addVisited(&*iter);
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState modifiedInState = inState;
+        PredicateState modifiedInState = inState.addVisited(&I);
 
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
@@ -152,8 +153,10 @@ void PredicateStateAnalysis::processTerminator(
         const PredicateState& state) {
     using namespace::llvm;
 
+    auto s = state.addVisited(&I);
+
     if (isa<BranchInst>(I))
-    { process(cast<BranchInst>(I), state); }
+    { process(cast<BranchInst>(I), s); }
 }
 
 void PredicateStateAnalysis::process(

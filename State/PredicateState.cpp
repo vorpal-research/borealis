@@ -19,20 +19,20 @@ PredicateState::PredicateState() {
 }
 
 PredicateState::PredicateState(const PredicateState& state) :
-            data(state.data), visited(visited) {
+            data(state.data), visited(state.visited) {
 }
 
 PredicateState::PredicateState(PredicateState&& state) :
-            data(std::move(state.data)), visited(std::move(visited)) {
+            data(std::move(state.data)), visited(std::move(state.visited)) {
 }
 
-const PredicateState& PredicateState::operator=(const PredicateState& state) {
+PredicateState& PredicateState::operator=(const PredicateState& state) {
     data = state.data;
     visited = state.visited;
     return *this;
 }
 
-const PredicateState& PredicateState::operator=(PredicateState&& state) {
+PredicateState& PredicateState::operator=(PredicateState&& state) {
     data = std::move(state.data);
     visited = std::move(state.visited);
     return *this;
@@ -51,6 +51,12 @@ PredicateState PredicateState::addAll(const PredicateState& state) const {
         res.data.push_back(p);
         res.visited.insert(p->getLocation());
     }
+    return res;
+}
+
+PredicateState PredicateState::addVisited(const llvm::Instruction* location) const {
+    PredicateState res = PredicateState(*this);
+    res.visited.insert(location);
     return res;
 }
 

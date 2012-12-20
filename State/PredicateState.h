@@ -30,11 +30,13 @@ public:
     PredicateState(const PredicateState& state);
     PredicateState(PredicateState&& state);
 
-    const PredicateState& operator=(const PredicateState& state);
-    const PredicateState& operator=(PredicateState&& state);
+    PredicateState& operator=(const PredicateState& state);
+    PredicateState& operator=(PredicateState&& state);
 
     PredicateState addPredicate(Predicate::Ptr pred) const;
     PredicateState addAll(const PredicateState& state) const;
+
+    PredicateState addVisited(const llvm::Instruction* location) const;
 
     std::pair<logic::Bool, logic::Bool> toZ3(Z3ExprFactory& z3ef) const;
 
