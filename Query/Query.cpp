@@ -11,4 +11,14 @@ namespace borealis {
 
 Query::~Query() {}
 
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Query& q) {
+    s << q.toString();
+    return s;
+}
+
+std::ostream& operator<<(std::ostream& s, const borealis::Query& q) {
+    s << q.toString();
+    return s;
+}
+
 } // namespace borealis

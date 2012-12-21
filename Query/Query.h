@@ -26,6 +26,9 @@ public:
 
 };
 
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Query& q);
+std::ostream& operator<<(std::ostream& s, const borealis::Query& q);
+
 } /* namespace borealis */
 
 #endif /* QUERY_H_ */
