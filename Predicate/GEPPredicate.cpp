@@ -80,8 +80,9 @@ logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     for (const auto& s : shifts) {
         Pointer by = z3ef.getExprForTerm(*s.first, ptrsize).to<Pointer>().getUnsafe();
         Pointer size = z3ef.getExprForTerm(*s.second, ptrsize).to<Pointer>().getUnsafe();
+        Pointer offset = by * size;
 
-        shift = shift + by * size;
+        shift = Pointer::addNoOverflow(shift, offset);
     }
 
     return lp == z3ef.if_(z3ef.isInvalidPtrExpr(rp))
