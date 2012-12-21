@@ -109,7 +109,7 @@ public:
                     &where,
                     dyn_cast<const Instruction>(&what),
                     dyn_cast<const Instruction>(&why)
-            })) continue;
+            })) continue; // FIXME
 
             z3::context ctx;
             Z3ExprFactory z3ef(ctx);
