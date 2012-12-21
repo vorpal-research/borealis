@@ -13,6 +13,7 @@
 
 namespace {
 
+using namespace borealis;
 using namespace borealis::util;
 using namespace borealis::util::streams;
 
@@ -103,4 +104,86 @@ TEST(Util, ltlt) {
 	}
 }
 
+TEST(Util, option) {
+    {
+
+        option<int> op = just(2);
+
+        EXPECT_EQ(op.getUnsafe(), 2);
+        EXPECT_FALSE(op.empty());
+
+        int count = 0;
+        for(auto& i: op) {
+            count++;
+            EXPECT_EQ(i, 2);
+        }
+
+        EXPECT_EQ(count, 1);
+
+        option<int> nop = nothing();
+        EXPECT_TRUE(nop.empty());
+
+        count = 0;
+        for(auto& i: nop) {
+            count++;
+            EXPECT_EQ(i, 2);
+        }
+
+        EXPECT_EQ(count, 0);
+
+        {
+            auto arg0 = just(1);
+            auto arg1 = just(2);
+            // this will fail if res is empty
+            auto res = just(0);
+            std::transform(
+                    arg0.begin(),
+                    arg0.end(),
+                    arg1.begin(),
+                    res.begin(),
+                    [](int a, int b){ return a+b; }
+            );
+
+            EXPECT_NE(res, just(0));
+            EXPECT_EQ(res, just(3));
+        }
+
+        {
+            auto arg0 = just(1);
+            auto arg1 = just(2);
+            // this will not fail if res is empty
+            // cos we use back_inserter
+            auto res = nothing<int>();
+            std::transform(
+                arg0.begin(),
+                arg0.end(),
+                arg1.begin(),
+                std::back_inserter(res),
+                [](int a, int b){ return a+b; }
+            );
+
+            EXPECT_NE(res, just(0));
+            EXPECT_EQ(res, just(3));
+        }
+
+        {
+            auto arg1 = just(1);
+            auto arg0 = nothing<int>();
+            // this will not fail if res is empty
+            // cos we use back_inserter
+            auto res = nothing<int>();
+            std::transform(
+                arg0.begin(),
+                arg0.end(),
+                arg1.begin(),
+                std::back_inserter(res),
+                [](int a, int b){ return a+b; }
+            );
+
+            EXPECT_EQ(res, nothing());
+        }
+    }
 }
+
+
+} // namespace _

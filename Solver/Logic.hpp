@@ -152,6 +152,10 @@ private:
 public:
     self& operator=(const self&) = default;
 
+    inline size_t getBitSize() const {
+        return bitsize;
+    }
+
     static z3::sort sort(z3::context& ctx) {
         return ctx.bv_sort(N);
     }
@@ -494,11 +498,11 @@ public:
 
 };
 
-class BitVectorExpr: public ValueExpr {
+class DynBitVectorExpr: public ValueExpr {
 public:
-    typedef BitVectorExpr self;
+    typedef DynBitVectorExpr self;
 
-    BitVectorExpr(z3::expr e, z3::expr axiom):
+    DynBitVectorExpr(z3::expr e, z3::expr axiom):
         ValueExpr(e, axiom) {
         if(!e.is_bv()) {
             throw ConversionException("BitVectorExpr constructed from incompatible expression: " +
@@ -506,8 +510,8 @@ public:
         }
     }
 
-    size_t bitsize() const {
-        return get().get_sort().bv_size();
+    size_t getBitSize() const {
+        return get_sort().bv_size();
     }
 
 };

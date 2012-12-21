@@ -16,6 +16,8 @@
 namespace borealis {
 namespace util {
 
+struct nothing_t {};
+
 template<class T>
 class option {
     typedef T* pointer;
@@ -25,6 +27,7 @@ class option {
 
 public:
     option() : holder(nullptr) {}
+    option(nothing_t) : holder(nullptr) {}
     explicit option(const T& val) : holder(new T(val)) {}
     explicit option(const std::function<std::shared_ptr<T>()>& generator) : holder(generator()) {}
     option(const self& that) {
@@ -43,6 +46,11 @@ public:
         holder.swap(that.holder);
     }
 
+    self& operator=(nothing_t) {
+        self temp; // exception safety
+        swap(temp);
+        return *this;
+    }
     self& operator=(const self& that) {
         self temp(that); // exception safety
         swap(temp);
@@ -51,6 +59,14 @@ public:
     self& operator=(self&& that) {
         holder = std::move(that.holder);
         return *this;
+    }
+
+    // this is provided only to support std::back_inserter iterator type
+    typedef T value_type;
+    typedef T& reference;
+    typedef const T& const_reference;
+    void push_back(const T& val) {
+        operator=(option(val));
     }
 
     bool operator==(const self& that) const {
@@ -64,6 +80,14 @@ public:
     bool operator==(const T& that) const {
         if( empty() ) return false;
         else return *holder == that;
+    }
+
+    bool operator!=(const self& that) const {
+        return !operator==(that);
+    }
+
+    bool operator!=(const T& that) const {
+        return !operator==(that);
     }
 
     const T* get() const {
@@ -88,23 +112,28 @@ public:
         return *holder.get();
     }
 
+    const T& getUnsafe() const {
+        return *holder.get();
+    }
+
     struct option_iterator {
-        const self* opt;
-        option_iterator(const self* opt) : opt(opt){};
+        self* opt;
+        option_iterator() : opt(nullptr) {};
+        option_iterator(self* opt) : opt(opt){};
         option_iterator(const option_iterator&) = default;
         option_iterator& operator=(const option_iterator&) = default;
 
-        option_iterator& operator==(const option_iterator& that) {
+        bool operator==(const option_iterator& that) const {
             return opt == that.opt;
         }
 
-        option_iterator& operator!=(const option_iterator& that) {
+        bool operator!=(const option_iterator& that) const {
             return opt != that.opt;
         }
 
         option_iterator operator++() {
             opt = nullptr;
-            return option_iterator(nullptr);
+            return *this;
         }
 
         option_iterator operator++(int) {
@@ -112,14 +141,40 @@ public:
             opt = nullptr;
             return option_iterator(tmp);
         }
+
+        const T& operator*() const {
+            return opt->getUnsafe();
+        }
+
+        T& operator*() {
+            return opt->getUnsafe();
+        }
+
+        const T* operator->() const {
+            return opt->get();
+        }
+
+        T* operator->() {
+            return opt->get();
+        }
     };
 
+    const option_iterator begin() const {
+        if(this->empty()) return option_iterator(nullptr);
+        else return option_iterator(this);
+    }
+
+    const option_iterator end() const {
+        return option_iterator();
+    }
+
     option_iterator begin() {
-        return option_iterator(this);
+        if(this->empty()) return option_iterator(nullptr);
+        else return option_iterator(this);
     }
 
     option_iterator end() {
-        return option_iterator(nullptr);
+        return option_iterator();
     }
 };
 
@@ -133,9 +188,13 @@ option<T> just(T && val) {
     return option<T>(val);
 }
 
+inline nothing_t nothing() {
+    return nothing_t();
+}
+
 template<class T>
-option<T> nothing() {
-    return option<T>();
+inline option<T> nothing() {
+    return nothing();
 }
 
 } // namespace util
