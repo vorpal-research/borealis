@@ -94,9 +94,7 @@ public:
         using llvm::dyn_cast;
         using llvm::Instruction;
 
-        NullPtrQuery npq = NullPtrQuery(&what, pass->slotTracker);
-        EqualityQuery eq = EqualityQuery(&what, &why, pass->slotTracker);
-        AndQuery q = AndQuery({&npq, &eq});
+        NullPtrQuery q = NullPtrQuery(&what, pass->slotTracker);
 
         pass->infos() << "Query: " << q.toString() << endl;
 
@@ -109,7 +107,12 @@ public:
                     &where,
                     dyn_cast<const Instruction>(&what),
                     dyn_cast<const Instruction>(&why)
-            })) continue; // FIXME
+            })) {
+
+                pass->infos() << "Infeasible!" << endl;
+
+                continue;
+            }
 
             z3::context ctx;
             Z3ExprFactory z3ef(ctx);
