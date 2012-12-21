@@ -14,7 +14,8 @@ Predicate::Predicate(borealis::id_t predicate_type_id) :
 
 Predicate::Predicate(borealis::id_t predicate_type_id, PredicateType type) :
         predicate_type_id(predicate_type_id),
-        type(type) {}
+        type(type),
+        location(nullptr) {}
 
 Predicate::~Predicate() {}
 
