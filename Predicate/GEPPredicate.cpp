@@ -80,14 +80,13 @@ logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     for (const auto& s : shifts) {
         Pointer by = z3ef.getExprForTerm(*s.first, ptrsize).to<Pointer>().getUnsafe();
         Pointer size = z3ef.getExprForTerm(*s.second, ptrsize).to<Pointer>().getUnsafe();
-        Pointer offset = by * size;
 
-        shift = Pointer::addNoOverflow(shift, offset);
+        shift = shift + by * size;
     }
 
-    return lp == z3ef.if_(z3ef.isInvalidPtrExpr(rp))
-                     .then_(z3ef.getInvalidPtr())
-                     .else_(rp+shift);
+    return z3ef.if_(z3ef.isInvalidPtrExpr(rp))
+               .then_(lp == z3ef.getInvalidPtr())
+               .else_(lp == rp+shift && !z3ef.isInvalidPtrExpr(lp));
 }
 
 bool GEPPredicate::equals(const Predicate* other) const {

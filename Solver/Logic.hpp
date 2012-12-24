@@ -156,11 +156,6 @@ public:
         return ctx.bv_sort(N);
     }
 
-    static self addNoOverflow(self& a, self& b) {
-        z3::context& ctx = a.ctx();
-        return self(ctx, Z3_mk_bvadd_no_overflow(ctx, a.get(), b.get(), false));
-    }
-
     static self mkBound(z3::context& ctx, unsigned i) {
         return self(ctx, Z3_mk_bound(ctx, i, sort(ctx)));
     }
