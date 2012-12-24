@@ -28,6 +28,7 @@ z3::check_result Z3Solver::check(
     s.add(ss.first.toAxiom());
     s.add(ss.second.toAxiom());
 
+    dbgs() << "  Query: " << endl << q << endl;
     dbgs() << "  Path predicates: " << endl << ss.first << endl;
     dbgs() << "  State predicates: " << endl << ss.second << endl;
 
@@ -36,11 +37,24 @@ z3::check_result Z3Solver::check(
 
     {
         TRACE_BLOCK("Calling Z3 check");
+        auto dbg = dbgs();
+
         expr pred_e = pred.get();
         check_result r = s.check(1, &pred_e);
-        dbgs() << "Acquired result: "
-               << ((r == z3::sat)? "sat" : (r == z3::unsat)? "unsat" : "unknown")
-               << endl;
+        dbg << "Acquired result: "
+            << ((r == z3::sat) ? "sat" : (r == z3::unsat) ? "unsat" : "unknown")
+            << endl;
+
+        dbg << "With:" << endl;
+        if (r == z3::sat) {
+            dbg << s.get_model() << endl;
+        } else if (r == z3::unsat) {
+            auto core = s.unsat_core();
+            for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+        } else {
+            dbg << s.reason_unknown() << endl;
+        }
+
         return r;
     }
 }
