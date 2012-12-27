@@ -36,10 +36,10 @@ public:
 
     typedef borealis::logic::Bool Bool;
     typedef borealis::logic::BitVector<32> Pointer;
-    typedef borealis::logic::BitVector<32> Integer;
-    typedef borealis::logic::BitVector<32> Real;
-    typedef borealis::logic::BitVector<8> Byte;
-    typedef borealis::logic::ScatterArray<Pointer> MemArray;
+    typedef borealis::logic::BitVector<Pointer::bitsize> Integer;
+    typedef borealis::logic::BitVector<Pointer::bitsize> Real;
+    typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
+    typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize> MemArray;
     typedef borealis::logic::SomeExpr Dynamic;
 
     Z3ExprFactory(z3::context& ctx);

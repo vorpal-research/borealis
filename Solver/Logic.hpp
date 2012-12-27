@@ -845,33 +845,67 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<size_t N>
-std::vector<BitVector<8>> splitBytes(BitVector<N> bv) {
-    typedef BitVector<8> Byte;
+template<size_t N, size_t ElemSize = 8>
+std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
+    typedef BitVector<ElemSize> Byte;
 
     z3::context& ctx = bv.get().ctx();
 
     std::vector<Byte> ret;
 
-    for (size_t ix = 0; ix < N; ix += 8) {
-        z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+7, ix, bv.get()));
+    if(N <= ElemSize) {
+        return std::vector<Byte>{ grow<ElemSize>(bv) };
+    }
+
+    for (size_t ix = 0; ix < N; ix += ElemSize) {
+        z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+ElemSize-1, ix, bv.get()));
         ret.push_back(Byte(e, bv.axiom()));
     }
 
     return ret;
 }
 
-std::vector<BitVector<8>> splitBytes(SomeExpr bv);
+template<size_t ElemSize = 8>
+std::vector<BitVector<ElemSize>> splitBytes(SomeExpr bv) {
+    typedef BitVector<ElemSize> Byte;
 
-template<size_t N>
-BitVector<N> concatBytes(const std::vector<BitVector<8>>& bytes) {
-    typedef BitVector<8> Byte;
+    size_t width = bv.get().get_sort().bv_size();
+
+    // FIXME: check for the <= case
+    if(width == ElemSize) {
+        for(auto& ibv: bv.to<Byte>()) {
+            return std::vector<Byte>{ ibv };
+        }
+
+        return
+           util::sayonara<std::vector<Byte>>(
+                   __FILE__,
+                   __LINE__,
+                   __PRETTY_FUNCTION__,
+                   "Invalid dynamic bitvector, cannot convert to Byte");
+    }
+
+    z3::context& ctx = bv.get().ctx();
+
+    std::vector<Byte> ret;
+
+    for (size_t ix = 0; ix < width; ix += ElemSize) {
+        z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+ElemSize-1, ix, bv.get()));
+        ret.push_back(Byte(e, bv.axiom()));
+    }
+
+    return ret;
+}
+
+template<size_t N, size_t ElemSize = 8>
+BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
+    typedef BitVector<ElemSize> Byte;
 
     using borealis::util::toString;
 
-    if (bytes.size() * 8 != N) throw ConversionException {
+    if (bytes.size() * ElemSize != N) throw ConversionException {
         "concatBytes failed to merge the resulting BitVector: "
-        "expected vector size " + toString(N/8) + ", got vector of size "
+        "expected vector size " + toString(N/ElemSize) + ", got vector of size "
         + toString(bytes.size())
     };
 
@@ -890,13 +924,32 @@ BitVector<N> concatBytes(const std::vector<BitVector<8>>& bytes) {
     return BitVector<N>(head, axiom);
 }
 
-SomeExpr concatBytesDynamic(const std::vector<BitVector<8>>& bytes);
+template<size_t ElemSize = 8>
+SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
+    typedef BitVector<ElemSize> Byte;
+
+    using borealis::util::toString;
+
+    z3::expr head = bytes[0].get();
+    z3::context& ctx = head.ctx();
+
+    for (size_t i = 1; i < bytes.size(); ++i) {
+        head = z3::expr(ctx, Z3_mk_concat(ctx, bytes[i].get(), head));
+    }
+
+    z3::expr axiom = bytes[0].axiom();
+    for (size_t i = 1; i < bytes.size(); ++i) {
+        axiom = z3impl::spliceAxioms(axiom, bytes[i].axiom());
+    }
+
+    return SomeExpr(head, axiom);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class Index, template<class, class> class InnerArray = FuncArray>
+template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = FuncArray>
 class ScatterArray {
-    typedef BitVector<8> Byte;
+    typedef BitVector<ElemSize> Byte;
     typedef InnerArray<Byte, Index> Inner;
 
     Inner inner;
@@ -910,8 +963,8 @@ public:
 
     SomeExpr select(Index i, size_t elemBitSize) {
         std::vector<Byte> bytes;
-        for(size_t j = 0; j < elemBitSize; j+=8) {
-            bytes.push_back(inner[i+j/8]);
+        for(size_t j = 0; j < elemBitSize; j+=ElemSize) {
+            bytes.push_back(inner[i+j/ElemSize]);
         }
         return concatBytesDynamic(bytes);
     }
@@ -921,8 +974,8 @@ public:
         enum { elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
-        for(int j = 0; j < elemBitSize; j+=8) {
-            bytes.push_back(inner[i+j/8]);
+        for(int j = 0; j < elemBitSize; j+=ElemSize) {
+            bytes.push_back(inner[i+j/ElemSize]);
         }
         return concatBytes<elemBitSize>(bytes);
     }
@@ -938,11 +991,11 @@ public:
     }
 
     template<class Elem>
-    inline ScatterArray<Index, InnerArray> store(Index i, Elem e, size_t elemBitSize) {
-        std::vector<Byte> bytes = splitBytes(e);
+    inline ScatterArray store(Index i, Elem e, size_t elemBitSize) {
+        std::vector<Byte> bytes = splitBytes<ElemSize>(e);
 
         std::vector<std::pair<Index, Byte>> cases;
-        for(auto j = 0U; j < elemBitSize/8; ++j) {
+        for(auto j = 0U; j < elemBitSize/ElemSize; ++j) {
             cases.push_back({ i+j, bytes[j] });
         }
 
@@ -950,11 +1003,11 @@ public:
     }
 
     template<class Elem>
-    ScatterArray<Index, InnerArray> store(Index i, Elem e) {
+    ScatterArray store(Index i, Elem e) {
         return store(i, e, Elem::bitsize);
     }
 
-    ScatterArray<Index, InnerArray> store(Index i, SomeExpr e) {
+    ScatterArray store(Index i, SomeExpr e) {
         return store(i, e,  e.get().get_sort().bv_size());
     }
 

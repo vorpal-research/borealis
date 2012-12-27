@@ -140,42 +140,7 @@ std::ostream& operator<<(std::ostream& ost, Bool b) {
     return ost << b.get().simplify() << " assuming " << b.axiom().simplify();
 }
 
-std::vector<BitVector<8>> splitBytes(SomeExpr bv) {
-    typedef BitVector<8> Byte;
 
-    size_t width = bv.get().get_sort().bv_size();
-
-    z3::context& ctx = bv.get().ctx();
-
-    std::vector<Byte> ret;
-
-    for (size_t ix = 0; ix < width; ix += 8) {
-        z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+7, ix, bv.get()));
-        ret.push_back(Byte(e, bv.axiom()));
-    }
-
-    return ret;
-}
-
-SomeExpr concatBytesDynamic(const std::vector<BitVector<8>>& bytes) {
-    typedef BitVector<8> Byte;
-
-    using borealis::util::toString;
-
-    z3::expr head = bytes[0].get();
-    z3::context& ctx = head.ctx();
-
-    for (size_t i = 1; i < bytes.size(); ++i) {
-        head = z3::expr(ctx, Z3_mk_concat(ctx, bytes[i].get(), head));
-    }
-
-    z3::expr axiom = bytes[0].axiom();
-    for (size_t i = 1; i < bytes.size(); ++i) {
-        axiom = z3impl::spliceAxioms(axiom, bytes[i].axiom());
-    }
-
-    return SomeExpr(head, axiom);
-}
 
 #define REDEF_BOOL_BOOL_OP(OP) \
         Bool operator OP(Bool bv0, Bool bv1) { \
