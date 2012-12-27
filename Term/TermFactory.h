@@ -41,7 +41,12 @@ public:
     }
 
     Term::Ptr getValueTerm(llvm::Value* v) {
-        return Term::Ptr(new ValueTerm(v, slotTracker));
+        using namespace llvm;
+
+        if (isa<Constant>(v))
+            return getConstTerm(valueType(*v), util::toString(*v));
+        else
+            return Term::Ptr(new ValueTerm(v, slotTracker));
     }
 
     static Ptr get(SlotTracker* slotTracker) {
