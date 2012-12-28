@@ -40,7 +40,7 @@ GEPPredicate::GEPPredicate(
     std::string a = "0";
     for (const auto& shift : shifts) {
         ValueTerm* by = new ValueTerm(shift.first, st);
-        ConstTerm* size = new ConstTerm(llvm::ValueType::INT_CONST, util::toString(shift.second));
+        ConstTerm* size = new ConstTerm(llvm::getIntConstant(shift.second), st);
         this->shifts.push_back(
                 std::make_pair(Term::Ptr(by), Term::Ptr(size))
         );

@@ -8,11 +8,14 @@
 #include <llvm/Constants.h>
 #include <llvm/InstrTypes.h>
 #include <llvm/Instructions.h>
+#include <llvm/LLVMContext.h>
 
 #include <cstdlib>
 #include <unordered_set>
 
 #include "util.h"
+
+#include "macros.h"
 
 namespace llvm {
 
@@ -146,6 +149,15 @@ ValueType type2type(const llvm::Type& type, TypeInfo info) {
     }
 }
 
+llvm::Constant* getBoolConstant(bool b) {
+    return b ? llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(llvm::getGlobalContext()))
+             : llvm::ConstantInt::getFalse(llvm::Type::getInt1Ty(llvm::getGlobalContext()));
+}
+
+llvm::Constant* getIntConstant(uint64_t i) {
+    return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvm::getGlobalContext()), i);
+}
+
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
     std::unordered_set<Loop*> loops;
 
@@ -155,6 +167,17 @@ std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
     loops.erase(nullptr);
 
     return std::list<Loop*>(loops.begin(), loops.end());
+}
+
+std::string arithString(ArithType opCode) {
+    switch (opCode) {
+    case ArithType::ADD: return "+";
+    case ArithType::SUB: return "-";
+    case ArithType::MUL: return "*";
+    case ArithType::DIV: return "/";
+    case ArithType::REM: return "%";
+    default: BYE_BYE(std::string, "Unreachable!");
+    }
 }
 
 } // namespace llvm
@@ -191,3 +214,5 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
 } // namespace streams
 } // namespace util
 } // namespace borealis
+
+#include "unmacros.h"

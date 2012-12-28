@@ -29,6 +29,10 @@
  * */
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
-
+#define BYE_BYE(type, msg) return borealis::util::sayonara<type>( \
+        __FILE__, \
+        __LINE__, \
+        __PRETTY_FUNCTION__, \
+        msg);
 
 // #endif /* MACROS_H_ */

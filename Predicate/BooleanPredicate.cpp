@@ -22,9 +22,9 @@ BooleanPredicate::BooleanPredicate(
 BooleanPredicate::BooleanPredicate(
         Term::Ptr v,
         bool b,
-        SlotTracker* /* st */) : Predicate(type_id(*this)),
+        SlotTracker* st) : Predicate(type_id(*this)),
 	        v(std::move(v)),
-	        b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
+	        b(new ConstTerm(llvm::getBoolConstant(b), st)) {
     this->asString = this->v->getName() + "=" + this->b->getName();
 }
 
@@ -32,9 +32,9 @@ BooleanPredicate::BooleanPredicate(
         PredicateType type,
         Term::Ptr v,
         bool b,
-        SlotTracker* /* st */) : Predicate(type_id(*this), type),
+        SlotTracker* st) : Predicate(type_id(*this), type),
             v(std::move(v)),
-            b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
+            b(new ConstTerm(llvm::getBoolConstant(b), st)) {
     this->asString = this->v->getName() + "=" + this->b->getName();
 }
 

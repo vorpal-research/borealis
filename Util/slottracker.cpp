@@ -258,7 +258,12 @@ std::string SlotTracker::getLocalName(const Value *V) {
         return "<null>";
     } else if (isa<ConstantInt>(V)) {
         const ConstantInt* cInt = cast<ConstantInt>(V);
-        return toString(cInt->getValue().getZExtValue());
+        if (cInt->getType()->getPrimitiveSizeInBits() == 1) {
+            if (cInt->isOne()) return "true";
+            else if (cInt->isZero()) return "false";
+        } else {
+            return toString(cInt->getValue().getZExtValue());
+        }
     } else if (isa<ConstantFP>(V)) {
         const ConstantFP* cFP = cast<ConstantFP>(V);
         return toString(cFP->getValueAPF().convertToDouble());
