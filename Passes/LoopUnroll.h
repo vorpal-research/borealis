@@ -10,6 +10,7 @@
 
 #include <llvm/Analysis/LoopIterator.h>
 #include <llvm/Analysis/LoopPass.h>
+#include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/Instructions.h>
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
@@ -29,6 +30,7 @@ public:
 private:
 
     llvm::LoopInfo* LI;
+    llvm::ScalarEvolution* SE;
 
 };
 
