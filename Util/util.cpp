@@ -102,31 +102,6 @@ ValueType valueType(const llvm::Value& value) {
 	        TypeInfo::VARIABLE);
 }
 
-std::string constantValueString(const llvm::Constant& constant) {
-    using borealis::util::toString;
-    using borealis::util::sayonara;
-
-    if (isa<ConstantPointerNull>(constant)) {
-        return "<null>";
-    } else if (isa<ConstantInt>(constant)) {
-        ConstantInt& ci = cast<ConstantInt>(constant);
-        if (ci.getType()->getPrimitiveSizeInBits() == 1) {
-            if (ci.isOne()) return "true";
-            else if (ci.isZero()) return "false";
-        } else {
-            return toString(ci.getValue().getZExtValue());
-        }
-    } else if (isa<ConstantFP>(constant)) {
-        ConstantFP& cf = cast<ConstantFP>(constant);
-        return toString(cf.getValueAPF().convertToDouble());
-    }
-
-    BYE_BYE(std::string,
-            toString(constant) +
-            " is not ConstantPointerNull, ConstantInt" +
-            " or ConstantFP - cannot convert to value string");
-}
-
 ValueType type2type(const llvm::Type& type, TypeInfo info) {
     using namespace::llvm;
 
