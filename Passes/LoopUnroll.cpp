@@ -6,6 +6,7 @@
  */
 
 #include <llvm/Analysis/Dominators.h>
+#include <llvm/Constants.h>
 #include <llvm/Support/CommandLine.h>
 
 #include "LoopUnroll.h"
@@ -68,6 +69,7 @@ void LoopUnroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace llvm;
 
     AU.addRequiredTransitive<LoopInfo>();
+    AU.addRequiredTransitive<ScalarEvolution>();
     // Does NOT preserve CFG
 }
 
@@ -75,6 +77,7 @@ bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     using namespace llvm;
 
     LI = &getAnalysis<LoopInfo>();
+    SE = &getAnalysis<ScalarEvolution>();
 
     // Basic info about the loop
     BasicBlock* Header = L->getHeader();
@@ -135,7 +138,12 @@ bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     LoopBlocksDFS::RPOIterator BlockBegin = DFS.beginRPO();
     LoopBlocksDFS::RPOIterator BlockEnd = DFS.endRPO();
 
-    for (unsigned UnrollIter = 0; UnrollIter != DerollCount; UnrollIter++) {
+    // Try to guess the deroll count
+    unsigned CurrentDerollCount = DerollCount;
+    unsigned TripCount = SE->getSmallConstantTripCount(L, Latch);
+    if (TripCount != 0) CurrentDerollCount = TripCount;
+
+    for (unsigned UnrollIter = 0; UnrollIter != CurrentDerollCount; UnrollIter++) {
         std::vector<BasicBlock*> NewBlocks;
 
         for (LoopBlocksDFS::RPOIterator BB = BlockBegin; BB != BlockEnd; ++BB) {
