@@ -10,6 +10,7 @@ HANDLE_PREDICATE(Load, LoadPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
+HANDLE_PREDICATE(Arith, ArithPredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE

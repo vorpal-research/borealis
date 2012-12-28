@@ -20,6 +20,7 @@
 #include "Predicate/StorePredicate.h"
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
+#include "Predicate/ArithPredicate.h"
 
 namespace borealis {
 
@@ -85,6 +86,15 @@ public:
             Term::Ptr rhv) {
         return Predicate::Ptr(
                 new EqualityPredicate(std::move(lhv), std::move(rhv), slotTracker));
+    }
+
+    Predicate::Ptr getArithPredicate(
+            Term::Ptr lhv,
+            Term::Ptr op1,
+            Term::Ptr op2,
+            llvm::ArithType opCode) {
+        return Predicate::Ptr(
+                new ArithPredicate(std::move(lhv), std::move(op1), std::move(op2), opCode, slotTracker));
     }
 
     static Ptr get(SlotTracker* slotTracker) {
