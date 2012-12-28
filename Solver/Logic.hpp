@@ -845,6 +845,37 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template<class Elem, class Index>
+class TheoryArray: public ValueExpr {
+    TheoryArray(z3::expr inner) : ValueExpr(inner){
+        if(!inner.is_array())
+            throw ConversionException("TheoryArray constructed from non-array");
+    };
+public:
+    TheoryArray(const TheoryArray&) = default;
+
+    Elem select    (Index i) { return Elem(z3::select(get(), i.get()));  }
+    Elem operator[](Index i) { return select(i); }
+
+    TheoryArray store(Index i, Elem e) {
+        return z3::store(get(), i.get(), e.get());
+    }
+
+    TheoryArray store(std::vector<std::pair<Index, Elem>> entries) {
+        z3::expr base = get();
+        for(auto& entry: entries) {
+            base = z3::store(base, entry.first.get(), entry.second.get());
+        }
+        return base;
+    }
+
+    static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
+        return z3::const_array(Index::sort(ctx), def.get());
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template<size_t N, size_t ElemSize = 8>
 std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
     typedef BitVector<ElemSize> Byte;
@@ -1012,7 +1043,7 @@ public:
     }
 
     static ScatterArray mkDefault(z3::context& ctx, const std::string& name, Byte def) {
-        return ScatterArray{ Inner(ctx, name, [def](Index){ return def; }) };
+        return ScatterArray{ Inner::mkDefault(ctx, name, def) };
     }
 };
 

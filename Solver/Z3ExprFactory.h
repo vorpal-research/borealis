@@ -39,7 +39,7 @@ public:
     typedef borealis::logic::BitVector<Pointer::bitsize> Integer;
     typedef borealis::logic::BitVector<Pointer::bitsize> Real;
     typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
-    typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize> MemArray;
+    typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, logic::TheoryArray> MemArray;
     typedef borealis::logic::SomeExpr Dynamic;
 
     Z3ExprFactory(z3::context& ctx);
