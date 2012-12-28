@@ -169,6 +169,17 @@ std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
     return std::list<Loop*>(loops.begin(), loops.end());
 }
 
+std::string arithString(ArithType opCode) {
+    switch (opCode) {
+    case ArithType::ADD: return "+";
+    case ArithType::SUB: return "-";
+    case ArithType::MUL: return "*";
+    case ArithType::DIV: return "/";
+    case ArithType::REM: return "%";
+    default: BYE_BYE(std::string, "Unreachable!");
+    }
+}
+
 } // namespace llvm
 
 namespace borealis {

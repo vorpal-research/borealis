@@ -69,6 +69,16 @@ llvm::Constant* getIntConstant(uint64_t i);
 
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
 
+enum class ArithType {
+    ADD,
+    SUB,
+    MUL,
+    DIV,
+    REM
+};
+
+std::string arithString(ArithType opCode);
+
 } // namespace llvm
 
 namespace borealis {
