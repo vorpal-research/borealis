@@ -8,11 +8,14 @@
 #include <llvm/Constants.h>
 #include <llvm/InstrTypes.h>
 #include <llvm/Instructions.h>
+#include <llvm/LLVMContext.h>
 
 #include <cstdlib>
 #include <unordered_set>
 
 #include "util.h"
+
+#include "macros.h"
 
 namespace llvm {
 
@@ -99,6 +102,31 @@ ValueType valueType(const llvm::Value& value) {
 	        TypeInfo::VARIABLE);
 }
 
+std::string constantValueString(const llvm::Constant& constant) {
+    using borealis::util::toString;
+    using borealis::util::sayonara;
+
+    if (isa<ConstantPointerNull>(constant)) {
+        return "<null>";
+    } else if (isa<ConstantInt>(constant)) {
+        ConstantInt& ci = cast<ConstantInt>(constant);
+        if (ci.getType()->getPrimitiveSizeInBits() == 1) {
+            if (ci.isOne()) return "true";
+            else if (ci.isZero()) return "false";
+        } else {
+            return toString(ci.getValue().getZExtValue());
+        }
+    } else if (isa<ConstantFP>(constant)) {
+        ConstantFP& cf = cast<ConstantFP>(constant);
+        return toString(cf.getValueAPF().convertToDouble());
+    }
+
+    BYE_BYE(std::string,
+            toString(constant) +
+            " is not ConstantPointerNull, ConstantInt" +
+            " or ConstantFP - cannot convert to value string");
+}
+
 ValueType type2type(const llvm::Type& type, TypeInfo info) {
     using namespace::llvm;
 
@@ -146,6 +174,15 @@ ValueType type2type(const llvm::Type& type, TypeInfo info) {
     }
 }
 
+llvm::Constant* getBoolConstant(bool b) {
+    return b ? llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(llvm::getGlobalContext()))
+             : llvm::ConstantInt::getFalse(llvm::Type::getInt1Ty(llvm::getGlobalContext()));
+}
+
+llvm::Constant* getIntConstant(uint64_t i) {
+    return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvm::getGlobalContext()), i);
+}
+
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
     std::unordered_set<Loop*> loops;
 
@@ -191,3 +228,5 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
 } // namespace streams
 } // namespace util
 } // namespace borealis
+
+#include "unmacros.h"
