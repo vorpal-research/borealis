@@ -28,12 +28,8 @@ public:
         return true;
     }
 
-    llvm::ValueType getType() const {
-        return type;
-    }
-
-    const std::string& getName() const {
-        return name;
+    llvm::Constant* getConstant() const {
+        return constant;
     }
 
     friend class TermFactory;
@@ -42,15 +38,11 @@ public:
 
 private:
 
-    ConstTerm(llvm::ValueType type, const std::string& name) :
-        Term((id_t)h(name), type, name, type_id(*this)),
-        name(name)
-    { this->type = type; }
+    ConstTerm(llvm::Constant* c, SlotTracker* st) :
+        Term((id_t)c, llvm::valueType(*c), st->getLocalName(c), type_id(*this))
+    { this->constant = c; }
 
-    llvm::ValueType type;
-    const std::string name;
-
-    static std::hash<std::string> h;
+    llvm::Constant* constant;
 
 };
 

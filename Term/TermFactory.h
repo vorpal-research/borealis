@@ -32,8 +32,8 @@ public:
         return Term::Ptr(new ArgumentTerm(a, slotTracker));
     }
 
-    Term::Ptr getConstTerm(llvm::ValueType type, const std::string& name) {
-        return Term::Ptr(new ConstTerm(type, name));
+    Term::Ptr getConstTerm(llvm::Constant* c) {
+        return Term::Ptr(new ConstTerm(c, slotTracker));
     }
 
     Term::Ptr getReturnValueTerm(llvm::Function* F) {
@@ -43,8 +43,10 @@ public:
     Term::Ptr getValueTerm(llvm::Value* v) {
         using namespace llvm;
 
-        if (isa<Constant>(v))
-            return getConstTerm(valueType(*v), util::toString(*v));
+        if (isa<ConstantPointerNull>(v) ||
+                isa<ConstantInt>(v) ||
+                isa<ConstantFP>(v))
+            return getConstTerm(cast<Constant>(v));
         else
             return Term::Ptr(new ValueTerm(v, slotTracker));
     }
