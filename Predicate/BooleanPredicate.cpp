@@ -24,7 +24,7 @@ BooleanPredicate::BooleanPredicate(
         bool b,
         SlotTracker* /* st */) : Predicate(type_id(*this)),
 	        v(std::move(v)),
-	        b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
+	        b(new ConstTerm(llvm::getBoolConstant(b))) {
     this->asString = this->v->getName() + "=" + this->b->getName();
 }
 
@@ -34,7 +34,7 @@ BooleanPredicate::BooleanPredicate(
         bool b,
         SlotTracker* /* st */) : Predicate(type_id(*this), type),
             v(std::move(v)),
-            b(new ConstTerm(llvm::ValueType::BOOL_CONST, b ? "TRUE" : "FALSE")) {
+            b(new ConstTerm(llvm::getBoolConstant(b))) {
     this->asString = this->v->getName() + "=" + this->b->getName();
 }
 

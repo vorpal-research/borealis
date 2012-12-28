@@ -55,7 +55,7 @@ public:
     }
 
     const Term* transformConstTerm(const ConstTerm* t) {
-        return TF->getConstTerm(t->getType(), t->getName()).release();
+        return TF->getConstTerm(t->getConstant()).release();
     }
 
     const Term* transformReturnValueTerm(const ReturnValueTerm* /* t */) {
