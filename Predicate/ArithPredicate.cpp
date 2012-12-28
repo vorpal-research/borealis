@@ -21,11 +21,11 @@ ArithPredicate::ArithPredicate(
             op2(std::move(op2)),
             opCode(opCode),
             _opCode(llvm::arithString(opCode)) {
-    this->asString = lhv->getName() + "=" +
-            op1->getName() +
-            _opCode +
-            op2->getName();
 
+    this->asString = this->lhv->getName() + "=" +
+            this->op1->getName() +
+            _opCode +
+            this->op2->getName();
 }
 
 ArithPredicate::ArithPredicate(
@@ -39,10 +39,11 @@ ArithPredicate::ArithPredicate(
             op2(std::move(op2)),
             opCode(opCode),
             _opCode(llvm::arithString(opCode)) {
-    this->asString = lhv->getName() + "=" +
-            op1->getName() +
+
+    this->asString = this->lhv->getName() + "=" +
+            this->op1->getName() +
             _opCode +
-            op2->getName();
+            this->op2->getName();
 }
 
 Predicate::Key ArithPredicate::getKey() const {
