@@ -9,6 +9,7 @@
 #define CONSTTERM_H_
 
 #include "Term.h"
+#include "Util/slottracker.h"
 
 namespace borealis {
 
