@@ -803,20 +803,27 @@ class InlinedFuncArray {
 
     std::shared_ptr<std::string> name;
     inner_t inner;
-    z3::context& context;
+    z3::context* context;
 
     InlinedFuncArray(
             z3::context& ctx,
             inner_t inner,
             std::shared_ptr<std::string>& name
-    ) : name(name), inner(inner), context(ctx){};
+    ) : name(name), inner(inner), context(&ctx){};
 public:
     InlinedFuncArray(const InlinedFuncArray&) = default;
     InlinedFuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
-        name(std::make_shared<std::string>(name)), inner(f), context(ctx){}
+        name(std::make_shared<std::string>(name)), inner(f), context(&ctx){}
 
     Elem select    (Index i) { return inner(i);  }
     Elem operator[](Index i) { return select(i); }
+
+    InlinedFuncArray& operator=(const InlinedFuncArray& o) {
+        this->name = o.name;
+        this->inner = o.inner;
+        this->context = o.context;
+        return *this;
+    }
 
     InlinedFuncArray<Elem, Index> store(Index i, Elem e) {
         inner_t existing = this->inner;
@@ -824,7 +831,7 @@ public:
             return if_(j == i).then_(e).else_(inner(j));
         };
 
-        return InlinedFuncArray<Elem, Index> (context, nf, name);
+        return InlinedFuncArray<Elem, Index> (*context, nf, name);
     }
 
     InlinedFuncArray<Elem, Index> store(std::vector<std::pair<Index, Elem>> entries) {
@@ -833,10 +840,10 @@ public:
             return switch_(j, entries, existing(j));
         };
 
-        return InlinedFuncArray<Elem, Index> (context, nf, name);
+        return InlinedFuncArray<Elem, Index> (*context, nf, name);
     }
 
-    z3::context& ctx() const { return context; }
+    z3::context& ctx() const { return *context; }
 
     static InlinedFuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
         return InlinedFuncArray(ctx, name, [def](Index){ return def; });
