@@ -35,11 +35,17 @@ public:
     typedef borealis::util::copyref<expr> exprRef;
 
     typedef borealis::logic::Bool Bool;
+    // logic type to represent pointers
     typedef borealis::logic::BitVector<32> Pointer;
+    // logic type to represent integers
     typedef borealis::logic::BitVector<Pointer::bitsize> Integer;
+    // logic type to represent reals
     typedef borealis::logic::BitVector<Pointer::bitsize> Real;
+    // logic type to represent memory units (FIXME: rename?)
     typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
+    // Array representing memory
     typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, logic::TheoryArray> MemArray;
+    // dynamic logic type
     typedef borealis::logic::SomeExpr Dynamic;
 
     Z3ExprFactory(z3::context& ctx);
