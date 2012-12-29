@@ -25,14 +25,16 @@ static stream_t infos() {
 
 TEST(Z3ExprFactory, getMemoryArray) {
     {
-        using borealis::logic::BitVector;
+        using borealis::logic::Bool;
         using borealis::Z3ExprFactory;
+
+        typedef Z3ExprFactory::Byte Byte;
 
         z3::context con;
         Z3ExprFactory factory(con);
-        auto mkbyte = [&](int val){ return BitVector<8>::mkConst(con, val); };
-        auto mkptr = [&](int val){ return Z3ExprFactory::Pointer::mkConst(con, val); };
-        auto check_expr = [&](borealis::logic::Bool e)->bool {
+        auto mkbyte = [&](int val){ return Byte::mkConst(con, val); };
+
+        auto check_expr = [&](Bool e)->bool {
             z3::solver solver(e.get().ctx());
             solver.add(e.axiom());
             solver.add(!e.get());
@@ -53,13 +55,11 @@ TEST(Z3ExprFactory, getMemoryArray) {
 
 TEST(Z3ExprFactory, byteFucking) {
     {
-        using borealis::logic::BitVector;
         using borealis::Z3ExprFactory;
 
         z3::context con;
         Z3ExprFactory factory(con);
-        auto mkbyte = [&](int val){ return BitVector<8>::mkConst(con, val); };
-        auto mkptr = [&](int val){ return Z3ExprFactory::Pointer::mkConst(con, val); };
+
         auto check_expr = [&](z3::expr axioms, z3::expr e)->bool {
             z3::solver solver(e.ctx());
             solver.add(axioms);
