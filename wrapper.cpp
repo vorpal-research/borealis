@@ -83,14 +83,12 @@ int main(int argc, const char** argv)
     const std::vector<std::string> empty;
 
     Config cfg("wrapper.conf");
-    auto logCFG = cfg.getValue<std::string>("logging", "ini");
-    if(!logCFG.empty()) {
-        borealis::logging::configureLoggingFacility(*logCFG.get());
+    for(auto logCFG: cfg.getValue<std::string>("logging", "ini")) {
+        borealis::logging::configureLoggingFacility(logCFG);
     }
 
-    auto z3log = cfg.getValue<std::string>("logging", "z3log");
-    if(!z3log.empty()) {
-        borealis::logging::configureZ3Log(*z3log.get());
+    for(auto z3log: cfg.getValue<std::string>("logging", "z3log")) {
+        borealis::logging::configureZ3Log(z3log);
     }
 
     // args to supply to opt
@@ -98,13 +96,14 @@ int main(int argc, const char** argv)
 
     size_t virt_argc = opt_args.size() + 1;
     {
-        std::unique_ptr<const char*[]> virt_argv(new const char*[virt_argc]);
+        std::vector<const char*> virt_argv(virt_argc);
+
         virt_argv[0] = "wrapper";
         for(size_t i = 1U; i < virt_argc; ++i) {
             virt_argv[i] = opt_args[i-1].c_str();
         }
 
-        llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.get());
+        llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.data());
     }
 
     // arguments to pass to the clang front-end
@@ -132,9 +131,7 @@ int main(int argc, const char** argv)
     DiagnosticOptions DiagOpts;
     auto diags = CompilerInstance::createDiagnostics(DiagOpts, cargs.size(), &*cargs.begin());
 
-    OwningPtr<CompilerInvocation> invoke(createInvocationFromCommandLine(cargs, diags));
-
-
+    std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(cargs, diags));
 
     // Print the argument list from the "real" compiler invocation
     std::vector<std::string> argsFromInvocation;
@@ -149,7 +146,7 @@ int main(int argc, const char** argv)
     }
 
     clang::CompilerInstance Clang;
-    Clang.setInvocation(invoke.take());
+    Clang.setInvocation(invoke.release());
     auto& stillInvoke = Clang.getInvocation();
 
     auto& to = stillInvoke.getTargetOpts();
@@ -159,19 +156,19 @@ int main(int argc, const char** argv)
     Clang.setDiagnostics(diags.getPtr());
 
     // Create an action and make the compiler instance carry it out
-    OwningPtr<GatherCommentsAction> Proc(new GatherCommentsAction());
-    if(!Clang.ExecuteAction(*Proc)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
+    GatherCommentsAction Proc;
+    if(!Clang.ExecuteAction(Proc)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
 
-    OwningPtr<CodeGenAction> Act(new EmitLLVMOnlyAction());
-    if(!Clang.ExecuteAction(*Act)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
+    EmitLLVMOnlyAction Act;
+    if(!Clang.ExecuteAction(Act)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
 
-    auto& module = *Act->takeModule();
+    std::unique_ptr<llvm::Module> module_ptr(Act.takeModule());
+    auto& module = *module_ptr;
 
     PassManager pm;
     // Explicitly schedule TargetData pass as the first pass to run;
     // note that M.get() gets a pointer or reference to the module to analyze
-    pm.add(new TargetData(&module));
-
+    pm.add(new TargetData(module_ptr.get()));
 
     std::vector<StringRef> passes2run;
 
@@ -179,7 +176,7 @@ int main(int argc, const char** argv)
     for (StringRef p: prePasses) {
         passes2run.push_back(p);
     }
-    for(StringRef p: args) {
+    for (StringRef p: args) {
         if( p.startswith("-pass") ) passes2run.push_back(p.drop_front(5));
     }
 
@@ -240,10 +237,10 @@ int main(int argc, const char** argv)
     initializeTarget(reg);
 
     using borealis::provideAsPass;
-    pm.add(provideAsPass(Proc.get()));
+    pm.add(provideAsPass(&Proc));
 
     if (!passes2run.empty()) {
-        for (const auto& pass : passes2run) {
+        for (StringRef pass : passes2run) {
             auto* passInfo = reg.getPassInfo(pass);
 
             if(passInfo == nullptr) {
@@ -263,8 +260,9 @@ int main(int argc, const char** argv)
 
         pm.run(module);
 
-        verifyModule(module, PrintMessageAction);
-
+        std::string error;
+        if(verifyModule(module, ReturnStatusAction, &error))
+            errs() << "Module errors detected: " << error << endl;
     }
 
     return 0;
