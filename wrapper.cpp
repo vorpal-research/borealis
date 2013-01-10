@@ -110,8 +110,6 @@ int main(int argc, const char** argv)
     std::vector<const char *> args(argv,argv+argc);
 
     args.erase(args.begin());
-    args.push_back("-g");
-
     // this is generally fucked up
     args.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
 
@@ -156,7 +154,6 @@ int main(int argc, const char** argv)
     Clang.setDiagnostics(diags.getPtr());
     // maximize debug metadata
     Clang.getCodeGenOpts().EmitDeclMetadata = true;
-    Clang.getCodeGenOpts().UnrollLoops = true;
     Clang.getCodeGenOpts().DebugInfo = true;
 
     // Create an action and make the compiler instance carry it out
