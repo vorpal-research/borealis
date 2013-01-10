@@ -53,16 +53,16 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
    if (Invalid)
      return comment_container();
 
-   using borealis::anno::calculator::parse_command;
+   using borealis::anno::parse;
 
    // FIXME belyaev: get rid of intermediate StringRef, pass pointers to parse_command
    auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
    auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
-   auto commands = parse_command(comment.str());
+   auto commands = parse(comment.str());
 
    auto ret = comment_container();
    for (command& cmd : commands) {
-	   auto pr = std::make_pair(std::move(locus), std::move(cmd));
+	   auto pr = std::make_pair(locus, std::move(cmd));
 	   ret.insert(pr);
    }
 

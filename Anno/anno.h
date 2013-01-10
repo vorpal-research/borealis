@@ -8,9 +8,11 @@
 #ifndef ANNO_H_
 #define ANNO_H_
 
-#include "anno.hpp"
+//#include "anno.hpp"
 
 #include <iostream>
+
+#include "command.hpp"
 
 namespace borealis{
 namespace anno{
@@ -124,6 +126,8 @@ public:
 		return v.builtins();
 	}
 };
+
+std::vector<command> parse(std::string v);
 
 } // namespace anno
 } // namespace borealis

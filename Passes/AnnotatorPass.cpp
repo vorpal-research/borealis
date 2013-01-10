@@ -28,7 +28,7 @@ bool AnnotatorPass::runOnModule(llvm::Module&) {
 
         auto values = locPass.getRangeFor(loc);
         for (auto& it : view(values)) {
-            annotations[it.second] = cmd;
+            annotations.insert(std::make_pair(it.second, cmd));
         }
     }
 

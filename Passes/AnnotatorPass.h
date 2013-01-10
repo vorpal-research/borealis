@@ -38,7 +38,7 @@ public:
     typedef DataProvider<borealis::comments::GatherCommentsAction> comments;
     typedef SourceLocationTracker locs;
     typedef NameTracker names;
-    typedef std::unordered_map<llvm::Value*, borealis::anno::command> annotations_t;
+    typedef std::unordered_multimap<llvm::Value*, borealis::anno::command> annotations_t;
 
 private:
 

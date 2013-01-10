@@ -263,18 +263,17 @@ struct ask_keyword :
 struct ask_arguments :
         action_base< ask_arguments > {
     static void apply(const std::string &, expr_stack & s, command_type & comm, commands_t &) {
-        if (comm.name_ == "requires" || comm.name_ == "ensures" || comm.name_ == "assigns"
-                || comm.name_ == "assert" || comm.name_ == "stack-depth") {
-            assert(s.size() == 1);
-            comm.args_.push_front(std::move(s.top()));
-            s.pop();
-        } else if (comm.name_ == "ignore" || comm.name_ == "skip" || comm.name_ == "endmask") {
-            assert(s.size() == 0);
+        if (comm.name_ == "ignore" || comm.name_ == "skip" || comm.name_ == "endmask") {
+            assert(s.empty());
         } else if (comm.name_ == "mask") {
             while (!s.empty()) {
                 comm.args_.push_front(std::move(s.top()));
                 s.pop();
             }
+        } else {
+            assert(s.size() == 1);
+            comm.args_.push_front(std::move(s.top()));
+            s.pop();
         }
     }
 };
@@ -427,7 +426,7 @@ struct read_mul :
 struct read_div :
         read_bop< '/', read_unary, divides< expression_type > > {
 };
-// div := '%' unary
+// mod := '%' unary
 struct read_mod :
         read_bop< '%', read_unary, modulus< expression_type > > {
 };
@@ -439,7 +438,7 @@ struct read_prod :
 struct read_add :
         read_bop< '+', read_prod, pluss< expression_type > > {
 };
-// add := '-' prod
+// sub := '-' prod
 struct read_sub :
         read_bop< '-', read_prod, minus< expression_type > > {
 };
@@ -484,7 +483,7 @@ struct read_inequality :
 struct read_eq :
         read_bop_m< pstring< '=', '=' >, read_inequality, equal< expression_type > > {
 };
-// neq = '==' inequality
+// neq = '!=' inequality
 struct read_neq :
         read_bop_m< pstring< '!', '=' >, read_inequality, nequal< expression_type > > {
 };
@@ -582,6 +581,9 @@ struct ignore_c :
 struct stack_depth_c :
         ifapply< ifmust< keyword< 's', 't', 'a', 'c', 'k', '-', 'd', 'e', 'p', 't', 'h' >, push_integer >, ask_arguments > {
 };
+struct unroll_c :
+        ifapply< ifmust< keyword< 'u', 'n', 'r', 'o', 'l', 'l' >, push_integer >, ask_arguments > {
+};
 struct mask_c :
         ifapply< ifmust< keyword< 'm', 'a', 's', 'k' >, masks >, ask_arguments > {
 };
@@ -590,7 +592,18 @@ struct endmask_c :
 };
 
 struct commands :
-        sor< requires_c, ensures_c, assigns_c, assert_c, skip_c, ignore_c, stack_depth_c, mask_c, endmask_c > {
+        sor<
+            requires_c,
+            ensures_c,
+            assigns_c,
+            assert_c,
+            skip_c,
+            ignore_c,
+            stack_depth_c,
+            unroll_c,
+            mask_c,
+            endmask_c
+        > {
 };
 
 struct acom :

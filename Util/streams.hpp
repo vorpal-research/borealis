@@ -266,6 +266,11 @@ Streamer& operator <<(Streamer& s, const std::set<T*>& set) {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace llvm {
+    inline raw_ostream& operator<<(raw_ostream& ost, const Pass& pass) {
+        pass.print(ost, nullptr);
+        return ost;
+    }
+
     template<class T, class Check = typename std::enable_if<
             borealis::util::is_using_llvm_output<T>::value
     >::type >

@@ -21,7 +21,7 @@
 namespace borealis {
 namespace comments {
 
-typedef borealis::anno::calculator::command_type command;
+typedef borealis::anno::command command;
 
 class GatherCommentsAction: public clang::PreprocessOnlyAction {
 
