@@ -154,6 +154,10 @@ int main(int argc, const char** argv)
 
     Clang.setTarget(pti);
     Clang.setDiagnostics(diags.getPtr());
+    // maximize debug metadata
+    Clang.getCodeGenOpts().EmitDeclMetadata = true;
+    Clang.getCodeGenOpts().UnrollLoops = true;
+    Clang.getCodeGenOpts().DebugInfo = true;
 
     // Create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
