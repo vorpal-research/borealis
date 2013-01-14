@@ -14,7 +14,7 @@ struct el {
 int main(void) {
     struct el *struct_arr_p[10];
     char ch = '0';
-    double tmp = 0.0;
+                double tmp = 0.0;
     int i;
 
     for (i = 0; i < 10; i++) {

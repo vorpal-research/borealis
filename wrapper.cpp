@@ -239,6 +239,7 @@ int main(int argc, const char** argv)
 
     using borealis::provideAsPass;
     pm.add(provideAsPass(&Proc));
+    pm.add(provideAsPass(&Clang.getSourceManager()));
 
     if (!passes2run.empty()) {
         for (StringRef pass : passes2run) {

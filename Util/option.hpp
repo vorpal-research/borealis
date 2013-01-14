@@ -42,7 +42,7 @@ public:
 
     bool empty() const { return holder == nullptr; }
 
-    void swap(const self& that ) {
+    void swap(self& that ) {
         holder.swap(that.holder);
     }
 
@@ -159,13 +159,49 @@ public:
         }
     };
 
-    const option_iterator begin() const {
-        if(this->empty()) return option_iterator(nullptr);
-        else return option_iterator(this);
+    struct const_option_iterator {
+        const self* opt;
+        const_option_iterator() : opt(nullptr) {};
+        const_option_iterator(const self* opt) : opt(opt){};
+        const_option_iterator(const const_option_iterator&) = default;
+        const_option_iterator& operator=(const const_option_iterator&) = default;
+
+        bool operator==(const const_option_iterator& that) const {
+            return opt == that.opt;
+        }
+
+        bool operator!=(const const_option_iterator& that) const {
+            return opt != that.opt;
+        }
+
+        const_option_iterator operator++() {
+            opt = nullptr;
+            return *this;
+        }
+
+        const_option_iterator operator++(int) {
+            auto* tmp = opt;
+            opt = nullptr;
+            return const_option_iterator(tmp);
+        }
+
+        const T& operator*() const {
+            return opt->getUnsafe();
+        }
+
+        const T* operator->() const {
+            return opt->get();
+        }
+
+    };
+
+    const_option_iterator begin() const {
+        if(this->empty()) return const_option_iterator(nullptr);
+        else return const_option_iterator(this);
     }
 
-    const option_iterator end() const {
-        return option_iterator();
+    const_option_iterator end() const {
+        return const_option_iterator();
     }
 
     option_iterator begin() {

@@ -11,6 +11,7 @@
 #include <set>
 #include <vector>
 
+#include <clang/AST/Decl.h>
 #include <llvm/Module.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/Casting.h>
@@ -24,6 +25,7 @@ namespace util {
 template<class T>
 struct is_using_llvm_output {
     enum { value =
+            std::is_base_of<clang::Decl, T>::value ||
             std::is_base_of<llvm::Value, T>::value ||
             std::is_base_of<llvm::Type, T>::value ||
             std::is_base_of<llvm::StringRef, T> :: value ||
@@ -138,6 +140,14 @@ std::string with_llvm_stream(Func f) {
     llvm::raw_string_ostream ost(buf);
     f(ost);
     return ost.str();
+}
+
+template<class T>
+std::ostream& output_using_llvm(std::ostream& ost, const T& val) {
+    std::string buf;
+    llvm::raw_string_ostream ostt(buf);
+    ostt << val;
+    return std::operator<<(ost, ostt.str());
 }
 
 } // namespace streams
@@ -266,21 +276,35 @@ Streamer& operator <<(Streamer& s, const std::set<T*>& set) {
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace llvm {
-    inline raw_ostream& operator<<(raw_ostream& ost, const Pass& pass) {
-        pass.print(ost, nullptr);
-        return ost;
-    }
 
-    template<class T, class Check = typename std::enable_if<
-            borealis::util::is_using_llvm_output<T>::value
-    >::type >
-    std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
+inline raw_ostream& operator<<(raw_ostream& ost, const Pass& pass) {
+    pass.print(ost, nullptr);
+    return ost;
+}
 
-        std::string buf;
-        llvm::raw_string_ostream ostt(buf);
-        ostt << llvm_val;
-        return std::operator<<(ost, ostt.str());
-    }
+template<class T, class Check = typename std::enable_if<
+        borealis::util::is_using_llvm_output<T>::value
+>::type >
+std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
+    return borealis::util::streams::output_using_llvm(ost, llvm_val);
+}
+
 } // namespace llvm
+
+namespace clang {
+
+inline raw_ostream& operator<<(raw_ostream& ost, const Decl& decl) {
+    decl.print(ost, 0, true);
+    return ost;
+}
+
+template<class T, class Check = typename std::enable_if<
+        borealis::util::is_using_llvm_output<T>::value
+>::type >
+std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
+    return borealis::util::streams::output_using_llvm(ost, llvm_val);
+}
+
+} // namespace clang
 
 #endif /* STREAMS_HPP_ */

@@ -10,7 +10,7 @@ int getArrayElem(const int* arr, int index)
 int main(void)
 {
    int index;
-   scanf("%d",&index);
+   //scanf("%d",&index);
    if (index >= 0)
       return 0;
    // Здесь должен быть только BUF-02
