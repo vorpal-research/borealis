@@ -20,6 +20,7 @@
 
 namespace borealis {
 
+// time optimized multidirectional container from Value* to VarInfo
 class VarInfoContainer {
     typedef std::unordered_map<llvm::Value*, VarInfo> v2vi_t;
     typedef std::unordered_map<util::key_ptr<std::string>, llvm::Value*> str2v_t;
@@ -69,12 +70,14 @@ public:
     llvm::Value* byName(const std::string& str) const {
         return bwd_names.at(str);
     }
+
     loc_value_range byLoc(const Locus& loc) const {
         auto start = bwd_locs.upper_bound(loc);
         auto end = start;
         while (end != bwd_locs.end() && end->first == start->first) ++end;
         return std::make_pair(start, end);
     }
+
     llvm::Value* byClang(clang::Decl* dcl) const {
         return bwd_clang.at(dcl);
     }
