@@ -27,7 +27,11 @@ class VarInfoContainer {
     typedef std::multimap<util::key_ptr<Locus>, llvm::Value*> loc2v_t;
     typedef std::unordered_map<clang::Decl*, llvm::Value*> clang2v_t;
 
+    // fwd keeps the actual data
     v2vi_t fwd;
+
+    // all other containers operate on pointers into fwd through key_ptr's
+    // (or just plain pointers into llvm or clang inner memory)
     str2v_t bwd_names;
     loc2v_t bwd_locs;
     clang2v_t bwd_clang;
@@ -56,7 +60,10 @@ public:
         }
 
         fwd[val] = vi;
-        auto& new_vi = fwd[val];
+        // ^= that was a copy assignment
+        // and =v this is taking a reference
+        auto& new_vi = fwd[val]; // vi and new_vi are NOT the same
+
         for(const auto& name: new_vi.originalName) {
             bwd_names.insert(make_pair(key_ptr<std::string>(name), val));
         }
