@@ -23,7 +23,7 @@ namespace borealis {
 // time optimized multidirectional container from Value* to VarInfo
 class VarInfoContainer {
     typedef std::unordered_map<llvm::Value*, VarInfo> v2vi_t;
-    typedef std::unordered_map<util::key_ptr<std::string>, llvm::Value*> str2v_t;
+    typedef std::unordered_multimap<util::key_ptr<std::string>, llvm::Value*> str2v_t;
     typedef std::multimap<util::key_ptr<Locus>, llvm::Value*> loc2v_t;
     typedef std::unordered_map<clang::Decl*, llvm::Value*> clang2v_t;
 
@@ -40,6 +40,9 @@ public:
     typedef loc2v_t::const_iterator loc_value_iterator;
     typedef std::pair<loc_value_iterator, loc_value_iterator> loc_value_range;
 
+    typedef str2v_t::const_iterator str_value_iterator;
+    typedef std::pair<str_value_iterator, str_value_iterator> str_value_range;
+
     typedef v2vi_t::const_iterator const_iterator;
 
     VarInfoContainer();
@@ -52,7 +55,7 @@ public:
         if(fwd.count(val)) {
             auto& old_vi = fwd[val];
             for(std::string& viname: old_vi.originalName)
-                bwd_names.erase(viname);
+                util::removeFromMultimap(bwd_names, key_ptr<std::string>(viname), val);
             for(Locus& viloc: old_vi.originalLocus)
                 util::removeFromMultimap(bwd_locs, key_ptr<Locus>(viloc), val);
             if(old_vi.ast && bwd_clang.count(old_vi.ast))
@@ -60,22 +63,22 @@ public:
         }
 
         fwd[val] = vi;
-        // ^= that was a copy assignment
-        // and =v this is taking a reference
+        // ▲ that was a copy assignment
+        // and this ▼ is taking a reference
         auto& new_vi = fwd[val]; // vi and new_vi are NOT the same
 
         for(const auto& name: new_vi.originalName) {
-            bwd_names.insert(make_pair(key_ptr<std::string>(name), val));
+            bwd_names.insert({ key_ptr<std::string>(name), val });
         }
         for(const auto& loc: new_vi.originalLocus) {
-            bwd_locs.insert(make_pair(key_ptr<Locus>(loc), val));
+            bwd_locs.insert({ key_ptr<Locus>(loc), val });
         }
         if(new_vi.ast) bwd_clang.insert(make_pair(new_vi.ast, val));
     }
 
     const VarInfo& get(llvm::Value* val) const { return fwd.at(val); }
-    llvm::Value* byName(const std::string& str) const {
-        return bwd_names.at(str);
+    str_value_range byName(const std::string& str) const {
+        return bwd_names.equal_range(str);
     }
 
     loc_value_range byLoc(const Locus& loc) const {

@@ -69,7 +69,11 @@ class key_ptr {
 public:
     explicit key_ptr(const T* cp): inner(cp) {};
     key_ptr(const T& cp): inner(&cp) {};
-    key_ptr(key_ptr&&) = default;
+    key_ptr(T&&) = delete; // this is explicitly deleted
+    // to drop common cases like key_ptr<string>("hello")
+    // and key_ptr<string>(func_returning_string())
+    // that are illegal, but work with (const T&) case.
+    // providing and deleting rvalue-ref constructor forbids these
     key_ptr(const key_ptr&) = default;
 
     const T* get() const { return inner; };

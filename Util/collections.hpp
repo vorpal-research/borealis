@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <list>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <tuple>
 #include <vector>
@@ -91,6 +92,18 @@ bool containsKey(const std::map<K, _>& map, const K& k) {
 
 template<class K, class V>
 void removeFromMultimap(std::multimap<K,V>& map, const K& k, const V& v) {
+    auto range = map.equal_range(k);
+
+    for(auto it = range.first; it != range.second; ++it) {
+        if(it->second == v) {
+            map.erase(it);
+            break;
+        }
+    }
+}
+
+template<class K, class V>
+void removeFromMultimap(std::unordered_multimap<K,V>& map, const K& k, const V& v) {
     auto range = map.equal_range(k);
 
     for(auto it = range.first; it != range.second; ++it) {
