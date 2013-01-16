@@ -35,11 +35,13 @@ public:
 
     friend class TermFactory;
 
+    ArgumentTerm(const ArgumentTerm&) = default;
 private:
 
     ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
-        Term((id_t)a, llvm::valueType(*a), st->getLocalName(a), type_id(*this))
-    { this->a = a; }
+        Term((id_t)a, llvm::valueType(*a), st->getLocalName(a), type_id(*this)),
+        a(a)
+    {}
 
     llvm::Argument* a;
 

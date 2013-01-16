@@ -31,8 +31,7 @@ public:
     template<class SubClass>
     const MallocPredicate* accept(Transformer<SubClass>* t) const {
         return new MallocPredicate(
-                Term::Ptr(t->transform(lhv.get()))
-        );
+                t->transform(lhv));
     }
 
     virtual bool equals(const Predicate* other) const;

@@ -33,8 +33,8 @@ public:
     template<class SubClass>
     const StorePredicate* accept(Transformer<SubClass>* t) const {
         return new StorePredicate(
-                Term::Ptr(t->transform(lhv.get())),
-                Term::Ptr(t->transform(rhv.get())));
+                t->transform(lhv),
+                t->transform(rhv));
     }
 
     virtual bool equals(const Predicate* other) const;

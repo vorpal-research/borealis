@@ -37,11 +37,13 @@ public:
     friend class BooleanPredicate;
     friend class GEPPredicate;
 
+    ConstTerm(const ConstTerm&) = default;
 private:
 
     ConstTerm(llvm::Constant* c, SlotTracker* st) :
-        Term((id_t)c, llvm::valueType(*c), st->getLocalName(c), type_id(*this))
-    { this->constant = c; }
+        Term((id_t)c, llvm::valueType(*c), st->getLocalName(c), type_id(*this)),
+        constant(c)
+    {}
 
     llvm::Constant* constant;
 

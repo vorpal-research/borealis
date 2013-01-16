@@ -35,6 +35,7 @@ public:
 
     friend class TermFactory;
 
+    ReturnValueTerm(const ReturnValueTerm&) = default;
 private:
 
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
@@ -43,8 +44,9 @@ private:
                 llvm::type2type(*F->getFunctionType()->getReturnType()),
                 "\\result",
                 type_id(*this)
-            )
-    { this->F = F; }
+            ),
+        F(F)
+    {}
 
     llvm::Function* F;
 

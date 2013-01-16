@@ -31,9 +31,9 @@ public:
     template<class SubClass>
     const ArithPredicate* accept(Transformer<SubClass>* t) const {
         return new ArithPredicate(
-                Term::Ptr(t->transform(lhv.get())),
-                Term::Ptr(t->transform(op1.get())),
-                Term::Ptr(t->transform(op2.get())),
+                t->transform(lhv),
+                t->transform(op1),
+                t->transform(op2),
                 opCode);
     }
 

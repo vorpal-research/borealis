@@ -44,26 +44,18 @@ public:
         this->TF = TF;
     }
 
-    const Term* transformArgumentTerm(const ArgumentTerm* t) {
+    Term::Ptr transformArgumentTerm(ArgumentTermPtr t) {
         using llvm::Argument;
         using llvm::Value;
 
         Argument* formal = t->getArgument();
         Value* actual = callSiteArguments[formal];
 
-        return TF->getValueTerm(actual).release();
+        return TF->getValueTerm(actual);
     }
 
-    const Term* transformConstTerm(const ConstTerm* t) {
-        return TF->getConstTerm(t->getConstant()).release();
-    }
-
-    const Term* transformReturnValueTerm(const ReturnValueTerm* /* t */) {
-        return TF->getValueTerm(returnValue).release();
-    }
-
-    const Term* transformValueTerm(const ValueTerm* t) {
-        return TF->getValueTerm(t->getValue()).release();
+    Term::Ptr transformReturnValueTerm(ReturnValueTermPtr /* t */) {
+        return TF->getValueTerm(returnValue);
     }
 
 private:

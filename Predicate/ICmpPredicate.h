@@ -33,9 +33,9 @@ public:
     template<class SubClass>
     const ICmpPredicate* accept(Transformer<SubClass>* t) const {
         return new ICmpPredicate(
-                Term::Ptr(t->transform(lhv.get())),
-                Term::Ptr(t->transform(op1.get())),
-                Term::Ptr(t->transform(op2.get())),
+                t->transform(lhv),
+                t->transform(op1),
+                t->transform(op2),
                 cond);
     }
 

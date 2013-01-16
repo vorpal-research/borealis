@@ -40,13 +40,13 @@ public:
         std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
         [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
             return std::make_pair(
-                    Term::Ptr(t->transform(e.first.get())),
-                    Term::Ptr(t->transform(e.second.get())));
+                    t->transform(e.first),
+                    t->transform(e.second));
         });
 
         return new GEPPredicate(
-                Term::Ptr(t->transform(lhv.get())),
-                Term::Ptr(t->transform(rhv.get())),
+                t->transform(lhv),
+                t->transform(rhv),
                 new_shifts);
     }
 

@@ -33,8 +33,8 @@ public:
     template<class SubClass>
     const AllocaPredicate* accept(Transformer<SubClass>* t) const {
         return new AllocaPredicate(
-                Term::Ptr(t->transform(lhv.get())),
-                Term::Ptr(t->transform(numElements.get())));
+                t->transform(lhv),
+                t->transform(numElements));
     }
 
     virtual bool equals(const Predicate* other) const;

@@ -33,8 +33,8 @@ public:
     template<class SubClass>
     const BooleanPredicate* accept(Transformer<SubClass>* t) const {
         return new BooleanPredicate(
-                Term::Ptr(t->transform(v.get())),
-                Term::Ptr(t->transform(b.get())));
+                t->transform(v),
+                t->transform(b));
     }
 
     virtual bool equals(const Predicate* other) const;

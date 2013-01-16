@@ -99,4 +99,20 @@ QUICK_RETURN(impl::apply_packed_step_1(tp, c, typename util::make_indexer<Args..
 } // naemspace util
 } // naemspace borealis
 
+namespace llvm {
+template<class T> struct simplify_type< std::shared_ptr<T> > {
+    typedef T* SimpleType;
+    static SimpleType getSimplifiedValue(const std::shared_ptr<T>& Val) {
+        return Val.get();
+    }
+};
+
+template<class T> struct simplify_type< const std::shared_ptr<T> > {
+    typedef T* SimpleType;
+    static SimpleType getSimplifiedValue(const std::shared_ptr<T>& Val) {
+        return Val.get();
+    }
+};
+} // namespace llvm
+
 #endif /* UTIL_HPP_ */

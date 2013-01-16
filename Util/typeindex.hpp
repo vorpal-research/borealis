@@ -32,13 +32,13 @@ constexpr id_t type_id() { return type_index<T>::id(); }
 
 } // namespace borealis
 
-namespace std{
+namespace std {
     template<class T>
     struct hash<borealis::type_index<T>> {
         size_t operator()(const borealis::type_index<T>&) {
             return borealis::type_index<T>::id();
         }
     };
-}
+} // namespace std
 
 #endif /* TYPEINDEX_HPP_ */

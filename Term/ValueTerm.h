@@ -37,11 +37,14 @@ public:
     friend class TermFactory;
     friend class GEPPredicate;
 
+
+    ValueTerm(const ValueTerm&) = default;
 private:
 
     ValueTerm(llvm::Value* v, SlotTracker* st) :
-        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this))
-    { this->v = v; }
+        Term((id_t)v, llvm::valueType(*v), st->getLocalName(v), type_id(*this)),
+        v(v)
+    {}
 
     llvm::Value* v;
 
