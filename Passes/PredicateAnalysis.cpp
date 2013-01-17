@@ -5,6 +5,8 @@
  *      Author: ice-phoenix
  */
 
+#include <vector>
+
 #include "PredicateAnalysis.h"
 #include "SlotTrackerPass.h"
 
@@ -86,6 +88,32 @@ public:
                 pass->PF->getPathBooleanPredicate(
                         pass->TF->getValueTerm(cond),
                         false
+                );
+    }
+
+    void visitSwitchInst(llvm::SwitchInst& I) {
+        using llvm::BasicBlock;
+
+        Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
+        std::vector<Term::Ptr> cases(I.getNumCases());
+        for (auto c = I.case_begin(); c != I.case_end(); ++c) {
+            Term::Ptr caseTerm = pass->TF->getConstTerm(c.getCaseValue());
+            BasicBlock* caseSucc = c.getCaseSuccessor();
+
+            pass->TPM[std::make_pair(&I, caseSucc)] =
+                    pass->PF->getEqualityPredicate(
+                            condTerm,
+                            caseTerm
+                    );
+
+            cases.push_back(caseTerm);
+        }
+
+        BasicBlock* defaultSucc = I.getDefaultDest();
+        pass->TPM[std::make_pair(&I, defaultSucc)] =
+                pass->PF->getPathDefaultSwitchCasePredicate(
+                        condTerm,
+                        cases
                 );
     }
 

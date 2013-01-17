@@ -21,6 +21,7 @@
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
 #include "Predicate/ArithPredicate.h"
+#include "Predicate/DefaultSwitchCasePredicate.h"
 
 namespace borealis {
 
@@ -71,6 +72,13 @@ public:
             bool b) {
         return Predicate::Ptr(
                 new BooleanPredicate(PredicateType::PATH, std::move(v), b, slotTracker));
+    }
+
+    Predicate::Ptr getPathDefaultSwitchCasePredicate(
+            Term::Ptr cond,
+            std::vector<Term::Ptr> cases) {
+        return Predicate::Ptr(
+                new DefaultSwitchCasePredicate(std::move(cond), std::move(cases)));
     }
 
     Predicate::Ptr getGEPPredicate(

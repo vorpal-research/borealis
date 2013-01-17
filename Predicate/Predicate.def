@@ -11,6 +11,7 @@ HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
 HANDLE_PREDICATE(Arith, ArithPredicate)
+HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE
