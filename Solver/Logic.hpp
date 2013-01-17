@@ -499,6 +499,7 @@ public:
 };
 
 class DynBitVectorExpr: public ValueExpr {
+
 public:
     typedef DynBitVectorExpr self;
 
@@ -510,29 +511,81 @@ public:
         }
     }
 
+
     size_t getBitSize() const {
         return get_sort().bv_size();
     }
 
+private:
+    DynBitVectorExpr growTo(size_t n) const {
+        size_t m = get().get_sort().bv_size();
+        if(m < n) {
+            return DynBitVectorExpr(z3::to_expr(ctx(), Z3_mk_sign_ext(ctx(), n-m, get())), axiom());
+        }
+        else return DynBitVectorExpr(get(), axiom());
+    }
+
+public:
+
+#define BIN_OP(OP) \
+    DynBitVectorExpr operator OP(const DynBitVectorExpr& rhv) const { \
+        const DynBitVectorExpr& lhv = *this; \
+        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize()); \
+        DynBitVectorExpr dlhv = lhv.growTo(sz); \
+        DynBitVectorExpr drhv = rhv.growTo(sz); \
+        return DynBitVectorExpr(lhv.get() OP rhv.get(), spliceAxioms(lhv, rhv)); \
+    }
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+    BIN_OP(|)
+    BIN_OP(&)
+
+#undef BIN_OP
+
+
+
+
 };
 
-template<class T>
-struct isBoolT: public std::integral_constant<bool, false> {};
+/////////////////////////////////////////
 
-template<>
-struct isBoolT<Bool>: public std::integral_constant<bool, true> {};
+namespace impl {
 
-template<class T>
-struct isBitVectorT: public std::integral_constant<bool, false> {};
+template<class Aspect>
+struct SomeExprAspectChecker{};
 
 template<size_t N>
-struct isBitVectorT<BitVector<N>>: public std::integral_constant<bool, true> {};
-
-template<class T>
-struct isComparableExpr: public std::integral_constant<bool, false> {};
+struct SomeExprAspectChecker< BitVector<N> >{
+    static bool check(z3::expr e) {
+        return e.is_bv() && e.get_sort().bv_size() == N;
+    }
+};
 
 template<>
-struct isComparableExpr<ComparableExpr>: public std::integral_constant<bool, true> {};
+struct SomeExprAspectChecker< DynBitVectorExpr >{
+    static bool check(z3::expr e) {
+        return e.is_bv();
+    }
+};
+
+template<>
+struct SomeExprAspectChecker< Bool >{
+    static bool check(z3::expr e) {
+        return e.is_bool();
+    }
+};
+
+template<>
+struct SomeExprAspectChecker< ComparableExpr >{
+    static bool check(z3::expr e) {
+        return e.is_arith() || e.is_bv();
+    }
+};
+
+} // namespace impl
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -554,69 +607,44 @@ public:
     template<size_t N>
     static SomeExpr mkDynamic(BitVector<N> bv) { return SomeExpr(bv); }
 
+    template<class Aspect>
+    bool is() {
+        return impl::SomeExprAspectChecker<Aspect>::check(get());
+    }
+
+    template<class Aspect>
+    util::option<Aspect> to() {
+        using util::just;
+        using util::nothing;
+
+        if(is<Aspect>()) return just(Aspect(get(), axiom()));
+        else return nothing();
+    }
+
     bool isBool() {
-        return get().get_sort().is_bool();
+        return is<Bool>();
     }
 
     borealis::util::option<Bool> toBool() {
-        if(isBool())
-            return borealis::util::just(Bool(get(), axiom()));
-        else
-            return borealis::util::nothing<Bool>();
+        return to<Bool>();
     }
 
     template<size_t N>
     bool isBitVector() {
-        return get().get_sort().is_bv() && get().get_sort().bv_size() == N;
+        return is<BitVector<N>>();
     }
 
     template<size_t N>
     borealis::util::option<BitVector<N>> toBitVector() {
-        if(isBitVector<N>())
-            return borealis::util::just(BitVector<N>(get(), axiom()));
-        else
-            return borealis::util::nothing<BitVector<N>>();
+        return to<BitVector<N>>();
     }
 
     bool isComparable() {
-        return get().is_arith() || get().is_bv();
+        return is<ComparableExpr>();
     }
 
     borealis::util::option<ComparableExpr> toComparable() {
-        if(isComparable())
-            return borealis::util::just(ComparableExpr(get(), axiom()));
-        else
-            return borealis::util::nothing<ComparableExpr>();
-    }
-
-    template<class To>
-    borealis::util::option<To> to(typename std::enable_if<isBoolT<To>::value>::type* = nullptr) {
-        return toBool();
-    }
-
-    template<class To>
-    borealis::util::option<To> to(typename std::enable_if<isBitVectorT<To>::value>::type* = nullptr) {
-        return toBitVector<To::bitsize>();
-    }
-
-    template<class To>
-    borealis::util::option<To> to(typename std::enable_if<isComparableExpr<To>::value>::type* = nullptr) {
-        return toComparable();
-    }
-
-    template<class To>
-    bool is(typename std::enable_if<isBoolT<To>::value>::type* = nullptr) {
-        return isBool();
-    }
-
-    template<class To>
-    bool is(typename std::enable_if<isBitVectorT<To>::value>::type* = nullptr) {
-        return isBitVector<To::bitsize>();
-    }
-
-    template<class To>
-    bool is(typename std::enable_if<isComparableExpr<To>::value>::type* = nullptr) {
-        return isComparable();
+        return to<ComparableExpr>();
     }
 
     // equality comparison operators are the most general ones
@@ -628,6 +656,8 @@ public:
         return Bool(this->get() != that.get(), spliceAxioms(*this, that));
     }
 };
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

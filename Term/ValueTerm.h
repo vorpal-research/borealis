@@ -37,8 +37,15 @@ public:
     friend class TermFactory;
     friend class GEPPredicate;
 
-
     ValueTerm(const ValueTerm&) = default;
+
+#include "Util/macros.h"
+
+    template<class Sub>
+    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+
+#include "Util/unmacros.h"
+
 private:
 
     ValueTerm(llvm::Value* v, SlotTracker* st) :

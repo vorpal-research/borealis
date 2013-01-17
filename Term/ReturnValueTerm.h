@@ -36,6 +36,14 @@ public:
     friend class TermFactory;
 
     ReturnValueTerm(const ReturnValueTerm&) = default;
+
+#include "Util/macros.h"
+
+    template<class Sub>
+    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+
+#include "Util/unmacros.h"
+
 private:
 
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
