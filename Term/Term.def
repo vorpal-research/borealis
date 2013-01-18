@@ -6,6 +6,11 @@ HANDLE_TERM(Argument, ArgumentTerm)
 HANDLE_TERM(Const, ConstTerm)
 HANDLE_TERM(ReturnValue, ReturnValueTerm)
 HANDLE_TERM(Value, ValueTerm)
+HANDLE_TERM(Binary, BinaryTerm)
+HANDLE_TERM(OpaqueVar, OpaqueVarTerm)
+HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
+HANDLE_TERM(OpaqueIntConstant, OpaqueIntConstantTerm)
+HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
 
 #ifdef HANDLE_TERM
 #undef HANDLE_TERM

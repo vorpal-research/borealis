@@ -17,6 +17,11 @@
 #include "Term/ReturnValueTerm.h"
 #include "Term/Term.h"
 #include "Term/ValueTerm.h"
+#include "Term/BinaryTerm.h"
+#include "Term/OpaqueBuiltinTerm.h"
+#include "Term/OpaqueFloatingConstantTerm.h"
+#include "Term/OpaqueIntConstantTerm.h"
+#include "Term/OpaqueVarTerm.h"
 
 #include "Util/slottracker.h"
 
@@ -66,6 +71,27 @@ public:
         else
             return Term::Ptr(new ValueTerm(v, slotTracker));
     }
+
+    Term::Ptr getBinaryTerm(llvm::ArithType opc, Term::Ptr lhv, Term::Ptr rhv) {
+        return Term::Ptr(new BinaryTerm(opc, lhv, rhv));
+    }
+
+    Term::Ptr getOpaqueVarTerm(const std::string& name) {
+        return Term::Ptr(new OpaqueVarTerm(name));
+    }
+
+    Term::Ptr getOpaqueBuiltinTerm(const std::string& name) {
+        return Term::Ptr(new OpaqueBuiltinTerm(name));
+    }
+
+    Term::Ptr getOpaqueConstantTerm(long long v) {
+        return Term::Ptr(new OpaqueIntConstantTerm(v));
+    }
+
+    Term::Ptr getOpaqueConstantTerm(double v) {
+        return Term::Ptr(new OpaqueFloatingConstantTerm(v));
+    }
+
 
     static Ptr get(SlotTracker* slotTracker) {
         return Ptr(new TermFactory(slotTracker));

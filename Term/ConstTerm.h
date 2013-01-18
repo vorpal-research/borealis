@@ -33,6 +33,14 @@ public:
     friend class TermFactory;
 
     ConstTerm(const ConstTerm&) = default;
+
+#include "Util/macros.h"
+
+    template<class Sub>
+    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+
+#include "Util/unmacros.h"
+
 private:
 
     ConstTerm(llvm::Constant* c, SlotTracker* st) :

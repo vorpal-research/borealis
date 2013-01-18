@@ -96,6 +96,12 @@ QUICK_RETURN(impl::apply_packed_step_1(tp, c, typename util::make_indexer<Args..
 
 #include "unmacros.h"
 
+template<class T>
+T* heap_copy(const T* val) {
+    return new T(*val);
+}
+
+
 } // naemspace util
 } // naemspace borealis
 

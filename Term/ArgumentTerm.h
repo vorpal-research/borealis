@@ -36,6 +36,12 @@ public:
     friend class TermFactory;
 
     ArgumentTerm(const ArgumentTerm&) = default;
+
+#include "Util/macros.h"
+    template<class Sub>
+    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+#include "Util/unmacros.h"
+
 private:
 
     ArgumentTerm(llvm::Argument* a, SlotTracker* st) :

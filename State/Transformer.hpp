@@ -11,7 +11,6 @@
 #include <llvm/Support/Casting.h>
 
 #include "Util/util.h"
-
 #include "Util/macros.h"
 
 namespace borealis {
@@ -85,7 +84,8 @@ protected:
 #define HANDLE_TERM(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Term::Ptr transform##NAME(CLASS##Ptr t) { \
-        DELEGATE(CLASS, t); \
+        CLASS##Ptr tt(t->accept(this)); \
+        DELEGATE(CLASS, tt); \
     }
 #include "Term/Term.def"
 

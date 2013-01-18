@@ -15,6 +15,15 @@
 
 namespace borealis {
 
+// Forward declaration
+template<class SubClass>
+class Transformer;
+
+
+// Forward declaration
+template<class SubClass>
+class Transformer;
+
 class Term {
 
 public:
@@ -29,6 +38,7 @@ protected:
     {}
 
     Term(const Term&) = default;
+    virtual ~Term(){};
 public:
 
     id_t getId() const {
@@ -43,7 +53,7 @@ public:
         return name;
     }
 
-    bool equals(const Term* other) const {
+    virtual bool equals(const Term* other) const {
         if (other == nullptr) return false;
         if (this == other) return true;
         return this->id == other->id &&
