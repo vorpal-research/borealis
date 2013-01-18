@@ -80,14 +80,14 @@ public:
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
         pass->TPM[std::make_pair(&I, trueSucc)] =
-                pass->PF->getPathBooleanPredicate(
+                pass->PF->getBooleanPredicate(
                         pass->TF->getValueTerm(cond),
-                        true
+                        pass->TF->getTrueTerm()
                 );
         pass->TPM[std::make_pair(&I, falseSucc)] =
-                pass->PF->getPathBooleanPredicate(
+                pass->PF->getBooleanPredicate(
                         pass->TF->getValueTerm(cond),
-                        false
+                        pass->TF->getFalseTerm()
                 );
     }
 
@@ -111,7 +111,7 @@ public:
 
         BasicBlock* defaultSucc = I.getDefaultDest();
         pass->TPM[std::make_pair(&I, defaultSucc)] =
-                pass->PF->getPathDefaultSwitchCasePredicate(
+                pass->PF->getDefaultSwitchCasePredicate(
                         condTerm,
                         cases
                 );
@@ -136,17 +136,18 @@ public:
 
         Type* type = I.getPointerOperandType();
 
-        std::vector< std::pair<Value*, uint64_t> > shifts;
+        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
         for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
             Value* v = *it;
-            uint64_t size = pass->TD->getTypeAllocSize(type);
-            shifts.push_back(std::make_pair(v, size));
+            Term::Ptr by = pass->TF->getValueTerm(v);
+            Term::Ptr size = pass->TF->getIntTerm(
+                    pass->TD->getTypeAllocSize(type));
+            shifts.push_back({by, size});
 
             if (type->isArrayTy()) type = type->getArrayElementType();
             else if (type->isStructTy()) {
                 if (!isa<ConstantInt>(v)) {
-                    sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                            "Field shift not ConstantInt in visitGetElementPtrInst");
+                    BYE_BYE_VOID("Field shift not ConstantInt in visitGetElementPtrInst");
                 }
                 auto fieldIdx = cast<ConstantInt>(v)->getZExtValue();
                 type = type->getStructElementType(fieldIdx);

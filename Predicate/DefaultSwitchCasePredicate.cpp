@@ -14,11 +14,19 @@
 namespace borealis {
 
 DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
+        PredicateType type,
+        Term::Ptr cond,
+        std::vector<Term::Ptr> cases) :
+            DefaultSwitchCasePredicate(cond, cases, nullptr, type) {};
+
+DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         Term::Ptr cond,
         std::vector<Term::Ptr> cases,
-        SlotTracker* /* st */) : Predicate(type_id(*this), PredicateType::PATH),
-            cond(std::move(cond)),
-            cases(std::move(cases)) {
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            cond(cond),
+            cases(cases) {
 
     std::string a = "";
     for (const auto& c : cases) {
@@ -26,14 +34,6 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
     }
 
     this->asString = this->cond->getName() + "=not(" + a + ")";
-}
-
-DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
-        Term::Ptr cond,
-        std::vector<Term::Ptr> cases) : DefaultSwitchCasePredicate(cond, cases, nullptr) {}
-
-Predicate::Key DefaultSwitchCasePredicate::getKey() const {
-    return std::make_pair(borealis::type_id(*this), cond->getId());
 }
 
 logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
@@ -67,9 +67,7 @@ bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
     if (const DefaultSwitchCasePredicate* o = llvm::dyn_cast<DefaultSwitchCasePredicate>(other)) {
         return *this->cond == *o->cond &&
             std::equal(cases.begin(), cases.end(), o->cases.begin(),
-                [](const Term::Ptr& e1, const Term::Ptr& e2) {
-                    return *e1 == *e2;
-                }
+                [](const Term::Ptr& e1, const Term::Ptr& e2) { return *e1 == *e2; }
             );
     } else {
         return false;
@@ -79,7 +77,7 @@ bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
 size_t DefaultSwitchCasePredicate::hashCode() const {
     size_t hash = 3;
     hash = 17 * hash + cond->hashCode();
-    for (auto& c : cases) hash = 17 * hash + c->hashCode();
+    for (const auto& c : cases) hash = 17 * hash + c->hashCode();
     return hash;
 }
 

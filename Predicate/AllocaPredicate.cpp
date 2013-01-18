@@ -8,38 +8,36 @@
 #include "AllocaPredicate.h"
 #include "Logging/tracer.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 AllocaPredicate::AllocaPredicate(
+        PredicateType type,
         Term::Ptr lhv,
-        Term::Ptr numElements) : Predicate(type_id(*this)),
-                lhv(std::move(lhv)),
-                numElements(std::move(numElements)) {
-    this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
-}
+        Term::Ptr numElements) :
+            AllocaPredicate(lhv, numElements, nullptr, type) {}
 
 AllocaPredicate::AllocaPredicate(
         Term::Ptr lhv,
         Term::Ptr numElements,
-        SlotTracker* /*st*/) : Predicate(type_id(*this)),
-                lhv(std::move(lhv)),
-                numElements(std::move(numElements)) {
+        SlotTracker* /*st*/,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv),
+            numElements(numElements) {
     this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
-}
-
-Predicate::Key AllocaPredicate::getKey() const {
-    return std::make_pair(type_id(*this), lhv->getId());
 }
 
 logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
+
     typedef Z3ExprFactory::Pointer Pointer;
 
     auto lhve = z3ef.getExprForTerm(*lhv, Pointer::bitsize);
-    if (!lhve.is<Pointer>())
-        return util::sayonara<logic::Bool>(__FILE__,__LINE__,__PRETTY_FUNCTION__,
-                "Encountered alloca predicate with non-pointer left side");
-
+    if (!lhve.is<Pointer>()) {
+        BYE_BYE(logic::Bool, "Encountered alloca with non-Pointer left side");
+    }
 
     auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {
@@ -68,3 +66,5 @@ size_t AllocaPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

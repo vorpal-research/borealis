@@ -10,41 +10,40 @@
 #include "Term/ValueTerm.h"
 #include "Logging/logger.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 StorePredicate::StorePredicate(
+        PredicateType type,
         Term::Ptr lhv,
-        Term::Ptr rhv) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
-    this->asString = "*" + this->lhv->getName() + "=" + this->rhv->getName();
-}
+        Term::Ptr rhv) :
+            StorePredicate(lhv, rhv, nullptr, type) {}
 
 StorePredicate::StorePredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* /* st */) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv),
+            rhv(rhv) {
     this->asString = "*" + this->lhv->getName() + "=" + this->rhv->getName();
-}
-
-Predicate::Key StorePredicate::getKey() const {
-    return std::make_pair(borealis::type_id(*this), lhv->getId());
 }
 
 logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
+    typedef Z3ExprFactory::Pointer Pointer;
+
     auto l = z3ef.getExprForTerm(*lhv);
     auto r = z3ef.getExprForTerm(*rhv);
 
     if (ctx) {
-        auto lptr = l.to<Z3ExprFactory::Pointer>();
+        auto lptr = l.to<Pointer>();
 
         if (lptr.empty()) {
-            return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "StorePredicate dealing with a non-pointer value");
+            BYE_BYE(logic::Bool, "Store dealing with a non-pointer value");
         }
         ctx->writeExprToMemory(lptr.getUnsafe(), r);
     }
@@ -71,3 +70,5 @@ size_t StorePredicate::hashCode() const {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

@@ -10,24 +10,20 @@
 namespace borealis {
 
 EqualityPredicate::EqualityPredicate(
+        PredicateType type,
         Term::Ptr lhv,
-        Term::Ptr rhv) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
-    this->asString = this->lhv->getName() + "=" + this->rhv->getName();
-}
+        Term::Ptr rhv) :
+            EqualityPredicate(lhv, rhv, nullptr, type) {}
 
 EqualityPredicate::EqualityPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* /* st */) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv),
+            rhv(rhv) {
     this->asString = this->lhv->getName() + "=" + this->rhv->getName();
-}
-
-Predicate::Key EqualityPredicate::getKey() const {
-    return std::make_pair(type_id(*this), lhv->getId());
 }
 
 logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {

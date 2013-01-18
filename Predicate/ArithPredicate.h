@@ -16,8 +16,6 @@ class ArithPredicate: public borealis::Predicate {
 
 public:
 
-    virtual Predicate::Key getKey() const;
-
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
     static bool classof(const Predicate* p) {
@@ -31,6 +29,7 @@ public:
     template<class SubClass>
     const ArithPredicate* accept(Transformer<SubClass>* t) const {
         return new ArithPredicate(
+                this->type,
                 t->transform(lhv),
                 t->transform(op1),
                 t->transform(op2),
@@ -47,10 +46,11 @@ private:
     const Term::Ptr lhv;
     const Term::Ptr op1;
     const Term::Ptr op2;
-    llvm::ArithType opCode;
-    std::string _opCode;
+    const llvm::ArithType opCode;
+    const std::string _opCode;
 
     ArithPredicate(
+            PredicateType type,
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
@@ -61,7 +61,8 @@ private:
             Term::Ptr op1,
             Term::Ptr op2,
             llvm::ArithType opCode,
-            SlotTracker* st);
+            SlotTracker* st,
+            PredicateType type = PredicateType::STATE);
 };
 
 } /* namespace borealis */

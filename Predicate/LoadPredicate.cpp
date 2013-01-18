@@ -7,27 +7,25 @@
 
 #include "LoadPredicate.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 LoadPredicate::LoadPredicate(
+        PredicateType type,
         Term::Ptr lhv,
-        Term::Ptr rhv) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
-    this->asString = this->lhv->getName() + "=*" + this->rhv->getName();
-}
+        Term::Ptr rhv) :
+            LoadPredicate(lhv, rhv, nullptr, type) {}
 
 LoadPredicate::LoadPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* /* st */) : Predicate(type_id(*this)),
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
             lhv(std::move(lhv)),
             rhv(std::move(rhv)) {
     this->asString = this->lhv->getName() + "=*" + this->rhv->getName();
-}
-
-Predicate::Key LoadPredicate::getKey() const {
-    return std::make_pair(type_id(*this), lhv->getId());
 }
 
 logic::Bool LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
@@ -38,9 +36,9 @@ logic::Bool LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) cons
 
     Dynamic l = z3ef.getExprForTerm(*lhv);
     Dynamic r = z3ef.getExprForTerm(*rhv);
-    if (!r.is<Pointer>())
-        return util::sayonara<logic::Bool>(__FILE__,__LINE__,__PRETTY_FUNCTION__,
-                "Encountered load predicate with non-pointer right side");
+    if (!r.is<Pointer>()) {
+        BYE_BYE(logic::Bool, "Encountered load with non-pointer right side");
+    }
 
     auto rp = r.to<Pointer>().getUnsafe();
 
@@ -72,3 +70,5 @@ size_t LoadPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

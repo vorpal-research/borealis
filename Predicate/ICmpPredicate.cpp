@@ -7,38 +7,32 @@
 
 #include "ICmpPredicate.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
-using llvm::ConditionType;
 using llvm::conditionString;
 using llvm::conditionType;
 
-using util::sayonara;
-
 ICmpPredicate::ICmpPredicate(
+        PredicateType type,
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
-        int cond) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            op1(std::move(op1)),
-            op2(std::move(op2)),
-            cond(cond),
-            _cond(conditionString(cond)) {
-
-    this->asString =
-            this->lhv->getName() + "=" + this->op1->getName() + _cond + this->op2->getName();
-}
+        int cond) :
+            ICmpPredicate(lhv, op1, op2, cond, nullptr, type) {}
 
 ICmpPredicate::ICmpPredicate(
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
         int cond,
-        SlotTracker* /* st */) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            op1(std::move(op1)),
-            op2(std::move(op2)),
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv),
+            op1(op1),
+            op2(op2),
             cond(cond),
             _cond(conditionString(cond)) {
 
@@ -46,16 +40,15 @@ ICmpPredicate::ICmpPredicate(
             this->lhv->getName() + "=" + this->op1->getName() + _cond + this->op2->getName();
 }
 
-Predicate::Key ICmpPredicate::getKey() const {
-    return std::make_pair(borealis::type_id(*this), lhv->getId());
-}
-
 logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
+    using llvm::ConditionType;
+
     auto le = z3ef.getExprForTerm(*lhv).toBool();
-    if (le.empty()) return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-            "Encountered ICmpPredicate with non-bool condition");
+    if (le.empty()) {
+        BYE_BYE(logic::Bool, "Encountered cmp with non-Bool condition");
+    }
 
     auto l = le.getUnsafe();
 
@@ -74,8 +67,7 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
 
     // these cases assume operands are comparable
     if(!o1.isComparable() || !o2.isComparable()) {
-        return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "Encountered ICmpPredicate with non-comparable operands");
+        BYE_BYE(logic::Bool, "Encountered cmp with non-comparable operands");
     }
 
     auto co1 = o1.toComparable().getUnsafe();
@@ -86,11 +78,9 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
         case ConditionType::GT: return l == (co1 > co2);
         case ConditionType::GTE: return l == (co1 >= co2);
         case ConditionType::UNKNOWN:
-            return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Unknown condition type in Z3 conversion");
+            BYE_BYE(logic::Bool, "Unknown condition type in Z3 conversion");
         default:
-            return sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "Unreachable");
+            BYE_BYE(logic::Bool, "Unreachable");
     }
 }
 
@@ -117,3 +107,5 @@ size_t ICmpPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

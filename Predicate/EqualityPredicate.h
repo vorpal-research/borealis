@@ -12,13 +12,9 @@
 
 namespace borealis {
 
-class PredicateFactory;
-
 class EqualityPredicate: public Predicate {
 
 public:
-
-    virtual Predicate::Key getKey() const;
 
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
@@ -33,6 +29,7 @@ public:
     template<class SubClass>
     const EqualityPredicate* accept(Transformer<SubClass>* t) const {
         return new EqualityPredicate(
+                this->type,
                 t->transform(lhv),
                 t->transform(rhv));
     }
@@ -48,13 +45,14 @@ private:
     const Term::Ptr rhv;
 
     EqualityPredicate(
+            PredicateType type,
             Term::Ptr lhv,
             Term::Ptr rhv);
-
     EqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            SlotTracker* st);
+            SlotTracker* st,
+            PredicateType type = PredicateType::STATE);
 
 };
 

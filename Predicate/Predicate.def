@@ -2,7 +2,6 @@
 #define HANDLE_PREDICATE(NAME, CLASS)
 #endif
 
-HANDLE_PREDICATE(Boolean, BooleanPredicate)
 HANDLE_PREDICATE(Equality, EqualityPredicate)
 HANDLE_PREDICATE(GEP, GEPPredicate)
 HANDLE_PREDICATE(ICmp, ICmpPredicate)

@@ -18,8 +18,6 @@ class ICmpPredicate: public Predicate {
 
 public:
 
-    virtual Predicate::Key getKey() const;
-
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
     static bool classof(const Predicate* p) {
@@ -33,6 +31,7 @@ public:
     template<class SubClass>
     const ICmpPredicate* accept(Transformer<SubClass>* t) const {
         return new ICmpPredicate(
+                this->type,
                 t->transform(lhv),
                 t->transform(op1),
                 t->transform(op2),
@@ -54,17 +53,18 @@ private:
     const std::string _cond;
 
     ICmpPredicate(
+            PredicateType type,
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
             int cond);
-
     ICmpPredicate(
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
             int cond,
-            SlotTracker* st);
+            SlotTracker* st,
+            PredicateType type = PredicateType::STATE);
 
 };
 
