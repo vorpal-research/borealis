@@ -5,23 +5,24 @@
  *      Author: ice-phoenix
  */
 
-#include "PredicateStateAnalysis.h"
-
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Passes/PredicateStateAnalysis.h"
 #include "Solver/Z3ExprFactory.h"
 #include "Solver/Z3Solver.h"
 #include "State/CallSiteInitializer.h"
 
 #include "Logging/tracer.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
-typedef PredicateAnalysis::PredicateMap PM;
-typedef PredicateAnalysis::TerminatorPredicateMap TPM;
-typedef PredicateAnalysis::PhiPredicateMap PPM;
+typedef AbstractPredicateAnalysis::PredicateMap PM;
+typedef AbstractPredicateAnalysis::TerminatorPredicateMap TPM;
+typedef AbstractPredicateAnalysis::PhiPredicateMap PPM;
 
 
 
@@ -44,7 +45,6 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
 
     Info.setPreservesAll();
     Info.addRequiredTransitive<FunctionManager>();
-    Info.addRequiredTransitive<PredicateAnalysis>();
     Info.addRequiredTransitive<SlotTrackerPass>();
     Info.addRequiredTransitive<LoopInfo>();
 }
@@ -57,19 +57,24 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
     FM = &getAnalysis<FunctionManager>();
-    PA = &getAnalysis<PredicateAnalysis>();
     LI = &getAnalysis<LoopInfo>();
+
+    for (auto* apaId : AbstractPredicateAnalysis::getRegistered()) {
+        APA.push_back(&getAnalysisID<AbstractPredicateAnalysis>(apaId, F));
+    }
 
     PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
 
     if (!getAllLoops(&F, LI).empty()) {
-        return util::sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Cannot analyze predicates when loops are present");
+        BYE_BYE(bool, "Cannot analyze predicates when loops are present");
     }
 
-    workQueue.push(std::make_tuple(nullptr, &F.getEntryBlock(), PredicateState()));
-    processQueue();
+    for (auto* pa : APA) {
+        PA = pa;
+        enqueue(nullptr, &F.getEntryBlock(), PredicateState());
+        processQueue();
+    }
 
     infos() << "= Predicate state analysis results =" << endl;
     for (auto& e : predicateStateMap) {
@@ -79,6 +84,13 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     infos() << "= Done =" << endl;
 
     return false;
+}
+
+void PredicateStateAnalysis::enqueue(
+        const llvm::BasicBlock* from,
+        const llvm::BasicBlock* to,
+        PredicateState state) {
+    workQueue.push(std::make_tuple(from, to, state));
 }
 
 void PredicateStateAnalysis::processQueue() {
@@ -107,7 +119,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     // Add incoming predicates from PHI nodes
     for ( ; isa<PHINode>(iter); ++iter) {
         inState = inState
-            .addPredicate(ppm[std::make_pair(from, cast<PHINode>(iter))])
+            .addPredicate(ppm[{from, cast<PHINode>(iter)}])
             .addVisited(&*iter);
     }
 
@@ -156,10 +168,10 @@ void PredicateStateAnalysis::processTerminator(
     auto s = state.addVisited(&I);
 
     if (isa<BranchInst>(I))
-    { process(cast<BranchInst>(I), s); }
+    { processBranchInst(cast<BranchInst>(I), s); }
 }
 
-void PredicateStateAnalysis::process(
+void PredicateStateAnalysis::processBranchInst(
         const llvm::BranchInst& I,
         const PredicateState& state) {
     using namespace::llvm;
@@ -168,21 +180,23 @@ void PredicateStateAnalysis::process(
 
     if (I.isUnconditional()) {
         const BasicBlock* succ = I.getSuccessor(0);
-        workQueue.push(std::make_tuple(I.getParent(), succ, state));
+        enqueue(I.getParent(), succ, state);
     } else {
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        Predicate::Ptr truePred = tpm[std::make_pair(&I, trueSucc)];
-        Predicate::Ptr falsePred = tpm[std::make_pair(&I, falseSucc)];
+        Predicate::Ptr truePred = tpm[{&I, trueSucc}];
+        Predicate::Ptr falsePred = tpm[{&I, falseSucc}];
 
-        workQueue.push(std::make_tuple(I.getParent(), trueSucc, state.addPredicate(truePred)));
-        workQueue.push(std::make_tuple(I.getParent(), falseSucc, state.addPredicate(falsePred)));
+        enqueue(I.getParent(), trueSucc, state.addPredicate(truePred));
+        enqueue(I.getParent(), falseSucc, state.addPredicate(falsePred));
     }
 }
 
 char PredicateStateAnalysis::ID;
 static llvm::RegisterPass<PredicateStateAnalysis>
-X("predicate-state", "Predicate state analysis");
+X("predicate-state-analysis", "Predicate state analysis");
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

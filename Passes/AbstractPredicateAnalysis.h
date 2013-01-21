@@ -37,14 +37,20 @@ public:
     typedef std::map<PhiBranch, Predicate::Ptr> PhiPredicateMap;
     typedef std::pair<PhiBranch, Predicate::Ptr> PhiPredicateMapEntry;
 
-    AbstractPredicateAnalysis(char ID) : llvm::FunctionPass(ID) {};
+    typedef std::set<const void*> RegisteredPasses;
+
+    AbstractPredicateAnalysis(char ID);
     virtual bool runOnFunction(llvm::Function& F) = 0;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const = 0;
-    virtual ~AbstractPredicateAnalysis() {};
+    virtual ~AbstractPredicateAnalysis();
 
     PredicateMap& getPredicateMap() { return PM; }
     TerminatorPredicateMap& getTerminatorPredicateMap() { return TPM; }
     PhiPredicateMap& getPhiPredicateMap() { return PPM; }
+
+    static RegisteredPasses getRegistered() {
+        return registeredPasses;
+    }
 
 protected:
 
@@ -57,6 +63,8 @@ protected:
     PredicateMap PM;
     TerminatorPredicateMap TPM;
     PhiPredicateMap PPM;
+
+    static RegisteredPasses registeredPasses;
 
 };
 

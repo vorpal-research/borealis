@@ -14,21 +14,22 @@
 #include <llvm/Pass.h>
 
 #include <algorithm>
+#include <list>
 #include <map>
 #include <queue>
 #include <set>
 #include <tuple>
 #include <vector>
 
-#include "FunctionManager.h"
-#include "PredicateAnalysis.h"
-#include "SlotTrackerPass.h"
-
-#include "Logging/logger.hpp"
+#include "Passes/FunctionManager.h"
+#include "Passes/AbstractPredicateAnalysis.h"
+#include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateState.h"
 #include "State/PredicateStateVector.h"
 #include "Term/TermFactory.h"
+
+#include "Logging/logger.hpp"
 
 namespace borealis {
 
@@ -41,11 +42,7 @@ public:
     typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
     typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;
 
-    typedef std::tuple<
-            const llvm::BasicBlock*,
-            const llvm::BasicBlock*,
-            PredicateState>
-    WorkQueueEntry;
+    typedef std::tuple<const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState> WorkQueueEntry;
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     static char ID;
@@ -73,16 +70,19 @@ private:
     WorkQueue workQueue;
 
     FunctionManager* FM;
-    PredicateAnalysis* PA;
     llvm::LoopInfo* LI;
+
+    std::list<AbstractPredicateAnalysis*> APA;
+    AbstractPredicateAnalysis* PA;
 
     PredicateFactory::Ptr PF;
     TermFactory::Ptr TF;
 
     void processQueue();
-    void processBasicBlock(const WorkQueueEntry& wqe);
-    void processTerminator(const llvm::TerminatorInst& I, const PredicateState& state);
-    void process(const llvm::BranchInst& I, const PredicateState& state);
+    void enqueue(const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState);
+    void processBasicBlock(const WorkQueueEntry&);
+    void processTerminator(const llvm::TerminatorInst&, const PredicateState&);
+    void processBranchInst(const llvm::BranchInst&, const PredicateState&);
 
 };
 
