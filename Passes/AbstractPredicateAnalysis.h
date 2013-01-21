@@ -1,35 +1,28 @@
 /*
- * PredicateAnalysis.h
+ * AbstractPredicateAnalysis.h
  *
  *  Created on: Aug 31, 2012
  *      Author: ice-phoenix
  */
 
-#ifndef PREDICATEANALYSIS_H_
-#define PREDICATEANALYSIS_H_
+#ifndef ABSTRACTPREDICATEANALYSIS_H_
+#define ABSTRACTPREDICATEANALYSIS_H_
 
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/InstVisitor.h>
-#include <llvm/Target/TargetData.h>
 
 #include <map>
 #include <set>
-#include <vector>
 
-#include "Predicate/PredicateFactory.h"
-#include "Term/TermFactory.h"
-#include "Util/slottracker.h"
+#include "Predicate/Predicate.h"
 #include "Util/util.h"
 
 namespace borealis {
 
-class PredicateAnalysisInstVisitor;
-
-class PredicateAnalysis: public llvm::FunctionPass {
+class AbstractPredicateAnalysis: public llvm::FunctionPass {
 
 public:
 
@@ -44,28 +37,18 @@ public:
     typedef std::map<PhiBranch, Predicate::Ptr> PhiPredicateMap;
     typedef std::pair<PhiBranch, Predicate::Ptr> PhiPredicateMapEntry;
 
-    static char ID;
+    AbstractPredicateAnalysis(char ID) : llvm::FunctionPass(ID) {};
+    virtual bool runOnFunction(llvm::Function& F) = 0;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const = 0;
+    virtual ~AbstractPredicateAnalysis() {};
 
-    PredicateAnalysis();
-    virtual bool runOnFunction(llvm::Function& F);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-    virtual ~PredicateAnalysis() {};
+    PredicateMap& getPredicateMap() { return PM; }
+    TerminatorPredicateMap& getTerminatorPredicateMap() { return TPM; }
+    PhiPredicateMap& getPhiPredicateMap() { return PPM; }
 
-    PredicateMap& getPredicateMap() {
-        return PM;
-    }
+protected:
 
-    TerminatorPredicateMap& getTerminatorPredicateMap() {
-        return TPM;
-    }
-
-    PhiPredicateMap& getPhiPredicateMap() {
-        return PPM;
-    }
-
-private:
-
-    void init() {
+    virtual void init() {
         PM.clear();
         TPM.clear();
         PPM.clear();
@@ -75,13 +58,8 @@ private:
     TerminatorPredicateMap TPM;
     PhiPredicateMap PPM;
 
-    PredicateFactory::Ptr PF;
-    TermFactory::Ptr TF;
-    llvm::TargetData* TD;
-
-    friend class PredicateAnalysisInstVisitor;
 };
 
 } /* namespace borealis */
 
-#endif /* PREDICATEANALYSIS_H_ */
+#endif /* ABSTRACTPREDICATEANALYSIS_H_ */
