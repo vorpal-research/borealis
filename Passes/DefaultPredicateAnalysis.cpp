@@ -96,7 +96,8 @@ public:
         using llvm::BasicBlock;
 
         Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
-        std::vector<Term::Ptr> cases(I.getNumCases());
+        std::vector<Term::Ptr> cases;
+        cases.reserve(I.getNumCases());
         for (auto c = I.case_begin(); c != I.case_end(); ++c) {
             Term::Ptr caseTerm = pass->TF->getConstTerm(c.getCaseValue());
             BasicBlock* caseSucc = c.getCaseSuccessor();
@@ -133,11 +134,11 @@ public:
 
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace llvm;
-        using borealis::util::sayonara;
 
         Type* type = I.getPointerOperandType();
 
-        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts(I.getNumIndices());
+        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
+        shifts.reserve(I.getNumIndices());
         for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
             Value* v = *it;
             Term::Ptr by = pass->TF->getValueTerm(v);
