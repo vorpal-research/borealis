@@ -22,7 +22,7 @@ MallocPredicate::MallocPredicate(
         SlotTracker* /*st*/,
         PredicateType type) :
             Predicate(type_id(*this), type),
-            lhv(std::move(lhv)) {
+            lhv(lhv) {
     this->asString = this->lhv->getName() + "=malloc()";
 }
 

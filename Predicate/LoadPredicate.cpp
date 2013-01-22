@@ -23,8 +23,8 @@ LoadPredicate::LoadPredicate(
         SlotTracker* /* st */,
         PredicateType type) :
             Predicate(type_id(*this), type),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
+            lhv(lhv),
+            rhv(rhv) {
     this->asString = this->lhv->getName() + "=*" + this->rhv->getName();
 }
 
