@@ -9,6 +9,7 @@
 
 #include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
+#include "Solver/Z3Solver.h"
 
 namespace borealis {
 
@@ -62,6 +63,14 @@ bool PredicateState::hasVisited(std::initializer_list<const llvm::Instruction*> 
     for (auto l : locations)
         if (!contains(visited, l)) return false;
     return true;
+}
+
+bool PredicateState::isUnreachable() const {
+    z3::context ctx;
+    Z3ExprFactory z3ef(ctx);
+    Z3Solver s(z3ef);
+
+    return !s.checkPathPredicates(*this);
 }
 
 std::pair<logic::Bool, logic::Bool> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
