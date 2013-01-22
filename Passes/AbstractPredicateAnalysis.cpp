@@ -12,8 +12,7 @@ namespace borealis {
 AbstractPredicateAnalysis::RegisteredPasses
 AbstractPredicateAnalysis::registeredPasses;
 
-AbstractPredicateAnalysis::AbstractPredicateAnalysis(char ID) :
-        llvm::FunctionPass(ID) {
+AbstractPredicateAnalysis::AbstractPredicateAnalysis(char ID) {
     registeredPasses.insert((const void*)&ID);
 };
 

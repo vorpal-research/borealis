@@ -22,7 +22,7 @@
 
 namespace borealis {
 
-class AbstractPredicateAnalysis: public llvm::FunctionPass {
+class AbstractPredicateAnalysis {
 
 public:
 
@@ -40,8 +40,6 @@ public:
     typedef std::set<const void*> RegisteredPasses;
 
     AbstractPredicateAnalysis(char ID);
-    virtual bool runOnFunction(llvm::Function& F) = 0;
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const = 0;
     virtual ~AbstractPredicateAnalysis();
 
     PredicateMap& getPredicateMap() { return PM; }

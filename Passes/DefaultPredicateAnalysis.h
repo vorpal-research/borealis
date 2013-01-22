@@ -14,11 +14,17 @@
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
 
+#include "Passes/PredicateStateAnalysis.hpp"
+
 namespace borealis {
 
-class DefaultPredicateAnalysis: public borealis::AbstractPredicateAnalysis {
+class DefaultPredicateAnalysis:
+        public llvm::FunctionPass,
+        public borealis::AbstractPredicateAnalysis {
 
 public:
+
+    typedef PredicateStateAnalysis<DefaultPredicateAnalysis> PSA;
 
     static char ID;
 

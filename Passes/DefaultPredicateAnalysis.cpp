@@ -257,6 +257,7 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 DefaultPredicateAnalysis::DefaultPredicateAnalysis() :
+        llvm::FunctionPass(ID),
         borealis::AbstractPredicateAnalysis(ID) {}
 
 void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
@@ -284,9 +285,15 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     return false;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 char DefaultPredicateAnalysis::ID;
 static llvm::RegisterPass<DefaultPredicateAnalysis>
 X("default-predicate-analysis", "Default instruction predicate analysis");
+
+char DefaultPredicateAnalysis_PSA_ID = DefaultPredicateAnalysis::PSA::ID;
+static llvm::RegisterPass<DefaultPredicateAnalysis::PSA>
+Y("default-predicate-state-analysis", "Default predicate state analysis");
 
 } /* namespace borealis */
 
