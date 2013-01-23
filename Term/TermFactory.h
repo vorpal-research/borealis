@@ -44,6 +44,22 @@ public:
         return Term::Ptr(new ConstTerm(c, slotTracker));
     }
 
+    Term::Ptr getBooleanTerm(bool b) {
+        return Term::Ptr(new ConstTerm(llvm::getBoolConstant(b), slotTracker));
+    }
+
+    Term::Ptr getTrueTerm() {
+        return getBooleanTerm(true);
+    }
+
+    Term::Ptr getFalseTerm() {
+        return getBooleanTerm(false);
+    }
+
+    Term::Ptr getIntTerm(uint64_t i) {
+        return Term::Ptr(new ConstTerm(llvm::getIntConstant(i), slotTracker));
+    }
+
     Term::Ptr getReturnValueTerm(llvm::Function* F) {
         return Term::Ptr(new ReturnValueTerm(F, slotTracker));
     }

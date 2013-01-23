@@ -12,31 +12,24 @@
 namespace borealis {
 
 ArithPredicate::ArithPredicate(
+        PredicateType type,
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
-        llvm::ArithType opCode) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            op1(std::move(op1)),
-            op2(std::move(op2)),
-            opCode(opCode),
-            _opCode(llvm::arithString(opCode)) {
-
-    this->asString = this->lhv->getName() + "=" +
-            this->op1->getName() +
-            _opCode +
-            this->op2->getName();
-}
+        llvm::ArithType opCode) :
+            ArithPredicate(lhv, op1, op2, opCode, nullptr, type) {}
 
 ArithPredicate::ArithPredicate(
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
         llvm::ArithType opCode,
-        SlotTracker* /* st */) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            op1(std::move(op1)),
-            op2(std::move(op2)),
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv),
+            op1(op1),
+            op2(op2),
             opCode(opCode),
             _opCode(llvm::arithString(opCode)) {
 
@@ -44,10 +37,6 @@ ArithPredicate::ArithPredicate(
             this->op1->getName() +
             _opCode +
             this->op2->getName();
-}
-
-Predicate::Key ArithPredicate::getKey() const {
-    return std::make_pair(borealis::type_id(*this), lhv->getId());
 }
 
 logic::Bool ArithPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {

@@ -14,10 +14,10 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "DetectNullPass.h"
-#include "PredicateStateAnalysis.h"
-#include "SlotTrackerPass.h"
-#include "SourceLocationTracker.h"
+#include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/DetectNullPass.h"
+#include "Passes/SlotTrackerPass.h"
+#include "Passes/SourceLocationTracker.h"
 
 #include "Logging/logger.hpp"
 
@@ -47,7 +47,7 @@ private:
 
 	llvm::AliasAnalysis* AA;
 	DetectNullPass* DNP;
-	PredicateStateAnalysis* PSA;
+	DefaultPredicateAnalysis::PSA* PSA;
 	SlotTracker* slotTracker;
 	SourceLocationTracker* sourceLocationTracker;
 

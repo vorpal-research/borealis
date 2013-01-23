@@ -1,12 +1,16 @@
 /*
- * PredicateAnalysis.cpp
+ * DefaultPredicateAnalysis.cpp
  *
  *  Created on: Aug 31, 2012
  *      Author: ice-phoenix
  */
 
-#include "PredicateAnalysis.h"
-#include "SlotTrackerPass.h"
+#include <llvm/Support/InstVisitor.h>
+
+#include <vector>
+
+#include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/SlotTrackerPass.h"
 
 #include "Logging/tracer.hpp"
 
@@ -16,16 +20,15 @@ namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Predicate analysis instruction visitor
+// Default predicate analysis instruction visitor
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-class PredicateAnalysisInstVisitor :
-        public llvm::InstVisitor<PredicateAnalysisInstVisitor> {
+class DPAInstVisitor : public llvm::InstVisitor<DPAInstVisitor> {
 
 public:
 
-    PredicateAnalysisInstVisitor(PredicateAnalysis* pass) : pass(pass) {}
+    DPAInstVisitor(DefaultPredicateAnalysis* pass) : pass(pass) {}
 
     void visitLoadInst(llvm::LoadInst& I) {
         using llvm::Value;
@@ -77,15 +80,42 @@ public:
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        pass->TPM[std::make_pair(&I, trueSucc)] =
-                pass->PF->getPathBooleanPredicate(
+        pass->TPM[{&I, trueSucc}] =
+                pass->PF->getBooleanPredicate(
                         pass->TF->getValueTerm(cond),
-                        true
+                        pass->TF->getTrueTerm()
                 );
-        pass->TPM[std::make_pair(&I, falseSucc)] =
-                pass->PF->getPathBooleanPredicate(
+        pass->TPM[{&I, falseSucc}] =
+                pass->PF->getBooleanPredicate(
                         pass->TF->getValueTerm(cond),
-                        false
+                        pass->TF->getFalseTerm()
+                );
+    }
+
+    void visitSwitchInst(llvm::SwitchInst& I) {
+        using llvm::BasicBlock;
+
+        Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
+        std::vector<Term::Ptr> cases;
+        cases.reserve(I.getNumCases());
+        for (auto c = I.case_begin(); c != I.case_end(); ++c) {
+            Term::Ptr caseTerm = pass->TF->getConstTerm(c.getCaseValue());
+            BasicBlock* caseSucc = c.getCaseSuccessor();
+
+            pass->TPM[{&I, caseSucc}] =
+                    pass->PF->getEqualityPredicate(
+                            condTerm,
+                            caseTerm
+                    );
+
+            cases.push_back(caseTerm);
+        }
+
+        BasicBlock* defaultSucc = I.getDefaultDest();
+        pass->TPM[{&I, defaultSucc}] =
+                pass->PF->getDefaultSwitchCasePredicate(
+                        condTerm,
+                        cases
                 );
     }
 
@@ -104,21 +134,22 @@ public:
 
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace llvm;
-        using borealis::util::sayonara;
 
         Type* type = I.getPointerOperandType();
 
-        std::vector< std::pair<Value*, uint64_t> > shifts;
+        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
+        shifts.reserve(I.getNumIndices());
         for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
             Value* v = *it;
-            uint64_t size = pass->TD->getTypeAllocSize(type);
-            shifts.push_back(std::make_pair(v, size));
+            Term::Ptr by = pass->TF->getValueTerm(v);
+            Term::Ptr size = pass->TF->getIntTerm(
+                    pass->TD->getTypeAllocSize(type));
+            shifts.push_back({by, size});
 
             if (type->isArrayTy()) type = type->getArrayElementType();
             else if (type->isStructTy()) {
                 if (!isa<ConstantInt>(v)) {
-                    sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                            "Field shift not ConstantInt in visitGetElementPtrInst");
+                    BYE_BYE_VOID("Non-constant structure field shift");
                 }
                 auto fieldIdx = cast<ConstantInt>(v)->getZExtValue();
                 type = type->getStructElementType(fieldIdx);
@@ -168,7 +199,7 @@ public:
             const BasicBlock* from = I.getIncomingBlock(i);
             Value* v = I.getIncomingValue(i);
 
-            pass->PPM[std::make_pair(from, &I)] = pass->PF->getEqualityPredicate(
+            pass->PPM[{from, &I}] = pass->PF->getEqualityPredicate(
                     pass->TF->getValueTerm(&I),
                     pass->TF->getValueTerm(v)
             );
@@ -220,15 +251,17 @@ public:
 
 private:
 
-    PredicateAnalysis* pass;
+    DefaultPredicateAnalysis* pass;
 
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PredicateAnalysis::PredicateAnalysis() : llvm::FunctionPass(ID) {}
+DefaultPredicateAnalysis::DefaultPredicateAnalysis() :
+        llvm::FunctionPass(ID),
+        borealis::AbstractPredicateAnalysis(ID) {}
 
-void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
+void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
     using namespace::llvm;
 
     Info.setPreservesAll();
@@ -236,7 +269,7 @@ void PredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
     Info.addRequiredTransitive<TargetData>();
 }
 
-bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
+bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     using namespace::llvm;
 
     TRACE_FUNC;
@@ -247,15 +280,21 @@ bool PredicateAnalysis::runOnFunction(llvm::Function& F) {
     TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
     TD = &getAnalysis<TargetData>();
 
-    PredicateAnalysisInstVisitor visitor(this);
+    DPAInstVisitor visitor(this);
     visitor.visit(F);
 
     return false;
 }
 
-char PredicateAnalysis::ID;
-static llvm::RegisterPass<PredicateAnalysis>
-X("predicate", "Instruction predicate analysis");
+////////////////////////////////////////////////////////////////////////////////
+
+char DefaultPredicateAnalysis::ID;
+static llvm::RegisterPass<DefaultPredicateAnalysis>
+X("default-predicate-analysis", "Default instruction predicate analysis");
+
+char DefaultPredicateAnalysis_PSA_ID = DefaultPredicateAnalysis::PSA::ID;
+static llvm::RegisterPass<DefaultPredicateAnalysis::PSA>
+Y("default-predicate-state-analysis", "Default predicate state analysis");
 
 } /* namespace borealis */
 

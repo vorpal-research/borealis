@@ -13,10 +13,6 @@
 
 namespace borealis {
 
-class TermFactory;
-class BooleanPredicate;
-class GEPPredicate;
-
 class ConstTerm: public borealis::Term {
 
 public:
@@ -33,9 +29,8 @@ public:
         return constant;
     }
 
+    friend class PredicateFactory;
     friend class TermFactory;
-    friend class BooleanPredicate;
-    friend class GEPPredicate;
 
     ConstTerm(const ConstTerm&) = default;
 

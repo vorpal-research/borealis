@@ -8,23 +8,22 @@
 #include "MallocPredicate.h"
 #include "Logging/tracer.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 MallocPredicate::MallocPredicate(
-        Term::Ptr lhv) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)) {
-    this->asString = this->lhv->getName() + "=malloc()";
-}
+        PredicateType type,
+        Term::Ptr lhv) :
+            MallocPredicate(lhv, nullptr, type) {}
 
 MallocPredicate::MallocPredicate(
         Term::Ptr lhv,
-        SlotTracker* /*st*/) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)) {
+        SlotTracker* /*st*/,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv) {
     this->asString = this->lhv->getName() + "=malloc()";
-}
-
-Predicate::Key MallocPredicate::getKey() const {
-    return std::make_pair(type_id(*this), lhv->getId());
 }
 
 logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
@@ -33,12 +32,11 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     typedef Z3ExprFactory::Pointer Pointer;
 
     auto lhve = z3ef.getExprForTerm(*lhv, Pointer::bitsize);
-    if (!lhve.is<Pointer>())
-        return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Malloc predicate produces a non-pointer");
+    if (!lhve.is<Pointer>()) {
+        BYE_BYE(logic::Bool, "Malloc produces a non-pointer");
+    }
 
     Pointer lhvp = lhve.to<Pointer>().getUnsafe();
-
     if (ctx) {
         ctx->registerDistinctPtr(lhvp);
     }
@@ -63,3 +61,5 @@ size_t MallocPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

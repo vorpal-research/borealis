@@ -15,13 +15,9 @@
 
 namespace borealis {
 
-class PredicateFactory;
-
 class GEPPredicate: public Predicate {
 
 public:
-
-    virtual Predicate::Key getKey() const;
 
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
@@ -38,13 +34,15 @@ public:
 
         std::vector< std::pair< Term::Ptr, Term::Ptr > > new_shifts(shifts.size());
         std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
-        [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
-            return std::make_pair(
-                    t->transform(e.first),
-                    t->transform(e.second));
-        });
+            [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
+                return std::make_pair(
+                        t->transform(e.first),
+                        t->transform(e.second));
+            }
+        );
 
         return new GEPPredicate(
+                this->type,
                 t->transform(lhv),
                 t->transform(rhv),
                 new_shifts);
@@ -62,15 +60,16 @@ private:
     std::vector< std::pair< Term::Ptr, Term::Ptr > > shifts;
 
     GEPPredicate(
+            PredicateType type,
             Term::Ptr lhv,
             Term::Ptr rhv,
             std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts);
-
     GEPPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            std::vector< std::pair<llvm::Value*, uint64_t> >& shifts,
-            SlotTracker* st);
+            std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts,
+            SlotTracker* st,
+            PredicateType type = PredicateType::STATE);
 
 };
 

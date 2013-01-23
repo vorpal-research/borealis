@@ -12,7 +12,7 @@
 
 #include "Predicate/Predicate.h"
 
-#include "Predicate/BooleanPredicate.h"
+#include "Predicate/ArithPredicate.h"
 #include "Predicate/EqualityPredicate.h"
 #include "Predicate/GEPPredicate.h"
 #include "Predicate/ICmpPredicate.h"
@@ -20,7 +20,7 @@
 #include "Predicate/StorePredicate.h"
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
-#include "Predicate/ArithPredicate.h"
+#include "Predicate/DefaultSwitchCasePredicate.h"
 
 namespace borealis {
 
@@ -34,27 +34,27 @@ public:
             Term::Ptr lhv,
             Term::Ptr rhv) {
         return Predicate::Ptr(
-                new LoadPredicate(std::move(lhv), std::move(rhv), slotTracker));
+                new LoadPredicate(lhv, rhv, slotTracker));
     }
 
     Predicate::Ptr getStorePredicate(
             Term::Ptr lhv,
             Term::Ptr rhv) {
         return Predicate::Ptr(
-                new StorePredicate(std::move(lhv), std::move(rhv), slotTracker));
+                new StorePredicate(lhv, rhv, slotTracker));
     }
 
     Predicate::Ptr getAllocaPredicate(
              Term::Ptr lhv,
              Term::Ptr numElements) {
         return Predicate::Ptr(
-                new AllocaPredicate(std::move(lhv), std::move(numElements), slotTracker));
+                new AllocaPredicate(lhv, numElements, slotTracker));
     }
 
     Predicate::Ptr getMallocPredicate(
                  Term::Ptr lhv) {
         return Predicate::Ptr(
-                new MallocPredicate(std::move(lhv), slotTracker));
+                new MallocPredicate(lhv, slotTracker));
     }
 
     Predicate::Ptr getICmpPredicate(
@@ -63,29 +63,44 @@ public:
             Term::Ptr op2,
             int cond) {
         return Predicate::Ptr(
-                new ICmpPredicate(std::move(lhv), std::move(op1), std::move(op2), cond, slotTracker));
+                new ICmpPredicate(lhv, op1, op2, cond, slotTracker));
     }
 
-    Predicate::Ptr getPathBooleanPredicate(
+    Predicate::Ptr getBooleanPredicate(
             Term::Ptr v,
-            bool b) {
+            Term::Ptr b) {
         return Predicate::Ptr(
-                new BooleanPredicate(PredicateType::PATH, std::move(v), b, slotTracker));
+                new EqualityPredicate(
+                        v,
+                        b,
+                        slotTracker,
+                        PredicateType::PATH));
+    }
+
+    Predicate::Ptr getDefaultSwitchCasePredicate(
+            Term::Ptr cond,
+            std::vector<Term::Ptr> cases) {
+        return Predicate::Ptr(
+                new DefaultSwitchCasePredicate(
+                        cond,
+                        cases,
+                        slotTracker,
+                        PredicateType::PATH));
     }
 
     Predicate::Ptr getGEPPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            std::vector< std::pair<llvm::Value*, uint64_t> > shifts) {
+            std::vector< std::pair< Term::Ptr, Term::Ptr > > shifts) {
         return Predicate::Ptr(
-                new GEPPredicate(std::move(lhv), std::move(rhv), shifts, slotTracker));
+                new GEPPredicate(lhv, rhv, shifts, slotTracker));
     }
 
     Predicate::Ptr getEqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv) {
         return Predicate::Ptr(
-                new EqualityPredicate(std::move(lhv), std::move(rhv), slotTracker));
+                new EqualityPredicate(lhv, rhv, slotTracker));
     }
 
     Predicate::Ptr getArithPredicate(
@@ -94,7 +109,7 @@ public:
             Term::Ptr op2,
             llvm::ArithType opCode) {
         return Predicate::Ptr(
-                new ArithPredicate(std::move(lhv), std::move(op1), std::move(op2), opCode, slotTracker));
+                new ArithPredicate(lhv, op1, op2, opCode, slotTracker));
     }
 
     static Ptr get(SlotTracker* slotTracker) {

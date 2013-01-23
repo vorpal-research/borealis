@@ -42,21 +42,9 @@ public:
 
     typedef std::shared_ptr<const Predicate> Ptr;
 
-    typedef std::pair<borealis::id_t, Term::id_t> Key;
-    struct KeyHash {
-    public:
-        static size_t hash(const Key& k) {
-            return (size_t)k.first ^ (size_t)k.second;
-        }
-        size_t operator()(const Key& k) const {
-            return hash(k);
-        }
-    };
-
     Predicate(borealis::id_t predicate_type_id);
     Predicate(borealis::id_t predicate_type_id, PredicateType type);
     virtual ~Predicate() = 0;
-    virtual Key getKey() const = 0;
 
     inline borealis::id_t getPredicateTypeId() const {
         return predicate_type_id;
@@ -93,10 +81,12 @@ public:
 
 protected:
 
-    borealis::id_t predicate_type_id;
-    PredicateType type;
-    std::string asString;
+    const borealis::id_t predicate_type_id;
+    const PredicateType type;
     const llvm::Instruction* location;
+
+    // Must be set in subclasses
+    std::string asString;
 
 };
 

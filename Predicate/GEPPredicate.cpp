@@ -10,15 +10,26 @@
 #include "Term/ConstTerm.h"
 #include "Term/ValueTerm.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
+
+GEPPredicate::GEPPredicate(
+        PredicateType type,
+        Term::Ptr lhv,
+        Term::Ptr rhv,
+        std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts) :
+            GEPPredicate(lhv, rhv, shifts, nullptr, type) {}
 
 GEPPredicate::GEPPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)),
-            shifts(std::move(shifts)) {
+        std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts,
+        SlotTracker* /* st */,
+        PredicateType type) :
+            Predicate(type_id(*this), type),
+            lhv(lhv),
+            rhv(rhv) {
 
     std::string a = "0";
     for (const auto& shift : shifts) {
@@ -27,33 +38,6 @@ GEPPredicate::GEPPredicate(
 
     this->asString =
             this->lhv->getName() + "=gep(" + this->rhv->getName() + "," + a + ")";
-}
-
-GEPPredicate::GEPPredicate(
-        Term::Ptr lhv,
-        Term::Ptr rhv,
-        std::vector< std::pair<llvm::Value*, uint64_t> >& shifts,
-        SlotTracker* st) : Predicate(type_id(*this)),
-            lhv(std::move(lhv)),
-            rhv(std::move(rhv)) {
-
-    std::string a = "0";
-    for (const auto& shift : shifts) {
-        ValueTerm* by = new ValueTerm(shift.first, st);
-        ConstTerm* size = new ConstTerm(llvm::getIntConstant(shift.second), st);
-        this->shifts.push_back(
-                std::make_pair(Term::Ptr(by), Term::Ptr(size))
-        );
-
-        a = a + "+" + by->getName() + "*" + size->getName();
-    }
-
-    this->asString =
-            this->lhv->getName() + "=gep(" + this->rhv->getName() + "," + a + ")";
-}
-
-Predicate::Key GEPPredicate::getKey() const {
-    return std::make_pair(type_id(*this), lhv->getId());
 }
 
 logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
@@ -67,8 +51,7 @@ logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     Dynamic r = z3ef.getExprForTerm(*rhv);
 
     if (!l.is<Pointer>() || !r.is<Pointer>()) {
-        return util::sayonara<logic::Bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Encountered a GEP predicate with non-pointer operand");
+        BYE_BYE(logic::Bool, "Encountered a GEP predicate with non-pointer operand");
     }
 
     Pointer lp = l.to<Pointer>().getUnsafe();
@@ -110,3 +93,5 @@ size_t GEPPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

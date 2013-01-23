@@ -40,6 +40,8 @@ public:
     PredicateState addVisited(const llvm::Instruction* location) const;
     bool hasVisited(std::initializer_list<const llvm::Instruction*> locations) const;
 
+    bool isUnreachable() const;
+
     std::pair<logic::Bool, logic::Bool> toZ3(Z3ExprFactory& z3ef) const;
 
     typedef std::list<Predicate::Ptr> Data;

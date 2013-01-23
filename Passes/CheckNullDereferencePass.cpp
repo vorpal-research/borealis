@@ -13,11 +13,13 @@
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
-#include "Logging/logger.hpp"
+#include "Passes/DefaultPredicateAnalysis.h"
 #include "Query/AndQuery.h"
 #include "Query/EqualityQuery.h"
 #include "Query/NullPtrQuery.h"
 #include "Solver/Z3Solver.h"
+
+#include "Logging/logger.hpp"
 
 namespace borealis {
 
@@ -153,8 +155,8 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const
 
     Info.setPreservesAll();
     Info.addRequiredTransitive<DSAA>();
+    Info.addRequiredTransitive<DefaultPredicateAnalysis::PSA>();
     Info.addRequiredTransitive<DetectNullPass>();
-    Info.addRequiredTransitive<PredicateStateAnalysis>();
     Info.addRequiredTransitive<SlotTrackerPass>();
     Info.addRequiredTransitive<SourceLocationTracker>();
 }
@@ -164,7 +166,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     AA = &getAnalysis<DSAA>();
     DNP = &getAnalysis<DetectNullPass>();
-    PSA = &getAnalysis<PredicateStateAnalysis>();
+    PSA = &getAnalysis<DefaultPredicateAnalysis::PSA>();
     slotTracker = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
     sourceLocationTracker = &getAnalysis<SourceLocationTracker>();
 

@@ -12,13 +12,9 @@
 
 namespace borealis {
 
-class PredicateFactory;
-
 class AllocaPredicate: public Predicate {
 
 public:
-
-    virtual Predicate::Key getKey() const;
 
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
 
@@ -33,6 +29,7 @@ public:
     template<class SubClass>
     const AllocaPredicate* accept(Transformer<SubClass>* t) const {
         return new AllocaPredicate(
+                this->type,
                 t->transform(lhv),
                 t->transform(numElements));
     }
@@ -48,13 +45,15 @@ private:
     const Term::Ptr numElements;
 
     AllocaPredicate(
+            PredicateType type,
             Term::Ptr lhv,
             Term::Ptr numElements);
 
     AllocaPredicate(
             Term::Ptr lhv,
             Term::Ptr numElements,
-            SlotTracker* st);
+            SlotTracker* st,
+            PredicateType type = PredicateType::STATE);
 
 };
 

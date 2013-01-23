@@ -2,7 +2,6 @@
 #define HANDLE_PREDICATE(NAME, CLASS)
 #endif
 
-HANDLE_PREDICATE(Boolean, BooleanPredicate)
 HANDLE_PREDICATE(Equality, EqualityPredicate)
 HANDLE_PREDICATE(GEP, GEPPredicate)
 HANDLE_PREDICATE(ICmp, ICmpPredicate)
@@ -11,6 +10,7 @@ HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
 HANDLE_PREDICATE(Arith, ArithPredicate)
+HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE
