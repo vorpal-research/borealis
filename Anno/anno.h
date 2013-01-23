@@ -84,6 +84,9 @@ class empty_visitor: public productionVisitor {
 	virtual void onUnary(un_opcode, const std::shared_ptr<production>& op0){
 		(*op0).accept(*this);
 	}
+
+public:
+	virtual ~empty_visitor(){};
 };
 
 class collector{

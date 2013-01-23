@@ -17,10 +17,14 @@
 
 #include "Actions/comments.h"
 #include "Anno/anno.h"
-#include "DataProvider.hpp"
 #include "Logging/logger.hpp"
-#include "NameTracker.h"
-#include "SourceLocationTracker.h"
+#include "Passes/DataProvider.hpp"
+#include "Passes/NameTracker.h"
+#include "Passes/SourceLocationTracker.h"
+#include "Passes/MetaInfoTrackerPass.h"
+#include "Passes/SlotTrackerPass.h"
+
+#include "Annotation/Annotation.h"
 
 namespace borealis {
 
@@ -31,20 +35,23 @@ class AnnotatorPass:
 public:
 
     static char ID;
-    static constexpr decltype("annotator") loggerDomain() { return "annotator"; }
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("annotator")
+#include "Util/unmacros.h"
 
     AnnotatorPass(): llvm::ModulePass(ID) {};
 
     typedef DataProvider<borealis::comments::GatherCommentsAction> comments;
-    typedef SourceLocationTracker locs;
-    typedef NameTracker names;
-    typedef std::unordered_multimap<llvm::Value*, borealis::anno::command> annotations_t;
-
-private:
-
-    annotations_t annotations;
+    typedef MetaInfoTrackerPass meta;
+    typedef SlotTrackerPass slots;
 
 public:
+    typedef std::vector< Annotation::Ptr > annotation_container;
+private:
+    annotation_container annotations;
+public:
+
+    const annotation_container& getAnnotations() { return annotations; }
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
     virtual bool runOnModule(llvm::Module&);

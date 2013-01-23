@@ -91,6 +91,20 @@ std::string conditionString(const int cond) {
 	return analyzeCondition(cond).first;
 }
 
+std::string conditionString(ConditionType cond) {
+    switch(cond) {
+    case ConditionType::EQ: return "==";
+    case ConditionType::NEQ: return "!=";
+    case ConditionType::GT: return ">";
+    case ConditionType::GTE: return ">=";
+    case ConditionType::LT: return "<";
+    case ConditionType::LTE: return "<=";
+    case ConditionType::TRUE: return "true";
+    case ConditionType::FALSE: return "false";
+    default: return "???";
+    }
+}
+
 ConditionType conditionType(const int cond) {
 	return analyzeCondition(cond).second;
 }
@@ -169,6 +183,10 @@ std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
     return std::list<Loop*>(loops.begin(), loops.end());
 }
 
+Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
+    return LI->getLoopFor(inst->getParent());
+}
+
 std::string arithString(ArithType opCode) {
     switch (opCode) {
     case ArithType::ADD: return "+";
@@ -176,6 +194,22 @@ std::string arithString(ArithType opCode) {
     case ArithType::MUL: return "*";
     case ArithType::DIV: return "/";
     case ArithType::REM: return "%";
+    case ArithType::BAND: return "&&";
+    case ArithType::BOR: return "||";
+    case ArithType::LAND: return "&";
+    case ArithType::LOR: return "|";
+    case ArithType::XOR: return "^";
+    case ArithType::LSH: return "<<";
+    case ArithType::RSH: return ">>";
+    default: BYE_BYE(std::string, "Unreachable!");
+    }
+}
+
+std::string unaryArithString(UnaryArithType opCode) {
+    switch (opCode) {
+    case UnaryArithType::NOT: return "!";
+    case UnaryArithType::BNOT: return "~";
+    case UnaryArithType::NEG: return "-";
     default: BYE_BYE(std::string, "Unreachable!");
     }
 }

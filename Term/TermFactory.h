@@ -18,9 +18,12 @@
 #include "Term/Term.h"
 #include "Term/ValueTerm.h"
 #include "Term/BinaryTerm.h"
+#include "Term/UnaryTerm.h"
+#include "Term/CmpTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
 #include "Term/OpaqueIntConstantTerm.h"
+#include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueVarTerm.h"
 
 #include "Util/slottracker.h"
@@ -52,12 +55,22 @@ public:
                 isa<ConstantInt>(v) ||
                 isa<ConstantFP>(v))
             return getConstTerm(cast<Constant>(v));
+        else if(auto* arg = dyn_cast<Argument>(v))
+            return getArgumentTerm(arg);
         else
             return Term::Ptr(new ValueTerm(v, slotTracker));
     }
 
     Term::Ptr getBinaryTerm(llvm::ArithType opc, Term::Ptr lhv, Term::Ptr rhv) {
         return Term::Ptr(new BinaryTerm(opc, lhv, rhv));
+    }
+
+    Term::Ptr getUnaryTerm(llvm::UnaryArithType opc, Term::Ptr rhv) {
+        return Term::Ptr(new UnaryTerm(opc, rhv));
+    }
+
+    Term::Ptr getCmpTerm(llvm::ConditionType opc, Term::Ptr lhv, Term::Ptr rhv) {
+        return Term::Ptr(new CmpTerm(opc, lhv, rhv));
     }
 
     Term::Ptr getOpaqueVarTerm(const std::string& name) {
@@ -74,6 +87,10 @@ public:
 
     Term::Ptr getOpaqueConstantTerm(double v) {
         return Term::Ptr(new OpaqueFloatingConstantTerm(v));
+    }
+
+    Term::Ptr getOpaqueConstantTerm(bool v) {
+        return Term::Ptr(new OpaqueBoolConstantTerm(v));
     }
 
 

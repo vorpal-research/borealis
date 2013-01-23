@@ -13,6 +13,9 @@
 #include "Util/util.h"
 #include "Util/macros.h"
 
+#include "Predicate/PredicateFactory.h"
+#include "Term/TermFactory.h"
+
 namespace borealis {
 
 #define HANDLE_PREDICATE(NAME, CLASS) class CLASS;

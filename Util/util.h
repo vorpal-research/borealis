@@ -42,6 +42,7 @@ enum class ConditionType {
 	UNKNOWN
 };
 std::string conditionString(const int cond);
+std::string conditionString(ConditionType cond);
 ConditionType conditionType(const int cond);
 
 enum class TypeInfo {
@@ -68,16 +69,32 @@ llvm::Constant* getBoolConstant(bool b);
 llvm::Constant* getIntConstant(uint64_t i);
 
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
+Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
 
 enum class ArithType {
     ADD,
     SUB,
     MUL,
     DIV,
-    REM
+    REM,
+    LAND,
+    LOR,
+    BAND,
+    BOR,
+    XOR,
+    LSH,
+    RSH
 };
 
 std::string arithString(ArithType opCode);
+
+enum class UnaryArithType {
+    NEG,
+    NOT,
+    BNOT,
+};
+
+std::string unaryArithString(UnaryArithType opCode);
 
 } // namespace llvm
 

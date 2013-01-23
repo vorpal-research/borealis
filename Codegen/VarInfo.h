@@ -19,6 +19,22 @@
 
 namespace borealis {
 
+enum class DiscoveryDirection {
+    Next,
+    Previous
+};
+
+enum class DiscoveryPolicy {
+    NextVal,
+    PreviousVal,
+    NextFunction,
+    EnclosingFunction,
+    PreviousFunction,
+    NextNonFunction,
+    PreviousNonFunction,
+    Loop
+};
+
 struct VarInfo {
     borealis::util::option<std::string> originalName;
     borealis::util::option<borealis::Locus> originalLocus;

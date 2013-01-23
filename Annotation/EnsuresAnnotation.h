@@ -1,0 +1,39 @@
+/*
+ * RequiresAnnotation.h
+ *
+ *  Created on: Jan 22, 2013
+ *      Author: belyaev
+ */
+
+#ifndef ENSURESANNOTATION_H_
+#define ENSURESANNOTATION_H_
+
+#include "LogicAnnotation.h"
+#include "AnnotationNames.hpp"
+
+namespace borealis {
+
+class EnsuresAnnotation: public LogicAnnotation {
+    typedef EnsuresAnnotation self;
+public:
+    EnsuresAnnotation(const Locus& locus, Term::Ptr term):
+        LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
+    virtual ~EnsuresAnnotation(){}
+
+    static bool classof(const Annotation* a) {
+        if(auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
+            return la->getTypeId() == type_id<self>();
+        } else return false;
+    }
+
+    static bool classof(const self* /* p */) {
+        return true;
+    }
+
+    static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
+        return Annotation::Ptr(new self(locus, terms.front()));
+    }
+};
+
+} /* namespace borealis */
+#endif /* ENSURESANNOTATION_H_ */

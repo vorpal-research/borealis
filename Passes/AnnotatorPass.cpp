@@ -7,29 +7,31 @@
 
 #include "AnnotatorPass.h"
 
+#include "Term/Term.h"
+#include "Term/TermFactory.h"
+
+#include "Annotation/AnnotationCast.h"
+
 namespace borealis {
+
 
 void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     Info.setPreservesAll();
     Info.addRequiredTransitive< comments >();
-    Info.addRequiredTransitive< names >();
-    Info.addRequiredTransitive< locs >();
 }
 
 bool AnnotatorPass::runOnModule(llvm::Module&) {
     using borealis::util::view;
 
     auto& commentsPass = getAnalysis< comments >();
-    auto& locPass = getAnalysis< locs >();
+
+    auto tf = TermFactory::get(nullptr);
 
     for (const auto & Comment : commentsPass.provide().getComments()) {
         const auto & loc = Comment.first;
         const auto & cmd = Comment.second;
 
-        auto values = locPass.getRangeFor(loc);
-        for (auto& it : view(values)) {
-            annotations.insert(std::make_pair(it.second, cmd));
-        }
+        annotations.push_back(fromParseResult(loc, cmd, tf.get()));
     }
 
     return false;
@@ -40,8 +42,7 @@ void AnnotatorPass::print(llvm::raw_ostream& O, const llvm::Module*) const {
     using borealis::util::toString;
 
     for(const auto& An : annotations) {
-        O << *An.first << endl;
-        O << toString(An.second) << endl;
+        O << *An << endl;
     }
 }
 

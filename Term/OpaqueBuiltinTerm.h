@@ -25,10 +25,11 @@ class OpaqueBuiltinTerm: public borealis::Term {
             type_id(*this)
         ),
         vname(vname){};
+
 public:
     OpaqueBuiltinTerm(const OpaqueBuiltinTerm&) = default;
 
-    const std::string& getName() { return vname; }
+    const std::string& getName() const { return vname; }
 
     friend class TermFactory;
 

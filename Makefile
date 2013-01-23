@@ -58,6 +58,7 @@ CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
 ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Actions \
 	$(PWD)/Anno \
+	$(PWD)/Annotation \
 	$(PWD)/Codegen \
 	$(PWD)/Config \
 	$(PWD)/Logging \

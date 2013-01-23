@@ -22,6 +22,7 @@ MetaInfoTrackerPass::~MetaInfoTrackerPass() {}
 
 void MetaInfoTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
     Info.addRequired<sm_t>();
+    Info.addRequired<loops>();
 
     Info.setPreservesAll();
 }
@@ -126,7 +127,19 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                locals[&F].put(val, mkVI(sm, var, decl));
+                auto vi = mkVI(sm, var, decl);
+
+                // debug declare has additional location data attached through dbg metadata
+                if(auto* nodeloc = inst->getMetadata("dbg")) {
+                    llvm::DILocation dloc(nodeloc);
+
+                    for(auto& locus: vi.originalLocus) {
+                        locus.loc.line = dloc.getLineNumber();
+                        locus.loc.col = dloc.getColumnNumber();
+                    }
+                }
+
+                locals[&F].put(val, vi);
             } else if(DbgValueInst* inst = dyn_cast_or_null<DbgValueInst>(&I)) {
                 auto* val = inst->getValue();
                 DIVariable var (inst->getVariable());
@@ -140,7 +153,19 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                locals[&F].put(val, mkVI(sm, var, decl));
+                auto vi = mkVI(sm, var, decl);
+
+                // debug value has additional location data attached through dbg metadata
+                if(auto* nodeloc = inst->getMetadata("dbg")) {
+                    llvm::DILocation dloc(nodeloc);
+
+                    for(auto& locus: vi.originalLocus) {
+                        locus.loc.line = dloc.getLineNumber();
+                        locus.loc.col = dloc.getColumnNumber();
+                    }
+                }
+
+                locals[&F].put(val, vi);
             }
         }
     }

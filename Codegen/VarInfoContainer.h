@@ -81,11 +81,27 @@ public:
         return bwd_names.equal_range(str);
     }
 
-    loc_value_range byLoc(const Locus& loc) const {
-        auto start = bwd_locs.upper_bound(loc);
-        auto end = start;
-        while (end != bwd_locs.end() && end->first == start->first) ++end;
-        return std::make_pair(start, end);
+    loc_value_iterator byLocIterFwd(const Locus& loc){
+        return bwd_locs.lower_bound(loc);
+    }
+
+    loc_value_iterator byLocIterBwd(const Locus& loc){
+        return --bwd_locs.lower_bound(loc);
+    }
+
+    loc_value_range byLoc(const Locus& loc, DiscoveryDirection dp = DiscoveryDirection::Next) const {
+        if(dp == DiscoveryDirection::Next) {
+            auto start = bwd_locs.lower_bound(loc);
+            auto end = start;
+            while (end != bwd_locs.end() && end->first == start->first) ++end;
+            return std::make_pair(start, end);
+        } else { // DiscoveryDirection::Previous
+            auto end = bwd_locs.lower_bound(loc);
+            --end;
+            auto start = end;
+            while(start != bwd_locs.begin() && start->first == end->first) --start;
+            return std::make_pair(start, end);
+        }
     }
 
     llvm::Value* byClang(clang::Decl* dcl) const {

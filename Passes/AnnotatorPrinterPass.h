@@ -18,7 +18,9 @@ class AnnotatorPrinterPass:
         public borealis::logging::ClassLevelLogging<AnnotatorPrinterPass>{
 public:
     static char ID;
-    static constexpr decltype("annotator") loggerDomain() { return "annotator"; }
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("annotator")
+#include "Util/unmacros.h"
 
     AnnotatorPrinterPass();
     virtual ~AnnotatorPrinterPass();

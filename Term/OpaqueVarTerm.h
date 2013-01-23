@@ -9,6 +9,7 @@
 #define OPAQUEVARTERM_H_
 
 #include "Term.h"
+#include "NameContext.h"
 
 namespace borealis {
 
@@ -17,7 +18,7 @@ class OpaqueVarTerm: public borealis::Term {
 
     std::string vname;
 
-    OpaqueVarTerm(const std::string vname):
+    OpaqueVarTerm(const std::string& vname):
         Term(
              std::hash<std::string>()(vname),
              llvm::ValueType::UNKNOWN,
@@ -25,10 +26,12 @@ class OpaqueVarTerm: public borealis::Term {
              type_id(*this)
         ),
         vname(vname){};
+
+
 public:
     OpaqueVarTerm(const OpaqueVarTerm&) = default;
 
-    const std::string& getName() { return vname; }
+    const std::string& getName() const { return vname; }
 
     friend class TermFactory;
 

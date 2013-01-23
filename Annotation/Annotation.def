@@ -1,0 +1,27 @@
+// lets put in some macro magic!!!
+
+#if !defined(HANDLE_ANNOTATION) && !defined(HANDLE_ANNOTATION_WITH_BASE)
+#define HANDLE_ANNOTATION(CMD, CLASS)
+#define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, CLASS)
+#elif !defined(HANDLE_ANNOTATION) && defined(HANDLE_ANNOTATION_WITH_BASE)
+#define HANDLE_ANNOTATION(CMD, CLASS) HANDLE_ANNOTATION_WITH_BASE(CMD, Annotation, CLASS)
+#elif defined(HANDLE_ANNOTATION) && !defined(HANDLE_ANNOTATION_WITH_BASE)
+#define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, CLASS) HANDLE_ANNOTATION(CMD, CLASS)
+#endif
+
+
+HANDLE_ANNOTATION_WITH_BASE("requires", LogicAnnotation, RequiresAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("ensures", LogicAnnotation, EnsuresAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("assigns", LogicAnnotation, AssignsAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("assert", LogicAnnotation, AssertAnnotation)
+HANDLE_ANNOTATION("skip", SkipAnnotation)
+HANDLE_ANNOTATION("ignore", IgnoreAnnotation)
+HANDLE_ANNOTATION("stack-depth", StackDepthAnnotation)
+HANDLE_ANNOTATION("unroll", UnrollAnnotation)
+HANDLE_ANNOTATION("mask", MaskAnnotation)
+HANDLE_ANNOTATION("endmask", EndMaskAnnotation)
+
+#undef HANDLE_ANNOTATION
+#undef HANDLE_ANNOTATION_WITH_BASE
+
+

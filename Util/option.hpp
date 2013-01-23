@@ -82,12 +82,20 @@ public:
         else return *holder == that;
     }
 
+    bool operator==(const nothing_t&) const {
+        return empty();
+    }
+
     bool operator!=(const self& that) const {
         return !operator==(that);
     }
 
     bool operator!=(const T& that) const {
         return !operator==(that);
+    }
+
+    bool operator!=(const nothing_t&) const {
+        return !empty();
     }
 
     const T* get() const {

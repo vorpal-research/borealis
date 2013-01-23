@@ -1,23 +1,23 @@
 /*
- * OpaqueConstantTerm.h
+ * OpaqueBoolConstantTerm.h
  *
- *  Created on: Jan 17, 2013
+ *  Created on: Jan 21, 2013
  *      Author: belyaev
  */
 
-#ifndef OPAQUEINTCONSTANTTERM_H_
-#define OPAQUEINTCONSTANTTERM_H_
+#ifndef OPAQUEBOOLCONSTANTTERM_H_
+#define OPAQUEBOOLCONSTANTTERM_H_
 
 #include "Term.h"
 
 namespace borealis {
 
-class OpaqueIntConstantTerm: public borealis::Term {
-    typedef OpaqueIntConstantTerm self;
+class OpaqueBoolConstantTerm: public borealis::Term {
+    typedef OpaqueBoolConstantTerm self;
 
-    long long value;
+    bool value;
 
-    OpaqueIntConstantTerm(long long value):
+    OpaqueBoolConstantTerm(bool value):
         Term(
             static_cast<id_t>(value),
             llvm::ValueType::UNKNOWN,
@@ -26,9 +26,9 @@ class OpaqueIntConstantTerm: public borealis::Term {
         ),
         value(value) {};
 public:
-    long long getValue() const { return value; }
+    long long getValue() { return value; }
 
-    OpaqueIntConstantTerm(const self&) = default;
+    OpaqueBoolConstantTerm(const self&) = default;
 
     friend class TermFactory;
 
@@ -56,4 +56,4 @@ public:
 };
 
 } /* namespace borealis */
-#endif /* OPAQUEINTCONSTANTTERM_H_ */
+#endif /* OPAQUEBOOLCONSTANTTERM_H_ */
