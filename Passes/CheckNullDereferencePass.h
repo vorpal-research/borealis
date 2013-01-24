@@ -15,9 +15,9 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/DefectManager.h"
 #include "Passes/DetectNullPass.h"
 #include "Passes/SlotTrackerPass.h"
-#include "Passes/SourceLocationTracker.h"
 
 #include "Logging/logger.hpp"
 
@@ -46,10 +46,10 @@ public:
 private:
 
 	llvm::AliasAnalysis* AA;
-	DetectNullPass* DNP;
 	DefaultPredicateAnalysis::PSA* PSA;
+    DefectManager* defectManager;
+    DetectNullPass* DNP;
 	SlotTracker* slotTracker;
-	SourceLocationTracker* sourceLocationTracker;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;
