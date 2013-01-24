@@ -127,6 +127,7 @@ LIBS := \
 	$(CLANGLIBS) \
 	-lz3 \
 	-ldl \
+	-lrt \
 	-lcfgparser \
 	-llog4cpp
 
