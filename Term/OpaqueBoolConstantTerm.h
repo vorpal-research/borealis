@@ -26,7 +26,7 @@ class OpaqueBoolConstantTerm: public borealis::Term {
         ),
         value(value) {};
 public:
-    long long getValue() { return value; }
+    bool getValue() const { return value; }
 
     OpaqueBoolConstantTerm(const self&) = default;
 

@@ -13,6 +13,9 @@
 namespace borealis {
 namespace util {
 
+// DO NOT DEFINE! decltype resolving only
+template<class T> T some();
+
 template<class T, class ...List>
 struct get_index_of_T_in;
 
