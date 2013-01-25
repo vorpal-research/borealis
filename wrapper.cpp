@@ -65,6 +65,7 @@
 #include "Config/config.h"
 #include "Logging/logger.hpp"
 #include "Passes/DataProvider.hpp"
+#include "Passes/PrinterPasses.h"
 #include "Util/util.h"
 
 int main(int argc, const char** argv)
@@ -243,7 +244,8 @@ int main(int argc, const char** argv)
 
     if (!passes2run.empty()) {
         for (StringRef pass : passes2run) {
-            auto* passInfo = reg.getPassInfo(pass);
+            auto* passInfo = pass.endswith("-printer") ?
+                    reg.getPassInfo(pass.drop_back(8)) : reg.getPassInfo(pass);
 
             if(passInfo == nullptr) {
                 errs () << "Pass " << pass << " cannot be found" << endl;
@@ -255,6 +257,9 @@ int main(int argc, const char** argv)
             if(passInfo->getNormalCtor()) {
                 auto thePass = passInfo->getNormalCtor()();
                 pm.add(thePass);
+                if(pass.endswith("-printer")) {
+                    pm.add(borealis::createPrinterFor(passInfo, thePass));
+                }
             } else {
                 errs() << "Could not create pass " << passInfo->getPassName() << endl;
             }

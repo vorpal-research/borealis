@@ -36,6 +36,6 @@ struct PrintModulePass: public llvm::ModulePass,
 
 char PrintModulePass::ID;
 static llvm::RegisterPass<PrintModulePass>
-X("module-printer", "Pass that prints a module");
+X("module-print", "Pass that prints a module");
 
 } // namespace borealis
