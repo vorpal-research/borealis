@@ -22,8 +22,16 @@ void DefectManager::addDefect(DefectType type, llvm::Instruction* where) {
     data.insert({type, locs->getLocFor(where)});
 }
 
+void DefectManager::print(llvm::raw_ostream& s, const llvm::Module*) const {
+    for (auto& defect : data) {
+        s << DefectTypeNames.at(defect.first) << " at " << defect.second << util::streams::endl;
+    }
+}
+
 char DefectManager::ID;
 static llvm::RegisterPass<DefectManager>
 X("defect-manager", "Pass that collects and filters detected defects");
+
+DefectManager::DefectData DefectManager::data;
 
 } /* namespace borealis */
