@@ -36,7 +36,9 @@ class CheckNullDereferencePass:
 public:
 
 	static char ID;
-	static constexpr decltype("check-null") loggerDomain() { return "check-null"; }
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("null-deref-check")
+#include "Util/unmacros.h"
 
 	CheckNullDereferencePass();
 	virtual bool runOnFunction(llvm::Function& F);
