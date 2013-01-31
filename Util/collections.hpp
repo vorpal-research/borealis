@@ -11,9 +11,9 @@
 #include <algorithm>
 #include <list>
 #include <map>
-#include <unordered_map>
 #include <set>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 namespace borealis {
@@ -29,10 +29,8 @@ class CollectionView {
     ContainerIter begin_;
     ContainerIter end_;
 public:
-    CollectionView(ContainerIter begin, ContainerIter end): begin_(begin), end_(end) {
-    }
-    CollectionView(std::pair<ContainerIter, ContainerIter> iters): begin_(iters.first), end_(iters.second) {
-    }
+    CollectionView(ContainerIter begin, ContainerIter end) : begin_(begin), end_(end) {}
+    CollectionView(std::pair<ContainerIter, ContainerIter> iters) : begin_(iters.first), end_(iters.second) {}
 
     ContainerIter begin() const { return begin_; }
     ContainerIter end() const { return end_; }
@@ -86,16 +84,15 @@ std::list<T> filter_not(const std::list<T>& lst, const Pred pred) {
 
 template<class K, class _>
 bool containsKey(const std::map<K, _>& map, const K& k) {
-    if (map.find(k) != map.end()) return true;
-    else return false;
+    return map.find(k) != map.end();
 }
 
 template<class K, class V>
 void removeFromMultimap(std::multimap<K,V>& map, const K& k, const V& v) {
     auto range = map.equal_range(k);
 
-    for(auto it = range.first; it != range.second; ++it) {
-        if(it->second == v) {
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == v) {
             map.erase(it);
             break;
         }
@@ -106,8 +103,8 @@ template<class K, class V>
 void removeFromMultimap(std::unordered_multimap<K,V>& map, const K& k, const V& v) {
     auto range = map.equal_range(k);
 
-    for(auto it = range.first; it != range.second; ++it) {
-        if(it->second == v) {
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == v) {
             map.erase(it);
             break;
         }
@@ -116,8 +113,7 @@ void removeFromMultimap(std::unordered_multimap<K,V>& map, const K& k, const V& 
 
 template<class Container, class T>
 bool contains(const Container& con, const T& t) {
-    if (std::find(con.begin(), con.end(), t) != con.end()) return true;
-    else return false;
+    return std::find(con.begin(), con.end(), t) != con.end();
 }
 
 namespace impl_ {
@@ -185,7 +181,7 @@ template<class...types>
 struct hash<std::tuple<types...>> {
     size_t operator()(const std::tuple<types...>& t) const {
         const size_t begin = std::tuple_size<std::tuple<types...>>::value-1;
-        return borealis::util::impl_::hash_impl<begin, types...>()(1, t); // 1 should be some larger value
+        return borealis::util::impl_::hash_impl<begin, types...>()(1, t); // FIXME: 1 should be some larger value
     }
 };
 
@@ -193,7 +189,7 @@ template<class T, class U>
 struct hash<std::pair<T, U>> {
     size_t operator()(const std::pair<T, U >& t) const {
         const size_t begin = 1;
-        return borealis::util::impl_::hash_impl<begin, T, U>()(1, t); // 1 should be some larger value
+        return borealis::util::impl_::hash_impl<begin, T, U>()(1, t); // FIXME: 1 should be some larger value
     }
 };
 

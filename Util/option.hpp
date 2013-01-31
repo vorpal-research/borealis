@@ -42,7 +42,7 @@ public:
 
     bool empty() const { return holder == nullptr; }
 
-    void swap(self& that ) {
+    void swap(self& that) {
         holder.swap(that.holder);
     }
 
@@ -70,9 +70,7 @@ public:
     }
 
     bool operator==(const self& that) const {
-        if( empty() ) {
-            return that.empty() ? true : false;
-        }
+        if( empty() ) return that.empty() ? true : false;
         else if( that.empty() ) return false;
         else return *holder == *(that.holder);
     }
@@ -116,11 +114,11 @@ public:
         return ptr ? *ptr : def;
     }
 
-    T& getUnsafe() {
+    const T& getUnsafe() const {
         return *holder.get();
     }
 
-    const T& getUnsafe() const {
+    T& getUnsafe() {
         return *holder.get();
     }
 
@@ -204,7 +202,7 @@ public:
     };
 
     const_option_iterator begin() const {
-        if(this->empty()) return const_option_iterator(nullptr);
+        if (this->empty()) return const_option_iterator(nullptr);
         else return const_option_iterator(this);
     }
 
@@ -213,7 +211,7 @@ public:
     }
 
     option_iterator begin() {
-        if(this->empty()) return option_iterator(nullptr);
+        if (this->empty()) return option_iterator(nullptr);
         else return option_iterator(this);
     }
 
@@ -228,7 +226,7 @@ option<T> just(const T& val) {
 }
 
 template<class T>
-option<T> just(T && val) {
+option<T> just(T&& val) {
     return option<T>(val);
 }
 
