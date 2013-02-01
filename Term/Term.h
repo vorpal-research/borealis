@@ -81,4 +81,19 @@ private:
 
 } /* namespace borealis */
 
+namespace std {
+template<>
+struct hash<borealis::Term::Ptr> {
+    size_t operator()(const borealis::Term::Ptr& t) const {
+        return t->hashCode();
+    }
+};
+template<>
+struct hash<const borealis::Term::Ptr> {
+    size_t operator()(const borealis::Term::Ptr& t) const {
+        return t->hashCode();
+    }
+};
+} // namespace std
+
 #endif /* TERM_H_ */
