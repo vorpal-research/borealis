@@ -61,7 +61,7 @@ public:
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
-            int cond) {
+            llvm::ConditionType cond) {
         return Predicate::Ptr(
                 new ICmpPredicate(lhv, op1, op2, cond, slotTracker));
     }

@@ -47,7 +47,7 @@ private:
     const Term::Ptr op1;
     const Term::Ptr op2;
 
-    const int cond;
+    const llvm::ConditionType cond;
     const std::string _cond;
 
     ICmpPredicate(
@@ -55,12 +55,12 @@ private:
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
-            int cond);
+            llvm::ConditionType cond);
     ICmpPredicate(
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
-            int cond,
+            llvm::ConditionType cond,
             SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 

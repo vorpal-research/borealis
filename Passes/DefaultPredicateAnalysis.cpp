@@ -60,7 +60,7 @@ public:
         Value* lhv = &I;
         Value* op1 = I.getOperand(0);
         Value* op2 = I.getOperand(1);
-        int pred = I.getPredicate();
+        llvm::ConditionType pred = conditionType(I.getPredicate());
 
         pass->PM[&I] = pass->PF->getICmpPredicate(
                 pass->TF->getValueTerm(lhv),
