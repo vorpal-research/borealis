@@ -9,7 +9,6 @@
 
 namespace borealis {
 
-
-BinaryTerm::~BinaryTerm() {}
+BinaryTerm::~BinaryTerm() {};
 
 } /* namespace borealis */

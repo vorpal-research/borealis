@@ -10,16 +10,16 @@
 
 #include <llvm/Argument.h>
 
-#include "Term.h"
+#include "Term/Term.h"
 #include "Util/slottracker.h"
 
 namespace borealis {
 
-class TermFactory;
-
 class ArgumentTerm: public borealis::Term {
 
 public:
+
+    friend class TermFactory;
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ArgumentTerm>();
@@ -33,8 +33,6 @@ public:
         return a;
     }
 
-    friend class TermFactory;
-
     ArgumentTerm(const ArgumentTerm&) = default;
 
 #include "Util/macros.h"
@@ -45,9 +43,8 @@ public:
 private:
 
     ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
-        Term((id_t)a, llvm::valueType(*a), st->getLocalName(a), type_id(*this)),
-        a(a)
-    {}
+        Term(std::hash<llvm::Argument*>()(a), llvm::valueType(*a), st->getLocalName(a), type_id(*this)),
+        a(a) {}
 
     llvm::Argument* a;
 

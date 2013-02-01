@@ -8,8 +8,8 @@
 #ifndef OPAQUEVARTERM_H_
 #define OPAQUEVARTERM_H_
 
-#include "Term.h"
-#include "NameContext.h"
+#include "Term/NameContext.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
@@ -24,22 +24,17 @@ class OpaqueVarTerm: public borealis::Term {
              llvm::ValueType::UNKNOWN,
              vname,
              type_id(*this)
-        ),
-        vname(vname){};
-
+        ), vname(vname) {};
 
 public:
-    OpaqueVarTerm(const OpaqueVarTerm&) = default;
 
     const std::string& getName() const { return vname; }
 
-    friend class TermFactory;
+    OpaqueVarTerm(const OpaqueVarTerm&) = default;
 
 #include "Util/macros.h"
-
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
 #include "Util/unmacros.h"
 
     static bool classof(const Term* t) {
@@ -51,12 +46,15 @@ public:
     }
 
     virtual bool equals(const Term* other) const {
-        if(const self* that = llvm::dyn_cast<self>(other)) {
+        if (const self* that = llvm::dyn_cast<self>(other)) {
             return  Term::equals(other) &&
                     that->vname == vname;
         } else return false;
     }
+
+    friend class TermFactory;
 };
 
 } /* namespace borealis */
+
 #endif /* OPAQUEVARTERM_H_ */

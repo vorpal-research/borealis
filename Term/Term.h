@@ -19,11 +19,6 @@ namespace borealis {
 template<class SubClass>
 class Transformer;
 
-
-// Forward declaration
-template<class SubClass>
-class Transformer;
-
 class Term {
 
 public:
@@ -34,11 +29,10 @@ public:
 protected:
 
     Term(id_t id, llvm::ValueType type, const std::string& name, borealis::id_t term_type_id) :
-        id(id), type(type), name(name), term_type_id(term_type_id)
-    {}
-
+        id(id), type(type), name(name), term_type_id(term_type_id) {};
     Term(const Term&) = default;
-    virtual ~Term(){};
+    virtual ~Term() {};
+
 public:
 
     id_t getId() const {
@@ -51,6 +45,10 @@ public:
 
     const std::string& getName() const {
         return name;
+    }
+
+    borealis::id_t getTermTypeId() const {
+        return term_type_id;
     }
 
     virtual bool equals(const Term* other) const {
@@ -70,10 +68,6 @@ public:
 
     static bool classof(const Term* /* t */) {
         return true;
-    }
-
-    inline borealis::id_t getTermTypeId() const {
-        return term_type_id;
     }
 
 private:

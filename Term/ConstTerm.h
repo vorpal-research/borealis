@@ -8,7 +8,7 @@
 #ifndef CONSTTERM_H_
 #define CONSTTERM_H_
 
-#include "Term.h"
+#include "Term/Term.h"
 #include "Util/slottracker.h"
 
 namespace borealis {
@@ -16,6 +16,9 @@ namespace borealis {
 class ConstTerm: public borealis::Term {
 
 public:
+
+    friend class PredicateFactory;
+    friend class TermFactory;
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ConstTerm>();
@@ -29,24 +32,18 @@ public:
         return constant;
     }
 
-    friend class PredicateFactory;
-    friend class TermFactory;
-
     ConstTerm(const ConstTerm&) = default;
 
 #include "Util/macros.h"
-
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
 #include "Util/unmacros.h"
 
 private:
 
     ConstTerm(llvm::Constant* c, SlotTracker* st) :
-        Term((id_t)c, llvm::valueType(*c), st->getLocalName(c), type_id(*this)),
-        constant(c)
-    {}
+        Term(std::hash<llvm::Constant*>()(c), llvm::valueType(*c), st->getLocalName(c), type_id(*this)),
+        constant(c) {};
 
     llvm::Constant* constant;
 

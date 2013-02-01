@@ -8,11 +8,11 @@
 #ifndef UNARYTERM_H_
 #define UNARYTERM_H_
 
-#include "Term.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
-class UnaryTerm: public Term {
+class UnaryTerm: public borealis::Term {
     typedef UnaryTerm self;
 
     llvm::UnaryArithType opcode;
@@ -21,26 +21,26 @@ class UnaryTerm: public Term {
     UnaryTerm(llvm::UnaryArithType opcode, Term::Ptr rhv):
         Term(
                 rhv->getId(),
-                llvm::ValueType::INT_VAR, // FIXME
+                llvm::ValueType::INT_VAR, // FIXME: infer the correct type?
                 llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), rhv(rhv){};
 
 public:
+
     UnaryTerm(const UnaryTerm&) = default;
+    ~UnaryTerm();
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const self* {
         return new UnaryTerm(opcode, tr->transform(rhv));
     }
 
-    ~UnaryTerm();
-
     virtual bool equals(const Term* other) const {
-        if(const UnaryTerm* that = llvm::dyn_cast<UnaryTerm>(other)) {
+        if (const UnaryTerm* that = llvm::dyn_cast<UnaryTerm>(other)) {
             return  Term::equals(other) &&
                     that->opcode == opcode &&
-                    that->rhv == rhv;
+                    *that->rhv == *rhv;
         } else return false;
     }
 
@@ -58,4 +58,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* UNARYTERM_H_ */

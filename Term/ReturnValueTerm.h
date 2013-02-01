@@ -10,16 +10,16 @@
 
 #include <llvm/Function.h>
 
-#include "Term.h"
+#include "Term/Term.h"
 #include "Util/slottracker.h"
 
 namespace borealis {
 
-class TermFactory;
-
 class ReturnValueTerm: public borealis::Term {
 
 public:
+
+    friend class TermFactory;
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ReturnValueTerm>();
@@ -33,28 +33,22 @@ public:
         return F;
     }
 
-    friend class TermFactory;
-
     ReturnValueTerm(const ReturnValueTerm&) = default;
 
 #include "Util/macros.h"
-
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
 #include "Util/unmacros.h"
 
 private:
 
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
         Term(
-                (id_t)F,
+                std::hash<llvm::Function*>()(F),
                 llvm::type2type(*F->getFunctionType()->getReturnType()),
                 "\\result",
                 type_id(*this)
-            ),
-        F(F)
-    {}
+        ), F(F) {}
 
     llvm::Function* F;
 
