@@ -36,7 +36,7 @@ public:
         new_shifts.reserve(shifts.size());
         std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
             [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
-                return { t->transform(e.first), t->transform(e.second) };
+                return std::make_pair(t->transform(e.first), t->transform(e.second));
             }
         );
 
