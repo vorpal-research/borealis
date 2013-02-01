@@ -16,12 +16,13 @@
 #include <list>
 #include <string>
 
-#include "util.hpp"
-#include "collections.hpp"
-#include "enums.hpp"
-#include "meta.hpp"
-#include "option.hpp"
-#include "streams.hpp"
+#include "Util/util.hpp"
+
+#include "Util/collections.hpp"
+#include "Util/enums.hpp"
+#include "Util/meta.hpp"
+#include "Util/option.hpp"
+#include "Util/streams.hpp"
 
 namespace llvm {
 
@@ -85,7 +86,6 @@ enum class ArithType {
     LSH,
     RSH
 };
-
 std::string arithString(ArithType opCode);
 
 enum class UnaryArithType {
@@ -93,7 +93,6 @@ enum class UnaryArithType {
     NOT,
     BNOT,
 };
-
 std::string unaryArithString(UnaryArithType opCode);
 
 } // namespace llvm
@@ -103,7 +102,7 @@ namespace util {
 
 std::string nospaces(const std::string& v);
 std::string nospaces(std::string&& v);
-bool endsWith (std::string const &fullString, std::string const &ending);
+bool endsWith(const std::string& fullString, const std::string& ending);
 
 namespace streams {
 

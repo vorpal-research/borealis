@@ -19,6 +19,8 @@
 #include <llvm/Type.h>
 #include <llvm/Value.h>
 
+#include <Util/collections.hpp>
+
 namespace borealis {
 namespace util {
 
@@ -28,7 +30,7 @@ struct is_using_llvm_output {
             std::is_base_of<clang::Decl, T>::value ||
             std::is_base_of<llvm::Value, T>::value ||
             std::is_base_of<llvm::Type, T>::value ||
-            std::is_base_of<llvm::StringRef, T> :: value ||
+            std::is_base_of<llvm::StringRef, T>::value ||
             std::is_base_of<llvm::Twine, T>::value ||
             std::is_base_of<llvm::Module, T>::value ||
             std::is_base_of<llvm::Pass, T>::value
@@ -162,6 +164,7 @@ std::ostream& output_using_llvm(std::ostream& ost, const T& val) {
 
 namespace std {
 
+namespace impl_ {
 // Custom output routines and such...
 const auto VECTOR_LEFT_BRACE = "[";
 const auto VECTOR_RIGHT_BRACE = "]";
@@ -171,30 +174,11 @@ const auto ELEMENT_DELIMITER = ", ";
 const auto TUPLE_LEFT_BRACE = "{";
 const auto TUPLE_RIGHT_BRACE = "}";
 const auto NULL_REPR = "<NULL>";
-
-template<typename T, typename Streamer>
-Streamer& operator <<(Streamer& s, const std::vector<T>& vec) {
-    typedef typename std::vector<T>::const_iterator ConstIter;
-
-    using namespace::std;
-
-    s << VECTOR_LEFT_BRACE;
-    if (!vec.empty()) {
-        ConstIter iter = vec.begin();
-        const T el = *iter++;
-        s << el;
-        for_each(iter, vec.end(), [&s](const T& e){
-            s << ELEMENT_DELIMITER << e;
-        });
-    }
-    s << VECTOR_RIGHT_BRACE;
-
-    return s;
-}
+} // namespace impl_
 
 template<typename T, typename U, typename Streamer>
 Streamer& operator <<(Streamer& s, const std::pair<T, U>& pp) {
-    using namespace::std;
+    using namespace std::impl_;
 
     s << TUPLE_LEFT_BRACE
       << pp.first
@@ -206,19 +190,41 @@ Streamer& operator <<(Streamer& s, const std::pair<T, U>& pp) {
 }
 
 template<typename T, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::vector<T>& vec) {
+    typedef typename std::vector<T>::const_iterator ConstIter;
+
+    using namespace std::impl_;
+    using borealis::util::view;
+
+    s << VECTOR_LEFT_BRACE;
+    if (!vec.empty()) {
+        ConstIter iter = vec.begin();
+        const T el = *iter++;
+        s << el;
+        for (auto& e : view(iter, vec.end())) {
+            s << ELEMENT_DELIMITER << e;
+        }
+    }
+    s << VECTOR_RIGHT_BRACE;
+
+    return s;
+}
+
+template<typename T, typename Streamer>
 Streamer& operator <<(Streamer& s, const std::set<T>& set) {
     typedef typename std::set<T>::const_iterator ConstIter;
 
-    using namespace::std;
+    using namespace std::impl_;
+    using borealis::util::view;
 
     s << SET_LEFT_BRACE;
     if (!set.empty()) {
         ConstIter iter = set.begin();
         const T el = *iter++;
         s << el;
-        for_each(iter, set.end(), [&s](const T& e){
+        for (auto& e : view(iter, set.end())) {
             s << ELEMENT_DELIMITER << e;
-        });
+        }
     }
     s << SET_RIGHT_BRACE;
 
@@ -229,17 +235,18 @@ template<typename T, typename Streamer>
 Streamer& operator <<(Streamer& s, const std::vector<T*>& vec) {
     typedef typename std::vector<T*>::const_iterator ConstIter;
 
-    using namespace::std;
+    using namespace std::impl_;
+    using borealis::util::view;
 
     s << VECTOR_LEFT_BRACE;
     if (!vec.empty()) {
         ConstIter iter = vec.begin();
         const T* el = *iter++;
         (el == NULL ? s << NULL_REPR : s << *el);
-        for_each(iter, vec.end(), [&s](const T* e){
+        for (auto& e : view(iter, vec.end())) {
             s << ELEMENT_DELIMITER;
             (e == NULL ? s << NULL_REPR : s << *e);
-        });
+        }
     }
     s << VECTOR_RIGHT_BRACE;
 
@@ -250,17 +257,18 @@ template<typename T, typename Streamer>
 Streamer& operator <<(Streamer& s, const std::set<T*>& set) {
     typedef typename std::set<T*>::const_iterator ConstIter;
 
-    using namespace::std;
+    using namespace std::impl_;
+    using borealis::util::view;
 
     s << SET_LEFT_BRACE;
     if (!set.empty()) {
         ConstIter iter = set.begin();
         const T* el = *iter++;
         (el == NULL ? s << NULL_REPR : s << *el);
-        for_each(iter, set.end(), [&s](const T* e){
+        for (auto& e : view(iter, set.end())) {
             s << ELEMENT_DELIMITER;
             (e == NULL ? s << NULL_REPR : s << *e);
-        });
+        }
     }
     s << SET_RIGHT_BRACE;
 
@@ -291,9 +299,15 @@ std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
 
 } // namespace llvm
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// clang
+//
+////////////////////////////////////////////////////////////////////////////////
+
 namespace clang {
 
-inline raw_ostream& operator<<(raw_ostream& ost, const Decl& decl) {
+inline raw_ostream& operator <<(raw_ostream& ost, const Decl& decl) {
     decl.print(ost, 0, true);
     return ost;
 }

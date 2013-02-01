@@ -13,8 +13,8 @@
 #include <cstddef>
 
 #include "Logging/logger.hpp"
-#include "streams.hpp"
-#include "meta.hpp"
+#include "Util/meta.hpp"
+#include "Util/streams.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -27,14 +27,14 @@ namespace util {
 
 template<typename RetTy = void>
 RetTy sayonara(std::string file, int line, std::string where, std::string reason) {
-    logging::errs() << file << ":" << toString(line) << logging::endl
-            << "\t" << where << logging::endl
-            << "\t" << reason << logging::endl;
+    using namespace borealis::logging;
 
+    errs() << file << ":" << toString(line) << endl
+            << "\t" << where << endl
+            << "\t" << reason << endl;
     llvm::llvm_shutdown();
     std::exit(EXIT_FAILURE);
 }
-
 
 // java-style reference
 template<class T>
@@ -43,11 +43,12 @@ class ref {
 
 public:
     ref(const ref& that) = default;
-    explicit ref(const T& v): ptr(&v){};
+    explicit ref(const T& v) : ptr(&v) {};
 
     const ref& operator=(const ref& that) = default;
     const ref& operator=(const T& v) {
-        ptr = &v; return *this;
+        ptr = &v;
+        return *this;
     }
 
     const T& get() const { return *ptr; }
@@ -63,14 +64,15 @@ class copyref {
     std::unique_ptr<T> inner;
 
 public:
-    copyref(const T& e) : inner(new T(e)) {};
     copyref(const copyref& ref) : inner(new T(*ref.inner)) {};
+    // XXX: make explicit?
+    copyref(const T& e) : inner(new T(e)) {};
 
     const copyref& operator=(const copyref& ref) {
         inner.reset(new T(*ref.inner));
         return *this;
     }
-    const copyref& operator=(T e) {
+    const copyref& operator=(const T& e) {
         inner.reset(new T(e));
         return *this;
     }
@@ -100,7 +102,6 @@ template<class T>
 T* heap_copy(const T* val) {
     return new T(*val);
 }
-
 
 } // naemspace util
 } // naemspace borealis
