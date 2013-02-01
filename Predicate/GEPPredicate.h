@@ -11,11 +11,11 @@
 #include <algorithm>
 #include <tuple>
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class GEPPredicate: public Predicate {
+class GEPPredicate: public borealis::Predicate {
 
 public:
 
@@ -32,12 +32,11 @@ public:
     template<class SubClass>
     const GEPPredicate* accept(Transformer<SubClass>* t) const {
 
-        std::vector< std::pair< Term::Ptr, Term::Ptr > > new_shifts(shifts.size());
+        std::vector< std::pair< Term::Ptr, Term::Ptr > > new_shifts;
+        new_shifts.reserve(shifts.size());
         std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
             [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
-                return std::make_pair(
-                        t->transform(e.first),
-                        t->transform(e.second));
+                return { t->transform(e.first), t->transform(e.second) };
             }
         );
 

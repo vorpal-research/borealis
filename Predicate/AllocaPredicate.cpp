@@ -5,9 +5,7 @@
  *      Author: belyaev
  */
 
-#include "AllocaPredicate.h"
-#include "Logging/tracer.hpp"
-
+#include "Predicate/AllocaPredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -59,10 +57,7 @@ bool AllocaPredicate::equals(const Predicate* other) const {
 }
 
 size_t AllocaPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + numElements->hashCode();
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, numElements);
 }
 
 } /* namespace borealis */

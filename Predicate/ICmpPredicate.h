@@ -8,13 +8,11 @@
 #ifndef ICMPPREDICATE_H_
 #define ICMPPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class PredicateFactory;
-
-class ICmpPredicate: public Predicate {
+class ICmpPredicate: public borealis::Predicate {
 
 public:
 

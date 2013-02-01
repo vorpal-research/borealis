@@ -5,8 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "ArithPredicate.h"
-
+#include "Predicate/ArithPredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -62,7 +61,7 @@ logic::Bool ArithPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     case llvm::ArithType::SUB: return l == o1 - o2;
     case llvm::ArithType::MUL: return l == o1 * o2;
     case llvm::ArithType::DIV: return l == o1 / o2;
-    // FIXME: add support for REM
+    // FIXME: add support for other ArithType
     default: BYE_BYE(logic::Bool, "Encountered unsupported arithmetic operation: " + _opCode);
     }
 }
@@ -81,12 +80,7 @@ bool ArithPredicate::equals(const Predicate* other) const {
 }
 
 size_t ArithPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + op1->hashCode();
-    hash = 17 * hash + op2->hashCode();
-    hash = 17 * hash + util::enums::asInteger(opCode);
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, op1, op2, opCode);
 }
 
 } /* namespace borealis */

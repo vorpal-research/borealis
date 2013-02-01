@@ -8,11 +8,11 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class StorePredicate: public Predicate {
+class StorePredicate: public borealis::Predicate {
 
 public:
 

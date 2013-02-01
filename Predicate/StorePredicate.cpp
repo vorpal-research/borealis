@@ -5,11 +5,8 @@
  *      Author: ice-phoenix
  */
 
-#include "StorePredicate.h"
-
+#include "Predicate/StorePredicate.h"
 #include "Term/ValueTerm.h"
-#include "Logging/logger.hpp"
-
 #include "Util/macros.h"
 
 namespace borealis {
@@ -63,10 +60,7 @@ bool StorePredicate::equals(const Predicate* other) const {
 }
 
 size_t StorePredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + rhv->hashCode();
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, rhv);
 }
 
 } /* namespace borealis */

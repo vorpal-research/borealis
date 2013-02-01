@@ -8,11 +8,11 @@
 #ifndef LOADPREDICATE_H_
 #define LOADPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class LoadPredicate: public Predicate {
+class LoadPredicate: public borealis::Predicate {
 
 public:
 

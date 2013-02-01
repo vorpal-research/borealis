@@ -8,7 +8,7 @@
 #ifndef DEFAULTSWITCHCASEPREDICATE_H_
 #define DEFAULTSWITCHCASEPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
@@ -28,7 +28,8 @@ public:
 
     template<class SubClass>
     const DefaultSwitchCasePredicate* accept(Transformer<SubClass>* t) const {
-        std::vector<Term::Ptr> new_cases(cases.size());
+        std::vector<Term::Ptr> new_cases;
+        new_cases.reserve(cases.size());
         std::transform(cases.begin(), cases.end(), new_cases.begin(),
             [t](const Term::Ptr& e) { return t->transform(e); }
         );

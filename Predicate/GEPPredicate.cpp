@@ -5,11 +5,9 @@
  *      Author: ice-phoenix
  */
 
-#include "GEPPredicate.h"
-
+#include "Predicate/GEPPredicate.h"
 #include "Term/ConstTerm.h"
 #include "Term/ValueTerm.h"
-
 #include "Util/macros.h"
 
 namespace borealis {
@@ -43,8 +41,8 @@ GEPPredicate::GEPPredicate(
 logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     TRACE_FUNC;
 
-    typedef Z3ExprFactory::Pointer Pointer;
     typedef Z3ExprFactory::Dynamic Dynamic;
+    typedef Z3ExprFactory::Pointer Pointer;
     typedef Z3ExprFactory::Integer Integer;
 
     Dynamic l = z3ef.getExprForTerm(*lhv);
@@ -78,18 +76,15 @@ bool GEPPredicate::equals(const Predicate* other) const {
     if (const GEPPredicate* o = llvm::dyn_cast<GEPPredicate>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
-        // FIXME: akhin Compare this->shifts and other->shifts
+        // FIXME: Compare this->shifts and other->shifts
     } else {
         return false;
     }
 }
 
 size_t GEPPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + rhv->hashCode();
-    // FIXME: akhin Hash this->shifts as well
-    return hash;
+    // FIXME: Hash this->shifts as well
+    return util::hash::hasher<3, 17>()(lhv, rhv);
 }
 
 } /* namespace borealis */

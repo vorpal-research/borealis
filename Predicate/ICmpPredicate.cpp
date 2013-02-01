@@ -5,8 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "ICmpPredicate.h"
-
+#include "Predicate/ICmpPredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -98,12 +97,7 @@ bool ICmpPredicate::equals(const Predicate* other) const {
 }
 
 size_t ICmpPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + op1->hashCode();
-    hash = 17 * hash + op2->hashCode();
-    hash = 17 * hash + cond;
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, op1, op2, cond);
 }
 
 } /* namespace borealis */

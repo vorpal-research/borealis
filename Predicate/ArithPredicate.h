@@ -8,7 +8,7 @@
 #ifndef ARITHPREDICATE_H_
 #define ARITHPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
@@ -55,7 +55,6 @@ private:
             Term::Ptr op1,
             Term::Ptr op2,
             llvm::ArithType opCode);
-
     ArithPredicate(
             Term::Ptr lhv,
             Term::Ptr op1,
@@ -63,6 +62,7 @@ private:
             llvm::ArithType opCode,
             SlotTracker* st,
             PredicateType type = PredicateType::STATE);
+
 };
 
 } /* namespace borealis */

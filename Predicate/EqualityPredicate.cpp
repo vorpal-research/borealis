@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "EqualityPredicate.h"
+#include "Predicate/EqualityPredicate.h"
 
 namespace borealis {
 
@@ -46,10 +46,7 @@ bool EqualityPredicate::equals(const Predicate* other) const {
 }
 
 size_t EqualityPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + rhv->hashCode();
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, rhv);
 }
 
 } /* namespace borealis */
