@@ -82,7 +82,7 @@ struct make_indexer<Head0, Head1, Tail...> {
 };
 
 template<class ...List>
-struct type_list{};
+struct type_list {};
 
 template<size_t I, class Tl>
 struct index_in_type_list;
