@@ -20,6 +20,7 @@
 
 #include "Util/collections.hpp"
 #include "Util/enums.hpp"
+#include "Util/hash.hpp"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
 #include "Util/streams.hpp"
