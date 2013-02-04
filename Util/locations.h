@@ -14,6 +14,8 @@
 #include <clang/Basic/SourceManager.h>
 #include <llvm/Instruction.h>
 
+#include <llvm/Analysis/DebugInfo.h>
+
 namespace borealis {
 
 struct LocalLocus {
@@ -110,6 +112,7 @@ struct Locus {
     explicit Locus(const LocalLocus& that): filename(UNKNOWN_NAME), loc(that) {};
     explicit Locus(LocalLocus&& that): filename(UNKNOWN_NAME), loc(std::move(that)) {};
     Locus(const clang::PresumedLoc& that): filename(that.getFilename()), loc(that.getLine(), that.getColumn()) {};
+    Locus(const llvm::DILocation& that): filename(that.getFilename()), loc(that.getLineNumber(), that.getColumnNumber()) {};
     Locus(const std::string& filename, const LocalLocus& loc): filename(filename), loc(loc) {};
     Locus(const std::string& filename, unsigned line, unsigned col): filename(filename), loc(line,col) {};
     Locus(std::string&& filename, LocalLocus&& loc): filename(std::move(filename)), loc(loc) {};

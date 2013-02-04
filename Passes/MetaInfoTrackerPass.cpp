@@ -141,6 +141,12 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
                 locals[&F].put(val, vi);
             } else if(DbgValueInst* inst = dyn_cast_or_null<DbgValueInst>(&I)) {
+                dbgs() << *inst->getValue() << " ==> " << mkVI(sm, DIVariable(inst->getVariable()), nullptr) << endl
+                       << " at " << llvm::instructionLocus(inst) << endl;
+                for(auto user : borealis::util::view(inst->getValue()->use_begin(), inst->getValue()->use_end())) {
+                    dbgs() << "used by " << *user << endl;
+                }
+
                 auto* val = inst->getValue();
                 DIVariable var (inst->getVariable());
 
@@ -170,14 +176,14 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
         }
     }
 
-    for(auto& glob: globals) {
-        infos() << *glob.first << "| -> |" << glob.second << endl;
-    }
-    for(auto& F: M) {
-        for(auto& loc: locals[&F]) {
-            infos() << *loc.first << "| -> |" << loc.second << endl;
-        }
-    }
+//    for(auto& glob: globals) {
+//        infos() << *glob.first << "| -> |" << glob.second << endl;
+//    }
+//    for(auto& F: M) {
+//        for(auto& loc: locals[&F]) {
+//            infos() << *loc.first << "| -> |" << loc.second << endl;
+//        }
+//    }
 
     return false;
 }
