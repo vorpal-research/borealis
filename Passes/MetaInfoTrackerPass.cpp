@@ -97,7 +97,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
         if (!di.isGlobalVariable()) continue;
 
         llvm::DIGlobalVariable glob(mglob);
-        globals.put(glob.getGlobal(), mkVI(sm, glob));
+        vars.put(glob.getGlobal(), mkVI(sm, glob));
     }
 
     for (auto& msp: view(dfi.subprogram_begin(), dfi.subprogram_end())) {
@@ -105,7 +105,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
         if(!di.isSubprogram()) continue;
 
         llvm::DISubprogram sp(msp);
-        globals.put(sp.getFunction(), mkVI(sm, sp));
+        vars.put(sp.getFunction(), mkVI(sm, sp));
     }
 
     for (auto& F: M) {
@@ -136,14 +136,10 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                locals[&F].put(val, vi);
+                vars.put(val, vi);
 
             } else if (DbgValueInst* inst = dyn_cast_or_null<DbgValueInst>(&I)) {
-                dbgs() << *inst->getValue() << " ==> " << mkVI(sm, DIVariable(inst->getVariable()), nullptr) << endl
-                       << " at " << llvm::instructionLocus(inst) << endl;
-                for (auto user : borealis::util::view(inst->getValue()->use_begin(), inst->getValue()->use_end())) {
-                    dbgs() << "  used by " << *user << endl;
-                }
+
 
                 auto* val = inst->getValue();
                 DIVariable var(inst->getVariable());
@@ -169,13 +165,20 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                locals[&F].put(val, vi);
+                infos() << *val << "| >>> |" << vi << endl;
+                vars.put(val, vi);
 
             }
         } // for (auto& I: view(inst_begin(F), inst_end(F)))
     } // for (auto& F: M)
 
     return false;
+}
+
+void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
+    for(auto& var: vars) {
+        infos() << *var.first << " ==> " << var.second << endl;
+    }
 }
 
 char MetaInfoTrackerPass::ID = 0U;

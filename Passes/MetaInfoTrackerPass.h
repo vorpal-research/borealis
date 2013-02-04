@@ -26,8 +26,7 @@ class MetaInfoTrackerPass: public llvm::ModulePass {
     typedef DataProvider<clang::SourceManager> sm_t;
     typedef llvm::LoopInfo loops;
 
-    VarInfoContainer globals;
-    std::unordered_map<llvm::Function*, VarInfoContainer > locals;
+    VarInfoContainer vars;
 
 public:
     static char ID;
@@ -37,6 +36,8 @@ public:
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
     virtual bool runOnModule(llvm::Module&);
+
+    virtual void print(llvm::raw_ostream&, const llvm::Module* M) const;
 
 };
 
