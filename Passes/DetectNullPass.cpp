@@ -5,12 +5,11 @@
  *      Author: ice-phoenix
  */
 
-#include "DetectNullPass.h"
-
 #include <llvm/Constants.h>
 #include <llvm/Support/InstVisitor.h>
 
 #include "Logging/tracer.hpp"
+#include "Passes/DetectNullPass.h"
 
 namespace borealis {
 

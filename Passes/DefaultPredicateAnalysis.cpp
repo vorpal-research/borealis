@@ -9,10 +9,9 @@
 
 #include <vector>
 
+#include "Logging/tracer.hpp"
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/SlotTrackerPass.h"
-
-#include "Logging/tracer.hpp"
 
 #include "Util/macros.h"
 

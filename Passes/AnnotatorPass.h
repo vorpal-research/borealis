@@ -17,14 +17,9 @@
 
 #include "Actions/comments.h"
 #include "Anno/anno.h"
+#include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
 #include "Passes/DataProvider.hpp"
-#include "Passes/NameTracker.h"
-#include "Passes/SourceLocationTracker.h"
-#include "Passes/MetaInfoTrackerPass.h"
-#include "Passes/SlotTrackerPass.h"
-
-#include "Annotation/Annotation.h"
 
 namespace borealis {
 
@@ -33,8 +28,8 @@ class AnnotatorPass:
     public borealis::logging::ClassLevelLogging<AnnotatorPass> {
 
 public:
-
     static char ID;
+
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("annotator")
 #include "Util/unmacros.h"
@@ -42,13 +37,11 @@ public:
     AnnotatorPass(): llvm::ModulePass(ID) {};
 
     typedef DataProvider<borealis::comments::GatherCommentsAction> comments;
-    typedef MetaInfoTrackerPass meta;
-    typedef SlotTrackerPass slots;
-
-public:
     typedef std::vector< Annotation::Ptr > annotation_container;
+
 private:
     annotation_container annotations;
+
 public:
 
     const annotation_container& getAnnotations() { return annotations; }

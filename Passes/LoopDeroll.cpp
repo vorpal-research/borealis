@@ -1,5 +1,5 @@
 /*
- * LoopUnroll.cpp
+ * LoopDeroll.cpp
  *
  *  Created on: Dec 7, 2012
  *      Author: ice-phoenix
@@ -13,7 +13,7 @@
 
 #include <vector>
 
-#include "Passes/LoopUnroll.h"
+#include "Passes/LoopDeroll.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -24,7 +24,7 @@ static llvm::cl::opt<unsigned>
 DerollCount("deroll-count", llvm::cl::init(3), llvm::cl::NotHidden,
   llvm::cl::desc("Set loop derolling count (default = 3)"));
 
-LoopUnroll::LoopUnroll() : llvm::LoopPass(ID) {}
+LoopDeroll::LoopDeroll() : llvm::LoopPass(ID) {}
 
 static inline void RemapInstruction(
         llvm::Instruction& I,
@@ -90,7 +90,7 @@ static inline llvm::BasicBlock* CreateUnreachableBasicBlock(
     return BB;
 }
 
-void LoopUnroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+void LoopDeroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace llvm;
 
     AU.addRequiredTransitive<LoopInfo>();
@@ -98,7 +98,7 @@ void LoopUnroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     // Does NOT preserve CFG
 }
 
-bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
+bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     using namespace llvm;
 
     LI = &getAnalysis<LoopInfo>();
@@ -263,8 +263,8 @@ bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     return true;
 }
 
-char LoopUnroll::ID;
-static llvm::RegisterPass<LoopUnroll>
+char LoopDeroll::ID;
+static llvm::RegisterPass<LoopDeroll>
 X("loop-deroll", "Loop de-roller pass");
 
 } /* namespace borealis */

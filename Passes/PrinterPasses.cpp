@@ -10,11 +10,12 @@
 #include <llvm/Pass.h>
 #include <llvm/CallGraphSCCPass.h>
 #include <llvm/Support/raw_ostream.h>
+
 #include "Logging/logger.hpp"
 #include "Util/util.h"
 
 // gracefully stolen from opt.cpp
-namespace borealis{
+namespace borealis {
 
 using namespace llvm;
 
@@ -23,8 +24,8 @@ struct CallGraphSCCPassPrinter : public CallGraphSCCPass {
     const PassInfo *PassToPrint;
     std::string PassName;
 
-    CallGraphSCCPassPrinter(const PassInfo *PI) :
-        CallGraphSCCPass(ID), PassToPrint(PI) {
+    CallGraphSCCPassPrinter(const PassInfo *PI)
+    : CallGraphSCCPass(ID), PassToPrint(PI) {
         std::string PassToPrintName =  PassToPrint->getPassName();
         PassName = "CallGraphSCCPass Printer: " + PassToPrintName;
     }
@@ -39,8 +40,8 @@ struct CallGraphSCCPassPrinter : public CallGraphSCCPass {
             std::string buf;
             raw_string_ostream Out(buf);
             if (F)
-                getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out,
-                        F->getParent());
+                getAnalysisID<Pass>(PassToPrint->getTypeInfo())
+                .print(Out, F->getParent());
             infos() << Out.str();
         }
         return false;
@@ -53,7 +54,6 @@ struct CallGraphSCCPassPrinter : public CallGraphSCCPass {
         AU.setPreservesAll();
     }
 };
-
 char CallGraphSCCPassPrinter::ID = 0;
 
 struct ModulePassPrinter : public ModulePass {
@@ -85,8 +85,8 @@ struct ModulePassPrinter : public ModulePass {
         AU.setPreservesAll();
     }
 };
-
 char ModulePassPrinter::ID = 0;
+
 struct FunctionPassPrinter : public FunctionPass {
     const PassInfo *PassToPrint;
     static char ID;
@@ -100,13 +100,13 @@ struct FunctionPassPrinter : public FunctionPass {
 
     virtual bool runOnFunction(Function &F) {
         infos() << "Printing analysis '" << PassToPrint->getPassName()
-            << "' for function '" << F.getName() << "':\n";
+                << "' for function '" << F.getName() << "':\n";
 
         std::string buf;
         raw_string_ostream Out(buf);
         // Get and print pass...
-        getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out,
-                F.getParent());
+        getAnalysisID<Pass>(PassToPrint->getTypeInfo())
+        .print(Out, F.getParent());
         infos() << Out.str();
         return false;
     }
@@ -118,7 +118,6 @@ struct FunctionPassPrinter : public FunctionPass {
         AU.setPreservesAll();
     }
 };
-
 char FunctionPassPrinter::ID = 0;
 
 struct LoopPassPrinter : public LoopPass {
@@ -126,12 +125,11 @@ struct LoopPassPrinter : public LoopPass {
     const PassInfo *PassToPrint;
     std::string PassName;
 
-    LoopPassPrinter(const PassInfo *PI) :
-        LoopPass(ID), PassToPrint(PI) {
+    LoopPassPrinter(const PassInfo *PI)
+    : LoopPass(ID), PassToPrint(PI) {
         std::string PassToPrintName =  PassToPrint->getPassName();
         PassName = "LoopPass Printer: " + PassToPrintName;
     }
-
 
     virtual bool runOnLoop(Loop *L, LPPassManager &) {
         infos() << "Printing analysis '" << PassToPrint->getPassName() << "':\n";
@@ -139,8 +137,8 @@ struct LoopPassPrinter : public LoopPass {
         std::string buf;
         raw_string_ostream Out(buf);
         // Get and print pass...
-        getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out,
-                L->getHeader()->getParent()->getParent());
+        getAnalysisID<Pass>(PassToPrint->getTypeInfo())
+        .print(Out, L->getHeader()->getParent()->getParent());
         infos() << Out.str();
         return false;
     }
@@ -152,7 +150,6 @@ struct LoopPassPrinter : public LoopPass {
         AU.setPreservesAll();
     }
 };
-
 char LoopPassPrinter::ID = 0;
 
 struct RegionPassPrinter : public RegionPass {
@@ -160,22 +157,22 @@ struct RegionPassPrinter : public RegionPass {
     const PassInfo *PassToPrint;
     std::string PassName;
 
-    RegionPassPrinter(const PassInfo *PI) : RegionPass(ID),
-            PassToPrint(PI) {
+    RegionPassPrinter(const PassInfo *PI)
+    : RegionPass(ID), PassToPrint(PI) {
         std::string PassToPrintName =  PassToPrint->getPassName();
         PassName = "RegionPass Printer: " + PassToPrintName;
     }
 
     virtual bool runOnRegion(Region *R, RGPassManager &) {
         infos() << "Printing analysis '" << PassToPrint->getPassName() << "' for "
-                    << "region: '" << R->getNameStr() << "' in function '"
-                    << R->getEntry()->getParent()->getName() << "':\n";
+                << "region: '" << R->getNameStr() << "' in function '"
+                << R->getEntry()->getParent()->getName() << "':\n";
 
         std::string buf;
         raw_string_ostream Out(buf);
         // Get and print pass...
-        getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out,
-                R->getEntry()->getParent()->getParent());
+        getAnalysisID<Pass>(PassToPrint->getTypeInfo())
+        .print(Out, R->getEntry()->getParent()->getParent());
         infos() << Out.str();
         return false;
     }
@@ -187,7 +184,6 @@ struct RegionPassPrinter : public RegionPass {
         AU.setPreservesAll();
     }
 };
-
 char RegionPassPrinter::ID = 0;
 
 struct BasicBlockPassPrinter : public BasicBlockPass {
@@ -203,15 +199,14 @@ struct BasicBlockPassPrinter : public BasicBlockPass {
 
     virtual bool runOnBasicBlock(BasicBlock &BB) {
         infos() << "Printing Analysis info for BasicBlock '" << BB.getName()
-            << "': Pass " << PassToPrint->getPassName() << ":\n";
+                << "': Pass " << PassToPrint->getPassName() << ":\n";
 
         std::string buf;
         raw_string_ostream Out(buf);
         // Get and print pass...
-        getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out,
-                BB.getParent()->getParent());
+        getAnalysisID<Pass>(PassToPrint->getTypeInfo())
+        .print(Out, BB.getParent()->getParent());
         infos() << Out.str();
-
         return false;
     }
 
@@ -222,7 +217,6 @@ struct BasicBlockPassPrinter : public BasicBlockPass {
         AU.setPreservesAll();
     }
 };
-
 char BasicBlockPassPrinter::ID = 0;
 
 Pass* createPrinterFor(const PassInfo* PassInf, Pass* pass) {
@@ -249,6 +243,3 @@ Pass* createPrinterFor(const PassInfo* PassInf, Pass* pass) {
 }
 
 } /* namespace borealis */
-
-
-

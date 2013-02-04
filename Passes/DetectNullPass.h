@@ -20,10 +20,9 @@
 
 #include "Util/util.h"
 
-namespace borealis {
+#include "Util/macros.h"
 
-class RegularDetectNullInstVisitor;
-class PHIDetectNullInstVisitor;
+namespace borealis {
 
 enum class NullStatus {
 	Null, Maybe_Null, Not_Null
@@ -93,8 +92,7 @@ struct NullInfo {
 	    using borealis::util::sayonara;
 
 		if (type != other.type) {
-		    return sayonara<NullInfo&>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-		            "Different NullInfo types in merge");
+		    BYE_BYE(NullInfo&, "Different NullInfo types in merge");
 		}
 
 		for (const auto& entry : other.offsetInfoMap){
@@ -170,8 +168,10 @@ private:
 	friend class PHIDetectNullInstVisitor;
 };
 
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info);
+llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const NullInfo& info);
 
 } /* namespace borealis */
 
 #endif /* DETECTNULLPASS_H_ */
+
+#include "Util/unmacros.h"

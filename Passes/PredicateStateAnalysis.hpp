@@ -60,7 +60,8 @@ public:
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     static char ID;
-    static constexpr decltype("psa") loggerDomain() { return "psa"; }
+
+    static constexpr auto loggerDomain() QUICK_RETURN("psa")
 
     PredicateStateAnalysis() : llvm::FunctionPass(ID) {}
 
@@ -97,14 +98,16 @@ public:
         enqueue(nullptr, &F.getEntryBlock(), PredicateState());
         processQueue();
 
+        return false;
+    }
+
+    virtual void print(llvm::raw_ostream&, const llvm::Module*) const {
         infos() << "= Predicate state analysis results =" << endl;
         for (auto& e : predicateStateMap) {
             infos() << *e.first << endl
                     << e.second << endl;
         }
         infos() << "= Done =" << endl;
-
-        return false;
     }
 
     virtual ~PredicateStateAnalysis() {};
@@ -216,6 +219,7 @@ private:
 
         if (isa<BranchInst>(I))
         { processBranchInst(cast<BranchInst>(I), s); }
+        // FIXME: Add support for SwitchInst
     }
 
     void processBranchInst(
@@ -239,7 +243,6 @@ private:
             enqueue(I.getParent(), falseSucc, state.addPredicate(falsePred));
         }
     }
-
 };
 
 template<class PredicateAnalysis>

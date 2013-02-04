@@ -16,5 +16,4 @@ llvm::Pass* createPrinterFor(const llvm::PassInfo*, llvm::Pass*);
 
 }
 
-
 #endif /* PRINTERPASSES_H_ */

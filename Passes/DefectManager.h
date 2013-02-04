@@ -15,9 +15,8 @@
 #include <set>
 #include <tuple>
 
-#include "Util/locations.h"
-
 #include "Logging/logger.hpp"
+#include "Util/locations.h"
 
 namespace borealis {
 

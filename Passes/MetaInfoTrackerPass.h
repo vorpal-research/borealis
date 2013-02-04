@@ -8,19 +8,19 @@
 #ifndef CLANGDECLTRACKERPASS_H_
 #define CLANGDECLTRACKERPASS_H_
 
-#include <llvm/Pass.h>
 #include <clang/AST/DeclBase.h>
 #include <clang/Basic/SourceManager.h>
+#include <llvm/Pass.h>
 
-
-#include "Passes/DataProvider.hpp"
 #include "Codegen/VarInfoContainer.h"
-#include "Util/option.hpp"
+#include "Passes/DataProvider.hpp"
 #include "Util/key_ptr.hpp"
+#include "Util/option.hpp"
 
 namespace borealis {
 
 // a pass that lets you track corresponding clang decls for llvm values
+// (and also does a bunch of other shit...)
 // not really a pass, just some functionality bundled into pass system
 class MetaInfoTrackerPass: public llvm::ModulePass {
     typedef DataProvider<clang::SourceManager> sm_t;
@@ -41,4 +41,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* CLANGDECLTRACKERPASS_H_ */

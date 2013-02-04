@@ -1,12 +1,12 @@
 /*
- * LoopUnroll.h
+ * LoopDeroll.h
  *
  *  Created on: Dec 7, 2012
  *      Author: ice-phoenix
  */
 
-#ifndef LOOPUNROLL_H_
-#define LOOPUNROLL_H_
+#ifndef LOOPDEROLL_H_
+#define LOOPDEROLL_H_
 
 #include <llvm/Analysis/LoopIterator.h>
 #include <llvm/Analysis/LoopPass.h>
@@ -17,13 +17,13 @@
 
 namespace borealis {
 
-class LoopUnroll: public llvm::LoopPass {
+class LoopDeroll: public llvm::LoopPass {
 
 public:
 
     static char ID;
 
-    LoopUnroll();
+    LoopDeroll();
     virtual void getAnalysisUsage(llvm::AnalysisUsage&) const;
     virtual bool runOnLoop(llvm::Loop*, llvm::LPPassManager&);
 
@@ -36,4 +36,4 @@ private:
 
 } /* namespace borealis */
 
-#endif /* LOOPUNROLL_H_ */
+#endif /* LOOPDEROLL_H_ */

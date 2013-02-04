@@ -5,15 +5,12 @@
  *      Author: belyaev
  */
 
-#include "AnnotatorPass.h"
-
+#include "Annotation/AnnotationCast.h"
+#include "Passes/AnnotatorPass.h"
 #include "Term/Term.h"
 #include "Term/TermFactory.h"
 
-#include "Annotation/AnnotationCast.h"
-
 namespace borealis {
-
 
 void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
     Info.setPreservesAll();
@@ -28,8 +25,8 @@ bool AnnotatorPass::runOnModule(llvm::Module&) {
     auto tf = TermFactory::get(nullptr);
 
     for (const auto & Comment : commentsPass.provide().getComments()) {
-        const auto & loc = Comment.first;
-        const auto & cmd = Comment.second;
+        const auto& loc = Comment.first;
+        const auto& cmd = Comment.second;
 
         annotations.push_back(fromParseResult(loc, cmd, tf.get()));
     }
@@ -41,7 +38,7 @@ void AnnotatorPass::print(llvm::raw_ostream& O, const llvm::Module*) const {
     using borealis::util::streams::endl;
     using borealis::util::toString;
 
-    for(const auto& An : annotations) {
+    for (const auto& An : annotations) {
         O << *An << endl;
     }
 }

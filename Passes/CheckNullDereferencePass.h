@@ -23,9 +23,6 @@
 
 namespace borealis {
 
-class DerefInstVisitor;
-class ValueInstVisitor;
-
 class CheckNullDereferencePass:
         public llvm::FunctionPass,
         public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
