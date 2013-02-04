@@ -8,12 +8,13 @@
 #ifndef LOGICANNOTATION_H_
 #define LOGICANNOTATION_H_
 
-#include "Annotation.h"
+#include "Annotation/Annotation.h"
 
 namespace borealis {
 
 class LogicAnnotation: public Annotation {
     typedef LogicAnnotation self;
+
 protected:
     borealis::id_t logic_annotation_type_id;
     borealis::Term::Ptr term;
@@ -33,10 +34,11 @@ public:
         return a->getTypeId() == type_id<self>();
     }
 
-    static bool classof(const self* /* p */) {
+    static bool classof(const self*) {
         return true;
     }
 };
 
 } /* namespace borealis */
+
 #endif /* LOGICANNOTATION_H_ */

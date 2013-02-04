@@ -13,8 +13,7 @@
 
 #include "Logging/logstream.hpp"
 #include "Predicate/Predicate.h"
-
-#include "PredicateState.h"
+#include "State/PredicateState.h"
 
 namespace borealis {
 

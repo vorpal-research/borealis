@@ -8,7 +8,7 @@
 #ifndef FUNCINFO_H_
 #define FUNCINFO_H_
 
-#include "VarInfo.h"
+#include "Codegen/VarInfo.h"
 
 namespace borealis {
 
@@ -26,7 +26,6 @@ struct FuncInfo {
     const_iterator end()   const { return locals.end();   }
 };
 
-}// namespace borealis
-
+} // namespace borealis
 
 #endif /* FUNCINFO_H_ */

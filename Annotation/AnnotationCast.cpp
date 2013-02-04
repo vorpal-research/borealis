@@ -22,6 +22,8 @@
 #include "Annotation/MaskAnnotation.h"
 #include "Annotation/EndMaskAnnotation.h"
 
+#include "Util/macros.h"
+
 using namespace borealis;
 
 static bool isCompare(bin_opcode op) {
@@ -53,8 +55,7 @@ static llvm::ConditionType convertCT(bin_opcode op) {
     case bin_opcode::OPCODE_LE:
         return llvm::ConditionType::LTE;
     default:
-#include "Util/macros.h"
-        BYE_BYE(llvm::ConditionType, "called with unconditional operation");
+        BYE_BYE(llvm::ConditionType, "Called with unconditional operation");
     }
 }
 
@@ -85,8 +86,7 @@ static llvm::ArithType convertAT(bin_opcode op) {
     case bin_opcode::OPCODE_RSH:
         return llvm::ArithType::RSH;
     default:
-#include "Util/macros.h"
-        BYE_BYE(llvm::ArithType, "called with unconditional operation");
+        BYE_BYE(llvm::ArithType, "Called with unconditional operation");
     }
 }
 
@@ -132,46 +132,43 @@ public:
         lhv->accept(lhvtc);
         rhv->accept(rhvtc);
 
-        if(isCompare(op)) {
+        if (isCompare(op)) {
             term = tf->getCmpTerm(convertCT(op), lhvtc.term, rhvtc.term );
         } else {
             term = tf->getBinaryTerm(convertAT(op), lhvtc.term, rhvtc.term );
         }
     }
+
     virtual void onUnary(un_opcode op,
             const prod_t& rhv) {
         TermConstructor rhvtc(tf);
 
         rhv->accept(rhvtc);
         term = tf->getUnaryTerm(convert(op), rhvtc.term);
-
-        // FIXME: fix it
-        util::sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-            "Unary ops not supported yet, sorry :(");
     }
 
     Term::Ptr getTerm() { return term; }
 };
 
-Annotation::Ptr borealis::fromParseResult(const Locus& locus, const anno::command& cmd, TermFactory* tf) {
+Annotation::Ptr borealis::fromParseResult(
+        const Locus& locus, const anno::command& cmd, TermFactory* tf) {
 
     std::vector<Term::Ptr> terms;
     terms.reserve(cmd.args_.size());
 
-    for(auto& arg: cmd.args_) {
+    for (auto& arg: cmd.args_) {
         TermConstructor tc(tf);
         arg->accept(tc);
         terms.push_back(tc.getTerm());
     }
 
 #define HANDLE_ANNOTATION(CMD, CLASS) \
-    if(cmd.name_ == CMD) { \
+    if (cmd.name_ == CMD) { \
         return CLASS::fromTerms(locus, terms); \
     }
-
 #include "Annotation/Annotation.def"
 
-#include "Util/macros.h"
     BYE_BYE(Annotation::Ptr, "Unknown annotation type: \"@" + cmd.name_ + "\"");
 }
 
+#include "Util/unmacros.h"

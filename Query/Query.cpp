@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "Query.h"
+#include "Query/Query.h"
 
 namespace borealis {
 

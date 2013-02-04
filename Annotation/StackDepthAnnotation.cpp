@@ -5,8 +5,4 @@
  *      Author: belyaev
  */
 
-#include "StackDepthAnnotation.h"
-
-namespace borealis {
-
-} /* namespace borealis */
+#include "Annotation/StackDepthAnnotation.h"

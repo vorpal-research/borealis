@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "Logic.hpp"
+#include "Solver/Logic.hpp"
 
 namespace borealis {
 namespace logic {
@@ -118,8 +118,11 @@ Bool Bool::mkVar(z3::context& ctx, const std::string& name) {
     return ctx.bool_const(name.c_str());
 }
 
-Bool Bool::mkVar(z3::context& ctx, const std::string& name,
-        std::function<Bool(Bool)> daAxiom) {
+Bool Bool::mkVar(
+        z3::context& ctx,
+        const std::string& name,
+        std::function<Bool(Bool)> daAxiom
+    ) {
     // first construct the no-axiom version
     self nav = mkVar(ctx, name);
     return self(nav.get(), z3impl::spliceAxioms(nav.axiom(), daAxiom(nav).toAxiom()));
@@ -129,8 +132,11 @@ Bool Bool::mkFreshVar(z3::context& ctx, const std::string& name) {
     return self(ctx, Z3_mk_fresh_const(ctx, name.c_str(), sort(ctx)));
 }
 
-Bool Bool::mkFreshVar(z3::context& ctx, const std::string& name,
-        std::function<Bool(Bool)> daAxiom) {
+Bool Bool::mkFreshVar(
+        z3::context& ctx,
+        const std::string& name,
+        std::function<Bool(Bool)> daAxiom
+    ) {
     // first construct the no-axiom version
     self nav = mkFreshVar(ctx, name);
     return self(nav.get(), z3impl::spliceAxioms(nav.axiom(), daAxiom(nav).toAxiom()));

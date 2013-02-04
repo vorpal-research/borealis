@@ -4,10 +4,13 @@
  *  Created on: Nov 23, 2012
  *      Author: belyaev
  */
+
 #ifndef TRACER_HPP_
 #define TRACER_HPP_
 
 #include <chrono>
+
+#include "Logging/logstream.hpp"
 
 namespace borealis {
 namespace logging {

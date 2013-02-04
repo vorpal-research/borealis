@@ -5,16 +5,15 @@
  *      Author: ice-phoenix
  */
 
-#include "PredicateState.h"
-
 #include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
 #include "Solver/Z3Solver.h"
+#include "State/PredicateState.h"
 
 namespace borealis {
 
-using util::contains;
-using util::view;
+using borealis::util::contains;
+using borealis::util::view;
 
 PredicateState::PredicateState() {
 }
@@ -60,8 +59,9 @@ PredicateState PredicateState::addVisited(const llvm::Instruction* location) con
 }
 
 bool PredicateState::hasVisited(std::initializer_list<const llvm::Instruction*> locations) const {
-    for (auto l : locations)
+    for (auto l : locations) {
         if (!contains(visited, l)) return false;
+    }
     return true;
 }
 
@@ -100,6 +100,7 @@ std::pair<logic::Bool, logic::Bool> PredicateState::toZ3(Z3ExprFactory& z3ef) co
     for (const auto& e : state) {
         s = s && e;
     }
+
     s = s && ctx.toZ3();
 
     return std::make_pair(p, s);

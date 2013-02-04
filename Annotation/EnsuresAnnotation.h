@@ -1,5 +1,5 @@
 /*
- * RequiresAnnotation.h
+ * EnsuresAnnotation.h
  *
  *  Created on: Jan 22, 2013
  *      Author: belyaev
@@ -8,25 +8,26 @@
 #ifndef ENSURESANNOTATION_H_
 #define ENSURESANNOTATION_H_
 
-#include "LogicAnnotation.h"
-#include "AnnotationNames.hpp"
+#include "Annotation/AnnotationNames.hpp"
+#include "Annotation/LogicAnnotation.h"
 
 namespace borealis {
 
 class EnsuresAnnotation: public LogicAnnotation {
     typedef EnsuresAnnotation self;
+
 public:
     EnsuresAnnotation(const Locus& locus, Term::Ptr term):
         LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
     virtual ~EnsuresAnnotation(){}
 
     static bool classof(const Annotation* a) {
-        if(auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
+        if (auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
             return la->getTypeId() == type_id<self>();
         } else return false;
     }
 
-    static bool classof(const self* /* p */) {
+    static bool classof(const self*) {
         return true;
     }
 
@@ -36,4 +37,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* ENSURESANNOTATION_H_ */

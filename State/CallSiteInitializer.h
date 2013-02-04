@@ -18,11 +18,11 @@
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
 
-#include "Transformer.hpp"
+#include "State/Transformer.hpp"
 
 namespace borealis {
 
-class CallSiteInitializer : public Transformer<CallSiteInitializer> {
+class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
 
 public:
 

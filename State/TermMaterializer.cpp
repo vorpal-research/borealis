@@ -5,17 +5,12 @@
  *      Author: belyaev
  */
 
-#include "TermMaterializer.h"
+#include "State/TermMaterializer.h"
 
 namespace borealis {
 
-TermMaterializer::TermMaterializer() {
-    // TODO Auto-generated constructor stub
+TermMaterializer::TermMaterializer() {}
 
-}
-
-TermMaterializer::~TermMaterializer() {
-    // TODO Auto-generated destructor stub
-}
+TermMaterializer::~TermMaterializer() {}
 
 } /* namespace borealis */

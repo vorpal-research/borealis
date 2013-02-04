@@ -8,20 +8,21 @@
 #ifndef ASSERTANNOTATION_H_
 #define ASSERTANNOTATION_H_
 
-#include "LogicAnnotation.h"
-#include "AnnotationNames.hpp"
+#include "Annotation/AnnotationNames.hpp"
+#include "Annotation/LogicAnnotation.h"
 
 namespace borealis {
 
 class AssertAnnotation: public LogicAnnotation {
     typedef AssertAnnotation self;
+
 public:
     AssertAnnotation(const Locus& locus, Term::Ptr term):
         LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
     virtual ~AssertAnnotation(){}
 
     static bool classof(const Annotation* a) {
-        if(auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
+        if (auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
             return la->getTypeId() == type_id<self>();
         } else return false;
     }
@@ -36,4 +37,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* ASSERTANNOTATION_H_ */

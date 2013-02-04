@@ -8,13 +8,14 @@
 #ifndef ENDMASKANNOTATION_H_
 #define ENDMASKANNOTATION_H_
 
-#include "Annotation.h"
-#include "AnnotationNames.hpp"
+#include "Annotation/Annotation.h"
+#include "Annotation/AnnotationNames.hpp"
 
 namespace borealis {
 
 class EndMaskAnnotation: public Annotation {
     typedef EndMaskAnnotation self;
+
 public:
     EndMaskAnnotation(const Locus& locus):
         Annotation(type_id(*this), AnnotationNames<self>::name(), locus) {};
@@ -24,7 +25,7 @@ public:
         return a->getTypeId() == type_id<self>();
     }
 
-    static bool classof(const self* /* p */) {
+    static bool classof(const self*) {
         return true;
     }
 
@@ -34,4 +35,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* ENDMASKANNOTATION_H_ */

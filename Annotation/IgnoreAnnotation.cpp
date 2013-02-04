@@ -1,12 +1,8 @@
 /*
- * SkipAnnotation.cpp
+ * IgnoreAnnotation.cpp
  *
  *  Created on: Jan 22, 2013
  *      Author: belyaev
  */
 
-#include "IgnoreAnnotation.h"
-
-namespace borealis {
-
-} /* namespace borealis */
+#include "Annotation/IgnoreAnnotation.h"

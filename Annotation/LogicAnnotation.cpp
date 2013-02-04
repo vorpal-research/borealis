@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "LogicAnnotation.h"
+#include "Annotation/LogicAnnotation.h"
 
 namespace borealis {
 

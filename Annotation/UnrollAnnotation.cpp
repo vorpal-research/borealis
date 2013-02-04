@@ -5,8 +5,4 @@
  *      Author: belyaev
  */
 
-#include "UnrollAnnotation.h"
-
-namespace borealis {
-
-} /* namespace borealis */
+#include "Annotation/UnrollAnnotation.h"

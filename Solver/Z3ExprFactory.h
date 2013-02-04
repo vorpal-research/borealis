@@ -11,11 +11,10 @@
 #include <llvm/Target/TargetData.h>
 #include <z3/z3++.h>
 
+#include "Logging/tracer.hpp"
+#include "Solver/Logic.hpp"
 #include "Term/Term.h"
 #include "Util/util.h"
-
-#include "Logging/tracer.hpp"
-#include "Logic.hpp"
 
 namespace borealis {
 

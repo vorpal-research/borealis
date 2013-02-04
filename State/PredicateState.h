@@ -79,17 +79,10 @@ public:
     bool operator==(const PredicateState& other) const {
         if (this == &other) return true;
 
-        // Workaround for std::shared_ptr::operator==
-        DataIterator __end1 = data.end();
-        DataIterator __end2 = other.data.end();
-
-        DataIterator __i1 = data.begin();
-        DataIterator __i2 = other.data.begin();
-        while (__i1 != __end1 && __i2 != __end2 && **__i1 == **__i2) {
-            ++__i1;
-            ++__i2;
-        }
-        return __i1 == __end1 && __i2 == __end2;
+        return std::equal(begin(), end(), other.begin(),
+            [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
+                return *a == *b;
+            });
     }
 
 private:

@@ -10,16 +10,17 @@
 
 #include <llvm/Value.h>
 
-#include "Query.h"
+#include "Query/Query.h"
 #include "Util/slottracker.h"
 
 namespace borealis {
 
-class EqualityQuery : public Query {
+class EqualityQuery : public borealis::Query {
 
 public:
 
-    EqualityQuery(const llvm::Value* v1,
+    EqualityQuery(
+            const llvm::Value* v1,
             const llvm::Value* v2,
             SlotTracker* st);
     virtual ~EqualityQuery();

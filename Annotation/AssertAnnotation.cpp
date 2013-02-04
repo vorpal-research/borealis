@@ -5,8 +5,4 @@
  *      Author: belyaev
  */
 
-#include "AssertAnnotation.h"
-
-namespace borealis {
-
-} /* namespace borealis */
+#include "Annotation/AssertAnnotation.h"

@@ -5,11 +5,11 @@
  *      Author: ice-phoenix
  */
 
-#include "PredicateStateVector.h"
+#include "State/PredicateStateVector.h"
 
 namespace borealis {
 
-using util::view;
+using borealis::util::view;
 
 PredicateStateVector::PredicateStateVector() {}
 

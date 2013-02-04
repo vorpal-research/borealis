@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "NullPtrQuery.h"
+#include "Query/NullPtrQuery.h"
 
 namespace borealis {
 

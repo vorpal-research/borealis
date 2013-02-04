@@ -5,11 +5,12 @@
  *      Author: ice-phoenix
  */
 
-#include "EqualityQuery.h"
+#include "Query/EqualityQuery.h"
 
 namespace borealis {
 
-EqualityQuery::EqualityQuery(const llvm::Value* v1,
+EqualityQuery::EqualityQuery(
+        const llvm::Value* v1,
         const llvm::Value* v2,
         SlotTracker* st) :
                 v1(v1),

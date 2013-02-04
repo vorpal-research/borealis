@@ -1,5 +1,5 @@
 /*
- * Transformer.h
+ * Transformer.hpp
  *
  *  Created on: Nov 20, 2012
  *      Author: ice-phoenix
@@ -10,11 +10,11 @@
 
 #include <llvm/Support/Casting.h>
 
-#include "Util/util.h"
-#include "Util/macros.h"
-
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
+#include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 

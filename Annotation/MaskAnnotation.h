@@ -8,8 +8,8 @@
 #ifndef MASKANNOTATION_H_
 #define MASKANNOTATION_H_
 
-#include "Annotation.h"
-#include "AnnotationNames.hpp"
+#include "Annotation/Annotation.h"
+#include "Annotation/AnnotationNames.hpp"
 
 namespace borealis {
 
@@ -17,6 +17,7 @@ class MaskAnnotation: public Annotation {
     typedef MaskAnnotation self;
 
     std::vector<Term::Ptr> masks;
+
 public:
     MaskAnnotation(const Locus& locus, const std::vector<Term::Ptr>& masks):
         Annotation(type_id(*this), AnnotationNames<self>::name(), locus),
@@ -27,7 +28,7 @@ public:
         return a->getTypeId() == type_id<self>();
     }
 
-    static bool classof(const self* /* p */) {
+    static bool classof(const self*) {
         return true;
     }
 
@@ -37,4 +38,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* MASKANNOTATION_H_ */

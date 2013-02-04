@@ -12,15 +12,16 @@
 
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
-
-#include "Transformer.hpp"
-
 #include "Util/locations.h"
+
+#include "State/Transformer.hpp"
 
 namespace borealis {
 
 class TermMaterializer: public borealis::Transformer<TermMaterializer> {
+
 public:
+
     TermMaterializer();
     virtual ~TermMaterializer();
 
@@ -54,18 +55,16 @@ public:
         const llvm::StringRef name = trm->getName();
         const auto& ctx = nameContext();
 
-        if(name == "result") {
+        if (name == "result") {
             if(ctx.func && ctx.placement == NameContext::Placement::OuterScope)
                 return factory().getReturnValueTerm(ctx.func);
             else {
                 failWith("\result can only be bound to functions' outer scope");
                 return trm;
             }
-        } else if(name.startswith("arg")) {
+        } else if (name.startswith("arg")) {
             if(ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
-                auto num = name.drop_front(3);
-                std::istringstream ist(num.str());
-
+                std::istringstream ist(name.drop_front(3).str());
                 unsigned val = 0U;
                 ist >> val;
 
@@ -85,4 +84,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* TERMMATERIALIZER_H_ */

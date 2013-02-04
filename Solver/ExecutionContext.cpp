@@ -5,8 +5,8 @@
  *      Author: belyaev
  */
 
-#include "ExecutionContext.h"
 #include "Logging/tracer.hpp"
+#include "Solver/ExecutionContext.h"
 
 namespace borealis {
 

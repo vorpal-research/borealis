@@ -10,11 +10,11 @@
 
 #include <llvm/Value.h>
 
-#include "Query.h"
+#include "Query/Query.h"
 
 namespace borealis {
 
-class NullPtrQuery : public Query {
+class NullPtrQuery : public borealis::Query {
 
 public:
 

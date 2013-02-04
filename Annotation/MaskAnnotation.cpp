@@ -5,8 +5,4 @@
  *      Author: belyaev
  */
 
-#include "MaskAnnotation.h"
-
-namespace borealis {
-
-} /* namespace borealis */
+#include "Annotation/MaskAnnotation.h"

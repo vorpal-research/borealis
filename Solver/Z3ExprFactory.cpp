@@ -5,7 +5,9 @@
  *      Author: ice-phoenix
  */
 
-#include "Z3ExprFactory.h"
+#include "Solver/Z3ExprFactory.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -74,7 +76,6 @@ Integer Z3ExprFactory::getIntConst(const std::string& v, size_t /* bits */) {
     return Integer::mkConst(ctx, ull);
 }
 
-// FIXME: belyaev Do smth with reals
 Real Z3ExprFactory::getRealVar(const std::string& name) {
     return Real::mkVar(ctx, name);
 }
@@ -153,8 +154,9 @@ Dynamic Z3ExprFactory::getExprByTypeAndName(
     case ValueType::PTR_VAR:
         return getPtr(name);
     case ValueType::UNKNOWN:
-        return util::sayonara<Dynamic>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Unknown value type for Z3 conversion");
+        BYE_BYE(Dynamic, "Unknown value type for Z3 conversion");
+    default:
+        BYE_BYE(Dynamic, "Unreachable!");
     }
 }
 
@@ -163,5 +165,7 @@ Dynamic Z3ExprFactory::getExprByTypeAndName(
 void Z3ExprFactory::initialize(llvm::TargetData* TD) {
     pointerSize = TD->getPointerSizeInBits();
 }
+
+#include "Util/unmacros.h"
 
 } /* namespace borealis */

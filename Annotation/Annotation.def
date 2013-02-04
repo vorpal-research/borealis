@@ -21,7 +21,6 @@ HANDLE_ANNOTATION("unroll", UnrollAnnotation)
 HANDLE_ANNOTATION("mask", MaskAnnotation)
 HANDLE_ANNOTATION("endmask", EndMaskAnnotation)
 
+
 #undef HANDLE_ANNOTATION
 #undef HANDLE_ANNOTATION_WITH_BASE
-
-

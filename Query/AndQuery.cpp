@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "AndQuery.h"
+#include "Query/AndQuery.h"
 
 namespace borealis {
 

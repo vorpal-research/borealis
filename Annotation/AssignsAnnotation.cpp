@@ -5,8 +5,4 @@
  *      Author: belyaev
  */
 
-#include "AssignsAnnotation.h"
-
-namespace borealis {
-
-} /* namespace borealis */
+#include "Annotation/AssignsAnnotation.h"

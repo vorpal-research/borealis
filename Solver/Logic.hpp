@@ -14,6 +14,8 @@
 
 #include "Util/util.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 namespace logic {
 
@@ -128,7 +130,7 @@ public:
 
     BitVector(const self&) = default;
     BitVector(z3::expr e, z3::expr axiom) : ValueExpr(e, axiom) {
-        if(!(e.is_bv() && e.get_sort().bv_size() == N)) {
+        if( ! (e.is_bv() && e.get_sort().bv_size() == N) ) {
             throw ConversionException(
                     "Trying to construct bitvector<" +
                     borealis::util::toString(N) +
@@ -138,7 +140,7 @@ public:
         }
     }
     explicit BitVector(z3::expr e) : ValueExpr(e) {
-        if(!(e.is_bv() && e.get_sort().bv_size() == N)) {
+        if( ! (e.is_bv() && e.get_sort().bv_size() == N) ) {
             throw ConversionException(
                     "Trying to construct bitvector<" +
                     borealis::util::toString(N) +
@@ -148,7 +150,7 @@ public:
         }
     }
 private:
-    BitVector(z3::context& ctx, Z3_ast ast) : BitVector(z3::to_expr(ctx, ast)){}
+    BitVector(z3::context& ctx, Z3_ast ast) : BitVector(z3::to_expr(ctx, ast)) {}
 public:
     self& operator=(const self&) = default;
 
@@ -449,7 +451,7 @@ z3::expr forAll(
     std::vector<Z3_sort> sort_array(sorts.rbegin(), sorts.rend());
 
     std::vector<Z3_symbol> name_array;
-    for(size_t i = 0U; i < numBounds; ++i) {
+    for (size_t i = 0U; i < numBounds; ++i) {
         std::string name = "forall_bound_" + toString(numBounds - i - 1);
         name_array.push_back(ctx.str_symbol(name.c_str()));
     }
@@ -498,6 +500,8 @@ public:
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 class DynBitVectorExpr: public ValueExpr {
 
 public:
@@ -505,12 +509,11 @@ public:
 
     DynBitVectorExpr(z3::expr e, z3::expr axiom):
         ValueExpr(e, axiom) {
-        if(!e.is_bv()) {
+        if( !e.is_bv() ) {
             throw ConversionException("BitVectorExpr constructed from incompatible expression: " +
                     borealis::util::toString(e));
         }
     }
-
 
     size_t getBitSize() const {
         return get_sort().bv_size();
@@ -519,9 +522,7 @@ public:
 private:
     DynBitVectorExpr growTo(size_t n) const {
         size_t m = get().get_sort().bv_size();
-        if(m < n) {
-            return DynBitVectorExpr(z3::to_expr(ctx(), Z3_mk_sign_ext(ctx(), n-m, get())), axiom());
-        }
+        if (m < n) return DynBitVectorExpr(z3::to_expr(ctx(), Z3_mk_sign_ext(ctx(), n-m, get())), axiom());
         else return DynBitVectorExpr(get(), axiom());
     }
 
@@ -545,12 +546,9 @@ public:
 
 #undef BIN_OP
 
-
-
-
 };
 
-/////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 namespace impl {
 
@@ -617,7 +615,7 @@ public:
         using util::just;
         using util::nothing;
 
-        if(is<Aspect>()) return just(Aspect(get(), axiom()));
+        if (is<Aspect>()) return just(Aspect(get(), axiom()));
         else return nothing();
     }
 
@@ -673,7 +671,7 @@ Bool distinct(z3::context& ctx, const std::vector<Elem> elems) {
     z3::expr ret = z3::to_expr(ctx, Z3_mk_distinct(ctx, cast.size(), &cast[0]));
 
     z3::expr axiom = elems[0].axiom();
-    for(auto elem: elems) {
+    for (auto elem: elems) {
         axiom = z3impl::spliceAxioms(axiom, elem.axiom());
     }
 
@@ -727,13 +725,12 @@ class Function<Res(Args...)> : public Expr {
             z3::func_decl z3func,
             std::function<Res(Args...)> realfunc) {
 
-        std::function<Bool(Args...)> lam = [&](Args... args)->Bool{
+        std::function<Bool(Args...)> lam = [&](Args... args)->Bool {
             return Bool(z3func(args.get()...) == realfunc(args...).get());
         };
 
         return z3impl::forAll<Bool, Args...>(ctx, lam);
     }
-
 
 public:
     typedef Function self;
@@ -884,8 +881,8 @@ public:
 
 template<class Elem, class Index>
 class TheoryArray: public ValueExpr {
-    TheoryArray(z3::expr inner) : ValueExpr(inner){
-        if(!inner.is_array())
+    TheoryArray(z3::expr inner) : ValueExpr(inner) {
+        if (!inner.is_array())
             throw ConversionException("TheoryArray constructed from non-array");
     };
 public:
@@ -900,7 +897,7 @@ public:
 
     TheoryArray store(std::vector<std::pair<Index, Elem>> entries) {
         z3::expr base = get();
-        for(auto& entry: entries) {
+        for (auto& entry: entries) {
             base = z3::store(base, entry.first.get(), entry.second.get());
         }
         return base;
@@ -921,7 +918,7 @@ std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
 
     std::vector<Byte> ret;
 
-    if(N <= ElemSize) {
+    if (N <= ElemSize) {
         return std::vector<Byte>{ grow<ElemSize>(bv) };
     }
 
@@ -940,17 +937,12 @@ std::vector<BitVector<ElemSize>> splitBytes(SomeExpr bv) {
     size_t width = bv.get().get_sort().bv_size();
 
     // FIXME: check for the <= case
-    if(width == ElemSize) {
-        for(auto& ibv: bv.to<Byte>()) {
+    if (width == ElemSize) {
+        for (auto& ibv: bv.to<Byte>()) {
             return std::vector<Byte>{ ibv };
         }
 
-        return
-           util::sayonara<std::vector<Byte>>(
-                   __FILE__,
-                   __LINE__,
-                   __PRETTY_FUNCTION__,
-                   "Invalid dynamic bitvector, cannot convert to Byte");
+        BYE_BYE(std::vector<Byte>, "Invalid dynamic BitVector, cannot convert to Byte");
     }
 
     z3::context& ctx = bv.get().ctx();
@@ -1031,7 +1023,7 @@ public:
 
     SomeExpr select(Index i, size_t elemBitSize) {
         std::vector<Byte> bytes;
-        for(size_t j = 0; j < elemBitSize; j+=ElemSize) {
+        for (size_t j = 0; j < elemBitSize; j+=ElemSize) {
             bytes.push_back(inner[i+j/ElemSize]);
         }
         return concatBytesDynamic(bytes);
@@ -1042,7 +1034,7 @@ public:
         enum { elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
-        for(int j = 0; j < elemBitSize; j+=ElemSize) {
+        for (int j = 0; j < elemBitSize; j+=ElemSize) {
             bytes.push_back(inner[i+j/ElemSize]);
         }
         return concatBytes<elemBitSize>(bytes);
@@ -1063,7 +1055,7 @@ public:
         std::vector<Byte> bytes = splitBytes<ElemSize>(e);
 
         std::vector<std::pair<Index, Byte>> cases;
-        for(auto j = 0U; j < elemBitSize/ElemSize; ++j) {
+        for (auto j = 0U; j < elemBitSize/ElemSize; ++j) {
             cases.push_back({ i+j, bytes[j] });
         }
 
@@ -1086,5 +1078,7 @@ public:
 
 } // namespace logic
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif // LOGIC_HPP

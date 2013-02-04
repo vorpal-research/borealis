@@ -10,11 +10,11 @@
 
 #include <initializer_list>
 
-#include "Query.h"
+#include "Query/Query.h"
 
 namespace borealis {
 
-class AndQuery : public Query {
+class AndQuery : public borealis::Query {
 
 public:
 

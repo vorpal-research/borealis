@@ -35,7 +35,7 @@ public:
     Annotation(borealis::id_t annotation_type_id, keyword_t keyword, Locus locus):
         annotation_type_id(annotation_type_id),
         keyword(keyword),
-        locus(locus){}
+        locus(locus) {}
 
     id_t getTypeId() const { return annotation_type_id; }
 
@@ -59,4 +59,5 @@ Streamer& operator<<(Streamer& str, const Annotation& a) {
 }
 
 } /* namespace borealis */
+
 #endif /* ANNOTATION_H_ */

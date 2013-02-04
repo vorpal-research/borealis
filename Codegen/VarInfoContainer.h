@@ -8,13 +8,13 @@
 #ifndef VARINFOCONTAINER_H_
 #define VARINFOCONTAINER_H_
 
-#include <string>
-#include <map>
-#include <unordered_map>
-
 #include <llvm/Value.h>
 
-#include "VarInfo.h"
+#include <map>
+#include <string>
+#include <unordered_map>
+
+#include "Codegen/VarInfo.h"
 #include "Util/key_ptr.hpp"
 #include "Util/util.h"
 
@@ -30,7 +30,7 @@ class VarInfoContainer {
     // fwd keeps the actual data
     v2vi_t fwd;
 
-    // all other containers operate on pointers into fwd through key_ptr's
+    // all other containers operate on pointers into fwd through key_ptrs
     // (or just plain pointers into llvm or clang inner memory)
     str2v_t bwd_names;
     loc2v_t bwd_locs;
@@ -49,16 +49,15 @@ public:
     ~VarInfoContainer();
 
     void put(llvm::Value* val, const VarInfo& vi) {
-        using std::make_pair;
         using util::key_ptr;
 
-        if(fwd.count(val)) {
+        if (fwd.count(val)) {
             auto& old_vi = fwd[val];
-            for(std::string& viname: old_vi.originalName)
+            for (std::string& viname: old_vi.originalName)
                 util::removeFromMultimap(bwd_names, key_ptr<std::string>(viname), val);
-            for(Locus& viloc: old_vi.originalLocus)
+            for (Locus& viloc: old_vi.originalLocus)
                 util::removeFromMultimap(bwd_locs, key_ptr<Locus>(viloc), val);
-            if(old_vi.ast && bwd_clang.count(old_vi.ast))
+            if (old_vi.ast && bwd_clang.count(old_vi.ast))
                 bwd_clang.erase(old_vi.ast);
         }
 
@@ -67,13 +66,15 @@ public:
         // and this ▼ is taking a reference
         auto& new_vi = fwd[val]; // vi and new_vi are NOT the same
 
-        for(const auto& name: new_vi.originalName) {
+        for (const auto& name: new_vi.originalName) {
             bwd_names.insert({ key_ptr<std::string>(name), val });
         }
-        for(const auto& loc: new_vi.originalLocus) {
+        for (const auto& loc: new_vi.originalLocus) {
             bwd_locs.insert({ key_ptr<Locus>(loc), val });
         }
-        if(new_vi.ast) bwd_clang.insert(make_pair(new_vi.ast, val));
+        if (new_vi.ast) {
+            bwd_clang.insert({new_vi.ast, val});
+        }
     }
 
     const VarInfo& get(llvm::Value* val) const { return fwd.at(val); }
@@ -90,7 +91,7 @@ public:
     }
 
     loc_value_range byLoc(const Locus& loc, DiscoveryDirection dp = DiscoveryDirection::Next) const {
-        if(dp == DiscoveryDirection::Next) {
+        if (dp == DiscoveryDirection::Next) {
             auto start = bwd_locs.lower_bound(loc);
             auto end = start;
             while (end != bwd_locs.end() && end->first == start->first) ++end;
@@ -99,7 +100,7 @@ public:
             auto end = bwd_locs.lower_bound(loc);
             --end;
             auto start = end;
-            while(start != bwd_locs.begin() && start->first == end->first) --start;
+            while (start != bwd_locs.begin() && start->first == end->first) --start;
             return std::make_pair(start, end);
         }
     }
@@ -115,8 +116,8 @@ public:
     const_iterator end() const {
         return fwd.end();
     }
-
 };
 
 } /* namespace borealis */
+
 #endif /* VARINFOCONTAINER_H_ */

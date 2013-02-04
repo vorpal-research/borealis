@@ -8,10 +8,10 @@
 #ifndef VARINFO_H_
 #define VARINFO_H_
 
-#include <string>
-
-#include <llvm/Analysis/DebugInfo.h>
 #include <clang/AST/DeclBase.h>
+#include <llvm/Analysis/DebugInfo.h>
+
+#include <string>
 
 #include "Logging/logger.hpp"
 #include "Util/locations.h"
@@ -43,13 +43,13 @@ struct VarInfo {
     const VarInfo& overwriteBy(const VarInfo& vi) {
         return *this;
 
-        if(!vi.originalName.empty()) {
+        if (!vi.originalName.empty()) {
             originalName = vi.originalName;
         }
-        if(!vi.originalLocus.empty()) {
+        if (!vi.originalLocus.empty()) {
             originalLocus = vi.originalLocus;
         }
-        if(vi.ast) {
+        if (vi.ast) {
             ast = vi.ast;
         }
 
@@ -67,9 +67,9 @@ inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
     return VarInfo{
         just(dd.getName().str()),
         just(
-            Locus{
+            Locus {
                 dd.getContext().getFilename(),
-                LocalLocus{ dd.getLineNumber(), 0U }
+                LocalLocus { dd.getLineNumber(), 0U }
             }
         ),
         ast
@@ -82,12 +82,13 @@ Streamer& operator<<(Streamer& ost, const VarInfo& vi) {
     ost << vi.originalName.getOrElse("<unknown-variable>")
         << " defined at ";
 
-    if(vi.originalLocus.empty()) ost << "<unknown-location>";
+    if (vi.originalLocus.empty()) ost << "<unknown-location>";
     else ost << vi.originalLocus.getUnsafe();
 
-    if(vi.ast) ost << ": " << *vi.ast;
+    if (vi.ast) ost << ": " << *vi.ast;
     return ost;
 }
 
 } /* namespace borealis */
+
 #endif /* VARINFO_H_ */

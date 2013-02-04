@@ -8,25 +8,26 @@
 #ifndef REQUIRESANNOTATION_H_
 #define REQUIRESANNOTATION_H_
 
-#include "LogicAnnotation.h"
-#include "AnnotationNames.hpp"
+#include "Annotation/AnnotationNames.hpp"
+#include "Annotation/LogicAnnotation.h"
 
 namespace borealis {
 
 class RequiresAnnotation: public LogicAnnotation {
     typedef RequiresAnnotation self;
+
 public:
     RequiresAnnotation(const Locus& locus, Term::Ptr term):
         LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
     virtual ~RequiresAnnotation(){}
 
     static bool classof(const Annotation* a) {
-        if(auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
+        if (auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {
             return la->getTypeId() == type_id<self>();
         } else return false;
     }
 
-    static bool classof(const self* /* p */) {
+    static bool classof(const self*) {
         return true;
     }
 
@@ -36,4 +37,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* REQUIRESANNOTATION_H_ */
