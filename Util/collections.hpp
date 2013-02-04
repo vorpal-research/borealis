@@ -87,6 +87,11 @@ bool containsKey(const std::map<K, _>& map, const K& k) {
     return map.find(k) != map.end();
 }
 
+template<class K, class _>
+bool containsKey(const std::unordered_map<K, _>& map, const K& k) {
+    return map.find(k) != map.end();
+}
+
 template<class K, class V>
 void removeFromMultimap(std::multimap<K,V>& map, const K& k, const V& v) {
     auto range = map.equal_range(k);
