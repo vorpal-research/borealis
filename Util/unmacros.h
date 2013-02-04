@@ -13,11 +13,10 @@
 #undef QUICK_RETURN
 #undef QUICK_CONST_RETURN
 #undef BYE_BYE
+#undef BYE_BYE_VOID
 #undef BOREALIS_MACROS_DEFINED
 #else
 #error "unmacros.h is included without corresponding macros.h include!"
 #endif // BOREALIS_MACROS_DEFINED
-
-
 
 // #endif /* UNMACROS_H_ */

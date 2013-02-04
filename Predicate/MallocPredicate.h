@@ -8,11 +8,11 @@
 #ifndef MALLOCPREDICATE_H_
 #define MALLOCPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class MallocPredicate: public Predicate {
+class MallocPredicate: public borealis::Predicate {
 
 public:
 

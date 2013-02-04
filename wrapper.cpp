@@ -63,10 +63,11 @@
 
 #include "Actions/comments.h"
 #include "Config/config.h"
-#include "Logging/logger.hpp"
 #include "Passes/DataProvider.hpp"
 #include "Passes/PrinterPasses.h"
 #include "Util/util.h"
+
+#include "Logging/logger.hpp"
 
 int main(int argc, const char** argv)
 {
@@ -75,8 +76,8 @@ int main(int argc, const char** argv)
 
     using borealis::comments::GatherCommentsAction;
     using borealis::config::Config;
-    using borealis::errs;
     using borealis::endl;
+    using borealis::errs;
     using borealis::infos;
     using borealis::logging::log_entry;
     using borealis::util::streams::error;
@@ -84,11 +85,11 @@ int main(int argc, const char** argv)
     const std::vector<std::string> empty;
 
     Config cfg("wrapper.conf");
-    for(auto logCFG: cfg.getValue<std::string>("logging", "ini")) {
+    for (auto logCFG : cfg.getValue<std::string>("logging", "ini")) {
         borealis::logging::configureLoggingFacility(logCFG);
     }
 
-    for(auto z3log: cfg.getValue<std::string>("logging", "z3log")) {
+    for (auto z3log : cfg.getValue<std::string>("logging", "z3log")) {
         borealis::logging::configureZ3Log(z3log);
     }
 
@@ -100,7 +101,7 @@ int main(int argc, const char** argv)
         std::vector<const char*> virt_argv(virt_argc);
 
         virt_argv[0] = "wrapper";
-        for(size_t i = 1U; i < virt_argc; ++i) {
+        for (size_t i = 1U; i < virt_argc; ++i) {
             virt_argv[i] = opt_args[i-1].c_str();
         }
 
@@ -115,14 +116,14 @@ int main(int argc, const char** argv)
     args.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
 
     auto cargs = args; // args we supply to the compiler itself, ignoring those used by us
-    auto newend =
-            std::remove_if(cargs.begin(), cargs.end(),
-                    [](const StringRef& ref) {return ref.startswith("-pass") || ref.startswith("-load");});
+    auto newend = std::remove_if(cargs.begin(), cargs.end(),
+        [](const StringRef& ref) { return ref.startswith("-pass") || ref.startswith("-load"); }
+    );
     cargs.erase(newend, cargs.end());
 
     {
-        auto out = borealis::logging::log_entry(infos());
-        for(const auto& arg : cargs) {
+        log_entry out(infos());
+        for (const auto& arg : cargs) {
             out << arg << " ";
         }
     }
@@ -139,7 +140,7 @@ int main(int argc, const char** argv)
     {
         log_entry out(infos());
         out << "clang ";
-        for(const auto& arg : argsFromInvocation) {
+        for (const auto& arg : argsFromInvocation) {
             out << arg << " ";
         }
     }
@@ -159,10 +160,10 @@ int main(int argc, const char** argv)
 
     // Create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
-    if(!Clang.ExecuteAction(Proc)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
+    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return 1; }
 
     EmitLLVMOnlyAction Act;
-    if(!Clang.ExecuteAction(Act)){ errs() << error("Fucked up, sorry :(") << endl; return 1; }
+    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; return 1; }
 
     std::unique_ptr<llvm::Module> module_ptr(Act.takeModule());
     auto& module = *module_ptr;
@@ -175,48 +176,43 @@ int main(int argc, const char** argv)
     std::vector<StringRef> passes2run;
 
     auto prePasses = cfg.getValue< std::vector<std::string> >("passes", "pre").getOrElse(empty);
-    for (StringRef p: prePasses) {
+    auto postPasses = cfg.getValue< std::vector<std::string> >("passes", "post").getOrElse(empty);
+
+    for (StringRef p : prePasses) {
         passes2run.push_back(p);
     }
-    for (StringRef p: args) {
+    for (StringRef p : args) {
         if( p.startswith("-pass") ) passes2run.push_back(p.drop_front(5));
     }
-
-    auto postPasses = cfg.getValue< std::vector<std::string> >("passes", "post").getOrElse(empty);
-    for (StringRef p: postPasses) {
+    for (StringRef p : postPasses) {
         passes2run.push_back(p);
     }
 
     std::vector<StringRef> libs2load;
 
     auto libs = cfg.getValue< std::vector<std::string> >("libs", "load").getOrElse(empty);
-    for (StringRef l: libs) {
+    for (StringRef l : libs) {
         libs2load.push_back(l);
     }
-    for (StringRef arg: args) {
+    for (StringRef arg : args) {
         if( arg.startswith("-load") ) libs2load.push_back(arg.drop_front(5));
     }
 
     {
         log_entry out(infos());
         out << "Passes:" << endl;
-        if (passes2run.empty())
-            out << "  " << error("None") << endl;
-        for (const auto& pass: passes2run) {
-            out << "  ";
-            out << pass << endl;
+        if (passes2run.empty()) out << "  " << error("None") << endl;
+        for (const auto& pass : passes2run) {
+            out << "  " << pass << endl;
         }
     }
-
 
     {
         log_entry out(infos());
         out << "Dynamic libraries:" << endl;
-        if (libs2load.empty())
-            out << "  " << error("None") << endl;
+        if (libs2load.empty()) out << "  " << error("None") << endl;
         for (const auto& lib: libs2load) {
-            out << "  ";
-            out << lib << endl;
+            out << "  " << lib << endl;
         }
     }
 
@@ -242,23 +238,25 @@ int main(int argc, const char** argv)
     pm.add(provideAsPass(&Proc));
     pm.add(provideAsPass(&Clang.getSourceManager()));
 
+    using borealis::createPrinterFor;
     if (!passes2run.empty()) {
         for (StringRef pass : passes2run) {
-            auto* passInfo = pass.endswith("-printer") ?
-                    reg.getPassInfo(pass.drop_back(8)) : reg.getPassInfo(pass);
+            bool isPrinterPass = pass.endswith("-printer");
+            StringRef passName = isPrinterPass ? pass.drop_back(8) : pass;
 
-            if(passInfo == nullptr) {
-                errs () << "Pass " << pass << " cannot be found" << endl;
+            auto* passInfo = reg.getPassInfo(passName);
+            if (passInfo == nullptr) {
+                errs () << "Pass " << passName << " cannot be found" << endl;
                 continue;
             }
 
             infos() << pass << ": " << passInfo->getPassName() << endl;
 
-            if(passInfo->getNormalCtor()) {
+            if (passInfo->getNormalCtor()) {
                 auto thePass = passInfo->getNormalCtor()();
                 pm.add(thePass);
-                if(pass.endswith("-printer")) {
-                    pm.add(borealis::createPrinterFor(passInfo, thePass));
+                if (isPrinterPass) {
+                    pm.add(createPrinterFor(passInfo, thePass));
                 }
             } else {
                 errs() << "Could not create pass " << passInfo->getPassName() << endl;
@@ -268,8 +266,9 @@ int main(int argc, const char** argv)
         pm.run(module);
 
         std::string error;
-        if(verifyModule(module, ReturnStatusAction, &error))
+        if (verifyModule(module, ReturnStatusAction, &error)) {
             errs() << "Module errors detected: " << error << endl;
+        }
     }
 
     return 0;

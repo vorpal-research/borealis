@@ -8,7 +8,7 @@
 #ifndef OPAQUEFLOATINGCONSTANTTERM_H_
 #define OPAQUEFLOATINGCONSTANTTERM_H_
 
-#include "Term.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
@@ -23,20 +23,17 @@ class OpaqueFloatingConstantTerm: public borealis::Term {
             llvm::ValueType::UNKNOWN,
             borealis::util::toString(value),
             type_id(*this)
-        ),
-        value(value) {};
+        ), value(value) {};
+
 public:
+
     double getValue() { return value; }
 
     OpaqueFloatingConstantTerm(const self&) = default;
 
-    friend class TermFactory;
-
 #include "Util/macros.h"
-
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
 #include "Util/unmacros.h"
 
     static bool classof(const Term* t) {
@@ -48,12 +45,15 @@ public:
     }
 
     virtual bool equals(const Term* other) const {
-        if(const self* that = llvm::dyn_cast<self>(other)) {
+        if (const self* that = llvm::dyn_cast<self>(other)) {
             return  Term::equals(other) &&
-                    that->value - value == .0;
+                    that->value - value == .0; // XXX: maybe bitwise is better?
         } else return false;
     }
+
+    friend class TermFactory;
 };
 
 } /* namespace borealis */
+
 #endif /* OPAQUEFLOATINGCONSTANTTERM_H_ */

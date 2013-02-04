@@ -37,4 +37,5 @@ Streamer& operator<<(Streamer& str, const NameContext& nc) {
 }
 
 } /* namespace borealis */
+
 #endif /* NAMECONTEXT_H_ */

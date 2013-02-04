@@ -17,13 +17,15 @@
 #include "Term/ReturnValueTerm.h"
 #include "Term/Term.h"
 #include "Term/ValueTerm.h"
+
 #include "Term/BinaryTerm.h"
-#include "Term/UnaryTerm.h"
 #include "Term/CmpTerm.h"
+#include "Term/UnaryTerm.h"
+
+#include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
 #include "Term/OpaqueIntConstantTerm.h"
-#include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueVarTerm.h"
 
 #include "Util/slottracker.h"
@@ -67,11 +69,9 @@ public:
     Term::Ptr getValueTerm(llvm::Value* v) {
         using namespace llvm;
 
-        if (isa<ConstantPointerNull>(v) ||
-                isa<ConstantInt>(v) ||
-                isa<ConstantFP>(v))
-            return getConstTerm(cast<Constant>(v));
-        else if(auto* arg = dyn_cast<Argument>(v))
+        if (auto* c = dyn_cast<Constant>(v))
+            return getConstTerm(c);
+        else if (auto* arg = dyn_cast<Argument>(v))
             return getArgumentTerm(arg);
         else
             return Term::Ptr(new ValueTerm(v, slotTracker));
@@ -108,6 +108,7 @@ public:
     Term::Ptr getOpaqueConstantTerm(bool v) {
         return Term::Ptr(new OpaqueBoolConstantTerm(v));
     }
+
 
 
     static Ptr get(SlotTracker* slotTracker) {

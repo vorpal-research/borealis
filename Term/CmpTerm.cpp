@@ -9,7 +9,6 @@
 
 namespace borealis {
 
-
-CmpTerm::~CmpTerm() {}
+CmpTerm::~CmpTerm() {};
 
 } /* namespace borealis */

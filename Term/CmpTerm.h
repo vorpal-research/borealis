@@ -8,11 +8,11 @@
 #ifndef CMPTERM_H_
 #define CMPTERM_H_
 
-#include "Term.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
-class CmpTerm: public Term {
+class CmpTerm: public borealis::Term {
     typedef CmpTerm self;
 
     llvm::ConditionType opcode;
@@ -22,27 +22,27 @@ class CmpTerm: public Term {
     CmpTerm(llvm::ConditionType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
                 lhv->getId() ^ rhv->getId(),
-                llvm::ValueType::INT_VAR, // FIXME
+                llvm::ValueType::INT_VAR, // FIXME: infer the correct type?
                 lhv->getName() + llvm::conditionString(opcode) + rhv->getName(),
                 type_id(*this)
-        ), opcode(opcode), lhv(lhv), rhv(rhv){};
+        ), opcode(opcode), lhv(lhv), rhv(rhv) {};
 
 public:
+
     CmpTerm(const CmpTerm&) = default;
+    ~CmpTerm();
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const self* {
         return new CmpTerm(opcode, tr->transform(lhv), tr->transform(rhv));
     }
 
-    ~CmpTerm();
-
     virtual bool equals(const Term* other) const {
-        if(const CmpTerm* that = llvm::dyn_cast<CmpTerm>(other)) {
+        if (const CmpTerm* that = llvm::dyn_cast<CmpTerm>(other)) {
             return  Term::equals(other) &&
                     that->opcode == opcode &&
-                    that->lhv == lhv &&
-                    that->rhv == rhv;
+                    *that->lhv == *lhv &&
+                    *that->rhv == *rhv;
         } else return false;
     }
 
@@ -61,4 +61,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* CMPTERM_H_ */

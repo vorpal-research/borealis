@@ -5,9 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "MallocPredicate.h"
-#include "Logging/tracer.hpp"
-
+#include "Predicate/MallocPredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -55,9 +53,7 @@ bool MallocPredicate::equals(const Predicate* other) const {
 }
 
 size_t MallocPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv);
 }
 
 } /* namespace borealis */

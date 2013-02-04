@@ -299,7 +299,7 @@ REDEF_BV_BIN_OP(/)
 
 #define REDEF_BV_INT_BIN_OP(OP) \
         template<size_t N> \
-        BitVector<N> operator OP(BitVector<N> bv, long long v1) { \
+        BitVector<N> operator OP(BitVector<N> bv, int v1) { \
             return BitVector<N>(bv.get() OP v1, bv.axiom()); \
         }
 
@@ -314,7 +314,7 @@ REDEF_BV_INT_BIN_OP(/)
 
 #define REDEF_INT_BV_BIN_OP(OP) \
         template<size_t N> \
-        BitVector<N> operator OP(long long v1, BitVector<N> bv) { \
+        BitVector<N> operator OP(int v1, BitVector<N> bv) { \
             return BitVector<N>(v1 OP bv.get(), bv.axiom()); \
         }
 

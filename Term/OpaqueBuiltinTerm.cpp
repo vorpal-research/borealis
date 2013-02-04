@@ -6,4 +6,3 @@
  */
 
 #include "OpaqueBuiltinTerm.h"
-

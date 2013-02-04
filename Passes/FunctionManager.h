@@ -29,7 +29,6 @@ public:
     typedef Data::value_type DataEntry;
 
     FunctionManager();
-
     virtual bool runOnModule(llvm::Module& /*M*/) { return false; }
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~FunctionManager() {};

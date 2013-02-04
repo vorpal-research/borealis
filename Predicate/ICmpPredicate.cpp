@@ -5,28 +5,26 @@
  *      Author: ice-phoenix
  */
 
-#include "ICmpPredicate.h"
-
+#include "Predicate/ICmpPredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
 
 using llvm::conditionString;
-using llvm::conditionType;
 
 ICmpPredicate::ICmpPredicate(
         PredicateType type,
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
-        int cond) :
+        llvm::ConditionType cond) :
             ICmpPredicate(lhv, op1, op2, cond, nullptr, type) {}
 
 ICmpPredicate::ICmpPredicate(
         Term::Ptr lhv,
         Term::Ptr op1,
         Term::Ptr op2,
-        int cond,
+        llvm::ConditionType cond,
         SlotTracker* /* st */,
         PredicateType type) :
             Predicate(type_id(*this), type),
@@ -55,9 +53,8 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
     auto o1 = z3ef.getExprForTerm(*op1);
     auto o2 = z3ef.getExprForTerm(*op2);
 
-    ConditionType ct = conditionType(cond);
     // these cases assume nothing about operands
-    switch(ct) {
+    switch(cond) {
         case ConditionType::EQ: return l == (o1 == o2);
         case ConditionType::NEQ: return l == (o1 != o2);
         case ConditionType::TRUE: return l == z3ef.getTrue();
@@ -72,7 +69,7 @@ logic::Bool ICmpPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
 
     auto co1 = o1.toComparable().getUnsafe();
     auto co2 = o2.toComparable().getUnsafe();
-    switch(ct) {
+    switch(cond) {
         case ConditionType::LT: return l == (co1 < co2);
         case ConditionType::LTE: return l == (co1 <= co2);
         case ConditionType::GT: return l == (co1 > co2);
@@ -98,12 +95,7 @@ bool ICmpPredicate::equals(const Predicate* other) const {
 }
 
 size_t ICmpPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + op1->hashCode();
-    hash = 17 * hash + op2->hashCode();
-    hash = 17 * hash + cond;
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, op1, op2, cond);
 }
 
 } /* namespace borealis */

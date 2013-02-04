@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 

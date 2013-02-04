@@ -8,11 +8,11 @@
 #ifndef ALLOCAPREDICATE_H_
 #define ALLOCAPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class AllocaPredicate: public Predicate {
+class AllocaPredicate: public borealis::Predicate {
 
 public:
 
@@ -48,7 +48,6 @@ private:
             PredicateType type,
             Term::Ptr lhv,
             Term::Ptr numElements);
-
     AllocaPredicate(
             Term::Ptr lhv,
             Term::Ptr numElements,

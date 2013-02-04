@@ -29,8 +29,7 @@ struct LocalLocus {
     LocalLocus(unsigned line, unsigned col): line(line), col(col) {};
     LocalLocus(const llvm::DebugLoc& dbg): line(dbg.getLine()), col(dbg.getCol()) {};
     LocalLocus(const clang::SourceLocation& src, const clang::SourceManager& mng):
-        line(mng.getExpansionLineNumber(src)), col(mng.getExpansionColumnNumber(src)) {}
-
+        line(mng.getExpansionLineNumber(src)), col(mng.getExpansionColumnNumber(src)) {};
 
     const LocalLocus& operator=(const LocalLocus& that) {
         this->line = that.line;
@@ -78,7 +77,7 @@ struct LocalLocus {
     }
 
     void operator()(std::string str) {
-        for(auto it = str.begin(); it != str.end(); ++it) (*this)(*it);
+        for (auto ch : str) (*this)(ch);
     }
 
     LocalLocus& operator++() {
@@ -95,7 +94,6 @@ struct LocalLocus {
 
 template<class Streamer>
 Streamer& operator<<(Streamer& ost, const LocalLocus& ll) {
-    // 1:1
     // this is generally fucked up
     return static_cast<Streamer&>(ost << ll.line << ":" << ll.col);
 }
@@ -115,7 +113,7 @@ struct Locus {
     Locus(const llvm::DILocation& that): filename(that.getFilename()), loc(that.getLineNumber(), that.getColumnNumber()) {};
     Locus(const std::string& filename, const LocalLocus& loc): filename(filename), loc(loc) {};
     Locus(const std::string& filename, unsigned line, unsigned col): filename(filename), loc(line,col) {};
-    Locus(std::string&& filename, LocalLocus&& loc): filename(std::move(filename)), loc(loc) {};
+    Locus(std::string&& filename, LocalLocus&& loc): filename(std::move(filename)), loc(std::move(loc)) {};
     Locus(std::string&& filename, unsigned line, unsigned col): filename(std::move(filename)), loc(line,col) {};
 
     const Locus& operator=(const Locus& that) {
@@ -141,7 +139,6 @@ struct Locus {
 
 template<class Streamer>
 Streamer& operator<<(Streamer& ost, const Locus& ll) {
-    // file.txt:1:2
     // this is generally fucked up
     return static_cast<Streamer&>(ost << ll.filename << ":" << ll.loc);
 }
@@ -170,9 +167,9 @@ class hash<borealis::Locus> {
 public:
     size_t operator()(const borealis::Locus &l) const
     {
-        size_t h1 = std::hash<borealis::LocalLocus>()(l.loc);
-        size_t h2 = std::hash<std::string>()(l.filename);
-        return h1 + (h2 << 16);
+        size_t h1 = std::hash<std::string>()(l.filename);
+        size_t h2 = std::hash<borealis::LocalLocus>()(l.loc);
+        return h2 + (h1 << 16);
     }
 };
 }

@@ -13,9 +13,9 @@
 #include <cstdlib>
 #include <unordered_set>
 
-#include "util.h"
+#include "Util/util.h"
 
-#include "macros.h"
+#include "Util/macros.h"
 
 namespace llvm {
 
@@ -27,63 +27,61 @@ llvm::raw_ostream& operator<<(
 }
 
 std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
-	using namespace::std;
-
 	typedef CmpInst::Predicate P;
 	typedef ConditionType CT;
 
 	switch (cond) {
 	case P::ICMP_EQ:
 	case P::FCMP_OEQ:
-		return make_pair("=", CT::EQ);
+		return {"=", CT::EQ};
 	case P::FCMP_UEQ:
-		return make_pair("?=", CT::EQ);
+		return {"?=", CT::EQ};
 
 	case P::ICMP_NE:
 	case P::FCMP_ONE:
-		return make_pair("~=", CT::NEQ);
+		return {"~=", CT::NEQ};
 	case P::FCMP_UNE:
-		return make_pair("?~=", CT::NEQ);
+		return {"?~=", CT::NEQ};
 
 	case P::ICMP_SGE:
 	case P::FCMP_OGE:
-		return make_pair(">=", CT::GTE);
+		return {">=", CT::GTE};
 	case P::ICMP_UGE:
-		return make_pair("+>=", CT::GTE);
+		return {"+>=", CT::GTE};
 	case P::FCMP_UGE:
-		return make_pair("?>=", CT::GTE);
+		return {"?>=", CT::GTE};
 
 	case P::ICMP_SGT:
 	case P::FCMP_OGT:
-		return make_pair(">", CT::GT);
+		return {">", CT::GT};
 	case P::ICMP_UGT:
-		return make_pair("+>", CT::GT);
+		return {"+>", CT::GT};
 	case P::FCMP_UGT:
-		return make_pair("?>", CT::GT);
+		return {"?>", CT::GT};
 
 	case P::ICMP_SLE:
 	case P::FCMP_OLE:
-		return make_pair("<=", CT::LTE);
+		return {"<=", CT::LTE};
 	case P::ICMP_ULE:
-		return make_pair("+<=", CT::LTE);
+		return {"+<=", CT::LTE};
 	case P::FCMP_ULE:
-		return make_pair("?<=", CT::LTE);
+		return {"?<=", CT::LTE};
 
 	case P::ICMP_SLT:
 	case P::FCMP_OLT:
-		return make_pair("<", CT::LT);
+		return {"<", CT::LT};
 	case P::ICMP_ULT:
-		return make_pair("+<", CT::LT);
+		return {"+<", CT::LT};
 	case P::FCMP_ULT:
-		return make_pair("?<", CT::LT);
+		return {"?<", CT::LT};
 
 	case P::FCMP_TRUE:
-		return make_pair("true", CT::TRUE);
+		return {"true", CT::TRUE};
 	case P::FCMP_FALSE:
-		return make_pair("false", CT::FALSE);
+		return {"false", CT::FALSE};
 
 	default:
-		return make_pair("???", CT::UNKNOWN);
+		return {"???", CT::UNKNOWN};
 	}
 }
 
@@ -228,7 +226,7 @@ std::string nospaces(std::string&& v) {
 	return v;
 }
 
-bool endsWith(std::string const &fullString, std::string const &ending) {
+bool endsWith(const std::string& fullString, const std::string& ending) {
     if (fullString.length() >= ending.length()) {
         return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
     } else {
@@ -249,4 +247,4 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
 } // namespace util
 } // namespace borealis
 
-#include "unmacros.h"
+#include "Util/unmacros.h"

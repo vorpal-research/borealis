@@ -7,8 +7,7 @@
 
 #include <algorithm>
 
-#include "DefaultSwitchCasePredicate.h"
-
+#include "Predicate/DefaultSwitchCasePredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -30,7 +29,7 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
 
     std::string a = "";
     for (const auto& c : cases) {
-        a = a + c->getName() + " or ";
+        a = a + c->getName() + " | ";
     }
 
     this->asString = this->cond->getName() + "=not(" + a + ")";
@@ -48,7 +47,7 @@ logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionConte
         BYE_BYE(logic::Bool, "Encountered switch with non-Integer condition");
     }
 
-    for (auto& c : cases) {
+    for (const auto& c : cases) {
         auto re = z3ef.getExprForTerm(*c).to<Integer>();
 
         if (re.empty()) {

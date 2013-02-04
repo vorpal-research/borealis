@@ -75,8 +75,8 @@ public:
   /// Construct from a function, starting out in incorp state.
   explicit SlotTracker(const llvm::Function *F);
 
-  /// Return the slot number of the specified value in it's type
-  /// plane.  If something is not in the SlotTracker, return -1.
+  /// Return the slot number of the specified value in its type
+  /// plane. If something is not in the SlotTracker, return -1.
   int getLocalSlot(const llvm::Value *V);
   int getGlobalSlot(const llvm::GlobalValue *V);
   int getMetadataSlot(const llvm::MDNode *N);

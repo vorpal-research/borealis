@@ -5,14 +5,13 @@
  *      Author: ice-phoenix
  */
 
-#include "CheckNullDereferencePass.h"
-
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 #include <llvm/Support/InstVisitor.h>
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
+#include "Passes/CheckNullDereferencePass.h"
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Query/AndQuery.h"
 #include "Query/EqualityQuery.h"
@@ -39,6 +38,7 @@ public:
         for (auto* derefNullValue : *(pass->DerefNullSet)) {
             if (pass->AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 pass->ValueNullSet->insert(&I);
+                break;
             }
         }
     }
@@ -67,6 +67,7 @@ public:
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 if (checkNullDereference(I, *ptr, *nullValue)) {
                     reportNullDereference(I, *ptr, *nullValue);
+                    break;
                 }
             }
         }
@@ -83,6 +84,7 @@ public:
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 if (checkNullDereference(I, *ptr, *nullValue)) {
                     reportNullDereference(I, *ptr, *nullValue);
+                    break;
                 }
             }
         }
@@ -131,15 +133,10 @@ public:
     }
 
     void reportNullDereference(
-            llvm::Value& in,
-            llvm::Value& what,
-            llvm::Value& from) {
-        pass->infos() << "Possible NULL dereference in" << endl
-                << "\t" << pass->sourceLocationTracker->getLocFor(&in) << "\t" << in << endl
-                << "from" << endl
-                << "\t" << pass->sourceLocationTracker->getLocFor(&from) << "\t" << from << endl
-                << "with" << endl
-                << "\t" << pass->sourceLocationTracker->getLocFor(&what) << "\t" << what << endl;
+            llvm::Instruction& where,
+            llvm::Value& /* what */,
+            llvm::Value& /* from */) {
+        pass->defectManager->addDefect(DefectType::INI_03, &where);
     }
 
 private:
@@ -156,19 +153,19 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const
     Info.setPreservesAll();
     Info.addRequiredTransitive<DSAA>();
     Info.addRequiredTransitive<DefaultPredicateAnalysis::PSA>();
+    Info.addRequiredTransitive<DefectManager>();
     Info.addRequiredTransitive<DetectNullPass>();
     Info.addRequiredTransitive<SlotTrackerPass>();
-    Info.addRequiredTransitive<SourceLocationTracker>();
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     using namespace::llvm;
 
     AA = &getAnalysis<DSAA>();
-    DNP = &getAnalysis<DetectNullPass>();
     PSA = &getAnalysis<DefaultPredicateAnalysis::PSA>();
+    defectManager = &getAnalysis<DefectManager>();
+    DNP = &getAnalysis<DetectNullPass>();
     slotTracker = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
-    sourceLocationTracker = &getAnalysis<SourceLocationTracker>();
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);
@@ -176,15 +173,11 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     ValueNullSet = &valueSet;
     DerefNullSet = &derefSet;
 
-    infos() << "DerefNullSet:" << endl
-            << *DerefNullSet << endl;
-
-    infos() << "ValueNullSet before propagation:" << endl
-            << *ValueNullSet << endl;
+    infos() << "DerefNullSet:" << endl << *DerefNullSet << endl;
+    infos() << "ValueNullSet before propagation:" << endl << *ValueNullSet << endl;
     DerefInstVisitor div(this);
     div.visit(F);
-    infos() << "ValueNullSet after propagation:" << endl
-            << *ValueNullSet << endl;
+    infos() << "ValueNullSet after propagation:" << endl << *ValueNullSet << endl;
 
     ValueInstVisitor viv(this);
     viv.visit(F);

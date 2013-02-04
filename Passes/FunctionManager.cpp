@@ -5,13 +5,14 @@
  *      Author: ice-phoenix
  */
 
-#include "FunctionManager.h"
-
-#include "AnnotatorPass.h"
 #include "Codegen/builtins.h"
 #include "Codegen/intrinsics.h"
 #include "Codegen/intrinsics_manager.h"
+#include "Passes/AnnotatorPass.h"
+#include "Passes/FunctionManager.h"
 #include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -29,8 +30,7 @@ void FunctionManager::addFunction(llvm::CallInst& CI, PredicateState state) {
     llvm::Function* F = CI.getCalledFunction();
 
     if (data.count(F) > 0) {
-        sayonara(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Attempt to register function " + F->getName().str() + " twice");
+        BYE_BYE_VOID("Attempt to register function " + F->getName().str() + " twice");
     }
 
     data[F] = state;
@@ -55,8 +55,6 @@ PredicateState FunctionManager::get(
 
     if (data.count(F) == 0) {
         return PredicateState();
-        // return sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-        //         "Attempt to get unregistered function " + F->getName().str());
     }
 
     return data[F];
@@ -67,3 +65,5 @@ static llvm::RegisterPass<FunctionManager>
 X("function-manager", "Pass that manages function analysis results");
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

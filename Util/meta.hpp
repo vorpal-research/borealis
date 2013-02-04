@@ -19,6 +19,7 @@ template<class T> T some();
 template<class T, class ...List>
 struct get_index_of_T_in;
 
+// Head == T
 template<class T, class ...Tail>
 struct get_index_of_T_in<T, T, Tail...> {
     enum { value = 0 };
@@ -81,7 +82,7 @@ struct make_indexer<Head0, Head1, Tail...> {
 };
 
 template<class ...List>
-struct type_list{};
+struct type_list {};
 
 template<size_t I, class Tl>
 struct index_in_type_list;

@@ -7,15 +7,18 @@
 
 #include <llvm/Analysis/Dominators.h>
 #include <llvm/Constants.h>
+#include <llvm/Metadata.h>
+#include <llvm/Support/Casting.h>
 #include <llvm/Support/CommandLine.h>
 
-#include "LoopUnroll.h"
+#include <vector>
 
+#include "Passes/LoopUnroll.h"
 #include "Util/util.h"
 
-namespace borealis {
+#include "Util/macros.h"
 
-using borealis::util::sayonara;
+namespace borealis {
 
 static llvm::cl::opt<unsigned>
 DerollCount("deroll-count", llvm::cl::init(3), llvm::cl::NotHidden,
@@ -34,6 +37,28 @@ static inline void RemapInstruction(
         ValueToValueMapTy::iterator It = VMap.find(Op);
         if (It != VMap.end()) {
             I.setOperand(op, It->second);
+        // Attempt to remap internal MDNode values to cloned ones
+        // to preserve debug information when unrolling
+        } else if (MDNode* MDN = dyn_cast_or_null<MDNode>(Op)) {
+
+            std::vector<Value*> mdn_values;
+            mdn_values.reserve(MDN->getNumOperands());
+            bool hasClonedValues = false;
+
+            for (unsigned mdn_op = 0, ee = MDN->getNumOperands(); mdn_op != ee; ++mdn_op) {
+                Instruction* OldVal = dyn_cast_or_null<Instruction>(MDN->getOperand(mdn_op));
+                ValueToValueMapTy::iterator mdn_it = VMap.find(OldVal);
+                if (OldVal && mdn_it != VMap.end()) {
+                    mdn_values.push_back(mdn_it->second);
+                    hasClonedValues = true;
+                } else {
+                    mdn_values.push_back(OldVal);
+                }
+            }
+
+            if (hasClonedValues) {
+                I.setOperand(op, MDNode::get(MDN->getContext(), mdn_values));
+            }
         }
     }
 
@@ -87,16 +112,13 @@ bool LoopUnroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
 
     // Sanity checks
     if (Header == nullptr) {
-        return sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Cannot unroll a loop with multiple headers");
+        BYE_BYE(bool, "Cannot unroll a loop with multiple headers");
     }
     if (Latch == nullptr) {
-        return sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Cannot unroll a loop with multiple latches");
+        BYE_BYE(bool, "Cannot unroll a loop with multiple latches");
     }
     if (LoopPredecessor == nullptr) {
-        return sayonara<bool>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                "Cannot unroll a loop with multiple predecessors");
+        BYE_BYE(bool, "Cannot unroll a loop with multiple predecessors");
     }
 
     // Loop exit info
@@ -246,3 +268,5 @@ static llvm::RegisterPass<LoopUnroll>
 X("loop-deroll", "Loop de-roller pass");
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

@@ -8,11 +8,11 @@
 #ifndef EQUALITYPREDICATE_H_
 #define EQUALITYPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class EqualityPredicate: public Predicate {
+class EqualityPredicate: public borealis::Predicate {
 
 public:
 

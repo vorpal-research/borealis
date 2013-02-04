@@ -15,9 +15,9 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/DefectManager.h"
 #include "Passes/DetectNullPass.h"
 #include "Passes/SlotTrackerPass.h"
-#include "Passes/SourceLocationTracker.h"
 
 #include "Logging/logger.hpp"
 
@@ -36,7 +36,9 @@ class CheckNullDereferencePass:
 public:
 
 	static char ID;
-	static constexpr decltype("check-null") loggerDomain() { return "check-null"; }
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("null-deref-check")
+#include "Util/unmacros.h"
 
 	CheckNullDereferencePass();
 	virtual bool runOnFunction(llvm::Function& F);
@@ -46,10 +48,10 @@ public:
 private:
 
 	llvm::AliasAnalysis* AA;
-	DetectNullPass* DNP;
 	DefaultPredicateAnalysis::PSA* PSA;
+    DefectManager* defectManager;
+    DetectNullPass* DNP;
 	SlotTracker* slotTracker;
-	SourceLocationTracker* sourceLocationTracker;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;

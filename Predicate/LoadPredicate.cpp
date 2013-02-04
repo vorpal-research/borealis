@@ -5,8 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "LoadPredicate.h"
-
+#include "Predicate/LoadPredicate.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -63,10 +62,7 @@ bool LoadPredicate::equals(const Predicate* other) const {
 }
 
 size_t LoadPredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + lhv->hashCode();
-    hash = 17 * hash + rhv->hashCode();
-    return hash;
+    return util::hash::hasher<3, 17>()(lhv, rhv);
 }
 
 } /* namespace borealis */

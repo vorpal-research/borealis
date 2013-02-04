@@ -8,7 +8,7 @@
 #ifndef OPAQUEINTCONSTANTTERM_H_
 #define OPAQUEINTCONSTANTTERM_H_
 
-#include "Term.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
@@ -23,20 +23,17 @@ class OpaqueIntConstantTerm: public borealis::Term {
             llvm::ValueType::UNKNOWN,
             borealis::util::toString(value),
             type_id(*this)
-        ),
-        value(value) {};
+        ), value(value) {};
+
 public:
+
     long long getValue() const { return value; }
 
     OpaqueIntConstantTerm(const self&) = default;
 
-    friend class TermFactory;
-
 #include "Util/macros.h"
-
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
 #include "Util/unmacros.h"
 
     static bool classof(const Term* t) {
@@ -53,7 +50,10 @@ public:
                     that->value == value;
         } else return false;
     }
+
+    friend class TermFactory;
 };
 
 } /* namespace borealis */
+
 #endif /* OPAQUEINTCONSTANTTERM_H_ */

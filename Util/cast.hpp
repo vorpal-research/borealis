@@ -9,19 +9,20 @@
 #define CAST_HPP_
 
 #include <llvm/Support/Casting.h>
+
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
 
-namespace borealis{
-namespace util{
+namespace borealis {
+namespace util {
 
 template<class Basic>
 class llvm_rtti_visitor {
     const Basic* b;
 
 public:
-    llvm_rtti_visitor(const Basic* b): b(b){};
-    llvm_rtti_visitor(const Basic& b): b(&b){};
+    llvm_rtti_visitor(const Basic* b) : b(b) {};
+    llvm_rtti_visitor(const Basic& b) : b(&b) {};
     llvm_rtti_visitor(const llvm_rtti_visitor& b) = default;
 
     template<class Derived, class Callable>
@@ -51,9 +52,7 @@ llvm_rtti_visitor<Basic> visit(const Basic* b) {
     return b;
 }
 
-}
-}
-
-
+} // namespace util
+} // namespace borealis
 
 #endif /* CAST_HPP_ */

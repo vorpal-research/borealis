@@ -12,8 +12,8 @@
 #define BOREALIS_MACROS_DEFINED
 
 /*
- * Macro for quick-writing of one-liners with tricky typing.
- * This can be used to replace this (note the clone):
+ * Macro for quick-writing one-liners with tricky typing.
+ * This can be used to replace this (note the same `a+b` used twice):
  *
  * template<class A, class B>
  * auto plus(A a, B b) -> decltype(a+b) { return a+b; }
@@ -23,7 +23,8 @@
  * template<class A, class B>
  * auto plus(A a, B b) QUICK_RETURN(a+b)
  *
- * Note that one-liners can be big and the impact will be significant.
+ * Note that the one-liners can be big and the impact will be significant.
+ *
  * TODO: the name choice is poor
  *
  * */

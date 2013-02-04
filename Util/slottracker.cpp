@@ -129,7 +129,7 @@ void SlotTracker::processFunction() {
             if (!I->getType()->isVoidTy() && !I->hasName())
                 CreateFunctionSlot(I);
 
-            // Intrinsics can directly use metadata.  We allow direct calls to any
+            // Intrinsics can directly use metadata. We allow direct calls to any
             // llvm.foo function here, because the target may not be linked into the
             // optimizer.
             if (const CallInst *CI = dyn_cast<CallInst>(I)) {
@@ -206,12 +206,11 @@ void SlotTracker::CreateModuleSlot(const GlobalValue *V) {
     unsigned DestSlot = mNext++;
     mMap[V] = DestSlot;
 
-    ST_DEBUG("  Inserting value [" << V->getType() << "] = " << V << " slot=" <<
-            DestSlot << " [");
+    ST_DEBUG("  Inserting value [" << V->getType() << "] = " << V << " slot=" << DestSlot << " [");
     // G = Global, F = Function, A = Alias, o = other
     ST_DEBUG((isa<GlobalVariable>(V) ? 'G' :
-            (isa<Function>(V) ? 'F' :
-                    (isa<GlobalAlias>(V) ? 'A' : 'o'))) << "]\n");
+             (isa<Function>(V) ? 'F' :
+             (isa<GlobalAlias>(V) ? 'A' : 'o'))) << "]\n");
 }
 
 /// CreateSlot - Create a new slot for the specified value if it has no name.
@@ -222,8 +221,7 @@ void SlotTracker::CreateFunctionSlot(const Value *V) {
     fMap[V] = DestSlot;
 
     // G = Global, F = Function, o = other
-    ST_DEBUG("  Inserting value [" << V->getType() << "] = " << V << " slot=" <<
-            DestSlot << " [o]\n");
+    ST_DEBUG("  Inserting value [" << V->getType() << "] = " << V << " slot=" << DestSlot << " [o]\n");
 }
 
 /// CreateModuleSlot - Insert the specified MDNode* into the slot table.

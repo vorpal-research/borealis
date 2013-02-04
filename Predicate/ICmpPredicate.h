@@ -8,13 +8,11 @@
 #ifndef ICMPPREDICATE_H_
 #define ICMPPREDICATE_H_
 
-#include "Predicate.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class PredicateFactory;
-
-class ICmpPredicate: public Predicate {
+class ICmpPredicate: public borealis::Predicate {
 
 public:
 
@@ -49,7 +47,7 @@ private:
     const Term::Ptr op1;
     const Term::Ptr op2;
 
-    const int cond;
+    const llvm::ConditionType cond;
     const std::string _cond;
 
     ICmpPredicate(
@@ -57,12 +55,12 @@ private:
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
-            int cond);
+            llvm::ConditionType cond);
     ICmpPredicate(
             Term::Ptr lhv,
             Term::Ptr op1,
             Term::Ptr op2,
-            int cond,
+            llvm::ConditionType cond,
             SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
