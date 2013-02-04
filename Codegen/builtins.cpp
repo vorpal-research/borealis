@@ -7,9 +7,10 @@
 
 #include <llvm/Analysis/MemoryBuiltins.h>
 
-#include "builtins.h"
-
+#include "Codegen/builtins.h"
 #include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -34,7 +35,6 @@ PredicateState getPredicateState(
     llvm::Function* F = CI.getCalledFunction();
 
     switch (bi) {
-
     case builtin::MALLOC:
         {
             PredicateState res;
@@ -47,10 +47,11 @@ PredicateState getPredicateState(
 
     default:
         {
-            return sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "Unknown built-in type");
+            BYE_BYE(PredicateState, "Unknown built-in type");
         }
     }
 }
 
 } // namespace borealis
+
+#include "Util/unmacros.h"

@@ -15,7 +15,9 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Type.h>
 
-#include "intrinsics.h"
+#include "Codegen/intrinsics.h"
+
+#include "Util/macros.h"
 
 using namespace borealis;
 
@@ -54,8 +56,9 @@ PredicateState borealis::getPredicateState(
 
     default:
         {
-            return util::sayonara<PredicateState>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                    "Unknown intrinsic type");
+            BYE_BYE(PredicateState, "Unknown intrinsic type");
         }
     }
 }
+
+#include "Util/unmacros.h"

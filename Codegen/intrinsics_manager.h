@@ -12,7 +12,7 @@
 
 #include <unordered_map>
 
-#include "intrinsics.h"
+#include "Codegen/intrinsics.h"
 
 namespace borealis {
 
@@ -23,7 +23,7 @@ public:
     typedef std::unordered_map<llvm::Function*, intrinsic> intrinsics_type_cache;
     typedef std::unordered_map<llvm::Function*, PredicateState> intrinsics_state_cache;
 
-    // TODO Make this shit also cache all intrinsic instances
+    // TODO: Make this shit also cache all intrinsic instances
     llvm::Function* createIntrinsic(
             intrinsic intr,
             llvm::Module* module,

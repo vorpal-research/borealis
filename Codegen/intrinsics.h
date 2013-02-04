@@ -39,7 +39,7 @@ typedef std::unordered_map<llvm::Type*, llvm::Function*> typed_intrinsics_cache;
 namespace std {
 
 template<>
-struct hash<borealis::intrinsic>: public borealis::util::enums::enum_hash<borealis::intrinsic> {};
+struct hash<borealis::intrinsic> : public borealis::util::enums::enum_hash<borealis::intrinsic> {};
 
 } // namespace std
 
