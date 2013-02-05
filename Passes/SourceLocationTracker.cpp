@@ -50,15 +50,20 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 				if (valueDebugInfo.contains(func)) {
 					fname = valueDebugInfo[Inst.getParent()->getParent()].filename;
 
-					const auto& loc = Inst.getDebugLoc();
+					Locus retloc;
+					retloc.filename = fname;
+					const auto& dbgloc = Inst.getDebugLoc();
 
-					if (!loc.isUnknown()) {
-						valueDebugInfo.put(Locus(
-								fname,
-								Inst.getDebugLoc().getLine(),
-								Inst.getDebugLoc().getCol()
-							), &Inst);
+					if (!dbgloc.isUnknown()) {
+					    retloc.loc = dbgloc;
 					}
+
+					if(auto* locmd = Inst.getMetadata("dbg")) {
+					    DILocation diloc(locmd);
+					    retloc = diloc;
+					}
+
+                    valueDebugInfo.put(retloc, &Inst);
 				}
 			}
 		}

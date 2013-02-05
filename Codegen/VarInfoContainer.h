@@ -22,7 +22,7 @@ namespace borealis {
 
 // time optimized multidirectional container from Value* to VarInfo
 class VarInfoContainer {
-    typedef std::unordered_map<llvm::Value*, VarInfo> v2vi_t;
+    typedef std::unordered_multimap<llvm::Value*, VarInfo> v2vi_t;
     typedef std::unordered_multimap<util::key_ptr<std::string>, llvm::Value*> str2v_t;
     typedef std::multimap<util::key_ptr<Locus>, llvm::Value*> loc2v_t;
     typedef std::unordered_map<clang::Decl*, llvm::Value*> clang2v_t;
@@ -51,20 +51,10 @@ public:
     void put(llvm::Value* val, const VarInfo& vi) {
         using util::key_ptr;
 
-        if (fwd.count(val)) {
-            auto& old_vi = fwd[val];
-            for (std::string& viname: old_vi.originalName)
-                util::removeFromMultimap(bwd_names, key_ptr<std::string>(viname), val);
-            for (Locus& viloc: old_vi.originalLocus)
-                util::removeFromMultimap(bwd_locs, key_ptr<Locus>(viloc), val);
-            if (old_vi.ast && bwd_clang.count(old_vi.ast))
-                bwd_clang.erase(old_vi.ast);
-        }
 
-        fwd[val] = vi;
-        // ▲ that was a copy assignment
-        // and this ▼ is taking a reference
-        auto& new_vi = fwd[val]; // vi and new_vi are NOT the same
+        auto new_it = fwd.insert({val, vi});
+
+        const auto& new_vi = new_it->second;
 
         for (const auto& name: new_vi.originalName) {
             bwd_names.insert({ key_ptr<std::string>(name), val });
@@ -77,7 +67,7 @@ public:
         }
     }
 
-    const VarInfo& get(llvm::Value* val) const { return fwd.at(val); }
+    //const VarInfo& get(llvm::Value* val) const { return fwd.at(val); }
     str_value_range byName(const std::string& str) const {
         return bwd_names.equal_range(str);
     }
