@@ -128,7 +128,7 @@ public:
 	}
 };
 
-std::vector<command> parse(std::string v);
+std::vector<command> parse(const std::string& v);
 
 } // namespace anno
 } // namespace borealis

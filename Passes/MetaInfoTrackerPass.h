@@ -39,6 +39,72 @@ public:
 
     virtual void print(llvm::raw_ostream&, const llvm::Module* M) const;
 
+    llvm::Value* locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const  {
+        using borealis::util::view;
+        typedef typename VarInfoContainer::loc_value_iterator::value_type loc_and_val;
+
+        switch(policy) {
+
+        case DiscoveryPolicy::NextVal:
+        {
+            auto fwd_it = vars.byLocFwd(loc);
+            auto end = vars.byLocEnd();
+            auto valsByName = vars.byName(name);
+
+            for(auto& byloc: view(fwd_it, end)) {
+                if(llvm::isa<llvm::Function>(byloc.second)) continue;
+
+                for(auto& byname: view(valsByName)) {
+                    if(byloc.second == byname.second) return byloc.second;
+                }
+            }
+
+            return nullptr;
+        }
+
+        case DiscoveryPolicy::PreviousVal:
+        {
+            auto bwd_it = vars.byLocReverse(loc);
+            auto end = vars.byLocReverseEnd();
+            auto valsByName = vars.byName(name);
+
+            for(auto& byloc: view(bwd_it, end)) {
+                if(llvm::isa<llvm::Function>(byloc.second)) continue;
+
+                for(auto& byname: view(valsByName)) {
+                    if(byloc.second == byname.second) return byloc.second;
+                }
+            }
+
+            return nullptr;
+        }
+
+        case DiscoveryPolicy::NextFunction:
+        {
+            auto fwd_it = vars.byLocFwd(loc);
+            auto end = vars.byLocEnd();
+            auto valsByName = vars.byName(name);
+
+            for(auto& byloc: view(fwd_it, end)) {
+                if(!llvm::isa<llvm::Function>(byloc.second)) continue;
+
+                for(auto& byname: view(valsByName)) {
+                    if(byloc.second == byname.second) return byloc.second;
+                }
+            }
+
+            return nullptr;
+        }
+
+#include "Util/macros.h"
+        default:
+            BYE_BYE(llvm::Value*, "Unknown discovery policy requested");
+            return nullptr;
+        }
+#include "Util/unmacros.h"
+
+    }
+
 };
 
 } /* namespace borealis */

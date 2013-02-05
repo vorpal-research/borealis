@@ -28,10 +28,6 @@ enum class DiscoveryPolicy {
     NextVal,
     PreviousVal,
     NextFunction,
-    EnclosingFunction,
-    PreviousFunction,
-    NextNonFunction,
-    PreviousNonFunction,
     Loop
 };
 

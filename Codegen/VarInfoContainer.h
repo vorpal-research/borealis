@@ -38,12 +38,14 @@ class VarInfoContainer {
 
 public:
     typedef loc2v_t::const_iterator loc_value_iterator;
+    typedef std::reverse_iterator<loc_value_iterator> reverse_loc_value_iterator;
     typedef std::pair<loc_value_iterator, loc_value_iterator> loc_value_range;
 
     typedef str2v_t::const_iterator str_value_iterator;
     typedef std::pair<str_value_iterator, str_value_iterator> str_value_range;
 
     typedef v2vi_t::const_iterator const_iterator;
+    typedef std::pair<const_iterator, const_iterator> value_range;
 
     VarInfoContainer();
     ~VarInfoContainer();
@@ -63,36 +65,115 @@ public:
             bwd_locs.insert({ key_ptr<Locus>(loc), val });
         }
         if (new_vi.ast) {
-            bwd_clang.insert({new_vi.ast, val});
+            bwd_clang.insert({ new_vi.ast, val });
         }
     }
 
-    //const VarInfo& get(llvm::Value* val) const { return fwd.at(val); }
+    value_range get(llvm::Value* val) const {
+        return fwd.equal_range(val);
+    }
+
     str_value_range byName(const std::string& str) const {
         return bwd_names.equal_range(str);
     }
 
-    loc_value_iterator byLocIterFwd(const Locus& loc){
+    str_value_iterator byNameEnd() const {
+        return bwd_names.end();
+    }
+
+    loc_value_iterator byLocFwd(const Locus& loc) const {
         return bwd_locs.lower_bound(loc);
     }
 
-    loc_value_iterator byLocIterBwd(const Locus& loc){
+    loc_value_iterator byLocBwd(const Locus& loc) const {
         return --bwd_locs.lower_bound(loc);
     }
 
-    loc_value_range byLoc(const Locus& loc, DiscoveryDirection dp = DiscoveryDirection::Next) const {
-        if (dp == DiscoveryDirection::Next) {
-            auto start = bwd_locs.lower_bound(loc);
-            auto end = start;
-            while (end != bwd_locs.end() && end->first == start->first) ++end;
-            return std::make_pair(start, end);
-        } else { // DiscoveryDirection::Previous
-            auto end = bwd_locs.lower_bound(loc);
-            --end;
-            auto start = end;
-            while (start != bwd_locs.begin() && start->first == end->first) --start;
-            return std::make_pair(start, end);
+    loc_value_iterator byLocEnd() const {
+        return bwd_locs.end();
+    }
+
+    reverse_loc_value_iterator byLocReverse(const Locus& loc) const {
+        return reverse_loc_value_iterator(byLocBwd(loc));
+    }
+
+    reverse_loc_value_iterator byLocReverseEnd() const {
+        return bwd_locs.rend();
+    }
+
+    llvm::Value* locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const  {
+        using borealis::util::view;
+        switch(policy) {
+
+        case DiscoveryPolicy::NextVal:
+        {
+            auto fwd_it = byLocFwd(loc);
+            auto end = byLocEnd();
+            auto valsByName = byName(name);
+
+            auto fnd = std::find_if(fwd_it, end,
+                [&](loc_value_iterator::value_type it) -> bool {
+                    if(llvm::isa<llvm::Function>(it.second)) return false;
+
+                    for(auto& byname: view(valsByName)) {
+                        if(byname.second == it.second) return true;
+                    }
+                    return false;
+                }
+            );
+            return (fnd == end)? nullptr : fnd->second;
         }
+
+        case DiscoveryPolicy::PreviousVal:
+        {
+            auto bwd_it = byLocReverse(loc);
+            auto end = byLocReverseEnd();
+            auto valsByName = byName(name);
+
+            auto fnd = std::find_if(bwd_it, end,
+                [&](reverse_loc_value_iterator::value_type it) -> bool {
+                    if(llvm::isa<llvm::Function>(it.second)) return false;
+
+                    for(auto& byname: view(valsByName)) {
+                        if(byname.second == it.second) return true;
+                    }
+                    return false;
+                }
+            );
+            return (fnd == end)? nullptr : fnd->second;
+        }
+
+        case DiscoveryPolicy::NextFunction:
+        {
+            auto fwd_it = byLocFwd(loc);
+            auto end = byLocEnd();
+            auto valsByName = byName(name);
+
+            auto fnd = std::find_if(fwd_it, end,
+                [&](loc_value_iterator::value_type it) -> bool {
+                    if(!llvm::isa<llvm::Function>(it.second)) return false;
+
+                    for(auto& byname: view(valsByName)) {
+                        if(byname.second == it.second) return true;
+                    }
+                    return false;
+                }
+            );
+            return (fnd == end)? nullptr : fnd->second;
+        }
+
+        case DiscoveryPolicy::Loop:
+        {
+            // FIXME
+        }
+
+#include "Util/macros.h"
+        default:
+            BYE_BYE(llvm::Value*, "Unknown discovery policy requested");
+            return nullptr;
+        }
+#include "Util/unmacros.h"
+
     }
 
     llvm::Value* byClang(clang::Decl* dcl) const {
