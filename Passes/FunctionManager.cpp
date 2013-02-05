@@ -5,7 +5,6 @@
  *      Author: ice-phoenix
  */
 
-#include "Codegen/builtins.h"
 #include "Codegen/intrinsics.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/AnnotatorPass.h"
@@ -16,8 +15,6 @@
 
 namespace borealis {
 
-using borealis::util::sayonara;
-
 FunctionManager::FunctionManager() : llvm::ModulePass(ID) {}
 
 void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -25,11 +22,13 @@ void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.addRequiredTransitive<AnnotatorPass>();
 }
 
-void FunctionManager::addFunction(llvm::CallInst& CI, PredicateState state) {
+void FunctionManager::put(llvm::CallInst& CI, PredicateState state) {
+
+    using borealis::util::containsKey;
 
     llvm::Function* F = CI.getCalledFunction();
 
-    if (data.count(F) > 0) {
+    if (containsKey(data, F)) {
         BYE_BYE_VOID("Attempt to register function " + F->getName().str() + " twice");
     }
 
@@ -41,23 +40,24 @@ PredicateState FunctionManager::get(
         PredicateFactory* PF,
         TermFactory* TF) {
 
+    using borealis::util::containsKey;
+
     llvm::Function* F = CI.getCalledFunction();
 
-    intrinsic intr = IntrinsicsManager::getInstance().getIntrinsicType(F);
-    if (intr != intrinsic::NOT_INTRINSIC) {
-        return getPredicateState(intr, F, PF, TF);
-    }
+    if (!containsKey(data, F)) {
+        auto& m = IntrinsicsManager::getInstance();
 
-    builtin bi = getBuiltInType(CI);
-    if (bi != builtin::NOT_BUILTIN) {
-        return getPredicateState(bi, CI, PF, TF);
+        function_type ft = m.getIntrinsicType(CI);
+        if (!isUnknown(ft)) {
+            auto state = m.getPredicateState(ft, F, PF, TF);
+            data[F] = state;
+            return state;
+        } else {
+            return PredicateState();
+        }
+    } else {
+        return data.at(F);
     }
-
-    if (data.count(F) == 0) {
-        return PredicateState();
-    }
-
-    return data[F];
 }
 
 char FunctionManager::ID;

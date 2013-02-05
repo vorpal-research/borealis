@@ -5,8 +5,6 @@
  *      Author: belyaev
  */
 
-#include "SLInjectionPass.h"
-
 #include <iterator>
 
 #include <llvm/BasicBlock.h>
@@ -16,28 +14,24 @@
 #include <llvm/Pass.h>
 #include <llvm/Type.h>
 
-#include "PhiInjectionPass.h"
+#include "Passes/PtrSSAPass/PhiInjectionPass.h"
+#include "Passes/PtrSSAPass/SLInjectionPass.h"
 
 namespace {
 using namespace borealis;
 using namespace llvm;
 }
 
-static Function* createDummyPtrFunction(Type* pointed, Module* where) {
-    auto ptr = PointerType::getUnqual(pointed);
-    auto ftype = FunctionType::get(ptr, ptr, false /* isVarArg */);
-    return IntrinsicsManager::getInstance()
-    .createIntrinsic(intrinsic::PTR_VERSION, where, ftype, pointed);
-}
-
 Function* ptrssa::StoreLoadInjectionPass::createNuevoFunc(
         Type* pointed, Module* daModule
 ) {
-    if(nuevos.count(pointed)) {
-        return nuevos[pointed];
-    } else {
-        return (nuevos[pointed] = createDummyPtrFunction(pointed, daModule));
-    }
+    auto ptr = PointerType::getUnqual(pointed);
+    auto ftype = FunctionType::get(ptr, ptr, false /* isVarArg */);
+    return IntrinsicsManager::getInstance().createIntrinsic(
+            function_type::INTRINSIC_PTR_VERSION,
+            borealis::util::toString(*pointed),
+            ftype,
+            daModule);
 }
 
 void ptrssa::StoreLoadInjectionPass::createNewDefs(BasicBlock &BB) {
