@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "Util/util.h"
+#include "Util/iterators.hpp"
 
 namespace {
 
@@ -185,5 +186,109 @@ TEST(Util, option) {
     }
 }
 
+TEST(Util, iterators) {
+    {
+        std::map<int, int> ints{
+            { 0, 1 },
+            { 2, 3 },
+            { 4, 5 },
+            { 6, 7 }
+        };
+        std::list<int> keys;
+
+        for(int a : view(iterate_keys(ints.begin()), iterate_keys(ints.end()))) {
+            keys.push_back(a);
+        }
+
+        std::list<int> pattern { 0, 2, 4, 6 };
+        ASSERT_EQ(keys, pattern);
+    }
+
+    {
+        const std::map<int, int> ints{
+            { 0, 1 },
+            { 2, 3 },
+            { 4, 5 },
+            { 6, 7 }
+        };
+        std::list<int> keys;
+
+        for(int a : view(iterate_keys(ints.begin()), iterate_keys(ints.end()))) {
+            keys.push_back(a);
+        }
+
+        std::list<int> pattern { 0, 2, 4, 6 };
+        ASSERT_EQ(keys, pattern);
+    }
+
+    {
+        std::map<int, int> ints{
+            { 0, 1 },
+            { 2, 3 },
+            { 4, 5 },
+            { 6, 7 }
+        };
+        std::list<int> keys;
+
+        for(const int& a : view(iterate_keys(begin_end_pair(ints)))) {
+            keys.push_back(a);
+        }
+
+        std::list<int> pattern { 0, 2, 4, 6 };
+        ASSERT_EQ(keys, pattern);
+    }
+
+    {
+        const std::map<int, int> ints{
+            { 0, 1 },
+            { 2, 3 },
+            { 4, 5 },
+            { 6, 7 }
+        };
+        std::list<int> keys;
+
+        for(const int& a : view(iterate_keys(begin_end_pair(ints)))) {
+            keys.push_back(a);
+        }
+
+        std::list<int> pattern { 0, 2, 4, 6 };
+        ASSERT_EQ(keys, pattern);
+    }
+
+
+    {
+        std::map<int, int> ints{
+            { 0, 1 },
+            { 2, 3 },
+            { 4, 5 },
+            { 6, 7 }
+        };
+        std::list<int> values;
+
+        for(int a : view(iterate_values(ints.begin()), iterate_values(ints.end()))) {
+            values.push_back(a);
+        }
+
+        std::list<int> pattern { 1, 3, 5, 7 };
+        ASSERT_EQ(values, pattern);
+    }
+
+    {
+        const std::map<int, int> ints{
+            { 0, 1 },
+            { 2, 3 },
+            { 4, 5 },
+            { 6, 7 }
+        };
+        std::list<int> values;
+
+        for(int a : view(citerate_values(ints.begin()), citerate_values(ints.end()))) {
+            values.push_back(a);
+        }
+
+        std::list<int> pattern { 1, 3, 5, 7 };
+        ASSERT_EQ(values, pattern);
+    }
+}
 
 } // namespace _
