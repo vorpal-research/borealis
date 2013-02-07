@@ -15,6 +15,7 @@ namespace borealis {
 enum class function_type {
     FIRST_INTRINSIC,
     INTRINSIC_PTR_VERSION,
+    INTRINSIC_VALUE,
     LAST_INTRINSIC,
 
     FIRST_BUILTIN,

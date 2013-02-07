@@ -10,6 +10,7 @@
 #include <llvm/IntrinsicInst.h>
 #include <llvm/Support/InstIterator.h>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Util/util.h"
@@ -82,6 +83,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using llvm::dyn_cast_or_null;
     using llvm::DbgDeclareInst;
     using llvm::DbgValueInst;
+    using llvm::CallInst;
     using llvm::MDNode;
     using llvm::Instruction;
     using llvm::ConstantInt;
@@ -140,7 +142,6 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
             } else if (DbgValueInst* inst = dyn_cast_or_null<DbgValueInst>(&I)) {
 
-
                 auto* val = inst->getValue();
                 DIVariable var(inst->getVariable());
 
@@ -165,9 +166,29 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                infos() << *val << "| >>> |" << vi << endl;
                 vars.put(val, vi);
 
+            } else if (CallInst* inst = dyn_cast_or_null<CallInst>(&I)) {
+                if(IntrinsicsManager::getInstance().getIntrinsicType(*inst)
+                        == function_type::INTRINSIC_VALUE) {
+                    auto* val = inst->getArgOperand(1);
+                    DIVariable var(inst->getMetadata("var"));
+
+                    clang::Decl* decl = nullptr;
+                    auto vi = mkVI(sm, var, decl);
+
+                    // debug value has additional location data attached through dbg metadata
+                    if (auto* nodeloc = inst->getMetadata("dbg")) {
+                        llvm::DILocation dloc(nodeloc);
+
+                        for (auto& locus: vi.originalLocus) {
+                            locus.loc.line = dloc.getLineNumber();
+                            locus.loc.col = dloc.getColumnNumber();
+                        }
+                    }
+
+                    vars.put(val, vi);
+                }
             }
         } // for (auto& I: view(inst_begin(F), inst_end(F)))
     } // for (auto& F: M)

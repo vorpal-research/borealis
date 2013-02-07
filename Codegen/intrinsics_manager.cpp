@@ -95,6 +95,14 @@ static IntrinsicsManager::RegisterIntrinsic INTRINSIC_PTR_VERSION {
     }
 };
 
+static IntrinsicsManager::RegisterIntrinsic INTRINSIC_VALUE {
+    function_type::INTRINSIC_VALUE,
+    "value",
+    [](llvm::Function*, PredicateFactory*, TermFactory*) {
+        return PredicateState();
+    }
+};
+
 static IntrinsicsManager::RegisterIntrinsic BUILTIN_MALLOC {
     function_type::BUILTIN_MALLOC,
     "malloc",
