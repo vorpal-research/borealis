@@ -33,6 +33,8 @@ llvm::raw_ostream& operator<<(
 		llvm::raw_ostream& ost,
 		llvm::raw_ostream& (*op)(llvm::raw_ostream&));
 
+llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T);
+
 enum class ConditionType {
 	EQ,
 	NEQ,

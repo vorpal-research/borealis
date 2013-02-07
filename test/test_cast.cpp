@@ -36,7 +36,7 @@ TEST(cast, visit) {
 
         auto check = false;
         visit(*trm)
-            .oncase<OpaqueIntConstantTerm>([&](const OpaqueIntConstantTerm& b){
+            .oncase<OpaqueIntConstantTerm>([&](const OpaqueIntConstantTerm&){
                 check = false;
             })
             .oncase<OpaqueBoolConstantTerm>([&](const OpaqueBoolConstantTerm& b){

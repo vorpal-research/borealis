@@ -53,22 +53,6 @@ TEST(Z3ExprFactory, getMemoryArray) {
     }
 }
 
-TEST(Z3ExprFactory, byteFucking) {
-    {
-        using borealis::Z3ExprFactory;
-
-        z3::context con;
-        Z3ExprFactory factory(con);
-
-        auto check_expr = [&](z3::expr axioms, z3::expr e)->bool {
-            z3::solver solver(e.ctx());
-            solver.add(axioms);
-            solver.add(!e);
-            return solver.check() == z3::unsat;
-        };
-    }
-}
-
 TEST(Z3ExprFactory, logic) {
     using borealis::logic::Bool;
     using borealis::logic::BitVector;

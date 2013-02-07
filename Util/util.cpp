@@ -26,6 +26,11 @@ llvm::raw_ostream& operator<<(
 	return op(ost);
 }
 
+llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T) {
+    T.print(OS);
+    return OS;
+}
+
 std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
 	typedef CmpInst::Predicate P;
 	typedef ConditionType CT;

@@ -16,11 +16,11 @@
 
 #include <unordered_map>
 
-#include "origin_tracker.h"
 #include "Codegen/intrinsics.h"
 #include "Codegen/intrinsics_manager.h"
-#include "Passes/SlotTrackerPass.h"
 #include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/PtrSSAPass/origin_tracker.h"
+#include "Passes/SlotTrackerPass.h"
 
 namespace borealis {
 namespace ptrssa {
@@ -112,8 +112,6 @@ private:
             }
         }
     }
-
-    typed_intrinsics_cache nuevos;
 
     llvm::DominatorTree* DT_;
 };

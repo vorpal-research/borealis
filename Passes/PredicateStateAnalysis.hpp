@@ -168,9 +168,12 @@ private:
 
         // Add incoming predicates from PHI nodes
         for ( ; isa<PHINode>(iter); ++iter) {
-            inState = inState
-                .addPredicate(ppm[{from, cast<PHINode>(iter)}])
-                .addVisited(&*iter);
+            const PHINode* phi = cast<PHINode>(iter);
+            if (phi->getBasicBlockIndex(from) != -1) {
+                inState = inState
+                    .addPredicate(ppm[{from, phi}])
+                    .addVisited(&*iter);
+            }
         }
 
         for (auto& I : view(iter, bb->end())) {
