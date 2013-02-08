@@ -19,7 +19,7 @@ namespace borealis {
 
 template<class Master>
 class ProxyFunctionPass : public llvm::FunctionPass {
-    FunctionPass* delegate;
+    Pass* delegate;
 
 public:
 
