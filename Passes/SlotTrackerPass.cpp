@@ -12,13 +12,17 @@
 namespace borealis {
 
 bool SlotTrackerPass::doInitialization(llvm::Module& M) {
-	globals.reset(new SlotTracker(&M));
+    if(!globals) globals.reset(new SlotTracker(&M));
 	return false;
 }
 
-bool SlotTrackerPass::runOnFunction(llvm::Function& F) {
+bool SlotTrackerPass::runOnModule(llvm::Module& M) {
     TRACE_FUNC;
-	funcs[&F] = ptr_t(new SlotTracker(&F));
+
+    doInitialization(M);
+
+	for(auto& F: M) funcs[&F] = ptr_t(new SlotTracker(&F));
+
 	return false;
 }
 

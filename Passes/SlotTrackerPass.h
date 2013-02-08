@@ -18,7 +18,7 @@
 
 namespace borealis {
 
-class SlotTrackerPass: public llvm::FunctionPass {
+class SlotTrackerPass: public llvm::ModulePass {
 
 	typedef std::unique_ptr<borealis::SlotTracker> ptr_t;
 
@@ -29,10 +29,10 @@ public:
 
 	static char ID;
 
-	SlotTrackerPass(): llvm::FunctionPass(ID) {}
+	SlotTrackerPass(): llvm::ModulePass(ID) {}
 
-	virtual bool doInitialization(llvm::Module& M);
-	virtual bool runOnFunction(llvm::Function& F);
+	bool doInitialization(llvm::Module& M);
+	virtual bool runOnModule(llvm::Module& M);
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
 
 	SlotTracker* getSlotTracker (const llvm::Function* func) const;
