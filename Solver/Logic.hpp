@@ -800,7 +800,7 @@ public:
     Elem operator[](Index i) { return select(i); }
 
     FuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t nf = inner_t::mkFreshFunc(inner.get().ctx(), *name, [this](Index res) {
+        inner_t nf = inner_t::mkFreshFunc(inner.get().ctx(), *name, [this,&i,&e](Index res) {
             return if_(res == i).then_(e).else_(this->select(res));
         });
 
@@ -854,7 +854,7 @@ public:
 
     InlinedFuncArray<Elem, Index> store(Index i, Elem e) {
         inner_t existing = this->inner;
-        inner_t nf = [this, existing](Index j) {
+        inner_t nf = [this,&i,&e](Index j) {
             return if_(j == i).then_(e).else_(inner(j));
         };
 
