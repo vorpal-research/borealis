@@ -66,10 +66,10 @@ public:
     }
 
     SubPass& getResultsForFunction(llvm::Function* F) {
-        if (borealis::util::containsKey(F, passes)) {
+        if (passes.count(F) > 0) {
             return *passes[F];
         } else {
-            BYE_BYE(SubPass&, "Unknown function: " + F->getName());
+            BYE_BYE(SubPass&, "Unknown function: " + F->getName().str());
         }
     }
 };
