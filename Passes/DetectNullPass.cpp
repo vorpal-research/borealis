@@ -140,7 +140,8 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-DetectNullPass::DetectNullPass() : llvm::FunctionPass(ID) {}
+DetectNullPass::DetectNullPass() : ProxyFunctionPass() {}
+DetectNullPass::DetectNullPass(llvm::Pass* pass) : ProxyFunctionPass(pass) {}
 
 void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	Info.setPreservesAll();
@@ -175,7 +176,7 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 }
 
 char DetectNullPass::ID;
-static llvm::RegisterPass<DetectNullPass>
+static RegisterModularizedPass<DetectNullPass>
 X("detect-null", "Explicit NULL assignment detector");
 
 } /* namespace borealis */

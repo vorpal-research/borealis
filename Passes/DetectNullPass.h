@@ -18,6 +18,8 @@
 #include <tuple>
 #include <utility>
 
+#include "Passes/PassModularizer.hpp"
+#include "Passes/ProxyFunctionPass.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -122,18 +124,23 @@ struct NullInfo {
 	}
 };
 
-class DetectNullPass: public llvm::FunctionPass {
+class DetectNullPass: public ProxyFunctionPass<DetectNullPass> {
+
+    friend class RegularDetectNullInstVisitor;
+    friend class PHIDetectNullInstVisitor;
 
 public:
 
 	typedef std::set<llvm::Value*> NullPtrSet;
 
 	typedef std::map<llvm::Value*, NullInfo> NullInfoMap;
-	typedef std::pair<llvm::Value*, NullInfo> NullInfoMapEntry;
+	typedef NullInfoMap::value_type NullInfoMapEntry;
 
 	static char ID;
+    typedef PassModularizer<DetectNullPass> MX;
 
 	DetectNullPass();
+	DetectNullPass(llvm::Pass*);
 	virtual bool runOnFunction(llvm::Function& F);
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
 	virtual ~DetectNullPass();
@@ -143,7 +150,7 @@ public:
 	}
 
 	NullPtrSet getNullSet(const NullType& type) {
-		NullPtrSet res = NullPtrSet();
+		NullPtrSet res;
 		for (const auto& entry : data) {
 			const NullInfo info = entry.second;
 			if (info.type == type) {
@@ -163,15 +170,12 @@ private:
 	void init() {
 	    data.clear();
 	}
-
-	friend class RegularDetectNullInstVisitor;
-	friend class PHIDetectNullInstVisitor;
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const NullInfo& info);
 
 } /* namespace borealis */
 
-#endif /* DETECTNULLPASS_H_ */
-
 #include "Util/unmacros.h"
+
+#endif /* DETECTNULLPASS_H_ */
