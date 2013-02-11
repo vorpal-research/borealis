@@ -18,8 +18,8 @@
 #include <tuple>
 #include <utility>
 
-#include "Passes/PassModularizer.hpp"
 #include "Passes/ProxyFunctionPass.hpp"
+#include "Util/passes.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -124,7 +124,9 @@ struct NullInfo {
 	}
 };
 
-class DetectNullPass: public ProxyFunctionPass<DetectNullPass> {
+class DetectNullPass:
+        public ProxyFunctionPass<DetectNullPass>,
+        public ShouldBeModularized {
 
     friend class RegularDetectNullInstVisitor;
     friend class PHIDetectNullInstVisitor;
@@ -137,7 +139,6 @@ public:
 	typedef NullInfoMap::value_type NullInfoMapEntry;
 
 	static char ID;
-    typedef PassModularizer<DetectNullPass> MX;
 
 	DetectNullPass();
 	DetectNullPass(llvm::Pass*);

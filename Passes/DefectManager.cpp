@@ -7,6 +7,7 @@
 
 #include "Passes/DefectManager.h"
 #include "Passes/SourceLocationTracker.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
@@ -14,7 +15,8 @@ DefectManager::DefectManager() : llvm::ModulePass(ID) {}
 
 void DefectManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-    AU.addRequiredTransitive<SourceLocationTracker>();
+
+    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
 void DefectManager::addDefect(DefectType type, llvm::Instruction* where) {

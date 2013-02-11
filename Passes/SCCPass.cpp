@@ -14,6 +14,7 @@
 #include "Passes/SCCPass.h"
 
 #include "Logging/logger.hpp"
+#include "Util/passes.hpp"
 #include "Util/util.h"
 
 namespace borealis {
@@ -26,16 +27,16 @@ void SCCPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace llvm;
 
     AU.setPreservesAll();
-    AU.addRequiredTransitive<CallGraph>();
 
-    AU.addRequiredTransitive<CheckNullDereferencePass::MX>();
+    AUX<CallGraph>::addRequiredTransitive(AU);
+    AUX<CheckNullDereferencePass>::addRequiredTransitive(AU);
 }
 
 bool SCCPass::runOnModule(llvm::Module&) {
 
     using namespace llvm;
 
-    auto* CG = &getAnalysis<CallGraph>();
+    auto* CG = &GetAnalysis<CallGraph>::doit(this);
     for (auto& SCC : borealis::util::view(scc_begin(CG), scc_end(CG))) {
         for (auto* e : SCC)
             infos() << *e->getFunction() << endl;

@@ -18,15 +18,16 @@
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/DefectManager.h"
 #include "Passes/DetectNullPass.h"
-#include "Passes/PassModularizer.hpp"
 #include "Passes/ProxyFunctionPass.hpp"
 #include "Passes/SlotTrackerPass.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
 class CheckNullDereferencePass:
         public ProxyFunctionPass<CheckNullDereferencePass>,
-        public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
+        public borealis::logging::ClassLevelLogging<CheckNullDereferencePass>,
+        public ShouldBeModularized {
 
     friend class DerefInstVisitor;
     friend class ValueInstVisitor;
@@ -34,7 +35,6 @@ class CheckNullDereferencePass:
 public:
 
     static char ID;
-	typedef PassModularizer<CheckNullDereferencePass> MX;
 
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("null-deref-check")

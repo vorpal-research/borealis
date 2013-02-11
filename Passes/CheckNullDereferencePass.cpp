@@ -11,14 +11,14 @@
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
+#include "Logging/logger.hpp"
 #include "Passes/CheckNullDereferencePass.h"
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Query/AndQuery.h"
 #include "Query/EqualityQuery.h"
 #include "Query/NullPtrQuery.h"
 #include "Solver/Z3Solver.h"
-
-#include "Logging/logger.hpp"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
@@ -148,29 +148,28 @@ private:
 CheckNullDereferencePass::CheckNullDereferencePass() : ProxyFunctionPass() {}
 CheckNullDereferencePass::CheckNullDereferencePass(llvm::Pass* pass) : ProxyFunctionPass(pass) {}
 
-void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
+void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace::llvm;
 
-    Info.setPreservesAll();
-    Info.addRequiredTransitive<AliasAnalysis>();
+    AU.setPreservesAll();
 
-    Info.addRequiredTransitive<DefaultPredicateAnalysis::PSA::MX>();
-    Info.addRequiredTransitive<DetectNullPass::MX>();
-
-    Info.addRequiredTransitive<DefectManager>();
-    Info.addRequiredTransitive<SlotTrackerPass>();
+    AUX<AliasAnalysis>::addRequiredTransitive(AU);
+    AUX<DefaultPredicateAnalysis::PSA>::addRequiredTransitive(AU);
+    AUX<DetectNullPass>::addRequiredTransitive(AU);
+    AUX<DefectManager>::addRequiredTransitive(AU);
+    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     using namespace::llvm;
 
-    AA = &getAnalysis<AliasAnalysis>();
+    AA = &GetAnalysis<AliasAnalysis>::doit(this, F);
 
-    PSA = &getAnalysis<DefaultPredicateAnalysis::PSA::MX>().getResultsForFunction(&F);
-    DNP = &getAnalysis<DetectNullPass::MX>().getResultsForFunction(&F);
+    PSA = &GetAnalysis<DefaultPredicateAnalysis::PSA>::doit(this, F);
+    DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
-    defectManager = &getAnalysis<DefectManager>();
-    slotTracker = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
+    defectManager = &GetAnalysis<DefectManager>::doit(this, F);
+    slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);
@@ -188,6 +187,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 }
 
 void CheckNullDereferencePass::print(llvm::raw_ostream& s, const llvm::Module*) const {
+    using borealis::util::streams::endl;
     s << "DerefNullSet:" << endl << *DerefNullSet << endl;
     s << "ValueNullSet:" << endl << *ValueNullSet << endl;
 }

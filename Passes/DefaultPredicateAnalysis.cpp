@@ -264,12 +264,13 @@ DefaultPredicateAnalysis::DefaultPredicateAnalysis(Pass* pass) :
         ProxyFunctionPass(pass),
         borealis::AbstractPredicateAnalysis(ID) {}
 
-void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
+void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace::llvm;
 
-    Info.setPreservesAll();
-    Info.addRequiredTransitive<SlotTrackerPass>();
-    Info.addRequiredTransitive<TargetData>();
+    AU.setPreservesAll();
+
+    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<TargetData>::addRequiredTransitive(AU);
 }
 
 bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
@@ -279,9 +280,11 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
 
     init();
 
-    PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
-    TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
-    TD = &getAnalysis<TargetData>();
+    auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+
+    PF = PredicateFactory::get(ST);
+    TF = TermFactory::get(ST);
+    TD = &GetAnalysis<TargetData>::doit(this, F);
 
     DPAInstVisitor visitor(this);
     visitor.visit(F);
