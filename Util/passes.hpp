@@ -13,6 +13,7 @@
 #include <type_traits>
 
 #include "Passes/PassModularizer.hpp"
+#include "Passes/ProxyFunctionPass.h"
 
 namespace borealis {
 
@@ -56,11 +57,19 @@ struct GetAnalysis<P, impl_::PassType::MODULARIZED> {
     static P& doit(llvm::Pass* pass, llvm::Function& F) {
         return pass->getAnalysis< PassModularizer<P> >().getResultsForFunction(&F);
     }
+
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+        return pass->getAnalysis< PassModularizer<P> >().getResultsForFunction(&F);
+    }
 };
 
 template<class P>
 struct GetAnalysis<P, impl_::PassType::FUNCTION> {
     static P& doit(llvm::Pass* pass, llvm::Function& F) {
+        return pass->getAnalysis< P >(F);
+    }
+
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
         return pass->getAnalysis< P >(F);
     }
 };
@@ -72,6 +81,14 @@ struct GetAnalysis<P, impl_::PassType::OTHER> {
     }
 
     static P& doit(llvm::Pass* pass, llvm::Function& F) {
+        return pass->getAnalysis< P >();
+    }
+
+    static P& doit(borealis::ProxyFunctionPass* pass) {
+        return pass->getAnalysis< P >();
+    }
+
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
         return pass->getAnalysis< P >();
     }
 };
