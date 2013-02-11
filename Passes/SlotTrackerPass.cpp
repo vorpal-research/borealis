@@ -5,14 +5,13 @@
  *      Author: belyaev
  */
 
-#include "SlotTrackerPass.h"
-
 #include "Logging/tracer.hpp"
+#include "Passes/SlotTrackerPass.h"
 
 namespace borealis {
 
 bool SlotTrackerPass::doInitialization(llvm::Module& M) {
-    if(!globals) globals.reset(new SlotTracker(&M));
+    if (!globals) globals.reset(new SlotTracker(&M));
 	return false;
 }
 
@@ -21,7 +20,8 @@ bool SlotTrackerPass::runOnModule(llvm::Module& M) {
 
     doInitialization(M);
 
-	for(auto& F: M) funcs[&F] = ptr_t(new SlotTracker(&F));
+	for (auto& F : M)
+	    funcs[&F] = ptr_t(new SlotTracker(&F));
 
 	return false;
 }
@@ -31,7 +31,7 @@ void SlotTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function* func) const{
-	if(func && borealis::util::containsKey(funcs, func)) {
+	if (func && borealis::util::containsKey(funcs, func)) {
 		return funcs.at(func).get();
 	} else {
 		return nullptr;

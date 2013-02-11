@@ -44,7 +44,7 @@ public:
     static char ID;
 
     DefectManager();
-    virtual bool runOnModule(llvm::Module& /*M*/) { return false; }
+    virtual bool runOnModule(llvm::Module&) { return false; }
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~DefectManager() {};
 
