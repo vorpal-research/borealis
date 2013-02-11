@@ -23,7 +23,7 @@ class ProxyFunctionPass : public llvm::FunctionPass {
 
 public:
 
-    ProxyFunctionPass(FunctionPass* delegate = nullptr):
+    ProxyFunctionPass(Pass* delegate = nullptr):
         FunctionPass(Master::ID), delegate(delegate) {};
 
     // here we overload (not override, but shadow-overload) all methods of Pass
