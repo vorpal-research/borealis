@@ -140,8 +140,8 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-DetectNullPass::DetectNullPass() : ProxyFunctionPass() {}
-DetectNullPass::DetectNullPass(llvm::Pass* pass) : ProxyFunctionPass(pass) {}
+DetectNullPass::DetectNullPass() : ProxyFunctionPass(ID) {}
+DetectNullPass::DetectNullPass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 	Info.setPreservesAll();

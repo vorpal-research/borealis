@@ -257,11 +257,11 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 DefaultPredicateAnalysis::DefaultPredicateAnalysis() :
-        ProxyFunctionPass(),
+        ProxyFunctionPass(ID),
         borealis::AbstractPredicateAnalysis(ID) {}
 
-DefaultPredicateAnalysis::DefaultPredicateAnalysis(Pass* pass) :
-        ProxyFunctionPass(pass),
+DefaultPredicateAnalysis::DefaultPredicateAnalysis(llvm::Pass* pass) :
+        ProxyFunctionPass(ID, pass),
         borealis::AbstractPredicateAnalysis(ID) {}
 
 void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {

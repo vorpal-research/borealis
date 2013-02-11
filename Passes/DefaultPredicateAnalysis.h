@@ -12,7 +12,7 @@
 
 #include "Passes/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis.hpp"
-#include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"
@@ -20,7 +20,7 @@
 namespace borealis {
 
 class DefaultPredicateAnalysis:
-        public ProxyFunctionPass<DefaultPredicateAnalysis>,
+        public ProxyFunctionPass,
         public borealis::AbstractPredicateAnalysis,
         public ShouldBeModularized {
 
@@ -32,7 +32,7 @@ public:
     typedef PredicateStateAnalysis<DefaultPredicateAnalysis> PSA;
 
     DefaultPredicateAnalysis();
-    DefaultPredicateAnalysis(Pass*);
+    DefaultPredicateAnalysis(llvm::Pass*);
     virtual bool runOnFunction(llvm::Function& F);
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
     virtual ~DefaultPredicateAnalysis();

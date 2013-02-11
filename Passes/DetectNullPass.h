@@ -18,7 +18,7 @@
 #include <tuple>
 #include <utility>
 
-#include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
@@ -125,7 +125,7 @@ struct NullInfo {
 };
 
 class DetectNullPass:
-        public ProxyFunctionPass<DetectNullPass>,
+        public ProxyFunctionPass,
         public ShouldBeModularized {
 
     friend class RegularDetectNullInstVisitor;

@@ -18,14 +18,14 @@
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/DefectManager.h"
 #include "Passes/DetectNullPass.h"
-#include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
 
 class CheckNullDereferencePass:
-        public ProxyFunctionPass<CheckNullDereferencePass>,
+        public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<CheckNullDereferencePass>,
         public ShouldBeModularized {
 

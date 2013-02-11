@@ -27,7 +27,7 @@
 #include "Logging/tracer.hpp"
 #include "Passes/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
-#include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Solver/Z3ExprFactory.h"
@@ -44,7 +44,7 @@ namespace borealis {
 
 template<class PredicateAnalysis>
 class PredicateStateAnalysis:
-        public ProxyFunctionPass< PredicateStateAnalysis<PredicateAnalysis> >,
+        public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis<PredicateAnalysis> >,
         public ShouldBeModularized {
 
@@ -66,8 +66,8 @@ public:
 
     static constexpr auto loggerDomain() QUICK_RETURN("psa")
 
-    PredicateStateAnalysis() : ProxyFunctionPass<self>() {}
-    PredicateStateAnalysis(llvm::Pass* pass) : ProxyFunctionPass<self>(pass) {}
+    PredicateStateAnalysis() : ProxyFunctionPass(ID) {}
+    PredicateStateAnalysis(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const{
         using namespace llvm;

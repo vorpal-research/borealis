@@ -22,17 +22,17 @@
 #include <unordered_set>
 
 #include "origin_tracker.h"
-#include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 
 namespace borealis {
 namespace ptrssa {
 
 class PhiInjectionPass :
-    public ProxyFunctionPass<PhiInjectionPass>,
+    public ProxyFunctionPass,
     public origin_tracker {
 
-    typedef ProxyFunctionPass<PhiInjectionPass> base;
+    typedef ProxyFunctionPass base;
 
 public:
 
@@ -40,8 +40,8 @@ public:
 
     typedef std::unordered_map<std::pair<llvm::BasicBlock*, llvm::Value*>, llvm::PHINode*> phi_tracker;
 
-    PhiInjectionPass() : base(), DT_(nullptr), DF_(nullptr) {}
-    PhiInjectionPass(FunctionPass* del) : base(del), DT_(nullptr), DF_(nullptr) {}
+    PhiInjectionPass() : base(ID), DT_(nullptr), DF_(nullptr) {}
+    PhiInjectionPass(FunctionPass* del) : base(ID, del), DT_(nullptr), DF_(nullptr) {}
 
     void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
     bool runOnFunction(llvm::Function&);

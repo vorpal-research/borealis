@@ -145,8 +145,8 @@ private:
 
 };
 
-CheckNullDereferencePass::CheckNullDereferencePass() : ProxyFunctionPass() {}
-CheckNullDereferencePass::CheckNullDereferencePass(llvm::Pass* pass) : ProxyFunctionPass(pass) {}
+CheckNullDereferencePass::CheckNullDereferencePass() : ProxyFunctionPass(ID) {}
+CheckNullDereferencePass::CheckNullDereferencePass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace::llvm;

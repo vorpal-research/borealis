@@ -18,7 +18,7 @@
 
 #include "Codegen/intrinsics.h"
 #include "Codegen/intrinsics_manager.h"
-#include "Passes/ProxyFunctionPass.hpp"
+#include "Passes/ProxyFunctionPass.h"
 #include "Passes/PtrSSAPass/origin_tracker.h"
 #include "Passes/SlotTrackerPass.h"
 
@@ -26,10 +26,10 @@ namespace borealis {
 namespace ptrssa {
 
 class StoreLoadInjectionPass:
-        public ProxyFunctionPass<StoreLoadInjectionPass>,
+        public ProxyFunctionPass,
         public origin_tracker {
 
-    typedef ProxyFunctionPass<StoreLoadInjectionPass> base;
+    typedef ProxyFunctionPass base;
 
 public:
 
@@ -37,8 +37,8 @@ public:
 
     typedef llvm::Value* value;
 
-    StoreLoadInjectionPass(): base(), DT_(nullptr) {};
-    StoreLoadInjectionPass(llvm::FunctionPass* del): base(del), DT_(nullptr) {};
+    StoreLoadInjectionPass(): base(ID), DT_(nullptr) {};
+    StoreLoadInjectionPass(llvm::FunctionPass* del): base(ID, del), DT_(nullptr) {};
 
     virtual bool runOnFunction(llvm::Function& F) {
         for (auto& bb : F) {
