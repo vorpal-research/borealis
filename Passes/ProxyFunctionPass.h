@@ -1,12 +1,12 @@
 /*
- * ProxyFunctionPass.hpp
+ * ProxyFunctionPass.h
  *
- *  Created on: Oct 24, 2012
- *      Author: belyaev
+ *  Created on: Feb 11, 2013
+ *      Author: ice-phoenix
  */
 
-#ifndef PROXYFUNCTIONPASS_HPP_
-#define PROXYFUNCTIONPASS_HPP_
+#ifndef PROXYFUNCTIONPASS_H_
+#define PROXYFUNCTIONPASS_H_
 
 #include <llvm/Pass.h>
 
@@ -17,14 +17,12 @@
 
 namespace borealis {
 
-template<class Master>
 class ProxyFunctionPass : public llvm::FunctionPass {
     Pass* delegate;
 
 public:
 
-    ProxyFunctionPass(Pass* delegate = nullptr):
-        FunctionPass(Master::ID), delegate(delegate) {};
+    ProxyFunctionPass(char& ID, Pass* delegate = nullptr);
 
     // here we overload (not override, but shadow-overload) all methods of Pass
 
@@ -99,9 +97,9 @@ public:
         }
     }
 
-    virtual ~ProxyFunctionPass() {};
+    virtual ~ProxyFunctionPass();
 };
 
 } // namespace borealis
 
-#endif /* PROXYFUNCTIONPASS_HPP_ */
+#endif /* PROXYFUNCTIONPASS_H_ */
