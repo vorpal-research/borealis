@@ -27,7 +27,6 @@
 #include "Logging/tracer.hpp"
 #include "Passes/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
-#include "Passes/PassModularizer.hpp"
 #include "Passes/ProxyFunctionPass.hpp"
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
@@ -37,6 +36,7 @@
 #include "State/PredicateState.h"
 #include "State/PredicateStateVector.h"
 #include "Term/TermFactory.h"
+#include "Util/passes.hpp"
 
 #include "Util/macros.h"
 
@@ -45,7 +45,8 @@ namespace borealis {
 template<class PredicateAnalysis>
 class PredicateStateAnalysis:
         public ProxyFunctionPass< PredicateStateAnalysis<PredicateAnalysis> >,
-        public borealis::logging::ClassLevelLogging<PredicateStateAnalysis<PredicateAnalysis> > {
+        public borealis::logging::ClassLevelLogging<PredicateStateAnalysis<PredicateAnalysis> >,
+        public ShouldBeModularized {
 
 public:
 
@@ -62,22 +63,21 @@ public:
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     static char ID;
-    typedef PassModularizer<self> MX;
-    typedef PassModularizer<PredicateAnalysis> ModularizedPredicateAnalysis;
 
     static constexpr auto loggerDomain() QUICK_RETURN("psa")
 
     PredicateStateAnalysis() : ProxyFunctionPass<self>() {}
     PredicateStateAnalysis(llvm::Pass* pass) : ProxyFunctionPass<self>(pass) {}
 
-    void getAnalysisUsage(llvm::AnalysisUsage& Info) const{
+    void getAnalysisUsage(llvm::AnalysisUsage& AU) const{
         using namespace llvm;
 
-        Info.setPreservesAll();
-        Info.addRequiredTransitive<FunctionManager>();
-        Info.addRequiredTransitive<SlotTrackerPass>();
+        AU.setPreservesAll();
 
-        Info.addRequiredTransitive<ModularizedPredicateAnalysis>();
+        AUX<FunctionManager>::addRequiredTransitive(AU);
+        AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+
+        AUX<PredicateAnalysis>::addRequiredTransitive(AU);
     }
 
     bool runOnFunction(llvm::Function& F) {
@@ -87,13 +87,13 @@ public:
 
         init();
 
-        FM = & (this->template getAnalysis< FunctionManager >());
+        FM = & (GetAnalysis< FunctionManager >::doit(this, F));
 
-        SlotTrackerPass* STP = & (this->template getAnalysis< SlotTrackerPass >());
-        PF = PredicateFactory::get(STP->getSlotTracker(F));
-        TF = TermFactory::get(STP->getSlotTracker(F));
+        auto* ST = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
+        PF = PredicateFactory::get(ST);
+        TF = TermFactory::get(ST);
 
-        PA = & (this->template getAnalysis< ModularizedPredicateAnalysis >()).getResultsForFunction(&F);
+        PA = & (GetAnalysis< PredicateAnalysis >::doit(this, F));
 
         enqueue(nullptr, &F.getEntryBlock(), PredicateState());
         processQueue();
