@@ -1,5 +1,5 @@
 /*
- * PassModulizer.hpp
+ * PassModularizer.hpp
  *
  *  Created on: Feb 8, 2013
  *      Author: belyaev
