@@ -178,16 +178,18 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     ValueNullSet = &valueSet;
     DerefNullSet = &derefSet;
 
-    infos() << "DerefNullSet:" << endl << *DerefNullSet << endl;
-    infos() << "ValueNullSet before propagation:" << endl << *ValueNullSet << endl;
     DerefInstVisitor div(this);
     div.visit(F);
-    infos() << "ValueNullSet after propagation:" << endl << *ValueNullSet << endl;
 
     ValueInstVisitor viv(this);
     viv.visit(F);
 
     return false;
+}
+
+void CheckNullDereferencePass::print(llvm::raw_ostream& s, const llvm::Module*) const {
+    s << "DerefNullSet:" << endl << *DerefNullSet << endl;
+    s << "ValueNullSet:" << endl << *ValueNullSet << endl;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {}
