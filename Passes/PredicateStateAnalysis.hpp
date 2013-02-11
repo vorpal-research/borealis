@@ -8,7 +8,6 @@
 #ifndef PREDICATESTATEANALYSIS_H_
 #define PREDICATESTATEANALYSIS_H_
 
-#include <llvm/Analysis/LoopInfo.h>
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 #include <llvm/Function.h>
@@ -24,8 +23,12 @@
 #include <tuple>
 #include <vector>
 
+#include "Logging/logger.hpp"
+#include "Logging/tracer.hpp"
 #include "Passes/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
+#include "Passes/PassModularizer.hpp"
+#include "Passes/ProxyFunctionPass.hpp"
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Solver/Z3ExprFactory.h"
@@ -35,45 +38,46 @@
 #include "State/PredicateStateVector.h"
 #include "Term/TermFactory.h"
 
-#include "Logging/logger.hpp"
-#include "Logging/tracer.hpp"
-
 #include "Util/macros.h"
 
 namespace borealis {
 
 template<class PredicateAnalysis>
 class PredicateStateAnalysis:
-        public llvm::FunctionPass,
+        public ProxyFunctionPass< PredicateStateAnalysis<PredicateAnalysis> >,
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis<PredicateAnalysis> > {
 
 public:
+
+    typedef PredicateStateAnalysis<PredicateAnalysis> self;
 
     typedef AbstractPredicateAnalysis::PredicateMap PM;
     typedef AbstractPredicateAnalysis::TerminatorPredicateMap TPM;
     typedef AbstractPredicateAnalysis::PhiPredicateMap PPM;
 
     typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
-    typedef std::pair<const llvm::Instruction*, PredicateStateVector> PredicateStateMapEntry;
+    typedef PredicateStateMap::value_type PredicateStateMapEntry;
 
     typedef std::tuple<const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState> WorkQueueEntry;
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     static char ID;
+    typedef PassModularizer<self> MX;
+    typedef PassModularizer<PredicateAnalysis> ModularizedPredicateAnalysis;
 
     static constexpr auto loggerDomain() QUICK_RETURN("psa")
 
-    PredicateStateAnalysis() : llvm::FunctionPass(ID) {}
+    PredicateStateAnalysis() : ProxyFunctionPass<self>() {}
+    PredicateStateAnalysis(llvm::Pass* pass) : ProxyFunctionPass<self>(pass) {}
 
     void getAnalysisUsage(llvm::AnalysisUsage& Info) const{
         using namespace llvm;
 
         Info.setPreservesAll();
         Info.addRequiredTransitive<FunctionManager>();
-        Info.addRequiredTransitive<LoopInfo>();
         Info.addRequiredTransitive<SlotTrackerPass>();
 
-        Info.addRequiredTransitive<PredicateAnalysis>();
+        Info.addRequiredTransitive<ModularizedPredicateAnalysis>();
     }
 
     bool runOnFunction(llvm::Function& F) {
@@ -83,17 +87,13 @@ public:
 
         init();
 
-        FM = &getAnalysis<FunctionManager>();
-        LI = &getAnalysis<LoopInfo>();
+        FM = & (this->template getAnalysis< FunctionManager >());
 
-        PA = &getAnalysis<PredicateAnalysis>();
+        SlotTrackerPass* STP = & (this->template getAnalysis< SlotTrackerPass >());
+        PF = PredicateFactory::get(STP->getSlotTracker(F));
+        TF = TermFactory::get(STP->getSlotTracker(F));
 
-        PF = PredicateFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
-        TF = TermFactory::get(getAnalysis<SlotTrackerPass>().getSlotTracker(F));
-
-        if (!getAllLoops(&F, LI).empty()) {
-            BYE_BYE(bool, "Cannot analyze predicates when loops are present");
-        }
+        PA = & (this->template getAnalysis< ModularizedPredicateAnalysis >()).getResultsForFunction(&F);
 
         enqueue(nullptr, &F.getEntryBlock(), PredicateState());
         processQueue();
