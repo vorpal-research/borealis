@@ -14,17 +14,18 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Logging/logger.hpp"
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/DefectManager.h"
 #include "Passes/DetectNullPass.h"
+#include "Passes/PassModularizer.hpp"
+#include "Passes/ProxyFunctionPass.hpp"
 #include "Passes/SlotTrackerPass.h"
-
-#include "Logging/logger.hpp"
 
 namespace borealis {
 
 class CheckNullDereferencePass:
-        public llvm::FunctionPass,
+        public ProxyFunctionPass<CheckNullDereferencePass>,
         public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
 
     friend class DerefInstVisitor;
@@ -32,12 +33,15 @@ class CheckNullDereferencePass:
 
 public:
 
-	static char ID;
+    static char ID;
+	typedef PassModularizer<CheckNullDereferencePass> MX;
+
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("null-deref-check")
 #include "Util/unmacros.h"
 
 	CheckNullDereferencePass();
+    CheckNullDereferencePass(llvm::Pass*);
 	virtual bool runOnFunction(llvm::Function& F);
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
 	virtual ~CheckNullDereferencePass();
@@ -45,9 +49,11 @@ public:
 private:
 
 	llvm::AliasAnalysis* AA;
+
 	DefaultPredicateAnalysis::PSA* PSA;
-    DefectManager* defectManager;
     DetectNullPass* DNP;
+
+    DefectManager* defectManager;
 	SlotTracker* slotTracker;
 
     DetectNullPass::NullPtrSet* ValueNullSet;

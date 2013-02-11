@@ -145,26 +145,31 @@ private:
 
 };
 
-CheckNullDereferencePass::CheckNullDereferencePass() : llvm::FunctionPass(ID) {}
+CheckNullDereferencePass::CheckNullDereferencePass() : ProxyFunctionPass() {}
+CheckNullDereferencePass::CheckNullDereferencePass(llvm::Pass* pass) : ProxyFunctionPass(pass) {}
 
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
     using namespace::llvm;
 
     Info.setPreservesAll();
-    Info.addRequiredTransitive<DSAA>();
-    Info.addRequiredTransitive<DefaultPredicateAnalysis::PSA>();
+    Info.addRequiredTransitive<AliasAnalysis>();
+
+    Info.addRequiredTransitive<DefaultPredicateAnalysis::PSA::MX>();
+    Info.addRequiredTransitive<DetectNullPass::MX>();
+
     Info.addRequiredTransitive<DefectManager>();
-    Info.addRequiredTransitive<DetectNullPass>();
     Info.addRequiredTransitive<SlotTrackerPass>();
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     using namespace::llvm;
 
-    AA = &getAnalysis<DSAA>();
-    PSA = &getAnalysis<DefaultPredicateAnalysis::PSA>();
+    AA = &getAnalysis<AliasAnalysis>();
+
+    PSA = &getAnalysis<DefaultPredicateAnalysis::PSA::MX>().getResultsForFunction(&F);
+    DNP = &getAnalysis<DetectNullPass::MX>().getResultsForFunction(&F);
+
     defectManager = &getAnalysis<DefectManager>();
-    DNP = &getAnalysis<DetectNullPass>();
     slotTracker = getAnalysis<SlotTrackerPass>().getSlotTracker(F);
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
@@ -188,7 +193,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 CheckNullDereferencePass::~CheckNullDereferencePass() {}
 
 char CheckNullDereferencePass::ID;
-static llvm::RegisterPass<CheckNullDereferencePass>
+static RegisterModularizedPass<CheckNullDereferencePass>
 X("check-null-deref", "NULL dereference checker");
 
 } /* namespace borealis */
