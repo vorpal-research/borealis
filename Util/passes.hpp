@@ -19,6 +19,12 @@ namespace borealis {
 
 class ShouldBeModularized {};
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Custom AnalysisUsage implementation
+//
+////////////////////////////////////////////////////////////////////////////////
+
 template<class P, bool isModularized = std::is_base_of<ShouldBeModularized, P>::value>
 struct AUX;
 
@@ -36,6 +42,8 @@ struct AUX<P, true> {
     }
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 namespace impl_ {
 enum class PassType {
     MODULARIZED,
@@ -43,6 +51,12 @@ enum class PassType {
     OTHER
 };
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Custom getAnalysis implementation
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<
     class P, // Pass which we try to get
@@ -90,6 +104,43 @@ struct GetAnalysis<P, impl_::PassType::OTHER> {
 
     static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
         return pass->getAnalysis< P >();
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Custom RegisterPass implementation
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<class P, bool isModularized = std::is_base_of<ShouldBeModularized, P>::value>
+struct RegisterPass;
+
+template<class P>
+struct RegisterPass<P, false> {
+    RegisterPass(
+            const char* PassArg,
+            const char* Name,
+            bool CFGOnly = false,
+            bool isAnalysis = false) {
+
+        static llvm::RegisterPass< P >
+        MX(PassArg, Name, CFGOnly, isAnalysis);
+
+    }
+};
+
+template<class P>
+struct RegisterPass<P, true> {
+    RegisterPass(
+            const char* PassArg,
+            const char* Name,
+            bool CFGOnly = false,
+            bool isAnalysis = false) {
+
+        static llvm::RegisterPass< PassModularizer<P> >
+        MX(PassArg, Name, CFGOnly, isAnalysis);
+
     }
 };
 

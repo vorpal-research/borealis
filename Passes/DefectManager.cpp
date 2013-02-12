@@ -31,7 +31,7 @@ void DefectManager::print(llvm::raw_ostream& s, const llvm::Module*) const {
 }
 
 char DefectManager::ID;
-static llvm::RegisterPass<DefectManager>
+static RegisterPass<DefectManager>
 X("defect-manager", "Pass that collects and filters detected defects");
 
 DefectManager::DefectData DefectManager::data;

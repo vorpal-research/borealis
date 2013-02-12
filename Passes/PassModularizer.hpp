@@ -21,7 +21,8 @@
 
 namespace borealis {
 
-// Should be used only with [SubPass = ProxyFunctionPass<...>]
+// Should not be used explicitly
+// Use ShouldBeModularized marker trait from Util/passes.hpp instead
 //
 template<class SubPass>
 class PassModularizer : public llvm::ModulePass {
@@ -76,20 +77,6 @@ public:
 
 template<class SubPass>
 char PassModularizer<SubPass>::ID;
-
-template<class SubPass>
-struct RegisterModularizedPass {
-    RegisterModularizedPass(
-            const char* PassArg,
-            const char* Name,
-            bool CFGOnly = false,
-            bool isAnalysis = false) {
-
-        static llvm::RegisterPass< PassModularizer<SubPass> >
-        MX(PassArg, Name, CFGOnly, isAnalysis);
-
-    }
-};
 
 } // namespace borealis
 

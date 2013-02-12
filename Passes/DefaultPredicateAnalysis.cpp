@@ -297,10 +297,11 @@ DefaultPredicateAnalysis::~DefaultPredicateAnalysis() {}
 ////////////////////////////////////////////////////////////////////////////////
 
 char DefaultPredicateAnalysis::ID;
-static RegisterModularizedPass<DefaultPredicateAnalysis>
+static RegisterPass<DefaultPredicateAnalysis>
 X("default-predicate-analysis", "Default instruction predicate analysis");
 
-static RegisterModularizedPass<DefaultPredicateAnalysis::PSA>
+char _ID = DefaultPredicateAnalysis::PSA::ID;
+static RegisterPass<DefaultPredicateAnalysis::PSA>
 Y("default-predicate-state-analysis", "Default predicate state analysis");
 
 } /* namespace borealis */

@@ -195,7 +195,7 @@ void CheckNullDereferencePass::print(llvm::raw_ostream& s, const llvm::Module*) 
 CheckNullDereferencePass::~CheckNullDereferencePass() {}
 
 char CheckNullDereferencePass::ID;
-static RegisterModularizedPass<CheckNullDereferencePass>
+static RegisterPass<CheckNullDereferencePass>
 X("check-null-deref", "NULL dereference checker");
 
 } /* namespace borealis */
