@@ -95,6 +95,8 @@ static llvm::UnaryArithType convert(un_opcode op) {
     case un_opcode::OPCODE_BNOT: return llvm::UnaryArithType::BNOT;
     case un_opcode::OPCODE_NOT: return llvm::UnaryArithType::NOT;
     case un_opcode::OPCODE_NEG: return llvm::UnaryArithType::NEG;
+    case un_opcode::OPCODE_LOAD:
+        BYE_BYE(llvm::UnaryArithType, "Dereference operator not supported");
     }
 }
 
@@ -144,7 +146,11 @@ public:
         TermConstructor rhvtc(tf);
 
         rhv->accept(rhvtc);
-        term = tf->getUnaryTerm(convert(op), rhvtc.term);
+        if(op == un_opcode::OPCODE_LOAD) {
+            term = tf->getLoadTerm(rhvtc.term);
+        }else {
+            term = tf->getUnaryTerm(convert(op), rhvtc.term);
+        }
     }
 
     Term::Ptr getTerm() { return term; }

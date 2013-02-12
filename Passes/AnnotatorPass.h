@@ -44,6 +44,11 @@ private:
 
 public:
 
+#include "Util/macros.h"
+    auto begin() QUICK_RETURN(annotations.begin())
+    auto end() QUICK_RETURN(annotations.end())
+#include "Util/unmacros.h"
+
     const annotation_container& getAnnotations() { return annotations; }
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;

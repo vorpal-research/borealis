@@ -30,6 +30,10 @@ public:
     Term::Ptr getTerm() { return term; }
     id_t getTypeId() const { return logic_annotation_type_id; }
 
+    virtual std::string argToString() const {
+        return " " + term->getName();
+    }
+
     static bool classof(const Annotation* a) {
         return a->getTypeId() == type_id<self>();
     }

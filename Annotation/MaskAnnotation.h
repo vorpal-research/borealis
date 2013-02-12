@@ -32,6 +32,18 @@ public:
         return true;
     }
 
+    virtual std::string argToString() const {
+        using borealis::util::head;
+        using borealis::util::tail;
+
+        std::ostringstream str;
+        str << " " << head(masks)->getName();
+        for(auto& mask: tail(masks)) {
+            str << ", " << mask->getName();
+        }
+        return str.str();
+    }
+
     static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
         return Annotation::Ptr(new self(locus, terms));
     }

@@ -23,6 +23,10 @@ public:
         depth(depth) {};
     virtual ~StackDepthAnnotation() {}
 
+    virtual std::string argToString() const {
+        return " " + std::to_string(depth);
+    }
+
     static bool classof(const Annotation* a) {
         return a->getTypeId() == type_id<self>();
     }
