@@ -22,6 +22,8 @@
 #include "Term/CmpTerm.h"
 #include "Term/UnaryTerm.h"
 
+#include "Term/LoadTerm.h"
+
 #include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
@@ -85,6 +87,10 @@ public:
         return Term::Ptr(new UnaryTerm(opc, rhv));
     }
 
+    Term::Ptr getLoadTerm(Term::Ptr rhv) {
+        return Term::Ptr(new LoadTerm(rhv));
+    }
+
     Term::Ptr getCmpTerm(llvm::ConditionType opc, Term::Ptr lhv, Term::Ptr rhv) {
         return Term::Ptr(new CmpTerm(opc, lhv, rhv));
     }
@@ -108,8 +114,6 @@ public:
     Term::Ptr getOpaqueConstantTerm(bool v) {
         return Term::Ptr(new OpaqueBoolConstantTerm(v));
     }
-
-
 
     static Ptr get(SlotTracker* slotTracker) {
         return Ptr(new TermFactory(slotTracker));

@@ -22,6 +22,8 @@ int main(void)
     int *s = p;
     int *t = q;
     // @unroll 0x100
+    // @requires *(*(x+4)) != 0
+    // @mask buf0, asd0, as
     if (s == NULL && t == NULL)
     {
 	s = &a[0];
