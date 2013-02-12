@@ -189,6 +189,7 @@ public:
 
         switch(op) {
         typedef un_opcode op;
+        case op::OPCODE_LOAD: errors << "dereference operator not supported"; break;
         case op::OPCODE_NEG:  assign( -operand.get() ); break;
         case op::OPCODE_NOT:  assign( !operand.get() ); break;
         case op::OPCODE_BNOT: assign( ~operand.get() ); break;

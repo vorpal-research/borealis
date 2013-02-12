@@ -120,6 +120,13 @@ T string_cast(const std::string& sexpr) {
 // the full set of moving operator-functor versions
 // unary ops
 template<class T>
+struct load :
+        std::unary_function< T, T > {
+    T operator()(T&& x) const
+    { return deref(move(x)); }
+};
+
+template<class T>
 struct negate :
         std::unary_function< T, T > {
     T operator()(T&& x) const
@@ -139,6 +146,8 @@ struct logical_not :
     T operator()(T&& x) const
     { return !move(x); }
 };
+
+
 
 // binary
 #define DEFBINARY(NAME, OP) \
@@ -400,6 +409,10 @@ struct read_uop :
         ifapply< seq< chpad< P >, O >, op_uaction< A > > {
 };
 
+// load := '*' atom
+struct read_load :
+        read_uop< '*', read_atom, load< expression_type > > {
+};
 // neg := '-' atom
 struct read_neg :
         read_uop< '-', read_atom, negate< expression_type > > {
@@ -415,7 +428,7 @@ struct read_bnot :
 
 // an unary op is just an atom, neg, not or bnot
 struct read_unary :
-        sor< read_neg, read_not, read_bnot, read_atom > {
+        sor< read_load, read_neg, read_not, read_bnot, read_atom > {
 };
 
 // mul := '*' unary

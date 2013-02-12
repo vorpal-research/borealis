@@ -52,6 +52,7 @@ enum class bin_opcode {
 };
 
 enum class un_opcode {
+    OPCODE_LOAD,
 	OPCODE_NEG,
 	OPCODE_NOT,
 	OPCODE_BNOT
@@ -209,6 +210,7 @@ prod_t operator|(prod_t&& op0, prod_t&& op1);
 prod_t operator^(prod_t&& op0, prod_t&& op1);
 prod_t operator<<(prod_t&& op0, prod_t&& op1);
 prod_t operator>>(prod_t&& op0, prod_t&& op1);
+prod_t deref(prod_t&& op0);
 prod_t operator!(prod_t&& op0);
 prod_t operator-(prod_t&& op0);
 prod_t operator~(prod_t&& op0);

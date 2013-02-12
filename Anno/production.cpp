@@ -279,6 +279,10 @@ prod_t operator>>(prod_t&& op0, prod_t&& op1) {
     return productionFactory::createBinary(bin_opcode::OPCODE_RSH, std::move(op0), std::move(op1));
 }
 
+prod_t deref(prod_t&& op0) {
+    return productionFactory::createUnary(un_opcode::OPCODE_LOAD, std::move(op0));
+}
+
 prod_t operator!(prod_t&& op0) {
     return productionFactory::createUnary(un_opcode::OPCODE_NOT, std::move(op0));
 }
