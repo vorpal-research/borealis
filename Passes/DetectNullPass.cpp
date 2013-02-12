@@ -176,7 +176,7 @@ llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
 }
 
 char DetectNullPass::ID;
-static RegisterModularizedPass<DetectNullPass>
+static RegisterPass<DetectNullPass>
 X("detect-null", "Explicit NULL assignment detector");
 
 } /* namespace borealis */

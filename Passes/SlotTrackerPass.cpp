@@ -7,6 +7,7 @@
 
 #include "Logging/tracer.hpp"
 #include "Passes/SlotTrackerPass.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
@@ -75,7 +76,7 @@ SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Argument& arg) const{
 }
 
 char SlotTrackerPass::ID;
-static llvm::RegisterPass<SlotTrackerPass>
+static RegisterPass<SlotTrackerPass>
 X("slot-tracker", "Provides slot tracker functionality for other passes");
 
 } // namespace borealis
