@@ -140,34 +140,6 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
                 vars.put(val, vi);
 
-            } else if (DbgValueInst* inst = dyn_cast_or_null<DbgValueInst>(&I)) {
-
-                auto* val = inst->getValue();
-                DIVariable var(inst->getVariable());
-
-                clang::Decl* decl = nullptr;
-                if (Instruction* inst = dyn_cast_or_null<Instruction>(val)) {
-                    if (MDNode* meta = inst->getMetadata("clang.decl.ptr")) {
-                        if (ConstantInt* ival = dyn_cast_or_null<ConstantInt>(meta->getOperand(0))){
-                            decl = reinterpret_cast<clang::Decl*>(ival->getValue().getZExtValue());
-                        }
-                    }
-                }
-
-                auto vi = mkVI(sm, var, decl);
-
-                // debug value has additional location data attached through dbg metadata
-                if (auto* nodeloc = inst->getMetadata("dbg")) {
-                    llvm::DILocation dloc(nodeloc);
-
-                    for (auto& locus: vi.originalLocus) {
-                        locus.loc.line = dloc.getLineNumber();
-                        locus.loc.col = dloc.getColumnNumber();
-                    }
-                }
-
-                vars.put(val, vi);
-
             } else if (CallInst* inst = dyn_cast_or_null<CallInst>(&I)) {
                 if(IntrinsicsManager::getInstance().getIntrinsicType(*inst)
                         == function_type::INTRINSIC_VALUE) {
@@ -196,9 +168,20 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
+inline std::string compact_string(llvm::Value* val) {
+    using llvm::dyn_cast_or_null;
+    using borealis::util::toString;
+
+    if(auto* f = dyn_cast_or_null<llvm::Function>(val)) {
+        return toString(f->getName());
+    } else if (auto* bb = dyn_cast_or_null<llvm::BasicBlock>(val)) {
+        return toString(bb->getName());
+    } else return toString(*val);
+}
+
 void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
     for(auto& var: vars) {
-        infos() << *var.first << " ==> " << var.second << endl;
+        infos() << compact_string(var.first) << " ==> " << var.second << endl;
     }
 }
 
