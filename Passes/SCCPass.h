@@ -8,7 +8,10 @@
 #ifndef SCCPASS_H_
 #define SCCPASS_H_
 
+#include <llvm/Analysis/CallGraph.h>
 #include <llvm/Pass.h>
+
+#include <vector>
 
 namespace borealis {
 
@@ -16,12 +19,15 @@ class SCCPass : public llvm::ModulePass {
 
 public:
 
-    static char ID;
+    typedef std::vector<llvm::CallGraphNode*> CallGraphSCC;
+    typedef CallGraphSCC::value_type CallGraphSCCNode;
 
-    SCCPass();
+    SCCPass(char& ID);
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual bool runOnModule(llvm::Module&);
     virtual ~SCCPass();
+
+    virtual bool runOnSCC(CallGraphSCC& SCC) = 0;
 };
 
 } /* namespace borealis */
