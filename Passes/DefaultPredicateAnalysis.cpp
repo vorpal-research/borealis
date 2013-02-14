@@ -257,12 +257,10 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 
 DefaultPredicateAnalysis::DefaultPredicateAnalysis() :
-        ProxyFunctionPass(ID),
-        borealis::AbstractPredicateAnalysis(ID) {}
+        ProxyFunctionPass(ID) {}
 
 DefaultPredicateAnalysis::DefaultPredicateAnalysis(llvm::Pass* pass) :
-        ProxyFunctionPass(ID, pass),
-        borealis::AbstractPredicateAnalysis(ID) {}
+        ProxyFunctionPass(ID, pass) {}
 
 void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace::llvm;
@@ -299,10 +297,6 @@ DefaultPredicateAnalysis::~DefaultPredicateAnalysis() {}
 char DefaultPredicateAnalysis::ID;
 static RegisterPass<DefaultPredicateAnalysis>
 X("default-predicate-analysis", "Default instruction predicate analysis");
-
-char _ID = DefaultPredicateAnalysis::PSA::ID;
-static RegisterPass<DefaultPredicateAnalysis::PSA>
-Y("default-predicate-state-analysis", "Default predicate state analysis");
 
 } /* namespace borealis */
 

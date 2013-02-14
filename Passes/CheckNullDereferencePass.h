@@ -15,9 +15,9 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "Logging/logger.hpp"
-#include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/DefectManager.h"
 #include "Passes/DetectNullPass.h"
+#include "Passes/PredicateStateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Util/passes.hpp"
@@ -52,7 +52,7 @@ private:
 
 	llvm::AliasAnalysis* AA;
 
-	DefaultPredicateAnalysis::PSA* PSA;
+	PredicateStateAnalysis* PSA;
     DetectNullPass* DNP;
 
     DefectManager* defectManager;

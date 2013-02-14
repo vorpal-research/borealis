@@ -11,7 +11,6 @@
 #include <llvm/Target/TargetData.h>
 
 #include "Passes/AbstractPredicateAnalysis.h"
-#include "Passes/PredicateStateAnalysis.hpp"
 #include "Passes/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
@@ -21,7 +20,7 @@ namespace borealis {
 
 class DefaultPredicateAnalysis:
         public ProxyFunctionPass,
-        public borealis::AbstractPredicateAnalysis,
+        public AbstractPredicateAnalysis,
         public ShouldBeModularized {
 
     friend class DPAInstVisitor;
@@ -29,7 +28,6 @@ class DefaultPredicateAnalysis:
 public:
 
     static char ID;
-    typedef PredicateStateAnalysis<DefaultPredicateAnalysis> PSA;
 
     DefaultPredicateAnalysis();
     DefaultPredicateAnalysis(llvm::Pass*);
