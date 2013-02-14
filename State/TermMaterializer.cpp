@@ -9,7 +9,12 @@
 
 namespace borealis {
 
-TermMaterializer::TermMaterializer() {}
+TermMaterializer::TermMaterializer(
+        const borealis::Annotation* A,
+        borealis::TermFactory* TF,
+        borealis::MetaInfoTrackerPass* MI) {
+
+}
 
 TermMaterializer::~TermMaterializer() {}
 

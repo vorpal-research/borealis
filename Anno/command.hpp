@@ -20,21 +20,21 @@ namespace borealis {
 namespace anno {
 
 struct command {
-	std::string name_;
-	std::list<prod_t> args_;
+    std::string name_;
+    std::list<prod_t> args_;
 };
 
 template<class Char>
 std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& ost, const command& com) {
-	ost << com.name_;
-	if(com.args_.empty()) return ost;
+    ost << com.name_;
+    if(com.args_.empty()) return ost;
 
-	ost << "(";
-	for(const prod_t& args : borealis::util::view(com.args_.begin(), --com.args_.end())) {
-		ost << *args << ",";
-	}
-	ost << *(com.args_.back()) << ")";
-	return ost;
+    ost << "(";
+    for(const prod_t& args : borealis::util::view(com.args_.begin(), --com.args_.end())) {
+        ost << *args << ",";
+    }
+    ost << *(com.args_.back()) << ")";
+    return ost;
 }
 
 } //namespace anno

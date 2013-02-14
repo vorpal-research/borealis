@@ -16,103 +16,103 @@ class productionVisitor;
 
 class production {
 protected:
-	class notImplemented: public virtual std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "production: method not implemented";
-		}
-	};
-	inline void unimplement() const { throw notImplemented(); }
+    class notImplemented: public virtual std::exception {
+    public:
+        virtual const char* what() const noexcept {
+            return "production: method not implemented";
+        }
+    };
+    inline void unimplement() const { throw notImplemented(); }
 public:
-	virtual void accept(productionVisitor&) const;
-	virtual ~production();
+    virtual void accept(productionVisitor&) const;
+    virtual ~production();
 };
 
 typedef std::shared_ptr<production> prod_t;
 
 enum class bin_opcode {
-	OPCODE_PLUS,
-	OPCODE_MINUS,
-	OPCODE_MULT,
-	OPCODE_DIV,
-	OPCODE_MOD,
-	OPCODE_EQ,
-	OPCODE_NE,
-	OPCODE_GT,
-	OPCODE_LT,
-	OPCODE_GE,
-	OPCODE_LE,
-	OPCODE_LAND,
-	OPCODE_LOR,
-	OPCODE_BAND,
-	OPCODE_BOR,
-	OPCODE_XOR,
-	OPCODE_LSH,
-	OPCODE_RSH
+    OPCODE_PLUS,
+    OPCODE_MINUS,
+    OPCODE_MULT,
+    OPCODE_DIV,
+    OPCODE_MOD,
+    OPCODE_EQ,
+    OPCODE_NE,
+    OPCODE_GT,
+    OPCODE_LT,
+    OPCODE_GE,
+    OPCODE_LE,
+    OPCODE_LAND,
+    OPCODE_LOR,
+    OPCODE_BAND,
+    OPCODE_BOR,
+    OPCODE_XOR,
+    OPCODE_LSH,
+    OPCODE_RSH
 };
 
 enum class un_opcode {
     OPCODE_LOAD,
-	OPCODE_NEG,
-	OPCODE_NOT,
-	OPCODE_BNOT
+    OPCODE_NEG,
+    OPCODE_NOT,
+    OPCODE_BNOT
 };
 
 enum class type {
-	INTEGER,
-	FLOATING,
-	BOOLEAN,
-	INVALID
+    INTEGER,
+    FLOATING,
+    BOOLEAN,
+    INVALID
 };
 
 class productionFactory;
 
 class productionVisitor {
 protected:
-	class notImplemented: public std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "productionVisitor: method not implemented";
-		}
-	};
+    class notImplemented: public std::exception {
+    public:
+        virtual const char* what() const noexcept {
+            return "productionVisitor: method not implemented";
+        }
+    };
 
-	inline void unimplement() { throw notImplemented(); }
+    inline void unimplement() { throw notImplemented(); }
 
 public:
 
-	virtual ~productionVisitor();
-	virtual void onDoubleConstant(double);
-	virtual void onIntConstant(int);
-	virtual void onBoolConstant(bool);
+    virtual ~productionVisitor();
+    virtual void onDoubleConstant(double);
+    virtual void onIntConstant(int);
+    virtual void onBoolConstant(bool);
 
-	virtual void onVariable(const std::string&);
-	virtual void onBuiltin(const std::string&);
-	virtual void onMask(const std::string&);
+    virtual void onVariable(const std::string&);
+    virtual void onBuiltin(const std::string&);
+    virtual void onMask(const std::string&);
 
-	virtual void onBinary(bin_opcode op,
-			const prod_t&,
-			const prod_t&);
-	virtual void onUnary(un_opcode op,
-			const prod_t&);
+    virtual void onBinary(bin_opcode op,
+            const prod_t&,
+            const prod_t&);
+    virtual void onUnary(un_opcode op,
+            const prod_t&);
 };
 
 class doubleConstant: public virtual production {
-	long double value_;
+    long double value_;
 public:
-	doubleConstant(long double value);
-	virtual void accept(productionVisitor& pv) const;
+    doubleConstant(long double value);
+    virtual void accept(productionVisitor& pv) const;
 };
 class intConstant: public virtual production {
-	long long value_;
+    long long value_;
 public:
-	intConstant(long long value);
-	virtual void accept(productionVisitor& pv) const;
+    intConstant(long long value);
+    virtual void accept(productionVisitor& pv) const;
 };
 class boolConstant: public virtual production {
-	bool value_;
+    bool value_;
 public:
-	boolConstant(bool value);
-	virtual void accept(productionVisitor& pv) const;
+    boolConstant(bool value);
+    virtual void accept(productionVisitor& pv) const;
 };
 
 class mask: public virtual production {
@@ -124,70 +124,70 @@ public:
 };
 
 class builtin: public virtual production {
-	std::string vname_;
+    std::string vname_;
 public:
-	explicit builtin(const std::string& vname);	;
-	explicit builtin(std::string&& vname);
-	virtual void accept(productionVisitor& pv) const;
+    explicit builtin(const std::string& vname);    ;
+    explicit builtin(std::string&& vname);
+    virtual void accept(productionVisitor& pv) const;
 };
 
 class variable: public virtual production {
-	std::string vname_;
+    std::string vname_;
 public:
-	explicit variable(const std::string& vname);
-	explicit variable(std::string&& vname);
-	virtual void accept(productionVisitor& pv) const;
+    explicit variable(const std::string& vname);
+    explicit variable(std::string&& vname);
+    virtual void accept(productionVisitor& pv) const;
 };
 
 class binary: public virtual production {
-	bin_opcode code_;
-	prod_t op0_;
-	prod_t op1_;
+    bin_opcode code_;
+    prod_t op0_;
+    prod_t op1_;
 public:
-	binary(bin_opcode code, prod_t&& op0, prod_t&& op1);
-	virtual void accept(productionVisitor& pv) const;
+    binary(bin_opcode code, prod_t&& op0, prod_t&& op1);
+    virtual void accept(productionVisitor& pv) const;
 };
 
 class unary: public virtual production {
-	un_opcode code_;
-	prod_t op_;
+    un_opcode code_;
+    prod_t op_;
 public:
-	unary(un_opcode code, prod_t&& op);
-	virtual void accept(productionVisitor& pv) const;
+    unary(un_opcode code, prod_t&& op);
+    virtual void accept(productionVisitor& pv) const;
 };
 
 class productionFactory {
 public:
-	static prod_t bind(double v);
-	static prod_t bind(long long v);
-	static prod_t bind(bool v);
-	// solving ambiguity that results into bind("") being bind(true) instead of bind(string(""))
-	static prod_t bind(const char* v);
-	static prod_t bind(std::string v);
+    static prod_t bind(double v);
+    static prod_t bind(long long v);
+    static prod_t bind(bool v);
+    // solving ambiguity that results into bind("") being bind(true) instead of bind(string(""))
+    static prod_t bind(const char* v);
+    static prod_t bind(std::string v);
 
-	static prod_t createDouble(double v);
-	static prod_t createInt(int v);
-	static prod_t createBool(bool v);
-	static prod_t createVar(std::string v);
-	static prod_t createBuiltin(std::string v);
-	static prod_t createMask(std::string v);
-	static prod_t createBinary(bin_opcode code, prod_t&& op0, prod_t&& op1);
-	static prod_t createUnary(un_opcode code, prod_t&& op);
+    static prod_t createDouble(double v);
+    static prod_t createInt(int v);
+    static prod_t createBool(bool v);
+    static prod_t createVar(std::string v);
+    static prod_t createBuiltin(std::string v);
+    static prod_t createMask(std::string v);
+    static prod_t createBinary(bin_opcode code, prod_t&& op0, prod_t&& op1);
+    static prod_t createUnary(un_opcode code, prod_t&& op);
 };
 
 class printingVisitor: public virtual productionVisitor {
-	std::ostream& ost_;
+    std::ostream& ost_;
 
-	virtual void onDoubleConstant(double v);
-	virtual void onIntConstant(int v);
-	virtual void onBoolConstant(bool v);
-	virtual void onVariable(const std::string& name);
-	virtual void onBuiltin(const std::string& name);
-	virtual void onMask(const std::string& mask);
-	virtual void onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1);
-	virtual void onUnary(un_opcode opc, const prod_t& op0);
+    virtual void onDoubleConstant(double v);
+    virtual void onIntConstant(int v);
+    virtual void onBoolConstant(bool v);
+    virtual void onVariable(const std::string& name);
+    virtual void onBuiltin(const std::string& name);
+    virtual void onMask(const std::string& mask);
+    virtual void onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1);
+    virtual void onUnary(un_opcode opc, const prod_t& op0);
 public:
-	printingVisitor(std::ostream& ost);
+    printingVisitor(std::ostream& ost);
 };
 
 std::ostream& operator<<( std::ostream& ost, const production& prod);

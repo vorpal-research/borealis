@@ -22,7 +22,7 @@ class TermMaterializer: public borealis::Transformer<TermMaterializer> {
 
 public:
 
-    TermMaterializer();
+    TermMaterializer(const borealis::Annotation* A, borealis::TermFactory* TF, borealis::MetaInfoTrackerPass* MI);
     virtual ~TermMaterializer();
 
     llvm::Value* forName(const std::string& name);

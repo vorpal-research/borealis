@@ -36,39 +36,46 @@ using llvm::dyn_cast_or_null;
 using llvm::DIVariable;
 using llvm::DIDescriptor;
 
-static VarInfo mkVI(const clang::SourceManager& sm, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, clang::Decl* ast = nullptr, bool allocated = false) {
     if (clang::NamedDecl* decl = llvm::dyn_cast_or_null<clang::NamedDecl>(ast)) {
         return VarInfo {
             just(decl->getName().str()),
             just(Locus(sm.getPresumedLoc(ast->getLocation()))),
+            allocated ? VarInfo::Allocated : VarInfo::Plain,
             ast
         };
     }
     return VarInfo();
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& node, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret {
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
     return ret.overwriteBy(mkVI(sm, ast));
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable& node, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret {
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
     return ret.overwriteBy(mkVI(sm, ast));
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret {
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
     return ret.overwriteBy(mkVI(sm, ast));
@@ -126,7 +133,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                auto vi = mkVI(sm, var, decl);
+                auto vi = mkVI(sm, var, decl, true);
 
                 // debug declare has additional location data attached through dbg metadata
                 if (auto* nodeloc = inst->getMetadata("dbg")) {

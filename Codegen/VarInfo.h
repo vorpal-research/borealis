@@ -34,6 +34,7 @@ enum class DiscoveryPolicy {
 struct VarInfo {
     borealis::util::option<std::string> originalName;
     borealis::util::option<borealis::Locus> originalLocus;
+    enum { Allocated, Plain } treatment;
     clang::Decl* ast;
 
     const VarInfo& overwriteBy(const VarInfo& vi) {
@@ -48,6 +49,9 @@ struct VarInfo {
         if (vi.ast) {
             ast = vi.ast;
         }
+        if (vi.treatment) {
+            treatment = vi.treatment;
+        }
 
         return *this;
     }
@@ -58,8 +62,6 @@ inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
     using borealis::Locus;
     using borealis::infos;
 
-    infos() << dd.getVersion() << endl;
-
     return VarInfo{
         just(dd.getName().str()),
         just(
@@ -68,6 +70,7 @@ inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
                 LocalLocus { dd.getLineNumber(), 0U }
             }
         ),
+        VarInfo::Plain,
         ast
     };
 }
@@ -80,6 +83,8 @@ Streamer& operator<<(Streamer& ost, const VarInfo& vi) {
 
     if (vi.originalLocus.empty()) ost << "<unknown-location>";
     else ost << vi.originalLocus.getUnsafe();
+
+    if(vi.treatment == VarInfo::Allocated) ost << "(alloca)";
 
     if (vi.ast) ost << ": " << *vi.ast;
     return ost;
