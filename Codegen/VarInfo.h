@@ -28,6 +28,7 @@ enum class DiscoveryPolicy {
     NextVal,
     PreviousVal,
     NextFunction,
+    PreviousFunction,
     Loop
 };
 

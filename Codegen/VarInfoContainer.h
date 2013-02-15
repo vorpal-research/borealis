@@ -86,7 +86,7 @@ public:
     }
 
     loc_value_iterator byLocBwd(const Locus& loc) const {
-        return --bwd_locs.lower_bound(loc);
+        return bwd_locs.lower_bound(loc);
     }
 
     loc_value_iterator byLocEnd() const {
@@ -99,81 +99,6 @@ public:
 
     reverse_loc_value_iterator byLocReverseEnd() const {
         return bwd_locs.rend();
-    }
-
-    llvm::Value* locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const  {
-        using borealis::util::view;
-        switch(policy) {
-
-        case DiscoveryPolicy::NextVal:
-        {
-            auto fwd_it = byLocFwd(loc);
-            auto end = byLocEnd();
-            auto valsByName = byName(name);
-
-            auto fnd = std::find_if(fwd_it, end,
-                [&](loc_value_iterator::value_type it) -> bool {
-                    if(llvm::isa<llvm::Function>(it.second)) return false;
-
-                    for(auto& byname: view(valsByName)) {
-                        if(byname.second == it.second) return true;
-                    }
-                    return false;
-                }
-            );
-            return (fnd == end)? nullptr : fnd->second;
-        }
-
-        case DiscoveryPolicy::PreviousVal:
-        {
-            auto bwd_it = byLocReverse(loc);
-            auto end = byLocReverseEnd();
-            auto valsByName = byName(name);
-
-            auto fnd = std::find_if(bwd_it, end,
-                [&](reverse_loc_value_iterator::value_type it) -> bool {
-                    if(llvm::isa<llvm::Function>(it.second)) return false;
-
-                    for(auto& byname: view(valsByName)) {
-                        if(byname.second == it.second) return true;
-                    }
-                    return false;
-                }
-            );
-            return (fnd == end)? nullptr : fnd->second;
-        }
-
-        case DiscoveryPolicy::NextFunction:
-        {
-            auto fwd_it = byLocFwd(loc);
-            auto end = byLocEnd();
-            auto valsByName = byName(name);
-
-            auto fnd = std::find_if(fwd_it, end,
-                [&](loc_value_iterator::value_type it) -> bool {
-                    if(!llvm::isa<llvm::Function>(it.second)) return false;
-
-                    for(auto& byname: view(valsByName)) {
-                        if(byname.second == it.second) return true;
-                    }
-                    return false;
-                }
-            );
-            return (fnd == end)? nullptr : fnd->second;
-        }
-
-        case DiscoveryPolicy::Loop:
-        {
-            // FIXME
-        }
-
-#include "Util/macros.h"
-        default:
-            BYE_BYE(llvm::Value*, "Unknown discovery policy requested");
-            return nullptr;
-        }
-#include "Util/unmacros.h"
-
     }
 
     llvm::Value* byClang(clang::Decl* dcl) const {

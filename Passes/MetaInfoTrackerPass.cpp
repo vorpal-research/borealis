@@ -106,7 +106,8 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
         if (!di.isGlobalVariable()) continue;
 
         llvm::DIGlobalVariable glob(mglob);
-        vars.put(glob.getGlobal(), mkVI(sm, glob));
+        // FIXME: deal with the globals that get optimized out
+        if(glob.getGlobal()) vars.put(glob.getGlobal(), mkVI(sm, glob));
     }
 
     for (auto& msp: view(dfi.subprogram_begin(), dfi.subprogram_end())) {

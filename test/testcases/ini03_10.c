@@ -15,14 +15,14 @@
 
 int main(void)
 {
-    // @requires a != 0
     int a[5] = {0, 1, 2, 3, 4};
+    // @assert a != 0
     static int *p;
     static int *q;
     int *s = p;
     int *t = q;
     // @unroll 0x100
-    // @requires *(*(x+4)) != 0
+    // @assert *(*(x+4)) != 0
     // @mask buf0, asd0, as
     if (s == NULL && t == NULL)
     {
