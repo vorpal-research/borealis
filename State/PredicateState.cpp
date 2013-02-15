@@ -46,6 +46,8 @@ PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
 }
 
 PredicateState PredicateState::addAll(const PredicateState& state) const {
+    if (state.empty()) return *this;
+
     PredicateState res = PredicateState(*this);
     res.data.insert(res.data.end(), state.data.begin(), state.data.end());
     res.visited.insert(state.visited.begin(), state.visited.end());

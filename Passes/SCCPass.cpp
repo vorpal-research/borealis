@@ -6,9 +6,6 @@
  */
 
 #include <llvm/ADT/SCCIterator.h>
-#include <llvm/Analysis/CallGraph.h>
-#include <llvm/GlobalValue.h>
-#include <llvm/Support/raw_ostream.h>
 
 #include "Passes/CheckNullDereferencePass.h"
 #include "Passes/SCCPass.h"
@@ -19,34 +16,63 @@
 
 namespace borealis {
 
-SCCPass::SCCPass() : llvm::ModulePass(ID) {}
+SCCPass::SCCPass(char& ID) : llvm::ModulePass(ID) {}
 
 SCCPass::~SCCPass() {}
 
 void SCCPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace llvm;
 
-    AU.setPreservesAll();
-
     AUX<CallGraph>::addRequiredTransitive(AU);
-    AUX<CheckNullDereferencePass>::addRequiredTransitive(AU);
 }
 
 bool SCCPass::runOnModule(llvm::Module&) {
-
     using namespace llvm;
 
-    auto* CG = &GetAnalysis<CallGraph>::doit(this);
-    for (auto& SCC : borealis::util::view(scc_begin(CG), scc_end(CG))) {
-        for (auto* e : SCC)
-            infos() << *e->getFunction() << endl;
+    bool changed = false;
+
+    CallGraph* CG = &GetAnalysis<CallGraph>::doit(this);
+    for (CallGraphSCC& SCC : borealis::util::view(scc_begin(CG), scc_end(CG))) {
+        changed |= runOnSCC(SCC);
     }
 
-    return false;
+    return changed;
 }
 
-char SCCPass::ID;
-static llvm::RegisterPass<SCCPass>
-X("scc", "SCC test pass");
+////////////////////////////////////////////////////////////////////////////////
+
+class SCCTestPass : public SCCPass {
+
+public:
+
+    static char ID;
+
+    SCCTestPass() : SCCPass(ID) {};
+
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+        using namespace llvm;
+        SCCPass::getAnalysisUsage(AU);
+
+        AU.setPreservesAll();
+
+        AUX<CheckNullDereferencePass>::addRequiredTransitive(AU);
+    }
+
+    virtual bool runOnSCC(CallGraphSCC& SCC) {
+        using namespace llvm;
+
+        for (CallGraphSCCNode node : SCC) {
+            Function* F = node->getFunction();
+            if (F) {
+                infos() << "SCC: " << F->getName() << endl;
+            }
+        }
+        return false;
+    }
+};
+
+char SCCTestPass::ID;
+static RegisterPass<SCCTestPass>
+X("scc-test", "Test pass for SCCPass");
 
 } /* namespace borealis */

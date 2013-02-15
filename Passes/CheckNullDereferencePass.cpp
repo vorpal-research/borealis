@@ -13,7 +13,7 @@
 
 #include "Logging/logger.hpp"
 #include "Passes/CheckNullDereferencePass.h"
-#include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/PredicateStateAnalysis.h"
 #include "Query/AndQuery.h"
 #include "Query/EqualityQuery.h"
 #include "Query/NullPtrQuery.h"
@@ -154,7 +154,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<AliasAnalysis>::addRequiredTransitive(AU);
-    AUX<DefaultPredicateAnalysis::PSA>::addRequiredTransitive(AU);
+    AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
     AUX<DetectNullPass>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
@@ -165,7 +165,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     AA = &GetAnalysis<AliasAnalysis>::doit(this, F);
 
-    PSA = &GetAnalysis<DefaultPredicateAnalysis::PSA>::doit(this, F);
+    PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
     DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
     defectManager = &GetAnalysis<DefectManager>::doit(this, F);

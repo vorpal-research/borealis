@@ -9,13 +9,8 @@
 
 namespace borealis {
 
-AbstractPredicateAnalysis::RegisteredPasses
-AbstractPredicateAnalysis::registeredPasses;
+AbstractPredicateAnalysis::AbstractPredicateAnalysis() {}
 
-AbstractPredicateAnalysis::AbstractPredicateAnalysis(char ID) {
-    registeredPasses.insert((const void*)&ID);
-};
-
-AbstractPredicateAnalysis::~AbstractPredicateAnalysis() {}; // FIXME: akhin Remove ID on delete?
+AbstractPredicateAnalysis::~AbstractPredicateAnalysis() {}
 
 } // namespace borealis

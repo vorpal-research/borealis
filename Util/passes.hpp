@@ -94,7 +94,7 @@ struct GetAnalysis<P, impl_::PassType::OTHER> {
         return pass->getAnalysis< P >();
     }
 
-    static P& doit(llvm::Pass* pass, llvm::Function& F) {
+    static P& doit(llvm::Pass* pass, llvm::Function&) {
         return pass->getAnalysis< P >();
     }
 
@@ -102,7 +102,7 @@ struct GetAnalysis<P, impl_::PassType::OTHER> {
         return pass->getAnalysis< P >();
     }
 
-    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function&) {
         return pass->getAnalysis< P >();
     }
 };
