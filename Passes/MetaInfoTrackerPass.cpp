@@ -179,17 +179,6 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
-inline std::string compact_string(llvm::Value* val) {
-    using llvm::dyn_cast_or_null;
-    using borealis::util::toString;
-
-    if(auto* f = dyn_cast_or_null<llvm::Function>(val)) {
-        return toString(f->getName());
-    } else if (auto* bb = dyn_cast_or_null<llvm::BasicBlock>(val)) {
-        return toString(bb->getName());
-    } else return toString(*val);
-}
-
 void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
     for(auto& var: vars) {
         infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
