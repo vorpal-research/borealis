@@ -101,14 +101,17 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     const clang::SourceManager& sm =
             getAnalysis< DataProvider<clang::SourceManager> >().provide();
 
-    for (auto& mglob: view(dfi.global_variable_begin(), dfi.global_variable_end())) {
-        llvm::DIDescriptor di(mglob);
-        if (!di.isGlobalVariable()) continue;
 
-        llvm::DIGlobalVariable glob(mglob);
-        // FIXME: deal with the globals that get optimized out
-        if(glob.getGlobal()) vars.put(glob.getGlobal(), mkVI(sm, glob));
-    }
+    auto intrinsic_manager = IntrinsicsManager::getInstance();
+
+    auto GlobalsDesc = M.getFunction("borealis.globals.##");
+    for(auto& BB: *GlobalsDesc)
+        for(auto& I: BB)
+            if(CallInst* call = llvm::dyn_cast<CallInst>(&I))
+                if(intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
+                    llvm::DIGlobalVariable glob(call->getMetadata("var"));
+                    vars.put(call->getArgOperand(0), mkVI(sm, glob));
+                }
 
     for (auto& msp: view(dfi.subprogram_begin(), dfi.subprogram_end())) {
         llvm::DIDescriptor di(msp);
@@ -189,7 +192,7 @@ inline std::string compact_string(llvm::Value* val) {
 
 void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
     for(auto& var: vars) {
-        infos() << compact_string(var.first) << " ==> " << var.second << endl;
+        infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
     }
 }
 

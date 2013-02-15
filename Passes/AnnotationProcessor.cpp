@@ -43,7 +43,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void AnnotationProcessor::print(llvm::raw_ostream& O, const llvm::Module*) const {
+void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module*) const {
 }
 
 char AnnotationProcessor::ID;

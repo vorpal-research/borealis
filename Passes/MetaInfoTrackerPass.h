@@ -84,6 +84,15 @@ private:
         return ValueDescriptor{nullptr, false};
     }
 
+
+    static bool isFunc(VarInfoContainer::loc_value_iterator::reference pr) {
+        return llvm::isa<llvm::Function>(pr.second);
+    }
+
+    static bool isNotFunc(VarInfoContainer::loc_value_iterator::reference pr) {
+        return !llvm::isa<llvm::Function>(pr.second);
+    }
+
 public:
     static char ID;
 
@@ -96,14 +105,6 @@ public:
     virtual void print(llvm::raw_ostream&, const llvm::Module* M) const;
 
     ValueDescriptor locate(const Locus& loc, DiscoveryPolicy policy) const {
-        auto isFunc = [](VarInfoContainer::loc_value_iterator::reference pr)->bool{
-            return llvm::isa<llvm::Function>(pr.second);
-        };
-
-        auto isNotFunc = [](VarInfoContainer::loc_value_iterator::reference pr)->bool{
-            return !llvm::isa<llvm::Function>(pr.second);
-        };
-
         switch(policy) {
         case DiscoveryPolicy::NextVal:
             return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isNotFunc);
@@ -125,14 +126,6 @@ public:
     ValueDescriptor locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const {
         using borealis::util::view;
         typedef typename VarInfoContainer::loc_value_iterator::value_type loc_and_val;
-
-        auto isFunc = [](VarInfoContainer::loc_value_iterator::reference pr){
-            return llvm::isa<llvm::Function>(pr.second);
-        };
-
-        auto isNotFunc = [](VarInfoContainer::loc_value_iterator::reference pr){
-            return !llvm::isa<llvm::Function>(pr.second);
-        };
 
         switch(policy) {
 

@@ -25,6 +25,44 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
+    llvm::DebugInfoFinder dfi;
+    dfi.processModule(M);
+
+    auto* Desc = intrinsic_manager.createIntrinsic(
+            function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
+            "##",
+            llvm::FunctionType::get(llvm::Type::getVoidTy(M.getContext()), false),
+            &M
+    );
+    llvm::BasicBlock::Create(M.getContext(), "bb", Desc);
+
+    for (auto& mglob: view(dfi.global_variable_begin(), dfi.global_variable_end())) {
+        llvm::DIDescriptor di(mglob);
+        if (!di.isGlobalVariable()) continue;
+
+        llvm::DIGlobalVariable glob(mglob);
+        if(!glob.getGlobal()) continue;
+
+        auto* current = intrinsic_manager.createIntrinsic(
+                function_type::INTRINSIC_GLOBAL,
+                toString(*glob.getGlobal()->getType()->getPointerElementType()),
+                llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(M.getContext()),
+                        std::vector<llvm::Type*>{ glob.getGlobal()->getType()->getPointerElementType() },
+                        false
+                ),
+                &M
+        );
+
+        auto* load = new llvm::LoadInst(glob.getGlobal(), "",  &Desc->front());
+        auto* call = llvm::CallInst::Create(current, std::vector<llvm::Value*>{load}, "", &Desc->front());
+        call->setMetadata("var", glob);
+
+        //FIXME: insert globals
+    }
+
+    llvm::ReturnInst::Create(M.getContext(), &Desc->front());
+
     std::list<llvm::DbgValueInst*> toReplace;
 
     for(auto& F : M) {

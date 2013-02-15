@@ -103,6 +103,22 @@ static IntrinsicsManager::RegisterIntrinsic INTRINSIC_VALUE {
     }
 };
 
+static IntrinsicsManager::RegisterIntrinsic INTRINSIC_GLOBAL_DESCRIPTOR_TABLE {
+    function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
+    "globals",
+    [](llvm::Function*, PredicateFactory*, TermFactory*) {
+        return PredicateState();
+    }
+};
+
+static IntrinsicsManager::RegisterIntrinsic INTRINSIC_GLOBAL {
+    function_type::INTRINSIC_GLOBAL,
+    "global",
+    [](llvm::Function*, PredicateFactory*, TermFactory*) {
+        return PredicateState();
+    }
+};
+
 static IntrinsicsManager::RegisterIntrinsic BUILTIN_MALLOC {
     function_type::BUILTIN_MALLOC,
     "malloc",
