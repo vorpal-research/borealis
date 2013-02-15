@@ -46,16 +46,21 @@ public:
                 " at " + util::toString(locus);
     }
 
-    keyword_t getKeyword() { return keyword; }
+
+    const Locus& getLocus() const { return locus; }
+    keyword_t getKeyword() const { return keyword; }
 
     static bool classof(const Annotation*) {
         return true;
     }
+
+
 };
 
 template<class Streamer>
 Streamer& operator<<(Streamer& str, const Annotation& a) {
-    return str << a.toString();
+    // this is generally fucked up
+    return static_cast<Streamer&>(str << a.toString());
 }
 
 } /* namespace borealis */
