@@ -75,6 +75,8 @@ public:
         return instance;
     }
 
+    const std::string getFuncName(function_type ft, const std::string& ext) const;
+
 private:
 
     typedef std::unordered_map< std::pair<function_type, llvm::FunctionType*>, llvm::Function*> typed_intrinsics_cache;
@@ -93,7 +95,6 @@ private:
     };
 
     IntrinsicInfo getIntrinsicInfo(function_type ft) const;
-    const std::string getFuncName(function_type ft, const std::string& ext) const;
     function_type getIntrinsicType(llvm::Function* F) const;
 };
 

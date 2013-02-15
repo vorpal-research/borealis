@@ -30,7 +30,7 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
 
     auto* Desc = intrinsic_manager.createIntrinsic(
             function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
-            "##",
+            "",
             llvm::FunctionType::get(llvm::Type::getVoidTy(M.getContext()), false),
             &M
     );

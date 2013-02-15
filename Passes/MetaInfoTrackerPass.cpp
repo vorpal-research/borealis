@@ -104,13 +104,26 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
     auto intrinsic_manager = IntrinsicsManager::getInstance();
 
-    auto GlobalsDesc = M.getFunction("borealis.globals.##");
+    ;
+    auto GlobalsDesc = M.getFunction(
+         intrinsic_manager.getFuncName(
+             function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
+             ""
+         )
+    );
+
     for(auto& BB: *GlobalsDesc)
         for(auto& I: BB)
             if(CallInst* call = llvm::dyn_cast<CallInst>(&I))
                 if(intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
                     llvm::DIGlobalVariable glob(call->getMetadata("var"));
-                    vars.put(call->getArgOperand(0), mkVI(sm, glob));
+                    auto* garg = call->getArgOperand(0);
+                    // if the arg is a load, add it dereferenced
+                    if(auto* load = llvm::dyn_cast<llvm::LoadInst>(garg)) {
+                        vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
+                    } else { // else it has been optimised, put it as is
+                        vars.put(garg, mkVI(sm, glob));
+                    }
                 }
 
     for (auto& msp: view(dfi.subprogram_begin(), dfi.subprogram_end())) {

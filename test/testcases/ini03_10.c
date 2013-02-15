@@ -6,7 +6,9 @@
 
 #include "test_include.h"
 
-/* @ensures x+x == 23
+int x = 11;
+
+/* @ensures x+x == 22
    @requires 2
  */
    // @ignore
