@@ -47,4 +47,6 @@
         return; \
     }
 
+#define ASSERT(cond, msg) while(!cond){ BYE_BYE_VOID(msg) }
+
 // #endif /* MACROS_H_ */
