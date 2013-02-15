@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "Passes/SCCPass.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -25,7 +26,7 @@ namespace borealis {
 // Use ShouldBeModularized marker trait from Util/passes.hpp instead
 //
 template<class SubPass>
-class PassModularizer : public llvm::ModulePass {
+class PassModularizer : public SCCPass {
 
     typedef std::unique_ptr<SubPass> subptr;
 
@@ -43,26 +44,28 @@ public:
 
     static char ID;
 
-    PassModularizer() : llvm::ModulePass(ID) {
+    PassModularizer() : SCCPass(ID) {
         passes[nullptr] = createSubPass();
     }
 
-    virtual bool runOnModule(llvm::Module &M) {
+    virtual bool runOnSCC(CallGraphSCC& SCC) {
+        using namespace llvm;
+
         bool changed = false;
-
-        for (auto& F : M) {
+        for (CallGraphSCCNode node : SCC) {
+            Function* F = node->getFunction();
             // Do not run on declarations
-            if (F.isDeclaration()) continue;
-
-            subptr ptr(createSubPass());
-            changed |= ptr->runOnFunction(F);
-            passes[&F] = std::move(ptr);
+            if (F && !F->isDeclaration()) {
+                subptr ptr(createSubPass());
+                changed |= ptr->runOnFunction(*F);
+                passes[F] = std::move(ptr);
+            }
         }
-
         return changed;
     }
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+        SCCPass::getAnalysisUsage(AU);
         getDefaultSubPass()->getAnalysisUsage(AU);
     }
 
