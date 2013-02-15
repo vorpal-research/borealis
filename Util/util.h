@@ -105,6 +105,22 @@ inline borealis::Locus instructionLocus(const Instruction* inst) {
     else return borealis::Locus();
 }
 
+
+inline std::string valueSummary(Value* v) {
+    if(!v) return "<nullptr>";
+    if(auto* f = llvm::dyn_cast_or_null<Function>(v)) {
+        return ("function " + f->getName()).str();
+    } else if(auto* bb = llvm::dyn_cast_or_null<BasicBlock>(v)) {
+        return ("basic block " + bb->getName()).str();
+    } else if(auto* i = llvm::dyn_cast_or_null<Instruction>(v)) {
+        return borealis::util::toString(*i).c_str()+2;
+    } else return borealis::util::toString(*v);
+}
+
+inline std::string valueSummary(Value& v) {
+    return valueSummary(&v);
+}
+
 } // namespace llvm
 
 namespace borealis {
