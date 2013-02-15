@@ -16,7 +16,7 @@ using anno::command;
 using anno::location;
 
 std::vector<command> parse(const std::string& v) {
-	return parse_command<location>(v);
+    return parse_command<location>(v);
 }
 
 } // namespace anno

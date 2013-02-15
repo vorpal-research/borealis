@@ -10,6 +10,12 @@
 
 #include <sstream>
 
+#include "Annotation/LogicAnnotation.h"
+#include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
+#include "Annotation/AssignsAnnotation.h"
+#include "Annotation/AssertAnnotation.h"
+#include "Passes/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
 #include "Util/locations.h"
@@ -18,16 +24,23 @@
 
 namespace borealis {
 
-class TermMaterializer: public borealis::Transformer<TermMaterializer> {
+class AnnotationMaterializer: public borealis::Transformer<AnnotationMaterializer> {
+    class AnnotationMaterializerImpl;
+    AnnotationMaterializerImpl* pimpl;
 
 public:
 
-    TermMaterializer();
-    virtual ~TermMaterializer();
+    AnnotationMaterializer(
+            const borealis::LogicAnnotation& A,
+            borealis::TermFactory* TF,
+            borealis::MetaInfoTrackerPass* MI);
+    ~AnnotationMaterializer();
 
-    llvm::Value* forName(const std::string& name);
-    const NameContext& nameContext();
-    TermFactory& factory();
+    MetaInfoTrackerPass::ValueDescriptor forName(const std::string& name) const;
+    const NameContext& nameContext() const;
+    TermFactory& factory() const;
+
+    Annotation::Ptr doit();
 
     void failWith(const std::string& message);
     inline void failWith(llvm::Twine twine) {
@@ -48,7 +61,11 @@ public:
 
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
         auto ret = forName(trm->getName());
-        return factory().getValueTerm(ret);
+        if(!ret.val) failWith(trm->getName() + " : variable not found in scope");
+
+        if(ret.shouldBeDereferenced) {
+            return factory().getLoadTerm(factory().getValueTerm(ret.val));
+        }else return factory().getValueTerm(ret.val);
     }
 
     Term::Ptr transformOpaqueBuiltinTerm(OpaqueBuiltinTermPtr trm) {
@@ -82,6 +99,10 @@ public:
         }
     }
 };
+
+
+Annotation::Ptr materialize(Annotation::Ptr, TermFactory*, MetaInfoTrackerPass*);
+
 
 } /* namespace borealis */
 

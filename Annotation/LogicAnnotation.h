@@ -27,12 +27,14 @@ public:
             borealis::Term::Ptr term);
     virtual ~LogicAnnotation() = 0;
 
-    Term::Ptr getTerm() { return term; }
+    Term::Ptr getTerm() const { return term; }
     id_t getTypeId() const { return logic_annotation_type_id; }
 
     virtual std::string argToString() const {
         return " " + term->getName();
     }
+
+    virtual Annotation::Ptr clone(Term::Ptr newTerm) const = 0;
 
     static bool classof(const Annotation* a) {
         return a->getTypeId() == type_id<self>();

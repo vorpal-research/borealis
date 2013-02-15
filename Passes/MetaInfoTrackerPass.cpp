@@ -36,39 +36,46 @@ using llvm::dyn_cast_or_null;
 using llvm::DIVariable;
 using llvm::DIDescriptor;
 
-static VarInfo mkVI(const clang::SourceManager& sm, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, clang::Decl* ast = nullptr, bool allocated = false) {
     if (clang::NamedDecl* decl = llvm::dyn_cast_or_null<clang::NamedDecl>(ast)) {
         return VarInfo {
             just(decl->getName().str()),
             just(Locus(sm.getPresumedLoc(ast->getLocation()))),
+            allocated ? VarInfo::Allocated : VarInfo::Plain,
             ast
         };
     }
     return VarInfo();
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& node, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret {
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
     return ret.overwriteBy(mkVI(sm, ast));
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable& node, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret {
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
     return ret.overwriteBy(mkVI(sm, ast));
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node, clang::Decl* ast = nullptr) {
+static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret {
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
     return ret.overwriteBy(mkVI(sm, ast));
@@ -94,13 +101,30 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     const clang::SourceManager& sm =
             getAnalysis< DataProvider<clang::SourceManager> >().provide();
 
-    for (auto& mglob: view(dfi.global_variable_begin(), dfi.global_variable_end())) {
-        llvm::DIDescriptor di(mglob);
-        if (!di.isGlobalVariable()) continue;
 
-        llvm::DIGlobalVariable glob(mglob);
-        vars.put(glob.getGlobal(), mkVI(sm, glob));
-    }
+    auto intrinsic_manager = IntrinsicsManager::getInstance();
+
+    ;
+    auto GlobalsDesc = M.getFunction(
+         intrinsic_manager.getFuncName(
+             function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
+             ""
+         )
+    );
+
+    for(auto& BB: *GlobalsDesc)
+        for(auto& I: BB)
+            if(CallInst* call = llvm::dyn_cast<CallInst>(&I))
+                if(intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
+                    llvm::DIGlobalVariable glob(call->getMetadata("var"));
+                    auto* garg = call->getArgOperand(0);
+                    // if the arg is a load, add it dereferenced
+                    if(auto* load = llvm::dyn_cast<llvm::LoadInst>(garg)) {
+                        vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
+                    } else { // else it has been optimised, put it as is
+                        vars.put(garg, mkVI(sm, glob));
+                    }
+                }
 
     for (auto& msp: view(dfi.subprogram_begin(), dfi.subprogram_end())) {
         llvm::DIDescriptor di(msp);
@@ -126,7 +150,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     }
                 }
 
-                auto vi = mkVI(sm, var, decl);
+                auto vi = mkVI(sm, var, decl, true);
 
                 // debug declare has additional location data attached through dbg metadata
                 if (auto* nodeloc = inst->getMetadata("dbg")) {
@@ -168,20 +192,9 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
-inline std::string compact_string(llvm::Value* val) {
-    using llvm::dyn_cast_or_null;
-    using borealis::util::toString;
-
-    if(auto* f = dyn_cast_or_null<llvm::Function>(val)) {
-        return toString(f->getName());
-    } else if (auto* bb = dyn_cast_or_null<llvm::BasicBlock>(val)) {
-        return toString(bb->getName());
-    } else return toString(*val);
-}
-
 void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
     for(auto& var: vars) {
-        infos() << compact_string(var.first) << " ==> " << var.second << endl;
+        infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
     }
 }
 

@@ -34,6 +34,10 @@ public:
     static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
         return Annotation::Ptr(new self(locus, terms.front()));
     }
+
+    Annotation::Ptr clone(Term::Ptr newTerm) const {
+        return Annotation::Ptr{ new self(locus, newTerm) };
+    }
 };
 
 } /* namespace borealis */

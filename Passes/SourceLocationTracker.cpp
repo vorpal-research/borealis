@@ -37,7 +37,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 			continue;
 
 		DIGlobalVariable glob(mdnode);
-		valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
+		if(glob.getGlobal()) valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
 	}
 
 	using borealis::util::containsKey;
@@ -63,6 +63,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 					    retloc = diloc;
 					}
 
+					dbgs() << llvm::valueSummary(Inst) << " ===> " << retloc << endl;
                     valueDebugInfo.put(retloc, &Inst);
 				}
 			}
@@ -111,14 +112,10 @@ void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
 void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module*) const {
 	using borealis::util::streams::endl;
 
-	typedef std::pair<llvm::Value*, Locus> valueDebugMapEntry;
+	typedef std::pair<Locus, llvm::Value*> valueDebugMapEntry;
 
-	for (const valueDebugMapEntry& val : valueDebugInfo.getTo()) {
-		ost << *val.first << endl;
-		ost.indent(2) << getFilenameFor(val.first)
-			   << ":" << getLineFor(val.first)
-			   << ":" << getColumnFor(val.first)
-			   << endl;
+	for (const valueDebugMapEntry& val : valueDebugInfo.getFrom()) {
+		ost << " " << llvm::valueSummary(val.second) << " ==> " << getLocFor(val.second) << endl;
 	}
 }
 

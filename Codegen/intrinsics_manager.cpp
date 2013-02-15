@@ -67,7 +67,8 @@ const std::string IntrinsicsManager::getFuncName(function_type ft, const std::st
     std::string buf;
     llvm::raw_string_ostream oss(buf);
 
-    oss << "borealis." << getIntrinsicInfo(ft).name << "." << ext;
+    oss << "borealis." << getIntrinsicInfo(ft).name;
+    if(!ext.empty()) oss << "." << ext;
     return oss.str();
 }
 
@@ -98,6 +99,22 @@ static IntrinsicsManager::RegisterIntrinsic INTRINSIC_PTR_VERSION {
 static IntrinsicsManager::RegisterIntrinsic INTRINSIC_VALUE {
     function_type::INTRINSIC_VALUE,
     "value",
+    [](llvm::Function*, PredicateFactory*, TermFactory*) {
+        return PredicateState();
+    }
+};
+
+static IntrinsicsManager::RegisterIntrinsic INTRINSIC_GLOBAL_DESCRIPTOR_TABLE {
+    function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
+    "globals",
+    [](llvm::Function*, PredicateFactory*, TermFactory*) {
+        return PredicateState();
+    }
+};
+
+static IntrinsicsManager::RegisterIntrinsic INTRINSIC_GLOBAL {
+    function_type::INTRINSIC_GLOBAL,
+    "global",
     [](llvm::Function*, PredicateFactory*, TermFactory*) {
         return PredicateState();
     }
