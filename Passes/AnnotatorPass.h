@@ -47,6 +47,8 @@ public:
 #include "Util/macros.h"
     auto begin() QUICK_RETURN(annotations.begin())
     auto end() QUICK_RETURN(annotations.end())
+    auto rbegin() QUICK_RETURN(annotations.rbegin())
+    auto rend() QUICK_RETURN(annotations.rend())
 #include "Util/unmacros.h"
 
     const annotation_container& getAnnotations() { return annotations; }
