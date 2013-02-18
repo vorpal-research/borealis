@@ -23,6 +23,7 @@
 #include "Util/hash.hpp"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
+#include "Util/passes.hpp"
 #include "Util/streams.hpp"
 #include "Util/locations.h"
 
