@@ -22,6 +22,21 @@ void AnnotationProcessor::getAnalysisUsage(llvm::AnalysisUsage& AU) const{
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
+static llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr) {
+    llvm::Constant* annoptr = llvm::ConstantInt::get(
+            ctx,
+            llvm::APInt(sizeof(uintptr_t)*8, reinterpret_cast<uintptr_t>(ptr))
+    );
+   return llvm::MDNode::get(ctx, annoptr);
+}
+
+static void* MDNode2Ptr(llvm::MDNode* ptr) {
+    if(auto* i = llvm::dyn_cast<llvm::ConstantInt>(ptr->getOperand(0))) {
+        return reinterpret_cast<void*>(static_cast<uintptr_t>(i->getLimitedValue()));
+    }
+    return nullptr;
+}
+
 bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     using namespace llvm;
     using borealis::util::reverse;
@@ -34,6 +49,8 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     SourceLocationTracker& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
     for (Annotation::Ptr anno : reverse(annotations)) {
+
+        if(!isa<LogicAnnotation>(anno)) continue;
 
         Constant* data = ConstantDataArray::getString(M.getContext(), toString(*anno));
 
@@ -56,7 +73,8 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                             anno_intr,
                             data,
                             "",
-                            F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
+                            F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime())->
+                                setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
                     break;
                 }
             }
@@ -67,7 +85,8 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                             anno_intr,
                             data,
                             "",
-                            I);
+                            I)->
+                        setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
                     break;
                 }
             }
@@ -77,7 +96,21 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module*) const {}
+void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const {
+    auto& IM = IntrinsicsManager::getInstance();
+
+    for(auto& F : *M) {
+        for(auto& BB : F) {
+            for(auto& I : BB) {
+                if(auto* ci = llvm::dyn_cast<llvm::CallInst>(&I)) {
+                    if(IM.getIntrinsicType(*ci) == function_type::INTRINSIC_ANNOTATION) {
+                        infos() << *static_cast<Annotation*>(MDNode2Ptr(ci->getMetadata("anno.ptr"))) << endl;
+                    }
+                }
+            }
+        }
+    }
+}
 
 char AnnotationProcessor::ID;
 static RegisterPass<AnnotationProcessor>

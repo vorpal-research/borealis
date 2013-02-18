@@ -54,7 +54,7 @@ static IntrinsicsManager::RegisterIntrinsic BUILTIN_MALLOC {
                 )
         );
     },
-    [](const IntrinsicsManager&, llvm::CallInst& CI) {
+    [](const IntrinsicsManager&, const llvm::CallInst& CI) {
         return llvm::isMalloc(&CI)
                 ? function_type::BUILTIN_MALLOC
                 : function_type::UNKNOWN;

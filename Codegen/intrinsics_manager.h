@@ -29,7 +29,7 @@ class IntrinsicsManager {
 public:
 
     typedef std::function<PredicateState(llvm::Function*, PredicateFactory*, TermFactory*)> state_generator;
-    typedef std::function<function_type(const IntrinsicsManager&, llvm::CallInst&)> type_resolver;
+    typedef std::function<function_type(const IntrinsicsManager&, const llvm::CallInst&)> type_resolver;
 
     struct IntrinsicInfo {
         function_type type;
@@ -62,7 +62,7 @@ public:
             llvm::FunctionType* funtype,
             llvm::Module* module);
 
-    function_type getIntrinsicType(llvm::CallInst& CI) const;
+    function_type getIntrinsicType(const llvm::CallInst& CI) const;
 
     void registerIntrinsic(const IntrinsicInfo& info) {
         info_cache[info.type] = info;
@@ -94,7 +94,7 @@ private:
     intrinsic_info_cache info_cache;
 
     type_resolvers resolvers {
-        [](const IntrinsicsManager& m, llvm::CallInst& CI) {
+        [](const IntrinsicsManager& m, const llvm::CallInst& CI) {
             return m.getIntrinsicType(CI.getCalledFunction());
         }
     };

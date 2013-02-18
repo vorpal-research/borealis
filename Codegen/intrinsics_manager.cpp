@@ -36,7 +36,7 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
     return f;
 }
 
-function_type IntrinsicsManager::getIntrinsicType(llvm::CallInst& CI) const {
+function_type IntrinsicsManager::getIntrinsicType(const llvm::CallInst& CI) const {
     for (auto& resolver : resolvers) {
         function_type r = resolver(*this, CI);
         if (r != function_type::UNKNOWN) return r;
