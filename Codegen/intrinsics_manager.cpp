@@ -5,8 +5,6 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Analysis/MemoryBuiltins.h>
-
 #include "Codegen/intrinsics_manager.h"
 #include "Util/macros.h"
 
@@ -80,64 +78,6 @@ function_type IntrinsicsManager::getIntrinsicType(llvm::Function* F) const {
         return function_type::UNKNOWN;
     }
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-static IntrinsicsManager::RegisterIntrinsic INTRINSIC_PTR_VERSION {
-    function_type::INTRINSIC_PTR_VERSION,
-    "ptrver",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
-        return PredicateState().addPredicate(
-               PF->getEqualityPredicate(
-                   TF->getReturnValueTerm(F),
-                   TF->getArgumentTerm(&*F->arg_begin())
-               )
-       );
-    }
-};
-
-static IntrinsicsManager::RegisterIntrinsic INTRINSIC_VALUE {
-    function_type::INTRINSIC_VALUE,
-    "value",
-    [](llvm::Function*, PredicateFactory*, TermFactory*) {
-        return PredicateState();
-    }
-};
-
-static IntrinsicsManager::RegisterIntrinsic INTRINSIC_GLOBAL_DESCRIPTOR_TABLE {
-    function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
-    "globals",
-    [](llvm::Function*, PredicateFactory*, TermFactory*) {
-        return PredicateState();
-    }
-};
-
-static IntrinsicsManager::RegisterIntrinsic INTRINSIC_GLOBAL {
-    function_type::INTRINSIC_GLOBAL,
-    "global",
-    [](llvm::Function*, PredicateFactory*, TermFactory*) {
-        return PredicateState();
-    }
-};
-
-static IntrinsicsManager::RegisterIntrinsic BUILTIN_MALLOC {
-    function_type::BUILTIN_MALLOC,
-    "malloc",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
-        return PredicateState().addPredicate(
-                PF->getMallocPredicate(
-                        TF->getReturnValueTerm(F)
-                )
-        );
-    },
-    [](const IntrinsicsManager&, llvm::CallInst& CI) {
-        return llvm::isMalloc(&CI)
-                ? function_type::BUILTIN_MALLOC
-                : function_type::UNKNOWN;
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////
 
 } // namespace borealis
 

@@ -41,13 +41,18 @@ public:
         RegisterIntrinsic(
                 function_type type,
                 const std::string& name,
-                state_generator state_generator,
+                state_generator state_generator = default_generator,
                 type_resolver type_resolver = nullptr)
         : IntrinsicInfo { type, name, state_generator } {
                 IntrinsicsManager::getInstance().registerIntrinsic(*this);
                 if (type_resolver) {
                     IntrinsicsManager::getInstance().registerResolver(type_resolver);
                 }
+        }
+
+        static PredicateState default_generator(
+                llvm::Function*, PredicateFactory*, TermFactory*) {
+            return PredicateState();
         }
     };
 
