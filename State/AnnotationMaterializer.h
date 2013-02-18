@@ -1,20 +1,20 @@
 /*
- * TermMaterializer.h
+ * AnnotationMaterializer.h
  *
  *  Created on: Jan 21, 2013
  *      Author: belyaev
  */
 
-#ifndef TERMMATERIALIZER_H_
-#define TERMMATERIALIZER_H_
+#ifndef ANNOTATIONMATERIALIZER_H_
+#define ANNOTATIONMATERIALIZER_H_
 
 #include <sstream>
 
-#include "Annotation/LogicAnnotation.h"
-#include "Annotation/EnsuresAnnotation.h"
-#include "Annotation/RequiresAnnotation.h"
-#include "Annotation/AssignsAnnotation.h"
 #include "Annotation/AssertAnnotation.h"
+#include "Annotation/AssignsAnnotation.h"
+#include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/LogicAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
@@ -46,7 +46,7 @@ public:
     inline void failWith(llvm::Twine twine) {
         return failWith(twine.str());
     }
-    // resolve ambiguity
+    // resolving ambiguity
     inline void failWith(const char* r) {
         return failWith(std::string(r));
     }
@@ -61,11 +61,13 @@ public:
 
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
         auto ret = forName(trm->getName());
-        if(!ret.val) failWith(trm->getName() + " : variable not found in scope");
+        if (ret.isInvalid()) failWith(trm->getName() + " : variable not found in scope");
 
-        if(ret.shouldBeDereferenced) {
+        if (ret.shouldBeDereferenced) {
             return factory().getLoadTerm(factory().getValueTerm(ret.val));
-        }else return factory().getValueTerm(ret.val);
+        } else {
+            return factory().getValueTerm(ret.val);
+        }
     }
 
     Term::Ptr transformOpaqueBuiltinTerm(OpaqueBuiltinTermPtr trm) {
@@ -73,14 +75,13 @@ public:
         const auto& ctx = nameContext();
 
         if (name == "result") {
-            if(ctx.func && ctx.placement == NameContext::Placement::OuterScope)
+            if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 return factory().getReturnValueTerm(ctx.func);
-            else {
+            } else {
                 failWith("\result can only be bound to functions' outer scope");
-                return trm;
             }
         } else if (name.startswith("arg")) {
-            if(ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
+            if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 std::istringstream ist(name.drop_front(3).str());
                 unsigned val = 0U;
                 ist >> val;
@@ -91,19 +92,17 @@ public:
                 return factory().getArgumentTerm(argIt);
             } else {
                 failWith("\arg# can only be bound to functions' outer scope");
-                return trm;
             }
         } else {
-            failWith("\\" + name + ": unknown builtin");
-            return trm;
+            failWith("\\" + name + " : unknown builtin");
         }
+
+        return trm;
     }
 };
 
-
 Annotation::Ptr materialize(Annotation::Ptr, TermFactory*, MetaInfoTrackerPass*);
-
 
 } /* namespace borealis */
 
-#endif /* TERMMATERIALIZER_H_ */
+#endif /* ANNOTATIONMATERIALIZER_H_ */

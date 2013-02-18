@@ -1,5 +1,5 @@
 /*
- * ClangDeclTrackerPass.cpp
+ * MetaInfoTrackerPass.cpp
  *
  *  Created on: Jan 11, 2013
  *      Author: belyaev
@@ -17,27 +17,35 @@
 
 namespace borealis {
 
-MetaInfoTrackerPass::MetaInfoTrackerPass(): ModulePass(ID) {}
+MetaInfoTrackerPass::MetaInfoTrackerPass() : ModulePass(ID) {}
 
 MetaInfoTrackerPass::~MetaInfoTrackerPass() {}
 
-void MetaInfoTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-    Info.addRequired<sm_t>();
-    Info.addRequired<loops>();
-    Info.setPreservesAll();
+void MetaInfoTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+    AU.setPreservesAll();
+
+    AUX<sm_t>::addRequiredTransitive(AU);
+    AUX<loops>::addRequiredTransitive(AU);
 }
 
 using borealis::util::option;
 using borealis::util::nothing;
 using borealis::util::just;
-using borealis::VarInfo;
-using borealis::Locus;
-using llvm::dyn_cast_or_null;
-using llvm::DIVariable;
-using llvm::DIDescriptor;
 
-static VarInfo mkVI(const clang::SourceManager& sm, clang::Decl* ast = nullptr, bool allocated = false) {
-    if (clang::NamedDecl* decl = llvm::dyn_cast_or_null<clang::NamedDecl>(ast)) {
+using borealis::Locus;
+using borealis::VarInfo;
+
+using llvm::dyn_cast;
+using llvm::dyn_cast_or_null;
+using llvm::DIDescriptor;
+using llvm::DIGlobalVariable;
+using llvm::DILocation;
+using llvm::DISubprogram;
+using llvm::DIVariable;
+
+static VarInfo mkVI(const clang::SourceManager& sm,
+        clang::Decl* ast = nullptr, bool allocated = false) {
+    if (clang::NamedDecl* decl = dyn_cast_or_null<clang::NamedDecl>(ast)) {
         return VarInfo {
             just(decl->getName().str()),
             just(Locus(sm.getPresumedLoc(ast->getLocation()))),
@@ -86,56 +94,56 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
     using llvm::inst_begin;
     using llvm::inst_end;
-    using llvm::dyn_cast;
-    using llvm::dyn_cast_or_null;
+    using llvm::CallInst;
+    using llvm::ConstantInt;
     using llvm::DbgDeclareInst;
     using llvm::DbgValueInst;
-    using llvm::CallInst;
-    using llvm::MDNode;
     using llvm::Instruction;
-    using llvm::ConstantInt;
+    using llvm::LoadInst;
+    using llvm::MDNode;
 
     llvm::DebugInfoFinder dfi;
     dfi.processModule(M);
 
     const clang::SourceManager& sm =
-            getAnalysis< DataProvider<clang::SourceManager> >().provide();
+            getAnalysis<sm_t>().provide();
+    auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
-
-    auto intrinsic_manager = IntrinsicsManager::getInstance();
-
-    ;
-    auto GlobalsDesc = M.getFunction(
+    auto* GlobalsDesc = M.getFunction(
          intrinsic_manager.getFuncName(
              function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
              ""
          )
     );
 
-    for(auto& BB: *GlobalsDesc)
-        for(auto& I: BB)
-            if(CallInst* call = llvm::dyn_cast<CallInst>(&I))
-                if(intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
-                    llvm::DIGlobalVariable glob(call->getMetadata("var"));
+    for (auto& BB : *GlobalsDesc) {
+        for (auto& I : BB) {
+            if (CallInst* call = dyn_cast<CallInst>(&I)) {
+                if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
+                    DIGlobalVariable glob(call->getMetadata("var"));
                     auto* garg = call->getArgOperand(0);
-                    // if the arg is a load, add it dereferenced
-                    if(auto* load = llvm::dyn_cast<llvm::LoadInst>(garg)) {
+                    // if garg is a load, add it dereferenced
+                    if (auto* load = dyn_cast<LoadInst>(garg)) {
                         vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
-                    } else { // else it has been optimised, put it as is
+                    // else it has been optimized away, put it as-is
+                    } else {
                         vars.put(garg, mkVI(sm, glob));
                     }
                 }
+            }
+        }
+    }
 
-    for (auto& msp: view(dfi.subprogram_begin(), dfi.subprogram_end())) {
-        llvm::DIDescriptor di(msp);
-        if(!di.isSubprogram()) continue;
+    for (auto& msp : view(dfi.subprogram_begin(), dfi.subprogram_end())) {
+        DIDescriptor di(msp);
+        if (!di.isSubprogram()) continue;
 
-        llvm::DISubprogram sp(msp);
+        DISubprogram sp(msp);
         vars.put(sp.getFunction(), mkVI(sm, sp));
     }
 
-    for (auto& F: M) {
-        for (auto& I: view(inst_begin(F), inst_end(F))) {
+    for (auto& F : M) {
+        for (auto& I : view(inst_begin(F), inst_end(F))) {
 
             if (DbgDeclareInst* inst = dyn_cast_or_null<DbgDeclareInst>(&I)) {
                 auto* val = inst->getAddress();
@@ -152,11 +160,12 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
                 auto vi = mkVI(sm, var, decl, true);
 
-                // debug declare has additional location data attached through dbg metadata
+                // debug declare has additional location data attached through
+                // dbg metadata
                 if (auto* nodeloc = inst->getMetadata("dbg")) {
-                    llvm::DILocation dloc(nodeloc);
+                    DILocation dloc(nodeloc);
 
-                    for (auto& locus: vi.originalLocus) {
+                    for (auto& locus : vi.originalLocus) {
                         locus.loc.line = dloc.getLineNumber();
                         locus.loc.col = dloc.getColumnNumber();
                     }
@@ -165,17 +174,17 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                 vars.put(val, vi);
 
             } else if (CallInst* inst = dyn_cast_or_null<CallInst>(&I)) {
-                if(IntrinsicsManager::getInstance().getIntrinsicType(*inst)
-                        == function_type::INTRINSIC_VALUE) {
+                if (IntrinsicsManager::getInstance().getIntrinsicType(*inst) == function_type::INTRINSIC_VALUE) {
                     auto* val = inst->getArgOperand(1);
                     DIVariable var(inst->getMetadata("var"));
 
                     clang::Decl* decl = nullptr;
                     auto vi = mkVI(sm, var, decl);
 
-                    // debug value has additional location data attached through dbg metadata
+                    // debug value has additional location data attached through
+                    // dbg metadata
                     if (auto* nodeloc = inst->getMetadata("dbg")) {
-                        llvm::DILocation dloc(nodeloc);
+                        DILocation dloc(nodeloc);
 
                         for (auto& locus: vi.originalLocus) {
                             locus.loc.line = dloc.getLineNumber();
@@ -186,21 +195,20 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                     vars.put(val, vi);
                 }
             }
-        } // for (auto& I: view(inst_begin(F), inst_end(F)))
-    } // for (auto& F: M)
+        } // for (auto& I : view(inst_begin(F), inst_end(F)))
+    } // for (auto& F : M)
 
     return false;
 }
 
 void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
-    for(auto& var: vars) {
+    for (auto& var : vars) {
         infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
     }
 }
 
-char MetaInfoTrackerPass::ID = 0U;
-
-static llvm::RegisterPass<MetaInfoTrackerPass>
+char MetaInfoTrackerPass::ID;
+static RegisterPass<MetaInfoTrackerPass>
 X("meta-tracker", "Meta info for values");
 
 } /* namespace borealis */

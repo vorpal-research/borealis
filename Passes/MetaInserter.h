@@ -10,7 +10,6 @@
 
 #include <llvm/Pass.h>
 
-
 #include "Codegen/intrinsics_manager.h"
 
 namespace borealis {
@@ -31,4 +30,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* METAINSERTER_H_ */

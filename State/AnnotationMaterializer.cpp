@@ -1,5 +1,5 @@
 /*
- * TermMaterializer.cpp
+ * AnnotationMaterializer.cpp
  *
  *  Created on: Jan 21, 2013
  *      Author: belyaev
@@ -17,41 +17,36 @@ public:
     NameContext nc;
 };
 
-
 AnnotationMaterializer::AnnotationMaterializer(
         const borealis::LogicAnnotation& A,
         borealis::TermFactory* TF,
-        borealis::MetaInfoTrackerPass* MI):
+        borealis::MetaInfoTrackerPass* MI) :
                 pimpl(
-                        new AnnotationMaterializerImpl{
+                        new AnnotationMaterializerImpl {
                             &A,
                             TF,
                             MI,
-                            NameContext{NameContext::Placement::GlobalScope, nullptr, A.getLocus()}
+                            NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
                         }
-                ){
-    if(llvm::isa<EnsuresAnnotation>(A) ||
+                ) {
+    if (llvm::isa<EnsuresAnnotation>(A) ||
             llvm::isa<RequiresAnnotation>(A) ||
             llvm::isa<AssignsAnnotation>(A)) {
         pimpl->nc.placement = NameContext::Placement::OuterScope;
-        if(auto f = llvm::dyn_cast_or_null<llvm::Function>(
+        if (auto f = llvm::dyn_cast_or_null<llvm::Function>(
                 pimpl->MI->locate(pimpl->nc.loc, DiscoveryPolicy::NextFunction).val
-           )) {
+            )) {
             pimpl->nc.func = f;
         }
-    } else if(llvm::isa<AssertAnnotation>(A)) {
+    } else if (llvm::isa<AssertAnnotation>(A)) {
         pimpl->nc.placement = NameContext::Placement::InnerScope;
-        if(auto f = llvm::dyn_cast_or_null<llvm::Function>(
+        if (auto f = llvm::dyn_cast_or_null<llvm::Function>(
                 pimpl->MI->locate(pimpl->nc.loc, DiscoveryPolicy::PreviousFunction).val
-           )) {
+            )) {
             pimpl->nc.func = f;
         }
-
     }
-
 };
-
-
 
 AnnotationMaterializer::~AnnotationMaterializer() {
     delete pimpl;
@@ -68,7 +63,7 @@ MetaInfoTrackerPass::ValueDescriptor AnnotationMaterializer::forName(const std::
     case NameContext::Placement::InnerScope:
         return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::PreviousVal);
     case NameContext::Placement::OuterScope:
-        // FIXME: outer-scope annotations may bind only to function arguments
+        // FIXME: outer scope annotations may bind only to function arguments
         return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::NextVal);
     }
 }
@@ -101,10 +96,12 @@ Annotation::Ptr materialize(
         TermFactory* TF,
         MetaInfoTrackerPass* MI
         ) {
-    if(auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation.get())){
+    if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation.get())){
         AnnotationMaterializer am(*logic, TF, MI);
         return am.doit();
-    } else return annotation;
+    } else {
+        return annotation;
+    }
 }
 
 } // namespace borealis

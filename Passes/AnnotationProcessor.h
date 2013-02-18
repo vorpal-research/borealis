@@ -21,12 +21,14 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("annotator")
 #include "Util/unmacros.h"
 
-    AnnotationProcessor(): llvm::ModulePass(ID) {};
+    AnnotationProcessor() : llvm::ModulePass(ID) {};
+    virtual ~AnnotationProcessor() {};
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual bool runOnModule(llvm::Module&);
-    virtual void print(llvm::raw_ostream& O, const llvm::Module*) const;
+    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const;
 };
 
 } /* namespace borealis */
+
 #endif /* ANNOTATIONPROCESSOR_H_ */
