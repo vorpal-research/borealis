@@ -66,7 +66,7 @@ const std::string IntrinsicsManager::getFuncName(function_type ft, const std::st
     llvm::raw_string_ostream oss(buf);
 
     oss << "borealis." << getIntrinsicInfo(ft).name;
-    if(!ext.empty()) oss << "." << ext;
+    if (!ext.empty()) oss << "." << ext;
     return oss.str();
 }
 
