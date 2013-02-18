@@ -53,6 +53,11 @@ inline auto view(const std::pair<Iter,Iter>& is) -> CollectionView<Iter> {
 }
 
 template<class Container>
+inline auto reverse(Container& c) -> CollectionView<decltype(c.rbegin())> {
+    return view(c.rbegin(), c.rend());
+}
+
+template<class Container>
 inline auto tail(const Container& con) -> CollectionView<decltype(con.begin())> {
     return view(++con.begin(), con.end());
 }
