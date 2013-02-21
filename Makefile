@@ -63,7 +63,6 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Logging \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
-	$(PWD)/Query \
 	$(PWD)/Solver \
 	$(PWD)/State \
 	$(PWD)/Term \

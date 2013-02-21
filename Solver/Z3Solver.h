@@ -10,7 +10,6 @@
 
 #include "Solver/Z3ExprFactory.h"
 #include "State/PredicateState.h"
-#include "Query/Query.h"
 
 namespace borealis {
 
@@ -21,15 +20,15 @@ public:
     Z3Solver(Z3ExprFactory& z3ef);
 
     bool checkSat(
-            const Query& q,
+            const PredicateState& q,
             const PredicateState& state);
 
     bool checkUnsat(
-            const Query& q,
+            const PredicateState& q,
             const PredicateState& state);
 
     bool checkSatOrUnknown(
-            const Query& q,
+            const PredicateState& q,
             const PredicateState& state);
 
     bool checkPathPredicates(
@@ -40,7 +39,7 @@ private:
     Z3ExprFactory& z3ef;
 
     z3::check_result check(
-            const Query& q,
+            const PredicateState& q,
             const PredicateState& state);
 
 };

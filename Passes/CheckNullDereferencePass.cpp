@@ -14,9 +14,6 @@
 #include "Logging/logger.hpp"
 #include "Passes/CheckNullDereferencePass.h"
 #include "Passes/PredicateStateAnalysis.h"
-#include "Query/AndQuery.h"
-#include "Query/EqualityQuery.h"
-#include "Query/NullPtrQuery.h"
 #include "Solver/Z3Solver.h"
 #include "Util/passes.hpp"
 
@@ -98,9 +95,11 @@ public:
         using llvm::dyn_cast;
         using llvm::Instruction;
 
-        NullPtrQuery q = NullPtrQuery(&what, pass->slotTracker);
+        Predicate::Ptr q = pass->PF->getEqualityPredicate(
+                pass->TF->getValueTerm(&what),
+                pass->TF->getNullPtrTerm());
 
-        pass->infos() << "Query: " << q.toString() << endl;
+        pass->infos() << "Query: " << q->toString() << endl;
 
         PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
         for (const auto& ps : psv) {
@@ -122,7 +121,7 @@ public:
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 
-            if (s.checkSatOrUnknown(q, ps)) {
+            if (s.checkSatOrUnknown(PredicateState().addPredicate(q), ps)) {
                 pass->infos() << "SAT" << endl;
                 return true;
             }
@@ -170,6 +169,9 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     defectManager = &GetAnalysis<DefectManager>::doit(this, F);
     slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+
+    PF = PredicateFactory::get(slotTracker);
+    TF = TermFactory::get(slotTracker);
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);

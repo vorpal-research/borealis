@@ -48,6 +48,10 @@ public:
         return Term::Ptr(new ConstTerm(c, slotTracker));
     }
 
+    Term::Ptr getNullPtrTerm() {
+        return getConstTerm(llvm::getNullPointer());
+    }
+
     Term::Ptr getBooleanTerm(bool b) {
         return Term::Ptr(new ConstTerm(llvm::getBoolConstant(b), slotTracker));
     }

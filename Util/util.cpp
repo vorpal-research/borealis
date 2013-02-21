@@ -175,6 +175,10 @@ llvm::Constant* getIntConstant(uint64_t i) {
     return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvm::getGlobalContext()), i);
 }
 
+llvm::ConstantPointerNull* getNullPointer() {
+    return llvm::ConstantPointerNull::get(llvm::Type::getInt64PtrTy(llvm::getGlobalContext()));
+}
+
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
     std::unordered_set<Loop*> loops;
 

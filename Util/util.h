@@ -9,6 +9,7 @@
 #define UTIL_H_
 
 #include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Constants.h>
 #include <llvm/Function.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Value.h>
@@ -73,6 +74,7 @@ ValueType type2type(const llvm::Type& type, TypeInfo info = TypeInfo::VARIABLE);
 
 llvm::Constant* getBoolConstant(bool b);
 llvm::Constant* getIntConstant(uint64_t i);
+llvm::ConstantPointerNull* getNullPointer();
 
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
 Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
