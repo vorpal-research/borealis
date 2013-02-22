@@ -5,6 +5,8 @@ syntax: glob
 *.gch
 .*
 *.log
+*.pyc
+
 
 wrapper
 run-tests
