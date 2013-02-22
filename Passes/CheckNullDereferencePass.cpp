@@ -106,11 +106,7 @@ public:
 
             pass->infos() << "Checking state: " << ps << endl;
 
-            if (!ps.hasVisited({
-                    &where,
-                    dyn_cast<const Instruction>(&what),
-                    dyn_cast<const Instruction>(&why)
-            })) {
+            if (!ps.hasVisited(&where, &what, &why)) {
 
                 pass->infos() << "Infeasible!" << endl;
 

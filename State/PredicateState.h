@@ -39,11 +39,32 @@ public:
     PredicateState addAll(const PredicateState& state) const;
 
     PredicateState addVisited(const llvm::Instruction* location) const;
-    bool hasVisited(std::initializer_list<const llvm::Instruction*> locations) const;
+
+    template<class H, class ...T>
+    bool hasVisited(H* loc, T... rest) const {
+        if (!borealis::util::contains(visited, loc)) return false;
+        return hasVisited(rest...);
+    }
+
+    template<class H, class ...T>
+    bool hasVisited(H loc, T... rest) const {
+        if (!borealis::util::contains(visited, &loc)) return false;
+        return hasVisited(rest...);
+    }
+
+    template<class H>
+    bool hasVisited(H* loc) const {
+        return borealis::util::contains(visited, loc);
+    }
+
+    template<class H>
+    bool hasVisited(H loc) const {
+        return borealis::util::contains(visited, &loc);
+    }
 
     bool isUnreachable() const;
 
-    std::pair<logic::Bool, logic::Bool> toZ3(Z3ExprFactory& z3ef) const;
+    logic::Bool toZ3(Z3ExprFactory& z3ef) const;
 
     typedef std::list<Predicate::Ptr> Data;
     typedef Data::value_type DataEntry;
@@ -69,10 +90,18 @@ public:
     DataIterator end() const { return data.end(); }
     bool empty() const { return data.empty(); }
 
-    PredicateState map(std::function<Predicate::Ptr(Predicate::Ptr)> f) {
+    PredicateState map(std::function<Predicate::Ptr(Predicate::Ptr)> f) const {
         PredicateState res;
         for (auto& p : data) {
             res = res.addPredicate(f(p));
+        }
+        return res;
+    }
+
+    PredicateState filter(std::function<bool(Predicate::Ptr)> f) const {
+        PredicateState res;
+        for (auto& p : data) {
+            if (f(p)) res = res.addPredicate(p);
         }
         return res;
     }

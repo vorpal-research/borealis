@@ -24,16 +24,14 @@ z3::check_result Z3Solver::check(
 
     solver s(z3ef.unwrap());
 
-    auto ss = state.toZ3(z3ef);
-    s.add(ss.first.toAxiom());
-    s.add(ss.second.toAxiom());
+    auto z3state = state.toZ3(z3ef);
+    s.add(z3state.toAxiom());
 
     dbgs() << "  Query: " << endl << q << endl;
-    dbgs() << "  Path predicates: " << endl << ss.first << endl;
-    dbgs() << "  State predicates: " << endl << ss.second << endl;
+    dbgs() << "  State: " << endl << z3state << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(pred.implies(q.toZ3(z3ef).second).toAxiom());
+    s.add(pred.implies(q.toZ3(z3ef)).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");
@@ -68,14 +66,16 @@ bool Z3Solver::checkPathPredicates(
 
     solver s(z3ef.unwrap());
 
-    auto ss = state.toZ3(z3ef);
-    s.add(ss.second.toAxiom());
+    auto pathPredicates = state.filter([](Predicate::Ptr p) { return p->getType() == PredicateType::PATH; }).toZ3(z3ef);
+    auto statePredicates = state.filter([](Predicate::Ptr p) { return p->getType() != PredicateType::PATH; }).toZ3(z3ef);
 
-    dbgs() << "  Path predicates: " << endl << ss.first << endl;
-    dbgs() << "  State predicates: " << endl << ss.second << endl;
+    s.add(statePredicates.toAxiom());
+
+    dbgs() << "  Path predicates: " << endl << pathPredicates << endl;
+    dbgs() << "  State predicates: " << endl << statePredicates << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(pred.implies(ss.first).toAxiom());
+    s.add(pred.implies(pathPredicates).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");

@@ -29,7 +29,9 @@ namespace borealis {
 
 enum class PredicateType {
     PATH,
-    STATE
+    STATE,
+    REQUIRES,
+    ENSURES
 };
 
 // Forward declaration
@@ -54,6 +56,11 @@ public:
         return type;
     }
 
+    inline Predicate* setType(PredicateType type) {
+        this->type = type;
+        return this;
+    }
+
     inline std::string toString() const {
         return asString;
     }
@@ -71,18 +78,20 @@ public:
 
     virtual size_t hashCode() const = 0;
 
-    const llvm::Instruction* getLocation() const {
+    inline const llvm::Instruction* getLocation() const {
         return location;
     }
 
-    void setLocation(const llvm::Instruction* location) {
+    inline Predicate* setLocation(const llvm::Instruction* location) {
         this->location = location;
+        return this;
     }
 
 protected:
 
     const borealis::id_t predicate_type_id;
-    const PredicateType type;
+
+    PredicateType type;
     const llvm::Instruction* location;
 
     // Must be set in subclasses
