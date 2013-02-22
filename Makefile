@@ -63,7 +63,6 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Logging \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
-	$(PWD)/Query \
 	$(PWD)/Solver \
 	$(PWD)/State \
 	$(PWD)/Term \
@@ -129,7 +128,8 @@ LIBS := \
 	-ldl \
 	-lrt \
 	-lcfgparser \
-	-llog4cpp
+	-llog4cpp \
+	-lprofiler
 
 default: all
 

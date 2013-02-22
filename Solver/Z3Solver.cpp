@@ -15,7 +15,7 @@ namespace borealis {
 Z3Solver::Z3Solver(Z3ExprFactory& z3ef) : z3ef(z3ef) {}
 
 z3::check_result Z3Solver::check(
-        const Query& q,
+        const PredicateState& q,
         const PredicateState& state) {
     using namespace::z3;
     using logic::Bool;
@@ -33,7 +33,7 @@ z3::check_result Z3Solver::check(
     dbgs() << "  State predicates: " << endl << ss.second << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(pred.implies(q.toZ3(z3ef)).toAxiom());
+    s.add(pred.implies(q.toZ3(z3ef).second).toAxiom());
 
     {
         TRACE_BLOCK("Calling Z3 check");
@@ -102,21 +102,21 @@ bool Z3Solver::checkPathPredicates(
 }
 
 bool Z3Solver::checkSat(
-        const Query& q,
+        const PredicateState& q,
         const PredicateState& state) {
     TRACE_FUNC;
     return check(q, state) == z3::sat;
 }
 
 bool Z3Solver::checkUnsat(
-        const Query& q,
+        const PredicateState& q,
         const PredicateState& state) {
     TRACE_FUNC;
     return check(q, state) == z3::unsat;
 }
 
 bool Z3Solver::checkSatOrUnknown(
-        const Query& q,
+        const PredicateState& q,
         const PredicateState& state) {
     TRACE_FUNC;
     return check(q, state) != z3::unsat;

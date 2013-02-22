@@ -20,6 +20,8 @@
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
+#include "Predicate/PredicateFactory.h"
+#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -57,6 +59,9 @@ private:
 
     DefectManager* defectManager;
 	SlotTracker* slotTracker;
+
+	PredicateFactory::Ptr PF;
+	TermFactory::Ptr TF;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;

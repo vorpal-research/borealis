@@ -15,16 +15,18 @@ namespace borealis {
 using borealis::util::contains;
 using borealis::util::view;
 
-PredicateState::PredicateState() {
+PredicateState::PredicateState() {}
+
+PredicateState::PredicateState(Predicate::Ptr p) {
+    data.push_back(p);
+    visited.insert(p->getLocation());
 }
 
 PredicateState::PredicateState(const PredicateState& state) :
-            data(state.data), visited(state.visited) {
-}
+            data(state.data), visited(state.visited) {}
 
 PredicateState::PredicateState(PredicateState&& state) :
-            data(std::move(state.data)), visited(std::move(state.visited)) {
-}
+            data(std::move(state.data)), visited(std::move(state.visited)) {}
 
 PredicateState& PredicateState::operator=(const PredicateState& state) {
     data = state.data;
@@ -136,6 +138,20 @@ std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
     }
     s << endl << ')';
     return s;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// PredicateState operators
+//
+////////////////////////////////////////////////////////////////////////////////
+
+const PredicateState operator&&(const PredicateState& state, Predicate::Ptr p) {
+    return state.addPredicate(p);
+}
+
+const PredicateState operator+(const PredicateState& state, Predicate::Ptr p) {
+    return state.addPredicate(p);
 }
 
 } /* namespace borealis */
