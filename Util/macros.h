@@ -47,6 +47,10 @@
         return; \
     }
 
-#define ASSERT(cond, msg) while(!cond){ BYE_BYE_VOID(msg) }
+#define ASSERT(cond, msg) while(!cond){ borealis::util::sayonara( \
+        __FILE__, \
+        __LINE__, \
+        __PRETTY_FUNCTION__, \
+        msg);}
 
 // #endif /* MACROS_H_ */

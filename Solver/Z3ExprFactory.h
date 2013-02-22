@@ -13,10 +13,17 @@
 
 #include "Logging/tracer.hpp"
 #include "Solver/Logic.hpp"
-#include "Term/Term.h"
+#include "Type/Type.h"
+#include "Type/Integer.h"
+#include "Type/Pointer.h"
+#include "Type/Float.h"
 #include "Util/util.h"
 
+#include "Util/cast.hpp"
+
 namespace borealis {
+
+class Term;
 
 class Z3ExprFactory {
 
@@ -46,6 +53,15 @@ public:
     typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, logic::TheoryArray> MemArray;
     // dynamic logic type
     typedef borealis::logic::SomeExpr Dynamic;
+
+    static size_t sizeForType(Type::Ptr type) {
+        using llvm::isa;
+        return isa<borealis::Integer>(type) ? Integer::bitsize :
+                isa<borealis::Pointer>(type) ? Pointer::bitsize :
+                 isa<borealis::Float>(type) ? Real::bitsize :
+                  util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                      "Cannot acquire bitsize for type " + util::toString(*type));
+    }
 
     Z3ExprFactory(z3::context& ctx);
 
@@ -77,6 +93,11 @@ public:
     MemArray getNoMemoryArray();
 
     // Generic functions
+
+    Dynamic getExprByTypeAndName(
+            const llvm::ValueType type,
+            const std::string& name,
+            size_t bitsize = 0);
     Dynamic getExprForTerm(const Term& term, size_t bits = 0);
     Dynamic getExprForValue(
         const llvm::Value& value,
@@ -104,10 +125,7 @@ private:
 
     expr to_expr(Z3_ast ast);
 
-    Dynamic getExprByTypeAndName(
-            const llvm::ValueType type,
-            const std::string& name,
-            size_t bitsize = 0);
+
 
 public:
 

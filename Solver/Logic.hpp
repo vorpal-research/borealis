@@ -14,6 +14,8 @@
 
 #include "Util/util.h"
 
+#include "Type/TypeFactory.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -327,6 +329,17 @@ REDEF_INT_BV_BIN_OP(*)
 REDEF_INT_BV_BIN_OP(/)
 
 #undef REDEF_INT_BV_BIN_OP
+
+#define REDEF_UN_OP(OP) \
+        template<size_t N> \
+        BitVector<N> operator OP(BitVector<N> bv) { \
+            return BitVector<N>(OP bv.get(), bv.axiom()); \
+        }
+
+REDEF_UN_OP(~)
+REDEF_UN_OP(-)
+
+#undef REDEF_UN_OP
 
 
 template<size_t N>

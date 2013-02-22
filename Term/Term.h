@@ -13,6 +13,12 @@
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
+#include "Solver/Z3ExprFactory.h"
+#include "Solver/ExecutionContext.h"
+
+#include "Type/Type.h"
+#include "Type/TypeFactory.h"
+
 namespace borealis {
 
 // Forward declaration
@@ -69,6 +75,12 @@ public:
     static bool classof(const Term* /* t */) {
         return true;
     }
+
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
+        return z3ef.getExprByTypeAndName(getType(), getName());
+    }
+
+    virtual Type::Ptr getTermType() const = 0;
 
 private:
 

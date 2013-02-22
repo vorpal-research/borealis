@@ -20,7 +20,7 @@ class OpaqueIntConstantTerm: public borealis::Term {
     OpaqueIntConstantTerm(long long value):
         Term(
             static_cast<id_t>(value),
-            llvm::ValueType::UNKNOWN,
+            llvm::ValueType::INT_CONST,
             borealis::util::toString(value),
             type_id(*this)
         ), value(value) {};
@@ -50,6 +50,11 @@ public:
                     that->value == value;
         } else return false;
     }
+
+    virtual Type::Ptr getTermType() const {
+        return TypeFactory::getInstance().getInteger();
+    }
+
 
     friend class TermFactory;
 };

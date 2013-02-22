@@ -134,7 +134,7 @@ public:
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace llvm;
 
-        Type* type = I.getPointerOperandType();
+        llvm::Type* type = I.getPointerOperandType();
 
         std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
         shifts.reserve(I.getNumIndices());

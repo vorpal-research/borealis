@@ -7,6 +7,8 @@
 
 #include "Solver/Z3ExprFactory.h"
 
+#include "Term/Term.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -18,6 +20,8 @@ Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {
 unsigned int Z3ExprFactory::pointerSize = 32;
 
 #define BRING_FROM_Z3EXPR_FACTORY(TYPE) typedef Z3ExprFactory::TYPE TYPE;
+
+namespace f {
 
 BRING_FROM_Z3EXPR_FACTORY(expr)
 BRING_FROM_Z3EXPR_FACTORY(function)
@@ -31,105 +35,107 @@ BRING_FROM_Z3EXPR_FACTORY(Real)
 BRING_FROM_Z3EXPR_FACTORY(Bool)
 BRING_FROM_Z3EXPR_FACTORY(Dynamic)
 
+}
+
 #undef BRING_FROM_Z3EXPR_FACTORY
 
-Pointer Z3ExprFactory::getPtr(const std::string& name) {
+f::Pointer Z3ExprFactory::getPtr(const std::string& name) {
     return Pointer::mkVar(ctx, name);
 }
 
-Pointer Z3ExprFactory::getNullPtr() {
+f::Pointer Z3ExprFactory::getNullPtr() {
     return Pointer::mkConst(ctx, 0);
 }
 
-Bool Z3ExprFactory::getBoolVar(const std::string& name) {
+f::Bool Z3ExprFactory::getBoolVar(const std::string& name) {
     return Bool::mkVar(ctx, name);
 }
 
-Bool Z3ExprFactory::getBoolConst(bool v) {
+f::Bool Z3ExprFactory::getBoolConst(bool v) {
     return Bool::mkConst(ctx, v);
 }
 
-Bool Z3ExprFactory::getTrue() {
+f::Bool Z3ExprFactory::getTrue() {
     return getBoolConst(true);
 }
 
-Bool Z3ExprFactory::getFalse() {
+f::Bool Z3ExprFactory::getFalse() {
     return getBoolConst(false);
 }
 
-Integer Z3ExprFactory::getIntVar(const std::string& name, size_t /* bits */) {
-    return Integer::mkVar(ctx, name);
+f::Integer Z3ExprFactory::getIntVar(const std::string& name, size_t /* bits */) {
+    return f::Integer::mkVar(ctx, name);
 }
 
-Integer Z3ExprFactory::getFreshIntVar(const std::string& name, size_t /* bits */ ) {
-    return Integer::mkFreshVar(ctx, name);
+f::Integer Z3ExprFactory::getFreshIntVar(const std::string& name, size_t /* bits */ ) {
+    return f::Integer::mkFreshVar(ctx, name);
 }
 
-Integer Z3ExprFactory::getIntConst(int v, size_t /* bits */) {
-    return Integer::mkConst(ctx, v);
+f::Integer Z3ExprFactory::getIntConst(int v, size_t /* bits */) {
+    return f::Integer::mkConst(ctx, v);
 }
 
-Integer Z3ExprFactory::getIntConst(const std::string& v, size_t /* bits */) {
+f::Integer Z3ExprFactory::getIntConst(const std::string& v, size_t /* bits */) {
     std::istringstream ost(v);
     unsigned long long ull;
     ost >> ull;
     return Integer::mkConst(ctx, ull);
 }
 
-Real Z3ExprFactory::getRealVar(const std::string& name) {
-    return Real::mkVar(ctx, name);
+f::Real Z3ExprFactory::getRealVar(const std::string& name) {
+    return f::Real::mkVar(ctx, name);
 }
 
-Real Z3ExprFactory::getFreshRealVar(const std::string& name) {
-    return Real::mkFreshVar(ctx, name);
+f::Real Z3ExprFactory::getFreshRealVar(const std::string& name) {
+    return f::Real::mkFreshVar(ctx, name);
 }
 
-Real Z3ExprFactory::getRealConst(int v) {
-    return Real::mkConst(ctx, v);
+f::Real Z3ExprFactory::getRealConst(int v) {
+    return f::Real::mkConst(ctx, v);
 }
 
-Real Z3ExprFactory::getRealConst(double v) {
-    return Real::mkConst(ctx, (long long int)v);
+f::Real Z3ExprFactory::getRealConst(double v) {
+    return f::Real::mkConst(ctx, (long long int)v);
 }
 
-Real Z3ExprFactory::getRealConst(const std::string& v) {
+f::Real Z3ExprFactory::getRealConst(const std::string& v) {
     std::istringstream buf(v);
     double dbl;
     buf >> dbl;
     return getRealConst(dbl);
 }
 
-MemArray Z3ExprFactory::getNoMemoryArray() {
-    return MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
+f::MemArray Z3ExprFactory::getNoMemoryArray() {
+    return f::MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
 }
 
-Dynamic Z3ExprFactory::getExprForTerm(const Term& term, size_t bits) {
+f::Dynamic Z3ExprFactory::getExprForTerm(const Term& term, size_t bits) {
     return getExprByTypeAndName(term.getType(), term.getName(), bits);
 }
 
-Dynamic Z3ExprFactory::getExprForValue(
+f::Dynamic Z3ExprFactory::getExprForValue(
         const llvm::Value& value,
         const std::string& name) {
     return getExprByTypeAndName(valueType(value), name);
 }
 
-Pointer Z3ExprFactory::getInvalidPtr() {
+f::Pointer Z3ExprFactory::getInvalidPtr() {
     return getNullPtr();
 }
 
-Bool Z3ExprFactory::isInvalidPtrExpr(Pointer ptr) {
+f::Bool Z3ExprFactory::isInvalidPtrExpr(f::Pointer ptr) {
     return (ptr == getInvalidPtr() || ptr == getNullPtr());
 }
 
-Bool Z3ExprFactory::getDistinct(const std::vector<Pointer>& exprs) {
+f::Bool Z3ExprFactory::getDistinct(const std::vector<f::Pointer>& exprs) {
     return logic::distinct(ctx, exprs);
 }
 
-expr Z3ExprFactory::to_expr(Z3_ast ast) {
+f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
     return z3::to_expr( ctx, ast );
 }
 
-Dynamic Z3ExprFactory::getExprByTypeAndName(
+f::Dynamic Z3ExprFactory::getExprByTypeAndName(
         const llvm::ValueType type,
         const std::string& name,
         size_t bitsize) {

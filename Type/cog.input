@@ -1,0 +1,13 @@
+cog.template -d -o Integer.h 
+cog.template -d -o Bool.h 
+cog.template -d -o Float.h
+cog.template -d -o Pointer.h
+cog.template -d -o UnknownType.h
+cog.template -d -o TypeError.h
+cog.template -d -o Integer.cpp
+cog.template -d -o Bool.cpp
+cog.template -d -o Float.cpp
+cog.template -d -o Pointer.cpp
+cog.template -d -o UnknownType.cpp
+cog.template -d -o TypeError.cpp
+
