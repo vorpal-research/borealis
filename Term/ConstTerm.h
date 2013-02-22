@@ -39,6 +39,10 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
+    virtual Type::Ptr getTermType() const {
+        return TypeFactory::getInstance().cast(constant->getType());
+    }
+
 private:
 
     ConstTerm(llvm::Constant* c, SlotTracker* st) :

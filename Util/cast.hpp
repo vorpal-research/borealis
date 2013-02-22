@@ -22,6 +22,7 @@ class llvm_rtti_visitor {
 
 public:
     llvm_rtti_visitor(const Basic* b) : b(b) {};
+    llvm_rtti_visitor(std::shared_ptr<Basic> b) : b(b.get()) {};
     llvm_rtti_visitor(const Basic& b) : b(&b) {};
     llvm_rtti_visitor(const llvm_rtti_visitor& b) = default;
 

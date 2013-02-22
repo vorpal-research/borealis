@@ -37,6 +37,12 @@ public:
         return new BinaryTerm(opcode, tr->transform(lhv), tr->transform(rhv));
     }
 
+#include "Util/macros.h"
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
+        BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported")
+    }
+#include "Util/unmacros.h"
+
     virtual bool equals(const Term* other) const {
         if (const BinaryTerm* that = llvm::dyn_cast<BinaryTerm>(other)) {
             return  Term::equals(other) &&
@@ -55,6 +61,19 @@ public:
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<self>();
+    }
+
+    virtual Type::Ptr getTermType() const {
+        auto& tf = TypeFactory::getInstance();
+
+        if(!tf.isValid(rhv->getTermType())) return rhv->getTermType();
+        if(!tf.isValid(lhv->getTermType())) return lhv->getTermType();
+
+        if(rhv->getTermType() != lhv->getTermType()) {
+            return tf.getTypeError("Invalid binop: types do not correspond");
+        }
+
+        return rhv->getTermType();
     }
 
     friend class TermFactory;

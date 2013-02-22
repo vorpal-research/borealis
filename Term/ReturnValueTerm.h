@@ -40,6 +40,10 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
+    virtual Type::Ptr getTermType() const {
+        return TypeFactory::getInstance().cast(F->getFunctionType()->getReturnType());
+    }
+
 private:
 
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :

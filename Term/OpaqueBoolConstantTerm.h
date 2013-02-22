@@ -20,8 +20,8 @@ class OpaqueBoolConstantTerm: public borealis::Term {
     OpaqueBoolConstantTerm(bool value):
         Term(
             static_cast<id_t>(value),
-            llvm::ValueType::UNKNOWN,
-            borealis::util::toString(value),
+            llvm::ValueType::BOOL_CONST,
+            value? "true" : "false",
             type_id(*this)
         ), value(value) {};
 public:
@@ -49,6 +49,11 @@ public:
                     that->value == value;
         } else return false;
     }
+
+    virtual Type::Ptr getTermType() const {
+        return TypeFactory::getInstance().getBool();
+    }
+
 
     friend class TermFactory;
 };

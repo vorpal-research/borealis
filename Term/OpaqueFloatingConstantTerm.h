@@ -20,7 +20,7 @@ class OpaqueFloatingConstantTerm: public borealis::Term {
     OpaqueFloatingConstantTerm(double value):
         Term(
             std::hash<double>()(value),
-            llvm::ValueType::UNKNOWN,
+            llvm::ValueType::REAL_CONST,
             borealis::util::toString(value),
             type_id(*this)
         ), value(value) {};
@@ -49,6 +49,10 @@ public:
             return  Term::equals(other) &&
                     that->value - value == .0; // XXX: maybe bitwise is better?
         } else return false;
+    }
+
+    virtual Type::Ptr getTermType() const {
+        return TypeFactory::getInstance().getFloat();
     }
 
     friend class TermFactory;

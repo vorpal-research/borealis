@@ -35,6 +35,10 @@ public:
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
+        BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported")
+    }
 #include "Util/unmacros.h"
 
     static bool classof(const Term* t) {
@@ -51,6 +55,11 @@ public:
                     that->vname == vname;
         } else return false;
     }
+
+    virtual Type::Ptr getTermType() const {
+        return TypeFactory::getInstance().getUnknown();
+    }
+
 
     friend class TermFactory;
 };

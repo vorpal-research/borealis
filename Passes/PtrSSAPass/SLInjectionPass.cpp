@@ -23,7 +23,7 @@ using namespace llvm;
 }
 
 Function* ptrssa::StoreLoadInjectionPass::createNuevoFunc(
-        Type* pointed, Module* daModule
+        llvm::Type* pointed, Module* daModule
 ) {
     auto ptr = PointerType::getUnqual(pointed);
     auto ftype = FunctionType::get(ptr, ptr, false /* isVarArg */);

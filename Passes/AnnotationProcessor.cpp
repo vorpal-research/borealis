@@ -39,6 +39,7 @@ static void* MDNode2Ptr(llvm::MDNode* ptr) {
 
 bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     using namespace llvm;
+    using llvm::Type;
     using borealis::util::reverse;
     using borealis::util::toString;
     using borealis::util::view;
