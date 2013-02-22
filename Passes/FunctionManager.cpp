@@ -19,7 +19,7 @@ FunctionManager::FunctionManager() : llvm::ModulePass(ID) {}
 
 void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-    AU.addRequiredTransitive<AnnotatorPass>();
+    AUX<AnnotatorPass>::addRequiredTransitive(AU);
 }
 
 void FunctionManager::put(llvm::CallInst& CI, PredicateState state) {
@@ -61,7 +61,7 @@ PredicateState FunctionManager::get(
 }
 
 char FunctionManager::ID;
-static llvm::RegisterPass<FunctionManager>
+static RegisterPass<FunctionManager>
 X("function-manager", "Pass that manages function analysis results");
 
 } /* namespace borealis */

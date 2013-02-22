@@ -70,22 +70,24 @@ public:
             Term::Ptr v,
             Term::Ptr b) {
         return Predicate::Ptr(
-                new EqualityPredicate(
+                (new EqualityPredicate(
                         v,
                         b,
-                        slotTracker,
-                        PredicateType::PATH));
+                        slotTracker))
+                ->setType(PredicateType::PATH)
+        );
     }
 
     Predicate::Ptr getDefaultSwitchCasePredicate(
             Term::Ptr cond,
             std::vector<Term::Ptr> cases) {
         return Predicate::Ptr(
-                new DefaultSwitchCasePredicate(
+                (new DefaultSwitchCasePredicate(
                         cond,
                         cases,
-                        slotTracker,
-                        PredicateType::PATH));
+                        slotTracker))
+                ->setType(PredicateType::PATH)
+        );
     }
 
     Predicate::Ptr getGEPPredicate(

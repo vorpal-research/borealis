@@ -62,13 +62,6 @@ PredicateState PredicateState::addVisited(const llvm::Instruction* location) con
     return res;
 }
 
-bool PredicateState::hasVisited(std::initializer_list<const llvm::Instruction*> locations) const {
-    for (auto l : locations) {
-        if (!contains(visited, l)) return false;
-    }
-    return true;
-}
-
 bool PredicateState::isUnreachable() const {
     z3::context ctx;
     Z3ExprFactory z3ef(ctx);
@@ -77,37 +70,20 @@ bool PredicateState::isUnreachable() const {
     return !s.checkPathPredicates(*this);
 }
 
-std::pair<logic::Bool, logic::Bool> PredicateState::toZ3(Z3ExprFactory& z3ef) const {
+logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     using namespace::z3;
 
     TRACE_FUNC;
 
     ExecutionContext ctx(z3ef);
 
-    auto path = std::vector<logic::Bool>();
-    auto state = std::vector<logic::Bool>();
-
+    auto res = z3ef.getTrue();
     for (auto& v : data) {
-        if (v->getType() == PredicateType::PATH) {
-            path.push_back(v->toZ3(z3ef, &ctx));
-        } else if (v->getType() == PredicateType::STATE) {
-            state.push_back(v->toZ3(z3ef, &ctx));
-        }
+        res = res && v->toZ3(z3ef, &ctx);
     }
+    res = res && ctx.toZ3();
 
-    auto p = z3ef.getTrue();
-    for (const auto& e : path) {
-        p = p && e;
-    }
-
-    auto s = z3ef.getTrue();
-    for (const auto& e : state) {
-        s = s && e;
-    }
-
-    s = s && ctx.toZ3();
-
-    return std::make_pair(p, s);
+    return res;
 }
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
