@@ -48,12 +48,13 @@ public:
         auto rp = r.to<Pointer>().getUnsafe();
 
         if (ctx) {
-            return z3ef.if_(z3ef.isInvalidPtrExpr(rp))
-                       .then_<Z3ExprFactory::Dynamic>(z3ef.getInvalidPtr())
-                       .else_(ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType())));
+            return logic::addAxiom(
+                    ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType())),
+                    !z3ef.isInvalidPtrExpr(rp)
+            );
         }
 
-        return z3ef.getTrue();
+        BYE_BYE(Dynamic, "Encountered load with no context supplied");
     }
 #include "Util/unmacros.h"
 
