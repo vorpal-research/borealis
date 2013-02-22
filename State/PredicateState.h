@@ -41,13 +41,13 @@ public:
     PredicateState addVisited(const llvm::Instruction* location) const;
 
     template<class H, class ...T>
-    bool hasVisited(H* loc, T... rest) const {
+    bool hasVisited(H* loc, T&... rest) const {
         if (!borealis::util::contains(visited, loc)) return false;
         return hasVisited(rest...);
     }
 
     template<class H, class ...T>
-    bool hasVisited(H loc, T... rest) const {
+    bool hasVisited(H& loc, T&... rest) const {
         if (!borealis::util::contains(visited, &loc)) return false;
         return hasVisited(rest...);
     }
@@ -58,7 +58,7 @@ public:
     }
 
     template<class H>
-    bool hasVisited(H loc) const {
+    bool hasVisited(H& loc) const {
         return borealis::util::contains(visited, &loc);
     }
 

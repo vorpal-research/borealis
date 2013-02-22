@@ -106,7 +106,7 @@ public:
 
             pass->infos() << "Checking state: " << ps << endl;
 
-            if (!ps.hasVisited(&where, &what, &why)) {
+            if (!ps.hasVisited(where, what, why)) {
 
                 pass->infos() << "Infeasible!" << endl;
 
