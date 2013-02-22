@@ -699,6 +699,11 @@ Bool forAll(
     return Bool(z3impl::forAll(ctx, func));
 }
 
+template<class ExprClass>
+ExprClass addAxiom(ExprClass expr, Bool axiom) {
+    return ExprClass{ expr.get(), z3impl::spliceAxioms(expr.axiom(), axiom.toAxiom()) };
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template< class >

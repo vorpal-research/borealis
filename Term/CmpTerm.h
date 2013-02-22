@@ -39,7 +39,20 @@ public:
 
 #include "Util/macros.h"
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
-        BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported")
+        auto lhvz3 = lhv->toZ3(z3ef, ctx);
+        auto rhvz3 = rhv->toZ3(z3ef, ctx);
+
+        switch(opcode) {
+        case llvm::ConditionType::EQ:    return lhvz3 == rhvz3;
+        case llvm::ConditionType::FALSE: return z3ef.getFalse();
+        case llvm::ConditionType::GT:    return lhvz3 >  rhvz3;
+        case llvm::ConditionType::GTE:   return lhvz3 >= rhvz3;
+        case llvm::ConditionType::LT:    return lhvz3 <  rhvz3;
+        case llvm::ConditionType::LTE:   return lhvz3 <= rhvz3;
+        case llvm::ConditionType::NEQ:   return lhvz3 != rhvz3;
+        case llvm::ConditionType::TRUE:  return z3ef.getTrue();
+        default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+        }
     }
 #include "Util/unmacros.h"
 

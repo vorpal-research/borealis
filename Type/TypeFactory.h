@@ -87,6 +87,7 @@ public:
         using llvm::dyn_cast;
 
         if(isa<Integer>(type)) return "Integer";
+        if(isa<Float>(type)) return "Float";
         if(isa<Bool>(type)) return "Bool";
         if(isa<UnknownType>(type)) return "Unknown";
         if(auto* Ptr = dyn_cast<Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
