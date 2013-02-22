@@ -121,7 +121,7 @@ public:
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 
-            if (s.checkSatOrUnknown(PredicateState().addPredicate(q), ps)) {
+            if (s.checkSatOrUnknown(q, ps)) {
                 pass->infos() << "SAT" << endl;
                 return true;
             }

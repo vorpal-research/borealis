@@ -28,6 +28,7 @@ class PredicateState {
 public:
 
     PredicateState();
+    PredicateState(Predicate::Ptr p);
     PredicateState(const PredicateState& state);
     PredicateState(PredicateState&& state);
 
@@ -95,6 +96,15 @@ private:
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state);
 std::ostream& operator<<(std::ostream& s, const PredicateState& state);
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// PredicateState operators
+//
+////////////////////////////////////////////////////////////////////////////////
+
+const PredicateState operator&&(const PredicateState& state, Predicate::Ptr p);
+const PredicateState operator+(const PredicateState& state, Predicate::Ptr p);
 
 } /* namespace borealis */
 

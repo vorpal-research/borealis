@@ -127,7 +127,8 @@ LIBS := \
 	-ldl \
 	-lrt \
 	-lcfgparser \
-	-llog4cpp
+	-llog4cpp \
+	-lprofiler
 
 default: all
 
