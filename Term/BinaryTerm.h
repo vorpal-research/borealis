@@ -42,20 +42,36 @@ public:
         auto lhvz3 = lhv->toZ3(z3ef, ctx);
         auto rhvz3 = rhv->toZ3(z3ef, ctx);
 
-        switch(opcode) {
-        case llvm::ArithType::ADD:  return lhvz3 +  rhvz3;
-        case llvm::ArithType::BAND: return lhvz3 &  rhvz3;
-        case llvm::ArithType::BOR:  return lhvz3 |  rhvz3;
-        case llvm::ArithType::DIV:  return lhvz3 /  rhvz3;
-        case llvm::ArithType::LAND: return lhvz3 && rhvz3;
-        case llvm::ArithType::LOR:  return lhvz3 || rhvz3;
-        case llvm::ArithType::LSH:  return lhvz3 << rhvz3;
-        case llvm::ArithType::MUL:  return lhvz3 *  rhvz3;
-        case llvm::ArithType::REM:  return lhvz3 %  rhvz3;
-        case llvm::ArithType::RSH:  return lhvz3 >> rhvz3;
-        case llvm::ArithType::SUB:  return lhvz3 -  rhvz3;
-        case llvm::ArithType::XOR:  return lhvz3 ^  rhvz3;
-        default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+        if(lhvz3.isBool() && rhvz3.isBool()) {
+            auto lhv = lhvz3.to<logic::Bool>().getUnsafe();
+            auto rhv = rhvz3.to<logic::Bool>().getUnsafe();
+
+            switch(opcode) {
+            case llvm::ArithType::LAND:
+                return lhv && rhv;
+            case llvm::ArithType::LOR:
+                return lhv || rhv;
+            default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+            }
+        }
+
+        if(lhvz3.isBool() && rhvz3.isBool()) {
+            auto lhv = lhvz3.to<logic::DynBitVectorExpr>().getUnsafe();
+            auto rhv = rhvz3.to<logic::DynBitVectorExpr>().getUnsafe();
+
+            switch(opcode) {
+            case llvm::ArithType::ADD:  return lhv +  rhv;
+            case llvm::ArithType::BAND: return lhv &  rhv;
+            case llvm::ArithType::BOR:  return lhv |  rhv;
+            case llvm::ArithType::DIV:  return lhv /  rhv;
+            case llvm::ArithType::LSH:  return lhv << rhv;
+            case llvm::ArithType::MUL:  return lhv *  rhv;
+            case llvm::ArithType::REM:  return lhv %  rhv;
+            case llvm::ArithType::RSH:  return lhv >> rhv;
+            case llvm::ArithType::SUB:  return lhv -  rhv;
+            case llvm::ArithType::XOR:  return lhv ^  rhv;
+            default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+            }
         }
     }
 #include "Util/unmacros.h"

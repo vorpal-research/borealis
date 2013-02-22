@@ -297,8 +297,23 @@ REDEF_BV_BIN_OP(+)
 REDEF_BV_BIN_OP(-)
 REDEF_BV_BIN_OP(*)
 REDEF_BV_BIN_OP(/)
+REDEF_BV_BIN_OP(|)
+REDEF_BV_BIN_OP(&)
+REDEF_BV_BIN_OP(>>)
+REDEF_BV_BIN_OP(<<)
+REDEF_BV_BIN_OP(^)
 
 #undef REDEF_BV_BIN_OP
+
+template<size_t N0, size_t N1, size_t M = impl::max(N0, N1)>
+BitVector<M> operator %(BitVector<N0> bv0, BitVector<N1> bv1) {
+    auto ebv0 = grow<M>(bv0);
+    auto ebv1 = grow<M>(bv1);
+    auto& ctx = bv0.ctx();
+
+    auto res = z3::to_expr(ctx, Z3_mk_bvsmod(ctx, ebv0.get(), ebv1.get()));
+    return BitVector<M>(res, spliceAxioms(ebv0, ebv1));
+}
 
 
 #define REDEF_BV_INT_BIN_OP(OP) \
@@ -508,6 +523,8 @@ public:
     REDEF_OP(>)
     REDEF_OP(>=)
     REDEF_OP(<=)
+    REDEF_OP(==)
+    REDEF_OP(!=)
 
 #undef REDEF_OP
 
@@ -547,7 +564,7 @@ public:
         size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize()); \
         DynBitVectorExpr dlhv = lhv.growTo(sz); \
         DynBitVectorExpr drhv = rhv.growTo(sz); \
-        return DynBitVectorExpr(lhv.get() OP rhv.get(), spliceAxioms(lhv, rhv)); \
+        return DynBitVectorExpr(dlhv.get() OP drhv.get(), spliceAxioms(lhv, rhv)); \
     }
 
     BIN_OP(+)
@@ -556,8 +573,45 @@ public:
     BIN_OP(/)
     BIN_OP(|)
     BIN_OP(&)
+    BIN_OP(^)
 
 #undef BIN_OP
+
+    DynBitVectorExpr operator %(const DynBitVectorExpr& rhv) const {
+        const DynBitVectorExpr& lhv = *this;
+        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+        DynBitVectorExpr dlhv = lhv.growTo(sz);
+        DynBitVectorExpr drhv = rhv.growTo(sz);
+        auto& ctx = this->ctx();
+
+        auto res = z3::to_expr(ctx, Z3_mk_bvsmod(ctx, dlhv.get(), drhv.get()));
+
+        return DynBitVectorExpr(res, spliceAxioms(lhv, rhv));
+    }
+
+    DynBitVectorExpr operator >>(const DynBitVectorExpr& rhv) const {
+        const DynBitVectorExpr& lhv = *this;
+        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+        DynBitVectorExpr dlhv = lhv.growTo(sz);
+        DynBitVectorExpr drhv = rhv.growTo(sz);
+        auto& ctx = this->ctx();
+
+        auto res = z3::to_expr(ctx, Z3_mk_bvashr(ctx, dlhv.get(), drhv.get()));
+
+        return DynBitVectorExpr(res, spliceAxioms(lhv, rhv));
+    }
+
+    DynBitVectorExpr operator <<(const DynBitVectorExpr& rhv) const {
+        const DynBitVectorExpr& lhv = *this;
+        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+        DynBitVectorExpr dlhv = lhv.growTo(sz);
+        DynBitVectorExpr drhv = rhv.growTo(sz);
+        auto& ctx = this->ctx();
+
+        auto res = z3::to_expr(ctx, Z3_mk_bvshl(ctx, dlhv.get(), drhv.get()));
+
+        return DynBitVectorExpr(res, spliceAxioms(lhv, rhv));
+    }
 
 };
 
@@ -612,6 +666,7 @@ public:
     SomeExpr(Bool b): ValueExpr(b) {};
     template<size_t N>
     SomeExpr(BitVector<N> bv): ValueExpr(bv) {};
+    SomeExpr(DynBitVectorExpr b): ValueExpr(b) {};
 
     static SomeExpr mkDynamic(Bool b) { return SomeExpr(b); }
 
