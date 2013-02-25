@@ -139,9 +139,9 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
             modifiedInState = modifiedInState.addAll(transformedCallState);
 
-        } else {
-            modifiedInState = modifiedInState.addAll(PM(&I));
         }
+
+        modifiedInState = modifiedInState.addAll(PM(&I));
 
         if (!containsKey(predicateStateMap, &I)) {
             predicateStateMap[&I] = PredicateStateVector();
