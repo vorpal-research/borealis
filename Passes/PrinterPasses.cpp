@@ -73,7 +73,8 @@ struct ModulePassPrinter : public ModulePass {
         std::string buf;
         raw_string_ostream Out(buf);
         // Get and print pass...
-        getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out, &M);
+        getAnalysisID<Pass>(PassToPrint->getTypeInfo())
+        .print(Out, &M);
         infos() << Out.str();
         return false;
     }

@@ -31,10 +31,7 @@ class PassModularizer : public SCCPass {
     typedef std::unique_ptr<SubPass> subptr;
 
     std::unordered_map<llvm::Function*, subptr> passes;
-
-    SubPass* getDefaultSubPass() const {
-        return passes.at(nullptr).get();
-    }
+    subptr defaultPass;
 
     subptr createSubPass() {
         return subptr(new SubPass(this));
@@ -44,9 +41,7 @@ public:
 
     static char ID;
 
-    PassModularizer() : SCCPass(ID) {
-        passes[nullptr] = createSubPass();
-    }
+    PassModularizer() : SCCPass(ID), defaultPass(new SubPass(this)) {}
 
     virtual bool runOnSCC(CallGraphSCC& SCC) {
         using namespace llvm;
@@ -66,7 +61,13 @@ public:
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
         SCCPass::getAnalysisUsage(AU);
-        getDefaultSubPass()->getAnalysisUsage(AU);
+        defaultPass->getAnalysisUsage(AU);
+    }
+
+    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const {
+        for (auto& p : passes) {
+            p.second->print(O, M);
+        }
     }
 
     SubPass& getResultsForFunction(llvm::Function* F) {
