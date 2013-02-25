@@ -53,4 +53,10 @@
         __PRETTY_FUNCTION__, \
         msg);}
 
+#define ASSERTC(cond) while(!(cond)){ borealis::util::sayonara( \
+        __FILE__, \
+        __LINE__, \
+        __PRETTY_FUNCTION__, \
+        #cond);}
+
 // #endif /* MACROS_H_ */

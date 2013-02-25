@@ -35,16 +35,16 @@ logic::Bool LoadPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) cons
 
     Dynamic l = z3ef.getExprForTerm(*lhv);
     Dynamic r = z3ef.getExprForTerm(*rhv);
-    if (!r.is<Pointer>()) {
-        BYE_BYE(logic::Bool, "Encountered load with non-pointer right side");
-    }
+    ASSERT(r.is<Pointer>(), "Encountered load with non-pointer right side");
+    ASSERT(l.is<logic::DynBitVectorExpr>(), "Encountered load with non-bv left side");
 
     auto rp = r.to<Pointer>().getUnsafe();
+    auto lp = r.to<logic::DynBitVectorExpr>().getUnsafe();
 
     if (ctx) {
         return z3ef.if_(z3ef.isInvalidPtrExpr(rp))
                    .then_(z3ef.getFalse())
-                   .else_(l == ctx->readExprFromMemory(rp, l.get_sort().bv_size()));
+                   .else_(l == ctx->readExprFromMemory(rp, lp.getBitSize()));
     }
 
     return z3ef.getTrue();

@@ -6,6 +6,7 @@
  */
 
 #include "Solver/Z3Solver.h"
+#include "Solver/Logic.hpp"
 
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
@@ -19,25 +20,26 @@ z3::check_result Z3Solver::check(
         const PredicateState& state) {
     using namespace::z3;
     using logic::Bool;
+    using logic::implies;
 
     TRACE_FUNC;
 
     solver s(z3ef.unwrap());
 
     auto z3state = state.toZ3(z3ef);
-    s.add(z3state.toAxiom());
+    s.add(logic::z3impl::asAxiom(z3state));
 
     dbgs() << "  Query: " << endl << q << endl;
     dbgs() << "  State: " << endl << z3state << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(pred.implies(q.toZ3(z3ef)).toAxiom());
+    s.add(logic::z3impl::asAxiom(implies(pred, q.toZ3(z3ef))));
 
     {
         TRACE_BLOCK("Calling Z3 check");
         auto dbg = dbgs();
 
-        expr pred_e = pred.get();
+        expr pred_e = logic::z3impl::getExpr(pred);
         check_result r = s.check(1, &pred_e);
         dbg << "Acquired result: "
             << ((r == z3::sat) ? "sat" : (r == z3::unsat) ? "unsat" : "unknown")
@@ -61,6 +63,7 @@ bool Z3Solver::checkPathPredicates(
         const PredicateState& state) {
     using namespace::z3;
     using logic::Bool;
+    using logic::implies;
 
     TRACE_FUNC;
 
@@ -69,17 +72,17 @@ bool Z3Solver::checkPathPredicates(
     auto pathPredicates = state.filter([](Predicate::Ptr p) { return p->getType() == PredicateType::PATH; }).toZ3(z3ef);
     auto statePredicates = state.filter([](Predicate::Ptr p) { return p->getType() != PredicateType::PATH; }).toZ3(z3ef);
 
-    s.add(statePredicates.toAxiom());
+    s.add(logic::z3impl::getAxiom(statePredicates));
 
     dbgs() << "  Path predicates: " << endl << pathPredicates << endl;
     dbgs() << "  State predicates: " << endl << statePredicates << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(pred.implies(pathPredicates).toAxiom());
+    s.add(logic::z3impl::asAxiom(implies(pred, pathPredicates)));
 
     {
         TRACE_BLOCK("Calling Z3 check");
-        expr pred_e = pred.get();
+        expr pred_e = logic::z3impl::getExpr(pred);
         check_result r = s.check(1, &pred_e);
 
         dbgs() << "Acquired result: "

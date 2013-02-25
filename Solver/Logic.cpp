@@ -34,6 +34,9 @@ ValueExpr::ValueExpr(z3::expr e, z3::expr axiom):
 ValueExpr::ValueExpr(z3::expr e):
     pimpl(new Impl{e, z3impl::defaultAxiom(e)}) {}
 
+ValueExpr::ValueExpr(z3::context& ctx, Z3_ast e):
+    pimpl(new Impl{z3::to_expr(ctx, e), z3impl::defaultAxiom(ctx)}) {}
+
 ValueExpr::~ValueExpr() {
     delete pimpl;
 }
@@ -48,109 +51,52 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
     return *this;
 }
 
-z3::expr ValueExpr::get() const {
-    return pimpl->inner;
-}
-
-z3::expr ValueExpr::axiom() const {
-    return pimpl->axiomatic;
-}
-
-z3::sort ValueExpr::get_sort() const {
-    return pimpl->inner.get_sort();
-}
-
-z3::context& ValueExpr::ctx() const {
-    return pimpl->inner.ctx();
-}
-
-Bool::Bool(const Bool&) = default;
-
-Bool::Bool(z3::expr e, z3::expr axiom) :
-        ValueExpr(e, axiom) {
-    if (!(e.is_bool())) {
-        throw ConversionException(
-                "Trying to construct Bool from non-bool: "
-                        + borealis::util::toString(e));
+namespace z3impl {
+    z3::expr getExpr(const ValueExpr& a) {
+        return a.pimpl->inner;
     }
-}
 
-Bool::Bool(z3::expr e) :
-        ValueExpr(e) {
-    if (!(e.is_bool())) {
-        throw ConversionException(
-                "Trying to construct Bool from non-bool: "
-                        + borealis::util::toString(e));
+    z3::expr getAxiom(const ValueExpr& a) {
+        return a.pimpl->axiomatic;
     }
+
+    z3::sort getSort(const ValueExpr& a) {
+        return a.pimpl->inner.get_sort();
+    }
+
+    z3::context& getContext(const ValueExpr& a) {
+        return a.pimpl->inner.ctx();
+    }
+
+    z3::expr asAxiom(const ValueExpr& a) {
+        return a.pimpl->inner && a.pimpl->axiomatic;
+    }
+} // namespace z3impl
+
+std::ostream& operator<<(std::ostream& ost, const ValueExpr& v) {
+    return ost << z3impl::getExpr(v).simplify() << " assuming " << z3impl::getAxiom(v).simplify();
 }
 
-Bool::Bool(z3::context& ctx, Z3_ast ast): Bool(z3::to_expr(ctx, ast)){};
+Bool implies(Bool lhv, Bool rhv) {
+    z3::expr lhv_raw = z3impl::getExpr(lhv);
+    z3::expr rhv_raw = z3impl::getExpr(rhv);
+    auto& ctx = lhv_raw.ctx();
 
-Bool Bool::implies(Bool that) const{
-    z3::expr lhv = get();
-    z3::expr rhv = that.get();
-    return self(to_expr(lhv.ctx(), Z3_mk_implies(lhv.ctx(), lhv, rhv)), spliceAxioms(*this, that));
+    return Bool(to_expr(ctx, Z3_mk_implies(ctx, lhv_raw, rhv_raw)), spliceAxioms(lhv, rhv));
 }
 
-Bool Bool::iff(Bool that) const{
-    z3::expr lhv = get();
-    z3::expr rhv = that.get();
-    return self(to_expr(lhv.ctx(), Z3_mk_iff(lhv.ctx(), lhv, rhv)), spliceAxioms(*this, that));
-}
+Bool iff(Bool lhv, Bool rhv) {
+    z3::expr lhv_raw = z3impl::getExpr(lhv);
+    z3::expr rhv_raw = z3impl::getExpr(rhv);
+    auto& ctx = lhv_raw.ctx();
 
-z3::expr Bool::toAxiom() const{
-    return get() && axiom();
+    return Bool(to_expr(ctx, Z3_mk_iff(ctx, lhv_raw, rhv_raw)), spliceAxioms(lhv, rhv));
 }
-
-z3::sort Bool::sort(z3::context& ctx) {
-    return ctx.bool_sort();
-}
-
-Bool Bool::mkBound(z3::context& ctx, unsigned i) {
-    return z3::to_expr(ctx, Z3_mk_bound(ctx, i, sort(ctx)));
-}
-
-Bool Bool::mkConst(z3::context& ctx, bool value) {
-    return ctx.bool_val(value);
-}
-
-Bool Bool::mkVar(z3::context& ctx, const std::string& name) {
-    return ctx.bool_const(name.c_str());
-}
-
-Bool Bool::mkVar(
-        z3::context& ctx,
-        const std::string& name,
-        std::function<Bool(Bool)> daAxiom
-    ) {
-    // first construct the no-axiom version
-    self nav = mkVar(ctx, name);
-    return self(nav.get(), z3impl::spliceAxioms(nav.axiom(), daAxiom(nav).toAxiom()));
-}
-
-Bool Bool::mkFreshVar(z3::context& ctx, const std::string& name) {
-    return self(ctx, Z3_mk_fresh_const(ctx, name.c_str(), sort(ctx)));
-}
-
-Bool Bool::mkFreshVar(
-        z3::context& ctx,
-        const std::string& name,
-        std::function<Bool(Bool)> daAxiom
-    ) {
-    // first construct the no-axiom version
-    self nav = mkFreshVar(ctx, name);
-    return self(nav.get(), z3impl::spliceAxioms(nav.axiom(), daAxiom(nav).toAxiom()));
-}
-
-std::ostream& operator<<(std::ostream& ost, Bool b) {
-    return ost << b.get().simplify() << " assuming " << b.axiom().simplify();
-}
-
 
 
 #define REDEF_BOOL_BOOL_OP(OP) \
         Bool operator OP(Bool bv0, Bool bv1) { \
-            return Bool(bv0.get() OP bv1.get(), spliceAxioms(bv0, bv1)); \
+            return Bool(z3impl::getExpr(bv0) OP z3impl::getExpr(bv1), spliceAxioms(bv0, bv1)); \
         }
 
 REDEF_BOOL_BOOL_OP(==)
@@ -161,7 +107,73 @@ REDEF_BOOL_BOOL_OP(||)
 #undef REDEF_BOOL_BOOL_OP
 
 Bool operator!(Bool bv0) {
-    return Bool(!bv0.get(), bv0.axiom());
+    return Bool(!z3impl::getExpr(bv0), z3impl::getAxiom(bv0));
+}
+
+#define REDEF_OP(OP) \
+    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
+        using namespace z3impl; \
+        return Bool(getExpr(lhv) OP getExpr(rhv), spliceAxioms(lhv, rhv)); \
+    }
+
+    REDEF_OP(<)
+    REDEF_OP(>)
+    REDEF_OP(>=)
+    REDEF_OP(<=)
+    REDEF_OP(==)
+    REDEF_OP(!=)
+
+#undef REDEF_OP
+
+#define BIN_OP(OP) \
+    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) { \
+        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize()); \
+        DynBitVectorExpr dlhv = lhv.growTo(sz); \
+        DynBitVectorExpr drhv = rhv.growTo(sz); \
+        return DynBitVectorExpr(z3impl::getExpr(dlhv) OP z3impl::getExpr(drhv), spliceAxioms(lhv, rhv)); \
+    }
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+    BIN_OP(|)
+    BIN_OP(&)
+    BIN_OP(^)
+
+#undef BIN_OP
+
+DynBitVectorExpr operator %(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
+    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+    DynBitVectorExpr dlhv = lhv.growTo(sz);
+    DynBitVectorExpr drhv = rhv.growTo(sz);
+    auto& ctx = z3impl::getContext(lhv);
+
+    auto res = z3::to_expr(ctx, Z3_mk_bvsmod(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
+
+    return DynBitVectorExpr(res, spliceAxioms(lhv, rhv));
+}
+
+DynBitVectorExpr operator >>(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
+    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+    DynBitVectorExpr dlhv = lhv.growTo(sz);
+    DynBitVectorExpr drhv = rhv.growTo(sz);
+    auto& ctx = z3impl::getContext(lhv);
+
+    auto res = z3::to_expr(ctx, Z3_mk_bvashr(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
+
+    return DynBitVectorExpr(res, spliceAxioms(lhv, rhv));
+}
+
+DynBitVectorExpr operator <<(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
+    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+    DynBitVectorExpr dlhv = lhv.growTo(sz);
+    DynBitVectorExpr drhv = rhv.growTo(sz);
+    auto& ctx = z3impl::getContext(lhv);
+
+    auto res = z3::to_expr(ctx, Z3_mk_bvshl(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
+
+    return DynBitVectorExpr(res, spliceAxioms(lhv, rhv));
 }
 
 } // namespace logic
