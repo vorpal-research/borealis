@@ -8,9 +8,12 @@
 #ifndef ANNOTATION_H_
 #define ANNOTATION_H_
 
+#include <llvm/Instructions.h>
+
 #include <memory>
 #include <string>
 
+#include "Codegen/llvm.h"
 #include "Util/util.h"
 #include "Util/locations.h"
 #include "Util/typeindex.hpp"
@@ -54,6 +57,9 @@ public:
         return true;
     }
 
+    static const Annotation* fromIntrinsic(const llvm::CallInst& CI) {
+        return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")));
+    }
 
 };
 

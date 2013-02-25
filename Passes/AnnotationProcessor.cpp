@@ -8,6 +8,7 @@
 #include <llvm/Constants.h>
 
 #include "Codegen/intrinsics_manager.h"
+#include "Codegen/llvm.h"
 #include "Passes/AnnotationProcessor.h"
 #include "Passes/AnnotatorPass.h"
 #include "Passes/SourceLocationTracker.h"
@@ -20,21 +21,6 @@ void AnnotationProcessor::getAnalysisUsage(llvm::AnalysisUsage& AU) const{
     AU.setPreservesAll();
     AUX<AnnotatorPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
-}
-
-static llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr) {
-    llvm::Constant* annoptr = llvm::ConstantInt::get(
-            ctx,
-            llvm::APInt(sizeof(uintptr_t)*8, reinterpret_cast<uintptr_t>(ptr))
-    );
-   return llvm::MDNode::get(ctx, annoptr);
-}
-
-static void* MDNode2Ptr(llvm::MDNode* ptr) {
-    if(auto* i = llvm::dyn_cast<llvm::ConstantInt>(ptr->getOperand(0))) {
-        return reinterpret_cast<void*>(static_cast<uintptr_t>(i->getLimitedValue()));
-    }
-    return nullptr;
 }
 
 bool AnnotationProcessor::runOnModule(llvm::Module& M) {
@@ -100,12 +86,12 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const {
     auto& IM = IntrinsicsManager::getInstance();
 
-    for(auto& F : *M) {
-        for(auto& BB : F) {
-            for(auto& I : BB) {
-                if(auto* ci = llvm::dyn_cast<llvm::CallInst>(&I)) {
-                    if(IM.getIntrinsicType(*ci) == function_type::INTRINSIC_ANNOTATION) {
-                        infos() << *static_cast<Annotation*>(MDNode2Ptr(ci->getMetadata("anno.ptr"))) << endl;
+    for (auto& F : *M) {
+        for (auto& BB : F) {
+            for (auto& I : BB) {
+                if (auto* CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
+                    if (IM.getIntrinsicType(*CI) == function_type::INTRINSIC_ANNOTATION) {
+                        infos() << *Annotation::fromIntrinsic(*CI) << endl;
                     }
                 }
             }
