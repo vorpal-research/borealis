@@ -5,9 +5,11 @@
 
 #ifdef INCLUDE_MODE
 #include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/AnnotationPredicateAnalysis.h"
 #endif
 
 HANDLE_ANALYSIS(DefaultPredicateAnalysis)
+HANDLE_ANALYSIS(AnnotationPredicateAnalysis)
 
 #ifdef HANDLE_ANALYSIS
 #undef HANDLE_ANALYSIS
