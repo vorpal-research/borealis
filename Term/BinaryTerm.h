@@ -55,7 +55,7 @@ public:
             }
         }
 
-        if(lhvz3.isBool() && rhvz3.isBool()) {
+        if(lhvz3.is<logic::DynBitVectorExpr>() && rhvz3.is<logic::DynBitVectorExpr>()) {
             auto lhv = lhvz3.to<logic::DynBitVectorExpr>().getUnsafe();
             auto rhv = rhvz3.to<logic::DynBitVectorExpr>().getUnsafe();
 
@@ -73,6 +73,8 @@ public:
             default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
             }
         }
+
+        BYE_BYE(Z3ExprFactory::Dynamic, "Unreachable")
     }
 #include "Util/unmacros.h"
 

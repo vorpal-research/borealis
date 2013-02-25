@@ -596,7 +596,7 @@ public:
     SomeExpr(z3::expr e, z3::expr axiom): ValueExpr(e, axiom) {};
     SomeExpr(const SomeExpr&) = default;
     SomeExpr(SomeExpr&&) = default;
-    SomeExpr(ValueExpr b): ValueExpr(b) {};
+    SomeExpr(const ValueExpr& b): ValueExpr(b) {};
 
     static SomeExpr mkDynamic(Bool b) { return SomeExpr(b); }
 
