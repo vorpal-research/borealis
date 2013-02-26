@@ -130,4 +130,12 @@ const PredicateState operator+(const PredicateState& state, Predicate::Ptr p) {
     return state.addPredicate(p);
 }
 
+const PredicateState operator&&(const PredicateState& a, const PredicateState& b) {
+    return a.addAll(b);
+}
+
+const PredicateState operator+(const PredicateState& a, const PredicateState& b) {
+    return a.addAll(b);
+}
+
 } /* namespace borealis */
