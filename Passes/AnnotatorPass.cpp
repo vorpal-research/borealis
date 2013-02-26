@@ -22,7 +22,7 @@ bool AnnotatorPass::runOnModule(llvm::Module&) {
 
     auto& commentsPass = getAnalysis< comments >();
 
-    auto tf = TermFactory::get(nullptr);
+    auto tf = TermFactory::get(nullptr); // FIXME: Add SlotTrackerPass to get correct SlotTracker
 
     for (const auto & Comment : commentsPass.provide().getComments()) {
         const auto& loc = Comment.first;
