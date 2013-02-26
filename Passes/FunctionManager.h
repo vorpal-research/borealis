@@ -29,11 +29,13 @@ public:
     typedef Data::value_type DataEntry;
 
     FunctionManager();
-    virtual bool runOnModule(llvm::Module&) { return false; }
+    virtual bool runOnModule(llvm::Module&);
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~FunctionManager() {};
 
-    void put(llvm::CallInst& CI, PredicateState state);
+    void put(llvm::Function* F, const PredicateState& state);
+    void update(llvm::Function* F, const PredicateState& state);
+
     PredicateState get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
 
 private:
