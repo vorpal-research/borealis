@@ -98,13 +98,23 @@ public:
         return res;
     }
 
-    PredicateState filter(std::function<bool(Predicate::Ptr)> f) const {
+    PredicateState filter(std::function<bool(Predicate::Ptr)> f = DEFAULT) const {
         PredicateState res;
         for (auto& p : data) {
             if (f(p)) res = res.addPredicate(p);
         }
         return res;
     }
+
+    static bool PATH(Predicate::Ptr p) {
+        return p->getType() == PredicateType::PATH; }
+    static bool STATE(Predicate::Ptr p) {
+        return p->getType() == PredicateType::STATE ||
+               p->getType() == PredicateType::ENSURES; }
+    static bool DEFAULT(Predicate::Ptr p) {
+        return p->getType() == PredicateType::PATH ||
+               p->getType() == PredicateType::STATE ||
+               p->getType() == PredicateType::ENSURES; }
 
     bool operator==(const PredicateState& other) const {
         if (this == &other) return true;
