@@ -14,6 +14,7 @@
 
 #include "Predicate/ArithPredicate.h"
 #include "Predicate/EqualityPredicate.h"
+#include "Predicate/InequalityPredicate.h"
 #include "Predicate/GEPPredicate.h"
 #include "Predicate/ICmpPredicate.h"
 #include "Predicate/LoadPredicate.h"
@@ -95,9 +96,18 @@ public:
     Predicate::Ptr getEqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            PredicateType type = PredicateType::PATH) {
+            PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
                 (new EqualityPredicate(lhv, rhv, slotTracker))
+                ->setType(type));
+    }
+
+    Predicate::Ptr getInequalityPredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv,
+            PredicateType type = PredicateType::STATE) {
+        return Predicate::Ptr(
+                (new InequalityPredicate(lhv, rhv, slotTracker))
                 ->setType(type));
     }
 

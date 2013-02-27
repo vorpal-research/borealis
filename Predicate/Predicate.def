@@ -3,6 +3,7 @@
 #endif
 
 HANDLE_PREDICATE(Equality, EqualityPredicate)
+HANDLE_PREDICATE(Inequality, InequalityPredicate)
 HANDLE_PREDICATE(GEP, GEPPredicate)
 HANDLE_PREDICATE(ICmp, ICmpPredicate)
 HANDLE_PREDICATE(Load, LoadPredicate)

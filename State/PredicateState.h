@@ -88,7 +88,12 @@ public:
 
     DataIterator begin() const { return data.begin(); }
     DataIterator end() const { return data.end(); }
-    bool empty() const { return data.empty(); }
+    bool isEmpty() const { return data.empty(); }
+
+    static const PredicateState& empty() {
+        static PredicateState empty;
+        return empty;
+    }
 
     PredicateState map(std::function<Predicate::Ptr(Predicate::Ptr)> f) const {
         PredicateState res;

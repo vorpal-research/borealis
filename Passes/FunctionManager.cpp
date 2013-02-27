@@ -76,7 +76,7 @@ void FunctionManager::update(llvm::Function* F, const PredicateState& state) {
     data[F] = data[F] + state;
 }
 
-PredicateState FunctionManager::get(
+const PredicateState& FunctionManager::get(
         llvm::CallInst& CI,
         PredicateFactory* PF,
         TermFactory* TF) {
@@ -92,13 +92,15 @@ PredicateState FunctionManager::get(
         if (!isUnknown(ft)) {
             auto state = m.getPredicateState(ft, F, PF, TF);
             data[F] = state;
-            return state;
+            return data.at(F);;
         } else {
-            return PredicateState();
+            return PredicateState::empty();
         }
     } else {
         return data.at(F);
     }
+
+    BYE_BYE(PredicateState&, "Unreachable!");
 }
 
 char FunctionManager::ID;

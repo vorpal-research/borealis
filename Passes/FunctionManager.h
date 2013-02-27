@@ -36,7 +36,7 @@ public:
     void put(llvm::Function* F, const PredicateState& state);
     void update(llvm::Function* F, const PredicateState& state);
 
-    PredicateState get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    const PredicateState& get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
 
 private:
 

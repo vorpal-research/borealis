@@ -48,7 +48,7 @@ PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
 }
 
 PredicateState PredicateState::addAll(const PredicateState& state) const {
-    if (state.empty()) return *this;
+    if (state.isEmpty()) return *this;
 
     PredicateState res = PredicateState(*this);
     res.data.insert(res.data.end(), state.data.begin(), state.data.end());
@@ -89,7 +89,7 @@ logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef) const {
 llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
     using borealis::util::streams::endl;
     s << '(';
-    if (!state.empty()) {
+    if (!state.isEmpty()) {
         auto iter = state.begin();
         const auto& el = *iter++;
         s << endl << "  " << el->toString();
@@ -104,7 +104,7 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state)
 std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
     using std::endl;
     s << '(';
-    if (!state.empty()) {
+    if (!state.isEmpty()) {
         auto iter = state.begin();
         const auto& el = *iter++;
         s << endl << "  " << el->toString();

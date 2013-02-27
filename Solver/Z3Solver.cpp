@@ -26,14 +26,15 @@ z3::check_result Z3Solver::check(
 
     solver s(z3ef.unwrap());
 
+    auto query = !q.toZ3(z3ef);
     auto z3state = state.toZ3(z3ef);
     s.add(logic::z3impl::asAxiom(z3state));
 
-    dbgs() << "  Query: " << endl << q << endl;
+    dbgs() << "  Query: " << endl << query << endl;
     dbgs() << "  State: " << endl << z3state << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(logic::z3impl::asAxiom(implies(pred, q.toZ3(z3ef))));
+    s.add(logic::z3impl::asAxiom(implies(pred, query)));
 
     {
         TRACE_BLOCK("Calling Z3 check");

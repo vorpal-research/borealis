@@ -95,7 +95,7 @@ public:
         using llvm::dyn_cast;
         using llvm::Instruction;
 
-        Predicate::Ptr q = pass->PF->getEqualityPredicate(
+        Predicate::Ptr q = pass->PF->getInequalityPredicate(
                 pass->TF->getValueTerm(&what),
                 pass->TF->getNullPtrTerm());
 
@@ -118,12 +118,14 @@ public:
             Z3Solver s(z3ef);
 
             if (s.checkSatOrUnknown(q, ps.filter())) {
-                pass->infos() << "SAT" << endl;
+                continue;
+            } else {
+                pass->infos() << "Violated!" << endl;
                 return true;
             }
         }
 
-        pass->infos() << "UNSAT" << endl;
+        pass->infos() << "Passed!" << endl;
         return false;
     }
 
