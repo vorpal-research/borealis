@@ -31,9 +31,6 @@ public:
             const PredicateState& q,
             const PredicateState& state);
 
-    bool checkPathPredicates(
-            const PredicateState& state);
-
 private:
 
     Z3ExprFactory& z3ef;
