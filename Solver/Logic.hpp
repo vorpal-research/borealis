@@ -213,8 +213,8 @@ struct impl::generator< BitVector<N> > {
     typedef long long basetype;
 
     static z3::sort sort(z3::context& ctx) { return ctx.bv_sort(N)  ; }
-    static bool check(z3::expr e) { return e.is_bool(); }
-    static z3::expr mkConst(z3::context& ctx, bool b) { return ctx.bool_val(b); }
+    static bool check(z3::expr e) { return e.is_bv(); }
+    static z3::expr mkConst(z3::context& ctx, int n) { return ctx.bv_val(n, N); }
 };
 
 template<size_t N>
@@ -234,11 +234,11 @@ template<size_t N0, size_t N1>
 inline
 typename std::enable_if<(N0 > N1), BitVector<N0>>::type
 grow(BitVector<N1> bv) {
-    z3::context& ctx = bv.get().ctx();
+    z3::context& ctx = z3impl::getContext(bv);
 
     return BitVector<N0>(
-        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, bv.get())),
-        bv.axiom()
+        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))),
+        z3impl::getAxiom(bv)
     );
 }
 
@@ -485,7 +485,7 @@ z3::expr forAll(
 
     using borealis::util::toString;
     using borealis::util::view;
-    std::vector<z3::sort> sorts { Args::sort(ctx)... };
+    std::vector<z3::sort> sorts { impl::generator<Args>::sort(ctx)... };
 
     size_t numBounds = sorts.size();
 
@@ -510,7 +510,7 @@ z3::expr forAll(
                     numBounds,
                     &sort_array[0],
                     &name_array[0],
-                    body.get()));
+                    z3impl::getExpr(body)));
     return axiom;
 }
 
@@ -704,24 +704,24 @@ class Function<Res(Args...)> : public Expr {
 
     template<class CArg>
     inline static z3::expr massAxiomAnd(CArg arg){
-        return arg.axiom();
+        return z3impl::getAxiom(arg);
     }
 
     template<class CArg0, class CArg1, class ...CArgs>
     inline static z3::expr massAxiomAnd(CArg0 arg0, CArg1 arg1, CArgs... args) {
-        return z3impl::spliceAxioms(arg0.axiom(), massAxiomAnd(arg1, args...));
+        return z3impl::spliceAxioms(z3impl::getAxiom(arg0), massAxiomAnd(arg1, args...));
     }
 
     static z3::func_decl constructFunc(z3::context& ctx, const std::string& name){
         const size_t N = sizeof...(Args);
-        z3::sort domain[N] = { Args::sort(ctx)... };
-        return ctx.function(name.c_str(), N, domain, Res::sort(ctx));
+        z3::sort domain[N] = { impl::generator<Args>::sort(ctx)... };
+        return ctx.function(name.c_str(), N, domain, impl::generator<Res>::sort(ctx));
     }
 
     static z3::func_decl constructFreshFunc(z3::context& ctx, const std::string& name){
         const size_t N = sizeof...(Args);
-        Z3_sort domain[N] = { Args::sort(ctx)... };
-        auto fd = Z3_mk_fresh_func_decl(ctx, name.c_str(), N, domain, Res::sort(ctx));
+        Z3_sort domain[N] = { impl::generator<Args>::sort(ctx)... };
+        auto fd = Z3_mk_fresh_func_decl(ctx, name.c_str(), N, domain, impl::generator<Res>::sort(ctx));
 
         return z3::func_decl(ctx, fd);
     }
@@ -732,7 +732,7 @@ class Function<Res(Args...)> : public Expr {
             std::function<Res(Args...)> realfunc) {
 
         std::function<Bool(Args...)> lam = [&](Args... args)->Bool {
-            return Bool(z3func(args.get()...) == realfunc(args...).get());
+            return Bool(z3func(z3impl::getExpr(args)...) == z3impl::getExpr(realfunc(args...)));
         };
 
         return z3impl::forAll<Bool, Args...>(ctx, lam);
@@ -754,15 +754,15 @@ public:
     z3::context& ctx() const { return inner.ctx(); }
 
     Res operator()(Args... args) {
-        return Res(inner(args.get()...), massAxiomAnd(*this, args...).simplify());
+        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(this->axiom(), massAxiomAnd(args...)).simplify());
     }
 
     static z3::sort range(z3::context& ctx) {
-        return Res::sort(ctx);
+        return impl::generator<Res>::sort(ctx);
     }
     template<size_t N = 0>
     static z3::sort domain(z3::context& ctx) {
-        return borealis::util::index_in_row<N, Args...>::type::sort(ctx);
+        return impl::generator<typename borealis::util::index_in_row<N, Args...>::type>::sort(ctx);
     }
 
     static self mkFunc(z3::context& ctx, const std::string& name) {
@@ -781,6 +781,7 @@ public:
         return self(f, ax);
     }
 };
+
 
 template<class Res, class ...Args>
 std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
@@ -909,6 +910,8 @@ public:
         return base;
     }
 
+    z3::context& ctx() const { return z3impl::getContext(this); }
+
     static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
         return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
     }
@@ -920,7 +923,7 @@ template<size_t N, size_t ElemSize = 8>
 std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
     typedef BitVector<ElemSize> Byte;
 
-    z3::context& ctx = bv.get().ctx();
+    z3::context& ctx = z3impl::getContext(bv);
 
     std::vector<Byte> ret;
 
@@ -929,8 +932,8 @@ std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
     }
 
     for (size_t ix = 0; ix < N; ix += ElemSize) {
-        z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+ElemSize-1, ix, bv.get()));
-        ret.push_back(Byte(e, bv.axiom()));
+        z3::expr e = z3::to_expr(ctx, Z3_mk_extract(ctx, ix+ElemSize-1, ix, z3impl::getExpr(bv)));
+        ret.push_back(Byte(e, z3impl::getAxiom(bv)));
     }
 
     return ret;
@@ -978,16 +981,16 @@ BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
         + toString(bytes.size())
     };
 
-    z3::expr head = bytes[0].get();
+    z3::expr head = z3impl::getExpr(bytes[0]);
     z3::context& ctx = head.ctx();
 
     for (size_t i = 1; i < bytes.size(); ++i) {
-        head = z3::expr(ctx, Z3_mk_concat(ctx, bytes[i].get(), head));
+        head = z3::expr(ctx, Z3_mk_concat(ctx, z3impl::getExpr(bytes[i]), head));
     }
 
-    z3::expr axiom = bytes[0].axiom();
+    z3::expr axiom = z3impl::getAxiom(bytes[0]);
     for (size_t i = 1; i < bytes.size(); ++i) {
-        axiom = z3impl::spliceAxioms(axiom, bytes[i].axiom());
+        axiom = z3impl::spliceAxioms(axiom, z3impl::getAxiom(bytes[i]));
     }
 
     return BitVector<N>(head, axiom);

@@ -25,7 +25,6 @@ void MetaInfoTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<sm_t>::addRequiredTransitive(AU);
-    AUX<loops>::addRequiredTransitive(AU);
 }
 
 using borealis::util::option;
