@@ -76,10 +76,10 @@ TEST(Transformer, CallSiteInitializer) {
         auto pred = PF->getEqualityPredicate(
                 TF->getArgumentTerm(arg),
                 TF->getValueTerm(val_1));
-        EXPECT_EQ("mock-arg=true", pred->toString());
+        EXPECT_EQ("@P mock-arg=true", pred->toString());
 
         auto pred2 = csi.transform(pred);
-        EXPECT_EQ("false=true", pred2->toString());
+        EXPECT_EQ("@P false=true", pred2->toString());
     }
 
 }
