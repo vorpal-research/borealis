@@ -135,6 +135,9 @@ std::ostream& operator<<(std::ostream& s, const PredicateState& state);
 const PredicateState operator&&(const PredicateState& state, Predicate::Ptr p);
 const PredicateState operator+(const PredicateState& state, Predicate::Ptr p);
 
+const PredicateState operator&&(const PredicateState& a, const PredicateState& b);
+const PredicateState operator+(const PredicateState& a, const PredicateState& b);
+
 } /* namespace borealis */
 
 #endif /* PREDICATESTATE_H_ */

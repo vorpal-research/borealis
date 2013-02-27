@@ -24,7 +24,6 @@ namespace borealis {
 // not really a pass, just some functionality bundled into pass system
 class MetaInfoTrackerPass: public llvm::ModulePass {
     typedef DataProvider<clang::SourceManager> sm_t;
-    typedef llvm::LoopInfo loops;
 
     VarInfoContainer vars;
 
