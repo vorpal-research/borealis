@@ -16,6 +16,8 @@
 #include <tuple>
 #include <unordered_set>
 
+#include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
@@ -33,6 +35,8 @@ enum class PredicateType {
     REQUIRES,
     ENSURES
 };
+
+PredicateType predicateType(const Annotation* a);
 
 // Forward declaration
 template<class SubClass>

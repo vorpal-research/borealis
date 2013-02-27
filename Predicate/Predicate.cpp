@@ -9,6 +9,14 @@
 
 namespace borealis {
 
+PredicateType predicateType(const Annotation* a) {
+   using namespace llvm;
+
+   if (isa<RequiresAnnotation>(a)) return PredicateType::REQUIRES;
+   if (isa<EnsuresAnnotation>(a)) return PredicateType::ENSURES;
+   return PredicateType::STATE;
+}
+
 Predicate::Predicate(borealis::id_t predicate_type_id) :
         Predicate(predicate_type_id, PredicateType::STATE) {}
 

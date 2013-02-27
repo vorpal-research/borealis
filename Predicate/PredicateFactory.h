@@ -69,13 +69,7 @@ public:
     Predicate::Ptr getBooleanPredicate(
             Term::Ptr v,
             Term::Ptr b) {
-        return Predicate::Ptr(
-                (new EqualityPredicate(
-                        v,
-                        b,
-                        slotTracker))
-                ->setType(PredicateType::PATH)
-        );
+        return getEqualityPredicate(v, b, PredicateType::PATH);
     }
 
     Predicate::Ptr getDefaultSwitchCasePredicate(
@@ -100,9 +94,11 @@ public:
 
     Predicate::Ptr getEqualityPredicate(
             Term::Ptr lhv,
-            Term::Ptr rhv) {
+            Term::Ptr rhv,
+            PredicateType type = PredicateType::PATH) {
         return Predicate::Ptr(
-                new EqualityPredicate(lhv, rhv, slotTracker));
+                (new EqualityPredicate(lhv, rhv, slotTracker))
+                ->setType(type));
     }
 
     Predicate::Ptr getArithPredicate(
