@@ -59,4 +59,6 @@
         __PRETTY_FUNCTION__, \
         #cond);}
 
+#define LAM1(TYPE, CODE_WITH_IT) [](TYPE it) { return CODE_WITH_IT; }
+
 // #endif /* MACROS_H_ */

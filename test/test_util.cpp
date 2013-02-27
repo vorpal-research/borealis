@@ -289,6 +289,38 @@ TEST(Util, iterators) {
         std::list<int> pattern { 1, 3, 5, 7 };
         ASSERT_EQ(values, pattern);
     }
+
+    {
+        std::vector<std::list<int>> con {
+            { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 }
+        };
+
+        std::vector<int> con2 { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        std::vector<int> pat { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        std::copy(flat_iterator(con.begin(), con.end()), flat_iterator(con.end(), con.end()), con2.begin());
+
+        ASSERT_EQ(con2, pat);
+    }
+
+    {
+        std::vector<std::list<std::vector<int>>> con {
+            { { 1, 2, 3 }, { 4, 5, 6 } }, { { 7 } }, { { 8, 9 } }
+        };
+
+        std::vector<int> con2 { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        std::vector<int> pat { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+
+
+        std::copy(
+                flat2_iterator(con.begin(), con.end()),
+                flat2_iterator(con.end()),
+                con2.begin()
+        );
+
+        ASSERT_EQ(con2, pat);
+    }
 }
 
 } // namespace _
