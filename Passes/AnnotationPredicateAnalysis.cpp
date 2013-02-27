@@ -38,7 +38,8 @@ public:
                 pass->PM[&CI] =
                         pass->PF->getEqualityPredicate(
                                 LA->getTerm(),
-                                pass->TF->getTrueTerm()
+                                pass->TF->getTrueTerm(),
+                                predicateType(LA)
                         );
             }
         }
