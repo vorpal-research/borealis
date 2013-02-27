@@ -96,7 +96,7 @@ Annotation::Ptr materialize(
         TermFactory* TF,
         MetaInfoTrackerPass* MI
         ) {
-    if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation.get())){
+    if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation)){
         AnnotationMaterializer am(*logic, TF, MI);
         return am.doit();
     } else {
