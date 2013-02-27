@@ -236,6 +236,79 @@ inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat
 }
 
 
+template <class RootIt, class Pred>
+class filtered_iterator {
+    RootIt current;
+    RootIt end;
+    Pred pred;
+
+
+    // restore the invariant ( pred(*current) == true || current == end )
+    void validate() {
+        while(!(pred(*current)) && (current != end) ) ++current;
+    }
+
+public:
+    // only bidir iterators capable
+    typedef std::forward_iterator_tag iterator_category;
+    typedef typename std::iterator_traits<RootIt>::difference_type
+            difference_type;
+    typedef typename std::iterator_traits<RootIt>::value_type
+            value_type;
+
+    typedef typename std::iterator_traits<RootIt>::pointer
+            pointer;
+    typedef typename std::iterator_traits<RootIt>::reference
+            reference;
+
+    typedef RootIt iterator_type;
+    typedef filtered_iterator<RootIt, Pred> self;
+
+    inline const RootIt& getCurrent() const { return current; }
+
+    inline filtered_iterator(const RootIt &I, const RootIt &E, Pred pred)
+    : current(I), end(E), pred(pred) {
+        validate();
+    };
+
+
+    inline explicit filtered_iterator(const std::pair<RootIt, RootIt> &P, Pred pred)
+    : filtered_iterator(P.first, P.second, pred) {}
+
+    inline filtered_iterator(const filtered_iterator &It)
+    : current(It.current), end(It.end), pred(It.pred) {}
+
+    inline reference operator*() const {
+        return *current;
+    }
+
+    inline pointer operator->() const {
+        return &*current;
+    }
+
+    self& operator++() {
+        if(current == end) return *this;
+
+        ++current;
+        validate();
+
+        return *this;
+    }
+
+    self operator++(int) { self tmp = *this; return self(++tmp); }
+
+    inline bool operator!=(const self& X) const { return !operator==(X); }
+    inline bool operator==(const self& X) const {
+        return current == X.current;
+    }
+
+};
+
+template<class It, class Pred>
+filtered_iterator<It, Pred> filter_iterator(It beg, It end, Pred pred) {
+    return filtered_iterator<It, Pred>(beg, end, pred);
+}
+
 template<class Iterator>
 class key_iterator {
     Iterator base;
