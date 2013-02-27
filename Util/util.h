@@ -102,6 +102,7 @@ enum class UnaryArithType {
 };
 std::string unaryArithString(UnaryArithType opCode);
 
+
 inline borealis::Locus instructionLocus(const Instruction* inst) {
     auto node = inst->getMetadata("dbg");
     if(node) return DILocation(node);
@@ -142,68 +143,27 @@ llvm::raw_ostream& endl(llvm::raw_ostream& ost);
 } // namespace util
 } // namespace borealis
 
-// FIXME: maybe this thing can be made less explicit???
 namespace std {
 ////////////////////////////////////////////////////////////////////////////////
 // ConditionType
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-struct hash<llvm::ConditionType> {
-    size_t operator()(const llvm::ConditionType& e) {
-        return borealis::util::enums::enum_hash<llvm::ConditionType>()(e);
-    }
-};
-template<>
-struct hash<const llvm::ConditionType> {
-    size_t operator()(const llvm::ConditionType& e) {
-        return borealis::util::enums::enum_hash<llvm::ConditionType>()(e);
-    }
-};
+template<> struct hash<llvm::ConditionType> : borealis::util::enums::enum_hash<llvm::ConditionType> {};
+template<> struct hash<const llvm::ConditionType> : borealis::util::enums::enum_hash<llvm::ConditionType> {};
 ////////////////////////////////////////////////////////////////////////////////
 // ValueType
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-struct hash<llvm::ValueType> {
-    size_t operator()(const llvm::ValueType& e) {
-        return borealis::util::enums::enum_hash<llvm::ValueType>()(e);
-    }
-};
-template<>
-struct hash<const llvm::ValueType> {
-    size_t operator()(const llvm::ValueType& e) {
-        return borealis::util::enums::enum_hash<llvm::ValueType>()(e);
-    }
-};
+template<> struct hash<llvm::ValueType> : borealis::util::enums::enum_hash<llvm::ValueType> {};
+template<> struct hash<const llvm::ValueType> : borealis::util::enums::enum_hash<llvm::ValueType> {};
 ////////////////////////////////////////////////////////////////////////////////
 // ArithType
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-struct hash<llvm::ArithType> {
-    size_t operator()(const llvm::ArithType& e) {
-        return borealis::util::enums::enum_hash<llvm::ArithType>()(e);
-    }
-};
-template<>
-struct hash<const llvm::ArithType> {
-    size_t operator()(const llvm::ArithType& e) {
-        return borealis::util::enums::enum_hash<llvm::ArithType>()(e);
-    }
-};
+template<> struct hash<llvm::ArithType> : borealis::util::enums::enum_hash<llvm::ArithType> {};
+template<> struct hash<const llvm::ArithType> : borealis::util::enums::enum_hash<llvm::ArithType> {};
 ////////////////////////////////////////////////////////////////////////////////
 // UnaryArithType
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-struct hash<llvm::UnaryArithType> {
-    size_t operator()(const llvm::UnaryArithType& e) {
-        return borealis::util::enums::enum_hash<llvm::UnaryArithType>()(e);
-    }
-};
-template<>
-struct hash<const llvm::UnaryArithType> {
-    size_t operator()(const llvm::UnaryArithType& e) {
-        return borealis::util::enums::enum_hash<llvm::UnaryArithType>()(e);
-    }
-};
+template<> struct hash<llvm::UnaryArithType> : borealis::util::enums::enum_hash<llvm::UnaryArithType> {};
+template<> struct hash<const llvm::UnaryArithType> : borealis::util::enums::enum_hash<llvm::UnaryArithType> {};
 }
 
 #endif /* UTIL_H_ */

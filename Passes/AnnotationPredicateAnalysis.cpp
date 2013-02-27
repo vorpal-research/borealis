@@ -13,6 +13,7 @@
 #include "Passes/AnnotationPredicateAnalysis.h"
 #include "Passes/AnnotationProcessor.h"
 #include "Passes/SlotTrackerPass.h"
+#include "State/AnnotationMaterializer.h"
 
 namespace borealis {
 
@@ -31,12 +32,14 @@ public:
     void visitCallInst(llvm::CallInst& CI) {
         auto& im = IntrinsicsManager::getInstance();
         if (im.getIntrinsicType(CI) == function_type::INTRINSIC_ANNOTATION) {
-            const Annotation* anno = Annotation::fromIntrinsic(CI);
+            Annotation::Ptr anno =
+                    materialize(Annotation::fromIntrinsic(CI), pass->TF.get(), pass->MI);
             if (auto* LA = llvm::dyn_cast<LogicAnnotation>(anno)) {
                 pass->PM[&CI] =
                         pass->PF->getEqualityPredicate(
                                 LA->getTerm(),
-                                pass->TF->getTrueTerm()
+                                pass->TF->getTrueTerm(),
+                                predicateType(LA)
                         );
             }
         }
@@ -62,6 +65,7 @@ void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) cons
     AU.setPreservesAll();
 
     AUX<AnnotationProcessor>::addRequiredTransitive(AU);
+    AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
@@ -71,6 +75,8 @@ bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
     TRACE_FUNC;
 
     init();
+
+    MI = &GetAnalysis<MetaInfoTrackerPass>::doit(this, F);
 
     SlotTracker* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
 

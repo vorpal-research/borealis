@@ -44,13 +44,13 @@ bool FunctionManager::runOnModule(llvm::Module& /* M */) {
 
     for (Annotation::Ptr a : annotations) {
         Annotation::Ptr anno = materialize(a, TF.get(), &meta);
-        if (isa<LogicAnnotation>(anno)) {
-            LogicAnnotation* logic = cast<LogicAnnotation>(anno);
+        if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
                     Predicate::Ptr p = PF->getEqualityPredicate(
                             logic->getTerm(),
-                            TF->getTrueTerm()
+                            TF->getTrueTerm(),
+                            predicateType(logic)
                     );
                     update(F, p);
                     break;

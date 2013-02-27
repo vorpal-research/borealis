@@ -16,6 +16,8 @@
 #include <tuple>
 #include <unordered_set>
 
+#include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
@@ -33,6 +35,8 @@ enum class PredicateType {
     REQUIRES,
     ENSURES
 };
+
+PredicateType predicateType(const Annotation* a);
 
 // Forward declaration
 template<class SubClass>
@@ -62,7 +66,12 @@ public:
     }
 
     inline std::string toString() const {
-        return asString;
+        switch (type) {
+        case PredicateType::REQUIRES: return "@R " + asString;
+        case PredicateType::ENSURES: return "@E " + asString;
+        case PredicateType::PATH: return "@P " + asString;
+        default: return asString;
+        }
     }
 
     virtual logic::Bool toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const = 0;

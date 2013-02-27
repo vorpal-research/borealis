@@ -22,7 +22,7 @@
 
 namespace borealis {
 
-class Annotation {
+class Annotation : public std::enable_shared_from_this<Annotation> {
 private:
     typedef Annotation self;
 
@@ -57,8 +57,9 @@ public:
         return true;
     }
 
-    static const Annotation* fromIntrinsic(const llvm::CallInst& CI) {
-        return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")));
+    static const Annotation::Ptr fromIntrinsic(const llvm::CallInst& CI) {
+        return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")))
+                ->shared_from_this();
     }
 
 };
