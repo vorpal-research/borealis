@@ -117,9 +117,7 @@ public:
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 
-            if (s.checkSatOrUnknown(q, ps.filter())) {
-                continue;
-            } else {
+            if (s.checkViolated(q, ps.filter())) {
                 pass->infos() << "Violated!" << endl;
                 return true;
             }

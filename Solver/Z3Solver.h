@@ -19,16 +19,12 @@ public:
 
     Z3Solver(Z3ExprFactory& z3ef);
 
-    bool checkSat(
-            const PredicateState& q,
+    bool checkViolated(
+            const PredicateState& query,
             const PredicateState& state);
 
-    bool checkUnsat(
-            const PredicateState& q,
-            const PredicateState& state);
-
-    bool checkSatOrUnknown(
-            const PredicateState& q,
+    bool checkPathPredicates(
+            const PredicateState& path,
             const PredicateState& state);
 
 private:
@@ -36,8 +32,8 @@ private:
     Z3ExprFactory& z3ef;
 
     z3::check_result check(
-            const PredicateState& q,
-            const PredicateState& state);
+            const logic::Bool& z3query,
+            const logic::Bool& z3state);
 
 };
 

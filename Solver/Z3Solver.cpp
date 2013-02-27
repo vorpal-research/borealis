@@ -16,8 +16,8 @@ namespace borealis {
 Z3Solver::Z3Solver(Z3ExprFactory& z3ef) : z3ef(z3ef) {}
 
 z3::check_result Z3Solver::check(
-        const PredicateState& q,
-        const PredicateState& state) {
+        const logic::Bool& z3query,
+        const logic::Bool& z3state) {
     using namespace::z3;
     using logic::Bool;
     using logic::implies;
@@ -26,15 +26,13 @@ z3::check_result Z3Solver::check(
 
     solver s(z3ef.unwrap());
 
-    auto query = !q.toZ3(z3ef);
-    auto z3state = state.toZ3(z3ef);
     s.add(logic::z3impl::asAxiom(z3state));
 
-    dbgs() << "  Query: " << endl << query << endl;
+    dbgs() << "  Query: " << endl << z3query << endl;
     dbgs() << "  State: " << endl << z3state << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(logic::z3impl::asAxiom(implies(pred, query)));
+    s.add(logic::z3impl::asAxiom(implies(pred, z3query)));
 
     {
         TRACE_BLOCK("Calling Z3 check");
@@ -60,25 +58,24 @@ z3::check_result Z3Solver::check(
     }
 }
 
-bool Z3Solver::checkSat(
-        const PredicateState& q,
+bool Z3Solver::checkViolated(
+        const PredicateState& query,
         const PredicateState& state) {
     TRACE_FUNC;
-    return check(q, state) == z3::sat;
+
+    auto z3query = !query.toZ3(z3ef);
+    auto z3state = state.toZ3(z3ef);
+    return check(z3query, z3state) != z3::unsat;
 }
 
-bool Z3Solver::checkUnsat(
-        const PredicateState& q,
+bool Z3Solver::checkPathPredicates(
+        const PredicateState& path,
         const PredicateState& state) {
     TRACE_FUNC;
-    return check(q, state) == z3::unsat;
-}
 
-bool Z3Solver::checkSatOrUnknown(
-        const PredicateState& q,
-        const PredicateState& state) {
-    TRACE_FUNC;
-    return check(q, state) != z3::unsat;
+    auto z3query = path.toZ3(z3ef);
+    auto z3state = state.toZ3(z3ef);
+    return check(z3query, z3state) == z3::unsat;
 }
 
 } /* namespace borealis */

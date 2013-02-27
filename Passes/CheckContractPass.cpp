@@ -34,7 +34,7 @@ public:
         Z3Solver s(z3ef);
 
         for (auto& state : states) {
-            if (s.checkSatOrUnknown(requires, state)) {
+            if (s.checkViolated(requires, state)) {
                 // TODO: Implement
             }
         }
