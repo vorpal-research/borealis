@@ -95,7 +95,7 @@ public:
     Predicate::Ptr getEqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            PredicateType type = PredicateType::PATH) {
+            PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
                 (new EqualityPredicate(lhv, rhv, slotTracker))
                 ->setType(type));

@@ -195,7 +195,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                 vars.put(val, vi);
             }
         }
-    } // for (auto& I : view(flat2Begin(M), flat2End(M)))
+    } // for (auto& I : flat2View(M.begin(), M.end()))
 
 
     return false;
