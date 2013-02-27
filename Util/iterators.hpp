@@ -10,6 +10,10 @@
 
 #include <iterator>
 
+namespace borealis {
+namespace util{
+
+
 template<class Container>
 std::pair<typename Container::iterator, typename Container::iterator>
 begin_end_pair(Container& c) {
@@ -20,6 +24,304 @@ template<class Container>
 std::pair<typename Container::const_iterator, typename Container::const_iterator>
 begin_end_pair(const Container& c) {
     return std::make_pair(c.begin(), c.end());
+}
+
+template <class RootIt, class UnaryFunc>
+class mapped_iterator {
+  RootIt current;
+  UnaryFunc Fn;
+public:
+  typedef typename std::iterator_traits<RootIt>::iterator_category
+          iterator_category;
+  typedef typename std::iterator_traits<RootIt>::difference_type
+          difference_type;
+  typedef decltype(Fn(*current)) value_type;
+
+  typedef void pointer;
+  //typedef typename UnaryFunc::result_type *pointer;
+  typedef void reference;        // Can't modify value returned by fn
+
+  typedef RootIt iterator_type;
+  typedef mapped_iterator<RootIt, UnaryFunc> _Self;
+
+  inline const RootIt &getCurrent() const { return current; }
+  inline const UnaryFunc &getFunc() const { return Fn; }
+
+  inline explicit mapped_iterator(const RootIt &I, UnaryFunc F)
+    : current(I), Fn(F) {}
+  inline mapped_iterator(const mapped_iterator &It)
+    : current(It.current), Fn(It.Fn) {}
+
+  inline value_type operator*() const {   // All this work to do this
+    return Fn(*current);         // little change
+  }
+
+  _Self& operator++() { ++current; return *this; }
+  _Self& operator--() { --current; return *this; }
+  _Self  operator++(int) { _Self __tmp = *this; ++current; return __tmp; }
+  _Self  operator--(int) { _Self __tmp = *this; --current; return __tmp; }
+  _Self  operator+    (difference_type n) const {
+    return _Self(current + n, Fn);
+  }
+  _Self& operator+=   (difference_type n) { current += n; return *this; }
+  _Self  operator-    (difference_type n) const {
+    return _Self(current - n, Fn);
+  }
+  _Self& operator-=   (difference_type n) { current -= n; return *this; }
+  reference operator[](difference_type n) const { return *(*this + n); }
+
+  inline bool operator!=(const _Self &X) const { return !operator==(X); }
+  inline bool operator==(const _Self &X) const { return current == X.current; }
+  inline bool operator< (const _Self &X) const { return current <  X.current; }
+
+  inline difference_type operator-(const _Self &X) const {
+    return current - X.current;
+  }
+};
+
+template <class _Iterator, class Func>
+inline mapped_iterator<_Iterator, Func>
+operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
+          const mapped_iterator<_Iterator, Func>& X) {
+  return mapped_iterator<_Iterator, Func>(X.getCurrent() - N, X.getFunc());
+}
+
+// map_iterator - Provide a convenient way to create mapped_iterators, just like
+// make_pair is useful for creating pairs...
+//
+template <class ItTy, class FuncTy>
+inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy &I, FuncTy F) {
+  return mapped_iterator<ItTy, FuncTy>(I, F);
+}
+
+template <class RootIt>
+class flattened_iterator {
+    RootIt current;
+    RootIt end;
+
+    typedef decltype(std::begin(*current)) ChildIt;
+
+    ChildIt child;
+
+    void validate()
+    {
+        while (current != end && child == current->end())
+        {
+            ++current;
+            if (current != end)
+                child = current->begin();
+        }
+    }
+
+public:
+    // only bidir iterators capable
+    typedef std::forward_iterator_tag iterator_category;
+    typedef typename std::iterator_traits<ChildIt>::difference_type
+            difference_type;
+    typedef typename std::iterator_traits<ChildIt>::value_type
+            value_type;
+
+    typedef typename std::iterator_traits<ChildIt>::pointer
+            pointer;
+    typedef typename std::iterator_traits<ChildIt>::reference
+            reference;
+
+    typedef RootIt iterator_type;
+    typedef flattened_iterator<RootIt> self;
+
+    inline const RootIt& getCurrent() const { return current; }
+    inline ChildIt& getChild() { return child; }
+    inline const ChildIt& getChild() const { return child; }
+
+
+    inline flattened_iterator(const RootIt &I, const RootIt &E)
+    : current(I), end(E), child(I != E ? I->begin() : ChildIt() ) {
+        validate();
+    }
+
+    inline explicit flattened_iterator(const std::pair<RootIt, RootIt> &P)
+    : flattened_iterator(P.first, P.second) {}
+
+    inline flattened_iterator(const flattened_iterator &It)
+    : current(It.current), end(It.end), child(It.child) {}
+
+    inline reference operator*() const {
+        return *child;
+    }
+
+    inline pointer operator->() const {
+        return &*child;
+    }
+
+    self& operator++() {
+        if(current == end) return *this;
+
+        ++getChild();
+        validate();
+
+        return *this;
+    }
+
+    self operator++(int) { self tmp = *this; return self(++tmp); }
+
+    inline bool operator!=(const self& X) const { return !operator==(X); }
+    inline bool operator==(const self& X) const {
+        if(current != X.current) return false;
+
+        return (current == end && X.current == end) ||
+               (current == X.current && getChild() == X.getChild());
+    }
+
+};
+
+template <class ItTy>
+inline flattened_iterator<ItTy> flat_iterator(const ItTy& I, const ItTy& E) {
+  return flattened_iterator<ItTy>(I, E);
+}
+
+template <class ItTy>
+inline flattened_iterator<ItTy> flat_iterator(const ItTy& E) {
+  return flat_iterator(E, E);
+}
+
+template <class ItTy>
+inline flattened_iterator<flattened_iterator<ItTy>> flat2_iterator(const ItTy& I, const ItTy& E) {
+  return flat_iterator(flat_iterator(I, E), flat_iterator(E));
+}
+
+template <class ItTy>
+inline flattened_iterator<flattened_iterator<ItTy>> flat2_iterator(const ItTy& E) {
+  return flat2_iterator(E,E);
+}
+
+
+template <class Con>
+inline flattened_iterator<typename Con::iterator> flatBegin(Con& C) {
+  return flat_iterator(C.begin(), C.end());
+}
+
+template <class Con>
+inline flattened_iterator<typename Con::iterator> flatEnd(Con& C) {
+  return flat_iterator(C.end());
+}
+
+template <class Con>
+inline flattened_iterator<flattened_iterator<typename Con::iterator>> flat2Begin(Con& C) {
+  return flat2_iterator(C.begin(), C.end());
+}
+
+template <class Con>
+inline flattened_iterator<flattened_iterator<typename Con::iterator>> flat2End(Con& C) {
+  return flat2_iterator(C.end());
+}
+
+template <class Con>
+inline flattened_iterator<typename Con::const_iterator> flatBegin(const Con& C) {
+  return flat_iterator(C.begin(), C.end());
+}
+
+template <class Con>
+inline flattened_iterator<typename Con::const_iterator> flatEnd(const Con& C) {
+  return flat_iterator(C.end());
+}
+
+template <class Con>
+inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat2Begin(const Con& C) {
+  return flat2_iterator(C.begin(), C.end());
+}
+
+template <class Con>
+inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat2End(const Con& C) {
+  return flat2_iterator(C.end());
+}
+
+#include "Util/macros.h"
+
+template <class Iter>
+inline auto flatView(Iter begin, Iter end) QUICK_RETURN (view(flat_iterator(begin, end), flat_iterator(end)))
+
+template <class Iter>
+inline auto flat2View(Iter begin, Iter end) QUICK_RETURN (view(flat2_iterator(begin, end), flat2_iterator(end)))
+
+template <class Iter>
+inline auto flatView(const std::pair<Iter, Iter>& p) QUICK_RETURN (flatView(p.first, p.second))
+
+template <class Iter>
+inline auto flat2View(const std::pair<Iter, Iter>& p) QUICK_RETURN (flat2View(p.first, p.second))
+
+#include "Util/unmacros.h"
+
+template <class RootIt, class Pred>
+class filtered_iterator {
+    RootIt current;
+    RootIt end;
+    Pred pred;
+
+
+    // restore the invariant ( pred(*current) == true || current == end )
+    void validate() {
+        while(!(pred(*current)) && (current != end) ) ++current;
+    }
+
+public:
+    // only bidir iterators capable
+    typedef std::forward_iterator_tag iterator_category;
+    typedef typename std::iterator_traits<RootIt>::difference_type
+            difference_type;
+    typedef typename std::iterator_traits<RootIt>::value_type
+            value_type;
+
+    typedef typename std::iterator_traits<RootIt>::pointer
+            pointer;
+    typedef typename std::iterator_traits<RootIt>::reference
+            reference;
+
+    typedef RootIt iterator_type;
+    typedef filtered_iterator<RootIt, Pred> self;
+
+    inline const RootIt& getCurrent() const { return current; }
+
+    inline filtered_iterator(const RootIt &I, const RootIt &E, Pred pred)
+    : current(I), end(E), pred(pred) {
+        validate();
+    };
+
+
+    inline explicit filtered_iterator(const std::pair<RootIt, RootIt> &P, Pred pred)
+    : filtered_iterator(P.first, P.second, pred) {}
+
+    inline filtered_iterator(const filtered_iterator &It)
+    : current(It.current), end(It.end), pred(It.pred) {}
+
+    inline reference operator*() const {
+        return *current;
+    }
+
+    inline pointer operator->() const {
+        return &*current;
+    }
+
+    self& operator++() {
+        if(current == end) return *this;
+
+        ++current;
+        validate();
+
+        return *this;
+    }
+
+    self operator++(int) { self tmp = *this; return self(++tmp); }
+
+    inline bool operator!=(const self& X) const { return !operator==(X); }
+    inline bool operator==(const self& X) const {
+        return current == X.current;
+    }
+
+};
+
+template<class It, class Pred>
+filtered_iterator<It, Pred> filter_iterator(It beg, It end, Pred pred) {
+    return filtered_iterator<It, Pred>(beg, end, pred);
 }
 
 template<class Iterator>
@@ -155,6 +457,11 @@ std::pair<value_citerator<Iterator>, value_citerator<Iterator>> citerate_values(
         citerate_values(it.first),
         citerate_values(it.second)
     };
+}
+
+
+
+}
 }
 
 #endif /* ITERATORS_HPP_ */

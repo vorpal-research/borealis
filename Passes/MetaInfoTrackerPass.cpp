@@ -14,6 +14,7 @@
 #include "Logging/logger.hpp"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Util/util.h"
+#include "Util/iterators.hpp"
 
 namespace borealis {
 
@@ -90,6 +91,7 @@ static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node
 
 bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using borealis::util::view;
+    using borealis::util::flat2View;
 
     using llvm::inst_begin;
     using llvm::inst_end;
@@ -141,61 +143,60 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
         vars.put(sp.getFunction(), mkVI(sm, sp));
     }
 
-    for (auto& F : M) {
-        for (auto& I : view(inst_begin(F), inst_end(F))) {
+    for (auto& I : flat2View(M.begin(), M.end())) {
 
-            if (DbgDeclareInst* inst = dyn_cast_or_null<DbgDeclareInst>(&I)) {
-                auto* val = inst->getAddress();
-                DIVariable var(inst->getVariable());
+        if (DbgDeclareInst* inst = dyn_cast_or_null<DbgDeclareInst>(&I)) {
+            auto* val = inst->getAddress();
+            DIVariable var(inst->getVariable());
 
-                clang::Decl* decl = nullptr;
-                if (Instruction* inst = dyn_cast_or_null<Instruction>(val)) {
-                    if (MDNode* meta = inst->getMetadata("clang.decl.ptr")) {
-                        if (ConstantInt* ival = dyn_cast_or_null<ConstantInt>(meta->getOperand(0))){
-                            decl = reinterpret_cast<clang::Decl*>(ival->getValue().getZExtValue());
-                        }
+            clang::Decl* decl = nullptr;
+            if (Instruction* inst = dyn_cast_or_null<Instruction>(val)) {
+                if (MDNode* meta = inst->getMetadata("clang.decl.ptr")) {
+                    if (ConstantInt* ival = dyn_cast_or_null<ConstantInt>(meta->getOperand(0))){
+                        decl = reinterpret_cast<clang::Decl*>(ival->getValue().getZExtValue());
                     }
                 }
+            }
 
-                auto vi = mkVI(sm, var, decl, true);
+            auto vi = mkVI(sm, var, decl, true);
 
-                // debug declare has additional location data attached through
+            // debug declare has additional location data attached through
+            // dbg metadata
+            if (auto* nodeloc = inst->getMetadata("dbg")) {
+                DILocation dloc(nodeloc);
+
+                for (auto& locus : vi.originalLocus) {
+                    locus.loc.line = dloc.getLineNumber();
+                    locus.loc.col = dloc.getColumnNumber();
+                }
+            }
+
+            vars.put(val, vi);
+
+        } else if (CallInst* inst = dyn_cast_or_null<CallInst>(&I)) {
+            if (IntrinsicsManager::getInstance().getIntrinsicType(*inst) == function_type::INTRINSIC_VALUE) {
+                auto* val = inst->getArgOperand(1);
+                DIVariable var(inst->getMetadata("var"));
+
+                clang::Decl* decl = nullptr;
+                auto vi = mkVI(sm, var, decl);
+
+                // debug value has additional location data attached through
                 // dbg metadata
                 if (auto* nodeloc = inst->getMetadata("dbg")) {
                     DILocation dloc(nodeloc);
 
-                    for (auto& locus : vi.originalLocus) {
+                    for (auto& locus: vi.originalLocus) {
                         locus.loc.line = dloc.getLineNumber();
                         locus.loc.col = dloc.getColumnNumber();
                     }
                 }
 
                 vars.put(val, vi);
-
-            } else if (CallInst* inst = dyn_cast_or_null<CallInst>(&I)) {
-                if (IntrinsicsManager::getInstance().getIntrinsicType(*inst) == function_type::INTRINSIC_VALUE) {
-                    auto* val = inst->getArgOperand(1);
-                    DIVariable var(inst->getMetadata("var"));
-
-                    clang::Decl* decl = nullptr;
-                    auto vi = mkVI(sm, var, decl);
-
-                    // debug value has additional location data attached through
-                    // dbg metadata
-                    if (auto* nodeloc = inst->getMetadata("dbg")) {
-                        DILocation dloc(nodeloc);
-
-                        for (auto& locus: vi.originalLocus) {
-                            locus.loc.line = dloc.getLineNumber();
-                            locus.loc.col = dloc.getColumnNumber();
-                        }
-                    }
-
-                    vars.put(val, vi);
-                }
             }
-        } // for (auto& I : view(inst_begin(F), inst_end(F)))
-    } // for (auto& F : M)
+        }
+    } // for (auto& I : flat2View(M.begin(), M.end()))
+
 
     return false;
 }

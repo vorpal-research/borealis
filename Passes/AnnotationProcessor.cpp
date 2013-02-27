@@ -14,6 +14,7 @@
 #include "Passes/SourceLocationTracker.h"
 #include "State/AnnotationMaterializer.h"
 #include "Util/util.h"
+#include "Util/iterators.hpp"
 
 namespace borealis {
 
@@ -86,14 +87,13 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const {
     auto& IM = IntrinsicsManager::getInstance();
 
-    for (auto& F : *M) {
-        for (auto& BB : F) {
-            for (auto& I : BB) {
-                if (auto* CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
-                    if (IM.getIntrinsicType(*CI) == function_type::INTRINSIC_ANNOTATION) {
-                        infos() << *Annotation::fromIntrinsic(*CI) << endl;
-                    }
-                }
+    using borealis::util::flat2View;
+    using borealis::util::begin_end_pair;
+
+    for (auto& I : flat2View(begin_end_pair(*M))) {
+        if (auto* CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
+            if (IM.getIntrinsicType(*CI) == function_type::INTRINSIC_ANNOTATION) {
+                infos() << *Annotation::fromIntrinsic(*CI) << endl;
             }
         }
     }

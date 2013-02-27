@@ -35,6 +35,7 @@ TEST(Term, classof) {
     {
         using namespace borealis;
         using namespace llvm;
+        using llvm::Type;
 
         LLVMContext& ctx = llvm::getGlobalContext();
         Module m("mock-module", ctx);

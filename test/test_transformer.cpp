@@ -38,6 +38,8 @@ TEST(Transformer, CallSiteInitializer) {
         using namespace borealis;
         using namespace llvm;
 
+        typedef llvm::Type Type;
+
         LLVMContext& ctx = llvm::getGlobalContext();
         Module m("mock-module", ctx);
 
@@ -46,7 +48,7 @@ TEST(Transformer, CallSiteInitializer) {
         Function* F = Function::Create(
                 FunctionType::get(
                         retType,
-                        ArrayRef<Type*>(argType),
+                        ArrayRef<llvm::Type*>(argType),
                         false),
                 GlobalValue::LinkageTypes::ExternalLinkage);
         Argument* arg = &*F->getArgumentList().begin();
