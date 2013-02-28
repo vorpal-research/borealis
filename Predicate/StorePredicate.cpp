@@ -31,7 +31,7 @@ logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) con
     auto r = rhv->toZ3(z3ef, ctx);
 
     ASSERT(l.is<Pointer>(),
-           "Store dealing with a non-pointer value")
+           "Store dealing with a non-pointer value");
 
     ctx->writeExprToMemory(l.to<Pointer>().getUnsafe(), r);
 

@@ -41,7 +41,7 @@ public:
         typedef Z3ExprFactory::Pointer Pointer;
         typedef Z3ExprFactory::Dynamic Dynamic;
 
-        ASSERTC(ctx != nullptr)
+        ASSERTC(ctx != nullptr);
 
         Dynamic r = rhv->toZ3(z3ef, ctx);
         ASSERT(r.is<Pointer>(),

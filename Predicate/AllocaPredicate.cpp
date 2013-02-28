@@ -28,7 +28,7 @@ logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     auto lhve = lhv->toZ3(z3ef, ctx);
 
     ASSERT(lhve.is<Pointer>(),
-           "Encountered alloca with non-Pointer left side")
+           "Encountered alloca with non-Pointer left side");
 
     auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {

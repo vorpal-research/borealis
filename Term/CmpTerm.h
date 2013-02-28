@@ -44,7 +44,7 @@ public:
         auto rhvz3 = rhv->toZ3(z3ef, ctx);
 
         ASSERT(lhvz3.isComparable() && rhvz3.isComparable(),
-               "Comparing incomparable expressions")
+               "Comparing incomparable expressions");
 
         auto lhv = lhvz3.toComparable().getUnsafe();
         auto rhv = rhvz3.toComparable().getUnsafe();
@@ -58,7 +58,7 @@ public:
         case llvm::ConditionType::LTE:   return lhv <= rhv;
         case llvm::ConditionType::NEQ:   return lhv != rhv;
         case llvm::ConditionType::TRUE:  return z3ef.getTrue();
-        default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+        default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode");
         }
     }
 #include "Util/unmacros.h"

@@ -69,11 +69,11 @@ public:
             case llvm::ArithType::RSH:  return lhv >> rhv;
             case llvm::ArithType::SUB:  return lhv -  rhv;
             case llvm::ArithType::XOR:  return lhv ^  rhv;
-            default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+            default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode");
             }
         }
 
-        BYE_BYE(Z3ExprFactory::Dynamic, "Unreachable!")
+        BYE_BYE(Z3ExprFactory::Dynamic, "Unreachable!");
     }
 #include "Util/unmacros.h"
 
