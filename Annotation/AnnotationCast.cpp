@@ -55,7 +55,7 @@ static llvm::ConditionType convertCT(bin_opcode op) {
     case bin_opcode::OPCODE_LE:
         return llvm::ConditionType::LTE;
     default:
-        BYE_BYE(llvm::ConditionType, "Called with unconditional operation");
+        BYE_BYE(llvm::ConditionType, "Called with non-conditional operation");
     }
 }
 
@@ -86,24 +86,30 @@ static llvm::ArithType convertAT(bin_opcode op) {
     case bin_opcode::OPCODE_RSH:
         return llvm::ArithType::RSH;
     default:
-        BYE_BYE(llvm::ArithType, "Called with unconditional operation");
+        BYE_BYE(llvm::ArithType, "Called with non-arithmetic operation");
     }
 }
 
 static llvm::UnaryArithType convert(un_opcode op) {
     switch(op) {
-    case un_opcode::OPCODE_BNOT: return llvm::UnaryArithType::BNOT;
-    case un_opcode::OPCODE_NOT: return llvm::UnaryArithType::NOT;
-    case un_opcode::OPCODE_NEG: return llvm::UnaryArithType::NEG;
+    case un_opcode::OPCODE_BNOT:
+        return llvm::UnaryArithType::BNOT;
+    case un_opcode::OPCODE_NOT:
+        return llvm::UnaryArithType::NOT;
+    case un_opcode::OPCODE_NEG:
+        return llvm::UnaryArithType::NEG;
     case un_opcode::OPCODE_LOAD:
         BYE_BYE(llvm::UnaryArithType, "Dereference operator not supported");
     }
 }
 
-class TermConstructor: public anno::empty_visitor {
+class TermConstructor : public anno::empty_visitor {
+
     TermFactory* tf;
     Term::Ptr term;
+
 public:
+
     TermConstructor(TermFactory* tf): tf(tf), term(nullptr) {}
 
     virtual void onDoubleConstant(double c) {
@@ -125,7 +131,8 @@ public:
         term = tf->getOpaqueBuiltinTerm(mask);
     }
 
-    virtual void onBinary(bin_opcode op,
+    virtual void onBinary(
+            bin_opcode op,
             const prod_t& lhv,
             const prod_t& rhv) {
         TermConstructor lhvtc(tf);
@@ -141,14 +148,15 @@ public:
         }
     }
 
-    virtual void onUnary(un_opcode op,
+    virtual void onUnary(
+            un_opcode op,
             const prod_t& rhv) {
         TermConstructor rhvtc(tf);
 
         rhv->accept(rhvtc);
         if(op == un_opcode::OPCODE_LOAD) {
             term = tf->getLoadTerm(rhvtc.term);
-        }else {
+        } else {
             term = tf->getUnaryTerm(convert(op), rhvtc.term);
         }
     }
@@ -162,7 +170,7 @@ Annotation::Ptr borealis::fromParseResult(
     std::vector<Term::Ptr> terms;
     terms.reserve(cmd.args_.size());
 
-    for (auto& arg: cmd.args_) {
+    for (auto& arg : cmd.args_) {
         TermConstructor tc(tf);
         arg->accept(tc);
         terms.push_back(tc.getTerm());
