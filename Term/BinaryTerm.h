@@ -99,15 +99,7 @@ public:
 
     virtual Type::Ptr getTermType() const {
         auto& tf = TypeFactory::getInstance();
-
-        if (!tf.isValid(rhv->getTermType())) return rhv->getTermType();
-        if (!tf.isValid(lhv->getTermType())) return lhv->getTermType();
-
-        if (rhv->getTermType() != lhv->getTermType()) {
-            return tf.getTypeError("Invalid binop: types do not correspond");
-        }
-
-        return rhv->getTermType();
+        return tf.merge(lhv->getTermType(), rhv->getTermType());
     }
 
     friend class TermFactory;

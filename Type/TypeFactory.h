@@ -96,6 +96,17 @@ public:
 
         BYE_BYE(std::string, "Unknown type")
     }
+
+    Type::Ptr merge(Type::Ptr one, Type::Ptr two) {
+        if(!isValid(one)) return one;
+        if(!isValid(two)) return two;
+
+        if(one == theUnknown) return two;
+        if(two == theUnknown) return one;
+        if(one == two) return one;
+
+        BYE_BYE(Type::Ptr, "Unmergeable types")
+    }
 #include "Util/unmacros.h"
 
 };
