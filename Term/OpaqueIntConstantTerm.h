@@ -37,7 +37,9 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
-    // FIXME: toZ3???
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
+        return z3ef.getIntConst(value, z3ef.sizeForType(getTermType()));
+    }
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<self>();
