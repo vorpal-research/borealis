@@ -94,7 +94,7 @@ public:
         if(auto* Ptr = dyn_cast<Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
         if(auto* Err = dyn_cast<TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
 
-        BYE_BYE(std::string, "Unknown type")
+        BYE_BYE(std::string, "Unknown type");
     }
 
     Type::Ptr merge(Type::Ptr one, Type::Ptr two) {
@@ -105,7 +105,7 @@ public:
         if(two == theUnknown) return one;
         if(one == two) return one;
 
-        BYE_BYE(Type::Ptr, "Unmergeable types")
+        BYE_BYE(Type::Ptr, "Unmergeable types");
     }
 #include "Util/unmacros.h"
 
