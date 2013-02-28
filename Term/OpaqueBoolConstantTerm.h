@@ -13,6 +13,7 @@
 namespace borealis {
 
 class OpaqueBoolConstantTerm: public borealis::Term {
+
     typedef OpaqueBoolConstantTerm self;
 
     bool value;
@@ -21,9 +22,10 @@ class OpaqueBoolConstantTerm: public borealis::Term {
         Term(
             static_cast<id_t>(value),
             llvm::ValueType::BOOL_CONST,
-            value? "true" : "false",
+            value ? "true" : "false",
             type_id(*this)
         ), value(value) {};
+
 public:
 
     bool getValue() const { return value; }
@@ -34,6 +36,8 @@ public:
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
+
+    // FIXME: toZ3???
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<self>();
@@ -54,8 +58,8 @@ public:
         return TypeFactory::getInstance().getBool();
     }
 
-
     friend class TermFactory;
+
 };
 
 } /* namespace borealis */

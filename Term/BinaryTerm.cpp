@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "BinaryTerm.h"
+#include "Term/BinaryTerm.h"
 
 namespace borealis {
 

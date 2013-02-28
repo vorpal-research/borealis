@@ -13,6 +13,7 @@
 namespace borealis {
 
 class BinaryTerm: public borealis::Term {
+
     typedef BinaryTerm self;
 
     llvm::ArithType opcode;
@@ -47,10 +48,8 @@ public:
             auto rhv = rhvz3.to<logic::Bool>().getUnsafe();
 
             switch(opcode) {
-            case llvm::ArithType::LAND:
-                return lhv && rhv;
-            case llvm::ArithType::LOR:
-                return lhv || rhv;
+            case llvm::ArithType::LAND: return lhv && rhv;
+            case llvm::ArithType::LOR:  return lhv || rhv;
             default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
             }
         }
@@ -74,7 +73,7 @@ public:
             }
         }
 
-        BYE_BYE(Z3ExprFactory::Dynamic, "Unreachable")
+        BYE_BYE(Z3ExprFactory::Dynamic, "Unreachable!")
     }
 #include "Util/unmacros.h"
 
@@ -101,10 +100,10 @@ public:
     virtual Type::Ptr getTermType() const {
         auto& tf = TypeFactory::getInstance();
 
-        if(!tf.isValid(rhv->getTermType())) return rhv->getTermType();
-        if(!tf.isValid(lhv->getTermType())) return lhv->getTermType();
+        if (!tf.isValid(rhv->getTermType())) return rhv->getTermType();
+        if (!tf.isValid(lhv->getTermType())) return lhv->getTermType();
 
-        if(rhv->getTermType() != lhv->getTermType()) {
+        if (rhv->getTermType() != lhv->getTermType()) {
             return tf.getTypeError("Invalid binop: types do not correspond");
         }
 

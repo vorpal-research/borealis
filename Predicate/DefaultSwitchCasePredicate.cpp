@@ -13,15 +13,8 @@
 namespace borealis {
 
 DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
-        PredicateType type,
-        Term::Ptr cond,
-        std::vector<Term::Ptr> cases) :
-            DefaultSwitchCasePredicate(cond, cases, nullptr, type) {};
-
-DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         Term::Ptr cond,
         std::vector<Term::Ptr> cases,
-        SlotTracker* /* st */,
         PredicateType type) :
             Predicate(type_id(*this), type),
             cond(cond),
@@ -35,24 +28,22 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
     this->asString = this->cond->getName() + "=not(" + a + ")";
 }
 
-logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
     typedef Z3ExprFactory::Integer Integer;
 
     auto result = z3ef.getTrue();
-    auto le = z3ef.getExprForTerm(*cond).to<Integer>();
+    auto le = cond->toZ3(z3ef, ctx).to<Integer>();
 
-    if (le.empty()) {
-        BYE_BYE(logic::Bool, "Encountered switch with non-Integer condition");
-    }
+    ASSERT(!le.empty(),
+           "Encountered switch with non-Integer condition");
 
     for (const auto& c : cases) {
-        auto re = z3ef.getExprForTerm(*c).to<Integer>();
+        auto re = c->toZ3(z3ef, ctx).to<Integer>();
 
-        if (re.empty()) {
-            BYE_BYE(logic::Bool, "Encountered switch with non-Integer case");
-        }
+        ASSERT(!re.empty(),
+               "Encountered switch with non-Integer case");
 
         result = result && le.getUnsafe() != re.getUnsafe();
     }

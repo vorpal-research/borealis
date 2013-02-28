@@ -5,4 +5,4 @@
  *      Author: belyaev
  */
 
-#include "OpaqueBoolConstantTerm.h"
+#include "Term/OpaqueBoolConstantTerm.h"

@@ -13,6 +13,7 @@
 namespace borealis {
 
 class OpaqueFloatingConstantTerm: public borealis::Term {
+
     typedef OpaqueFloatingConstantTerm self;
 
     double value;
@@ -36,6 +37,8 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
+    // FIXME: toZ3???
+
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<self>();
     }
@@ -47,7 +50,7 @@ public:
     virtual bool equals(const Term* other) const {
         if (const self* that = llvm::dyn_cast<self>(other)) {
             return  Term::equals(other) &&
-                    that->value - value == .0; // XXX: maybe bitwise is better?
+                    std::abs(that->value - value) < .01;
         } else return false;
     }
 
@@ -56,6 +59,7 @@ public:
     }
 
     friend class TermFactory;
+
 };
 
 } /* namespace borealis */

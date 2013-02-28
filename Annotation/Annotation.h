@@ -14,11 +14,10 @@
 #include <string>
 
 #include "Codegen/llvm.h"
-#include "Util/util.h"
+#include "Term/TermFactory.h"
 #include "Util/locations.h"
 #include "Util/typeindex.hpp"
-
-#include "Term/TermFactory.h"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -49,7 +48,6 @@ public:
                 " at " + util::toString(locus);
     }
 
-
     const Locus& getLocus() const { return locus; }
     keyword_t getKeyword() const { return keyword; }
 
@@ -61,7 +59,6 @@ public:
         return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")))
                 ->shared_from_this();
     }
-
 };
 
 template<class Streamer>

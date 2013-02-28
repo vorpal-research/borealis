@@ -32,7 +32,7 @@ public:
     }
 
     static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
-        return Annotation::Ptr(new self(locus, terms.front()));
+        return Annotation::Ptr{ new self(locus, terms.front()) };
     }
 
     Annotation::Ptr clone(Term::Ptr newTerm) const {

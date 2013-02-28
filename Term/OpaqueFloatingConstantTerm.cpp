@@ -5,4 +5,4 @@
  *      Author: belyaev
  */
 
-#include "OpaqueFloatingConstantTerm.h"
+#include "Term/OpaqueFloatingConstantTerm.h"

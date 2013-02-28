@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "LoadTerm.h"
+#include "Term/LoadTerm.h"
 
 namespace borealis {
 

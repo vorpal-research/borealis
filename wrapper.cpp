@@ -63,11 +63,10 @@
 
 #include "Actions/comments.h"
 #include "Config/config.h"
+#include "Logging/logger.hpp"
 #include "Passes/DataProvider.hpp"
 #include "Passes/PrinterPasses.h"
 #include "Util/util.h"
-
-#include "Logging/logger.hpp"
 
 int main(int argc, const char** argv)
 {

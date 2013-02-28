@@ -29,9 +29,9 @@ public:
     template<class SubClass>
     const AllocaPredicate* accept(Transformer<SubClass>* t) const {
         return new AllocaPredicate(
-                this->type,
                 t->transform(lhv),
-                t->transform(numElements));
+                t->transform(numElements),
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -45,13 +45,8 @@ private:
     const Term::Ptr numElements;
 
     AllocaPredicate(
-            PredicateType type,
-            Term::Ptr lhv,
-            Term::Ptr numElements);
-    AllocaPredicate(
             Term::Ptr lhv,
             Term::Ptr numElements,
-            SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
 };

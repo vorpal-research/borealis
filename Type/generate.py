@@ -15,7 +15,6 @@ class $clazz : public $base {
     typedef $clazz self;
     typedef $base base;
 
-
     $clazz($member_params) : $base(type_id(*this))$member_cons {}
 
 public:
@@ -32,6 +31,7 @@ public:
 #endif // $guard
 
 '''
+
 contents = Template(contents)
 
 def constructor_param(field):

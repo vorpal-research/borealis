@@ -8,22 +8,16 @@
 #ifndef PREDICATE_H_
 #define PREDICATE_H_
 
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/Value.h>
-#include <z3/z3++.h>
+#include <llvm/Instruction.h>
 
 #include <memory>
-#include <tuple>
-#include <unordered_set>
 
 #include "Annotation/EnsuresAnnotation.h"
 #include "Annotation/RequiresAnnotation.h"
 #include "Logging/logger.hpp"
-#include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
 #include "Solver/Z3ExprFactory.h"
 #include "Term/Term.h"
-#include "Util/slottracker.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
@@ -52,20 +46,20 @@ public:
     Predicate(borealis::id_t predicate_type_id, PredicateType type);
     virtual ~Predicate() = 0;
 
-    inline borealis::id_t getPredicateTypeId() const {
+    borealis::id_t getPredicateTypeId() const {
         return predicate_type_id;
     }
 
-    inline PredicateType getType() const {
+    PredicateType getType() const {
         return type;
     }
 
-    inline Predicate* setType(PredicateType type) {
+    Predicate* setType(PredicateType type) {
         this->type = type;
         return this;
     }
 
-    inline std::string toString() const {
+    std::string toString() const {
         switch (type) {
         case PredicateType::REQUIRES: return "@R " + asString;
         case PredicateType::ENSURES: return "@E " + asString;
@@ -87,11 +81,11 @@ public:
 
     virtual size_t hashCode() const = 0;
 
-    inline const llvm::Instruction* getLocation() const {
+    const llvm::Instruction* getLocation() const {
         return location;
     }
 
-    inline Predicate* setLocation(const llvm::Instruction* location) {
+    Predicate* setLocation(const llvm::Instruction* location) {
         this->location = location;
         return this;
     }
@@ -108,9 +102,15 @@ protected:
 
 };
 
-llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const borealis::Predicate& p);
 std::ostream& operator<<(std::ostream& s, const borealis::Predicate& p);
 
 } /* namespace borealis */
+
+namespace std {
+template<>
+struct hash<borealis::PredicateType> : public borealis::util::enums::enum_hash<borealis::PredicateType> {};
+template<>
+struct hash<const borealis::PredicateType> : public borealis::util::enums::enum_hash<borealis::PredicateType> {};
+}
 
 #endif /* PREDICATE_H_ */

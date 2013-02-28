@@ -13,6 +13,7 @@
 namespace borealis {
 
 class OpaqueIntConstantTerm: public borealis::Term {
+
     typedef OpaqueIntConstantTerm self;
 
     long long value;
@@ -36,6 +37,8 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
+    // FIXME: toZ3???
+
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<self>();
     }
@@ -55,8 +58,8 @@ public:
         return TypeFactory::getInstance().getInteger();
     }
 
-
     friend class TermFactory;
+
 };
 
 } /* namespace borealis */

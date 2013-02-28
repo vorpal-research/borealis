@@ -13,6 +13,7 @@
 namespace borealis {
 
 class OpaqueBuiltinTerm: public borealis::Term {
+
     typedef OpaqueBuiltinTerm self;
 
     const std::string vname;
@@ -34,10 +35,6 @@ public:
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const {
-        BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported")
-    }
 #include "Util/unmacros.h"
 
     static bool classof(const Term* t) {
@@ -60,6 +57,7 @@ public:
     }
 
     friend class TermFactory;
+
 };
 
 } /* namespace borealis */

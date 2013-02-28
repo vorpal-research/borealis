@@ -9,7 +9,6 @@ class Float : public Type {
     typedef Float self;
     typedef Type base;
 
-
     Float() : Type(type_id(*this)) {}
 
 public:
@@ -18,11 +17,8 @@ public:
 
     friend class TypeFactory;
 
-    
 };
 
 } // namespace borealis
 
 #endif // FLOAT_H
-
-

@@ -32,19 +32,19 @@ public:
     template<class SubClass>
     const GEPPredicate* accept(Transformer<SubClass>* t) const {
 
-        std::vector< std::pair< Term::Ptr, Term::Ptr > > new_shifts;
+        std::vector< std::pair<Term::Ptr, Term::Ptr> > new_shifts;
         new_shifts.reserve(shifts.size());
         std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
-            [t](const std::pair< Term::Ptr, Term::Ptr >& e) {
+            [t](const std::pair<Term::Ptr, Term::Ptr>& e) {
                 return std::make_pair(t->transform(e.first), t->transform(e.second));
             }
         );
 
         return new GEPPredicate(
-                this->type,
                 t->transform(lhv),
                 t->transform(rhv),
-                new_shifts);
+                new_shifts,
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -56,18 +56,12 @@ private:
 
     const Term::Ptr lhv;
     const Term::Ptr rhv;
-    std::vector< std::pair< Term::Ptr, Term::Ptr > > shifts;
+    std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
 
-    GEPPredicate(
-            PredicateType type,
-            Term::Ptr lhv,
-            Term::Ptr rhv,
-            std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts);
     GEPPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
             std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts,
-            SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
 };

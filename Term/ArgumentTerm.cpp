@@ -5,4 +5,4 @@
  *      Author: ice-phoenix
  */
 
-#include "ArgumentTerm.h"
+#include "Term/ArgumentTerm.h"

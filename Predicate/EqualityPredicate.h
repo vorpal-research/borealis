@@ -29,9 +29,9 @@ public:
     template<class SubClass>
     const EqualityPredicate* accept(Transformer<SubClass>* t) const {
         return new EqualityPredicate(
-                this->type,
                 t->transform(lhv),
-                t->transform(rhv));
+                t->transform(rhv),
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -45,13 +45,8 @@ private:
     const Term::Ptr rhv;
 
     EqualityPredicate(
-            PredicateType type,
-            Term::Ptr lhv,
-            Term::Ptr rhv);
-    EqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
 };

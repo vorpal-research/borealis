@@ -20,7 +20,6 @@ class ValueTerm: public borealis::Term {
 public:
 
     friend class TermFactory;
-    friend class GEPPredicate;
 
     static bool classof(const Term* t) {
         return t->getTermTypeId() == type_id<ValueTerm>();
@@ -49,7 +48,6 @@ public:
     virtual Type::Ptr getTermType() const {
         return TypeFactory::getInstance().cast(v->getType());
     }
-
 
 private:
 

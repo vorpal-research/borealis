@@ -5,18 +5,13 @@
  *      Author: belyaev
  */
 
-#include "TypeFactory.h"
+#include "Type/TypeFactory.h"
 
 namespace borealis {
 
-TypeFactory::TypeFactory() {
-    // TODO Auto-generated constructor stub
+TypeFactory::TypeFactory() {}
 
-}
-
-TypeFactory::~TypeFactory() {
-    // TODO Auto-generated destructor stub
-}
+TypeFactory::~TypeFactory() {}
 
 std::ostream& operator<<(std::ostream& ost, const Type& tp) {
     return ost << TypeFactory::getInstance().toString(tp);

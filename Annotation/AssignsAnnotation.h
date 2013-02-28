@@ -27,12 +27,12 @@ public:
         } else return false;
     }
 
-    static bool classof(const self* /* p */) {
+    static bool classof(const self*) {
         return true;
     }
 
     static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
-        return Annotation::Ptr(new self(locus, terms.front()));
+        return Annotation::Ptr{ new self(locus, terms.front()) };
     }
 
     Annotation::Ptr clone(Term::Ptr newTerm) const {

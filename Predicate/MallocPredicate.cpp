@@ -11,13 +11,7 @@
 namespace borealis {
 
 MallocPredicate::MallocPredicate(
-        PredicateType type,
-        Term::Ptr lhv) :
-            MallocPredicate(lhv, nullptr, type) {}
-
-MallocPredicate::MallocPredicate(
         Term::Ptr lhv,
-        SlotTracker* /*st*/,
         PredicateType type) :
             Predicate(type_id(*this), type),
             lhv(lhv) {
@@ -29,12 +23,12 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
 
     typedef Z3ExprFactory::Pointer Pointer;
 
-    auto lhve = z3ef.getExprForTerm(*lhv, Pointer::bitsize);
-    if (!lhve.is<Pointer>()) {
-        BYE_BYE(logic::Bool, "Malloc produces a non-pointer");
-    }
+    auto lhve = lhv->toZ3(z3ef, ctx);
 
-    Pointer lhvp = lhve.to<Pointer>().getUnsafe();
+    ASSERT(lhve.is<Pointer>(),
+           "Malloc produces a non-pointer");
+
+    auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {
         ctx->registerDistinctPtr(lhvp);
     }
@@ -53,7 +47,7 @@ bool MallocPredicate::equals(const Predicate* other) const {
 }
 
 size_t MallocPredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(lhv);
+    return util::hash::hasher<3, 17>()(type, lhv);
 }
 
 } /* namespace borealis */

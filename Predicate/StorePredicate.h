@@ -29,9 +29,9 @@ public:
     template<class SubClass>
     const StorePredicate* accept(Transformer<SubClass>* t) const {
         return new StorePredicate(
-                this->type,
                 t->transform(lhv),
-                t->transform(rhv));
+                t->transform(rhv),
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -45,13 +45,8 @@ private:
     const Term::Ptr rhv;
 
     StorePredicate(
-            PredicateType type,
-            Term::Ptr lhv,
-            Term::Ptr rhv);
-    StorePredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
 };

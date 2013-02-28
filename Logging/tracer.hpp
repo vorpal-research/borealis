@@ -16,11 +16,13 @@ namespace borealis {
 namespace logging {
 
 class func_tracer {
+
     const char* fname_;
     borealis::logging::logstream log;
     std::chrono::time_point<std::chrono::system_clock> start;
 
 public:
+
     func_tracer(
             const char* fname,
             borealis::logging::logstream log):

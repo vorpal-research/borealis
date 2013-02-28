@@ -38,7 +38,7 @@ public:
 
         std::ostringstream str;
         str << " " << head(masks)->getName();
-        for(auto& mask: tail(masks)) {
+        for (auto& mask : tail(masks)) {
             str << ", " << mask->getName();
         }
         return str.str();

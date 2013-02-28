@@ -5,12 +5,9 @@
 HANDLE_PREDICATE(Equality, EqualityPredicate)
 HANDLE_PREDICATE(Inequality, InequalityPredicate)
 HANDLE_PREDICATE(GEP, GEPPredicate)
-HANDLE_PREDICATE(ICmp, ICmpPredicate)
-HANDLE_PREDICATE(Load, LoadPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
-HANDLE_PREDICATE(Arith, ArithPredicate)
 HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)
 
 #ifdef HANDLE_PREDICATE

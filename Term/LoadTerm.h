@@ -13,6 +13,7 @@
 namespace borealis {
 
 class LoadTerm: public borealis::Term {
+
     typedef LoadTerm self;
 
     Term::Ptr rhv;
@@ -23,7 +24,7 @@ class LoadTerm: public borealis::Term {
                 llvm::ValueType::PTR_VAR, // FIXME: infer the correct type?
                 "*(" + rhv->getName() + ")",
                 type_id(*this)
-        ), rhv(rhv){};
+        ), rhv(rhv) {};
 
 public:
 
@@ -36,25 +37,21 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
         typedef Z3ExprFactory::Pointer Pointer;
         typedef Z3ExprFactory::Dynamic Dynamic;
 
-        Dynamic r = z3ef.getExprForTerm(*rhv);
-        if (!r.is<Pointer>()) {
-            BYE_BYE(logic::Bool, "Encountered load with non-pointer right side");
-        }
+        ASSERTC(ctx != nullptr)
+
+        Dynamic r = rhv->toZ3(z3ef, ctx);
+        ASSERT(r.is<Pointer>(),
+               "Encountered load with non-pointer right side");
 
         auto rp = r.to<Pointer>().getUnsafe();
-
-        if (ctx) {
-            return logic::addAxiom(
-                    ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType())),
-                    !z3ef.isInvalidPtrExpr(rp)
-            );
-        }
-
-        BYE_BYE(Dynamic, "Encountered load with no context supplied");
+        return logic::addAxiom(
+                ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType())),
+                !z3ef.isInvalidPtrExpr(rp)
+        );
     }
 #include "Util/unmacros.h"
 
@@ -76,20 +73,21 @@ public:
     }
 
     virtual Type::Ptr getTermType() const {
+        auto& tf = TypeFactory::getInstance();
+
         Type::Ptr ptr = rhv->getTermType();
 
-        // if we are in an error, return it
-        if(!TypeFactory::getInstance().isValid(ptr)) return ptr;
+        if (!tf.isValid(ptr)) return ptr;
 
-        if(auto* cst = llvm::dyn_cast<Pointer>(ptr)) {
+        if (auto* cst = llvm::dyn_cast<Pointer>(ptr)) {
             return cst->getPointed();
         } else {
-            return TypeFactory::getInstance().getTypeError("Load from a non-pointer");
+            return tf.getTypeError("Load from a non-pointer");
         }
     }
 
-
     friend class TermFactory;
+
 };
 
 } /* namespace borealis */

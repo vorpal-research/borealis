@@ -17,7 +17,6 @@ class ConstTerm: public borealis::Term {
 
 public:
 
-    friend class PredicateFactory;
     friend class TermFactory;
 
     static bool classof(const Term* t) {

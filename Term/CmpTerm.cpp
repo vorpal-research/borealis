@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "CmpTerm.h"
+#include "Term/CmpTerm.h"
 
 namespace borealis {
 

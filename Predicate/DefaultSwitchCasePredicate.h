@@ -35,9 +35,9 @@ public:
         );
 
         return new DefaultSwitchCasePredicate(
-                this->type,
                 t->transform(cond),
-                new_cases);
+                new_cases,
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -57,7 +57,6 @@ private:
     DefaultSwitchCasePredicate(
             Term::Ptr cond,
             std::vector<Term::Ptr> cases,
-            SlotTracker* st,
             PredicateType type = PredicateType::PATH);
 
 };

@@ -37,7 +37,9 @@ public:
 
         pass->PM[&I] = pass->PF->getLoadPredicate(
                 pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(rhv)
+                pass->TF->getLoadTerm(
+                        pass->TF->getValueTerm(rhv)
+                )
         );
     }
 
@@ -59,13 +61,15 @@ public:
         Value* lhv = &I;
         Value* op1 = I.getOperand(0);
         Value* op2 = I.getOperand(1);
-        llvm::ConditionType pred = conditionType(I.getPredicate());
+        llvm::ConditionType cond = conditionType(I.getPredicate());
 
         pass->PM[&I] = pass->PF->getICmpPredicate(
                 pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(op1),
-                pass->TF->getValueTerm(op2),
-                pred
+                pass->TF->getCmpTerm(
+                        cond,
+                        pass->TF->getValueTerm(op1),
+                        pass->TF->getValueTerm(op2)
+                )
         );
     }
 
@@ -242,9 +246,11 @@ public:
 
         pass->PM[&I] = pass->PF->getArithPredicate(
                 pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(op1),
-                pass->TF->getValueTerm(op2),
-                type
+                pass->TF->getBinaryTerm(
+                        type,
+                        pass->TF->getValueTerm(op1),
+                        pass->TF->getValueTerm(op2)
+                )
         );
     }
 

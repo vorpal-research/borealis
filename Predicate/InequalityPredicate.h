@@ -29,9 +29,9 @@ public:
     template<class SubClass>
     const InequalityPredicate* accept(Transformer<SubClass>* t) const {
         return new InequalityPredicate(
-                this->type,
                 t->transform(lhv),
-                t->transform(rhv));
+                t->transform(rhv),
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -45,13 +45,8 @@ private:
     const Term::Ptr rhv;
 
     InequalityPredicate(
-            PredicateType type,
-            Term::Ptr lhv,
-            Term::Ptr rhv);
-    InequalityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
 };

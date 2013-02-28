@@ -6,21 +6,13 @@
  */
 
 #include "Predicate/StorePredicate.h"
-#include "Term/ValueTerm.h"
 #include "Util/macros.h"
 
 namespace borealis {
 
 StorePredicate::StorePredicate(
-        PredicateType type,
-        Term::Ptr lhv,
-        Term::Ptr rhv) :
-            StorePredicate(lhv, rhv, nullptr, type) {}
-
-StorePredicate::StorePredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* /* st */,
         PredicateType type) :
             Predicate(type_id(*this), type),
             lhv(lhv),
@@ -33,17 +25,15 @@ logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) con
 
     typedef Z3ExprFactory::Pointer Pointer;
 
-    auto l = z3ef.getExprForTerm(*lhv);
-    auto r = z3ef.getExprForTerm(*rhv);
+    ASSERTC(ctx != nullptr);
 
-    if (ctx) {
-        auto lptr = l.to<Pointer>();
+    auto l = lhv->toZ3(z3ef, ctx);
+    auto r = rhv->toZ3(z3ef, ctx);
 
-        if (lptr.empty()) {
-            BYE_BYE(logic::Bool, "Store dealing with a non-pointer value");
-        }
-        ctx->writeExprToMemory(lptr.getUnsafe(), r);
-    }
+    ASSERT(l.is<Pointer>(),
+           "Store dealing with a non-pointer value")
+
+    ctx->writeExprToMemory(l.to<Pointer>().getUnsafe(), r);
 
     return z3ef.getTrue();
 }
@@ -60,7 +50,7 @@ bool StorePredicate::equals(const Predicate* other) const {
 }
 
 size_t StorePredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(lhv, rhv);
+    return util::hash::hasher<3, 17>()(type, lhv, rhv);
 }
 
 } /* namespace borealis */

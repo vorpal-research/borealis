@@ -73,7 +73,7 @@ public:
         using borealis::util::toString;
 
         if(type->isIntegerTy())
-            return (type->getIntegerBitWidth() == 1)? getBool() : getInteger();
+            return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger();
         else if(type->isFloatTy())
             return getFloat();
         else if(type->isPointerTy())
@@ -82,6 +82,7 @@ public:
             return getTypeError("Unsupported llvm type: " + toString(*type));
     }
 
+#include "Util/macros.h"
     std::string toString(const Type& type) {
         using llvm::isa;
         using llvm::dyn_cast;
@@ -93,13 +94,14 @@ public:
         if(auto* Ptr = dyn_cast<Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
         if(auto* Err = dyn_cast<TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
 
-#include "Util/macros.h"
         BYE_BYE(std::string, "Unknown type")
-#include "Util/unmacros.h"
     }
+#include "Util/unmacros.h"
+
 };
 
 std::ostream& operator<<(std::ostream& ost, const Type& tp);
 
 } /* namespace borealis */
+
 #endif /* TYPEFACTORY_H_ */

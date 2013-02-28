@@ -5,4 +5,4 @@
  *      Author: belyaev
  */
 
-#include "OpaqueIntConstantTerm.h"
+#include "Term/OpaqueIntConstantTerm.h"

@@ -6,24 +6,14 @@
  */
 
 #include "Predicate/GEPPredicate.h"
-#include "Term/ConstTerm.h"
-#include "Term/ValueTerm.h"
 #include "Util/macros.h"
 
 namespace borealis {
 
 GEPPredicate::GEPPredicate(
-        PredicateType type,
         Term::Ptr lhv,
         Term::Ptr rhv,
-        std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts) :
-            GEPPredicate(lhv, rhv, shifts, nullptr, type) {}
-
-GEPPredicate::GEPPredicate(
-        Term::Ptr lhv,
-        Term::Ptr rhv,
-        std::vector< std::pair< Term::Ptr, Term::Ptr > >& shifts,
-        SlotTracker* /* st */,
+        std::vector< std::pair<Term::Ptr, Term::Ptr> >& shifts,
         PredicateType type) :
             Predicate(type_id(*this), type),
             lhv(lhv),
@@ -38,31 +28,31 @@ GEPPredicate::GEPPredicate(
             this->lhv->getName() + "=gep(" + this->rhv->getName() + "," + a + ")";
 }
 
-logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
     typedef Z3ExprFactory::Dynamic Dynamic;
     typedef Z3ExprFactory::Pointer Pointer;
     typedef Z3ExprFactory::Integer Integer;
 
-    Dynamic l = z3ef.getExprForTerm(*lhv);
-    Dynamic r = z3ef.getExprForTerm(*rhv);
+    Dynamic l = lhv->toZ3(z3ef, ctx);
+    Dynamic r = rhv->toZ3(z3ef, ctx);
 
-    if (!l.is<Pointer>() || !r.is<Pointer>()) {
-        BYE_BYE(logic::Bool, "Encountered a GEP predicate with non-pointer operand");
-    }
+    ASSERT(l.is<Pointer>() && r.is<Pointer>(),
+           "Encountered a GEP predicate with non-pointer operand");
 
     Pointer lp = l.to<Pointer>().getUnsafe();
     Pointer rp = r.to<Pointer>().getUnsafe();
 
-    const size_t ptrsize = Pointer::bitsize;
-
-    Integer shift = z3ef.getIntConst(0, ptrsize);
+    Pointer shift = z3ef.getIntConst(0, Pointer::bitsize);
     for (const auto& s : shifts) {
-        Pointer by = z3ef.getExprForTerm(*s.first, ptrsize).to<Pointer>().getUnsafe();
-        Pointer size = z3ef.getExprForTerm(*s.second, ptrsize).to<Pointer>().getUnsafe();
+        auto by = s.first->toZ3(z3ef, ctx).to<Pointer>();
+        auto size = s.second->toZ3(z3ef, ctx).to<Pointer>();
 
-        shift = shift + by * size;
+        ASSERT(!by.empty() && !size.empty(),
+               "Encountered a GEP predicate with incorrect shifts");
+
+        shift = shift + by.getUnsafe() * size.getUnsafe();
     }
 
     return z3ef.if_(z3ef.isInvalidPtrExpr(rp))
@@ -84,7 +74,7 @@ bool GEPPredicate::equals(const Predicate* other) const {
 
 size_t GEPPredicate::hashCode() const {
     // FIXME: Hash this->shifts as well
-    return util::hash::hasher<3, 17>()(lhv, rhv);
+    return util::hash::hasher<3, 17>()(type, lhv, rhv);
 }
 
 } /* namespace borealis */

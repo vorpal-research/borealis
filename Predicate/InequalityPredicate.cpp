@@ -10,15 +10,8 @@
 namespace borealis {
 
 InequalityPredicate::InequalityPredicate(
-        PredicateType type,
-        Term::Ptr lhv,
-        Term::Ptr rhv) :
-        InequalityPredicate(lhv, rhv, nullptr, type) {}
-
-InequalityPredicate::InequalityPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
-        SlotTracker* /* st */,
         PredicateType type) :
             Predicate(type_id(*this), type),
             lhv(lhv),
@@ -26,12 +19,9 @@ InequalityPredicate::InequalityPredicate(
     this->asString = this->lhv->getName() + "=" + this->rhv->getName();
 }
 
-logic::Bool InequalityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool InequalityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
-
-    auto l = z3ef.getExprForTerm(*lhv);
-    auto r = z3ef.getExprForTerm(*rhv);
-    return l != r;
+    return lhv->toZ3(z3ef, ctx) != rhv->toZ3(z3ef, ctx);
 }
 
 bool InequalityPredicate::equals(const Predicate* other) const {
@@ -46,7 +36,7 @@ bool InequalityPredicate::equals(const Predicate* other) const {
 }
 
 size_t InequalityPredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(lhv, rhv);
+    return util::hash::hasher<3, 17>()(type, lhv, rhv);
 }
 
 } /* namespace borealis */

@@ -11,15 +11,8 @@
 namespace borealis {
 
 AllocaPredicate::AllocaPredicate(
-        PredicateType type,
-        Term::Ptr lhv,
-        Term::Ptr numElements) :
-            AllocaPredicate(lhv, numElements, nullptr, type) {}
-
-AllocaPredicate::AllocaPredicate(
         Term::Ptr lhv,
         Term::Ptr numElements,
-        SlotTracker* /*st*/,
         PredicateType type) :
             Predicate(type_id(*this), type),
             lhv(lhv),
@@ -32,10 +25,10 @@ logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
 
     typedef Z3ExprFactory::Pointer Pointer;
 
-    auto lhve = z3ef.getExprForTerm(*lhv, Pointer::bitsize);
-    if (!lhve.is<Pointer>()) {
-        BYE_BYE(logic::Bool, "Encountered alloca with non-Pointer left side");
-    }
+    auto lhve = lhv->toZ3(z3ef, ctx);
+
+    ASSERT(lhve.is<Pointer>(),
+           "Encountered alloca with non-Pointer left side")
 
     auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {
@@ -57,7 +50,7 @@ bool AllocaPredicate::equals(const Predicate* other) const {
 }
 
 size_t AllocaPredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(lhv, numElements);
+    return util::hash::hasher<3, 17>()(type, lhv, numElements);
 }
 
 } /* namespace borealis */

@@ -14,6 +14,7 @@
 namespace borealis {
 
 class UnaryTerm: public borealis::Term {
+
     typedef UnaryTerm self;
 
     llvm::UnaryArithType opcode;
@@ -55,13 +56,12 @@ public:
         return t->getTermTypeId() == type_id<self>();
     }
 
+#include "Util/macros.h"
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
         typedef Z3ExprFactory::Integer Int;
         typedef Z3ExprFactory::Bool Bool;
 
         auto z3rhv = rhv->toZ3(z3ef, ctx);
-
-#include "Util/macros.h"
 
         switch(opcode) {
         case llvm::UnaryArithType::BNOT:
@@ -73,10 +73,9 @@ public:
         case llvm::UnaryArithType::NOT:
             ASSERT(z3rhv.is<Bool>(), "Logic not: rhv is not a boolean");
             return !z3rhv.to<Bool>().getUnsafe();
-#include "Util/unmacros.h"
-
         }
     }
+#include "Util/unmacros.h"
 
     virtual Type::Ptr getTermType() const {
         return rhv->getTermType();

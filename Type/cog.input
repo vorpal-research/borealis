@@ -10,4 +10,3 @@ cog.template -d -o Float.cpp
 cog.template -d -o Pointer.cpp
 cog.template -d -o UnknownType.cpp
 cog.template -d -o TypeError.cpp
-

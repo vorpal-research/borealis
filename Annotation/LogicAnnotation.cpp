@@ -20,11 +20,10 @@ LogicAnnotation::LogicAnnotation(
 
 LogicAnnotation::~LogicAnnotation() {}
 
-Annotation::Ptr LogicAnnotation::clone(Term::Ptr) const{
 #include "Util/macros.h"
+Annotation::Ptr LogicAnnotation::clone(Term::Ptr) const{
     BYE_BYE(Annotation::Ptr, "Not implemented")
-#include "Util/unmacros.h"
-
 }
+#include "Util/unmacros.h"
 
 } /* namespace borealis */

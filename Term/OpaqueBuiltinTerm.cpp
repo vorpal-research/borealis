@@ -5,4 +5,4 @@
  *      Author: belyaev
  */
 
-#include "OpaqueBuiltinTerm.h"
+#include "Term/OpaqueBuiltinTerm.h"

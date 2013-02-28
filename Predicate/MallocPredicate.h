@@ -29,8 +29,8 @@ public:
     template<class SubClass>
     const MallocPredicate* accept(Transformer<SubClass>* t) const {
         return new MallocPredicate(
-                this->type,
-                t->transform(lhv));
+                t->transform(lhv),
+                this->type);
     }
 
     virtual bool equals(const Predicate* other) const;
@@ -43,11 +43,7 @@ private:
     const Term::Ptr lhv;
 
     MallocPredicate(
-            PredicateType type,
-            Term::Ptr lhv);
-    MallocPredicate(
             Term::Ptr lhv,
-            SlotTracker* st,
             PredicateType type = PredicateType::STATE);
 
 };

@@ -12,12 +12,9 @@
 
 #include "Predicate/Predicate.h"
 
-#include "Predicate/ArithPredicate.h"
 #include "Predicate/EqualityPredicate.h"
 #include "Predicate/InequalityPredicate.h"
 #include "Predicate/GEPPredicate.h"
-#include "Predicate/ICmpPredicate.h"
-#include "Predicate/LoadPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
@@ -33,38 +30,34 @@ public:
 
     Predicate::Ptr getLoadPredicate(
             Term::Ptr lhv,
-            Term::Ptr rhv) {
-        return Predicate::Ptr(
-                new LoadPredicate(lhv, rhv, slotTracker));
+            Term::Ptr loadTerm) {
+        return getEqualityPredicate(lhv, loadTerm);
     }
 
     Predicate::Ptr getStorePredicate(
             Term::Ptr lhv,
             Term::Ptr rhv) {
         return Predicate::Ptr(
-                new StorePredicate(lhv, rhv, slotTracker));
+                new StorePredicate(lhv, rhv));
     }
 
     Predicate::Ptr getAllocaPredicate(
              Term::Ptr lhv,
              Term::Ptr numElements) {
         return Predicate::Ptr(
-                new AllocaPredicate(lhv, numElements, slotTracker));
+                new AllocaPredicate(lhv, numElements));
     }
 
     Predicate::Ptr getMallocPredicate(
                  Term::Ptr lhv) {
         return Predicate::Ptr(
-                new MallocPredicate(lhv, slotTracker));
+                new MallocPredicate(lhv));
     }
 
     Predicate::Ptr getICmpPredicate(
             Term::Ptr lhv,
-            Term::Ptr op1,
-            Term::Ptr op2,
-            llvm::ConditionType cond) {
-        return Predicate::Ptr(
-                new ICmpPredicate(lhv, op1, op2, cond, slotTracker));
+            Term::Ptr cmpTerm) {
+        return getEqualityPredicate(lhv, cmpTerm);
     }
 
     Predicate::Ptr getBooleanPredicate(
@@ -79,8 +72,7 @@ public:
         return Predicate::Ptr(
                 (new DefaultSwitchCasePredicate(
                         cond,
-                        cases,
-                        slotTracker))
+                        cases))
                 ->setType(PredicateType::PATH)
         );
     }
@@ -90,7 +82,7 @@ public:
             Term::Ptr rhv,
             std::vector< std::pair< Term::Ptr, Term::Ptr > > shifts) {
         return Predicate::Ptr(
-                new GEPPredicate(lhv, rhv, shifts, slotTracker));
+                new GEPPredicate(lhv, rhv, shifts));
     }
 
     Predicate::Ptr getEqualityPredicate(
@@ -98,7 +90,7 @@ public:
             Term::Ptr rhv,
             PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                (new EqualityPredicate(lhv, rhv, slotTracker))
+                (new EqualityPredicate(lhv, rhv))
                 ->setType(type));
     }
 
@@ -107,17 +99,14 @@ public:
             Term::Ptr rhv,
             PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                (new InequalityPredicate(lhv, rhv, slotTracker))
+                (new InequalityPredicate(lhv, rhv))
                 ->setType(type));
     }
 
     Predicate::Ptr getArithPredicate(
             Term::Ptr lhv,
-            Term::Ptr op1,
-            Term::Ptr op2,
-            llvm::ArithType opCode) {
-        return Predicate::Ptr(
-                new ArithPredicate(lhv, op1, op2, opCode, slotTracker));
+            Term::Ptr arithTerm) {
+        return getEqualityPredicate(lhv, arithTerm);
     }
 
 

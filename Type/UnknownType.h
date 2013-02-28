@@ -9,7 +9,6 @@ class UnknownType : public Type {
     typedef UnknownType self;
     typedef Type base;
 
-
     UnknownType() : Type(type_id(*this)) {}
 
 public:
@@ -18,11 +17,8 @@ public:
 
     friend class TypeFactory;
 
-    
 };
 
 } // namespace borealis
 
 #endif // UNKNOWNTYPE_H
-
-

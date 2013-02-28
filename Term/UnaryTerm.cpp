@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "UnaryTerm.h"
+#include "Term/UnaryTerm.h"
 
 namespace borealis {
 

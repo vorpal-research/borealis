@@ -13,6 +13,7 @@
 namespace borealis {
 
 class CmpTerm: public borealis::Term {
+
     typedef CmpTerm self;
 
     llvm::ConditionType opcode;
@@ -41,9 +42,9 @@ public:
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
         auto lhvz3 = lhv->toZ3(z3ef, ctx);
         auto rhvz3 = rhv->toZ3(z3ef, ctx);
-        if(!lhvz3.isComparable() || !rhvz3.isComparable()) {
-            BYE_BYE(Z3ExprFactory::Dynamic, "Comparing uncomparable expressions")
-        }
+
+        ASSERT(lhvz3.isComparable() && rhvz3.isComparable(),
+               "Comparing incomparable expressions")
 
         auto lhv = lhvz3.toComparable().getUnsafe();
         auto rhv = rhvz3.toComparable().getUnsafe();
@@ -77,10 +78,10 @@ public:
     virtual Type::Ptr getTermType() const {
         auto& tf = TypeFactory::getInstance();
 
-        if(!tf.isValid(rhv->getTermType())) return rhv->getTermType();
-        if(!tf.isValid(lhv->getTermType())) return lhv->getTermType();
+        if (!tf.isValid(rhv->getTermType())) return rhv->getTermType();
+        if (!tf.isValid(lhv->getTermType())) return lhv->getTermType();
 
-        if(rhv->getTermType() != lhv->getTermType()) {
+        if (rhv->getTermType() != lhv->getTermType()) {
             return tf.getTypeError("Invalid cmp: types do not correspond");
         }
 

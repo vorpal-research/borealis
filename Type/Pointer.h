@@ -9,7 +9,6 @@ class Pointer : public Type {
     typedef Pointer self;
     typedef Type base;
 
-
     Pointer(Type::Ptr pointed) : Type(type_id(*this)), pointed(pointed) {}
 
 public:
@@ -17,10 +16,10 @@ public:
     static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
     friend class TypeFactory;
-
     
 private:
     Type::Ptr pointed;
+
 public:
     Type::Ptr getPointed() const { return pointed; }
 
@@ -29,5 +28,3 @@ public:
 } // namespace borealis
 
 #endif // POINTER_H
-
-

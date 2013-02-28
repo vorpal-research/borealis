@@ -76,9 +76,11 @@ public:
         return true;
     }
 
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
-        return z3ef.getExprByTypeAndName(getType(), getName());
+#include "Util/macros.h"
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const {
+        BYE_BYE(Z3ExprFactory::Dynamic, "Should not be called!")
     }
+#include "Util/unmacros.h"
 
     virtual Type::Ptr getTermType() const = 0;
 

@@ -5,4 +5,4 @@
  *      Author: belyaev
  */
 
-#include "OpaqueVarTerm.h"
+#include "Term/OpaqueVarTerm.h"

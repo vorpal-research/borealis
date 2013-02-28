@@ -9,7 +9,6 @@ class Bool : public Type {
     typedef Bool self;
     typedef Type base;
 
-
     Bool() : Type(type_id(*this)) {}
 
 public:
@@ -18,11 +17,8 @@ public:
 
     friend class TypeFactory;
 
-    
 };
 
 } // namespace borealis
 
 #endif // BOOL_H
-
-
