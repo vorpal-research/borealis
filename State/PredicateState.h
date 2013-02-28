@@ -120,6 +120,8 @@ public:
         return p->getType() == PredicateType::PATH ||
                p->getType() == PredicateType::STATE ||
                p->getType() == PredicateType::ENSURES; }
+    static bool REQUIRES(Predicate::Ptr p) {
+            return p->getType() == PredicateType::REQUIRES; }
 
     bool operator==(const PredicateState& other) const {
         if (this == &other) return true;

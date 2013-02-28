@@ -7,8 +7,10 @@
 
 #include <llvm/Support/InstVisitor.h>
 
+#include "Logging/logger.hpp"
 #include "Passes/CheckContractPass.h"
 #include "Solver/Z3Solver.h"
+#include "State/CallSiteInitializer.h"
 #include "State/PredicateState.h"
 #include "Util/passes.hpp"
 
@@ -26,16 +28,27 @@ public:
         auto& contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
         auto& states = pass->PSA->getPredicateStateMap()[&CI];
 
-        auto requires = contract.filter([](Predicate::Ptr p) { return p->getType() == PredicateType::REQUIRES; });
+        auto requires = contract.filter(PredicateState::REQUIRES);
         if (requires.isEmpty()) return;
+
+        CallSiteInitializer csi(CI, pass->TF.get());
+        PredicateState instantiatedRequires = requires.map(
+            [&csi](Predicate::Ptr p) {
+                return csi.transform(p);
+            }
+        );
+
+        infos() << "Checking: " << CI << endl;
+        infos() << "  Requires: " << endl << instantiatedRequires << endl;
 
         z3::context ctx;
         Z3ExprFactory z3ef(ctx);
         Z3Solver s(z3ef);
 
         for (auto& state : states) {
-            if (s.checkViolated(requires, state)) {
-                // TODO: Implement
+            infos() << "  State: " << endl << state << endl;
+            if (s.checkViolated(instantiatedRequires, state.filter())) {
+                pass->DM->addDefect(DefectType::REQ_01, &CI);
             }
         }
     }

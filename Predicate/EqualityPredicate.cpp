@@ -26,12 +26,9 @@ EqualityPredicate::EqualityPredicate(
     this->asString = this->lhv->getName() + "=" + this->rhv->getName();
 }
 
-logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
-
-    auto l = z3ef.getExprForTerm(*lhv);
-    auto r = z3ef.getExprForTerm(*rhv);
-    return l == r;
+    return lhv->toZ3(z3ef, ctx) == rhv->toZ3(z3ef, ctx);
 }
 
 bool EqualityPredicate::equals(const Predicate* other) const {

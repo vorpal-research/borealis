@@ -21,11 +21,13 @@
 namespace borealis {
 
 enum class DefectType {
-    INI_03
+    INI_03,
+    REQ_01
 };
 
 const std::map<DefectType, const std::string> DefectTypeNames = {
-    { DefectType::INI_03, "INI-03" }
+    { DefectType::INI_03, "INI-03" },
+    { DefectType::REQ_01, "REQ-01" }
 };
 
 class DefectManager:
