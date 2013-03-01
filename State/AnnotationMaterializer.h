@@ -17,10 +17,9 @@
 #include "Annotation/RequiresAnnotation.h"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
+#include "State/Transformer.hpp"
 #include "Term/TermFactory.h"
 #include "Util/locations.h"
-
-#include "State/Transformer.hpp"
 
 namespace borealis {
 
@@ -49,14 +48,6 @@ public:
     // resolving ambiguity
     inline void failWith(const char* r) {
         return failWith(std::string(r));
-    }
-
-    Term::Ptr transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr trm) {
-        return trm; // FIXME: return ConstantInt;
-    }
-
-    Term::Ptr transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr trm) {
-        return trm; // FIXME: return Constant;
     }
 
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm) {

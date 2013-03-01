@@ -16,9 +16,8 @@
 #include <unordered_map>
 
 #include "Predicate/PredicateFactory.h"
-#include "Term/TermFactory.h"
-
 #include "State/Transformer.hpp"
+#include "Term/TermFactory.h"
 
 namespace borealis {
 
@@ -54,7 +53,7 @@ public:
         return TF->getValueTerm(actual);
     }
 
-    Term::Ptr transformReturnValueTerm(ReturnValueTermPtr /* t */) {
+    Term::Ptr transformReturnValueTerm(ReturnValueTermPtr) {
         return TF->getValueTerm(returnValue);
     }
 

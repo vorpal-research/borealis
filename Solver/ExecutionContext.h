@@ -8,9 +8,9 @@
 #ifndef Z3CONTEXT_H_
 #define Z3CONTEXT_H_
 
-#include <vector>
-
 #include <z3/z3++.h>
+
+#include <vector>
 
 #include "Solver/Z3ExprFactory.h"
 

@@ -47,7 +47,7 @@
         return; \
     }
 
-#define ASSERT(cond, msg) while(!cond){ borealis::util::sayonara( \
+#define ASSERT(cond, msg) while(!(cond)){ borealis::util::sayonara( \
         __FILE__, \
         __LINE__, \
         __PRETTY_FUNCTION__, \

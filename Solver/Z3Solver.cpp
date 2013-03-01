@@ -5,11 +5,10 @@
  *      Author: ice-phoenix
  */
 
-#include "Solver/Z3Solver.h"
-#include "Solver/Logic.hpp"
-
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
+#include "Solver/Logic.hpp"
+#include "Solver/Z3Solver.h"
 
 namespace borealis {
 

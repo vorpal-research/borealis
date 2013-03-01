@@ -8,11 +8,9 @@
 #ifndef PREDICATESTATE_H_
 #define PREDICATESTATE_H_
 
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/Value.h>
 
 #include <functional>
-#include <initializer_list>
 #include <list>
 #include <unordered_set>
 
@@ -29,8 +27,8 @@ public:
 
     PredicateState();
     PredicateState(Predicate::Ptr p);
-    PredicateState(const PredicateState& state);
-    PredicateState(PredicateState&& state);
+    PredicateState(const PredicateState& state) = default;
+    PredicateState(PredicateState&& state) = default;
 
     PredicateState& operator=(const PredicateState& state);
     PredicateState& operator=(PredicateState&& state);
@@ -95,7 +93,8 @@ public:
         return empty;
     }
 
-    PredicateState map(std::function<Predicate::Ptr(Predicate::Ptr)> f) const {
+    template<class Mapper>
+    PredicateState map(Mapper f) const {
         PredicateState res;
         for (auto& p : data) {
             res = res.addPredicate(f(p));
@@ -103,12 +102,17 @@ public:
         return res;
     }
 
-    PredicateState filter(std::function<bool(Predicate::Ptr)> f = DEFAULT) const {
+    template<class Condition>
+    PredicateState filter(Condition f) const {
         PredicateState res;
         for (auto& p : data) {
             if (f(p)) res = res.addPredicate(p);
         }
         return res;
+    }
+
+    PredicateState filter() const {
+        return filter(DEFAULT);
     }
 
     static bool PATH(Predicate::Ptr p) {
@@ -140,7 +144,6 @@ private:
 
 };
 
-llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state);
 std::ostream& operator<<(std::ostream& s, const PredicateState& state);
 
 ////////////////////////////////////////////////////////////////////////////////

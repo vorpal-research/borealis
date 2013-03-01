@@ -6,9 +6,7 @@
  */
 
 #include "Solver/Z3ExprFactory.h"
-
 #include "Term/Term.h"
-
 #include "Util/macros.h"
 
 namespace borealis {
@@ -109,16 +107,6 @@ f::MemArray Z3ExprFactory::getNoMemoryArray() {
     return f::MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
 }
 
-f::Dynamic Z3ExprFactory::getExprForTerm(const Term& term, size_t bits) {
-    return getExprByTypeAndName(term.getType(), term.getName(), bits);
-}
-
-f::Dynamic Z3ExprFactory::getExprForValue(
-        const llvm::Value& value,
-        const std::string& name) {
-    return getExprByTypeAndName(valueType(value), name);
-}
-
 f::Pointer Z3ExprFactory::getInvalidPtr() {
     return getNullPtr();
 }
@@ -133,6 +121,18 @@ f::Bool Z3ExprFactory::getDistinct(const std::vector<f::Pointer>& exprs) {
 
 f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
     return z3::to_expr( ctx, ast );
+}
+
+f::Dynamic Z3ExprFactory::getExprForTerm(
+        const Term& term,
+        size_t bits) {
+    return getExprByTypeAndName(term.getType(), term.getName(), bits);
+}
+
+f::Dynamic Z3ExprFactory::getExprForValue(
+        const llvm::Value& value,
+        const std::string& name) {
+    return getExprByTypeAndName(valueType(value), name);
 }
 
 f::Dynamic Z3ExprFactory::getExprByTypeAndName(
@@ -172,6 +172,6 @@ void Z3ExprFactory::initialize(llvm::TargetData* TD) {
     pointerSize = TD->getPointerSizeInBits();
 }
 
-#include "Util/unmacros.h"
-
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

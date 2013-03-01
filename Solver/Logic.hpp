@@ -8,13 +8,12 @@
 #ifndef LOGIC_HPP
 #define LOGIC_HPP
 
-#include <functional>
-
 #include <z3/z3++.h>
 
-#include "Util/util.h"
+#include <functional>
 
 #include "Type/TypeFactory.h"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -32,24 +31,21 @@ struct ConversionException: public std::exception {
 };
 
 namespace z3impl {
-
-inline z3::expr defaultAxiom(z3::context& ctx) {
-    return ctx.bool_val(true);
-}
-
-inline z3::expr defaultAxiom(z3::expr& e) {
-    return defaultAxiom(e.ctx());
-}
-
-inline z3::expr spliceAxioms(z3::expr e0, z3::expr e1) {
-    return (e0 && e1).simplify();
-}
-
+    inline z3::expr defaultAxiom(z3::context& ctx) {
+        return ctx.bool_val(true);
+    }
+    inline z3::expr defaultAxiom(z3::expr& e) {
+        return defaultAxiom(e.ctx());
+    }
+    inline z3::expr spliceAxioms(z3::expr e0, z3::expr e1) {
+        return (e0 && e1).simplify();
+    }
 } // namespace z3impl
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class ValueExpr;
+
 namespace z3impl {
     z3::expr getExpr(const ValueExpr& a);
     z3::expr getAxiom(const ValueExpr& a);
@@ -72,7 +68,6 @@ namespace z3impl {
     inline z3::expr asAxiom(const ValueExpr* e) {
         ASSERTC(e != nullptr); return asAxiom(*e);
     }
-
 } // namespace z3impl
 
 class ValueExpr: public Expr {
@@ -118,54 +113,53 @@ struct generator;
 
 #define ASPECT_BEGIN(CLASS) \
     class CLASS: public ValueExpr { \
-        CLASS(z3::context& ctx, Z3_ast ast): ValueExpr(ctx, ast){ \
-            ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) \
-        }; \
+        CLASS(z3::context& ctx, Z3_ast ast): ValueExpr(ctx, ast){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
     public: \
         CLASS(z3::expr e): ValueExpr(e){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
-        CLASS(z3::expr e, z3::expr a): ValueExpr(e,a){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
+        CLASS(z3::expr e, z3::expr a): ValueExpr(e, a){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
         CLASS(const CLASS&) = default; \
         CLASS(const ValueExpr& e): ValueExpr(e){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
         CLASS& operator=(const CLASS&) = default; \
 \
         static CLASS mkConst(z3::context& ctx, typename impl::generator<CLASS>::basetype value) { \
             return CLASS(impl::generator<CLASS>::mkConst(ctx, value)); \
-        }\
+        } \
 \
-        static CLASS mkBound(z3::context& ctx, unsigned i) {\
-            return CLASS(ctx, Z3_mk_bound(ctx, i, impl::generator<CLASS>::sort(ctx)));\
-        }\
+        static CLASS mkBound(z3::context& ctx, unsigned i) { \
+            return CLASS(ctx, Z3_mk_bound(ctx, i, impl::generator<CLASS>::sort(ctx))); \
+        } \
 \
-        static CLASS mkVar(z3::context& ctx, const std::string& name) {\
-            return CLASS(ctx.constant(name.c_str(), impl::generator<CLASS>::sort(ctx)));\
-        }\
+        static CLASS mkVar(z3::context& ctx, const std::string& name) { \
+            return CLASS(ctx.constant(name.c_str(), impl::generator<CLASS>::sort(ctx))); \
+        } \
 \
-        static CLASS mkVar(\
-                z3::context& ctx,\
+        static CLASS mkVar( \
+                z3::context& ctx, \
                 const std::string& name, \
-                std::function<Bool(CLASS)> daAxiom) {\
-            /* first construct the no-axiom version */\
-            CLASS nav = mkVar(ctx, name);\
-            return CLASS(z3impl::getExpr(nav),\
-                         z3impl::spliceAxioms(z3impl::getAxiom(nav),\
-                                 z3impl::asAxiom(daAxiom(nav)))\
-            );\
-        }\
+                std::function<Bool(CLASS)> daAxiom) { \
+            /* first construct the no-axiom version */ \
+            CLASS nav = mkVar(ctx, name); \
+            return CLASS(z3impl::getExpr(nav), \
+                         z3impl::spliceAxioms( \
+                                 z3impl::getAxiom(nav), \
+                                 z3impl::asAxiom(daAxiom(nav))) \
+            ); \
+        } \
 \
-        static CLASS mkFreshVar(z3::context& ctx, const std::string& name) {\
-            return CLASS(ctx, Z3_mk_fresh_const(ctx, name.c_str(), impl::generator<CLASS>::sort(ctx)));\
-        }\
+        static CLASS mkFreshVar(z3::context& ctx, const std::string& name) { \
+            return CLASS(ctx, Z3_mk_fresh_const(ctx, name.c_str(), impl::generator<CLASS>::sort(ctx))); \
+        } \
 \
-        static CLASS mkFreshVar(\
-                z3::context& ctx,\
-                const std::string& name,\
-                std::function<Bool(CLASS)> daAxiom) {\
-            /* first construct the no-axiom version */\
-            CLASS nav = mkFreshVar(ctx, name);\
-            return CLASS(\
-                    z3impl::getExpr(nav),\
-                    z3impl::spliceAxioms(z3impl::getAxiom(nav), z3impl::asAxiom(daAxiom(nav)))\
-            );\
+        static CLASS mkFreshVar( \
+                z3::context& ctx, \
+                const std::string& name, \
+                std::function<Bool(CLASS)> daAxiom) { \
+            /* first construct the no-axiom version */ \
+            CLASS nav = mkFreshVar(ctx, name); \
+            return CLASS( \
+                    z3impl::getExpr(nav), \
+                    z3impl::spliceAxioms(z3impl::getAxiom(nav), z3impl::asAxiom(daAxiom(nav))) \
+            ); \
         }
 
 #define ASPECT_END };
@@ -213,7 +207,7 @@ struct impl::generator< BitVector<N> > {
     typedef long long basetype;
 
     static z3::sort sort(z3::context& ctx) { return ctx.bv_sort(N)  ; }
-    static bool check(z3::expr e) { return e.is_bv(); }
+    static bool check(z3::expr e) { return e.is_bv() && e.get_sort().bv_size() == N; }
     static z3::expr mkConst(z3::context& ctx, int n) { return ctx.bv_val(n, N); }
 };
 
@@ -243,11 +237,9 @@ grow(BitVector<N1> bv) {
 }
 
 namespace impl {
-
 constexpr size_t max(size_t N0, size_t N1) {
     return N0 > N1 ? N0 : N1;
 }
-
 } // namespace impl
 
 template<class T0, class T1>
@@ -327,6 +319,7 @@ REDEF_BV_BIN_OP(^)
 
 #undef REDEF_BV_BIN_OP
 
+
 template<size_t N0, size_t N1, size_t M = impl::max(N0, N1)>
 BitVector<M> operator %(BitVector<N0> bv0, BitVector<N1> bv1) {
     auto ebv0 = grow<M>(bv0);
@@ -367,11 +360,13 @@ REDEF_INT_BV_BIN_OP(/)
 
 #undef REDEF_INT_BV_BIN_OP
 
+
 #define REDEF_UN_OP(OP) \
         template<size_t N> \
         BitVector<N> operator OP(BitVector<N> bv) { \
             return BitVector<N>(OP z3impl::getExpr(bv), z3impl::getAxiom(bv)); \
         }
+
 
 REDEF_UN_OP(~)
 REDEF_UN_OP(-)
@@ -521,7 +516,7 @@ z3::expr forAll(
 class ComparableExpr;
 
 template<>
-struct impl::generator<ComparableExpr>: impl::generator<BitVector<1>> {
+struct impl::generator<ComparableExpr> : impl::generator<BitVector<1>> {
     static bool check(z3::expr e) { return e.is_bv() || e.is_arith() || e.is_real(); }
 };
 
@@ -544,7 +539,7 @@ ASPECT(ComparableExpr)
 class DynBitVectorExpr;
 
 template<>
-struct impl::generator<DynBitVectorExpr>: impl::generator<BitVector<1>> {
+struct impl::generator<DynBitVectorExpr> : impl::generator<BitVector<1>> {
     static bool check(z3::expr e) { return e.is_bv(); }
 };
 
@@ -566,7 +561,6 @@ public:
             );
         else return DynBitVectorExpr(z3impl::getExpr(this), z3impl::getAxiom(this));
     }
-
 ASPECT_END
 
 #define BIN_OP(OP) \
@@ -587,7 +581,7 @@ ASPECT_END
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// untyped logic expression
+// Untyped logic expression
 class SomeExpr: public ValueExpr {
 public:
     typedef SomeExpr self;
@@ -653,12 +647,10 @@ public:
     }
 };
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class Elem>
-Bool distinct(z3::context& ctx, const std::vector<Elem> elems) {
+Bool distinct(z3::context& ctx, const std::vector<Elem>& elems) {
     if (elems.empty()) return Bool::mkConst(ctx, true);
 
     std::vector<Z3_ast> cast;
@@ -669,7 +661,7 @@ Bool distinct(z3::context& ctx, const std::vector<Elem> elems) {
     z3::expr ret = z3::to_expr(ctx, Z3_mk_distinct(ctx, cast.size(), &cast[0]));
 
     z3::expr axiom = z3impl::getAxiom(elems[0]);
-    for (auto elem: elems) {
+    for (auto elem : elems) {
         axiom = z3impl::spliceAxioms(axiom, z3impl::getAxiom(elem));
     }
 
@@ -782,7 +774,6 @@ public:
     }
 };
 
-
 template<class Res, class ...Args>
 std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
     return ost << f.get() << " assuming " << f.axiom().simplify();
@@ -797,11 +788,12 @@ class FuncArray {
     std::shared_ptr<std::string> name;
     inner_t inner;
 
-    FuncArray(inner_t inner, std::shared_ptr<std::string>& name): name(name), inner(inner){};
+    FuncArray(inner_t inner, std::shared_ptr<std::string>& name): name(name), inner(inner) {};
+
 public:
     FuncArray(const FuncArray&) = default;
     FuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
-        name(std::make_shared<std::string>(name)), inner(inner_t::mkFreshFunc(ctx, name, f)){}
+        name(std::make_shared<std::string>(name)), inner(inner_t::mkFreshFunc(ctx, name, f)) {}
 
     Elem select    (Index i) { return inner(i);  }
     Elem operator[](Index i) { return select(i); }
@@ -814,7 +806,7 @@ public:
         return FuncArray<Elem, Index> (nf, name);
     }
 
-    FuncArray<Elem, Index> store(std::vector<std::pair<Index, Elem>> entries) {
+    FuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
         inner_t nf = inner_t::mkFreshFunc(inner.get().ctx(), *name, [this, entries](Index j) {
             return switch_(j, entries, this->select(j));
         });
@@ -843,11 +835,11 @@ class InlinedFuncArray {
             z3::context& ctx,
             inner_t inner,
             std::shared_ptr<std::string>& name
-    ) : name(name), inner(inner), context(&ctx){};
+    ) : name(name), inner(inner), context(&ctx) {};
 public:
     InlinedFuncArray(const InlinedFuncArray&) = default;
     InlinedFuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
-        name(std::make_shared<std::string>(name)), inner(f), context(&ctx){}
+        name(std::make_shared<std::string>(name)), inner(f), context(&ctx) {}
 
     Elem select    (Index i) { return inner(i);  }
     Elem operator[](Index i) { return select(i); }
@@ -868,7 +860,7 @@ public:
         return InlinedFuncArray<Elem, Index> (*context, nf, name);
     }
 
-    InlinedFuncArray<Elem, Index> store(std::vector<std::pair<Index, Elem>> entries) {
+    InlinedFuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
         inner_t existing = this->inner;
         inner_t nf = [this, existing, entries](Index j) {
             return switch_(j, entries, existing(j));
@@ -889,8 +881,7 @@ public:
 template<class Elem, class Index>
 class TheoryArray: public ValueExpr {
     TheoryArray(z3::expr inner) : ValueExpr(inner) {
-        if (!inner.is_array())
-            throw ConversionException("TheoryArray constructed from non-array");
+        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
     };
 public:
     TheoryArray(const TheoryArray&) = default;
@@ -902,7 +893,7 @@ public:
         return z3::store(z3impl::getExpr(this), z3impl::getExpr(i), z3impl::getExpr(e));
     }
 
-    TheoryArray store(std::vector<std::pair<Index, Elem>> entries) {
+    TheoryArray store(const std::vector<std::pair<Index, Elem>>& entries) {
         z3::expr base = z3impl::getExpr(this);
         for (auto& entry: entries) {
             base = z3::store(base, z3impl::getExpr(entry.first), z3impl::getExpr(entry.second));
@@ -943,7 +934,7 @@ template<size_t ElemSize = 8>
 std::vector<BitVector<ElemSize>> splitBytes(SomeExpr bv) {
     typedef BitVector<ElemSize> Byte;
 
-    if(!bv.is<DynBitVectorExpr>()) BYE_BYE(std::vector<BitVector<ElemSize>>, "Non-vector");
+    ASSERT(bv.is<DynBitVectorExpr>(), "Non-vector");
 
     DynBitVectorExpr bvv = bv.to<DynBitVectorExpr>().getUnsafe();
     size_t width = bvv.getBitSize();
@@ -975,11 +966,10 @@ BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
 
     using borealis::util::toString;
 
-    if (bytes.size() * ElemSize != N) throw ConversionException {
-        "concatBytes failed to merge the resulting BitVector: "
-        "expected vector size " + toString(N/ElemSize) + ", got vector of size "
-        + toString(bytes.size())
-    };
+    ASSERT(bytes.size() * ElemSize == N,
+           "concatBytes failed to merge the resulting BitVector: "
+           "expected vector size " + toString(N/ElemSize) + ", got vector of size " +
+           toString(bytes.size()));
 
     z3::expr head = z3impl::getExpr(bytes[0]);
     z3::context& ctx = head.ctx();
@@ -1026,7 +1016,7 @@ class ScatterArray {
 
     Inner inner;
 
-    ScatterArray(InnerArray<Byte, Index> inner): inner(inner){};
+    ScatterArray(InnerArray<Byte, Index> inner): inner(inner) {};
 
 public:
     ScatterArray(const ScatterArray&) = default;
@@ -1081,8 +1071,8 @@ public:
 
     ScatterArray store(Index i, SomeExpr e) {
         ASSERTC(e.is<DynBitVectorExpr>());
-        auto bv = e.to<DynBitVectorExpr>().getUnsafe();
 
+        auto bv = e.to<DynBitVectorExpr>().getUnsafe();
         return store(i, e, bv.getBitSize());
     }
 

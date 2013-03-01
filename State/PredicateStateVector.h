@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "Logging/logstream.hpp"
 #include "Predicate/Predicate.h"
 #include "State/PredicateState.h"
 
@@ -22,9 +21,8 @@ class PredicateStateVector {
 public:
 
     PredicateStateVector();
-    PredicateStateVector(const PredicateStateVector& psv);
+    PredicateStateVector(const PredicateStateVector& psv) = default;
 
-    PredicateStateVector addPredicate(Predicate::Ptr pred) const;
     PredicateStateVector merge(const PredicateStateVector& psv) const;
     PredicateStateVector merge(const PredicateState& state) const;
 
@@ -64,7 +62,6 @@ private:
 
 };
 
-llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateStateVector& vec);
 std::ostream& operator<<(std::ostream& s, const PredicateStateVector& vec);
 
 } /* namespace borealis */

@@ -13,13 +13,12 @@
 
 #include "Logging/tracer.hpp"
 #include "Solver/Logic.hpp"
-#include "Type/Type.h"
+#include "Type/Float.h"
 #include "Type/Integer.h"
 #include "Type/Pointer.h"
-#include "Type/Float.h"
-#include "Util/util.h"
-
+#include "Type/Type.h"
 #include "Util/cast.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -57,10 +56,10 @@ public:
     static size_t sizeForType(Type::Ptr type) {
         using llvm::isa;
         return isa<borealis::Integer>(type) ? Integer::bitsize :
-                isa<borealis::Pointer>(type) ? Pointer::bitsize :
-                 isa<borealis::Float>(type) ? Real::bitsize :
-                  util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                      "Cannot acquire bitsize for type " + util::toString(*type));
+               isa<borealis::Pointer>(type) ? Pointer::bitsize :
+               isa<borealis::Float>(type) ? Real::bitsize :
+               util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                       "Cannot acquire bitsize for type " + util::toString(*type));
     }
 
     Z3ExprFactory(z3::context& ctx);
@@ -93,16 +92,16 @@ public:
     MemArray getNoMemoryArray();
 
     // Generic functions
-
     Dynamic getExprByTypeAndName(
             const llvm::ValueType type,
             const std::string& name,
             size_t bitsize = 0);
-    Dynamic getExprForTerm(const Term& term, size_t bits = 0);
+    Dynamic getExprForTerm(
+            const Term& term,
+            size_t bits = 0);
     Dynamic getExprForValue(
-        const llvm::Value& value,
-        const std::string& name
-    );
+            const llvm::Value& value,
+            const std::string& name);
     // Valid/invalid pointers
     Pointer getInvalidPtr();
     Bool isInvalidPtrExpr(Pointer ptr);
@@ -115,17 +114,15 @@ public:
 
     template<class T, class U>
     T switch_(
-        U val,
-        const std::vector<std::pair<U, T>>& cases,
-        T default_) {
+            U val,
+            const std::vector<std::pair<U, T>>& cases,
+            T default_) {
         return logic::switch_(val, cases, default_);
     }
 
 private:
 
     expr to_expr(Z3_ast ast);
-
-
 
 public:
 

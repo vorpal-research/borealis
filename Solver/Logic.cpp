@@ -106,9 +106,11 @@ REDEF_BOOL_BOOL_OP(||)
 
 #undef REDEF_BOOL_BOOL_OP
 
+
 Bool operator!(Bool bv0) {
     return Bool(!z3impl::getExpr(bv0), z3impl::getAxiom(bv0));
 }
+
 
 #define REDEF_OP(OP) \
     Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
@@ -124,6 +126,7 @@ Bool operator!(Bool bv0) {
     REDEF_OP(!=)
 
 #undef REDEF_OP
+
 
 #define BIN_OP(OP) \
     DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) { \

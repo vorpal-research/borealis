@@ -10,6 +10,8 @@
 #include "Solver/Z3Solver.h"
 #include "State/PredicateState.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 using borealis::util::contains;
@@ -21,12 +23,6 @@ PredicateState::PredicateState(Predicate::Ptr p) {
     data.push_back(p);
     visited.insert(p->getLocation());
 }
-
-PredicateState::PredicateState(const PredicateState& state) :
-            data(state.data), visited(state.visited) {}
-
-PredicateState::PredicateState(PredicateState&& state) :
-            data(std::move(state.data)), visited(std::move(state.visited)) {}
 
 PredicateState& PredicateState::operator=(const PredicateState& state) {
     data = state.data;
@@ -41,6 +37,8 @@ PredicateState& PredicateState::operator=(PredicateState&& state) {
 }
 
 PredicateState PredicateState::addPredicate(Predicate::Ptr pred) const {
+    ASSERT(pred != nullptr, "Trying to add an empty predicate");
+
     PredicateState res = PredicateState(*this);
     res.data.push_back(pred);
     res.visited.insert(pred->getLocation());
@@ -71,8 +69,6 @@ bool PredicateState::isUnreachable() const {
 }
 
 logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef) const {
-    using namespace::z3;
-
     TRACE_FUNC;
 
     ExecutionContext ctx(z3ef);
@@ -84,21 +80,6 @@ logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef) const {
     res = res && ctx.toZ3();
 
     return res;
-}
-
-llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const PredicateState& state) {
-    using borealis::util::streams::endl;
-    s << '(';
-    if (!state.isEmpty()) {
-        auto iter = state.begin();
-        const auto& el = *iter++;
-        s << endl << "  " << el->toString();
-        for (const auto& e : view(iter, state.end())) {
-            s << ',' << endl << "  " << e->toString();
-        }
-    }
-    s << endl << ')';
-    return s;
 }
 
 std::ostream& operator<<(std::ostream& s, const PredicateState& state) {
@@ -139,3 +120,5 @@ const PredicateState operator+(const PredicateState& a, const PredicateState& b)
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
