@@ -11,7 +11,6 @@
 #include "Passes/SCCPass.h"
 
 #include "Logging/logger.hpp"
-#include "Util/passes.hpp"
 #include "Util/util.h"
 
 namespace borealis {
@@ -21,9 +20,7 @@ SCCPass::SCCPass(char& ID) : llvm::ModulePass(ID) {}
 SCCPass::~SCCPass() {}
 
 void SCCPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    using namespace llvm;
-
-    AUX<CallGraph>::addRequiredTransitive(AU);
+    AUX<llvm::CallGraph>::addRequiredTransitive(AU);
 }
 
 bool SCCPass::runOnModule(llvm::Module&) {
@@ -50,11 +47,8 @@ public:
     SCCTestPass() : SCCPass(ID) {};
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-        using namespace llvm;
         SCCPass::getAnalysisUsage(AU);
-
         AU.setPreservesAll();
-
         AUX<CheckNullDereferencePass>::addRequiredTransitive(AU);
     }
 

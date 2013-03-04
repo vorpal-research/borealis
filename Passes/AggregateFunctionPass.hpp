@@ -47,8 +47,8 @@ public:
     }
 
     virtual bool doFinalization(llvm::Module& M) {
-        using borealis::util::view;
-        for (FunctionPass* child : view(children.rbegin(), children.rend())) {
+        using borealis::util::reverse;
+        for (FunctionPass* child : reverse(children)) {
             child->doFinalization(M);
         }
         return false;
@@ -68,8 +68,8 @@ public:
     }
 
     virtual ~AggregateFunctionPass() {
-        // TODO belyaev make deletion type-aware?
-        for(FunctionPass* child : children) {
+        // TODO: make deletion type-aware?
+        for (FunctionPass* child : children) {
             delete child;
         }
     }

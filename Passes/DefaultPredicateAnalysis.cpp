@@ -222,6 +222,7 @@ public:
 
         ArithType type;
 
+        // TODO: rewrite
         switch (opCode) {
         case OPS::Add:
         case OPS::FAdd:

@@ -100,6 +100,7 @@ private:
     PredicateState PM(const llvm::Instruction* I);
     PredicateState PPM(PhiBranch key);
     PredicateState TPM(TerminatorBranch key);
+
 };
 
 } /* namespace borealis */

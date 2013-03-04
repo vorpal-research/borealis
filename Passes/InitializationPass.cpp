@@ -7,12 +7,14 @@
 
 #include <llvm/Target/TargetData.h>
 
-#include "InitializationPass.h"
+#include "Passes/InitializationPass.h"
 #include "Solver/Z3ExprFactory.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
 void InitializationPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+    AU.setPreservesAll();
     AU.addRequiredTransitive<llvm::TargetData>();
 }
 
@@ -23,7 +25,7 @@ void InitializationPass::initializePass() {
 InitializationPass::~InitializationPass() {}
 
 char InitializationPass::ID;
-static llvm::RegisterPass<InitializationPass>
+static RegisterPass<InitializationPass>
 X("init", "Initialization pass");
 
 } /* namespace borealis */

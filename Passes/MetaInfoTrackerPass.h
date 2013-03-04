@@ -17,6 +17,8 @@
 #include "Util/key_ptr.hpp"
 #include "Util/option.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 // a pass that lets you track corresponding clang decls for llvm values
@@ -137,10 +139,8 @@ public:
             return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
         case DiscoveryPolicy::PreviousFunction:
             return locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
-#include "Util/macros.h"
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");
-#include "Util/unmacros.h"
         }
     }
 
@@ -154,14 +154,14 @@ public:
             return locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
         case DiscoveryPolicy::PreviousFunction:
             return locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
-#include "Util/macros.h"
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");
-#include "Util/unmacros.h"
         }
     }
 };
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* METAINFOTRACKERPASS_H_ */

@@ -92,7 +92,7 @@ const PredicateState& FunctionManager::get(
         if (!isUnknown(ft)) {
             auto state = m.getPredicateState(ft, F, PF, TF);
             data[F] = state;
-            return data.at(F);;
+            return data.at(F);
         } else {
             return PredicateState::empty();
         }

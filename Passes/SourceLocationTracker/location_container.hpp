@@ -46,7 +46,7 @@ public:
             removeFromMultimap(l2t, loc, val);
         }
         t2l[val] = loc;
-        l2t.insert(std::make_pair(loc, val));
+        l2t.insert({loc, val});
     }
 
     bool contains(const Locus& loc) const {

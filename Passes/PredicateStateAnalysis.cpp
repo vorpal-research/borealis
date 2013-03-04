@@ -8,7 +8,6 @@
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateStateAnalysis.h"
 #include "State/CallSiteInitializer.h"
-#include "Util/passes.hpp"
 #include "Util/util.h"
 
 // Hacky-hacky way to include all predicate analyses
@@ -48,7 +47,7 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     TF = TermFactory::get(ST);
 
 #define HANDLE_ANALYSIS(CLASS) \
-    PA.push_back(dynamic_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
+    PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
 #include "Passes/PredicateAnalysis.def"
 
     enqueue(nullptr, &F.getEntryBlock(), PredicateState());

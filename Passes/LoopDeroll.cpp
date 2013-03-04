@@ -264,7 +264,7 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
 }
 
 char LoopDeroll::ID;
-static llvm::RegisterPass<LoopDeroll>
+static RegisterPass<LoopDeroll>
 X("loop-deroll", "Loop de-roller pass");
 
 } /* namespace borealis */

@@ -32,7 +32,7 @@ public:
 
 	NameTracker(): ModulePass(ID) {};
 	virtual bool runOnModule(llvm::Module& M);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
 	virtual ~NameTracker() {}
 
 	const nameResolver_t& getGlobalResolver() {

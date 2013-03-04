@@ -6,6 +6,7 @@
  */
 
 #include "Passes/NameTracker.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
@@ -31,12 +32,12 @@ bool NameTracker::runOnModule(llvm::Module& M) {
 	return false;
 }
 
-void NameTracker::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	Info.setPreservesAll();
+void NameTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+	AU.setPreservesAll();
 }
 
 char NameTracker::ID = 0;
-static llvm::RegisterPass<NameTracker>
-X("name-tracker", "Pass used to track value names in LLVM IR", false, false);
+static RegisterPass<NameTracker>
+X("name-tracker", "Pass used to track value names in LLVM IR");
 
 } // namespace borealis
