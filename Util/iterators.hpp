@@ -235,22 +235,6 @@ inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat
   return flat2_iterator(C.end());
 }
 
-#include "Util/macros.h"
-
-template <class Iter>
-inline auto flatView(Iter begin, Iter end) QUICK_RETURN (view(flat_iterator(begin, end), flat_iterator(end)))
-
-template <class Iter>
-inline auto flat2View(Iter begin, Iter end) QUICK_RETURN (view(flat2_iterator(begin, end), flat2_iterator(end)))
-
-template <class Iter>
-inline auto flatView(const std::pair<Iter, Iter>& p) QUICK_RETURN (flatView(p.first, p.second))
-
-template <class Iter>
-inline auto flat2View(const std::pair<Iter, Iter>& p) QUICK_RETURN (flat2View(p.first, p.second))
-
-#include "Util/unmacros.h"
-
 template <class RootIt, class Pred>
 class filtered_iterator {
     RootIt current;

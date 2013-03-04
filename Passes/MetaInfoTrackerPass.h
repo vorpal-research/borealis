@@ -108,7 +108,7 @@ private:
     }
 
     static bool isFunc(VarInfoContainer::loc_value_iterator::reference pr) {
-        return llvm::isa<llvm::Function>(pr.second);
+        return  llvm::isa<llvm::Function>(pr.second);
     }
 
     static bool isNotFunc(VarInfoContainer::loc_value_iterator::reference pr) {

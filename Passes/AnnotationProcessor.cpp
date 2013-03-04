@@ -87,10 +87,10 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const {
     auto& IM = IntrinsicsManager::getInstance();
 
-    using borealis::util::flat2View;
+    using borealis::util::view;
     using borealis::util::begin_end_pair;
 
-    for (auto& I : flat2View(begin_end_pair(*M))) {
+    for (auto& I : view(begin_end_pair(*M)).flatten().flatten()) {
         if (auto* CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
             if (IM.getIntrinsicType(*CI) == function_type::INTRINSIC_ANNOTATION) {
                 infos() << *Annotation::fromIntrinsic(*CI) << endl;
