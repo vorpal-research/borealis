@@ -48,9 +48,9 @@ enum class ConditionType {
 	FALSE,
 	UNKNOWN
 };
-std::string conditionString(const int cond);
+std::string conditionString(int cond);
 std::string conditionString(ConditionType cond);
-ConditionType conditionType(const int cond);
+ConditionType conditionType(int cond);
 
 enum class TypeInfo {
     VARIABLE,
@@ -101,6 +101,7 @@ enum class UnaryArithType {
     BNOT,
 };
 std::string unaryArithString(UnaryArithType opCode);
+
 
 
 inline borealis::Locus instructionLocus(const Instruction* inst) {

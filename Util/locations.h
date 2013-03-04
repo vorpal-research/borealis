@@ -12,9 +12,8 @@
 #include <utility>
 
 #include <clang/Basic/SourceManager.h>
-#include <llvm/Instruction.h>
-
 #include <llvm/Analysis/DebugInfo.h>
+#include <llvm/Instruction.h>
 
 namespace borealis {
 

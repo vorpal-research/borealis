@@ -31,7 +31,9 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T) {
     return OS;
 }
 
-std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
+typedef std::pair<std::string, ConditionType> ConditionDescription;
+
+ConditionDescription analyzeCondition(const int cond) {
 	typedef CmpInst::Predicate P;
 	typedef ConditionType CT;
 
@@ -86,11 +88,11 @@ std::pair<std::string, ConditionType> analyzeCondition(const int cond) {
 		return {"false", CT::FALSE};
 
 	default:
-		return {"???", CT::UNKNOWN};
+	    BYE_BYE(ConditionDescription, "Unreachable!");
 	}
 }
 
-std::string conditionString(const int cond) {
+std::string conditionString(int cond) {
 	return analyzeCondition(cond).first;
 }
 
@@ -104,11 +106,11 @@ std::string conditionString(ConditionType cond) {
     case ConditionType::LTE: return "<=";
     case ConditionType::TRUE: return "true";
     case ConditionType::FALSE: return "false";
-    default: return "???";
+    default: BYE_BYE(std::string, "Unreachable!");
     }
 }
 
-ConditionType conditionType(const int cond) {
+ConditionType conditionType(int cond) {
 	return analyzeCondition(cond).second;
 }
 
@@ -162,7 +164,7 @@ ValueType type2type(const llvm::Type& type, TypeInfo info) {
             return VT::NULL_PTR_CONST;
         }
     default:
-        return VT::UNKNOWN;
+        BYE_BYE(ValueType, "Unreachable!");
     }
 }
 

@@ -62,16 +62,6 @@ inline auto tail(const Container& con) -> CollectionView<decltype(con.begin())> 
     return view(++con.begin(), con.end());
 }
 
-template<class Container, class Callable>
-inline void for_each(const Container& con, const Callable cl) {
-    std::for_each(con.begin(), con.end(), cl);
-}
-
-template<class Container, class Callable>
-inline void for_each(Container& con, const Callable cl) {
-    std::for_each(con.begin(), con.end(), cl);
-}
-
 template<class T>
 T copy(T other) { return other; }
 

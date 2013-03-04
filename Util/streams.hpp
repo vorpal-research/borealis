@@ -107,15 +107,6 @@ struct error_printer {
 };
 
 template<class T>
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const error_printer<T>& v) {
-    s.changeColor(s.RED);
-    s << v.val;
-    s.resetColor();
-
-    return s;
-}
-
-template<class T>
 std::ostream& operator <<(std::ostream& s, const error_printer<T>& v) {
     s << "!";
     s << v.val;
@@ -128,6 +119,8 @@ std::ostream& operator <<(std::ostream& s, const error_printer<T>& v) {
 //   errs() << error(42) << endl;
 template<class T>
 error_printer<T> error(const T& val) { return error_printer<T>(val); }
+
+
 
 template<class Func>
 std::string with_stream(Func f) {
