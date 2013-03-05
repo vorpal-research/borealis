@@ -103,6 +103,8 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using llvm::LoadInst;
     using llvm::MDNode;
 
+    TRACE_FUNC;
+
     llvm::DebugInfoFinder dfi;
     dfi.processModule(M);
 
@@ -117,20 +119,20 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
          )
     );
 
-    for (auto& BB : *GlobalsDesc) {
-        for (auto& I : BB) {
-            if (CallInst* call = dyn_cast<CallInst>(&I)) {
-                if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
-                    DIGlobalVariable glob(call->getMetadata("var"));
-                    auto* garg = call->getArgOperand(0);
-                    // if garg is a load, add it dereferenced
-                    if (auto* load = dyn_cast<LoadInst>(garg)) {
-                        vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
-                    // else it has been optimized away, put it as-is
-                    } else {
-                        vars.put(garg, mkVI(sm, glob));
-                    }
-                }
+    for (CallInst* call : viewContainer(GlobalsDesc)
+                         .flatten()
+                         .map(borealis::util::takePtr())
+                         .map(llvm::dyn_caster<CallInst>())
+                         .filter()) {
+        if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
+            DIGlobalVariable glob(call->getMetadata("var"));
+            auto* garg = call->getArgOperand(0);
+            // if garg is a load, add it dereferenced
+            if (auto* load = dyn_cast<LoadInst>(garg)) {
+                vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
+            // else it has been optimized away, put it as-is
+            } else {
+                vars.put(garg, mkVI(sm, glob));
             }
         }
     }

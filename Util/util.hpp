@@ -22,6 +22,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "macros.h"
+
 namespace borealis {
 namespace util {
 
@@ -83,7 +85,7 @@ public:
 
 };
 
-#include "macros.h"
+
 
 namespace impl {
 template<class Tuple, class Callable, size_t ...N>
@@ -96,7 +98,7 @@ template<class Callable, class ...Args>
 auto apply_packed(Callable c, const std::tuple<Args...>& tp)
 QUICK_RETURN(impl::apply_packed_step_1(tp, c, typename util::make_indexer<Args...>::type()))
 
-#include "unmacros.h"
+
 
 template<class T>
 T* heap_copy(const T* val) {
@@ -107,6 +109,13 @@ T* heap_copy(const T* val) {
 } // naemspace borealis
 
 namespace llvm {
+template<class To>
+struct dyn_caster {
+    template<class From>
+    auto operator()(const From& from) QUICK_CONST_RETURN(dyn_cast<To>(from));
+};
+
+
 template<class T> struct simplify_type< std::shared_ptr<T> > {
     typedef T* SimpleType;
     static SimpleType getSimplifiedValue(const std::shared_ptr<T>& Val) {
@@ -122,4 +131,5 @@ template<class T> struct simplify_type< const std::shared_ptr<T> > {
 };
 } // namespace llvm
 
+#include "unmacros.h"
 #endif /* UTIL_HPP_ */

@@ -30,6 +30,7 @@ template<class ContainerIter>
 class CollectionView {
     ContainerIter begin_;
     ContainerIter end_;
+
 public:
     CollectionView(ContainerIter begin, ContainerIter end) : begin_(begin), end_(end) {}
     CollectionView(std::pair<ContainerIter, ContainerIter> iters) : begin_(iters.first), end_(iters.second) {}
@@ -38,13 +39,55 @@ public:
     ContainerIter end() const { return end_; }
     bool empty() const { return begin_ == end_; }
 
-#include "Util/macros.h"
-    CollectionView<flattened_iterator<ContainerIter>> flatten() {
+    CollectionView<flattened_iterator<ContainerIter>> flatten() const {
         return CollectionView<flattened_iterator<ContainerIter>>{flat_iterator(begin_, end_), flat_iterator(end_)};
     }
-#include "Util/unmacros.h"
+
+    template<class Mapping>
+    CollectionView<mapped_iterator<ContainerIter, Mapping>> map(Mapping mapping) const {
+        return CollectionView<mapped_iterator<ContainerIter, Mapping>>{borealis::util::map_iterator(begin_, mapping), borealis::util::map_iterator(end_, mapping)};
+    }
+
+    template<class Pred>
+    CollectionView<filtered_iterator<ContainerIter, Pred>> filter(Pred pred) const {
+        return CollectionView<filtered_iterator<ContainerIter, Pred>>{filter_iterator(begin_, end_, pred), filter_iterator(end_, pred)};
+    }
+
+    static bool defaultPred(decltype(*begin_) v) {
+        if(v) return true;
+        else return false;
+    }
+
+#include "macros.h"
+    auto filter() QUICK_CONST_RETURN(filter(defaultPred));
+#include "unmacros.h"
 
 };
+
+
+struct deref{
+    template<class T>
+    auto operator()(T& val) const -> decltype(*val) {
+        return *val;
+    }
+
+    template<class T>
+    auto operator()(const T& val) const -> decltype(*val) {
+        return *val;
+    }
+};
+
+struct takePtr{
+    template<class T>
+    auto operator()(T& val) const -> decltype(&val)  {
+        return &val;
+    }
+
+    template<class T>
+    auto operator()(const T& val) const -> decltype(&val) {
+        return &val;
+    }
+} ;
 
 template<class Container>
 inline auto head(const Container& con) -> decltype(*con.begin()) {

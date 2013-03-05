@@ -37,9 +37,9 @@ public:
           difference_type;
   typedef decltype(Fn(*current)) value_type;
 
-  typedef void pointer;
+  typedef struct{} pointer;
   //typedef typename UnaryFunc::result_type *pointer;
-  typedef void reference;        // Can't modify value returned by fn
+  typedef value_type reference;        // Can't modify value returned by fn
 
   typedef RootIt iterator_type;
   typedef mapped_iterator<RootIt, UnaryFunc> _Self;
@@ -244,7 +244,7 @@ class filtered_iterator {
 
     // restore the invariant ( pred(*current) == true || current == end )
     void validate() {
-        while(!(pred(*current)) && (current != end) ) ++current;
+        while((current != end) && !(pred(*current))) ++current;
     }
 
 public:
@@ -307,6 +307,12 @@ template<class It, class Pred>
 filtered_iterator<It, Pred> filter_iterator(It beg, It end, Pred pred) {
     return filtered_iterator<It, Pred>(beg, end, pred);
 }
+
+template<class It, class Pred>
+filtered_iterator<It, Pred> filter_iterator(It end, Pred pred) {
+    return filtered_iterator<It, Pred>(end, end, pred);
+}
+
 
 template<class Iterator>
 class key_iterator {
