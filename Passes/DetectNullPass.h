@@ -19,7 +19,6 @@
 #include <utility>
 
 #include "Passes/ProxyFunctionPass.h"
-#include "Util/passes.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -93,9 +92,7 @@ struct NullInfo {
 	    using borealis::util::containsKey;
 	    using borealis::util::sayonara;
 
-		if (type != other.type) {
-		    BYE_BYE(NullInfo&, "Different NullInfo types in merge");
-		}
+	    ASSERT(type == other.type, "Different NullInfo types in merge");
 
 		for (const auto& entry : other.offsetInfoMap){
 			std::vector<unsigned> idxs = entry.first;
@@ -143,7 +140,7 @@ public:
 	DetectNullPass();
 	DetectNullPass(llvm::Pass*);
 	virtual bool runOnFunction(llvm::Function& F);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
 	virtual ~DetectNullPass();
 
 	const NullInfoMap& getNullInfoMap() {
@@ -172,8 +169,6 @@ private:
 	    data.clear();
 	}
 };
-
-llvm::raw_ostream& operator<<(llvm::raw_ostream& s, const NullInfo& info);
 
 } /* namespace borealis */
 

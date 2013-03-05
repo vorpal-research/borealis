@@ -28,7 +28,7 @@ namespace borealis {
 namespace util {
 
 template<typename RetTy = void>
-RetTy sayonara(std::string file, int line, std::string where, std::string reason) {
+RetTy sayonara(const std::string& file, int line, const std::string& where, const std::string& reason) {
     using namespace borealis::logging;
 
     errs() << file << ":" << toString(line) << endl
@@ -55,7 +55,6 @@ public:
 
     const T& get() const { return *ptr; }
     T& get() { return *ptr; }
-    // XXX: remove?
     operator T&() { return get(); }
 
 };
@@ -67,8 +66,7 @@ class copyref {
 
 public:
     copyref(const copyref& ref) : inner(new T(*ref.inner)) {};
-    // XXX: make explicit?
-    copyref(const T& e) : inner(new T(e)) {};
+    explicit copyref(const T& e) : inner(new T(e)) {};
 
     const copyref& operator=(const copyref& ref) {
         inner.reset(new T(*ref.inner));
@@ -80,7 +78,6 @@ public:
     }
 
     T get() const { return *inner; }
-
     operator T() { return get(); }
 
 };

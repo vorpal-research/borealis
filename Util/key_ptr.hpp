@@ -58,8 +58,6 @@ template<class T> struct hash<borealis::util::key_holder_ptr<T>> {
 namespace borealis {
 namespace util {
 
-
-
 // ptr class adapter with value-based comparisons and hash
 // intended to be used in maps and unordered maps
 template<class T>

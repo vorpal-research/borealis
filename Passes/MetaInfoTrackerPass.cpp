@@ -13,8 +13,8 @@
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
 #include "Passes/MetaInfoTrackerPass.h"
-#include "Util/util.h"
 #include "Util/iterators.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 

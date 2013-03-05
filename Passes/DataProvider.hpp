@@ -13,8 +13,8 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "Util/util.h"
 #include "Util/typeindex.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -40,8 +40,8 @@ public:
 
 	static char ID;
 
-	DataProvider(): llvm::ImmutablePass(ID), value(nullptr){ enforce_static(st); }
-	DataProvider(const T* v): llvm::ImmutablePass(ID), value(v){ enforce_static(st); }
+	DataProvider(): llvm::ImmutablePass(ID), value(nullptr) { enforce_static(st); }
+	DataProvider(const T* v): llvm::ImmutablePass(ID), value(v) { enforce_static(st); }
 
 	virtual void initializePass() {}
 

@@ -7,8 +7,8 @@
 
 #include <llvm/Analysis/LoopPass.h>
 #include <llvm/Analysis/RegionPass.h>
-#include <llvm/Pass.h>
 #include <llvm/CallGraphSCCPass.h>
+#include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include "Logging/logger.hpp"

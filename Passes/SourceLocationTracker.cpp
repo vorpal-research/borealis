@@ -5,14 +5,15 @@
  *      Author: belyaev
  */
 
-#include "SourceLocationTracker.h"
-
 #include "Logging/tracer.hpp"
+#include "Passes/SourceLocationTracker.h"
 
 namespace borealis {
 
 bool SourceLocationTracker::runOnModule(llvm::Module& M) {
-	using namespace::llvm;
+	using namespace llvm;
+    using borealis::util::containsKey;
+	using borealis::util::view;
 
 	TRACE_FUNC;
 
@@ -20,8 +21,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 	llvm::DebugInfoFinder dif;
 	dif.processModule(M);
 
-	for (auto it = dif.subprogram_begin(); it != dif.subprogram_end(); ++it) {
-		MDNode *mdnode = *it;
+	for (auto* mdnode : view(dif.subprogram_begin(), dif.subprogram_end())) {
 		DIDescriptor diDesc(mdnode);
 		if (!diDesc.isSubprogram())
 			continue;
@@ -30,17 +30,14 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 		valueDebugInfo.put(Locus(subProg.getFilename().str(), subProg.getLineNumber(), 0U), subProg.getFunction());
 	}
 
-	for (auto it = dif.global_variable_begin(); it != dif.global_variable_end(); ++it) {
-		MDNode *mdnode = *it;
+	for (auto* mdnode : view(dif.global_variable_begin(), dif.global_variable_end())) {
 		DIDescriptor diDesc(mdnode);
 		if (!diDesc.isGlobalVariable())
 			continue;
 
 		DIGlobalVariable glob(mdnode);
-		if(glob.getGlobal()) valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
+		if (glob.getGlobal()) valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
 	}
-
-	using borealis::util::containsKey;
 
 	for (auto& F : M) {
 		for (auto& BB : F) {
@@ -105,8 +102,8 @@ SourceLocationTracker::valueDebugMap::const_range SourceLocationTracker::getRang
 	return valueDebugInfo.range_after(loc);
 }
 
-void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	Info.setPreservesAll();
+void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+	AU.setPreservesAll();
 }
 
 void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module*) const {
@@ -120,7 +117,7 @@ void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module*) c
 }
 
 char SourceLocationTracker::ID;
-static llvm::RegisterPass<SourceLocationTracker>
+static RegisterPass<SourceLocationTracker>
 X("source-location-tracker", "Clang metadata extractor to provide values with their source locations");
 
 } // namespace borealis

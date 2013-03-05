@@ -11,8 +11,7 @@
 #include <iterator>
 
 namespace borealis {
-namespace util{
-
+namespace util {
 
 template<class Container>
 std::pair<typename Container::iterator, typename Container::iterator>
@@ -25,6 +24,12 @@ std::pair<typename Container::const_iterator, typename Container::const_iterator
 begin_end_pair(const Container& c) {
     return std::make_pair(c.begin(), c.end());
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Mapped iterator
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template <class RootIt, class UnaryFunc>
 class mapped_iterator {
@@ -44,22 +49,23 @@ public:
   typedef RootIt iterator_type;
   typedef mapped_iterator<RootIt, UnaryFunc> _Self;
 
-  inline const RootIt &getCurrent() const { return current; }
-  inline const UnaryFunc &getFunc() const { return Fn; }
+  inline const RootIt& getCurrent() const { return current; }
+  inline const UnaryFunc& getFunc() const { return Fn; }
 
-  inline explicit mapped_iterator(const RootIt &I, UnaryFunc F)
+  inline explicit mapped_iterator(const RootIt& I, UnaryFunc F)
     : current(I), Fn(F) {}
-  inline mapped_iterator(const mapped_iterator &It)
+  inline mapped_iterator(const mapped_iterator& It)
     : current(It.current), Fn(It.Fn) {}
 
   inline value_type operator*() const {   // All this work to do this
-    return Fn(*current);         // little change
+    return Fn(*current);                  // little change
   }
 
   _Self& operator++() { ++current; return *this; }
   _Self& operator--() { --current; return *this; }
   _Self  operator++(int) { _Self __tmp = *this; ++current; return __tmp; }
   _Self  operator--(int) { _Self __tmp = *this; --current; return __tmp; }
+
   _Self  operator+    (difference_type n) const {
     return _Self(current + n, Fn);
   }
@@ -68,13 +74,12 @@ public:
     return _Self(current - n, Fn);
   }
   _Self& operator-=   (difference_type n) { current -= n; return *this; }
-  reference operator[](difference_type n) const { return *(*this + n); }
 
-  inline bool operator!=(const _Self &X) const { return !operator==(X); }
-  inline bool operator==(const _Self &X) const { return current == X.current; }
-  inline bool operator< (const _Self &X) const { return current <  X.current; }
+  inline bool operator!=(const _Self& X) const { return !operator==(X); }
+  inline bool operator==(const _Self& X) const { return current == X.current; }
+  inline bool operator< (const _Self& X) const { return current <  X.current; }
 
-  inline difference_type operator-(const _Self &X) const {
+  inline difference_type operator-(const _Self& X) const {
     return current - X.current;
   }
 };
@@ -87,12 +92,18 @@ operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
 }
 
 // map_iterator - Provide a convenient way to create mapped_iterators, just like
-// make_pair is useful for creating pairs...
+// make_pair is used for creating pairs...
 //
 template <class ItTy, class FuncTy>
-inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy &I, FuncTy F) {
+inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy& I, FuncTy F) {
   return mapped_iterator<ItTy, FuncTy>(I, F);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Flattened iterator
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template <class RootIt>
 class flattened_iterator {
@@ -108,8 +119,9 @@ class flattened_iterator {
         while (current != end && child == current->end())
         {
             ++current;
-            if (current != end)
+            if (current != end) {
                 child = current->begin();
+            }
         }
     }
 
@@ -133,16 +145,15 @@ public:
     inline ChildIt& getChild() { return child; }
     inline const ChildIt& getChild() const { return child; }
 
-
-    inline flattened_iterator(const RootIt &I, const RootIt &E)
+    inline flattened_iterator(const RootIt& I, const RootIt& E)
     : current(I), end(E), child(I != E ? I->begin() : ChildIt() ) {
         validate();
     }
 
-    inline explicit flattened_iterator(const std::pair<RootIt, RootIt> &P)
+    inline explicit flattened_iterator(const std::pair<RootIt, RootIt>& P)
     : flattened_iterator(P.first, P.second) {}
 
-    inline flattened_iterator(const flattened_iterator &It)
+    inline flattened_iterator(const flattened_iterator& It)
     : current(It.current), end(It.end), child(It.child) {}
 
     inline reference operator*() const {
@@ -191,8 +202,9 @@ inline flattened_iterator<flattened_iterator<ItTy>> flat2_iterator(const ItTy& I
 
 template <class ItTy>
 inline flattened_iterator<flattened_iterator<ItTy>> flat2_iterator(const ItTy& E) {
-  return flat2_iterator(E,E);
+  return flat2_iterator(E, E);
 }
+
 
 
 template <class Con>
@@ -235,12 +247,17 @@ inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat
   return flat2_iterator(C.end());
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Filtered iterator
+//
+////////////////////////////////////////////////////////////////////////////////
+
 template <class RootIt, class Pred>
 class filtered_iterator {
     RootIt current;
     RootIt end;
     Pred pred;
-
 
     // restore the invariant ( pred(*current) == true || current == end )
     void validate() {
@@ -265,16 +282,16 @@ public:
 
     inline const RootIt& getCurrent() const { return current; }
 
-    inline filtered_iterator(const RootIt &I, const RootIt &E, Pred pred)
+    inline filtered_iterator(const RootIt& I, const RootIt& E, Pred pred)
     : current(I), end(E), pred(pred) {
         validate();
     };
 
 
-    inline explicit filtered_iterator(const std::pair<RootIt, RootIt> &P, Pred pred)
+    inline explicit filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
     : filtered_iterator(P.first, P.second, pred) {}
 
-    inline filtered_iterator(const filtered_iterator &It)
+    inline filtered_iterator(const filtered_iterator& It)
     : current(It.current), end(It.end), pred(It.pred) {}
 
     inline reference operator*() const {
@@ -300,7 +317,6 @@ public:
     inline bool operator==(const self& X) const {
         return current == X.current;
     }
-
 };
 
 template<class It, class Pred>
@@ -313,6 +329,12 @@ filtered_iterator<It, Pred> filter_iterator(It end, Pred pred) {
     return filtered_iterator<It, Pred>(end, end, pred);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Key iterator
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<class Iterator>
 class key_iterator {
@@ -359,6 +381,12 @@ std::pair<key_iterator<Iterator>, key_iterator<Iterator>> iterate_keys(const std
     };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// Value iterator
+//
+////////////////////////////////////////////////////////////////////////////////
+
 template<class Iterator>
 class value_iterator {
     Iterator base;
@@ -403,6 +431,12 @@ std::pair<value_iterator<Iterator>, value_iterator<Iterator>> iterate_values(con
         iterate_values(it.second)
     };
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Value const iterator
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<class Iterator>
 class value_citerator {
@@ -449,9 +483,7 @@ std::pair<value_citerator<Iterator>, value_citerator<Iterator>> citerate_values(
     };
 }
 
-
-
-}
-}
+} // namespace util
+} // namespace borealis
 
 #endif /* ITERATORS_HPP_ */

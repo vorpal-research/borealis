@@ -14,11 +14,11 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "SourceLocationTracker/location_container.hpp"
-#include "Util/util.h"
-
 #include <map>
 #include <tuple>
+
+#include "SourceLocationTracker/location_container.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -39,10 +39,10 @@ public:
 
 	SourceLocationTracker() : llvm::ModulePass(ID) {}
 	virtual bool runOnModule(llvm::Module& M);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~SourceLocationTracker() {}
 
-    virtual void print(llvm::raw_ostream &O, const llvm::Module *M) const;
+    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const;
 
 	const std::string& getFilenameFor(llvm::Value* val) const;
 	unsigned getLineFor(llvm::Value* val) const;

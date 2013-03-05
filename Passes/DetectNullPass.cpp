@@ -122,15 +122,13 @@ private:
 
         for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
             Value* incoming = I.getIncomingValue(i);
-            if (isa<Value>(incoming)) {
-                if (isa<PHINode>(incoming)) {
-                    auto sub = getIncomingValues(
-                            *cast<PHINode>(incoming),
-                            visited);
-                    res.insert(sub.begin(), sub.end());
-                } else {
-                    res.insert(cast<Value>(incoming));
-                }
+            if (isa<PHINode>(incoming)) {
+                auto sub = getIncomingValues(
+                        *cast<PHINode>(incoming),
+                        visited);
+                res.insert(sub.begin(), sub.end());
+            } else {
+                res.insert(incoming);
             }
         }
 
@@ -143,8 +141,8 @@ private:
 DetectNullPass::DetectNullPass() : ProxyFunctionPass(ID) {}
 DetectNullPass::DetectNullPass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
-void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	Info.setPreservesAll();
+void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+	AU.setPreservesAll();
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
@@ -162,18 +160,6 @@ bool DetectNullPass::runOnFunction(llvm::Function& F) {
 }
 
 DetectNullPass::~DetectNullPass() {}
-
-llvm::raw_ostream& operator <<(llvm::raw_ostream& s, const NullInfo& info) {
-	using borealis::util::enums::asInteger;
-	using borealis::util::streams::endl;
-
-    s << asInteger(info.type) << ":" << endl;
-	for(const auto& entry : info.offsetInfoMap) {
-		s << entry.first << "->" << asInteger(entry.second) << endl;
-	}
-
-	return s;
-}
 
 char DetectNullPass::ID;
 static RegisterPass<DetectNullPass>
