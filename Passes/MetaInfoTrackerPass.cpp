@@ -91,7 +91,7 @@ static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node
 
 bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using borealis::util::view;
-    using borealis::util::flat2View;
+    using borealis::util::viewContainer;
 
     using llvm::inst_begin;
     using llvm::inst_end;
@@ -136,14 +136,13 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     }
 
     for (auto& msp : view(dfi.subprogram_begin(), dfi.subprogram_end())) {
-        DIDescriptor di(msp);
-        if (!di.isSubprogram()) continue;
+        if (!DIDescriptor(msp).isSubprogram()) continue;
 
         DISubprogram sp(msp);
         vars.put(sp.getFunction(), mkVI(sm, sp));
     }
 
-    for (auto& I : flat2View(M.begin(), M.end())) {
+    for (auto& I : viewContainer(M).flatten().flatten()) {
 
         if (DbgDeclareInst* inst = dyn_cast_or_null<DbgDeclareInst>(&I)) {
             auto* val = inst->getAddress();

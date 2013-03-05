@@ -16,6 +16,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "iterators.hpp"
+
 namespace borealis {
 namespace util {
 
@@ -35,6 +37,13 @@ public:
     ContainerIter begin() const { return begin_; }
     ContainerIter end() const { return end_; }
     bool empty() const { return begin_ == end_; }
+
+#include "Util/macros.h"
+    CollectionView<flattened_iterator<ContainerIter>> flatten() {
+        return CollectionView<flattened_iterator<ContainerIter>>{flat_iterator(begin_, end_), flat_iterator(end_)};
+    }
+#include "Util/unmacros.h"
+
 };
 
 template<class Container>
@@ -50,6 +59,26 @@ inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
 template<class Iter>
 inline auto view(const std::pair<Iter,Iter>& is) -> CollectionView<Iter> {
     return CollectionView<Iter>(is);
+}
+
+template<class Container>
+inline auto viewContainer(const Container* con) -> CollectionView<decltype(con->begin())> {
+    return CollectionView<decltype(con->begin())>{ con->begin(), con->end() };
+}
+
+template<class Container>
+inline auto viewContainer(const Container& con) -> CollectionView<decltype(con.begin())> {
+    return CollectionView<decltype(con.begin())>{ con.begin(), con.end() };
+}
+
+template<class Container>
+inline auto viewContainer(Container* con) -> CollectionView<decltype(con->begin())> {
+    return CollectionView<decltype(con->begin())>{ con->begin(), con->end() };
+}
+
+template<class Container>
+inline auto viewContainer(Container& con) -> CollectionView<decltype(con.begin())> {
+    return CollectionView<decltype(con.begin())>{ con.begin(), con.end() };
 }
 
 template<class Container>
