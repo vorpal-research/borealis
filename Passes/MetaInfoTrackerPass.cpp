@@ -146,7 +146,7 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
     for (auto& I : viewContainer(M).flatten().flatten()) {
 
-        if (DbgDeclareInst* inst = dyn_cast_or_null<DbgDeclareInst>(&I)) {
+        if (DbgDeclareInst* inst = dyn_cast<DbgDeclareInst>(&I)) {
             auto* val = inst->getAddress();
             DIVariable var(inst->getVariable());
 
