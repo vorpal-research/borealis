@@ -17,7 +17,8 @@ GEPPredicate::GEPPredicate(
         PredicateType type) :
             Predicate(type_id(*this), type),
             lhv(lhv),
-            rhv(rhv) {
+            rhv(rhv),
+            shifts(shifts) {
 
     std::string a = "0";
     for (const auto& shift : shifts) {

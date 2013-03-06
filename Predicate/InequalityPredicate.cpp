@@ -16,7 +16,7 @@ InequalityPredicate::InequalityPredicate(
             Predicate(type_id(*this), type),
             lhv(lhv),
             rhv(rhv) {
-    this->asString = this->lhv->getName() + "=" + this->rhv->getName();
+    this->asString = this->lhv->getName() + "!=" + this->rhv->getName();
 }
 
 logic::Bool InequalityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
