@@ -34,8 +34,8 @@ public:
 
 protected:
 
-    Term(id_t id, llvm::ValueType type, const std::string& name, borealis::id_t term_type_id) :
-        id(id), type(type), name(name), term_type_id(term_type_id) {};
+    Term(id_t id, const std::string& name, borealis::id_t term_type_id) :
+        id(id), name(name), term_type_id(term_type_id) {};
     Term(const Term&) = default;
     virtual ~Term() {};
 
@@ -43,10 +43,6 @@ public:
 
     id_t getId() const {
         return id;
-    }
-
-    llvm::ValueType getType() const {
-        return type;
     }
 
     const std::string& getName() const {
@@ -87,7 +83,6 @@ public:
 private:
 
     const id_t id;
-    const llvm::ValueType type;
     const std::string name;
     const borealis::id_t term_type_id;
 

@@ -123,11 +123,6 @@ f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
     return z3::to_expr( ctx, ast );
 }
 
-f::Dynamic Z3ExprFactory::getExprForTerm(
-        const Term& term) {
-    return getExprByTypeAndName(term.getType(), term.getName());
-}
-
 f::Dynamic Z3ExprFactory::getExprForValue(
         const llvm::Value& value,
         const std::string& name) {

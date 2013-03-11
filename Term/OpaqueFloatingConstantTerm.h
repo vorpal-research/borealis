@@ -21,7 +21,6 @@ class OpaqueFloatingConstantTerm: public borealis::Term {
     OpaqueFloatingConstantTerm(double value):
         Term(
             std::hash<double>()(value),
-            llvm::ValueType::REAL_CONST,
             borealis::util::toString(value),
             type_id(*this)
         ), value(value) {};

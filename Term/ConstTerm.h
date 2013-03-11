@@ -49,7 +49,7 @@ public:
 private:
 
     ConstTerm(llvm::Constant* c, SlotTracker* st) :
-        Term(std::hash<llvm::Constant*>()(c), llvm::valueType(*c), st->getLocalName(c), type_id(*this)),
+        Term(std::hash<llvm::Constant*>()(c), st->getLocalName(c), type_id(*this)),
         constant(c) {};
 
     llvm::Constant* constant;

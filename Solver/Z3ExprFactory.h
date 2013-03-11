@@ -95,8 +95,6 @@ public:
     Dynamic getExprByTypeAndName(
             const llvm::ValueType type,
             const std::string& name);
-    Dynamic getExprForTerm(
-            const Term& term);
     Dynamic getExprForValue(
             const llvm::Value& value,
             const std::string& name);

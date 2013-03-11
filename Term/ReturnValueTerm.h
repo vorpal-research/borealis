@@ -49,7 +49,6 @@ private:
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
         Term(
                 std::hash<llvm::Function*>()(F),
-                llvm::type2type(*F->getFunctionType()->getReturnType()),
                 "\\result",
                 type_id(*this)
         ), F(F) {}

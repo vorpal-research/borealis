@@ -51,7 +51,7 @@ public:
 private:
 
     ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
-        Term(std::hash<llvm::Argument*>()(a), llvm::valueType(*a), st->getLocalName(a), type_id(*this)),
+        Term(std::hash<llvm::Argument*>()(a), st->getLocalName(a), type_id(*this)),
         a(a) {}
 
     llvm::Argument* a;

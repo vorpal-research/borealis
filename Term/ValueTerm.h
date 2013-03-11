@@ -52,7 +52,7 @@ public:
 private:
 
     ValueTerm(llvm::Value* v, SlotTracker* st) :
-        Term(std::hash<llvm::Value*>()(v), llvm::valueType(*v), st->getLocalName(v), type_id(*this)),
+        Term(std::hash<llvm::Value*>()(v), st->getLocalName(v), type_id(*this)),
         v(v) {}
 
     llvm::Value* v;

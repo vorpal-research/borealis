@@ -21,7 +21,6 @@ class LoadTerm: public borealis::Term {
     LoadTerm(Term::Ptr rhv):
         Term(
                 rhv->getId(),
-                llvm::ValueType::PTR_VAR, // FIXME: infer the correct type?
                 "*(" + rhv->getName() + ")",
                 type_id(*this)
         ), rhv(rhv) {};

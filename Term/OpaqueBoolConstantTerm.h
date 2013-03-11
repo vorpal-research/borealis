@@ -21,7 +21,6 @@ class OpaqueBoolConstantTerm: public borealis::Term {
     OpaqueBoolConstantTerm(bool value):
         Term(
             static_cast<id_t>(value),
-            llvm::ValueType::BOOL_CONST,
             value ? "true" : "false",
             type_id(*this)
         ), value(value) {};

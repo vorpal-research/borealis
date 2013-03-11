@@ -22,7 +22,6 @@ class OpaqueVarTerm: public borealis::Term {
     OpaqueVarTerm(const std::string& vname):
         Term(
              std::hash<std::string>()(vname),
-             llvm::ValueType::UNKNOWN,
              vname,
              type_id(*this)
         ), vname(vname) {};

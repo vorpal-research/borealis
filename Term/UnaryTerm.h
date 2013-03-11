@@ -23,7 +23,6 @@ class UnaryTerm: public borealis::Term {
     UnaryTerm(llvm::UnaryArithType opcode, Term::Ptr rhv):
         Term(
                 rhv->getId(),
-                llvm::ValueType::INT_VAR, // FIXME: infer the correct type?
                 llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), rhv(rhv){};
