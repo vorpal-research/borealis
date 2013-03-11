@@ -550,7 +550,8 @@ struct read_lor2 :
         seq< read_land2, star< read_lor > > {
 };
 // lor2 is the root of all expressions (as we don't consider even less bound ones)
-// XXX: do we need to implement ternary operator (?) if we do, it will be right below lor2
+// XXX: do we need to implement ternary operator (:?)
+// if we do, it will be right below lor2
 struct read_expr :
         read_lor2 {
 };

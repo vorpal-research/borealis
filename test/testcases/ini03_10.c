@@ -4,18 +4,17 @@
 
 // Yep.
 
-#include "test_include.h"
+//#include "test_include.h"
 
 int x = 11;
 
-/* @ensures x+x == 22
+/* ensures x+x == 22
    @requires 2
  */
    // @ignore
 // @requires 2+2
-
-
-int main(void)
+// @requires argc > 0
+int main(int argc, char* argv[])
 {
     int a[5] = {0, 1, 2, 3, 4};
     // @assert a != 0
