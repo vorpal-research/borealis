@@ -8,14 +8,19 @@
 #ifndef Z3SOLVER_H_
 #define Z3SOLVER_H_
 
+#include "Logging/logger.hpp"
 #include "Solver/Z3ExprFactory.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 
-class Z3Solver {
+class Z3Solver : public borealis::logging::ClassLevelLogging<Z3Solver> {
 
 public:
+
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("z3solver")
+#include "Util/unmacros.h"
 
     Z3Solver(Z3ExprFactory& z3ef);
 

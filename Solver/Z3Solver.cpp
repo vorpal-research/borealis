@@ -5,7 +5,6 @@
  *      Author: ice-phoenix
  */
 
-#include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
 #include "Solver/Logic.hpp"
 #include "Solver/Z3Solver.h"
