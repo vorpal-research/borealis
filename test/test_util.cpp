@@ -21,22 +21,6 @@ using namespace borealis::util::streams;
 TEST(Util, views) {
 
 	{
-		std::vector<int> f{1,2,3,4};
-		EXPECT_EQ(head(f), 1);
-
-		std::ostringstream ost;
-		for_each(tail(f), [&](int v){ ost << v; });
-		EXPECT_EQ(ost.str(), "234");
-	}
-
-	{
-		int arr[] = {22,23,24,25};
-		std::ostringstream ost;
-		for_each(view(arr,arr+4), [&](int v){ ost << v; });
-		EXPECT_EQ(ost.str(), "22232425");
-	}
-
-	{
 		struct fail_on_copy {
 			int numcopies;
 			fail_on_copy(): numcopies(0){};
