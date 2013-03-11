@@ -20,6 +20,7 @@
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
 #include "Passes/DataProvider.hpp"
+#include "Passes/SlotTrackerPass.h"
 
 namespace borealis {
 
@@ -37,6 +38,7 @@ public:
     AnnotatorPass(): llvm::ModulePass(ID) {};
 
     typedef DataProvider<borealis::comments::GatherCommentsAction> comments;
+    typedef SlotTrackerPass slots;
     typedef std::vector< Annotation::Ptr > annotation_container;
 
 private:

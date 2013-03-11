@@ -38,7 +38,7 @@ public:
 #include "Util/unmacros.h"
 
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
-        return z3ef.getIntConst(value, z3ef.sizeForType(getTermType()));
+        return z3ef.getIntConst(value);
     }
 
     static bool classof(const Term* t) {

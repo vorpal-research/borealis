@@ -93,6 +93,7 @@ enum class ArithType {
     LSH,
     RSH
 };
+ArithType arithType(llvm::BinaryOperator::BinaryOps llops);
 std::string arithString(ArithType opCode);
 
 enum class UnaryArithType {
@@ -102,14 +103,11 @@ enum class UnaryArithType {
 };
 std::string unaryArithString(UnaryArithType opCode);
 
-
-
 inline borealis::Locus instructionLocus(const Instruction* inst) {
     auto node = inst->getMetadata("dbg");
     if(node) return DILocation(node);
     else return borealis::Locus();
 }
-
 
 inline std::string valueSummary(Value* v) {
     if(!v) return "<nullptr>";

@@ -117,6 +117,10 @@ private:
         return !llvm::isa<llvm::Function>(pr.second);
     }
 
+    static bool isArg(VarInfoContainer::loc_value_iterator::reference pr) {
+        return llvm::isa<llvm::Argument>(pr.second);
+    }
+
 public:
 
     static char ID;
@@ -139,6 +143,10 @@ public:
             return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
         case DiscoveryPolicy::PreviousFunction:
             return locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
+        case DiscoveryPolicy::NextArgument:
+            return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isArg);
+        case DiscoveryPolicy::PreviousArgument:
+            return locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");
         }
@@ -154,6 +162,10 @@ public:
             return locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
         case DiscoveryPolicy::PreviousFunction:
             return locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
+        case DiscoveryPolicy::NextArgument:
+            return locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isArg);
+        case DiscoveryPolicy::PreviousArgument:
+            return locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");
         }

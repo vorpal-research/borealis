@@ -25,8 +25,6 @@
  *
  * Note that the one-liners can be big and the impact will be significant.
  *
- * TODO: the name choice is poor
- *
  * */
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 

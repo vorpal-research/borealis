@@ -63,8 +63,7 @@ MetaInfoTrackerPass::ValueDescriptor AnnotationMaterializer::forName(const std::
     case NameContext::Placement::InnerScope:
         return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::PreviousVal);
     case NameContext::Placement::OuterScope:
-        // FIXME: outer scope annotations may bind only to function arguments
-        return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::NextVal);
+        return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::NextArgument);
     }
 }
 

@@ -939,13 +939,10 @@ std::vector<BitVector<ElemSize>> splitBytes(SomeExpr bv) {
     DynBitVectorExpr bvv = bv.to<DynBitVectorExpr>().getUnsafe();
     size_t width = bvv.getBitSize();
 
-    // FIXME: check for the <= case
-    if (width == ElemSize) {
-        for (auto& ibv: bv.to<Byte>()) {
-            return std::vector<Byte>{ ibv };
-        }
-
-        BYE_BYE(std::vector<Byte>, "Invalid dynamic BitVector, cannot convert to Byte");
+    if (width <= ElemSize) {
+        SomeExpr newv = bvv.growTo(ElemSize);
+        ASSERT(newv.is<Byte>(), "Invalid dynamic BitVector, cannot convert to Byte");
+        return std::vector<Byte>{ newv.to<Byte>().getUnsafe() };
     }
 
     z3::context& ctx = z3impl::getContext(bvv);

@@ -9,20 +9,23 @@
 #include "Passes/AnnotatorPass.h"
 #include "Term/Term.h"
 #include "Term/TermFactory.h"
+#include "Util/util.h"
 
 namespace borealis {
 
-void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const{
-    Info.setPreservesAll();
-    Info.addRequiredTransitive< comments >();
+void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+    AU.setPreservesAll();
+    AUX< comments >::addRequiredTransitive(AU);
+    AUX< slots >::addRequiredTransitive(AU);
 }
 
-bool AnnotatorPass::runOnModule(llvm::Module&) {
+bool AnnotatorPass::runOnModule(llvm::Module& M) {
     using borealis::util::view;
 
-    auto& commentsPass = getAnalysis< comments >();
+    auto& commentsPass = GetAnalysis< comments >::doit(this);
 
-    auto tf = TermFactory::get(nullptr); // FIXME: Add SlotTrackerPass to get correct SlotTracker
+    auto* st = GetAnalysis< slots >::doit(this).getSlotTracker(M);
+    auto tf = TermFactory::get(st);
 
     for (const auto & Comment : commentsPass.provide().getComments()) {
         const auto& loc = Comment.first;

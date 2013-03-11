@@ -212,38 +212,14 @@ public:
     void visitBinaryOperator(llvm::BinaryOperator& I) {
         using llvm::Value;
         using llvm::ArithType;
+        using llvm::arithType;
 
         typedef llvm::Instruction::BinaryOps OPS;
 
         Value* lhv = &I;
         Value* op1 = I.getOperand(0);
         Value* op2 = I.getOperand(1);
-        OPS opCode = I.getOpcode();
-
-        ArithType type;
-
-        // TODO: rewrite
-        switch (opCode) {
-        case OPS::Add:
-        case OPS::FAdd:
-            type = ArithType::ADD;
-            break;
-        case OPS::Sub:
-        case OPS::FSub:
-            type = ArithType::SUB;
-            break;
-        case OPS::Mul:
-        case OPS::FMul:
-            type = ArithType::MUL;
-            break;
-        case OPS::UDiv:
-        case OPS::SDiv:
-        case OPS::FDiv:
-            type = ArithType::DIV;
-            break;
-        default:
-            return; // FIXME: Do smth?
-        }
+        ArithType type = arithType(I.getOpcode());
 
         pass->PM[&I] = pass->PF->getArithPredicate(
                 pass->TF->getValueTerm(lhv),

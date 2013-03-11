@@ -11,6 +11,7 @@
 #include "Passes/AnnotatorPass.h"
 #include "Passes/FunctionManager.h"
 #include "Passes/MetaInfoTrackerPass.h"
+#include "Passes/SlotTrackerPass.h"
 #include "Passes/SourceLocationTracker.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/AnnotationMaterializer.h"
@@ -29,18 +30,20 @@ void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
     AUX<AnnotatorPass>::addRequiredTransitive(AU);
     AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
+    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
-bool FunctionManager::runOnModule(llvm::Module& /* M */) {
+bool FunctionManager::runOnModule(llvm::Module& M) {
     using namespace llvm;
 
     AnnotatorPass& annotations = GetAnalysis< AnnotatorPass >::doit(this);
     MetaInfoTrackerPass& meta =  GetAnalysis< MetaInfoTrackerPass >::doit(this);
     SourceLocationTracker& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
-    PredicateFactory::Ptr PF = PredicateFactory::get(nullptr); // FIXME: Add SlotTrackerPass
-    TermFactory::Ptr TF = TermFactory::get(nullptr); // FIXME: Add SlotTrackerPass
+    SlotTracker* slots = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
+    PredicateFactory::Ptr PF = PredicateFactory::get(slots);
+    TermFactory::Ptr TF = TermFactory::get(slots);
 
     for (Annotation::Ptr a : annotations) {
         Annotation::Ptr anno = materialize(a, TF.get(), &meta);

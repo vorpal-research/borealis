@@ -96,6 +96,9 @@ private:
     void processBranchInst(
             const llvm::BranchInst& I,
             const PredicateState& state);
+    void processSwitchInst(
+            const llvm::SwitchInst& I,
+            const PredicateState& state);
 
     PredicateState PM(const llvm::Instruction* I);
     PredicateState PPM(PhiBranch key);

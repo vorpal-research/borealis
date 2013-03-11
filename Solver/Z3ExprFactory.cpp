@@ -61,19 +61,19 @@ f::Bool Z3ExprFactory::getFalse() {
     return getBoolConst(false);
 }
 
-f::Integer Z3ExprFactory::getIntVar(const std::string& name, size_t /* bits */) {
+f::Integer Z3ExprFactory::getIntVar(const std::string& name) {
     return f::Integer::mkVar(ctx, name);
 }
 
-f::Integer Z3ExprFactory::getFreshIntVar(const std::string& name, size_t /* bits */ ) {
+f::Integer Z3ExprFactory::getFreshIntVar(const std::string& name) {
     return f::Integer::mkFreshVar(ctx, name);
 }
 
-f::Integer Z3ExprFactory::getIntConst(int v, size_t /* bits */) {
+f::Integer Z3ExprFactory::getIntConst(int v) {
     return f::Integer::mkConst(ctx, v);
 }
 
-f::Integer Z3ExprFactory::getIntConst(const std::string& v, size_t /* bits */) {
+f::Integer Z3ExprFactory::getIntConst(const std::string& v) {
     std::istringstream ost(v);
     unsigned long long ull;
     ost >> ull;
@@ -124,9 +124,8 @@ f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
 }
 
 f::Dynamic Z3ExprFactory::getExprForTerm(
-        const Term& term,
-        size_t bits) {
-    return getExprByTypeAndName(term.getType(), term.getName(), bits);
+        const Term& term) {
+    return getExprByTypeAndName(term.getType(), term.getName());
 }
 
 f::Dynamic Z3ExprFactory::getExprForValue(
@@ -137,21 +136,20 @@ f::Dynamic Z3ExprFactory::getExprForValue(
 
 f::Dynamic Z3ExprFactory::getExprByTypeAndName(
         const llvm::ValueType type,
-        const std::string& name,
-        size_t bitsize) {
+        const std::string& name) {
     using llvm::ValueType;
 
     switch(type) {
     case ValueType::INT_CONST:
-        return getIntConst(name, (!bitsize)?32:bitsize); // FIXME
+        return getIntConst(name);
     case ValueType::INT_VAR:
-        return getIntVar(name, (!bitsize)?32:bitsize); // FIXME
+        return getIntVar(name);
     case ValueType::REAL_CONST:
         return getRealConst(name);
     case ValueType::REAL_VAR:
         return getRealVar(name);
     case ValueType::BOOL_CONST:
-        return getBoolConst(name == "TRUE" || name == "true"); // FIXME
+        return getBoolConst(name == "TRUE" || name == "true");
     case ValueType::BOOL_VAR:
         return getBoolVar(name);
     case ValueType::NULL_PTR_CONST:

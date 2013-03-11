@@ -68,7 +68,6 @@ public:
     }
 
     virtual ~AggregateFunctionPass() {
-        // TODO: make deletion type-aware?
         for (FunctionPass* child : children) {
             delete child;
         }

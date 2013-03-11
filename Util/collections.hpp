@@ -214,57 +214,7 @@ void tuple_for_each(Tup& tup, Op op) {
     return delegate::apply(tup, op);
 }
 
-namespace impl_ {
-namespace {
-
-inline static size_t hash_combiner(size_t left, size_t right) // replaceable
-{ return left^right; }
-
-template<int index, class...types>
-struct hash_impl {
-    size_t operator()(size_t a, const std::tuple<types...>& t) const {
-        typedef typename std::tuple_element<index, std::tuple<types...>>::type nexttype;
-        hash_impl<index-1, types...> next;
-        size_t b = std::hash<nexttype>()(std::get<index>(t));
-        return next(hash_combiner(a, b), t);
-    }
-};
-
-template<class...types>
-struct hash_impl<0, types...> {
-    size_t operator()(size_t a, const std::tuple<types...>& t) const {
-        typedef typename std::tuple_element<0, std::tuple<types...>>::type nexttype;
-        size_t b = std::hash<nexttype>()(std::get<0>(t));
-        return hash_combiner(a, b);
-    }
-};
-
-} // namespace
-} // namespace impl_
-
 } // namespace util
 } // namespace borealis
-
-
-
-namespace std {
-
-template<class...types>
-struct hash<std::tuple<types...>> {
-    size_t operator()(const std::tuple<types...>& t) const {
-        const size_t begin = std::tuple_size<std::tuple<types...>>::value-1;
-        return borealis::util::impl_::hash_impl<begin, types...>()(1, t); // FIXME: 1 should be some larger value
-    }
-};
-
-template<class T, class U>
-struct hash<std::pair<T, U>> {
-    size_t operator()(const std::pair<T, U >& t) const {
-        const size_t begin = 1;
-        return borealis::util::impl_::hash_impl<begin, T, U>()(1, t); // FIXME: 1 should be some larger value
-    }
-};
-
-} // namespace std
 
 #endif /* COLLECTIONS_HPP_ */

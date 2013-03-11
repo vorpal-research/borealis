@@ -196,6 +196,34 @@ Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
     return LI->getLoopFor(inst->getParent());
 }
 
+ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {
+    typedef llvm::BinaryOperator::BinaryOps ops;
+
+    switch(llops) {
+    case ops::Add:  return ArithType::ADD;
+    case ops::FAdd: return ArithType::ADD;
+    case ops::Sub:  return ArithType::SUB;
+    case ops::FSub: return ArithType::SUB;
+    case ops::Mul:  return ArithType::MUL;
+    case ops::FMul: return ArithType::MUL;
+    case ops::UDiv: return ArithType::DIV;
+    case ops::SDiv: return ArithType::DIV;
+    case ops::FDiv: return ArithType::DIV;
+    case ops::URem: return ArithType::REM;
+    case ops::SRem: return ArithType::REM;
+    case ops::FRem: return ArithType::REM;
+
+    // Logical operators (integer operands)
+    case ops::Shl:  return ArithType::LSH;
+    case ops::LShr: return ArithType::RSH;
+    case ops::AShr: return ArithType::RSH;
+    case ops::And:  return ArithType::BAND;
+    case ops::Or:   return ArithType::BOR;
+    case ops::Xor:  return ArithType::XOR;
+    default: BYE_BYE(ArithType, "Unreachable");
+    }
+}
+
 std::string arithString(ArithType opCode) {
     switch (opCode) {
     case ArithType::ADD: return "+";
@@ -203,10 +231,10 @@ std::string arithString(ArithType opCode) {
     case ArithType::MUL: return "*";
     case ArithType::DIV: return "/";
     case ArithType::REM: return "%";
-    case ArithType::BAND: return "&&";
-    case ArithType::BOR: return "||";
-    case ArithType::LAND: return "&";
-    case ArithType::LOR: return "|";
+    case ArithType::BAND: return "&";
+    case ArithType::BOR: return "|";
+    case ArithType::LAND: return "&&";
+    case ArithType::LOR: return "||";
     case ArithType::XOR: return "^";
     case ArithType::LSH: return "<<";
     case ArithType::RSH: return ">>";

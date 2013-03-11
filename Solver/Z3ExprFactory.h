@@ -46,7 +46,7 @@ public:
     typedef borealis::logic::BitVector<Pointer::bitsize> Integer;
     // logic type to represent reals
     typedef borealis::logic::BitVector<Pointer::bitsize> Real;
-    // logic type to represent memory units (FIXME: rename?)
+    // logic type to represent memory units
     typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
     // Array representing memory
     typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, logic::TheoryArray> MemArray;
@@ -78,10 +78,10 @@ public:
     Bool getTrue();
     Bool getFalse();
     // Integers
-    Integer getIntVar(const std::string& name, size_t bits);
-    Integer getFreshIntVar(const std::string& name, size_t bits);
-    Integer getIntConst(int v, size_t bits);
-    Integer getIntConst(const std::string& v, size_t bits);
+    Integer getIntVar(const std::string& name);
+    Integer getFreshIntVar(const std::string& name);
+    Integer getIntConst(int v);
+    Integer getIntConst(const std::string& v);
     // Reals
     Real getRealVar(const std::string& name);
     Real getFreshRealVar(const std::string& name);
@@ -94,11 +94,9 @@ public:
     // Generic functions
     Dynamic getExprByTypeAndName(
             const llvm::ValueType type,
-            const std::string& name,
-            size_t bitsize = 0);
+            const std::string& name);
     Dynamic getExprForTerm(
-            const Term& term,
-            size_t bits = 0);
+            const Term& term);
     Dynamic getExprForValue(
             const llvm::Value& value,
             const std::string& name);

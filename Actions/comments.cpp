@@ -55,7 +55,6 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
 
    using borealis::anno::parse;
 
-   // FIXME belyaev: get rid of intermediate StringRef, pass pointers to parse_command
    auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
    auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
    auto commands = parse(comment.str());

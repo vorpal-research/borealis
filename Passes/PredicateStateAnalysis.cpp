@@ -162,7 +162,8 @@ void PredicateStateAnalysis::processTerminator(
 
     if (isa<BranchInst>(I))
     { processBranchInst(cast<BranchInst>(I), s); }
-    // FIXME: Add support for SwitchInst
+    else if (isa<SwitchInst>(I))
+    { processSwitchInst(cast<SwitchInst>(I), s); }
 }
 
 void PredicateStateAnalysis::processBranchInst(
@@ -183,6 +184,22 @@ void PredicateStateAnalysis::processBranchInst(
         enqueue(I.getParent(), trueSucc, state.addAll(trueState));
         enqueue(I.getParent(), falseSucc, state.addAll(falseState));
     }
+}
+
+void PredicateStateAnalysis::processSwitchInst(
+        const llvm::SwitchInst& I,
+        const PredicateState& state) {
+    using namespace::llvm;
+
+    for (auto c = I.case_begin(); c != I.case_end(); ++c) {
+        const BasicBlock* caseSucc = c.getCaseSuccessor();
+        PredicateState caseState = TPM({&I, caseSucc});
+        enqueue(I.getParent(), caseSucc, state.addAll(caseState));
+    }
+
+    const BasicBlock* defaultSucc = I.getDefaultDest();
+    PredicateState defaultState = TPM({&I, defaultSucc});
+    enqueue(I.getParent(), defaultSucc, state.addAll(defaultState));
 }
 
 PredicateState PredicateStateAnalysis::PM(const llvm::Instruction* I) {

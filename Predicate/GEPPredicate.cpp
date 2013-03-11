@@ -44,7 +44,7 @@ logic::Bool GEPPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const
     Pointer lp = l.to<Pointer>().getUnsafe();
     Pointer rp = r.to<Pointer>().getUnsafe();
 
-    Pointer shift = z3ef.getIntConst(0, Pointer::bitsize);
+    Pointer shift = z3ef.getIntConst(0);
     for (const auto& s : shifts) {
         auto by = s.first->toZ3(z3ef, ctx).to<Pointer>();
         auto size = s.second->toZ3(z3ef, ctx).to<Pointer>();
@@ -65,16 +65,19 @@ bool GEPPredicate::equals(const Predicate* other) const {
     if (this == other) return true;
     if (const GEPPredicate* o = llvm::dyn_cast<GEPPredicate>(other)) {
         return *this->lhv == *o->lhv &&
-                *this->rhv == *o->rhv;
-        // FIXME: Compare this->shifts and other->shifts
+                *this->rhv == *o->rhv &&
+                std::equal(this->shifts.begin(), this->shifts.end(), o->shifts.begin(),
+                    [](const std::pair<Term::Ptr, Term::Ptr>& a, const std::pair<Term::Ptr, Term::Ptr>& b) {
+                        return *a.first == *b.first && *a.second == *b.second;
+                    }
+                );
     } else {
         return false;
     }
 }
 
 size_t GEPPredicate::hashCode() const {
-    // FIXME: Hash this->shifts as well
-    return util::hash::hasher<3, 17>()(type, lhv, rhv);
+    return util::hash::hasher<3, 17>()(type, lhv, rhv, shifts);
 }
 
 } /* namespace borealis */
