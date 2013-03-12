@@ -265,6 +265,9 @@ std::string SlotTracker::getLocalName(const Value *V) {
     } else if (isa<ConstantFP>(V)) {
         const ConstantFP* cFP = cast<ConstantFP>(V);
         return toString(cFP->getValueAPF().convertToDouble());
+    } else if (isa<Constant>(V) && !V->hasName()) {
+        // FIXME: this is generally fucked up
+        return toString(V);
     }
 
     if (V->hasName()) {
