@@ -6,7 +6,6 @@
  */
 
 #include "Passes/DefectSummaryPass.h"
-
 #include "Util/passes.hpp"
 
 #include "Passes/Checkers.def"
@@ -20,9 +19,7 @@ void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 #define HANDLE_CHECKER(Checker) \
     AUX<Checker>::addRequiredTransitive(AU);
-
 #include "Passes/Checkers.def"
-
 
 }
 
@@ -30,8 +27,8 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
     return false;
 }
 
-void DefectSummaryPass::print(llvm::raw_ostream& str, const llvm::Module* M) const {
-    GetAnalysis<DefectManager>::doit(this).print(str, M);
+void DefectSummaryPass::print(llvm::raw_ostream& O, const llvm::Module* M) const {
+    GetAnalysis<DefectManager>::doit(this).print(O, M);
 }
 
 char DefectSummaryPass::ID;
