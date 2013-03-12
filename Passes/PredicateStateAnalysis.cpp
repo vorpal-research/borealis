@@ -40,7 +40,7 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 
     init();
 
-    FM = & (GetAnalysis< FunctionManager >::doit(this, F));
+    FM = &GetAnalysis< FunctionManager >::doit(this, F);
 
     auto* ST = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
     PF = PredicateFactory::get(ST);
@@ -50,7 +50,7 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
 #include "Passes/PredicateAnalysis.def"
 
-    enqueue(nullptr, &F.getEntryBlock(), PredicateState());
+    enqueue(nullptr, &F.getEntryBlock(), PredicateState::empty());
     processQueue();
 
     return false;
@@ -111,41 +111,35 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     for ( ; isa<PHINode>(iter); ++iter) {
         const PHINode* phi = cast<PHINode>(iter);
         if (phi->getBasicBlockIndex(from) != -1) {
-            inState = inState
-                .addAll(PPM({from, phi}))
-                .addVisited(phi);
+            inState = inState.addAll(PPM({from, phi})).addVisited(phi);
         }
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState modifiedInState = inState.addVisited(&I);
+        PredicateState modifiedInState = inState.addAll(PM(&I)).addVisited(&I);
+        predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
+        // Add function summaries AFTER the CallInst has been processed
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
 
-            PredicateState callState = FM->get(
+            const PredicateState& callState = FM->get(
                     CI,
                     PF.get(),
                     TF.get());
             CallSiteInitializer csi(CI, TF.get());
 
-            PredicateState transformedCallState = callState.map(
+            PredicateState transformedCallState = callState.filterByTypes(
+                { PredicateType::STATE, PredicateType::ENSURES }
+            ).map(
                 [&csi](Predicate::Ptr p) {
                     return csi.transform(p);
                 }
             );
 
             modifiedInState = modifiedInState.addAll(transformedCallState);
-
         }
-
-        modifiedInState = modifiedInState.addAll(PM(&I));
-
-        if (!containsKey(predicateStateMap, &I)) {
-            predicateStateMap[&I] = PredicateStateVector();
-        }
-        predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
         inState = modifiedInState;
     }
@@ -178,8 +172,8 @@ void PredicateStateAnalysis::processBranchInst(
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        PredicateState trueState = TPM({&I, trueSucc});
-        PredicateState falseState = TPM({&I, falseSucc});
+        const PredicateState trueState = TPM({&I, trueSucc});
+        const PredicateState falseState = TPM({&I, falseSucc});
 
         enqueue(I.getParent(), trueSucc, state.addAll(trueState));
         enqueue(I.getParent(), falseSucc, state.addAll(falseState));
@@ -193,12 +187,12 @@ void PredicateStateAnalysis::processSwitchInst(
 
     for (auto c = I.case_begin(); c != I.case_end(); ++c) {
         const BasicBlock* caseSucc = c.getCaseSuccessor();
-        PredicateState caseState = TPM({&I, caseSucc});
+        const PredicateState caseState = TPM({&I, caseSucc});
         enqueue(I.getParent(), caseSucc, state.addAll(caseState));
     }
 
     const BasicBlock* defaultSucc = I.getDefaultDest();
-    PredicateState defaultState = TPM({&I, defaultSucc});
+    const PredicateState defaultState = TPM({&I, defaultSucc});
     enqueue(I.getParent(), defaultSucc, state.addAll(defaultState));
 }
 

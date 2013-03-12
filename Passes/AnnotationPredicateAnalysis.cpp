@@ -8,7 +8,9 @@
 #include <llvm/Support/InstVisitor.h>
 
 #include "Annotation/Annotation.h"
+#include "Annotation/AssertAnnotation.h"
 #include "Annotation/LogicAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/AnnotationPredicateAnalysis.h"
 #include "Passes/AnnotationProcessor.h"
@@ -34,7 +36,9 @@ public:
         if (im.getIntrinsicType(CI) == function_type::INTRINSIC_ANNOTATION) {
             Annotation::Ptr anno =
                     materialize(Annotation::fromIntrinsic(CI), pass->TF.get(), pass->MI);
-            if (auto* LA = llvm::dyn_cast<LogicAnnotation>(anno)) {
+            if (llvm::isa<RequiresAnnotation>(anno) ||
+                    llvm::isa<AssertAnnotation>(anno)) {
+                LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 pass->PM[&CI] =
                         pass->PF->getEqualityPredicate(
                                 LA->getTerm(),

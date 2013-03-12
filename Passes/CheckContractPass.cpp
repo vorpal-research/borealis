@@ -28,7 +28,7 @@ public:
         auto& contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
         auto& states = pass->PSA->getPredicateStateMap()[&CI];
 
-        auto requires = contract.filter(PredicateState::REQUIRES);
+        auto requires = contract.filterByTypes({PredicateType::REQUIRES});
         if (requires.isEmpty()) return;
 
         CallSiteInitializer csi(CI, pass->TF.get());
@@ -38,17 +38,39 @@ public:
             }
         );
 
-        infos() << "Checking: " << CI << endl;
-        infos() << "  Requires: " << endl << instantiatedRequires << endl;
+        dbgs() << "Checking: " << CI << endl;
+        dbgs() << "  Requires: " << endl << instantiatedRequires << endl;
 
         z3::context ctx;
         Z3ExprFactory z3ef(ctx);
         Z3Solver s(z3ef);
 
         for (auto& state : states) {
-            infos() << "  State: " << endl << state << endl;
-            if (s.checkViolated(instantiatedRequires, state.filter())) {
+            dbgs() << "  State: " << endl << state << endl;
+            if (s.checkViolated(instantiatedRequires, state)) {
                 pass->DM->addDefect(DefectType::REQ_01, &CI);
+            }
+        }
+    }
+
+    void visitReturnInst(llvm::ReturnInst& RI) {
+        auto& contract = pass->FM->get(RI.getParent()->getParent());
+        auto& states = pass->PSA->getPredicateStateMap()[&RI];
+
+        auto ensures = contract.filterByTypes({PredicateType::ENSURES});
+        if (ensures.isEmpty()) return;
+
+        dbgs() << "Checking: " << RI << endl;
+        dbgs() << "  Ensures: " << endl << ensures << endl;
+
+        z3::context ctx;
+        Z3ExprFactory z3ef(ctx);
+        Z3Solver s(z3ef);
+
+        for (auto& state : states) {
+            dbgs() << "  State: " << endl << state << endl;
+            if (s.checkViolated(ensures, state)) {
+                pass->DM->addDefect(DefectType::ENS_01, &RI);
             }
         }
     }
