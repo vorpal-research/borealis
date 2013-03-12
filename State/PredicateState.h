@@ -11,6 +11,7 @@
 #include <llvm/Value.h>
 
 #include <functional>
+#include <initializer_list>
 #include <list>
 #include <unordered_set>
 
@@ -96,8 +97,17 @@ public:
     template<class Mapper>
     PredicateState map(Mapper f) const {
         PredicateState res;
+        for (auto& p : data) res = res.addPredicate(f(p));
+        return res;
+    }
+
+    PredicateState filterByTypes(std::initializer_list<PredicateType> types) const {
+        PredicateState res;
         for (auto& p : data) {
-            res = res.addPredicate(f(p));
+            if (std::any_of(types.begin(), types.end(),
+                [&p](const PredicateType& type) { return p->getType() == type; })) {
+                res = res.addPredicate(p);
+            }
         }
         return res;
     }
@@ -105,27 +115,22 @@ public:
     template<class Condition>
     PredicateState filter(Condition f) const {
         PredicateState res;
-        for (auto& p : data) {
-            if (f(p)) res = res.addPredicate(p);
-        }
+        for (auto& p : data) if (f(p)) res = res.addPredicate(p);
         return res;
     }
 
-    PredicateState filter() const {
-        return filter(DEFAULT);
+    std::pair<PredicateState, PredicateState> splitByTypes(std::initializer_list<PredicateType> types) const {
+        PredicateState yes, no;
+        for (auto& p : data) {
+            if (std::any_of(types.begin(), types.end(),
+                [&p](const PredicateType& type) { return p->getType() == type; })) {
+                yes = yes.addPredicate(p);
+            } else {
+                no = no.addPredicate(p);
+            }
+        }
+        return std::make_pair(yes, no);
     }
-
-    static bool PATH(Predicate::Ptr p) {
-        return p->getType() == PredicateType::PATH; }
-    static bool STATE(Predicate::Ptr p) {
-        return p->getType() == PredicateType::STATE ||
-               p->getType() == PredicateType::ENSURES; }
-    static bool DEFAULT(Predicate::Ptr p) {
-        return p->getType() == PredicateType::PATH ||
-               p->getType() == PredicateType::STATE ||
-               p->getType() == PredicateType::ENSURES; }
-    static bool REQUIRES(Predicate::Ptr p) {
-            return p->getType() == PredicateType::REQUIRES; }
 
     bool operator==(const PredicateState& other) const {
         if (this == &other) return true;

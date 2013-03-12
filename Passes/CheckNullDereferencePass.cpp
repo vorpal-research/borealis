@@ -121,7 +121,7 @@ public:
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 
-            if (s.checkViolated(q, ps.filter())) {
+            if (s.checkViolated(q, ps)) {
                 dbgs() << "Violated!" << endl;
                 return true;
             }

@@ -231,6 +231,18 @@ public:
         );
     }
 
+    void visitReturnInst(llvm::ReturnInst& I) {
+        using llvm::Value;
+
+        Value* rv = I.getReturnValue();
+        if (rv == nullptr) return;
+
+        pass->PM[&I] = pass->PF->getEqualityPredicate(
+                pass->TF->getReturnValueTerm(I.getParent()->getParent()),
+                pass->TF->getValueTerm(rv)
+        );
+    }
+
 private:
 
     DefaultPredicateAnalysis* pass;

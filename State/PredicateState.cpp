@@ -65,7 +65,8 @@ bool PredicateState::isUnreachable() const {
     Z3ExprFactory z3ef(ctx);
     Z3Solver s(z3ef);
 
-    return s.checkPathPredicates(filter(PATH), filter(STATE));
+    auto split = this->splitByTypes({PredicateType::PATH});
+    return s.checkPathPredicates(split.first, split.second);
 }
 
 logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef) const {
