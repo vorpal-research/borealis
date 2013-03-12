@@ -48,8 +48,6 @@ public:
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
 	virtual ~CheckNullDereferencePass();
 
-	virtual void print(llvm::raw_ostream&, const llvm::Module*) const;
-
 private:
 
 	llvm::AliasAnalysis* AA;

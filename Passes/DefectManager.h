@@ -51,7 +51,6 @@ public:
 
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("defect-manager")
-#include "Util/unmacros.h"
 
     typedef std::set< std::pair<DefectType, const Locus> > DefectData;
     typedef DefectData::value_type DefectDataEntry;
@@ -70,6 +69,13 @@ public:
 private:
 
     static DefectData data;
+
+public:
+
+    auto begin() QUICK_CONST_RETURN(data.begin())
+    auto end() QUICK_CONST_RETURN(data.end())
+
+#include "Util/unmacros.h"
 
 };
 

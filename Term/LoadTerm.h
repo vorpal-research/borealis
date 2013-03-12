@@ -47,10 +47,8 @@ public:
                "Encountered load with non-pointer right side");
 
         auto rp = r.to<Pointer>().getUnsafe();
-        return logic::addAxiom(
-                ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType())),
-                !z3ef.isInvalidPtrExpr(rp)
-        );
+
+        return ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType()));
     }
 #include "Util/unmacros.h"
 
