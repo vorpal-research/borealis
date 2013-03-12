@@ -47,7 +47,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
         llvm::StringRef ln = getRawSource(sm, line);
         std::string pt = ln.str();
 
-        for(auto i = ln.find_first_not_of("\t\n "); i < ln.size(); ++i) {
+        for (auto i = ln.find_first_not_of("\t\n "); i < ln.size(); ++i) {
             pt[i] = '~';
         }
 
