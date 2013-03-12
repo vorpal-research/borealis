@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+
+
 extern int arr[10];
 
 int getArrayElem(const int* arr, int index)
@@ -7,10 +9,12 @@ int getArrayElem(const int* arr, int index)
    return arr[index];
 }
 
-int main(void)
+// @requires argc > 0
+// @ensures \result <= 0
+int main(int argc, char* argv[])
 {
    int index;
-   //scanf("%d",&index);
+   scanf("%d",&index);
    if (index >= 0)
       return 0;
    // Здесь должен быть только BUF-02

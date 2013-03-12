@@ -11,7 +11,8 @@ struct el {
     char c;
 };
 
-int main(void) {
+// @ensures \res <= 0
+int main() {
     struct el *struct_arr_p[10];
     char ch = '0';
                 double tmp = 0.0;

@@ -37,12 +37,12 @@ static bool PhiContainsSource(PHINode* phi, BasicBlock* source) {
 void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, phi_tracker& track) {
     using borealis::util::view;
 
-    infos() << "Propagating |" << from << "| to |" << to << "|" << endl;
+    dbgs() << "Propagating |" << from << "| to |" << to << "|" << endl;
 
     auto parent = from.getParent();
     auto orig = getOriginOrSelf(&from);
 
-    infos() << "Origin for them: |" << *orig << "| " << endl << endl;
+    dbgs() << "Origin for them: |" << *orig << "| " << endl << endl;
 
     for(auto succ : view(succ_begin(parent), succ_end(parent))){
         auto key = std::make_pair(succ, orig);

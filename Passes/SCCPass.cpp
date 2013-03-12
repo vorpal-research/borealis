@@ -58,7 +58,7 @@ public:
         for (CallGraphSCCNode node : SCC) {
             Function* F = node->getFunction();
             if (F) {
-                infos() << "SCC: " << F->getName() << endl;
+                dbgs() << "SCC: " << F->getName() << endl;
             }
         }
         return false;

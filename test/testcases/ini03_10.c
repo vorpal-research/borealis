@@ -13,6 +13,7 @@ int x = 11;
  */
    // @ignore
 // @requires 2+2
+// @ensures \res > 0
 // @requires argc > 0
 int main(int argc, char* argv[])
 {

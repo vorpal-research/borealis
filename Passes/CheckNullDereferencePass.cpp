@@ -47,9 +47,13 @@ private:
 };
 
 class ValueInstVisitor :
-    public llvm::InstVisitor<ValueInstVisitor> {
+    public llvm::InstVisitor<ValueInstVisitor>,
+    // this is by design!
+    public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
 
 public:
+
+
 
     ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
 
@@ -99,16 +103,16 @@ public:
                 pass->TF->getValueTerm(&what),
                 pass->TF->getNullPtrTerm());
 
-        pass->infos() << "Query: " << q->toString() << endl;
+        dbgs() << "Query: " << q->toString() << endl;
 
         PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
         for (const auto& ps : psv) {
 
-            pass->infos() << "Checking state: " << ps << endl;
+            dbgs() << "Checking state: " << ps << endl;
 
             if (!ps.hasVisited(where, what, why)) {
 
-                pass->infos() << "Infeasible!" << endl;
+                dbgs() << "Infeasible!" << endl;
 
                 continue;
             }
@@ -118,12 +122,12 @@ public:
             Z3Solver s(z3ef);
 
             if (s.checkViolated(q, ps.filter())) {
-                pass->infos() << "Violated!" << endl;
+                dbgs() << "Violated!" << endl;
                 return true;
             }
         }
 
-        pass->infos() << "Passed!" << endl;
+        dbgs() << "Passed!" << endl;
         return false;
     }
 
@@ -184,10 +188,9 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     return false;
 }
 
-void CheckNullDereferencePass::print(llvm::raw_ostream& s, const llvm::Module*) const {
-    using borealis::util::streams::endl;
-    s << "DerefNullSet:" << endl << *DerefNullSet << endl;
-    s << "ValueNullSet:" << endl << *ValueNullSet << endl;
+void CheckNullDereferencePass::print(llvm::raw_ostream&, const llvm::Module*) const {
+    infos() << "DerefNullSet:" << endl << *DerefNullSet << endl;
+    infos() << "ValueNullSet:" << endl << *ValueNullSet << endl;
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {}

@@ -52,29 +52,40 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                 &M
         );
 
+        CallInst* templ = CallInst::Create(
+                anno_intr,
+                data,
+                "");
+        templ->setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
+
         if (isa<RequiresAnnotation>(anno) ||
-                isa<EnsuresAnnotation>(anno) ||
                 isa<AssignsAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
-                    CallInst::Create(
-                            anno_intr,
-                            data,
-                            "",
-                            F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime())->
-                                setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
+                    templ->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
+                    break;
+                }
+            }
+        } else if (isa<EnsuresAnnotation>(anno)) {
+            for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
+                if (Function* F = dyn_cast<Function>(e.second)) {
+                    // this is generally fucked up, BUT we have to insert the template somewhere
+                    // otherwise it can not be properly deleted
+                    templ->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
+                    for(auto& BB : *F) {
+                        if(isa<ReturnInst>(BB.getTerminator()) || isa<UnreachableInst>(BB.getTerminator())) {
+                            // insert clones at the actual rets
+                            templ->clone()->insertBefore(BB.getTerminator());
+                        }
+                    }
+                    templ->eraseFromParent();
                     break;
                 }
             }
         } else if (isa<AssertAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Instruction* I = dyn_cast<Instruction>(e.second)) {
-                    CallInst::Create(
-                            anno_intr,
-                            data,
-                            "",
-                            I)->
-                        setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
+                    templ->insertBefore(I);
                     break;
                 }
             }

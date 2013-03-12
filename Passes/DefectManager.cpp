@@ -11,6 +11,7 @@
 
 namespace borealis {
 
+
 DefectManager::DefectManager() : llvm::ModulePass(ID) {}
 
 void DefectManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {

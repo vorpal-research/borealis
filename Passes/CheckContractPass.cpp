@@ -38,15 +38,15 @@ public:
             }
         );
 
-        infos() << "Checking: " << CI << endl;
-        infos() << "  Requires: " << endl << instantiatedRequires << endl;
+        dbgs() << "Checking: " << CI << endl;
+        dbgs() << "  Requires: " << endl << instantiatedRequires << endl;
 
         z3::context ctx;
         Z3ExprFactory z3ef(ctx);
         Z3Solver s(z3ef);
 
         for (auto& state : states) {
-            infos() << "  State: " << endl << state << endl;
+            dbgs() << "  State: " << endl << state << endl;
             if (s.checkViolated(instantiatedRequires, state.filter())) {
                 pass->DM->addDefect(DefectType::REQ_01, &CI);
             }
@@ -74,6 +74,7 @@ void CheckContractPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool CheckContractPass::runOnFunction(llvm::Function& F) {
+
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);

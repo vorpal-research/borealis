@@ -48,8 +48,18 @@ protected:
     }
 };
 
+template<class ClassLevelLoggingParam>
+std::string logDomainFor(typename std::enable_if<bool(ClassLevelLoggingParam::loggerDomain()[0])>::type*) {
+    return ClassLevelLoggingParam::loggerDomain();
+}
+
+template<class ClassLevelLoggingParam>
+std::string logDomainFor(...) {
+    return "";
+}
+
 template<class T>
-std::string ClassLevelLogging<T>::logger = T::loggerDomain();
+std::string ClassLevelLogging<T>::logger = logDomainFor<T>(nullptr);
 
 template<class T>
 class ObjectLevelLogging {

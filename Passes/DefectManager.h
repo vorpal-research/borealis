@@ -25,9 +25,20 @@ enum class DefectType {
     REQ_01
 };
 
-const std::map<DefectType, const std::string> DefectTypeNames = {
-    { DefectType::INI_03, "INI-03" },
-    { DefectType::REQ_01, "REQ-01" }
+struct DefectSummary {
+    std::string type;
+    std::string description;
+};
+
+template<class Streamer>
+Streamer& operator<<(Streamer& str, const DefectSummary& ds) {
+    // this is generally fucked up
+    return static_cast<Streamer&>(str << "\"" << ds.type << "\": " << ds.description);
+}
+
+const std::map<DefectType, const DefectSummary> DefectTypeNames = {
+    { DefectType::INI_03, { "INI-03", "Dereferencing a nullptr" } },
+    { DefectType::REQ_01, { "REQ-01", "Contract check failed" } }
 };
 
 class DefectManager:
