@@ -40,6 +40,10 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const {
+        return z3ef.getExprForType(*F->getFunctionType()->getReturnType(), getName());
+    }
+
     virtual Type::Ptr getTermType() const {
         return TypeFactory::getInstance().cast(F->getFunctionType()->getReturnType());
     }
@@ -49,7 +53,7 @@ private:
     ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
         Term(
                 std::hash<llvm::Function*>()(F),
-                "\\result",
+                "\\result_" + F->getName().str(),
                 type_id(*this)
         ), F(F) {}
 
