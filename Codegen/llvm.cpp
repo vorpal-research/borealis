@@ -6,7 +6,11 @@
  */
 
 #include <clang/Basic/FileManager.h>
+#include <clang/Basic/Diagnostic.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/Frontend/DiagnosticOptions.h>
 #include <llvm/Constants.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "Codegen/llvm.h"
 

@@ -36,13 +36,31 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
     for (auto& defect : dm) {
         Locus origin = defect.second;
-        Locus beg { origin.filename, LocalLocus { origin.loc.line - 3, 1U } };
-        Locus end { origin.filename, LocalLocus { origin.loc.line + 3, 1U } };
-        LocusRange range {beg, end};
+        Locus beg  { origin.filename, LocalLocus { origin.loc.line - 3, 1U } };
+        Locus prev { origin.filename, LocalLocus { origin.loc.line    , 1U } };
+        Locus next { origin.filename, LocalLocus { origin.loc.line + 1, 1U } };
+        Locus end  { origin.filename, LocalLocus { origin.loc.line + 3, 1U } };
+        LocusRange before {beg, prev};
+        LocusRange line {prev, next};
+        LocusRange after {next, end};
 
-        infos() << DefectTypeNames.at(defect.first) << endl;
-        infos() << origin << endl;
-        infos() << getRawSource(sm, range) << endl;
+
+
+        llvm::StringRef ln = getRawSource(sm, line);
+        std::string pt = ln.str();
+
+        for(auto i = ln.find_first_not_of("\t\n "); i < ln.size(); ++i) {
+            pt[i] = '~';
+        }
+
+        pt[origin.loc.col-1] = '^';
+
+        infos() << DefectTypeNames.at(defect.first)
+                << " at " << origin << endl
+                << getRawSource(sm, before)
+                << ln
+                << pt << endl
+                << getRawSource(sm, after) << endl;
     }
     return false;
 }

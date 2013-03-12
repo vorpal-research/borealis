@@ -137,7 +137,8 @@ int main(int argc, const char** argv)
     }
 
     DiagnosticOptions DiagOpts;
-    auto diags = CompilerInstance::createDiagnostics(DiagOpts, cargs.size(), &*cargs.begin());
+    auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagnosticOptions());
+    auto diags = CompilerInstance::createDiagnostics(DiagOpts, cargs.size(), &*cargs.begin(), tdp);
 
     std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(cargs, diags));
 
