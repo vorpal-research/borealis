@@ -80,6 +80,18 @@ void FunctionManager::update(llvm::Function* F, const PredicateState& state) {
 }
 
 const PredicateState& FunctionManager::get(
+        llvm::Function* F) {
+
+    using borealis::util::containsKey;
+
+    if (containsKey(data, F)) {
+        return data.at(F);
+    }
+
+    return PredicateState::empty();
+}
+
+const PredicateState& FunctionManager::get(
         llvm::CallInst& CI,
         PredicateFactory* PF,
         TermFactory* TF) {
@@ -88,22 +100,20 @@ const PredicateState& FunctionManager::get(
 
     llvm::Function* F = CI.getCalledFunction();
 
-    if (!containsKey(data, F)) {
-        auto& m = IntrinsicsManager::getInstance();
-
-        function_type ft = m.getIntrinsicType(CI);
-        if (!isUnknown(ft)) {
-            auto state = m.getPredicateState(ft, F, PF, TF);
-            data[F] = state;
-            return data.at(F);
-        } else {
-            return PredicateState::empty();
-        }
-    } else {
+    if (containsKey(data, F)) {
         return data.at(F);
     }
 
-    BYE_BYE(PredicateState&, "Unreachable!");
+    auto& m = IntrinsicsManager::getInstance();
+    function_type ft = m.getIntrinsicType(CI);
+
+    auto state = PredicateState::empty();
+    if (!isUnknown(ft)) {
+        state = m.getPredicateState(ft, F, PF, TF);
+    }
+
+    data[F] = state;
+    return data.at(F);
 }
 
 char FunctionManager::ID;
