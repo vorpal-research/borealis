@@ -44,8 +44,6 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
         LocusRange line {prev, next};
         LocusRange after {next, end};
 
-
-
         llvm::StringRef ln = getRawSource(sm, line);
         std::string pt = ln.str();
 
