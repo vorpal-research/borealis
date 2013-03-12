@@ -76,10 +76,18 @@ int main(int argc, const char** argv)
     using borealis::comments::GatherCommentsAction;
     using borealis::config::Config;
     using borealis::endl;
-    using borealis::errs;
-    using borealis::infos;
     using borealis::logging::log_entry;
     using borealis::util::streams::error;
+
+    constexpr auto loggingDomain = "wrapper";
+
+    auto infos = [](){
+        return borealis::logging::infosFor(loggingDomain);
+    };
+
+    auto errs = [](){
+        return borealis::logging::errsFor(loggingDomain);
+    };
 
     const std::vector<std::string> empty;
 
@@ -125,6 +133,7 @@ int main(int argc, const char** argv)
         for (const auto& arg : cargs) {
             out << arg << " ";
         }
+        out << endl;
     }
 
     DiagnosticOptions DiagOpts;
@@ -142,6 +151,7 @@ int main(int argc, const char** argv)
         for (const auto& arg : argsFromInvocation) {
             out << arg << " ";
         }
+        out << endl;
     }
 
     clang::CompilerInstance Clang;
