@@ -23,18 +23,18 @@ z3::check_result Z3Solver::check(
     TRACE_FUNC;
 
     solver s(z3ef.unwrap());
+    auto dbg = dbgs();
 
     s.add(logic::z3impl::asAxiom(z3state));
 
-    dbgs() << "  Query: " << endl << z3query << endl;
-    dbgs() << "  State: " << endl << z3state << endl;
+    dbg << "  Query: " << endl << z3query << endl;
+    dbg << "  State: " << endl << z3state << endl;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(logic::z3impl::asAxiom(implies(pred, z3query)));
 
     {
         TRACE_BLOCK("Calling Z3 check");
-        auto dbg = dbgs();
 
         expr pred_e = logic::z3impl::getExpr(pred);
         check_result r = s.check(1, &pred_e);
@@ -48,6 +48,9 @@ z3::check_result Z3Solver::check(
         } else if (r == z3::unsat) {
             auto core = s.unsat_core();
             for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+
+            // dbg << "PROOF!: " << s.proof() << endl;
+
         } else {
             dbg << s.reason_unknown() << endl;
         }

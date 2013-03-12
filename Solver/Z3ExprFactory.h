@@ -98,6 +98,9 @@ public:
     Dynamic getExprForValue(
             const llvm::Value& value,
             const std::string& name);
+    Dynamic getExprForType(
+            const llvm::Type& type,
+            const std::string& name);
     // Valid/invalid pointers
     Pointer getInvalidPtr();
     Bool isInvalidPtrExpr(Pointer ptr);

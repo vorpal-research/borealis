@@ -12,7 +12,10 @@
 namespace borealis {
 
 Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {
-    // Z3_update_param_value(ctx, "MACRO_FINDER", "true");
+    // Z3_update_param_value(ctx, ":macro-finder", "true");
+    // Z3_update_param_value(ctx, ":produce-models", "true");
+    ctx.set("PROOF_MODE", 2);
+    // Z3_update_param_value(ctx, ":produce-unsat-cores", "true");
 }
 
 unsigned int Z3ExprFactory::pointerSize = 32;
@@ -127,6 +130,12 @@ f::Dynamic Z3ExprFactory::getExprForValue(
         const llvm::Value& value,
         const std::string& name) {
     return getExprByTypeAndName(valueType(value), name);
+}
+
+f::Dynamic Z3ExprFactory::getExprForType(
+        const llvm::Type& type,
+        const std::string& name) {
+    return getExprByTypeAndName(type2type(type), name);
 }
 
 f::Dynamic Z3ExprFactory::getExprByTypeAndName(
