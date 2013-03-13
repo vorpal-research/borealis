@@ -111,7 +111,7 @@ public:
     }
 
     Predicate::Ptr getGlobalsPredicate(
-            std::initializer_list<Term::Ptr> globals) {
+            const std::vector<Term::Ptr>& globals) {
         return Predicate::Ptr(
                 new GlobalsPredicate(globals));
     }

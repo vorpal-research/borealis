@@ -50,7 +50,15 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
 #include "Passes/PredicateAnalysis.def"
 
-    enqueue(nullptr, &F.getEntryBlock(), PredicateState::empty());
+    // Register globals in our predicate states
+    std::vector<Term::Ptr> globals;
+    globals.reserve(F.getParent()->getGlobalList().size());
+    for (auto& g : F.getParent()->getGlobalList()) {
+        globals.push_back(TF->getValueTerm(&g));
+    }
+    Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
+
+    enqueue(nullptr, &F.getEntryBlock(), gPredicate);
     processQueue();
 
     return false;
