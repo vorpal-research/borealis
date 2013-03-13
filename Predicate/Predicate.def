@@ -9,6 +9,7 @@ HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
 HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)
+HANDLE_PREDICATE(Globals, GlobalsPredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE

@@ -19,6 +19,7 @@
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
 #include "Predicate/DefaultSwitchCasePredicate.h"
+#include "Predicate/GlobalsPredicate.h"
 
 namespace borealis {
 
@@ -107,6 +108,12 @@ public:
             Term::Ptr lhv,
             Term::Ptr arithTerm) {
         return getEqualityPredicate(lhv, arithTerm);
+    }
+
+    Predicate::Ptr getGlobalsPredicate(
+            std::initializer_list<Term::Ptr> globals) {
+        return Predicate::Ptr(
+                new GlobalsPredicate(globals));
     }
 
 
