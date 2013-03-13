@@ -99,23 +99,26 @@ public:
         using llvm::dyn_cast;
         using llvm::Instruction;
 
+        dbgs() << "Checking: " << endl
+               << "  ptr: " << what << endl
+               << "  aliasing: " << why << endl
+               << "  at: " << where << endl;
+
         Predicate::Ptr q = pass->PF->getInequalityPredicate(
                 pass->TF->getValueTerm(&what),
                 pass->TF->getNullPtrTerm());
 
-        dbgs() << "Query: " << q->toString() << endl;
-
         PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
+
         for (const auto& ps : psv) {
 
-            dbgs() << "Checking state: " << ps << endl;
-
             if (!ps.hasVisited(where, what, why)) {
-
                 dbgs() << "Infeasible!" << endl;
-
                 continue;
             }
+
+            dbgs() << "Query: " << q->toString() << endl;
+            dbgs() << "State: " << ps << endl;
 
             z3::context ctx;
             Z3ExprFactory z3ef(ctx);
