@@ -74,6 +74,11 @@ bool Z3Solver::checkPathPredicates(
         const PredicateState& state) {
     TRACE_FUNC;
 
+    dbgs() << "Checking path: " << endl
+           << path << endl
+           << "in: " << endl
+           << state << endl;
+
     auto z3query = path.toZ3(z3ef);
     auto z3state = state.toZ3(z3ef);
     return check(z3query, z3state) == z3::unsat;

@@ -61,7 +61,9 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
                 &M
         );
 
-        auto* resolvedSize = arraySize ? arraySize : llvm::ConstantInt::get(size_type, DefaultMallocSize);
+        auto* resolvedSize = arraySize && llvm::isa<llvm::Constant>(arraySize)
+                ? arraySize
+                : llvm::ConstantInt::get(size_type, DefaultMallocSize);
 
         auto* call = llvm::CallInst::Create(current, resolvedSize, "", CI);
         call->setMetadata("dbg", CI->getMetadata("dbg"));
