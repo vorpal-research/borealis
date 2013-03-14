@@ -35,7 +35,7 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
         if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
             elems = intCnst->getLimitedValue();
-        } else ASSERT(false, "Encountered malloc with non-integer element number")
+        } else ASSERT(false, "Encountered malloc with non-integer element number");
     } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(numElements)) {
         elems = cnst->getValue();
     } else ASSERT(false, "Encountered malloc with non-integer/non-constant element number");
