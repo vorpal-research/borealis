@@ -30,9 +30,22 @@ logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     ASSERT(lhve.is<Pointer>(),
            "Encountered alloca with non-Pointer left side");
 
+    ASSERT(llvm::isa<ConstTerm>(numElements) || llvm::isa<OpaqueIntConstantTerm>(numElements),
+           "Encountered alloca with non-constant element number");
+
+    unsigned long long elems = 1;
+    if(const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
+        if(llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
+            elems = intCnst->getLimitedValue();
+        } else ASSERT(false, "Encountered alloca with non-integer element number")
+    } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(numElements)) {
+        elems = cnst->getValue();
+    } else ASSERT(false, "Encountered alloca with non-integer/non-constant element number");
+
     auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {
         ctx->registerDistinctPtr(lhvp);
+        for(auto i = 1ULL; i < elems; ++i) ctx->registerDistinctPtr(lhvp+i);
     }
 
     return !z3ef.isInvalidPtrExpr(lhvp);
