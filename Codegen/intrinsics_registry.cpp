@@ -48,7 +48,9 @@ static RegisterIntrinsic BUILTIN_MALLOC {
     function_type::BUILTIN_MALLOC,
     "malloc",
     [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
-        return PF->getMallocPredicate(TF->getReturnValueTerm(F));
+        return PF->getMallocPredicate(
+                TF->getReturnValueTerm(F),
+                TF->getArgumentTerm(F->getArgumentList().begin()));
     },
     [](const IntrinsicsManager&, const llvm::CallInst& CI) {
         return llvm::isMalloc(&CI)

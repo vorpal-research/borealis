@@ -30,6 +30,7 @@ public:
     const MallocPredicate* accept(Transformer<SubClass>* t) const {
         return new MallocPredicate(
                 t->transform(lhv),
+                t->transform(numElements),
                 this->type);
     }
 
@@ -41,9 +42,11 @@ public:
 private:
 
     const Term::Ptr lhv;
+    const Term::Ptr numElements;
 
     MallocPredicate(
             Term::Ptr lhv,
+            Term::Ptr numElements,
             PredicateType type = PredicateType::STATE);
 
 };

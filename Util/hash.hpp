@@ -43,6 +43,8 @@ struct hasher {
     }
 };
 
+typedef hasher<3, 17> defaultHasher;
+
 
 
 namespace impl_ {

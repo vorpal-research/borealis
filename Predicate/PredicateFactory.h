@@ -50,9 +50,10 @@ public:
     }
 
     Predicate::Ptr getMallocPredicate(
-                 Term::Ptr lhv) {
+                 Term::Ptr lhv,
+                 Term::Ptr numElements) {
         return Predicate::Ptr(
-                new MallocPredicate(lhv));
+                new MallocPredicate(lhv, numElements));
     }
 
     Predicate::Ptr getICmpPredicate(
