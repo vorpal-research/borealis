@@ -30,8 +30,8 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
            "Malloc produces a non-pointer");
 
     unsigned long long elems = 20;
-    if(const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
-        if(llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
+    if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
+        if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
             elems = intCnst->getLimitedValue();
         }
     } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(numElements)) {
@@ -41,7 +41,7 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     auto lhvp = lhve.to<Pointer>().getUnsafe();
     if (ctx) {
         ctx->registerDistinctPtr(lhvp);
-        for(auto i = 1ULL; i < elems; ++i) ctx->registerDistinctPtr(lhvp+i);
+        for (auto i = 1ULL; i < elems; ++i) ctx->registerDistinctPtr(lhvp+i);
     }
 
     return z3ef.getTrue();
