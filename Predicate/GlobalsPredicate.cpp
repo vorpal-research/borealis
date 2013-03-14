@@ -29,18 +29,19 @@ GlobalsPredicate::GlobalsPredicate(
 logic::Bool GlobalsPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
+    ASSERTC(ctx != nullptr);
+
     typedef Z3ExprFactory::Pointer Pointer;
 
-    if (ctx) {
-        for (auto& g : globals) {
-            auto ge = g->toZ3(z3ef, ctx);
-            ASSERT(ge.is<Pointer>(), "Encountered non-Pointer global value: " + g->getName());
-            auto gp = ge.to<Pointer>().getUnsafe();
-            ctx->registerDistinctPtr(gp);
-        }
+    auto res = z3ef.getTrue();
+    for (auto& g : globals) {
+        auto ge = g->toZ3(z3ef, ctx);
+        ASSERT(ge.is<Pointer>(), "Encountered non-Pointer global value: " + g->getName());
+        auto gp = ge.to<Pointer>().getUnsafe();
+        res = res && gp == ctx->getDistinctPtr();
     }
 
-    return z3ef.getTrue();
+    return res;
 }
 
 bool GlobalsPredicate::equals(const Predicate* other) const {

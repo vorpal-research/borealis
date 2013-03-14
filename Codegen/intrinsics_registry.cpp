@@ -44,18 +44,13 @@ static RegisterIntrinsic INTRINSIC_ANNOTATION {
     "annotation"
 };
 
-static RegisterIntrinsic BUILTIN_MALLOC {
-    function_type::BUILTIN_MALLOC,
+static RegisterIntrinsic INTRINSIC_MALLOC {
+    function_type::INTRINSIC_MALLOC,
     "malloc",
     [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
         return PF->getMallocPredicate(
                 TF->getReturnValueTerm(F),
                 TF->getArgumentTerm(F->getArgumentList().begin()));
-    },
-    [](const IntrinsicsManager&, const llvm::CallInst& CI) {
-        return llvm::isMalloc(&CI)
-                ? function_type::BUILTIN_MALLOC
-                : function_type::UNKNOWN;
     }
 };
 

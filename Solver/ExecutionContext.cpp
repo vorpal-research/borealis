@@ -12,15 +12,13 @@ namespace borealis {
 
 ExecutionContext::ExecutionContext(Z3ExprFactory& factory):
     factory(factory),
-    memory(factory.getNoMemoryArray()) {};
+    memory(factory.getNoMemoryArray()),
+    currentPtr(1U) {};
 
 logic::Bool ExecutionContext::toZ3() {
     TRACE_FUNC;
 
-    if (allocated_pointers.size() < 2)
-        return factory.getTrue();
-
-    return factory.getDistinct(allocated_pointers);
+    return factory.getTrue();
 }
 
 } // namespace borealis

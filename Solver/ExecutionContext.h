@@ -25,15 +25,22 @@ public:
 private:
     Z3ExprFactory& factory;
     MemArray memory;
-    std::vector<Z3ExprFactory::Pointer> allocated_pointers;
+    unsigned long long currentPtr;
 
 public:
     ExecutionContext(Z3ExprFactory& factory);
 
     MemArray getCurrentMemoryContents() { return memory; }
 
-    inline void registerDistinctPtr(Z3ExprFactory::Pointer ptr) {
-        allocated_pointers.push_back(ptr);
+    inline Z3ExprFactory::Pointer getDistinctPtr(size_t ofSize = 1U) {
+        auto ret = Z3ExprFactory::Pointer::mkConst(
+            factory.unwrap(),
+            currentPtr
+        );
+
+        currentPtr += ofSize;
+
+        return ret;
     }
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {

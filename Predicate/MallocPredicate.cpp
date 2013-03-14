@@ -22,6 +22,8 @@ MallocPredicate::MallocPredicate(
 logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
+    ASSERTC(ctx != nullptr);
+
     typedef Z3ExprFactory::Pointer Pointer;
 
     auto lhve = lhv->toZ3(z3ef, ctx);
@@ -29,22 +31,17 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     ASSERT(lhve.is<Pointer>(),
            "Malloc produces a non-pointer");
 
-    unsigned long long elems = 20;
+    unsigned long long elems = 1;
     if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
         if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
             elems = intCnst->getLimitedValue();
-        }
+        } else ASSERT(false, "Encountered malloc with non-integer element number")
     } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(numElements)) {
         elems = cnst->getValue();
-    }
+    } else ASSERT(false, "Encountered malloc with non-integer/non-constant element number");
 
     auto lhvp = lhve.to<Pointer>().getUnsafe();
-    if (ctx) {
-        ctx->registerDistinctPtr(lhvp);
-        for (auto i = 1ULL; i < elems; ++i) ctx->registerDistinctPtr(lhvp+i);
-    }
-
-    return z3ef.getTrue();
+    return lhvp == z3ef.getNullPtr() || lhvp == ctx->getDistinctPtr(elems);
 }
 
 bool MallocPredicate::equals(const Predicate* other) const {

@@ -6,6 +6,7 @@ static int GLOBAL_TABLE_SIZE = 8;
 
 int main() {
     global_table = malloc(sizeof(int*) * GLOBAL_TABLE_SIZE);
+    if (!global_table) return -1;
 
     for (int i = 0; i < GLOBAL_TABLE_SIZE; ++i) {
         global_table[i] = NULL;

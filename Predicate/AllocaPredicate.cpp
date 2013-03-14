@@ -23,6 +23,8 @@ AllocaPredicate::AllocaPredicate(
 logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
+    ASSERTC(ctx != nullptr);
+
     typedef Z3ExprFactory::Pointer Pointer;
 
     auto lhve = lhv->toZ3(z3ef, ctx);
@@ -43,12 +45,7 @@ logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     } else ASSERT(false, "Encountered alloca with non-integer/non-constant element number");
 
     auto lhvp = lhve.to<Pointer>().getUnsafe();
-    if (ctx) {
-        ctx->registerDistinctPtr(lhvp);
-        for (auto i = 1ULL; i < elems; ++i) ctx->registerDistinctPtr(lhvp+i);
-    }
-
-    return !z3ef.isInvalidPtrExpr(lhvp);
+    return lhvp == ctx->getDistinctPtr(elems);
 }
 
 bool AllocaPredicate::equals(const Predicate* other) const {
