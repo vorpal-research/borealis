@@ -48,14 +48,13 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
     }
 
     for (llvm::CallInst* CI : mallocs) {
-        auto* returnType = llvm::getMallocType(CI);
         auto* arraySize = llvm::getMallocArraySize(CI, &TD, true);
 
         auto* current = intrinsic_manager.createIntrinsic(
                 function_type::INTRINSIC_MALLOC,
-                toString(*returnType),
+                "",
                 llvm::FunctionType::get(
-                        returnType ? returnType : CI->getType(),
+                        CI->getType(),
                         arraySize ? arraySize->getType() : size_type,
                         false
                 ),
@@ -67,12 +66,7 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
         auto* call = llvm::CallInst::Create(current, resolvedSize, "", CI);
         call->setMetadata("dbg", CI->getMetadata("dbg"));
 
-        if (returnType) {
-            CI->use_back()->replaceAllUsesWith(call);
-            CI->use_back()->eraseFromParent();
-        } else {
-            CI->replaceAllUsesWith(call);
-        }
+        CI->replaceAllUsesWith(call);
         CI->eraseFromParent();
     }
 
