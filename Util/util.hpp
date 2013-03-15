@@ -12,6 +12,8 @@
 
 #include <cstddef>
 
+#include "lib/debugbreak/debugbreak.h"
+
 #include "Logging/logger.hpp"
 #include "Util/meta.hpp"
 #include "Util/streams.hpp"
@@ -30,6 +32,8 @@ namespace util {
 template<typename RetTy = void>
 RetTy sayonara(const std::string& file, int line, const std::string& where, const std::string& reason) {
     using namespace borealis::logging;
+
+    debug_break();
 
     errs() << file << ":" << toString(line) << endl
             << "\t" << where << endl

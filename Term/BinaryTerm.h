@@ -47,9 +47,12 @@ public:
             auto rhv = rhvz3.to<logic::Bool>().getUnsafe();
 
             switch(opcode) {
+            case llvm::ArithType::BAND:
             case llvm::ArithType::LAND: return lhv && rhv;
+            case llvm::ArithType::BOR:
             case llvm::ArithType::LOR:  return lhv || rhv;
-            default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode")
+            default: BYE_BYE(Z3ExprFactory::Dynamic,
+                             "Unsupported logic opcode: " + llvm::arithString(opcode));
             }
         }
 
@@ -68,7 +71,8 @@ public:
             case llvm::ArithType::RSH:  return lhv >> rhv;
             case llvm::ArithType::SUB:  return lhv -  rhv;
             case llvm::ArithType::XOR:  return lhv ^  rhv;
-            default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode");
+            default: BYE_BYE(Z3ExprFactory::Dynamic,
+                             "Unsupported bv opcode: " + llvm::arithString(opcode));
             }
         }
 
