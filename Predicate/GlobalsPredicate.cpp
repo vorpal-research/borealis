@@ -21,7 +21,7 @@ GlobalsPredicate::GlobalsPredicate(
 
     std::string a = head(globals)->getName();
     for (auto& g : tail(globals)) {
-        a = "," + a + g->getName();
+        a = a + "," + g->getName();
     }
     this->asString = "globals(" + a + ")";
 }
