@@ -41,7 +41,7 @@ public:
         T ret;
         if(valid && parser.getValue(section, option, &ret)) {
             return just(std::move(ret));
-        } else return nothing<T>();
+        } else return nothing();
     }
 
     std::multimap<std::string, std::string> optionsFor(const std::string& name) {
@@ -57,6 +57,101 @@ public:
 };
 
 #undef RESTRICT_PARAMETER_TO
+
+
+#include "Util/macros.h"
+
+class AppConfiguration {
+    std::unique_ptr<Config> globalConfig;
+
+    AppConfiguration(): globalConfig(nullptr) {};
+    ~AppConfiguration(){};
+
+public:
+    static AppConfiguration& instance() {
+        static AppConfiguration ac;
+        return ac;
+    }
+
+    static void initialize(const std::string& filename) {
+        instance().globalConfig.reset(new Config(filename));
+    }
+
+    template<class T>
+    friend class ConfigEntry;
+};
+
+template<class T = std::string>
+class ConfigEntry {
+    std::string section;
+    std::string key;
+    mutable borealis::util::option<T> cached;
+
+    static borealis::util::option<T> nothing;
+
+public:
+    ConfigEntry(const std::string& section, const std::string& key):
+        section(section), key(key), cached() {};
+
+    const borealis::util::option<T>& get() const {
+        auto& conf = AppConfiguration::instance().globalConfig;
+        if(!conf) return nothing;
+
+        if(cached.empty()){
+            cached = conf->getValue<T>(section, key);
+        }
+        return cached;
+    }
+
+    operator const borealis::util::option<T>& () const{
+        return get();
+    }
+
+    auto begin() QUICK_CONST_RETURN(get().begin())
+    auto end() QUICK_CONST_RETURN(get().end())
+
+};
+
+template<class T> borealis::util::option<T> ConfigEntry<T>::nothing;
+
+template<>
+class ConfigEntry<std::vector<std::string>> {
+    std::string section;
+    std::string key;
+    mutable std::vector<std::string> cached;
+public:
+    ConfigEntry(const std::string& section, const std::string& key):
+        section(section), key(key), cached() {};
+
+    const std::vector<std::string>& get() const {
+        auto& conf = AppConfiguration::instance().globalConfig;
+        if(!conf) return cached;
+
+        if(cached.empty()){
+            cached =
+                    AppConfiguration::instance().
+                        globalConfig->
+                            getValue<std::vector<std::string>>(section, key).
+                                getOrElse(std::vector<std::string>());
+        }
+        return cached;
+    }
+
+    operator const std::vector<std::string>& () const{
+        return get();
+    }
+
+    auto begin() QUICK_CONST_RETURN(get().begin())
+    auto end() QUICK_CONST_RETURN(get().end())
+
+    auto size() QUICK_CONST_RETURN(get().size())
+    auto operator[](size_t index) QUICK_CONST_RETURN(get()[index])
+};
+
+typedef ConfigEntry<> StringConfigEntry;
+typedef ConfigEntry<std::vector<std::string>> MultiConfigEntry;
+
+#include "Util/unmacros.h"
 
 } // namespace config
 } // namespace borealis

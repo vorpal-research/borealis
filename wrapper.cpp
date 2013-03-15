@@ -91,18 +91,30 @@ int main(int argc, const char** argv)
 
     const std::vector<std::string> empty;
 
-    Config cfg("wrapper.conf");
-    for (auto logCFG : cfg.getValue<std::string>("logging", "ini")) {
-        borealis::logging::configureLoggingFacility(logCFG);
+
+    using namespace borealis::config;
+
+    AppConfiguration::initialize("wrapper.conf");
+
+    StringConfigEntry logFile("logging", "ini");
+    StringConfigEntry z3log("logging", "z3log");
+
+    MultiConfigEntry opt_args("opt", "load");
+
+    MultiConfigEntry prePasses("passes", "pre");
+    MultiConfigEntry postPasses("passes", "post");
+    MultiConfigEntry libs("libs", "load");
+
+
+    for (const auto& logFile : logFile) {
+        borealis::logging::configureLoggingFacility(logFile);
     }
 
-    for (auto z3log : cfg.getValue<std::string>("logging", "z3log")) {
+    for (const auto& z3log : z3log) {
         borealis::logging::configureZ3Log(z3log);
     }
 
     // args to supply to opt
-    auto opt_args = cfg.getValue< std::vector<std::string> >("opt", "load").getOrElse(empty);
-
     size_t virt_argc = opt_args.size() + 1;
     {
         std::vector<const char*> virt_argv(virt_argc);
@@ -184,10 +196,6 @@ int main(int argc, const char** argv)
     pm.add(new TargetData(module_ptr.get()));
 
     std::vector<StringRef> passes2run;
-
-    auto prePasses = cfg.getValue< std::vector<std::string> >("passes", "pre").getOrElse(empty);
-    auto postPasses = cfg.getValue< std::vector<std::string> >("passes", "post").getOrElse(empty);
-
     for (StringRef p : prePasses) {
         passes2run.push_back(p);
     }
@@ -200,7 +208,6 @@ int main(int argc, const char** argv)
 
     std::vector<StringRef> libs2load;
 
-    auto libs = cfg.getValue< std::vector<std::string> >("libs", "load").getOrElse(empty);
     for (StringRef l : libs) {
         libs2load.push_back(l);
     }

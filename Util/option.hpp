@@ -109,6 +109,11 @@ public:
         return ptr ? *ptr : def;
     }
 
+    T getOrElse(T&& def) const {
+        auto* ptr = holder.get();
+        return ptr ? *ptr : def;
+    }
+
     T& getOrElse(T& def) {
         auto* ptr = holder.get();
         return ptr ? *ptr : def;

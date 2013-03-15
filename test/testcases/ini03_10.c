@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     static int *q;
     int *s = p;
     int *t = q;
-    int* dyn = malloc(250);
+    int* dyn = malloc(999);
     // @unroll 0x100
     // @mask buf0, asd0, as
     if (argc > 3)

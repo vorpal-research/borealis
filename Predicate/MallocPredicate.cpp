@@ -6,6 +6,8 @@
  */
 
 #include "Predicate/MallocPredicate.h"
+#include "Config/config.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -41,7 +43,14 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     } else ASSERT(false, "Encountered malloc with non-integer/non-constant element number");
 
     auto lhvp = lhve.to<Pointer>().getUnsafe();
-    return lhvp == z3ef.getNullPtr() || lhvp == ctx->getDistinctPtr(elems);
+
+    static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
+
+    if(NullableMallocs.get().getOrElse(true)) {
+        return lhvp == z3ef.getNullPtr() || lhvp == ctx->getDistinctPtr(elems);
+    } else {
+        return lhvp == ctx->getDistinctPtr(elems);
+    }
 }
 
 bool MallocPredicate::equals(const Predicate* other) const {
