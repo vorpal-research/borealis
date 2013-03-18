@@ -58,7 +58,6 @@ public:
 
 #undef RESTRICT_PARAMETER_TO
 
-
 #include "Util/macros.h"
 
 class AppConfiguration {
@@ -101,6 +100,16 @@ public:
             cached = conf->getValue<T>(section, key);
         }
         return cached;
+    }
+
+    const T& get(const T& def) const {
+        auto& conf = AppConfiguration::instance().globalConfig;
+        if(!conf) return def;
+
+        if(cached.empty()){
+            cached = conf->getValue<T>(section, key);
+        }
+        return cached.getOrElse(def);
     }
 
     operator const borealis::util::option<T>& () const{
