@@ -819,6 +819,10 @@ public:
     static FuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
         return FuncArray(ctx, name, [def](Index){ return def; });
     }
+
+    friend std::ostream& operator<<(std::ostream& ost, const FuncArray<Elem, Index>& fa) {
+        return ost << "farray " << *fa.name << " {" << fa.inner << "}";
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -874,6 +878,10 @@ public:
     static InlinedFuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
         return InlinedFuncArray(ctx, name, [def](Index){ return def; });
     }
+
+    friend std::ostream& operator<<(std::ostream& ost, const InlinedFuncArray<Elem, Index>& fa) {
+        return ost << "inlinedArray " << *fa.name << " {}";
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -906,6 +914,7 @@ public:
     static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
         return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
     }
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
