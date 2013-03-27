@@ -55,7 +55,7 @@ struct NullInfo {
 	NullInfo& setStatus(
 			unsigned idx,
 			const NullStatus& status) {
-		return setStatus({ idx }, status);
+		return setStatus(std::vector<unsigned>{ idx }, status);
 	}
 
 	NullInfo& setStatus(

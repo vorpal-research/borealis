@@ -24,7 +24,7 @@ using namespace borealis::util;
 class RegularDetectNullInstVisitor :
         public llvm::InstVisitor<RegularDetectNullInstVisitor> {
 
-public:
+        public:
 
     using llvm::InstVisitor<RegularDetectNullInstVisitor>::visit;
 
@@ -64,12 +64,11 @@ public:
         Value* value = I.getInsertedValueOperand();
 
         if (isa<ConstantPointerNull>(value)) {
-            const std::vector<unsigned>& idxs = I.getIndices().vec();
-            pass->data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
+            pass->data[&I] = NullInfo().setStatus(I.getIndices().vec(), NullStatus::Null);
         }
     }
 
-private:
+        private:
 
     DetectNullPass* pass;
 
@@ -84,7 +83,7 @@ private:
 class PHIDetectNullInstVisitor :
         public llvm::InstVisitor<PHIDetectNullInstVisitor> {
 
-public:
+        public:
 
     PHIDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {}
 
@@ -107,7 +106,7 @@ public:
         pass->data[&I] = nullInfo;
     }
 
-private:
+        private:
 
     DetectNullPass* pass;
 
@@ -143,28 +142,28 @@ DetectNullPass::DetectNullPass() : ProxyFunctionPass(ID) {}
 DetectNullPass::DetectNullPass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-	AU.setPreservesAll();
+    AU.setPreservesAll();
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
     TRACE_FUNC;
 
-	init();
+    init();
 
-	//Add maybe-nulls for function arguments
-	for (auto& arg : F.getArgumentList()) {
-	    if (arg.getType()->isPointerTy()) {
-	        data[&arg] = NullInfo().setStatus(NullStatus::MaybeNull);
-	    }
-	}
+    //Add maybe-nulls for function arguments
+    for (auto& arg : F.getArgumentList()) {
+        if (arg.getType()->isPointerTy()) {
+            data[&arg] = NullInfo().setStatus(NullStatus::MaybeNull);
+        }
+    }
 
-	RegularDetectNullInstVisitor regularVisitor(this);
-	regularVisitor.visit(F);
+    RegularDetectNullInstVisitor regularVisitor(this);
+    regularVisitor.visit(F);
 
-	PHIDetectNullInstVisitor phiVisitor(this);
-	phiVisitor.visit(F);
+    PHIDetectNullInstVisitor phiVisitor(this);
+    phiVisitor.visit(F);
 
-	return false;
+    return false;
 }
 
 DetectNullPass::~DetectNullPass() {}
