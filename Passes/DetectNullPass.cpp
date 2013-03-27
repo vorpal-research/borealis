@@ -42,7 +42,7 @@ public:
     void visitCallInst(llvm::CallInst& I) {
         if (!I.getType()->isPointerTy()) return;
 
-        pass->data[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
+        pass->data[&I] = NullInfo().setStatus(NullStatus::MaybeNull);
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
@@ -62,8 +62,9 @@ public:
         using namespace llvm;
 
         Value* value = I.getInsertedValueOperand();
+
         if (isa<ConstantPointerNull>(value)) {
-            const std::vector<unsigned> idxs = I.getIndices().vec();
+            const std::vector<unsigned>& idxs = I.getIndices().vec();
             pass->data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
         }
     }
@@ -100,7 +101,7 @@ public:
             if (containsKey(pass->data, II)) {
                 nullInfo = nullInfo.merge(pass->data[II]);
             } else {
-                nullInfo = nullInfo.merge(NullStatus::Not_Null);
+                nullInfo = nullInfo.merge(NullStatus::NotNull);
             }
         }
         pass->data[&I] = nullInfo;
@@ -149,6 +150,13 @@ bool DetectNullPass::runOnFunction(llvm::Function& F) {
     TRACE_FUNC;
 
 	init();
+
+	//Add maybe-nulls for function arguments
+	for (auto& arg : F.getArgumentList()) {
+	    if (arg.getType()->isPointerTy()) {
+	        data[&arg] = NullInfo().setStatus(NullStatus::MaybeNull);
+	    }
+	}
 
 	RegularDetectNullInstVisitor regularVisitor(this);
 	regularVisitor.visit(F);
