@@ -57,4 +57,27 @@ TEST(cast, visit) {
     }
 }
 
+TEST(cast, pair_matcher) {
+    {
+        using borealis::util::match_pair;
+        using borealis::OpaqueBoolConstantTerm;
+        using borealis::OpaqueIntConstantTerm;
+
+        auto tf = TermFactory::get(nullptr);
+        auto lhv = tf->getOpaqueConstantTerm(true);
+        auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
+
+        if (auto matched = match_pair<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
+            ASSERT_TRUE(matched->first->getValue());
+            ASSERT_EQ(0xC0DEBEEFLL, matched->second->getValue());
+        } else {
+            FAIL();
+        }
+
+        if (auto matched = match_pair<OpaqueIntConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
+            FAIL();
+        }
+    }
+}
+
 } /* namespace */
