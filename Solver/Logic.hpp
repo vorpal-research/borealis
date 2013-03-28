@@ -763,14 +763,20 @@ public:
 
     static self mkFunc(z3::context& ctx, const std::string& name, std::function<Res(Args...)> body) {
         z3::func_decl f = constructFunc(ctx, name);
-        z3::expr ax = constructAxiomatic(ctx, f , body);
+        z3::expr ax = constructAxiomatic(ctx, f, body);
         return self(f, ax);
     }
 
     static self mkFreshFunc(z3::context& ctx, const std::string& name, std::function<Res(Args...)> body) {
         z3::func_decl f = constructFreshFunc(ctx, name);
-        z3::expr ax = constructAxiomatic(ctx, f , body);
+        z3::expr ax = constructAxiomatic(ctx, f, body);
         return self(f, ax);
+    }
+
+    static self mkDerivedFunc(const self& oldFunc, const std::string& name, std::function<Res(Args...)> body) {
+        z3::func_decl f = constructFreshFunc(oldFunc.ctx(), name);
+        z3::expr ax = constructAxiomatic(oldFunc.ctx(), f, body);
+        return self(f, ax && oldFunc.axiom());
     }
 };
 
@@ -799,7 +805,7 @@ public:
     Elem operator[](Index i) { return select(i); }
 
     FuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t nf = inner_t::mkFreshFunc(inner.get().ctx(), *name, [this,&i,&e](Index res) {
+        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this,&i,&e](Index res) {
             return if_(res == i).then_(e).else_(this->select(res));
         });
 
@@ -807,7 +813,7 @@ public:
     }
 
     FuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
-        inner_t nf = inner_t::mkFreshFunc(inner.get().ctx(), *name, [this, entries](Index j) {
+        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this, entries](Index j) {
             return switch_(j, entries, this->select(j));
         });
 
@@ -818,6 +824,10 @@ public:
 
     static FuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
         return FuncArray(ctx, name, [def](Index){ return def; });
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const FuncArray<Elem, Index>& fa) {
+        return ost << "funcArray " << *fa.name << " {" << fa.inner << "}";
     }
 };
 
@@ -874,6 +884,10 @@ public:
     static InlinedFuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
         return InlinedFuncArray(ctx, name, [def](Index){ return def; });
     }
+
+    friend std::ostream& operator<<(std::ostream& ost, const InlinedFuncArray<Elem, Index>& ifa) {
+        return ost << "inlinedArray " << *ifa.name << " { ... }";
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -906,6 +920,7 @@ public:
     static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
         return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
     }
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1006,7 +1021,7 @@ SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = FuncArray>
+template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = TheoryArray>
 class ScatterArray {
     typedef BitVector<ElemSize> Byte;
     typedef InnerArray<Byte, Index> Inner;

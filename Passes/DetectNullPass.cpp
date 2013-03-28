@@ -24,7 +24,7 @@ using namespace borealis::util;
 class RegularDetectNullInstVisitor :
         public llvm::InstVisitor<RegularDetectNullInstVisitor> {
 
-public:
+        public:
 
     using llvm::InstVisitor<RegularDetectNullInstVisitor>::visit;
 
@@ -42,7 +42,7 @@ public:
     void visitCallInst(llvm::CallInst& I) {
         if (!I.getType()->isPointerTy()) return;
 
-        pass->data[&I] = NullInfo().setStatus(NullStatus::Maybe_Null);
+        pass->data[&I] = NullInfo().setStatus(NullStatus::MaybeNull);
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
@@ -62,13 +62,13 @@ public:
         using namespace llvm;
 
         Value* value = I.getInsertedValueOperand();
+
         if (isa<ConstantPointerNull>(value)) {
-            const std::vector<unsigned> idxs = I.getIndices().vec();
-            pass->data[&I] = NullInfo().setStatus(idxs, NullStatus::Null);
+            pass->data[&I] = NullInfo().setStatus(I.getIndices().vec(), NullStatus::Null);
         }
     }
 
-private:
+        private:
 
     DetectNullPass* pass;
 
@@ -83,7 +83,7 @@ private:
 class PHIDetectNullInstVisitor :
         public llvm::InstVisitor<PHIDetectNullInstVisitor> {
 
-public:
+        public:
 
     PHIDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {}
 
@@ -100,13 +100,13 @@ public:
             if (containsKey(pass->data, II)) {
                 nullInfo = nullInfo.merge(pass->data[II]);
             } else {
-                nullInfo = nullInfo.merge(NullStatus::Not_Null);
+                nullInfo = nullInfo.merge(NullStatus::NotNull);
             }
         }
         pass->data[&I] = nullInfo;
     }
 
-private:
+        private:
 
     DetectNullPass* pass;
 
@@ -142,21 +142,28 @@ DetectNullPass::DetectNullPass() : ProxyFunctionPass(ID) {}
 DetectNullPass::DetectNullPass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-	AU.setPreservesAll();
+    AU.setPreservesAll();
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
     TRACE_FUNC;
 
-	init();
+    init();
 
-	RegularDetectNullInstVisitor regularVisitor(this);
-	regularVisitor.visit(F);
+    //Add maybe-nulls for function arguments
+    for (auto& arg : F.getArgumentList()) {
+        if (arg.getType()->isPointerTy()) {
+            data[&arg] = NullInfo().setStatus(NullStatus::MaybeNull);
+        }
+    }
 
-	PHIDetectNullInstVisitor phiVisitor(this);
-	phiVisitor.visit(F);
+    RegularDetectNullInstVisitor regularVisitor(this);
+    regularVisitor.visit(F);
 
-	return false;
+    PHIDetectNullInstVisitor phiVisitor(this);
+    phiVisitor.visit(F);
+
+    return false;
 }
 
 DetectNullPass::~DetectNullPass() {}

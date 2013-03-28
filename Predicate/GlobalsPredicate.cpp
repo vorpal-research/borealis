@@ -19,6 +19,11 @@ GlobalsPredicate::GlobalsPredicate(
     using borealis::util::head;
     using borealis::util::tail;
 
+    if (globals.empty()) {
+        this->asString = "globals()";
+        return;
+    }
+
     std::string a = head(globals)->getName();
     for (auto& g : tail(globals)) {
         a = a + "," + g->getName();

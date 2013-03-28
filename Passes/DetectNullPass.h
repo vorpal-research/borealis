@@ -26,7 +26,7 @@
 namespace borealis {
 
 enum class NullStatus {
-	Null, Maybe_Null, Not_Null
+	Null, MaybeNull, NotNull
 };
 
 enum class NullType {
@@ -36,29 +36,29 @@ enum class NullType {
 struct NullInfo {
 
 	typedef std::map<std::vector<unsigned>, NullStatus> OffsetInfoMap;
-	typedef std::pair<std::vector<unsigned>, NullStatus> OffsetInfoMapEntry;
+	typedef OffsetInfoMap::value_type OffsetInfoMapEntry;
 
 	NullType type = NullType::VALUE;
 	OffsetInfoMap offsetInfoMap;
 
-	inline NullInfo& setType(
+	NullInfo& setType(
 	        const NullType& type) {
 	    this->type = type;
 	    return *this;
 	}
 
-	inline NullInfo& setStatus(
+	NullInfo& setStatus(
 			const NullStatus& status) {
 		return setStatus(0, status);
 	}
 
-	inline NullInfo& setStatus(
+	NullInfo& setStatus(
 			unsigned idx,
 			const NullStatus& status) {
-		return setStatus(std::vector<unsigned> { idx }, status);
+		return setStatus(std::vector<unsigned>{ idx }, status);
 	}
 
-	inline NullInfo& setStatus(
+	NullInfo& setStatus(
 			const std::vector<unsigned>& v,
 			const NullStatus& status) {
 		offsetInfoMap[v] = status;
@@ -66,10 +66,13 @@ struct NullInfo {
 	}
 
 	NullStatus getStatus() const {
-	    if (offsetInfoMap.empty()) return NullStatus::Not_Null;
+	    using borealis::util::head;
+	    using borealis::util::tail;
 
-	    NullStatus res = (*offsetInfoMap.begin()).second;
-	    for (const auto& e : offsetInfoMap) {
+	    if (offsetInfoMap.empty()) return NullStatus::NotNull;
+
+	    NullStatus res = head(offsetInfoMap).second;
+	    for (const auto& e : tail(offsetInfoMap)) {
 	        res = mergeStatus(res, e.second);
 	    }
 
@@ -81,22 +84,21 @@ struct NullInfo {
 			const NullStatus& two) {
 		if (one == NullStatus::Null && two == NullStatus::Null) {
 			return NullStatus::Null;
-		} else if (one == NullStatus::Not_Null && two == NullStatus::Not_Null) {
-			return NullStatus::Not_Null;
+		} else if (one == NullStatus::NotNull && two == NullStatus::NotNull) {
+			return NullStatus::NotNull;
 		} else {
-			return NullStatus::Maybe_Null;
+			return NullStatus::MaybeNull;
 		}
 	}
 
 	NullInfo& merge(const NullInfo& other) {
 	    using borealis::util::containsKey;
-	    using borealis::util::sayonara;
 
 	    ASSERT(type == other.type, "Different NullInfo types in merge");
 
 		for (const auto& entry : other.offsetInfoMap){
-			std::vector<unsigned> idxs = entry.first;
-			NullStatus status = entry.second;
+			const std::vector<unsigned>& idxs = entry.first;
+			const NullStatus& status = entry.second;
 
 			if (!containsKey(offsetInfoMap, idxs)) {
 				offsetInfoMap[idxs] = status;
@@ -112,8 +114,8 @@ struct NullInfo {
 	    if (offsetInfoMap.empty()) {
 	        return setStatus(status);
 	    } else {
-            for (const auto& entry : offsetInfoMap) {
-                std::vector<unsigned> idxs = entry.first;
+            for (const auto& e : offsetInfoMap) {
+                const std::vector<unsigned>& idxs = e.first;
                 offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
             }
             return *this;
@@ -149,13 +151,10 @@ public:
 
 	NullPtrSet getNullSet(const NullType& type) {
 		NullPtrSet res;
-		for (const auto& entry : data) {
-			const NullInfo info = entry.second;
-			if (info.type == type) {
-			    NullStatus ns = info.getStatus();
-			    if (ns != NullStatus::Not_Null) {
-			        res.insert(entry.first);
-			    }
+		for (const auto& e : data) {
+			const NullInfo info = e.second;
+			if (info.type == type && info.getStatus() != NullStatus::NotNull) {
+                res.insert(e.first);
 			}
 		}
 		return res;
