@@ -46,6 +46,7 @@ public:
     }
 
     Term::Ptr getRhv() const { return rhv; }
+    llvm::UnaryArithType getOpcode() const { return opcode; }
 
     static bool classof(const UnaryTerm*) {
         return true;

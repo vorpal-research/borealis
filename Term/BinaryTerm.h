@@ -89,8 +89,9 @@ public:
         } else return false;
     }
 
-    Term::Ptr getLhv() { return lhv; }
-    Term::Ptr getRhv() { return rhv; }
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
+    llvm::ArithType getOpcode() const { return opcode; }
 
     static bool classof(const BinaryTerm*) {
         return true;

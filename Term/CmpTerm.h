@@ -73,6 +73,7 @@ public:
 
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getRhv() const { return rhv; }
+    llvm::ConditionType getOpcode() const { return opcode; }
 
     virtual Type::Ptr getTermType() const {
         auto& tf = TypeFactory::getInstance();

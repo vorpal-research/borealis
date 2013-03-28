@@ -27,7 +27,7 @@ class OpaqueFloatingConstantTerm: public borealis::Term {
 
 public:
 
-    double getValue() { return value; }
+    double getValue() const { return value; }
 
     OpaqueFloatingConstantTerm(const self&) = default;
 
