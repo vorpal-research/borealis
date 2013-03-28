@@ -1,11 +1,15 @@
 #ifndef HANDLE_ANALYSIS
-#define HANDLE_ANALYSIS(CLASS)
 #define INCLUDE_MODE
 #endif
 
 #ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/AnnotationPredicateAnalysis.h"
+
+#define HANDLE_ANALYSIS(CLASS)
+
 #endif
 
 HANDLE_ANALYSIS(DefaultPredicateAnalysis)
@@ -13,8 +17,4 @@ HANDLE_ANALYSIS(AnnotationPredicateAnalysis)
 
 #ifdef HANDLE_ANALYSIS
 #undef HANDLE_ANALYSIS
-#endif
-
-#ifdef INCLUDE_MODE
-#undef INCLUDE_MODE
 #endif

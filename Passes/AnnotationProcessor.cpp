@@ -82,7 +82,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                     break;
                 }
             }
-        } else if (isa<AssertAnnotation>(anno)) {
+        } else if (isa<AssertAnnotation>(anno) || isa<AssumeAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Instruction* I = dyn_cast<Instruction>(e.second)) {
                     templ->insertBefore(I);

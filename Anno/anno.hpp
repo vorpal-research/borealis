@@ -527,6 +527,8 @@ struct assigns_c :
         ifapply< ifmust< keyword< 'a', 's', 's', 'i', 'g', 'n', 's' >, read_expr >, ask_arguments > {};
 struct assert_c :
         ifapply< ifmust< keyword< 'a', 's', 's', 'e', 'r', 't' >, read_expr >, ask_arguments > {};
+struct assume_c :
+        ifapply< ifmust< keyword< 'a', 's', 's', 'u', 'm', 'e' >, read_expr >, ask_arguments > {};
 struct skip_c :
         ifapply< keyword< 's', 'k', 'i', 'p' >, ask_arguments > {};
 struct ignore_c :
@@ -545,6 +547,7 @@ struct commands :
             requires_c,
             ensures_c,
             assigns_c,
+            assume_c,
             assert_c,
             skip_c,
             ignore_c,

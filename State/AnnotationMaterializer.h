@@ -10,11 +10,8 @@
 
 #include <sstream>
 
-#include "Annotation/AssertAnnotation.h"
-#include "Annotation/AssignsAnnotation.h"
-#include "Annotation/EnsuresAnnotation.h"
-#include "Annotation/LogicAnnotation.h"
-#include "Annotation/RequiresAnnotation.h"
+#include "Annotation/Annotation.def"
+
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/Transformer.hpp"

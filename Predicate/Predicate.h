@@ -12,8 +12,7 @@
 
 #include <memory>
 
-#include "Annotation/EnsuresAnnotation.h"
-#include "Annotation/RequiresAnnotation.h"
+#include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
 #include "Solver/ExecutionContext.h"
 #include "Solver/Z3ExprFactory.h"

@@ -1,15 +1,20 @@
 #ifndef HANDLE_CHECKER
-#define HANDLE_CHECKER(CLASS)
 #define INCLUDE_MODE
 #endif
 
 #ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
 #include "Passes/CheckNullDereferencePass.h"
 #include "Passes/CheckContractPass.h"
+
+#define HANDLE_CHECKER(CLASS)
+
 #endif
 
 HANDLE_CHECKER(CheckNullDereferencePass)
 HANDLE_CHECKER(CheckContractPass)
 
+#ifdef HANDLE_CHECKER
 #undef HANDLE_CHECKER
-#undef INCLUDE_MODE
+#endif

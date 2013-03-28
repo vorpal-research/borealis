@@ -11,16 +11,7 @@
 
 #include "Annotation/AnnotationCast.h"
 
-#include "Annotation/RequiresAnnotation.h"
-#include "Annotation/EnsuresAnnotation.h"
-#include "Annotation/AssignsAnnotation.h"
-#include "Annotation/AssertAnnotation.h"
-#include "Annotation/SkipAnnotation.h"
-#include "Annotation/IgnoreAnnotation.h"
-#include "Annotation/StackDepthAnnotation.h"
-#include "Annotation/UnrollAnnotation.h"
-#include "Annotation/MaskAnnotation.h"
-#include "Annotation/EndMaskAnnotation.h"
+#include "Annotation/Annotation.def"
 
 #include "Util/macros.h"
 

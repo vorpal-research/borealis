@@ -7,6 +7,9 @@
 
 #include "Predicate/Predicate.h"
 
+#include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
+
 namespace borealis {
 
 PredicateType predicateType(const Annotation* a) {
