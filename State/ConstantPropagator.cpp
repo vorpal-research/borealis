@@ -5,7 +5,7 @@
  *      Author: snowball
  */
 
-#include "ConstantPropagator.h"
+#include "State/ConstantPropagator.h"
 
 namespace borealis {
 
@@ -22,10 +22,10 @@ Term::Ptr ConstantPropagator::transformUnaryTerm(UnaryTermPtr term) {
     } else if (auto t = dyn_cast<OpaqueFloatingConstantTerm>(value)) {
         return propagateTerm(op, t->getValue());
     } else if (auto t = dyn_cast<ConstTerm>(value)) {
-        if (auto t2 = dyn_cast<ConstantInt>(t->getConstant())) {
-            return propagateTerm(op, (long long) t2->getSExtValue());
-        } else if (auto t2 = dyn_cast<ConstantFP>(t->getConstant())) {
-            return propagateTerm(op, t2->getValueAPF().convertToDouble());
+        if (auto constInt = dyn_cast<ConstantInt>(t->getConstant())) {
+            return propagateTerm(op, static_cast<long long>(constInt->getSExtValue()));
+        } else if (auto constFloat = dyn_cast<ConstantFP>(t->getConstant())) {
+            return propagateTerm(op, constFloat->getValueAPF().convertToDouble());
         }
     }
     return term;
@@ -42,4 +42,3 @@ Term::Ptr ConstantPropagator::transformCmpTerm(CmpTermPtr term) {
 }
 
 } /* namespace borealis */
-
