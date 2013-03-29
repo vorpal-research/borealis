@@ -41,8 +41,8 @@ private:
         typedef OpaqueFloatingConstantTerm Float;
         typedef ConstTerm Const;
 
-        auto lhv = transform(leftTerm);
-        auto rhv = transform(rightTerm);
+        auto lhv = leftTerm;
+        auto rhv = rightTerm;
 
 #define PROPAGATE(A, B) \
     if (auto matched = match_pair<A, B>(lhv, rhv)) { \
