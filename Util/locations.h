@@ -89,12 +89,24 @@ struct LocalLocus {
         ++(*this);
         return std::move(copy);
     }
+
+    bool isUnknown() const {
+        return col == UNKNOWN_LOC || line == UNKNOWN_LOC;
+    }
 };
 
 template<class Streamer>
 Streamer& operator<<(Streamer& ost, const LocalLocus& ll) {
+    if (ll.line == LocalLocus::UNKNOWN_LOC) ost << "<unknown-line>";
+    else ost << ll.line;
+
+    ost << ":";
+
+    if (ll.col == LocalLocus::UNKNOWN_LOC) ost << "<unknown-col>";
+    else ost << ll.col;
+
     // this is generally fucked up
-    return static_cast<Streamer&>(ost << ll.line << ":" << ll.col);
+    return static_cast<Streamer&>(ost);
 }
 
 struct Locus {
@@ -133,6 +145,10 @@ struct Locus {
 
     bool operator<(const Locus& that) const {
         return (filename == that.filename) && (loc < that.loc);
+    }
+
+    bool isUnknown() const {
+        return filename.empty() || loc.isUnknown();
     }
 };
 
