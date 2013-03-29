@@ -28,6 +28,7 @@ public:
     virtual bool runOnFunction(llvm::Function&);
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~LoopManager();
+    virtual void print(llvm::raw_ostream&, const llvm::Module*);
 
     unsigned getUnrollCount(llvm::Loop* L) const;
 
