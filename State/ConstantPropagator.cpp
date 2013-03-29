@@ -12,7 +12,7 @@ namespace borealis {
 Term::Ptr ConstantPropagator::transformUnaryTerm(UnaryTermPtr term) {
     using namespace llvm;
 
-    auto value = transform(term->getRhv());
+    auto value = term->getRhv();
     auto op = term->getOpcode();
 
     if (auto t = dyn_cast<OpaqueBoolConstantTerm>(value)) {
