@@ -27,6 +27,10 @@ public:
         return " " + std::to_string(level);
     }
 
+    size_t getLevel() const {
+        return level;
+    }
+
     static bool classof(const Annotation* a) {
         return a->getTypeId() == type_id<self>();
     }
