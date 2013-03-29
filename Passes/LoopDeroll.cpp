@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "Passes/LoopDeroll.h"
+#include "Util/passes.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -93,22 +94,19 @@ static inline llvm::BasicBlock* CreateUnreachableBasicBlock(
 void LoopDeroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace llvm;
 
-    AU.addRequiredTransitive<LoopInfo>();
-    AU.addRequiredTransitive<ScalarEvolution>();
+    AUX<LoopInfo>::addRequiredTransitive(AU);
+    AUX<LoopManager>::addRequiredTransitive(AU);
+    AUX<ScalarEvolution>::addRequiredTransitive(AU);
     // Does NOT preserve CFG
 }
 
 bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     using namespace llvm;
 
-    LI = &getAnalysis<LoopInfo>();
-    SE = &getAnalysis<ScalarEvolution>();
-
     // Basic info about the loop
     BasicBlock* Header = L->getHeader();
     BasicBlock* Latch = L->getLoopLatch();
     BasicBlock* LoopPredecessor = L->getLoopPredecessor();
-    Function* F = Header->getParent();
 
     // Sanity checks
     if (Header == nullptr) {
@@ -120,6 +118,12 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     if (LoopPredecessor == nullptr) {
         BYE_BYE(bool, "Cannot unroll a loop with multiple predecessors");
     }
+
+    Function* F = Header->getParent();
+
+    LI = &getAnalysis<LoopInfo>();
+    LM = &getAnalysis<LoopManager>();
+    SE = &getAnalysis<ScalarEvolution>();
 
     // Loop exit info
     BranchInst* BI = cast<BranchInst>(Latch->getTerminator());
@@ -160,10 +164,15 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     LoopBlocksDFS::RPOIterator BlockBegin = DFS.beginRPO();
     LoopBlocksDFS::RPOIterator BlockEnd = DFS.endRPO();
 
-    // Try to guess the deroll count
     unsigned CurrentDerollCount = DerollCount;
+
+    // Try to guess the deroll count
     unsigned TripCount = SE->getSmallConstantTripCount(L, Latch);
     if (TripCount != 0) CurrentDerollCount = TripCount;
+
+    // Try to find unroll annotation for this loop
+    unsigned AnnoUnrollCount = LM->getUnrollCount(L);
+    if (AnnoUnrollCount != 0) CurrentDerollCount = AnnoUnrollCount;
 
     for (unsigned UnrollIter = 0; UnrollIter != CurrentDerollCount; UnrollIter++) {
         std::vector<BasicBlock*> NewBlocks;

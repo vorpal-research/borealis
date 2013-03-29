@@ -15,6 +15,8 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
+#include "Passes/LoopManager.h"
+
 namespace borealis {
 
 class LoopDeroll: public llvm::LoopPass {
@@ -30,6 +32,7 @@ public:
 private:
 
     llvm::LoopInfo* LI;
+    LoopManager* LM;
     llvm::ScalarEvolution* SE;
 
 };
