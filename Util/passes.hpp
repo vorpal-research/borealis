@@ -15,6 +15,8 @@
 #include "Passes/PassModularizer.hpp"
 #include "Passes/ProxyFunctionPass.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 class ShouldBeModularized {};
@@ -33,12 +35,20 @@ struct AUX<P, false> {
     static void addRequiredTransitive(llvm::AnalysisUsage& AU) {
         AU.addRequiredTransitive< P >();
     }
+
+    static void addRequired(llvm::AnalysisUsage& AU) {
+        AU.addRequired< P >();
+    }
 };
 
 template<class P>
 struct AUX<P, true> {
     static void addRequiredTransitive(llvm::AnalysisUsage& AU) {
         AU.addRequiredTransitive< PassModularizer<P> >();
+    }
+
+    static void addRequired(llvm::AnalysisUsage& AU) {
+        AU.addRequired< PassModularizer<P> >();
     }
 };
 
@@ -79,11 +89,15 @@ struct GetAnalysis<P, impl_::PassType::MODULARIZED> {
 
 template<class P>
 struct GetAnalysis<P, impl_::PassType::FUNCTION> {
-    static P& doit(const llvm::Pass* pass, llvm::Function& F) {
+    static P& doit(llvm::Pass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
+
         return pass->getAnalysis< P >(F);
     }
 
-    static P& doit(const borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
+
         return pass->getAnalysis< P >(F);
     }
 };
@@ -145,5 +159,7 @@ struct RegisterPass<P, true> {
 };
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* PASSES_HPP_ */
