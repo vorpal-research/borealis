@@ -5,8 +5,11 @@
  *      Author: belyaev
  */
 
+#include <llvm/ADT/DepthFirstIterator.h>
+
 #include "Logging/tracer.hpp"
 #include "Passes/SourceLocationTracker.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
@@ -39,7 +42,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
     }
 
 
-    for(auto& Inst : viewContainer(M).flatten().flatten()) {
+    for (auto& Inst : viewContainer(M).flatten().flatten()) {
         Value* func = Inst.getParent()->getParent();
         if (valueDebugInfo.contains(func)) {
             std::string fname = valueDebugInfo[func].filename;
@@ -58,6 +61,27 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
             }
 
             valueDebugInfo.put(retloc, &Inst);
+        }
+    }
+
+    for (auto& F : M) {
+        if (F.isDeclaration()) continue;
+
+        auto& loops = GetAnalysis<LoopInfo>::doit(this, F);
+
+        for (auto* root : loops) {
+            for (auto* loop : view(df_begin(root), df_end(root))) {
+                Locus minBound;
+
+                for (BasicBlock* bb : view(loop->block_begin(), loop->block_end())) {
+                    for (Instruction& i : *bb) {
+                        if (minBound.isUnknown()) minBound = getLocFor(&i);
+                        else minBound = std::min(minBound, getLocFor(&i));
+                    }
+                }
+
+                loopDebugInfo.put(minBound, loop->getBlocks());
+            }
         }
     }
 
@@ -92,21 +116,44 @@ const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
     } else return empty;
 }
 
+const Locus& SourceLocationTracker::getLocFor(llvm::Loop* loop) const {
+    const static Locus empty;
+
+    if(loop && loopDebugInfo.contains(loop->getBlocks())) {
+        return loopDebugInfo[loop->getBlocks()];
+    } else return empty;
+}
+
 SourceLocationTracker::valueDebugMap::const_range SourceLocationTracker::getRangeFor(const Locus& loc) const {
     return valueDebugInfo.range_after(loc);
 }
 
-void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    AU.setPreservesAll();
+const std::vector<llvm::BasicBlock*>& SourceLocationTracker::getLoopFor(const Locus& loc) const {
+	const static std::vector<llvm::BasicBlock*> empty;
+
+    auto range = loopDebugInfo.range_after(loc);
+    if(range.first == range.second) return empty;
+    else return range.first->second;
 }
 
-void SourceLocationTracker::print(llvm::raw_ostream &ost, const llvm::Module*) const {
-    using borealis::util::streams::endl;
+void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+    AU.setPreservesAll();
+    AUX<llvm::LoopInfo>::addRequired(AU);
+}
+
+void SourceLocationTracker::print(llvm::raw_ostream&, const llvm::Module*) const {
 
     typedef std::pair<Locus, llvm::Value*> valueDebugMapEntry;
+    typedef std::pair<Locus, std::vector<llvm::BasicBlock*>> loopDebugMapEntry;
+    auto info = infos();
 
     for (const valueDebugMapEntry& val : valueDebugInfo.getFrom()) {
-        ost << " " << llvm::valueSummary(val.second) << " ==> " << getLocFor(val.second) << endl;
+        info << " " << llvm::valueSummary(val.second) << " ==> " << getLocFor(val.second) << endl;
+    }
+
+    info << "loops:" << endl;
+    for (const loopDebugMapEntry& val : loopDebugInfo.getFrom()) {
+        info << " " << val.second << " ==> " << loopDebugInfo[val.second] << endl;
     }
 }
 

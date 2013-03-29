@@ -9,6 +9,7 @@
 #define SOURCELOCATIONTRACKER_H_
 
 #include <llvm/Analysis/DebugInfo.h>
+#include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Function.h>
 #include <llvm/Module.h>
 #include <llvm/Pass.h>
@@ -28,10 +29,12 @@ public:
 
 	typedef Locus location_t;
 	typedef location_container<llvm::Value*> valueDebugMap;
+	typedef location_container< std::vector<llvm::BasicBlock*> > loopDebugMap;
 
 private:
 
 	valueDebugMap valueDebugInfo;
+	loopDebugMap loopDebugInfo;
 
 public:
 
@@ -48,8 +51,10 @@ public:
 	unsigned getLineFor(llvm::Value* val) const;
 	unsigned getColumnFor(llvm::Value* val) const;
 	const Locus& getLocFor(llvm::Value* val) const;
+	const Locus& getLocFor(llvm::Loop* loop) const;
 
 	valueDebugMap::const_range getRangeFor(const Locus& loc) const;
+	const std::vector<llvm::BasicBlock*>& getLoopFor(const Locus& loc) const;
 };
 
 } // namespace borealis
