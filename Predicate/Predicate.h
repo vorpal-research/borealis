@@ -26,7 +26,9 @@ enum class PredicateType {
     PATH,
     STATE,
     REQUIRES,
-    ENSURES
+    ENSURES,
+    ASSERT,
+    ASSUME
 };
 
 PredicateType predicateType(const Annotation* a);
@@ -62,6 +64,8 @@ public:
         switch (type) {
         case PredicateType::REQUIRES: return "@R " + asString;
         case PredicateType::ENSURES: return "@E " + asString;
+        case PredicateType::ASSERT: return "@A " + asString;
+        case PredicateType::ASSUME: return "@U " + asString;
         case PredicateType::PATH: return "@P " + asString;
         default: return asString;
         }
