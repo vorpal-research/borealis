@@ -48,7 +48,7 @@ unsigned LoopManager::getUnrollCount(llvm::Loop* L) const {
     }
 }
 
-void LoopManager::print(llvm::raw_ostream&, const llvm::Module*) {
+void LoopManager::print(llvm::raw_ostream&, const llvm::Module*) const {
     // TODO: implement print
 }
 
