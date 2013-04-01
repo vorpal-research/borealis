@@ -139,7 +139,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
             CallSiteInitializer csi(CI, TF.get());
 
             PredicateState transformedCallState = callState.filterByTypes(
-                { PredicateType::STATE, PredicateType::ENSURES }
+                { PredicateType::ENSURES }
             ).map(
                 [&csi](Predicate::Ptr p) {
                     return csi.transform(p);

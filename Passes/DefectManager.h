@@ -23,7 +23,8 @@ namespace borealis {
 enum class DefectType {
     INI_03,
     REQ_01,
-    ENS_01
+    ENS_01,
+    ASR_01
 };
 
 struct DefectSummary {
@@ -40,7 +41,8 @@ Streamer& operator<<(Streamer& str, const DefectSummary& ds) {
 const std::map<DefectType, const DefectSummary> DefectTypeNames = {
     { DefectType::INI_03, { "INI-03", "Dereferencing a nullptr" } },
     { DefectType::REQ_01, { "REQ-01", "Requires contract check failed" } },
-    { DefectType::ENS_01, { "ENS-01", "Ensures contract check failed" } }
+    { DefectType::ENS_01, { "ENS-01", "Ensures contract check failed" } },
+    { DefectType::ASR_01, { "ASR-01", "Assert check failed" } }
 };
 
 class DefectManager:
