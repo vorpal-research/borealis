@@ -9,12 +9,44 @@
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Frontend/DiagnosticOptions.h>
+#include <llvm/Analysis/DebugInfo.h>
+#include <llvm/Analysis/DIBuilder.h>
+#include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
+#include <llvm/Function.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Type.h>
 
 #include "Codegen/llvm.h"
 
 namespace borealis {
+
+void insertBeforeWithLocus(
+        llvm::Instruction* what,
+        llvm::Instruction* before,
+        const Locus& loc) {
+    what->insertBefore(before);
+    setDebugLocusWithCopiedScope(what, before, loc);
+}
+
+void setDebugLocusWithCopiedScope(
+        llvm::Instruction* to,
+        llvm::Instruction* from,
+        const Locus& loc) {
+    using namespace llvm;
+
+    auto& ctx = from->getContext();
+
+    auto* dbg = MDNode::get(
+            ctx,
+            std::vector<Value*>{
+                    ConstantInt::get(Type::getInt32Ty(ctx), loc.loc.line),
+                    ConstantInt::get(Type::getInt32Ty(ctx), loc.loc.col),
+                    from->getDebugLoc().getScope(ctx),
+                    nullptr
+            });
+    to->setMetadata("dbg", dbg);
+}
 
 llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr) {
     llvm::Constant* ptrAsInt = llvm::ConstantInt::get(

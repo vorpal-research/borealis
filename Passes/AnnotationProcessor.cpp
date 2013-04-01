@@ -62,6 +62,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                 isa<AssignsAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
+                    // TODO: fix insertBeforeWithLocus problem
                     templ->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
                     break;
                 }
@@ -71,10 +72,13 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
                     // this is generally fucked up, BUT we have to insert the template somewhere
                     // otherwise it can not be properly deleted
+                    // TODO: fix insertBeforeWithLocus problem
                     templ->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
-                    for(auto& BB : *F) {
-                        if(isa<ReturnInst>(BB.getTerminator()) || isa<UnreachableInst>(BB.getTerminator())) {
+                    for (auto& BB : *F) {
+                        if (isa<ReturnInst>(BB.getTerminator()) || isa<UnreachableInst>(BB.getTerminator())) {
                             // insert clones at the actual rets
+                            // no need to clone MDNodes, they are copied in templ->clone()
+                            // TODO: fix insertBeforeWithLocus problem
                             templ->clone()->insertBefore(BB.getTerminator());
                         }
                     }
@@ -85,7 +89,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
         } else if (isa<AssertAnnotation>(anno) || isa<AssumeAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Instruction* I = dyn_cast<Instruction>(e.second)) {
-                    templ->insertBefore(I);
+                    insertBeforeWithLocus(templ, I, anno->getLocus());
                     break;
                 }
             }

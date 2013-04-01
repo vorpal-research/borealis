@@ -16,6 +16,15 @@
 
 namespace borealis {
 
+void insertBeforeWithLocus(
+        llvm::Instruction* what,
+        llvm::Instruction* before,
+        const Locus& loc);
+void setDebugLocusWithCopiedScope(
+        llvm::Instruction* to,
+        llvm::Instruction* from,
+        const Locus& loc);
+
 llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr);
 void* MDNode2Ptr(llvm::MDNode* ptr);
 
