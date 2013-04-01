@@ -55,7 +55,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
                 retloc.loc = dbgloc;
             }
 
-            if(auto* locmd = Inst.getMetadata("dbg")) {
+            if (auto* locmd = Inst.getMetadata("dbg")) {
                 DILocation diloc(locmd);
                 retloc = diloc;
             }
