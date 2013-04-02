@@ -94,6 +94,11 @@ inline auto head(const Container& con) -> decltype(*con.begin()) {
     return *con.begin();
 }
 
+template<class Container>
+inline auto head(Container& con) -> decltype(*con.begin()) {
+    return *con.begin();
+}
+
 template<class Iter>
 inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
     return CollectionView<Iter>(b, e);
@@ -131,6 +136,11 @@ inline auto reverse(Container& c) -> CollectionView<decltype(c.rbegin())> {
 
 template<class Container>
 inline auto tail(const Container& con) -> CollectionView<decltype(con.begin())> {
+    return view(++con.begin(), con.end());
+}
+
+template<class Container>
+inline auto tail(Container& con) -> CollectionView<decltype(con.begin())> {
     return view(++con.begin(), con.end());
 }
 
