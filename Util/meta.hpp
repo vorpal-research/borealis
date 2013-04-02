@@ -16,6 +16,12 @@ namespace util {
 // DO NOT DEFINE! decltype resolving only
 template<class T> T some();
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// get_index_of_T_in
+//
+////////////////////////////////////////////////////////////////////////////////
+
 template<class T, class ...List>
 struct get_index_of_T_in;
 
@@ -31,6 +37,12 @@ struct get_index_of_T_in<T, Head, Tail...> {
     enum { value = get_index_of_T_in<T, Tail...>::value + 1 };
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// is_T_in
+//
+////////////////////////////////////////////////////////////////////////////////
+
 template<class T, class ...List>
 struct is_T_in;
 
@@ -42,6 +54,12 @@ struct is_T_in<T,H,Tail...> : is_T_in<T, Tail...> {};
 
 template<class T>
 struct is_T_in<T> : std::false_type {};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// index_in_row
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<size_t I, class ...List>
 struct index_in_row;
@@ -55,6 +73,12 @@ template<size_t I, class Ignore, class ...Tail>
 struct index_in_row<I, Ignore, Tail...> {
     typedef typename index_in_row<I-1, Tail...>::type type;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Indexers
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<size_t ...N>
 struct indexer {};
@@ -80,6 +104,22 @@ struct make_indexer<Head0, Head1, Tail...> {
     typedef typename make_indexer<Head1, Tail...>::type prev;
     typedef typename glue_indexer<sizeof...(Tail)+1, prev>::type type;
 };
+
+
+
+template<class Indexer>
+struct indexer_tail;
+
+template<size_t Head, size_t ...Tail>
+struct indexer_tail< indexer<Head, Tail...> > {
+    typedef indexer<Tail...> type;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// index_in_type_list
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<class ...List>
 struct type_list {};
