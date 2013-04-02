@@ -101,6 +101,18 @@ QUICK_RETURN(impl::apply_packed_step_1(tp, c, typename util::make_indexer<Args..
 
 
 
+namespace impl {
+template<class Tuple, size_t ...N>
+auto tuple_tail_step_1(const Tuple& tp, util::indexer<N...>)
+QUICK_RETURN(std::make_tuple(std::get<N>(tp)...))
+} // namespace impl
+
+template<class ...Args>
+auto tuple_tail(const std::tuple<Args...>& tp)
+QUICK_RETURN(impl::tuple_tail_step_1(tp, typename util::indexer_tail< typename util::make_indexer<Args...>::type >::type()))
+
+
+
 template<class T>
 T* heap_copy(const T* val) {
     return new T(*val);
@@ -115,7 +127,6 @@ struct dyn_caster {
     template<class From>
     auto operator()(const From& from) QUICK_CONST_RETURN(dyn_cast<To>(from));
 };
-
 
 template<class T> struct simplify_type< std::shared_ptr<T> > {
     typedef T* SimpleType;
@@ -133,4 +144,5 @@ template<class T> struct simplify_type< const std::shared_ptr<T> > {
 } // namespace llvm
 
 #include "unmacros.h"
+
 #endif /* UTIL_HPP_ */

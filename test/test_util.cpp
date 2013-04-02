@@ -321,4 +321,15 @@ TEST(Util, iterators) {
 
 } // TEST(Util, iterators)
 
+TEST(Util, tuple) {
+    {
+        std::tuple<int, float, double> tuple(42, 3.17, 14.88);
+
+        std::tuple<float, double> tailed = tuple_tail(tuple);
+
+        ASSERT_FLOAT_EQ(3.17, std::get<0>(tailed));
+        ASSERT_DOUBLE_EQ(14.88, std::get<1>(tailed));
+    }
+}
+
 } // namespace
