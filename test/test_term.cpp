@@ -16,24 +16,20 @@
 
 #include <gtest/gtest.h>
 
-#include "Term/ArgumentTerm.h"
-#include "Term/ConstTerm.h"
-#include "Term/ReturnValueTerm.h"
-#include "Term/Term.h"
+#include "Term/Term.def"
 #include "Term/TermFactory.h"
-#include "Term/ValueTerm.h"
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
 namespace {
 
+using namespace borealis;
 using namespace borealis::util;
 using namespace borealis::util::streams;
 
 TEST(Term, classof) {
 
     {
-        using namespace borealis;
         using namespace llvm;
         using llvm::Type;
 
@@ -43,28 +39,27 @@ TEST(Term, classof) {
         Function* f = Function::Create(
                 FunctionType::get(
                         Type::getVoidTy(ctx),
-                        ArrayRef<Type*>(Type::getInt1Ty(ctx)),
+                        Type::getInt1Ty(ctx),
                         false),
                 GlobalValue::LinkageTypes::ExternalLinkage);
-        Argument* a = &*f->getArgumentList().begin();
+        Argument* a = &head(f->getArgumentList());
         a->setName("mock-arg");
 
         SlotTracker st(&m);
-
         auto TF = TermFactory::get(&st);
 
-        Term::Ptr t1 = TF->getArgumentTerm(a);
+        auto t1 = TF->getArgumentTerm(a);
 
-        EXPECT_TRUE(isa<ArgumentTerm>(*t1));
-        EXPECT_TRUE(isa<Term>(*t1));
-        EXPECT_FALSE(isa<ConstTerm>(*t1));
-        EXPECT_FALSE(isa<ReturnValueTerm>(*t1));
-        EXPECT_FALSE(isa<ValueTerm>(*t1));
+        EXPECT_TRUE(isa<ArgumentTerm>(t1));
+        EXPECT_TRUE(isa<Term>(t1));
+        EXPECT_FALSE(isa<ConstTerm>(t1));
+        EXPECT_FALSE(isa<ReturnValueTerm>(t1));
+        EXPECT_FALSE(isa<ValueTerm>(t1));
 
-        const ConstTerm* t2 = dyn_cast<ConstTerm>(t1.get());
+        auto* t2 = dyn_cast<ConstTerm>(t1);
         EXPECT_EQ(nullptr, t2);
     }
 
 }
 
-} // namespace borealis
+} // namespace
