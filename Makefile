@@ -101,6 +101,8 @@ TEST_OBJECTS := $(SOURCES_WITHOUT_MAIN:.cpp=.o) $(TEST_SOURCES:.cpp=.o)
 TEST_HEADERS := $(TEST_SOURCES:.cpp=.h)
 TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
 
+TEST_OUTPUT := "test_results.xml"
+
 ################################################################################
 # Exes
 ################################################################################
@@ -160,10 +162,10 @@ $(TEST_EXES): $(TEST_OBJECTS)
 tests: $(TEST_EXES)
 
 check: tests
-	$(PWD)/$(TEST_EXES)
+	$(PWD)/$(TEST_EXES) --gtest_output="xml:$(TEST_OUTPUT)"
 
 clean:
-	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES)
+	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES) $(TEST_OUTPUT)
 
 ################################################################################
 -include $(DEPS)
