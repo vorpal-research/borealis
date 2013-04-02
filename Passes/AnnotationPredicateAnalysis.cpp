@@ -7,10 +7,8 @@
 
 #include <llvm/Support/InstVisitor.h>
 
-#include "Annotation/Annotation.h"
-#include "Annotation/AssumeAnnotation.h"
-#include "Annotation/LogicAnnotation.h"
-#include "Annotation/RequiresAnnotation.h"
+#include "Annotation/Annotation.def"
+
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/AnnotationPredicateAnalysis.h"
 #include "Passes/AnnotationProcessor.h"
@@ -36,8 +34,7 @@ public:
         if (im.getIntrinsicType(CI) == function_type::INTRINSIC_ANNOTATION) {
             Annotation::Ptr anno =
                     materialize(Annotation::fromIntrinsic(CI), pass->TF.get(), pass->MI);
-            if (llvm::isa<RequiresAnnotation>(anno) ||
-                    llvm::isa<AssumeAnnotation>(anno)) {
+            if (llvm::isa<AssumeAnnotation>(anno)) {
                 LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 pass->PM[&CI] =
                         pass->PF->getEqualityPredicate(
@@ -68,7 +65,7 @@ void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) cons
 
     AU.setPreservesAll();
 
-    AUX<AnnotationProcessor>::addRequiredTransitive(AU);
+    AUX<AnnotationProcessor>::addRequired(AU);
     AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
@@ -82,8 +79,7 @@ bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
 
     MI = &GetAnalysis<MetaInfoTrackerPass>::doit(this, F);
 
-    SlotTracker* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-
+    auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     PF = PredicateFactory::get(ST);
     TF = TermFactory::get(ST);
 

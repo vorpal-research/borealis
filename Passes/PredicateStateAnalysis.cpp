@@ -58,19 +58,22 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     }
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
 
-    enqueue(nullptr, &F.getEntryBlock(), gPredicate);
+    // Register REQUIRES from annotations
+    PredicateState requires = FM->get(&F).filterByTypes({ PredicateType::REQUIRES });
+
+    enqueue(nullptr, &F.getEntryBlock(), gPredicate + requires);
     processQueue();
 
     return false;
 }
 
 void PredicateStateAnalysis::print(llvm::raw_ostream&, const llvm::Module*) const {
-    infos() << "= Predicate state analysis results =" << endl;
+    infos() << "Predicate state analysis results" << endl;
     for (auto& e : predicateStateMap) {
         infos() << *e.first << endl
                 << e.second << endl;
     }
-    infos() << "= Done =" << endl;
+    infos() << "End of predicate state analysis results" << endl;
 }
 
 PredicateStateAnalysis::~PredicateStateAnalysis() {}
@@ -128,14 +131,11 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
         PredicateState modifiedInState = inState.addAll(PM(&I)).addVisited(&I);
         predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
-        // Add function summaries AFTER the CallInst has been processed
+        // Add ENSURES *after* the CallInst has been processed
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
 
-            const PredicateState& callState = FM->get(
-                    CI,
-                    PF.get(),
-                    TF.get());
+            const PredicateState& callState = FM->get(CI, PF.get(), TF.get());
             CallSiteInitializer csi(CI, TF.get());
 
             PredicateState transformedCallState = callState.filterByTypes(
