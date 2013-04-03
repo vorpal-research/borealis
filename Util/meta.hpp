@@ -107,11 +107,12 @@ struct make_indexer<Head0, Head1, Tail...> {
 
 
 
-template<class Indexer>
-struct indexer_tail;
+template<class What>
+struct cdr;
 
 template<size_t Head, size_t ...Tail>
-struct indexer_tail< indexer<Head, Tail...> > {
+struct cdr< indexer<Head, Tail...> > {
+    static_assert(sizeof...(Tail) > 0, "cdr with 1-element indexer");
     typedef indexer<Tail...> type;
 };
 

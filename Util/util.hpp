@@ -103,13 +103,13 @@ QUICK_RETURN(impl::apply_packed_step_1(tp, c, typename util::make_indexer<Args..
 
 namespace impl {
 template<class Tuple, size_t ...N>
-auto tuple_tail_step_1(const Tuple& tp, util::indexer<N...>)
+auto cdr_tuple_step_1(const Tuple& tp, util::indexer<N...>)
 QUICK_RETURN(std::make_tuple(std::get<N>(tp)...))
 } // namespace impl
 
 template<class ...Args>
-auto tuple_tail(const std::tuple<Args...>& tp)
-QUICK_RETURN(impl::tuple_tail_step_1(tp, typename util::indexer_tail< typename util::make_indexer<Args...>::type >::type()))
+auto cdr_tuple(const std::tuple<Args...>& tp)
+QUICK_RETURN(impl::cdr_tuple_step_1(tp, typename util::cdr< typename util::make_indexer<Args...>::type >::type()))
 
 
 
