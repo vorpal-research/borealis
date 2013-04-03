@@ -48,8 +48,6 @@ TEST(Cast, visit) {
 
 TEST(Cast, pair_matcher) {
     {
-        using borealis::util::match_pair;
-
         auto tf = TermFactory::get(nullptr);
         auto lhv = tf->getOpaqueConstantTerm(true);
         auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
@@ -62,6 +60,25 @@ TEST(Cast, pair_matcher) {
         }
 
         if (auto matched = match_pair<OpaqueIntConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
+            FAIL();
+        }
+    }
+}
+
+TEST(Cast, DISABLED_tuple_matcher) {
+    {
+        auto tf = TermFactory::get(nullptr);
+        auto lhv = tf->getOpaqueConstantTerm(true);
+        auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
+
+        if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
+            ASSERT_EQ(true, matched.get<0>()->getValue());
+            ASSERT_EQ(0xC0DEBEEFLL, matched.get<1>()->getValue());
+        } else {
+            FAIL();
+        }
+
+        if (auto matched = match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
             FAIL();
         }
     }
