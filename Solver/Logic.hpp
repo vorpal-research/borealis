@@ -172,14 +172,16 @@ struct generator;
 
 class Bool;
 
+namespace impl {
 template<>
-struct impl::generator<Bool> {
+struct generator<Bool> {
     typedef bool basetype;
 
     static z3::sort sort(z3::context& ctx) { return ctx.bool_sort(); }
     static bool check(z3::expr e) { return e.is_bool(); }
     static z3::expr mkConst(z3::context& ctx, bool b) { return ctx.bool_val(b); }
 };
+} // namespace impl
 
 ASPECT(Bool)
 
@@ -202,14 +204,16 @@ Bool iff(Bool lhv, Bool rhv);
 
 template<size_t N> class BitVector;
 
+namespace impl {
 template<size_t N>
-struct impl::generator< BitVector<N> > {
+struct generator< BitVector<N> > {
     typedef long long basetype;
 
     static z3::sort sort(z3::context& ctx) { return ctx.bv_sort(N)  ; }
     static bool check(z3::expr e) { return e.is_bv() && e.get_sort().bv_size() == N; }
     static z3::expr mkConst(z3::context& ctx, int n) { return ctx.bv_val(n, N); }
 };
+} // namespace impl
 
 template<size_t N>
 ASPECT_BEGIN(BitVector)
@@ -515,10 +519,12 @@ z3::expr forAll(
 
 class ComparableExpr;
 
+namespace impl {
 template<>
-struct impl::generator<ComparableExpr> : impl::generator<BitVector<1>> {
+struct generator<ComparableExpr> : generator<BitVector<1>> {
     static bool check(z3::expr e) { return e.is_bv() || e.is_arith() || e.is_real(); }
 };
+} // namespace impl
 
 ASPECT(ComparableExpr)
 
@@ -538,10 +544,12 @@ ASPECT(ComparableExpr)
 
 class DynBitVectorExpr;
 
+namespace impl {
 template<>
-struct impl::generator<DynBitVectorExpr> : impl::generator<BitVector<1>> {
+struct generator<DynBitVectorExpr> : generator<BitVector<1>> {
     static bool check(z3::expr e) { return e.is_bv(); }
 };
+} // namespace impl
 
 ASPECT_BEGIN(DynBitVectorExpr)
 public:

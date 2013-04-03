@@ -20,36 +20,36 @@ namespace borealis {
 
 template<class T>
 class DataProvider: public llvm::ImmutablePass {
-	struct static_ {
-		static_() {
-			static std::string Tname = borealis::util::toString(borealis::type_id<T>());
-			static std::string Passname = std::string("data-provider-") + Tname;
-			static std::string Passdesc = std::string("Provider of ") + Tname;
+    struct static_ {
+        static_() {
+            static std::string Tname = borealis::util::toString(borealis::type_id<T>());
+            static std::string Passname = std::string("data-provider-") + Tname;
+            static std::string Passdesc = std::string("Provider of ") + Tname;
 
-			static llvm::RegisterPass< DataProvider<T> > X(Passname.c_str(), Passdesc.c_str(), false, false);
-		}
-	};
+            static llvm::RegisterPass< DataProvider<T> > X(Passname.c_str(), Passdesc.c_str(), false, false);
+        }
+    };
 
-	static static_ st;
+    static static_ st;
 
-	virtual void enforce_static(static_&) {}
+    virtual void enforce_static(static_&) {}
 
-	const T* value;
+    const T* value;
 
 public:
 
-	static char ID;
+    static char ID;
 
-	DataProvider(): llvm::ImmutablePass(ID), value(nullptr) { enforce_static(st); }
-	DataProvider(const T* v): llvm::ImmutablePass(ID), value(v) { enforce_static(st); }
+    DataProvider(): llvm::ImmutablePass(ID), value(nullptr) { enforce_static(st); }
+    DataProvider(const T* v): llvm::ImmutablePass(ID), value(v) { enforce_static(st); }
 
-	virtual void initializePass() {}
+    virtual void initializePass() {}
 
-	const T& provide() {
-		return *value;
-	}
+    const T& provide() {
+        return *value;
+    }
 
-	friend DataProvider<T>* provideAsPass(const T* value);
+    friend DataProvider<T>* provideAsPass(const T* value);
 };
 
 template<class T>
@@ -60,7 +60,7 @@ typename DataProvider<T>::static_ DataProvider<T>::st;
 
 template<class T>
 DataProvider<T>* provideAsPass(const T* value) {
-	return new DataProvider<T>(value);
+    return new DataProvider<T>(value);
 }
 
 } // namespace borealis

@@ -59,7 +59,7 @@ public:
     }
 
 #include "macros.h"
-    auto filter() QUICK_CONST_RETURN(filter(defaultPred));
+    auto filter() QUICK_CONST_RETURN(this->filter(defaultPred));
 #include "unmacros.h"
 
 };

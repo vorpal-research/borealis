@@ -116,8 +116,8 @@ public:
         return get();
     }
 
-    auto begin() QUICK_CONST_RETURN(get().begin())
-    auto end() QUICK_CONST_RETURN(get().end())
+    auto begin() QUICK_CONST_RETURN(this->get().begin())
+    auto end() QUICK_CONST_RETURN(this->get().end())
 
 };
 
