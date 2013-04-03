@@ -93,10 +93,12 @@ private:
     function_type_cache type_cache;
     intrinsic_info_cache info_cache;
 
+    static function_type default_resolver(const IntrinsicsManager& m, const llvm::CallInst& CI) {
+        return m.getIntrinsicType(CI.getCalledFunction());
+    };
+
     type_resolvers resolvers {
-        [](const IntrinsicsManager& m, const llvm::CallInst& CI) {
-            return m.getIntrinsicType(CI.getCalledFunction());
-        }
+        default_resolver
     };
 
     IntrinsicInfo getIntrinsicInfo(function_type ft) const;
