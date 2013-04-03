@@ -52,7 +52,7 @@ public:
   inline const RootIt& getCurrent() const { return current; }
   inline const UnaryFunc& getFunc() const { return Fn; }
 
-  inline explicit mapped_iterator(const RootIt& I, UnaryFunc F)
+  inline mapped_iterator(const RootIt& I, UnaryFunc F)
     : current(I), Fn(F) {}
   inline mapped_iterator(const mapped_iterator& It)
     : current(It.current), Fn(It.Fn) {}
@@ -288,7 +288,7 @@ public:
     };
 
 
-    inline explicit filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
+    inline filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
     : filtered_iterator(P.first, P.second, pred) {}
 
     inline filtered_iterator(const filtered_iterator& It)
