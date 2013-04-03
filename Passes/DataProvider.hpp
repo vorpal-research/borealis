@@ -19,6 +19,14 @@
 namespace borealis {
 
 template<class T>
+class DataProvider;
+
+template<class T>
+DataProvider<T>* provideAsPass(const T* value) {
+    return new DataProvider<T>(value);
+}
+
+template<class T>
 class DataProvider: public llvm::ImmutablePass {
     struct static_ {
         static_() {
@@ -49,7 +57,7 @@ public:
         return *value;
     }
 
-    friend DataProvider<T>* provideAsPass(const T* value);
+    friend DataProvider<T>* provideAsPass<>(const T* value);
 };
 
 template<class T>
@@ -57,11 +65,6 @@ char DataProvider<T>::ID;
 
 template<class T>
 typename DataProvider<T>::static_ DataProvider<T>::st;
-
-template<class T>
-DataProvider<T>* provideAsPass(const T* value) {
-    return new DataProvider<T>(value);
-}
 
 } // namespace borealis
 
