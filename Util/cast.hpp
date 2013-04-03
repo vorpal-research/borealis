@@ -87,7 +87,7 @@ pair_matcher<
 
     typedef typename llvm::cast_retty<T1, Q1>::ret_type R1;
     typedef typename llvm::cast_retty<T2, Q2>::ret_type R2;
-	typedef	typename pair_matcher<R1, R2> Retty;
+	typedef	pair_matcher<R1, R2> Retty;
     typedef typename Retty::datty datty;
     typedef typename Retty::datptr datptr;
 
