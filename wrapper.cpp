@@ -106,12 +106,12 @@ int main(int argc, const char** argv)
     MultiConfigEntry libs("libs", "load");
 
 
-    for (const auto& logFile : logFile) {
-        borealis::logging::configureLoggingFacility(logFile);
+    for (const auto& op : logFile) {
+        borealis::logging::configureLoggingFacility(op);
     }
 
-    for (const auto& z3log : z3log) {
-        borealis::logging::configureZ3Log(z3log);
+    for (const auto& op : z3log) {
+        borealis::logging::configureZ3Log(op);
     }
 
     // args to supply to opt
