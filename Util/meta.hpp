@@ -30,7 +30,7 @@ struct type_list {};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// cdr / append
+// cdr / cons / append
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +42,16 @@ struct cdr< indexer<Head, Tail...> > {
     static_assert(sizeof...(Tail) > 0, "cdr with 1-element indexer");
     typedef indexer<Tail...> type;
 };
+
+
+template<class E, class List>
+struct cons;
+
+template<class E, class ...List>
+struct cons<E, type_list<List...>> {
+    typedef type_list<E, List...> type;
+};
+
 
 template<class E, class List>
 struct append;
