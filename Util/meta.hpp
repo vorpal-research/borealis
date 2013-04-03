@@ -18,6 +18,41 @@ template<class T> T some();
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Types
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<size_t ...N>
+struct indexer {};
+
+template<class ...List>
+struct type_list {};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// cdr / append
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<class List>
+struct cdr;
+
+template<size_t Head, size_t ...Tail>
+struct cdr< indexer<Head, Tail...> > {
+    static_assert(sizeof...(Tail) > 0, "cdr with 1-element indexer");
+    typedef indexer<Tail...> type;
+};
+
+template<class E, class List>
+struct append;
+
+template<class E, class ...List>
+struct append<E, type_list<List...>> {
+    typedef type_list<List..., E> type;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // get_index_of_T_in
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,12 +111,9 @@ struct index_in_row<I, Ignore, Tail...> {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Indexers
+// make_indexer_from
 //
 ////////////////////////////////////////////////////////////////////////////////
-
-template<size_t ...N>
-struct indexer {};
 
 template<size_t N, class Indexer>
 struct glue_indexer;
@@ -90,7 +122,6 @@ template<size_t N, size_t ...Row>
 struct glue_indexer<N, indexer<Row...>> {
     typedef indexer<Row..., N> type;
 };
-
 
 
 template<size_t From, size_t To>
@@ -106,7 +137,6 @@ struct make_indexer_from<From, From> {
 };
 
 
-
 template<class ...Args>
 struct make_indexer : public make_indexer_from<0, sizeof...(Args)-1> {};
 
@@ -114,32 +144,13 @@ template<class ...Args>
 struct make_cdr_indexer : public make_indexer_from<1, sizeof...(Args)-1> {};
 
 
-
-////////////////////////////////////////////////////////////////////////////////
-//
-// cdr
-//
-////////////////////////////////////////////////////////////////////////////////
-
-template<class What>
-struct cdr;
-
-template<size_t Head, size_t ...Tail>
-struct cdr< indexer<Head, Tail...> > {
-    static_assert(sizeof...(Tail) > 0, "cdr with 1-element indexer");
-    typedef indexer<Tail...> type;
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 //
 // index_in_type_list
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class ...List>
-struct type_list {};
-
-template<size_t I, class Tl>
+template<size_t I, class TypeList>
 struct index_in_type_list;
 
 template<size_t I, class ...Args>
