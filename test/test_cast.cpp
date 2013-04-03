@@ -65,7 +65,8 @@ TEST(Cast, pair_matcher) {
     }
 }
 
-TEST(Cast, DISABLED_tuple_matcher) {
+/*******************************************************************************
+TEST(Cast, tuple_matcher) {
     {
         auto tf = TermFactory::get(nullptr);
         auto lhv = tf->getOpaqueConstantTerm(true);
@@ -83,5 +84,6 @@ TEST(Cast, DISABLED_tuple_matcher) {
         }
     }
 }
+*******************************************************************************/
 
 } // namespace
