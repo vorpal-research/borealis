@@ -91,21 +91,35 @@ struct glue_indexer<N, indexer<Row...>> {
     typedef indexer<Row..., N> type;
 };
 
+
+
+template<size_t From, size_t To>
+struct make_indexer_from {
+    static_assert(To > From, "Cannot make decreasing indexer");
+    typedef typename make_indexer_from<From, To-1>::type prev;
+    typedef typename glue_indexer<To, prev>::type type;
+};
+
+template<size_t From>
+struct make_indexer_from<From, From> {
+    typedef indexer<From> type;
+};
+
+
+
 template<class ...Args>
-struct make_indexer;
+struct make_indexer : public make_indexer_from<0, sizeof...(Args)-1> {};
 
-template<class Head>
-struct make_indexer<Head> {
-    typedef indexer<0> type;
-};
-
-template<class Head0, class Head1, class ...Tail>
-struct make_indexer<Head0, Head1, Tail...> {
-    typedef typename make_indexer<Head1, Tail...>::type prev;
-    typedef typename glue_indexer<sizeof...(Tail)+1, prev>::type type;
-};
+template<class ...Args>
+struct make_cdr_indexer : public make_indexer_from<1, sizeof...(Args)-1> {};
 
 
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// cdr
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<class What>
 struct cdr;
