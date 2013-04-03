@@ -16,10 +16,16 @@
 #include <unordered_map>
 #include <vector>
 
-#include "iterators.hpp"
+#include "Util/iterators.hpp"
 
 namespace borealis {
 namespace util {
+
+template<class T>
+bool isValid(T v) {
+    if(v) return true;
+    else return false;
+}
 
 // stupid straightforward collection view
 //  - cannot be used after any operation with begin or end
@@ -52,16 +58,6 @@ public:
     CollectionView<filtered_iterator<ContainerIter, Pred>> filter(Pred pred) const {
         return CollectionView<filtered_iterator<ContainerIter, Pred>>{filter_iterator(begin_, end_, pred), filter_iterator(end_, pred)};
     }
-
-    static bool defaultPred(decltype(*begin_) v) {
-        if(v) return true;
-        else return false;
-    }
-
-#include "macros.h"
-    auto filter() QUICK_CONST_RETURN(this->filter(defaultPred));
-#include "unmacros.h"
-
 };
 
 
