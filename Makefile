@@ -46,9 +46,11 @@ WARNINGS_TAE := overloaded-virtual return-stack-address \
 	implicit-function-declaration address-of-temporary \
 	delete-non-virtual-dtor
 
+ifeq ($(CXX), "clang++")
 CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
 	$(foreach w,$(WARNINGS_OFF),-Wno-$(w)) \
 	$(foreach w,$(WARNINGS_TAE),-Werror-$(w))
+endif
 
 ################################################################################
 # Sources
