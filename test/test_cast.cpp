@@ -65,25 +65,24 @@ TEST(Cast, pair_matcher) {
     }
 }
 
-/*******************************************************************************
+
 TEST(Cast, tuple_matcher) {
     {
         auto tf = TermFactory::get(nullptr);
         auto lhv = tf->getOpaqueConstantTerm(true);
         auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
-        if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
+        if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(std::make_tuple(lhv, rhv))) {
             ASSERT_EQ(true, matched.get<0>()->getValue());
             ASSERT_EQ(0xC0DEBEEFLL, matched.get<1>()->getValue());
         } else {
             FAIL();
         }
 
-        if (auto matched = match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
+        if (match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(std::make_tuple(lhv, rhv))) {
             FAIL();
         }
     }
 }
-*******************************************************************************/
 
 } // namespace

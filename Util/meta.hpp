@@ -35,6 +35,55 @@ struct type_list {};
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class List>
+struct isTypeList: std::false_type {};
+template<class... Args>
+struct isTypeList<type_list<Args...>>: std::true_type {};
+
+template<class List>
+struct tl_car;
+
+template<class H, class...Args>
+struct tl_car< type_list<H, Args...> > {
+    typedef H type;
+};
+
+template<class TList>
+using tl_car_q = typename tl_car<TList>::type;
+
+template<class List>
+struct tl_cdr;
+
+template<class H, class...Args>
+struct tl_cdr< type_list<H, Args...> > {
+    typedef type_list<Args...> type;
+};
+
+template<class TList>
+using tl_cdr_q = typename tl_cdr<TList>::type;
+
+template<class List>
+struct tl_to_tuple;
+
+template<class ...Args>
+struct tl_to_tuple< type_list<Args...> > {
+    typedef std::tuple<Args...> type;
+};
+
+template<class TList>
+using tl_to_tuple_q = typename tl_to_tuple<TList>::type;
+
+template<class Tuple>
+struct tl_from_tuple;
+
+template<class ...Args>
+struct tl_from_tuple< std::tuple<Args...> > {
+    typedef type_list<Args...> type;
+};
+
+template<class Tup>
+using tl_from_tuple_q = typename tl_from_tuple<Tup>::type;
+
+template<class List>
 struct cdr;
 
 template<size_t Head, size_t ...Tail>
