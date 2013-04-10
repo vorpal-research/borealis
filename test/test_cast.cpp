@@ -59,7 +59,7 @@ TEST(Cast, pair_matcher) {
             FAIL();
         }
 
-        if (auto matched = match_pair<OpaqueIntConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
+        if (match_pair<OpaqueIntConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
             FAIL();
         }
     }
@@ -72,14 +72,14 @@ TEST(Cast, tuple_matcher) {
         auto lhv = tf->getOpaqueConstantTerm(true);
         auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
-        if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(std::make_tuple(lhv, rhv))) {
+        if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
             ASSERT_EQ(true, matched.get<0>()->getValue());
             ASSERT_EQ(0xC0DEBEEFLL, matched.get<1>()->getValue());
         } else {
             FAIL();
         }
 
-        if (auto matched = match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(std::make_tuple(lhv, rhv))) {
+        if (match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
             FAIL();
         }
     }

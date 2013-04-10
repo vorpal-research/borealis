@@ -164,21 +164,19 @@ struct get_cast_retty<type_list<T>, type_list<Q>> {
 template<class T1, class ...T>
 struct match_tuple {
 
-    typedef type_list<T1, T...> tlist;
-
-    template<class Tuple>
+    template<class U1, class ...U>
     using rettype = tuple_matcher<
-       typename impl::get_cast_retty<tlist, tl_from_tuple_q<Tuple>>::type
+       typename impl::get_cast_retty<type_list<T1, T...>, type_list<U1, U...>>::type
     >;
 
-    template<class U>
-    static rettype<U> doit_(const U& v, std::true_type) {
+    template<class U1, class ...U>
+    static rettype<U1, U...> doit(const U1& u, const U&... us) {
         using llvm::dyn_cast;
 
-        typedef rettype<U> Retty;
+        typedef rettype<U1, U...> Retty;
 
-        if (auto r1 = dyn_cast<T1>(std::get<0>(v))) {
-            if (auto rs = match_tuple<T...>::doit(cdr_tuple(v))) {
+        if (auto r1 = dyn_cast<T1>(u)) {
+            if (auto rs = match_tuple<T...>::doit(us...)) {
                 return Retty {
                     borealis::util::heap_copy(&r1),
                     borealis::util::heap_copy(&rs)
@@ -190,12 +188,12 @@ struct match_tuple {
     }
 
     template<class U>
-    static rettype<U> doit_(const U& v, std::false_type) {
+    static rettype<U> doit(const U& u) {
         using llvm::dyn_cast;
 
         typedef rettype<U> Retty;
 
-        if (auto r1 = dyn_cast<T1>(std::get<0>(v))) {
+        if (auto r1 = dyn_cast<T1>(u)) {
             return Retty {
                 borealis::util::heap_copy(&r1),
                 nullptr
@@ -205,13 +203,7 @@ struct match_tuple {
         return Retty { nullptr, nullptr };
     }
 
-    template<class U>
-    static rettype<U> doit(const U& v) {
-        return doit_(v, std::integral_constant<bool, (std::tuple_size<U>::value > 1)>());
-    }
-
 };
-/*******************************************************************************/
 
 } // namespace util
 } // namespace borealis
