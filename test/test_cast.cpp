@@ -73,8 +73,8 @@ TEST(Cast, tuple_matcher) {
         auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
         if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
-            ASSERT_EQ(true, matched.get<0>()->getValue());
-            ASSERT_EQ(0xC0DEBEEFLL, matched.get<1>()->getValue());
+            ASSERT_EQ(true, matched->get<0>()->getValue());
+            ASSERT_EQ(0xC0DEBEEFLL, matched->get<1>()->getValue());
         } else {
             FAIL();
         }

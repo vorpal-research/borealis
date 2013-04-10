@@ -112,33 +112,51 @@ struct tuple_matcher;
 
 template<class ...Retty>
 struct tuple_matcher< type_list<Retty...> > {
+
     typedef type_list<Retty...> TheList;
     typedef tl_car_q<TheList> data_t;
-    typedef tuple_matcher<tl_cdr_q<TheList>> tail_t;
+    typedef std::unique_ptr<tuple_matcher<tl_cdr_q<TheList>>> tail_t;
+
+    typedef tuple_matcher< TheList > self;
+    typedef std::unique_ptr<self> Ptr;
 
     template<size_t Idx>
     using RetNum = typename index_in_row<Idx, Retty...>::type;
 
-    data_t* head;
-    tail_t* tail;
-
-    operator void*() {
-        return reinterpret_cast<void*>(head);
-    }
+    data_t head;
+    tail_t tail;
 
     template<size_t Idx>
     RetNum<Idx> get() {
+        static_assert(Idx >= 0,               "tuple_matcher::get with negative index");
+        static_assert(Idx < sizeof...(Retty), "tuple_matcher::get with index out-of-bounds");
         return get_<Idx>(std::integral_constant<bool, Idx == 0>());
     }
 
     template<size_t Idx>
     RetNum<0U> get_(std::true_type) {
-        return *head;
+        return head;
     }
 
     template<size_t Idx>
     RetNum<Idx> get_(std::false_type) {
         return tail->template get<Idx-1>();
+    }
+};
+
+template<class R>
+struct tuple_matcher< type_list<R> > {
+    typedef R data_t;
+
+    typedef tuple_matcher< type_list<R> > self;
+    typedef std::unique_ptr<self> Ptr;
+
+    data_t head;
+
+    template<size_t Idx>
+    R get() {
+        static_assert(Idx == 0, "tuple_matcher::get with incorrect index");
+        return head;
     }
 };
 
@@ -165,42 +183,47 @@ template<class T1, class ...T>
 struct match_tuple {
 
     template<class U1, class ...U>
-    using rettype = tuple_matcher<
-       typename impl::get_cast_retty<type_list<T1, T...>, type_list<U1, U...>>::type
+    using Rettype = tuple_matcher<
+        typename impl::get_cast_retty<type_list<T1, T...>, type_list<U1, U...>>::type
     >;
 
     template<class U1, class ...U>
-    static rettype<U1, U...> doit(const U1& u, const U&... us) {
+    static typename Rettype<U1, U...>::Ptr doit(const U1& u, const U&... us) {
         using llvm::dyn_cast;
 
-        typedef rettype<U1, U...> Retty;
+        typedef Rettype<U1, U...> Retty;
+        typedef typename Retty::Ptr RettyPtr;
 
         if (auto r1 = dyn_cast<T1>(u)) {
             if (auto rs = match_tuple<T...>::doit(us...)) {
-                return Retty {
-                    borealis::util::heap_copy(&r1),
-                    borealis::util::heap_copy(&rs)
-                };
+                return RettyPtr(
+                    new Retty {
+                        r1,
+                        std::move(rs)
+                    }
+                );
             }
         }
 
-        return Retty { nullptr, nullptr };
+        return RettyPtr( nullptr );
     }
 
     template<class U>
-    static rettype<U> doit(const U& u) {
+    static typename Rettype<U>::Ptr doit(const U& u) {
         using llvm::dyn_cast;
 
-        typedef rettype<U> Retty;
+        typedef Rettype<U> Retty;
+        typedef typename Retty::Ptr RettyPtr;
 
         if (auto r1 = dyn_cast<T1>(u)) {
-            return Retty {
-                borealis::util::heap_copy(&r1),
-                nullptr
-            };
+            return RettyPtr(
+                new Retty {
+                    r1
+                }
+            );
         }
 
-        return Retty { nullptr, nullptr };
+        return RettyPtr( nullptr );
     }
 
 };
