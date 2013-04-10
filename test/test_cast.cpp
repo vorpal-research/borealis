@@ -79,7 +79,7 @@ TEST(Cast, tuple_matcher) {
             FAIL();
         }
 
-        if (match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(std::make_tuple(lhv, rhv))) {
+        if (auto matched = match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(std::make_tuple(lhv, rhv))) {
             FAIL();
         }
     }

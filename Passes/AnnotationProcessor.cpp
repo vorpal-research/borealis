@@ -42,7 +42,6 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 
         Constant* data = ConstantDataArray::getString(M.getContext(), toString(*anno));
 
-
         Function* anno_intr = im.createIntrinsic(
                 function_type::INTRINSIC_ANNOTATION,
                 toString(*data->getType()),

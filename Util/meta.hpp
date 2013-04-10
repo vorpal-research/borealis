@@ -30,19 +30,21 @@ struct type_list {};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// cdr / cons / append
+// type_list stuff
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class List>
-struct isTypeList: std::false_type {};
-template<class... Args>
-struct isTypeList<type_list<Args...>>: std::true_type {};
+struct isTypeList : std::false_type {};
 
+template<class ...Args>
+struct isTypeList< type_list<Args...> > : std::true_type {};
+
+// car
 template<class List>
 struct tl_car;
 
-template<class H, class...Args>
+template<class H, class ...Args>
 struct tl_car< type_list<H, Args...> > {
     typedef H type;
 };
@@ -50,17 +52,20 @@ struct tl_car< type_list<H, Args...> > {
 template<class TList>
 using tl_car_q = typename tl_car<TList>::type;
 
+// cdr
 template<class List>
 struct tl_cdr;
 
-template<class H, class...Args>
+template<class H, class ...Args>
 struct tl_cdr< type_list<H, Args...> > {
+    // static_assert(sizeof...(Args) > 0, "tl_cdr with 1-element type list");
     typedef type_list<Args...> type;
 };
 
 template<class TList>
 using tl_cdr_q = typename tl_cdr<TList>::type;
 
+// type_list -> tuple
 template<class List>
 struct tl_to_tuple;
 
@@ -72,6 +77,7 @@ struct tl_to_tuple< type_list<Args...> > {
 template<class TList>
 using tl_to_tuple_q = typename tl_to_tuple<TList>::type;
 
+// tuple -> type_list
 template<class Tuple>
 struct tl_from_tuple;
 
@@ -80,8 +86,14 @@ struct tl_from_tuple< std::tuple<Args...> > {
     typedef type_list<Args...> type;
 };
 
-template<class Tup>
-using tl_from_tuple_q = typename tl_from_tuple<Tup>::type;
+template<class Tuple>
+using tl_from_tuple_q = typename tl_from_tuple<Tuple>::type;
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// cdr / cons / append
+//
+////////////////////////////////////////////////////////////////////////////////
 
 template<class List>
 struct cdr;

@@ -106,18 +106,18 @@ pair_matcher<
 // "dyn_cast for a tuple" kinda stuff
 //
 ////////////////////////////////////////////////////////////////////////////////
-/*******************************************************************************/
+
 template<class RettyTypeList>
 struct tuple_matcher;
 
 template<class ...Retty>
-struct tuple_matcher<type_list<Retty...>> {
-    typedef type_list<Retty...> theList;
-    typedef tl_car_q<theList> data_t;
-    typedef tuple_matcher<tl_cdr_q<theList>> tail_t;
+struct tuple_matcher< type_list<Retty...> > {
+    typedef type_list<Retty...> TheList;
+    typedef tl_car_q<TheList> data_t;
+    typedef tuple_matcher<tl_cdr_q<TheList>> tail_t;
 
-    template<size_t Ix>
-    using RetNum = typename index_in_row<Ix, Retty...>::type;
+    template<size_t Idx>
+    using RetNum = typename index_in_row<Idx, Retty...>::type;
 
     data_t* head;
     tail_t* tail;
@@ -131,7 +131,7 @@ struct tuple_matcher<type_list<Retty...>> {
         return get_<Idx>(std::integral_constant<bool, Idx == 0>());
     }
 
-    template<size_t>
+    template<size_t Idx>
     RetNum<0U> get_(std::true_type) {
         return *head;
     }
@@ -143,18 +143,18 @@ struct tuple_matcher<type_list<Retty...>> {
 };
 
 
+
 namespace impl {
 template<class TL, class QL>
 struct get_cast_retty {
-
     typedef typename get_cast_retty<tl_cdr_q<TL>, tl_cdr_q<QL>>::type rest;
     typedef typename llvm::cast_retty<tl_car_q<TL>, tl_car_q<QL>>::ret_type self;
     typedef typename cons<self, rest>::type type;
 };
 
-template<class T1, class Q1>
-struct get_cast_retty<type_list<T1>, type_list<Q1>> {
-    typedef typename llvm::cast_retty<T1, Q1>::ret_type self;
+template<class T, class Q>
+struct get_cast_retty<type_list<T>, type_list<Q>> {
+    typedef typename llvm::cast_retty<T, Q>::ret_type self;
     typedef type_list<self> type;
 };
 } // namespace impl
@@ -178,17 +178,15 @@ struct match_tuple {
         typedef rettype<U> Retty;
 
         if (auto r1 = dyn_cast<T1>(std::get<0>(v))) {
-            typedef match_tuple<T...> mtuple;
-            if (auto rs = mtuple::doit(cdr_tuple(v))) {
+            if (auto rs = match_tuple<T...>::doit(cdr_tuple(v))) {
                 return Retty {
                     borealis::util::heap_copy(&r1),
                     borealis::util::heap_copy(&rs)
                 };
-
             }
         }
 
-        return rettype<U> { nullptr, nullptr };
+        return Retty { nullptr, nullptr };
     }
 
     template<class U>
@@ -204,7 +202,7 @@ struct match_tuple {
             };
         }
 
-        return rettype<U> { nullptr, nullptr };
+        return Retty { nullptr, nullptr };
     }
 
     template<class U>
