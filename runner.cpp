@@ -5,6 +5,8 @@
  *      Author: ice-phoenix
  */
 
+#include <unistd.h>
+
 #include "runner.h"
 
 namespace borealis {
