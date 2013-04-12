@@ -134,7 +134,8 @@ LIBS := \
 	-lrt \
 	-lcfgparser \
 	-llog4cpp \
-	-lprofiler
+	-lprofiler \
+	-ljsoncpp
 
 default: all
 

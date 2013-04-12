@@ -91,6 +91,7 @@ static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node
 
 bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using borealis::util::isValid;
+    using borealis::util::takePtr;
     using borealis::util::view;
     using borealis::util::viewContainer;
 
@@ -122,9 +123,9 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
 
     for (CallInst* call : viewContainer(GlobalsDesc)
                          .flatten()
-                         .map(borealis::util::takePtr())
+                         .map(takePtr())
                          .map(llvm::dyn_caster<CallInst>())
-                         .filter(isValid<CallInst*>)) {
+                         .filter(isValid())) {
         if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
             DIGlobalVariable glob(call->getMetadata("var"));
             auto* garg = call->getArgOperand(0);

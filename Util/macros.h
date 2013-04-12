@@ -57,4 +57,7 @@
         __PRETTY_FUNCTION__, \
         #cond);}
 
+#define GUARD(...) typename std::enable_if<__VA_ARGS__>::type
+#define GUARDED(TYPE, ...) typename std::enable_if<__VA_ARGS__, TYPE>::type
+
 // #endif /* MACROS_H_ */

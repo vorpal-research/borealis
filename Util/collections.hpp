@@ -21,12 +21,6 @@
 namespace borealis {
 namespace util {
 
-template<class T>
-bool isValid(T v) {
-    if(v) return true;
-    else return false;
-}
-
 // stupid straightforward collection view
 //  - cannot be used after any operation with begin or end
 //  - should be used in-place only, like this:
@@ -60,8 +54,14 @@ public:
     }
 };
 
+struct isValid {
+    template<class T>
+    bool operator()(const T& val) const {
+        return val ? true : false;
+    }
+};
 
-struct deref{
+struct deref {
     template<class T>
     auto operator()(T& val) const -> decltype(*val) {
         return *val;
@@ -73,7 +73,7 @@ struct deref{
     }
 };
 
-struct takePtr{
+struct takePtr {
     template<class T>
     auto operator()(T& val) const -> decltype(&val)  {
         return &val;
