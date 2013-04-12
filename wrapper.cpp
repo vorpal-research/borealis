@@ -68,6 +68,8 @@
 #include "Passes/PrinterPasses.h"
 #include "Util/util.h"
 
+#include "wrapper.h"
+
 int main(int argc, const char** argv)
 {
     using namespace clang;
@@ -78,6 +80,8 @@ int main(int argc, const char** argv)
     using borealis::endl;
     using borealis::logging::log_entry;
     using borealis::util::streams::error;
+
+#define RETURN_RESULT(R) return borealis::util::enums::asInteger(R);
 
     constexpr auto loggingDomain = "wrapper";
 
@@ -182,10 +186,10 @@ int main(int argc, const char** argv)
 
     // Create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
-    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return 1; }
+    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; RETURN_RESULT(borealis::Result::E_GATHER_COMMENTS); }
 
     EmitLLVMOnlyAction Act;
-    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; return 1; }
+    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; RETURN_RESULT(borealis::Result::E_EMIT_LLVM); }
 
     std::unique_ptr<llvm::Module> module_ptr(Act.takeModule());
     auto& module = *module_ptr;
@@ -288,5 +292,5 @@ int main(int argc, const char** argv)
         }
     }
 
-    return 0;
+    RETURN_RESULT(borealis::Result::OK);
 }
