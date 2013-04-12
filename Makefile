@@ -162,7 +162,7 @@ $(EXES): $(OBJECTS)
 $(TEST_EXES): $(TEST_OBJECTS)
 	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) -lgtest
 
-tests: $(TEST_EXES)
+tests: $(EXES) $(TEST_EXES)
 
 check: tests
 	$(PWD)/$(TEST_EXES) --gtest_output="xml:$(TEST_OUTPUT)"
