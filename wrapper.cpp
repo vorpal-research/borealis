@@ -81,8 +81,6 @@ int main(int argc, const char** argv)
     using borealis::logging::log_entry;
     using borealis::util::streams::error;
 
-#define RETURN_RESULT(R) return borealis::util::enums::asInteger(R);
-
     constexpr auto loggingDomain = "wrapper";
 
     auto infos = [](){
@@ -186,10 +184,10 @@ int main(int argc, const char** argv)
 
     // Create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
-    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; RETURN_RESULT(borealis::Result::E_GATHER_COMMENTS); }
+    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return E_GATHER_COMMENTS; }
 
     EmitLLVMOnlyAction Act;
-    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; RETURN_RESULT(borealis::Result::E_EMIT_LLVM); }
+    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; return E_EMIT_LLVM; }
 
     std::unique_ptr<llvm::Module> module_ptr(Act.takeModule());
     auto& module = *module_ptr;
@@ -292,5 +290,5 @@ int main(int argc, const char** argv)
         }
     }
 
-    RETURN_RESULT(borealis::Result::OK);
+    return OK;
 }

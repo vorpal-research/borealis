@@ -30,7 +30,16 @@ int Runner::run() {
 
     const std::vector<char*> const_execv_args(std::move(execv_args));
 
-    return execv(const_execv_args[0], &const_execv_args[0]);
+    int res = execv(const_execv_args[0], &const_execv_args[0]);
+    if (res != -1) {
+        return res;
+    } else {
+        switch (errno) {
+        case ENOENT: return E_PROGRAM_NOT_FOUND;
+        case EFAULT: return E_FAULT;
+        default: return E_UNKNOWN;
+        }
+    }
 }
 
 } /* namespace borealis */

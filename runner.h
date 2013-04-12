@@ -13,6 +13,10 @@
 
 namespace borealis {
 
+#define E_UNKNOWN           -0x1001
+#define E_PROGRAM_NOT_FOUND -0x1002
+#define E_FAULT             -0x1003
+
 class Runner {
 
 public:

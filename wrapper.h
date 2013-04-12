@@ -10,11 +10,9 @@
 
 namespace borealis {
 
-enum class Result {
-    E_GATHER_COMMENTS = 0x1001,
-    E_EMIT_LLVM       = 0x1002,
-    OK                = 0x0000
-};
+#define E_GATHER_COMMENTS 0x1001
+#define E_EMIT_LLVM       0x1002
+#define OK                0x0000
 
 } // namespace borealis
 
