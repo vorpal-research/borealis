@@ -10,9 +10,9 @@
 
 namespace borealis {
 
-#define E_GATHER_COMMENTS 0x1001
-#define E_EMIT_LLVM       0x1002
 #define OK                0x0000
+#define E_GATHER_COMMENTS 0x0001
+#define E_EMIT_LLVM       0x0002
 
 } // namespace borealis
 

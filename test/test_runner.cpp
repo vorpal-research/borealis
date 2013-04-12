@@ -16,13 +16,33 @@ namespace {
 
 using namespace borealis;
 
-TEST(Runner, invalidProgram) {
+TEST(Runner, noProgram) {
     {
         int res = borealis::Runner("foo")
         .withArg("bar")
         .run();
 
-        ASSERT_EQ(E_PROGRAM_NOT_FOUND, res);
+        ASSERT_EQ(E_EXEC_ERROR, res);
+    }
+}
+
+TEST(Runner, noFile) {
+    {
+        int res = borealis::Runner("wrapper")
+        .withArg("test/testcases/iniXX_XX.c")
+        .run();
+
+        ASSERT_EQ(E_GATHER_COMMENTS, res);
+    }
+}
+
+TEST(Runner, basic) {
+    {
+        int res = borealis::Runner("wrapper")
+        .withArg("test/testcases/ini01_01.c")
+        .run();
+
+        ASSERT_EQ(OK, res);
     }
 }
 

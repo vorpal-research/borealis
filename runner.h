@@ -13,9 +13,12 @@
 
 namespace borealis {
 
-#define E_UNKNOWN           -0x1001
-#define E_PROGRAM_NOT_FOUND -0x1002
-#define E_FAULT             -0x1003
+#define E_CHILD_ERROR        0x00FF
+
+#define E_UNKNOWN           -0x0001
+#define E_CANNOT_FORK       -0x0002
+#define E_EXEC_ERROR        -0x0003
+#define E_COREDUMP          -0x0004
 
 class Runner {
 
