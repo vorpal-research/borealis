@@ -144,9 +144,6 @@ TEST(Json, readwrite) {
         ASSERT_EQ(v0.str, "an object that is");
     }
 
-    std::vector<std::string> tmp{"A", "B", "C", "D"};
-    infos () << jsonify(tmp);
-    infos () << tmp;
 }
 
 } // namespace
