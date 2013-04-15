@@ -1,6 +1,7 @@
 syntax: glob
 
 *.o
+*.a
 *.d
 *.gch
 .*
