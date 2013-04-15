@@ -29,7 +29,7 @@ TEST(Runner, noProgram) {
 TEST(Runner, noFile) {
     {
         int res = borealis::Runner("wrapper")
-        .withArg("test/testcases/iniXX_XX.c")
+        .withArg("test/testcases/XXX/iniXX_XX.c")
         .run();
 
         ASSERT_EQ(E_GATHER_COMMENTS, res);
@@ -39,7 +39,7 @@ TEST(Runner, noFile) {
 TEST(Runner, basic) {
     {
         int res = borealis::Runner("wrapper")
-        .withArg("test/testcases/ini01_01.c")
+        .withArg("test/testcases/aegis/ini01_01.c")
         .run();
 
         ASSERT_EQ(OK, res);
