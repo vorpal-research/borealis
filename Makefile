@@ -54,6 +54,16 @@ CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
 endif
 
 ################################################################################
+# Google Test
+################################################################################
+
+GOOGLE_TEST_DIR := $(PWD)/lib/google-test
+
+GOOGLE_TEST_LIB := $(GOOGLE_TEST_DIR)/make/gtest.a
+
+CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
+
+################################################################################
 # Sources
 ################################################################################
 
@@ -76,7 +86,8 @@ ADDITIONAL_SOURCE_DIRS := \
 	
 ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD) \
-	$(PWD)/lib/pegtl/include
+	$(PWD)/lib/pegtl/include \
+	$(PWD)/lib/google-test/include
 	
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 
@@ -160,15 +171,21 @@ all: $(EXES)
 $(EXES): $(OBJECTS)
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
 
-$(TEST_EXES): $(TEST_OBJECTS)
-	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) -lgtest
+google-test:
+	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a
+
+clean-google-test:
+	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make clean
+
+$(TEST_EXES): $(TEST_OBJECTS) google-test
+	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
 
 tests: $(EXES) $(TEST_EXES)
 
 check: tests
 	$(PWD)/$(TEST_EXES) --gtest_output="xml:$(TEST_OUTPUT)"
 
-clean:
+clean: clean-google-test
 	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES) $(TEST_OUTPUT)
 
 ################################################################################
