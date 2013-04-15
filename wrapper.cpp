@@ -184,10 +184,10 @@ int main(int argc, const char** argv)
 
     // Create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
-    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return E_GATHER_COMMENTS; }
+    if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_GATHER_COMMENTS; }
 
     EmitLLVMOnlyAction Act;
-    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; return E_EMIT_LLVM; }
+    if (!Clang.ExecuteAction(Act)) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_EMIT_LLVM; }
 
     std::unique_ptr<llvm::Module> module_ptr(Act.takeModule());
     auto& module = *module_ptr;
@@ -290,5 +290,5 @@ int main(int argc, const char** argv)
         }
     }
 
-    return OK;
+    return borealis::OK;
 }
