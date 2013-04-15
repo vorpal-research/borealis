@@ -26,9 +26,18 @@ namespace anno {
 // distinguish between std::string and pegtl::string
 // std::string -> stdstring
 typedef std::string stdstring;
+
+template<class SS> struct static_string2pegtl_string;
+template<char ...SS> struct static_string2pegtl_string<util::static_string<SS...>> {
+    typedef pegtl::string<SS...> type;
+};
+
 // pegtl::string -> pstring
 template<int ...Chars>
 struct pstring : pegtl::string< Chars... > {};
+
+#include "Util/macros.h"
+#define _PS(STR) typename static_string2pegtl_string<STATIC_STRING(STR)>::type
 
 // bad string cast exception, no additional info provided, sorry
 class bad_string_cast :
@@ -302,7 +311,7 @@ struct push_integer :
 // must come BEFORE the variable grammar, as 'true' and 'false' are valid var names
 // boolean := true | false
 struct boolean :
-        seq< sor< pstring< 't', 'r', 'u', 'e' >, pstring< 'f', 'a', 'l', 's', 'e' > > > {};
+        seq< sor< _PS("true"), _PS("false") > > {};
 // --//-- with action applied
 struct push_boolean :
         pad< ifapply< boolean, push< bool > >, space > {};
@@ -353,9 +362,9 @@ struct chpad :
         literal< one< C > > {};
 
 // a string surrounded by spaces
-template<int ...Chars>
+template<class PS>
 struct strpad :
-        literal< pstring< Chars... > > {};
+        literal< PS > {};
 
 // opening paren
 struct read_open :
@@ -382,8 +391,8 @@ struct read_bop :
 template<typename Rule, typename O, typename A>
 struct read_bop_m;
 template<typename O, typename A, int ...Chars>
-struct read_bop_m< pstring< Chars... >, O, A > :
-        ifapply< seq< strpad< Chars... >, O >, op_baction< A > > {};
+struct read_bop_m< pegtl::string< Chars... >, O, A > :
+        ifapply< seq< strpad< pegtl::string< Chars... > >, O >, op_baction< A > > {};
 
 // unary operation rule
 // eq to:
@@ -432,10 +441,10 @@ struct read_sum :
         seq< read_prod, star< sor< read_add, read_sub > > > {};
 // lsh := '<<' sum
 struct read_lsh :
-        read_bop_m< pstring< '<', '<' >, read_sum, left_shift< expression_type > > {};
+        read_bop_m< _PS("<<"), read_sum, left_shift< expression_type > > {};
 // rsh := '>>' sum
 struct read_rsh :
-        read_bop_m< pstring< '>', '>' >, read_sum, right_shift< expression_type > > {};
+        read_bop_m< _PS(">>"), read_sum, right_shift< expression_type > > {};
 // shift := sum *(lsh | rsh)
 struct read_shift :
         seq< read_sum, star< sor< read_lsh, read_rsh > > > {};
@@ -448,19 +457,19 @@ struct read_lt :
         read_bop< '<', read_shift, less< expression_type > > {};
 // lt := '>=' shift
 struct read_ge :
-        read_bop_m< pstring< '>', '=' >, read_shift, greater_or_equal< expression_type > > {};
+        read_bop_m< _PS(">="), read_shift, greater_or_equal< expression_type > > {};
 // lt := '<=' shift
 struct read_le :
-        read_bop_m< pstring< '<', '=' >, read_shift, less_or_equal< expression_type > > {};
+        read_bop_m< _PS("<="), read_shift, less_or_equal< expression_type > > {};
 // inequality := shift *(gt | lt | ge | le)
 struct read_inequality :
         seq< read_shift, star< sor< read_ge, read_gt, read_le, read_lt > > > {};
 // eq = '==' inequality
 struct read_eq :
-        read_bop_m< pstring< '=', '=' >, read_inequality, equal< expression_type > > {};
+        read_bop_m< _PS("=="), read_inequality, equal< expression_type > > {};
 // neq = '!=' inequality
 struct read_neq :
-        read_bop_m< pstring< '!', '=' >, read_inequality, nequal< expression_type > > {};
+        read_bop_m< _PS("!="), read_inequality, nequal< expression_type > > {};
 // equality := inequality *(eq | neq)
 struct read_equality :
         seq< read_inequality, star< sor< read_eq, read_neq > > > {};
@@ -488,14 +497,14 @@ struct read_bitor2 :
 
 // land := '&&' bitor2
 struct read_land :
-        read_bop_m< pstring< '&', '&' >, read_bitor2, logical_and< expression_type > > {};
+        read_bop_m< _PS("&&"), read_bitor2, logical_and< expression_type > > {};
 // land2 := bitor2 *(land)
 struct read_land2 :
         seq< read_bitor2, star< read_land > > {};
 
 // lor := '||' land2
 struct read_lor :
-        read_bop_m< pstring< '|', '|' >, read_land2, logical_or< expression_type > > {};
+        read_bop_m< _PS("||"), read_land2, logical_or< expression_type > > {};
 // lor2 := land2 *(lor)
 struct read_lor2 :
         seq< read_land2, star< read_lor > > {};
@@ -515,32 +524,34 @@ struct push_mask :
 struct masks :
         seq< push_mask, star< seq< chpad< ',' >, push_mask > > > {};
 
-template<int ...Name>
+template<class PS>
 struct keyword :
-        ifapply< strpad< Name... >, ask_keyword > {};
+        ifapply< strpad< PS >, ask_keyword > {};
+
+#define KEYWORD(STR) keyword<_PS(STR)>
 
 struct requires_c :
-        ifapply< ifmust< keyword< 'r', 'e', 'q', 'u', 'i', 'r', 'e', 's' >, read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("requires"), read_expr >, ask_arguments > {};
 struct ensures_c :
-        ifapply< ifmust< keyword< 'e', 'n', 's', 'u', 'r', 'e', 's' >, read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("ensures"), read_expr >, ask_arguments > {};
 struct assigns_c :
-        ifapply< ifmust< keyword< 'a', 's', 's', 'i', 'g', 'n', 's' >, read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("assigns"), read_expr >, ask_arguments > {};
 struct assert_c :
-        ifapply< ifmust< keyword< 'a', 's', 's', 'e', 'r', 't' >, read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("assert"), read_expr >, ask_arguments > {};
 struct assume_c :
-        ifapply< ifmust< keyword< 'a', 's', 's', 'u', 'm', 'e' >, read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("assume"), read_expr >, ask_arguments > {};
 struct skip_c :
-        ifapply< keyword< 's', 'k', 'i', 'p' >, ask_arguments > {};
+        ifapply< KEYWORD("skip"), ask_arguments > {};
 struct ignore_c :
-        ifapply< keyword< 'i', 'g', 'n', 'o', 'r', 'e' >, ask_arguments > {};
+        ifapply< KEYWORD("ignore"), ask_arguments > {};
 struct stack_depth_c :
-        ifapply< ifmust< keyword< 's', 't', 'a', 'c', 'k', '-', 'd', 'e', 'p', 't', 'h' >, push_integer >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("stack-depth"), push_integer >, ask_arguments > {};
 struct unroll_c :
-        ifapply< ifmust< keyword< 'u', 'n', 'r', 'o', 'l', 'l' >, push_integer >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("unroll"), push_integer >, ask_arguments > {};
 struct mask_c :
-        ifapply< ifmust< keyword< 'm', 'a', 's', 'k' >, masks >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("mask"), masks >, ask_arguments > {};
 struct endmask_c :
-        ifapply< keyword< 'e', 'n', 'd', 'm', 'a', 's', 'k' >, ask_arguments > {};
+        ifapply< KEYWORD("endmask"), ask_arguments > {};
 
 struct commands :
         sor<
@@ -562,7 +573,8 @@ struct acom :
 struct acom_c :
         ifapply< acom, store_command > {};
 struct annotated_commentary :
-        sor< seq< pstring< '/', '/' >, plus< literal< acom_c > > >, seq< pstring< '/', '*' >, plus< literal< acom_c > >, pstring< '*', '/' > > > {};
+        sor< seq< _PS("//"), plus< literal< acom_c > > >,
+             seq< _PS("/*"), plus< literal< acom_c > >, _PS("*/") > > {};
 
 struct read_calc :
         seq< commands, space_until_eof > {};
@@ -583,6 +595,11 @@ std::vector< command_type > parse_command(const std::string& command) {
 }
 
 }   // namespace calculator
+
+#undef _PS
+#undef KEYWORD
+#include "Util/unmacros.h"
+
 }   // namespace anno
 }   // namespace borealis
 

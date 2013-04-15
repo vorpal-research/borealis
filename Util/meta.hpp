@@ -232,6 +232,75 @@ struct index_in_type_list<I, type_list<Args...>> {
     typedef typename index_in_row<I, Args...>::type type;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// static_string
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<char ...Args> struct static_string {
+    enum{ length = sizeof...(Args) };
+    typedef const char(&array_ref)[sizeof...(Args)+1];
+
+    static array_ref c_str() {
+        static const char output[]{ Args..., '\0' };
+        return output;
+    }
+
+    operator array_ref() const {
+        return c_str();
+    }
+
+    operator const char* () const {
+        return c_str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, static_string<Args...>) {
+        return ost << static_string::c_str();
+    }
+};
+
+template<size_t Sz>
+constexpr char at(char const(&s)[Sz], size_t i) {
+    return i >= Sz ? '\0' : s[i];
+}
+
+template<class SS, char wha>
+struct ss_append_char;
+
+template<char... Str>
+struct ss_append_char<static_string<Str...>, '\0'> {
+    typedef static_string<Str...> type;
+};
+
+template<char wha, char... Str>
+struct ss_append_char<static_string<Str...>, wha> {
+    typedef static_string<Str..., wha> type;
+};
+
+template<class SS, char wha>
+using ss_append_char_q = typename ss_append_char<SS, wha>::type;
+
+template<class SS, char... wha>
+struct ss_append_chars;
+
+template<class SS>
+struct ss_append_chars<SS> {
+    typedef SS type;
+};
+
+template<class SS, char Head, char ...Tail>
+struct ss_append_chars<SS, Head, Tail...> {
+    typedef typename ss_append_char<SS, Head>::type headed;
+    typedef typename ss_append_chars<headed, Tail...>::type type;
+};
+
+template<class SS, char... wha>
+using ss_append_chars_q = typename ss_append_chars<SS, wha...>::type;
+
+template<char... wha>
+using make_ss = typename ss_append_chars<static_string<>, wha...>::type;
+
 } // namespace util
 } // namespace borealis
 
