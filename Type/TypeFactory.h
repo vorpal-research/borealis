@@ -74,7 +74,7 @@ public:
 
         if(type->isIntegerTy())
             return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger();
-        else if(type->isFloatTy())
+        else if(type->isFloatingPointTy())
             return getFloat();
         else if(type->isPointerTy())
             return getPointer(cast(type->getPointerElementType()));
