@@ -16,34 +16,9 @@
 #include <tuple>
 
 #include "Logging/logger.hpp"
-#include "Util/locations.h"
+#include "Passes/DefectManager/DefectInfo.h"
 
 namespace borealis {
-
-enum class DefectType {
-    INI_03,
-    REQ_01,
-    ENS_01,
-    ASR_01
-};
-
-struct DefectSummary {
-    std::string type;
-    std::string description;
-};
-
-template<class Streamer>
-Streamer& operator<<(Streamer& str, const DefectSummary& ds) {
-    // this is generally fucked up
-    return static_cast<Streamer&>(str << "\"" << ds.type << "\": " << ds.description);
-}
-
-const std::map<DefectType, const DefectSummary> DefectTypeNames = {
-    { DefectType::INI_03, { "INI-03", "Dereferencing a nullptr" } },
-    { DefectType::REQ_01, { "REQ-01", "Requires contract check failed" } },
-    { DefectType::ENS_01, { "ENS-01", "Ensures contract check failed" } },
-    { DefectType::ASR_01, { "ASR-01", "Assert check failed" } }
-};
 
 class DefectManager:
         public llvm::ModulePass,
@@ -54,7 +29,7 @@ public:
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("defect-manager")
 
-    typedef std::set< std::pair<DefectType, const Locus> > DefectData;
+    typedef std::set<DefectInfo> DefectData;
     typedef DefectData::value_type DefectDataEntry;
 
     static char ID;
@@ -73,6 +48,8 @@ private:
     static DefectData data;
 
 public:
+
+    const DefectData& getData() const { return data; }
 
     auto begin() QUICK_CONST_RETURN(data.begin())
     auto end() QUICK_CONST_RETURN(data.end())

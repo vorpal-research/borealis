@@ -6,15 +6,25 @@
  */
 
 #include <clang/Basic/SourceManager.h>
+#include <llvm/Support/CommandLine.h>
 
 #include "Codegen/llvm.h"
 #include "Passes/Checkers.def"
 #include "Passes/DataProvider.hpp"
 #include "Passes/DefectSummaryPass.h"
+#include "Util/json.hpp"
 #include "Util/locations.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
+
+static llvm::cl::opt<bool>
+DumpOutput("dump-output", llvm::cl::init(false), llvm::cl::NotHidden,
+  llvm::cl::desc("Dump analysis results to JSON"));
+
+static llvm::cl::opt<std::string>
+OutputFile("dump-output-file", llvm::cl::init(""), llvm::cl::NotHidden,
+  llvm::cl::desc("JSON output file for analysis results"));
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
@@ -31,18 +41,18 @@ void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool DefectSummaryPass::runOnModule(llvm::Module&) {
     using clang::SourceManager;
 
-    DefectManager& dm = GetAnalysis<DefectManager>::doit(this);
-    const SourceManager& sm = GetAnalysis<DataProvider<clang::SourceManager>>::doit(this).provide();
+    auto& dm = GetAnalysis<DefectManager>::doit(this);
+    auto& sm = GetAnalysis<DataProvider<clang::SourceManager>>::doit(this).provide();
 
     for (auto& defect : dm) {
-        Locus origin = defect.second;
+        Locus origin = defect.location;
         Locus beg  { origin.filename, LocalLocus { origin.loc.line - 3, 1U } };
         Locus prev { origin.filename, LocalLocus { origin.loc.line    , 1U } };
         Locus next { origin.filename, LocalLocus { origin.loc.line + 1, 1U } };
         Locus end  { origin.filename, LocalLocus { origin.loc.line + 3, 1U } };
-        LocusRange before {beg, prev};
-        LocusRange line {prev, next};
-        LocusRange after {next, end};
+        LocusRange before { beg,  prev };
+        LocusRange line   { prev, next };
+        LocusRange after  { next, end  };
 
         llvm::StringRef ln = getRawSource(sm, line);
         std::string pt = ln.str();
@@ -53,13 +63,16 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
         pt[origin.loc.col-1] = '^';
 
-        infos() << DefectTypeNames.at(defect.first)
+        infos() << DefectTypeNames.at(defect.type)
                 << " at " << origin << endl
                 << getRawSource(sm, before)
                 << ln
                 << pt << endl
                 << getRawSource(sm, after) << endl;
     }
+
+    infos() << util::jsonify(dm.getData()) << endl;
+
     return false;
 }
 

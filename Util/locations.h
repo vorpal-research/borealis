@@ -15,6 +15,8 @@
 #include <llvm/Analysis/DebugInfo.h>
 #include <llvm/Instruction.h>
 
+#include "Util/json_traits.hpp"
+
 namespace borealis {
 
 struct LocalLocus {
@@ -42,6 +44,10 @@ struct LocalLocus {
 
     bool operator<(const LocalLocus& that) const {
         return (line < that.line) || (line == that.line && col < that.col);
+    }
+
+    bool operator>(const LocalLocus& that) const {
+        return (line > that.line) || (line == that.line && col > that.col);
     }
 
     const LocalLocus& operator+=(const LocalLocus& that) {
@@ -109,6 +115,31 @@ Streamer& operator<<(Streamer& ost, const LocalLocus& ll) {
     return static_cast<Streamer&>(ost);
 }
 
+namespace util {
+template<>
+struct json_traits<LocalLocus> {
+    typedef std::unique_ptr<LocalLocus> optional_ptr_t;
+
+    static Json::Value toJson(const LocalLocus& val) {
+        Json::Value dict;
+        dict["line"] = util::toJson(val.line);
+        dict["col"] = util::toJson(val.col);
+        return dict;
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& json) {
+        using borealis::util::json_object_builder;
+
+        json_object_builder<LocalLocus, unsigned, unsigned> builder {
+            "line", "col"
+        };
+        return optional_ptr_t {
+            builder.build(json)
+        };
+    }
+};
+} //namespace util
+
 struct Locus {
     static constexpr auto UNKNOWN_NAME = "";
 
@@ -147,6 +178,10 @@ struct Locus {
         return (filename == that.filename) && (loc < that.loc);
     }
 
+    bool operator>(const Locus& that) const {
+        return (filename == that.filename) && (loc > that.loc);
+    }
+
     bool isUnknown() const {
         return filename.empty() || loc.isUnknown();
     }
@@ -157,6 +192,31 @@ Streamer& operator<<(Streamer& ost, const Locus& ll) {
     // this is generally fucked up
     return static_cast<Streamer&>(ost << ll.filename << ":" << ll.loc);
 }
+
+namespace util {
+template<>
+struct json_traits<Locus> {
+    typedef std::unique_ptr<Locus> optional_ptr_t;
+
+    static Json::Value toJson(const Locus& val) {
+        Json::Value dict;
+        dict["filename"] = util::toJson(val.filename);
+        dict["loc"] = util::toJson(val.loc);
+        return dict;
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& json) {
+        using borealis::util::json_object_builder;
+
+        json_object_builder<Locus, std::string, LocalLocus> builder {
+            "filename", "loc"
+        };
+        return optional_ptr_t {
+            builder.build(json)
+        };
+    }
+};
+} //namespace util
 
 struct LocusRange {
     Locus lhv;

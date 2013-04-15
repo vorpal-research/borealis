@@ -9,6 +9,7 @@
 #define JSON_TRAITS_HPP_
 
 #include <map>
+#include <set>
 #include <vector>
 
 #include "Util/json.hpp"
@@ -22,14 +23,39 @@ struct json_traits<std::vector<T>> {
 
     static Json::Value toJson(const std::vector<T>& val) {
         Json::Value ret;
-        for(const auto& v : val) ret.append(v);
+        for(const auto& m : val) ret.append(util::toJson(m));
         return ret;
     }
 
     static optional_ptr_t fromJson(const Json::Value& val) {
         std::vector<T> ret;
-        for(const auto& v : val) ret.push_back(v);
+        for(const auto& m : val) {
+            if(auto v = util::fromJson<T>(m)) {
+                ret.push_back(*v);
+            } else return nullptr;
+        }
         return optional_ptr_t { new std::vector<T>(std::move(ret)) };
+    }
+};
+
+template<class T>
+struct json_traits<std::set<T>> {
+    typedef std::unique_ptr<std::set<T>> optional_ptr_t;
+
+    static Json::Value toJson(const std::set<T>& val) {
+        Json::Value ret;
+        for(const auto& m : val) ret.append(util::toJson(m));
+        return ret;
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& val) {
+        std::set<T> ret;
+        for(const auto& m : val) {
+            if(auto v = util::fromJson<T>(m)) {
+                ret.push_back(*v);
+            } else return nullptr;
+        }
+        return optional_ptr_t { new std::set<T>(std::move(ret)) };
     }
 };
 
@@ -39,9 +65,7 @@ struct json_traits<std::map<std::string, V>> {
 
     static Json::Value toJson(const std::map<std::string, V>& val) {
         Json::Value ret;
-        for(const auto& v : val) {
-            ret[v.first] = toJson(v.second);
-        }
+        for(const auto& m : val) ret[m.first] = util::toJson(m.second);
         return ret;
     }
 
@@ -50,7 +74,7 @@ struct json_traits<std::map<std::string, V>> {
 
         for(const auto& k : val.getMemberNames()) {
             if(auto v = util::fromJson<V>(val[k])) {
-                ret[k] = v;
+                ret[k] = *v;
             } else return nullptr;
         }
 

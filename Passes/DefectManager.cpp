@@ -11,7 +11,6 @@
 
 namespace borealis {
 
-
 DefectManager::DefectManager() : llvm::ModulePass(ID) {}
 
 void DefectManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -27,7 +26,7 @@ void DefectManager::addDefect(DefectType type, llvm::Instruction* where) {
 
 void DefectManager::print(llvm::raw_ostream& s, const llvm::Module*) const {
     for (auto& defect : data) {
-        s << DefectTypeNames.at(defect.first) << " at " << defect.second << util::streams::endl;
+        s << DefectTypeNames.at(defect.type) << " at " << defect.location << util::streams::endl;
     }
 }
 
