@@ -246,6 +246,28 @@ Streamer& operator <<(Streamer& s, const std::vector<T*>& vec) {
     return s;
 }
 
+template<typename Streamer>
+Streamer& operator <<(Streamer& s, const std::vector<const char*>& vec) {
+    typedef typename std::vector<const char*>::const_iterator ConstIter;
+
+    using namespace std::impl_;
+    using borealis::util::view;
+
+    s << VECTOR_LEFT_BRACE;
+    if (!vec.empty()) {
+        ConstIter iter = vec.begin();
+        auto el = *iter++;
+        (el == NULL ? s << NULL_REPR : s << el);
+        for (auto& e : view(iter, vec.end())) {
+            s << ELEMENT_DELIMITER;
+            (e == NULL ? s << NULL_REPR : s << e);
+        }
+    }
+    s << VECTOR_RIGHT_BRACE;
+
+    return s;
+}
+
 template<typename T, typename Streamer>
 Streamer& operator <<(Streamer& s, const std::set<T*>& set) {
     typedef typename std::set<T*>::const_iterator ConstIter;
