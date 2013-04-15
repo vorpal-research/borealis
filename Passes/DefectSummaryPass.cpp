@@ -8,6 +8,8 @@
 #include <clang/Basic/SourceManager.h>
 #include <llvm/Support/CommandLine.h>
 
+#include <fstream>
+
 #include "Codegen/llvm.h"
 #include "Passes/Checkers.def"
 #include "Passes/DataProvider.hpp"
@@ -23,7 +25,7 @@ DumpOutput("dump-output", llvm::cl::init(false), llvm::cl::NotHidden,
   llvm::cl::desc("Dump analysis results to JSON"));
 
 static llvm::cl::opt<std::string>
-OutputFile("dump-output-file", llvm::cl::init(""), llvm::cl::NotHidden,
+DumpOutputFile("dump-output-file", llvm::cl::init(""), llvm::cl::NotHidden,
   llvm::cl::desc("JSON output file for analysis results"));
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -71,7 +73,15 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
                 << getRawSource(sm, after) << endl;
     }
 
-    infos() << util::jsonify(dm.getData()) << endl;
+    if (DumpOutput || !DumpOutputFile.empty()) {
+        if (DumpOutputFile.empty()) {
+            DumpOutputFile = "borealis.json";
+        }
+
+        std::ofstream json;
+        json << util::jsonify(dm.getData());
+        json.close();
+    }
 
     return false;
 }

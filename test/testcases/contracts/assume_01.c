@@ -11,6 +11,7 @@ struct el {
 int main(void) {
     struct el* ptr;
     ptr = (struct el*)malloc(2 * sizeof(struct el));
+
     // @assume ptr != 0
 
     ptr[0].c = 1;

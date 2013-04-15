@@ -8,10 +8,16 @@ struct el {
     char c;
 };
 
+void do_smth(struct el**);
+
 int main(void) {
     struct el* ptr;
+
+    do_smth(&ptr);
+
     ptr = (struct el*)malloc(2 * sizeof(struct el));
-    // @assert ptr != 0
+
+    // @assume ptr != 0
 
     ptr[0].c = 1;
     ptr[1].c = 2;
