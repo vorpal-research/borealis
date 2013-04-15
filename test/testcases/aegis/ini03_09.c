@@ -1,7 +1,3 @@
-//
-// Разыменование неинициализированного или нулевого указателя
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,11 +7,10 @@ struct el {
     char c;
 };
 
-// @ensures \res <= 0
-int main() {
+int main(void) {
     struct el *struct_arr_p[10];
     char ch = '0';
-                double tmp = 0.0;
+    double tmp = 0.0;
     int i;
 
     for (i = 0; i < 10; i++) {
@@ -33,9 +28,9 @@ int main() {
     free(struct_arr_p[5]);
 
     for (i = 0; i < 10; i++) {
-        printf("Elements: %lf %c", 	// дефект INI-03 на шестой
-            struct_arr_p[i]->d,     // итерации цикла
-            struct_arr_p[i]->c);	//
+        printf("Elements: %lf %c",
+            struct_arr_p[i]->d,
+            struct_arr_p[i]->c);
     }
 
     for (i = 0; i < 10; i++) {
