@@ -70,6 +70,58 @@
 
 #include "wrapper.h"
 
+struct program_args {
+    std::vector<std::string> passes;
+    std::vector<std::string> libs;
+    std::vector<const char*> opt;
+    const char** opt_argv;
+    int opt_argc;
+    std::string config;
+    std::vector<const char*> compiler;
+    const char** compiler_argv;
+    int compiler_argc;
+
+    program_args(int argc, const char** argv):
+        passes(), libs(),
+        opt{"wrapper"}, opt_argv(), opt_argc(),
+        config(),
+        compiler(), compiler_argv(nullptr), compiler_argc(0) {
+        using borealis::util::view;
+        for(llvm::StringRef arg : view(argv+1, argv+argc)) {
+            if(arg.startswith("-pass")) passes.push_back(arg.drop_front(5).str());
+            else if(arg.startswith("-lib")) passes.push_back(arg.drop_front(4).str());
+            else if(arg.startswith("-opt")) passes.push_back(arg.drop_front(4).data());
+            else if(arg.startswith("-cfg")) config = (arg.drop_front(4).str());
+            else compiler.push_back(arg.data());
+        }
+        // this is generally fucked up
+        compiler.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
+        compiler_argv = compiler.data();
+        compiler_argc = compiler.size();
+        opt_argv = opt.data();
+        opt_argc = opt.size();
+    }
+
+    template<class InputIterator>
+    program_args& addOptArgument(InputIterator from, InputIterator to) {
+        using borealis::util::view;
+
+        for(const std::string& arg: view(from, to)) opt.push_back(arg.c_str());
+        opt_argv = opt.data();
+        opt_argc = opt.size();
+        return *this;
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const program_args& args) {
+        ost << "passes: " << args.passes << std::endl;
+        ost << "libs: " << args.libs << std::endl;
+        ost << "opt: " << args.opt << std::endl;
+        ost << "config: " << args.config << std::endl;
+        ost << "compiler: " << args.compiler << std::endl;
+        return ost;
+    }
+};
+
 int main(int argc, const char** argv)
 {
     using namespace clang;
@@ -93,10 +145,11 @@ int main(int argc, const char** argv)
 
     const std::vector<std::string> empty;
 
+    program_args args(argc, argv);
 
     using namespace borealis::config;
 
-    AppConfiguration::initialize("wrapper.conf");
+    AppConfiguration::initialize(args.config.empty()? "wrapper.conf" : args.config.c_str());
 
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
@@ -107,7 +160,6 @@ int main(int argc, const char** argv)
     MultiConfigEntry postPasses("passes", "post");
     MultiConfigEntry libs("libs", "load");
 
-
     for (const auto& op : logFile) {
         borealis::logging::configureLoggingFacility(op);
     }
@@ -116,35 +168,16 @@ int main(int argc, const char** argv)
         borealis::logging::configureZ3Log(op);
     }
 
-    // args to supply to opt
-    size_t virt_argc = opt_args.size() + 1;
-    {
-        std::vector<const char*> virt_argv(virt_argc);
-
-        virt_argv[0] = "wrapper";
-        for (size_t i = 1U; i < virt_argc; ++i) {
-            virt_argv[i] = opt_args[i-1].c_str();
-        }
-
-        llvm::cl::ParseCommandLineOptions(virt_argc, virt_argv.data());
-    }
-
     // arguments to pass to the clang front-end
-    std::vector<const char *> args(argv,argv+argc);
+    // args to supply to opt
+    args.addOptArgument(opt_args.begin(), opt_args.end());
 
-    args.erase(args.begin());
-    // this is generally fucked up
-    args.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
-
-    auto cargs = args; // args we supply to the compiler itself, ignoring those used by us
-    auto newend = std::remove_if(cargs.begin(), cargs.end(),
-        [](const StringRef& ref) { return ref.startswith("-pass") || ref.startswith("-load"); }
-    );
-    cargs.erase(newend, cargs.end());
+    llvm::cl::ParseCommandLineOptions(args.opt_argc, args.opt_argv);
 
     {
-        log_entry out(infos());
-        for (const auto& arg : cargs) {
+        auto out = infos();
+        out << endl;
+        for (const auto& arg : args.compiler) {
             out << arg << " ";
         }
         out << endl;
@@ -152,16 +185,16 @@ int main(int argc, const char** argv)
 
     DiagnosticOptions DiagOpts;
     auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagnosticOptions());
-    auto diags = CompilerInstance::createDiagnostics(DiagOpts, cargs.size(), &*cargs.begin(), tdp);
+    auto diags = CompilerInstance::createDiagnostics(DiagOpts, args.compiler_argc, args.compiler_argv, tdp);
 
-    std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(cargs, diags));
+    std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(args.compiler, diags));
 
     // Print the argument list from the "real" compiler invocation
     std::vector<std::string> argsFromInvocation;
     invoke->toArgs(argsFromInvocation);
 
     {
-        log_entry out(infos());
+        auto out = infos();
         out << "clang ";
         for (const auto& arg : argsFromInvocation) {
             out << arg << " ";
@@ -201,9 +234,7 @@ int main(int argc, const char** argv)
     for (StringRef p : prePasses) {
         passes2run.push_back(p);
     }
-    for (StringRef p : args) {
-        if( p.startswith("-pass") ) passes2run.push_back(p.drop_front(5));
-    }
+    passes2run.insert(passes2run.end(), args.passes.begin(), args.passes.end());
     for (StringRef p : postPasses) {
         passes2run.push_back(p);
     }
@@ -213,10 +244,7 @@ int main(int argc, const char** argv)
     for (StringRef l : libs) {
         libs2load.push_back(l);
     }
-    for (StringRef arg : args) {
-        if( arg.startswith("-load") ) libs2load.push_back(arg.drop_front(5));
-    }
-
+    libs2load.insert(passes2run.end(), args.libs.begin(), args.libs.end());
     {
         log_entry out(infos());
         out << "Passes:" << endl;
