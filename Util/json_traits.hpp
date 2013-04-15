@@ -8,8 +8,8 @@
 #ifndef JSON_TRAITS_HPP_
 #define JSON_TRAITS_HPP_
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "Util/json.hpp"
 
@@ -29,7 +29,7 @@ struct json_traits<std::vector<T>> {
     static optional_ptr_t fromJson(const Json::Value& val) {
         std::vector<T> ret;
         for(const auto& v : val) ret.push_back(v);
-        return ret;
+        return optional_ptr_t { new std::vector<T>(std::move(ret)) };
     }
 };
 
@@ -54,13 +54,11 @@ struct json_traits<std::map<std::string, V>> {
             } else return nullptr;
         }
 
-        return optional_ptr_t{ new std::map<std::string, V>(std::move(ret)) };
+        return optional_ptr_t { new std::map<std::string, V>(std::move(ret)) };
     }
 };
 
 } // namespace util
 } // namespace borealis
-
-
 
 #endif /* JSON_TRAITS_HPP_ */

@@ -8,15 +8,15 @@
 #ifndef JSON_HPP_
 #define JSON_HPP_
 
-#include <string>
-#include <memory>
-
 #include <jsoncpp/json/json.h>
+
+#include <memory>
+#include <string>
 
 #include "Util/meta.hpp"
 
 namespace borealis {
-namespace util{
+namespace util {
 
 template<class T, typename SFINAE = void>
 struct json_traits;
@@ -98,9 +98,9 @@ struct json_traits<std::string> {
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isString() ?
-                optional_ptr_t(new std::string(json.asString())):
-                nullptr;
+        return json.isString()
+               ? optional_ptr_t(new std::string(json.asString()))
+               : nullptr;
     }
 };
 
@@ -181,7 +181,7 @@ struct type_K_comb {
 template<class F, class S>
 using type_K_comb_q = typename type_K_comb<F,S>::type;
 
-}//namespace impl
+} //namespace impl
 
 template<class Obj, class ...Args>
 struct json_object_builder {
@@ -189,8 +189,7 @@ struct json_object_builder {
 
     // this is a constructor that takes a number of std::strings
     // exactly the same as the number of types in Args
-    json_object_builder(const impl::type_K_comb_q<std::string, Args>&... keys):
-        keys{ keys... } {}
+    json_object_builder(const impl::type_K_comb_q<std::string, Args>&... keys) : keys { keys... } {}
 
     template<size_t ...Ixs>
     Obj* build_(const Json::Value& val, util::indexer<Ixs...>) const {
@@ -212,13 +211,7 @@ struct json_object_builder {
     }
 };
 
-
-
-
-}
-}
-
-
-
+} // namespace util
+} // namespace borealis
 
 #endif /* JSON_HPP_ */

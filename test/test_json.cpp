@@ -1,5 +1,5 @@
 /*
- * test_cast.cpp
+ * test_json.cpp
  *
  *  Created on: Nov 19, 2012
  *      Author: kopcap
@@ -7,9 +7,9 @@
 
 #include <gtest/gtest.h>
 
-#include "Util/util.h"
 #include "Util/json.hpp"
 #include "Util/json_traits.hpp"
+#include "Util/util.h"
 
 #include "Logging/logger.hpp"
 
@@ -18,7 +18,8 @@ struct test_json_structure {
     std::string str;
 };
 
-namespace borealis{ namespace util {
+namespace borealis {
+namespace util {
 
 template<>
 struct json_traits<test_json_structure> {
@@ -37,14 +38,14 @@ struct json_traits<test_json_structure> {
         json_object_builder<test_json_structure, int, std::string> builder {
             "x", "str"
         };
-        return optional_ptr_t{
+        return optional_ptr_t {
             builder.build(json)
         };
     }
-
 };
 
-} /* namespace util */ } /* namespace borealis */
+} /* namespace util */
+} /* namespace borealis */
 
 namespace {
 
@@ -63,9 +64,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
+        ASSERT_EQ("foobar", v1);
         ASSERT_EQ(v0, v1);
-        ASSERT_EQ(v1, "foobar");
-
     }
 
     {
@@ -76,8 +76,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
+        ASSERT_EQ(0xDEAD, v1);
         ASSERT_EQ(v0, v1);
-        ASSERT_EQ(v1, 0xDEAD);
     }
 
     {
@@ -88,8 +88,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
+        ASSERT_EQ(0xDEAD, v1);
         ASSERT_EQ(v0, v1);
-        ASSERT_EQ(v1, 0xDEAD);
     }
 
     {
@@ -111,8 +111,8 @@ TEST(Json, readwrite) {
         buf << jsonify(std::string("totally not an object"));
         buf >> jsonify(v0);
 
-        ASSERT_EQ(v0.x, 20);
-        ASSERT_EQ(v0.str, "an object that is");
+        ASSERT_EQ(20, v0.x);
+        ASSERT_EQ("an object that is", v0.str);
     }
 
     {
@@ -125,8 +125,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v1);
         buf >> jsonify(v0);
 
-        ASSERT_EQ(v0.x, 20);
-        ASSERT_EQ(v0.str, "an object that is");
+        ASSERT_EQ(20, v0.x);
+        ASSERT_EQ("an object that is", v0.str);
     }
 
     {
@@ -140,8 +140,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v1);
         buf >> jsonify(v0);
 
-        ASSERT_EQ(v0.x, 20);
-        ASSERT_EQ(v0.str, "an object that is");
+        ASSERT_EQ(20, v0.x);
+        ASSERT_EQ("an object that is", v0.str);
     }
 
 }
