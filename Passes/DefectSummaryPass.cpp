@@ -78,7 +78,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
             DumpOutputFile = "borealis.json";
         }
 
-        std::ofstream json;
+        std::ofstream json(DumpOutputFile);
         json << util::jsonify(dm.getData());
         json.close();
     }
