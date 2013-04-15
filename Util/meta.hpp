@@ -240,10 +240,19 @@ struct index_in_type_list<I, type_list<Args...>> {
 
 template<char ...Args> struct static_string {
     enum{ length = sizeof...(Args) };
+    typedef const char(&array_ref)[sizeof...(Args)+1];
 
-    static const char(&c_str())[sizeof...(Args)+1]  {
+    static array_ref c_str() {
         static const char output[]{ Args..., '\0' };
         return output;
+    }
+
+    operator array_ref() const {
+        return c_str();
+    }
+
+    operator const char* () const {
+        return c_str();
     }
 
     friend std::ostream& operator<<(std::ostream& ost, static_string<Args...>) {
