@@ -171,7 +171,6 @@ int main(int argc, const char** argv)
     // arguments to pass to the clang front-end
     // args to supply to opt
     args.addOptArgument(opt_args.begin(), opt_args.end());
-    //std::cerr << args << std::endl;
 
     llvm::cl::ParseCommandLineOptions(args.opt_argc, args.opt_argv);
 
