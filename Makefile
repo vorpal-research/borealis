@@ -172,10 +172,10 @@ $(EXES): $(OBJECTS)
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
 
 google-test:
-	$(MAKE) -C $(GOOGLE_TEST_DIR)/make gtest.a
+	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a
 
 clean-google-test:
-	$(MAKE) -C $(GOOGLE_TEST_DIR)/make clean
+	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make clean
 
 $(TEST_EXES): $(TEST_OBJECTS) google-test
 	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
