@@ -12,15 +12,16 @@
 
 namespace borealis {
 
-class DefectSummaryPass: public llvm::ModulePass,
-    public logging::ClassLevelLogging<DefectSummaryPass> {
+class DefectSummaryPass:
+        public llvm::ModulePass,
+        public logging::ClassLevelLogging<DefectSummaryPass> {
+
 public:
     static char ID;
 
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("defect-summary")
 #include "Util/unmacros.h"
-
 
     DefectSummaryPass(): llvm::ModulePass(ID) {};
     virtual ~DefectSummaryPass() {};

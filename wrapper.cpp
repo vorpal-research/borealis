@@ -81,16 +81,12 @@ struct program_args {
     const char** compiler_argv;
     int compiler_argc;
 
-    program_args(int argc, const char** argv):
-        passes(), libs(),
-        opt{"wrapper"}, opt_argv(), opt_argc(),
-        config(),
-        compiler(), compiler_argv(nullptr), compiler_argc(0) {
+    program_args(int argc, const char** argv) : opt { "wrapper" } {
         using borealis::util::view;
         for(llvm::StringRef arg : view(argv+1, argv+argc)) {
             if(arg.startswith("-pass")) passes.push_back(arg.drop_front(5).str());
-            else if(arg.startswith("-lib")) passes.push_back(arg.drop_front(4).str());
-            else if(arg.startswith("-opt")) passes.push_back(arg.drop_front(4).data());
+            else if(arg.startswith("-lib")) libs.push_back(arg.drop_front(4).str());
+            else if(arg.startswith("-opt")) opt.push_back(arg.drop_front(4).data());
             else if(arg.startswith("-cfg")) config = (arg.drop_front(4).str());
             else compiler.push_back(arg.data());
         }
@@ -106,7 +102,7 @@ struct program_args {
     program_args& addOptArgument(InputIterator from, InputIterator to) {
         using borealis::util::view;
 
-        for(const std::string& arg: view(from, to)) opt.push_back(arg.c_str());
+        for(const std::string& arg : view(from, to)) opt.push_back(arg.c_str());
         opt_argv = opt.data();
         opt_argc = opt.size();
         return *this;
@@ -122,8 +118,7 @@ struct program_args {
     }
 };
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     using namespace clang;
     using namespace llvm;
 
@@ -149,7 +144,7 @@ int main(int argc, const char** argv)
 
     using namespace borealis::config;
 
-    AppConfiguration::initialize(args.config.empty()? "wrapper.conf" : args.config.c_str());
+    AppConfiguration::initialize(args.config.empty() ? "wrapper.conf" : args.config.c_str());
 
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
@@ -168,7 +163,6 @@ int main(int argc, const char** argv)
         borealis::logging::configureZ3Log(op);
     }
 
-    // arguments to pass to the clang front-end
     // args to supply to opt
     args.addOptArgument(opt_args.begin(), opt_args.end());
 
@@ -240,11 +234,10 @@ int main(int argc, const char** argv)
     }
 
     std::vector<StringRef> libs2load;
-
     for (StringRef l : libs) {
         libs2load.push_back(l);
     }
-    libs2load.insert(passes2run.end(), args.libs.begin(), args.libs.end());
+    libs2load.insert(libs2load.end(), args.libs.begin(), args.libs.end());
     {
         log_entry out(infos());
         out << "Passes:" << endl;
@@ -258,7 +251,7 @@ int main(int argc, const char** argv)
         log_entry out(infos());
         out << "Dynamic libraries:" << endl;
         if (libs2load.empty()) out << "  " << error("None") << endl;
-        for (const auto& lib: libs2load) {
+        for (const auto& lib : libs2load) {
             out << "  " << lib << endl;
         }
     }
