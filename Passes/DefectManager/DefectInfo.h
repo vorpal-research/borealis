@@ -92,6 +92,7 @@ struct json_traits<DefectInfo> {
 
 } // namespace util
 
+bool operator==(const DefectInfo& a, const DefectInfo& b);
 bool operator<(const DefectInfo& a, const DefectInfo& b);
 
 } // namespace borealis
