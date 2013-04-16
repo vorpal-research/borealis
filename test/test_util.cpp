@@ -91,6 +91,14 @@ TEST(Util, ltlt) {
 		EXPECT_EQ("[1, 2, 3, 4]", ost.str());
 	}
 
+    {
+        std::ostringstream ost;
+
+        std::vector<const char*> vec{"one","two","three","four"};
+        ost << vec;
+        EXPECT_EQ("[one, two, three, four]", ost.str());
+    }
+
 }
 
 TEST(Util, option) {

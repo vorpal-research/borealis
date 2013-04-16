@@ -209,6 +209,15 @@ struct elemPrettyPrinter<Elem, GUARD(!std::is_pointer<Elem>::value)> {
     }
 };
 
+template<>
+struct elemPrettyPrinter<const char*> {
+    template<class Streamer>
+    static Streamer& doit(Streamer& s, const char* e) {
+        // this is generally fucked up...
+        return static_cast<Streamer&>(e == nullptr ? s << impl_::NULL_REPR : s << e);
+    }
+};
+
 #include "Util/unmacros.h"
 
 
