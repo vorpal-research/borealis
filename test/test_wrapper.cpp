@@ -51,6 +51,7 @@ protected:
 
 TEST_P(WrapperTest, basic) {
     int res = borealis::Runner("wrapper")
+    .withArg("-cfgwrapper.tests.conf")
     .withArg("-opt-dump-output-file=" + actualF)
     .withArg(inputF)
     .run();
