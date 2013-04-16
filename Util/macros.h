@@ -9,6 +9,10 @@
 // #ifndef MACROS_H_
 // #define MACROS_H_
 
+#ifdef BOREALIS_MACROS_DEFINED
+#error "macros.h included twice!"
+#endif
+
 #define BOREALIS_MACROS_DEFINED
 
 /*

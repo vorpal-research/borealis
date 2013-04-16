@@ -175,11 +175,11 @@ struct Locus {
     }
 
     bool operator<(const Locus& that) const {
-        return (filename == that.filename) && (loc < that.loc);
+        return (filename < that.filename) || ((filename == that.filename) && (loc < that.loc));
     }
 
     bool operator>(const Locus& that) const {
-        return (filename == that.filename) && (loc > that.loc);
+        return !(*this == that || *this < that);
     }
 
     bool isUnknown() const {
