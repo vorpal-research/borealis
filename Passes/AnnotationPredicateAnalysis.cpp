@@ -11,7 +11,6 @@
 
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/AnnotationPredicateAnalysis.h"
-#include "Passes/AnnotationProcessor.h"
 #include "Passes/SlotTrackerPass.h"
 #include "State/AnnotationMaterializer.h"
 
@@ -61,18 +60,12 @@ AnnotationPredicateAnalysis::AnnotationPredicateAnalysis(llvm::Pass* pass) :
         ProxyFunctionPass(ID, pass) {}
 
 void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    using namespace::llvm;
-
     AU.setPreservesAll();
-
-    AUX<AnnotationProcessor>::addRequired(AU);
     AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
 bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace::llvm;
-
     TRACE_FUNC;
 
     init();

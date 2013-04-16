@@ -19,9 +19,9 @@
 namespace borealis {
 
 void AnnotationProcessor::getAnalysisUsage(llvm::AnalysisUsage& AU) const{
-    AU.setPreservesAll();
-    AUX<AnnotatorPass>::addRequiredTransitive(AU);
-    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
+    AU.setPreservesCFG();
+    AUX<AnnotatorPass>::addRequired(AU);
+    AUX<SourceLocationTracker>::addRequired(AU);
 }
 
 bool AnnotationProcessor::runOnModule(llvm::Module& M) {
