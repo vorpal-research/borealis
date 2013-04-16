@@ -183,7 +183,9 @@ $(TEST_EXES): $(TEST_OBJECTS) google-test
 tests: $(EXES) $(TEST_EXES)
 
 check: tests
-	$(PWD)/$(TEST_EXES) --gtest_output="xml:$(TEST_OUTPUT)"
+	$(PWD)/$(TEST_EXES) \
+	--gtest_output="xml:$(TEST_OUTPUT)" \
+	--gtest_color=yes
 
 clean: clean-google-test
 	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES) $(TEST_OUTPUT)
