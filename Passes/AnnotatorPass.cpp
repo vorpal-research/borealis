@@ -37,12 +37,9 @@ bool AnnotatorPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void AnnotatorPass::print(llvm::raw_ostream& O, const llvm::Module*) const {
-    using borealis::util::streams::endl;
-    using borealis::util::toString;
-
+void AnnotatorPass::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& An : annotations) {
-        O << *An << endl;
+        infos() << *An << endl;
     }
 }
 
