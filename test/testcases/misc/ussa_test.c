@@ -1,11 +1,11 @@
-int main(int x) {
-	int* a = (int*)x;
+int main(int argc, char* argv[]) {
+	int* a = (int*)argc;
 	int i = 0;
 
-	if(x > 20) {
-		a = 0xdeadbeef;
+	if(argc > 20) {
+		a = (int*)0xdeadbeef;
 	}
 	for(i = 0; i < 100; ++i) *a += i;
 
-	return a;
+	return (int)a;
 }

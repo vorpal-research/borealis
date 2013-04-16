@@ -1,0 +1,40 @@
+These benchmarks test handling of interprocedural dataflow analysis. 
+As such, the general assumption is that memory allocation does not fail. 
+Furthermore, memory leaks are currently not treated as bugs either. 
+
+---
+
+The following test cases have the respected number of bugs: 
+
+ex3.c --> 1
+ex4.c --> 1
+ex12.c
+ex13.c --> 1
+ex20.c --> 2
+ex26.c --> 1
+ex27.c --> 1
+ex28.c --> 1
+ex36.c --> 2
+ex39.c --> 1 (using bit-precise modeling)
+ex40.c --> 5
+ex41.c --> 4
+ex43.c --> 4
+ex49.c --> 1 (using bit-precise modeling)
+inf1.c --> 1 
+inf4.c --> 1 
+inf5.c --> 1 
+
+---
+
+Assuming malloc may return NULL, additional errors may occur.
+ 
+ex8.c --> 1
+ex30.c --> 2
+ex37.c --> 1 
+ex46.c --> 2
+ex47.c --> 1 (2, if free(NULL) is considered a bug)
+inf2.c --> 1
+
+---
+
+Memory leaks are not tracked as of now. 

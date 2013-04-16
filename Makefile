@@ -148,9 +148,20 @@ LIBS := \
 	-lprofiler \
 	-ljsoncpp
 
-default: all
+default: check
 
-.PHONY: all clean
+.PHONY: all tests regenerate-test-defs check clean .FORCE
+
+.FORCE:
+
+################################################################################
+# Test defs management
+################################################################################
+
+TEST_DEFS := $(shell find $(TEST_DIRS) -name "tests.def")
+
+$(TEST_DEFS): .FORCE
+	ls -1 $(@D) | grep '^.*.c$$' | xargs -n1 basename > $@
 
 ################################################################################
 # Deps management
@@ -178,12 +189,16 @@ clean-google-test:
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make clean
 
 $(TEST_EXES): $(TEST_OBJECTS) google-test
-	$(CXX) -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
+	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
 
 tests: $(EXES) $(TEST_EXES)
 
-check: tests
-	$(PWD)/$(TEST_EXES) --gtest_output="xml:$(TEST_OUTPUT)"
+regenerate-test-defs: $(TEST_DEFS)
+
+check: tests regenerate-test-defs
+	$(PWD)/$(TEST_EXES) \
+	--gtest_output="xml:$(TEST_OUTPUT)" \
+	--gtest_color=yes
 
 clean: clean-google-test
 	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES) $(TEST_OUTPUT)
