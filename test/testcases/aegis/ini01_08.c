@@ -1,6 +1,6 @@
 #include <string.h>
 
-int main(int argc) {
+int main(int argc, char* argv[]) {
     static char a[5];
     char *psrc;
     char *pdst;
