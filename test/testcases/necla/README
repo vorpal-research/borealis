@@ -1,0 +1,37 @@
+These benchmarks have been collected and organized by the Systems Analysis
+and Verification group at NEC Laboratories America (http://www.nec-labs.com). 
+They include programs written by researchers at NEC Laboratories as well as
+freely available programs from the web.
+
+Permission is granted to use and redistribute them for research purposes.
+
+NEC Laboratories America or its associates make no representations whatsoever 
+about these benchmarks, and cannot be held liable for any damages whatsoever
+incurred during their use. 
+
+For questions, corrections and new contributions, please contact 
+Franjo Ivancic <ivancic@nec-labs.com>. 
+
+
+
+Versioning information
+----------------------
+
+V1.0 (2008, Sriram Sankaranarayanan): 
+  * Initial Release
+
+V1.1 (Jan. 2011, Franjo Ivancic):
+  * Updated bugs file for examples ex13, ex25, ex28, and ex40. 
+  * Slight changes made to examples ex40 and ex41. 
+  * We are grateful to Lucas Cordeiro from the University of Southampton
+    for pointing out a number of inconsistencies in the expected results file. 
+
+V1.2 (Aug 2012, Franjo Ivancic):
+   * Added clarification that memory allocation issues are not a primary 
+     concern for these benchmarks. Also, note that memory leaks are not 
+     a concern in these benchmarks. 
+   * We are grateful to Milena Vujosevic-Janicic from the University of 
+     Belgrade and Viktor Kuncak from EPFL for pointing out many further 
+     inconsistencies in the expected results file.
+   * Updated bugs file for examples: ex8, ex30, ex37, ex39, ex46, ex47, ex49, 
+                                     inf1, inf2, inf4, inf5. 
