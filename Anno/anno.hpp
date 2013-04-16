@@ -10,10 +10,13 @@
 
 #include <pegtl.hh>
 
-#include "command.hpp"
-#include "locator.hpp"
-#include "production.h"
+#include "Anno/command.hpp"
+#include "Anno/locator.hpp"
+#include "Anno/production.h"
 #include "Util/util.h"
+
+#include "Anno/zappo.hpp"
+#include "Anno/zappo_macros.h"
 
 #include <algorithm>
 #include <memory>
@@ -27,17 +30,9 @@ namespace anno {
 // std::string -> stdstring
 typedef std::string stdstring;
 
-template<class SS> struct static_string2pegtl_string;
-template<char ...SS> struct static_string2pegtl_string<util::static_string<SS...>> {
-    typedef pegtl::string<SS...> type;
-};
-
 // pegtl::string -> pstring
 template<int ...Chars>
 struct pstring : pegtl::string< Chars... > {};
-
-#include "Util/macros.h"
-#define _PS(STR) typename static_string2pegtl_string<STATIC_STRING(STR)>::type
 
 // bad string cast exception, no additional info provided, sorry
 class bad_string_cast :
@@ -297,11 +292,9 @@ struct ask_arguments :
 };
 
 // integer grammar
-struct integer :
-        sor< ifmust< seq< one< '0' >, one< 'x', 'X' > >, plus< xdigit > >, // hex
-                ifmust< one< '0' >, star< range< '0', '7' > > >,           // oct
-                seq< range< '1', '9' >, star< digit > >                    // dec
-        > {};
+using integer = GRAMMAR(
+    CH('0') >> CH('x', 'X') >= +G(xdigit) | CH('0') >= *RANGE('0', '7') | RANGE('1', '9') >> *G(digit)
+);
 
 // --//-- with action applied
 struct push_integer :
@@ -310,31 +303,23 @@ struct push_integer :
 // boolean grammar
 // must come BEFORE the variable grammar, as 'true' and 'false' are valid var names
 // boolean := true | false
-struct boolean :
-        seq< sor< _PS("true"), _PS("false") > > {};
+using boolean = GRAMMAR( S("true") | S("false") );
 // --//-- with action applied
 struct push_boolean :
         pad< ifapply< boolean, push< bool > >, space > {};
 
 // FP grammar
 // exponent := ('e'|'E') ('+'|'-') +(DIGIT)
-struct exponent :
-        ifmust< one< 'e', 'E' >, one< '+', '-' >, plus< digit > > {};
+using exponent = GRAMMAR( CH('e', 'E') >= CH('+', '-') >= +G(digit));
 // floating := +(DIGIT) exponent                    // 1e+2
 // floating := *(DIGIT) '.' +(DIGIT) ?exponent      // .23
 // floating := +(DIGIT) '.' *(DIGIT) ?exponent      // 1.
-struct floating :
-        sor<
-            seq< plus< digit >, exponent >,
-            seq< star< digit >, one< '.' >,
-            plus< digit >, opt< exponent > >,
-            seq<
-                plus< digit >,
-                one< '.' >,
-                star< digit >,
-                opt< exponent >
-            >
-        > {};
+using floating = GRAMMAR(
+      +G(digit) >> G(exponent)                          /* 1e+2 */
+    | *G(digit) >> CH('.') >> +G(digit) >> ~G(exponent) /* .23 */
+    | +G(digit) >> CH('.') >> *G(digit) >> ~G(exponent) /* 1. */
+);
+
 // --//-- with action applied
 struct push_floating :
         pad< ifapply< floating, push< double > >, space > {};
@@ -596,9 +581,8 @@ std::vector< command_type > parse_command(const std::string& command) {
 
 }   // namespace calculator
 
-#undef _PS
 #undef KEYWORD
-#include "Util/unmacros.h"
+#include "Anno/zappo_unmacros.h"
 
 }   // namespace anno
 }   // namespace borealis

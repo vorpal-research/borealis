@@ -522,7 +522,7 @@ class ComparableExpr;
 namespace impl {
 template<>
 struct generator<ComparableExpr> : generator<BitVector<1>> {
-    static bool check(z3::expr e) { return e.is_bv() || e.is_arith() || e.is_real(); }
+    static bool check(z3::expr e) { return e.is_bool() || e.is_bv() || e.is_arith() || e.is_real(); }
 };
 } // namespace impl
 
