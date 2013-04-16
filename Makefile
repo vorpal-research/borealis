@@ -148,7 +148,7 @@ LIBS := \
 	-lprofiler \
 	-ljsoncpp
 
-default: check
+default: all
 
 .PHONY: all tests regenerate-test-defs check clean .FORCE
 
