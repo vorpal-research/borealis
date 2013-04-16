@@ -94,6 +94,7 @@ struct json_traits<DefectInfo> {
 
 bool operator==(const DefectInfo& a, const DefectInfo& b);
 bool operator<(const DefectInfo& a, const DefectInfo& b);
+std::ostream& operator<<(std::ostream& s, const DefectInfo& di);
 
 } // namespace borealis
 
