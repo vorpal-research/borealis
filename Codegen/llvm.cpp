@@ -68,6 +68,10 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
 
     FileManager& fm = sm.getFileManager();
 
+    if (range.lhv.isUnknown() || range.rhv.isUnknown()) {
+        return "Encountered unknown location, enjoy a smiley =)";
+    }
+
     const FileEntry* begFile = fm.getFile(range.lhv.filename);
 
     auto begLoc = sm.translateFileLineCol(begFile, range.lhv.loc.line, range.lhv.loc.col);
