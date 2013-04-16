@@ -33,7 +33,7 @@ TEST(Cast, visit) {
             .oncase<OpaqueBoolConstantTerm>([&](const OpaqueBoolConstantTerm& b){
                 check = b.getValue();
             });
-        ASSERT_TRUE(check);
+        EXPECT_TRUE(check);
 
         auto trm2 = tf->getOpaqueConstantTerm(false);
         check = visit(*trm2)
@@ -42,7 +42,7 @@ TEST(Cast, visit) {
                     })
                     .getOrElse(true);
 
-        ASSERT_FALSE(check);
+        EXPECT_FALSE(check);
     }
 }
 
@@ -53,14 +53,14 @@ TEST(Cast, pair_matcher) {
         auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
         if (auto matched = match_pair<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
-            ASSERT_EQ(true, matched->first->getValue());
-            ASSERT_EQ(0xC0DEBEEFLL, matched->second->getValue());
+            EXPECT_EQ(true, matched->first->getValue());
+            EXPECT_EQ(0xC0DEBEEFLL, matched->second->getValue());
         } else {
-            FAIL();
+            FAIL() << "match_pair didn't match valid elements";
         }
 
         if (match_pair<OpaqueIntConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
-            FAIL();
+            FAIL() << "match_pair matched invalid elements";
         }
     }
 }
@@ -73,14 +73,14 @@ TEST(Cast, tuple_matcher) {
         auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
         if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
-            ASSERT_EQ(true, matched->get<0>()->getValue());
-            ASSERT_EQ(0xC0DEBEEFLL, matched->get<1>()->getValue());
+            EXPECT_EQ(true, matched->get<0>()->getValue());
+            EXPECT_EQ(0xC0DEBEEFLL, matched->get<1>()->getValue());
         } else {
-            FAIL();
+            FAIL() << "match_tuple didn't match valid elements";
         }
 
         if (match_tuple<OpaqueIntConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
-            FAIL();
+            FAIL() << "match_tuple matched invalid elements";
         }
     }
 }

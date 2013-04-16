@@ -64,8 +64,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
-        ASSERT_EQ("foobar", v1);
-        ASSERT_EQ(v0, v1);
+        EXPECT_EQ("foobar", v1);
+        EXPECT_EQ(v0, v1);
     }
 
     {
@@ -76,8 +76,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
-        ASSERT_EQ(0xDEAD, v1);
-        ASSERT_EQ(v0, v1);
+        EXPECT_EQ(0xDEAD, v1);
+        EXPECT_EQ(v0, v1);
     }
 
     {
@@ -88,8 +88,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
-        ASSERT_EQ(0xDEAD, v1);
-        ASSERT_EQ(v0, v1);
+        EXPECT_EQ(0xDEAD, v1);
+        EXPECT_EQ(v0, v1);
     }
 
     {
@@ -100,8 +100,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v0);
         buf >> jsonify(v1);
 
-        ASSERT_EQ(v0.x, v1.x);
-        ASSERT_EQ(v0.str, v1.str);
+        EXPECT_EQ(v0.x, v1.x);
+        EXPECT_EQ(v0.str, v1.str);
     }
 
     {
@@ -111,8 +111,8 @@ TEST(Json, readwrite) {
         buf << jsonify(std::string("totally not an object"));
         buf >> jsonify(v0);
 
-        ASSERT_EQ(20, v0.x);
-        ASSERT_EQ("an object that is", v0.str);
+        EXPECT_EQ(20, v0.x);
+        EXPECT_EQ("an object that is", v0.str);
     }
 
     {
@@ -125,8 +125,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v1);
         buf >> jsonify(v0);
 
-        ASSERT_EQ(20, v0.x);
-        ASSERT_EQ("an object that is", v0.str);
+        EXPECT_EQ(20, v0.x);
+        EXPECT_EQ("an object that is", v0.str);
     }
 
     {
@@ -140,8 +140,8 @@ TEST(Json, readwrite) {
         buf << jsonify(v1);
         buf >> jsonify(v0);
 
-        ASSERT_EQ(20, v0.x);
-        ASSERT_EQ("an object that is", v0.str);
+        EXPECT_EQ(20, v0.x);
+        EXPECT_EQ("an object that is", v0.str);
     }
 
 }

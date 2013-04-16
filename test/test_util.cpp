@@ -50,18 +50,20 @@ TEST(Util, copy) {
 }
 
 TEST(Util, toString) {
-	EXPECT_EQ("23",   toString(23));
-	EXPECT_EQ("true", toString(true));
-	EXPECT_EQ("foo",  toString("foo"));
+    {
+        EXPECT_EQ("23",   toString(23));
+        EXPECT_EQ("true", toString(true));
+        EXPECT_EQ("foo",  toString("foo"));
 
-	void* ptr = reinterpret_cast<void*>(0xDEADBEEF);
-	EXPECT_EQ("0xdeadbeef", toString(ptr));
+        void* ptr = reinterpret_cast<void*>(0xDEADBEEF);
+        EXPECT_EQ("0xdeadbeef", toString(ptr));
 
-	std::vector<int> vec{1,2,3,4};
-	EXPECT_EQ("[1, 2, 3, 4]", toString(vec));
+        std::vector<int> vec{1,2,3,4};
+        EXPECT_EQ("[1, 2, 3, 4]", toString(vec));
 
-	std::set<int> set{1,2,3,4};
-	EXPECT_EQ("(1, 2, 3, 4)", toString(set));
+        std::set<int> set{1,2,3,4};
+        EXPECT_EQ("(1, 2, 3, 4)", toString(set));
+    }
 }
 
 TEST(Util, ltlt) {
@@ -121,7 +123,7 @@ TEST(Util, option) {
         option<int> nop = nothing();
         EXPECT_TRUE(nop.empty());
 
-        for(auto& i : nop) {
+        for (auto& i : nop) {
             ADD_FAILURE() << "Got " << i << " from nothing!";
         }
     }
@@ -186,7 +188,7 @@ TEST(Util, iterators) {
         }
 
         std::list<int> pattern { 0, 2, 4, 6 };
-        ASSERT_EQ(pattern, keys);
+        EXPECT_EQ(pattern, keys);
     }
 
     {
@@ -203,7 +205,7 @@ TEST(Util, iterators) {
         }
 
         std::list<int> pattern { 0, 2, 4, 6 };
-        ASSERT_EQ(pattern, keys);
+        EXPECT_EQ(pattern, keys);
     }
 
     {
@@ -220,7 +222,7 @@ TEST(Util, iterators) {
         }
 
         std::list<int> pattern { 0, 2, 4, 6 };
-        ASSERT_EQ(pattern, keys);
+        EXPECT_EQ(pattern, keys);
     }
 
     {
@@ -237,7 +239,7 @@ TEST(Util, iterators) {
         }
 
         std::list<int> pattern { 0, 2, 4, 6 };
-        ASSERT_EQ(pattern, keys);
+        EXPECT_EQ(pattern, keys);
     }
 
     {
@@ -254,7 +256,7 @@ TEST(Util, iterators) {
         }
 
         std::list<int> pattern { 1, 3, 5, 7 };
-        ASSERT_EQ(pattern, values);
+        EXPECT_EQ(pattern, values);
     }
 
     {
@@ -271,7 +273,7 @@ TEST(Util, iterators) {
         }
 
         std::list<int> pattern { 1, 3, 5, 7 };
-        ASSERT_EQ(pattern, values);
+        EXPECT_EQ(pattern, values);
     }
 
     {
@@ -288,7 +290,7 @@ TEST(Util, iterators) {
             con2.begin()
         );
 
-        ASSERT_EQ(pat, con2);
+        EXPECT_EQ(pat, con2);
     }
 
     {
@@ -305,7 +307,7 @@ TEST(Util, iterators) {
             con2.begin()
         );
 
-        ASSERT_EQ(pat, con2);
+        EXPECT_EQ(pat, con2);
     }
 
     {
@@ -324,7 +326,7 @@ TEST(Util, iterators) {
             con2.begin()
         );
 
-        ASSERT_EQ(pat, con2);
+        EXPECT_EQ(pat, con2);
     }
 
 } // TEST(Util, iterators)
@@ -335,8 +337,8 @@ TEST(Util, tuple) {
 
         std::tuple<float, double> cdr = cdr_tuple(tuple);
 
-        ASSERT_FLOAT_EQ(3.17, std::get<0>(cdr));
-        ASSERT_DOUBLE_EQ(14.88, std::get<1>(cdr));
+        EXPECT_FLOAT_EQ(3.17, std::get<0>(cdr));
+        EXPECT_DOUBLE_EQ(14.88, std::get<1>(cdr));
     }
 }
 
