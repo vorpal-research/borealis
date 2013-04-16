@@ -104,7 +104,7 @@ TEST_F(TransformerTest, ConstantPropagatorUnary) {
         ConstantPropagator cp(TF.get());
         auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
 
-        ASSERT_NE(0, result);
+        ASSERT_NE(nullptr, result);
         EXPECT_DOUBLE_EQ(-5.4, result->getValue());
     }
 }
@@ -131,7 +131,7 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         ConstantPropagator cp(TF.get());
         auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
 
-        ASSERT_NE(0, result);
+        ASSERT_NE(nullptr, result);
         EXPECT_DOUBLE_EQ(3.0, result->getValue());
     }
 
@@ -159,7 +159,7 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         ConstantPropagator cp(TF.get());
         auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
 
-        ASSERT_NE(0, result);
+        ASSERT_NE(nullptr, result);
         EXPECT_NEAR(8.7, result->getValue(), 0.1);
     }
 
@@ -190,7 +190,7 @@ TEST_F(TransformerTest, ConstantPropagator) {
         ConstantPropagator cp(TF.get());
         auto result = dyn_cast<OpaqueBoolConstantTerm>(cp.transform(testTerm));
 
-        ASSERT_NE(0, result);
+        ASSERT_NE(nullptr, result);
         EXPECT_TRUE(result->getValue());
     }
 }
