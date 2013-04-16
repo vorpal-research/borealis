@@ -131,7 +131,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
         PredicateState modifiedInState = inState.addAll(PM(&I)).addVisited(&I);
         predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
-        // Add ENSURES *after* the CallInst has been processed
+        // Add ensures and summary *after* the CallInst has been processed
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
 
@@ -139,7 +139,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
             CallSiteInitializer csi(CI, TF.get());
 
             PredicateState transformedCallState = callState.filterByTypes(
-                { PredicateType::ENSURES }
+                { PredicateType::ENSURES, PredicateType::STATE }
             ).map(
                 [&csi](Predicate::Ptr p) {
                     return csi.transform(p);
