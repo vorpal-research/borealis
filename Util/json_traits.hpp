@@ -52,7 +52,7 @@ struct json_traits<std::set<T>> {
         std::set<T> ret;
         for(const auto& m : val) {
             if(auto v = util::fromJson<T>(m)) {
-                ret.push_back(*v);
+                ret.insert(*v);
             } else return nullptr;
         }
         return optional_ptr_t { new std::set<T>(std::move(ret)) };
