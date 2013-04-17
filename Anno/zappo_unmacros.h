@@ -20,5 +20,4 @@
 #undef CH
 #undef RANGE
 
-
 //#endif /* ZAPPO_UNMACROS_H_ */

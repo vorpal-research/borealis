@@ -3,3 +3,4 @@ assert_02.c
 assume_01.c
 assume_02.c
 ini03_04.assume.c
+misc_01.c

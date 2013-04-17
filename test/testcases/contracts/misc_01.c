@@ -1,4 +1,4 @@
-// this file is only here for testing annotation parsing 
+// this file is here only for testing annotation parsing
 #include <stdlib.h>
 
 int main(int argc, char* argv[]) {
