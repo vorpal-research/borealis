@@ -23,8 +23,10 @@
 
 #define G(...) borealis::zappo::tag<__VA_ARGS__>()
 #define S(STR) borealis::zappo::tag<_PS(STR)>()
+#define PSS(STR) borealis::zappo::tag<STR>()
 
 #define GRAMMAR(...) borealis::zappo::untag<decltype((__VA_ARGS__))>
+#define LITERALGRAMMAR(...) pegtl::pad<borealis::zappo::untag<decltype((__VA_ARGS__))>, pegtl::space>
 #define CH(...) G(pegtl::one<__VA_ARGS__>)
 #define RANGE(from, to) G(pegtl::range<from, to>)
 

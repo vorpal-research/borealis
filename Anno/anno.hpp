@@ -321,35 +321,26 @@ using floating = GRAMMAR(
 );
 
 // --//-- with action applied
-struct push_floating :
-        pad< ifapply< floating, push< double > >, space > {};
-
+using push_floating = LITERALGRAMMAR( G(floating) & G(push<double>) );
 // variable is just an identifier, can push it right away
-struct push_variable :
-        pad< ifapply< identifier, push< stdstring > >, space > {};
-
+using push_variable = LITERALGRAMMAR( G(identifier) & G(push<stdstring>) );
 // builtin is just an identifier prefixed with '\'
-struct push_builtin :
-        pad< ifapply< seq< one< '\\' >, identifier >, push< stdstring > >, space > {};
+using push_builtin = LITERALGRAMMAR( CH('\\') >> G(identifier) & G(push<stdstring>) );
 
 // a primitive is a variable or a literal
 struct push_primitive :
         sor< push_floating, push_integer, push_boolean, push_variable, push_builtin > {};
 
-// smth surrounded by spaces
-template<typename Rule>
-struct literal :
-        pad< Rule, space > {};
-
 // a char surrounded by spaces
 template<int C>
-struct chpad :
-        literal< one< C > > {};
+using chpad = LITERALGRAMMAR(CH(C));
 
 // a string surrounded by spaces
 template<class PS>
-struct strpad :
-        literal< PS > {};
+using strpad = LITERALGRAMMAR(PSS(PS));
+
+template<class Grammar>
+using literal = LITERALGRAMMAR(G(Grammar));
 
 // opening paren
 struct read_open :
