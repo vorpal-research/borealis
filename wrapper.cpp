@@ -130,11 +130,11 @@ int main(int argc, const char** argv) {
 
     constexpr auto loggingDomain = "wrapper";
 
-    auto infos = [](){
+    auto infos = []{
         return borealis::logging::infosFor(loggingDomain);
     };
 
-    auto errs = [](){
+    auto errs = []{
         return borealis::logging::errsFor(loggingDomain);
     };
 
