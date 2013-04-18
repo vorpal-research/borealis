@@ -104,6 +104,7 @@ struct LocalLocus {
         return col == UNKNOWN_LOC || line == UNKNOWN_LOC;
     }
 
+
     LocalLocus advance(int howmuch, measure what) const {
         if(this->isUnknown()) return *this;
 
@@ -216,11 +217,11 @@ struct Locus {
         return Locus{ this->filename, this->loc.advance(howmuch, what) };
     }
 
-    inline Locus advanceLine(int howmuch) {
+    inline Locus advanceLine(int howmuch) const {
         return advance(howmuch, LocalLocus::measure::line);
     }
 
-    inline Locus advanceCol(int howmuch) {
+    inline Locus advanceCol(int howmuch) const {
         return advance(howmuch, LocalLocus::measure::col);
     }
 };
