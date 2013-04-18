@@ -37,7 +37,7 @@ public:
     PredicateState addPredicate(Predicate::Ptr pred) const;
     PredicateState addAll(const PredicateState& state) const;
 
-    PredicateState addVisited(const llvm::Instruction* location) const;
+    PredicateState addVisited(const llvm::Value* location) const;
 
     template<class H, class ...T>
     bool hasVisited(H* loc, T&... rest) const {
@@ -69,7 +69,7 @@ public:
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
 
-    typedef std::unordered_set<const llvm::Instruction*> Locations;
+    typedef std::unordered_set<const llvm::Value*> Locations;
 
     struct Hash {
         static size_t hash(const PredicateState& state) {
@@ -162,6 +162,9 @@ const PredicateState operator+(const PredicateState& state, Predicate::Ptr p);
 
 const PredicateState operator&&(const PredicateState& a, const PredicateState& b);
 const PredicateState operator+(const PredicateState& a, const PredicateState& b);
+
+const PredicateState operator<<(const PredicateState& a, const llvm::Value* loc);
+const PredicateState operator<<(const PredicateState& a, const llvm::Value& loc);
 
 } /* namespace borealis */
 

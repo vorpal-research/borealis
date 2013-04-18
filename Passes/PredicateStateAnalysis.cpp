@@ -59,9 +59,14 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
 
     // Register REQUIRES from annotations
-    PredicateState requires = FM->get(&F).filterByTypes({ PredicateType::REQUIRES });
+    PredicateState initialState = gPredicate + FM->get(&F).filterByTypes({ PredicateType::REQUIRES });
 
-    enqueue(nullptr, &F.getEntryBlock(), gPredicate + requires);
+    // Register arguments as visited values
+    for (auto& arg : F.getArgumentList()) {
+        initialState = initialState << arg;
+    }
+
+    enqueue(nullptr, &F.getEntryBlock(), initialState);
     processQueue();
 
     return false;
@@ -122,13 +127,13 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     for ( ; isa<PHINode>(iter); ++iter) {
         const PHINode* phi = cast<PHINode>(iter);
         if (phi->getBasicBlockIndex(from) != -1) {
-            inState = inState.addAll(PPM({from, phi})).addVisited(phi);
+            inState = inState + PPM({from, phi}) << phi;
         }
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState modifiedInState = inState.addAll(PM(&I)).addVisited(&I);
+        PredicateState modifiedInState = inState + PM(&I) << I;
         predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
         // Add ensures and summary *after* the CallInst has been processed
@@ -146,7 +151,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
                 }
             );
 
-            modifiedInState = modifiedInState.addAll(transformedCallState);
+            modifiedInState = modifiedInState + transformedCallState;
         }
 
         inState = modifiedInState;
@@ -160,7 +165,7 @@ void PredicateStateAnalysis::processTerminator(
         const PredicateState& state) {
     using namespace::llvm;
 
-    auto s = state.addVisited(&I);
+    auto s = state << I;
 
     if (isa<BranchInst>(I))
     { processBranchInst(cast<BranchInst>(I), s); }
@@ -180,11 +185,8 @@ void PredicateStateAnalysis::processBranchInst(
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        const PredicateState trueState = TPM({&I, trueSucc});
-        const PredicateState falseState = TPM({&I, falseSucc});
-
-        enqueue(I.getParent(), trueSucc, state.addAll(trueState));
-        enqueue(I.getParent(), falseSucc, state.addAll(falseState));
+        enqueue(I.getParent(), trueSucc, state + TPM({&I, trueSucc}));
+        enqueue(I.getParent(), falseSucc, state + TPM({&I, falseSucc}));
     }
 }
 
@@ -195,13 +197,11 @@ void PredicateStateAnalysis::processSwitchInst(
 
     for (auto c = I.case_begin(); c != I.case_end(); ++c) {
         const BasicBlock* caseSucc = c.getCaseSuccessor();
-        const PredicateState caseState = TPM({&I, caseSucc});
-        enqueue(I.getParent(), caseSucc, state.addAll(caseState));
+        enqueue(I.getParent(), caseSucc, state + TPM({&I, caseSucc}));
     }
 
     const BasicBlock* defaultSucc = I.getDefaultDest();
-    const PredicateState defaultState = TPM({&I, defaultSucc});
-    enqueue(I.getParent(), defaultSucc, state.addAll(defaultState));
+    enqueue(I.getParent(), defaultSucc, state + TPM({&I, defaultSucc}));
 }
 
 PredicateState PredicateStateAnalysis::PM(const llvm::Instruction* I) {
@@ -212,7 +212,7 @@ PredicateState PredicateStateAnalysis::PM(const llvm::Instruction* I) {
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPredicateMap();
         if (containsKey(map, I)) {
-            res = res.addPredicate(map.at(I));
+            res = res + map.at(I);
         }
     }
 
@@ -227,7 +227,7 @@ PredicateState PredicateStateAnalysis::PPM(PhiBranch key) {
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPhiPredicateMap();
         if (containsKey(map, key)) {
-            res = res.addPredicate(map.at(key));
+            res = res + map.at(key);
         }
     }
 
@@ -242,7 +242,7 @@ PredicateState PredicateStateAnalysis::TPM(TerminatorBranch key) {
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getTerminatorPredicateMap();
         if (containsKey(map, key)) {
-            res = res.addPredicate(map.at(key));
+            res = res + map.at(key);
         }
     }
 

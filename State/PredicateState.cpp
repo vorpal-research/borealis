@@ -54,7 +54,7 @@ PredicateState PredicateState::addAll(const PredicateState& state) const {
     return res;
 }
 
-PredicateState PredicateState::addVisited(const llvm::Instruction* location) const {
+PredicateState PredicateState::addVisited(const llvm::Value* location) const {
     PredicateState res = PredicateState(*this);
     res.visited.insert(location);
     return res;
@@ -118,6 +118,14 @@ const PredicateState operator&&(const PredicateState& a, const PredicateState& b
 
 const PredicateState operator+(const PredicateState& a, const PredicateState& b) {
     return a.addAll(b);
+}
+
+const PredicateState operator<<(const PredicateState& a, const llvm::Value* loc) {
+    return a.addVisited(loc);
+}
+
+const PredicateState operator<<(const PredicateState& a, const llvm::Value& loc) {
+    return a.addVisited(&loc);
 }
 
 } /* namespace borealis */
