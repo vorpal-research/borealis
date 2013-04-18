@@ -51,6 +51,7 @@ public:
             case llvm::ArithType::LAND: return lhv && rhv;
             case llvm::ArithType::BOR:
             case llvm::ArithType::LOR:  return lhv || rhv;
+            case llvm::ArithType::XOR:  return lhv ^  rhv;
             default: BYE_BYE(Z3ExprFactory::Dynamic,
                              "Unsupported logic opcode: " + llvm::arithString(opcode));
             }

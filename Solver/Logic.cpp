@@ -104,6 +104,12 @@ REDEF_BOOL_BOOL_OP(!=)
 REDEF_BOOL_BOOL_OP(&&)
 REDEF_BOOL_BOOL_OP(||)
 
+Bool operator^(Bool bv0, Bool bv1) {
+    auto& ctx = z3impl::getContext(bv0);
+    auto res = z3::to_expr(ctx, Z3_mk_xor(ctx, z3impl::getExpr(bv0), z3impl::getExpr(bv1)));
+    return Bool(res, spliceAxioms(bv0, bv1));
+}
+
 #undef REDEF_BOOL_BOOL_OP
 
 
