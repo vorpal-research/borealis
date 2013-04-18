@@ -48,10 +48,11 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
     for (auto& defect : dm) {
         Locus origin = defect.location;
-        Locus beg  { origin.filename, LocalLocus { origin.loc.line - 3, 1U } };
-        Locus prev { origin.filename, LocalLocus { origin.loc.line    , 1U } };
-        Locus next { origin.filename, LocalLocus { origin.loc.line + 1, 1U } };
-        Locus end  { origin.filename, LocalLocus { origin.loc.line + 3, 1U } };
+        auto beg = origin.advanceLine(-3);
+        auto prev = origin.advanceLine(0);
+        auto next = origin.advanceLine(1);
+        auto end = origin.advanceLine(3);
+
         LocusRange before { beg,  prev };
         LocusRange line   { prev, next };
         LocusRange after  { next, end  };
