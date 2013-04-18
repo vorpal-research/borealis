@@ -104,7 +104,6 @@ struct LocalLocus {
         return col == UNKNOWN_LOC || line == UNKNOWN_LOC;
     }
 
-
     LocalLocus advance(int howmuch, measure what) const {
         if(this->isUnknown()) return *this;
 
