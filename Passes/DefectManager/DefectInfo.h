@@ -17,7 +17,8 @@ enum class DefectType {
     INI_03,
     REQ_01,
     ENS_01,
-    ASR_01
+    ASR_01,
+    NDF_01
 };
 
 struct DefectSummary {
@@ -35,14 +36,16 @@ const std::map<DefectType, const DefectSummary> DefectTypeNames = {
     { DefectType::INI_03, { "INI-03", "Dereferencing a nullptr" } },
     { DefectType::REQ_01, { "REQ-01", "Requires contract check failed" } },
     { DefectType::ENS_01, { "ENS-01", "Ensures contract check failed" } },
-    { DefectType::ASR_01, { "ASR-01", "Assert check failed" } }
+    { DefectType::ASR_01, { "ASR-01", "Assert check failed" } },
+    { DefectType::NDF_01, { "NDF-01", "Use of undef value detected" } },
 };
 
 const std::map<std::string, DefectType> DefectTypesByName = {
     { "INI-03", DefectType::INI_03 },
     { "REQ-01", DefectType::REQ_01 },
     { "ENS-01", DefectType::ENS_01 },
-    { "ASR-01", DefectType::ASR_01 }
+    { "ASR-01", DefectType::ASR_01 },
+    { "NDF-01", DefectType::NDF_01 }
 };
 
 struct DefectInfo {
