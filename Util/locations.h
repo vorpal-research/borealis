@@ -20,6 +20,7 @@
 namespace borealis {
 
 struct LocalLocus {
+    enum class measure {line, col};
     static constexpr unsigned UNKNOWN_LOC = ~0U;
 
     unsigned line;
@@ -63,8 +64,11 @@ struct LocalLocus {
     }
 
     const LocalLocus& operator-=(const LocalLocus& that) {
-        this->line -= that.line;
-        this->col  -= that.col;
+        if(this->line > that.line) this->line -= that.line;
+        else this->line = 1U;
+        if(this->col > that.col) this->col -= that.col;
+        else this->col = 1U;
+
         return *this;
     }
 
@@ -98,6 +102,29 @@ struct LocalLocus {
 
     bool isUnknown() const {
         return col == UNKNOWN_LOC || line == UNKNOWN_LOC;
+    }
+
+
+    LocalLocus advance(int howmuch, measure what) const {
+        if(this->isUnknown()) return *this;
+
+        LocalLocus that(*this);
+        switch(what) {
+        case measure::col:
+            {
+                long long newCol = that.col + howmuch;
+                that.col = newCol < 1 ? 1U : static_cast<unsigned>(newCol);
+                break;
+            }
+        case measure::line:
+            {
+                long long newLine = that.line + howmuch;
+                that.line = newLine < 1 ? 1U : static_cast<unsigned>(newLine);
+                that.col = 1U;
+                break;
+            }
+        }
+        return std::move(that);
     }
 };
 
@@ -184,6 +211,18 @@ struct Locus {
 
     bool isUnknown() const {
         return filename.empty() || loc.isUnknown();
+    }
+
+    inline Locus advance(int howmuch, LocalLocus::measure what) const {
+        return Locus{ this->filename, this->loc.advance(howmuch, what) };
+    }
+
+    inline Locus advanceLine(int howmuch) {
+        return advance(howmuch, LocalLocus::measure::line);
+    }
+
+    inline Locus advanceCol(int howmuch) {
+        return advance(howmuch, LocalLocus::measure::col);
     }
 };
 
