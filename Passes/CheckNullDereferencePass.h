@@ -39,7 +39,7 @@ public:
     static char ID;
 
 #include "Util/macros.h"
-    static constexpr auto loggerDomain() QUICK_RETURN("null-deref-check")
+    static constexpr auto loggerDomain() QUICK_RETURN("check-null-deref")
 #include "Util/unmacros.h"
 
 	CheckNullDereferencePass();

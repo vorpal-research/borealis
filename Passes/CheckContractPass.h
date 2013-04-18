@@ -31,10 +31,14 @@ public:
 
     static char ID;
 
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("check-contracts")
+#include "Util/unmacros.h"
+
     CheckContractPass();
     CheckContractPass(llvm::Pass*);
     virtual bool runOnFunction(llvm::Function& F);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~CheckContractPass();
 
 private:
