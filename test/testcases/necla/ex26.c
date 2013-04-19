@@ -1,3 +1,4 @@
+#include "defines.h"
 
 int foo(int x);
 int a [100];

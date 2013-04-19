@@ -1,3 +1,4 @@
+#include "defines.h"
 #define NULL 0
 
 typedef struct {

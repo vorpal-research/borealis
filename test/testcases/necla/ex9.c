@@ -1,3 +1,4 @@
+#include "defines.h"
 int * a;
 int n;
 

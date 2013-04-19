@@ -1,3 +1,4 @@
+#include "defines.h"
 /*
   fn1 returns a positive value less than n.
 */

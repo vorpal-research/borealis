@@ -1,3 +1,4 @@
+#include "defines.h"
 #include <stdlib.h>
 
 #define INIT_SIZE 100

@@ -1,3 +1,4 @@
+#include "defines.h"
 int my_malloc( unsigned int size, void * * b){
    *b = malloc(size);
    if (*b) return 1;

@@ -1,3 +1,4 @@
+#include "defines.h"
 int check(int * x){
    if (!x) return 0;
 

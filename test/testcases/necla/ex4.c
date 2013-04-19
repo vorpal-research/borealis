@@ -1,3 +1,4 @@
+#include "defines.h"
 int a[10];
 
 int foo(int x){

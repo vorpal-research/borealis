@@ -1,3 +1,4 @@
+#include "defines.h"
 
 int main(){
    int a[32];

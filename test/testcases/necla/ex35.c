@@ -1,3 +1,4 @@
+#include "defines.h"
 /*--
   laplace.c
   Taken from Prof. Goubault page.

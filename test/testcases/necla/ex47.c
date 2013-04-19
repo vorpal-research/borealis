@@ -1,3 +1,4 @@
+#include "defines.h"
 #include <stdlib.h>
 
 typedef int DIST;

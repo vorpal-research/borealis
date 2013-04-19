@@ -1,3 +1,4 @@
+#include "defines.h"
 
 /*
    An array with constant-time reset.

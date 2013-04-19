@@ -1,3 +1,4 @@
+#include "defines.h"
 int x,y;
 
 int foo(int * ptr){

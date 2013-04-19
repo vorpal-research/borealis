@@ -1,3 +1,4 @@
+#include "defines.h"
 struct foo{
    int x[1000];
 };

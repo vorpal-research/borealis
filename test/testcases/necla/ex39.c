@@ -1,3 +1,4 @@
+#include "defines.h"
 /*-- from blast tacas 06 examplex --*/
 extern int __NONDET__();
 

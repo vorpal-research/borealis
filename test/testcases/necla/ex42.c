@@ -1,3 +1,4 @@
+#include "defines.h"
 extern int __NONDET__();
   
 char x[101], y[101], z[201];

@@ -1,3 +1,4 @@
+#include "defines.h"
 /*** bigint.c ***/
 
 /*  This is a very crude large integer package.  The purpose is to teach, not to

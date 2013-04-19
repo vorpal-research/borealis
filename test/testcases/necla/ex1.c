@@ -1,3 +1,4 @@
+#include "defines.h"
 #define N  (1<<10)
 int A[N] ;
 int B[N/2] ; 

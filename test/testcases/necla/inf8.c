@@ -1,3 +1,4 @@
+#include "defines.h"
 
 int main(int a, int b, int c, int d) {
 	int id, utriag, ltriag, triag, unknown;
