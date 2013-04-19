@@ -122,6 +122,24 @@ public:
                 );
     }
 
+    void visitSelectInst(llvm::SelectInst& I) {
+        using llvm::Value;
+
+        Value* lhv = &I;
+        Value* cnd = I.getCondition();
+        Value* tru = I.getTrueValue();
+        Value* fls = I.getFalseValue();
+
+        pass->PM[&I] = pass->PF->getEqualityPredicate(
+                pass->TF->getValueTerm(lhv),
+                pass->TF->getTernaryTerm(
+                        pass->TF->getValueTerm(cnd),
+                        pass->TF->getValueTerm(tru),
+                        pass->TF->getValueTerm(fls)
+                )
+        );
+    }
+
     void visitAllocaInst(llvm::AllocaInst& I) {
         using llvm::BasicBlock;
         using llvm::Value;

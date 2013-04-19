@@ -21,6 +21,7 @@
 #include "Term/BinaryTerm.h"
 #include "Term/CmpTerm.h"
 #include "Term/UnaryTerm.h"
+#include "Term/TernaryTerm.h"
 
 #include "Term/LoadTerm.h"
 
@@ -81,6 +82,10 @@ public:
             return getArgumentTerm(arg);
         else
             return Term::Ptr(new ValueTerm(v, slotTracker));
+    }
+
+    Term::Ptr getTernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls) {
+        return Term::Ptr(new TernaryTerm(cnd, tru, fls));
     }
 
     Term::Ptr getBinaryTerm(llvm::ArithType opc, Term::Ptr lhv, Term::Ptr rhv) {
