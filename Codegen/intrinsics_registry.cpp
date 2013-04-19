@@ -11,6 +11,9 @@
 
 #include "Util/macros.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpredefined-identifier-outside-function"
+
 namespace borealis {
 
 typedef IntrinsicsManager::RegisterIntrinsic RegisterIntrinsic;
@@ -18,7 +21,7 @@ typedef IntrinsicsManager::RegisterIntrinsic RegisterIntrinsic;
 static RegisterIntrinsic INTRINSIC_PTR_VERSION {
     function_type::INTRINSIC_PTR_VERSION,
     "ptrver",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState {
         ASSERTC(F->getArgumentList().size() > 0);
         return PF->getEqualityPredicate(
                    TF->getReturnValueTerm(F),
@@ -50,7 +53,7 @@ static RegisterIntrinsic INTRINSIC_ANNOTATION {
 static RegisterIntrinsic INTRINSIC_MALLOC {
     function_type::INTRINSIC_MALLOC,
     "malloc",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState {
         ASSERTC(F->getArgumentList().size() > 0);
         return PF->getMallocPredicate(
                 TF->getReturnValueTerm(F),
@@ -61,7 +64,7 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState {
         ASSERTC(F->getArgumentList().size() > 0);
         return PF->getInequalityPredicate(
             TF->getArgumentTerm(F->getArgumentList().begin()),
@@ -79,7 +82,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
 static RegisterIntrinsic BUILTIN_BOR_ASSUME {
     function_type::BUILTIN_BOR_ASSUME,
     "borealis_assume",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState {
         ASSERTC(F->getArgumentList().size() > 0);
         return PF->getInequalityPredicate(
             TF->getArgumentTerm(F->getArgumentList().begin()),
@@ -95,5 +98,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
 };
 
 } // namespace borealis
+
+#pragma clang diagnostic pop
 
 #include "Util/unmacros.h"
