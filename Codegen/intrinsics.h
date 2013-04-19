@@ -23,6 +23,8 @@ enum class function_type {
     LAST_INTRINSIC,
 
     FIRST_BUILTIN,
+    BUILTIN_BOR_ASSERT,
+    BUILTIN_BOR_ASSUME,
     LAST_BUILTIN,
 
     UNKNOWN

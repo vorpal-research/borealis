@@ -19,6 +19,8 @@
 #include "State/Transformer.hpp"
 #include "Term/TermFactory.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
@@ -48,6 +50,9 @@ public:
         using llvm::Value;
 
         Argument* formal = t->getArgument();
+
+        ASSERT(callSiteArguments.count(formal) > 0, "Cannot find an actual function argument at call site");
+
         Value* actual = callSiteArguments[formal];
 
         return TF->getValueTerm(actual);
@@ -69,5 +74,7 @@ private:
 };
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* CALLSITEINITIALIZER_H_ */

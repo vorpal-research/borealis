@@ -169,27 +169,34 @@ public:
         );
     }
 
-    void visitSExtInst(llvm::SExtInst& I) {
+    void visitCastInst(llvm::CastInst& I) {
+        using llvm::ConditionType;
+        using llvm::isa;
         using llvm::Value;
 
         Value* lhv = &I;
         Value* rhv = I.getOperand(0);
 
+        Term::Ptr lhvt = pass->TF->getValueTerm(lhv);
+        Term::Ptr rhvt = pass->TF->getValueTerm(rhv);
+
+        if (isa<Bool>(lhvt->getTermType()) && ! isa<Bool>(rhvt->getTermType())) {
+            rhvt = pass->TF->getCmpTerm(
+                    ConditionType::NEQ,
+                    rhvt,
+                    pass->TF->getIntTerm(0ULL)
+            );
+        } else if (! isa<Bool>(lhvt->getTermType()) && isa<Bool>(rhvt->getTermType())) {
+            lhvt = pass->TF->getCmpTerm(
+                    ConditionType::NEQ,
+                    lhvt,
+                    pass->TF->getIntTerm(0ULL)
+            );
+        }
+
         pass->PM[&I] = pass->PF->getEqualityPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(rhv)
-        );
-    }
-
-    void visitBitCastInst(llvm::BitCastInst& I) {
-        using llvm::Value;
-
-        Value* lhv = &I;
-        Value* rhv = I.getOperand(0);
-
-        pass->PM[&I] = pass->PF->getEqualityPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(rhv)
+                lhvt,
+                rhvt
         );
     }
 

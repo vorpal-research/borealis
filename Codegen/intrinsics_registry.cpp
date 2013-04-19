@@ -9,6 +9,8 @@
 
 #include "Codegen/intrinsics_manager.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 typedef IntrinsicsManager::RegisterIntrinsic RegisterIntrinsic;
@@ -17,9 +19,10 @@ static RegisterIntrinsic INTRINSIC_PTR_VERSION {
     function_type::INTRINSIC_PTR_VERSION,
     "ptrver",
     [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+        ASSERTC(F->getArgumentList().size() > 0);
         return PF->getEqualityPredicate(
                    TF->getReturnValueTerm(F),
-                   TF->getArgumentTerm(&*F->arg_begin())
+                   TF->getArgumentTerm(F->getArgumentList().begin())
         );
     }
 };
@@ -48,10 +51,49 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
     function_type::INTRINSIC_MALLOC,
     "malloc",
     [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+        ASSERTC(F->getArgumentList().size() > 0);
         return PF->getMallocPredicate(
                 TF->getReturnValueTerm(F),
                 TF->getArgumentTerm(F->getArgumentList().begin()));
     }
 };
 
+static RegisterIntrinsic BUILTIN_BOR_ASSERT {
+    function_type::BUILTIN_BOR_ASSERT,
+    "borealis_assert",
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+        ASSERTC(F->getArgumentList().size() > 0);
+        return PF->getInequalityPredicate(
+            TF->getArgumentTerm(F->getArgumentList().begin()),
+            TF->getIntTerm(0ULL),
+            PredicateType::REQUIRES
+        );
+    },
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
+        return ci.getCalledFunction()->getName() == "borealis_assert"
+               ? function_type::BUILTIN_BOR_ASSERT
+               : function_type::UNKNOWN;
+    }
+};
+
+static RegisterIntrinsic BUILTIN_BOR_ASSUME {
+    function_type::BUILTIN_BOR_ASSUME,
+    "borealis_assume",
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) {
+        ASSERTC(F->getArgumentList().size() > 0);
+        return PF->getInequalityPredicate(
+            TF->getArgumentTerm(F->getArgumentList().begin()),
+            TF->getIntTerm(0ULL),
+            PredicateType::ENSURES
+        );
+    },
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
+        return ci.getCalledFunction()->getName() == "borealis_assume"
+               ? function_type::BUILTIN_BOR_ASSUME
+               : function_type::UNKNOWN;
+    }
+};
+
 } // namespace borealis
+
+#include "Util/unmacros.h"
