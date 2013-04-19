@@ -5,9 +5,12 @@
  *      Author: ice-phoenix
  */
 
-#include "slottracker.h"
+#include <llvm/ADT/APFloat.h>
 
+#include "Util/slottracker.h"
 #include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -263,8 +266,15 @@ std::string SlotTracker::getLocalName(const Value *V) {
             return toString(cInt->getValue().getZExtValue());
         }
     } else if (isa<ConstantFP>(V)) {
-        const ConstantFP* cFP = cast<ConstantFP>(V);
-        return toString(cFP->getValueAPF().convertToDouble());
+        const APFloat& cFP = cast<ConstantFP>(V)->getValueAPF();
+
+        if (&cFP.getSemantics() == &APFloat::IEEEsingle) {
+            return toString(cFP.convertToFloat());
+        } else if (&cFP.getSemantics() == &APFloat::IEEEdouble) {
+            return toString(cFP.convertToDouble());
+        } else {
+            BYE_BYE(std::string, "Unsupported semantics of APFloat");
+        }
     } else if (isa<Constant>(V) && !V->hasName()) {
         // FIXME: this is generally fucked up
         return toString(V);
@@ -279,3 +289,5 @@ std::string SlotTracker::getLocalName(const Value *V) {
 }
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
