@@ -81,5 +81,6 @@ TEST_P(WrapperTest, basic) {
 INSTANTIATE_TEST_CASE_P(Aegis, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/aegis")));
 INSTANTIATE_TEST_CASE_P(Contracts, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/contracts")));
 INSTANTIATE_TEST_CASE_P(Misc, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/misc")));
+INSTANTIATE_TEST_CASE_P(Necla, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/necla")));
 
 } // namespace

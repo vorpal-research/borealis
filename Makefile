@@ -195,7 +195,7 @@ tests: $(EXES) $(TEST_EXES)
 
 regenerate-test-defs: $(TEST_DEFS)
 
-check: tests regenerate-test-defs
+check: tests
 	$(PWD)/$(TEST_EXES) \
 	--gtest_output="xml:$(TEST_OUTPUT)" \
 	--gtest_color=yes
