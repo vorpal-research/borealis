@@ -9,14 +9,17 @@ typedef struct {
 
 #define dev_t necla_dev_t
 
+// @ensures \result != 0
 dev_t* dev_alloc(int dev) {
 	dev_t* x = (dev_t*)malloc(sizeof(dev_t));
+	// @assume x != 0
 	x->dev    = dev;
 	x->obj    = NULL;
 	x->status = 0;
 	return x;
 }
 
+// @requires dev != 0
 void dev_free(dev_t* dev) {
 	switch(dev->dev) {
 	case 0:

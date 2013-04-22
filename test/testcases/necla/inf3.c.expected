@@ -1,1 +1,16 @@
-null
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf3.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 56
+			}
+		},
+		"type" : "REQ-01"
+	}
+]

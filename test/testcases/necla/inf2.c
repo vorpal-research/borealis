@@ -6,8 +6,10 @@ typedef struct {
   void* z;
 } st_t;
 
+// @ensures \result != 0
 st_t* st_alloc(int x, int y) {
   st_t* t = (st_t*) malloc(sizeof(st_t));
+  // @assume t != 0
   if (x > 0 && y > 0) {
     t->x = x;
     t->y = y;
@@ -20,6 +22,8 @@ st_t* st_alloc(int x, int y) {
   return t;
 }
 
+// @requires st1 != 0
+// @requires st2 != 0
 int st_compact(st_t* st1, st_t* st2) {
   if (st1->z > 0 ) {
     if (st2->z > 0 ) {
