@@ -109,7 +109,8 @@ public:
             pass->TPM[{&I, caseSucc}] =
                     pass->PF->getEqualityPredicate(
                             condTerm,
-                            caseTerm
+                            caseTerm,
+                            PredicateType::PATH
                     );
 
             cases.push_back(caseTerm);

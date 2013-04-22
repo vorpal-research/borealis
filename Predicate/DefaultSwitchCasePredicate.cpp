@@ -8,6 +8,8 @@
 #include <algorithm>
 
 #include "Predicate/DefaultSwitchCasePredicate.h"
+#include "Util/util.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -20,9 +22,16 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
             cond(cond),
             cases(cases) {
 
-    std::string a = "";
-    for (const auto& c : cases) {
-        a = a + c->getName() + " | ";
+    using borealis::util::head;
+    using borealis::util::tail;
+
+    std::string a("");
+
+    if (cases.size() != 0) {
+        a = head(cases)->getName();
+        for (const auto& c : tail(cases)) {
+            a = a + "|" + c->getName();
+        }
     }
 
     this->asString = this->cond->getName() + "=not(" + a + ")";
