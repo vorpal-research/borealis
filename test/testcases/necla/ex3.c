@@ -1,26 +1,27 @@
 #include "defines.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warray-bounds"
+
 int x;
 
-int main(){
+int main() {
 
    int a[100];
-   int i,j=0;
+   int i, j=0;
    x=10;
    
-   if (x <= 1)
-      return 1;
+   if (x <= 1) return 1;
    
-   for (i =0; i< x ; ++i){
-      j = j +2;
+   for (i = 0; i < x; ++i) {
+      j = j + 2;
    }
 
-   if ( j >= 2*x)   {
-      a[101]=0; /*-- force an error here! --*/
+   if (j >= 2*x) {
+      a[101] = 0; /*-- force an error here! --*/
    }
    
    return j;
-
 }
 
-
+#pragma clang diagnostic pop

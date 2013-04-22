@@ -6,8 +6,8 @@ int main(){
 
    a[x%32] = 1;
    
+   return __NONDET__();
 }
-
 
 /* 
    Benchmark ex13.c comment 

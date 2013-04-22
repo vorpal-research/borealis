@@ -5,8 +5,9 @@ typedef struct {
 	int dev;
 	void* obj;
 	int status;
-} dev_t;
+} necla_dev_t;
 
+#define dev_t necla_dev_t
 
 dev_t* dev_alloc(int dev) {
 	dev_t* x = (dev_t*)malloc(sizeof(dev_t));
@@ -39,7 +40,7 @@ int main(int devNr, int proc) {
 	dev_t* dev = dev_alloc(devNr);
 	switch(devNr) {
 	case 0:
-		dev->obj = (void*)dev_malloc(proc);
+		dev->obj = (void*)dev_alloc(proc);
 		dev->status = 1;
 		break;
 	case 1:
