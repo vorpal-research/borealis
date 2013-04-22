@@ -8,7 +8,9 @@ void defect2(void);
 void defect3(void);
 
 int main(int argc, char *argv[]) {
-    const char ** ps = keywords;
+    // @assume argv != 0
+
+    const char **ps = keywords;
     int shift;
     while (*ps && strcmp(*ps, *argv)) {
         ps++;
