@@ -36,7 +36,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     AnnotatorPass& annotations = GetAnalysis< AnnotatorPass >::doit(this);
     SourceLocationTracker& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
-    for (Annotation::Ptr anno : reverse(annotations)) {
+    for (Annotation::Ptr anno : annotations) {
 
         if(!isa<LogicAnnotation>(anno)) continue;
 

@@ -1,4 +1,6 @@
 int main(int argc, char* argv[]) {
+	// @assume argc > 0
+
 	int* a = (int*)argc;
 	int i = 0;
 

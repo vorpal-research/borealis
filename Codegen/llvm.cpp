@@ -102,11 +102,11 @@ unsigned long long getTypeSizeInElems(llvm::Type* type) {
 
     unsigned long long res = 0;
 
-    if (auto* structType = dyn_cast<StructType>(type)) {
+    if (auto* structType = dyn_cast_or_null<StructType>(type)) {
         for (auto* structElem : view(structType->element_begin(), structType->element_end())) {
             res += getTypeSizeInElems(structElem);
         }
-    } else if (auto* arrayType = dyn_cast<ArrayType>(type)) {
+    } else if (auto* arrayType = dyn_cast_or_null<ArrayType>(type)) {
         res += arrayType->getArrayNumElements() * getTypeSizeInElems(arrayType->getArrayElementType());
     } else {
         res = 1;

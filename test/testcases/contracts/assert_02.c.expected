@@ -1,1 +1,16 @@
-null
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/contracts/assert_02.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 14
+			}
+		},
+		"type" : "ASR-01"
+	}
+]

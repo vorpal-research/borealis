@@ -275,6 +275,15 @@ std::string SlotTracker::getLocalName(const Value *V) {
         } else {
             BYE_BYE(std::string, "Unsupported semantics of APFloat");
         }
+    } else if (isa<ConstantExpr>(V)) {
+        const ConstantExpr* cE = cast<ConstantExpr>(V);
+        if (cE->getOpcode() >= Instruction::CastOpsBegin &&
+            cE->getOpcode() <= Instruction::CastOpsEnd) {
+            return getLocalName(cE->getOperand(0));
+        } else {
+            // FIXME: this is generally fucked up
+            return toString(V);
+        }
     } else if (isa<Constant>(V) && !V->hasName()) {
         // FIXME: this is generally fucked up
         return toString(V);

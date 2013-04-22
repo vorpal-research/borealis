@@ -70,7 +70,8 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     // Pointers
-    Pointer getPtr(const std::string& name);
+    Pointer getPtrVar(const std::string& name);
+    Pointer getPtrConst(const std::string& v);
     Pointer getNullPtr();
     // Bools
     Bool getBoolVar(const std::string& name);

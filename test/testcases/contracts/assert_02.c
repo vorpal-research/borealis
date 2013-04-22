@@ -9,11 +9,11 @@ struct el {
 };
 
 int main(void) {
-    struct el* ptr;
-    ptr = (struct el*)malloc(2 * sizeof(struct el));
+    struct el* ptr = (struct el*)malloc(2 * sizeof(struct el));
 
     // @assert ptr != 0
 
+    // @assume ptr != 0
     ptr[0].c = 1;
     ptr[1].c = 2;
 

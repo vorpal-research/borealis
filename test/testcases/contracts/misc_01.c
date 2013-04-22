@@ -2,7 +2,12 @@
 #include <stdlib.h>
 
 int main(int argc, char* argv[]) {
+	// @assume argv != 0
+	// @assume *argv != 0
+
 	int* val = (int*)malloc(sizeof(int));
+	// @assume val != 0
+
 	int* e0x = val;
 
 	// @assume (e0x != 0) == true

@@ -40,8 +40,15 @@ BRING_FROM_Z3EXPR_FACTORY(Dynamic)
 
 #undef BRING_FROM_Z3EXPR_FACTORY
 
-f::Pointer Z3ExprFactory::getPtr(const std::string& name) {
+f::Pointer Z3ExprFactory::getPtrVar(const std::string& name) {
     return Pointer::mkVar(ctx, name);
+}
+
+f::Pointer Z3ExprFactory::getPtrConst(const std::string& v) {
+    std::istringstream ost(v);
+    unsigned long long ull;
+    ost >> ull;
+    return Pointer::mkConst(ctx, ull);
 }
 
 f::Pointer Z3ExprFactory::getNullPtr() {
@@ -159,8 +166,9 @@ f::Dynamic Z3ExprFactory::getExprByTypeAndName(
     case ValueType::NULL_PTR_CONST:
         return getNullPtr();
     case ValueType::PTR_CONST:
+        return getPtrConst(name);
     case ValueType::PTR_VAR:
-        return getPtr(name);
+        return getPtrVar(name);
     case ValueType::UNKNOWN:
         BYE_BYE(Dynamic, "Unknown value type for Z3 conversion");
     default:
