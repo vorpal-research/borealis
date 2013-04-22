@@ -1,16 +1,1 @@
-
-[
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/aegis/ini03_11.c",
-			"loc" : 
-			{
-				"col" : 19,
-				"line" : 13
-			}
-		},
-		"type" : "INI-03"
-	}
-]
+null
