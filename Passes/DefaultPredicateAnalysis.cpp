@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "Codegen/llvm.h"
 #include "Logging/tracer.hpp"
 #include "Passes/DefaultPredicateAnalysis.h"
 #include "Passes/SlotTrackerPass.h"
@@ -141,15 +142,29 @@ public:
     }
 
     void visitAllocaInst(llvm::AllocaInst& I) {
+        using llvm::cast;
+        using llvm::dyn_cast;
+        using llvm::isa;
+        using llvm::ArrayType;
         using llvm::BasicBlock;
+        using llvm::ConstantInt;
+        using llvm::Type;
         using llvm::Value;
 
         Value* lhv = &I;
-        Value* numElems = I.getArraySize();
+        Value* arraySize = I.getArraySize();
+        Type* allocatedType = I.getAllocatedType();
+
+        ASSERTC(isa<ConstantInt>(arraySize));
+
+        unsigned long long numElems = cast<ConstantInt>(arraySize)->getZExtValue();
+        numElems = numElems * getTypeSizeInElems(allocatedType);
+
+        ASSERTC(numElems > 0);
 
         pass->PM[&I] = pass->PF->getAllocaPredicate(
                 pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(numElems)
+                pass->TF->getIntTerm(numElems)
         );
     }
 
@@ -163,8 +178,7 @@ public:
         for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
             Value* v = *it;
             Term::Ptr by = pass->TF->getValueTerm(v);
-            Term::Ptr size = pass->TF->getIntTerm(
-                    pass->TD->getTypeAllocSize(type));
+            Term::Ptr size = pass->TF->getIntTerm(getTypeSizeInElems(type));
             shifts.push_back({by, size});
 
             if (type->isArrayTy()) type = type->getArrayElementType();

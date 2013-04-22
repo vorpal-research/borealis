@@ -13,11 +13,13 @@
 #include <llvm/Analysis/DIBuilder.h>
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
+#include <llvm/DerivedTypes.h>
 #include <llvm/Function.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Type.h>
 
 #include "Codegen/llvm.h"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -92,6 +94,25 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
             sm.getBufferData(BeginFileID, &Invalid).data();
 
     return StringRef{ BufferStart + BeginOffset, EndOffset - BeginOffset };
+}
+
+unsigned long long getTypeSizeInElems(llvm::Type* type) {
+    using namespace llvm;
+    using borealis::util::view;
+
+    unsigned long long res = 0;
+
+    if (auto* structType = dyn_cast<StructType>(type)) {
+        for (auto* structElem : view(structType->element_begin(), structType->element_end())) {
+            res += getTypeSizeInElems(structElem);
+        }
+    } else if (auto* arrayType = dyn_cast<ArrayType>(type)) {
+        res += arrayType->getArrayNumElements() * getTypeSizeInElems(arrayType->getArrayElementType());
+    } else {
+        res = 1;
+    }
+
+    return res;
 }
 
 } // namespace borealis

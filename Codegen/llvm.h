@@ -30,6 +30,8 @@ void* MDNode2Ptr(llvm::MDNode* ptr);
 
 llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& range);
 
+unsigned long long getTypeSizeInElems(llvm::Type* type);
+
 } // namespace borealis
 
 #endif /* CODEGEN_LLVM_H_ */

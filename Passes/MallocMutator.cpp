@@ -10,6 +10,7 @@
 #include <llvm/Target/TargetData.h>
 
 #include "Codegen/intrinsics_manager.h"
+#include "Codegen/llvm.h"
 #include "Passes/MallocMutator.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
@@ -49,21 +50,27 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
 
     for (llvm::CallInst* CI : mallocs) {
         auto* arraySize = llvm::getMallocArraySize(CI, &TD, true);
+        auto elemSize = getTypeSizeInElems(llvm::getMallocAllocatedType(CI));
 
         auto* current = intrinsic_manager.createIntrinsic(
                 function_type::INTRINSIC_MALLOC,
                 "",
                 llvm::FunctionType::get(
                         CI->getType(),
-                        arraySize ? arraySize->getType() : size_type,
+                        size_type,
                         false
                 ),
                 &M
         );
 
-        auto* resolvedSize = arraySize && llvm::isa<llvm::Constant>(arraySize)
-                ? arraySize
-                : llvm::ConstantInt::get(size_type, DefaultMallocSize);
+        unsigned long long resolvedArraySize;
+        if (auto* constantArraySize = llvm::dyn_cast_or_null<llvm::ConstantInt>(arraySize)) {
+            resolvedArraySize = constantArraySize->getZExtValue();
+        } else {
+            resolvedArraySize = DefaultMallocSize;
+        }
+
+        auto* resolvedSize = llvm::ConstantInt::get(size_type, resolvedArraySize * elemSize);
 
         auto* call = llvm::CallInst::Create(current, resolvedSize, "", CI);
         call->setMetadata("dbg", CI->getMetadata("dbg"));
