@@ -1,1 +1,29 @@
-null
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex38.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 16
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex38.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 17
+			}
+		},
+		"type" : "REQ-01"
+	}
+]
