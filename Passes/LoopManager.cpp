@@ -33,7 +33,9 @@ bool LoopManager::runOnFunction(llvm::Function&) {
     for (auto& anno : AP) {
         if (auto* unroll = dyn_cast<UnrollAnnotation>(anno)) {
             const auto& blocks = SL.getLoopFor(unroll->getLocus());
-            if (!blocks.empty()) data[blocks] = unroll->getLevel();
+            // This is generally fucked up, BUT here:
+            //   blocks.front() == loop.getHeader()
+            if (!blocks.empty()) data[blocks.front()] = unroll->getLevel();
         }
     }
 
@@ -41,8 +43,9 @@ bool LoopManager::runOnFunction(llvm::Function&) {
 }
 
 unsigned LoopManager::getUnrollCount(llvm::Loop* L) const {
-    if (data.count(L->getBlocks())) {
-        return data.at(L->getBlocks());
+    auto it = data.find(L->getHeader());
+    if (it != data.end()) {
+        return it->second;
     } else {
         return 0;
     }

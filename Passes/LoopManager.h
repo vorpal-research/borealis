@@ -20,7 +20,7 @@ class LoopManager: public llvm::FunctionPass {
 
 public:
 
-    typedef std::unordered_map<std::vector<llvm::BasicBlock*>, unsigned> Data;
+    typedef std::unordered_map<llvm::BasicBlock*, unsigned> Data;
 
     static char ID;
 
