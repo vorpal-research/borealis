@@ -5,6 +5,8 @@ int check(int* x) {
    return 10;
 }
 
+// @requires a != 0
+// @requires b != 0
 int copy(int* a, int* b) {
    *a = *b;
    return 2;
@@ -16,6 +18,9 @@ int foo(int* a, int* b, int n) {
    if (n <= 0) return 1;
    if (!check(a)) return 1;
    if (!check(b)) return 1;
+
+   // @assume a != 0
+   // @assume b != 0
 
    for (i=0; i < n; ++i) {
       copy(a+i,b+i);
