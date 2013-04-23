@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include "Config/config.h"
 #include "Solver/Z3ExprFactory.h"
 #include "Term/Term.h"
 #include "Util/macros.h"
@@ -114,7 +115,15 @@ f::Real Z3ExprFactory::getRealConst(const std::string& v) {
 }
 
 f::MemArray Z3ExprFactory::getNoMemoryArray() {
-    return f::MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
+    static config::ConfigEntry<bool> DefaultToUnknown("analysis", "memory-defaults-to-unknown");
+
+    auto opt = DefaultToUnknown.get();
+
+    if(opt.empty() || opt == false) {
+        return f::MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
+    } else {
+        return f::MemArray::mkFree(ctx, "mem");
+    }
 }
 
 f::Pointer Z3ExprFactory::getInvalidPtr() {

@@ -786,6 +786,10 @@ public:
         return self(f, ax);
     }
 
+    static self mkFreshFunc(z3::context& ctx, const std::string& name) {
+        return self(constructFreshFunc(ctx, name));
+    }
+
     static self mkFreshFunc(z3::context& ctx, const std::string& name, std::function<Res(Args...)> body) {
         z3::func_decl f = constructFreshFunc(ctx, name);
         z3::expr ax = constructAxiomatic(ctx, f, body);
@@ -817,6 +821,8 @@ class FuncArray {
 
 public:
     FuncArray(const FuncArray&) = default;
+    FuncArray(z3::context& ctx, const std::string& name):
+        name(std::make_shared<std::string>(name)), inner(inner_t::mkFreshFunc(ctx, name)) {}
     FuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
         name(std::make_shared<std::string>(name)), inner(inner_t::mkFreshFunc(ctx, name, f)) {}
 
@@ -845,6 +851,10 @@ public:
         return FuncArray(ctx, name, [def](Index){ return def; });
     }
 
+    static FuncArray mkFree(z3::context& ctx, const std::string& name) {
+        return FuncArray(ctx, name);
+    }
+
     friend std::ostream& operator<<(std::ostream& ost, const FuncArray<Elem, Index>& fa) {
         return ost << "funcArray " << *fa.name << " {" << fa.inner << "}";
     }
@@ -869,6 +879,11 @@ public:
     InlinedFuncArray(const InlinedFuncArray&) = default;
     InlinedFuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
         name(std::make_shared<std::string>(name)), inner(f), context(&ctx) {}
+    InlinedFuncArray(z3::context& ctx, const std::string& name):
+        name(std::make_shared<std::string>(name)),
+        context(&ctx) {
+        inner = [&ctx, &name](Index){ return Elem::mkFreshVar(ctx, name + ".elem"); };
+    }
 
     Elem select    (Index i) { return inner(i);  }
     Elem operator[](Index i) { return select(i); }
@@ -902,6 +917,10 @@ public:
 
     static InlinedFuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
         return InlinedFuncArray(ctx, name, [def](Index){ return def; });
+    }
+
+    static InlinedFuncArray mkFree(z3::context& ctx, const std::string& name) {
+        return InlinedFuncArray(ctx, name);
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const InlinedFuncArray<Elem, Index>& ifa) {
@@ -940,6 +959,15 @@ public:
         return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
     }
 
+    static TheoryArray mkFree(z3::context& ctx, const std::string& name) {
+        return ctx.constant(
+            name.c_str(),
+            ctx.array_sort(
+                impl::generator<Index>::sort(ctx),
+                impl::generator<Elem>::sort(ctx)
+            )
+        );
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1109,6 +1137,10 @@ public:
 
     static ScatterArray mkDefault(z3::context& ctx, const std::string& name, Byte def) {
         return ScatterArray{ Inner::mkDefault(ctx, name, def) };
+    }
+
+    static ScatterArray mkFree(z3::context& ctx, const std::string& name) {
+        return ScatterArray{ Inner::mkFree(ctx, name) };
     }
 };
 
