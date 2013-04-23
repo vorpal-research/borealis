@@ -3,16 +3,11 @@
 /*
    An array with constant-time reset.
 */
-
 #include <stdlib.h>
 
 typedef int data_t;
 typedef size_t idx_t;
 typedef int bool_t;
-
-int __NONDET__();
-int ASSUME(int);
-int ASSERT(int);
 
 typedef struct {
   data_t resetVal;
@@ -23,42 +18,46 @@ typedef struct {
   idx_t *dataWriteEvidence;
 } buf_t;
 
+// @ensures \result != 0
 buf_t *bufAlloc(size_t n) {
   int i;
   buf_t *b = (buf_t *)malloc(sizeof(buf_t));
+  ASSUME(b);
+
   b->data = (data_t *)malloc(sizeof(data_t) * n);
   b->maxNumData = n;
   b->numData = 0;
   for (i=0; i<n; i++)
      b->dataWriteEvidence[i] = n;
+
   return b;
 }
 
+// @requires buf_ != 0
+// @requires idx_ >= 0
 bool_t bufIdxWritten(const buf_t *buf_, idx_t idx_) {
-  ASSUME(buf_ != NULL );
-  ASSUME(0 <= idx_ );
   ASSUME(idx_ < buf_->maxNumData);
-  return buf_->dataWriteEvidence[idx_] >= 0 &&
+  return /* buf_->dataWriteEvidence[idx_] >= 0 && */
     buf_->dataWriteEvidence[idx_] < buf_->numData &&
     buf_->dataIdx[buf_->dataWriteEvidence[idx_]] == idx_;
 }
 
+// @requires buf_ != 0
+// @requires idx_ >= 0
 data_t bufRead(const buf_t *buf_, idx_t idx_) {
-  ASSUME(buf_ != NULL );
-  ASSUME(0 <= idx_ );
-  ASSUME( idx_ < buf_->maxNumData);
+  ASSUME(idx_ < buf_->maxNumData);
   return bufIdxWritten(buf_, idx_) ? buf_->data[buf_->dataWriteEvidence[idx_]] : buf_->resetVal;
 }
 
+// @requires buf_ != 0
 void bufReset(buf_t *buf_, data_t resetVal_) {
-  ASSUME(buf_ != NULL);
   buf_->resetVal = resetVal_;
   buf_->numData = 0;
 }
 
+// @requires buf_ != 0
+// @requires idx_ >= 0
 void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
-   ASSUME(buf_!=NULL);
-   ASSUME(0 <= idx_);
    ASSUME(idx_ < buf_->maxNumData);
    idx_t writeDataTo = buf_->dataWriteEvidence[idx_];
    if (!bufIdxWritten(buf_, idx_)) {
@@ -71,8 +70,8 @@ void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
   buf_->data[writeDataTo] = val_;
 }
 
+// @requires buf_ != 0
 idx_t randomIdx(const buf_t *buf_) {
-  ASSUME(buf_ != NULL);
   idx_t idx = __NONDET__();
   ASSUME(0 <= idx);
   ASSUME(idx < buf_->maxNumData);
@@ -87,14 +86,14 @@ int main(int argc, char *argv[]) {
   bool_t datumOut;
   
   buf_t **bufs = (buf_t **)malloc(numBufs * sizeof(buf_t *));
+  ASSUME(bufs);
+
   for (i=0; i<numBufs; i++)
      bufs[i] = bufAlloc(maxN);
   
-  for (i=0; i<numWrites; i++) {
+  for (i=0; i<numWrites; i++)
      for (j=0; j<numBufs; j++)
         bufWrite(bufs[j], randomIdx(bufs[j]), (data_t)__NONDET__());
-     
-  }
   
   for (i=0; i<numReads; i++) {
      for (j=0; j<numBufs; j++) {
@@ -105,9 +104,8 @@ int main(int argc, char *argv[]) {
            bufReset(bufs[j], datum);
         else
            datumOut = bufRead(bufs[j], randomIdx(bufs[j]));
-        
-        
      }
   }
+  
   return 1;
 }
