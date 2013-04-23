@@ -61,9 +61,13 @@ public:
         for (auto& state : states) {
             dbgs() << "  State: " << endl << state << endl;
             if (s.checkViolated(instantiatedRequires, state)) {
+                dbgs() << "Violated!" << endl;
                 pass->DM->addDefect(DefectType::REQ_01, &CI);
+                return;
             }
         }
+
+        dbgs() << "Passed!" << endl;
     }
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {

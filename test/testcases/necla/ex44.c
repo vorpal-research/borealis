@@ -27,6 +27,7 @@ Vector* create_vector() {
 
 // @requires vct != 0
 void push_back(Vector* vct, int value) {
+    ASSUME(vct->data);
     int* tmp;
     ASSERT(vct->size <= vct->capacity);
     if (vct->size >= vct->capacity) {

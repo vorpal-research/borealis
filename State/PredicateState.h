@@ -63,7 +63,7 @@ public:
 
     bool isUnreachable() const;
 
-    logic::Bool toZ3(Z3ExprFactory& z3ef) const;
+    logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const;
 
     typedef std::list<Predicate::Ptr> Data;
     typedef Data::value_type DataEntry;

@@ -69,16 +69,17 @@ bool PredicateState::isUnreachable() const {
     return s.checkPathPredicates(split.first, split.second);
 }
 
-logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef) const {
+logic::Bool PredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
     TRACE_FUNC;
 
     ExecutionContext ctx(z3ef);
+    if (!pctx) pctx = &ctx;
 
     auto res = z3ef.getTrue();
     for (auto& v : data) {
-        res = res && v->toZ3(z3ef, &ctx);
+        res = res && v->toZ3(z3ef, pctx);
     }
-    res = res && ctx.toZ3();
+    res = res && pctx->toZ3();
 
     return res;
 }

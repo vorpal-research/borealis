@@ -2,6 +2,7 @@
 #include <string.h>
 
 // @requires b != 0
+// @ensures (\result == 1 && *b != 0) || (\result == 0 && *b == 0)
 int my_malloc(unsigned int size, void** b) {
    *b = malloc(size);
    if (*b) return 1;

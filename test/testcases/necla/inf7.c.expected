@@ -1,1 +1,120 @@
-null
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 27
+			}
+		},
+		"type" : "INI-03"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 60
+			}
+		},
+		"type" : "INI-03"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 67
+			}
+		},
+		"type" : "INI-03"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 26
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 27
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 28
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 32
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 35
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 72
+			}
+		},
+		"type" : "REQ-01"
+	}
+]

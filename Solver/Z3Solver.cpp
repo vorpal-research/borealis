@@ -64,8 +64,9 @@ bool Z3Solver::checkViolated(
         const PredicateState& state) {
     TRACE_FUNC;
 
-    auto z3query = !query.toZ3(z3ef);
-    auto z3state = state.toZ3(z3ef);
+    ExecutionContext ctx(z3ef);
+    auto z3state = state.toZ3(z3ef, &ctx);
+    auto z3query = !query.toZ3(z3ef, &ctx);
     return check(z3query, z3state) != z3::unsat;
 }
 
@@ -79,8 +80,9 @@ bool Z3Solver::checkPathPredicates(
            << "in: " << endl
            << state << endl;
 
-    auto z3query = path.toZ3(z3ef);
-    auto z3state = state.toZ3(z3ef);
+    ExecutionContext ctx(z3ef);
+    auto z3state = state.toZ3(z3ef, &ctx);
+    auto z3query = path.toZ3(z3ef, &ctx);
     return check(z3query, z3state) == z3::unsat;
 }
 
