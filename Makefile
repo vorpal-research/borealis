@@ -162,7 +162,8 @@ TEST_DEFS := $(shell find $(TEST_DIRS) -name "tests.def")
 
 $(TEST_DEFS): .FORCE
 	ls -1 $(@D) | grep '^.*.c$$' | xargs -n1 basename > $@.all
-	grep -v -x -f $(@D)/"tests.long.def" $@.all > $@
+	sed 's/^#\s*//' $(@D)/"tests.long.def" > $@.long.all
+	grep -v -x -f $@.long.all $@.all > $@
 
 
 

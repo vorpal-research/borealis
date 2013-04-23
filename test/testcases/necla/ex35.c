@@ -1,4 +1,5 @@
 #include "defines.h"
+
 /*--
   laplace.c
   Taken from Prof. Goubault page.
@@ -19,31 +20,41 @@ NUM xsi[N];
 NUM gamma;
 NUM rho;
 
+NUM __BUILTIN_DAED_FBETWEEN(NUM, NUM);
+NUM __BUILTIN_DAED_FPRINT(NUM, NUM);
+
+// @requires x != 0
+// @requires y != 0
 void evalA(NUM *x, NUM *y) {
-  /* computes y=Ax */
+  /* computes y = Ax */
   int i,j;
-  for (i=0;i<N;i++) {
+  for (i=0; i<N; i++) {
     y[i] = 0;
-    for (j=0;j<N;j++)
-      y[i] = y[i]+A[i][j]*x[j];
+    for (j=0; j<N; j++)
+      y[i] = y[i] + A[i][j] * x[j];
   }
 }
 
+// @requires x != 0
+// @requires y != 0
 NUM scalarproduct(NUM *x, NUM *y) {
   /* computes (x,y) */
   int i;
   NUM res;
   res = 0;
-  for (i=0;i<N;i++)
-    res = res+x[i]*y[i];
+  for (i=0; i<N; i++)
+    res = res + x[i] * y[i];
   return res;
 }
 
+// @requires x != 0
+// @requires y != 0
+// @requires z != 0
 void multadd(NUM *x, NUM *y, NUM alpha, NUM beta, NUM *z) {
-  /* computes z=alpha*x+beta*y */
+  /* computes z = alpha*x + beta*y */
   int i;
-  for (i=0;i<N;i++) {
-    z[i] = alpha*x[i]+beta*y[i];
+  for (i=0; i<N; i++) {
+    z[i] = alpha * x[i] + beta * y[i];
   }
 }
 
@@ -52,9 +63,9 @@ int main() {
   NUM temp[N];
   NUM norm, norm2, beta;
 
-  /* init A - discretisation du laplacien en dimension un */
-  for (i=0;i<N;i++) {
-      A[i][i] = __BUILTIN_DAED_FBETWEEN(2.0/(N+1)-0.0000001,2.0/(N+1)+0.0000001);
+  /* init A - discretization of the Laplacian in one dimension */
+  for (i=0; i<N; i++) {
+      A[i][i] = __BUILTIN_DAED_FBETWEEN(2.0/(N+1)-0.0000001, 2.0/(N+1)+0.0000001);
       if (i < N-1) {
          A[i][i+1] = -1.0/(N+1);
          A[i+1][i] = -1.0/(N+1);
@@ -62,27 +73,27 @@ int main() {
   }
 
   /* init B */
-  for (i=0;i<N;i++)
+  for (i=0; i<N; i++)
     b[i] = 1;
 
   /* init x */
-  for (i=0;i<N;i++)
-    xi[i] = __BUILTIN_DAED_FBETWEEN(0,0.0000001);
+  for (i=0; i<N; i++)
+    xi[i] = __BUILTIN_DAED_FBETWEEN(0, 0.0000001);
 
   /* init solution */
-  evalA(xi,temp);
-  multadd(b,temp,1,-1,gi); /* g0=b-Ax */
+  evalA(xi, temp);
+  multadd(b, temp, 1, -1, gi); /* g0 = b-Ax */
 
-  for (j=0;j<N;j++)
+  for (j=0; j<N; j++)
     hi[j] = gi[j];
 
-  norm = scalarproduct(gi,gi);
+  norm = scalarproduct(gi, gi);
 
   k = 0;
   /* conjugate gradient algorithm */
   while (norm > epsilon) {
-/*   if (k>=1)
-      norm = __BUILTIN_DAED_FPRINT(norm,norm);*/
+    // if (k>=1)
+    //   norm = __BUILTIN_DAED_FPRINT(norm, norm);
     evalA(hi,temp); 
     rho = scalarproduct(hi,temp); 
     norm2 = norm;
@@ -93,7 +104,7 @@ int main() {
     beta = norm/norm2;
     multadd(gsi,hi,1,beta,hsi);
 
-    for (j=0;j<N;j++) {
+    for (j=0; j<N; j++) {
       xi[j] = xsi[j];
       gi[j] = gsi[j];
       hi[j] = hsi[j];
@@ -103,9 +114,10 @@ int main() {
   }
 
   for (j=0;j<N;j++)
-    xi[j] = __BUILTIN_DAED_FPRINT(xi[j],xi[j]);
-
+    xi[j] = __BUILTIN_DAED_FPRINT(xi[j], xi[j]);
   evalA(xi,temp);
   for (j=0;j<N;j++)
-     temp[j] = __BUILTIN_DAED_FPRINT(temp[j],temp[j]);
+     temp[j] = __BUILTIN_DAED_FPRINT(temp[j], temp[j]);
+
+   return 0;
 }
