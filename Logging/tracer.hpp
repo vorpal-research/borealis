@@ -23,6 +23,8 @@ class func_tracer {
 
 public:
 
+    static const std::string logDomain;
+
     func_tracer(
             const char* fname,
             borealis::logging::logstream log):
@@ -48,8 +50,12 @@ public:
 } // namespace borealis
 
 #ifndef NO_TRACE_FUNC
-#define TRACE_FUNC borealis::logging::func_tracer ftracer(__PRETTY_FUNCTION__, dbgs());
-#define TRACE_BLOCK(MSG) borealis::logging::func_tracer ftracer(MSG, dbgs());
+#define TRACE_FUNC borealis::logging::func_tracer ftracer( \
+        __PRETTY_FUNCTION__, \
+        borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
+#define TRACE_BLOCK(MSG) borealis::logging::func_tracer ftracer( \
+        MSG, \
+        borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
 #else
 #define TRACE_FUNC
 #define TRACE_BLOCK(MSG)

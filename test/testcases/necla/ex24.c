@@ -1,21 +1,24 @@
 #include "defines.h"
 #include <string.h>
-extern int __NONDET__();
 
-int foo(int * x){
+#define SIZE 10
+
+int foo(int* x) {
    *x = __NONDET__();
    return __NONDET__();
 }
-int main(){
-   int i,j,ret,offset, tmp_cnt, tel_data,klen;
-   /* source snippet*/
-   int x [1000];
 
-   for (i = 0; i < 1000; ++i)
-      x[i]= __NONDET__();
+int bar(int* x);
+
+int main() {
+   int i, j, ret, offset, tmp_cnt, tel_data, klen;
+   /* source snippet */
+   int x[SIZE];
+
+   for (i = 0; i < SIZE; ++i)
+      x[i] = __NONDET__();
    
-   for (i= 0; i < 1000; ++i){
-
+   for (i = 0; i < SIZE; ++i) {
       ret = __NONDET__();
       if (ret != 0)
          return -1;
@@ -23,54 +26,32 @@ int main(){
       if (tmp_cnt < 0)
          return -1;
       
-      
-      for ( offset = 0; offset < tmp_cnt; offset++ )
-      {
-         ret = foo(&tel_data ) ;
-         if ( ( ret == 0 ) || ( ret == 1 ) )
-            {
-      
-                return 1 ;
-            }
+      for (offset = 0; offset < tmp_cnt; offset++) {
+         ret = foo(&tel_data);
+         if ( ret == 0 || ret == 1 )
+            return 1;
          else if ( ret == -1 )
-            {
-              
-               continue ;
+            continue;
+         
+         for (j = 0; x[j] != 0; j++) {
+            if (x[i] == 1) {
+               memmove(&x[i], &x[i + 1], SIZE - i);
             }
-
-         
-         for ( j = 0; x[j] != 0; j++ )
-            {
-              
-               if ( x[i] == 1)
-               {
-              
-                  memmove( &x[i], &x[i + 1], (1001) - ( i + 1 ) )  ;
-               }
-            }
-
-            
-         ret = bar( x) ;
-         
-         if ( ret != -1 )
-         {
-         
-            continue ;
          }
+            
+         ret = bar(x);
 
+         if (ret != -1) {
+            continue;
+         }
          
-         klen = strlen(x ) ;
+         klen = strlen((const char*)x);
          
-         if ( klen > 20 )
-            {
-         
-               x[i]=0;
-             
-            }
-            else if ( klen > 0 )
-            {
-               x[i] =  -1;
-            }
+         if (klen > 20) {
+            x[i] = 0;
+         } else if (klen > 0) {
+            x[i] = -1;
+         }
       }
    }
 
