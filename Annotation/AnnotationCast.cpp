@@ -73,9 +73,9 @@ static llvm::ArithType convertAT(bin_opcode op) {
     case bin_opcode::OPCODE_XOR:
         return llvm::ArithType::XOR;
     case bin_opcode::OPCODE_LSH:
-        return llvm::ArithType::LSH;
+        return llvm::ArithType::SHL;
     case bin_opcode::OPCODE_RSH:
-        return llvm::ArithType::RSH;
+        return llvm::ArithType::ASHR;
     default:
         BYE_BYE(llvm::ArithType, "Called with non-arithmetic operation");
     }

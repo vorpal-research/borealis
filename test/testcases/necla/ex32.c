@@ -1,24 +1,23 @@
 #include "defines.h"
-struct foo{
+
+struct foo {
    int x[1000];
 };
 
-int make_null(struct foo * hoo){
+// @requires hoo != 0
+int make_null(struct foo* hoo) {
    int i;
    // @unroll 99
-   for (i=999; i >= 0; i--)
-      hoo -> x[i]=0;
+   for (i=999; i >= 0; i--) hoo->x[i] = 0;
    return 0;
-
 }
 
-int no(int i){
-   if (i == 0)
-      make_null((struct foo*) 0);
+int no(int i) {
+   if (i == 0) make_null((struct foo*)0);
    return 1;
 }
 
-int main(){
+int main() {
    struct foo hoo;
    no(1);
    make_null(&hoo);

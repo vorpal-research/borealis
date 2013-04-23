@@ -90,8 +90,9 @@ enum class ArithType {
     BAND,
     BOR,
     XOR,
-    LSH,
-    RSH
+    SHL,
+    ASHR,
+    LSHR
 };
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops);
 std::string arithString(ArithType opCode);

@@ -66,12 +66,13 @@ public:
             case llvm::ArithType::BAND: return lhv &  rhv;
             case llvm::ArithType::BOR:  return lhv |  rhv;
             case llvm::ArithType::DIV:  return lhv /  rhv;
-            case llvm::ArithType::LSH:  return lhv << rhv;
+            case llvm::ArithType::SHL:  return lhv << rhv;
             case llvm::ArithType::MUL:  return lhv *  rhv;
             case llvm::ArithType::REM:  return lhv %  rhv;
-            case llvm::ArithType::RSH:  return lhv >> rhv;
+            case llvm::ArithType::ASHR: return lhv >> rhv;
             case llvm::ArithType::SUB:  return lhv -  rhv;
             case llvm::ArithType::XOR:  return lhv ^  rhv;
+            case llvm::ArithType::LSHR: return lhv.lshr(rhv);
             default: BYE_BYE(Z3ExprFactory::Dynamic,
                              "Unsupported bv opcode: " + llvm::arithString(opcode));
             }

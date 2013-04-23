@@ -1,7 +1,10 @@
 #include "defines.h"
+
 /*
   fn1 returns a positive value less than n.
 */
+// @ensures \result >= 0
+// @ensures \result < n
 int fn1(int n) {
     int ret = __NONDET__();
     ASSUME(0 <= ret);

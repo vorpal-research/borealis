@@ -214,9 +214,9 @@ ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {
     case ops::FRem: return ArithType::REM;
 
     // Logical operators (integer operands)
-    case ops::Shl:  return ArithType::LSH;
-    case ops::LShr: return ArithType::RSH;
-    case ops::AShr: return ArithType::RSH;
+    case ops::Shl:  return ArithType::SHL;
+    case ops::LShr: return ArithType::LSHR;
+    case ops::AShr: return ArithType::ASHR;
     case ops::And:  return ArithType::BAND;
     case ops::Or:   return ArithType::BOR;
     case ops::Xor:  return ArithType::XOR;
@@ -236,8 +236,9 @@ std::string arithString(ArithType opCode) {
     case ArithType::LAND: return "&&";
     case ArithType::LOR: return "||";
     case ArithType::XOR: return "^";
-    case ArithType::LSH: return "<<";
-    case ArithType::RSH: return ">>";
+    case ArithType::SHL: return "<<";
+    case ArithType::ASHR: return ">>";
+    case ArithType::LSHR: return ">>>";
     default: BYE_BYE(std::string, "Unreachable!");
     }
 }

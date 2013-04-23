@@ -570,6 +570,17 @@ public:
             );
         else return DynBitVectorExpr(z3impl::getExpr(this), z3impl::getAxiom(this));
     }
+
+    DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
+        size_t sz = std::max(getBitSize(), shift.getBitSize());
+        DynBitVectorExpr w = this->growTo(sz);
+        DynBitVectorExpr s = shift.growTo(sz);
+        auto& ctx = z3impl::getContext(w);
+
+        auto res = z3::to_expr(ctx, Z3_mk_bvlshr(ctx, z3impl::getExpr(w), z3impl::getExpr(s)));
+
+        return DynBitVectorExpr(res, spliceAxioms(w, s));
+    }
 ASPECT_END
 
 #define BIN_OP(OP) \

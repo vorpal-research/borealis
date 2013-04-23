@@ -1,6 +1,7 @@
 #include "defines.h"
 #include <string.h>
 
+// @requires b != 0
 int my_malloc(unsigned int size, void** b) {
    *b = malloc(size);
    if (*b) return 1;

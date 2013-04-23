@@ -132,10 +132,11 @@ private:
         case llvm::ArithType::DIV:  return lhv /  rhv;
         case llvm::ArithType::LAND: return lhv && rhv;
         case llvm::ArithType::LOR:  return lhv || rhv;
-        case llvm::ArithType::LSH:  return lhv << rhv;
+        case llvm::ArithType::SHL:  return lhv << rhv;
         case llvm::ArithType::MUL:  return lhv *  rhv;
         case llvm::ArithType::REM:  return lhv %  rhv;
-        case llvm::ArithType::RSH:  return lhv >> rhv;
+        case llvm::ArithType::ASHR: return lhv >> rhv;
+        case llvm::ArithType::LSHR: return lhv >> rhv; // FIXME: Should be allowed only for unsigned types
         case llvm::ArithType::SUB:  return lhv -  rhv;
         case llvm::ArithType::XOR:  return lhv ^  rhv;
         }
