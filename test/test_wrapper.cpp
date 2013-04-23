@@ -25,8 +25,10 @@ namespace {
 using namespace borealis;
 using namespace borealis::util;
 
-static std::vector<std::string> getTestFiles(const std::string& dir) {
-    std::ifstream defs(dir + "/tests.def");
+
+
+static std::vector<std::string> getTestFiles(const std::string& dir, const std::string& file) {
+    std::ifstream defs(dir + "/" + file);
     std::string filename;
 
     std::vector<std::string> tests;
@@ -35,6 +37,16 @@ static std::vector<std::string> getTestFiles(const std::string& dir) {
     }
     return tests;
 }
+
+static std::vector<std::string> ShortTestFiles(const std::string& dir) {
+    return getTestFiles(dir, "tests.def");
+}
+
+static std::vector<std::string> LongTestFiles(const std::string& dir) {
+    return getTestFiles(dir, "tests.long.def");
+}
+
+
 
 class WrapperTest : public ::testing::TestWithParam<std::string> {
 public:
@@ -48,6 +60,8 @@ protected:
     std::string expectedF;
     std::string actualF;
 };
+
+
 
 TEST_P(WrapperTest, basic) {
     int res = borealis::Runner("wrapper")
@@ -78,9 +92,20 @@ TEST_P(WrapperTest, basic) {
     EXPECT_EQ(expected, actual);
 }
 
-INSTANTIATE_TEST_CASE_P(Aegis, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/aegis")));
-INSTANTIATE_TEST_CASE_P(Contracts, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/contracts")));
-INSTANTIATE_TEST_CASE_P(Misc, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/misc")));
-INSTANTIATE_TEST_CASE_P(Necla, WrapperTest, ::testing::ValuesIn(getTestFiles("test/testcases/necla")));
+
+
+INSTANTIATE_TEST_CASE_P(Aegis, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/aegis")));
+INSTANTIATE_TEST_CASE_P(AegisLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/aegis")));
+
+INSTANTIATE_TEST_CASE_P(Contracts, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/contracts")));
+INSTANTIATE_TEST_CASE_P(ContractsLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/contracts")));
+
+INSTANTIATE_TEST_CASE_P(Misc, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/misc")));
+INSTANTIATE_TEST_CASE_P(MiscLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/misc")));
+
+INSTANTIATE_TEST_CASE_P(Necla, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/necla")));
+INSTANTIATE_TEST_CASE_P(NeclaLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/necla")));
+
+
 
 } // namespace

@@ -161,7 +161,14 @@ default: all
 TEST_DEFS := $(shell find $(TEST_DIRS) -name "tests.def")
 
 $(TEST_DEFS): .FORCE
-	ls -1 $(@D) | grep '^.*.c$$' | xargs -n1 basename > $@
+	ls -1 $(@D) | grep '^.*.c$$' | xargs -n1 basename > $@.all
+	grep -v -x -f $(@D)/"tests.long.def" $@.all > $@
+
+
+
+RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
+	--gtest_output="xml:$(TEST_OUTPUT)" \
+	--gtest_color=yes
 
 ################################################################################
 # Deps management
@@ -195,10 +202,14 @@ tests: $(EXES) $(TEST_EXES)
 
 regenerate-test-defs: $(TEST_DEFS)
 
-check: tests
-	$(PWD)/$(TEST_EXES) \
-	--gtest_output="xml:$(TEST_OUTPUT)" \
-	--gtest_color=yes
+check: tests regenerate-test-defs
+	$(RUN_TEST_EXES) --gtest_filter=-*Long/*
+
+check-long: tests regenerate-test-defs
+	$(RUN_TEST_EXES) --gtest_filter=*Long/*
+
+check-all: tests regenerate-test-defs
+	$(RUN_TEST_EXES)
 
 clean: clean-google-test
 	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES) $(TEST_OUTPUT)
