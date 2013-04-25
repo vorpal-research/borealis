@@ -133,7 +133,7 @@ void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
 }
 
 void MallocMutator::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    AU.setPreservesAll();
+    AU.setPreservesCFG();
     AUX<llvm::TargetData>::addRequiredTransitive(AU);
 }
 
