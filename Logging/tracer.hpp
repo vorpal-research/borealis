@@ -30,18 +30,18 @@ public:
             borealis::logging::logstream log):
                 fname_(fname), log(log), start() {
         start = std::chrono::system_clock::now();
-        log << "Entering " << fname_ << borealis::logging::endl;
+        log << "> " << fname_ << borealis::logging::endl;
     }
 
     ~func_tracer() {
         auto end = std::chrono::system_clock::now();
         auto duration =
                 std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
-        log << "Exiting "
+        log << "< "
             << fname_
-            << ": "
+            << " : "
             << duration
-            << "µs"
+            << " µs"
             << borealis::logging::endl;
     }
 };

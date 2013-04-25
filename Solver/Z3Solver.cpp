@@ -34,7 +34,7 @@ z3::check_result Z3Solver::check(
     s.add(logic::z3impl::asAxiom(implies(pred, z3query)));
 
     {
-        TRACE_BLOCK("Calling Z3 check");
+        TRACE_BLOCK("z3::check");
 
         expr pred_e = logic::z3impl::getExpr(pred);
         check_result r = s.check(1, &pred_e);
