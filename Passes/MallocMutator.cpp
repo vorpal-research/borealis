@@ -69,7 +69,7 @@ void MallocMutator::eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI)
 
     auto* current = intrinsic_manager.createIntrinsic(
             function_type::INTRINSIC_MALLOC,
-            toString(mallocType),
+            toString(*mallocType),
             FunctionType::get(
                     mallocType,
                     size_type,
@@ -116,7 +116,7 @@ void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
 
     auto* current = intrinsic_manager.createIntrinsic(
             function_type::INTRINSIC_MALLOC,
-            toString(mallocType),
+            toString(*mallocType),
             llvm::FunctionType::get(
                     mallocType,
                     size_type,
