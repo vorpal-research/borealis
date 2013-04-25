@@ -24,6 +24,14 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual bool runOnModule(llvm::Module&);
     virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const;
+
+private:
+
+    bool canEliminateMallocBitcasts(llvm::CallInst* CI);
+    llvm::PointerType* getMallocBitcastType(llvm::CallInst* CI);
+
+    void eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI);
+    void mutateMalloc(llvm::Module& M, llvm::CallInst* CI);
 };
 
 } /* namespace borealis */
