@@ -183,6 +183,8 @@ int main(int argc, const char** argv) {
 
     std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(args.compiler, diags));
 
+    if (!invoke) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_ILLEGAL_COMPILER_OPTIONS; }
+
     // Print the argument list from the "real" compiler invocation
     std::vector<std::string> argsFromInvocation;
     invoke->toArgs(argsFromInvocation);

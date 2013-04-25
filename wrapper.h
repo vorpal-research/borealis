@@ -11,9 +11,10 @@
 namespace borealis {
 
 enum {
-    OK                  = 0x0000,
-    E_GATHER_COMMENTS   = 0x0001,
-    E_EMIT_LLVM         = 0x0002
+    OK                           = 0x0000,
+    E_ILLEGAL_COMPILER_OPTIONS   = 0x0001,
+    E_GATHER_COMMENTS            = 0x0002,
+    E_EMIT_LLVM                  = 0x0003
 };
 
 } // namespace borealis
