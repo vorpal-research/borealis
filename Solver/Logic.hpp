@@ -1142,6 +1142,10 @@ public:
     static ScatterArray mkFree(z3::context& ctx, const std::string& name) {
         return ScatterArray{ Inner::mkFree(ctx, name) };
     }
+
+    friend std::ostream& operator<<(std::ostream& ost, const ScatterArray& arr) {
+        return ost << arr.inner;
+    }
 };
 
 } // namespace logic
