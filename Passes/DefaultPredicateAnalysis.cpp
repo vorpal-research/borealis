@@ -313,7 +313,7 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
 
     PF = PredicateFactory::get(ST);
     TF = TermFactory::get(ST);
-    TD = &GetAnalysis<TargetData>::doit(this, F);
+    TD = &GetAnalysis<llvm::TargetData>::doit(this, F);
 
     DPAInstVisitor visitor(this);
     visitor.visit(F);
