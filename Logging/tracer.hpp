@@ -50,15 +50,25 @@ public:
 } // namespace borealis
 
 #ifndef NO_TRACE_FUNC
-#define TRACE_FUNC borealis::logging::func_tracer ftracer( \
+
+#define TRACE_FUNC \
+    borealis::logging::func_tracer ftracer( \
         __PRETTY_FUNCTION__, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
-#define TRACE_BLOCK(MSG) borealis::logging::func_tracer ftracer( \
+
+#define TRACE_BLOCK(MSG) \
+    borealis::logging::func_tracer ftracer( \
         MSG, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
+
+#define TRACE_MEASUREMENT(MSG) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain)) \
+        << "= " << MSG << borealis::logging::endl;
+
 #else
 #define TRACE_FUNC
 #define TRACE_BLOCK(MSG)
+#define TRACE_MEASURMENT(MSG)
 #endif
 
 #endif /* TRACER_HPP_ */

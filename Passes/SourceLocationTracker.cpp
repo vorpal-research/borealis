@@ -19,8 +19,6 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
     using borealis::util::view;
     using borealis::util::viewContainer;
 
-    TRACE_FUNC;
-
     // Get metadata about functions (subprograms)
     llvm::DebugInfoFinder dif;
     dif.processModule(M);

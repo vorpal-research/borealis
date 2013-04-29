@@ -146,8 +146,6 @@ void DetectNullPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool DetectNullPass::runOnFunction(llvm::Function& F) {
-    TRACE_FUNC;
-
     init();
 
     //Add maybe-nulls for function arguments

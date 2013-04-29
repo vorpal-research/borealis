@@ -105,8 +105,6 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using llvm::LoadInst;
     using llvm::MDNode;
 
-    TRACE_FUNC;
-
     llvm::DebugInfoFinder dfi;
     dfi.processModule(M);
 

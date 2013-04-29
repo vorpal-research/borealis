@@ -34,10 +34,6 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace llvm;
-
-    TRACE_FUNC;
-
     init();
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);

@@ -307,10 +307,6 @@ void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace::llvm;
-
-    TRACE_FUNC;
-
     init();
 
     auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);

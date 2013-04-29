@@ -66,8 +66,6 @@ void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) cons
 }
 
 bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
-    TRACE_FUNC;
-
     init();
 
     MI = &GetAnalysis<MetaInfoTrackerPass>::doit(this, F);
