@@ -110,7 +110,7 @@ inline borealis::Locus instructionLocus(const Instruction* inst) {
     else return borealis::Locus();
 }
 
-inline std::string valueSummary(Value* v) {
+inline std::string valueSummary(const Value* v) {
     if(!v) return "<nullptr>";
     if(auto* f = llvm::dyn_cast_or_null<Function>(v)) {
         return ("function " + f->getName()).str();
@@ -121,7 +121,7 @@ inline std::string valueSummary(Value* v) {
     } else return borealis::util::toString(*v);
 }
 
-inline std::string valueSummary(Value& v) {
+inline std::string valueSummary(const Value& v) {
     return valueSummary(&v);
 }
 

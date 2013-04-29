@@ -118,6 +118,32 @@ T* heap_copy(const T* val) {
     return new T(*val);
 }
 
+
+
+namespace impl {
+template<char Sep>
+std::ostringstream& concat_(std::ostringstream& s) {
+    return s;
+}
+template<char Sep, class H, class ...T>
+std::ostringstream& concat_(std::ostringstream& s, const H& h, const T&... t) {
+    // this is generally fucked up...
+    return concat_<Sep, T...>(static_cast<std::ostringstream&>(s << Sep << h), t...);
+}
+template<char Sep, class H, class ...T>
+std::ostringstream& concat(std::ostringstream& s, const H& h, const T&... t) {
+    // this is generally fucked up...
+    return concat_<Sep, T...>(static_cast<std::ostringstream&>(s << h), t...);
+}
+} // namespace impl
+
+template<char Sep = ' ', class ...Args>
+std::string join(const Args&... args) {
+    std::ostringstream s;
+    impl::concat<Sep, Args...>(s, args...);
+    return s.str();
+}
+
 } // naemspace util
 } // naemspace borealis
 

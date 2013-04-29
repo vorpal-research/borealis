@@ -29,10 +29,12 @@ public:
     typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
+    typedef Data::size_type DataSizeType;
 
     DataIterator begin() const { return data.begin(); }
     DataIterator end() const { return data.end(); }
     bool empty() const { return data.empty(); }
+    DataSizeType size() const { return data.size(); }
 
     bool operator==(const PredicateStateVector& other) const {
         return data == other.data;

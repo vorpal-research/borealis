@@ -56,19 +56,29 @@ public:
         __PRETTY_FUNCTION__, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
 
-#define TRACE_BLOCK(MSG) \
+#define TRACE_BLOCK(ID) \
     borealis::logging::func_tracer ftracer( \
-        MSG, \
+        ID, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
 
-#define TRACE_MEASUREMENT(MSG) \
-    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain)) \
-        << "= " << MSG << borealis::logging::endl;
+#define TRACE_MEASUREMENT(M...) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+        << "= " << borealis::util::join(M) << borealis::logging::endl;
+
+#define TRACE_UP(M...) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+        << "> " << borealis::util::join(M) << borealis::logging::endl;
+
+#define TRACE_DOWN(M...) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+        << "< " << borealis::util::join(M) << borealis::logging::endl;
 
 #else
 #define TRACE_FUNC
-#define TRACE_BLOCK(MSG)
-#define TRACE_MEASURMENT(MSG)
+#define TRACE_BLOCK(ID)
+#define TRACE_MEASURMENT(M...)
+#define TRACE_UP(M...)
+#define TRACE_DOWN(M...)
 #endif
 
 #endif /* TRACER_HPP_ */
