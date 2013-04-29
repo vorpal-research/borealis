@@ -1,6 +1,7 @@
 #!/bin/awk -f
 
-{ print $1 " " $2 " " $3 get_trace_name(); }
+/[<>]/ { print $1 " " $2 " " $3 get_trace_name(); }
+/[=]/  { print $1 " " $2 " " $3 $4 " " $5; }
 
 function get_trace_name() {
     for (i = 4; i <= NF; i++) {
