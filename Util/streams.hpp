@@ -9,6 +9,7 @@
 #define STREAMS_HPP_
 
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 #include <clang/AST/Decl.h>
@@ -258,6 +259,12 @@ Streamer& operator <<(Streamer& s, const std::vector<T>& vec) {
 template<typename T, typename Streamer>
 Streamer& operator <<(Streamer& s, const std::set<T>& vec) {
     typedef std::set<T> Container;
+    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, vec);
+}
+
+template<typename T, typename Streamer>
+Streamer& operator <<(Streamer& s, const std::unordered_set<T>& vec) {
+    typedef std::unordered_set<T> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, vec);
 }
 
