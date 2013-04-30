@@ -21,6 +21,7 @@
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
+#include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
@@ -59,6 +60,7 @@ private:
 	SlotTracker* slotTracker;
 
 	PredicateFactory::Ptr PF;
+	PredicateStateFactory::Ptr PSF;
 	TermFactory::Ptr TF;
 
     DetectNullPass::NullPtrSet* ValueNullSet;

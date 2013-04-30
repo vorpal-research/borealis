@@ -18,7 +18,7 @@
 
 #include "Codegen/intrinsics.h"
 #include "Predicate/PredicateFactory.h"
-#include "State/PredicateState.h"
+#include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"
 #include "Util/util.h"
 
@@ -28,7 +28,7 @@ class IntrinsicsManager {
 
 public:
 
-    typedef std::function<PredicateState(llvm::Function*, PredicateFactory*, TermFactory*)> state_generator;
+    typedef std::function<PredicateState::Ptr(llvm::Function*, PredicateFactory*, TermFactory*)> state_generator;
     typedef std::function<function_type(const IntrinsicsManager&, const llvm::CallInst&)> type_resolver;
 
     struct IntrinsicInfo {
@@ -50,9 +50,9 @@ public:
                 }
         }
 
-        static PredicateState DefaultGenerator(
+        static PredicateState::Ptr DefaultGenerator(
                 llvm::Function*, PredicateFactory*, TermFactory*) {
-            return PredicateState();
+            return PredicateStateFactory::get()->Basic();
         }
     };
 
@@ -72,7 +72,7 @@ public:
         resolvers.push_back(resolver);
     }
 
-    PredicateState getPredicateState(
+    PredicateState::Ptr getPredicateState(
             function_type, llvm::Function*, PredicateFactory*, TermFactory*) const;
 
     static IntrinsicsManager& getInstance() {

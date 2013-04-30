@@ -44,7 +44,7 @@ function_type IntrinsicsManager::getIntrinsicType(const llvm::CallInst& CI) cons
     return function_type::UNKNOWN;
 }
 
-PredicateState IntrinsicsManager::getPredicateState(
+PredicateState::Ptr IntrinsicsManager::getPredicateState(
         function_type ft,
         llvm::Function* F,
         PredicateFactory* PF,

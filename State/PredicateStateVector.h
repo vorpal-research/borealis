@@ -24,9 +24,9 @@ public:
     PredicateStateVector(const PredicateStateVector& psv) = default;
 
     PredicateStateVector merge(const PredicateStateVector& psv) const;
-    PredicateStateVector merge(const PredicateState& state) const;
+    PredicateStateVector merge(PredicateState::Ptr state) const;
 
-    typedef std::unordered_set<PredicateState, PredicateState::Hash> Data;
+    typedef std::unordered_set<PredicateState::Ptr> Data;
     typedef Data::value_type DataEntry;
     typedef Data::const_iterator DataIterator;
     typedef Data::size_type DataSizeType;
@@ -47,8 +47,7 @@ public:
     template<class Condition>
     PredicateStateVector remove_if(Condition cond) const {
         PredicateStateVector res = PredicateStateVector(*this);
-        for (auto iter = res.data.begin(); iter != res.data.end(); )
-        {
+        for (auto iter = res.data.begin(); iter != res.data.end(); ) {
             if (cond(*iter)) {
                 iter = res.data.erase(iter);
             } else {

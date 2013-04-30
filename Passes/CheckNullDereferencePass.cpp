@@ -104,15 +104,18 @@ public:
                << "  aliasing: " << why << endl
                << "  at: " << where << endl;
 
-        Predicate::Ptr q = pass->PF->getInequalityPredicate(
-                pass->TF->getValueTerm(&what),
-                pass->TF->getNullPtrTerm());
+        PredicateState::Ptr q =
+                pass->PSF->Basic() +
+                pass->PF->getInequalityPredicate(
+                    pass->TF->getValueTerm(&what),
+                    pass->TF->getNullPtrTerm()
+                );
 
         PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
 
-        for (const auto& ps : psv) {
+        for (auto& ps : psv) {
 
-            if (!ps.hasVisited(where, what, why)) {
+            if (!ps->hasVisited({&where, &what, &why})) {
                 dbgs() << "Infeasible!" << endl;
                 continue;
             }
@@ -175,6 +178,8 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     PF = PredicateFactory::get(slotTracker);
     TF = TermFactory::get(slotTracker);
+
+    PSF = PredicateStateFactory::get();
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);

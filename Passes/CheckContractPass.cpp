@@ -13,7 +13,6 @@
 #include "Solver/Z3Solver.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
-#include "State/PredicateState.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -38,14 +37,14 @@ public:
     }
 
     void checkContract(llvm::CallInst& CI) {
-        auto& contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
-        auto& states = pass->PSA->getPredicateStateMap()[&CI];
+        auto contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
+        auto states = pass->PSA->getPredicateStateMap()[&CI];
 
-        auto requires = contract.filterByTypes({PredicateType::REQUIRES});
-        if (requires.isEmpty()) return;
+        auto requires = contract->filterByTypes({PredicateType::REQUIRES});
+        if (requires->isEmpty()) return;
 
         CallSiteInitializer csi(CI, pass->TF.get());
-        PredicateState instantiatedRequires = requires.map(
+        auto instantiatedRequires = requires->map(
             [&csi](Predicate::Ptr p) {
                 return csi.transform(p);
             }
@@ -75,11 +74,13 @@ public:
         auto& states = pass->PSA->getPredicateStateMap()[&CI];
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
-            auto query = pass->PF->getEqualityPredicate(
+            auto query =
+                pass->PSF->Basic() +
+                pass->PF->getEqualityPredicate(
                     LA->getTerm(),
                     pass->TF->getTrueTerm(),
                     predicateType(LA)
-            );
+                );
 
             dbgs() << "Checking: " << CI << endl;
             dbgs() << "  Assert: " << endl << LA << endl;
@@ -98,11 +99,11 @@ public:
     }
 
     void visitReturnInst(llvm::ReturnInst& RI) {
-        auto& contract = pass->FM->get(RI.getParent()->getParent());
-        auto& states = pass->PSA->getPredicateStateMap()[&RI];
+        auto contract = pass->FM->get(RI.getParent()->getParent());
+        auto states = pass->PSA->getPredicateStateMap()[&RI];
 
-        auto ensures = contract.filterByTypes({PredicateType::ENSURES});
-        if (ensures.isEmpty()) return;
+        auto ensures = contract->filterByTypes({PredicateType::ENSURES});
+        if (ensures->isEmpty()) return;
 
         dbgs() << "Checking: " << RI << endl;
         dbgs() << "  Ensures: " << endl << ensures << endl;

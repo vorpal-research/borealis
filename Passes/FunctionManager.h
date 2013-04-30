@@ -14,7 +14,7 @@
 #include <unordered_map>
 
 #include "Predicate/PredicateFactory.h"
-#include "State/PredicateState.h"
+#include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"
 
 namespace borealis {
@@ -25,7 +25,7 @@ public:
 
     static char ID;
 
-    typedef std::unordered_map<llvm::Function*, PredicateState> Data;
+    typedef std::unordered_map<llvm::Function*, PredicateState::Ptr> Data;
     typedef Data::value_type DataEntry;
 
     FunctionManager();
@@ -33,11 +33,11 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
     virtual ~FunctionManager() {};
 
-    void put(llvm::Function* F, const PredicateState& state);
-    void update(llvm::Function* F, const PredicateState& state);
-    const PredicateState& get(llvm::Function* F);
+    void put(llvm::Function* F, PredicateState::Ptr state);
+    void update(llvm::Function* F, PredicateState::Ptr state);
+    PredicateState::Ptr get(llvm::Function* F);
 
-    const PredicateState& get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    PredicateState::Ptr get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
 
 private:
 

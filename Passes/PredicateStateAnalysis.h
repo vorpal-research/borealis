@@ -26,7 +26,7 @@
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
-#include "State/PredicateState.h"
+#include "State/PredicateStateFactory.h"
 #include "State/PredicateStateVector.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"
@@ -38,7 +38,7 @@ class PredicateStateAnalysis:
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
         public ShouldBeModularized {
 
-    typedef std::tuple<const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState> WorkQueueEntry;
+    typedef std::tuple<const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState::Ptr> WorkQueueEntry;
     typedef std::queue<WorkQueueEntry> WorkQueue;
 
     typedef AbstractPredicateAnalysis::PredicateMap PredicateMap;
@@ -80,6 +80,7 @@ private:
     std::list<AbstractPredicateAnalysis*> PA;
 
     PredicateFactory::Ptr PF;
+    PredicateStateFactory::Ptr PSF;
     TermFactory::Ptr TF;
 
     void init();
@@ -87,22 +88,22 @@ private:
     void enqueue(
             const llvm::BasicBlock* from,
             const llvm::BasicBlock* to,
-            PredicateState state);
+            PredicateState::Ptr state);
     void processQueue();
     void processBasicBlock(const WorkQueueEntry& wqe);
     void processTerminator(
             const llvm::TerminatorInst& I,
-            const PredicateState& state);
+            PredicateState::Ptr state);
     void processBranchInst(
             const llvm::BranchInst& I,
-            const PredicateState& state);
+            PredicateState::Ptr state);
     void processSwitchInst(
             const llvm::SwitchInst& I,
-            const PredicateState& state);
+            PredicateState::Ptr state);
 
-    PredicateState PM(const llvm::Instruction* I);
-    PredicateState PPM(PhiBranch key);
-    PredicateState TPM(TerminatorBranch key);
+    PredicateState::Ptr PM(const llvm::Instruction* I);
+    PredicateState::Ptr PPM(PhiBranch key);
+    PredicateState::Ptr TPM(TerminatorBranch key);
 
 };
 

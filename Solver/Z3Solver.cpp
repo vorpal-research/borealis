@@ -60,8 +60,8 @@ z3::check_result Z3Solver::check(
 }
 
 bool Z3Solver::checkViolated(
-        const PredicateState& query,
-        const PredicateState& state) {
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
     TRACE_FUNC;
 
     dbgs() << "Checking query: " << endl
@@ -70,14 +70,14 @@ bool Z3Solver::checkViolated(
            << state << endl;
 
     ExecutionContext ctx(z3ef);
-    auto z3state = state.toZ3(z3ef, &ctx);
-    auto z3query = !query.toZ3(z3ef, &ctx);
+    auto z3state = state->toZ3(z3ef, &ctx);
+    auto z3query = !query->toZ3(z3ef, &ctx);
     return check(z3query, z3state) != z3::unsat;
 }
 
 bool Z3Solver::checkPathPredicates(
-        const PredicateState& path,
-        const PredicateState& state) {
+        PredicateState::Ptr path,
+        PredicateState::Ptr state) {
     TRACE_FUNC;
 
     dbgs() << "Checking path: " << endl
@@ -86,8 +86,8 @@ bool Z3Solver::checkPathPredicates(
            << state << endl;
 
     ExecutionContext ctx(z3ef);
-    auto z3state = state.toZ3(z3ef, &ctx);
-    auto z3query = path.toZ3(z3ef, &ctx);
+    auto z3state = state->toZ3(z3ef, &ctx);
+    auto z3query = path->toZ3(z3ef, &ctx);
     return check(z3query, z3state) == z3::unsat;
 }
 

@@ -43,6 +43,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
 
     SlotTracker* slots = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
     PredicateFactory::Ptr PF = PredicateFactory::get(slots);
+    PredicateStateFactory::Ptr PSF = PredicateStateFactory::get();
     TermFactory::Ptr TF = TermFactory::get(slots);
 
     for (Annotation::Ptr a : annotations) {
@@ -50,12 +51,14 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
-                    Predicate::Ptr p = PF->getEqualityPredicate(
-                            logic->getTerm(),
-                            TF->getTrueTerm(),
-                            predicateType(logic)
-                    );
-                    update(F, p);
+                    PredicateState::Ptr ps =
+                            PSF->Basic() +
+                            PF->getEqualityPredicate(
+                                logic->getTerm(),
+                                TF->getTrueTerm(),
+                                predicateType(logic)
+                            );
+                    update(F, ps);
                     break;
                 }
             }
@@ -65,7 +68,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void FunctionManager::put(llvm::Function* F, const PredicateState& state) {
+void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
 
     using borealis::util::containsKey;
 
@@ -75,11 +78,18 @@ void FunctionManager::put(llvm::Function* F, const PredicateState& state) {
     data[F] = state;
 }
 
-void FunctionManager::update(llvm::Function* F, const PredicateState& state) {
-    data[F] = data[F] + state;
+void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
+
+    using borealis::util::containsKey;
+
+    if (containsKey(data, F)) {
+        data[F] = data[F] + state;
+    } else {
+        data[F] = state;
+    }
 }
 
-const PredicateState& FunctionManager::get(
+PredicateState::Ptr FunctionManager::get(
         llvm::Function* F) {
 
     using borealis::util::containsKey;
@@ -88,10 +98,10 @@ const PredicateState& FunctionManager::get(
         return data.at(F);
     }
 
-    return PredicateState::empty();
+    return PredicateStateFactory::get()->Basic();
 }
 
-const PredicateState& FunctionManager::get(
+PredicateState::Ptr FunctionManager::get(
         llvm::CallInst& CI,
         PredicateFactory* PF,
         TermFactory* TF) {
@@ -107,7 +117,7 @@ const PredicateState& FunctionManager::get(
     auto& m = IntrinsicsManager::getInstance();
     function_type ft = m.getIntrinsicType(CI);
 
-    auto state = PredicateState::empty();
+    auto state = PredicateStateFactory::get()->Basic();
     if (!isUnknown(ft)) {
         state = m.getPredicateState(ft, F, PF, TF);
     }

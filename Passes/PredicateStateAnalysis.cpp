@@ -42,6 +42,8 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     PF = PredicateFactory::get(ST);
     TF = TermFactory::get(ST);
 
+    PSF = PredicateStateFactory::get();
+
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
 #include "Passes/PredicateAnalysis.def"
@@ -55,7 +57,10 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
 
     // Register REQUIRES from annotations
-    PredicateState initialState = gPredicate + FM->get(&F).filterByTypes({ PredicateType::REQUIRES });
+    PredicateState::Ptr initialState =
+            PSF->Basic() +
+            gPredicate +
+            FM->get(&F)->filterByTypes({ PredicateType::REQUIRES });
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {
@@ -95,7 +100,7 @@ void PredicateStateAnalysis::init() {
 void PredicateStateAnalysis::enqueue(
         const llvm::BasicBlock* from,
         const llvm::BasicBlock* to,
-        PredicateState state) {
+        PredicateState::Ptr state) {
     TRACE_UP("psa::queue");
     workQueue.push(std::make_tuple(from, to, state));
 }
@@ -116,9 +121,11 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     const BasicBlock* from = std::get<0>(wqe);
     const BasicBlock* bb = std::get<1>(wqe);
-    PredicateState inState = std::get<2>(wqe);
+    PredicateState::Ptr inState = std::get<2>(wqe);
 
-    if (inState.isUnreachable()) return;
+    // if (inState->isUnreachable()) return;
+
+    inState = PSF->Chain(inState, PSF->Basic());
 
     auto iter = bb->begin();
 
@@ -132,7 +139,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState modifiedInState = inState + PM(&I) << I;
+        PredicateState::Ptr modifiedInState = inState + PM(&I) << I;
         predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
         TRACE_MEASUREMENT(
@@ -145,12 +152,12 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
 
-            const PredicateState& callState = FM->get(CI, PF.get(), TF.get());
+            PredicateState::Ptr callState = FM->get(CI, PF.get(), TF.get());
             CallSiteInitializer csi(CI, TF.get());
 
-            PredicateState transformedCallState = callState.filterByTypes(
+            PredicateState::Ptr transformedCallState = callState->filterByTypes(
                 { PredicateType::ENSURES, PredicateType::STATE }
-            ).map(
+            )->map(
                 [&csi](Predicate::Ptr p) {
                     return csi.transform(p);
                 }
@@ -167,7 +174,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
 void PredicateStateAnalysis::processTerminator(
         const llvm::TerminatorInst& I,
-        const PredicateState& state) {
+        PredicateState::Ptr state) {
     using namespace::llvm;
 
     auto s = state << I;
@@ -180,7 +187,7 @@ void PredicateStateAnalysis::processTerminator(
 
 void PredicateStateAnalysis::processBranchInst(
         const llvm::BranchInst& I,
-        const PredicateState& state) {
+        PredicateState::Ptr state) {
     using namespace::llvm;
 
     if (I.isUnconditional()) {
@@ -197,7 +204,7 @@ void PredicateStateAnalysis::processBranchInst(
 
 void PredicateStateAnalysis::processSwitchInst(
         const llvm::SwitchInst& I,
-        const PredicateState& state) {
+        PredicateState::Ptr state) {
     using namespace::llvm;
 
     for (auto c = I.case_begin(); c != I.case_end(); ++c) {
@@ -209,10 +216,10 @@ void PredicateStateAnalysis::processSwitchInst(
     enqueue(I.getParent(), defaultSucc, state + TPM({&I, defaultSucc}));
 }
 
-PredicateState PredicateStateAnalysis::PM(const llvm::Instruction* I) {
+PredicateState::Ptr PredicateStateAnalysis::PM(const llvm::Instruction* I) {
     using borealis::util::containsKey;
 
-    PredicateState res;
+    PredicateState::Ptr res = PSF->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPredicateMap();
@@ -224,10 +231,10 @@ PredicateState PredicateStateAnalysis::PM(const llvm::Instruction* I) {
     return res;
 }
 
-PredicateState PredicateStateAnalysis::PPM(PhiBranch key) {
+PredicateState::Ptr PredicateStateAnalysis::PPM(PhiBranch key) {
     using borealis::util::containsKey;
 
-    PredicateState res;
+    PredicateState::Ptr res = PSF->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPhiPredicateMap();
@@ -239,10 +246,10 @@ PredicateState PredicateStateAnalysis::PPM(PhiBranch key) {
     return res;
 }
 
-PredicateState PredicateStateAnalysis::TPM(TerminatorBranch key) {
+PredicateState::Ptr PredicateStateAnalysis::TPM(TerminatorBranch key) {
     using borealis::util::containsKey;
 
-    PredicateState res;
+    PredicateState::Ptr res = PSF->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getTerminatorPredicateMap();

@@ -25,12 +25,12 @@ public:
     Z3Solver(Z3ExprFactory& z3ef);
 
     bool checkViolated(
-            const PredicateState& query,
-            const PredicateState& state);
+            PredicateState::Ptr query,
+            PredicateState::Ptr state);
 
     bool checkPathPredicates(
-            const PredicateState& path,
-            const PredicateState& state);
+            PredicateState::Ptr path,
+            PredicateState::Ptr state);
 
 private:
 
