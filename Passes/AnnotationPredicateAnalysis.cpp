@@ -12,7 +12,7 @@
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/AnnotationPredicateAnalysis.h"
 #include "Passes/SlotTrackerPass.h"
-#include "State/AnnotationMaterializer.h"
+#include "State/Transformer/AnnotationMaterializer.h"
 
 namespace borealis {
 

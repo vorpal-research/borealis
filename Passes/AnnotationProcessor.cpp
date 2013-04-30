@@ -12,7 +12,7 @@
 #include "Passes/AnnotationProcessor.h"
 #include "Passes/AnnotatorPass.h"
 #include "Passes/SourceLocationTracker.h"
-#include "State/AnnotationMaterializer.h"
+#include "State/Transformer/AnnotationMaterializer.h"
 #include "Util/util.h"
 #include "Util/iterators.hpp"
 

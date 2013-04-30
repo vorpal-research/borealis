@@ -14,7 +14,7 @@
 #include "Passes/SlotTrackerPass.h"
 #include "Passes/SourceLocationTracker.h"
 #include "Predicate/PredicateFactory.h"
-#include "State/AnnotationMaterializer.h"
+#include "State/Transformer/AnnotationMaterializer.h"
 #include "Term/TermFactory.h"
 #include "Util/util.h"
 

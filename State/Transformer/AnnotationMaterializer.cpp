@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "State/AnnotationMaterializer.h"
+#include "State/Transformer/AnnotationMaterializer.h"
 
 namespace borealis {
 

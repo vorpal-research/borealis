@@ -16,7 +16,7 @@
 #include <unordered_map>
 
 #include "Predicate/PredicateFactory.h"
-#include "State/Transformer.hpp"
+#include "State/Transformer/Transformer.hpp"
 #include "Term/TermFactory.h"
 
 #include "Util/macros.h"

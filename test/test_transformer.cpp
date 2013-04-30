@@ -17,8 +17,8 @@
 #include <gtest/gtest.h>
 
 #include "Predicate/PredicateFactory.h"
-#include "State/CallSiteInitializer.h"
-#include "State/ConstantPropagator.h"
+#include "State/Transformer/CallSiteInitializer.h"
+#include "State/Transformer/ConstantPropagator.h"
 #include "Term/Term.def"
 #include "Term/TermFactory.h"
 #include "Util/slottracker.h"

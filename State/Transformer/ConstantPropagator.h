@@ -11,7 +11,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "State/Transformer.hpp"
+#include "State/Transformer/Transformer.hpp"
 #include "Util/cast.hpp"
 
 #include "Util/macros.h"

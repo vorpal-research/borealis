@@ -5,7 +5,7 @@
  *      Author: snowball
  */
 
-#include "State/ConstantPropagator.h"
+#include "State/Transformer/ConstantPropagator.h"
 
 namespace borealis {
 

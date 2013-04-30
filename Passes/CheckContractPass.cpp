@@ -11,8 +11,8 @@
 #include "Logging/logger.hpp"
 #include "Passes/CheckContractPass.h"
 #include "Solver/Z3Solver.h"
-#include "State/AnnotationMaterializer.h"
-#include "State/CallSiteInitializer.h"
+#include "State/Transformer/AnnotationMaterializer.h"
+#include "State/Transformer/CallSiteInitializer.h"
 #include "State/PredicateState.h"
 #include "Util/passes.hpp"
 
