@@ -30,9 +30,14 @@ private:
 public:
     ExecutionContext(Z3ExprFactory& factory);
 
-    MemArray getCurrentMemoryContents() { return memory; }
+    MemArray getCurrentMemoryContents() {
+        TRACE_FUNC;
+        return memory;
+    }
 
     inline Z3ExprFactory::Pointer getDistinctPtr(size_t ofSize = 1U) {
+        TRACE_FUNC;
+
         auto ret = Z3ExprFactory::Pointer::mkConst(
             factory.unwrap(),
             currentPtr
