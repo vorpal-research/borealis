@@ -330,16 +330,17 @@ TEST(Util, iterators) {
     }
 
     {
-        std::vector<int> con0 {
-            1, 2, 3, 4, 5, 6, 7, 8, 9
-        };
-
+        std::vector<int> con0 { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         std::vector<int> con1 { 10, 11, 12, 13 };
-        std::vector<int> con(glue_iterator(
+
+        std::vector<int> con(
+            glue_iterator(
                 std::make_pair(con0.begin(), con0.end()),
                 std::make_pair(con1.begin(), con1.end())
-        ), glued_iterator<typename std::vector<int>::iterator>());
-        std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+            ),
+            glued_iterator<typename std::vector<int>::iterator>()
+        );
+        std::vector<int> pat { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
 
         EXPECT_EQ(pat, con);
     }

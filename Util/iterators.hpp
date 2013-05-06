@@ -8,8 +8,8 @@
 #ifndef ITERATORS_HPP_
 #define ITERATORS_HPP_
 
-#include <list>
 #include <iterator>
+#include <list>
 
 #include "Util/meta.hpp"
 
@@ -124,10 +124,8 @@ class glued_iterator {
         return rest.front().second;
     }
 
-    void validate()
-    {
-        while (!rest.empty() && current() == current_end())
-        {
+    void validate() {
+        while (!rest.empty() && current() == current_end()) {
             rest.pop_front();
         }
     }
@@ -192,7 +190,7 @@ public:
 };
 
 template<class ...It>
-glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It,It>& ... pairs ) {
+glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It, It>& ... pairs ) {
     typedef util::head_of_row_q<It...> RealIt;
     typedef std::pair<RealIt, RealIt> pair_t;
     return glued_iterator<RealIt>(std::list<pair_t>{pairs...});
