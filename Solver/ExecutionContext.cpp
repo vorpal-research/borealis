@@ -15,7 +15,7 @@ ExecutionContext::ExecutionContext(Z3ExprFactory& factory):
     memory(factory.getNoMemoryArray()),
     currentPtr(1U) {};
 
-logic::Bool ExecutionContext::toZ3() {
+Z3ExprFactory::Bool ExecutionContext::toZ3() {
     TRACE_FUNC;
 
     return factory.getTrue();

@@ -51,6 +51,19 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
     return *this;
 }
 
+ValueExpr ValueExpr::simplify() const {
+    z3::params params(this->pimpl->inner.ctx());
+
+    params.set(":pull-cheap-ite", true);
+    params.set(":push-bv-ite", true);
+    params.set(":expand-select-store", true);
+
+    return ValueExpr{
+        this->pimpl->inner.simplify(params),
+        this->pimpl->axiomatic.simplify(params)
+    };
+}
+
 namespace z3impl {
     z3::expr getExpr(const ValueExpr& a) {
         return a.pimpl->inner;
@@ -74,7 +87,7 @@ namespace z3impl {
 } // namespace z3impl
 
 std::ostream& operator<<(std::ostream& ost, const ValueExpr& v) {
-    return ost << z3impl::getExpr(v).simplify() << " assuming " << z3impl::getAxiom(v).simplify();
+    return ost << z3impl::getExpr(v) << " assuming " << z3impl::getAxiom(v);
 }
 
 Bool implies(Bool lhv, Bool rhv) {

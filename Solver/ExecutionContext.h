@@ -60,7 +60,7 @@ public:
         memory = memory.store(ix, val);
     }
 
-    logic::Bool toZ3();
+    Z3ExprFactory::Bool toZ3();
 };
 
 } /* namespace borealis */

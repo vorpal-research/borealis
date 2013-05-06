@@ -34,10 +34,6 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace llvm;
-
-    TRACE_FUNC;
-
     init();
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
@@ -100,6 +96,7 @@ void PredicateStateAnalysis::enqueue(
         const llvm::BasicBlock* from,
         const llvm::BasicBlock* to,
         PredicateState state) {
+    TRACE_UP("psa::queue");
     workQueue.push(std::make_tuple(from, to, state));
 }
 
@@ -107,12 +104,14 @@ void PredicateStateAnalysis::processQueue() {
     while (!workQueue.empty()) {
         processBasicBlock(workQueue.front());
         workQueue.pop();
+        TRACE_DOWN("psa::queue");
     }
 }
 
 void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     using namespace llvm;
     using borealis::util::containsKey;
+    using borealis::util::toString;
     using borealis::util::view;
 
     const BasicBlock* from = std::get<0>(wqe);
@@ -135,6 +134,12 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
         PredicateState modifiedInState = inState + PM(&I) << I;
         predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
+
+        TRACE_MEASUREMENT(
+                "psa::states." + toString(&I),
+                predicateStateMap[&I].size(),
+                "at",
+                valueSummary(I));
 
         // Add ensures and summary *after* the CallInst has been processed
         if (isa<CallInst>(I)) {

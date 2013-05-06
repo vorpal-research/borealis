@@ -183,6 +183,9 @@ struct index_in_row<I, Ignore, Tail...> {
 template<size_t I, class ...List>
 using index_in_row_q = typename index_in_row<I, List...>::type;
 
+template<class ...List>
+using head_of_row_q = typename index_in_row<0U, List...>::type;
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // make_indexer_from

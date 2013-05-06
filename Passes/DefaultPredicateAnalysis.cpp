@@ -307,17 +307,13 @@ void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
-    using namespace::llvm;
-
-    TRACE_FUNC;
-
     init();
 
     auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
 
     PF = PredicateFactory::get(ST);
     TF = TermFactory::get(ST);
-    TD = &GetAnalysis<TargetData>::doit(this, F);
+    TD = &GetAnalysis<llvm::TargetData>::doit(this, F);
 
     DPAInstVisitor visitor(this);
     visitor.visit(F);

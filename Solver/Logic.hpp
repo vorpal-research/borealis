@@ -91,6 +91,8 @@ public:
     friend z3::context& z3impl::getContext(const ValueExpr& a);
 
     void swap(ValueExpr&);
+
+    ValueExpr simplify() const;
 };
 
 template<class Expr0, class Expr1>
@@ -120,6 +122,7 @@ struct generator;
         CLASS(const CLASS&) = default; \
         CLASS(const ValueExpr& e): ValueExpr(e){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
         CLASS& operator=(const CLASS&) = default; \
+        CLASS simplify() const { return CLASS{ ValueExpr::simplify() }; } \
 \
         static CLASS mkConst(z3::context& ctx, typename impl::generator<CLASS>::basetype value) { \
             return CLASS(impl::generator<CLASS>::mkConst(ctx, value)); \

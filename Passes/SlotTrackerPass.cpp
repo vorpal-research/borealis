@@ -17,8 +17,6 @@ bool SlotTrackerPass::doInitialization(llvm::Module& M) {
 }
 
 bool SlotTrackerPass::runOnModule(llvm::Module& M) {
-    TRACE_FUNC;
-
     doInitialization(M);
 
 	for (auto& F : M)

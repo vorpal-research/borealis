@@ -223,6 +223,16 @@ struct Locus {
     inline Locus advanceCol(int howmuch) const {
         return advance(howmuch, LocalLocus::measure::col);
     }
+
+    operator void*() {
+        if(isUnknown()) return nullptr;
+        else return this;
+    }
+
+    void* operator!() {
+        if(isUnknown()) return this;
+        else return nullptr;
+    }
 };
 
 template<class Streamer>

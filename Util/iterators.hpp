@@ -8,7 +8,10 @@
 #ifndef ITERATORS_HPP_
 #define ITERATORS_HPP_
 
+#include <list>
 #include <iterator>
+
+#include "Util/meta.hpp"
 
 namespace borealis {
 namespace util {
@@ -97,6 +100,102 @@ operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
 template <class ItTy, class FuncTy>
 inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy& I, FuncTy F) {
   return mapped_iterator<ItTy, FuncTy>(I, F);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Glue iterator
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template <class RootIt>
+class glued_iterator {
+    std::list<std::pair<RootIt, RootIt>> rest;
+
+    const RootIt& current() const {
+        return rest.front().first;
+    }
+
+    RootIt& current() {
+        return rest.front().first;
+    }
+
+    RootIt current_end() const {
+        return rest.front().second;
+    }
+
+    void validate()
+    {
+        while (!rest.empty() && current() == current_end())
+        {
+            rest.pop_front();
+        }
+    }
+
+public:
+    // only bidir iterators capable
+    typedef std::forward_iterator_tag iterator_category;
+    typedef typename std::iterator_traits<RootIt>::difference_type
+            difference_type;
+    typedef typename std::iterator_traits<RootIt>::value_type
+            value_type;
+
+    typedef typename std::iterator_traits<RootIt>::pointer
+            pointer;
+    typedef typename std::iterator_traits<RootIt>::reference
+            reference;
+
+    typedef RootIt iterator_type;
+    typedef glued_iterator self;
+
+    inline glued_iterator(): rest() {};
+    inline explicit glued_iterator(const std::list<std::pair<RootIt, RootIt>>& ranges)
+        : rest(ranges) {
+        validate();
+    }
+
+    inline explicit glued_iterator(std::list<std::pair<RootIt, RootIt>>&& ranges)
+        : rest(ranges) {
+        validate();
+    }
+
+    inline glued_iterator(const glued_iterator& It) = default;
+    inline glued_iterator(glued_iterator&& It) = default;
+
+    inline reference operator*() const {
+        return *current();
+    }
+
+    inline pointer operator->() const {
+        return &*current();
+    }
+
+    self& operator++() {
+        if(rest.empty()) return *this;
+
+        ++current();
+        validate();
+
+        return *this;
+    }
+
+    self operator++(int) { self tmp = *this; return self(++tmp); }
+
+    inline bool operator!=(const self& X) const { return !operator==(X); }
+    inline bool operator==(const self& X) const {
+        if(rest.empty()) return X.rest.empty();
+        if(X.rest.empty()) return false;
+
+        return current() == X.current();
+    }
+
+};
+
+template<class ...It>
+glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It,It>& ... pairs ) {
+    typedef util::head_of_row_q<It...> RealIt;
+    typedef std::pair<RealIt, RealIt> pair_t;
+    return glued_iterator<RealIt>(std::list<pair_t>{pairs...});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

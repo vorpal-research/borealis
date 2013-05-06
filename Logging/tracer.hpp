@@ -30,18 +30,18 @@ public:
             borealis::logging::logstream log):
                 fname_(fname), log(log), start() {
         start = std::chrono::system_clock::now();
-        log << "Entering " << fname_ << borealis::logging::endl;
+        log << "> " << fname_ << borealis::logging::endl;
     }
 
     ~func_tracer() {
         auto end = std::chrono::system_clock::now();
         auto duration =
                 std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
-        log << "Exiting "
+        log << "< "
             << fname_
-            << ": "
+            << " : "
             << duration
-            << "µs"
+            << " µs"
             << borealis::logging::endl;
     }
 };
@@ -50,15 +50,35 @@ public:
 } // namespace borealis
 
 #ifndef NO_TRACE_FUNC
-#define TRACE_FUNC borealis::logging::func_tracer ftracer( \
+
+#define TRACE_FUNC \
+    borealis::logging::func_tracer ftracer( \
         __PRETTY_FUNCTION__, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
-#define TRACE_BLOCK(MSG) borealis::logging::func_tracer ftracer( \
-        MSG, \
+
+#define TRACE_BLOCK(ID) \
+    borealis::logging::func_tracer ftracer( \
+        ID, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
+
+#define TRACE_MEASUREMENT(M...) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+        << "= " << borealis::util::join(M) << borealis::logging::endl;
+
+#define TRACE_UP(M...) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+        << "> " << borealis::util::join(M) << borealis::logging::endl;
+
+#define TRACE_DOWN(M...) \
+    borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+        << "< " << borealis::util::join(M) << borealis::logging::endl;
+
 #else
 #define TRACE_FUNC
-#define TRACE_BLOCK(MSG)
+#define TRACE_BLOCK(ID)
+#define TRACE_MEASURMENT(M...)
+#define TRACE_UP(M...)
+#define TRACE_DOWN(M...)
 #endif
 
 #endif /* TRACER_HPP_ */
