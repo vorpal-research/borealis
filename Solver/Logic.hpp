@@ -866,6 +866,48 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class Elem, class Index>
+class TheoryArray: public ValueExpr {
+    TheoryArray(z3::expr inner) : ValueExpr(inner) {
+        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
+    };
+public:
+    TheoryArray(const TheoryArray&) = default;
+
+    Elem select    (Index i) { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
+    Elem operator[](Index i) { return select(i); }
+
+    TheoryArray store(Index i, Elem e) {
+        return z3::store(z3impl::getExpr(this), z3impl::getExpr(i), z3impl::getExpr(e));
+    }
+
+    TheoryArray store(const std::vector<std::pair<Index, Elem>>& entries) {
+        z3::expr base = z3impl::getExpr(this);
+        for (auto& entry: entries) {
+            base = z3::store(base, z3impl::getExpr(entry.first), z3impl::getExpr(entry.second));
+        }
+        return base;
+    }
+
+    z3::context& ctx() const { return z3impl::getContext(this); }
+
+    static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
+        return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
+    }
+
+    static TheoryArray mkFree(z3::context& ctx, const std::string& name) {
+        return ctx.constant(
+            name.c_str(),
+            ctx.array_sort(
+                impl::generator<Index>::sort(ctx),
+                impl::generator<Elem>::sort(ctx)
+            )
+        );
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<class Elem, class Index>
 class InlinedFuncArray {
     typedef std::function<Elem(Index)> inner_t;
 
@@ -885,7 +927,11 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         name(std::make_shared<std::string>(name)),
         context(&ctx) {
-        inner = [&ctx, &name](Index){ return Elem::mkFreshVar(ctx, name + ".elem"); };
+        // FIXME belyaev: this MAY be generally fucked up, but should work for now
+        inner = [&ctx, name](Index ix)->Elem{
+            auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
+            return initial.select(ix);
+        };
     }
 
     Elem select    (Index i) { return inner(i);  }
@@ -931,47 +977,7 @@ public:
     }
 };
 
-////////////////////////////////////////////////////////////////////////////////
 
-template<class Elem, class Index>
-class TheoryArray: public ValueExpr {
-    TheoryArray(z3::expr inner) : ValueExpr(inner) {
-        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
-    };
-public:
-    TheoryArray(const TheoryArray&) = default;
-
-    Elem select    (Index i) { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
-    Elem operator[](Index i) { return select(i); }
-
-    TheoryArray store(Index i, Elem e) {
-        return z3::store(z3impl::getExpr(this), z3impl::getExpr(i), z3impl::getExpr(e));
-    }
-
-    TheoryArray store(const std::vector<std::pair<Index, Elem>>& entries) {
-        z3::expr base = z3impl::getExpr(this);
-        for (auto& entry: entries) {
-            base = z3::store(base, z3impl::getExpr(entry.first), z3impl::getExpr(entry.second));
-        }
-        return base;
-    }
-
-    z3::context& ctx() const { return z3impl::getContext(this); }
-
-    static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
-        return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
-    }
-
-    static TheoryArray mkFree(z3::context& ctx, const std::string& name) {
-        return ctx.constant(
-            name.c_str(),
-            ctx.array_sort(
-                impl::generator<Index>::sort(ctx),
-                impl::generator<Elem>::sort(ctx)
-            )
-        );
-    }
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 
