@@ -49,7 +49,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
     for (auto& defect : dm) {
         Locus origin = defect.location;
 
-        if(!origin) {
+        if (!origin) {
             infos() << DefectTypeNames.at(defect.type)
                     << " (cannot trace location)"
                     << endl;

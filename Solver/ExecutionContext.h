@@ -18,6 +18,7 @@ namespace borealis {
 
 class ExecutionContext {
 public:
+    typedef Z3ExprFactory::Bool Bool;
     typedef Z3ExprFactory::Pointer Pointer;
     typedef Z3ExprFactory::Dynamic Dynamic;
     typedef Z3ExprFactory::MemArray MemArray;
@@ -35,10 +36,10 @@ public:
         return memory;
     }
 
-    inline Z3ExprFactory::Pointer getDistinctPtr(size_t ofSize = 1U) {
+    inline Pointer getDistinctPtr(size_t ofSize = 1U) {
         TRACE_FUNC;
 
-        auto ret = Z3ExprFactory::Pointer::mkConst(
+        auto ret = Pointer::mkConst(
             factory.unwrap(),
             currentPtr
         );
@@ -65,7 +66,7 @@ public:
         memory = memory.store(ix, val);
     }
 
-    Z3ExprFactory::Bool toZ3();
+    Bool toZ3();
 };
 
 } /* namespace borealis */

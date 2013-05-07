@@ -67,6 +67,11 @@ bool Z3Solver::checkViolated(
         const PredicateState& state) {
     TRACE_FUNC;
 
+    dbgs() << "Checking query: " << endl
+           << query << endl
+           << "in: " << endl
+           << state << endl;
+
     ExecutionContext ctx(z3ef);
     auto z3state = state.toZ3(z3ef, &ctx);
     auto z3query = !query.toZ3(z3ef, &ctx);

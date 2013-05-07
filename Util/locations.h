@@ -225,12 +225,12 @@ struct Locus {
     }
 
     operator void*() {
-        if(isUnknown()) return nullptr;
+        if (isUnknown()) return nullptr;
         else return this;
     }
 
     void* operator!() {
-        if(isUnknown()) return this;
+        if (isUnknown()) return this;
         else return nullptr;
     }
 };
