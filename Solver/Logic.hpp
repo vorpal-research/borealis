@@ -40,6 +40,13 @@ namespace z3impl {
     inline z3::expr spliceAxioms(z3::expr e0, z3::expr e1) {
         return (e0 && e1).simplify();
     }
+    inline z3::expr spliceAxioms(std::initializer_list<z3::expr> il) {
+        borealis::util::copyref<z3::expr> accum = util::head(il);
+        for(auto e : util::tail(il)) {
+            accum = (accum && e).simplify();
+        }
+        return accum;
+    }
 } // namespace z3impl
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +79,7 @@ namespace z3impl {
 
 class ValueExpr: public Expr {
     struct Impl;
-    Impl* pimpl;
+    std::unique_ptr<Impl> pimpl;
 
 public:
     ValueExpr(const ValueExpr&);
@@ -95,10 +102,10 @@ public:
     ValueExpr simplify() const;
 };
 
-template<class Expr0, class Expr1>
-inline z3::expr spliceAxioms(const Expr0& e0, const Expr1& e1) {
+template<class ...Exprs>
+inline z3::expr spliceAxioms(const Exprs&... exprs) {
     return z3impl::spliceAxioms(
-        z3impl::getAxiom(e0), z3impl::getAxiom(e1)
+        { z3impl::getAxiom(exprs)... }
     );
 }
 
@@ -404,18 +411,19 @@ struct ifer {
                            z3impl::getExpr(fb)
                        )
                    ),
-                   z3impl::spliceAxioms(
-                       z3impl::getAxiom(cond),
-                       z3::to_expr(
-                           ctx,
-                           Z3_mk_ite(
-                               ctx,
-                               z3impl::getExpr(cond),
-                               z3impl::getAxiom(tb),
-                               z3impl::getAxiom(fb)
-                           )
-                       )
-                   )
+                   spliceAxioms(cond, tb, fb)
+//                   z3impl::spliceAxioms(
+//                       z3impl::getAxiom(cond),
+//                       z3::to_expr(
+//                           ctx,
+//                           Z3_mk_ite(
+//                               ctx,
+//                               z3impl::getExpr(cond),
+//                               z3impl::getAxiom(tb),
+//                               z3impl::getAxiom(fb)
+//                           )
+//                       )
+//                   )
             );
         }
     };

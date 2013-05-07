@@ -48,11 +48,12 @@ class ref {
     T* ptr;
 
 public:
+    ref(): ptr(nullptr){};
     ref(const ref& that) = default;
     explicit ref(const T& v) : ptr(&v) {};
 
-    const ref& operator=(const ref& that) = default;
-    const ref& operator=(const T& v) {
+    ref& operator=(const ref& that) = default;
+    ref& operator=(T& v) {
         ptr = &v;
         return *this;
     }
@@ -69,20 +70,21 @@ class copyref {
     std::unique_ptr<T> inner;
 
 public:
-    copyref(const copyref& ref) : inner(new T(*ref.inner)) {};
-    explicit copyref(const T& e) : inner(new T(e)) {};
+    copyref(): inner{nullptr} {};
+    copyref(const copyref& ref) : inner{new T{*ref.inner}} {};
+    copyref(const T& e) : inner{new T{e}} {};
 
     const copyref& operator=(const copyref& ref) {
-        inner.reset(new T(*ref.inner));
+        inner.reset(new T{*ref.inner});
         return *this;
     }
     const copyref& operator=(const T& e) {
-        inner.reset(new T(e));
+        inner.reset(new T{e});
         return *this;
     }
 
-    T get() const { return *inner; }
-    operator T() { return get(); }
+    const T& get() const { return *inner; }
+    operator const T&() const { return get(); }
 
 };
 

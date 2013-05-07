@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -168,6 +169,28 @@ TEST(Util, option) {
         );
 
         EXPECT_EQ(nothing<int>(), res);
+    }
+
+    {
+        auto res = nothing<int>();
+        int x = 42;
+        auto xs = []{ return 23; };
+
+        EXPECT_EQ(res.getOrElse(2), 2);
+        EXPECT_EQ(res.getOrElse(x), 42);
+        EXPECT_EQ(res.getOrElse(xs()), 23);
+
+        struct {
+            template<class T>
+            auto operator()(T&& i) -> typename std::remove_reference<T>::type {
+                auto res = nothing<int>();
+                return res.getOrElse(std::forward<T>(i));
+            }
+        } inner;
+
+        EXPECT_EQ(inner(2), 2);
+        EXPECT_EQ(inner(x), 42);
+        EXPECT_EQ(inner(xs()), 23);
     }
 
 } // TEST(Util, option)

@@ -49,7 +49,7 @@ public:
     // logic type to represent memory units
     typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
     // Array representing memory
-    template<class Elem, class Index> using ArrayImpl = logic::InlinedFuncArray<Elem, Index>;
+    template<class Elem, class Index> using ArrayImpl = logic::TheoryArray<Elem, Index>;
     typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
     // dynamic logic type
     typedef borealis::logic::SomeExpr Dynamic;

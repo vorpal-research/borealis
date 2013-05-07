@@ -102,14 +102,15 @@ public:
         return cached;
     }
 
-    const T& get(const T& def) const {
+    template<class U>
+    auto get(U&& def) const -> decltype(cached.getOrElse(std::forward<U>(def))) {
         auto& conf = AppConfiguration::instance().globalConfig;
         if(!conf) return def;
 
         if(cached.empty()){
             cached = conf->getValue<T>(section, key);
         }
-        return cached.getOrElse(def);
+        return cached.getOrElse(std::forward<U>(def));
     }
 
     operator const borealis::util::option<T>& () const{

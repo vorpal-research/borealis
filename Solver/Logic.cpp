@@ -26,7 +26,7 @@ ValueExpr::ValueExpr(const ValueExpr& that):
     pimpl(new Impl(*that.pimpl)) {}
 
 ValueExpr::ValueExpr(ValueExpr&& that):
-    pimpl((that.pimpl)) {}
+    pimpl(std::move(that.pimpl)) {}
 
 ValueExpr::ValueExpr(z3::expr e, z3::expr axiom):
     pimpl(new Impl{e, axiom}) {}
@@ -37,9 +37,7 @@ ValueExpr::ValueExpr(z3::expr e):
 ValueExpr::ValueExpr(z3::context& ctx, Z3_ast e):
     pimpl(new Impl{z3::to_expr(ctx, e), z3impl::defaultAxiom(ctx)}) {}
 
-ValueExpr::~ValueExpr() {
-    delete pimpl;
-}
+ValueExpr::~ValueExpr() {}
 
 void ValueExpr::swap(ValueExpr& that) {
     std::swap(pimpl, that.pimpl);

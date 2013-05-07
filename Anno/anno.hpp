@@ -151,8 +151,6 @@ struct logical_not :
     { return !move(x); }
 };
 
-
-
 // binary
 #define DEFBINARY(NAME, OP) \
     template <class T> \
