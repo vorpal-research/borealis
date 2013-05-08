@@ -16,7 +16,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 #include "Util/iterators.hpp"
 
 #include "Util/macros.h"

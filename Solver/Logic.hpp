@@ -42,7 +42,7 @@ namespace z3impl {
     }
     inline z3::expr spliceAxioms(std::initializer_list<z3::expr> il) {
         borealis::util::copyref<z3::expr> accum = util::head(il);
-        for(auto e : util::tail(il)) {
+        for (auto e : util::tail(il)) {
             accum = (accum && e).simplify();
         }
         return accum;

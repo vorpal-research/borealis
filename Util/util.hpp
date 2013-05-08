@@ -48,7 +48,7 @@ class ref {
     T* ptr;
 
 public:
-    ref(): ptr(nullptr){};
+    ref() : ptr(nullptr) {};
     ref(const ref& that) = default;
     explicit ref(const T& v) : ptr(&v) {};
 
@@ -70,7 +70,7 @@ class copyref {
     std::unique_ptr<T> inner;
 
 public:
-    copyref(): inner{nullptr} {};
+    copyref() : inner{nullptr} {};
     copyref(const copyref& ref) : inner{new T{*ref.inner}} {};
     copyref(const T& e) : inner{new T{e}} {};
 

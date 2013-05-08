@@ -176,9 +176,9 @@ TEST(Util, option) {
         int x = 42;
         auto xs = []{ return 23; };
 
-        EXPECT_EQ(res.getOrElse(2), 2);
-        EXPECT_EQ(res.getOrElse(x), 42);
-        EXPECT_EQ(res.getOrElse(xs()), 23);
+        EXPECT_EQ(2,  res.getOrElse(2));
+        EXPECT_EQ(42, res.getOrElse(x));
+        EXPECT_EQ(23, res.getOrElse(xs()));
 
         struct {
             template<class T>
@@ -188,9 +188,9 @@ TEST(Util, option) {
             }
         } inner;
 
-        EXPECT_EQ(inner(2), 2);
-        EXPECT_EQ(inner(x), 42);
-        EXPECT_EQ(inner(xs()), 23);
+        EXPECT_EQ(2,  inner(2));
+        EXPECT_EQ(42, inner(x));
+        EXPECT_EQ(23, inner(xs()));
     }
 
 } // TEST(Util, option)
