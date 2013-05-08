@@ -19,6 +19,14 @@ using namespace borealis;
 using namespace borealis::util;
 using namespace borealis::util::streams;
 
+struct {
+    template<class T>
+    auto operator()(T&& i) -> typename std::remove_reference<T>::type {
+        auto res = nothing<int>();
+        return res.getOrElse(std::forward<T>(i));
+    }
+} forwardingGetOrElser;
+
 TEST(Util, copy) {
 
 	{
@@ -180,17 +188,9 @@ TEST(Util, option) {
         EXPECT_EQ(42, res.getOrElse(x));
         EXPECT_EQ(23, res.getOrElse(xs()));
 
-        struct {
-            template<class T>
-            auto operator()(T&& i) -> typename std::remove_reference<T>::type {
-                auto res = nothing<int>();
-                return res.getOrElse(std::forward<T>(i));
-            }
-        } inner;
-
-        EXPECT_EQ(2,  inner(2));
-        EXPECT_EQ(42, inner(x));
-        EXPECT_EQ(23, inner(xs()));
+        EXPECT_EQ(2,  forwardingGetOrElser(2));
+        EXPECT_EQ(42, forwardingGetOrElser(x));
+        EXPECT_EQ(23, forwardingGetOrElser(xs()));
     }
 
 } // TEST(Util, option)
