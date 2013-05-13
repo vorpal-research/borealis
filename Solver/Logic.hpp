@@ -830,15 +830,15 @@ public:
     Elem operator[](Index i) { return select(i); }
 
     FuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this,&i,&e](Index res) {
-            return if_(res == i).then_(e).else_(this->select(res));
+        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this,&i,&e](Index j) {
+            return if_(j == i).then_(e).else_(this->select(j));
         });
 
         return FuncArray<Elem, Index> (nf, name);
     }
 
     FuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
-        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this, entries](Index j) {
+        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this,entries](Index j) {
             return switch_(j, entries, this->select(j));
         });
 
@@ -896,7 +896,6 @@ public:
     }
 
     InlinedFuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t existing = this->inner;
         inner_t nf = [this,&i,&e](Index j) {
             return if_(j == i).then_(e).else_(inner(j));
         };
@@ -905,9 +904,8 @@ public:
     }
 
     InlinedFuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
-        inner_t existing = this->inner;
-        inner_t nf = [this, existing, entries](Index j) {
-            return switch_(j, entries, existing(j));
+        inner_t nf = [this,entries](Index j) {
+            return switch_(j, entries, inner(j));
         };
 
         return InlinedFuncArray<Elem, Index> (*context, nf, name);
