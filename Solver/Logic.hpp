@@ -1084,8 +1084,8 @@ public:
 
     SomeExpr select(Index i, size_t elemBitSize) {
         std::vector<Byte> bytes;
-        for (size_t j = 0; j < elemBitSize; j+=ElemSize) {
-            bytes.push_back(inner[i+j/ElemSize]);
+        for (auto j = 0U; j < elemBitSize/ElemSize; ++j) {
+            bytes.push_back(inner[i+j]);
         }
         return concatBytesDynamic(bytes);
     }
@@ -1095,8 +1095,8 @@ public:
         enum { elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
-        for (int j = 0; j < elemBitSize; j+=ElemSize) {
-            bytes.push_back(inner[i+j/ElemSize]);
+        for (auto j = 0U; j < elemBitSize/ElemSize; ++j) {
+            bytes.push_back(inner[i+j]);
         }
         return concatBytes<elemBitSize>(bytes);
     }
