@@ -830,7 +830,7 @@ public:
     Elem operator[](Index i) { return select(i); }
 
     FuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this,&i,&e](Index j) {
+        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [this,i,e](Index j) {
             return if_(j == i).then_(e).else_(this->select(j));
         });
 
@@ -882,7 +882,7 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         name(std::make_shared<std::string>(name)),
         context(&ctx) {
-        inner = [&ctx, &name](Index){ return Elem::mkFreshVar(ctx, name + ".elem"); };
+        inner = [name, &ctx](Index){ return Elem::mkFreshVar(ctx, name + ".elem"); };
     }
 
     Elem select    (Index i) { return inner(i);  }
@@ -896,16 +896,18 @@ public:
     }
 
     InlinedFuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t nf = [this,&i,&e](Index j) {
-            return if_(j == i).then_(e).else_(inner(j));
+        inner_t old = this->inner;
+        inner_t nf = [old,i,e](Index j) {
+            return if_(j == i).then_(e).else_(old(j));
         };
 
         return InlinedFuncArray<Elem, Index> (*context, nf, name);
     }
 
     InlinedFuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
-        inner_t nf = [this,entries](Index j) {
-            return switch_(j, entries, inner(j));
+        inner_t old = this->inner;
+        inner_t nf = [old,entries](Index j) {
+            return switch_(j, entries, old(j));
         };
 
         return InlinedFuncArray<Elem, Index> (*context, nf, name);
@@ -922,7 +924,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const InlinedFuncArray<Elem, Index>& ifa) {
-        return ost << "inlinedArray " << *ifa.name << " { ... }";
+        return ost << "inlinedArray " << *ifa.name << " {...}";
     }
 };
 
