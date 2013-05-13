@@ -173,14 +173,6 @@ static bool allptrs(const H& h, const T&... t) {
     else return allptrs(t...);
 }
 
-template<class F, class S>
-struct type_K_comb {
-    typedef F type;
-};
-
-template<class F, class S>
-using type_K_comb_q = typename type_K_comb<F,S>::type;
-
 } //namespace impl
 
 template<class Obj, class ...Args>
@@ -189,7 +181,7 @@ struct json_object_builder {
 
     // this is a constructor that takes a number of std::strings
     // exactly the same as the number of types in Args
-    json_object_builder(const impl::type_K_comb_q<std::string, Args>&... keys) : keys { keys... } {}
+    json_object_builder(const type_K_comb_q<std::string, Args>&... keys) : keys { keys... } {}
 
     template<size_t ...Ixs>
     Obj* build_(const Json::Value& val, util::indexer<Ixs...>) const {

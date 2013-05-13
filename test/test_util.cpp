@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -17,6 +18,14 @@ namespace {
 using namespace borealis;
 using namespace borealis::util;
 using namespace borealis::util::streams;
+
+struct {
+    template<class T>
+    auto operator()(T&& i) -> typename std::remove_reference<T>::type {
+        auto res = nothing<int>();
+        return res.getOrElse(std::forward<T>(i));
+    }
+} forwardingGetOrElser;
 
 TEST(Util, copy) {
 
@@ -168,6 +177,20 @@ TEST(Util, option) {
         );
 
         EXPECT_EQ(nothing<int>(), res);
+    }
+
+    {
+        auto res = nothing<int>();
+        int x = 42;
+        auto xs = []{ return 23; };
+
+        EXPECT_EQ(2,  res.getOrElse(2));
+        EXPECT_EQ(42, res.getOrElse(x));
+        EXPECT_EQ(23, res.getOrElse(xs()));
+
+        EXPECT_EQ(2,  forwardingGetOrElser(2));
+        EXPECT_EQ(42, forwardingGetOrElser(x));
+        EXPECT_EQ(23, forwardingGetOrElser(xs()));
     }
 
 } // TEST(Util, option)
@@ -327,6 +350,21 @@ TEST(Util, iterators) {
         );
 
         EXPECT_EQ(pat, con2);
+    }
+
+    {
+        std::vector<int> con0 {
+            1, 2, 3, 4, 5, 6, 7, 8, 9
+        };
+
+        std::vector<int> con1 { 10, 11, 12, 13 };
+        std::vector<int> con(glue_iterator(
+                std::make_pair(con0.begin(), con0.end()),
+                std::make_pair(con1.begin(), con1.end())
+        ), glued_iterator<typename std::vector<int>::iterator>());
+        std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+
+        EXPECT_EQ(pat, con);
     }
 
 } // TEST(Util, iterators)

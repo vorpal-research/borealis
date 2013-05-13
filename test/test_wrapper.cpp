@@ -106,6 +106,9 @@ INSTANTIATE_TEST_CASE_P(MiscLong, WrapperTest, ::testing::ValuesIn(LongTestFiles
 INSTANTIATE_TEST_CASE_P(Necla, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/necla")));
 INSTANTIATE_TEST_CASE_P(NeclaLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/necla")));
 
+//INSTANTIATE_TEST_CASE_P(SvComp, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/svcomp")));
+//INSTANTIATE_TEST_CASE_P(SvCompLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/svcomp")));
+
 
 
 } // namespace

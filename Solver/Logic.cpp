@@ -26,7 +26,7 @@ ValueExpr::ValueExpr(const ValueExpr& that):
     pimpl(new Impl(*that.pimpl)) {}
 
 ValueExpr::ValueExpr(ValueExpr&& that):
-    pimpl((that.pimpl)) {}
+    pimpl(std::move(that.pimpl)) {}
 
 ValueExpr::ValueExpr(z3::expr e, z3::expr axiom):
     pimpl(new Impl{e, axiom}) {}
@@ -37,9 +37,7 @@ ValueExpr::ValueExpr(z3::expr e):
 ValueExpr::ValueExpr(z3::context& ctx, Z3_ast e):
     pimpl(new Impl{z3::to_expr(ctx, e), z3impl::defaultAxiom(ctx)}) {}
 
-ValueExpr::~ValueExpr() {
-    delete pimpl;
-}
+ValueExpr::~ValueExpr() {}
 
 void ValueExpr::swap(ValueExpr& that) {
     std::swap(pimpl, that.pimpl);
@@ -49,6 +47,19 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
     ValueExpr e(that);
     swap(e);
     return *this;
+}
+
+ValueExpr ValueExpr::simplify() const {
+    z3::params params(this->pimpl->inner.ctx());
+
+    params.set(":pull-cheap-ite", true);
+    params.set(":push-bv-ite", true);
+    params.set(":expand-select-store", true);
+
+    return ValueExpr{
+        this->pimpl->inner.simplify(params),
+        this->pimpl->axiomatic.simplify(params)
+    };
 }
 
 namespace z3impl {
@@ -74,7 +85,7 @@ namespace z3impl {
 } // namespace z3impl
 
 std::ostream& operator<<(std::ostream& ost, const ValueExpr& v) {
-    return ost << z3impl::getExpr(v).simplify() << " assuming " << z3impl::getAxiom(v).simplify();
+    return ost << z3impl::getExpr(v) << " assuming " << z3impl::getAxiom(v);
 }
 
 Bool implies(Bool lhv, Bool rhv) {

@@ -14,8 +14,8 @@ namespace borealis {
 Z3Solver::Z3Solver(Z3ExprFactory& z3ef) : z3ef(z3ef) {}
 
 z3::check_result Z3Solver::check(
-        const logic::Bool& z3query,
-        const logic::Bool& z3state) {
+        const logic::Bool& z3query_,
+        const logic::Bool& z3state_) {
     using namespace::z3;
     using logic::Bool;
     using logic::implies;
@@ -24,6 +24,9 @@ z3::check_result Z3Solver::check(
 
     solver s(z3ef.unwrap());
     auto dbg = dbgs();
+
+    auto z3state = z3state_.simplify();
+    auto z3query = z3query_.simplify();
 
     s.add(logic::z3impl::asAxiom(z3state));
 

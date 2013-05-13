@@ -18,6 +18,8 @@
 
 #include "Util/iterators.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 namespace util {
 
@@ -85,15 +87,9 @@ struct takePtr {
     }
 } ;
 
-template<class Container>
-inline auto head(const Container& con) -> decltype(*con.begin()) {
-    return *con.begin();
-}
+template<class C> inline auto head(const C& con) QUICK_RETURN(*std::begin(con));
 
-template<class Container>
-inline auto head(Container& con) -> decltype(*con.begin()) {
-    return *con.begin();
-}
+template<class C> inline auto head(C& con) QUICK_RETURN(*std::begin(con));
 
 template<class Iter>
 inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
@@ -106,13 +102,13 @@ inline auto view(const std::pair<Iter,Iter>& is) -> CollectionView<Iter> {
 }
 
 template<class Container>
-inline auto viewContainer(const Container* con) -> CollectionView<decltype(con->begin())> {
-    return CollectionView<decltype(con->begin())>{ con->begin(), con->end() };
+inline auto viewContainer(const Container& con) -> CollectionView<decltype(std::begin(con))> {
+    return CollectionView<decltype(std::begin(con))>{ std::begin(con), std::end(con) };
 }
 
 template<class Container>
-inline auto viewContainer(const Container& con) -> CollectionView<decltype(con.begin())> {
-    return CollectionView<decltype(con.begin())>{ con.begin(), con.end() };
+inline auto viewContainer(const Container* con) -> decltype(viewContainer(*con)) {
+    return viewContainer(*con);
 }
 
 template<class Container>
@@ -121,8 +117,8 @@ inline auto viewContainer(Container* con) -> CollectionView<decltype(con->begin(
 }
 
 template<class Container>
-inline auto viewContainer(Container& con) -> CollectionView<decltype(con.begin())> {
-    return CollectionView<decltype(con.begin())>{ con.begin(), con.end() };
+inline auto viewContainer(Container& con) -> CollectionView<decltype(std::begin(con))> {
+    return CollectionView<decltype(std::begin(con))>{ std::begin(con), std::end(con) };
 }
 
 template<class Container>
@@ -131,13 +127,17 @@ inline auto reverse(Container& c) -> CollectionView<decltype(c.rbegin())> {
 }
 
 template<class Container>
-inline auto tail(const Container& con) -> CollectionView<decltype(con.begin())> {
-    return view(++con.begin(), con.end());
+inline auto tail(const Container& con) -> CollectionView<decltype(std::begin(con))> {
+    // fix the issue for initializer_list in which begin() is not assignable
+    // with std::next
+    return view(std::next(std::begin(con)), std::end(con));
 }
 
 template<class Container>
-inline auto tail(Container& con) -> CollectionView<decltype(con.begin())> {
-    return view(++con.begin(), con.end());
+inline auto tail(Container& con) -> CollectionView<decltype(std::begin(con))> {
+    // fix the issue for initializer_list in which begin() is not assignable
+    // with std::next
+    return view(std::next(std::begin(con)), std::end(con));
 }
 
 template<class T>
@@ -145,8 +145,10 @@ T copy(T other) { return other; }
 
 template<class T, class Pred>
 std::list<T> filter_not(const std::list<T>&& lst, const Pred pred) {
-    auto rem = std::remove_if(lst.begin(), lst.end(), pred);
-    lst.erase(rem, lst.end());
+    auto begin = std::begin(lst);
+    auto end = std::end(lst);
+    auto rem = std::remove_if(begin, end, pred);
+    lst.erase(rem, end);
     return lst;
 }
 
@@ -191,7 +193,8 @@ void removeFromMultimap(std::unordered_multimap<K,V>& map, const K& k, const V& 
 
 template<class Container, class T>
 bool contains(const Container& con, const T& t) {
-    return std::find(con.begin(), con.end(), t) != con.end();
+    auto end = std::end(con);
+    return std::find(std::begin(con), end, t) != end;
 }
 
 namespace impl_ {
@@ -222,5 +225,7 @@ void tuple_for_each(Tup& tup, Op op) {
 
 } // namespace util
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* COLLECTIONS_HPP_ */

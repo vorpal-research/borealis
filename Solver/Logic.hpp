@@ -40,6 +40,13 @@ namespace z3impl {
     inline z3::expr spliceAxioms(z3::expr e0, z3::expr e1) {
         return (e0 && e1).simplify();
     }
+    inline z3::expr spliceAxioms(std::initializer_list<z3::expr> il) {
+        borealis::util::copyref<z3::expr> accum = util::head(il);
+        for (auto e : util::tail(il)) {
+            accum = (accum && e).simplify();
+        }
+        return accum;
+    }
 } // namespace z3impl
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +79,7 @@ namespace z3impl {
 
 class ValueExpr: public Expr {
     struct Impl;
-    Impl* pimpl;
+    std::unique_ptr<Impl> pimpl;
 
 public:
     ValueExpr(const ValueExpr&);
@@ -91,12 +98,14 @@ public:
     friend z3::context& z3impl::getContext(const ValueExpr& a);
 
     void swap(ValueExpr&);
+
+    ValueExpr simplify() const;
 };
 
-template<class Expr0, class Expr1>
-inline z3::expr spliceAxioms(const Expr0& e0, const Expr1& e1) {
+template<class ...Exprs>
+inline z3::expr spliceAxioms(const Exprs&... exprs) {
     return z3impl::spliceAxioms(
-        z3impl::getAxiom(e0), z3impl::getAxiom(e1)
+        { z3impl::getAxiom(exprs)... }
     );
 }
 
@@ -120,6 +129,7 @@ struct generator;
         CLASS(const CLASS&) = default; \
         CLASS(const ValueExpr& e): ValueExpr(e){ ASSERTC(impl::generator<CLASS>::check(z3impl::getExpr(this))) }; \
         CLASS& operator=(const CLASS&) = default; \
+        CLASS simplify() const { return CLASS{ ValueExpr::simplify() }; } \
 \
         static CLASS mkConst(z3::context& ctx, typename impl::generator<CLASS>::basetype value) { \
             return CLASS(impl::generator<CLASS>::mkConst(ctx, value)); \
@@ -401,18 +411,19 @@ struct ifer {
                            z3impl::getExpr(fb)
                        )
                    ),
-                   z3impl::spliceAxioms(
-                       z3impl::getAxiom(cond),
-                       z3::to_expr(
-                           ctx,
-                           Z3_mk_ite(
-                               ctx,
-                               z3impl::getExpr(cond),
-                               z3impl::getAxiom(tb),
-                               z3impl::getAxiom(fb)
-                           )
-                       )
-                   )
+                   spliceAxioms(cond, tb, fb)
+//                   z3impl::spliceAxioms(
+//                       z3impl::getAxiom(cond),
+//                       z3::to_expr(
+//                           ctx,
+//                           Z3_mk_ite(
+//                               ctx,
+//                               z3impl::getExpr(cond),
+//                               z3impl::getAxiom(tb),
+//                               z3impl::getAxiom(fb)
+//                           )
+//                       )
+//                   )
             );
         }
     };
@@ -863,6 +874,48 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class Elem, class Index>
+class TheoryArray: public ValueExpr {
+    TheoryArray(z3::expr inner) : ValueExpr(inner) {
+        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
+    };
+public:
+    TheoryArray(const TheoryArray&) = default;
+
+    Elem select    (Index i) { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
+    Elem operator[](Index i) { return select(i); }
+
+    TheoryArray store(Index i, Elem e) {
+        return z3::store(z3impl::getExpr(this), z3impl::getExpr(i), z3impl::getExpr(e));
+    }
+
+    TheoryArray store(const std::vector<std::pair<Index, Elem>>& entries) {
+        z3::expr base = z3impl::getExpr(this);
+        for (auto& entry: entries) {
+            base = z3::store(base, z3impl::getExpr(entry.first), z3impl::getExpr(entry.second));
+        }
+        return base;
+    }
+
+    z3::context& ctx() const { return z3impl::getContext(this); }
+
+    static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
+        return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
+    }
+
+    static TheoryArray mkFree(z3::context& ctx, const std::string& name) {
+        return ctx.constant(
+            name.c_str(),
+            ctx.array_sort(
+                impl::generator<Index>::sort(ctx),
+                impl::generator<Elem>::sort(ctx)
+            )
+        );
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<class Elem, class Index>
 class InlinedFuncArray {
     typedef std::function<Elem(Index)> inner_t;
 
@@ -882,7 +935,11 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         name(std::make_shared<std::string>(name)),
         context(&ctx) {
-        inner = [name, &ctx](Index){ return Elem::mkFreshVar(ctx, name + ".elem"); };
+        // FIXME belyaev: this MAY be generally fucked up, but should work for now
+        inner = [name, &ctx](Index ix) -> Elem {
+            auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
+            return initial.select(ix);
+        };
     }
 
     Elem select    (Index i) { return inner(i);  }
@@ -925,48 +982,6 @@ public:
 
     friend std::ostream& operator<<(std::ostream& ost, const InlinedFuncArray<Elem, Index>& ifa) {
         return ost << "inlinedArray " << *ifa.name << " {...}";
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-template<class Elem, class Index>
-class TheoryArray: public ValueExpr {
-    TheoryArray(z3::expr inner) : ValueExpr(inner) {
-        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
-    };
-public:
-    TheoryArray(const TheoryArray&) = default;
-
-    Elem select    (Index i) { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
-    Elem operator[](Index i) { return select(i); }
-
-    TheoryArray store(Index i, Elem e) {
-        return z3::store(z3impl::getExpr(this), z3impl::getExpr(i), z3impl::getExpr(e));
-    }
-
-    TheoryArray store(const std::vector<std::pair<Index, Elem>>& entries) {
-        z3::expr base = z3impl::getExpr(this);
-        for (auto& entry: entries) {
-            base = z3::store(base, z3impl::getExpr(entry.first), z3impl::getExpr(entry.second));
-        }
-        return base;
-    }
-
-    z3::context& ctx() const { return z3impl::getContext(this); }
-
-    static TheoryArray mkDefault(z3::context& ctx, const std::string&, Elem def) {
-        return z3::const_array(impl::generator<Index>::sort(ctx), z3impl::getExpr(def));
-    }
-
-    static TheoryArray mkFree(z3::context& ctx, const std::string& name) {
-        return ctx.constant(
-            name.c_str(),
-            ctx.array_sort(
-                impl::generator<Index>::sort(ctx),
-                impl::generator<Elem>::sort(ctx)
-            )
-        );
     }
 };
 

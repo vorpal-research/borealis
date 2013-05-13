@@ -46,7 +46,7 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
 
     static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
 
-    if(NullableMallocs.get().getOrElse(true)) {
+    if(NullableMallocs.get(true)) {
         return lhvp == z3ef.getNullPtr() || lhvp == ctx->getDistinctPtr(elems);
     } else {
         return lhvp == ctx->getDistinctPtr(elems);
