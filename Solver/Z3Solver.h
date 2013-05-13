@@ -24,11 +24,11 @@ public:
 
     Z3Solver(Z3ExprFactory& z3ef);
 
-    bool checkViolated(
+    bool isViolated(
             PredicateState::Ptr query,
             PredicateState::Ptr state);
 
-    bool checkPathPredicates(
+    bool isPathImpossible(
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 

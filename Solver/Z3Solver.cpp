@@ -59,7 +59,7 @@ z3::check_result Z3Solver::check(
     }
 }
 
-bool Z3Solver::checkViolated(
+bool Z3Solver::isViolated(
         PredicateState::Ptr query,
         PredicateState::Ptr state) {
     TRACE_FUNC;
@@ -75,7 +75,7 @@ bool Z3Solver::checkViolated(
     return check(z3query, z3state) != z3::unsat;
 }
 
-bool Z3Solver::checkPathPredicates(
+bool Z3Solver::isPathImpossible(
         PredicateState::Ptr path,
         PredicateState::Ptr state) {
     TRACE_FUNC;
@@ -87,8 +87,8 @@ bool Z3Solver::checkPathPredicates(
 
     ExecutionContext ctx(z3ef);
     auto z3state = state->toZ3(z3ef, &ctx);
-    auto z3query = path->toZ3(z3ef, &ctx);
-    return check(z3query, z3state) == z3::unsat;
+    auto z3path = path->toZ3(z3ef, &ctx);
+    return check(z3path, z3state) == z3::unsat;
 }
 
 } /* namespace borealis */

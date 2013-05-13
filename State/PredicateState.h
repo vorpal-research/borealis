@@ -42,6 +42,8 @@ public:
     virtual PredicateState::Ptr filter(Filterer f) const = 0;
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const = 0;
 
+    bool isUnreachable() const;
+
     static bool classof(const PredicateState* /* ps */) {
         return true;
     }

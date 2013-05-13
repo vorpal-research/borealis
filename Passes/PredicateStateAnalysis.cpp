@@ -123,7 +123,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     const BasicBlock* bb = std::get<1>(wqe);
     PredicateState::Ptr inState = std::get<2>(wqe);
 
-    // if (inState->isUnreachable()) return;
+    if (inState->isUnreachable()) return;
 
     inState = PSF->Chain(inState, PSF->Basic());
 

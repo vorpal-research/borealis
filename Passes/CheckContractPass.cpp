@@ -59,7 +59,7 @@ public:
 
         for (auto& state : states) {
             dbgs() << "  State: " << endl << state << endl;
-            if (s.checkViolated(instantiatedRequires, state)) {
+            if (s.isViolated(instantiatedRequires, state)) {
                 dbgs() << "Violated!" << endl;
                 pass->DM->addDefect(DefectType::REQ_01, &CI);
                 return;
@@ -91,7 +91,7 @@ public:
 
             for (auto& state : states) {
                 dbgs() << "  State: " << endl << state << endl;
-                if (s.checkViolated(query, state)) {
+                if (s.isViolated(query, state)) {
                     pass->DM->addDefect(DefectType::ASR_01, &CI);
                 }
             }
@@ -114,7 +114,7 @@ public:
 
         for (auto& state : states) {
             dbgs() << "  State: " << endl << state << endl;
-            if (s.checkViolated(ensures, state)) {
+            if (s.isViolated(ensures, state)) {
                 pass->DM->addDefect(DefectType::ENS_01, &RI);
             }
         }
