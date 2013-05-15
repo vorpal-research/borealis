@@ -31,7 +31,7 @@ public:
 
         std::vector<Term::Ptr> new_globals;
         new_globals.reserve(globals.size());
-        std::transform(globals.begin(), globals.end(), new_globals.begin(),
+        std::transform(globals.begin(), globals.end(), std::back_inserter(new_globals),
             [t](const Term::Ptr& e) { return t->transform(e); }
         );
 

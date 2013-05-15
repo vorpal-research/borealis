@@ -34,7 +34,7 @@ public:
 
         std::vector< std::pair<Term::Ptr, Term::Ptr> > new_shifts;
         new_shifts.reserve(shifts.size());
-        std::transform(shifts.begin(), shifts.end(), new_shifts.begin(),
+        std::transform(shifts.begin(), shifts.end(), std::back_inserter(new_shifts),
             [t](const std::pair<Term::Ptr, Term::Ptr>& e) {
                 return std::make_pair(t->transform(e.first), t->transform(e.second));
             }
