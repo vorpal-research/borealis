@@ -8,8 +8,9 @@
 #include <gtest/gtest.h>
 #include <z3/z3++.h>
 
-#include "Solver/Logic.hpp"
+#include "Solver/ExecutionContext.h"
 #include "Solver/Z3ExprFactory.h"
+#include "Solver/Z3Solver.h"
 #include "Util/util.h"
 
 namespace {
@@ -49,6 +50,91 @@ TEST(Z3ExprFactory, memoryArray) {
         for (int i = 0; i < 153; i++) {
             EXPECT_TRUE(check_expr(arr[i] == mkbyte(0xFF)));
         }
+    }
+}
+
+TEST(ExecutionContext, mergeMemory) {
+    {
+        using namespace borealis::logic;
+
+        using borealis::ExecutionContext;
+        using borealis::Z3ExprFactory;
+
+        typedef Z3ExprFactory::Bool Bool;
+        typedef Z3ExprFactory::Integer Integer;
+        typedef Z3ExprFactory::Pointer Pointer;
+
+        z3::context ctx;
+        Z3ExprFactory factory(ctx);
+
+        ExecutionContext memory_with_a(factory);
+        ExecutionContext memory_with_b(factory);
+
+        Pointer ptr = factory.getPtrVar("ptr");
+        Integer a = factory.getIntConst(0xdeadbeef);
+        Integer b = factory.getIntConst(0xabcdefff);
+        Integer z = factory.getIntConst(0xfeedbeef);
+
+        Integer cond = factory.getIntVar("cond");
+        Bool cond_a = cond == a;
+        Bool cond_b = cond == b;
+
+        memory_with_a.writeExprToMemory(ptr, a);
+        memory_with_b.writeExprToMemory(ptr, b);
+
+        ExecutionContext merged = ExecutionContext::mergeMemory(
+                factory,
+                std::vector<std::pair<Bool, ExecutionContext>>{
+                    { cond_a, memory_with_a },
+                    { cond_b, memory_with_b }
+                }
+        );
+        Integer c = merged.readExprFromMemory<Integer>(ptr);
+
+        auto check_expr_in = [&](Bool e, Bool in)->bool {
+
+            infos() << "Checking:" << endl
+                    << e << endl
+                    << "  in:" << endl
+                    << in << endl;
+
+            z3::solver s(ctx);
+
+            s.add(logic::z3impl::asAxiom(in));
+
+            Bool pred = factory.getBoolVar("$CHECK$");
+            s.add(logic::z3impl::asAxiom(implies(pred, !e)));
+
+            z3::expr pred_e = logic::z3impl::getExpr(pred);
+            z3::check_result r = s.check(1, &pred_e);
+
+            if (r == z3::sat) {
+                infos() << "SAT:" << endl;
+                infos() << s.get_model() << endl;
+            } else if (r == z3::unsat) {
+                infos() << "UNSAT:" << endl;
+                auto core = s.unsat_core();
+                for (size_t i = 0U; i < core.size(); ++i) infos() << core[i] << endl;
+            } else {
+                infos() << "WTF:" << endl;
+                infos() << s.reason_unknown() << endl;
+            }
+
+            return r == z3::unsat;
+        };
+
+        EXPECT_TRUE(check_expr_in(
+            c == a,   // expr
+            cond == a // in
+        ));
+        EXPECT_TRUE(check_expr_in(
+            c == b,   // expr
+            cond == b // in
+        ));
+        EXPECT_FALSE(check_expr_in(
+            c == a,   // expr
+            cond == z // in
+        ));
     }
 }
 
