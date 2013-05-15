@@ -66,6 +66,27 @@ public:
         memory = memory.store(ix, val);
     }
 
+    static ExecutionContext mergeMemory(Z3ExprFactory& factory, const std::vector<std::pair<Bool, ExecutionContext>>&  memories) {
+        ExecutionContext res(factory);
+
+        // Merge current pointer
+        for (auto& e : memories) {
+            res.currentPtr = std::max(res.currentPtr, e.second.currentPtr);
+        }
+
+        // Merge memory
+        std::vector<std::pair<Bool, MemArray>> inners;
+        inners.reserve(memories.size());
+        std::transform(memories.begin(), memories.end(), std::back_inserter(inners),
+            [](const std::pair<Bool, ExecutionContext>& p) {
+                return std::make_pair(p.first, p.second.memory);
+            }
+        );
+        res.memory = MemArray::merge(factory.unwrap(), inners);
+
+        return res;
+    }
+
     Bool toZ3();
 };
 

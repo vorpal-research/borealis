@@ -462,6 +462,21 @@ T switch_(
     return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
 }
 
+template<class T>
+T switch_(
+        const std::vector<std::pair<Bool, T>>& cases,
+        T default_
+    ) {
+
+    auto mkIte = [](T b, const std::pair<Bool, T>& a) {
+        return if_(a.first)
+               .then_(a.second)
+               .else_(b);
+    };
+
+    return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace impl {
@@ -875,10 +890,15 @@ public:
 
 template<class Elem, class Index>
 class TheoryArray: public ValueExpr {
+
+public:
+
     TheoryArray(z3::expr inner) : ValueExpr(inner) {
         ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
     };
-public:
+    TheoryArray(z3::expr inner, z3::expr axioms) : ValueExpr(inner, axioms) {
+        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
+    };
     TheoryArray(const TheoryArray&) = default;
 
     Elem select    (Index i) { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
@@ -910,6 +930,11 @@ public:
                 impl::generator<Elem>::sort(ctx)
             )
         );
+    }
+
+    static TheoryArray merge(z3::context& ctx, const std::vector<std::pair<Bool, TheoryArray>>& arrays) {
+        TheoryArray default_ = TheoryArray::mkFree(ctx, "merged");
+        return switch_(arrays, default_);
     }
 };
 
@@ -987,7 +1012,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<size_t N, size_t ElemSize = 8>
+template<size_t ElemSize = 8, size_t N>
 std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
     typedef BitVector<ElemSize> Byte;
 
@@ -1156,6 +1181,20 @@ public:
 
     static ScatterArray mkFree(z3::context& ctx, const std::string& name) {
         return ScatterArray{ Inner::mkFree(ctx, name) };
+    }
+
+    static ScatterArray merge(z3::context& ctx, const std::vector<std::pair<Bool, ScatterArray>>& arrays) {
+        std::vector<std::pair<Bool, Inner>> inners;
+        inners.reserve(arrays.size());
+        std::transform(arrays.begin(), arrays.end(), std::back_inserter(inners),
+            [](const std::pair<Bool, ScatterArray>& p) {
+                return std::make_pair(p.first, p.second.inner);
+            }
+        );
+
+        Inner merged = Inner::merge(ctx, inners);
+
+        return ScatterArray{ merged };
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const ScatterArray& arr) {
