@@ -932,9 +932,10 @@ public:
         );
     }
 
-    static TheoryArray merge(z3::context& ctx, const std::vector<std::pair<Bool, TheoryArray>>& arrays) {
-        TheoryArray default_ = TheoryArray::mkFree(ctx, "merged");
-        return switch_(arrays, default_);
+    static TheoryArray merge(
+            TheoryArray defaultArray,
+            const std::vector<std::pair<Bool, TheoryArray>>& arrays) {
+        return switch_(arrays, defaultArray);
     }
 };
 
@@ -1183,7 +1184,9 @@ public:
         return ScatterArray{ Inner::mkFree(ctx, name) };
     }
 
-    static ScatterArray merge(z3::context& ctx, const std::vector<std::pair<Bool, ScatterArray>>& arrays) {
+    static ScatterArray merge(
+            ScatterArray defaultArray,
+            const std::vector<std::pair<Bool, ScatterArray>>& arrays) {
         std::vector<std::pair<Bool, Inner>> inners;
         inners.reserve(arrays.size());
         std::transform(arrays.begin(), arrays.end(), std::back_inserter(inners),
@@ -1192,7 +1195,7 @@ public:
             }
         );
 
-        Inner merged = Inner::merge(ctx, inners);
+        Inner merged = Inner::merge(defaultArray.inner, inners);
 
         return ScatterArray{ merged };
     }

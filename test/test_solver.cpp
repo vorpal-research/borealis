@@ -67,6 +67,7 @@ TEST(ExecutionContext, mergeMemory) {
         z3::context ctx;
         Z3ExprFactory factory(ctx);
 
+        ExecutionContext default_memory(factory);
         ExecutionContext memory_with_a(factory);
         ExecutionContext memory_with_b(factory);
 
@@ -83,7 +84,7 @@ TEST(ExecutionContext, mergeMemory) {
         memory_with_b.writeExprToMemory(ptr, b);
 
         ExecutionContext merged = ExecutionContext::mergeMemory(
-                factory,
+                default_memory,
                 std::vector<std::pair<Bool, ExecutionContext>>{
                     { cond_a, memory_with_a },
                     { cond_b, memory_with_b }
