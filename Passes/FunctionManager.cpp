@@ -14,6 +14,7 @@
 #include "Passes/SlotTrackerPass.h"
 #include "Passes/SourceLocationTracker.h"
 #include "Predicate/PredicateFactory.h"
+#include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "Term/TermFactory.h"
 #include "Util/util.h"
@@ -43,21 +44,23 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
 
     SlotTracker* slots = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
     PredicateFactory::Ptr PF = PredicateFactory::get(slots);
-    PredicateStateFactory::Ptr PSF = PredicateStateFactory::get();
     TermFactory::Ptr TF = TermFactory::get(slots);
+
+    PSF = PredicateStateFactory::get();
 
     for (Annotation::Ptr a : annotations) {
         Annotation::Ptr anno = materialize(a, TF.get(), &meta);
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
-                    PredicateState::Ptr ps =
-                            PSF->Basic() +
-                            PF->getEqualityPredicate(
-                                logic->getTerm(),
-                                TF->getTrueTerm(),
-                                predicateType(logic)
-                            );
+                    PredicateState::Ptr ps = (
+                        PSF +
+                        PF->getEqualityPredicate(
+                            logic->getTerm(),
+                            TF->getTrueTerm(),
+                            predicateType(logic)
+                        )
+                    )();
                     update(F, ps);
                     break;
                 }
@@ -83,7 +86,7 @@ void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
-        data[F] = data[F] + state;
+        data[F] = (PSF + data[F] + state)();
     } else {
         data[F] = state;
     }

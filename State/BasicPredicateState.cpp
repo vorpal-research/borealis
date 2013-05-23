@@ -26,18 +26,6 @@ PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const
     return PredicateState::Ptr(res);
 }
 
-PredicateState::Ptr BasicPredicateState::addAll(PredicateState::Ptr state) const {
-    ASSERTC(state != nullptr);
-    auto* s = llvm::dyn_cast<BasicPredicateState>(state);
-    ASSERTC(s != nullptr);
-
-    if (s->isEmpty()) return this->shared_from_this();
-
-    auto* res = new BasicPredicateState(*this);
-    res->data.insert(res->data.end(), s->data.begin(), s->data.end());
-    return PredicateState::Ptr(res);
-}
-
 logic::Bool BasicPredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
     TRACE_FUNC;
 

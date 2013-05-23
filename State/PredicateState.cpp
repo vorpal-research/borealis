@@ -42,14 +42,6 @@ PredicateState::Ptr operator+(PredicateState::Ptr state, Predicate::Ptr p) {
     return state->addPredicate(p);
 }
 
-PredicateState::Ptr operator&&(PredicateState::Ptr a, PredicateState::Ptr b) {
-    return a->addAll(b);
-}
-
-PredicateState::Ptr operator+(PredicateState::Ptr a, PredicateState::Ptr b) {
-    return a->addAll(b);
-}
-
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc) {
     return state->addVisited(loc);
 }

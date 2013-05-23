@@ -31,7 +31,6 @@ public:
     typedef std::function<bool(Predicate::Ptr)> Filterer;
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const = 0;
-    virtual PredicateState::Ptr addAll(PredicateState::Ptr state) const = 0;
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const = 0;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
@@ -75,8 +74,6 @@ std::ostream& operator<<(std::ostream& s, PredicateState::Ptr state);
 
 PredicateState::Ptr operator&&(PredicateState::Ptr state, Predicate::Ptr p);
 PredicateState::Ptr operator+ (PredicateState::Ptr state, Predicate::Ptr p);
-PredicateState::Ptr operator&&(PredicateState::Ptr a, PredicateState::Ptr b);
-PredicateState::Ptr operator+ (PredicateState::Ptr a, PredicateState::Ptr b);
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc);
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc);
 

@@ -27,16 +27,6 @@ PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const
     return PredicateState::Ptr(res);
 }
 
-PredicateState::Ptr PredicateStateChain::addAll(PredicateState::Ptr state) const {
-    ASSERTC(state != nullptr);
-
-    if (state->isEmpty()) return this->shared_from_this();
-
-    auto* res = new PredicateStateChain(*this);
-    res->curr = res->curr + state;
-    return PredicateState::Ptr(res);
-}
-
 logic::Bool PredicateStateChain::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
     TRACE_FUNC;
     return base->toZ3(z3ef, pctx) && curr->toZ3(z3ef, pctx);

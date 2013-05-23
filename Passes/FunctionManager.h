@@ -43,6 +43,8 @@ private:
 
     Data data;
 
+    PredicateStateFactory::Ptr PSF;
+
 };
 
 } /* namespace borealis */

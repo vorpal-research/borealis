@@ -19,7 +19,6 @@ class PredicateStateChain :
 public:
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const;
-    virtual PredicateState::Ptr addAll(PredicateState::Ptr state) const;
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const;

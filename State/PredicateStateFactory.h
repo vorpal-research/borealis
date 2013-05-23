@@ -20,7 +20,7 @@ class PredicateStateFactory {
 
 public:
 
-    typedef std::unique_ptr<PredicateStateFactory> Ptr;
+    typedef std::shared_ptr<PredicateStateFactory> Ptr;
 
     PredicateState::Ptr Chain(
             PredicateState::Ptr base,
