@@ -72,7 +72,6 @@ std::ostream& operator<<(std::ostream& s, PredicateState::Ptr state);
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-PredicateState::Ptr operator&&(PredicateState::Ptr state, Predicate::Ptr p);
 PredicateState::Ptr operator+ (PredicateState::Ptr state, Predicate::Ptr p);
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc);
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc);

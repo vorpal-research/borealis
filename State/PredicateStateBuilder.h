@@ -21,24 +21,23 @@ private:
 
 public:
 
-    PredicateStateBuilder(PredicateStateFactory::Ptr PSF);
+    PredicateStateBuilder(PredicateStateFactory::Ptr PSF, PredicateState::Ptr state);
     PredicateStateBuilder(const PredicateStateBuilder&) = default;
     PredicateStateBuilder(PredicateStateBuilder&&) = default;
 
     PredicateState::Ptr operator()() const;
 
-    friend PredicateStateBuilder operator&&(PredicateStateBuilder PSB, PredicateState::Ptr s);
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
-    friend PredicateStateBuilder operator&&(PredicateStateBuilder PSB, Predicate::Ptr p);
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
     friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value* loc);
     friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value& loc);
 
 };
 
-PredicateStateBuilder operator&&(PredicateStateBuilder PSB, PredicateState::Ptr s);
+PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, PredicateState::Ptr state);
+PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Predicate::Ptr p);
+
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
-PredicateStateBuilder operator&&(PredicateStateBuilder PSB, Predicate::Ptr p);
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
 PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value* loc);
 PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value& loc);

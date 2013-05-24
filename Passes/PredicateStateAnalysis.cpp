@@ -58,11 +58,9 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
 
     // Register REQUIRES from annotations
-    PredicateState::Ptr initialState = (
-        PSF +
-        gPredicate +
-        FM->get(&F)->filterByTypes({ PredicateType::REQUIRES })
-    )();
+    PredicateState::Ptr requires = FM->get(&F)->filterByTypes({ PredicateType::REQUIRES });
+
+    PredicateState::Ptr initialState = (PSF * gPredicate + requires)();
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {
@@ -127,7 +125,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
 
     if (inState->isUnreachable()) return;
 
-    inState = (PSF + inState)();
+    inState = (PSF * inState)();
 
     auto iter = bb->begin();
 
@@ -135,13 +133,13 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
     for ( ; isa<PHINode>(iter); ++iter) {
         const PHINode* phi = cast<PHINode>(iter);
         if (phi->getBasicBlockIndex(from) != -1) {
-            inState = (PSF + inState + PPM({from, phi}) << phi)();
+            inState = (PSF * inState + PPM({from, phi}) << phi)();
         }
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState::Ptr modifiedInState = (PSF + inState + PM(&I) << I)();
+        PredicateState::Ptr modifiedInState = (PSF * inState + PM(&I) << I)();
         predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
 
         TRACE_MEASUREMENT(
@@ -165,7 +163,7 @@ void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
                 }
             );
 
-            modifiedInState = (PSF + modifiedInState + transformedCallState)();
+            modifiedInState = (PSF * modifiedInState + transformedCallState)();
         }
 
         inState = modifiedInState;
@@ -199,10 +197,11 @@ void PredicateStateAnalysis::processBranchInst(
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
-        enqueue(I.getParent(), trueSucc,
-            ( PSF + state + TPM({&I, trueSucc})  )() );
-        enqueue(I.getParent(), falseSucc,
-            ( PSF + state + TPM({&I, falseSucc}) )() );
+        PredicateState::Ptr trueState = TPM({&I, trueSucc});
+        PredicateState::Ptr falseState = TPM({&I, falseSucc});
+
+        enqueue(I.getParent(), trueSucc, (PSF * state + trueState)());
+        enqueue(I.getParent(), falseSucc, (PSF * state + falseState)());
     }
 }
 
@@ -213,13 +212,13 @@ void PredicateStateAnalysis::processSwitchInst(
 
     for (auto c = I.case_begin(); c != I.case_end(); ++c) {
         const BasicBlock* caseSucc = c.getCaseSuccessor();
-        enqueue(I.getParent(), caseSucc,
-            ( PSF + state + TPM({&I, caseSucc}) )() );
+        PredicateState::Ptr caseState = TPM({&I, caseSucc});
+        enqueue(I.getParent(), caseSucc, (PSF * state + caseState)());
     }
 
     const BasicBlock* defaultSucc = I.getDefaultDest();
-    enqueue(I.getParent(), defaultSucc,
-        ( PSF + state + TPM({&I, defaultSucc}) )() );
+    PredicateState::Ptr defaultState = TPM({&I, defaultSucc});
+    enqueue(I.getParent(), defaultSucc, (PSF * state + defaultState)());
 }
 
 PredicateState::Ptr PredicateStateAnalysis::PM(const llvm::Instruction* I) {

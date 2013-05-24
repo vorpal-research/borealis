@@ -11,9 +11,6 @@
 
 namespace borealis {
 
-PredicateStateChain::PredicateStateChain() :
-        PredicateStateChain(nullptr, nullptr) {};
-
 PredicateStateChain::PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr) :
         PredicateState(type_id<PredicateStateChain>()),
         base(base),
@@ -72,16 +69,10 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitBy
     auto baseSplit = this->base->splitByTypes(types);
     auto currSplit = this->curr->splitByTypes(types);
 
-    auto* yes = new PredicateStateChain();
-    auto* no = new PredicateStateChain();
-
-    yes->base = baseSplit.first;
-    yes->curr = currSplit.first;
-
-    no->base = baseSplit.second;
-    no->curr = currSplit.second;
-
-    return std::make_pair(PredicateState::Ptr(yes), PredicateState::Ptr(no));
+    return std::make_pair(
+        PredicateState::Ptr(new PredicateStateChain(baseSplit.first, currSplit.first)),
+        PredicateState::Ptr(new PredicateStateChain(baseSplit.second, currSplit.second))
+    );
 }
 
 bool PredicateStateChain::isEmpty() const {

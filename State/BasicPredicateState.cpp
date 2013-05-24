@@ -29,9 +29,6 @@ PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const
 logic::Bool BasicPredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
     TRACE_FUNC;
 
-    ExecutionContext ctx(z3ef);
-    if (!pctx) pctx = &ctx;
-
     auto res = z3ef.getTrue();
     for (auto& v : data) {
         res = res && v->toZ3(z3ef, pctx);

@@ -34,10 +34,6 @@ std::ostream& operator<<(std::ostream& s, PredicateState::Ptr state) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-PredicateState::Ptr operator&&(PredicateState::Ptr state, Predicate::Ptr p) {
-    return state->addPredicate(p);
-}
-
 PredicateState::Ptr operator+(PredicateState::Ptr state, Predicate::Ptr p) {
     return state->addPredicate(p);
 }

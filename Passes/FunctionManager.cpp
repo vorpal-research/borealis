@@ -54,7 +54,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
                     PredicateState::Ptr ps = (
-                        PSF +
+                        PSF *
                         PF->getEqualityPredicate(
                             logic->getTerm(),
                             TF->getTrueTerm(),
@@ -86,7 +86,7 @@ void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
-        data[F] = (PSF + data[F] + state)();
+        data[F] = (PSF * data[F] + state)();
     } else {
         data[F] = state;
     }

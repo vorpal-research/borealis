@@ -59,7 +59,6 @@ private:
     PredicateState::Ptr base;
     PredicateState::Ptr curr;
 
-    PredicateStateChain();
     PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr);
     PredicateStateChain(const PredicateStateChain& state) = default;
     PredicateStateChain(PredicateStateChain&& state) = default;

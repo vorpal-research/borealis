@@ -66,9 +66,18 @@ public:
         memory = memory.store(ix, val);
     }
 
+    ExecutionContext& switchOn(const std::vector<std::pair<Bool, ExecutionContext>>& contexts) {
+        auto merged = ExecutionContext::mergeMemory(*this, contexts);
+
+        this->memory = merged.memory;
+        this->currentPtr = merged.currentPtr;
+
+        return *this;
+    }
+
     static ExecutionContext mergeMemory(
             ExecutionContext defaultContext,
-            const std::vector<std::pair<Bool, ExecutionContext>>&  contexts) {
+            const std::vector<std::pair<Bool, ExecutionContext>>& contexts) {
         ExecutionContext res(defaultContext.factory);
 
         // Merge current pointer
