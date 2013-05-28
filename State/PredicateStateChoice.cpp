@@ -29,7 +29,7 @@ PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
         }
     );
 
-    return PredicateState::Ptr(new Self(newChoices));
+    return Simplified(new Self(newChoices));
 }
 
 logic::Bool PredicateStateChoice::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
@@ -68,7 +68,7 @@ PredicateState::Ptr PredicateStateChoice::addVisited(const llvm::Value* loc) con
         }
     );
 
-    return PredicateState::Ptr(new Self(newChoices));
+    return Simplified(new Self(newChoices));
 }
 
 bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
@@ -96,7 +96,7 @@ PredicateState::Ptr PredicateStateChoice::map(Mapper m) const {
         }
     );
 
-    return PredicateState::Ptr(new Self(mapped));
+    return Simplified(new Self(mapped));
 }
 
 PredicateState::Ptr PredicateStateChoice::filterByTypes(std::initializer_list<PredicateType> types) const {
@@ -109,7 +109,7 @@ PredicateState::Ptr PredicateStateChoice::filterByTypes(std::initializer_list<Pr
         }
     );
 
-    return PredicateState::Ptr(new Self(mapped));
+    return Simplified(new Self(mapped));
 }
 
 PredicateState::Ptr PredicateStateChoice::filter(Filterer f) const {
@@ -122,7 +122,7 @@ PredicateState::Ptr PredicateStateChoice::filter(Filterer f) const {
         }
     );
 
-    return PredicateState::Ptr(new Self(mapped));
+    return Simplified(new Self(mapped));
 }
 
 std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChoice::splitByTypes(std::initializer_list<PredicateType> types) const {
@@ -138,8 +138,8 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChoice::splitB
     }
 
     return std::make_pair(
-        PredicateState::Ptr(new Self(yes)),
-        PredicateState::Ptr(new Self(no))
+        Simplified(new Self(yes)),
+        Simplified(new Self(no))
     );
 }
 
@@ -155,10 +155,30 @@ PredicateState::Ptr PredicateStateChoice::sliceOn(PredicateState::Ptr base) cons
 
     if (std::all_of(slices.begin(), slices.end(),
         [](PredicateState::Ptr slice) { return slice != nullptr; })) {
-        return PredicateState::Ptr(new Self(slices));
+        return Simplified(new Self(slices));
     }
 
     return nullptr;
+}
+
+PredicateState::Ptr PredicateStateChoice::simplify() const {
+    std::vector<PredicateState::Ptr> simplified;
+    simplified.reserve(choices.size());
+
+    std::transform(choices.begin(), choices.end(), std::back_inserter(simplified),
+        [](PredicateState::Ptr choice) {
+            return choice->simplify();
+        }
+    );
+
+    std::remove_if(simplified.begin(), simplified.end(),
+        [](PredicateState::Ptr choice) { return choice->isEmpty(); });
+
+    if (simplified.size() == 1) {
+        return borealis::util::head(simplified);
+    } else {
+        return PredicateState::Ptr(new Self(simplified));
+    }
 }
 
 bool PredicateStateChoice::isEmpty() const {

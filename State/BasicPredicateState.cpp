@@ -38,9 +38,9 @@ void BasicPredicateState::addVisitedInPlace(const Locations& locs) {
 PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
 
-    auto* res = new Self(*this);
+    auto res = SelfPtr(new Self(*this));
     res->addPredicateInPlace(pred);
-    return PredicateState::Ptr(res);
+    return Simplified(res.release());
 }
 
 logic::Bool BasicPredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
@@ -56,9 +56,9 @@ logic::Bool BasicPredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pct
 }
 
 PredicateState::Ptr BasicPredicateState::addVisited(const llvm::Value* loc) const {
-    auto* res = new Self(*this);
+    auto res = SelfPtr(new Self(*this));
     res->addVisitedInPlace(loc);
-    return PredicateState::Ptr(res);
+    return Simplified(res.release());
 }
 
 bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
@@ -70,16 +70,16 @@ bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> l
 }
 
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
-    auto* res = new Self();
+    auto res = SelfPtr(new Self());
     for (auto& p : data) {
         res->addPredicateInPlace(m(p));
     }
     res->addVisitedInPlace(this->locs);
-    return PredicateState::Ptr(res);
+    return Simplified(res.release());
 }
 
 PredicateState::Ptr BasicPredicateState::filterByTypes(std::initializer_list<PredicateType> types) const {
-    auto* res = new Self();
+    auto res = SelfPtr(new Self());
     for (auto& p : data) {
         if (std::any_of(types.begin(), types.end(),
             [&p](const PredicateType& type) { return p->getType() == type; })) {
@@ -87,23 +87,23 @@ PredicateState::Ptr BasicPredicateState::filterByTypes(std::initializer_list<Pre
         }
     }
     res->addVisitedInPlace(this->locs);
-    return PredicateState::Ptr(res);
+    return Simplified(res.release());
 }
 
 PredicateState::Ptr BasicPredicateState::filter(Filterer f) const {
-    auto* res = new Self();
+    auto res = SelfPtr(new Self());
     for (auto& p : data) {
         if (f(p)) {
             res->addPredicateInPlace(p);
         }
     }
     res->addVisitedInPlace(this->locs);
-    return PredicateState::Ptr(res);
+    return Simplified(res.release());
 }
 
 std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitByTypes(std::initializer_list<PredicateType> types) const {
-    auto* left = new Self();
-    auto* right = new Self();
+    auto left = SelfPtr(new Self());
+    auto right = SelfPtr(new Self());
     for (auto& p : data) {
         if (std::any_of(types.begin(), types.end(),
             [&p](const PredicateType& type) { return p->getType() == type; })) {
@@ -114,14 +114,18 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitBy
     }
     left->addVisitedInPlace(this->locs);
     right->addVisitedInPlace(this->locs);
-    return std::make_pair(PredicateState::Ptr(left), PredicateState::Ptr(right));
+    return std::make_pair(Simplified(left.release()), Simplified(right.release()));
 }
 
 PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr base) const {
     if (*this == *base) {
-        return PredicateState::Ptr(new Self());
+        return Simplified(new Self());
     }
     return nullptr;
+}
+
+PredicateState::Ptr BasicPredicateState::simplify() const {
+    return this->shared_from_this();
 }
 
 bool BasicPredicateState::isEmpty() const {

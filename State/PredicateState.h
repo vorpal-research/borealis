@@ -18,11 +18,8 @@
 
 namespace borealis {
 
-class PredicateState {
-
-protected:
-
-    const borealis::id_t predicate_state_type_id;
+class PredicateState :
+    public std::enable_shared_from_this<const PredicateState> {
 
 public:
 
@@ -42,6 +39,8 @@ public:
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const = 0;
 
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const = 0;
+
+    virtual PredicateState::Ptr simplify() const = 0;
 
     bool isUnreachable() const;
 
@@ -63,6 +62,14 @@ public:
 
     borealis::id_t getPredicateStateTypeId() const {
         return predicate_state_type_id;
+    }
+
+protected:
+
+    const borealis::id_t predicate_state_type_id;
+
+    static PredicateState::Ptr Simplified(const PredicateState* s) {
+        return PredicateState::Ptr(s)->simplify();
     }
 };
 

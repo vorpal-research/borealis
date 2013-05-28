@@ -20,10 +20,10 @@
 namespace borealis {
 
 class BasicPredicateState :
-        public PredicateState,
-        public std::enable_shared_from_this<BasicPredicateState> {
+        public PredicateState {
 
     typedef BasicPredicateState Self;
+    typedef std::unique_ptr<Self> SelfPtr;
 
     typedef std::list<Predicate::Ptr> Data;
     typedef std::unordered_set<const llvm::Value*> Locations;
@@ -42,6 +42,8 @@ public:
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const;
 
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const;
+
+    virtual PredicateState::Ptr simplify() const;
 
     static bool classof(const Self* /* ps */) {
         return true;

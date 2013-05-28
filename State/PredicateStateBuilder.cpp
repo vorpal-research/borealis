@@ -20,7 +20,7 @@ PredicateStateBuilder::PredicateStateBuilder(
         PSF(PSF), State(PSF->Basic() + pred) {};
 
 PredicateState::Ptr PredicateStateBuilder::operator()() const {
-    return State;
+    return State->simplify();
 }
 
 PredicateStateBuilder& PredicateStateBuilder::operator+=(PredicateState::Ptr s) {

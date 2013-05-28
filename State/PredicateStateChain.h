@@ -13,10 +13,10 @@
 namespace borealis {
 
 class PredicateStateChain :
-        public PredicateState,
-        public std::enable_shared_from_this<PredicateStateChain> {
+        public PredicateState {
 
     typedef PredicateStateChain Self;
+    typedef std::unique_ptr<Self> SelfPtr;
 
 public:
 
@@ -32,6 +32,8 @@ public:
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const;
 
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const;
+
+    virtual PredicateState::Ptr simplify() const;
 
     virtual bool isEmpty() const;
 
