@@ -22,10 +22,14 @@ private:
 public:
 
     PredicateStateBuilder(PredicateStateFactory::Ptr PSF, PredicateState::Ptr state);
+    PredicateStateBuilder(PredicateStateFactory::Ptr PSF, Predicate::Ptr pred);
     PredicateStateBuilder(const PredicateStateBuilder&) = default;
     PredicateStateBuilder(PredicateStateBuilder&&) = default;
 
     PredicateState::Ptr operator()() const;
+
+    PredicateStateBuilder& operator+=(PredicateState::Ptr s);
+    PredicateStateBuilder& operator+=(Predicate::Ptr p);
 
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);

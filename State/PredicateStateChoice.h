@@ -1,32 +1,22 @@
 /*
- * BasicPredicateState.h
+ * PredicateStateChoice.h
  *
- *  Created on: Oct 3, 2012
+ *  Created on: May 23, 2013
  *      Author: ice-phoenix
  */
 
-#ifndef BASICPREDICATESTATE_H_
-#define BASICPREDICATESTATE_H_
+#ifndef PREDICATESTATECHOICE_H_
+#define PREDICATESTATECHOICE_H_
 
-#include <llvm/Value.h>
-
-#include <list>
-#include <unordered_set>
-
-#include "Logging/logger.hpp"
 #include "State/PredicateState.h"
-#include "Util/util.h"
 
 namespace borealis {
 
-class BasicPredicateState :
+class PredicateStateChoice:
         public PredicateState,
-        public std::enable_shared_from_this<BasicPredicateState> {
+        public std::enable_shared_from_this<PredicateStateChoice> {
 
-    typedef BasicPredicateState Self;
-
-    typedef std::list<Predicate::Ptr> Data;
-    typedef std::unordered_set<const llvm::Value*> Locations;
+    typedef PredicateStateChoice Self;
 
 public:
 
@@ -43,6 +33,8 @@ public:
 
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const;
 
+    virtual bool isEmpty() const;
+
     static bool classof(const Self* /* ps */) {
         return true;
     }
@@ -51,16 +43,15 @@ public:
         return ps->getPredicateStateTypeId() == type_id<Self>();
     }
 
-    virtual bool isEmpty() const;
-
     virtual bool equals(const PredicateState* other) const {
         if (this == other) return true;
 
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return std::equal(data.begin(), data.end(), o->data.begin(),
-                [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
+            return std::equal(choices.begin(), choices.end(), o->choices.begin(),
+                [](PredicateState::Ptr a, PredicateState::Ptr b) {
                     return *a == *b;
-                });
+                }
+            );
         } else {
             return false;
         }
@@ -72,19 +63,15 @@ public:
 
 private:
 
-    Data data;
-    Locations locs;
+    std::vector<PredicateState::Ptr> choices;
 
-    BasicPredicateState();
-    BasicPredicateState(const Self& state) = default;
-    BasicPredicateState(Self&& state) = default;
-
-    void addPredicateInPlace(Predicate::Ptr pred);
-    void addVisitedInPlace(const llvm::Value* loc);
-    void addVisitedInPlace(const Locations& locs);
+    PredicateStateChoice(const std::vector<PredicateState::Ptr>& choices);
+    PredicateStateChoice(std::vector<PredicateState::Ptr>&& choices);
+    PredicateStateChoice(const Self& state) = default;
+    PredicateStateChoice(Self&& state) = default;
 
 };
 
 } /* namespace borealis */
 
-#endif /* BASICPREDICATESTATE_H_ */
+#endif /* PREDICATESTATECHOICE_H_ */

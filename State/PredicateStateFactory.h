@@ -13,6 +13,7 @@
 #include "State/BasicPredicateState.h"
 #include "State/PredicateState.h"
 #include "State/PredicateStateChain.h"
+#include "State/PredicateStateChoice.h"
 
 namespace borealis {
 
@@ -25,6 +26,13 @@ public:
     PredicateState::Ptr Chain(
             PredicateState::Ptr base,
             PredicateState::Ptr curr);
+
+    PredicateState::Ptr Chain(
+            PredicateState::Ptr base,
+            Predicate::Ptr pred);
+
+    PredicateState::Ptr Choice(
+            const std::vector<PredicateState::Ptr>& choices);
 
     PredicateState::Ptr Basic();
 

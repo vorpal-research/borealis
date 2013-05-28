@@ -17,6 +17,20 @@ PredicateState::Ptr PredicateStateFactory::Chain(
     );
 }
 
+PredicateState::Ptr PredicateStateFactory::Chain(
+        PredicateState::Ptr base,
+        Predicate::Ptr pred) {
+    return PredicateState::Ptr(
+            new PredicateStateChain(base, Basic() + pred)
+    );
+}
+
+PredicateState::Ptr PredicateStateFactory::Choice(const std::vector<PredicateState::Ptr>& choices) {
+    return PredicateState::Ptr(
+            new PredicateStateChoice(choices)
+    );
+}
+
 PredicateState::Ptr PredicateStateFactory::Basic() {
     static PredicateState::Ptr basic(new BasicPredicateState());
     return basic;

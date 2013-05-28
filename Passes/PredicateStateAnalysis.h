@@ -8,6 +8,7 @@
 #ifndef PREDICATESTATEANALYSIS_H_
 #define PREDICATESTATEANALYSIS_H_
 
+#include <llvm/Analysis/Dominators.h>
 #include <llvm/BasicBlock.h>
 #include <llvm/Constants.h>
 #include <llvm/Function.h>
@@ -27,7 +28,6 @@
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
-#include "State/PredicateStateVector.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
@@ -38,9 +38,6 @@ class PredicateStateAnalysis:
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
         public ShouldBeModularized {
 
-    typedef std::tuple<const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState::Ptr> WorkQueueEntry;
-    typedef std::queue<WorkQueueEntry> WorkQueue;
-
     typedef AbstractPredicateAnalysis::PredicateMap PredicateMap;
     typedef AbstractPredicateAnalysis::PhiPredicateMap PhiPredicateMap;
     typedef AbstractPredicateAnalysis::PhiBranch PhiBranch;
@@ -49,8 +46,8 @@ class PredicateStateAnalysis:
 
 public:
 
-    typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStateMap;
-    typedef PredicateStateMap::value_type PredicateStateMapEntry;
+    typedef std::map<const llvm::BasicBlock*, PredicateState::Ptr> BasicBlockStates;
+    typedef std::map<const llvm::Instruction*, PredicateState::Ptr> InstructionStates;
 
     static char ID;
 
@@ -65,17 +62,15 @@ public:
     virtual bool runOnFunction(llvm::Function& F);
     virtual void print(llvm::raw_ostream&, const llvm::Module*) const;
 
-    virtual ~PredicateStateAnalysis();
-
-    PredicateStateMap& getPredicateStateMap();
+    const InstructionStates& getInstructionStates();
 
 private:
 
-    PredicateStateMap predicateStateMap;
-    WorkQueue workQueue;
+    BasicBlockStates basicBlockStates;
+    InstructionStates instructionStates;
 
     FunctionManager* FM;
-    llvm::LoopInfo* LI;
+    llvm::DominatorTree* DT;
 
     std::list<AbstractPredicateAnalysis*> PA;
 
@@ -85,22 +80,9 @@ private:
 
     void init();
 
-    void enqueue(
-            const llvm::BasicBlock* from,
-            const llvm::BasicBlock* to,
-            PredicateState::Ptr state);
-    void processQueue();
-    void processBasicBlock(const WorkQueueEntry& wqe);
-    void processTerminator(
-            const llvm::TerminatorInst& I,
-            PredicateState::Ptr state);
-    void processBranchInst(
-            const llvm::BranchInst& I,
-            PredicateState::Ptr state);
-    void processSwitchInst(
-            const llvm::SwitchInst& I,
-            PredicateState::Ptr state);
+    void processBasicBlock(llvm::BasicBlock* BB);
 
+    PredicateState::Ptr BBM(llvm::BasicBlock* BB);
     PredicateState::Ptr PM(const llvm::Instruction* I);
     PredicateState::Ptr PPM(PhiBranch key);
     PredicateState::Ptr TPM(TerminatorBranch key);

@@ -16,6 +16,8 @@ class PredicateStateChain :
         public PredicateState,
         public std::enable_shared_from_this<PredicateStateChain> {
 
+    typedef PredicateStateChain Self;
+
 public:
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const;
@@ -29,20 +31,22 @@ public:
     virtual PredicateState::Ptr filter(Filterer f) const;
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const;
 
+    virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const;
+
     virtual bool isEmpty() const;
 
-    static bool classof(const PredicateStateChain* /* ps */) {
+    static bool classof(const Self* /* ps */) {
         return true;
     }
 
     static bool classof(const PredicateState* ps) {
-        return ps->getPredicateStateTypeId() == type_id<PredicateStateChain>();
+        return ps->getPredicateStateTypeId() == type_id<Self>();
     }
 
     virtual bool equals(const PredicateState* other) const {
         if (this == other) return true;
 
-        if (auto* o = llvm::dyn_cast_or_null<PredicateStateChain>(other)) {
+        if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return *this->base == *o->base &&
                     *this->curr == *o->curr;
         } else {
@@ -60,8 +64,8 @@ private:
     PredicateState::Ptr curr;
 
     PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr);
-    PredicateStateChain(const PredicateStateChain& state) = default;
-    PredicateStateChain(PredicateStateChain&& state) = default;
+    PredicateStateChain(const Self& state) = default;
+    PredicateStateChain(Self&& state) = default;
 
 };
 

@@ -111,30 +111,27 @@ public:
                     pass->TF->getNullPtrTerm()
                 );
 
-        PredicateStateVector psv = pass->PSA->getPredicateStateMap()[&where];
+        PredicateState::Ptr ps = pass->PSA->getInstructionStates().at(&where);
 
-        for (auto& ps : psv) {
-
-            if (!ps->hasVisited({&where, &what, &why})) {
-                dbgs() << "Infeasible!" << endl;
-                continue;
-            }
-
-            dbgs() << "Query: " << q->toString() << endl;
-            dbgs() << "State: " << ps << endl;
-
-            z3::context ctx;
-            Z3ExprFactory z3ef(ctx);
-            Z3Solver s(z3ef);
-
-            if (s.isViolated(q, ps)) {
-                dbgs() << "Violated!" << endl;
-                return true;
-            }
+        if (!ps->hasVisited({&where, &what, &why})) {
+            dbgs() << "Infeasible!" << endl;
+            return false;
         }
 
-        dbgs() << "Passed!" << endl;
-        return false;
+        dbgs() << "Query: " << q->toString() << endl;
+        dbgs() << "State: " << ps << endl;
+
+        z3::context ctx;
+        Z3ExprFactory z3ef(ctx);
+        Z3Solver s(z3ef);
+
+        if (s.isViolated(q, ps)) {
+            dbgs() << "Violated!" << endl;
+            return true;
+        } else {
+            dbgs() << "Passed!" << endl;
+            return false;
+        }
     }
 
     void reportNullDereference(

@@ -5,14 +5,19 @@
  *      Author: ice-phoenix
  */
 
+#include <llvm/Support/CFG.h>
+
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateStateAnalysis.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
+#include "Util/graph.h"
 #include "Util/util.h"
 
 // Hacky-hacky way to include all predicate analyses
 #include "Passes/PredicateAnalysis.def"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -29,6 +34,8 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 
+    AUX<llvm::DominatorTree>::addRequired(AU);
+
 #define HANDLE_ANALYSIS(CLASS) \
     AUX<CLASS>::addRequiredTransitive(AU);
 #include "Passes/PredicateAnalysis.def"
@@ -38,6 +45,7 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
+    DT = &GetAnalysis< llvm::DominatorTree >::doit(this, F);
 
     auto* ST = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
     PF = PredicateFactory::get(ST);
@@ -67,158 +75,130 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         initialState = initialState << arg;
     }
 
-    enqueue(nullptr, &F.getEntryBlock(), initialState);
-    processQueue();
+    // Initial state goes in nullptr
+    basicBlockStates[nullptr] = initialState;
+
+    // Process basic blocks in topological order
+    TopologicalSorter::Result ordered = TopologicalSorter().doit(F);
+    ASSERT(!ordered.empty(),
+           "No topological order for: " + F.getName().str());
+    ASSERT(ordered.getUnsafe().size() == F.getBasicBlockList().size(),
+           "Topological order does not include all basic blocks for: " + F.getName().str());
+
+    dbgs() << "Topological sorting for: " << F.getName() << endl;
+    for (auto* BB : ordered.getUnsafe()) {
+        dbgs() << valueSummary(BB) << endl;
+    }
+    dbgs() << "End of topological sorting for: " << F.getName() << endl;
+
+    for (auto* BB : ordered.getUnsafe()) {
+        processBasicBlock(BB);
+    }
 
     return false;
 }
 
 void PredicateStateAnalysis::print(llvm::raw_ostream&, const llvm::Module*) const {
     infos() << "Predicate state analysis results" << endl;
-    for (auto& e : predicateStateMap) {
+    for (auto& e : instructionStates) {
         infos() << *e.first << endl
                 << e.second << endl;
     }
     infos() << "End of predicate state analysis results" << endl;
 }
 
-PredicateStateAnalysis::~PredicateStateAnalysis() {}
-
-PredicateStateAnalysis::PredicateStateMap& PredicateStateAnalysis::getPredicateStateMap() {
-    return predicateStateMap;
+const PredicateStateAnalysis::InstructionStates& PredicateStateAnalysis::getInstructionStates() {
+    return instructionStates;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void PredicateStateAnalysis::init() {
-    predicateStateMap.clear();
-
-    WorkQueue q;
-    std::swap(workQueue, q);
+    basicBlockStates.clear();
+    instructionStates.clear();
 }
 
-void PredicateStateAnalysis::enqueue(
-        const llvm::BasicBlock* from,
-        const llvm::BasicBlock* to,
-        PredicateState::Ptr state) {
-    TRACE_UP("psa::queue");
-    workQueue.push(std::make_tuple(from, to, state));
-}
-
-void PredicateStateAnalysis::processQueue() {
-    while (!workQueue.empty()) {
-        processBasicBlock(workQueue.front());
-        workQueue.pop();
-        TRACE_DOWN("psa::queue");
-    }
-}
-
-void PredicateStateAnalysis::processBasicBlock(const WorkQueueEntry& wqe) {
+void PredicateStateAnalysis::processBasicBlock(llvm::BasicBlock* BB) {
     using namespace llvm;
-    using borealis::util::containsKey;
-    using borealis::util::toString;
     using borealis::util::view;
 
-    const BasicBlock* from = std::get<0>(wqe);
-    const BasicBlock* bb = std::get<1>(wqe);
-    PredicateState::Ptr inState = std::get<2>(wqe);
+    auto inState = BBM(BB);
 
     if (inState->isUnreachable()) return;
 
-    inState = (PSF * inState)();
+    for (auto& I : view(BB->begin(), BB->end())) {
 
-    auto iter = bb->begin();
-
-    // Add incoming predicates from PHI nodes
-    for ( ; isa<PHINode>(iter); ++iter) {
-        const PHINode* phi = cast<PHINode>(iter);
-        if (phi->getBasicBlockIndex(from) != -1) {
-            inState = (PSF * inState + PPM({from, phi}) << phi)();
-        }
-    }
-
-    for (auto& I : view(iter, bb->end())) {
-
-        PredicateState::Ptr modifiedInState = (PSF * inState + PM(&I) << I)();
-        predicateStateMap[&I] = predicateStateMap[&I].merge(modifiedInState);
-
-        TRACE_MEASUREMENT(
-                "psa::states." + toString(&I),
-                predicateStateMap[&I].size(),
-                "at",
-                valueSummary(I));
+        auto instructionState = (PSF * inState + PM(&I) << I)();
+        instructionStates[&I] = instructionState;
 
         // Add ensures and summary *after* the CallInst has been processed
         if (isa<CallInst>(I)) {
-            CallInst& CI = cast<CallInst>(I);
+            auto& CI = cast<CallInst>(I);
 
-            PredicateState::Ptr callState = FM->get(CI, PF.get(), TF.get());
+            auto callState = FM->get(CI, PF.get(), TF.get());
             CallSiteInitializer csi(CI, TF.get());
 
-            PredicateState::Ptr transformedCallState = callState->filterByTypes(
-                { PredicateType::ENSURES, PredicateType::STATE }
-            )->map(
-                [&csi](Predicate::Ptr p) {
-                    return csi.transform(p);
-                }
-            );
+            auto csiCallState = callState
+                ->filterByTypes(
+                    { PredicateType::ENSURES, PredicateType::STATE }
+                )->map(
+                    [&csi](Predicate::Ptr p) {
+                        return csi.transform(p);
+                    }
+                );
 
-            modifiedInState = (PSF * modifiedInState + transformedCallState)();
+            instructionState = (PSF * instructionState + csiCallState)();
         }
 
-        inState = modifiedInState;
+        inState = instructionState;
     }
 
-    processTerminator(*bb->getTerminator(), inState);
+    basicBlockStates[BB] = inState;
 }
 
-void PredicateStateAnalysis::processTerminator(
-        const llvm::TerminatorInst& I,
-        PredicateState::Ptr state) {
-    using namespace::llvm;
+////////////////////////////////////////////////////////////////////////////////
 
-    auto s = state << I;
+PredicateState::Ptr PredicateStateAnalysis::BBM(llvm::BasicBlock* BB) {
+    using namespace llvm;
 
-    if (isa<BranchInst>(I))
-    { processBranchInst(cast<BranchInst>(I), s); }
-    else if (isa<SwitchInst>(I))
-    { processSwitchInst(cast<SwitchInst>(I), s); }
-}
+    using borealis::util::containsKey;
+    using borealis::util::view;
 
-void PredicateStateAnalysis::processBranchInst(
-        const llvm::BranchInst& I,
-        PredicateState::Ptr state) {
-    using namespace::llvm;
+    auto* idom = (*DT)[BB]->getIDom();
 
-    if (I.isUnconditional()) {
-        const BasicBlock* succ = I.getSuccessor(0);
-        enqueue(I.getParent(), succ, state);
-    } else {
-        const BasicBlock* trueSucc = I.getSuccessor(0);
-        const BasicBlock* falseSucc = I.getSuccessor(1);
-
-        PredicateState::Ptr trueState = TPM({&I, trueSucc});
-        PredicateState::Ptr falseState = TPM({&I, falseSucc});
-
-        enqueue(I.getParent(), trueSucc, (PSF * state + trueState)());
-        enqueue(I.getParent(), falseSucc, (PSF * state + falseState)());
-    }
-}
-
-void PredicateStateAnalysis::processSwitchInst(
-        const llvm::SwitchInst& I,
-        PredicateState::Ptr state) {
-    using namespace::llvm;
-
-    for (auto c = I.case_begin(); c != I.case_end(); ++c) {
-        const BasicBlock* caseSucc = c.getCaseSuccessor();
-        PredicateState::Ptr caseState = TPM({&I, caseSucc});
-        enqueue(I.getParent(), caseSucc, (PSF * state + caseState)());
+    if (!idom) {
+        return basicBlockStates.at(nullptr);
     }
 
-    const BasicBlock* defaultSucc = I.getDefaultDest();
-    PredicateState::Ptr defaultState = TPM({&I, defaultSucc});
-    enqueue(I.getParent(), defaultSucc, (PSF * state + defaultState)());
+    auto base = basicBlockStates.at(idom->getBlock());
+    std::vector<PredicateState::Ptr> choices;
+
+    for (auto* predBB : view(pred_begin(BB), pred_end(BB))) {
+        auto stateBuilder = PSF * basicBlockStates.at(predBB);
+
+        // Adding path predicate from predBB
+        stateBuilder += TPM({predBB->getTerminator(), BB});
+
+        // Adding PHI predicates from predBB
+        for (auto it = BB->begin(); isa<PHINode>(it); ++it) {
+            const PHINode* phi = cast<PHINode>(it);
+            if (phi->getBasicBlockIndex(predBB) != -1) {
+                stateBuilder += PPM({predBB, phi}) << phi;
+            }
+        }
+
+        auto inState = stateBuilder();
+
+        auto slice = inState->sliceOn(base);
+        ASSERT(slice, "Could not slice state on its predecessor");
+
+        choices.push_back(slice);
+    }
+
+    return PSF->Chain(
+            base,
+            PSF->Choice(choices)
+    );
 }
 
 PredicateState::Ptr PredicateStateAnalysis::PM(const llvm::Instruction* I) {
@@ -266,8 +246,12 @@ PredicateState::Ptr PredicateStateAnalysis::TPM(TerminatorBranch key) {
     return res;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 char PredicateStateAnalysis::ID;
 static RegisterPass<PredicateStateAnalysis>
 X("predicate-state-analysis", "Analysis that merges the results of separate predicate analyses");
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

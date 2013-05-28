@@ -38,7 +38,7 @@ public:
 
     void checkContract(llvm::CallInst& CI) {
         auto contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
-        auto states = pass->PSA->getPredicateStateMap()[&CI];
+        auto state = pass->PSA->getInstructionStates().at(&CI);
 
         auto requires = contract->filterByTypes({PredicateType::REQUIRES});
         if (requires->isEmpty()) return;
@@ -57,21 +57,15 @@ public:
         Z3ExprFactory z3ef(ctx);
         Z3Solver s(z3ef);
 
-        for (auto& state : states) {
-            dbgs() << "  State: " << endl << state << endl;
-            if (s.isViolated(instantiatedRequires, state)) {
-                dbgs() << "Violated!" << endl;
-                pass->DM->addDefect(DefectType::REQ_01, &CI);
-                return;
-            }
+        dbgs() << "  State: " << endl << state << endl;
+        if (s.isViolated(instantiatedRequires, state)) {
+            pass->DM->addDefect(DefectType::REQ_01, &CI);
         }
-
-        dbgs() << "Passed!" << endl;
     }
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
         auto anno = materialize(A, pass->TF.get(), pass->MI);
-        auto& states = pass->PSA->getPredicateStateMap()[&CI];
+        auto& state = pass->PSA->getInstructionStates().at(&CI);
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
             auto query =
@@ -89,18 +83,16 @@ public:
             Z3ExprFactory z3ef(ctx);
             Z3Solver s(z3ef);
 
-            for (auto& state : states) {
-                dbgs() << "  State: " << endl << state << endl;
-                if (s.isViolated(query, state)) {
-                    pass->DM->addDefect(DefectType::ASR_01, &CI);
-                }
+            dbgs() << "  State: " << endl << state << endl;
+            if (s.isViolated(query, state)) {
+                pass->DM->addDefect(DefectType::ASR_01, &CI);
             }
         }
     }
 
     void visitReturnInst(llvm::ReturnInst& RI) {
         auto contract = pass->FM->get(RI.getParent()->getParent());
-        auto states = pass->PSA->getPredicateStateMap()[&RI];
+        auto state = pass->PSA->getInstructionStates().at(&RI);
 
         auto ensures = contract->filterByTypes({PredicateType::ENSURES});
         if (ensures->isEmpty()) return;
@@ -112,11 +104,9 @@ public:
         Z3ExprFactory z3ef(ctx);
         Z3Solver s(z3ef);
 
-        for (auto& state : states) {
-            dbgs() << "  State: " << endl << state << endl;
-            if (s.isViolated(ensures, state)) {
-                pass->DM->addDefect(DefectType::ENS_01, &RI);
-            }
+        dbgs() << "  State: " << endl << state << endl;
+        if (s.isViolated(ensures, state)) {
+            pass->DM->addDefect(DefectType::ENS_01, &RI);
         }
     }
 

@@ -12,14 +12,14 @@
 namespace borealis {
 
 PredicateStateChain::PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr) :
-        PredicateState(type_id<PredicateStateChain>()),
+        PredicateState(type_id<Self>()),
         base(base),
         curr(curr) {};
 
 PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
 
-    auto* res = new PredicateStateChain(*this);
+    auto* res = new Self(*this);
     res->curr = res->curr + pred;
     return PredicateState::Ptr(res);
 }
@@ -30,7 +30,7 @@ logic::Bool PredicateStateChain::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pct
 }
 
 PredicateState::Ptr PredicateStateChain::addVisited(const llvm::Value* loc) const {
-    auto* res = new PredicateStateChain(*this);
+    auto* res = new Self(*this);
     res->curr = res->curr << loc;
     return PredicateState::Ptr(res);
 }
@@ -45,21 +45,21 @@ bool PredicateStateChain::hasVisited(std::initializer_list<const llvm::Value*> l
 }
 
 PredicateState::Ptr PredicateStateChain::map(Mapper m) const {
-    auto* res = new PredicateStateChain(*this);
+    auto* res = new Self(*this);
     res->base = res->base->map(m);
     res->curr = res->curr->map(m);
     return PredicateState::Ptr(res);
 }
 
 PredicateState::Ptr PredicateStateChain::filterByTypes(std::initializer_list<PredicateType> types) const {
-    auto* res = new PredicateStateChain(*this);
+    auto* res = new Self(*this);
     res->base = res->base->filterByTypes(types);
     res->curr = res->curr->filterByTypes(types);
     return PredicateState::Ptr(res);
 }
 
 PredicateState::Ptr PredicateStateChain::filter(Filterer f) const {
-    auto* res = new PredicateStateChain(*this);
+    auto* res = new Self(*this);
     res->base = res->base->filter(f);
     res->curr = res->curr->filter(f);
     return PredicateState::Ptr(res);
@@ -70,9 +70,22 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitBy
     auto currSplit = this->curr->splitByTypes(types);
 
     return std::make_pair(
-        PredicateState::Ptr(new PredicateStateChain(baseSplit.first, currSplit.first)),
-        PredicateState::Ptr(new PredicateStateChain(baseSplit.second, currSplit.second))
+        PredicateState::Ptr(new Self(baseSplit.first, currSplit.first)),
+        PredicateState::Ptr(new Self(baseSplit.second, currSplit.second))
     );
+}
+
+PredicateState::Ptr PredicateStateChain::sliceOn(PredicateState::Ptr base) const {
+    if (*this->base == *base) {
+        return this->curr;
+    }
+
+    auto slice = this->base->sliceOn(base);
+    if (slice) {
+        return PredicateState::Ptr(new Self(slice, this->curr));
+    }
+
+    return nullptr;
 }
 
 bool PredicateStateChain::isEmpty() const {
