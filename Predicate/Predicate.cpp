@@ -34,9 +34,8 @@ Predicate::Predicate(borealis::id_t predicate_type_id, PredicateType type) :
 
 Predicate::~Predicate() {}
 
-std::ostream& operator<<(std::ostream& s, const borealis::Predicate& p) {
-    s << p.toString();
-    return s;
+std::ostream& operator<<(std::ostream& s, Predicate::Ptr p) {
+    return s << p->toString();
 }
 
 } // namespace borealis
