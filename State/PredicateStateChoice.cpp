@@ -192,6 +192,25 @@ bool PredicateStateChoice::isEmpty() const {
     );
 }
 
+borealis::logging::logstream& PredicateStateChoice::dump(borealis::logging::logstream& s) const {
+    using borealis::logging::endl;
+    using borealis::logging::il;
+    using borealis::logging::ir;
+
+    s << "(BEGIN";
+    s << il << endl;
+    if (!choices.empty()) {
+        s << "<OR>" << head(choices);
+        for (const auto& choice : tail(choices)) {
+            s << "," << endl << "<OR>" << choice;
+        }
+    }
+    s << ir << endl;
+    s << "END)";
+
+    return s;
+}
+
 std::string PredicateStateChoice::toString() const {
     using std::endl;
 

@@ -132,18 +132,39 @@ bool BasicPredicateState::isEmpty() const {
     return data.empty();
 }
 
+borealis::logging::logstream& BasicPredicateState::dump(borealis::logging::logstream& s) const {
+    using borealis::logging::endl;
+    using borealis::logging::il;
+    using borealis::logging::ir;
+
+    s << '(';
+    s << il << endl;
+    if (!this->isEmpty()) {
+        s << head(this->data)->toString();
+        for (auto& e : tail(this->data)) {
+            s << ',' << endl << e->toString();
+        }
+    }
+    s << ir << endl;
+    s << ')';
+
+    return s;
+}
+
 std::string BasicPredicateState::toString() const {
     using std::endl;
 
     std::ostringstream s;
-    s << '(';
+
+    s << '(' << endl;
     if (!this->isEmpty()) {
-        s << endl << "  " << head(this->data)->toString();
+        s << "  " << head(this->data)->toString();
         for (auto& e : tail(this->data)) {
             s << ',' << endl << "  " << e->toString();
         }
     }
     s << endl << ')';
+
     return s.str();
 }
 

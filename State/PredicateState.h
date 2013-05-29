@@ -22,8 +22,6 @@ namespace borealis {
 class PredicateState :
     public std::enable_shared_from_this<const PredicateState> {
 
-    typedef borealis::logging::logstream logstream;
-
 public:
 
     typedef std::shared_ptr<const PredicateState> Ptr;
@@ -59,9 +57,7 @@ public:
     }
 
     virtual std::string toString() const = 0;
-    virtual logstream& dump(logstream& s) const {
-        return s << this->toString();
-    }
+    virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const = 0;
 
     PredicateState(borealis::id_t predicate_state_type_id);
     virtual ~PredicateState();

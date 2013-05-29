@@ -107,6 +107,10 @@ bool PredicateStateChain::isEmpty() const {
     return curr->isEmpty() && base->isEmpty();
 }
 
+borealis::logging::logstream& PredicateStateChain::dump(borealis::logging::logstream& s) const {
+    return s << base << "->" << curr;
+}
+
 std::string PredicateStateChain::toString() const {
     return base->toString() + "->" + curr->toString();
 }
