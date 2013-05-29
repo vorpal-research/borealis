@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <memory>
 
+#include "Logging/logstream.hpp"
 #include "Predicate/Predicate.h"
 #include "Solver/ExecutionContext.h"
 #include "Solver/Z3ExprFactory.h"
@@ -20,6 +21,8 @@ namespace borealis {
 
 class PredicateState :
     public std::enable_shared_from_this<const PredicateState> {
+
+    typedef borealis::logging::logstream logstream;
 
 public:
 
@@ -56,6 +59,9 @@ public:
     }
 
     virtual std::string toString() const = 0;
+    virtual logstream& dump(logstream& s) const {
+        return s << this->toString();
+    }
 
     PredicateState(borealis::id_t predicate_state_type_id);
     virtual ~PredicateState();
@@ -74,6 +80,7 @@ protected:
 };
 
 std::ostream& operator<<(std::ostream& s, PredicateState::Ptr state);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, PredicateState::Ptr state);
 
 ////////////////////////////////////////////////////////////////////////////////
 //

@@ -28,6 +28,10 @@ std::ostream& operator<<(std::ostream& s, PredicateState::Ptr state) {
     return s << state->toString();
 }
 
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, PredicateState::Ptr state) {
+    return state->dump(s);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // PredicateState operators

@@ -11,6 +11,9 @@
 
 namespace borealis {
 
+using borealis::util::head;
+using borealis::util::tail;
+
 PredicateStateChoice::PredicateStateChoice(const std::vector<PredicateState::Ptr>& choices) :
         PredicateState(type_id<Self>()),
         choices(choices) {};
@@ -175,7 +178,7 @@ PredicateState::Ptr PredicateStateChoice::simplify() const {
         [](PredicateState::Ptr choice) { return choice->isEmpty(); });
 
     if (simplified.size() == 1) {
-        return borealis::util::head(simplified);
+        return head(simplified);
     } else {
         return PredicateState::Ptr(new Self(simplified));
     }
@@ -190,11 +193,20 @@ bool PredicateStateChoice::isEmpty() const {
 }
 
 std::string PredicateStateChoice::toString() const {
-    return std::accumulate(choices.begin(), choices.end(), std::string("BEGIN_OR\n"),
-        [](const std::string& accum, PredicateState::Ptr choice) {
-            return accum + "<or>" + choice->toString() + "\n";
+    using std::endl;
+
+    std::ostringstream s;
+
+    s << "(BEGIN" << endl;
+    if (!choices.empty()) {
+        s << "<OR>" << head(choices);
+        for (const auto& choice : tail(choices)) {
+            s << "," << endl << "<OR>" << choice;
         }
-    ) + "END_OR";
+    }
+    s << endl << "END)";
+
+    return s.str();
 }
 
 } /* namespace borealis */

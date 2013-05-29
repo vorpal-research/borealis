@@ -108,7 +108,7 @@ bool PredicateStateChain::isEmpty() const {
 }
 
 std::string PredicateStateChain::toString() const {
-    return curr->toString() + "<-" + base->toString();
+    return base->toString() + "->" + curr->toString();
 }
 
 } /* namespace borealis */
