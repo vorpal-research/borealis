@@ -74,14 +74,26 @@ void configureZ3Log(const std::string& filename) {
     Z3_open_log(filename.c_str());
 }
 
+stream_t& indent(stream_t& st) {
+    return st.indentOn();
+}
+
+stream_t& il(stream_t& st) {
+    return st.incIndent();
+}
+
+stream_t& ir(stream_t& st) {
+    return st.decIndent();
+}
+
 stream_t& endl(stream_t& st) {
     st << "\n";
-    return st;
+    return st.indentOn();
 }
 
 stream_t& end(stream_t& st) {
     st << log4cpp::eol;
-    return st;
+    return st.indentOn();
 }
 
 } // namespace logging

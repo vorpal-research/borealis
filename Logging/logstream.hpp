@@ -33,18 +33,53 @@ enum class PriorityLevel {
 
 class logstream {
     impl_::stream_t inner;
+    unsigned char indent;
+    bool shouldIndentNext;
 
-    logstream(impl_::stream_t inner) : inner(inner) {};
+    logstream(impl_::stream_t inner) :
+        inner(inner), indent(0U), shouldIndentNext(false) {};
+
+    logstream& incIndent() {
+        ++indent;
+        return *this;
+    }
+
+    logstream& decIndent() {
+        --indent;
+        return *this;
+    }
+
+    logstream& putIndent() {
+        if (shouldIndentNext) {
+            shouldIndentNext = false;
+            for (auto i = indent; i != 0; --i) {
+                inner << "  ";
+            }
+        }
+        return *this;
+    }
+
+    logstream& indentOn() {
+        shouldIndentNext = true;
+        return *this;
+    }
+
+    logstream& indentOff() {
+        shouldIndentNext = false;
+        return *this;
+    }
 
 public:
 
     template<class T>
     logstream& operator<<(const T& val) {
+        putIndent();
         inner << val;
         return *this;
     }
 
     logstream& operator<<(logstream&(*mutator)(logstream&)) {
+        putIndent();
         return mutator(*this);
     }
 
@@ -58,6 +93,13 @@ public:
     friend logstream errsFor(const std::string& category);
     friend logstream criticalsFor(const std::string& category);
     friend logstream logsFor(PriorityLevel lv, const std::string& category);
+
+    friend logstream& indent(logstream&);
+    friend logstream& il(logstream&);
+    friend logstream& ir(logstream&);
+
+    friend logstream& endl(logstream&);
+    friend logstream& end(logstream&);
 };
 
 logstream dbgsFor(const std::string& category);
@@ -66,6 +108,10 @@ logstream warnsFor(const std::string& category);
 logstream errsFor(const std::string& category);
 logstream criticalsFor(const std::string& category);
 logstream logsFor(PriorityLevel lv, const std::string& category);
+
+logstream& indent(logstream&);
+logstream& il(logstream&);
+logstream& ir(logstream&);
 
 logstream& endl(logstream&);
 logstream& end(logstream&);
