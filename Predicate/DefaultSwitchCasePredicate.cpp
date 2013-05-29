@@ -25,9 +25,9 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
     using borealis::util::head;
     using borealis::util::tail;
 
-    std::string a("");
+    std::string a{""};
 
-    if (cases.size() != 0) {
+    if (!cases.empty()) {
         a = head(cases)->getName();
         for (const auto& c : tail(cases)) {
             a = a + "|" + c->getName();

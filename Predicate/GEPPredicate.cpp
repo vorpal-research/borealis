@@ -20,9 +20,17 @@ GEPPredicate::GEPPredicate(
             rhv(rhv),
             shifts(shifts) {
 
-    std::string a = "0";
-    for (const auto& shift : shifts) {
-        a = a + "+" + shift.first->getName() + "*" + shift.second->getName();
+    using borealis::util::head;
+    using borealis::util::tail;
+
+    std::string a{""};
+
+    if (!shifts.empty()) {
+        const auto& h = head(shifts);
+        a = h.first->getName() + "*" + h.second->getName();
+        for (const auto& shift : tail(shifts)) {
+            a = a + "+" + shift.first->getName() + "*" + shift.second->getName();
+        }
     }
 
     this->asString =
