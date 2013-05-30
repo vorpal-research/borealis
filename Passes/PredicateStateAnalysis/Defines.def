@@ -1,0 +1,18 @@
+#ifndef HANDLE_PSA
+#define INCLUDE_MODE
+#endif
+
+#ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
+#include "Passes/PredicateStateAnalysis/OneForAll.h"
+
+#define HANDLE_PSA(CLASS)
+
+#endif
+
+HANDLE_PSA(OneForAll)
+
+#ifdef HANDLE_PSA
+#undef HANDLE_PSA
+#endif

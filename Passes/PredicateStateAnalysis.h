@@ -33,59 +33,56 @@
 
 namespace borealis {
 
-class PredicateStateAnalysis:
-        public ProxyFunctionPass,
-        public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
-        public ShouldBeModularized {
+////////////////////////////////////////////////////////////////////////////////
 
-    typedef AbstractPredicateAnalysis::PredicateMap PredicateMap;
-    typedef AbstractPredicateAnalysis::PhiPredicateMap PhiPredicateMap;
-    typedef AbstractPredicateAnalysis::PhiBranch PhiBranch;
-    typedef AbstractPredicateAnalysis::TerminatorPredicateMap TerminatorPredicateMap;
-    typedef AbstractPredicateAnalysis::TerminatorBranch TerminatorBranch;
+class AbstractPredicateStateAnalysis {
 
 public:
 
-    typedef std::map<const llvm::BasicBlock*, PredicateState::Ptr> BasicBlockStates;
     typedef std::map<const llvm::Instruction*, PredicateState::Ptr> InstructionStates;
 
-    static char ID;
+    AbstractPredicateStateAnalysis();
+    virtual ~AbstractPredicateStateAnalysis();
 
-#include "Util/macros.h"
-    static constexpr auto loggerDomain() QUICK_RETURN("psa")
-#include "Util/unmacros.h"
+    virtual bool runOnFunction(llvm::Function& F) = 0;
+    virtual void print(llvm::raw_ostream&, const llvm::Module*) const = 0;
+
+    const InstructionStates& getInstructionStates() const { return instructionStates; }
+
+protected:
+
+    InstructionStates instructionStates;
+
+    virtual void init() {
+        instructionStates.clear();
+    }
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class PredicateStateAnalysis:
+        public ProxyFunctionPass,
+        public ShouldBeModularized {
+
+    typedef AbstractPredicateStateAnalysis::InstructionStates InstructionStates;
+
+public:
+
+    static char ID;
 
     PredicateStateAnalysis();
     PredicateStateAnalysis(llvm::Pass* pass);
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual bool runOnFunction(llvm::Function& F);
-    virtual void print(llvm::raw_ostream&, const llvm::Module*) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void print(llvm::raw_ostream& O , const llvm::Module* M) const override;
 
-    const InstructionStates& getInstructionStates();
+    const InstructionStates& getInstructionStates() const;
 
 private:
 
-    BasicBlockStates basicBlockStates;
-    InstructionStates instructionStates;
-
-    FunctionManager* FM;
-    llvm::DominatorTree* DT;
-
-    std::list<AbstractPredicateAnalysis*> PA;
-
-    PredicateFactory::Ptr PF;
-    PredicateStateFactory::Ptr PSF;
-    TermFactory::Ptr TF;
-
-    void init();
-
-    void processBasicBlock(llvm::BasicBlock* BB);
-
-    PredicateState::Ptr BBM(llvm::BasicBlock* BB);
-    PredicateState::Ptr PM(const llvm::Instruction* I);
-    PredicateState::Ptr PPM(PhiBranch key);
-    PredicateState::Ptr TPM(TerminatorBranch key);
+    AbstractPredicateStateAnalysis* delegate;
 
 };
 
