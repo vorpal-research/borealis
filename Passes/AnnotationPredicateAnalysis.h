@@ -20,8 +20,8 @@
 namespace borealis {
 
 class AnnotationPredicateAnalysis:
-        public ProxyFunctionPass,
         public AbstractPredicateAnalysis,
+        public ProxyFunctionPass,
         public ShouldBeModularized {
 
     friend class APAInstVisitor;
@@ -32,9 +32,9 @@ public:
 
     AnnotationPredicateAnalysis();
     AnnotationPredicateAnalysis(llvm::Pass*);
-    virtual bool runOnFunction(llvm::Function& F);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-    virtual ~AnnotationPredicateAnalysis();
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+    virtual ~AnnotationPredicateAnalysis() override;
 
 private:
 

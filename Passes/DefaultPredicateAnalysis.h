@@ -19,8 +19,8 @@
 namespace borealis {
 
 class DefaultPredicateAnalysis:
-        public ProxyFunctionPass,
         public AbstractPredicateAnalysis,
+        public ProxyFunctionPass,
         public ShouldBeModularized {
 
     friend class DPAInstVisitor;
@@ -31,9 +31,9 @@ public:
 
     DefaultPredicateAnalysis();
     DefaultPredicateAnalysis(llvm::Pass*);
-    virtual bool runOnFunction(llvm::Function& F);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-    virtual ~DefaultPredicateAnalysis();
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+    virtual ~DefaultPredicateAnalysis() override;
 
 private:
 

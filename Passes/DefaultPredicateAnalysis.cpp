@@ -298,12 +298,9 @@ DefaultPredicateAnalysis::DefaultPredicateAnalysis(llvm::Pass* pass) :
         ProxyFunctionPass(ID, pass) {}
 
 void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    using namespace::llvm;
-
     AU.setPreservesAll();
-
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
-    AUX<TargetData>::addRequiredTransitive(AU);
+    AUX<llvm::TargetData>::addRequiredTransitive(AU);
 }
 
 bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
