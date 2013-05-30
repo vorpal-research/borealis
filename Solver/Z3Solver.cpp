@@ -32,6 +32,7 @@ z3::check_result Z3Solver::check(
 
     dbg << "  Query: " << endl << z3query << endl;
     dbg << "  State: " << endl << z3state << endl;
+    dbg << end;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(logic::z3impl::asAxiom(implies(pred, z3query)));

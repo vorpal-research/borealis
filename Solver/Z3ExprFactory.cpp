@@ -18,7 +18,7 @@ Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {
     // Z3_update_param_value(ctx, ":produce-unsat-cores", "true");
     // Needs to be set before z3::context is created
     // (i.e., in the z3::config object)
-    // ctx.set("PROOF_MODE", 2);
+    // ctx.set(":proof-mode", 2);
 }
 
 unsigned int Z3ExprFactory::pointerSize = 32;

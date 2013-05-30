@@ -61,7 +61,6 @@ stream_t criticalsFor(const std::string& category) {
     return stream_t(getCat(category).critStream());
 }
 
-
 stream_t logsFor(PriorityLevel lvl, const std::string& category) {
     return stream_t(getCat(category) << mapPriorities(lvl));
 }
