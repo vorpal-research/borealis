@@ -12,13 +12,16 @@
 
 namespace borealis {
 
-Z3ExprFactory::Z3ExprFactory(z3::context& ctx) : ctx(ctx) {
-    // Z3_update_param_value(ctx, ":macro-finder", "true");
-    // Z3_update_param_value(ctx, ":produce-models", "true");
-    // Z3_update_param_value(ctx, ":produce-unsat-cores", "true");
+Z3ExprFactory::Z3ExprFactory() {
     // Needs to be set before z3::context is created
     // (i.e., in the z3::config object)
-    // ctx.set(":proof-mode", 2);
+    // ctx.set(":proof-mode", 2U);
+
+    z3::config cfg;
+    cfg.set(":lift-ite", 2);
+    cfg.set(":ng-lift-ite", 2);
+
+    ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
 }
 
 unsigned int Z3ExprFactory::pointerSize = 32;
@@ -44,26 +47,26 @@ BRING_FROM_Z3EXPR_FACTORY(Dynamic)
 #undef BRING_FROM_Z3EXPR_FACTORY
 
 f::Pointer Z3ExprFactory::getPtrVar(const std::string& name) {
-    return Pointer::mkVar(ctx, name);
+    return Pointer::mkVar(*ctx, name);
 }
 
 f::Pointer Z3ExprFactory::getPtrConst(const std::string& v) {
     std::istringstream ost(v);
     unsigned long long ull;
     ost >> ull;
-    return Pointer::mkConst(ctx, ull);
+    return Pointer::mkConst(*ctx, ull);
 }
 
 f::Pointer Z3ExprFactory::getNullPtr() {
-    return Pointer::mkConst(ctx, 0);
+    return Pointer::mkConst(*ctx, 0);
 }
 
 f::Bool Z3ExprFactory::getBoolVar(const std::string& name) {
-    return Bool::mkVar(ctx, name);
+    return Bool::mkVar(*ctx, name);
 }
 
 f::Bool Z3ExprFactory::getBoolConst(bool v) {
-    return Bool::mkConst(ctx, v);
+    return Bool::mkConst(*ctx, v);
 }
 
 f::Bool Z3ExprFactory::getTrue() {
@@ -75,38 +78,38 @@ f::Bool Z3ExprFactory::getFalse() {
 }
 
 f::Integer Z3ExprFactory::getIntVar(const std::string& name) {
-    return f::Integer::mkVar(ctx, name);
+    return f::Integer::mkVar(*ctx, name);
 }
 
 f::Integer Z3ExprFactory::getFreshIntVar(const std::string& name) {
-    return f::Integer::mkFreshVar(ctx, name);
+    return f::Integer::mkFreshVar(*ctx, name);
 }
 
 f::Integer Z3ExprFactory::getIntConst(int v) {
-    return f::Integer::mkConst(ctx, v);
+    return f::Integer::mkConst(*ctx, v);
 }
 
 f::Integer Z3ExprFactory::getIntConst(const std::string& v) {
     std::istringstream ost(v);
     unsigned long long ull;
     ost >> ull;
-    return Integer::mkConst(ctx, ull);
+    return Integer::mkConst(*ctx, ull);
 }
 
 f::Real Z3ExprFactory::getRealVar(const std::string& name) {
-    return f::Real::mkVar(ctx, name);
+    return f::Real::mkVar(*ctx, name);
 }
 
 f::Real Z3ExprFactory::getFreshRealVar(const std::string& name) {
-    return f::Real::mkFreshVar(ctx, name);
+    return f::Real::mkFreshVar(*ctx, name);
 }
 
 f::Real Z3ExprFactory::getRealConst(int v) {
-    return f::Real::mkConst(ctx, v);
+    return f::Real::mkConst(*ctx, v);
 }
 
 f::Real Z3ExprFactory::getRealConst(double v) {
-    return f::Real::mkConst(ctx, (long long int)v);
+    return f::Real::mkConst(*ctx, (long long int)v);
 }
 
 f::Real Z3ExprFactory::getRealConst(const std::string& v) {
@@ -122,9 +125,9 @@ f::MemArray Z3ExprFactory::getNoMemoryArray() {
     auto opt = DefaultToUnknown.get();
 
     if(opt.empty() || opt == false) {
-        return f::MemArray::mkDefault(ctx, "mem", Byte::mkConst(ctx, 0xff));
+        return f::MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
     } else {
-        return f::MemArray::mkFree(ctx, "mem");
+        return f::MemArray::mkFree(*ctx, "mem");
     }
 }
 
@@ -137,11 +140,11 @@ f::Bool Z3ExprFactory::isInvalidPtrExpr(f::Pointer ptr) {
 }
 
 f::Bool Z3ExprFactory::getDistinct(const std::vector<f::Pointer>& exprs) {
-    return logic::distinct(ctx, exprs);
+    return logic::distinct(*ctx, exprs);
 }
 
 f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
-    return z3::to_expr( ctx, ast );
+    return z3::to_expr( *ctx, ast );
 }
 
 f::Dynamic Z3ExprFactory::getExprForValue(

@@ -16,8 +16,7 @@ PredicateState::PredicateState(borealis::id_t predicate_state_type_id) :
 PredicateState::~PredicateState() {}
 
 bool PredicateState::isUnreachable() const {
-    z3::context ctx;
-    Z3ExprFactory z3ef(ctx);
+    Z3ExprFactory z3ef;
     Z3Solver s(z3ef);
 
     auto split = this->splitByTypes({PredicateType::PATH});

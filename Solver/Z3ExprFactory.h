@@ -63,10 +63,10 @@ public:
                        "Cannot acquire bitsize for type " + util::toString(*type));
     }
 
-    Z3ExprFactory(z3::context& ctx);
+    Z3ExprFactory();
 
     z3::context& unwrap() {
-        return ctx;
+        return *ctx;
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -131,7 +131,7 @@ public:
 
 private:
 
-    z3::context& ctx;
+    std::unique_ptr<z3::context> ctx;
 
     static unsigned int pointerSize;
 

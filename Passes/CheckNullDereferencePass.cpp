@@ -121,8 +121,7 @@ public:
         dbgs() << "Query: " << q->toString() << endl;
         dbgs() << "State: " << ps << endl;
 
-        z3::context ctx;
-        Z3ExprFactory z3ef(ctx);
+        Z3ExprFactory z3ef;
         Z3Solver s(z3ef);
 
         if (s.isViolated(q, ps)) {

@@ -53,8 +53,7 @@ public:
         dbgs() << "Checking: " << CI << endl;
         dbgs() << "  Requires: " << endl << instantiatedRequires << endl;
 
-        z3::context ctx;
-        Z3ExprFactory z3ef(ctx);
+        Z3ExprFactory z3ef;
         Z3Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
@@ -79,8 +78,7 @@ public:
             dbgs() << "Checking: " << CI << endl;
             dbgs() << "  Assert: " << endl << LA << endl;
 
-            z3::context ctx;
-            Z3ExprFactory z3ef(ctx);
+            Z3ExprFactory z3ef;
             Z3Solver s(z3ef);
 
             dbgs() << "  State: " << endl << state << endl;
@@ -100,8 +98,7 @@ public:
         dbgs() << "Checking: " << RI << endl;
         dbgs() << "  Ensures: " << endl << ensures << endl;
 
-        z3::context ctx;
-        Z3ExprFactory z3ef(ctx);
+        Z3ExprFactory z3ef;
         Z3Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
