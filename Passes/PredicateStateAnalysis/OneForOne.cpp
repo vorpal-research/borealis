@@ -129,7 +129,9 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
     const BasicBlock* bb = std::get<1>(wqe);
     PredicateState::Ptr inState = std::get<2>(wqe);
 
-    if (inState->isUnreachable()) return;
+    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachable()) {
+        return;
+    }
 
     auto iter = bb->begin();
 

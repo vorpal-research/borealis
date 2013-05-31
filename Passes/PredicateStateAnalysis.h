@@ -87,7 +87,8 @@ public:
 
     PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const;
 
-    static const std::string Mode;
+    static const std::string Mode();
+    static bool CheckUnreachable();
 
 private:
 

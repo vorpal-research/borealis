@@ -116,7 +116,9 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
     auto inState = BBM(BB);
 
-    if (inState->isUnreachable()) return;
+    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachable()) {
+        return;
+    }
 
     for (auto& I : view(BB->begin(), BB->end())) {
 
