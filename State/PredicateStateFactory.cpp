@@ -14,7 +14,7 @@ PredicateState::Ptr PredicateStateFactory::Chain(
         PredicateState::Ptr curr) {
     return PredicateState::Ptr(
             new PredicateStateChain(base, curr)
-    );
+    )->simplify();
 }
 
 PredicateState::Ptr PredicateStateFactory::Chain(
@@ -22,13 +22,13 @@ PredicateState::Ptr PredicateStateFactory::Chain(
         Predicate::Ptr pred) {
     return PredicateState::Ptr(
             new PredicateStateChain(base, Basic() + pred)
-    );
+    )->simplify();
 }
 
 PredicateState::Ptr PredicateStateFactory::Choice(const std::vector<PredicateState::Ptr>& choices) {
     return PredicateState::Ptr(
             new PredicateStateChoice(choices)
-    );
+    )->simplify();
 }
 
 PredicateState::Ptr PredicateStateFactory::Basic() {
