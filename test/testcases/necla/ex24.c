@@ -3,11 +3,13 @@
 
 #define SIZE 10
 
+// @requires x != 0
 int foo(int* x) {
    *x = __NONDET__();
    return __NONDET__();
 }
 
+// requires \arg0 != 0 // crashes LLVM
 int bar(int* x);
 
 int main() {

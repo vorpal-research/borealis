@@ -156,6 +156,8 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
     using namespace llvm;
     using borealis::util::view;
 
+    TRACE_UP("psa::bbm", valueSummary(BB));
+
     auto* idom = (*DT)[BB]->getIDom();
 
     if (!idom) {
@@ -186,6 +188,8 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
 
         choices.push_back(slice);
     }
+
+    TRACE_DOWN("psa::bbm", valueSummary(BB));
 
     return PSF->Chain(
             base,
