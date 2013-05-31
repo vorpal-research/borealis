@@ -31,9 +31,8 @@ TEST(Z3ExprFactory, memoryArray) {
         using borealis::Z3ExprFactory;
         typedef Z3ExprFactory::Byte Byte;
 
-        z3::context ctx;
-        Z3ExprFactory factory(ctx);
-        auto mkbyte = [&](int val){ return Byte::mkConst(ctx, val); };
+        Z3ExprFactory factory;
+        auto mkbyte = [&](int val){ return Byte::mkConst(factory.unwrap(), val); };
 
         auto check_expr = [&](Bool e)->bool {
             z3::solver solver(z3impl::getContext(e));
@@ -64,8 +63,7 @@ TEST(ExecutionContext, mergeMemory) {
         typedef Z3ExprFactory::Integer Integer;
         typedef Z3ExprFactory::Pointer Pointer;
 
-        z3::context ctx;
-        Z3ExprFactory factory(ctx);
+        Z3ExprFactory factory;
 
         ExecutionContext default_memory(factory);
         ExecutionContext memory_with_a(factory);
@@ -99,7 +97,7 @@ TEST(ExecutionContext, mergeMemory) {
                     << "  in:" << endl
                     << in << endl;
 
-            z3::solver s(ctx);
+            z3::solver s(factory.unwrap());
 
             s.add(logic::z3impl::asAxiom(in));
 

@@ -38,7 +38,9 @@ public:
 
     void checkContract(llvm::CallInst& CI) {
         auto contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
-        auto state = pass->PSA->getInstructionStates().at(&CI);
+        auto state = pass->PSA->getInstructionState(&CI);
+
+        if (!state) return;
 
         auto requires = contract->filterByTypes({PredicateType::REQUIRES});
         if (requires->isEmpty()) return;
@@ -64,7 +66,9 @@ public:
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
         auto anno = materialize(A, pass->TF.get(), pass->MI);
-        auto& state = pass->PSA->getInstructionStates().at(&CI);
+        auto state = pass->PSA->getInstructionState(&CI);
+
+        if (!state) return;
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
             auto query =
@@ -90,7 +94,9 @@ public:
 
     void visitReturnInst(llvm::ReturnInst& RI) {
         auto contract = pass->FM->get(RI.getParent()->getParent());
-        auto state = pass->PSA->getInstructionStates().at(&RI);
+        auto state = pass->PSA->getInstructionState(&RI);
+
+        if (!state) return;
 
         auto ensures = contract->filterByTypes({PredicateType::ENSURES});
         if (ensures->isEmpty()) return;

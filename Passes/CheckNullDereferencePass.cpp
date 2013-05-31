@@ -111,9 +111,9 @@ public:
                     pass->TF->getNullPtrTerm()
                 );
 
-        PredicateState::Ptr ps = pass->PSA->getInstructionStates().at(&where);
+        PredicateState::Ptr ps = pass->PSA->getInstructionState(&where);
 
-        if (!ps->hasVisited({&where, &what, &why})) {
+        if (!ps || !ps->hasVisited({&where, &what, &why})) {
             dbgs() << "Infeasible!" << endl;
             return false;
         }

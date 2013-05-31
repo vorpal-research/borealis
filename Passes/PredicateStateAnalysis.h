@@ -30,6 +30,7 @@
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -47,7 +48,13 @@ public:
     virtual bool runOnFunction(llvm::Function& F) = 0;
     virtual void print(llvm::raw_ostream&, const llvm::Module*) const = 0;
 
-    const InstructionStates& getInstructionStates() const { return instructionStates; }
+    PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const {
+        if (borealis::util::containsKey(instructionStates, I)) {
+            return instructionStates.at(I);
+        } else {
+            return nullptr;
+        }
+    }
 
 protected:
 
@@ -78,7 +85,9 @@ public:
     virtual bool runOnFunction(llvm::Function& F) override;
     virtual void print(llvm::raw_ostream& O , const llvm::Module* M) const override;
 
-    const InstructionStates& getInstructionStates() const;
+    PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const;
+
+    static const std::string Mode;
 
 private:
 

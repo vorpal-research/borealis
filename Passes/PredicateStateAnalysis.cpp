@@ -5,8 +5,11 @@
  *      Author: ice-phoenix
  */
 
+#include "Config/config.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/PredicateStateAnalysis/Defines.def"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -22,11 +25,23 @@ PredicateStateAnalysis::PredicateStateAnalysis(llvm::Pass* pass) :
 
 void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-    AUX<OneForAll>::addRequiredTransitive(AU);
+
+    if ("one-for-one" == Mode)
+        AUX<OneForOne>::addRequiredTransitive(AU);
+    else if ("one-for-all" == Mode)
+        AUX<OneForAll>::addRequiredTransitive(AU);
+    else
+        BYE_BYE_VOID("Unknown PSA mode: " + Mode);
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
-    delegate = &GetAnalysis<OneForAll>::doit(this, F);
+    if ("one-for-one" == Mode)
+        delegate = &GetAnalysis<OneForOne>::doit(this, F);
+    else if ("one-for-all" == Mode)
+        delegate = &GetAnalysis<OneForAll>::doit(this, F);
+    else
+        BYE_BYE(bool, "Unknown PSA mode: " + Mode);
+
     return false;
 }
 
@@ -34,8 +49,8 @@ void PredicateStateAnalysis::print(llvm::raw_ostream& O, const llvm::Module* M) 
     delegate->print(O, M);
 }
 
-const PredicateStateAnalysis::InstructionStates& PredicateStateAnalysis::getInstructionStates() const {
-    return delegate->getInstructionStates();
+PredicateState::Ptr PredicateStateAnalysis::getInstructionState(const llvm::Instruction* I) const {
+    return delegate->getInstructionState(I);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,4 +59,9 @@ char PredicateStateAnalysis::ID;
 static RegisterPass<PredicateStateAnalysis>
 X("predicate-state-analysis", "Delegating analysis that merges the results of separate predicate analyses");
 
+const std::string PredicateStateAnalysis::Mode =
+    config::ConfigEntry<std::string>("psa", "mode").get("one-for-one");
+
 } /* namespace borealis */
+
+#include "Util/unmacros.h"

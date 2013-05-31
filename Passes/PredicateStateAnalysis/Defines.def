@@ -5,12 +5,14 @@
 #ifdef INCLUDE_MODE
 #undef INCLUDE_MODE
 
+#include "Passes/PredicateStateAnalysis/OneForOne.h"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
 
 #define HANDLE_PSA(CLASS)
 
 #endif
 
+HANDLE_PSA(OneForOne)
 HANDLE_PSA(OneForAll)
 
 #ifdef HANDLE_PSA
