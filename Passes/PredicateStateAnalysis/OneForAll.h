@@ -1,5 +1,5 @@
 /*
- * PredicateStateAnalysis.h
+ * OneForAll.h
  *
  *  Created on: Sep 4, 2012
  *      Author: ice-phoenix

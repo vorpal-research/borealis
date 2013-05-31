@@ -21,10 +21,8 @@
 
 namespace borealis {
 
-OneForAll::OneForAll() :
-        ProxyFunctionPass(ID) {}
-OneForAll::OneForAll(llvm::Pass* pass) :
-        ProxyFunctionPass(ID, pass) {}
+OneForAll::OneForAll() : ProxyFunctionPass(ID) {}
+OneForAll::OneForAll(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void OneForAll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
