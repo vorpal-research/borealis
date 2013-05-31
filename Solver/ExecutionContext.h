@@ -30,6 +30,7 @@ private:
 
 public:
     ExecutionContext(Z3ExprFactory& factory);
+    ExecutionContext(const ExecutionContext&) = default;
 
     MemArray getCurrentMemoryContents() {
         TRACE_FUNC;
@@ -100,7 +101,11 @@ public:
     }
 
     Bool toZ3();
+
+    friend std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx);
 };
+
+std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx);
 
 } /* namespace borealis */
 

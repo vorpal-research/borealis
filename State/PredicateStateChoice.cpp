@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include "Logging/logger.hpp"
 #include "State/PredicateStateChoice.h"
 
 #include "Util/macros.h"
@@ -38,7 +39,10 @@ PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
 logic::Bool PredicateStateChoice::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
     TRACE_FUNC;
 
+    using borealis::logging::endl;
     using borealis::logic::Bool;
+
+    dbgs() << "Before PSChoice:" << endl << *pctx << endl;
 
     auto res = z3ef.getFalse();
     std::vector<std::pair<Bool, ExecutionContext>> memories;
@@ -47,6 +51,8 @@ logic::Bool PredicateStateChoice::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pc
     for (auto& choice : choices) {
         ExecutionContext choiceCtx(*pctx);
 
+        dbgs() << "In choice:" << endl << choiceCtx << endl;
+
         auto path = choice->filterByTypes({PredicateType::PATH});
 
         auto z3state = choice->toZ3(z3ef, &choiceCtx);
@@ -54,9 +60,13 @@ logic::Bool PredicateStateChoice::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pc
 
         res = res || z3state;
         memories.push_back(std::make_pair(z3path, choiceCtx));
+
+        dbgs() << "Out choice:" << endl << choiceCtx << endl;
     }
 
     pctx->switchOn(memories);
+
+    dbgs() << "After PSChoice:" << endl << *pctx << endl;
 
     return res;
 }

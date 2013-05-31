@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
 
@@ -19,6 +20,13 @@ ExecutionContext::Bool ExecutionContext::toZ3() {
     TRACE_FUNC;
 
     return factory.getTrue();
+}
+
+std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx) {
+    using std::endl;
+    return s << "Ctx state:" << endl
+             << "< offset = " << ctx.currentPtr << " >" << endl
+             << ctx.memory;
 }
 
 } // namespace borealis
