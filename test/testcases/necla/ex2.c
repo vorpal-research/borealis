@@ -4,8 +4,6 @@ int* a;
 
 // @requires n != 0
 int test(int* n) {
-   ASSUME(a);
-
    int i;
 
    for (i = 0; i < *n; ++i) {
