@@ -1,7 +1,8 @@
 #include "defines.h"
-int x,y;
 
-int foo(int * ptr){
+int x, y;
+
+int foo(int* ptr) {
    if (ptr == &x)
       *ptr = 0;
    if (ptr == &y)
@@ -10,12 +11,11 @@ int foo(int * ptr){
    return 1;
 }
 
-
-int main(){
-
-   foo (&x);
-   foo( &y);
+int main() {
+   foo(&x);
+   foo(&y);
 
    ASSERT(x <= y);
+
    return 1;
 }
