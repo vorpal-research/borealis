@@ -72,7 +72,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
     // Pointers
     Pointer getPtrVar(const std::string& name);
-    Pointer getPtrConst(const std::string& v);
+    Pointer getPtrConst(int ptr);
     Pointer getNullPtr();
     // Bools
     Bool getBoolVar(const std::string& name);
@@ -83,26 +83,19 @@ public:
     Integer getIntVar(const std::string& name);
     Integer getFreshIntVar(const std::string& name);
     Integer getIntConst(int v);
-    Integer getIntConst(const std::string& v);
     // Reals
     Real getRealVar(const std::string& name);
     Real getFreshRealVar(const std::string& name);
     Real getRealConst(int v);
     Real getRealConst(double v);
-    Real getRealConst(const std::string& v);
     // Memory
     MemArray getNoMemoryArray();
 
     // Generic functions
-    Dynamic getExprByTypeAndName(
-            const llvm::ValueType type,
+    Dynamic getVarByTypeAndName(
+            Type::Ptr type,
             const std::string& name);
-    Dynamic getExprForValue(
-            const llvm::Value& value,
-            const std::string& name);
-    Dynamic getExprForType(
-            const llvm::Type& type,
-            const std::string& name);
+
     // Valid/invalid pointers
     Pointer getInvalidPtr();
     Bool isInvalidPtrExpr(Pointer ptr);

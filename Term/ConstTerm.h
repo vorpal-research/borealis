@@ -11,6 +11,8 @@
 #include "Term/Term.h"
 #include "Util/slottracker.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 class ConstTerm: public borealis::Term {
@@ -33,13 +35,43 @@ public:
 
     ConstTerm(const ConstTerm&) = default;
 
-#include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
 
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
-        return z3ef.getExprForValue(*constant, getName());
+        using namespace llvm;
+
+        if (isa<ConstantPointerNull>(constant)) {
+            return z3ef.getNullPtr();
+        } else if (auto* cInt = dyn_cast<ConstantInt>(constant)) {
+            if (cInt->getType()->getPrimitiveSizeInBits() == 1) {
+                if (cInt->isOne()) return z3ef.getTrue();
+                else if (cInt->isZero()) return z3ef.getFalse();
+            } else {
+                return z3ef.getIntConst(cInt->getValue().getZExtValue());
+            }
+        } else if (auto* cFP = dyn_cast<ConstantFP>(constant)) {
+            auto& fp = cFP->getValueAPF();
+
+            if (&fp.getSemantics() == &APFloat::IEEEsingle) {
+                return z3ef.getRealConst(fp.convertToFloat());
+            } else if (&fp.getSemantics() == &APFloat::IEEEdouble) {
+                return z3ef.getRealConst(fp.convertToDouble());
+            } else {
+                BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported semantics of APFloat");
+            }
+        } else if (auto* cE = dyn_cast<ConstantExpr>(constant)) {
+            if (cE->getOpcode() >= Instruction::CastOpsBegin &&
+                cE->getOpcode() <= Instruction::CastOpsEnd) {
+                return z3ef.getVarByTypeAndName(getTermType(), getName());
+            } else {
+                // FIXME: this is generally fucked up
+                return z3ef.getVarByTypeAndName(getTermType(), getName());
+            }
+        }
+
+        // FIXME: this is generally fucked up
+        return z3ef.getVarByTypeAndName(getTermType(), getName());
     }
 
     virtual Type::Ptr getTermType() const {
@@ -57,5 +89,7 @@ private:
 };
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* CONSTTERM_H_ */

@@ -31,6 +31,8 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T) {
     return OS;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 typedef std::pair<std::string, ConditionType> ConditionDescription;
 
 ConditionDescription analyzeCondition(const int cond) {
@@ -114,88 +116,6 @@ ConditionType conditionType(int cond) {
 	return analyzeCondition(cond).second;
 }
 
-ValueType valueType(const llvm::Value& value) {
-	return type2type(*value.getType(),
-	        isa<llvm::ConstantPointerNull>(value) ? TypeInfo::CONSTANT_POINTER_NULL :
-	        isa<llvm::Constant>(value) ? TypeInfo::CONSTANT :
-	        TypeInfo::VARIABLE);
-}
-
-ValueType type2type(const llvm::Type& type, TypeInfo info) {
-    using namespace::llvm;
-
-    typedef ValueType VT;
-
-    switch(info) {
-    case TypeInfo::VARIABLE:
-        {
-            if (type.isIntegerTy()) {
-                if (type.getPrimitiveSizeInBits() == 1) {
-                    return VT::BOOL_VAR;
-                } else {
-                    return VT::INT_VAR;
-                }
-            } else if (type.isFloatingPointTy()) {
-                return VT::REAL_VAR;
-            } else if (type.isPointerTy()) {
-                return VT::PTR_VAR;
-            } else {
-                return VT::UNKNOWN;
-            }
-        }
-    case TypeInfo::CONSTANT:
-        {
-            if (type.isIntegerTy()) {
-                if (type.getPrimitiveSizeInBits() == 1) {
-                    return VT::BOOL_CONST;
-                } else {
-                    return VT::INT_CONST;
-                }
-            } else if (type.isFloatingPointTy()) {
-                return VT::REAL_CONST;
-            } else if (type.isPointerTy()) {
-                return VT::PTR_CONST;
-            } else {
-                return VT::UNKNOWN;
-            }
-        }
-    case TypeInfo::CONSTANT_POINTER_NULL:
-        {
-            return VT::NULL_PTR_CONST;
-        }
-    default:
-        BYE_BYE(ValueType, "Unreachable!");
-    }
-}
-
-llvm::Constant* getBoolConstant(bool b) {
-    return b ? llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(llvm::getGlobalContext()))
-             : llvm::ConstantInt::getFalse(llvm::Type::getInt1Ty(llvm::getGlobalContext()));
-}
-
-llvm::Constant* getIntConstant(uint64_t i) {
-    return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvm::getGlobalContext()), i);
-}
-
-llvm::ConstantPointerNull* getNullPointer() {
-    return llvm::ConstantPointerNull::get(llvm::Type::getInt64PtrTy(llvm::getGlobalContext()));
-}
-
-std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
-    std::unordered_set<Loop*> loops;
-
-    for (const auto& BB : *F) {
-        loops.insert(LI->getLoopFor(&BB));
-    }
-    loops.erase(nullptr);
-
-    return std::list<Loop*>(loops.begin(), loops.end());
-}
-
-Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
-    return LI->getLoopFor(inst->getParent());
-}
-
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {
     typedef llvm::BinaryOperator::BinaryOps ops;
 
@@ -250,6 +170,36 @@ std::string unaryArithString(UnaryArithType opCode) {
     case UnaryArithType::NEG: return "-";
     default: BYE_BYE(std::string, "Unreachable!");
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+llvm::Constant* getBoolConstant(bool b) {
+    return b ? llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(llvm::getGlobalContext()))
+             : llvm::ConstantInt::getFalse(llvm::Type::getInt1Ty(llvm::getGlobalContext()));
+}
+
+llvm::Constant* getIntConstant(uint64_t i) {
+    return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvm::getGlobalContext()), i);
+}
+
+llvm::ConstantPointerNull* getNullPointer() {
+    return llvm::ConstantPointerNull::get(llvm::Type::getInt64PtrTy(llvm::getGlobalContext()));
+}
+
+std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
+    std::unordered_set<Loop*> loops;
+
+    for (const auto& BB : *F) {
+        loops.insert(LI->getLoopFor(&BB));
+    }
+    loops.erase(nullptr);
+
+    return std::list<Loop*>(loops.begin(), loops.end());
+}
+
+Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
+    return LI->getLoopFor(inst->getParent());
 }
 
 } // namespace llvm

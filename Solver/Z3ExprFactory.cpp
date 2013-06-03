@@ -50,11 +50,8 @@ f::Pointer Z3ExprFactory::getPtrVar(const std::string& name) {
     return Pointer::mkVar(*ctx, name);
 }
 
-f::Pointer Z3ExprFactory::getPtrConst(const std::string& v) {
-    std::istringstream ost(v);
-    unsigned long long ull;
-    ost >> ull;
-    return Pointer::mkConst(*ctx, ull);
+f::Pointer Z3ExprFactory::getPtrConst(int ptr) {
+    return Pointer::mkConst(*ctx, ptr);
 }
 
 f::Pointer Z3ExprFactory::getNullPtr() {
@@ -89,13 +86,6 @@ f::Integer Z3ExprFactory::getIntConst(int v) {
     return f::Integer::mkConst(*ctx, v);
 }
 
-f::Integer Z3ExprFactory::getIntConst(const std::string& v) {
-    std::istringstream ost(v);
-    unsigned long long ull;
-    ost >> ull;
-    return Integer::mkConst(*ctx, ull);
-}
-
 f::Real Z3ExprFactory::getRealVar(const std::string& name) {
     return f::Real::mkVar(*ctx, name);
 }
@@ -110,13 +100,6 @@ f::Real Z3ExprFactory::getRealConst(int v) {
 
 f::Real Z3ExprFactory::getRealConst(double v) {
     return f::Real::mkConst(*ctx, (long long int)v);
-}
-
-f::Real Z3ExprFactory::getRealConst(const std::string& v) {
-    std::istringstream buf(v);
-    double dbl;
-    buf >> dbl;
-    return getRealConst(dbl);
 }
 
 f::MemArray Z3ExprFactory::getNoMemoryArray() {
@@ -147,47 +130,23 @@ f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
     return z3::to_expr( *ctx, ast );
 }
 
-f::Dynamic Z3ExprFactory::getExprForValue(
-        const llvm::Value& value,
+f::Dynamic Z3ExprFactory::getVarByTypeAndName(
+        Type::Ptr type,
         const std::string& name) {
-    return getExprByTypeAndName(valueType(value), name);
-}
+    using llvm::isa;
 
-f::Dynamic Z3ExprFactory::getExprForType(
-        const llvm::Type& type,
-        const std::string& name) {
-    return getExprByTypeAndName(type2type(type), name);
-}
-
-f::Dynamic Z3ExprFactory::getExprByTypeAndName(
-        const llvm::ValueType type,
-        const std::string& name) {
-    using llvm::ValueType;
-
-    switch(type) {
-    case ValueType::INT_CONST:
-        return getIntConst(name);
-    case ValueType::INT_VAR:
+    if (isa<borealis::Integer>(type))
         return getIntVar(name);
-    case ValueType::REAL_CONST:
-        return getRealConst(name);
-    case ValueType::REAL_VAR:
+    else if (isa<borealis::Float>(type))
         return getRealVar(name);
-    case ValueType::BOOL_CONST:
-        return getBoolConst(name == "TRUE" || name == "true");
-    case ValueType::BOOL_VAR:
+    else if (isa<borealis::Bool>(type))
         return getBoolVar(name);
-    case ValueType::NULL_PTR_CONST:
-        return getNullPtr();
-    case ValueType::PTR_CONST:
-        return getPtrConst(name);
-    case ValueType::PTR_VAR:
+    else if (isa<borealis::Pointer>(type))
         return getPtrVar(name);
-    case ValueType::UNKNOWN:
-        BYE_BYE(Dynamic, "Unknown value type for Z3 conversion");
-    default:
-        BYE_BYE(Dynamic, "Unreachable!");
-    }
+    else if (isa<borealis::UnknownType>(type))
+        BYE_BYE(Dynamic, "Unknown var type for Z3 conversion");
+
+    BYE_BYE(Dynamic, "Unreachable!");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

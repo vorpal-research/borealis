@@ -42,7 +42,7 @@ public:
 
 
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
-        return z3ef.getExprForValue(*v, getName());
+        return z3ef.getVarByTypeAndName(getTermType(), getName());
     }
 
     virtual Type::Ptr getTermType() const {

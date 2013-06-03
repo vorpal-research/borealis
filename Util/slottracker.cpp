@@ -257,26 +257,27 @@ std::string SlotTracker::getLocalName(const Value *V) {
 
     if (isa<ConstantPointerNull>(V)) {
         return "<null>";
-    } else if (isa<ConstantInt>(V)) {
-        const ConstantInt* cInt = cast<ConstantInt>(V);
+
+    } else if (auto* cInt = dyn_cast<ConstantInt>(V)) {
         if (cInt->getType()->getPrimitiveSizeInBits() == 1) {
             if (cInt->isOne()) return "true";
             else if (cInt->isZero()) return "false";
         } else {
             return toString(cInt->getValue().getZExtValue());
         }
-    } else if (isa<ConstantFP>(V)) {
-        const APFloat& cFP = cast<ConstantFP>(V)->getValueAPF();
 
-        if (&cFP.getSemantics() == &APFloat::IEEEsingle) {
-            return toString(cFP.convertToFloat());
-        } else if (&cFP.getSemantics() == &APFloat::IEEEdouble) {
-            return toString(cFP.convertToDouble());
+    } else if (auto* cFP = dyn_cast<ConstantFP>(V)) {
+        auto& fp = cFP->getValueAPF();
+
+        if (&fp.getSemantics() == &APFloat::IEEEsingle) {
+            return toString(fp.convertToFloat());
+        } else if (&fp.getSemantics() == &APFloat::IEEEdouble) {
+            return toString(fp.convertToDouble());
         } else {
             BYE_BYE(std::string, "Unsupported semantics of APFloat");
         }
-    } else if (isa<ConstantExpr>(V)) {
-        const ConstantExpr* cE = cast<ConstantExpr>(V);
+
+    } else if (auto* cE = dyn_cast<ConstantExpr>(V)) {
         if (cE->getOpcode() >= Instruction::CastOpsBegin &&
             cE->getOpcode() <= Instruction::CastOpsEnd) {
             return getLocalName(cE->getOperand(0));
@@ -284,6 +285,7 @@ std::string SlotTracker::getLocalName(const Value *V) {
             // FIXME: this is generally fucked up
             return toString(V);
         }
+
     } else if (isa<Constant>(V) && !V->hasName()) {
         // FIXME: this is generally fucked up
         return toString(V);

@@ -37,6 +37,8 @@ llvm::raw_ostream& operator<<(
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T);
 
+////////////////////////////////////////////////////////////////////////////////
+
 enum class ConditionType {
 	EQ,
 	NEQ,
@@ -51,33 +53,6 @@ enum class ConditionType {
 std::string conditionString(int cond);
 std::string conditionString(ConditionType cond);
 ConditionType conditionType(int cond);
-
-enum class TypeInfo {
-    VARIABLE,
-    CONSTANT,
-    CONSTANT_POINTER_NULL
-};
-enum class ValueType {
-	INT_CONST,
-	INT_VAR,
-	BOOL_CONST,
-	BOOL_VAR,
-	REAL_CONST,
-	REAL_VAR,
-	NULL_PTR_CONST,
-	PTR_CONST,
-	PTR_VAR,
-	UNKNOWN
-};
-ValueType valueType(const llvm::Value& value);
-ValueType type2type(const llvm::Type& type, TypeInfo info = TypeInfo::VARIABLE);
-
-llvm::Constant* getBoolConstant(bool b);
-llvm::Constant* getIntConstant(uint64_t i);
-llvm::ConstantPointerNull* getNullPointer();
-
-std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
-Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
 
 enum class ArithType {
     ADD,
@@ -103,6 +78,17 @@ enum class UnaryArithType {
     BNOT,
 };
 std::string unaryArithString(UnaryArithType opCode);
+
+////////////////////////////////////////////////////////////////////////////////
+
+llvm::Constant* getBoolConstant(bool b);
+llvm::Constant* getIntConstant(uint64_t i);
+llvm::ConstantPointerNull* getNullPointer();
+
+std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
+Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
+
+////////////////////////////////////////////////////////////////////////////////
 
 inline borealis::Locus instructionLocus(const Instruction* inst) {
     auto node = inst->getMetadata("dbg");
@@ -149,11 +135,6 @@ namespace std {
 ////////////////////////////////////////////////////////////////////////////////
 template<> struct hash<llvm::ConditionType> : borealis::util::enums::enum_hash<llvm::ConditionType> {};
 template<> struct hash<const llvm::ConditionType> : borealis::util::enums::enum_hash<llvm::ConditionType> {};
-////////////////////////////////////////////////////////////////////////////////
-// ValueType
-////////////////////////////////////////////////////////////////////////////////
-template<> struct hash<llvm::ValueType> : borealis::util::enums::enum_hash<llvm::ValueType> {};
-template<> struct hash<const llvm::ValueType> : borealis::util::enums::enum_hash<llvm::ValueType> {};
 ////////////////////////////////////////////////////////////////////////////////
 // ArithType
 ////////////////////////////////////////////////////////////////////////////////
