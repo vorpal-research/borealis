@@ -14,7 +14,6 @@
 
 #include "Predicate/EqualityPredicate.h"
 #include "Predicate/InequalityPredicate.h"
-#include "Predicate/GEPPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
@@ -77,14 +76,6 @@ public:
                         cases))
                 ->setType(PredicateType::PATH)
         );
-    }
-
-    Predicate::Ptr getGEPPredicate(
-            Term::Ptr lhv,
-            Term::Ptr rhv,
-            std::vector< std::pair< Term::Ptr, Term::Ptr > > shifts) {
-        return Predicate::Ptr(
-                new GEPPredicate(lhv, rhv, shifts));
     }
 
     Predicate::Ptr getEqualityPredicate(

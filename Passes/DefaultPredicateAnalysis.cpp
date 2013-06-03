@@ -18,6 +18,9 @@
 
 namespace borealis {
 
+using borealis::util::tail;
+using borealis::util::view;
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Default predicate analysis instruction visitor
@@ -172,33 +175,18 @@ public:
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace llvm;
 
-        llvm::Type* type = I.getPointerOperandType();
-
-        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
-        shifts.reserve(I.getNumIndices());
-        for (auto it = I.idx_begin(); it != I.idx_end(); ++it) {
-            Value* v = *it;
-            Term::Ptr by = pass->TF->getValueTerm(v);
-            Term::Ptr size = pass->TF->getIntTerm(getTypeSizeInElems(type));
-            shifts.push_back({by, size});
-
-            if (type->isArrayTy()) type = type->getArrayElementType();
-            else if (type->isStructTy()) {
-                if (!isa<ConstantInt>(v)) {
-                    BYE_BYE_VOID("Non-constant structure field shift");
-                }
-                auto fieldIdx = cast<ConstantInt>(v)->getZExtValue();
-                type = type->getStructElementType(fieldIdx);
-            }
-        }
-
         Value* lhv = &I;
         Value* rhv = I.getPointerOperand();
 
-        pass->PM[&I] = pass->PF->getGEPPredicate(
+        std::vector<llvm::Value*> idx;
+        idx.reserve(I.getNumOperands() - 1);
+        for (auto& i : tail(view(I.op_begin(), I.op_end()))) {
+            idx.push_back(i);
+        }
+
+        pass->PM[&I] = pass->PF->getEqualityPredicate(
                 pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(rhv),
-                shifts
+                pass->TF->getGepTerm(rhv, idx)
         );
     }
 

@@ -12,6 +12,8 @@
 
 #include <memory>
 
+#include "Codegen/llvm.h"
+
 #include "Term/ArgumentTerm.h"
 #include "Term/ConstTerm.h"
 #include "Term/ReturnValueTerm.h"
@@ -25,6 +27,8 @@
 
 #include "Term/LoadTerm.h"
 
+#include "Term/GepTerm.h"
+
 #include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
@@ -32,6 +36,8 @@
 #include "Term/OpaqueVarTerm.h"
 
 #include "Util/slottracker.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -100,6 +106,34 @@ public:
         return Term::Ptr(new LoadTerm(rhv));
     }
 
+    Term::Ptr getGepTerm(llvm::Value* base, const std::vector<llvm::Value*>& idxs) {
+        using namespace llvm;
+
+        Term::Ptr v = getValueTerm(base);
+
+        llvm::Type* type = base->getType();
+
+        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
+        shifts.reserve(idxs.size());
+
+        for (auto* idx : idxs) {
+            Term::Ptr by = getValueTerm(idx);
+            Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
+            shifts.push_back({by, size});
+
+            if (type->isArrayTy()) type = type->getArrayElementType();
+            else if (type->isStructTy()) {
+                if (!isa<ConstantInt>(idx)) {
+                    BYE_BYE(Term::Ptr, "Non-constant structure field shift");
+                }
+                auto fieldIdx = cast<ConstantInt>(idx)->getZExtValue();
+                type = type->getStructElementType(fieldIdx);
+            }
+        }
+
+        return Term::Ptr(new GepTerm(v, shifts, type));
+    }
+
     Term::Ptr getCmpTerm(llvm::ConditionType opc, Term::Ptr lhv, Term::Ptr rhv) {
         return Term::Ptr(new CmpTerm(opc, lhv, rhv));
     }
@@ -137,5 +171,7 @@ private:
 };
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* TERMFACTORY_H_ */

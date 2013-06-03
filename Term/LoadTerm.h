@@ -20,7 +20,7 @@ class LoadTerm: public borealis::Term {
 
     LoadTerm(Term::Ptr rhv):
         Term(
-                rhv->getId(),
+                rhv->hashCode(),
                 "*(" + rhv->getName() + ")",
                 type_id(*this)
         ), rhv(rhv) {};

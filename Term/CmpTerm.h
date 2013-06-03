@@ -22,7 +22,7 @@ class CmpTerm: public borealis::Term {
 
     CmpTerm(llvm::ConditionType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->getId() ^ rhv->getId(),
+                lhv->hashCode() ^ rhv->hashCode(),
                 "(" + lhv->getName() + " " + llvm::conditionString(opcode) + " " + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};

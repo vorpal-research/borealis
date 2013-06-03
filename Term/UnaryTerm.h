@@ -22,7 +22,7 @@ class UnaryTerm: public borealis::Term {
 
     UnaryTerm(llvm::UnaryArithType opcode, Term::Ptr rhv):
         Term(
-                rhv->getId(),
+                rhv->hashCode(),
                 llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), rhv(rhv){};

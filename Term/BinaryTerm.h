@@ -22,7 +22,7 @@ class BinaryTerm: public borealis::Term {
 
     BinaryTerm(llvm::ArithType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->getId() ^ rhv->getId(),
+                lhv->hashCode() ^ rhv->hashCode(),
                 "(" + lhv->getName() + " " + llvm::arithString(opcode) + " " + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};

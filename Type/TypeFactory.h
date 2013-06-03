@@ -69,7 +69,7 @@ public:
         return type->getId() != type_id<TypeError>();
     }
 
-    Type::Ptr cast(llvm::Type* type) {
+    Type::Ptr cast(const llvm::Type* type) {
         using borealis::util::toString;
 
         if(type->isIntegerTy())

@@ -22,7 +22,7 @@ class TernaryTerm: public borealis::Term {
 
     TernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls):
         Term(
-                cnd->getId() ^ tru->getId() ^ fls->getId(),
+                cnd->hashCode() ^ tru->hashCode() ^ fls->hashCode(),
                 "(" + cnd->getName() + " ? " + tru->getName() + " : " + fls->getName() + ")",
                 type_id(*this)
         ), cnd(cnd), tru(tru), fls(fls) {};
