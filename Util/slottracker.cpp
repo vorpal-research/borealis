@@ -283,12 +283,12 @@ std::string SlotTracker::getLocalName(const Value *V) {
             return getLocalName(cE->getOperand(0));
         } else {
             // FIXME: this is generally fucked up
-            return toString(V);
+            return "?" + toString(V) + "?";
         }
 
     } else if (isa<Constant>(V) && !V->hasName()) {
         // FIXME: this is generally fucked up
-        return toString(V);
+        return "?" + toString(V) + "?";
     }
 
     if (V->hasName()) {
