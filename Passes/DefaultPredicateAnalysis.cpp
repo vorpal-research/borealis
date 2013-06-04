@@ -178,15 +178,15 @@ public:
         Value* lhv = &I;
         Value* rhv = I.getPointerOperand();
 
-        std::vector<llvm::Value*> idx;
-        idx.reserve(I.getNumOperands() - 1);
+        std::vector<llvm::Value*> idxs;
+        idxs.reserve(I.getNumOperands() - 1);
         for (auto& i : tail(view(I.op_begin(), I.op_end()))) {
-            idx.push_back(i);
+            idxs.push_back(i);
         }
 
         pass->PM[&I] = pass->PF->getEqualityPredicate(
                 pass->TF->getValueTerm(lhv),
-                pass->TF->getGepTerm(rhv, idx)
+                pass->TF->getGepTerm(rhv, idxs)
         );
     }
 

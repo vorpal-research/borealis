@@ -43,6 +43,8 @@ namespace borealis {
 
 class TermFactory {
 
+    typedef std::vector<llvm::Value*> ValueVector;
+
 public:
 
     typedef std::unique_ptr<TermFactory> Ptr;
@@ -52,6 +54,22 @@ public:
     }
 
     Term::Ptr getConstTerm(llvm::Constant* c) {
+        using namespace llvm;
+        using borealis::util::tail;
+        using borealis::util::view;
+
+        if (auto* cE = dyn_cast<ConstantExpr>(c)) {
+            if (cE->getOpcode() == Instruction::GetElementPtr) {
+                auto* base = cE->getOperand(0);
+                ValueVector idxs;
+                idxs.reserve(cE->getNumOperands() - 1);
+                for (auto& i : tail(view(cE->op_begin(), cE->op_end()))) {
+                    idxs.push_back(i);
+                }
+                return getGepTerm(base, idxs);
+            }
+        }
+
         return Term::Ptr(new ConstTerm(c, slotTracker));
     }
 
@@ -86,8 +104,8 @@ public:
             return getConstTerm(c);
         else if (auto* arg = dyn_cast<Argument>(v))
             return getArgumentTerm(arg);
-        else
-            return Term::Ptr(new ValueTerm(v, slotTracker));
+
+        return Term::Ptr(new ValueTerm(v, slotTracker));
     }
 
     Term::Ptr getTernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls) {
@@ -106,8 +124,9 @@ public:
         return Term::Ptr(new LoadTerm(rhv));
     }
 
-    Term::Ptr getGepTerm(llvm::Value* base, const std::vector<llvm::Value*>& idxs) {
+    Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         using namespace llvm;
+        using borealis::util::tail;
 
         Term::Ptr v = getValueTerm(base);
 
@@ -121,7 +140,8 @@ public:
             Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
             shifts.push_back({by, size});
 
-            if (type->isArrayTy()) type = type->getArrayElementType();
+            if (type->isPointerTy()) type = type->getPointerElementType();
+            else if (type->isArrayTy()) type = type->getArrayElementType();
             else if (type->isStructTy()) {
                 if (!isa<ConstantInt>(idx)) {
                     BYE_BYE(Term::Ptr, "Non-constant structure field shift");
@@ -130,6 +150,8 @@ public:
                 type = type->getStructElementType(fieldIdx);
             }
         }
+
+        type = GetElementPtrInst::getGEPReturnType(base, idxs);
 
         return Term::Ptr(new GepTerm(v, shifts, type));
     }
