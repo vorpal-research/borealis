@@ -84,11 +84,18 @@ void MallocMutator::eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI)
     // All users of this malloc call are:
     // - bitcasts
     // - of the same mallocType type
+
+    std::vector<BitCastInst*> bitCasts;
+    bitCasts.reserve(CI->getNumUses());
     for (User* user : view(CI->use_begin(), CI->use_end())) {
-        BitCastInst* bitCast = cast<BitCastInst>(user);
+        bitCasts.push_back(cast<BitCastInst>(user));
+    }
+
+    for (BitCastInst* bitCast : bitCasts) {
         bitCast->replaceAllUsesWith(call);
         bitCast->eraseFromParent();
     }
+
     CI->eraseFromParent();
 }
 
