@@ -60,14 +60,6 @@ public:
             } else {
                 BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported semantics of APFloat");
             }
-        } else if (auto* cE = dyn_cast<ConstantExpr>(constant)) {
-            if (cE->getOpcode() >= Instruction::CastOpsBegin &&
-                cE->getOpcode() <= Instruction::CastOpsEnd) {
-                return z3ef.getVarByTypeAndName(getTermType(), getName());
-            } else {
-                // FIXME: this is generally fucked up
-                return z3ef.getVarByTypeAndName(getTermType(), getName());
-            }
         }
 
         // FIXME: this is generally fucked up
