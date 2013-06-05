@@ -14,7 +14,10 @@ namespace borealis {
 PredicateStateChain::PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr) :
         PredicateState(type_id<Self>()),
         base(base),
-        curr(curr) {};
+        curr(curr) {
+    ASSERTC(base != nullptr);
+    ASSERTC(curr != nullptr);
+};
 
 PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
@@ -86,7 +89,7 @@ PredicateState::Ptr PredicateStateChain::sliceOn(PredicateState::Ptr base) const
     }
 
     auto slice = this->base->sliceOn(base);
-    if (slice) {
+    if (slice != nullptr) {
         return Simplified(new Self(slice, this->curr));
     }
 

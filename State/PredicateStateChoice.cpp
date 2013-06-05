@@ -17,11 +17,17 @@ using borealis::util::tail;
 
 PredicateStateChoice::PredicateStateChoice(const std::vector<PredicateState::Ptr>& choices) :
         PredicateState(type_id<Self>()),
-        choices(choices) {};
+        choices(choices) {
+    ASSERTC(std::all_of(choices.begin(), choices.end(),
+            [](PredicateState::Ptr s) { return s != nullptr; }));
+};
 
 PredicateStateChoice::PredicateStateChoice(std::vector<PredicateState::Ptr>&& choices) :
         PredicateState(type_id<Self>()),
-        choices(std::move(choices)) {};
+        choices(std::move(choices)) {
+    ASSERTC(std::all_of(choices.begin(), choices.end(),
+            [](PredicateState::Ptr s) { return s != nullptr; }));
+};
 
 PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
     std::vector<PredicateState::Ptr> newChoices;
@@ -175,8 +181,10 @@ PredicateState::Ptr PredicateStateChoice::simplify() const {
         }
     );
 
-    std::remove_if(simplified.begin(), simplified.end(),
-        [](PredicateState::Ptr choice) { return choice->isEmpty(); });
+    simplified.erase(
+        std::remove_if(simplified.begin(), simplified.end(),
+            [](PredicateState::Ptr choice) { return choice->isEmpty(); })
+    );
 
     if (simplified.size() == 1) {
         return head(simplified);
