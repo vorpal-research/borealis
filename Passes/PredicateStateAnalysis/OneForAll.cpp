@@ -67,7 +67,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     PredicateState::Ptr initialState = (PSF * gPredicate + requires)();
 
     // Register arguments as visited values
-    for (auto& arg : F.getArgumentList()) {
+    for (const auto& arg : F.getArgumentList()) {
         initialState = initialState << arg;
     }
 
@@ -96,7 +96,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
 void OneForAll::print(llvm::raw_ostream&, const llvm::Module*) const {
     infos() << "Predicate state analysis results" << endl;
-    for (auto& e : instructionStates) {
+    for (const auto& e : instructionStates) {
         infos() << *e.first << endl
                 << e.second << endl;
     }
@@ -116,11 +116,10 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
     auto inState = BBM(BB);
 
-    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachable()) {
-        return;
-    }
+    if (!inState) return;
+    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachable()) return;
 
-    for (auto& I : view(BB->begin(), BB->end())) {
+    for (const auto& I : view(BB->begin(), BB->end())) {
 
         auto instructionState = (PSF * inState + PM(&I) << I)();
         instructionStates[&I] = instructionState;
@@ -154,6 +153,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
 PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
     using namespace llvm;
+    using borealis::util::containsKey;
     using borealis::util::view;
 
     TRACE_UP("psa::bbm", valueSummary(BB));
@@ -167,7 +167,10 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
     auto base = basicBlockStates.at(idom->getBlock());
     std::vector<PredicateState::Ptr> choices;
 
-    for (auto* predBB : view(pred_begin(BB), pred_end(BB))) {
+    for (const auto* predBB : view(pred_begin(BB), pred_end(BB))) {
+        // predBB is unreachable
+        if (!containsKey(basicBlockStates, predBB)) continue;
+
         auto stateBuilder = PSF * basicBlockStates.at(predBB);
 
         // Adding path predicate from predBB
@@ -191,10 +194,14 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
 
     TRACE_DOWN("psa::bbm", valueSummary(BB));
 
-    return PSF->Chain(
+    if (choices.empty())
+        // All predecessors are unreachable, and we too are as such...
+        return nullptr;
+    else
+        return PSF->Chain(
             base,
             PSF->Choice(choices)
-    );
+        );
 }
 
 PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {
