@@ -159,16 +159,22 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
     TRACE_UP("psa::bbm", valueSummary(BB));
 
     auto* idom = (*DT)[BB]->getIDom();
-
+    // Function entry block does not have an idom
     if (!idom) {
         return basicBlockStates.at(nullptr);
+    }
+
+    const auto* idomBB = idom->getBlock();
+    // idom is unreachable
+    if (!containsKey(basicBlockStates, idomBB)) {
+        return nullptr;
     }
 
     auto base = basicBlockStates.at(idom->getBlock());
     std::vector<PredicateState::Ptr> choices;
 
     for (const auto* predBB : view(pred_begin(BB), pred_end(BB))) {
-        // predBB is unreachable
+        // predecessor is unreachable
         if (!containsKey(basicBlockStates, predBB)) continue;
 
         auto stateBuilder = PSF * basicBlockStates.at(predBB);
@@ -187,7 +193,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         auto inState = stateBuilder();
 
         auto slice = inState->sliceOn(base);
-        ASSERT(slice, "Could not slice state on its predecessor");
+        ASSERT(slice != nullptr, "Could not slice state on its predecessor");
 
         choices.push_back(slice);
     }
