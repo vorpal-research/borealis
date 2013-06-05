@@ -183,7 +183,9 @@ PredicateState::Ptr PredicateStateChoice::simplify() const {
 
     simplified.erase(
         std::remove_if(simplified.begin(), simplified.end(),
-            [](PredicateState::Ptr choice) { return choice->isEmpty(); })
+            [](PredicateState::Ptr choice) { return choice->isEmpty(); }
+        ),
+        simplified.end()
     );
 
     if (simplified.size() == 1) {
