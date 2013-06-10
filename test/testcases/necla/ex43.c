@@ -71,6 +71,7 @@ void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
 }
 
 // @requires buf_ != 0
+// @ensures \result >= 0
 idx_t randomIdx(const buf_t *buf_) {
   idx_t idx = __NONDET__();
   ASSUME(0 <= idx);
