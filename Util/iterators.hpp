@@ -34,7 +34,7 @@ begin_end_pair(const Container& c) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class RootIt, class UnaryFunc>
+template<class RootIt, class UnaryFunc>
 class mapped_iterator {
   RootIt current;
   UnaryFunc Fn;
@@ -46,8 +46,8 @@ public:
   typedef decltype(Fn(*current)) value_type;
 
   typedef struct{} pointer;
-  //typedef typename UnaryFunc::result_type *pointer;
-  typedef value_type reference;        // Can't modify value returned by fn
+  // typedef typename UnaryFunc::result_type* pointer;
+  typedef value_type reference; // Can't modify value returned by Fn
 
   typedef RootIt iterator_type;
   typedef mapped_iterator<RootIt, UnaryFunc> _Self;
@@ -55,13 +55,11 @@ public:
   inline const RootIt& getCurrent() const { return current; }
   inline const UnaryFunc& getFunc() const { return Fn; }
 
-  inline mapped_iterator(const RootIt& I, UnaryFunc F)
-    : current(I), Fn(F) {}
-  inline mapped_iterator(const mapped_iterator& It)
-    : current(It.current), Fn(It.Fn) {}
+  inline mapped_iterator(const RootIt& I, UnaryFunc F) : current(I), Fn(F) {}
+  inline mapped_iterator(const mapped_iterator& It) = default;
 
-  inline value_type operator*() const {   // All this work to do this
-    return Fn(*current);                  // little change
+  inline value_type operator*() const {    // All this work to do this
+    return Fn(*current);                   // little change
   }
 
   _Self& operator++() { ++current; return *this; }
@@ -69,14 +67,14 @@ public:
   _Self  operator++(int) { _Self __tmp = *this; ++current; return __tmp; }
   _Self  operator--(int) { _Self __tmp = *this; --current; return __tmp; }
 
-  _Self  operator+    (difference_type n) const {
+  _Self  operator+ (difference_type n) const {
     return _Self(current + n, Fn);
   }
-  _Self& operator+=   (difference_type n) { current += n; return *this; }
-  _Self  operator-    (difference_type n) const {
+  _Self& operator+=(difference_type n) { current += n; return *this; }
+  _Self  operator- (difference_type n) const {
     return _Self(current - n, Fn);
   }
-  _Self& operator-=   (difference_type n) { current -= n; return *this; }
+  _Self& operator-=(difference_type n) { current -= n; return *this; }
 
   inline bool operator!=(const _Self& X) const { return !operator==(X); }
   inline bool operator==(const _Self& X) const { return current == X.current; }
@@ -87,30 +85,31 @@ public:
   }
 };
 
-template <class _Iterator, class Func>
+template<class _Iterator, class Func>
 inline mapped_iterator<_Iterator, Func>
 operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
           const mapped_iterator<_Iterator, Func>& X) {
   return mapped_iterator<_Iterator, Func>(X.getCurrent() - N, X.getFunc());
 }
 
-// map_iterator - Provide a convenient way to create mapped_iterators, just like
-// make_pair is used for creating pairs...
+// map_iterator - provides a convenient way to create mapped_iterators,
+// just like std::make_pair is used for creating pairs...
 //
-template <class ItTy, class FuncTy>
+template<class ItTy, class FuncTy>
 inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy& I, FuncTy F) {
   return mapped_iterator<ItTy, FuncTy>(I, F);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Glue iterator
+// Glued iterator
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class RootIt>
+template<class RootIt>
 class glued_iterator {
-    std::list<std::pair<RootIt, RootIt>> rest;
+    typedef std::list<std::pair<RootIt, RootIt>> Ranges;
+    Ranges rest;
 
     const RootIt& current() const {
         return rest.front().first;
@@ -146,14 +145,12 @@ public:
     typedef RootIt iterator_type;
     typedef glued_iterator self;
 
-    inline glued_iterator(): rest() {};
-    inline explicit glued_iterator(const std::list<std::pair<RootIt, RootIt>>& ranges)
-        : rest(ranges) {
+    inline glued_iterator() {};
+    inline explicit glued_iterator(const Ranges& ranges) : rest(ranges) {
         validate();
     }
 
-    inline explicit glued_iterator(std::list<std::pair<RootIt, RootIt>>&& ranges)
-        : rest(ranges) {
+    inline explicit glued_iterator(Ranges&& ranges) : rest(std::move(ranges)) {
         validate();
     }
 
@@ -169,7 +166,7 @@ public:
     }
 
     self& operator++() {
-        if(rest.empty()) return *this;
+        if (rest.empty()) return *this;
 
         ++current();
         validate();
@@ -181,19 +178,17 @@ public:
 
     inline bool operator!=(const self& X) const { return !operator==(X); }
     inline bool operator==(const self& X) const {
-        if(rest.empty()) return X.rest.empty();
-        if(X.rest.empty()) return false;
-
+        if (rest.empty()) return X.rest.empty();
+        if (X.rest.empty()) return false;
         return current() == X.current();
     }
-
 };
 
 template<class ...It>
-glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It, It>& ... pairs ) {
+glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It, It>&... pairs) {
     typedef util::head_of_row_q<It...> RealIt;
     typedef std::pair<RealIt, RealIt> pair_t;
-    return glued_iterator<RealIt>(std::list<pair_t>{pairs...});
+    return glued_iterator<RealIt>{std::list<pair_t>{pairs...}};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -202,7 +197,7 @@ glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It, It>
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class RootIt>
+template<class RootIt>
 class flattened_iterator {
     RootIt current;
     RootIt end;
@@ -211,10 +206,8 @@ class flattened_iterator {
 
     ChildIt child;
 
-    void validate()
-    {
-        while (current != end && child == current->end())
-        {
+    void validate() {
+        while (current != end && child == current->end()) {
             ++current;
             if (current != end) {
                 child = current->begin();
@@ -243,15 +236,14 @@ public:
     inline const ChildIt& getChild() const { return child; }
 
     inline flattened_iterator(const RootIt& I, const RootIt& E)
-    : current(I), end(E), child(I != E ? I->begin() : ChildIt() ) {
+    : current(I), end(E), child(I != E ? I->begin() : ChildIt()) {
         validate();
     }
 
     inline explicit flattened_iterator(const std::pair<RootIt, RootIt>& P)
     : flattened_iterator(P.first, P.second) {}
 
-    inline flattened_iterator(const flattened_iterator& It)
-    : current(It.current), end(It.end), child(It.child) {}
+    inline flattened_iterator(const flattened_iterator& It) = default;
 
     inline reference operator*() const {
         return *child;
@@ -262,7 +254,7 @@ public:
     }
 
     self& operator++() {
-        if(current == end) return *this;
+        if (current == end) return *this;
 
         ++getChild();
         validate();
@@ -274,12 +266,10 @@ public:
 
     inline bool operator!=(const self& X) const { return !operator==(X); }
     inline bool operator==(const self& X) const {
-        if(current != X.current) return false;
-
+        if (current != X.current) return false;
         return (current == end && X.current == end) ||
                (current == X.current && getChild() == X.getChild());
     }
-
 };
 
 template <class ItTy>
@@ -350,7 +340,7 @@ inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class RootIt, class Pred>
+template<class RootIt, class Pred>
 class filtered_iterator {
     RootIt current;
     RootIt end;
@@ -358,7 +348,7 @@ class filtered_iterator {
 
     // restore the invariant ( pred(*current) == true || current == end )
     void validate() {
-        while((current != end) && !(pred(*current))) ++current;
+        while ((current != end) && !(pred(*current))) ++current;
     }
 
 public:
@@ -382,14 +372,12 @@ public:
     inline filtered_iterator(const RootIt& I, const RootIt& E, Pred pred)
     : current(I), end(E), pred(pred) {
         validate();
-    };
-
+    }
 
     inline filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
     : filtered_iterator(P.first, P.second, pred) {}
 
-    inline filtered_iterator(const filtered_iterator& It)
-    : current(It.current), end(It.end), pred(It.pred) {}
+    inline filtered_iterator(const filtered_iterator& It) = default;
 
     inline reference operator*() const {
         return *current;
@@ -426,7 +414,6 @@ filtered_iterator<It, Pred> filter_iterator(It end, Pred pred) {
     return filtered_iterator<It, Pred>(end, end, pred);
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Key iterator
@@ -437,20 +424,19 @@ template<class Iterator>
 class key_iterator {
     Iterator base;
 public:
-    /// One of the @link iterator_tags tag types@endlink.
-    typedef typename Iterator::iterator_category  iterator_category;
-    /// The type "pointed to" by the iterator.
-    typedef typename Iterator::value_type::first_type value_type;
-    /// Distance between iterators is represented as this type.
-    typedef typename Iterator::difference_type  difference_type;
-    /// This type represents a pointer-to-value_type.
-    typedef value_type*   pointer;
-    /// This type represents a reference-to-value_type.
+    typedef typename Iterator::iterator_category
+            iterator_category;
+    typedef typename Iterator::value_type::first_type
+            value_type;
+    typedef typename Iterator::difference_type
+            difference_type;
+
+    typedef value_type* pointer;
     typedef value_type& reference;
 
     key_iterator(const key_iterator&) = default;
     key_iterator(key_iterator&&) = default;
-    key_iterator(const Iterator& base): base(base){};
+    key_iterator(const Iterator& base) : base(base) {};
 
     key_iterator& operator=(const key_iterator&) = default;
     key_iterator& operator=(key_iterator&&) = default;
@@ -488,20 +474,19 @@ template<class Iterator>
 class value_iterator {
     Iterator base;
 public:
-    /// One of the @link iterator_tags tag types@endlink.
-    typedef typename Iterator::iterator_category  iterator_category;
-    /// The type "pointed to" by the iterator.
-    typedef typename Iterator::value_type::second_type value_type;
-    /// Distance between iterators is represented as this type.
-    typedef typename Iterator::difference_type  difference_type;
-    /// This type represents a pointer-to-value_type.
-    typedef value_type*   pointer;
-    /// This type represents a reference-to-value_type.
+    typedef typename Iterator::iterator_category
+            iterator_category;
+    typedef typename Iterator::value_type::second_type
+            value_type;
+    typedef typename Iterator::difference_type
+            difference_type;
+
+    typedef value_type* pointer;
     typedef value_type& reference;
 
     value_iterator(const value_iterator&) = default;
     value_iterator(value_iterator&&) = default;
-    value_iterator(const Iterator& base): base(base){};
+    value_iterator(const Iterator& base) : base(base) {};
 
     value_iterator& operator=(const value_iterator&) = default;
     value_iterator& operator=(value_iterator&&) = default;
@@ -539,20 +524,19 @@ template<class Iterator>
 class value_citerator {
     Iterator base;
 public:
-    /// One of the @link iterator_tags tag types@endlink.
-    typedef typename Iterator::iterator_category  iterator_category;
-    /// The type "pointed to" by the iterator.
-    typedef typename Iterator::value_type::second_type value_type;
-    /// Distance between iterators is represented as this type.
-    typedef typename Iterator::difference_type  difference_type;
-    /// This type represents a pointer-to-value_type.
-    typedef const value_type*   pointer;
-    /// This type represents a reference-to-value_type.
+    typedef typename Iterator::iterator_category
+            iterator_category;
+    typedef typename Iterator::value_type::second_type
+            value_type;
+    typedef typename Iterator::difference_type
+            difference_type;
+
+    typedef const value_type* pointer;
     typedef const value_type& reference;
 
     value_citerator(const value_citerator&) = default;
     value_citerator(value_citerator&&) = default;
-    value_citerator(const Iterator& base): base(base){};
+    value_citerator(const Iterator& base) : base(base) {};
 
     value_citerator& operator=(const value_citerator&) = default;
     value_citerator& operator=(value_citerator&&) = default;

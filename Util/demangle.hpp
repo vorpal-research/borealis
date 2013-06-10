@@ -20,22 +20,22 @@ namespace util {
 
 template<class T>
 inline std::string demangle(const char* mangled) {
-    if ( ! mangled ) {
+    if ( !mangled ) {
         return "(null)";
-    } else if ( ! mangled[0] ) {
+    } else if ( !mangled[0] ) {
         return "(empty)";
     }
     int status = -1;
 
-    const std::shared_ptr<const char> demangled(
-            abi::__cxa_demangle( mangled, 0, 0, &status ),
-            [](const char* buf) { free(static_cast<void*>(buf)); }
+    std::shared_ptr<const char> demangled(
+        abi::__cxa_demangle( mangled, 0, 0, &status ),
+        [](const char* buf) { free(static_cast<void*>(buf)); }
     );
 
-    if ( ! demangled.get() ) {
+    if ( !demangled.get() ) {
         return mangled;
     } else if ( 0 == status ) {
-        std::string vi = demangled.get();
+        std::string vi{ demangled.get() };
         return vi;
     }
     return mangled;

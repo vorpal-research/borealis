@@ -13,7 +13,7 @@
 
 #include <unordered_map>
 
-#include "Util/util.h"
+#include "Util/collections.hpp"
 
 #include "Util/macros.h"
 
@@ -26,12 +26,12 @@ class TopologicalSorter {
         GREY,
         BLACK
     };
-    typedef std::unordered_map<llvm::BasicBlock*, Color> Marks;
+    typedef std::unordered_map<const llvm::BasicBlock*, Color> Marks;
 
 public:
 
     typedef std::list<llvm::BasicBlock*> Ordered;
-    typedef util::option<Ordered> Result;
+    typedef borealis::util::option<Ordered> Result;
 
     void clear() {
         marks.clear();
@@ -39,8 +39,6 @@ public:
     }
 
     Result doit(llvm::Function& F) {
-        using borealis::util::view;
-
         clear();
 
         for (llvm::BasicBlock& BB : F) {
@@ -80,21 +78,21 @@ private:
         return true;
     }
 
-    bool isBlack(llvm::BasicBlock* BB) const {
+    bool isBlack(const llvm::BasicBlock* BB) const {
         return borealis::util::containsKey(marks, BB)
                && marks.at(BB) == Color::BLACK;
     }
 
-    bool isGrey(llvm::BasicBlock* BB) const {
+    bool isGrey(const llvm::BasicBlock* BB) const {
         return borealis::util::containsKey(marks, BB)
                && marks.at(BB) == Color::GREY;
     }
 
-    void markBlack(llvm::BasicBlock* BB) {
+    void markBlack(const llvm::BasicBlock* BB) {
         marks[BB] = Color::BLACK;
     }
 
-    void markGrey(llvm::BasicBlock* BB) {
+    void markGrey(const llvm::BasicBlock* BB) {
         marks[BB] = Color::GREY;
     }
 
@@ -102,6 +100,6 @@ private:
 
 } // namespace borealis
 
-#endif /* GRAPH_H_ */
-
 #include "Util/unmacros.h"
+
+#endif /* GRAPH_H_ */

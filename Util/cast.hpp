@@ -12,7 +12,6 @@
 
 #include <utility>
 
-#include "Util/util.hpp"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
 
@@ -33,7 +32,7 @@ public:
 
     template<class Derived, class Callable>
     auto on(Callable c) -> option<decltype(c(some<Derived>()))> {
-        if(auto der = llvm::dyn_cast_or_null<Derived>(b)) {
+        if (auto* der = llvm::dyn_cast_or_null<Derived>(b)) {
             return just(c(*der));
         }
         return nothing();
@@ -41,7 +40,7 @@ public:
 
     template<class Derived, class Callable>
     llvm_rtti_visitor& oncase(Callable c) {
-        if(auto der = llvm::dyn_cast_or_null<Derived>(b)) {
+        if (auto* der = llvm::dyn_cast_or_null<Derived>(b)) {
             c(*der);
         }
         return *this;
@@ -70,7 +69,7 @@ struct pair_matcher {
     typedef std::unique_ptr<datty> datptr;
     datptr data;
 
-    datty* operator ->() {
+    datty* operator->() {
         return data.get();
     }
 
@@ -94,11 +93,11 @@ pair_matcher<
 
     if (auto r1 = dyn_cast<T1>(q1)) {
         if (auto r2 = dyn_cast<T2>(q2)) {
-            return Retty { datptr(new datty(r1, r2)) };
+            return Retty{ datptr{ new datty{r1, r2} } };
         }
     }
 
-    return Retty { nullptr };
+    return Retty{ nullptr };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -196,16 +195,16 @@ struct match_tuple {
 
         if (auto r1 = dyn_cast<T1>(u)) {
             if (auto rs = match_tuple<T...>::doit(us...)) {
-                return RettyPtr(
-                    new Retty {
+                return RettyPtr{
+                    new Retty{
                         r1,
                         std::move(rs)
                     }
-                );
+                };
             }
         }
 
-        return RettyPtr( nullptr );
+        return RettyPtr{ nullptr };
     }
 
     template<class U>
@@ -216,14 +215,14 @@ struct match_tuple {
         typedef typename Retty::Ptr RettyPtr;
 
         if (auto r1 = dyn_cast<T1>(u)) {
-            return RettyPtr(
-                new Retty {
+            return RettyPtr{
+                new Retty{
                     r1
                 }
-            );
+            };
         }
 
-        return RettyPtr( nullptr );
+        return RettyPtr{ nullptr };
     }
 
 };
