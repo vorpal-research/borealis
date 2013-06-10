@@ -83,11 +83,12 @@ struct program_args {
 
     program_args(int argc, const char** argv) : opt { "wrapper" } {
         using borealis::util::view;
-        for(llvm::StringRef arg : view(argv+1, argv+argc)) {
-            if(arg.startswith("-pass")) passes.push_back(arg.drop_front(5).str());
-            else if(arg.startswith("-lib")) libs.push_back(arg.drop_front(4).str());
-            else if(arg.startswith("-opt")) opt.push_back(arg.drop_front(4).data());
-            else if(arg.startswith("-cfg")) config = (arg.drop_front(4).str());
+
+        for (llvm::StringRef arg : view(argv+1, argv+argc)) {
+            if (arg.startswith("-pass")) passes.push_back(arg.drop_front(5).str());
+            else if (arg.startswith("-lib")) libs.push_back(arg.drop_front(4).str());
+            else if (arg.startswith("-opt")) opt.push_back(arg.drop_front(4).data());
+            else if (arg.startswith("-cfg")) config = (arg.drop_front(4).str());
             else compiler.push_back(arg.data());
         }
         // this is generally fucked up
@@ -99,21 +100,22 @@ struct program_args {
     }
 
     template<class InputIterator>
-    program_args& addOptArgument(InputIterator from, InputIterator to) {
+    program_args& addOptArguments(InputIterator from, InputIterator to) {
         using borealis::util::view;
 
-        for(const std::string& arg : view(from, to)) opt.push_back(arg.c_str());
+        for (const std::string& arg : view(from, to)) opt.push_back(arg.c_str());
         opt_argv = opt.data();
         opt_argc = opt.size();
         return *this;
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const program_args& args) {
-        ost << "passes: " << args.passes << std::endl;
-        ost << "libs: " << args.libs << std::endl;
-        ost << "opt: " << args.opt << std::endl;
-        ost << "config: " << args.config << std::endl;
-        ost << "compiler: " << args.compiler << std::endl;
+        using std::endl;
+        ost << "passes: " << args.passes << endl;
+        ost << "libs: " << args.libs << endl;
+        ost << "opt: " << args.opt << endl;
+        ost << "config: " << args.config << endl;
+        ost << "compiler: " << args.compiler << endl;
         return ost;
     }
 };
@@ -122,27 +124,20 @@ int main(int argc, const char** argv) {
     using namespace clang;
     using namespace llvm;
 
+    using namespace borealis::config;
+
     using borealis::comments::GatherCommentsAction;
-    using borealis::config::Config;
     using borealis::endl;
-    using borealis::logging::log_entry;
     using borealis::util::streams::error;
 
     constexpr auto loggingDomain = "wrapper";
 
-    auto infos = []{
-        return borealis::logging::infosFor(loggingDomain);
-    };
-
-    auto errs = []{
-        return borealis::logging::errsFor(loggingDomain);
-    };
+    auto infos = []{ return borealis::logging::infosFor(loggingDomain); };
+    auto errs = []{ return borealis::logging::errsFor(loggingDomain); };
 
     const std::vector<std::string> empty;
 
     program_args args(argc, argv);
-
-    using namespace borealis::config;
 
     AppConfiguration::initialize(args.config.empty() ? "wrapper.conf" : args.config.c_str());
 
@@ -164,12 +159,12 @@ int main(int argc, const char** argv) {
     }
 
     // args to supply to opt
-    args.addOptArgument(opt_args.begin(), opt_args.end());
+    args.addOptArguments(opt_args.begin(), opt_args.end());
 
     llvm::cl::ParseCommandLineOptions(args.opt_argc, args.opt_argv);
 
     {
-        auto out = infos();
+        borealis::logging::log_entry out(infos());
         out << endl;
         for (const auto& arg : args.compiler) {
             out << arg << " ";
@@ -185,12 +180,12 @@ int main(int argc, const char** argv) {
 
     if (!invoke) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_ILLEGAL_COMPILER_OPTIONS; }
 
-    // Print the argument list from the "real" compiler invocation
+    // print the argument list from the "real" compiler invocation
     std::vector<std::string> argsFromInvocation;
     invoke->toArgs(argsFromInvocation);
 
     {
-        auto out = infos();
+        borealis::logging::log_entry out(infos());
         out << "clang ";
         for (const auto& arg : argsFromInvocation) {
             out << arg << " ";
@@ -211,7 +206,7 @@ int main(int argc, const char** argv) {
     Clang.getCodeGenOpts().EmitDeclMetadata = true;
     Clang.getCodeGenOpts().DebugInfo = true;
 
-    // Create an action and make the compiler instance carry it out
+    // create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
     if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_GATHER_COMMENTS; }
 
@@ -222,7 +217,7 @@ int main(int argc, const char** argv) {
     auto& module = *module_ptr;
 
     PassManager pm;
-    // Explicitly schedule TargetData pass as the first pass to run;
+    // explicitly schedule TargetData pass as the first pass to run;
     // note that M.get() gets a pointer or reference to the module to analyze
     pm.add(new TargetData(module_ptr.get()));
 
@@ -241,7 +236,7 @@ int main(int argc, const char** argv) {
     }
     libs2load.insert(libs2load.end(), args.libs.begin(), args.libs.end());
     {
-        log_entry out(infos());
+        borealis::logging::log_entry out(infos());
         out << "Passes:" << endl;
         if (passes2run.empty()) out << "  " << error("None") << endl;
         for (const auto& pass : passes2run) {
@@ -250,7 +245,7 @@ int main(int argc, const char** argv) {
     }
 
     {
-        log_entry out(infos());
+        borealis::logging::log_entry out(infos());
         out << "Dynamic libraries:" << endl;
         if (libs2load.empty()) out << "  " << error("None") << endl;
         for (const auto& lib : libs2load) {
@@ -264,7 +259,7 @@ int main(int argc, const char** argv) {
         pl = lib;
     }
 
-    // Initialize passes
+    // initialize passes
     auto& reg = *PassRegistry::getPassRegistry();
     initializeCore(reg);
     initializeScalarOpts(reg);
@@ -288,14 +283,14 @@ int main(int argc, const char** argv) {
 
             auto* passInfo = reg.getPassInfo(passName);
             if (passInfo == nullptr) {
-                errs () << "Pass " << passName << " cannot be found" << endl;
+                errs() << "Pass " << passName << " cannot be found" << endl;
                 continue;
             }
 
             infos() << pass << ": " << passInfo->getPassName() << endl;
 
-            if (passInfo->getNormalCtor()) {
-                auto thePass = passInfo->getNormalCtor()();
+            if (auto* ctor = passInfo->getNormalCtor()) {
+                auto thePass = ctor();
                 pm.add(thePass);
                 if (isPrinterPass) {
                     pm.add(createPrinterFor(passInfo, thePass));

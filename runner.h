@@ -8,8 +8,8 @@
 #ifndef RUNNER_H_
 #define RUNNER_H_
 
-#include <algorithm>
-#include <list>
+#include <string>
+#include <vector>
 
 namespace borealis {
 
