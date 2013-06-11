@@ -6,6 +6,7 @@
  */
 
 #include "Predicate/StorePredicate.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -50,7 +51,7 @@ bool StorePredicate::equals(const Predicate* other) const {
 }
 
 size_t StorePredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(type, lhv, rhv);
+    return util::hash::defaultHasher()(type, lhv, rhv);
 }
 
 } /* namespace borealis */

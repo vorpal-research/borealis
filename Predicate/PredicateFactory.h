@@ -10,15 +10,8 @@
 
 #include <memory>
 
+#include "Predicate/Predicate.def"
 #include "Predicate/Predicate.h"
-
-#include "Predicate/EqualityPredicate.h"
-#include "Predicate/InequalityPredicate.h"
-#include "Predicate/StorePredicate.h"
-#include "Predicate/AllocaPredicate.h"
-#include "Predicate/MallocPredicate.h"
-#include "Predicate/DefaultSwitchCasePredicate.h"
-#include "Predicate/GlobalsPredicate.h"
 
 namespace borealis {
 
@@ -71,10 +64,10 @@ public:
             Term::Ptr cond,
             std::vector<Term::Ptr> cases) {
         return Predicate::Ptr(
-                (new DefaultSwitchCasePredicate(
-                        cond,
-                        cases))
-                ->setType(PredicateType::PATH)
+            new DefaultSwitchCasePredicate(
+                cond,
+                cases,
+                PredicateType::PATH)
         );
     }
 
@@ -83,8 +76,7 @@ public:
             Term::Ptr rhv,
             PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                (new EqualityPredicate(lhv, rhv))
-                ->setType(type));
+                new EqualityPredicate(lhv, rhv, type));
     }
 
     Predicate::Ptr getInequalityPredicate(
@@ -92,8 +84,7 @@ public:
             Term::Ptr rhv,
             PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                (new InequalityPredicate(lhv, rhv))
-                ->setType(type));
+                new InequalityPredicate(lhv, rhv, type));
     }
 
     Predicate::Ptr getArithPredicate(

@@ -1,5 +1,20 @@
 #ifndef HANDLE_PREDICATE
+#define INCLUDE_MODE
+#endif
+
+#ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
+#include "Predicate/EqualityPredicate.h"
+#include "Predicate/InequalityPredicate.h"
+#include "Predicate/StorePredicate.h"
+#include "Predicate/AllocaPredicate.h"
+#include "Predicate/MallocPredicate.h"
+#include "Predicate/DefaultSwitchCasePredicate.h"
+#include "Predicate/GlobalsPredicate.h"
+
 #define HANDLE_PREDICATE(NAME, CLASS)
+
 #endif
 
 HANDLE_PREDICATE(Equality, EqualityPredicate)

@@ -36,7 +36,7 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
         return z3ef.getRealConst(value);
     }
 
@@ -48,14 +48,14 @@ public:
         return true;
     }
 
-    virtual bool equals(const Term* other) const {
+    virtual bool equals(const Term* other) const override {
         if (const self* that = llvm::dyn_cast<self>(other)) {
             return Term::equals(other) &&
                    std::abs(that->value - value) < .01;
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const {
+    virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().getFloat();
     }
 

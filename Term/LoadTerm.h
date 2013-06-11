@@ -36,7 +36,7 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
         typedef Z3ExprFactory::Dynamic Dynamic;
         typedef Z3ExprFactory::Pointer Pointer;
 
@@ -52,7 +52,7 @@ public:
     }
 #include "Util/unmacros.h"
 
-    virtual bool equals(const Term* other) const {
+    virtual bool equals(const Term* other) const override {
         if (const LoadTerm* that = llvm::dyn_cast<LoadTerm>(other)) {
             return  Term::equals(other) &&
                     *that->rhv == *rhv;
@@ -69,7 +69,7 @@ public:
         return t->getTermTypeId() == type_id<self>();
     }
 
-    virtual Type::Ptr getTermType() const {
+    virtual Type::Ptr getTermType() const override {
         auto& tf = TypeFactory::getInstance();
         auto ptr = rhv->getTermType();
 

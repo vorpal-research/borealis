@@ -36,27 +36,8 @@ public:
         return new UnaryTerm(opcode, tr->transform(rhv));
     }
 
-    virtual bool equals(const Term* other) const {
-        if (const UnaryTerm* that = llvm::dyn_cast<UnaryTerm>(other)) {
-            return Term::equals(other) &&
-                   that->opcode == opcode &&
-                   *that->rhv == *rhv;
-        } else return false;
-    }
-
-    llvm::UnaryArithType getOpcode() const { return opcode; }
-    Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const UnaryTerm*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
-    }
-
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
         typedef Z3ExprFactory::Bool Bool;
         typedef Z3ExprFactory::Integer Int;
 
@@ -76,7 +57,26 @@ public:
     }
 #include "Util/unmacros.h"
 
-    virtual Type::Ptr getTermType() const {
+    virtual bool equals(const Term* other) const override {
+        if (const UnaryTerm* that = llvm::dyn_cast<UnaryTerm>(other)) {
+            return Term::equals(other) &&
+                   that->opcode == opcode &&
+                   *that->rhv == *rhv;
+        } else return false;
+    }
+
+    llvm::UnaryArithType getOpcode() const { return opcode; }
+    Term::Ptr getRhv() const { return rhv; }
+
+    static bool classof(const UnaryTerm*) {
+        return true;
+    }
+
+    static bool classof(const Term* t) {
+        return t->getTermTypeId() == type_id<self>();
+    }
+
+    virtual Type::Ptr getTermType() const override {
         return rhv->getTermType();
     }
 

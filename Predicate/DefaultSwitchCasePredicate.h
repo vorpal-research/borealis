@@ -16,7 +16,7 @@ class DefaultSwitchCasePredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
+    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override;
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<DefaultSwitchCasePredicate>();
@@ -40,20 +40,16 @@ public:
                 this->type);
     }
 
-    virtual bool equals(const Predicate* other) const;
-    virtual size_t hashCode() const;
+    virtual bool equals(const Predicate* other) const override;
+    virtual size_t hashCode() const override;
 
     friend class PredicateFactory;
 
 private:
 
-    const Term::Ptr cond;
+    Term::Ptr cond;
     const std::vector<Term::Ptr> cases;
 
-    DefaultSwitchCasePredicate(
-            PredicateType type,
-            Term::Ptr cond,
-            std::vector<Term::Ptr> cases);
     DefaultSwitchCasePredicate(
             Term::Ptr cond,
             std::vector<Term::Ptr> cases,

@@ -40,11 +40,11 @@ public:
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
         return z3ef.getVarByTypeAndName(getTermType(), getName());
     }
 
-    virtual Type::Ptr getTermType() const {
+    virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(a->getType());
     }
 

@@ -5,12 +5,11 @@
  *      Author: ice-phoenix
  */
 
-#include "Predicate/Predicate.h"
-
 #include "Annotation/AssertAnnotation.h"
 #include "Annotation/AssumeAnnotation.h"
 #include "Annotation/EnsuresAnnotation.h"
 #include "Annotation/RequiresAnnotation.h"
+#include "Predicate/Predicate.h"
 
 namespace borealis {
 
@@ -31,8 +30,6 @@ Predicate::Predicate(borealis::id_t predicate_type_id, PredicateType type) :
         predicate_type_id(predicate_type_id),
         type(type),
         location(nullptr) {}
-
-Predicate::~Predicate() {}
 
 std::ostream& operator<<(std::ostream& s, Predicate::Ptr p) {
     return s << p->toString();

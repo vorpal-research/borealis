@@ -44,14 +44,14 @@ public:
         return true;
     }
 
-    virtual bool equals(const Term* other) const {
+    virtual bool equals(const Term* other) const override {
         if (const self* that = llvm::dyn_cast<self>(other)) {
             return Term::equals(other) &&
                    that->vname == vname;
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const {
+    virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().getUnknown();
     }
 

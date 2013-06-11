@@ -6,6 +6,7 @@
  */
 
 #include "Predicate/AllocaPredicate.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -23,9 +24,9 @@ AllocaPredicate::AllocaPredicate(
 logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
-    ASSERTC(ctx != nullptr);
-
     typedef Z3ExprFactory::Pointer Pointer;
+
+    ASSERTC(ctx != nullptr);
 
     auto lhve = lhv->toZ3(z3ef, ctx);
 
@@ -60,7 +61,7 @@ bool AllocaPredicate::equals(const Predicate* other) const {
 }
 
 size_t AllocaPredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(type, lhv, numElements);
+    return util::hash::defaultHasher()(type, lhv, numElements);
 }
 
 } /* namespace borealis */

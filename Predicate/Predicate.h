@@ -45,7 +45,7 @@ public:
 
     Predicate(borealis::id_t predicate_type_id);
     Predicate(borealis::id_t predicate_type_id, PredicateType type);
-    virtual ~Predicate() = 0;
+    virtual ~Predicate() {};
 
     borealis::id_t getPredicateTypeId() const {
         return predicate_type_id;
@@ -96,7 +96,6 @@ public:
 protected:
 
     const borealis::id_t predicate_type_id;
-
     PredicateType type;
     const llvm::Instruction* location;
 

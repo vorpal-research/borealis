@@ -5,8 +5,8 @@
  *      Author: ice-phoenix
  */
 
-#include "Predicate/MallocPredicate.h"
 #include "Config/config.h"
+#include "Predicate/MallocPredicate.h"
 
 #include "Util/macros.h"
 
@@ -17,21 +17,22 @@ MallocPredicate::MallocPredicate(
         Term::Ptr numElements,
         PredicateType type) :
             Predicate(type_id(*this), type),
-            lhv(lhv), numElements(numElements) {
+            lhv(lhv),
+            numElements(numElements) {
     this->asString = this->lhv->getName() + "=malloc(" + this->numElements->getName() + ")";
 }
 
 logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
     TRACE_FUNC;
 
-    ASSERTC(ctx != nullptr);
-
     typedef Z3ExprFactory::Pointer Pointer;
 
-    auto lhve = lhv->toZ3(z3ef, ctx);
+    ASSERTC(ctx != nullptr);
 
+    auto lhve = lhv->toZ3(z3ef, ctx);
     ASSERT(lhve.is<Pointer>(),
            "Malloc produces a non-pointer");
+    auto lhvp = lhve.to<Pointer>().getUnsafe();
 
     unsigned long long elems = 1;
     if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
@@ -41,8 +42,6 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
     } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(numElements)) {
         elems = cnst->getValue();
     } else ASSERT(false, "Encountered malloc with non-integer/non-constant element number");
-
-    auto lhvp = lhve.to<Pointer>().getUnsafe();
 
     static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
 
@@ -64,7 +63,7 @@ bool MallocPredicate::equals(const Predicate* other) const {
 }
 
 size_t MallocPredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(type, lhv);
+    return util::hash::defaultHasher()(type, lhv);
 }
 
 } /* namespace borealis */

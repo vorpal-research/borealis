@@ -16,7 +16,7 @@ class GlobalsPredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
+    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const override;
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<GlobalsPredicate>();
@@ -28,7 +28,6 @@ public:
 
     template<class SubClass>
     const GlobalsPredicate* accept(Transformer<SubClass>* t) const {
-
         std::vector<Term::Ptr> new_globals;
         new_globals.reserve(globals.size());
         std::transform(globals.begin(), globals.end(), std::back_inserter(new_globals),
@@ -40,14 +39,14 @@ public:
                 this->type);
     }
 
-    virtual bool equals(const Predicate* other) const;
-    virtual size_t hashCode() const;
+    virtual bool equals(const Predicate* other) const override;
+    virtual size_t hashCode() const override;
 
     friend class PredicateFactory;
 
 private:
 
-    std::vector<Term::Ptr> globals;
+    const std::vector<Term::Ptr> globals;
 
     GlobalsPredicate(
             const std::vector<Term::Ptr>& globals,

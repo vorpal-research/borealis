@@ -53,7 +53,7 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
         typedef Z3ExprFactory::Dynamic Dynamic;
         typedef Z3ExprFactory::Integer Integer;
         typedef Z3ExprFactory::Pointer Pointer;
@@ -86,7 +86,7 @@ public:
     }
 #include "Util/unmacros.h"
 
-    virtual Type::Ptr getTermType() const {
+    virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(type);
     }
 

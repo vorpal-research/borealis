@@ -36,7 +36,7 @@ bool InequalityPredicate::equals(const Predicate* other) const {
 }
 
 size_t InequalityPredicate::hashCode() const {
-    return util::hash::hasher<3, 17>()(type, lhv, rhv);
+    return util::hash::defaultHasher()(type, lhv, rhv);
 }
 
 } /* namespace borealis */

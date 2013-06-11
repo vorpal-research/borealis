@@ -16,7 +16,7 @@ class InequalityPredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const;
+    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override;
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<InequalityPredicate>();
@@ -34,15 +34,15 @@ public:
                 this->type);
     }
 
-    virtual bool equals(const Predicate* other) const;
-    virtual size_t hashCode() const;
+    virtual bool equals(const Predicate* other) const override;
+    virtual size_t hashCode() const override;
 
     friend class PredicateFactory;
 
 private:
 
-    const Term::Ptr lhv;
-    const Term::Ptr rhv;
+    Term::Ptr lhv;
+    Term::Ptr rhv;
 
     InequalityPredicate(
             Term::Ptr lhv,

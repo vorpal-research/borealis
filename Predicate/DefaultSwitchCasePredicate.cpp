@@ -43,14 +43,13 @@ logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionConte
     typedef Z3ExprFactory::Integer Integer;
 
     auto result = z3ef.getTrue();
-    auto le = cond->toZ3(z3ef, ctx).to<Integer>();
 
+    auto le = cond->toZ3(z3ef, ctx).to<Integer>();
     ASSERT(!le.empty(),
            "Encountered switch with non-Integer condition");
 
     for (const auto& c : cases) {
         auto re = c->toZ3(z3ef, ctx).to<Integer>();
-
         ASSERT(!re.empty(),
                "Encountered switch with non-Integer case");
 
@@ -74,10 +73,7 @@ bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
 }
 
 size_t DefaultSwitchCasePredicate::hashCode() const {
-    size_t hash = 3;
-    hash = 17 * hash + cond->hashCode();
-    for (const auto& c : cases) hash = 17 * hash + c->hashCode();
-    return hash;
+    return util::hash::defaultHasher()(type, cond, cases);
 }
 
 } /* namespace borealis */
