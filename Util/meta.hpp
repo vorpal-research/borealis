@@ -33,7 +33,8 @@ struct type_list {};
 // Type combinators
 //
 ////////////////////////////////////////////////////////////////////////////////
-template<class F, class>
+
+template<class F, class _>
 struct type_K_comb {
     typedef F type;
 };
@@ -71,7 +72,7 @@ struct tl_cdr;
 
 template<class H, class ...Args>
 struct tl_cdr< type_list<H, Args...> > {
-    // static_assert(sizeof...(Args) > 0, "tl_cdr with 1-element type list");
+    static_assert(sizeof...(Args) > 0, "tl_cdr with 1-element type list");
     typedef type_list<Args...> type;
 };
 
@@ -166,10 +167,10 @@ template<class T, class ...List>
 struct is_T_in;
 
 template<class T, class ...Tail>
-struct is_T_in<T,T,Tail...> : std::true_type {};
+struct is_T_in<T, T, Tail...> : std::true_type {};
 
 template<class T, class H, class ...Tail>
-struct is_T_in<T,H,Tail...> : is_T_in<T, Tail...> {};
+struct is_T_in<T, H, Tail...> : is_T_in<T, Tail...> {};
 
 template<class T>
 struct is_T_in<T> : std::false_type {};
@@ -184,12 +185,12 @@ template<size_t I, class ...List>
 struct index_in_row;
 
 template<class Head, class ...Tail>
-struct index_in_row<0, Head, Tail...> {
+struct index_in_row<0U, Head, Tail...> {
     typedef Head type;
 };
 
-template<size_t I, class Ignore, class ...Tail>
-struct index_in_row<I, Ignore, Tail...> {
+template<size_t I, class _, class ...Tail>
+struct index_in_row<I, _, Tail...> {
     typedef typename index_in_row<I-1, Tail...>::type type;
 };
 
@@ -228,11 +229,10 @@ struct make_indexer_from<From, From> {
 
 
 template<class ...Args>
-struct make_indexer : public make_indexer_from<0, sizeof...(Args)-1> {};
+struct make_indexer : public make_indexer_from<0U, sizeof...(Args)-1> {};
 
 template<class ...Args>
-struct make_cdr_indexer : public make_indexer_from<1, sizeof...(Args)-1> {};
-
+struct make_cdr_indexer : public make_indexer_from<1U, sizeof...(Args)-1> {};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -254,8 +254,9 @@ struct index_in_type_list<I, type_list<Args...>> {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<char ...Args> struct static_string {
-    enum{ length = sizeof...(Args) };
+template<char ...Args>
+struct static_string {
+    enum { length = sizeof...(Args) };
     typedef const char(&array_ref)[sizeof...(Args)+1];
 
     static array_ref c_str() {
@@ -267,7 +268,7 @@ template<char ...Args> struct static_string {
         return c_str();
     }
 
-    operator const char* () const {
+    operator const char*() const {
         return c_str();
     }
 
@@ -284,12 +285,12 @@ constexpr char at(char const(&s)[Sz], size_t i) {
 template<class SS, char wha>
 struct ss_append_char;
 
-template<char... Str>
+template<char ...Str>
 struct ss_append_char<static_string<Str...>, '\0'> {
     typedef static_string<Str...> type;
 };
 
-template<char wha, char... Str>
+template<char wha, char ...Str>
 struct ss_append_char<static_string<Str...>, wha> {
     typedef static_string<Str..., wha> type;
 };
@@ -297,7 +298,7 @@ struct ss_append_char<static_string<Str...>, wha> {
 template<class SS, char wha>
 using ss_append_char_q = typename ss_append_char<SS, wha>::type;
 
-template<class SS, char... wha>
+template<class SS, char ...wha>
 struct ss_append_chars;
 
 template<class SS>
@@ -311,10 +312,10 @@ struct ss_append_chars<SS, Head, Tail...> {
     typedef typename ss_append_chars<headed, Tail...>::type type;
 };
 
-template<class SS, char... wha>
+template<class SS, char ...wha>
 using ss_append_chars_q = typename ss_append_chars<SS, wha...>::type;
 
-template<char... wha>
+template<char ...wha>
 using make_ss = typename ss_append_chars<static_string<>, wha...>::type;
 
 } // namespace util

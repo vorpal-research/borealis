@@ -79,10 +79,12 @@ struct GetAnalysis;
 template<class P>
 struct GetAnalysis<P, impl_::PassType::MODULARIZED> {
     static P& doit(const llvm::Pass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
         return pass->getAnalysis< PassModularizer<P> >().getResultsForFunction(&F);
     }
 
     static P& doit(const borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
         return pass->getAnalysis< PassModularizer<P> >().getResultsForFunction(&F);
     }
 };
@@ -91,13 +93,11 @@ template<class P>
 struct GetAnalysis<P, impl_::PassType::FUNCTION> {
     static P& doit(llvm::Pass* pass, llvm::Function& F) {
         ASSERTC(!F.isDeclaration());
-
         return pass->getAnalysis< P >(F);
     }
 
     static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
         ASSERTC(!F.isDeclaration());
-
         return pass->getAnalysis< P >(F);
     }
 };

@@ -9,6 +9,7 @@
 #include "Passes/AnnotatorPass.h"
 #include "Term/Term.h"
 #include "Term/TermFactory.h"
+#include "Util/passes.hpp"
 #include "Util/util.h"
 
 namespace borealis {

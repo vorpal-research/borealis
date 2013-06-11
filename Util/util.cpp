@@ -94,26 +94,26 @@ ConditionDescription analyzeCondition(const int cond) {
 	}
 }
 
+ConditionType conditionType(int cond) {
+    return analyzeCondition(cond).second;
+}
+
 std::string conditionString(int cond) {
 	return analyzeCondition(cond).first;
 }
 
 std::string conditionString(ConditionType cond) {
     switch(cond) {
-    case ConditionType::EQ: return "==";
-    case ConditionType::NEQ: return "!=";
-    case ConditionType::GT: return ">";
-    case ConditionType::GTE: return ">=";
-    case ConditionType::LT: return "<";
-    case ConditionType::LTE: return "<=";
-    case ConditionType::TRUE: return "true";
+    case ConditionType::EQ:    return "==";
+    case ConditionType::NEQ:   return "!=";
+    case ConditionType::GT:    return ">";
+    case ConditionType::GTE:   return ">=";
+    case ConditionType::LT:    return "<";
+    case ConditionType::LTE:   return "<=";
+    case ConditionType::TRUE:  return "true";
     case ConditionType::FALSE: return "false";
     default: BYE_BYE(std::string, "Unreachable!");
     }
-}
-
-ConditionType conditionType(int cond) {
-	return analyzeCondition(cond).second;
 }
 
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {
@@ -140,23 +140,23 @@ ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {
     case ops::And:  return ArithType::BAND;
     case ops::Or:   return ArithType::BOR;
     case ops::Xor:  return ArithType::XOR;
-    default: BYE_BYE(ArithType, "Unreachable");
+    default: BYE_BYE(ArithType, "Unreachable!");
     }
 }
 
 std::string arithString(ArithType opCode) {
     switch (opCode) {
-    case ArithType::ADD: return "+";
-    case ArithType::SUB: return "-";
-    case ArithType::MUL: return "*";
-    case ArithType::DIV: return "/";
-    case ArithType::REM: return "%";
+    case ArithType::ADD:  return "+";
+    case ArithType::SUB:  return "-";
+    case ArithType::MUL:  return "*";
+    case ArithType::DIV:  return "/";
+    case ArithType::REM:  return "%";
     case ArithType::BAND: return "&";
-    case ArithType::BOR: return "|";
+    case ArithType::BOR:  return "|";
     case ArithType::LAND: return "&&";
-    case ArithType::LOR: return "||";
-    case ArithType::XOR: return "^";
-    case ArithType::SHL: return "<<";
+    case ArithType::LOR:  return "||";
+    case ArithType::XOR:  return "^";
+    case ArithType::SHL:  return "<<";
     case ArithType::ASHR: return ">>";
     case ArithType::LSHR: return ">>>";
     default: BYE_BYE(std::string, "Unreachable!");
@@ -165,9 +165,9 @@ std::string arithString(ArithType opCode) {
 
 std::string unaryArithString(UnaryArithType opCode) {
     switch (opCode) {
-    case UnaryArithType::NOT: return "!";
+    case UnaryArithType::NOT:  return "!";
     case UnaryArithType::BNOT: return "~";
-    case UnaryArithType::NEG: return "-";
+    case UnaryArithType::NEG:  return "-";
     default: BYE_BYE(std::string, "Unreachable!");
     }
 }

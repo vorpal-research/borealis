@@ -34,7 +34,7 @@ struct json_traits<std::vector<T>> {
                 ret.push_back(*v);
             } else return nullptr;
         }
-        return optional_ptr_t { new std::vector<T>(std::move(ret)) };
+        return optional_ptr_t { new std::vector<T>{std::move(ret)} };
     }
 };
 
@@ -55,7 +55,7 @@ struct json_traits<std::set<T>> {
                 ret.insert(*v);
             } else return nullptr;
         }
-        return optional_ptr_t { new std::set<T>(std::move(ret)) };
+        return optional_ptr_t { new std::set<T>{std::move(ret)} };
     }
 };
 
@@ -71,14 +71,12 @@ struct json_traits<std::map<std::string, V>> {
 
     static optional_ptr_t fromJson(const Json::Value& val) {
         std::map<std::string, V> ret;
-
         for(const auto& k : val.getMemberNames()) {
             if(auto v = util::fromJson<V>(val[k])) {
                 ret[k] = *v;
             } else return nullptr;
         }
-
-        return optional_ptr_t { new std::map<std::string, V>(std::move(ret)) };
+        return optional_ptr_t { new std::map<std::string, V>{std::move(ret)} };
     }
 };
 

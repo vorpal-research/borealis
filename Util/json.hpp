@@ -15,13 +15,15 @@
 
 #include "Util/meta.hpp"
 
+#include "Util/macros.h"
+
 namespace borealis {
 namespace util {
 
+////////////////////////////////////////////////////////////////////////////////
+
 template<class T, typename SFINAE = void>
 struct json_traits;
-
-#include "Util/macros.h"
 
 template<>
 struct json_traits<Json::Value> {
@@ -45,10 +47,8 @@ struct json_traits<T, GUARD(std::is_same<T, bool>::value || std::is_floating_poi
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isBool()   ? optional_ptr_t(new T(json.asBool())) :
-               json.isInt()    ? optional_ptr_t(new T(json.asInt())) :
-               json.isUInt()   ? optional_ptr_t(new T(json.asUInt())) :
-               json.isDouble() ? optional_ptr_t(new T(json.asDouble())) :
+        return json.isBool()   ? optional_ptr_t{ new T{json.asBool()} } :
+               json.isDouble() ? optional_ptr_t{ new T{json.asDouble()} } :
                                  nullptr;
     }
 };
@@ -62,11 +62,8 @@ struct json_traits<T, GUARD(std::is_arithmetic<T>::value && std::is_signed<T>::v
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isBool()   ? optional_ptr_t(new T(json.asBool())) :
-               json.isInt()    ? optional_ptr_t(new T(json.asInt())) :
-               json.isUInt()   ? optional_ptr_t(new T(json.asUInt())) :
-               json.isDouble() ? optional_ptr_t(new T(json.asDouble())) :
-                                 nullptr;
+        return json.isInt() ? optional_ptr_t{ new T{json.asInt()} } :
+                              nullptr;
     }
 };
 
@@ -79,15 +76,10 @@ struct json_traits<T, GUARD(std::is_arithmetic<T>::value && std::is_unsigned<T>:
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isBool()   ? optional_ptr_t(new T(json.asBool())) :
-               json.isInt()    ? optional_ptr_t(new T(json.asInt())) :
-               json.isUInt()   ? optional_ptr_t(new T(json.asUInt())) :
-               json.isDouble() ? optional_ptr_t(new T(json.asDouble())) :
-                                 nullptr;
+        return json.isUInt() ? optional_ptr_t{ new T{json.asUInt()} } :
+                               nullptr;
     }
 };
-
-#include "Util/unmacros.h"
 
 template<>
 struct json_traits<std::string> {
@@ -99,10 +91,12 @@ struct json_traits<std::string> {
 
     static optional_ptr_t fromJson(const Json::Value& json) {
         return json.isString()
-               ? optional_ptr_t(new std::string(json.asString()))
+               ? optional_ptr_t{ new std::string{json.asString()} }
                : nullptr;
     }
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
 Json::Value toJson(const T& val) {
@@ -127,6 +121,8 @@ void write_as_json(std::ostream& ost, const T& val) {
     Json::StyledStreamWriter writer;
     writer.write(ost, json_traits<T>::toJson(val));
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
 struct Jsoner {
@@ -157,22 +153,21 @@ struct const_Jsoner {
 };
 
 template<class T>
-Jsoner<T> jsonify(T& value) { return Jsoner<T> { &value }; }
+Jsoner<T> jsonify(T& value) { return Jsoner<T>{ &value }; }
 template<class T>
-const_Jsoner<T> jsonify(const T& value) { return const_Jsoner<T> { &value }; }
+const_Jsoner<T> jsonify(const T& value) { return const_Jsoner<T>{ &value }; }
+
+////////////////////////////////////////////////////////////////////////////////
 
 namespace impl {
-
 static bool allptrs() {
     return true;
 }
-
 template<class H, class ...T>
 static bool allptrs(const H& h, const T&... t) {
     if(!h) return false;
     else return allptrs(t...);
 }
-
 } //namespace impl
 
 template<class Obj, class ...Args>
@@ -198,12 +193,14 @@ struct json_object_builder {
         };
     }
 
-    Obj* build(const Json::Value& val) const{
+    Obj* build(const Json::Value& val) const {
         return build_(val, typename util::make_indexer<Args...>::type());
     }
 };
 
 } // namespace util
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* JSON_HPP_ */

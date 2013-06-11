@@ -8,7 +8,10 @@
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/InstIterator.h>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/MetaInserter.h"
+#include "Util/passes.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 

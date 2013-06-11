@@ -53,13 +53,13 @@
         __FILE__, \
         __LINE__, \
         __PRETTY_FUNCTION__, \
-        msg);}
+        msg); }
 
 #define ASSERTC(cond) while(!(cond)){ borealis::util::sayonara( \
         __FILE__, \
         __LINE__, \
         __PRETTY_FUNCTION__, \
-        #cond);}
+        #cond); }
 
 #define GUARD(...) typename std::enable_if<__VA_ARGS__>::type
 #define GUARDED(TYPE, ...) typename std::enable_if<__VA_ARGS__, TYPE>::type

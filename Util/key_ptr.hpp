@@ -15,9 +15,7 @@ namespace util {
 // intended to be used in maps and unordered maps
 template<class T>
 class key_holder_ptr {
-
     std::shared_ptr<T> inner;
-
 public:
     key_holder_ptr(const std::shared_ptr<T>& cp) : inner(cp) {};
     key_holder_ptr(key_holder_ptr&&) = default;
@@ -34,12 +32,11 @@ public:
 
     std::shared_ptr<T>& operator->() { return inner; }
     const std::shared_ptr<T>& operator->() const { return inner; }
-
 };
 
 template<class T, class ...Args>
 key_holder_ptr<T> make_key_holder(Args&&... args) {
-    return key_holder_ptr<T>(std::make_shared(std::forward(args)...));
+    return key_holder_ptr<T>{ std::make_shared(std::forward(args)...) };
 }
 
 } // namespace util
@@ -47,8 +44,9 @@ key_holder_ptr<T> make_key_holder(Args&&... args) {
 
 namespace std {
 
-template<class T> struct hash<borealis::util::key_holder_ptr<T>> {
-    size_t operator()(const borealis::util::key_holder_ptr<T> & x) const {
+template<class T>
+struct hash<borealis::util::key_holder_ptr<T>> {
+    size_t operator()(const borealis::util::key_holder_ptr<T>& x) const {
         return std::hash<T>()(*x);
     }
 };
@@ -62,17 +60,16 @@ namespace util {
 // intended to be used in maps and unordered maps
 template<class T>
 class key_ptr {
-
     const T* inner;
-
 public:
-    explicit key_ptr(const T* cp) : inner(cp) {};
+    key_ptr(const T* cp) : inner(cp) {};
     key_ptr(const T& cp) : inner(&cp) {};
     key_ptr(T&&) = delete; // this is explicitly deleted
     // to drop common cases like key_ptr<string>("hello")
     // and key_ptr<string>(func_returning_string())
     // that are illegal but work with (const T&) case.
     // providing and deleting rvalue-ref constructor forbids these
+    key_ptr(key_ptr&&) = default;
     key_ptr(const key_ptr&) = default;
 
     const T* get() const { return inner; }
@@ -82,7 +79,6 @@ public:
 
     const T& operator*() const { return *inner; }
     const T* operator->() const { return inner; }
-
 };
 
 } // namespace util
@@ -91,7 +87,7 @@ public:
 namespace std {
 
 template<class T> struct hash<borealis::util::key_ptr<T>> {
-    size_t operator()(const borealis::util::key_ptr<T> & x) const {
+    size_t operator()(const borealis::util::key_ptr<T>& x) const {
         return std::hash<T>()(*x);
     }
 };

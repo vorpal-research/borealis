@@ -17,16 +17,15 @@
 #include <list>
 #include <string>
 
-#include "Util/util.hpp"
-
 #include "Util/collections.hpp"
 #include "Util/enums.hpp"
 #include "Util/hash.hpp"
+#include "Util/iterators.hpp"
+#include "Util/locations.h"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
-#include "Util/passes.hpp"
 #include "Util/streams.hpp"
-#include "Util/locations.h"
+#include "Util/util.hpp"
 
 namespace llvm {
 
@@ -50,9 +49,9 @@ enum class ConditionType {
 	FALSE,
 	UNKNOWN
 };
+ConditionType conditionType(int cond);
 std::string conditionString(int cond);
 std::string conditionString(ConditionType cond);
-ConditionType conditionType(int cond);
 
 enum class ArithType {
     ADD,
@@ -97,12 +96,13 @@ inline borealis::Locus instructionLocus(const Instruction* inst) {
 }
 
 inline std::string valueSummary(const Value* v) {
-    if(!v) return "<nullptr>";
-    if(auto* f = llvm::dyn_cast_or_null<Function>(v)) {
+    if(!v) {
+        return "<nullptr>";
+    } else if(auto* f = llvm::dyn_cast<Function>(v)) {
         return ("function " + f->getName()).str();
-    } else if(auto* bb = llvm::dyn_cast_or_null<BasicBlock>(v)) {
+    } else if(auto* bb = llvm::dyn_cast<BasicBlock>(v)) {
         return ("basic block " + bb->getName()).str();
-    } else if(auto* i = llvm::dyn_cast_or_null<Instruction>(v)) {
+    } else if(auto* i = llvm::dyn_cast<Instruction>(v)) {
         return borealis::util::toString(*i).c_str()+2;
     } else return borealis::util::toString(*v);
 }

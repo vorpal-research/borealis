@@ -13,8 +13,8 @@
 #include "Passes/AnnotatorPass.h"
 #include "Passes/SourceLocationTracker.h"
 #include "State/Transformer/AnnotationMaterializer.h"
+#include "Util/passes.hpp"
 #include "Util/util.h"
-#include "Util/iterators.hpp"
 
 namespace borealis {
 

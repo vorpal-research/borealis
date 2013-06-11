@@ -70,7 +70,7 @@ public:
     }
 
     bool operator==(const self& that) const {
-        if( empty() ) return that.empty() ? true : false;
+        if( empty() ) return that.empty();
         else if( that.empty() ) return false;
         else return *holder == *(that.holder);
     }
@@ -130,7 +130,7 @@ public:
     struct option_iterator {
         self* opt;
         option_iterator() : opt(nullptr) {};
-        option_iterator(self* opt) : opt(opt){};
+        option_iterator(self* opt) : opt(opt) {};
         option_iterator(const option_iterator&) = default;
         option_iterator& operator=(const option_iterator&) = default;
 
@@ -173,7 +173,7 @@ public:
     struct const_option_iterator {
         const self* opt;
         const_option_iterator() : opt(nullptr) {};
-        const_option_iterator(const self* opt) : opt(opt){};
+        const_option_iterator(const self* opt) : opt(opt) {};
         const_option_iterator(const const_option_iterator&) = default;
         const_option_iterator& operator=(const const_option_iterator&) = default;
 
@@ -203,11 +203,10 @@ public:
         const T* operator->() const {
             return opt->get();
         }
-
     };
 
     const_option_iterator begin() const {
-        if (this->empty()) return const_option_iterator(nullptr);
+        if (this->empty()) return const_option_iterator();
         else return const_option_iterator(this);
     }
 
@@ -216,7 +215,7 @@ public:
     }
 
     option_iterator begin() {
-        if (this->empty()) return option_iterator(nullptr);
+        if (this->empty()) return option_iterator();
         else return option_iterator(this);
     }
 

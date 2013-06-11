@@ -10,8 +10,6 @@
 
 #include <llvm/Pass.h>
 
-#include "Codegen/intrinsics_manager.h"
-
 namespace borealis {
 
 class MetaInserter: public llvm::ModulePass {

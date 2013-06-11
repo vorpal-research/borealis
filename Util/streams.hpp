@@ -8,10 +8,6 @@
 #ifndef STREAMS_HPP_
 #define STREAMS_HPP_
 
-#include <set>
-#include <unordered_set>
-#include <vector>
-
 #include <clang/AST/Decl.h>
 #include <llvm/Module.h>
 #include <llvm/Pass.h>
@@ -20,7 +16,15 @@
 #include <llvm/Type.h>
 #include <llvm/Value.h>
 
+#include <iostream>
+#include <set>
+#include <sstream>
+#include <unordered_set>
+#include <vector>
+
 #include <Util/collections.hpp>
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace util {
@@ -43,8 +47,7 @@ struct UseLLVMOstreams {
     enum { value = is_using_llvm_output<T>::value };
 };
 
-template<class T,
-bool UseLLVMOstream = false>
+template<class T, bool UseLLVMOstream = false>
 struct Stringifier;
 
 template<class T>
@@ -70,7 +73,7 @@ struct Stringifier<T, true> {
 template<>
 struct Stringifier<bool> {
     static std::string toString(bool t) {
-        return t?"true":"false";
+        return t ? "true" : "false";
     }
 };
 
@@ -108,12 +111,8 @@ struct error_printer {
 };
 
 template<class T>
-std::ostream& operator <<(std::ostream& s, const error_printer<T>& v) {
-    s << "!";
-    s << v.val;
-    s << "!";
-
-    return s;
+std::ostream& operator<<(std::ostream& s, const error_printer<T>& v) {
+    return s << "!" << v.val << "!";
 }
 
 // prints values in red:
@@ -143,7 +142,7 @@ std::ostream& output_using_llvm(std::ostream& ost, const T& val) {
     std::string buf;
     llvm::raw_string_ostream ostt(buf);
     ostt << val;
-    return std::operator<<(ost, ostt.str());
+    return ost << ostt.str();
 }
 
 } // namespace streams
@@ -173,7 +172,7 @@ const auto NULL_REPR = "<NULL>";
 
 
 template<typename T, typename U, typename Streamer>
-Streamer& operator <<(Streamer& s, const std::pair<T, U>& pp) {
+Streamer& operator<<(Streamer& s, const std::pair<T, U>& pp) {
     using namespace std::impl_;
 
     s << TUPLE_LEFT_BRACE
@@ -189,8 +188,6 @@ Streamer& operator <<(Streamer& s, const std::pair<T, U>& pp) {
 
 template<typename Elem, typename SFINAE = void>
 struct elemPrettyPrinter;
-
-#include "Util/macros.h"
 
 template< typename Elem >
 struct elemPrettyPrinter<Elem, GUARD(std::is_pointer<Elem>::value)> {
@@ -218,8 +215,6 @@ struct elemPrettyPrinter<const char*> {
         return static_cast<Streamer&>(e == nullptr ? s << impl_::NULL_REPR : s << e);
     }
 };
-
-#include "Util/unmacros.h"
 
 
 
@@ -251,19 +246,19 @@ struct containerPrettyPrinter {
 };
 
 template<typename T, typename Streamer>
-Streamer& operator <<(Streamer& s, const std::vector<T>& vec) {
+Streamer& operator<<(Streamer& s, const std::vector<T>& vec) {
     typedef std::vector<T> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::VECTOR_LEFT_BRACE, impl_::VECTOR_RIGHT_BRACE>(s, vec);
 }
 
 template<typename T, typename Streamer>
-Streamer& operator <<(Streamer& s, const std::set<T>& vec) {
+Streamer& operator<<(Streamer& s, const std::set<T>& vec) {
     typedef std::set<T> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, vec);
 }
 
 template<typename T, typename Streamer>
-Streamer& operator <<(Streamer& s, const std::unordered_set<T>& vec) {
+Streamer& operator<<(Streamer& s, const std::unordered_set<T>& vec) {
     typedef std::unordered_set<T> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, vec);
 }
@@ -283,10 +278,8 @@ inline raw_ostream& operator<<(raw_ostream& ost, const Pass& pass) {
     return ost;
 }
 
-template<class T, class Check = typename std::enable_if<
-        borealis::util::is_using_llvm_output<T>::value
->::type >
-std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
+template<class T, class Check = GUARD(borealis::util::is_using_llvm_output<T>::value)>
+std::ostream& operator<<(std::ostream& ost, const T& llvm_val) {
     return borealis::util::streams::output_using_llvm(ost, llvm_val);
 }
 
@@ -305,13 +298,13 @@ inline raw_ostream& operator <<(raw_ostream& ost, const Decl& decl) {
     return ost;
 }
 
-template<class T, class Check = typename std::enable_if<
-        borealis::util::is_using_llvm_output<T>::value
->::type >
-std::ostream& operator <<(std::ostream& ost, const T& llvm_val) {
+template<class T, class Check = GUARD(borealis::util::is_using_llvm_output<T>::value)>
+std::ostream& operator<<(std::ostream& ost, const T& llvm_val) {
     return borealis::util::streams::output_using_llvm(ost, llvm_val);
 }
 
 } // namespace clang
+
+#include "Util/unmacros.h"
 
 #endif /* STREAMS_HPP_ */

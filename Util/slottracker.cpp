@@ -8,7 +8,8 @@
 #include <llvm/ADT/APFloat.h>
 
 #include "Util/slottracker.h"
-#include "Util/util.h"
+#include "Util/streams.hpp"
+#include "Util/util.hpp"
 
 #include "Util/macros.h"
 
@@ -253,7 +254,7 @@ void SlotTracker::CreateMetadataSlot(const MDNode *N) {
 ////////////////////////////////////////////////////////////////////////////////
 
 std::string SlotTracker::getLocalName(const Value *V) {
-    using util::toString;
+    using borealis::util::toString;
 
     if (isa<ConstantPointerNull>(V)) {
         return "<null>";

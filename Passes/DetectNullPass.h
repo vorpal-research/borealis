@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "Passes/ProxyFunctionPass.h"
+#include "Util/passes.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"

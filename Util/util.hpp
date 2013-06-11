@@ -18,13 +18,13 @@
 #include "Util/meta.hpp"
 #include "Util/streams.hpp"
 
+#include "Util/macros.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // borealis::util
 //
 ////////////////////////////////////////////////////////////////////////////////
-
-#include "macros.h"
 
 namespace borealis {
 namespace util {
@@ -61,7 +61,6 @@ public:
     const T& get() const { return *ptr; }
     T& get() { return *ptr; }
     operator T&() { return get(); }
-
 };
 
 // copying reference
@@ -71,21 +70,20 @@ class copyref {
 
 public:
     copyref() : inner{nullptr} {};
-    copyref(const copyref& ref) : inner{new T{*ref.inner}} {};
-    copyref(const T& e) : inner{new T{e}} {};
+    copyref(const copyref& ref) : inner{ new T{*ref.inner} } {};
+    explicit copyref(const T& e) : inner{ new T{e} } {};
 
     const copyref& operator=(const copyref& ref) {
-        inner.reset(new T{*ref.inner});
+        inner.reset( new T{*ref.inner} );
         return *this;
     }
     const copyref& operator=(const T& e) {
-        inner.reset(new T{e});
+        inner.reset( new T{e} );
         return *this;
     }
 
     const T& get() const { return *inner; }
     operator const T&() const { return get(); }
-
 };
 
 
@@ -117,7 +115,7 @@ QUICK_RETURN(impl::cdr_tuple_step_1(tp, typename util::make_cdr_indexer<Args...>
 
 template<class T>
 T* heap_copy(const T* val) {
-    return new T(*val);
+    return new T{ *val };
 }
 
 
@@ -171,6 +169,6 @@ template<class T> struct simplify_type< const std::shared_ptr<T> > {
 };
 } // namespace llvm
 
-#include "unmacros.h"
+#include "Util/unmacros.h"
 
 #endif /* UTIL_HPP_ */
