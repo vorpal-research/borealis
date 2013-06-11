@@ -48,13 +48,6 @@ public:
         return true;
     }
 
-    virtual bool equals(const Term* other) const {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
-                    that->value == value;
-        } else return false;
-    }
-
     virtual Type::Ptr getTermType() const {
         return TypeFactory::getInstance().getBool();
     }

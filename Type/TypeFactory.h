@@ -8,13 +8,14 @@
 #ifndef TYPEFACTORY_H_
 #define TYPEFACTORY_H_
 
-#include "Type/Type.h"
 #include "Type/Bool.h"
 #include "Type/Float.h"
 #include "Type/Integer.h"
 #include "Type/Pointer.h"
+#include "Type/Type.h"
 #include "Type/TypeError.h"
 #include "Type/UnknownType.h"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -69,6 +70,10 @@ public:
         return type->getId() != type_id<TypeError>();
     }
 
+    bool isUnknown(Type::Ptr type) {
+        return type->getId() == type_id<UnknownType>();
+    }
+
     Type::Ptr cast(const llvm::Type* type) {
         using borealis::util::toString;
 
@@ -101,8 +106,8 @@ public:
         if(!isValid(one)) return one;
         if(!isValid(two)) return two;
 
-        if(one == theUnknown) return two;
-        if(two == theUnknown) return one;
+        if(isUnknown(one)) return two;
+        if(isUnknown(two)) return one;
         if(one == two) return one;
 
         BYE_BYE(Type::Ptr, "Unmergeable types");

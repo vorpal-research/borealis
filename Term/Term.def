@@ -1,5 +1,28 @@
 #ifndef HANDLE_TERM
+#define INCLUDE_MODE
+#endif
+
+#ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
+#include "Term/ArgumentTerm.h"
+#include "Term/ConstTerm.h"
+#include "Term/ReturnValueTerm.h"
+#include "Term/ValueTerm.h"
+#include "Term/TernaryTerm.h"
+#include "Term/BinaryTerm.h"
+#include "Term/UnaryTerm.h"
+#include "Term/CmpTerm.h"
+#include "Term/LoadTerm.h"
+#include "Term/GepTerm.h"
+#include "Term/OpaqueVarTerm.h"
+#include "Term/OpaqueBuiltinTerm.h"
+#include "Term/OpaqueIntConstantTerm.h"
+#include "Term/OpaqueBoolConstantTerm.h"
+#include "Term/OpaqueFloatingConstantTerm.h"
+
 #define HANDLE_TERM(NAME, CLASS)
+
 #endif
 
 HANDLE_TERM(Argument, ArgumentTerm)

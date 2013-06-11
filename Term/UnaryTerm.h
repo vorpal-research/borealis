@@ -9,7 +9,6 @@
 #define UNARYTERM_H_
 
 #include "Term/Term.h"
-#include "Solver/Z3ExprFactory.h"
 
 namespace borealis {
 
@@ -25,7 +24,7 @@ class UnaryTerm: public borealis::Term {
                 rhv->hashCode(),
                 llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
                 type_id(*this)
-        ), opcode(opcode), rhv(rhv){};
+        ), opcode(opcode), rhv(rhv) {};
 
 public:
 
@@ -39,14 +38,14 @@ public:
 
     virtual bool equals(const Term* other) const {
         if (const UnaryTerm* that = llvm::dyn_cast<UnaryTerm>(other)) {
-            return  Term::equals(other) &&
-                    that->opcode == opcode &&
-                    *that->rhv == *rhv;
+            return Term::equals(other) &&
+                   that->opcode == opcode &&
+                   *that->rhv == *rhv;
         } else return false;
     }
 
-    Term::Ptr getRhv() const { return rhv; }
     llvm::UnaryArithType getOpcode() const { return opcode; }
+    Term::Ptr getRhv() const { return rhv; }
 
     static bool classof(const UnaryTerm*) {
         return true;
@@ -57,9 +56,9 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
-        typedef Z3ExprFactory::Integer Int;
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
         typedef Z3ExprFactory::Bool Bool;
+        typedef Z3ExprFactory::Integer Int;
 
         auto z3rhv = rhv->toZ3(z3ef, ctx);
 

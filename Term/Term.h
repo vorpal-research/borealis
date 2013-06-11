@@ -10,14 +10,11 @@
 
 #include <string>
 
+#include "Solver/ExecutionContext.h"
+#include "Solver/Z3ExprFactory.h"
+#include "Type/TypeFactory.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
-
-#include "Solver/Z3ExprFactory.h"
-#include "Solver/ExecutionContext.h"
-
-#include "Type/Type.h"
-#include "Type/TypeFactory.h"
 
 namespace borealis {
 
@@ -29,7 +26,6 @@ class Term {
 
 public:
 
-    typedef size_t id_t;
     typedef std::shared_ptr<const Term> Ptr;
 
 protected:
@@ -73,7 +69,7 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory&, ExecutionContext*) const {
         BYE_BYE(Z3ExprFactory::Dynamic, "Should not be called!");
     }
 #include "Util/unmacros.h"

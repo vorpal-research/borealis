@@ -38,13 +38,16 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
+        typedef Z3ExprFactory::Bool Bool;
+        typedef Z3ExprFactory::DynBV DynBV;
+
         auto lhvz3 = lhv->toZ3(z3ef, ctx);
         auto rhvz3 = rhv->toZ3(z3ef, ctx);
 
         if(lhvz3.isBool() && rhvz3.isBool()) {
-            auto lhv = lhvz3.to<logic::Bool>().getUnsafe();
-            auto rhv = rhvz3.to<logic::Bool>().getUnsafe();
+            auto lhv = lhvz3.to<Bool>().getUnsafe();
+            auto rhv = rhvz3.to<Bool>().getUnsafe();
 
             switch(opcode) {
             case llvm::ArithType::BAND:
@@ -57,9 +60,9 @@ public:
             }
         }
 
-        if(lhvz3.is<logic::DynBitVectorExpr>() && rhvz3.is<logic::DynBitVectorExpr>()) {
-            auto lhv = lhvz3.to<logic::DynBitVectorExpr>().getUnsafe();
-            auto rhv = rhvz3.to<logic::DynBitVectorExpr>().getUnsafe();
+        if(lhvz3.is<DynBV>() && rhvz3.is<DynBV>()) {
+            auto lhv = lhvz3.to<DynBV>().getUnsafe();
+            auto rhv = rhvz3.to<DynBV>().getUnsafe();
 
             switch(opcode) {
             case llvm::ArithType::ADD:  return lhv +  rhv;
@@ -91,9 +94,9 @@ public:
         } else return false;
     }
 
+    llvm::ArithType getOpcode() const { return opcode; }
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getRhv() const { return rhv; }
-    llvm::ArithType getOpcode() const { return opcode; }
 
     static bool classof(const BinaryTerm*) {
         return true;

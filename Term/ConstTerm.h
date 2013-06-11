@@ -8,6 +8,8 @@
 #ifndef CONSTTERM_H_
 #define CONSTTERM_H_
 
+#include <llvm/Constant.h>
+
 #include "Term/Term.h"
 #include "Util/slottracker.h"
 
@@ -30,7 +32,7 @@ public:
     }
 
     llvm::Constant* getConstant() const {
-        return constant;
+        return c;
     }
 
     ConstTerm(const ConstTerm&) = default;
@@ -41,16 +43,18 @@ public:
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const {
         using namespace llvm;
 
-        if (isa<ConstantPointerNull>(constant)) {
+        if (isa<ConstantPointerNull>(c)) {
             return z3ef.getNullPtr();
-        } else if (auto* cInt = dyn_cast<ConstantInt>(constant)) {
+
+        } else if (auto* cInt = dyn_cast<ConstantInt>(c)) {
             if (cInt->getType()->getPrimitiveSizeInBits() == 1) {
                 if (cInt->isOne()) return z3ef.getTrue();
                 else if (cInt->isZero()) return z3ef.getFalse();
             } else {
                 return z3ef.getIntConst(cInt->getValue().getZExtValue());
             }
-        } else if (auto* cFP = dyn_cast<ConstantFP>(constant)) {
+
+        } else if (auto* cFP = dyn_cast<ConstantFP>(c)) {
             auto& fp = cFP->getValueAPF();
 
             if (&fp.getSemantics() == &APFloat::IEEEsingle) {
@@ -67,16 +71,16 @@ public:
     }
 
     virtual Type::Ptr getTermType() const {
-        return TypeFactory::getInstance().cast(constant->getType());
+        return TypeFactory::getInstance().cast(c->getType());
     }
 
 private:
 
     ConstTerm(llvm::Constant* c, SlotTracker* st) :
         Term(std::hash<llvm::Constant*>()(c), st->getLocalName(c), type_id(*this)),
-        constant(c) {};
+        c(c) {};
 
-    llvm::Constant* constant;
+    llvm::Constant* c;
 
 };
 

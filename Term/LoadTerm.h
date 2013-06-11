@@ -37,8 +37,8 @@ public:
 
 #include "Util/macros.h"
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-        typedef Z3ExprFactory::Pointer Pointer;
         typedef Z3ExprFactory::Dynamic Dynamic;
+        typedef Z3ExprFactory::Pointer Pointer;
 
         ASSERTC(ctx != nullptr);
 
@@ -71,8 +71,7 @@ public:
 
     virtual Type::Ptr getTermType() const {
         auto& tf = TypeFactory::getInstance();
-
-        Type::Ptr ptr = rhv->getTermType();
+        auto ptr = rhv->getTermType();
 
         if (!tf.isValid(ptr)) return ptr;
 
@@ -84,7 +83,6 @@ public:
     }
 
     friend class TermFactory;
-
 };
 
 } /* namespace borealis */

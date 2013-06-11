@@ -50,8 +50,8 @@ public:
 
     virtual bool equals(const Term* other) const {
         if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
-                    std::abs(that->value - value) < .01;
+            return Term::equals(other) &&
+                   std::abs(that->value - value) < .01;
         } else return false;
     }
 

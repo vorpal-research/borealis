@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "TermFactory.h"
+#include "Term/TermFactory.h"
 
 namespace borealis {
 

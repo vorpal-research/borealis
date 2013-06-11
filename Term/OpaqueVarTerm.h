@@ -8,7 +8,6 @@
 #ifndef OPAQUEVARTERM_H_
 #define OPAQUEVARTERM_H_
 
-#include "Term/NameContext.h"
 #include "Term/Term.h"
 
 namespace borealis {
@@ -47,8 +46,8 @@ public:
 
     virtual bool equals(const Term* other) const {
         if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
-                    that->vname == vname;
+            return Term::equals(other) &&
+                   that->vname == vname;
         } else return false;
     }
 

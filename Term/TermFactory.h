@@ -8,33 +8,10 @@
 #ifndef TERMFACTORY_H_
 #define TERMFACTORY_H_
 
-#include <llvm/Value.h>
-
 #include <memory>
 
 #include "Codegen/llvm.h"
-
-#include "Term/ArgumentTerm.h"
-#include "Term/ConstTerm.h"
-#include "Term/ReturnValueTerm.h"
-#include "Term/Term.h"
-#include "Term/ValueTerm.h"
-
-#include "Term/BinaryTerm.h"
-#include "Term/CmpTerm.h"
-#include "Term/UnaryTerm.h"
-#include "Term/TernaryTerm.h"
-
-#include "Term/LoadTerm.h"
-
-#include "Term/GepTerm.h"
-
-#include "Term/OpaqueBoolConstantTerm.h"
-#include "Term/OpaqueBuiltinTerm.h"
-#include "Term/OpaqueFloatingConstantTerm.h"
-#include "Term/OpaqueIntConstantTerm.h"
-#include "Term/OpaqueVarTerm.h"
-
+#include "Term/Term.def"
 #include "Util/slottracker.h"
 
 #include "Util/macros.h"
@@ -130,7 +107,6 @@ public:
 
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         using namespace llvm;
-        using borealis::util::tail;
 
         Term::Ptr v = getValueTerm(base);
 

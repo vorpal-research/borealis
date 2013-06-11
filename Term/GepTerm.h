@@ -10,8 +10,6 @@
 
 #include "Term/Term.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 class GepTerm: public borealis::Term {
@@ -54,10 +52,11 @@ public:
         );
     }
 
+#include "Util/macros.h"
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
         typedef Z3ExprFactory::Dynamic Dynamic;
-        typedef Z3ExprFactory::Pointer Pointer;
         typedef Z3ExprFactory::Integer Integer;
+        typedef Z3ExprFactory::Pointer Pointer;
 
         Dynamic vv = v->toZ3(z3ef, ctx);
 
@@ -77,17 +76,15 @@ public:
             shift = shift + by.getUnsafe() * size.getUnsafe();
         }
 
-        return z3ef.if_(
-                        z3ef.isInvalidPtrExpr(vp)
-                    ).then_(
-                        z3ef.getInvalidPtr()
-                    ).else_(
-                        logic::addAxiom(
-                            vp + shift,
-                            !z3ef.isInvalidPtrExpr(vp + shift)
-                        )
-                    );
+        return z3ef.if_(z3ef.isInvalidPtrExpr(vp))
+                   .then_(z3ef.getInvalidPtr())
+                   .else_(
+                       (vp + shift).withAxiom(
+                           !z3ef.isInvalidPtrExpr(vp + shift)
+                       )
+                   );
     }
+#include "Util/unmacros.h"
 
     virtual Type::Ptr getTermType() const {
         return TypeFactory::getInstance().cast(type);
@@ -109,10 +106,7 @@ private:
             ) +
             ")",
             type_id(*this)
-        ),
-        v(v),
-        shifts(shifts),
-        type(type) {}
+        ), v(v), shifts(shifts), type(type) {}
 
     Term::Ptr v;
     const Shifts shifts;
@@ -121,7 +115,5 @@ private:
 };
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"
 
 #endif /* GEPTERM_H_ */

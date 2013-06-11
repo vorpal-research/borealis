@@ -131,6 +131,13 @@ struct generator;
         CLASS& operator=(const CLASS&) = default; \
         CLASS simplify() const { return CLASS{ ValueExpr::simplify() }; } \
 \
+        CLASS withAxiom(Bool axiom) const { \
+            return CLASS{ \
+                z3impl::getExpr(*this), \
+                z3impl::spliceAxioms(z3impl::getAxiom(*this), z3impl::asAxiom(axiom)) \
+            }; \
+        } \
+\
         static CLASS mkConst(z3::context& ctx, typename impl::generator<CLASS>::basetype value) { \
             return CLASS(impl::generator<CLASS>::mkConst(ctx, value)); \
         } \

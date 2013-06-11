@@ -38,7 +38,7 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
         auto lhvz3 = lhv->toZ3(z3ef, ctx);
         auto rhvz3 = rhv->toZ3(z3ef, ctx);
 
@@ -71,9 +71,9 @@ public:
         } else return false;
     }
 
+    llvm::ConditionType getOpcode() const { return opcode; }
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getRhv() const { return rhv; }
-    llvm::ConditionType getOpcode() const { return opcode; }
 
     virtual Type::Ptr getTermType() const {
         auto& tf = TypeFactory::getInstance();

@@ -51,6 +51,8 @@ public:
     // Array representing memory
     template<class Elem, class Index> using ArrayImpl = logic::TheoryArray<Elem, Index>;
     typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
+    // dynamic bit vector
+    typedef borealis::logic::DynBitVectorExpr DynBV;
     // dynamic logic type
     typedef borealis::logic::SomeExpr Dynamic;
 

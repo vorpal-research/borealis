@@ -38,7 +38,7 @@ public:
     }
 
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx = nullptr) const {
+    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
         auto cndz3 = cnd->toZ3(z3ef, ctx);
         auto truz3 = tru->toZ3(z3ef, ctx);
         auto flsz3 = fls->toZ3(z3ef, ctx);
@@ -62,9 +62,9 @@ public:
         } else return false;
     }
 
+    Term::Ptr getCnd() const { return cnd; }
     Term::Ptr getTru() const { return tru; }
     Term::Ptr getFls() const { return fls; }
-    Term::Ptr getCnd() const { return cnd; }
 
     static bool classof(const self*) {
         return true;

@@ -5,7 +5,6 @@
 #include <string>
 
 #include "Util/typeindex.hpp"
-#include "Util/util.h"
 
 namespace borealis {
 

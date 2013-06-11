@@ -15,6 +15,7 @@
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/Transformer/Transformer.hpp"
+#include "Term/NameContext.h"
 #include "Term/TermFactory.h"
 #include "Util/locations.h"
 
