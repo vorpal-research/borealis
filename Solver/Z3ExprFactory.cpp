@@ -7,19 +7,16 @@
 
 #include "Config/config.h"
 #include "Solver/Z3ExprFactory.h"
-#include "Term/Term.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
 
 Z3ExprFactory::Z3ExprFactory() {
-    // Needs to be set before z3::context is created
-    // (i.e., in the z3::config object)
-    // ctx.set(":proof-mode", 2U);
-
     z3::config cfg;
     cfg.set(":lift-ite", 2);
     cfg.set(":ng-lift-ite", 2);
+    // cfg.set(":proof-mode", 2);
 
     ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
 }
@@ -30,16 +27,16 @@ unsigned int Z3ExprFactory::pointerSize = 32;
 
 namespace f {
 
+BRING_FROM_Z3EXPR_FACTORY(array)
 BRING_FROM_Z3EXPR_FACTORY(expr)
 BRING_FROM_Z3EXPR_FACTORY(function)
-BRING_FROM_Z3EXPR_FACTORY(array)
 BRING_FROM_Z3EXPR_FACTORY(sort)
 
-BRING_FROM_Z3EXPR_FACTORY(Pointer)
-BRING_FROM_Z3EXPR_FACTORY(MemArray)
-BRING_FROM_Z3EXPR_FACTORY(Integer)
-BRING_FROM_Z3EXPR_FACTORY(Real)
 BRING_FROM_Z3EXPR_FACTORY(Bool)
+BRING_FROM_Z3EXPR_FACTORY(Integer)
+BRING_FROM_Z3EXPR_FACTORY(Pointer)
+BRING_FROM_Z3EXPR_FACTORY(Real)
+BRING_FROM_Z3EXPR_FACTORY(MemArray)
 BRING_FROM_Z3EXPR_FACTORY(Dynamic)
 
 }
@@ -103,11 +100,9 @@ f::Real Z3ExprFactory::getRealConst(double v) {
 }
 
 f::MemArray Z3ExprFactory::getNoMemoryArray() {
-    static config::ConfigEntry<bool> DefaultToUnknown("analysis", "memory-defaults-to-unknown");
+    static config::ConfigEntry<bool> DefaultsToUnknown("analysis", "memory-defaults-to-unknown");
 
-    auto opt = DefaultToUnknown.get();
-
-    if(opt.empty() || opt == false) {
+    if (DefaultsToUnknown.get(false) == false) {
         return f::MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
     } else {
         return f::MemArray::mkFree(*ctx, "mem");
@@ -144,7 +139,9 @@ f::Dynamic Z3ExprFactory::getVarByTypeAndName(
     else if (isa<borealis::Pointer>(type))
         return getPtrVar(name);
     else if (isa<borealis::UnknownType>(type))
-        BYE_BYE(Dynamic, "Unknown var type for Z3 conversion");
+        BYE_BYE(Dynamic, "Unknown var type in Z3 conversion")
+    else if (isa<borealis::TypeError>(type))
+        BYE_BYE(Dynamic, "Encountered type error in Z3 conversion")
 
     BYE_BYE(Dynamic, "Unreachable!");
 }

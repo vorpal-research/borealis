@@ -8,10 +8,9 @@
 #ifndef Z3CONTEXT_H_
 #define Z3CONTEXT_H_
 
-#include <z3/z3++.h>
-
 #include <vector>
 
+#include "Logging/tracer.hpp"
 #include "Solver/Z3ExprFactory.h"
 
 namespace borealis {
@@ -20,8 +19,8 @@ class ExecutionContext {
 public:
     typedef Z3ExprFactory::Bool Bool;
     typedef Z3ExprFactory::Pointer Pointer;
-    typedef Z3ExprFactory::Dynamic Dynamic;
     typedef Z3ExprFactory::MemArray MemArray;
+    typedef Z3ExprFactory::Dynamic Dynamic;
 
 private:
     Z3ExprFactory& factory;

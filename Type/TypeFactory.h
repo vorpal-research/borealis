@@ -8,13 +8,7 @@
 #ifndef TYPEFACTORY_H_
 #define TYPEFACTORY_H_
 
-#include "Type/Bool.h"
-#include "Type/Float.h"
-#include "Type/Integer.h"
-#include "Type/Pointer.h"
-#include "Type/Type.h"
-#include "Type/TypeError.h"
-#include "Type/UnknownType.h"
+#include "Type/Type.def"
 #include "Util/util.h"
 
 namespace borealis {
@@ -116,7 +110,7 @@ public:
 
 };
 
-std::ostream& operator<<(std::ostream& ost, const Type& tp);
+std::ostream& operator<<(std::ostream& ost, Type::Ptr tp);
 
 } /* namespace borealis */
 

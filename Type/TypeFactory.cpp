@@ -13,8 +13,8 @@ TypeFactory::TypeFactory() {}
 
 TypeFactory::~TypeFactory() {}
 
-std::ostream& operator<<(std::ostream& ost, const Type& tp) {
-    return ost << TypeFactory::getInstance().toString(tp);
+std::ostream& operator<<(std::ostream& ost, Type::Ptr tp) {
+    return ost << TypeFactory::getInstance().toString(*tp);
 }
 
 } /* namespace borealis */

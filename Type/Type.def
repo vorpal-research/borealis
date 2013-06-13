@@ -1,0 +1,28 @@
+#ifndef HANDLE_TYPE
+#define INCLUDE_MODE
+#endif
+
+#ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
+#include "Type/Bool.h"
+#include "Type/Float.h"
+#include "Type/Integer.h"
+#include "Type/Pointer.h"
+#include "Type/TypeError.h"
+#include "Type/UnknownType.h"
+
+#define HANDLE_TYPE(NAME, CLASS)
+
+#endif
+
+HANDLE_TYPE(Bool, Bool)
+HANDLE_TYPE(Float, Float)
+HANDLE_TYPE(Integer, Integer)
+HANDLE_TYPE(Pointer, Pointer)
+HANDLE_TYPE(TypeError, TypeError)
+HANDLE_TYPE(UnknownType, UnknownType)
+
+#ifdef HANDLE_TYPE
+#undef HANDLE_TYPE
+#endif

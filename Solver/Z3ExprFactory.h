@@ -11,13 +11,8 @@
 #include <llvm/Target/TargetData.h>
 #include <z3/z3++.h>
 
-#include "Logging/tracer.hpp"
 #include "Solver/Logic.hpp"
-#include "Type/Float.h"
-#include "Type/Integer.h"
-#include "Type/Pointer.h"
-#include "Type/Type.h"
-#include "Util/cast.hpp"
+#include "Type/TypeFactory.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -29,7 +24,7 @@ class Z3ExprFactory {
 public:
 
     typedef z3::func_decl function;
-    typedef function array;
+    typedef z3::func_decl array;
     typedef z3::expr expr;
     typedef z3::sort sort;
     typedef std::vector<expr> expr_vector;
@@ -37,7 +32,7 @@ public:
     // a hack: CopyAssignable reference to non-CopyAssignable object
     // (z3::expr is CopyConstructible, but not CopyAssignable, so no
     // accumulator-like shit is possible with it)
-    typedef borealis::util::copyref<expr> exprRef;
+    // typedef borealis::util::copyref<expr> exprRef;
 
     typedef borealis::logic::Bool Bool;
     // logic type to represent pointers
@@ -48,7 +43,7 @@ public:
     typedef borealis::logic::BitVector<Pointer::bitsize> Real;
     // logic type to represent memory units
     typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
-    // Array representing memory
+    // memory array
     template<class Elem, class Index> using ArrayImpl = logic::TheoryArray<Elem, Index>;
     typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
     // dynamic bit vector
@@ -62,7 +57,7 @@ public:
                isa<borealis::Pointer>(type) ? Pointer::bitsize :
                isa<borealis::Float>(type) ? Real::bitsize :
                util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                       "Cannot acquire bitsize for type " + util::toString(*type));
+                       "Cannot acquire bitsize for type " + util::toString(type));
     }
 
     Z3ExprFactory();

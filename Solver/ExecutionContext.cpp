@@ -5,8 +5,6 @@
  *      Author: belyaev
  */
 
-#include "Logging/logger.hpp"
-#include "Logging/tracer.hpp"
 #include "Solver/ExecutionContext.h"
 
 namespace borealis {
@@ -18,7 +16,6 @@ ExecutionContext::ExecutionContext(Z3ExprFactory& factory):
 
 ExecutionContext::Bool ExecutionContext::toZ3() {
     TRACE_FUNC;
-
     return factory.getTrue();
 }
 
