@@ -26,17 +26,15 @@ public:
     static const std::string logDomain;
 
     func_tracer(
-            const char* fname,
-            borealis::logging::logstream log):
-                fname_(fname), log(log), start() {
-        start = std::chrono::system_clock::now();
+        const char* fname,
+        borealis::logging::logstream log):
+            fname_(fname), log(log), start(std::chrono::system_clock::now()) {
         log << "> " << fname_ << borealis::logging::endl;
     }
 
     ~func_tracer() {
         auto end = std::chrono::system_clock::now();
-        auto duration =
-                std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
         log << "< "
             << fname_
             << " : "

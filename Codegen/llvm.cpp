@@ -5,10 +5,10 @@
  *      Author: ice-phoenix
  */
 
-#include <clang/Basic/FileManager.h>
 #include <clang/Basic/Diagnostic.h>
-#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/Basic/FileManager.h>
 #include <clang/Frontend/DiagnosticOptions.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <llvm/Analysis/DebugInfo.h>
 #include <llvm/Analysis/DIBuilder.h>
 #include <llvm/BasicBlock.h>
@@ -19,7 +19,6 @@
 #include <llvm/Type.h>
 
 #include "Codegen/llvm.h"
-#include "Util/util.h"
 
 namespace borealis {
 
@@ -52,8 +51,8 @@ void setDebugLocusWithCopiedScope(
 
 llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr) {
     llvm::Constant* ptrAsInt = llvm::ConstantInt::get(
-            ctx,
-            llvm::APInt(sizeof(uintptr_t)*8, reinterpret_cast<uintptr_t>(ptr))
+        ctx,
+        llvm::APInt(sizeof(uintptr_t) * 8, reinterpret_cast<uintptr_t>(ptr))
     );
     return llvm::MDNode::get(ctx, ptrAsInt);
 }
@@ -84,14 +83,11 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
     unsigned BeginOffset;
     unsigned EndOffset;
 
-    std::tie(BeginFileID, BeginOffset) =
-            sm.getDecomposedLoc(begLoc);
-    std::tie(EndFileID, EndOffset) =
-            sm.getDecomposedLoc(endLoc);
+    std::tie(BeginFileID, BeginOffset) = sm.getDecomposedLoc(begLoc);
+    std::tie(EndFileID, EndOffset) = sm.getDecomposedLoc(endLoc);
 
     bool Invalid = false;
-    const char* BufferStart =
-            sm.getBufferData(BeginFileID, &Invalid).data();
+    const char* BufferStart = sm.getBufferData(BeginFileID, &Invalid).data();
 
     return StringRef{ BufferStart + BeginOffset, EndOffset - BeginOffset };
 }

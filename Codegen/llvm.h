@@ -12,7 +12,7 @@
 #include <clang/Basic/SourceManager.h>
 #include <llvm/Metadata.h>
 
-#include "Util/locations.h"
+#include "Util/util.h"
 
 namespace borealis {
 

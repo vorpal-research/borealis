@@ -6,6 +6,7 @@
  */
 
 #include "Codegen/intrinsics_manager.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -15,23 +16,21 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
         const std::string& ext,
         llvm::FunctionType* funtype,
         llvm::Module* module) {
-    using llvm::GlobalValue;
-    using llvm::Function;
     using borealis::util::containsKey;
 
     if (containsKey(intrinsics_cache, {ft, funtype})) {
-        return intrinsics_cache[{ft, funtype}];
+        return intrinsics_cache.at({ft, funtype});
     }
 
-    Function* f = Function::Create(
+    auto* f = llvm::Function::Create(
             funtype,
-            GlobalValue::ExternalLinkage,
+            llvm::GlobalValue::ExternalLinkage,
             getFuncName(ft, ext),
             module
     );
 
-    type_cache[f] = ft;
     intrinsics_cache[{ft, funtype}] = f;
+    type_cache[f] = ft;
 
     return f;
 }
@@ -52,18 +51,9 @@ PredicateState::Ptr IntrinsicsManager::getPredicateState(
     return getIntrinsicInfo(ft).generator(F, PF, TF);
 }
 
-IntrinsicsManager::IntrinsicInfo IntrinsicsManager::getIntrinsicInfo(function_type ft) const {
-    using borealis::util::containsKey;
-    if (containsKey(info_cache, ft)) {
-        return info_cache.at(ft);
-    } else {
-        BYE_BYE(IntrinsicsManager::IntrinsicInfo, "Unknown function type");
-    }
-}
-
 const std::string IntrinsicsManager::getFuncName(function_type ft, const std::string& ext) const {
     std::string buf;
-    llvm::raw_string_ostream oss(buf);
+    std::ostringstream oss(buf);
 
     oss << "borealis." << getIntrinsicInfo(ft).name;
     if (!ext.empty()) oss << "." << ext;
@@ -71,12 +61,21 @@ const std::string IntrinsicsManager::getFuncName(function_type ft, const std::st
 }
 
 function_type IntrinsicsManager::getIntrinsicType(llvm::Function* F) const {
-    auto iter = type_cache.find(F);
-    if (iter != type_cache.end()) {
-        return (*iter).second;
-    } else {
-        return function_type::UNKNOWN;
+    using borealis::util::containsKey;
+    if (containsKey(type_cache, F)) {
+        return type_cache.at(F);
     }
+
+    return function_type::UNKNOWN;
+}
+
+IntrinsicsManager::IntrinsicInfo IntrinsicsManager::getIntrinsicInfo(function_type ft) const {
+    using borealis::util::containsKey;
+    if (containsKey(info_cache, ft)) {
+        return info_cache.at(ft);
+    }
+
+    BYE_BYE(IntrinsicsManager::IntrinsicInfo, "Unknown function type");
 }
 
 } // namespace borealis

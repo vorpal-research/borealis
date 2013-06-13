@@ -5,14 +5,13 @@
  *      Author: belyaev
  */
 
-#include "logstream.hpp"
-
 #include <log4cpp/Category.hh>
 #include <log4cpp/CategoryStream.hh>
 #include <log4cpp/Priority.hh>
 #include <log4cpp/PropertyConfigurator.hh>
-
 #include <z3/z3++.h>
+
+#include "Logging/logstream.hpp"
 
 inline static log4cpp::Priority::PriorityLevel mapPriorities(borealis::logging::PriorityLevel pli) {
     typedef borealis::logging::PriorityLevel pl;
@@ -41,7 +40,7 @@ using log4cpp::PropertyConfigurator;
 typedef logstream stream_t;
 
 inline Category& getCat(const std::string& cname) {
-    if(cname.empty()) return Category::getRoot();
+    if (cname.empty()) return Category::getRoot();
     else return Category::getInstance(cname);
 }
 
@@ -71,6 +70,7 @@ void configureLoggingFacility(const std::string& filename) {
 
 void configureZ3Log(const std::string& filename) {
     Z3_open_log(filename.c_str());
+    // TODO: akhin Add call to Z3_close_log somewhere...
 }
 
 stream_t& indent(stream_t& st) {

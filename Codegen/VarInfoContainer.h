@@ -51,21 +51,20 @@ public:
     ~VarInfoContainer();
 
     void put(llvm::Value* val, const VarInfo& vi) {
-        using util::key_ptr;
-
+        using borealis::util::key_ptr;
 
         auto new_it = fwd.insert({val, vi});
 
         const auto& new_vi = new_it->second;
 
         for (const auto& name: new_vi.originalName) {
-            bwd_names.insert({ key_ptr<std::string>(name), val });
+            bwd_names.insert({ name, val });
         }
         for (const auto& loc: new_vi.originalLocus) {
-            bwd_locs.insert({ key_ptr<Locus>(loc), val });
+            bwd_locs.insert({ loc, val });
         }
-        if (new_vi.ast) {
-            bwd_clang.insert({ new_vi.ast, val });
+        if (auto* ast = new_vi.ast) {
+            bwd_clang.insert({ ast, val });
         }
     }
 

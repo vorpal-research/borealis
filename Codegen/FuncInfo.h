@@ -10,22 +10,23 @@
 
 #include "Codegen/VarInfo.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 struct FuncInfo {
     VarInfo func;
     std::vector<VarInfo> locals;
 
-    typedef std::vector<VarInfo>::iterator iterator;
-    typedef std::vector<VarInfo>::const_iterator const_iterator;
+    auto begin() QUICK_RETURN(this->locals.begin())
+    auto end() QUICK_RETURN(this->locals.end())
 
-    iterator begin() { return locals.begin(); }
-    iterator end()   { return locals.end();   }
-
-    const_iterator begin() const { return locals.begin(); }
-    const_iterator end()   const { return locals.end();   }
+    auto begin() QUICK_CONST_RETURN(this->locals.begin())
+    auto end() QUICK_CONST_RETURN(this->locals.end())
 };
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* FUNCINFO_H_ */

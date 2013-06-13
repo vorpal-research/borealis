@@ -14,8 +14,7 @@
 #include <string>
 
 #include "Logging/logger.hpp"
-#include "Util/locations.h"
-#include "Util/option.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -41,7 +40,6 @@ struct VarInfo {
     clang::Decl* ast;
 
     const VarInfo& overwriteBy(const VarInfo& vi) {
-        return *this;
 
         if (!vi.originalName.empty()) {
             originalName = vi.originalName;
@@ -63,21 +61,19 @@ struct VarInfo {
 inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
     using borealis::util::just;
     using borealis::Locus;
-    using borealis::infos;
 
     return VarInfo{
         just(dd.getName().str()),
         just(
-            Locus {
+            Locus{
                 dd.getContext().getFilename(),
-                LocalLocus { dd.getLineNumber(), 0U }
+                LocalLocus{ dd.getLineNumber(), 0U }
             }
         ),
         VarInfo::Plain,
         ast
     };
 }
-
 
 template<class Streamer>
 Streamer& operator<<(Streamer& ost, const VarInfo& vi) {
@@ -87,9 +83,9 @@ Streamer& operator<<(Streamer& ost, const VarInfo& vi) {
     if (vi.originalLocus.empty()) ost << "<unknown-location>";
     else ost << vi.originalLocus.getUnsafe();
 
-    if(vi.treatment == VarInfo::Allocated) ost << "(alloca)";
+    if (vi.treatment == VarInfo::Allocated) ost << " (alloca)";
 
-    if (vi.ast) ost << ": " << *vi.ast;
+    if (vi.ast) ost << " : " << *vi.ast;
     return ost;
 }
 

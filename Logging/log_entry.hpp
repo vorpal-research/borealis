@@ -11,8 +11,8 @@
 #include <memory>
 #include <sstream>
 
-#include "logger.hpp"
-#include "logstream.hpp"
+#include "Logging/logger.hpp"
+#include "Logging/logstream.hpp"
 
 namespace borealis {
 namespace logging {
@@ -24,7 +24,7 @@ class log_entry {
 public:
     log_entry(const log_entry&) = default;
     log_entry(log_entry&&) = default;
-    log_entry(logstream log): buf(new std::ostringstream), log(log) {}
+    log_entry(logstream log) : buf(new std::ostringstream()), log(log) {}
 
     template<class T>
     log_entry& operator<<(const T& val) {
@@ -37,7 +37,7 @@ public:
     }
 
     log_entry& operator<<(logstream&(*val)(logstream&)) {
-        if(val == &endl) {
+        if (val == &endl) {
             *buf << "\n";
         } else if (val == &end) {
             *buf << "\n";
@@ -47,14 +47,14 @@ public:
     }
 
     void flush() {
-        if(buf) {
+        if (buf) {
             log << buf->str();
             log.flush();
             buf.release();
         }
     }
 
-    ~log_entry() {flush();}
+    ~log_entry() { flush(); }
 
 };
 

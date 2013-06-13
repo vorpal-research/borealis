@@ -43,7 +43,7 @@ public:
                 const std::string& name,
                 state_generator generator = DefaultGenerator,
                 type_resolver type_resolver = nullptr)
-        : IntrinsicInfo { type, name, generator } {
+        : IntrinsicInfo{ type, name, generator } {
                 IntrinsicsManager::getInstance().registerIntrinsic(*this);
                 if (type_resolver) {
                     IntrinsicsManager::getInstance().registerResolver(type_resolver);
@@ -101,8 +101,8 @@ private:
         default_resolver
     };
 
-    IntrinsicInfo getIntrinsicInfo(function_type ft) const;
     function_type getIntrinsicType(llvm::Function* F) const;
+    IntrinsicInfo getIntrinsicInfo(function_type ft) const;
 };
 
 } // namespace borealis

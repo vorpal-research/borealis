@@ -139,9 +139,9 @@ f::Dynamic Z3ExprFactory::getVarByTypeAndName(
     else if (isa<borealis::Pointer>(type))
         return getPtrVar(name);
     else if (isa<borealis::UnknownType>(type))
-        BYE_BYE(Dynamic, "Unknown var type in Z3 conversion")
+        BYE_BYE(Dynamic, "Unknown var type in Z3 conversion");
     else if (isa<borealis::TypeError>(type))
-        BYE_BYE(Dynamic, "Encountered type error in Z3 conversion")
+        BYE_BYE(Dynamic, "Encountered type error in Z3 conversion");
 
     BYE_BYE(Dynamic, "Unreachable!");
 }

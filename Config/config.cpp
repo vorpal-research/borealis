@@ -5,6 +5,6 @@
  *      Author: belyaev
  */
 
-#include "config.h"
+#include "Config/config.h"
 
 borealis::config::Config::~Config() {}

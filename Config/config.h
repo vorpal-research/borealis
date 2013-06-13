@@ -8,19 +8,18 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#include <string>
-
 #include <cfgparser.h>
 #include <configwrapper.h>
 
+#include <string>
+
 #include "Util/util.h"
-#include "Util/option.hpp"
 
 namespace borealis {
 namespace config {
 
-#define RESTRICT_PARAMETER_TO(PARAM, ...) class PARAM##Resolver = std::enable_if< \
-    borealis::util::is_T_in<PARAM, __VA_ARGS__>::value >
+#define RESTRICT_PARAMETER_TO(PARAM, ...) class PARAM##Resolver = \
+    std::enable_if< borealis::util::is_T_in<PARAM, __VA_ARGS__>::value >
 
 class Config {
 
@@ -29,7 +28,7 @@ class Config {
 
 public:
 
-    Config(const std::string& file): parser(), valid(parser.readFile(file) == 0) {}
+    Config(const std::string& file): valid(parser.readFile(file) == 0) {}
     Config(const Config&) = default;
     Config(Config&&) = default;
 
@@ -39,7 +38,7 @@ public:
         using borealis::util::nothing;
 
         T ret;
-        if(valid && parser.getValue(section, option, &ret)) {
+        if (valid && parser.getValue(section, option, &ret)) {
             return just(std::move(ret));
         } else return nothing();
     }
@@ -53,7 +52,6 @@ public:
     }
 
     ~Config();
-
 };
 
 #undef RESTRICT_PARAMETER_TO
@@ -64,7 +62,7 @@ class AppConfiguration {
     std::unique_ptr<Config> globalConfig;
 
     AppConfiguration(): globalConfig(nullptr) {};
-    ~AppConfiguration(){};
+    ~AppConfiguration() {};
 
 public:
     static AppConfiguration& instance() {
@@ -90,13 +88,13 @@ class ConfigEntry {
 
 public:
     ConfigEntry(const std::string& section, const std::string& key):
-        section(section), key(key), cached() {};
+        section(section), key(key) {};
 
     const borealis::util::option<T>& get() const {
         auto& conf = AppConfiguration::instance().globalConfig;
-        if(!conf) return nothing;
+        if (!conf) return nothing;
 
-        if(cached.empty()){
+        if (cached.empty()) {
             cached = conf->getValue<T>(section, key);
         }
         return cached;
@@ -105,24 +103,22 @@ public:
     template<class U>
     auto get(U&& def) const -> decltype(cached.getOrElse(std::forward<U>(def))) {
         auto& conf = AppConfiguration::instance().globalConfig;
-        if(!conf) return def;
+        if (!conf) return def;
 
-        if(cached.empty()){
+        if (cached.empty()) {
             cached = conf->getValue<T>(section, key);
         }
         return cached.getOrElse(std::forward<U>(def));
     }
 
-    operator const borealis::util::option<T>& () const{
-        return get();
-    }
+    operator const borealis::util::option<T>&() const { return get(); }
 
     auto begin() QUICK_CONST_RETURN(this->get().begin())
     auto end() QUICK_CONST_RETURN(this->get().end())
-
 };
 
-template<class T> borealis::util::option<T> ConfigEntry<T>::nothing;
+template<class T>
+borealis::util::option<T> ConfigEntry<T>::nothing;
 
 template<>
 class ConfigEntry<std::vector<std::string>> {
@@ -131,39 +127,36 @@ class ConfigEntry<std::vector<std::string>> {
     mutable std::vector<std::string> cached;
 public:
     ConfigEntry(const std::string& section, const std::string& key):
-        section(section), key(key), cached() {};
+        section(section), key(key) {};
 
     const std::vector<std::string>& get() const {
         auto& conf = AppConfiguration::instance().globalConfig;
-        if(!conf) return cached;
+        if (!conf) return cached;
 
-        if(cached.empty()){
-            cached =
-                    AppConfiguration::instance().
-                        globalConfig->
-                            getValue<std::vector<std::string>>(section, key).
-                                getOrElse(std::vector<std::string>());
+        if (cached.empty()) {
+            cached = AppConfiguration::instance()
+                     .globalConfig
+                     ->getValue<std::vector<std::string>>(section, key)
+                     .getOrElse(std::vector<std::string>());
         }
         return cached;
     }
 
-    operator const std::vector<std::string>& () const{
-        return get();
-    }
+    operator const std::vector<std::string>&() const { return get(); }
 
-    auto begin() QUICK_CONST_RETURN(get().begin())
-    auto end() QUICK_CONST_RETURN(get().end())
+    auto begin() QUICK_CONST_RETURN(this->get().begin())
+    auto end() QUICK_CONST_RETURN(this->get().end())
+    auto size() QUICK_CONST_RETURN(this->get().size())
 
-    auto size() QUICK_CONST_RETURN(get().size())
-    auto operator[](size_t index) QUICK_CONST_RETURN(get()[index])
+    auto operator[](size_t index) QUICK_CONST_RETURN(this->get()[index])
 };
 
 typedef ConfigEntry<> StringConfigEntry;
 typedef ConfigEntry<std::vector<std::string>> MultiConfigEntry;
 
-#include "Util/unmacros.h"
-
 } // namespace config
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* CONFIG_H_ */

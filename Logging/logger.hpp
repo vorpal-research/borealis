@@ -10,8 +10,10 @@
 
 #include <type_traits>
 
-#include "log_entry.hpp"
-#include "logstream.hpp"
+#include "Logging/log_entry.hpp"
+#include "Logging/logstream.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace logging {
@@ -26,7 +28,6 @@ private:
     static std::string logger;
 
 protected:
-
     static stream_t dbgs() {
         return dbgsFor(logger);
     }
@@ -43,13 +44,13 @@ protected:
         return criticalsFor(logger);
     }
 
-    static stream_t logs(priority_t ll = PriorityLevel::DEBUG) {
+    static stream_t logs(priority_t ll = priority_t::DEBUG) {
         return logsFor(ll, logger);
     }
 };
 
 template<class ClassLevelLoggingParam>
-std::string logDomainFor(typename std::enable_if<bool(ClassLevelLoggingParam::loggerDomain()[0])>::type*) {
+std::string logDomainFor( GUARDED(void*, bool(ClassLevelLoggingParam::loggerDomain()[0])) ) {
     return ClassLevelLoggingParam::loggerDomain();
 }
 
@@ -61,6 +62,7 @@ std::string logDomainFor(...) {
 template<class T>
 std::string ClassLevelLogging<T>::logger = logDomainFor<T>(nullptr);
 
+
 template<class T>
 class ObjectLevelLogging {
 
@@ -68,7 +70,6 @@ private:
     mutable std::string logger;
 
 protected:
-
     void assignLogger(const std::string& domain) {
         logger = domain;
     }
@@ -83,7 +84,7 @@ protected:
     stream_t errs() const { return errsFor(logger); }
     stream_t criticals() const { return criticalsFor(logger); }
 
-    stream_t logs(priority_t ll = PriorityLevel::DEBUG) const {
+    stream_t logs(priority_t ll = priority_t::DEBUG) const {
         return logsFor(ll, logger);
     }
 };
@@ -100,15 +101,17 @@ inline stream_t logs(priority_t ll = priority_t::DEBUG) {
 
 } // namespace logging
 
-using logging::errs;
+using logging::dbgs;
 using logging::infos;
 using logging::warns;
+using logging::errs;
 using logging::criticals;
-using logging::dbgs;
 using logging::logs;
 using logging::endl;
 using logging::end;
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* LOGGER_HPP_ */

@@ -38,7 +38,7 @@
         __FILE__, \
         __LINE__, \
         __PRETTY_FUNCTION__, \
-        msg);
+        msg)
 
 #define BYE_BYE_VOID(msg) { \
         borealis::util::sayonara<void>( \

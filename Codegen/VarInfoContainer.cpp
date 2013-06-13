@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include "VarInfoContainer.h"
+#include "Codegen/VarInfoContainer.h"
 
 namespace borealis {
 

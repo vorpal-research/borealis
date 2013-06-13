@@ -19,6 +19,8 @@ namespace borealis {
 
 typedef IntrinsicsManager::RegisterIntrinsic RegisterIntrinsic;
 
+// TODO: akhin Make generator accept PredicateStateFactory from the outside
+
 static RegisterIntrinsic INTRINSIC_PTR_VERSION {
     function_type::INTRINSIC_PTR_VERSION,
     "ptrver",
