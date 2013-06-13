@@ -248,6 +248,9 @@ struct index_in_type_list<I, type_list<Args...>> {
     typedef typename index_in_row<I, Args...>::type type;
 };
 
+template<size_t I, class TypeList>
+using index_in_type_list_q = typename index_in_type_list<I, TypeList>::type;
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // static_string
