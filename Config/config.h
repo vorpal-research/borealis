@@ -144,11 +144,11 @@ public:
 
     operator const std::vector<std::string>&() const { return get(); }
 
-    auto begin() QUICK_CONST_RETURN(this->get().begin())
-    auto end() QUICK_CONST_RETURN(this->get().end())
-    auto size() QUICK_CONST_RETURN(this->get().size())
+    auto begin() QUICK_CONST_RETURN(get().begin())
+    auto end() QUICK_CONST_RETURN(get().end())
+    auto size() QUICK_CONST_RETURN(get().size())
 
-    auto operator[](size_t index) QUICK_CONST_RETURN(this->get()[index])
+    auto operator[](size_t index) QUICK_CONST_RETURN(get()[index])
 };
 
 typedef ConfigEntry<> StringConfigEntry;
