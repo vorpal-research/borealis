@@ -8,15 +8,15 @@
 #ifndef COMMENTS_H_
 #define COMMENTS_H_
 
-#include <map>
-
 #include <clang/Basic/SourceManager.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Lex/Preprocessor.h>
 
+#include <map>
+
 #include "Anno/anno.h"
-#include "Util/locations.h"
+#include "Util/util.h"
 
 namespace borealis {
 namespace comments {
@@ -27,7 +27,7 @@ class GatherCommentsAction: public clang::PreprocessOnlyAction {
 
 public:
 
-	// std::map is here not because it's associative, but 'cos it is sorted and easy-to-use
+	// std::multimap is here not because it's associative, but 'cos it is sorted and easy-to-use
 	// std::set<pair> may seem more applicable, but requires more boilerplate
 	typedef std::multimap<borealis::Locus, command> comment_container;
 	typedef comment_container::iterator iterator;
@@ -47,18 +47,18 @@ private:
 		virtual ~CommentKeeper() { detach(); };
 
 		void attach() {
-			if(!attached) pp.AddCommentHandler(this);
+			if (!attached) pp.AddCommentHandler(this);
 			attached = true;
 		}
 
 		comment_container detach() {
-			if(attached) pp.RemoveCommentHandler(this);
+			if (attached) pp.RemoveCommentHandler(this);
 			attached = false;
 			return std::move(comments);
 		}
 	};
 
-	std::auto_ptr<CommentKeeper> keeper;
+	std::unique_ptr<CommentKeeper> keeper;
 	llvm::StringRef currentFile = "";
 
 	comment_container allComments;
