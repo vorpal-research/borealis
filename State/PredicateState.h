@@ -17,6 +17,8 @@
 #include "Solver/ExecutionContext.h"
 #include "Solver/Z3ExprFactory.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 class PredicateState :
@@ -25,6 +27,7 @@ class PredicateState :
 public:
 
     typedef std::shared_ptr<const PredicateState> Ptr;
+    typedef std::function<PredicateState::Ptr(PredicateState::Ptr)> FMapper;
     typedef std::function<Predicate::Ptr(Predicate::Ptr)> Mapper;
     typedef std::function<bool(Predicate::Ptr)> Filterer;
 
@@ -34,13 +37,22 @@ public:
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const = 0;
 
-    virtual PredicateState::Ptr map(Mapper m) const = 0;
-    virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const = 0;
-    virtual PredicateState::Ptr filter(Filterer f) const = 0;
+    virtual PredicateState::Ptr fmap(FMapper) const {
+        BYE_BYE(PredicateState::Ptr, "Should not be called!");
+    }
+
+    virtual PredicateState::Ptr map(Mapper m) const {
+        return fmap([&](PredicateState::Ptr s) { return s->map(m); });
+    }
+    virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const {
+        return fmap([&](PredicateState::Ptr s) { return s->filterByTypes(types); });
+    }
+    virtual PredicateState::Ptr filter(Filterer f) const {
+        return fmap([&](PredicateState::Ptr s) { return s->filter(f); });
+    }
+
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const = 0;
-
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const = 0;
-
     virtual PredicateState::Ptr simplify() const = 0;
 
     bool isUnreachable() const;
@@ -89,5 +101,7 @@ PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc);
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* PREDICATESTATE_H_ */

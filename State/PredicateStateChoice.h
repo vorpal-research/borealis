@@ -12,7 +12,7 @@
 
 namespace borealis {
 
-class PredicateStateChoice:
+class PredicateStateChoice :
         public PredicateState {
 
     typedef PredicateStateChoice Self;
@@ -26,13 +26,10 @@ public:
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
 
-    virtual PredicateState::Ptr map(Mapper m) const override;
-    virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const override;
-    virtual PredicateState::Ptr filter(Filterer f) const override;
+    virtual PredicateState::Ptr fmap(FMapper f) const override;
+
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const override;
-
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const override;;
-
     virtual PredicateState::Ptr simplify() const override;;
 
     virtual bool isEmpty() const override;;
@@ -72,6 +69,8 @@ private:
     PredicateStateChoice(std::vector<PredicateState::Ptr>&& choices);
     PredicateStateChoice(const Self& state) = default;
     PredicateStateChoice(Self&& state) = default;
+
+    SelfPtr fmap_(FMapper f) const;
 
 };
 

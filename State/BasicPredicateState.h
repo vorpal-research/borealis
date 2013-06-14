@@ -13,9 +13,7 @@
 #include <list>
 #include <unordered_set>
 
-#include "Logging/logger.hpp"
 #include "State/PredicateState.h"
-#include "Util/util.h"
 
 namespace borealis {
 
@@ -39,10 +37,9 @@ public:
     virtual PredicateState::Ptr map(Mapper m) const override;
     virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const override;
     virtual PredicateState::Ptr filter(Filterer f) const override;
+
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const override;
-
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const override;
-
     virtual PredicateState::Ptr simplify() const override;
 
     static bool classof(const Self* /* ps */) {

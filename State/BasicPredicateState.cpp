@@ -7,6 +7,7 @@
 
 #include "Logging/tracer.hpp"
 #include "State/BasicPredicateState.h"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -22,8 +23,8 @@ BasicPredicateState::BasicPredicateState() :
 
 void BasicPredicateState::addPredicateInPlace(Predicate::Ptr pred) {
     this->data.push_back(pred);
-    if (pred->getLocation()) {
-        this->locs.insert(pred->getLocation());
+    if (const auto* loc = pred->getLocation()) {
+        this->locs.insert(loc);
     }
 }
 
@@ -38,7 +39,7 @@ void BasicPredicateState::addVisitedInPlace(const Locations& locs) {
 PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
 
-    auto res = SelfPtr(new Self(*this));
+    auto res = SelfPtr(new Self{ *this });
     res->addPredicateInPlace(pred);
     return Simplified(res.release());
 }
@@ -56,21 +57,18 @@ logic::Bool BasicPredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pct
 }
 
 PredicateState::Ptr BasicPredicateState::addVisited(const llvm::Value* loc) const {
-    auto res = SelfPtr(new Self(*this));
+    auto res = SelfPtr(new Self{ *this });
     res->addVisitedInPlace(loc);
     return Simplified(res.release());
 }
 
 bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
     return std::all_of(locs.begin(), locs.end(),
-        [this](const llvm::Value* loc) {
-            return contains(this->locs, loc);
-        }
-    );
+        [this](const llvm::Value* loc) { return contains(this->locs, loc); });
 }
 
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
-    auto res = SelfPtr(new Self());
+    auto res = SelfPtr(new Self{});
     for (auto& p : data) {
         res->addPredicateInPlace(m(p));
     }
@@ -79,47 +77,43 @@ PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
 }
 
 PredicateState::Ptr BasicPredicateState::filterByTypes(std::initializer_list<PredicateType> types) const {
-    auto res = SelfPtr(new Self());
+    auto res = SelfPtr(new Self{});
     for (auto& p : data) {
         if (std::any_of(types.begin(), types.end(),
-            [&p](const PredicateType& type) { return p->getType() == type; })) {
-            res->addPredicateInPlace(p);
-        }
+            [&](const PredicateType& type) { return p->getType() == type; }
+        )) res->addPredicateInPlace(p);
     }
     res->addVisitedInPlace(this->locs);
     return Simplified(res.release());
 }
 
 PredicateState::Ptr BasicPredicateState::filter(Filterer f) const {
-    auto res = SelfPtr(new Self());
+    auto res = SelfPtr(new Self{});
     for (auto& p : data) {
-        if (f(p)) {
+        if (f(p))
             res->addPredicateInPlace(p);
-        }
     }
     res->addVisitedInPlace(this->locs);
     return Simplified(res.release());
 }
 
 std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitByTypes(std::initializer_list<PredicateType> types) const {
-    auto left = SelfPtr(new Self());
-    auto right = SelfPtr(new Self());
+    auto yes = SelfPtr(new Self{});
+    auto no = SelfPtr(new Self{});
     for (auto& p : data) {
         if (std::any_of(types.begin(), types.end(),
-            [&p](const PredicateType& type) { return p->getType() == type; })) {
-            left->addPredicateInPlace(p);
-        } else {
-            right->addPredicateInPlace(p);
-        }
+            [&](const PredicateType& type) { return p->getType() == type; }
+        )) yes->addPredicateInPlace(p);
+        else no->addPredicateInPlace(p);
     }
-    left->addVisitedInPlace(this->locs);
-    right->addVisitedInPlace(this->locs);
-    return std::make_pair(Simplified(left.release()), Simplified(right.release()));
+    yes->addVisitedInPlace(this->locs);
+    no->addVisitedInPlace(this->locs);
+    return std::make_pair(Simplified(yes.release()), Simplified(no.release()));
 }
 
 PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr base) const {
     if (*this == *base) {
-        return Simplified(new Self());
+        return Simplified(new Self{});
     }
     return nullptr;
 }
