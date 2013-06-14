@@ -19,7 +19,7 @@ class AssumeAnnotation: public LogicAnnotation {
 public:
     AssumeAnnotation(const Locus& locus, Term::Ptr term):
         LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
-    virtual ~AssumeAnnotation(){}
+    virtual ~AssumeAnnotation() {}
 
     static bool classof(const Annotation* a) {
         if (auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {

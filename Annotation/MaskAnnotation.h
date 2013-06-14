@@ -45,7 +45,7 @@ public:
     }
 
     static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
-        return Annotation::Ptr(new self(locus, terms));
+        return Annotation::Ptr{ new self(locus, terms) };
     }
 };
 

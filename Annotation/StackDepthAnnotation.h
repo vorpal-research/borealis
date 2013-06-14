@@ -37,8 +37,8 @@ public:
 
     static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
         if (auto* depth_p = llvm::dyn_cast<OpaqueIntConstantTerm>(terms.front().get())) {
-            return Annotation::Ptr(new self(locus, depth_p->getValue()));
-        } else return Annotation::Ptr();
+            return Annotation::Ptr{ new self(locus, depth_p->getValue()) };
+        } else return Annotation::Ptr{};
     }
 };
 

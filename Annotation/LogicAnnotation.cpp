@@ -21,7 +21,7 @@ LogicAnnotation::LogicAnnotation(
 LogicAnnotation::~LogicAnnotation() {}
 
 #include "Util/macros.h"
-Annotation::Ptr LogicAnnotation::clone(Term::Ptr) const{
+Annotation::Ptr LogicAnnotation::clone(Term::Ptr) const {
     BYE_BYE(Annotation::Ptr, "Not implemented");
 }
 #include "Util/unmacros.h"

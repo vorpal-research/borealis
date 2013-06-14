@@ -15,7 +15,6 @@
 
 #include "Codegen/llvm.h"
 #include "Term/TermFactory.h"
-#include "Util/locations.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
@@ -27,6 +26,7 @@ private:
 
 protected:
     typedef const char* const keyword_t;
+
     borealis::id_t annotation_type_id;
     keyword_t keyword;
     Locus locus;
@@ -48,8 +48,8 @@ public:
                 " at " + util::toString(locus);
     }
 
-    const Locus& getLocus() const { return locus; }
     keyword_t getKeyword() const { return keyword; }
+    const Locus& getLocus() const { return locus; }
 
     static bool classof(const Annotation*) {
         return true;
@@ -57,14 +57,14 @@ public:
 
     static const Annotation::Ptr fromIntrinsic(const llvm::CallInst& CI) {
         return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")))
-                ->shared_from_this();
+               ->shared_from_this();
     }
 };
 
 template<class Streamer>
-Streamer& operator<<(Streamer& str, const Annotation& a) {
+Streamer& operator<<(Streamer& str, Annotation::Ptr a) {
     // this is generally fucked up
-    return static_cast<Streamer&>(str << a.toString());
+    return static_cast<Streamer&>(str << a->toString());
 }
 
 } /* namespace borealis */

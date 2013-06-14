@@ -17,14 +17,14 @@ class LogicAnnotation: public Annotation {
 
 protected:
     borealis::id_t logic_annotation_type_id;
-    borealis::Term::Ptr term;
+    Term::Ptr term;
 
 public:
     LogicAnnotation(
             id_t logic_annotation_type_id,
             const Locus& locus,
             keyword_t keyword,
-            borealis::Term::Ptr term);
+            Term::Ptr term);
     virtual ~LogicAnnotation() = 0;
 
     Term::Ptr getTerm() const { return term; }

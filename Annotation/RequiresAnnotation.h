@@ -19,7 +19,7 @@ class RequiresAnnotation: public LogicAnnotation {
 public:
     RequiresAnnotation(const Locus& locus, Term::Ptr term):
         LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
-    virtual ~RequiresAnnotation(){}
+    virtual ~RequiresAnnotation() {}
 
     static bool classof(const Annotation* a) {
         if (auto* la = llvm::dyn_cast_or_null<LogicAnnotation>(a)) {

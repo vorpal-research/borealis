@@ -5,13 +5,11 @@
  *      Author: belyaev
  */
 
-#include "Anno/anno.h"
-#include "Term/Term.h"
-#include "Term/TermFactory.h"
-
 #include "Annotation/AnnotationCast.h"
-
 #include "Annotation/Annotation.def"
+#include "Anno/anno.h"
+#include "Term/TermFactory.h"
+#include "Term/Term.h"
 
 #include "Util/macros.h"
 
@@ -101,7 +99,7 @@ class TermConstructor : public anno::empty_visitor {
 
 public:
 
-    TermConstructor(TermFactory* tf): tf(tf), term(nullptr) {}
+    TermConstructor(TermFactory* tf): tf(tf) {}
 
     virtual void onDoubleConstant(double c) {
         term = tf->getOpaqueConstantTerm(c);
@@ -161,7 +159,7 @@ Annotation::Ptr borealis::fromParseResult(
     std::vector<Term::Ptr> terms;
     terms.reserve(cmd.args_.size());
 
-    for (auto& arg : cmd.args_) {
+    for (const auto& arg : cmd.args_) {
         TermConstructor tc(tf);
         arg->accept(tc);
         terms.push_back(tc.getTerm());

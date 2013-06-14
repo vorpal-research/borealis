@@ -80,7 +80,7 @@ void AnnotationMaterializer::failWith(const std::string& message) {
 
     std::ostringstream str;
     str << "Error while processing annotation: "
-        << *pimpl->A
+        << pimpl->A->toString()
         << "; scope "
         << pimpl->nc
         << ": "

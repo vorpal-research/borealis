@@ -40,7 +40,7 @@ bool AnnotatorPass::runOnModule(llvm::Module& M) {
 
 void AnnotatorPass::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& An : annotations) {
-        infos() << *An << endl;
+        infos() << An << endl;
     }
 }
 

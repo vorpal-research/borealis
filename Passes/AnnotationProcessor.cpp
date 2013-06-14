@@ -40,7 +40,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 
         if(!isa<LogicAnnotation>(anno)) continue;
 
-        Constant* data = ConstantDataArray::getString(M.getContext(), toString(*anno));
+        Constant* data = ConstantDataArray::getString(M.getContext(), toString(anno));
 
         Function* anno_intr = im.createIntrinsic(
                 function_type::INTRINSIC_ANNOTATION,
@@ -108,7 +108,7 @@ void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const
     for (auto& I : view(begin_end_pair(*M)).flatten().flatten()) {
         if (auto* CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
             if (IM.getIntrinsicType(*CI) == function_type::INTRINSIC_ANNOTATION) {
-                infos() << *Annotation::fromIntrinsic(*CI) << endl;
+                infos() << Annotation::fromIntrinsic(*CI) << endl;
             }
         }
     }
