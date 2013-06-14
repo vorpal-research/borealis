@@ -11,24 +11,24 @@ namespace borealis {
 
 class AnnotationMaterializer::AnnotationMaterializerImpl {
 public:
-    const borealis::LogicAnnotation* A;
-    borealis::TermFactory* TF;
-    borealis::MetaInfoTrackerPass* MI;
+    const LogicAnnotation* A;
+    TermFactory* TF;
+    MetaInfoTrackerPass* MI;
     NameContext nc;
 };
 
 AnnotationMaterializer::AnnotationMaterializer(
-        const borealis::LogicAnnotation& A,
-        borealis::TermFactory* TF,
-        borealis::MetaInfoTrackerPass* MI) :
-                pimpl(
-                        new AnnotationMaterializerImpl {
-                            &A,
-                            TF,
-                            MI,
-                            NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
-                        }
-                ) {
+        const LogicAnnotation& A,
+        TermFactory* TF,
+        MetaInfoTrackerPass* MI) :
+            pimpl(
+                    new AnnotationMaterializerImpl {
+                        &A,
+                        TF,
+                        MI,
+                        NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
+                    }
+            ) {
     if (llvm::isa<EnsuresAnnotation>(A) ||
             llvm::isa<RequiresAnnotation>(A) ||
             llvm::isa<AssignsAnnotation>(A)) {

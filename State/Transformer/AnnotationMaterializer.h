@@ -11,26 +11,25 @@
 #include <sstream>
 
 #include "Annotation/Annotation.def"
-
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/Transformer/Transformer.hpp"
 #include "Term/NameContext.h"
 #include "Term/TermFactory.h"
-#include "Util/locations.h"
+#include "Util/util.h"
 
 namespace borealis {
 
-class AnnotationMaterializer: public borealis::Transformer<AnnotationMaterializer> {
+class AnnotationMaterializer : public borealis::Transformer<AnnotationMaterializer> {
     class AnnotationMaterializerImpl;
     AnnotationMaterializerImpl* pimpl;
 
 public:
 
     AnnotationMaterializer(
-            const borealis::LogicAnnotation& A,
-            borealis::TermFactory* TF,
-            borealis::MetaInfoTrackerPass* MI);
+            const LogicAnnotation& A,
+            TermFactory* TF,
+            MetaInfoTrackerPass* MI);
     ~AnnotationMaterializer();
 
     MetaInfoTrackerPass::ValueDescriptor forName(const std::string& name) const;

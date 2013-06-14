@@ -203,33 +203,25 @@ private:
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ArithType opcode, Lhv lhv, Rhv rhv,
-            typename std::enable_if<
-                !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value
-            >::type* = nullptr) {
+            GUARDED(void*, !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value) = nullptr) {
         return TF_->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ConditionType opcode, Lhv lhv, Rhv rhv,
-            typename std::enable_if<
-                !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value
-            >::type* = nullptr) {
+            GUARDED(void*, !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value) = nullptr) {
         return TF_->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ArithType opcode, Lhv lhv, Rhv rhv,
-            typename std::enable_if<
-                std::is_floating_point<Lhv>::value || std::is_floating_point<Rhv>::value
-            >::type* = nullptr) {
+            GUARDED(void*, std::is_floating_point<Lhv>::value || std::is_floating_point<Rhv>::value) = nullptr) {
         return TF_->getOpaqueConstantTerm(propagateDouble(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ConditionType opcode, Lhv lhv, Rhv rhv,
-            typename std::enable_if<
-                std::is_floating_point<Lhv>::value || std::is_floating_point<Rhv>::value
-            >::type* = nullptr) {
+            GUARDED(void*, std::is_floating_point<Lhv>::value || std::is_floating_point<Rhv>::value) = nullptr) {
         return TF_->getOpaqueConstantTerm(propagateDouble(opcode, lhv, rhv));
     }
 };

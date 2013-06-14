@@ -30,15 +30,13 @@ public:
     CallSiteInitializer(
             llvm::CallInst& I,
             TermFactory* TF) {
-        using llvm::Argument;
-        using llvm::Value;
 
         auto& formalArgs = I.getCalledFunction()->getArgumentList();
         int argIdx = 0;
 
         this->returnValue = &I;
-        for (Argument& formal : formalArgs) {
-            Value* actual = I.getArgOperand(argIdx++);
+        for (auto& formal : formalArgs) {
+            auto* actual = I.getArgOperand(argIdx++);
             callSiteArguments[&formal] = actual;
         }
 
@@ -46,14 +44,12 @@ public:
     }
 
     Term::Ptr transformArgumentTerm(ArgumentTermPtr t) {
-        using llvm::Argument;
-        using llvm::Value;
+        auto* formal = t->getArgument();
 
-        Argument* formal = t->getArgument();
+        ASSERT(callSiteArguments.count(formal) > 0,
+               "Cannot find an actual function argument at call site");
 
-        ASSERT(callSiteArguments.count(formal) > 0, "Cannot find an actual function argument at call site");
-
-        Value* actual = callSiteArguments[formal];
+        auto* actual = callSiteArguments[formal];
 
         return TF->getValueTerm(actual);
     }
