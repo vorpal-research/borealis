@@ -89,10 +89,12 @@ public:
     virtual void onBuiltin(const std::string&);
     virtual void onMask(const std::string&);
 
-    virtual void onBinary(bin_opcode op,
+    virtual void onBinary(
+            bin_opcode op,
             const prod_t&,
             const prod_t&);
-    virtual void onUnary(un_opcode op,
+    virtual void onUnary(
+            un_opcode op,
             const prod_t&);
 };
 
@@ -190,29 +192,29 @@ public:
     printingVisitor(std::ostream& ost);
 };
 
-std::ostream& operator<<( std::ostream& ost, const production& prod);
+std::ostream& operator<<(std::ostream& ost, const production& prod);
 
-prod_t operator+(prod_t&& op0, prod_t&& op1);
-prod_t operator-(prod_t&& op0, prod_t&& op1);
-prod_t operator*(prod_t&& op0, prod_t&& op1);
-prod_t operator/(prod_t&& op0, prod_t&& op1);
-prod_t operator%(prod_t&& op0, prod_t&& op1);
+prod_t operator+ (prod_t&& op0, prod_t&& op1);
+prod_t operator- (prod_t&& op0, prod_t&& op1);
+prod_t operator* (prod_t&& op0, prod_t&& op1);
+prod_t operator/ (prod_t&& op0, prod_t&& op1);
+prod_t operator% (prod_t&& op0, prod_t&& op1);
 prod_t operator==(prod_t&& op0, prod_t&& op1);
 prod_t operator!=(prod_t&& op0, prod_t&& op1);
-prod_t operator>(prod_t&& op0, prod_t&& op1);
-prod_t operator<(prod_t&& op0, prod_t&& op1);
+prod_t operator> (prod_t&& op0, prod_t&& op1);
+prod_t operator< (prod_t&& op0, prod_t&& op1);
 prod_t operator>=(prod_t&& op0, prod_t&& op1);
 prod_t operator<=(prod_t&& op0, prod_t&& op1);
 prod_t operator&&(prod_t&& op0, prod_t&& op1);
 prod_t operator||(prod_t&& op0, prod_t&& op1);
-prod_t operator&(prod_t&& op0, prod_t&& op1);
-prod_t operator|(prod_t&& op0, prod_t&& op1);
-prod_t operator^(prod_t&& op0, prod_t&& op1);
+prod_t operator& (prod_t&& op0, prod_t&& op1);
+prod_t operator| (prod_t&& op0, prod_t&& op1);
+prod_t operator^ (prod_t&& op0, prod_t&& op1);
 prod_t operator<<(prod_t&& op0, prod_t&& op1);
 prod_t operator>>(prod_t&& op0, prod_t&& op1);
-prod_t deref(prod_t&& op0);
-prod_t operator!(prod_t&& op0);
-prod_t operator-(prod_t&& op0);
-prod_t operator~(prod_t&& op0);
+prod_t deref     (prod_t&& op0);
+prod_t operator! (prod_t&& op0);
+prod_t operator- (prod_t&& op0);
+prod_t operator~ (prod_t&& op0);
 
 #endif // PRODUCTION_H_

@@ -5,24 +5,25 @@
  *      Author: belyaev
  */
 
-#include "production.h"
+#include "Anno/production.h"
 
 #include <ostream>
+
 using std::boolalpha;
 using std::make_shared;
 using std::ostream;
 
-productionVisitor::~productionVisitor(){};
-void productionVisitor::onDoubleConstant(double){ unimplement(); }
-void productionVisitor::onIntConstant(int){ unimplement(); }
-void productionVisitor::onBoolConstant(bool){ unimplement(); }
+productionVisitor::~productionVisitor() {};
+void productionVisitor::onDoubleConstant(double) { unimplement(); }
+void productionVisitor::onIntConstant(int) { unimplement(); }
+void productionVisitor::onBoolConstant(bool) { unimplement(); }
 
-void productionVisitor::onVariable(const std::string&){ unimplement(); }
-void productionVisitor::onBuiltin(const std::string&){ unimplement(); }
-void productionVisitor::onMask(const std::string&){ unimplement(); }
+void productionVisitor::onVariable(const std::string&) { unimplement(); }
+void productionVisitor::onBuiltin(const std::string&) { unimplement(); }
+void productionVisitor::onMask(const std::string&) { unimplement(); }
 
-void productionVisitor::onBinary(bin_opcode, const prod_t&, const prod_t&){ unimplement(); }
-void productionVisitor::onUnary(un_opcode, const prod_t&){ unimplement(); }
+void productionVisitor::onBinary(bin_opcode, const prod_t&, const prod_t&) { unimplement(); }
+void productionVisitor::onUnary(un_opcode, const prod_t&) { unimplement(); }
 
 void production::accept(productionVisitor&) const { unimplement(); }
 production::~production() {};
@@ -43,29 +44,29 @@ void boolConstant::accept(productionVisitor& pv) const {
 }
 
 builtin::builtin(const std::string& vname) : vname_(vname) {}
-builtin::builtin(std::string&& vname): vname_(vname) {};
+builtin::builtin(std::string&& vname) : vname_(std::move(vname)) {};
 void builtin::accept(productionVisitor& pv) const {
     pv.onBuiltin(vname_);
 };
 
 variable::variable(const std::string& vname) : vname_(vname) {}
-variable::variable(std::string&& vname): vname_(vname) {};
+variable::variable(std::string&& vname) : vname_(std::move(vname)) {};
 void variable::accept(productionVisitor& pv) const {
     pv.onVariable(vname_);
 };
 
 mask::mask(const std::string& mask) : mask_(mask) {}
-mask::mask(std::string&& mask): mask_(mask) {};
+mask::mask(std::string&& mask) : mask_(std::move(mask)) {};
 void mask::accept(productionVisitor& pv) const {
     pv.onMask(mask_);
 };
 
-binary::binary(bin_opcode code, prod_t&& op0, prod_t&& op1): code_(code), op0_(std::move(op0)), op1_(std::move(op1)){};
+binary::binary(bin_opcode code, prod_t&& op0, prod_t&& op1) : code_(code), op0_(std::move(op0)), op1_(std::move(op1)) {};
 void binary::accept(productionVisitor& pv) const {
     pv.onBinary(code_, op0_, op1_);
 };
 
-unary::unary(un_opcode code, prod_t&& op): code_(code), op_(std::move(op)){};
+unary::unary(un_opcode code, prod_t&& op) : code_(code), op_(std::move(op)) {};
 void unary::accept(productionVisitor& pv) const {
     pv.onUnary(code_, op_);
 };
@@ -86,7 +87,7 @@ prod_t productionFactory::bind(const char* v) {
     return createVar(v);
 }
 prod_t productionFactory::bind(std::string v) {
-    if(v.size() > 0 && v[0] == '\\') return createBuiltin(v.substr(1, std::string::npos));
+    if (v.size() > 0 && v[0] == '\\') return createBuiltin(v.substr(1, std::string::npos));
     else return createVar(v);
 }
 

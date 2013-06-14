@@ -5,18 +5,14 @@
  *      Author: belyaev
  */
 
-#include "anno.h"
-#include "anno.hpp"
+#include "Anno/anno.h"
+#include "Anno/anno.hpp"
 
 namespace borealis {
 namespace anno {
 
-using anno::calculator::parse_command;
-using anno::command;
-using anno::location;
-
 std::vector<command> parse(const std::string& v) {
-    return parse_command<location>(v);
+    return calculator::parse_command<location>(v);
 }
 
 } // namespace anno

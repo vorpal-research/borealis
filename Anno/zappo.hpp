@@ -8,13 +8,16 @@
 #ifndef ZAPPO_HPP_
 #define ZAPPO_HPP_
 
-#include "anno.h"
+#include "Anno/anno.h"
 
 namespace borealis {
 namespace zappo {
 
-template<class SS> struct static_string2pegtl_string;
-template<char ...SS> struct static_string2pegtl_string<util::static_string<SS...>> {
+template<class SS>
+struct static_string2pegtl_string;
+
+template<char ...SS>
+struct static_string2pegtl_string<util::static_string<SS...>> {
     typedef pegtl::string<SS...> type;
 };
 
@@ -27,7 +30,7 @@ struct tag {
     typedef T type;
 
     template<class Padder>
-    tag<pegtl::pad<T, Padder>> pad(tag<Padder>);
+    tag< pegtl::pad<T, Padder> > pad(tag<Padder>);
 };
 
 template<class T>
@@ -41,8 +44,7 @@ template<class T, class U> tag<pegtl::seq     <T, U>> operator >> (tag<T>, tag<U
 template<class T, class U> tag<pegtl::ifmust  <T, U>> operator >= (tag<T>, tag<U>);
 template<class T, class U> tag<pegtl::ifapply <T, U>> operator &  (tag<T>, tag<U>);
 
-
-}// namespace zappo
-}// namespace borealis
+} // namespace zappo
+} // namespace borealis
 
 #endif /* ZAPPO_HPP_ */

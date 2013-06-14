@@ -17,6 +17,7 @@
 #undef G
 #undef S
 #undef GRAMMAR
+#undef LITERALGRAMMAR
 #undef CH
 #undef RANGE
 

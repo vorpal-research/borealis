@@ -17,8 +17,8 @@
 #include <string>
 #include <utility>
 
-namespace borealis{
-namespace anno{
+namespace borealis {
+namespace anno {
 
 template<class T> T some();
 
@@ -30,8 +30,7 @@ std::string streamify(Callable fun){
 }
 
 template< typename Location = pegtl::ascii_location >
-class calc_exception
- : public std::exception {
+class calc_exception : public std::exception {
      typedef std::list<std::pair<Location, std::string>> rule_stack;
      Location loc_;
      // using shared ptrs for satisfying
@@ -42,10 +41,10 @@ public:
      // this is (logically) a move constructor, but who cares
      calc_exception(const calc_exception&) = default;
 
-     explicit calc_exception(const Location& loc): loc_(loc){
+     explicit calc_exception(const Location& loc) : loc_(loc){
          str_rep = std::make_shared<std::ostringstream>();
          rule_stack_trace = std::make_shared<rule_stack>();
-         *str_rep << loc <<std::endl;
+         *str_rep << loc << std::endl;
      }
 
      virtual const char* what() const throw() {
@@ -57,7 +56,7 @@ public:
      }
 
      calc_exception& push_rule(const Location& loc, const std::string& rule_rep) {
-         rule_stack_trace->push_back(std::make_pair(loc,rule_rep));
+         rule_stack_trace->push_back({loc,rule_rep});
          *str_rep << loc << ":" << rule_rep << std::endl;
          return *this;
      }
@@ -77,8 +76,8 @@ struct anno_guard : private pegtl::nocopy< anno_guard< Rule, Input, Debug > >
 {
     typedef typename Input::location_type Location;
 
-    anno_guard( Location && w, pegtl::counter & t )
-    : m_location( std::move( w ) ),
+    anno_guard( Location&& w, pegtl::counter& t )
+    : m_location( std::move(w) ),
       m_counter( t ) {
         m_counter.enter();
     }
@@ -87,50 +86,50 @@ struct anno_guard : private pegtl::nocopy< anno_guard< Rule, Input, Debug > >
         m_counter.leave();
     }
 
-    bool operator() (const bool result, const bool) const {
+    bool operator()(const bool result, const bool) const {
         return result;
     }
 
-    const Location & location() const {
+    const Location& location() const {
         return m_location;
     }
 
 protected:
     const Location m_location;
-    pegtl::counter & m_counter;
+    pegtl::counter& m_counter;
 };
 
-struct anno_debug: public pegtl::debug_base {
+struct anno_debug : public pegtl::debug_base {
     template<typename TopRule>
-    explicit anno_debug(const pegtl::tag<TopRule> & help) :
-        unrecover(false), m_printer(help)  {
-    }
+    explicit anno_debug(const pegtl::tag<TopRule>& help) :
+        unrecover(false), m_printer(help) {}
 
     std::vector<std::string> trace;
     bool unrecover;
 
-    template<bool Must, typename Rule, typename Input, typename ... States>
-    bool match(Input & in, States && ... st) {
+    template<bool Must, typename Rule, typename Input, typename ...States>
+    bool match(Input& in, States&&... st) {
         const anno_guard< Rule, Input, anno_debug > d( in.location(), m_counter );
         bool res;
 
-        if(!unrecover) {
-            res = d( Rule::template match< Must >( in, * this, std::forward< States >( st ) ... ), Must );
+        if (!unrecover) {
+            res = d( Rule::template match< Must >( in, *this, std::forward< States >( st )... ), Must );
         } else return false;
 
-        if(unrecover) {
-            trace.push_back(streamify([&](std::ostream& oss){
-                    oss << d.location() << ":"
-                        << m_counter.nest() << ": expected "
-                        << m_printer.template rule< Rule >();
+        if (unrecover) {
+            trace.push_back(streamify([&](std::ostream& oss) {
+                oss << d.location() << ":"
+                    << m_counter.nest() << ": expected "
+                    << m_printer.template rule< Rule >();
             }));
             return false;
         }
-        if(!res && Must) {
-            trace.push_back(streamify([&](std::ostream& oss){
-                    oss << d.location() << ":"
-                        << m_counter.nest() << ": expected "
-                        << m_printer.template rule< Rule >();
+
+        if (!res && Must) {
+            trace.push_back(streamify([&](std::ostream& oss) {
+                oss << d.location() << ":"
+                    << m_counter.nest() << ": expected "
+                    << m_printer.template rule< Rule >();
             }));
             return false;
         } else {
@@ -143,32 +142,32 @@ protected:
     pegtl::printer m_printer;
 };
 
-template< typename TopRule, typename Input, typename ... States >
+template< typename TopRule, typename Input, typename ...States >
 struct calc_parser {
     bool success;
     std::vector<std::string> str;
 
-    calc_parser( Input & in, States && ... st ) {
+    calc_parser( Input& in, States&&... st ) {
         anno_debug de( pegtl::tag< TopRule >( 0 ) );
 
-        success = de.template match< true, TopRule >( in, std::forward< States >( st ) ... );
+        success = de.template match< true, TopRule >( in, std::forward< States >( st )... );
 
-        if(!success) {
+        if (!success) {
             str = std::move(de.trace);
         }
     }
 };
 
-template< typename TopRule, typename Input, typename ... States >
-calc_parser<TopRule, Input, States...> make_calc_parser( Input & in, States && ... st ) {
-    return calc_parser<TopRule, Input, States...>(in, std::forward(st)...);
+template< typename TopRule, typename Input, typename ...States >
+calc_parser<TopRule, Input, States...> make_calc_parser( Input& in, States&&... st ) {
+    return calc_parser<TopRule, Input, States...>(in, std::forward<States>(st)...);
 }
 
-template< typename TopRule, typename Location = pegtl::ascii_location, typename ... States >
+template< typename TopRule, typename Location = pegtl::ascii_location, typename ...States >
 calc_parser< TopRule, pegtl::string_input< Location >, States... >
-calc_parse_string( const std::string & string, States && ... st ) {
+calc_parse_string( const std::string& string, States&&... st ) {
    pegtl::string_input< Location > in( string );
-   calc_parser< TopRule, decltype(in), States... > cp( in, std::forward< States >( st ) ... );
+   calc_parser< TopRule, decltype(in), States... > cp(in, std::forward<States>(st)...);
    return cp;
 }
 
