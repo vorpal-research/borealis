@@ -6,13 +6,11 @@
  */
 
 #include "Logging/tracer.hpp"
+#include "Passes/PredicateAnalysis.def"
 #include "Passes/PredicateStateAnalysis/OneForOne.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "Util/util.h"
-
-// Hacky-hacky way to include all predicate analyses
-#include "Passes/PredicateAnalysis.def"
 
 namespace borealis {
 
@@ -48,9 +46,11 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
 #include "Passes/PredicateAnalysis.def"
 
     // Register globals in our predicate states
+    auto& globalList = F.getParent()->getGlobalList();
+
     std::vector<Term::Ptr> globals;
-    globals.reserve(F.getParent()->getGlobalList().size());
-    for (auto& g : F.getParent()->getGlobalList()) {
+    globals.reserve(globalList.size());
+    for (auto& g : globalList) {
         globals.push_back(TF->getValueTerm(&g));
     }
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
@@ -164,9 +164,7 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
             PredicateState::Ptr csiCallState = callState->filterByTypes(
                 { PredicateType::ENSURES, PredicateType::STATE }
             )->map(
-                [&csi](Predicate::Ptr p) {
-                    return csi.transform(p);
-                }
+                [&csi](Predicate::Ptr p) { return csi.transform(p); }
             );
 
             modifiedInState = (PSF * modifiedInState + csiCallState)();

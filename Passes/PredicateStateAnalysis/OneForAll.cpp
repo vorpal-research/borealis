@@ -8,14 +8,12 @@
 #include <llvm/Support/CFG.h>
 
 #include "Logging/tracer.hpp"
+#include "Passes/PredicateAnalysis.def"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "Util/graph.h"
 #include "Util/util.h"
-
-// Hacky-hacky way to include all predicate analyses
-#include "Passes/PredicateAnalysis.def"
 
 #include "Util/macros.h"
 
@@ -27,10 +25,9 @@ OneForAll::OneForAll(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 void OneForAll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
+    AUX<llvm::DominatorTree>::addRequired(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
-
-    AUX<llvm::DominatorTree>::addRequired(AU);
 
 #define HANDLE_ANALYSIS(CLASS) \
     AUX<CLASS>::addRequiredTransitive(AU);
@@ -54,9 +51,11 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 #include "Passes/PredicateAnalysis.def"
 
     // Register globals in our predicate states
+    auto& globalList = F.getParent()->getGlobalList();
+
     std::vector<Term::Ptr> globals;
-    globals.reserve(F.getParent()->getGlobalList().size());
-    for (auto& g : F.getParent()->getGlobalList()) {
+    globals.reserve(globalList.size());
+    for (auto& g : globalList) {
         globals.push_back(TF->getValueTerm(&g));
     }
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
@@ -135,9 +134,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
                 ->filterByTypes(
                     { PredicateType::ENSURES, PredicateType::STATE }
                 )->map(
-                    [&csi](Predicate::Ptr p) {
-                        return csi.transform(p);
-                    }
+                    [&csi](Predicate::Ptr p) { return csi.transform(p); }
                 );
 
             instructionState = (PSF * instructionState + csiCallState)();

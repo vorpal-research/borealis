@@ -9,7 +9,7 @@
 #define DEFECTINFO_H_
 
 #include "Util/json_traits.hpp"
-#include "Util/locations.h"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -65,7 +65,7 @@ struct json_traits<DefectType> {
 
     static optional_ptr_t fromJson(const Json::Value& json) {
         if (auto v = util::fromJson<std::string>(json)) {
-            return optional_ptr_t { new DefectType(DefectTypesByName.at(*v)) };
+            return optional_ptr_t{ new DefectType{ DefectTypesByName.at(*v) } };
         } else return nullptr;
     }
 };
