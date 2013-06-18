@@ -39,16 +39,27 @@ struct AUX<P, false> {
     static void addRequired(llvm::AnalysisUsage& AU) {
         AU.addRequired< P >();
     }
+
+    static void addPreserved(llvm::AnalysisUsage& AU) {
+        AU.addPreserved< P >();
+    }
 };
 
 template<class P>
 struct AUX<P, true> {
+
+    typedef PassModularizer<P> PP;
+
     static void addRequiredTransitive(llvm::AnalysisUsage& AU) {
-        AU.addRequiredTransitive< PassModularizer<P> >();
+        AU.addRequiredTransitive< PP >();
     }
 
     static void addRequired(llvm::AnalysisUsage& AU) {
-        AU.addRequired< PassModularizer<P> >();
+        AU.addRequired< PP >();
+    }
+
+    static void addPreserved(llvm::AnalysisUsage& AU) {
+        AU.addPreserved< PP >();
     }
 };
 

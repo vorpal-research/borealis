@@ -8,9 +8,6 @@
 #ifndef PHIINJECTIONPASS_H_
 #define PHIINJECTIONPASS_H_
 
-#include <llvm/ADT/DenseMap.h>
-#include <llvm/ADT/Statistic.h>
-#include <llvm/Analysis/DominanceFrontier.h>
 #include <llvm/Analysis/Dominators.h>
 #include <llvm/Constants.h>
 #include <llvm/Instructions.h>
@@ -21,39 +18,40 @@
 #include <tuple>
 #include <unordered_set>
 
-#include "origin_tracker.h"
 #include "Passes/ProxyFunctionPass.h"
+#include "Passes/PtrSSAPass/origin_tracker.h"
 #include "Passes/SlotTrackerPass.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 namespace ptrssa {
 
 class PhiInjectionPass :
     public ProxyFunctionPass,
+    public ShouldBeModularized,
     public origin_tracker {
-
-    typedef ProxyFunctionPass base;
 
 public:
 
     static char ID;
 
-    typedef std::unordered_map<std::pair<llvm::BasicBlock*, llvm::Value*>, llvm::PHINode*> phi_tracker;
+    typedef std::unordered_map<
+        std::pair<llvm::BasicBlock*, llvm::Value*>,
+        llvm::PHINode*
+    > phi_tracker;
 
-    PhiInjectionPass() : base(ID), DT_(nullptr), DF_(nullptr) {}
-    PhiInjectionPass(FunctionPass* del) : base(ID, del), DT_(nullptr), DF_(nullptr) {}
+    PhiInjectionPass() : ProxyFunctionPass(ID) {}
+    PhiInjectionPass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
-    void getAnalysisUsage(llvm::AnalysisUsage &AU) const;
-    bool runOnFunction(llvm::Function&);
+    virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+    virtual bool runOnFunction(llvm::Function& F) override;
     virtual ~PhiInjectionPass() {}
 
-    void propagateInstruction(llvm::Instruction& from, llvm::Instruction& to, phi_tracker&);
+    void propagateInstruction(llvm::Instruction& from, llvm::Instruction& to, phi_tracker& tracker);
 
 private:
 
-    // Variables always live
-    llvm::DominatorTree *DT_;
-    llvm::DominanceFrontier *DF_;
+    llvm::DominatorTree* DT_;
 };
 
 } // namespace ptrssa

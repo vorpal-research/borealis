@@ -9,6 +9,7 @@
 #define ORIGIN_TRACKER_H_
 
 #include <llvm/Value.h>
+
 #include <unordered_map>
 
 namespace borealis {
@@ -26,7 +27,7 @@ public:
 
     inline const value_resolver& getResolver() const { return origins; }
 
-    void mergeOriginInfoFrom(const origin_tracker& other) ;
+    void mergeOriginInfoFrom(const origin_tracker& other);
 
 protected:
     void setOrigin(value k, value v);

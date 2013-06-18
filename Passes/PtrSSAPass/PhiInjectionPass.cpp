@@ -5,85 +5,85 @@
  *      Author: belyaev
  */
 
-#include <llvm/ADT/ArrayRef.h>
 #include <llvm/Support/Casting.h>
-#include <llvm/Support/CFG.h>
 
 #include <set>
 #include <tuple>
 
 #include "Codegen/intrinsics.h"
-#include "PhiInjectionPass.h"
-#include "SLInjectionPass.h"
+#include "Passes/PtrSSAPass/PhiInjectionPass.h"
+#include "Passes/PtrSSAPass/SLInjectionPass.h"
 
 namespace borealis {
 namespace ptrssa {
 
-using namespace llvm;
-
-void PhiInjectionPass::getAnalysisUsage(AnalysisUsage &AU) const {
-    AU.addRequiredTransitive<DominatorTree>();
-    AU.addRequiredTransitive<SlotTrackerPass>();
-    AU.addPreserved<StoreLoadInjectionPass>();
+void PhiInjectionPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
+    AUX<llvm::DominatorTree>::addRequiredTransitive(AU);
+    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<StoreLoadInjectionPass>::addPreserved(AU);
 
     // This pass modifies the program, but not the CFG
     AU.setPreservesCFG();
 }
 
-static bool PhiContainsSource(PHINode* phi, BasicBlock* source) {
+static bool PhiContainsSource(llvm::PHINode* phi, llvm::BasicBlock* source) {
     return phi->getBasicBlockIndex(source) != -1;
 }
 
-void PhiInjectionPass::propagateInstruction(Instruction& from, Instruction& to, phi_tracker& track) {
+void PhiInjectionPass::propagateInstruction(llvm::Instruction& from, llvm::Instruction& to, phi_tracker& tracker) {
     using borealis::util::view;
 
     dbgs() << "Propagating |" << from << "| to |" << to << "|" << endl;
 
-    auto parent = from.getParent();
-    auto orig = getOriginOrSelf(&from);
+    auto* parent = from.getParent();
+    auto* orig = getOriginOrSelf(&from);
 
-    dbgs() << "Origin for them: |" << *orig << "| " << endl << endl;
+    dbgs() << "Origin for them: |" << *orig << "|" << endl;
 
-    for(auto succ : view(succ_begin(parent), succ_end(parent))){
+    for (auto* succ : view(succ_begin(parent), succ_end(parent))) {
         auto key = std::make_pair(succ, orig);
-        if(track.count(key) && PhiContainsSource(track.at(key), parent)) continue;
+        if (tracker.count(key) && PhiContainsSource(tracker.at(key), parent)) continue;
 
-        PHINode* phi = nullptr;
-        if(track.count(key)) {
-            phi = track.at(key);
+        llvm::PHINode* phi = nullptr;
+        if (tracker.count(key)) {
+            phi = tracker.at(key);
         } else {
             auto& BBnext = *succ;
 
             std::string name;
-            if(orig->hasName()) name = (orig->getName() + ".").str();
+            if (orig->hasName()) name = (orig->getName() + ".").str();
 
-            phi = PHINode::Create(from.getType(), 0, name, &BBnext.front());
+            phi = llvm::PHINode::Create(from.getType(), 0, name, &BBnext.front());
         }
         phi->addIncoming(&from, from.getParent());
 
-        track.insert(make_pair(key, phi));
+        tracker.insert({key, phi});
         setOrigin(phi, orig);
 
-        propagateInstruction(*phi, to, track);
+        propagateInstruction(*phi, to, tracker);
     }
 }
 
-bool PhiInjectionPass::runOnFunction(Function &F) {
-    DT_ = &getAnalysis<DominatorTree>();
+bool PhiInjectionPass::runOnFunction(llvm::Function& F) {
+    using namespace llvm;
+
+    DT_ = &GetAnalysis<llvm::DominatorTree>::doit(this, F);
 
     auto sli = getAnalysisIfAvailable<StoreLoadInjectionPass>();
-    if(origins.empty() && sli) mergeOriginInfoFrom(*sli);
+    if (origins.empty() && sli) mergeOriginInfoFrom(*sli);
 
-    phi_tracker track;
+    phi_tracker tracker;
     for (auto& BB : F) {
         for (auto& I : BB) {
             std::vector<User*> uses(I.use_begin(), I.use_end());
-            for (User* U : uses) {
-                if (auto IUse = dyn_cast<Instruction>(U) ) {
-                    if(IUse->getParent() != &BB && !isa<PHINode>(IUse)) {
-                        propagateInstruction(I, *IUse, track);
-                        auto key = std::make_pair(IUse->getParent(), getOriginOrSelf(&I));
-                        IUse->replaceUsesOfWith(&I, track.at(key));
+            for (auto* U : uses) {
+                if (auto* IUse = dyn_cast<Instruction>(U)) {
+                    if (IUse->getParent() != &BB && !isa<PHINode>(IUse)) {
+                        propagateInstruction(I, *IUse, tracker);
+                        IUse->replaceUsesOfWith(
+                                &I,
+                                tracker.at({IUse->getParent(), getOriginOrSelf(&I)})
+                        );
                     }
                 }
             }

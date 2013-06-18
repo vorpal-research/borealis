@@ -13,7 +13,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "Util/locations.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -42,7 +41,7 @@ public:
     void put(const Locus& loc, T val) {
         using borealis::util::removeFromMultimap;
 
-        if(t2l.count(val)) {
+        if (t2l.count(val)) {
             removeFromMultimap(l2t, loc, val);
         }
         t2l[val] = loc;
@@ -57,7 +56,7 @@ public:
         return t2l.count(val) > 0;
     }
 
-    const Locus& operator[] (T key) const {
+    const Locus& operator[](T key) const {
         return t2l.at(key);
     }
 
