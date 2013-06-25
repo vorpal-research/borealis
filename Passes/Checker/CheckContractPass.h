@@ -18,11 +18,12 @@
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"
+#include "Util/passes.hpp"
 
 namespace borealis {
 
 class CheckContractPass :
-        public borealis::ProxyFunctionPass,
+        public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<CheckContractPass>,
         public ShouldBeModularized {
 
@@ -37,17 +38,17 @@ public:
 #include "Util/unmacros.h"
 
     CheckContractPass();
-    CheckContractPass(llvm::Pass*);
-    virtual bool runOnFunction(llvm::Function& F);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+    CheckContractPass(llvm::Pass* pass);
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~CheckContractPass();
 
 private:
 
-    PredicateStateAnalysis* PSA;
-    MetaInfoTrackerPass* MI;
-    FunctionManager* FM;
     DefectManager* DM;
+    FunctionManager* FM;
+    MetaInfoTrackerPass* MI;
+    PredicateStateAnalysis* PSA;
 
     PredicateFactory::Ptr PF;
     PredicateStateFactory::Ptr PSF;

@@ -44,9 +44,9 @@ public:
 #include "Util/unmacros.h"
 
 	CheckNullDereferencePass();
-    CheckNullDereferencePass(llvm::Pass*);
-	virtual bool runOnFunction(llvm::Function& F);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
+    CheckNullDereferencePass(llvm::Pass* pass);
+	virtual bool runOnFunction(llvm::Function& F) override;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
 	virtual ~CheckNullDereferencePass();
 
 private:
@@ -56,8 +56,8 @@ private:
 	PredicateStateAnalysis* PSA;
     DetectNullPass* DNP;
 
-    DefectManager* defectManager;
-	SlotTracker* slotTracker;
+    DefectManager* DM;
+	SlotTracker* ST;
 
 	PredicateFactory::Ptr PF;
 	PredicateStateFactory::Ptr PSF;

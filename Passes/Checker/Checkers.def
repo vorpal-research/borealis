@@ -5,9 +5,9 @@
 #ifdef INCLUDE_MODE
 #undef INCLUDE_MODE
 
-#include "Passes/CheckNullDereferencePass.h"
-#include "Passes/CheckContractPass.h"
-#include "Passes/CheckUndefValuesPass.h"
+#include "Passes/Checker/CheckNullDereferencePass.h"
+#include "Passes/Checker/CheckContractPass.h"
+#include "Passes/Checker/CheckUndefValuesPass.h"
 
 #define HANDLE_CHECKER(CLASS)
 

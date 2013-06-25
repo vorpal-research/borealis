@@ -7,7 +7,7 @@
 
 #include <llvm/Support/InstVisitor.h>
 
-#include "Passes/CheckUndefValuesPass.h"
+#include "Passes/Checker/CheckUndefValuesPass.h"
 
 namespace borealis {
 
@@ -20,11 +20,10 @@ public:
     UndefInstVisitor(CheckUndefValuesPass* pass) : pass(pass) {}
 
     void visitInstruction(llvm::Instruction& I) {
-        using namespace llvm;
         using borealis::util::view;
 
-        for (Value* op : view(I.op_begin(), I.op_end())) {
-            if (isa<UndefValue>(op)) {
+        for (llvm::Value* op : view(I.op_begin(), I.op_end())) {
+            if (llvm::isa<llvm::UndefValue>(op)) {
                 pass->DM->addDefect(DefectType::NDF_01, &I);
                 break;
             }

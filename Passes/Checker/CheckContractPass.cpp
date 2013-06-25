@@ -9,11 +9,11 @@
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
-#include "Passes/CheckContractPass.h"
+#include "Passes/Checker/CheckContractPass.h"
 #include "Solver/Z3Solver.h"
+#include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
-#include "Util/passes.hpp"
 
 namespace borealis {
 
@@ -47,9 +47,7 @@ public:
 
         CallSiteInitializer csi(CI, pass->TF.get());
         auto instantiatedRequires = requires->map(
-            [&csi](Predicate::Ptr p) {
-                return csi.transform(p);
-            }
+            [&csi](Predicate::Ptr p) { return csi.transform(p); }
         );
 
         dbgs() << "Checking: " << CI << endl;
@@ -71,13 +69,14 @@ public:
         if (!state) return;
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
-            auto query =
-                pass->PSF->Basic() +
+            auto query = (
+                pass->PSF *
                 pass->PF->getEqualityPredicate(
                     LA->getTerm(),
                     pass->TF->getTrueTerm(),
                     predicateType(LA)
-                );
+                )
+            )();
 
             dbgs() << "Checking: " << CI << endl;
             dbgs() << "  Assert: " << endl << LA << endl;
@@ -141,9 +140,11 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     MI = &GetAnalysis<MetaInfoTrackerPass>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    SlotTracker* slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    auto* slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     PF = PredicateFactory::get(slotTracker);
     TF = TermFactory::get(slotTracker);
+
+    PSF = PredicateStateFactory::get();
 
     CallInstVisitor civ(this);
     civ.visit(F);

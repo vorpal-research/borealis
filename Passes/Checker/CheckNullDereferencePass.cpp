@@ -5,19 +5,17 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/BasicBlock.h>
-#include <llvm/Constants.h>
 #include <llvm/Support/InstVisitor.h>
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
-#include "Logging/logger.hpp"
-#include "Passes/CheckNullDereferencePass.h"
-#include "Passes/PredicateStateAnalysis.h"
+#include "Passes/Checker/CheckNullDereferencePass.h"
 #include "Solver/Z3Solver.h"
-#include "Util/passes.hpp"
+#include "State/PredicateStateBuilder.h"
 
 namespace borealis {
+
+////////////////////////////////////////////////////////////////////////////////
 
 class DerefInstVisitor : public llvm::InstVisitor<DerefInstVisitor> {
 
@@ -46,14 +44,14 @@ private:
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 class ValueInstVisitor :
     public llvm::InstVisitor<ValueInstVisitor>,
-    // this is by design!
+    // this is by design (i.e., sharing logging facilities)
     public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
 
 public:
-
-
 
     ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
 
@@ -104,12 +102,13 @@ public:
                << "  aliasing: " << why << endl
                << "  at: " << where << endl;
 
-        PredicateState::Ptr q =
-                pass->PSF->Basic() +
-                pass->PF->getInequalityPredicate(
-                    pass->TF->getValueTerm(&what),
-                    pass->TF->getNullPtrTerm()
-                );
+        PredicateState::Ptr q = (
+            pass->PSF *
+            pass->PF->getInequalityPredicate(
+                pass->TF->getValueTerm(&what),
+                pass->TF->getNullPtrTerm()
+            )
+        )();
 
         PredicateState::Ptr ps = pass->PSA->getInstructionState(&where);
 
@@ -137,7 +136,7 @@ public:
             llvm::Instruction& where,
             llvm::Value& /* what */,
             llvm::Value& /* from */) {
-        pass->defectManager->addDefect(DefectType::INI_03, &where);
+        pass->DM->addDefect(DefectType::INI_03, &where);
     }
 
 private:
@@ -146,15 +145,15 @@ private:
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 CheckNullDereferencePass::CheckNullDereferencePass() : ProxyFunctionPass(ID) {}
 CheckNullDereferencePass::CheckNullDereferencePass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    using namespace::llvm;
-
     AU.setPreservesAll();
 
-    AUX<AliasAnalysis>::addRequiredTransitive(AU);
+    AUX<llvm::AliasAnalysis>::addRequiredTransitive(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
     AUX<DetectNullPass>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
@@ -162,18 +161,17 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
-    using namespace::llvm;
 
-    AA = &GetAnalysis<AliasAnalysis>::doit(this, F);
+    AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
 
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
     DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
-    defectManager = &GetAnalysis<DefectManager>::doit(this, F);
-    slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    DM = &GetAnalysis<DefectManager>::doit(this, F);
+    ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
 
-    PF = PredicateFactory::get(slotTracker);
-    TF = TermFactory::get(slotTracker);
+    PF = PredicateFactory::get(ST);
+    TF = TermFactory::get(ST);
 
     PSF = PredicateStateFactory::get();
 

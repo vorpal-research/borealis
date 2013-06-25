@@ -17,7 +17,7 @@
 namespace borealis {
 
 class CheckUndefValuesPass :
-        public borealis::ProxyFunctionPass,
+        public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<CheckUndefValuesPass>,
         public ShouldBeModularized {
 
@@ -32,9 +32,9 @@ public:
 #include "Util/unmacros.h"
 
     CheckUndefValuesPass();
-    CheckUndefValuesPass(llvm::Pass*);
-    virtual bool runOnFunction(llvm::Function& F);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+    CheckUndefValuesPass(llvm::Pass* pass);
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~CheckUndefValuesPass();
 
 private:
