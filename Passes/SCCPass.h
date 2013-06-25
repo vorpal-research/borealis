@@ -23,8 +23,8 @@ public:
     typedef CallGraphSCC::value_type CallGraphSCCNode;
 
     SCCPass(char& ID);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual bool runOnModule(llvm::Module&);
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual bool runOnModule(llvm::Module&) override;
     virtual ~SCCPass();
 
     virtual bool runOnSCC(CallGraphSCC& SCC) = 0;

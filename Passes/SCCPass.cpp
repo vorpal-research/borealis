@@ -7,7 +7,7 @@
 
 #include <llvm/ADT/SCCIterator.h>
 
-#include "Passes/CheckNullDereferencePass.h"
+#include "Passes/Checker/CheckNullDereferencePass.h"
 #include "Passes/SCCPass.h"
 
 #include "Logging/logger.hpp"
@@ -25,11 +25,12 @@ void SCCPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool SCCPass::runOnModule(llvm::Module&) {
     using namespace llvm;
+    using borealis::util::view;
 
     bool changed = false;
 
     CallGraph* CG = &GetAnalysis<CallGraph>::doit(this);
-    for (CallGraphSCC& SCC : borealis::util::view(scc_begin(CG), scc_end(CG))) {
+    for (CallGraphSCC& SCC : view(scc_begin(CG), scc_end(CG))) {
         changed |= runOnSCC(SCC);
     }
 

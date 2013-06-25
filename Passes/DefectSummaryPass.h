@@ -10,25 +10,27 @@
 
 #include <llvm/Pass.h>
 
+#include "Logging/logger.hpp"
+
 namespace borealis {
 
 class DefectSummaryPass:
         public llvm::ModulePass,
-        public logging::ClassLevelLogging<DefectSummaryPass> {
+        public borealis::logging::ClassLevelLogging<DefectSummaryPass> {
 
 public:
+
     static char ID;
 
 #include "Util/macros.h"
     static constexpr auto loggerDomain() QUICK_RETURN("defect-summary")
 #include "Util/unmacros.h"
 
-    DefectSummaryPass(): llvm::ModulePass(ID) {};
+    DefectSummaryPass() : llvm::ModulePass(ID) {};
     virtual ~DefectSummaryPass() {};
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual bool runOnModule(llvm::Module&);
-    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual bool runOnModule(llvm::Module&) override;
 };
 
 } /* namespace borealis */
