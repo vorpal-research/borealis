@@ -13,8 +13,8 @@
 
 #include <unordered_map>
 
-#include "Passes/ProxyFunctionPass.h"
 #include "Passes/PtrSSAPass/origin_tracker.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
 namespace borealis {

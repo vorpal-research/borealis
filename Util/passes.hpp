@@ -12,8 +12,8 @@
 
 #include <type_traits>
 
-#include "Passes/PassModularizer.hpp"
-#include "Passes/ProxyFunctionPass.h"
+#include "Passes/Util/PassModularizer.hpp"
+#include "Passes/Util/ProxyFunctionPass.h"
 
 #include "Util/macros.h"
 

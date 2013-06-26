@@ -5,13 +5,11 @@
  *      Author: belyaev
  */
 
-#include <llvm/Pass.h>
-
-#include "Passes/ProxyFunctionPass.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 
 namespace borealis {
 
-ProxyFunctionPass::ProxyFunctionPass(char& ID, Pass* delegate):
+ProxyFunctionPass::ProxyFunctionPass(char& ID, Pass* delegate) :
         llvm::FunctionPass(ID), delegate(delegate) {};
 
 ProxyFunctionPass::~ProxyFunctionPass() {};

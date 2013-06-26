@@ -18,7 +18,7 @@
 #include "Passes/FunctionManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis.h"
-#include "Passes/ProxyFunctionPass.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"

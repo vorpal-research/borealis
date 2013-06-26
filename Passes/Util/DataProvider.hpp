@@ -8,10 +8,7 @@
 #ifndef DATAPROVIDER_HPP_
 #define DATAPROVIDER_HPP_
 
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/raw_ostream.h>
 
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
@@ -27,14 +24,16 @@ DataProvider<T>* provideAsPass(const T* value) {
 }
 
 template<class T>
-class DataProvider: public llvm::ImmutablePass {
+class DataProvider : public llvm::ImmutablePass {
+
     struct static_ {
         static_() {
-            static std::string Tname = borealis::util::toString(borealis::type_id<T>());
-            static std::string Passname = std::string("data-provider-") + Tname;
-            static std::string Passdesc = std::string("Provider of ") + Tname;
+            static std::string tname = borealis::util::toString(borealis::type_id<T>());
+            static std::string passname = std::string("data-provider-") + tname;
+            static std::string passdesc = std::string("Provider of ") + tname;
 
-            static llvm::RegisterPass< DataProvider<T> > X(Passname.c_str(), Passdesc.c_str(), false, false);
+            static llvm::RegisterPass< DataProvider<T> >
+            X(passname.c_str(), passdesc.c_str(), false, false);
         }
     };
 
@@ -48,8 +47,8 @@ public:
 
     static char ID;
 
-    DataProvider(): llvm::ImmutablePass(ID), value(nullptr) { enforce_static(st); }
-    DataProvider(const T* v): llvm::ImmutablePass(ID), value(v) { enforce_static(st); }
+    DataProvider() : llvm::ImmutablePass(ID) { enforce_static(st); }
+    DataProvider(const T* v) : llvm::ImmutablePass(ID), value(v) { enforce_static(st); }
 
     virtual void initializePass() {}
 

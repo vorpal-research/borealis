@@ -19,8 +19,8 @@
 #include "Anno/anno.h"
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
-#include "Passes/DataProvider.hpp"
 #include "Passes/SlotTrackerPass.h"
+#include "Passes/Util/DataProvider.hpp"
 
 namespace borealis {
 

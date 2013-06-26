@@ -14,7 +14,7 @@
 #include "Passes/DefectManager.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/MetaInfoTrackerPass.h"
-#include "Passes/ProxyFunctionPass.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"

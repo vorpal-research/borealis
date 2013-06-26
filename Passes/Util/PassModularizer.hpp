@@ -8,9 +8,7 @@
 #ifndef PASSMODULIZER_HPP_
 #define PASSMODULIZER_HPP_
 
-#include <llvm/Module.h>
 #include <llvm/Pass.h>
-#include <llvm/PassAnalysisSupport.h>
 
 #include <unordered_map>
 #include <utility>
@@ -22,9 +20,8 @@
 
 namespace borealis {
 
-// Should not be used explicitly
-// Use ShouldBeModularized marker trait from Util/passes.hpp instead
-//
+// Should not be used explicitly!
+// Use ShouldBeModularized marker trait from Util/passes.hpp instead.
 template<class SubPass>
 class PassModularizer : public SCCPass {
 
@@ -34,7 +31,7 @@ class PassModularizer : public SCCPass {
     subptr defaultPass;
 
     subptr createSubPass() {
-        return subptr(new SubPass(this));
+        return subptr{ new SubPass(this) };
     }
 
 public:

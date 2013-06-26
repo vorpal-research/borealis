@@ -13,7 +13,7 @@
 #include <llvm/Pass.h>
 
 #include "Codegen/VarInfoContainer.h"
-#include "Passes/DataProvider.hpp"
+#include "Passes/Util/DataProvider.hpp"
 #include "Util/key_ptr.hpp"
 #include "Util/option.hpp"
 

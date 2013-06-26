@@ -12,8 +12,8 @@
 
 #include "Codegen/llvm.h"
 #include "Passes/Checker/Checkers.def"
-#include "Passes/DataProvider.hpp"
 #include "Passes/DefectSummaryPass.h"
+#include "Passes/Util/DataProvider.hpp"
 #include "Util/json.hpp"
 #include "Util/passes.hpp"
 

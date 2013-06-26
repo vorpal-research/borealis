@@ -21,7 +21,7 @@
 #include "PtrSSAPass/PhiInjectionPass.h"
 #include "PtrSSAPass/SLInjectionPass.h"
 
-#include "AggregateFunctionPass.hpp"
+#include "Passes/Util/AggregateFunctionPass.hpp"
 
 namespace borealis {
 

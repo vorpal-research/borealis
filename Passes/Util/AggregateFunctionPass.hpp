@@ -16,15 +16,15 @@
 
 namespace borealis {
 
-// This is purely a base class.
-// Will not work as an actual pass.
+// This is a purely base class.
+// Will not work as an actual pass. Ever.
 // Handling the usual pass routines is a clear derived classes' responsibility.
-// Thanx.
+// 10x.
 
 template<class ...Passes>
-class AggregateFunctionPass: public llvm::FunctionPass {
+class AggregateFunctionPass : public llvm::FunctionPass {
 
-    std::array< FunctionPass*, (sizeof...(Passes)) > children;
+    std::array< FunctionPass*, sizeof...(Passes) > children;
 
 public:
 
@@ -40,35 +40,39 @@ public:
     }
 
     virtual bool doInitialization(llvm::Module& M) {
-        for (FunctionPass* child : children) {
-            child->doInitialization(M);
+        bool changed = false;
+        for (auto* child : children) {
+            changed |= child->doInitialization(M);
         }
-        return false;
+        return changed;
     }
 
     virtual bool doFinalization(llvm::Module& M) {
         using borealis::util::reverse;
-        for (FunctionPass* child : reverse(children)) {
-            child->doFinalization(M);
+
+        bool changed = false;
+        for (auto* child : reverse(children)) {
+            changed |= child->doFinalization(M);
         }
-        return false;
+        return changed;
     }
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-        for (FunctionPass* child : children) {
+        for (auto* child : children) {
             child->getAnalysisUsage(AU);
         }
     }
 
     virtual bool runOnFunction(llvm::Function& F) {
-        for (FunctionPass* child : children) {
-            child->runOnFunction(F);
+        bool changed = false;
+        for (auto* child : children) {
+            changed |= child->runOnFunction(F);
         }
-        return false;
+        return changed;
     }
 
     virtual ~AggregateFunctionPass() {
-        for (FunctionPass* child : children) {
+        for (auto* child : children) {
             delete child;
         }
     }

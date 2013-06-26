@@ -18,7 +18,7 @@
 #include <tuple>
 #include <utility>
 
-#include "Passes/ProxyFunctionPass.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 

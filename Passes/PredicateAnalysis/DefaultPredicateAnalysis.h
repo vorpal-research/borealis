@@ -12,7 +12,7 @@
 #include <llvm/Target/TargetData.h>
 
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
-#include "Passes/ProxyFunctionPass.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"

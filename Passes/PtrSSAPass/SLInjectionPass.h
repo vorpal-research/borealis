@@ -11,8 +11,8 @@
 #include <llvm/Analysis/Dominators.h>
 #include <llvm/Pass.h>
 
-#include "Passes/ProxyFunctionPass.h"
 #include "Passes/PtrSSAPass/origin_tracker.h"
+#include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
