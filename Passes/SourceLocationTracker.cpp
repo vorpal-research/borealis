@@ -7,9 +7,9 @@
 
 #include <llvm/ADT/DepthFirstIterator.h>
 
-#include "Logging/tracer.hpp"
 #include "Passes/SourceLocationTracker.h"
 #include "Util/passes.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -28,7 +28,8 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
         if (!diDesc.isSubprogram()) continue;
 
         DISubprogram subProg(mdnode);
-        valueDebugInfo.put(Locus(subProg.getFilename().str(), subProg.getLineNumber(), 0U), subProg.getFunction());
+        if (subProg.getFunction())
+            valueDebugInfo.put(Locus(subProg.getFilename().str(), subProg.getLineNumber(), 0U), subProg.getFunction());
     }
 
     for (auto* mdnode : view(dif.global_variable_begin(), dif.global_variable_end())) {
@@ -36,29 +37,28 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
         if (!diDesc.isGlobalVariable()) continue;
 
         DIGlobalVariable glob(mdnode);
-        if (glob.getGlobal()) valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
+        if (glob.getGlobal())
+            valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
     }
 
 
-    for (auto& Inst : viewContainer(M).flatten().flatten()) {
-        Value* func = Inst.getParent()->getParent();
+    for (auto& I : viewContainer(M).flatten().flatten()) {
+        Value* func = I.getParent()->getParent();
         if (valueDebugInfo.contains(func)) {
-            std::string fname = valueDebugInfo[func].filename;
-
             Locus retloc;
-            retloc.filename = fname;
-            const auto& dbgloc = Inst.getDebugLoc();
+            retloc.filename = valueDebugInfo[func].filename;
+            const auto& dbgloc = I.getDebugLoc();
 
             if (!dbgloc.isUnknown()) {
                 retloc.loc = dbgloc;
             }
 
-            if (auto* locmd = Inst.getMetadata("dbg")) {
+            if (auto* locmd = I.getMetadata("dbg")) {
                 DILocation diloc(locmd);
                 retloc = diloc;
             }
 
-            valueDebugInfo.put(retloc, &Inst);
+            valueDebugInfo.put(retloc, &I);
         }
     }
 
@@ -89,19 +89,19 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
 const std::string& SourceLocationTracker::getFilenameFor(llvm::Value* val) const {
     static std::string empty_string = "";
 
-    if(val && valueDebugInfo.contains(val)) {
+    if (val && valueDebugInfo.contains(val)) {
         return valueDebugInfo[val].filename;
     } else return empty_string;
 }
 
 unsigned SourceLocationTracker::getLineFor(llvm::Value* val) const {
-    if(val && valueDebugInfo.contains(val)) {
+    if (val && valueDebugInfo.contains(val)) {
         return valueDebugInfo[val].loc.line;
     } else return unsigned(-1);
 }
 
 unsigned SourceLocationTracker::getColumnFor(llvm::Value* val) const {
-    if(val && valueDebugInfo.contains(val)) {
+    if (val && valueDebugInfo.contains(val)) {
         return valueDebugInfo[val].loc.col;
     } else return unsigned(-1);
 }
@@ -109,7 +109,7 @@ unsigned SourceLocationTracker::getColumnFor(llvm::Value* val) const {
 const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
     const static Locus empty;
 
-    if(val && valueDebugInfo.contains(val)) {
+    if (val && valueDebugInfo.contains(val)) {
         return valueDebugInfo[val];
     } else return empty;
 }
@@ -117,7 +117,7 @@ const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
 const Locus& SourceLocationTracker::getLocFor(llvm::Loop* loop) const {
     const static Locus empty;
 
-    if(loop && loopDebugInfo.contains(loop->getBlocks())) {
+    if (loop && loopDebugInfo.contains(loop->getBlocks())) {
         return loopDebugInfo[loop->getBlocks()];
     } else return empty;
 }
@@ -130,7 +130,7 @@ const std::vector<llvm::BasicBlock*>& SourceLocationTracker::getLoopFor(const Lo
 	const static std::vector<llvm::BasicBlock*> empty;
 
     auto range = loopDebugInfo.range_after(loc);
-    if(range.first == range.second) return empty;
+    if (range.first == range.second) return empty;
     else return range.first->second;
 }
 
@@ -143,6 +143,7 @@ void SourceLocationTracker::print(llvm::raw_ostream&, const llvm::Module*) const
 
     typedef std::pair<Locus, llvm::Value*> valueDebugMapEntry;
     typedef std::pair<Locus, std::vector<llvm::BasicBlock*>> loopDebugMapEntry;
+
     auto info = infos();
 
     for (const valueDebugMapEntry& val : valueDebugInfo.getFrom()) {

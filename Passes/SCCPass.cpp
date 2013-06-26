@@ -11,6 +11,7 @@
 #include "Passes/SCCPass.h"
 
 #include "Logging/logger.hpp"
+#include "Util/passes.hpp"
 #include "Util/util.h"
 
 namespace borealis {

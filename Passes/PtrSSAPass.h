@@ -5,30 +5,20 @@
  *      Author: belyaev
  */
 
-#include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Analysis/DominanceFrontier.h"
-#include "llvm/Analysis/Dominators.h"
-#include "llvm/Constants.h"
-#include "llvm/Instructions.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/CFG.h"
 
-#include <algorithm>
-#include <unordered_map>
-
-#include "SlotTrackerPass.h"
+#include "Passes/SlotTrackerPass.h"
+#include "Passes/Util/AggregateFunctionPass.hpp"
 #include "PtrSSAPass/PhiInjectionPass.h"
 #include "PtrSSAPass/SLInjectionPass.h"
 
-#include "Passes/Util/AggregateFunctionPass.hpp"
-
 namespace borealis {
 
-class PtrSSAPass : public AggregateFunctionPass<
-                                ptrssa::PhiInjectionPass,
-                                ptrssa::StoreLoadInjectionPass
-                          > {
+class PtrSSAPass :
+    public AggregateFunctionPass<
+        ptrssa::PhiInjectionPass,
+        ptrssa::StoreLoadInjectionPass
+    > {
 
     typedef ptrssa::PhiInjectionPass phis_t;
     typedef ptrssa::StoreLoadInjectionPass sls_t;
@@ -52,7 +42,7 @@ public:
         return false;
     }
 
-    virtual ~PtrSSAPass(){};
+    virtual ~PtrSSAPass() {};
 };
 
 } // namespace borealis

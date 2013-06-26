@@ -5,7 +5,6 @@
  *      Author: belyaev
  */
 
-#include "Logging/tracer.hpp"
 #include "Passes/SlotTrackerPass.h"
 #include "Util/passes.hpp"
 
@@ -20,16 +19,16 @@ bool SlotTrackerPass::runOnModule(llvm::Module& M) {
     doInitialization(M);
 
 	for (auto& F : M)
-	    funcs[&F] = ptr_t(new SlotTracker(&F));
+	    funcs[&F] = ptr_t{ new SlotTracker(&F) };
 
 	return false;
 }
 
-void SlotTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& Info) const {
-	Info.setPreservesAll();
+void SlotTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+	AU.setPreservesAll();
 }
 
-SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function* func) const{
+SlotTracker* SlotTrackerPass::getSlotTracker(const llvm::Function* func) const {
 	if (func && borealis::util::containsKey(funcs, func)) {
 		return funcs.at(func).get();
 	} else {
@@ -41,8 +40,8 @@ SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module*) const{
 	return globals.get();
 }
 
-SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::BasicBlock* inst) const{
-	return getSlotTracker(inst->getParent());
+SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::BasicBlock* bb) const{
+	return getSlotTracker(bb->getParent());
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Instruction* inst) const{
