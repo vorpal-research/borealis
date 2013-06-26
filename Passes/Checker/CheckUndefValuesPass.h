@@ -12,6 +12,7 @@
 
 #include "Logging/logger.hpp"
 #include "Passes/DefectManager.h"
+#include "Passes/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
 namespace borealis {

@@ -8,7 +8,6 @@
 #include <llvm/Support/InstVisitor.h>
 
 #include "Codegen/intrinsics_manager.h"
-#include "Logging/logger.hpp"
 #include "Passes/Checker/CheckContractPass.h"
 #include "Solver/Z3Solver.h"
 #include "State/PredicateStateBuilder.h"
