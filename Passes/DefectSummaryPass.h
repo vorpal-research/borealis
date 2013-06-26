@@ -14,7 +14,7 @@
 
 namespace borealis {
 
-class DefectSummaryPass:
+class DefectSummaryPass :
         public llvm::ModulePass,
         public borealis::logging::ClassLevelLogging<DefectSummaryPass> {
 
