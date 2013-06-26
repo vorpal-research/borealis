@@ -8,6 +8,7 @@
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 #include "Passes/PredicateStateAnalysis/OneForOne.h"
+#include "Passes/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "Util/util.h"
@@ -18,8 +19,6 @@ OneForOne::OneForOne() : ProxyFunctionPass(ID) {}
 OneForOne::OneForOne(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
 void OneForOne::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    using namespace llvm;
-
     AU.setPreservesAll();
 
     AUX<FunctionManager>::addRequiredTransitive(AU);

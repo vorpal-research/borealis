@@ -8,10 +8,6 @@
 #ifndef PREDICATESTATEANALYSIS_ONEFORONE_H_
 #define PREDICATESTATEANALYSIS_ONEFORONE_H_
 
-#include <llvm/BasicBlock.h>
-#include <llvm/Constants.h>
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <list>
@@ -24,7 +20,6 @@
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
-#include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"

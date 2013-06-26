@@ -60,6 +60,7 @@ AnnotationPredicateAnalysis::AnnotationPredicateAnalysis(llvm::Pass* pass) :
 
 void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
+
     AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }

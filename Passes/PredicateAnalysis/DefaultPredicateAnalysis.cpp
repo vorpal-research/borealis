@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "Codegen/llvm.h"
-#include "Logging/tracer.hpp"
 #include "Passes/PredicateAnalysis/DefaultPredicateAnalysis.h"
 #include "Passes/SlotTrackerPass.h"
 

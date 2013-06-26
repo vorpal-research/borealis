@@ -11,7 +11,6 @@
 #include <llvm/Pass.h>
 
 #include <map>
-#include <set>
 
 #include "Predicate/Predicate.h"
 

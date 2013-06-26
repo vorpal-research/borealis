@@ -15,7 +15,6 @@
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Passes/ProxyFunctionPass.h"
-#include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"

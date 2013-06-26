@@ -8,10 +8,8 @@
 #ifndef SOURCE_LOCATION_TRACKER_LOCATION_CONTAINER_H
 #define SOURCE_LOCATION_TRACKER_LOCATION_CONTAINER_H
 
-#include <functional>
 #include <map>
 #include <unordered_map>
-#include <utility>
 
 #include "Util/util.h"
 

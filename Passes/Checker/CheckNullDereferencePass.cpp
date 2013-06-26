@@ -94,9 +94,6 @@ public:
             llvm::Value& what,
             llvm::Value& why) {
 
-        using llvm::dyn_cast;
-        using llvm::Instruction;
-
         dbgs() << "Checking: " << endl
                << "  ptr: " << what << endl
                << "  aliasing: " << why << endl

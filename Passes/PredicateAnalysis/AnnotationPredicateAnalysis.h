@@ -34,7 +34,7 @@ public:
     AnnotationPredicateAnalysis(llvm::Pass*);
     virtual bool runOnFunction(llvm::Function& F) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
-    virtual ~AnnotationPredicateAnalysis() override;
+    virtual ~AnnotationPredicateAnalysis();
 
 private:
 

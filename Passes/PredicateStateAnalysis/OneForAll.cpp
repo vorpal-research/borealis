@@ -10,6 +10,7 @@
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
+#include "Passes/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "Util/graph.h"
@@ -155,7 +156,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
 
     TRACE_UP("psa::bbm", valueSummary(BB));
 
-    auto* idom = (*DT)[BB]->getIDom();
+    const auto* idom = (*DT)[BB]->getIDom();
     // Function entry block does not have an idom
     if (!idom) {
         return basicBlockStates.at(nullptr);

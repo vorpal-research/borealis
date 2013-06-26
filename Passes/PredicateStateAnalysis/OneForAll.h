@@ -9,22 +9,16 @@
 #define PREDICATESTATEANALYSIS_ONEFORALL_H_
 
 #include <llvm/Analysis/Dominators.h>
-#include <llvm/BasicBlock.h>
-#include <llvm/Constants.h>
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <list>
-#include <tuple>
 #include <unordered_map>
 
 #include "Logging/logger.hpp"
-#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
+#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
-#include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"

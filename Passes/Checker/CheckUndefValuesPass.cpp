@@ -20,10 +20,11 @@ public:
     UndefInstVisitor(CheckUndefValuesPass* pass) : pass(pass) {}
 
     void visitInstruction(llvm::Instruction& I) {
+        using namespace llvm;
         using borealis::util::view;
 
-        for (llvm::Value* op : view(I.op_begin(), I.op_end())) {
-            if (llvm::isa<llvm::UndefValue>(op)) {
+        for (Value* op : view(I.op_begin(), I.op_end())) {
+            if (isa<UndefValue>(op)) {
                 pass->DM->addDefect(DefectType::NDF_01, &I);
                 break;
             }
