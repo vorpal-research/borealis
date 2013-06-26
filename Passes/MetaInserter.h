@@ -12,18 +12,19 @@
 
 namespace borealis {
 
-class MetaInserter: public llvm::ModulePass {
+class MetaInserter : public llvm::ModulePass {
 public:
+
     static char ID;
 
     MetaInserter();
     virtual ~MetaInserter();
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage & AU) const {
+    virtual void getAnalysisUsage(llvm::AnalysisUsage & AU) const override {
         AU.setPreservesCFG();
     }
 
-    virtual bool runOnModule(llvm::Module&);
+    virtual bool runOnModule(llvm::Module&) override;
 
 };
 

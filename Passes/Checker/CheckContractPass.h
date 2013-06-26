@@ -12,6 +12,7 @@
 
 #include "Logging/logger.hpp"
 #include "Passes/DefectManager.h"
+#include "Passes/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"

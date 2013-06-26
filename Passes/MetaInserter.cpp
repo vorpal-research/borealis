@@ -5,9 +5,6 @@
  *      Author: belyaev
  */
 
-#include <llvm/Support/Casting.h>
-#include <llvm/Support/InstIterator.h>
-
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/MetaInserter.h"
 #include "Util/passes.hpp"
@@ -20,29 +17,23 @@ MetaInserter::MetaInserter() : ModulePass(ID) {}
 MetaInserter::~MetaInserter() {}
 
 bool MetaInserter::runOnModule(llvm::Module &M) {
+    using namespace llvm;
     using borealis::util::toString;
     using borealis::util::view;
-
-    using llvm::inst_begin;
-    using llvm::inst_end;
-    using llvm::dyn_cast;
-    using llvm::BasicBlock;
-    using llvm::CallInst;
-    using llvm::LoadInst;
-    using llvm::ReturnInst;
+    using borealis::util::viewContainer;
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
     llvm::DebugInfoFinder dfi;
     dfi.processModule(M);
 
-    llvm::Function* Desc = intrinsic_manager.createIntrinsic(
+    auto* GDT = intrinsic_manager.createIntrinsic(
             function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
             "",
             llvm::FunctionType::get(llvm::Type::getVoidTy(M.getContext()), false),
             &M
     );
-    BasicBlock::Create(M.getContext(), "bb", Desc);
+    BasicBlock::Create(M.getContext(), "bb", GDT);
 
     for (auto& mglob : view(dfi.global_variable_begin(), dfi.global_variable_end())) {
         llvm::DIDescriptor di(mglob);
@@ -55,29 +46,25 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
                 function_type::INTRINSIC_GLOBAL,
                 toString(*glob.getGlobal()->getType()->getPointerElementType()),
                 llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(M.getContext()),
-                        std::vector<llvm::Type*> { glob.getGlobal()->getType()->getPointerElementType() },
-                        false
+                    llvm::Type::getVoidTy(M.getContext()),
+                    std::vector<llvm::Type*>{ glob.getGlobal()->getType()->getPointerElementType() },
+                    false
                 ),
                 &M
         );
 
-        auto* load = new LoadInst(glob.getGlobal(), "", &Desc->front());
-        auto* call = CallInst::Create(current, std::vector<llvm::Value*>{load}, "", &Desc->front());
+        auto* load = new LoadInst(glob.getGlobal(), "", &GDT->front());
+        auto* call = CallInst::Create(current, std::vector<llvm::Value*>{ load }, "", &GDT->front());
         call->setMetadata("var", glob);
     }
 
-    ReturnInst::Create(M.getContext(), &Desc->front());
+    ReturnInst::Create(M.getContext(), &GDT->front());
 
     std::list<llvm::DbgValueInst*> toReplace;
 
-    for (auto& F : M) {
-        for (auto& BB : F) {
-            for (auto& I : BB) {
-                if (auto* call = dyn_cast<llvm::DbgValueInst>(&I)) {
-                    toReplace.push_back(call);
-                }
-            }
+    for (auto& I : viewContainer(M).flatten().flatten()) {
+        if (auto* call = dyn_cast<llvm::DbgValueInst>(&I)) {
+            toReplace.push_back(call);
         }
     }
 
@@ -86,21 +73,21 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
         auto* offset = call->getArgOperand(1);
         auto* val = call->getValue();
 
-        auto* tp = llvm::FunctionType::get(
+        auto* ty = llvm::FunctionType::get(
             llvm::Type::getVoidTy(M.getContext()),
             std::vector<llvm::Type*>{ offset->getType(), val->getType() },
             false
         );
 
-        llvm::Function* intr = intrinsic_manager.createIntrinsic(
+        auto* current = intrinsic_manager.createIntrinsic(
             function_type::INTRINSIC_VALUE,
             toString(*val->getType()),
-            tp,
+            ty,
             &M
         );
 
         auto* newCall = CallInst::Create(
-            intr,
+            current,
             std::vector<llvm::Value*>{ offset, val },
             "",
             call

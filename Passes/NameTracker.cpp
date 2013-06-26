@@ -24,7 +24,7 @@ bool NameTracker::runOnModule(llvm::Module& M) {
 		    addName(A, globalResolver);
 		}
 		for (auto& BB : F) {
-			for (auto& I: BB) {
+			for (auto& I : BB) {
 			    addName(I, globalResolver);
 			}
 		}
@@ -36,7 +36,7 @@ void NameTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 	AU.setPreservesAll();
 }
 
-char NameTracker::ID = 0;
+char NameTracker::ID;
 static RegisterPass<NameTracker>
 X("name-tracker", "Pass used to track value names in LLVM IR");
 
