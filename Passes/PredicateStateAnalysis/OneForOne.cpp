@@ -6,7 +6,7 @@
  */
 
 #include "Logging/tracer.hpp"
-#include "Passes/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 #include "Passes/PredicateStateAnalysis/OneForOne.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
@@ -27,7 +27,7 @@ void OneForOne::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 #define HANDLE_ANALYSIS(CLASS) \
     AUX<CLASS>::addRequiredTransitive(AU);
-#include "Passes/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 }
 
 bool OneForOne::runOnFunction(llvm::Function& F) {
@@ -43,7 +43,7 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
-#include "Passes/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 
     // Register globals in our predicate states
     auto& globalList = F.getParent()->getGlobalList();

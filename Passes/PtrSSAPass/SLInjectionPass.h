@@ -9,20 +9,11 @@
 #define SLINJECTIONPASS_H_
 
 #include <llvm/Analysis/Dominators.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Value.h>
 
-#include <unordered_map>
-
-#include "Codegen/intrinsics.h"
-#include "Codegen/intrinsics_manager.h"
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/PtrSSAPass/origin_tracker.h"
-#include "Passes/SlotTrackerPass.h"
 #include "Util/passes.hpp"
-#include "Util/util.h"
 
 namespace borealis {
 namespace ptrssa {
@@ -35,8 +26,6 @@ class StoreLoadInjectionPass:
 public:
 
     static char ID;
-
-    typedef llvm::Value* value;
 
     StoreLoadInjectionPass() : ProxyFunctionPass(ID) {};
     StoreLoadInjectionPass(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {};

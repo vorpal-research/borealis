@@ -6,11 +6,8 @@
  */
 
 #include <llvm/Support/Casting.h>
+#include <llvm/Support/CFG.h>
 
-#include <set>
-#include <tuple>
-
-#include "Codegen/intrinsics.h"
 #include "Passes/PtrSSAPass/PhiInjectionPass.h"
 #include "Passes/PtrSSAPass/SLInjectionPass.h"
 
@@ -19,7 +16,6 @@ namespace ptrssa {
 
 void PhiInjectionPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
     AUX<llvm::DominatorTree>::addRequiredTransitive(AU);
-    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<StoreLoadInjectionPass>::addPreserved(AU);
 
     // This pass modifies the program, but not the CFG

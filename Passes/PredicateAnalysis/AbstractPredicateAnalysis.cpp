@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "Passes/AbstractPredicateAnalysis.h"
+#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 
 namespace borealis {
 

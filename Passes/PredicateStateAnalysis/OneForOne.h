@@ -15,13 +15,13 @@
 #include <llvm/Pass.h>
 
 #include <list>
-#include <map>
 #include <queue>
 #include <tuple>
+#include <unordered_map>
 
 #include "Logging/logger.hpp"
-#include "Passes/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
+#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
@@ -39,7 +39,7 @@ class OneForOne:
         public ShouldBeModularized {
 
     typedef std::vector<PredicateState::Ptr> PredicateStateVector;
-    typedef std::map<const llvm::Instruction*, PredicateStateVector> PredicateStates;
+    typedef std::unordered_map<const llvm::Instruction*, PredicateStateVector> PredicateStates;
     typedef PredicateStates::value_type PredicateStatesEntry;
 
     typedef std::tuple<const llvm::BasicBlock*, const llvm::BasicBlock*, PredicateState::Ptr> WorkQueueEntry;

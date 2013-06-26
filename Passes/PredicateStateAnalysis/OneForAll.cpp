@@ -8,7 +8,7 @@
 #include <llvm/Support/CFG.h>
 
 #include "Logging/tracer.hpp"
-#include "Passes/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
@@ -31,7 +31,7 @@ void OneForAll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 #define HANDLE_ANALYSIS(CLASS) \
     AUX<CLASS>::addRequiredTransitive(AU);
-#include "Passes/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 }
 
 bool OneForAll::runOnFunction(llvm::Function& F) {
@@ -48,7 +48,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
-#include "Passes/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
 
     // Register globals in our predicate states
     auto& globalList = F.getParent()->getGlobalList();
@@ -201,10 +201,11 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         // All predecessors are unreachable, and we too are as such...
         return nullptr;
     else
-        return PSF->Chain(
-            base,
+        return (
+            PSF *
+            base +
             PSF->Choice(choices)
-        );
+        )();
 }
 
 PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {

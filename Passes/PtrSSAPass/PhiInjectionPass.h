@@ -9,18 +9,12 @@
 #define PHIINJECTIONPASS_H_
 
 #include <llvm/Analysis/Dominators.h>
-#include <llvm/Constants.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/CFG.h>
 
-#include <algorithm>
-#include <tuple>
-#include <unordered_set>
+#include <unordered_map>
 
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/PtrSSAPass/origin_tracker.h"
-#include "Passes/SlotTrackerPass.h"
 #include "Util/passes.hpp"
 
 namespace borealis {

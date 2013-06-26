@@ -10,6 +10,7 @@
 
 #include <iterator>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/PtrSSAPass/PhiInjectionPass.h"
 #include "Passes/PtrSSAPass/SLInjectionPass.h"
 
@@ -78,7 +79,6 @@ void StoreLoadInjectionPass::renameNewDefs(
 
 void StoreLoadInjectionPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
     AUX<llvm::DominatorTree>::addRequiredTransitive(AU);
-    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<PhiInjectionPass>::addPreserved(AU);
 
     // This pass modifies the program, but not the CFG

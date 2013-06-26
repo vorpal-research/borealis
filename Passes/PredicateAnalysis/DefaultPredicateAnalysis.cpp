@@ -11,7 +11,7 @@
 
 #include "Codegen/llvm.h"
 #include "Logging/tracer.hpp"
-#include "Passes/DefaultPredicateAnalysis.h"
+#include "Passes/PredicateAnalysis/DefaultPredicateAnalysis.h"
 #include "Passes/SlotTrackerPass.h"
 
 #include "Util/macros.h"
@@ -60,12 +60,13 @@ public:
     }
 
     void visitICmpInst(llvm::ICmpInst& I) {
+        using llvm::ConditionType;
         using llvm::Value;
 
         Value* lhv = &I;
         Value* op1 = I.getOperand(0);
         Value* op2 = I.getOperand(1);
-        llvm::ConditionType cond = conditionType(I.getPredicate());
+        ConditionType cond = conditionType(I.getPredicate());
 
         pass->PM[&I] = pass->PF->getICmpPredicate(
                 pass->TF->getValueTerm(lhv),
@@ -79,22 +80,21 @@ public:
 
     void visitBranchInst(llvm::BranchInst& I) {
         using llvm::BasicBlock;
-        using llvm::Value;
 
         if (I.isUnconditional()) return;
 
-        Value* cond = I.getCondition();
+        Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
         pass->TPM[{&I, trueSucc}] =
                 pass->PF->getBooleanPredicate(
-                        pass->TF->getValueTerm(cond),
+                        condTerm,
                         pass->TF->getTrueTerm()
                 );
         pass->TPM[{&I, falseSucc}] =
                 pass->PF->getBooleanPredicate(
-                        pass->TF->getValueTerm(cond),
+                        condTerm,
                         pass->TF->getFalseTerm()
                 );
     }
@@ -103,11 +103,13 @@ public:
         using llvm::BasicBlock;
 
         Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
+
         std::vector<Term::Ptr> cases;
         cases.reserve(I.getNumCases());
+
         for (auto c = I.case_begin(); c != I.case_end(); ++c) {
             Term::Ptr caseTerm = pass->TF->getConstTerm(c.getCaseValue());
-            BasicBlock* caseSucc = c.getCaseSuccessor();
+            const BasicBlock* caseSucc = c.getCaseSuccessor();
 
             pass->TPM[{&I, caseSucc}] =
                     pass->PF->getEqualityPredicate(
@@ -119,7 +121,7 @@ public:
             cases.push_back(caseTerm);
         }
 
-        BasicBlock* defaultSucc = I.getDefaultDest();
+        const BasicBlock* defaultSucc = I.getDefaultDest();
         pass->TPM[{&I, defaultSucc}] =
                 pass->PF->getDefaultSwitchCasePredicate(
                         condTerm,
@@ -146,14 +148,8 @@ public:
     }
 
     void visitAllocaInst(llvm::AllocaInst& I) {
-        using llvm::cast;
-        using llvm::dyn_cast;
-        using llvm::isa;
-        using llvm::ArrayType;
-        using llvm::BasicBlock;
-        using llvm::ConstantInt;
+        using namespace llvm;
         using llvm::Type;
-        using llvm::Value;
 
         Value* lhv = &I;
         Value* arraySize = I.getArraySize();
@@ -191,9 +187,7 @@ public:
     }
 
     void visitCastInst(llvm::CastInst& I) {
-        using llvm::ConditionType;
-        using llvm::isa;
-        using llvm::Value;
+        using namespace llvm;
 
         Value* lhv = &I;
         Value* rhv = I.getOperand(0);
@@ -222,9 +216,7 @@ public:
     }
 
     void visitPHINode(llvm::PHINode& I) {
-        using llvm::BasicBlock;
-        using llvm::PHINode;
-        using llvm::Value;
+        using namespace llvm;
 
         for (unsigned int i = 0; i < I.getNumIncomingValues(); i++) {
             const BasicBlock* from = I.getIncomingBlock(i);
@@ -238,9 +230,7 @@ public:
     }
 
     void visitBinaryOperator(llvm::BinaryOperator& I) {
-        using llvm::Value;
-        using llvm::ArithType;
-        using llvm::arithType;
+        using namespace llvm;
 
         typedef llvm::Instruction::BinaryOps OPS;
 
@@ -287,6 +277,7 @@ DefaultPredicateAnalysis::DefaultPredicateAnalysis(llvm::Pass* pass) :
 
 void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
+
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<llvm::TargetData>::addRequiredTransitive(AU);
 }
@@ -295,9 +286,9 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
     auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-
     PF = PredicateFactory::get(ST);
     TF = TermFactory::get(ST);
+
     TD = &GetAnalysis<llvm::TargetData>::doit(this, F);
 
     DPAInstVisitor visitor(this);

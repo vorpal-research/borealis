@@ -8,9 +8,8 @@
 #include <llvm/Support/InstVisitor.h>
 
 #include "Annotation/Annotation.def"
-
 #include "Codegen/intrinsics_manager.h"
-#include "Passes/AnnotationPredicateAnalysis.h"
+#include "Passes/PredicateAnalysis/AnnotationPredicateAnalysis.h"
 #include "Passes/SlotTrackerPass.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 

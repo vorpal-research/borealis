@@ -1,17 +1,16 @@
 /*
- * AnnotationPredicateAnalysis.h
+ * DefaultPredicateAnalysis.h
  *
- *  Created on: Feb 25, 2013
+ *  Created on: Aug 31, 2012
  *      Author: ice-phoenix
  */
 
-#ifndef ANNOTATIONPREDICATEANALYSIS_H_
-#define ANNOTATIONPREDICATEANALYSIS_H_
+#ifndef DEFAULTPREDICATEANALYSIS_H_
+#define DEFAULTPREDICATEANALYSIS_H_
 
-#include <llvm/Pass.h>
+#include <llvm/Target/TargetData.h>
 
-#include "Passes/AbstractPredicateAnalysis.h"
-#include "Passes/MetaInfoTrackerPass.h"
+#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
@@ -19,31 +18,31 @@
 
 namespace borealis {
 
-class AnnotationPredicateAnalysis:
+class DefaultPredicateAnalysis:
         public AbstractPredicateAnalysis,
         public ProxyFunctionPass,
         public ShouldBeModularized {
 
-    friend class APAInstVisitor;
+    friend class DPAInstVisitor;
 
 public:
 
     static char ID;
 
-    AnnotationPredicateAnalysis();
-    AnnotationPredicateAnalysis(llvm::Pass*);
+    DefaultPredicateAnalysis();
+    DefaultPredicateAnalysis(llvm::Pass*);
     virtual bool runOnFunction(llvm::Function& F) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
-    virtual ~AnnotationPredicateAnalysis() override;
+    virtual ~DefaultPredicateAnalysis() override;
 
 private:
 
-    MetaInfoTrackerPass* MI;
     PredicateFactory::Ptr PF;
     TermFactory::Ptr TF;
+    llvm::TargetData* TD;
 
 };
 
 } /* namespace borealis */
 
-#endif /* ANNOTATIONPREDICATEANALYSIS_H_ */
+#endif /* DEFAULTPREDICATEANALYSIS_H_ */

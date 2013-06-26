@@ -16,11 +16,11 @@
 #include <llvm/Pass.h>
 
 #include <list>
-#include <map>
 #include <tuple>
+#include <unordered_map>
 
 #include "Logging/logger.hpp"
-#include "Passes/AbstractPredicateAnalysis.h"
+#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
@@ -41,7 +41,7 @@ class OneForAll:
     typedef AbstractPredicateAnalysis::PhiBranch PhiBranch;
     typedef AbstractPredicateAnalysis::TerminatorBranch TerminatorBranch;
 
-    typedef std::map<const llvm::BasicBlock*, PredicateState::Ptr> BasicBlockStates;
+    typedef std::unordered_map<const llvm::BasicBlock*, PredicateState::Ptr> BasicBlockStates;
 
 public:
 

@@ -8,17 +8,12 @@
 #ifndef ABSTRACTPREDICATEANALYSIS_H_
 #define ABSTRACTPREDICATEANALYSIS_H_
 
-#include <llvm/BasicBlock.h>
-#include <llvm/Constants.h>
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <map>
 #include <set>
 
 #include "Predicate/Predicate.h"
-#include "Util/util.h"
 
 namespace borealis {
 
@@ -27,15 +22,15 @@ class AbstractPredicateAnalysis {
 public:
 
     typedef std::map<const llvm::Instruction*, Predicate::Ptr> PredicateMap;
-    typedef std::pair<const llvm::Instruction*, Predicate::Ptr> PredicateMapEntry;
+    typedef PredicateMap::value_type PredicateMapEntry;
 
     typedef std::pair<const llvm::TerminatorInst*, const llvm::BasicBlock*> TerminatorBranch;
     typedef std::map<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMap;
-    typedef std::pair<TerminatorBranch, Predicate::Ptr> TerminatorPredicateMapEntry;
+    typedef TerminatorPredicateMap::value_type TerminatorPredicateMapEntry;
 
     typedef std::pair<const llvm::BasicBlock*, const llvm::PHINode*> PhiBranch;
     typedef std::map<PhiBranch, Predicate::Ptr> PhiPredicateMap;
-    typedef std::pair<PhiBranch, Predicate::Ptr> PhiPredicateMapEntry;
+    typedef PhiPredicateMap::value_type PhiPredicateMapEntry;
 
     AbstractPredicateAnalysis();
     virtual ~AbstractPredicateAnalysis();

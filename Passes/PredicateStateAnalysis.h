@@ -14,16 +14,12 @@
 #include <llvm/Function.h>
 #include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/raw_ostream.h>
 
-#include <list>
-#include <map>
-#include <queue>
-#include <tuple>
+#include <unordered_map>
 
 #include "Logging/logger.hpp"
-#include "Passes/AbstractPredicateAnalysis.h"
 #include "Passes/FunctionManager.h"
+#include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/ProxyFunctionPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
@@ -40,7 +36,7 @@ class AbstractPredicateStateAnalysis {
 
 public:
 
-    typedef std::map<const llvm::Instruction*, PredicateState::Ptr> InstructionStates;
+    typedef std::unordered_map<const llvm::Instruction*, PredicateState::Ptr> InstructionStates;
 
     AbstractPredicateStateAnalysis();
     virtual ~AbstractPredicateStateAnalysis();
