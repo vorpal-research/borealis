@@ -10,6 +10,7 @@
 
 #include <llvm/Pass.h>
 
+#include "Logging/logger.hpp"
 #include "Passes/DefectManager.h"
 #include "Passes/PredicateStateAnalysis.h"
 #include "Passes/MetaInfoTrackerPass.h"
