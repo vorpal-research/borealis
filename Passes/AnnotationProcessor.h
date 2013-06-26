@@ -12,9 +12,10 @@
 
 namespace borealis {
 
-class AnnotationProcessor: public llvm::ModulePass {
+class AnnotationProcessor : public llvm::ModulePass {
 
 public:
+
     static char ID;
 
 #include "Util/macros.h"
@@ -24,9 +25,9 @@ public:
     AnnotationProcessor() : llvm::ModulePass(ID) {};
     virtual ~AnnotationProcessor() {};
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual bool runOnModule(llvm::Module&);
-    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual bool runOnModule(llvm::Module&) override;
+    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
 };
 
 } /* namespace borealis */

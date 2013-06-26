@@ -20,6 +20,7 @@ namespace borealis {
 
 void AnnotationProcessor::getAnalysisUsage(llvm::AnalysisUsage& AU) const{
     AU.setPreservesCFG();
+
     AUX<AnnotatorPass>::addRequired(AU);
     AUX<SourceLocationTracker>::addRequired(AU);
 }
@@ -31,14 +32,14 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     using borealis::util::toString;
     using borealis::util::view;
 
-    IntrinsicsManager& im = IntrinsicsManager::getInstance();
+    auto& im = IntrinsicsManager::getInstance();
 
-    AnnotatorPass& annotations = GetAnalysis< AnnotatorPass >::doit(this);
-    SourceLocationTracker& locs = GetAnalysis< SourceLocationTracker >::doit(this);
+    auto& annotations = GetAnalysis< AnnotatorPass >::doit(this);
+    auto& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
-    for (Annotation::Ptr anno : annotations) {
+    for (auto anno : annotations) {
 
-        if(!isa<LogicAnnotation>(anno)) continue;
+        if (!isa<LogicAnnotation>(anno)) continue;
 
         Constant* data = ConstantDataArray::getString(M.getContext(), toString(anno));
 
@@ -52,44 +53,43 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                 &M
         );
 
-        CallInst* templ = CallInst::Create(
+        CallInst* tmpl = CallInst::Create(
                 anno_intr,
                 data,
                 "");
-        templ->setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
+        tmpl->setMetadata("anno.ptr", ptr2MDNode(M.getContext(), anno.get()));
 
         if (isa<RequiresAnnotation>(anno) ||
-                isa<AssignsAnnotation>(anno)) {
+            isa<AssignsAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
-                    // TODO: fix insertBeforeWithLocus problem
-                    templ->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
+                    insertBeforeWithLocus(tmpl, F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime(), anno->getLocus());
                     break;
                 }
             }
+
         } else if (isa<EnsuresAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
                     // this is generally fucked up, BUT we have to insert the template somewhere
-                    // otherwise it can not be properly deleted
-                    // TODO: fix insertBeforeWithLocus problem
-                    templ->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
+                    // otherwise it cannot be properly deleted
+                    insertBeforeWithLocus(tmpl, F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime(), anno->getLocus());
                     for (auto& BB : *F) {
                         if (isa<ReturnInst>(BB.getTerminator()) || isa<UnreachableInst>(BB.getTerminator())) {
                             // insert clones at the actual rets
                             // no need to clone MDNodes, they are copied in templ->clone()
-                            // TODO: fix insertBeforeWithLocus problem
-                            templ->clone()->insertBefore(BB.getTerminator());
+                            insertBeforeWithLocus(tmpl->clone(), BB.getTerminator(), anno->getLocus());
                         }
                     }
-                    templ->eraseFromParent();
+                    tmpl->eraseFromParent();
                     break;
                 }
             }
+
         } else if (isa<AssertAnnotation>(anno) || isa<AssumeAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Instruction* I = dyn_cast<Instruction>(e.second)) {
-                    insertBeforeWithLocus(templ, I, anno->getLocus());
+                    insertBeforeWithLocus(tmpl, I, anno->getLocus());
                     break;
                 }
             }
@@ -100,13 +100,13 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 }
 
 void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const {
+    using namespace llvm;
+    using borealis::util::viewContainer;
+
     auto& IM = IntrinsicsManager::getInstance();
 
-    using borealis::util::view;
-    using borealis::util::begin_end_pair;
-
-    for (auto& I : view(begin_end_pair(*M)).flatten().flatten()) {
-        if (auto* CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
+    for (auto& I : viewContainer(*M).flatten().flatten()) {
+        if (auto* CI = dyn_cast<CallInst>(&I)) {
             if (IM.getIntrinsicType(*CI) == function_type::INTRINSIC_ANNOTATION) {
                 infos() << Annotation::fromIntrinsic(*CI) << endl;
             }

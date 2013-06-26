@@ -1,19 +1,16 @@
 /*
- * Annotator.h
+ * AnnotatorPass.h
  *
  *  Created on: Oct 8, 2012
  *      Author: belyaev
  */
 
-#ifndef ANNOTATOR_H
-#define ANNOTATOR_H
+#ifndef ANNOTATORPASS_H
+#define ANNOTATORPASS_H
 
-#include <unordered_map>
-
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/raw_ostream.h>
+
+#include <vector>
 
 #include "Actions/comments.h"
 #include "Anno/anno.h"
@@ -55,11 +52,11 @@ public:
 
     const annotation_container& getAnnotations() { return annotations; }
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const;
-    virtual bool runOnModule(llvm::Module&);
-    virtual void print(llvm::raw_ostream& O, const llvm::Module*) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+    virtual bool runOnModule(llvm::Module&) override;
+    virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
 };
 
 } // namespace borealis
 
-#endif // ANNOTATOR_H
+#endif // ANNOTATORPASS_H
