@@ -6,17 +6,14 @@
  */
 
 #include "Annotation/LogicAnnotation.h"
-#include "Codegen/intrinsics.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/AnnotatorPass.h"
 #include "Passes/FunctionManager.h"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Passes/SlotTrackerPass.h"
 #include "Passes/SourceLocationTracker.h"
-#include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
@@ -30,6 +27,7 @@ FunctionManager::FunctionManager() : llvm::ModulePass(ID) {}
 
 void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
+
     AUX<AnnotatorPass>::addRequiredTransitive(AU);
     AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
@@ -39,21 +37,21 @@ void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool FunctionManager::runOnModule(llvm::Module& M) {
     using namespace llvm;
 
-    AnnotatorPass& annotations = GetAnalysis< AnnotatorPass >::doit(this);
-    MetaInfoTrackerPass& meta =  GetAnalysis< MetaInfoTrackerPass >::doit(this);
-    SourceLocationTracker& locs = GetAnalysis< SourceLocationTracker >::doit(this);
+    auto& annotations = GetAnalysis< AnnotatorPass >::doit(this);
+    auto& meta =  GetAnalysis< MetaInfoTrackerPass >::doit(this);
+    auto& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
-    SlotTracker* slots = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
-    PredicateFactory::Ptr PF = PredicateFactory::get(slots);
-    TermFactory::Ptr TF = TermFactory::get(slots);
+    auto* slots = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
+    auto PF = PredicateFactory::get(slots);
+    auto TF = TermFactory::get(slots);
 
     PSF = PredicateStateFactory::get();
 
-    for (Annotation::Ptr a : annotations) {
+    for (auto a : annotations) {
         Annotation::Ptr anno = materialize(a, TF.get(), &meta);
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
-                if (Function* F = dyn_cast<Function>(e.second)) {
+                if (auto* F = dyn_cast<Function>(e.second)) {
                     PredicateState::Ptr ps = (
                         PSF *
                         PF->getEqualityPredicate(
@@ -73,7 +71,6 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
 }
 
 void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
-
     using borealis::util::containsKey;
 
     ASSERT(!containsKey(data, F),
@@ -83,26 +80,25 @@ void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
 }
 
 void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
-
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
-        data[F] = (PSF * data[F] + state)();
+        data[F] = (PSF * data.at(F) + state)();
     } else {
         data[F] = state;
     }
 }
 
-PredicateState::Ptr FunctionManager::get(
-        llvm::Function* F) {
-
+PredicateState::Ptr FunctionManager::get(llvm::Function* F) {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
-        return data.at(F);
+        // Do nothing
+    } else {
+        data[F] = PSF->Basic();
     }
 
-    return PredicateStateFactory::get()->Basic();
+    return data.at(F);
 }
 
 PredicateState::Ptr FunctionManager::get(
@@ -121,7 +117,7 @@ PredicateState::Ptr FunctionManager::get(
     auto& m = IntrinsicsManager::getInstance();
     function_type ft = m.getIntrinsicType(CI);
 
-    auto state = PredicateStateFactory::get()->Basic();
+    auto state = PSF->Basic();
     if (!isUnknown(ft)) {
         state = m.getPredicateState(ft, F, PF, TF);
     }

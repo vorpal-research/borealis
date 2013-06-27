@@ -12,18 +12,16 @@
 
 namespace borealis {
 
-class InitializationPass: public llvm::ImmutablePass {
+class InitializationPass : public llvm::ImmutablePass {
 
 public:
 
     static char ID;
 
-    InitializationPass(): llvm::ImmutablePass(ID) {}
-
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual void initializePass();
-
-    virtual ~InitializationPass();
+    InitializationPass() : llvm::ImmutablePass(ID) {}
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual void initializePass() override;
+    virtual ~InitializationPass() {};
 
 };
 

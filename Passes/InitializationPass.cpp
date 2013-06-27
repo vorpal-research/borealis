@@ -15,14 +15,12 @@ namespace borealis {
 
 void InitializationPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-    AU.addRequiredTransitive<llvm::TargetData>();
+    AUX<llvm::TargetData>::addRequiredTransitive(AU);
 }
 
 void InitializationPass::initializePass() {
-    Z3ExprFactory::initialize(&getAnalysis<llvm::TargetData>());
+    Z3ExprFactory::initialize(&GetAnalysis<llvm::TargetData>::doit(this));
 }
-
-InitializationPass::~InitializationPass() {}
 
 char InitializationPass::ID;
 static RegisterPass<InitializationPass>

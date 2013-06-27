@@ -8,7 +8,6 @@
 #ifndef FUNCTIONMANAGER_H_
 #define FUNCTIONMANAGER_H_
 
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
 
 #include <unordered_map>
@@ -19,7 +18,7 @@
 
 namespace borealis {
 
-class FunctionManager: public llvm::ModulePass {
+class FunctionManager : public llvm::ModulePass {
 
 public:
 
@@ -29,8 +28,8 @@ public:
     typedef Data::value_type DataEntry;
 
     FunctionManager();
-    virtual bool runOnModule(llvm::Module&);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+    virtual bool runOnModule(llvm::Module&) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~FunctionManager() {};
 
     void put(llvm::Function* F, PredicateState::Ptr state);

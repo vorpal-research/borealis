@@ -5,13 +5,12 @@
  *      Author: belyaev
  */
 
-#include <llvm/Analysis/LoopInfo.h>
-
 #include "Annotation/UnrollAnnotation.h"
 #include "Passes/AnnotatorPass.h"
 #include "Passes/LoopManager.h"
 #include "Passes/SourceLocationTracker.h"
 #include "Util/passes.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -19,12 +18,12 @@ LoopManager::LoopManager() : llvm::FunctionPass(ID) {}
 
 void LoopManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
+
     AUX<AnnotatorPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
 bool LoopManager::runOnFunction(llvm::Function&) {
-
     using namespace llvm;
 
     auto& AP = GetAnalysis<AnnotatorPass>::doit(this);
@@ -43,9 +42,12 @@ bool LoopManager::runOnFunction(llvm::Function&) {
 }
 
 unsigned LoopManager::getUnrollCount(llvm::Loop* L) const {
-    auto it = data.find(L->getHeader());
-    if (it != data.end()) {
-        return it->second;
+    using borealis::util::containsKey;
+
+    auto* loopHeader = L->getHeader();
+
+    if (containsKey(data, loopHeader)) {
+        return data.at(loopHeader);
     } else {
         return 0;
     }

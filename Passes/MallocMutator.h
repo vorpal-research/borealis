@@ -12,7 +12,7 @@
 
 namespace borealis {
 
-class MallocMutator: public llvm::ModulePass {
+class MallocMutator : public llvm::ModulePass {
 
 public:
 
@@ -21,9 +21,9 @@ public:
     MallocMutator() : llvm::ModulePass(ID) {};
     virtual ~MallocMutator() {}
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual bool runOnModule(llvm::Module&);
-    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual bool runOnModule(llvm::Module&) override;
+    virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
 
 private:
 

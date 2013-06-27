@@ -12,11 +12,9 @@
 
 #include <unordered_map>
 
-#include "Util/util.h"
-
 namespace borealis {
 
-class LoopManager: public llvm::FunctionPass {
+class LoopManager : public llvm::FunctionPass {
 
 public:
 
@@ -25,10 +23,11 @@ public:
     static char ID;
 
     LoopManager();
-    virtual bool runOnFunction(llvm::Function&);
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+    virtual bool runOnFunction(llvm::Function&) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~LoopManager();
-    virtual void print(llvm::raw_ostream&, const llvm::Module*) const;
+
+    virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
 
     unsigned getUnrollCount(llvm::Loop* L) const;
 
