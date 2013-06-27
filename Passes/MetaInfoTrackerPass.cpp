@@ -6,15 +6,12 @@
  */
 
 #include <llvm/Constants.h>
-#include <llvm/Instruction.h>
-#include <llvm/IntrinsicInst.h>
-#include <llvm/Support/InstIterator.h>
+#include <llvm/Instructions.h>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
 #include "Passes/MetaInfoTrackerPass.h"
 #include "Util/passes.hpp"
-#include "Util/util.h"
 
 namespace borealis {
 
@@ -24,69 +21,58 @@ MetaInfoTrackerPass::~MetaInfoTrackerPass() {}
 
 void MetaInfoTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-
     AUX<sm_t>::addRequiredTransitive(AU);
 }
 
+using namespace llvm;
 using borealis::util::option;
 using borealis::util::nothing;
 using borealis::util::just;
 
-using borealis::Locus;
-using borealis::VarInfo;
-
-using llvm::dyn_cast;
-using llvm::dyn_cast_or_null;
-using llvm::DIDescriptor;
-using llvm::DIGlobalVariable;
-using llvm::DILocation;
-using llvm::DISubprogram;
-using llvm::DIVariable;
-
 static VarInfo mkVI(const clang::SourceManager& sm,
         clang::Decl* ast = nullptr, bool allocated = false) {
-    if (clang::NamedDecl* decl = dyn_cast_or_null<clang::NamedDecl>(ast)) {
-        return VarInfo {
+    if (auto* decl = dyn_cast_or_null<clang::NamedDecl>(ast)) {
+        return VarInfo{
             just(decl->getName().str()),
             just(Locus(sm.getPresumedLoc(ast->getLocation()))),
             allocated ? VarInfo::Allocated : VarInfo::Plain,
             ast
         };
     }
-    return VarInfo();
+    return VarInfo{};
 }
 
 static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret {
+    VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
-    return ret.overwriteBy(mkVI(sm, ast));
+    return ret.overwriteBy(mkVI(sm, ast, allocated));
 }
 
 static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret {
+    VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
-    return ret.overwriteBy(mkVI(sm, ast));
+    return ret.overwriteBy(mkVI(sm, ast, allocated));
 }
 
 static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret {
+    VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
         ast
     };
-    return ret.overwriteBy(mkVI(sm, ast));
+    return ret.overwriteBy(mkVI(sm, ast, allocated));
 }
 
 bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
@@ -95,21 +81,10 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     using borealis::util::view;
     using borealis::util::viewContainer;
 
-    using llvm::inst_begin;
-    using llvm::inst_end;
-    using llvm::CallInst;
-    using llvm::ConstantInt;
-    using llvm::DbgDeclareInst;
-    using llvm::DbgValueInst;
-    using llvm::Instruction;
-    using llvm::LoadInst;
-    using llvm::MDNode;
-
-    llvm::DebugInfoFinder dfi;
+    DebugInfoFinder dfi;
     dfi.processModule(M);
 
-    const clang::SourceManager& sm =
-            getAnalysis<sm_t>().provide();
+    auto& sm = GetAnalysis<sm_t>::doit(this).provide();
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
     auto* GlobalsDesc = M.getFunction(
@@ -127,11 +102,11 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
         if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
             DIGlobalVariable glob(call->getMetadata("var"));
             auto* garg = call->getArgOperand(0);
-            // if garg is a load, add it dereferenced
             if (auto* load = dyn_cast<LoadInst>(garg)) {
+                // if garg is a load, add it dereferenced
                 vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
-            // else it has been optimized away, put it as-is
             } else {
+                // else it has been optimized away, put it as-is
                 vars.put(garg, mkVI(sm, glob));
             }
         }
@@ -151,9 +126,9 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
             DIVariable var(inst->getVariable());
 
             clang::Decl* decl = nullptr;
-            if (Instruction* inst = dyn_cast_or_null<Instruction>(val)) {
-                if (MDNode* meta = inst->getMetadata("clang.decl.ptr")) {
-                    if (ConstantInt* ival = dyn_cast_or_null<ConstantInt>(meta->getOperand(0))){
+            if (auto* inst = dyn_cast_or_null<Instruction>(val)) {
+                if (auto* meta = inst->getMetadata("clang.decl.ptr")) {
+                    if (auto* ival = dyn_cast_or_null<ConstantInt>(meta->getOperand(0))){
                         decl = reinterpret_cast<clang::Decl*>(ival->getValue().getZExtValue());
                     }
                 }
@@ -175,12 +150,11 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
             vars.put(val, vi);
 
         } else if (CallInst* inst = dyn_cast_or_null<CallInst>(&I)) {
-            if (IntrinsicsManager::getInstance().getIntrinsicType(*inst) == function_type::INTRINSIC_VALUE) {
+            if (intrinsic_manager.getIntrinsicType(*inst) == function_type::INTRINSIC_VALUE) {
                 auto* val = inst->getArgOperand(1);
                 DIVariable var(inst->getMetadata("var"));
 
-                clang::Decl* decl = nullptr;
-                auto vi = mkVI(sm, var, decl);
+                auto vi = mkVI(sm, var);
 
                 // debug value has additional location data attached through
                 // dbg metadata
@@ -196,14 +170,13 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
                 vars.put(val, vi);
             }
         }
-    } // for (auto& I : flat2View(M.begin(), M.end()))
-
+    } // for (auto& I : viewContainer(M).flatten().flatten())
 
     return false;
 }
 
 void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
-    for (auto& var : vars) {
+    for (const auto& var : vars) {
         infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
     }
 }

@@ -8,23 +8,21 @@
 #ifndef METAINFOTRACKERPASS_H_
 #define METAINFOTRACKERPASS_H_
 
-#include <clang/AST/DeclBase.h>
-#include <clang/Basic/SourceManager.h>
 #include <llvm/Pass.h>
 
 #include "Codegen/VarInfoContainer.h"
 #include "Passes/Util/DataProvider.hpp"
 #include "Util/key_ptr.hpp"
-#include "Util/option.hpp"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 
-// a pass that lets you track corresponding clang decls for llvm values
-// (and also does a bunch of other shit...)
-// not really a pass, just some functionality bundled into pass system
-class MetaInfoTrackerPass: public llvm::ModulePass {
+// a pass that lets you track mappings between clang decls and llvm values
+// (and does a bunch of other shit as well...)
+// not really a pass, just some functionality bundled into llvm pass system
+class MetaInfoTrackerPass : public llvm::ModulePass {
     typedef DataProvider<clang::SourceManager> sm_t;
 
     VarInfoContainer vars;
@@ -47,10 +45,13 @@ private:
             Iter begin,
             Iter end,
             bool(*f)(typename Iter::reference)) const {
-        using namespace llvm;
 
+        using namespace llvm;
+        using borealis::util::view;
+
+        // fnd :: (Locus, llvm::Value*)
         auto fnd = std::find_if(begin, end, f);
-        if (fnd == end) return ValueDescriptor{nullptr, false};
+        if (fnd == end) return ValueDescriptor{ nullptr, false };
 
         Value* foundValue = fnd->second;
         const Locus& foundLocus = *fnd->first;
@@ -58,9 +59,7 @@ private:
         bool deref = false;
 
         // vars :: llvm::Value* -> (llvm::Value*, VarInfo)
-        //
-        // Try to find VarInfo with the same Locus as the original one
-        for (auto& pr : borealis::util::view(vars.get(foundValue))) {
+        for (auto& pr : view(vars.get(foundValue))) {
             const VarInfo& varInfo = pr.second;
             if (varInfo.originalLocus == foundLocus) {
                 deref = (varInfo.treatment == VarInfo::Allocated);
@@ -68,7 +67,7 @@ private:
             }
         }
 
-        return ValueDescriptor{foundValue, deref};
+        return ValueDescriptor{ foundValue, deref };
     }
 
     template<class Iter>
@@ -96,21 +95,22 @@ private:
                 const Locus& foundLocus = *byLoc.first;
                 const std::string& foundName = *byName.first;
 
-                for (auto& info : view(vars.get(foundValue))) {
-                    const VarInfo& varInfo = info.second;
+                // vars :: llvm::Value* -> (llvm::Value*, VarInfo)
+                for (auto& pr : view(vars.get(foundValue))) {
+                    const VarInfo& varInfo = pr.second;
                     if (varInfo.originalLocus == foundLocus &&
                         varInfo.originalName == foundName) {
-                        return ValueDescriptor{foundValue, (varInfo.treatment == VarInfo::Allocated)};
+                        return ValueDescriptor{ foundValue, (varInfo.treatment == VarInfo::Allocated) };
                     }
                 }
             }
         }
 
-        return ValueDescriptor{nullptr, false};
+        return ValueDescriptor{ nullptr, false };
     }
 
     static bool isFunc(VarInfoContainer::loc_value_iterator::reference pr) {
-        return  llvm::isa<llvm::Function>(pr.second);
+        return llvm::isa<llvm::Function>(pr.second);
     }
 
     static bool isNotFunc(VarInfoContainer::loc_value_iterator::reference pr) {
@@ -128,10 +128,9 @@ public:
     MetaInfoTrackerPass();
     virtual ~MetaInfoTrackerPass();
 
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
-    virtual bool runOnModule(llvm::Module&);
-
-    virtual void print(llvm::raw_ostream&, const llvm::Module* M) const;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    virtual bool runOnModule(llvm::Module&) override;
+    virtual void print(llvm::raw_ostream&, const llvm::Module* M) const override;
 
     ValueDescriptor locate(const Locus& loc, DiscoveryPolicy policy) const {
         switch(policy) {
