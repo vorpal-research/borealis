@@ -6,10 +6,13 @@
  */
 
 #include <llvm/Analysis/Dominators.h>
+#include <llvm/Analysis/LoopIterator.h>
 #include <llvm/Constants.h>
+#include <llvm/Instructions.h>
 #include <llvm/Metadata.h>
-#include <llvm/Support/Casting.h>
 #include <llvm/Support/CommandLine.h>
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 #include <vector>
 
@@ -40,7 +43,7 @@ static inline void RemapInstruction(
             I.setOperand(op, It->second);
         // Attempt to remap internal MDNode values to cloned ones
         // to preserve debug information when unrolling
-        } else if (MDNode* MDN = dyn_cast_or_null<MDNode>(Op)) {
+        } else if (auto* MDN = dyn_cast_or_null<MDNode>(Op)) {
 
             std::vector<Value*> mdn_values;
             mdn_values.reserve(MDN->getNumOperands());
@@ -48,9 +51,9 @@ static inline void RemapInstruction(
 
             for (unsigned mdn_op = 0, ee = MDN->getNumOperands(); mdn_op != ee; ++mdn_op) {
                 Instruction* OldVal = dyn_cast_or_null<Instruction>(MDN->getOperand(mdn_op));
-                ValueToValueMapTy::iterator mdn_it = VMap.find(OldVal);
-                if (OldVal && mdn_it != VMap.end()) {
-                    mdn_values.push_back(mdn_it->second);
+                ValueToValueMapTy::iterator Mdn_It = VMap.find(OldVal);
+                if (OldVal && Mdn_It != VMap.end()) {
+                    mdn_values.push_back(Mdn_It->second);
                     hasClonedValues = true;
                 } else {
                     mdn_values.push_back(OldVal);
@@ -65,7 +68,7 @@ static inline void RemapInstruction(
 
     if (isa<PHINode>(I)) {
         PHINode& PN = cast<PHINode>(I);
-        for (unsigned i = 0, ee = PN.getNumIncomingValues(); i != ee; ++i) {
+        for (unsigned i = 0, e = PN.getNumIncomingValues(); i != e; ++i) {
             ValueToValueMapTy::iterator It = VMap.find(PN.getIncomingBlock(i));
             if (It != VMap.end()) {
                 PN.setIncomingBlock(i, cast<BasicBlock>(It->second));
@@ -177,7 +180,7 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     for (unsigned UnrollIter = 0; UnrollIter != CurrentDerollCount; UnrollIter++) {
         std::vector<BasicBlock*> NewBlocks;
 
-        for (LoopBlocksDFS::RPOIterator BB = BlockBegin; BB != BlockEnd; ++BB) {
+        for (auto BB = BlockBegin; BB != BlockEnd; ++BB) {
             ValueToValueMapTy VMap;
             BasicBlock* New = CloneBasicBlock(*BB, VMap, ".bor." + Twine(UnrollIter));
             F->getBasicBlockList().push_back(New);
@@ -206,12 +209,10 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
             }
 
             // Add PHI entries for newly created values to all exit blocks
-            for (succ_iterator SI = succ_begin(*BB), SE = succ_end(*BB);
-                    SI != SE; ++SI) {
+            for (auto SI = succ_begin(*BB), SE = succ_end(*BB); SI != SE; ++SI) {
                 if (L->contains(*SI))
                     continue;
-                for (BasicBlock::iterator BBI = (*SI)->begin();
-                        PHINode* PHI = dyn_cast<PHINode>(BBI); ++BBI) {
+                for (auto BBI = (*SI)->begin(); PHINode* PHI = dyn_cast<PHINode>(BBI); ++BBI) {
                     Value* Incoming = PHI->getIncomingValueForBlock(*BB);
                     ValueToValueMapTy::iterator It = LastValueMap.find(Incoming);
                     if (It != LastValueMap.end())
