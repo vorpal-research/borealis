@@ -8,15 +8,10 @@
 #ifndef DETECTNULLPASS_H_
 #define DETECTNULLPASS_H_
 
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/raw_ostream.h>
 
 #include <map>
 #include <set>
-#include <tuple>
-#include <utility>
 
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
@@ -97,14 +92,14 @@ struct NullInfo {
 
 	    ASSERT(type == other.type, "Different NullInfo types in merge");
 
-		for (const auto& entry : other.offsetInfoMap){
-			const std::vector<unsigned>& idxs = entry.first;
-			const NullStatus& status = entry.second;
+		for (const auto& e : other.offsetInfoMap){
+			const std::vector<unsigned>& idxs = e.first;
+			const NullStatus& status = e.second;
 
 			if (!containsKey(offsetInfoMap, idxs)) {
 				offsetInfoMap[idxs] = status;
 			} else {
-				offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
+				offsetInfoMap[idxs] = mergeStatus(offsetInfoMap.at(idxs), status);
 			}
 		}
 
@@ -117,7 +112,7 @@ struct NullInfo {
 	    } else {
             for (const auto& e : offsetInfoMap) {
                 const std::vector<unsigned>& idxs = e.first;
-                offsetInfoMap[idxs] = mergeStatus(offsetInfoMap[idxs], status);
+                offsetInfoMap[idxs] = mergeStatus(offsetInfoMap.at(idxs), status);
             }
             return *this;
 	    }
@@ -142,8 +137,8 @@ public:
 
 	DetectNullPass();
 	DetectNullPass(llvm::Pass*);
-	virtual bool runOnFunction(llvm::Function& F);
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+	virtual bool runOnFunction(llvm::Function& F) override;
+	virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 	virtual ~DetectNullPass();
 
 	const NullInfoMap& getNullInfoMap() {

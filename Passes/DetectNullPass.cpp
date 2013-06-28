@@ -8,12 +8,12 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/InstVisitor.h>
 
-#include "Logging/tracer.hpp"
 #include "Passes/DetectNullPass.h"
 
 namespace borealis {
 
-using namespace borealis::util;
+using borealis::util::contains;
+using borealis::util::containsKey;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -24,17 +24,15 @@ using namespace borealis::util;
 class RegularDetectNullInstVisitor :
         public llvm::InstVisitor<RegularDetectNullInstVisitor> {
 
-        public:
+public:
 
     using llvm::InstVisitor<RegularDetectNullInstVisitor>::visit;
 
     RegularDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {}
 
     void visit(llvm::Instruction& I) {
-        using llvm::Value;
 
-        Value* ptr = &I;
-        if (containsKey(pass->data, ptr)) return;
+        if (containsKey(pass->data, &I)) return;
 
         InstVisitor::visit(I);
     }
@@ -53,7 +51,7 @@ class RegularDetectNullInstVisitor :
 
         if (!ptr->getType()->getPointerElementType()->isPointerTy()) return;
 
-        if (isa<ConstantPointerNull>(*value)) {
+        if (isa<ConstantPointerNull>(value)) {
             pass->data[ptr] = NullInfo().setType(NullType::DEREF).setStatus(NullStatus::Null);
         }
     }
@@ -68,7 +66,7 @@ class RegularDetectNullInstVisitor :
         }
     }
 
-        private:
+private:
 
     DetectNullPass* pass;
 
@@ -83,7 +81,7 @@ class RegularDetectNullInstVisitor :
 class PHIDetectNullInstVisitor :
         public llvm::InstVisitor<PHIDetectNullInstVisitor> {
 
-        public:
+public:
 
     PHIDetectNullInstVisitor(DetectNullPass* pass) : pass(pass) {}
 
@@ -93,12 +91,12 @@ class PHIDetectNullInstVisitor :
         if (!I.getType()->isPointerTy()) return;
 
         std::set<PHINode*> visited;
-        auto incomingValues = getIncomingValues(I, visited);
+        auto incomingValues = getIncomingValues(&I, visited);
 
         NullInfo nullInfo;
-        for (Value* II : incomingValues) {
+        for (auto* II : incomingValues) {
             if (containsKey(pass->data, II)) {
-                nullInfo = nullInfo.merge(pass->data[II]);
+                nullInfo = nullInfo.merge(pass->data.at(II));
             } else {
                 nullInfo = nullInfo.merge(NullStatus::NotNull);
             }
@@ -106,26 +104,24 @@ class PHIDetectNullInstVisitor :
         pass->data[&I] = nullInfo;
     }
 
-        private:
+private:
 
     DetectNullPass* pass;
 
     std::set<llvm::Value*> getIncomingValues(
-            llvm::PHINode& I,
+            llvm::PHINode* I,
             std::set<llvm::PHINode*>& visited) {
         using namespace llvm;
 
         std::set<Value*> res;
 
-        if (contains(visited, &I)) return res;
-        else visited.insert(&I);
+        if (contains(visited, I)) return res;
+        else visited.insert(I);
 
-        for (unsigned i = 0U; i < I.getNumIncomingValues(); ++i) {
-            Value* incoming = I.getIncomingValue(i);
-            if (isa<PHINode>(incoming)) {
-                auto sub = getIncomingValues(
-                        *cast<PHINode>(incoming),
-                        visited);
+        for (unsigned i = 0U; i < I->getNumIncomingValues(); ++i) {
+            Value* incoming = I->getIncomingValue(i);
+            if (auto* iPhi = dyn_cast<PHINode>(incoming)) {
+                auto sub = getIncomingValues(iPhi, visited);
                 res.insert(sub.begin(), sub.end());
             } else {
                 res.insert(incoming);
