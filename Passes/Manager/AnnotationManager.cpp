@@ -6,21 +6,21 @@
  */
 
 #include "Annotation/AnnotationCast.h"
-#include "Passes/Misc/AnnotatorPass.h"
+#include "Passes/Manager/AnnotationManager.h"
 #include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
 namespace borealis {
 
-void AnnotatorPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+void AnnotationManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX< comments >::addRequiredTransitive(AU);
     AUX< slots >::addRequiredTransitive(AU);
 }
 
-bool AnnotatorPass::runOnModule(llvm::Module& M) {
+bool AnnotationManager::runOnModule(llvm::Module& M) {
     using borealis::util::view;
 
     auto& cmnts = GetAnalysis< comments >::doit(this);
@@ -38,14 +38,14 @@ bool AnnotatorPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void AnnotatorPass::print(llvm::raw_ostream&, const llvm::Module*) const {
+void AnnotationManager::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& An : annotations) {
         infos() << An << endl;
     }
 }
 
-char AnnotatorPass::ID;
-static RegisterPass<borealis::AnnotatorPass>
-X("annotator", "Anno annotation language processor", false, false);
+char AnnotationManager::ID;
+static RegisterPass<AnnotationManager>
+X("annotation-manager", "Annotation manager", false, false);
 
 } // namespace borealis

@@ -9,7 +9,7 @@
 
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
-#include "Passes/Misc/AnnotatorPass.h"
+#include "Passes/Manager/AnnotationManager.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Transform/AnnotationProcessor.h"
 #include "State/Transformer/AnnotationMaterializer.h"
@@ -21,7 +21,7 @@ namespace borealis {
 void AnnotationProcessor::getAnalysisUsage(llvm::AnalysisUsage& AU) const{
     AU.setPreservesCFG();
 
-    AUX<AnnotatorPass>::addRequired(AU);
+    AUX<AnnotationManager>::addRequired(AU);
     AUX<SourceLocationTracker>::addRequired(AU);
 }
 
@@ -34,7 +34,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 
     auto& im = IntrinsicsManager::getInstance();
 
-    auto& annotations = GetAnalysis< AnnotatorPass >::doit(this);
+    auto& annotations = GetAnalysis< AnnotationManager >::doit(this);
     auto& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
     for (auto anno : annotations) {

@@ -7,8 +7,8 @@
 
 #include "Annotation/LogicAnnotation.h"
 #include "Codegen/intrinsics_manager.h"
+#include "Passes/Manager/AnnotationManager.h"
 #include "Passes/Manager/FunctionManager.h"
-#include "Passes/Misc/AnnotatorPass.h"
 #include "Passes/Tracker/MetaInfoTrackerPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
@@ -28,7 +28,7 @@ FunctionManager::FunctionManager() : llvm::ModulePass(ID) {}
 void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
-    AUX<AnnotatorPass>::addRequiredTransitive(AU);
+    AUX<AnnotationManager>::addRequiredTransitive(AU);
     AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
@@ -37,7 +37,7 @@ void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool FunctionManager::runOnModule(llvm::Module& M) {
     using namespace llvm;
 
-    auto& annotations = GetAnalysis< AnnotatorPass >::doit(this);
+    auto& annotations = GetAnalysis< AnnotationManager >::doit(this);
     auto& meta =  GetAnalysis< MetaInfoTrackerPass >::doit(this);
     auto& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 

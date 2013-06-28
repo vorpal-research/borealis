@@ -1,12 +1,12 @@
 /*
- * AnnotatorPass.h
+ * AnnotationManager.h
  *
  *  Created on: Oct 8, 2012
  *      Author: belyaev
  */
 
-#ifndef ANNOTATORPASS_H
-#define ANNOTATORPASS_H
+#ifndef ANNOTATIONMANAGER_H
+#define ANNOTATIONMANAGER_H
 
 #include <llvm/Pass.h>
 
@@ -21,9 +21,9 @@
 
 namespace borealis {
 
-class AnnotatorPass:
+class AnnotationManager:
     public llvm::ModulePass,
-    public borealis::logging::ClassLevelLogging<AnnotatorPass> {
+    public borealis::logging::ClassLevelLogging<AnnotationManager> {
 
 public:
     static char ID;
@@ -32,7 +32,8 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("annotator")
 #include "Util/unmacros.h"
 
-    AnnotatorPass(): llvm::ModulePass(ID) {};
+    AnnotationManager() : llvm::ModulePass(ID) {};
+    virtual ~AnnotationManager() {};
 
     typedef DataProvider<borealis::comments::GatherCommentsAction> comments;
     typedef SlotTrackerPass slots;
@@ -59,4 +60,4 @@ public:
 
 } // namespace borealis
 
-#endif // ANNOTATORPASS_H
+#endif // ANNOTATIONMANAGER_H

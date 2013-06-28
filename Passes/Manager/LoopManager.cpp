@@ -6,8 +6,8 @@
  */
 
 #include "Annotation/UnrollAnnotation.h"
+#include "Passes/Manager/AnnotationManager.h"
 #include "Passes/Manager/LoopManager.h"
-#include "Passes/Misc/AnnotatorPass.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
@@ -19,14 +19,14 @@ LoopManager::LoopManager() : llvm::FunctionPass(ID) {}
 void LoopManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
-    AUX<AnnotatorPass>::addRequiredTransitive(AU);
+    AUX<AnnotationManager>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
 bool LoopManager::runOnFunction(llvm::Function&) {
     using namespace llvm;
 
-    auto& AP = GetAnalysis<AnnotatorPass>::doit(this);
+    auto& AP = GetAnalysis<AnnotationManager>::doit(this);
     auto& SL = GetAnalysis<SourceLocationTracker>::doit(this);
 
     for (auto& anno : AP) {
