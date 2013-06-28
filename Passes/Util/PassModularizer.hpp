@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "Passes/SCCPass.h"
+#include "Passes/Util/SCCPass.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"

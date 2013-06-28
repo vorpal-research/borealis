@@ -16,9 +16,9 @@
 #include <unordered_map>
 
 #include "Logging/logger.hpp"
-#include "Passes/FunctionManager.h"
+#include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
-#include "Passes/PredicateStateAnalysis.h"
+#include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"

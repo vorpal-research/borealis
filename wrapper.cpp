@@ -64,7 +64,7 @@
 #include "Actions/comments.h"
 #include "Config/config.h"
 #include "Logging/logger.hpp"
-#include "Passes/PrinterPasses.h"
+#include "Passes/Misc/PrinterPasses.h"
 #include "Passes/Util/DataProvider.hpp"
 #include "Util/util.h"
 

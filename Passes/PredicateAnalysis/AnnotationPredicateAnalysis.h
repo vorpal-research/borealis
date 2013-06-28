@@ -11,7 +11,7 @@
 #include <llvm/Pass.h>
 
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
-#include "Passes/MetaInfoTrackerPass.h"
+#include "Passes/Tracker/MetaInfoTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"

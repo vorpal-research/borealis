@@ -11,7 +11,7 @@
 #include <llvm/Pass.h>
 
 #include "Logging/logger.hpp"
-#include "Passes/DefectManager.h"
+#include "Passes/Defect/DefectManager.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 

@@ -9,7 +9,7 @@
 
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/Checker/CheckContractPass.h"
-#include "Passes/SlotTrackerPass.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Solver/Z3Solver.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"

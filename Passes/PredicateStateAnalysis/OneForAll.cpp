@@ -8,9 +8,9 @@
 #include <llvm/Support/CFG.h>
 
 #include "Logging/tracer.hpp"
-#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/Defines.def"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
-#include "Passes/SlotTrackerPass.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "Util/graph.h"
@@ -32,7 +32,7 @@ void OneForAll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 #define HANDLE_ANALYSIS(CLASS) \
     AUX<CLASS>::addRequiredTransitive(AU);
-#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/Defines.def"
 }
 
 bool OneForAll::runOnFunction(llvm::Function& F) {
@@ -49,7 +49,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
-#include "Passes/PredicateAnalysis/PredicateAnalysis.def"
+#include "Passes/PredicateAnalysis/Defines.def"
 
     // Register globals in our predicate states
     auto& globalList = F.getParent()->getGlobalList();

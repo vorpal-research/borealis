@@ -11,7 +11,7 @@
 #include <sstream>
 
 #include "Annotation/Annotation.def"
-#include "Passes/MetaInfoTrackerPass.h"
+#include "Passes/Tracker/MetaInfoTrackerPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/Transformer/Transformer.hpp"
 #include "Term/NameContext.h"

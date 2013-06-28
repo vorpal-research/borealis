@@ -8,11 +8,12 @@ syntax: glob
 *.log
 *.pyc
 
-
 wrapper
 run-tests
-
 
 test_results.xml
 *.tmp
 *.all
+
+*.png
+*.xml

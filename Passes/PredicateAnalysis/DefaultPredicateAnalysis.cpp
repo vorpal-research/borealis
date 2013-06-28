@@ -11,7 +11,7 @@
 
 #include "Codegen/llvm.h"
 #include "Passes/PredicateAnalysis/DefaultPredicateAnalysis.h"
-#include "Passes/SlotTrackerPass.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 
 #include "Util/macros.h"
 

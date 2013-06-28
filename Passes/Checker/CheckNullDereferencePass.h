@@ -12,10 +12,10 @@
 #include <llvm/Pass.h>
 
 #include "Logging/logger.hpp"
-#include "Passes/DefectManager.h"
-#include "Passes/DetectNullPass.h"
-#include "Passes/PredicateStateAnalysis.h"
-#include "Passes/SlotTrackerPass.h"
+#include "Passes/Defect/DefectManager.h"
+#include "Passes/Misc/DetectNullPass.h"
+#include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"

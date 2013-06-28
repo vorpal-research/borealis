@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "Passes/DefectManager/DefectInfo.h"
+#include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "Util/json.hpp"
 #include "Util/json_traits.hpp"
 #include "Util/util.h"
