@@ -13,7 +13,7 @@
 
 #include <unordered_map>
 
-#include "Passes/Transform/PtrSSAPass/origin_tracker.h"
+#include "Passes/Transform/PtrSsa/origin_tracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 

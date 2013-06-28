@@ -13,14 +13,14 @@ class AnnotationMaterializer::AnnotationMaterializerImpl {
 public:
     const LogicAnnotation* A;
     TermFactory* TF;
-    MetaInfoTrackerPass* MI;
+    MetaInfoTracker* MI;
     NameContext nc;
 };
 
 AnnotationMaterializer::AnnotationMaterializer(
         const LogicAnnotation& A,
         TermFactory* TF,
-        MetaInfoTrackerPass* MI) :
+        MetaInfoTracker* MI) :
             pimpl(
                     new AnnotationMaterializerImpl {
                         &A,
@@ -57,7 +57,7 @@ Annotation::Ptr AnnotationMaterializer::doit() {
     return pimpl->A->clone(trm);
 }
 
-MetaInfoTrackerPass::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
+MetaInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
     switch(pimpl->nc.placement) {
     case NameContext::Placement::GlobalScope:
     case NameContext::Placement::InnerScope:
@@ -93,7 +93,7 @@ void AnnotationMaterializer::failWith(const std::string& message) {
 Annotation::Ptr materialize(
         Annotation::Ptr annotation,
         TermFactory* TF,
-        MetaInfoTrackerPass* MI
+        MetaInfoTracker* MI
             ) {
     if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation)){
         AnnotationMaterializer am(*logic, TF, MI);

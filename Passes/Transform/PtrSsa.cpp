@@ -5,13 +5,13 @@
  *      Author: belyaev
  */
 
-#include "Passes/Transform/PtrSSAPass.h"
+#include "Passes/Transform/PtrSsa.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
 
-char PtrSSAPass::ID;
-static RegisterPass<PtrSSAPass>
+char PtrSsa::ID;
+static RegisterPass<PtrSsa>
 X("pointer-ssa", "Pass that places an intrinsic mark on every pointer before every use");
 
 } // namespace borealis

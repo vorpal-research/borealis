@@ -11,7 +11,7 @@
 #include <sstream>
 
 #include "Annotation/Annotation.def"
-#include "Passes/Tracker/MetaInfoTrackerPass.h"
+#include "Passes/Tracker/MetaInfoTracker.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/Transformer/Transformer.hpp"
 #include "Term/NameContext.h"
@@ -29,10 +29,10 @@ public:
     AnnotationMaterializer(
             const LogicAnnotation& A,
             TermFactory* TF,
-            MetaInfoTrackerPass* MI);
+            MetaInfoTracker* MI);
     ~AnnotationMaterializer();
 
-    MetaInfoTrackerPass::ValueDescriptor forName(const std::string& name) const;
+    MetaInfoTracker::ValueDescriptor forName(const std::string& name) const;
     const NameContext& nameContext() const;
     TermFactory& factory() const;
 
@@ -89,7 +89,7 @@ public:
     }
 };
 
-Annotation::Ptr materialize(Annotation::Ptr, TermFactory*, MetaInfoTrackerPass*);
+Annotation::Ptr materialize(Annotation::Ptr, TermFactory*, MetaInfoTracker*);
 
 } /* namespace borealis */
 

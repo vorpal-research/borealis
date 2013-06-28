@@ -10,16 +10,16 @@
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
-#include "Passes/Tracker/MetaInfoTrackerPass.h"
+#include "Passes/Tracker/MetaInfoTracker.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
 
-MetaInfoTrackerPass::MetaInfoTrackerPass() : ModulePass(ID) {}
+MetaInfoTracker::MetaInfoTracker() : ModulePass(ID) {}
 
-MetaInfoTrackerPass::~MetaInfoTrackerPass() {}
+MetaInfoTracker::~MetaInfoTracker() {}
 
-void MetaInfoTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+void MetaInfoTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
     AUX<sm_t>::addRequiredTransitive(AU);
 }
@@ -75,7 +75,7 @@ static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node
     return ret.overwriteBy(mkVI(sm, ast, allocated));
 }
 
-bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
+bool MetaInfoTracker::runOnModule(llvm::Module& M) {
     using borealis::util::isValid;
     using borealis::util::takePtr;
     using borealis::util::view;
@@ -175,14 +175,14 @@ bool MetaInfoTrackerPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void MetaInfoTrackerPass::print(llvm::raw_ostream&, const llvm::Module*) const {
+void MetaInfoTracker::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& var : vars) {
         infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
     }
 }
 
-char MetaInfoTrackerPass::ID;
-static RegisterPass<MetaInfoTrackerPass>
+char MetaInfoTracker::ID;
+static RegisterPass<MetaInfoTracker>
 X("meta-tracker", "Meta info for values");
 
 } /* namespace borealis */

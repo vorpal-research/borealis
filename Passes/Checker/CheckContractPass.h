@@ -14,7 +14,7 @@
 #include "Passes/Defect/DefectManager.h"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
-#include "Passes/Tracker/MetaInfoTrackerPass.h"
+#include "Passes/Tracker/MetaInfoTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
@@ -48,7 +48,7 @@ private:
 
     DefectManager* DM;
     FunctionManager* FM;
-    MetaInfoTrackerPass* MI;
+    MetaInfoTracker* MI;
     PredicateStateAnalysis* PSA;
 
     PredicateFactory::Ptr PF;

@@ -61,14 +61,14 @@ AnnotationPredicateAnalysis::AnnotationPredicateAnalysis(llvm::Pass* pass) :
 void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
-    AUX<MetaInfoTrackerPass>::addRequiredTransitive(AU);
+    AUX<MetaInfoTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
 bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
-    MI = &GetAnalysis<MetaInfoTrackerPass>::doit(this, F);
+    MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
 
     auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     PF = PredicateFactory::get(ST);

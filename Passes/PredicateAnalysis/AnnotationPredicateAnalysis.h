@@ -11,7 +11,7 @@
 #include <llvm/Pass.h>
 
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
-#include "Passes/Tracker/MetaInfoTrackerPass.h"
+#include "Passes/Tracker/MetaInfoTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Predicate/PredicateFactory.h"
 #include "Term/TermFactory.h"
@@ -38,7 +38,7 @@ public:
 
 private:
 
-    MetaInfoTrackerPass* MI;
+    MetaInfoTracker* MI;
     PredicateFactory::Ptr PF;
     TermFactory::Ptr TF;
 

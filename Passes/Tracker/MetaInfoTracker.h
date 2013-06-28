@@ -22,7 +22,7 @@ namespace borealis {
 // a pass that lets you track mappings between clang decls and llvm values
 // (and does a bunch of other shit as well...)
 // not really a pass, just some functionality bundled into llvm pass system
-class MetaInfoTrackerPass : public llvm::ModulePass {
+class MetaInfoTracker : public llvm::ModulePass {
     typedef DataProvider<clang::SourceManager> sm_t;
 
     VarInfoContainer vars;
@@ -125,8 +125,8 @@ public:
 
     static char ID;
 
-    MetaInfoTrackerPass();
-    virtual ~MetaInfoTrackerPass();
+    MetaInfoTracker();
+    virtual ~MetaInfoTracker();
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnModule(llvm::Module&) override;

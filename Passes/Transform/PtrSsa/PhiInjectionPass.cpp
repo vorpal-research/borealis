@@ -8,8 +8,8 @@
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/CFG.h>
 
-#include "Passes/Transform/PtrSSAPass/PhiInjectionPass.h"
-#include "Passes/Transform/PtrSSAPass/SLInjectionPass.h"
+#include "Passes/Transform/PtrSsa/PhiInjectionPass.h"
+#include "Passes/Transform/PtrSsa/SLInjectionPass.h"
 
 namespace borealis {
 namespace ptrssa {

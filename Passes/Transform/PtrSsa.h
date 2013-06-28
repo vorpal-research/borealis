@@ -9,12 +9,12 @@
 
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Util/AggregateFunctionPass.hpp"
-#include "PtrSSAPass/PhiInjectionPass.h"
-#include "PtrSSAPass/SLInjectionPass.h"
+#include "Passes/Transform/PtrSsa/PhiInjectionPass.h"
+#include "Passes/Transform/PtrSsa/SLInjectionPass.h"
 
 namespace borealis {
 
-class PtrSSAPass :
+class PtrSsa :
     public AggregateFunctionPass<
         ptrssa::PhiInjectionPass,
         ptrssa::StoreLoadInjectionPass
@@ -29,7 +29,7 @@ public:
 
 	static char ID;
 
-	PtrSSAPass() : base(ID) {}
+	PtrSsa() : base(ID) {}
 
     virtual bool runOnFunction(llvm::Function& F) {
         auto& phis = getChildAnalysis<phis_t>();
@@ -42,7 +42,7 @@ public:
         return false;
     }
 
-    virtual ~PtrSSAPass() {};
+    virtual ~PtrSsa() {};
 };
 
 } // namespace borealis
