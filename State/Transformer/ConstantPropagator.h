@@ -146,11 +146,17 @@ private:
     bool propagate(llvm::ConditionType opcode, Lhv lhv, Rhv rhv) {
         switch (opcode) {
         case llvm::ConditionType::EQ:    return lhv == rhv;
-        case llvm::ConditionType::GT:    return lhv >  rhv;
-        case llvm::ConditionType::GTE:   return lhv >= rhv;
-        case llvm::ConditionType::LT:    return lhv <  rhv;
-        case llvm::ConditionType::LTE:   return lhv <= rhv;
         case llvm::ConditionType::NEQ:   return lhv != rhv;
+
+        case llvm::ConditionType::GT:
+        case llvm::ConditionType::UGT:   return lhv >  rhv;
+        case llvm::ConditionType::GE:
+        case llvm::ConditionType::UGE:   return lhv >= rhv;
+        case llvm::ConditionType::LT:
+        case llvm::ConditionType::ULT:   return lhv <  rhv;
+        case llvm::ConditionType::LE:
+        case llvm::ConditionType::ULE:   return lhv <= rhv;
+
         case llvm::ConditionType::TRUE:  return true;
         case llvm::ConditionType::FALSE: return false;
         case llvm::ConditionType::UNKNOWN:
@@ -177,16 +183,22 @@ private:
         switch (opcode) {
         case llvm::ConditionType::EQ:
             return std::fabs(lhv - rhv) < EPSILON;
+        case llvm::ConditionType::NEQ:
+            return std::fabs(lhv - rhv) >= EPSILON;
+
         case llvm::ConditionType::GT:
+        case llvm::ConditionType::UGT:
             return lhv > rhv;
-        case llvm::ConditionType::GTE:
+        case llvm::ConditionType::GE:
+        case llvm::ConditionType::UGE:
             return lhv > rhv || std::fabs(lhv - rhv) < EPSILON;
         case llvm::ConditionType::LT:
+        case llvm::ConditionType::ULT:
             return lhv < rhv;
-        case llvm::ConditionType::LTE:
+        case llvm::ConditionType::LE:
+        case llvm::ConditionType::ULE:
             return lhv < rhv || std::fabs(lhv - rhv) < EPSILON;
-        case llvm::ConditionType::NEQ:
-            return std::fabs(lhv - rhv) > EPSILON;
+
         case llvm::ConditionType::TRUE:
             return true;
         case llvm::ConditionType::FALSE:

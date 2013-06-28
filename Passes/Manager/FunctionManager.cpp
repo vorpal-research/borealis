@@ -50,6 +50,11 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     for (auto a : annotations) {
         Annotation::Ptr anno = materialize(a, TF.get(), &meta);
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
+
+            if ( ! (isa<RequiresAnnotation>(logic) ||
+                    isa<EnsuresAnnotation>(logic) ||
+                    isa<AssignsAnnotation>(logic))) continue;
+
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
                 if (auto* F = dyn_cast<Function>(e.second)) {
                     PredicateState::Ptr ps = (

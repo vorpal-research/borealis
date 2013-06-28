@@ -40,9 +40,9 @@ static llvm::ConditionType convertCT(bin_opcode op) {
     case bin_opcode::OPCODE_LT:
         return llvm::ConditionType::LT;
     case bin_opcode::OPCODE_GE:
-        return llvm::ConditionType::GTE;
+        return llvm::ConditionType::GE;
     case bin_opcode::OPCODE_LE:
-        return llvm::ConditionType::LTE;
+        return llvm::ConditionType::LE;
     default:
         BYE_BYE(llvm::ConditionType, "Called with non-conditional operation");
     }

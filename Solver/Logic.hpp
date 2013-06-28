@@ -567,7 +567,27 @@ struct generator<ComparableExpr> : generator<BitVector<1>> {
 };
 } // namespace impl
 
-ASPECT(ComparableExpr)
+ASPECT_BEGIN(ComparableExpr)
+public:
+
+#define OP(NAME) \
+Bool NAME(const ComparableExpr& other) { \
+    auto& ctx = z3impl::getContext(this); \
+    auto l = z3impl::getExpr(this); \
+    auto r = z3impl::getExpr(other); \
+    auto res = z3::to_expr(ctx, Z3_mk_bv##NAME(ctx, l, r)); \
+    auto axm = spliceAxioms(*this, other); \
+    return Bool(res, axm); \
+}
+
+OP(ugt)
+OP(uge)
+OP(ult)
+OP(ule)
+
+#undef OP
+
+ASPECT_END
 
 #define REDEF_OP(OP) \
     Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv);

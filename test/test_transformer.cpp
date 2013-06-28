@@ -171,7 +171,7 @@ TEST_F(TransformerTest, ConstantPropagator) {
 
         // 0.3 >= 20 && !(-5.4)
         auto testTerm = TF->getCmpTerm(
-            ConditionType::GTE,
+            ConditionType::GE,
             TF->getOpaqueConstantTerm(0.3),
             TF->getBinaryTerm(
                 ArithType::LAND,

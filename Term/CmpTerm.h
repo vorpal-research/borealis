@@ -50,13 +50,21 @@ public:
 
         switch(opcode) {
         case llvm::ConditionType::EQ:    return lhv == rhv;
-        case llvm::ConditionType::FALSE: return z3ef.getFalse();
-        case llvm::ConditionType::GT:    return lhv >  rhv;
-        case llvm::ConditionType::GTE:   return lhv >= rhv;
-        case llvm::ConditionType::LT:    return lhv <  rhv;
-        case llvm::ConditionType::LTE:   return lhv <= rhv;
         case llvm::ConditionType::NEQ:   return lhv != rhv;
+
+        case llvm::ConditionType::GT:    return lhv >  rhv;
+        case llvm::ConditionType::GE:    return lhv >= rhv;
+        case llvm::ConditionType::LT:    return lhv <  rhv;
+        case llvm::ConditionType::LE:    return lhv <= rhv;
+
+        case llvm::ConditionType::UGT:   return lhv.ugt(rhv);
+        case llvm::ConditionType::UGE:   return lhv.uge(rhv);
+        case llvm::ConditionType::ULT:   return lhv.ult(rhv);
+        case llvm::ConditionType::ULE:   return lhv.ule(rhv);
+
         case llvm::ConditionType::TRUE:  return z3ef.getTrue();
+        case llvm::ConditionType::FALSE: return z3ef.getFalse();
+
         default: BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported opcode");
         }
     }

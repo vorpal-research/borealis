@@ -30,15 +30,16 @@ AnnotationMaterializer::AnnotationMaterializer(
                     }
             ) {
     if (llvm::isa<EnsuresAnnotation>(A) ||
-            llvm::isa<RequiresAnnotation>(A) ||
-            llvm::isa<AssignsAnnotation>(A)) {
+        llvm::isa<RequiresAnnotation>(A) ||
+        llvm::isa<AssignsAnnotation>(A)) {
         pimpl->nc.placement = NameContext::Placement::OuterScope;
         if (auto f = llvm::dyn_cast_or_null<llvm::Function>(
                 pimpl->MI->locate(pimpl->nc.loc, DiscoveryPolicy::NextFunction).val
             )) {
             pimpl->nc.func = f;
         }
-    } else if (llvm::isa<AssertAnnotation>(A)) {
+    } else if (llvm::isa<AssertAnnotation>(A) ||
+               llvm::isa<AssumeAnnotation>(A)) {
         pimpl->nc.placement = NameContext::Placement::InnerScope;
         if (auto f = llvm::dyn_cast_or_null<llvm::Function>(
                 pimpl->MI->locate(pimpl->nc.loc, DiscoveryPolicy::PreviousFunction).val

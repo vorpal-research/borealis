@@ -54,33 +54,33 @@ ConditionDescription analyzeCondition(const int cond) {
 
 	case P::ICMP_SGE:
 	case P::FCMP_OGE:
-		return {">=", CT::GTE};
+		return {">=", CT::GE};
 	case P::ICMP_UGE:
-		return {"+>=", CT::GTE};
+		return {"+>=", CT::UGE};
 	case P::FCMP_UGE:
-		return {"?>=", CT::GTE};
+		return {"?>=", CT::GE};
 
 	case P::ICMP_SGT:
 	case P::FCMP_OGT:
 		return {">", CT::GT};
 	case P::ICMP_UGT:
-		return {"+>", CT::GT};
+		return {"+>", CT::UGT};
 	case P::FCMP_UGT:
 		return {"?>", CT::GT};
 
 	case P::ICMP_SLE:
 	case P::FCMP_OLE:
-		return {"<=", CT::LTE};
+		return {"<=", CT::LE};
 	case P::ICMP_ULE:
-		return {"+<=", CT::LTE};
+		return {"+<=", CT::ULE};
 	case P::FCMP_ULE:
-		return {"?<=", CT::LTE};
+		return {"?<=", CT::LE};
 
 	case P::ICMP_SLT:
 	case P::FCMP_OLT:
 		return {"<", CT::LT};
 	case P::ICMP_ULT:
-		return {"+<", CT::LT};
+		return {"+<", CT::ULT};
 	case P::FCMP_ULT:
 		return {"?<", CT::LT};
 
@@ -106,10 +106,17 @@ std::string conditionString(ConditionType cond) {
     switch(cond) {
     case ConditionType::EQ:    return "==";
     case ConditionType::NEQ:   return "!=";
+
     case ConditionType::GT:    return ">";
-    case ConditionType::GTE:   return ">=";
+    case ConditionType::GE:    return ">=";
     case ConditionType::LT:    return "<";
-    case ConditionType::LTE:   return "<=";
+    case ConditionType::LE:    return "<=";
+
+    case ConditionType::UGT:   return "+>";
+    case ConditionType::UGE:   return "+>=";
+    case ConditionType::ULT:   return "+<";
+    case ConditionType::ULE:   return "+<=";
+
     case ConditionType::TRUE:  return "true";
     case ConditionType::FALSE: return "false";
     default: BYE_BYE(std::string, "Unreachable!");

@@ -41,10 +41,17 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T);
 enum class ConditionType {
 	EQ,
 	NEQ,
+
 	GT,
-	GTE,
+	GE,
 	LT,
-	LTE,
+	LE,
+
+    UGT,
+    UGE,
+    ULT,
+    ULE,
+
 	TRUE,
 	FALSE,
 	UNKNOWN
