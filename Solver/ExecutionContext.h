@@ -8,6 +8,8 @@
 #ifndef Z3CONTEXT_H_
 #define Z3CONTEXT_H_
 
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "Logging/tracer.hpp"
@@ -24,8 +26,34 @@ public:
 
 private:
     Z3ExprFactory& factory;
-    MemArray memory;
+    std::unordered_map<std::string, MemArray> memArrays;
     unsigned long long currentPtr;
+
+    static constexpr auto MEMORY_ID = "$$__MEMORY__$$";
+    MemArray memory() const {
+        return get(MEMORY_ID);
+    }
+    void memory(const MemArray& value) {
+        set(MEMORY_ID, value);
+    }
+
+    MemArray get(const std::string& id) const {
+        using borealis::util::containsKey;
+        if (containsKey(memArrays, id)) {
+            return memArrays.at(id);
+        }
+        return factory.getNoMemoryArray();
+    }
+    void set(const std::string& id, const MemArray& value) {
+        memArrays.emplace(id, value);
+    }
+
+    typedef std::unordered_set<std::string> MemArrayIds;
+
+    MemArrayIds getMemArrayIds() const {
+        auto it = util::iterate_keys(util::begin_end_pair(memArrays));
+        return MemArrayIds(it.first, it.second);
+    }
 
 public:
     ExecutionContext(Z3ExprFactory& factory);
@@ -33,7 +61,7 @@ public:
 
     MemArray getCurrentMemoryContents() {
         TRACE_FUNC;
-        return memory;
+        return memory();
     }
 
     inline Pointer getDistinctPtr(size_t ofSize = 1U) {
@@ -51,25 +79,27 @@ public:
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
         TRACE_FUNC;
-        return memory.select(ix, bitSize);
+        return memory().select(ix, bitSize);
     }
 
     template<class ExprClass>
     ExprClass readExprFromMemory(Pointer ix) {
         TRACE_FUNC;
-        return memory.select<ExprClass>(ix);
+        return memory().select<ExprClass>(ix);
     }
 
     template<class ExprClass>
     void writeExprToMemory(Pointer ix, ExprClass val) {
         TRACE_FUNC;
-        memory = memory.store(ix, val);
+        memory( memory().store(ix, val) );
     }
 
-    ExecutionContext& switchOn(const std::vector<std::pair<Bool, ExecutionContext>>& contexts) {
+    typedef std::pair<Bool, ExecutionContext> Choice;
+
+    ExecutionContext& switchOn(const std::vector<Choice>& contexts) {
         auto merged = ExecutionContext::mergeMemory(*this, contexts);
 
-        this->memory = merged.memory;
+        this->memArrays = merged.memArrays;
         this->currentPtr = merged.currentPtr;
 
         return *this;
@@ -77,7 +107,7 @@ public:
 
     static ExecutionContext mergeMemory(
             ExecutionContext defaultContext,
-            const std::vector<std::pair<Bool, ExecutionContext>>& contexts) {
+            const std::vector<Choice>& contexts) {
         ExecutionContext res(defaultContext.factory);
 
         // Merge current pointer
@@ -86,15 +116,26 @@ public:
             res.currentPtr = std::max(res.currentPtr, e.second.currentPtr);
         }
 
-        // Merge memory
-        std::vector<std::pair<Bool, MemArray>> memories;
-        memories.reserve(contexts.size());
-        std::transform(contexts.begin(), contexts.end(), std::back_inserter(memories),
-            [](const std::pair<Bool, ExecutionContext>& p) {
-                return std::make_pair(p.first, p.second.memory);
+        // Collect all active memory array ids
+        auto memArrayIds = std::accumulate(contexts.begin(), contexts.end(),
+            defaultContext.getMemArrayIds(),
+            [](MemArrayIds a, Choice e) -> MemArrayIds {
+                auto ids = e.second.getMemArrayIds();
+                a.insert(ids.begin(), ids.end());
+                return a;
             }
         );
-        res.memory = MemArray::merge(defaultContext.memory, memories);
+
+        // Merge memory arrays
+        for (const auto& id : memArrayIds) {
+            std::vector<std::pair<Bool, MemArray>> alternatives;
+            alternatives.reserve(contexts.size());
+            std::transform(contexts.begin(), contexts.end(), std::back_inserter(alternatives),
+                [&id](const Choice& p) { return std::make_pair(p.first, p.second.get(id)); }
+            );
+
+            res.set(id, MemArray::merge(defaultContext.get(id), alternatives));
+        }
 
         return res;
     }
