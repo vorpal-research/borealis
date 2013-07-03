@@ -27,11 +27,16 @@ enum class function_type {
     BUILTIN_BOR_ASSUME,
     LAST_BUILTIN,
 
+    FIRST_ACTION,
+    ACTION_DEFECT,
+    LAST_ACTION,
+
     UNKNOWN
 };
 
 bool isIntrinsic(function_type ft);
 bool isBuiltin(function_type ft);
+bool isAction(function_type ft);
 bool isUnknown(function_type ft);
 
 } // namespace borealis

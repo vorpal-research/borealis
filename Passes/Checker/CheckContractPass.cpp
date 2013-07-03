@@ -8,6 +8,7 @@
 #include <llvm/Support/InstVisitor.h>
 
 #include "Codegen/intrinsics_manager.h"
+#include "Codegen/llvm.h"
 #include "Passes/Checker/CheckContractPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Solver/Z3Solver.h"
@@ -31,6 +32,8 @@ public:
         switch (im.getIntrinsicType(CI)) {
         case function_type::INTRINSIC_ANNOTATION:
             checkAnnotation(CI, Annotation::fromIntrinsic(CI)); break;
+        case function_type::ACTION_DEFECT:
+            checkActionDefect(CI); break;
         default:
             checkContract(CI); break;
         }
@@ -59,6 +62,27 @@ public:
         dbgs() << "  State: " << endl << state << endl;
         if (s.isViolated(instantiatedRequires, state)) {
             pass->DM->addDefect(DefectType::REQ_01, &CI);
+        }
+    }
+
+    void checkActionDefect(llvm::CallInst& CI) {
+        using namespace llvm;
+
+        auto state = pass->PSA->getInstructionState(&CI);
+
+        if (!state) return;
+
+        dbgs() << "Checking: " << CI << endl;
+        dbgs() << "  State: " << endl << state << endl;
+
+        if (!state->isUnreachable()) {
+            auto* op0 = CI.getArgOperand(0);
+            auto* op1 = CI.getArgOperand(1);
+
+            auto defectType = getAsCompileTimeString(op0);
+            auto defectMsg = getAsCompileTimeString(op1);
+
+            pass->DM->addDefect(defectType.getOrElse("UNK-99"), &CI);
         }
     }
 

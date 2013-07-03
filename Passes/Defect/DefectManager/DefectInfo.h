@@ -32,7 +32,7 @@ Streamer& operator<<(Streamer& str, const DefectSummary& ds) {
     return static_cast<Streamer&>(str << "\"" << ds.type << "\": " << ds.description);
 }
 
-const std::map<DefectType, const DefectSummary> DefectTypeNames = {
+const std::map<DefectType, const DefectSummary> DefectTypes = {
     { DefectType::INI_03, { "INI-03", "Dereferencing a nullptr" } },
     { DefectType::REQ_01, { "REQ-01", "Requires contract check failed" } },
     { DefectType::ENS_01, { "ENS-01", "Ensures contract check failed" } },
@@ -49,7 +49,7 @@ const std::map<std::string, DefectType> DefectTypesByName = {
 };
 
 struct DefectInfo {
-    DefectType type;
+    std::string type;
     Locus location;
 };
 
@@ -60,7 +60,7 @@ struct json_traits<DefectType> {
     typedef std::unique_ptr<DefectType> optional_ptr_t;
 
     static Json::Value toJson(const DefectType& val) {
-        return util::toJson(DefectTypeNames.at(val).type);
+        return util::toJson(DefectTypes.at(val).type);
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
@@ -84,7 +84,7 @@ struct json_traits<DefectInfo> {
     static optional_ptr_t fromJson(const Json::Value& json) {
         using borealis::util::json_object_builder;
 
-        json_object_builder<DefectInfo, DefectType, Locus> builder {
+        json_object_builder<DefectInfo, std::string, Locus> builder {
             "type", "location"
         };
         return optional_ptr_t {

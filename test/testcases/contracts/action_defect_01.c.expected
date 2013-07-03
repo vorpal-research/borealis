@@ -1,0 +1,16 @@
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/contracts/action_defect_01.c",
+			"loc" : 
+			{
+				"col" : 2,
+				"line" : 6
+			}
+		},
+		"type" : "BUG-42"
+	}
+]

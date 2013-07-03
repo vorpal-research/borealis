@@ -111,4 +111,20 @@ unsigned long long getTypeSizeInElems(llvm::Type* type) {
     return res;
 }
 
+util::option<std::string> getAsCompileTimeString(llvm::Value* value) {
+    using namespace llvm;
+
+    auto* v = value->stripPointerCasts();
+    if (auto* gv = dyn_cast<GlobalVariable>(v)) {
+        if (gv->hasInitializer()) v = gv->getInitializer();
+    }
+
+    if (auto* cv = dyn_cast<ConstantDataSequential>(v)) {
+        if (cv->isCString()) return util::just(cv->getAsCString().str());
+        else if (cv->isString()) return util::just(cv->getAsString().str());
+    }
+
+    return util::nothing();
+}
+
 } // namespace borealis

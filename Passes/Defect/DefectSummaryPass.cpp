@@ -50,7 +50,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
         Locus origin = defect.location;
 
         if (!origin) {
-            infos() << DefectTypeNames.at(defect.type)
+            infos() << defect.type
                     << " (cannot trace location)"
                     << endl;
             continue;
@@ -74,7 +74,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
         pt[origin.loc.col-1] = '^';
 
-        infos() << DefectTypeNames.at(defect.type)
+        infos() << defect.type
                 << " at " << origin << endl
                 << getRawSource(sm, before)
                 << ln

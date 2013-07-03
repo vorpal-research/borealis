@@ -105,6 +105,17 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
     }
 };
 
+static RegisterIntrinsic ACTION_DEFECT {
+    function_type::ACTION_DEFECT,
+    "borealis_action_defect",
+    RegisterIntrinsic::DefaultGenerator,
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
+        return ci.getCalledFunction()->getName() == "borealis_action_defect"
+               ? function_type::ACTION_DEFECT
+               : function_type::UNKNOWN;
+    }
+};
+
 } // namespace borealis
 
 #pragma clang diagnostic pop

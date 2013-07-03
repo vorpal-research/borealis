@@ -38,6 +38,7 @@ public:
     virtual ~DefectManager() {};
 
     void addDefect(DefectType type, llvm::Instruction* where);
+    void addDefect(std::string type, llvm::Instruction* where);
 
     virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
 

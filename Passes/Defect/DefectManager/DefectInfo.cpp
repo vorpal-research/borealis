@@ -22,7 +22,7 @@ bool operator<(const DefectInfo& a, const DefectInfo& b) {
 }
 
 std::ostream& operator<<(std::ostream& s, const DefectInfo& di) {
-    return s << DefectTypeNames.at(di.type).type << ":" << di.location;
+    return s << di.type << ":" << di.location;
 }
 
 } // namespace borealis

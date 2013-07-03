@@ -32,6 +32,8 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
 
 unsigned long long getTypeSizeInElems(llvm::Type* type);
 
+util::option<std::string> getAsCompileTimeString(llvm::Value* value);
+
 } // namespace borealis
 
 #endif /* CODEGEN_LLVM_H_ */
