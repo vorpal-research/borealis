@@ -105,6 +105,10 @@ public:
         return Term::Ptr(new LoadTerm(rhv));
     }
 
+    Term::Ptr getReadPropertyTerm(const std::string& propName, Term::Ptr rhv, Type::Ptr type) {
+        return Term::Ptr(new ReadPropertyTerm(propName, rhv, type));
+    }
+
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         using namespace llvm;
 
