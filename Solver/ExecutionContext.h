@@ -77,22 +77,39 @@ public:
         return ret;
     }
 
+////////////////////////////////////////////////////////////////////////////////
+
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
         TRACE_FUNC;
         return memory().select(ix, bitSize);
     }
-
     template<class ExprClass>
     ExprClass readExprFromMemory(Pointer ix) {
         TRACE_FUNC;
         return memory().select<ExprClass>(ix);
     }
-
     template<class ExprClass>
     void writeExprToMemory(Pointer ix, ExprClass val) {
         TRACE_FUNC;
         memory( memory().store(ix, val) );
     }
+
+    Dynamic readProperty(const std::string& id, Pointer ix, size_t bitSize) {
+        TRACE_FUNC;
+        return get(id).select(ix, bitSize);
+    }
+    template<class ExprClass>
+    ExprClass readProperty(const std::string& id, Pointer ix) {
+        TRACE_FUNC;
+        return get(id).select<ExprClass>(ix);
+    }
+    template<class ExprClass>
+    void writeProperty(const std::string& id, Pointer ix, ExprClass val) {
+        TRACE_FUNC;
+        set( id, get(id).store(ix, val) );
+    }
+
+////////////////////////////////////////////////////////////////////////////////
 
     typedef std::pair<Bool, ExecutionContext> Choice;
 
