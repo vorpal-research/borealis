@@ -14,6 +14,7 @@
 #include "Term/UnaryTerm.h"
 #include "Term/CmpTerm.h"
 #include "Term/LoadTerm.h"
+#include "Term/ReadPropertyTerm.h"
 #include "Term/GepTerm.h"
 #include "Term/OpaqueVarTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
@@ -34,6 +35,7 @@ HANDLE_TERM(Binary, BinaryTerm)
 HANDLE_TERM(Unary, UnaryTerm)
 HANDLE_TERM(Cmp, CmpTerm)
 HANDLE_TERM(Load, LoadTerm)
+HANDLE_TERM(ReadProperty, ReadPropertyTerm)
 HANDLE_TERM(Gep, GepTerm)
 HANDLE_TERM(OpaqueVar, OpaqueVarTerm)
 HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
