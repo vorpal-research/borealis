@@ -105,7 +105,7 @@ public:
         return Term::Ptr(new LoadTerm(rhv));
     }
 
-    Term::Ptr getReadPropertyTerm(const std::string& propName, Term::Ptr rhv, Type::Ptr type) {
+    Term::Ptr getReadPropertyTerm(Term::Ptr propName, Term::Ptr rhv, Type::Ptr type) {
         return Term::Ptr(new ReadPropertyTerm(propName, rhv, type));
     }
 

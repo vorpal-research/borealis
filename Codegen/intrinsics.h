@@ -25,6 +25,7 @@ enum class function_type {
     FIRST_BUILTIN,
     BUILTIN_BOR_ASSERT,
     BUILTIN_BOR_ASSUME,
+    BUILTIN_BOR_GETPROP,
     LAST_BUILTIN,
 
     FIRST_ACTION,

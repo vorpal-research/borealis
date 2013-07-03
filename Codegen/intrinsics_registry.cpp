@@ -116,6 +116,33 @@ static RegisterIntrinsic ACTION_DEFECT {
     }
 };
 
+static RegisterIntrinsic BUILTIN_BOR_GETPROP {
+    function_type::BUILTIN_BOR_GETPROP,
+    "borealis_get_property",
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+        ASSERTC(F->getArgumentList().size() > 1);
+
+        auto it = F->arg_begin();
+        llvm::Argument* propName = it++;
+        llvm::Argument* ptr = it++;
+
+        return PredicateStateFactory::get()->Basic() +
+               PF->getEqualityPredicate(
+                    TF->getReturnValueTerm(F),
+                    TF->getReadPropertyTerm(
+                            TF->getArgumentTerm(propName),
+                            TF->getArgumentTerm(ptr),
+                            TypeFactory::getInstance().cast(F->getReturnType())
+                    )
+               );
+    },
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
+        return ci.getCalledFunction()->getName() == "borealis_get_property"
+               ? function_type::BUILTIN_BOR_GETPROP
+               : function_type::UNKNOWN;
+    }
+};
+
 } // namespace borealis
 
 #pragma clang diagnostic pop
