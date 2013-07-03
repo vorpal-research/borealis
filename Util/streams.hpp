@@ -252,15 +252,21 @@ Streamer& operator<<(Streamer& s, const std::vector<T>& vec) {
 }
 
 template<typename T, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::set<T>& vec) {
+Streamer& operator<<(Streamer& s, const std::set<T>& set) {
     typedef std::set<T> Container;
-    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, vec);
+    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, set);
 }
 
 template<typename T, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::unordered_set<T>& vec) {
+Streamer& operator<<(Streamer& s, const std::unordered_set<T>& set) {
     typedef std::unordered_set<T> Container;
-    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, vec);
+    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, set);
+}
+
+template<typename K, typename V, typename Streamer>
+Streamer& operator<<(Streamer& s, const std::unordered_map<K, V>& map) {
+    typedef std::unordered_map<K, V> Container;
+    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, map);
 }
 
 } // namespace std
