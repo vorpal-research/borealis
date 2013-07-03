@@ -15,6 +15,10 @@ public:
     id_t getId() const { return theId; }	
 
     typedef std::shared_ptr<const Type> Ptr;
+
+    bool operator==(const Type& other) const {
+        return other.theId == theId;
+    }
 };
 
 } // namespace borealis
