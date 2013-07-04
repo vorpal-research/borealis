@@ -41,6 +41,9 @@ public:
             if (opcode >= Instruction::CastOpsBegin && opcode <= Instruction::CastOpsEnd) {
                 return getValueTerm(cE->getOperand(0));
             } else if (opcode == Instruction::GetElementPtr) {
+                auto* stripped = cE->stripPointerCasts();
+                if (stripped != cE) return getValueTerm(stripped);
+
                 auto* base = cE->getOperand(0);
                 ValueVector idxs;
                 idxs.reserve(cE->getNumOperands() - 1);

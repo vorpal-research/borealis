@@ -3,6 +3,7 @@ assert_01.c
 assert_02.c
 assume_01.c
 assume_02.c
+get_set_property_01.c
 ini03_04.assume.c
 ini03_04.assume.intrinsic.c
 misc_01.c

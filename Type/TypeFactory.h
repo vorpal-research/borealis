@@ -77,6 +77,8 @@ public:
             return getFloat();
         else if(type->isPointerTy())
             return getPointer(cast(type->getPointerElementType()));
+        else if (type->isArrayTy())
+            return getPointer(cast(type->getArrayElementType()));
         else
             return getTypeError("Unsupported llvm type: " + toString(*type));
     }
