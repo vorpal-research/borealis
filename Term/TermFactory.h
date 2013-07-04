@@ -111,28 +111,23 @@ public:
 
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         using namespace llvm;
+        using borealis::util::tail;
 
         Term::Ptr v = getValueTerm(base);
 
         llvm::Type* type = base->getType();
 
         std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
-        shifts.reserve(idxs.size());
+        shifts.reserve(idxs.size() - 1);
 
-        for (auto* idx : idxs) {
+        for (auto* idx : tail(idxs)) {
+            ASSERT(type, "Incorrect GEP type indices");
+
             Term::Ptr by = getValueTerm(idx);
             Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
             shifts.push_back({by, size});
 
-            if (type->isPointerTy()) type = type->getPointerElementType();
-            else if (type->isArrayTy()) type = type->getArrayElementType();
-            else if (type->isStructTy()) {
-                if (!isa<ConstantInt>(idx)) {
-                    BYE_BYE(Term::Ptr, "Non-constant structure field shift");
-                }
-                auto fieldIdx = cast<ConstantInt>(idx)->getZExtValue();
-                type = type->getStructElementType(fieldIdx);
-            }
+            type = GetElementPtrInst::getIndexedType(type, idx);
         }
 
         type = GetElementPtrInst::getGEPReturnType(base, idxs);
