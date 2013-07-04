@@ -34,6 +34,14 @@ public:
                 new StorePredicate(lhv, rhv));
     }
 
+    Predicate::Ptr getWritePropertyPredicate(
+            Term::Ptr propName,
+            Term::Ptr lhv,
+            Term::Ptr rhv) {
+        return Predicate::Ptr(
+                new WritePropertyPredicate(propName, lhv, rhv));
+    }
+
     Predicate::Ptr getAllocaPredicate(
              Term::Ptr lhv,
              Term::Ptr numElements) {

@@ -143,6 +143,31 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
     }
 };
 
+static RegisterIntrinsic BUILTIN_BOR_SETPROP {
+    function_type::BUILTIN_BOR_SETPROP,
+    "borealis_set_property",
+    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+        ASSERTC(F->getArgumentList().size() > 2);
+
+        auto it = F->arg_begin();
+        llvm::Argument* propName = it++;
+        llvm::Argument* ptr = it++;
+        llvm::Argument* value = it++;
+
+        return PredicateStateFactory::get()->Basic() +
+               PF->getWritePropertyPredicate(
+                        TF->getArgumentTerm(propName),
+                        TF->getArgumentTerm(ptr),
+                        TF->getArgumentTerm(value)
+               );
+    },
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
+        return ci.getCalledFunction()->getName() == "borealis_set_property"
+               ? function_type::BUILTIN_BOR_SETPROP
+               : function_type::UNKNOWN;
+    }
+};
+
 } // namespace borealis
 
 #pragma clang diagnostic pop
