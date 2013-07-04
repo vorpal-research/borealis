@@ -36,12 +36,11 @@ public:
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new ReadPropertyTerm(tr->transform(propName), tr->transform(rhv), type);
+        return new self(tr->transform(propName), tr->transform(rhv), type);
     }
 
 #include "Util/macros.h"
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Dynamic Dynamic;
         typedef Z3ExprFactory::Pointer Pointer;
 
         ASSERTC(ctx != nullptr);
@@ -53,9 +52,9 @@ public:
         ASSERT(!strPropName.empty(),
                "Property read with unknown property name");
 
-        Dynamic r = rhv->toZ3(z3ef, ctx);
+        auto r = rhv->toZ3(z3ef, ctx);
         ASSERT(r.is<Pointer>(),
-               "Encountered property read with non-pointer right side");
+               "Property read with non-pointer right side");
 
         auto rp = r.to<Pointer>().getUnsafe();
 

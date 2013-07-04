@@ -34,7 +34,9 @@ logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) con
     ASSERT(l.is<Pointer>(),
            "Store dealing with a non-pointer value");
 
-    ctx->writeExprToMemory(l.to<Pointer>().getUnsafe(), r);
+    auto lp = l.to<Pointer>().getUnsafe();
+
+    ctx->writeExprToMemory(lp, r);
 
     return z3ef.getTrue();
 }
@@ -42,7 +44,7 @@ logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) con
 bool StorePredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const StorePredicate* o = llvm::dyn_cast<StorePredicate>(other)) {
+    if (const self* o = llvm::dyn_cast<self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
     } else {

@@ -8,6 +8,7 @@
 #include "Predicate/EqualityPredicate.h"
 #include "Predicate/InequalityPredicate.h"
 #include "Predicate/StorePredicate.h"
+#include "Predicate/WritePropertyPredicate.h"
 #include "Predicate/AllocaPredicate.h"
 #include "Predicate/MallocPredicate.h"
 #include "Predicate/DefaultSwitchCasePredicate.h"
@@ -20,6 +21,7 @@
 HANDLE_PREDICATE(Equality, EqualityPredicate)
 HANDLE_PREDICATE(Inequality, InequalityPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
+HANDLE_PREDICATE(WriteProperty, WritePropertyPredicate)
 HANDLE_PREDICATE(Alloca, AllocaPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
 HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)

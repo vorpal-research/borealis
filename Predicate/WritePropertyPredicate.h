@@ -1,20 +1,20 @@
 /*
- * StorePredicate.h
+ * WritePropertyPredicate.h
  *
  *  Created on: Sep 25, 2012
  *      Author: ice-phoenix
  */
 
-#ifndef STOREPREDICATE_H_
-#define STOREPREDICATE_H_
+#ifndef WRITEPROPERTYPREDICATE_H_
+#define WRITEPROPERTYPREDICATE_H_
 
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
-class StorePredicate: public borealis::Predicate {
+class WritePropertyPredicate: public borealis::Predicate {
 
-    typedef StorePredicate self;
+    typedef WritePropertyPredicate self;
 
 public:
 
@@ -31,6 +31,7 @@ public:
     template<class SubClass>
     const self* accept(Transformer<SubClass>* t) const {
         return new self(
+                t->transform(propName),
                 t->transform(lhv),
                 t->transform(rhv),
                 this->type);
@@ -43,10 +44,12 @@ public:
 
 private:
 
+    Term::Ptr propName;
     Term::Ptr lhv;
     Term::Ptr rhv;
 
-    StorePredicate(
+    WritePropertyPredicate(
+            Term::Ptr propName,
             Term::Ptr lhv,
             Term::Ptr rhv,
             PredicateType type = PredicateType::STATE);
@@ -55,4 +58,4 @@ private:
 
 } /* namespace borealis */
 
-#endif /* STOREPREDICATE_H_ */
+#endif /* WRITEPROPERTYPREDICATE_H_ */

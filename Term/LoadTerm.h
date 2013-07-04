@@ -27,24 +27,23 @@ class LoadTerm: public borealis::Term {
 
 public:
 
-    LoadTerm(const LoadTerm&) = default;
+    LoadTerm(const self&) = default;
     ~LoadTerm();
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new LoadTerm(tr->transform(rhv));
+        return new self(tr->transform(rhv));
     }
 
 #include "Util/macros.h"
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Dynamic Dynamic;
         typedef Z3ExprFactory::Pointer Pointer;
 
         ASSERTC(ctx != nullptr);
 
-        Dynamic r = rhv->toZ3(z3ef, ctx);
+        auto r = rhv->toZ3(z3ef, ctx);
         ASSERT(r.is<Pointer>(),
-               "Encountered load with non-pointer right side");
+               "Load with non-pointer right side");
 
         auto rp = r.to<Pointer>().getUnsafe();
 
@@ -53,7 +52,7 @@ public:
 #include "Util/unmacros.h"
 
     virtual bool equals(const Term* other) const override {
-        if (const LoadTerm* that = llvm::dyn_cast<LoadTerm>(other)) {
+        if (const self* that = llvm::dyn_cast<self>(other)) {
             return  Term::equals(other) &&
                     *that->rhv == *rhv;
         } else return false;
@@ -61,7 +60,7 @@ public:
 
     Term::Ptr getRhv() const { return rhv; }
 
-    static bool classof(const LoadTerm*) {
+    static bool classof(const self*) {
         return true;
     }
 
