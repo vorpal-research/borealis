@@ -256,6 +256,9 @@ void SlotTracker::CreateMetadataSlot(const MDNode *N) {
 std::string SlotTracker::getLocalName(const Value *V) {
     using borealis::util::toString;
 
+    // NB: you should keep this piece of code in sync with
+    //     ConstTerm::toZ3() method
+
     if (isa<ConstantPointerNull>(V)) {
         return "<null>";
 

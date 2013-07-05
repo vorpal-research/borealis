@@ -70,7 +70,7 @@ void configureLoggingFacility(const std::string& filename) {
 
 void configureZ3Log(const std::string& filename) {
     Z3_open_log(filename.c_str());
-    // TODO: akhin Add call to Z3_close_log somewhere...
+    atexit(Z3_close_log);
 }
 
 stream_t& indent(stream_t& st) {

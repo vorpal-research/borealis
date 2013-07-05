@@ -43,6 +43,9 @@ public:
     virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
         using namespace llvm;
 
+        // NB: you should keep this piece of code in sync with
+        //     SlotTracker::getLocalName() method
+
         if (isa<ConstantPointerNull>(c)) {
             return z3ef.getNullPtr();
 

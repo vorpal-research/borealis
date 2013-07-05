@@ -12,15 +12,23 @@
 
 #include <unordered_map>
 
+#include "Logging/logger.hpp"
+
 namespace borealis {
 
-class LoopManager : public llvm::FunctionPass {
+class LoopManager :
+        public llvm::FunctionPass,
+        public borealis::logging::ClassLevelLogging<LoopManager> {
 
 public:
 
     typedef std::unordered_map<llvm::BasicBlock*, unsigned> Data;
 
     static char ID;
+
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("loop")
+#include "Util/unmacros.h"
 
     LoopManager();
     virtual bool runOnFunction(llvm::Function&) override;

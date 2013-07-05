@@ -54,7 +54,13 @@ unsigned LoopManager::getUnrollCount(llvm::Loop* L) const {
 }
 
 void LoopManager::print(llvm::raw_ostream&, const llvm::Module*) const {
-    // TODO: implement print
+    auto& SL = GetAnalysis<SourceLocationTracker>::doit(this);
+
+    for (const auto& e : data) {
+        auto loopLoc = SL.getLocFor(e.first->getFirstNonPHIOrDbgOrLifetime());
+        infos() << "Loop at: " << loopLoc << endl
+                << "Unroll count: " << e.second << endl;
+    }
 }
 
 LoopManager::~LoopManager() {}
