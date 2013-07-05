@@ -63,14 +63,15 @@ PredicateState::Ptr PredicateStateChoice::addVisited(const llvm::Value* loc) con
 }
 
 bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
-    // FIXME: akhin Just fix this piece of crap
-    for (const auto* loc : locs) {
-        if (std::any_of(choices.begin(), choices.end(),
-            [&loc](const PredicateState::Ptr& choice) { return choice->hasVisited({loc}); }
-        )) continue;
-        else return false;
+    auto visited = std::unordered_set<const llvm::Value*>(locs.begin(), locs.end());
+    return hasVisitedFrom(visited);
+}
+
+bool PredicateStateChoice::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
+    for (const auto& choice: choices) {
+        if (choice->hasVisitedFrom(visited)) return true;
     }
-    return true;
+    return false;
 }
 
 PredicateStateChoice::SelfPtr PredicateStateChoice::fmap_(FMapper f) const {

@@ -67,6 +67,22 @@ bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> l
         [this](const llvm::Value* loc) { return contains(this->locs, loc); });
 }
 
+bool BasicPredicateState::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
+    using borealis::util::containsKey;
+
+    auto it = visited.begin();
+    auto end = visited.end();
+    for ( ; it != end; ) {
+        if (contains(locs, *it)) {
+            visited.erase(it++);
+        } else {
+            ++it;
+        }
+    }
+
+    return visited.empty();
+}
+
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
     auto res = SelfPtr(new Self{});
     for (auto& p : data) {

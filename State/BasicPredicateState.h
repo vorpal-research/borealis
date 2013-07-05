@@ -33,6 +33,7 @@ public:
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
+    virtual bool hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const override;
 
     virtual PredicateState::Ptr map(Mapper m) const override;
     virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const override;

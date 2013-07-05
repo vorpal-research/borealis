@@ -11,6 +11,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <unordered_set>
 
 #include "Logging/logstream.hpp"
 #include "Predicate/Predicate.h"
@@ -36,6 +37,7 @@ public:
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const = 0;
+    virtual bool hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const = 0;
 
     virtual PredicateState::Ptr fmap(FMapper) const {
         BYE_BYE(PredicateState::Ptr, "Should not be called!");

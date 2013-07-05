@@ -45,12 +45,12 @@ PredicateState::Ptr PredicateStateChain::addVisited(const llvm::Value* loc) cons
 }
 
 bool PredicateStateChain::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
-    // FIXME: akhin Just fix this piece of crap
-    for (const auto* loc : locs) {
-        if (curr->hasVisited({loc}) || base->hasVisited({loc})) continue;
-        else return false;
-    }
-    return true;
+    auto visited = std::unordered_set<const llvm::Value*>(locs.begin(), locs.end());
+    return hasVisitedFrom(visited);
+}
+
+bool PredicateStateChain::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
+    return curr->hasVisitedFrom(visited) || base->hasVisitedFrom(visited);
 }
 
 PredicateStateChain::SelfPtr PredicateStateChain::fmap_(FMapper f) const {
