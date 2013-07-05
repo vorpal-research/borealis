@@ -43,8 +43,8 @@ BRING_FROM_Z3EXPR_FACTORY(Dynamic)
 
 #undef BRING_FROM_Z3EXPR_FACTORY
 
-f::Pointer Z3ExprFactory::getPtrVar(const std::string& name) {
-    return Pointer::mkVar(*ctx, name);
+f::Pointer Z3ExprFactory::getPtrVar(const std::string& name, bool fresh) {
+    return fresh ? Pointer::mkFreshVar(*ctx, name) : Pointer::mkVar(*ctx, name);
 }
 
 f::Pointer Z3ExprFactory::getPtrConst(int ptr) {
@@ -55,8 +55,8 @@ f::Pointer Z3ExprFactory::getNullPtr() {
     return Pointer::mkConst(*ctx, 0);
 }
 
-f::Bool Z3ExprFactory::getBoolVar(const std::string& name) {
-    return Bool::mkVar(*ctx, name);
+f::Bool Z3ExprFactory::getBoolVar(const std::string& name, bool fresh) {
+    return fresh ? Bool::mkFreshVar(*ctx, name) : Bool::mkVar(*ctx, name);
 }
 
 f::Bool Z3ExprFactory::getBoolConst(bool v) {
@@ -71,41 +71,33 @@ f::Bool Z3ExprFactory::getFalse() {
     return getBoolConst(false);
 }
 
-f::Integer Z3ExprFactory::getIntVar(const std::string& name) {
-    return f::Integer::mkVar(*ctx, name);
-}
-
-f::Integer Z3ExprFactory::getFreshIntVar(const std::string& name) {
-    return f::Integer::mkFreshVar(*ctx, name);
+f::Integer Z3ExprFactory::getIntVar(const std::string& name, bool fresh) {
+    return fresh ? Integer::mkFreshVar(*ctx, name) : Integer::mkVar(*ctx, name);
 }
 
 f::Integer Z3ExprFactory::getIntConst(int v) {
-    return f::Integer::mkConst(*ctx, v);
+    return Integer::mkConst(*ctx, v);
 }
 
-f::Real Z3ExprFactory::getRealVar(const std::string& name) {
-    return f::Real::mkVar(*ctx, name);
-}
-
-f::Real Z3ExprFactory::getFreshRealVar(const std::string& name) {
-    return f::Real::mkFreshVar(*ctx, name);
+f::Real Z3ExprFactory::getRealVar(const std::string& name, bool fresh) {
+    return fresh ? Real::mkFreshVar(*ctx, name) : Real::mkVar(*ctx, name);
 }
 
 f::Real Z3ExprFactory::getRealConst(int v) {
-    return f::Real::mkConst(*ctx, v);
+    return Real::mkConst(*ctx, v);
 }
 
 f::Real Z3ExprFactory::getRealConst(double v) {
-    return f::Real::mkConst(*ctx, (long long int)v);
+    return Real::mkConst(*ctx, (long long int)v);
 }
 
 f::MemArray Z3ExprFactory::getNoMemoryArray() {
     static config::ConfigEntry<bool> DefaultsToUnknown("analysis", "memory-defaults-to-unknown");
 
     if (DefaultsToUnknown.get(false) == false) {
-        return f::MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
+        return MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
     } else {
-        return f::MemArray::mkFree(*ctx, "mem");
+        return MemArray::mkFree(*ctx, "mem");
     }
 }
 
@@ -127,17 +119,18 @@ f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
 
 f::Dynamic Z3ExprFactory::getVarByTypeAndName(
         Type::Ptr type,
-        const std::string& name) {
+        const std::string& name,
+        bool fresh) {
     using llvm::isa;
 
     if (isa<borealis::Integer>(type))
-        return getIntVar(name);
+        return getIntVar(name, fresh);
     else if (isa<borealis::Float>(type))
-        return getRealVar(name);
+        return getRealVar(name, fresh);
     else if (isa<borealis::Bool>(type))
-        return getBoolVar(name);
+        return getBoolVar(name, fresh);
     else if (isa<borealis::Pointer>(type))
-        return getPtrVar(name);
+        return getPtrVar(name, fresh);
     else if (isa<borealis::UnknownType>(type))
         BYE_BYE(Dynamic, "Unknown var type in Z3 conversion");
     else if (isa<borealis::TypeError>(type))

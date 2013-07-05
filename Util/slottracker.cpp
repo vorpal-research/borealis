@@ -283,6 +283,9 @@ std::string SlotTracker::getLocalName(const Value *V) {
             BYE_BYE(std::string, "Unsupported semantics of APFloat");
         }
 
+    } else if (isa<UndefValue>(V)) {
+        return "<undef>";
+
     } else if (isa<Constant>(V) && !V->hasName()) {
         wtf() << "Unsupported constant encountered: " << toString(*V) << endl;
         return "?" + toString(V) + "?";

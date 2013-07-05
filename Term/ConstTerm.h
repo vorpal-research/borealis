@@ -67,6 +67,10 @@ public:
             } else {
                 BYE_BYE(Z3ExprFactory::Dynamic, "Unsupported semantics of APFloat");
             }
+
+        } else if (dyn_cast<UndefValue>(c)) {
+            return z3ef.getVarByTypeAndName(getTermType(), getName(), true);
+
         }
 
         // FIXME: this is generally fucked up

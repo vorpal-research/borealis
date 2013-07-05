@@ -68,21 +68,19 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     // Pointers
-    Pointer getPtrVar(const std::string& name);
+    Pointer getPtrVar(const std::string& name, bool fresh = false);
     Pointer getPtrConst(int ptr);
     Pointer getNullPtr();
     // Bools
-    Bool getBoolVar(const std::string& name);
+    Bool getBoolVar(const std::string& name, bool fresh = false);
     Bool getBoolConst(bool b);
     Bool getTrue();
     Bool getFalse();
     // Integers
-    Integer getIntVar(const std::string& name);
-    Integer getFreshIntVar(const std::string& name);
+    Integer getIntVar(const std::string& name, bool fresh = false);
     Integer getIntConst(int v);
     // Reals
-    Real getRealVar(const std::string& name);
-    Real getFreshRealVar(const std::string& name);
+    Real getRealVar(const std::string& name, bool fresh = false);
     Real getRealConst(int v);
     Real getRealConst(double v);
     // Memory
@@ -91,7 +89,8 @@ public:
     // Generic functions
     Dynamic getVarByTypeAndName(
             Type::Ptr type,
-            const std::string& name);
+            const std::string& name,
+            bool fresh = false);
 
     // Valid/invalid pointers
     Pointer getInvalidPtr();
