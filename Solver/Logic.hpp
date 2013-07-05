@@ -983,7 +983,7 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         name(std::make_shared<std::string>(name)),
         context(&ctx) {
-        // FIXME belyaev: this MAY be generally fucked up, but should work for now
+        // FIXME belyaev this MAY be generally fucked up, but should work for now
         inner = [name,&ctx](Index ix) -> Elem {
             auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
             return initial.select(ix);

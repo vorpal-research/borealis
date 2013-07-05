@@ -95,6 +95,8 @@ inline stream_t warns() { return warnsFor(""); }
 inline stream_t errs() { return errsFor(""); }
 inline stream_t criticals() { return criticalsFor(""); }
 
+inline stream_t wtf() { return errsFor("wtf"); }
+
 inline stream_t logs(priority_t ll = priority_t::DEBUG) {
     return logsFor(ll, "");
 }
