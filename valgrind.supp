@@ -85,3 +85,10 @@
    fun:_ZNK8borealis22OpaqueBoolConstantTerm8getValueEv
    ...
 }
+{
+   llvm::StringRef
+   Memcheck:Leak
+   ...
+   fun:_ZNK4llvm9StringRef*
+   ...
+}
