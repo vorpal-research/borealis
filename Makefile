@@ -172,6 +172,12 @@ RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
 	--gtest_color=yes
 
 ################################################################################
+# Valgrind
+################################################################################
+
+VALGRIND := valgrind --leak-check=yes --suppressions=valgrind.supp
+
+################################################################################
 # Deps management
 ################################################################################
 %.d: %.cpp
@@ -205,6 +211,9 @@ regenerate-test-defs: $(TEST_DEFS)
 
 check: tests regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=-*Long/*
+
+check-with-valgrind: tests regenerate-test-defs
+	$(VALGRIND) $(RUN_TEST_EXES) --gtest_filter=-*Long/*
 
 check-long: tests regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*Long/*

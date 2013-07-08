@@ -45,3 +45,43 @@
    ...
    fun:_ZN2z37context*
 }
+{
+   google-test from main
+   Memcheck:Leak
+   ...
+   fun:_ZN7testing*
+   fun:main
+}
+{
+   google-test as lib
+   Memcheck:Leak
+   ...
+   fun:_ZN7testing8internal*
+}
+{
+   cfgparser from borealis::config
+   Memcheck:Leak
+   ...
+   fun:_ZN14ConfigParser_t*
+   fun:_ZN8borealis6config*
+   ...
+}
+{
+   Z3 pattern inference
+   Memcheck:Leak
+   ...
+   fun:_ZN17pattern_inference18reduce1_quantifierEP10quantifier
+   ...
+}
+{
+   borealis::OpaqueFloatingConstantTerm::getValue()
+   Memcheck:Addr8
+   fun:_ZNK8borealis26OpaqueFloatingConstantTerm8getValueEv
+   ...
+}
+{
+   borealis::OpaqueBoolConstantTerm::getValue()
+   Memcheck:Addr1
+   fun:_ZNK8borealis22OpaqueBoolConstantTerm8getValueEv
+   ...
+}
