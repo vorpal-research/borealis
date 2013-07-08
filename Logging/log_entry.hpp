@@ -50,7 +50,9 @@ public:
         if (buf) {
             log << buf->str();
             log.flush();
-            buf.release();
+
+            auto empty = std::unique_ptr<std::ostringstream>();
+            buf.swap(empty);
         }
     }
 

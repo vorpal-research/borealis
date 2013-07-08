@@ -1,0 +1,47 @@
+{
+   clang from main
+   Memcheck:Leak
+   ...
+   fun:_ZN5clang*
+   fun:main
+}
+{
+   clang as lib
+   Memcheck:Leak
+   ...
+   fun:_ZN5clang*
+}
+{
+   libc init
+   Memcheck:Leak
+   ...
+   fun:__libc_csu_init
+   fun:(below main)
+}
+{
+   Z3_mk_config
+   Memcheck:Leak
+   ...
+   fun:Z3_mk_config
+   ...
+}
+{
+   Z3_mk_context_rc
+   Memcheck:Leak
+   ...
+   fun:Z3_mk_context_rc
+   ...
+}
+{
+   log4cpp from borealis::logging
+   Memcheck:Leak
+   ...
+   fun:_ZN7log4cpp*
+   fun:_ZN8borealis7logging*
+}
+{
+   Z3 context
+   Memcheck:Leak
+   ...
+   fun:_ZN2z37context*
+}
