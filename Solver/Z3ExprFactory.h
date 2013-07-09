@@ -32,7 +32,7 @@ public:
     // a hack: CopyAssignable reference to non-CopyAssignable object
     // (z3::expr is CopyConstructible, but not CopyAssignable, so no
     // accumulator-like shit is possible with it)
-    // typedef borealis::util::copyref<expr> exprRef;
+    // typedef util::copyref<expr> exprRef;
 
     typedef borealis::logic::Bool Bool;
     // logic type to represent pointers
