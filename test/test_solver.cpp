@@ -82,6 +82,7 @@ TEST(ExecutionContext, mergeMemory) {
         memory_with_b.writeExprToMemory(ptr, b);
 
         ExecutionContext merged = ExecutionContext::mergeMemory(
+                "merged",
                 default_memory,
                 std::vector<std::pair<Bool, ExecutionContext>>{
                     { cond_a, memory_with_a },

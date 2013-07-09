@@ -113,8 +113,10 @@ public:
 
     typedef std::pair<Bool, ExecutionContext> Choice;
 
-    ExecutionContext& switchOn(const std::vector<Choice>& contexts) {
-        auto merged = ExecutionContext::mergeMemory(*this, contexts);
+    ExecutionContext& switchOn(
+            const std::string& name,
+            const std::vector<Choice>& contexts) {
+        auto merged = ExecutionContext::mergeMemory(name, *this, contexts);
 
         this->memArrays = merged.memArrays;
         this->currentPtr = merged.currentPtr;
@@ -123,6 +125,7 @@ public:
     }
 
     static ExecutionContext mergeMemory(
+            const std::string& name,
             ExecutionContext defaultContext,
             const std::vector<Choice>& contexts) {
         ExecutionContext res(defaultContext.factory);
@@ -151,7 +154,7 @@ public:
                 [&id](const Choice& p) { return std::make_pair(p.first, p.second.get(id)); }
             );
 
-            res.set(id, MemArray::merge(defaultContext.get(id), alternatives));
+            res.set(id, MemArray::merge(name, defaultContext.get(id), alternatives));
         }
 
         return res;

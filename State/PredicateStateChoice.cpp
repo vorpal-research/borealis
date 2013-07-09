@@ -53,7 +53,7 @@ logic::Bool PredicateStateChoice::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pc
         memories.push_back({z3path, choiceCtx});
     }
 
-    pctx->switchOn(memories);
+    pctx->switchOn("choice", memories);
 
     return res;
 }

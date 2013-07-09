@@ -40,8 +40,15 @@ namespace z3impl {
         return (e0 && e1).simplify();
     }
     inline z3::expr spliceAxioms(std::initializer_list<z3::expr> il) {
-        borealis::util::copyref<z3::expr> accum{ util::head(il) };
+        util::copyref<z3::expr> accum{ util::head(il) };
         for (const auto& e : util::tail(il)) {
+            accum = (accum && e).simplify();
+        }
+        return accum;
+    }
+    inline z3::expr spliceAxioms(const std::vector<z3::expr>& v) {
+        util::copyref<z3::expr> accum{ util::head(v) };
+        for (const auto& e : util::tail(v)) {
             accum = (accum && e).simplify();
         }
         return accum;
@@ -811,7 +818,7 @@ public:
     z3::expr axiom() const { return axiomatic; }
     z3::context& ctx() const { return inner.ctx(); }
 
-    Res operator()(Args... args) {
+    Res operator()(Args... args) const {
         return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
     }
 
@@ -844,10 +851,30 @@ public:
         return self(f, ax);
     }
 
-    static self mkDerivedFunc(const self& oldFunc, const std::string& name, std::function<Res(Args...)> body) {
-        z3::func_decl f = constructFreshFunc(oldFunc.ctx(), name);
-        z3::expr ax = constructAxiomatic(oldFunc.ctx(), f, body);
+    static self mkDerivedFunc(
+            z3::context& ctx,
+            const std::string& name,
+            const self& oldFunc,
+            std::function<Res(Args...)> body) {
+        z3::func_decl f = constructFreshFunc(ctx, name);
+        z3::expr ax = constructAxiomatic(ctx, f, body);
         return self(f, z3impl::spliceAxioms(oldFunc.axiom(), ax));
+    }
+
+    static self mkDerivedFunc(
+            z3::context& ctx,
+            const std::string& name,
+            const std::vector<self>& oldFuncs,
+            std::function<Res(Args...)> body) {
+        z3::func_decl f = constructFreshFunc(ctx, name);
+
+        std::vector<z3::expr> axs;
+        axs.reserve(oldFuncs.size() + 1);
+        std::transform(oldFuncs.begin(), oldFuncs.end(), std::back_inserter(axs),
+            [](const self& oldFunc) { return oldFunc.axiom(); });
+        axs.push_back(constructAxiomatic(ctx, f, body));
+
+        return self(f, z3impl::spliceAxioms(axs));
     }
 };
 
@@ -860,50 +887,82 @@ std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
 
 template<class Elem, class Index>
 class FuncArray {
+    typedef FuncArray<Elem, Index> Self;
     typedef Function<Elem(Index)> inner_t;
 
     std::shared_ptr<std::string> name;
     inner_t inner;
 
-    FuncArray(inner_t inner, std::shared_ptr<std::string>& name): name(name), inner(inner) {};
+    FuncArray(const std::string& name, inner_t inner):
+        name(std::make_shared<std::string>(name)), inner(inner) {};
+    FuncArray(std::shared_ptr<std::string>& name, inner_t inner):
+        name(name), inner(inner) {};
 
 public:
     FuncArray(const FuncArray&) = default;
     FuncArray(z3::context& ctx, const std::string& name):
-        name(std::make_shared<std::string>(name)), inner(inner_t::mkFreshFunc(ctx, name)) {}
+        FuncArray(name, inner_t::mkFreshFunc(ctx, name)) {}
     FuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
-        name(std::make_shared<std::string>(name)), inner(inner_t::mkFreshFunc(ctx, name, f)) {}
+        FuncArray(name, inner_t::mkFreshFunc(ctx, name, f)) {}
 
-    Elem select    (Index i) { return inner(i);  }
-    Elem operator[](Index i) { return select(i); }
+    Elem select    (Index i) const { return inner(i);  }
+    Elem operator[](Index i) const { return select(i); }
 
-    FuncArray<Elem, Index> store(Index i, Elem e) {
-        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [=](Index j) {
+    Self store(Index i, Elem e) {
+        inner_t nf = inner_t::mkDerivedFunc(ctx(), *name, inner, [=](Index j) {
             return if_(j == i).then_(e).else_(this->select(j));
         });
 
-        return FuncArray<Elem, Index>{ nf, name };
+        return Self{ name, nf };
     }
 
-    FuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
-        inner_t nf = inner_t::mkDerivedFunc(inner, *name, [=](Index j) {
+    Self store(const std::vector<std::pair<Index, Elem>>& entries) {
+        inner_t nf = inner_t::mkDerivedFunc(ctx(), *name, inner, [=](Index j) {
             return switch_(j, entries, this->select(j));
         });
 
-        return FuncArray<Elem, Index>{ nf, name };
+        return Self{ name, nf };
     }
 
     z3::context& ctx() { return inner.ctx(); }
 
-    static FuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
-        return FuncArray{ ctx, name, [def](Index){ return def; } };
+    static Self mkDefault(z3::context& ctx, const std::string& name, Elem def) {
+        return Self{ ctx, name, [def](Index){ return def; } };
     }
 
-    static FuncArray mkFree(z3::context& ctx, const std::string& name) {
-        return FuncArray{ ctx, name };
+    static Self mkFree(z3::context& ctx, const std::string& name) {
+        return Self{ ctx, name };
     }
 
-    friend std::ostream& operator<<(std::ostream& ost, const FuncArray<Elem, Index>& fa) {
+    static Self merge(
+            const std::string& name,
+            Self defaultArray,
+            const std::vector<std::pair<Bool, Self>>& arrays) {
+
+        std::vector<inner_t> inners;
+        inners.reserve(arrays.size() + 1);
+        std::transform(arrays.begin(), arrays.end(), std::back_inserter(inners),
+            [](const std::pair<Bool, Self>& e) { return e.second.inner; });
+        inners.push_back(defaultArray.inner);
+
+        inner_t nf = inner_t::mkDerivedFunc(defaultArray.ctx(), name, inners,
+            [=](Index j) -> Elem {
+                std::vector<std::pair<Bool, Elem>> selected;
+                selected.reserve(arrays.size());
+                std::transform(arrays.begin(), arrays.end(), std::back_inserter(selected),
+                    [=](const std::pair<Bool, Self>& e) {
+                        return std::make_pair(e.first, e.second.select(j));
+                    }
+                );
+
+                return switch_(selected, defaultArray.select(j));
+            }
+        );
+
+        return Self{ name, nf };
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const Self& fa) {
         return ost << "funcArray " << *fa.name << " {" << fa.inner << "}";
     }
 };
@@ -955,6 +1014,7 @@ public:
     }
 
     static TheoryArray merge(
+            const std::string&,
             TheoryArray defaultArray,
             const std::vector<std::pair<Bool, TheoryArray>>& arrays) {
         return switch_(arrays, defaultArray);
@@ -1197,6 +1257,7 @@ public:
     }
 
     static ScatterArray merge(
+            const std::string& name,
             ScatterArray defaultArray,
             const std::vector<std::pair<Bool, ScatterArray>>& arrays
         ) {
@@ -1209,7 +1270,7 @@ public:
             }
         );
 
-        Inner merged = Inner::merge(defaultArray.inner, inners);
+        Inner merged = Inner::merge(name, defaultArray.inner, inners);
 
         return ScatterArray{ merged };
     }
