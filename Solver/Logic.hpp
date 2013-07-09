@@ -982,8 +982,8 @@ public:
     };
     TheoryArray(const TheoryArray&) = default;
 
-    Elem select    (Index i) { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
-    Elem operator[](Index i) { return select(i); }
+    Elem select    (Index i) const { return Elem(z3::select(z3impl::getExpr(this), z3impl::getExpr(i)));  }
+    Elem operator[](Index i) const { return select(i); }
 
     TheoryArray store(Index i, Elem e) {
         return z3::store(z3impl::getExpr(this), z3impl::getExpr(i), z3impl::getExpr(e));
@@ -1025,24 +1025,24 @@ public:
 
 template<class Elem, class Index>
 class InlinedFuncArray {
+    typedef InlinedFuncArray<Elem, Index> Self;
     typedef std::function<Elem(Index)> inner_t;
 
+    z3::context* context;
     std::shared_ptr<std::string> name;
     inner_t inner;
-    z3::context* context;
 
     InlinedFuncArray(
             z3::context& ctx,
-            inner_t inner,
-            std::shared_ptr<std::string>& name
-    ) : name(name), inner(inner), context(&ctx) {};
+            std::shared_ptr<std::string>& name,
+            inner_t inner
+    ) : context(&ctx), name(name), inner(inner) {};
 public:
     InlinedFuncArray(const InlinedFuncArray&) = default;
     InlinedFuncArray(z3::context& ctx, const std::string& name, std::function<Elem(Index)> f):
-        name(std::make_shared<std::string>(name)), inner(f), context(&ctx) {}
+        context(&ctx), name(std::make_shared<std::string>(name)), inner(f) {}
     InlinedFuncArray(z3::context& ctx, const std::string& name):
-        name(std::make_shared<std::string>(name)),
-        context(&ctx) {
+        context(&ctx), name(std::make_shared<std::string>(name)) {
         // FIXME belyaev this MAY be generally fucked up, but should work for now
         inner = [name,&ctx](Index ix) -> Elem {
             auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
@@ -1050,18 +1050,18 @@ public:
         };
     }
 
-    Elem select    (Index i) { return inner(i);  }
-    Elem operator[](Index i) { return select(i); }
+    Elem select    (Index i) const { return inner(i);  }
+    Elem operator[](Index i) const { return select(i); }
 
     InlinedFuncArray& operator=(const InlinedFuncArray&) = default;
 
-    InlinedFuncArray<Elem, Index> store(Index i, Elem e) {
+    Self store(Index i, Elem e) {
         inner_t old = this->inner;
         inner_t nf = [=](Index j) {
             return if_(j == i).then_(e).else_(old(j));
         };
 
-        return InlinedFuncArray<Elem, Index>{ *context, nf, name };
+        return Self{ *context, name, nf };
     }
 
     InlinedFuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
@@ -1070,20 +1070,40 @@ public:
             return switch_(j, entries, old(j));
         };
 
-        return InlinedFuncArray<Elem, Index>{ *context, nf, name };
+        return Self{ *context, name, nf };
     }
 
     z3::context& ctx() const { return *context; }
 
-    static InlinedFuncArray mkDefault(z3::context& ctx, const std::string& name, Elem def) {
-        return InlinedFuncArray{ ctx, name, [def](Index){ return def; } };
+    static Self mkDefault(z3::context& ctx, const std::string& name, Elem def) {
+        return Self{ ctx, name, [def](Index){ return def; } };
     }
 
-    static InlinedFuncArray mkFree(z3::context& ctx, const std::string& name) {
-        return InlinedFuncArray{ ctx, name };
+    static Self mkFree(z3::context& ctx, const std::string& name) {
+        return Self{ ctx, name };
     }
 
-    friend std::ostream& operator<<(std::ostream& ost, const InlinedFuncArray<Elem, Index>& ifa) {
+    static Self merge(
+            const std::string& name,
+            Self defaultArray,
+            const std::vector<std::pair<Bool, Self>>& arrays) {
+
+        inner_t nf = [=](Index j) -> Elem {
+            std::vector<std::pair<Bool, Elem>> selected;
+            selected.reserve(arrays.size());
+            std::transform(arrays.begin(), arrays.end(), std::back_inserter(selected),
+                [=](const std::pair<Bool, Self>& e) {
+                    return std::make_pair(e.first, e.second.select(j));
+                }
+            );
+
+            return switch_(selected, defaultArray.select(j));
+        };
+
+        return Self{ defaultArray.ctx(), name, nf };
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const Self& ifa) {
         return ost << "inlinedArray " << *ifa.name << " {...}";
     }
 };
