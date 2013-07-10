@@ -1049,16 +1049,18 @@ public:
         context(&ctx), name(std::make_shared<std::string>(name)), inner(f) {}
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         context(&ctx), name(std::make_shared<std::string>(name)) {
+
         // FIXME belyaev this MAY be generally fucked up, but should work for now
         // inner = [name,&ctx](Index ix) -> Elem {
         //     auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
         //     return initial.select(ix);
         // };
+
         // FIXME akhin this is as fucked up as before, but also works for now
-        //             NB! this is slow as hell...
-        inner = [name,&ctx](Index) -> Elem {
-            return Elem::mkFreshVar(ctx, "initial");
-        };
+
+        auto initialMem = Function<Elem(Index)>::mkFunc(ctx, "$$__initial_mem__$$");
+
+        inner = [name,&ctx,initialMem](Index ix) -> Elem { return initialMem(ix); };
     }
 
     Elem select    (Index i) const { return inner(i);  }
