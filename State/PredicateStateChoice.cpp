@@ -133,6 +133,8 @@ PredicateState::Ptr PredicateStateChoice::simplify() const {
         end
     );
 
+    // TODO akhin Do smth if simplified.size() == 0
+
     if (simplified.size() == 1) {
         return head(simplified);
     } else {

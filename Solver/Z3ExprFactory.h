@@ -23,12 +23,6 @@ class Z3ExprFactory {
 
 public:
 
-    typedef z3::func_decl function;
-    typedef z3::func_decl array;
-    typedef z3::expr expr;
-    typedef z3::sort sort;
-    typedef std::vector<expr> expr_vector;
-
     // a hack: CopyAssignable reference to non-CopyAssignable object
     // (z3::expr is CopyConstructible, but not CopyAssignable, so no
     // accumulator-like shit is possible with it)
@@ -112,7 +106,7 @@ public:
 
 private:
 
-    expr to_expr(Z3_ast ast);
+    z3::expr to_expr(Z3_ast ast);
 
 public:
 

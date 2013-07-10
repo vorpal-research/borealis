@@ -27,11 +27,6 @@ unsigned int Z3ExprFactory::pointerSize = 32;
 
 namespace f {
 
-BRING_FROM_Z3EXPR_FACTORY(array)
-BRING_FROM_Z3EXPR_FACTORY(expr)
-BRING_FROM_Z3EXPR_FACTORY(function)
-BRING_FROM_Z3EXPR_FACTORY(sort)
-
 BRING_FROM_Z3EXPR_FACTORY(Bool)
 BRING_FROM_Z3EXPR_FACTORY(Integer)
 BRING_FROM_Z3EXPR_FACTORY(Pointer)
@@ -113,7 +108,7 @@ f::Bool Z3ExprFactory::getDistinct(const std::vector<f::Pointer>& exprs) {
     return logic::distinct(*ctx, exprs);
 }
 
-f::expr Z3ExprFactory::to_expr(Z3_ast ast) {
+z3::expr Z3ExprFactory::to_expr(Z3_ast ast) {
     return z3::to_expr( *ctx, ast );
 }
 
