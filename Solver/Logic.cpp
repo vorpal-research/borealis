@@ -5,6 +5,8 @@
  *      Author: belyaev
  */
 
+#include <sstream>
+
 #include "Solver/Logic.hpp"
 
 namespace borealis {
@@ -49,6 +51,10 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
     return *this;
 }
 
+std::string ValueExpr::toSmtLib() const {
+    return z3impl::asSmtLib(this);
+}
+
 ValueExpr ValueExpr::simplify() const {
     z3::params params(this->pimpl->inner.ctx());
 
@@ -81,6 +87,12 @@ namespace z3impl {
 
     z3::expr asAxiom(const ValueExpr& a) {
         return a.pimpl->inner && a.pimpl->axiomatic;
+    }
+
+    std::string asSmtLib(const ValueExpr& a) {
+        std::ostringstream oss;
+        oss << asAxiom(a);
+        return oss.str();
     }
 } // namespace z3impl
 
