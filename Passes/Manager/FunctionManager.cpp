@@ -23,6 +23,8 @@ namespace borealis {
 
 using borealis::util::view;
 
+////////////////////////////////////////////////////////////////////////////////
+
 FunctionManager::FunctionManager() : llvm::ModulePass(ID) {}
 
 void FunctionManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -74,38 +76,69 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     return false;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     ASSERT(!containsKey(data, F),
            "Attempt to register function " + F->getName().str() + " twice")
 
-    data[F] = state;
+    data.emplace(F, state);
 }
 
 void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
-        data[F] = (PSF * data.at(F) + state)();
+        data.emplace(F, mergeFunctionDesc(data.at(F), state));
     } else {
-        data[F] = state;
+        data.emplace(F, state);
     }
 }
 
-PredicateState::Ptr FunctionManager::get(llvm::Function* F) {
+////////////////////////////////////////////////////////////////////////////////
+
+FunctionManager::FunctionDesc FunctionManager::get(llvm::Function* F) {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
         // Do nothing
     } else {
-        data[F] = PSF->Basic();
+        data.emplace(F, PSF->Basic());
     }
 
     return data.at(F);
 }
 
-PredicateState::Ptr FunctionManager::get(
+PredicateState::Ptr FunctionManager::getReq(llvm::Function* F) {
+    const auto& desc = get(F);
+    return desc.Req;
+}
+
+PredicateState::Ptr FunctionManager::getBdy(llvm::Function* F) {
+    const auto& desc = get(F);
+    return desc.Bdy;
+}
+
+PredicateState::Ptr FunctionManager::getEns(llvm::Function* F) {
+    const auto& desc = get(F);
+    return desc.Ens;
+}
+
+PredicateState::Ptr FunctionManager::getInternalView(llvm::Function* F) {
+    const auto& desc = get(F);
+    return (PSF * desc.Req + desc.Bdy)();
+}
+
+PredicateState::Ptr FunctionManager::getExternalView(llvm::Function* F) {
+    const auto& desc = get(F);
+    return (PSF * desc.Bdy + desc.Ens)();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+FunctionManager::FunctionDesc FunctionManager::get(
         llvm::CallInst& CI,
         PredicateFactory* PF,
         TermFactory* TF) {
@@ -126,9 +159,61 @@ PredicateState::Ptr FunctionManager::get(
         state = m.getPredicateState(ft, F, PF, TF);
     }
 
-    data[F] = state;
+    data.emplace(F, state);
     return data.at(F);
 }
+
+PredicateState::Ptr FunctionManager::getReq(
+        llvm::CallInst& CI,
+        PredicateFactory* PF,
+        TermFactory* TF) {
+    const auto& desc = get(CI, PF, TF);
+    return desc.Req;
+}
+
+PredicateState::Ptr FunctionManager::getBdy(
+        llvm::CallInst& CI,
+        PredicateFactory* PF,
+        TermFactory* TF) {
+    const auto& desc = get(CI, PF, TF);
+    return desc.Bdy;
+}
+
+PredicateState::Ptr FunctionManager::getEns(
+        llvm::CallInst& CI,
+        PredicateFactory* PF,
+        TermFactory* TF) {
+    const auto& desc = get(CI, PF, TF);
+    return desc.Ens;
+}
+
+PredicateState::Ptr FunctionManager::getInternalView(
+        llvm::CallInst& CI,
+        PredicateFactory* PF,
+        TermFactory* TF) {
+    const auto& desc = get(CI, PF, TF);
+    return (PSF * desc.Req + desc.Bdy)();
+}
+
+PredicateState::Ptr FunctionManager::getExternalView(
+        llvm::CallInst& CI,
+        PredicateFactory* PF,
+        TermFactory* TF) {
+    const auto& desc = get(CI, PF, TF);
+    return (PSF * desc.Bdy + desc.Ens)();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+FunctionManager::FunctionDesc FunctionManager::mergeFunctionDesc(const FunctionDesc& d1, const FunctionDesc& d2) const {
+    return FunctionDesc{
+        (PSF * d1.Req + d2.Req)(),
+        (PSF * d1.Bdy + d2.Bdy)(),
+        (PSF * d1.Ens + d2.Ens)()
+    };
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 char FunctionManager::ID;
 static RegisterPass<FunctionManager>

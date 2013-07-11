@@ -54,10 +54,10 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     }
     Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
 
-    // Register REQUIRES from annotations
-    PredicateState::Ptr requires = FM->get(&F)->filterByTypes({ PredicateType::REQUIRES });
+    // Register known function behavior
+    PredicateState::Ptr alreadyKnown = FM->getInternalView(&F);
 
-    PredicateState::Ptr initialState = (PSF * gPredicate + requires)();
+    PredicateState::Ptr initialState = (PSF * gPredicate + alreadyKnown)();
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {
@@ -157,12 +157,10 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
         if (isa<CallInst>(I)) {
             CallInst& CI = cast<CallInst>(I);
 
-            PredicateState::Ptr callState = FM->get(CI, PF.get(), TF.get());
+            PredicateState::Ptr callState = FM->getExternalView(CI, PF.get(), TF.get());
             CallSiteInitializer csi(CI, TF.get());
 
-            PredicateState::Ptr csiCallState = callState->filterByTypes(
-                { PredicateType::ENSURES, PredicateType::STATE }
-            )->map(
+            PredicateState::Ptr csiCallState = callState->map(
                 [&csi](Predicate::Ptr p) { return csi.transform(p); }
             );
 

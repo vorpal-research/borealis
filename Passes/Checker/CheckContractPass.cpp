@@ -40,27 +40,25 @@ public:
     }
 
     void checkContract(llvm::CallInst& CI) {
-        auto contract = pass->FM->get(CI, pass->PF.get(), pass->TF.get());
-        auto state = pass->PSA->getInstructionState(&CI);
+        auto contract = pass->FM->getReq(CI, pass->PF.get(), pass->TF.get());
+        if (contract->isEmpty()) return;
 
+        auto state = pass->PSA->getInstructionState(&CI);
         if (!state) return;
 
-        auto requires = contract->filterByTypes({PredicateType::REQUIRES});
-        if (requires->isEmpty()) return;
-
         CallSiteInitializer csi(CI, pass->TF.get());
-        auto instantiatedRequires = requires->map(
+        auto instantiatedContract = contract->map(
             [&csi](Predicate::Ptr p) { return csi.transform(p); }
         );
 
         dbgs() << "Checking: " << CI << endl;
-        dbgs() << "  Requires: " << endl << instantiatedRequires << endl;
+        dbgs() << "  Requires: " << endl << instantiatedContract << endl;
 
         Z3ExprFactory z3ef;
         Z3Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
-        if (s.isViolated(instantiatedRequires, state)) {
+        if (s.isViolated(instantiatedContract, state)) {
             pass->DM->addDefect(DefectType::REQ_01, &CI);
         }
     }
@@ -69,7 +67,6 @@ public:
         using namespace llvm;
 
         auto state = pass->PSA->getInstructionState(&CI);
-
         if (!state) return;
 
         dbgs() << "Checking: " << CI << endl;
@@ -88,8 +85,8 @@ public:
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
         auto anno = materialize(A, pass->TF.get(), pass->MI);
-        auto state = pass->PSA->getInstructionState(&CI);
 
+        auto state = pass->PSA->getInstructionState(&CI);
         if (!state) return;
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
@@ -116,22 +113,20 @@ public:
     }
 
     void visitReturnInst(llvm::ReturnInst& RI) {
-        auto contract = pass->FM->get(RI.getParent()->getParent());
-        auto state = pass->PSA->getInstructionState(&RI);
+        auto contract = pass->FM->getEns(RI.getParent()->getParent());
+        if (contract->isEmpty()) return;
 
+        auto state = pass->PSA->getInstructionState(&RI);
         if (!state) return;
 
-        auto ensures = contract->filterByTypes({PredicateType::ENSURES});
-        if (ensures->isEmpty()) return;
-
         dbgs() << "Checking: " << RI << endl;
-        dbgs() << "  Ensures: " << endl << ensures << endl;
+        dbgs() << "  Ensures: " << endl << contract << endl;
 
         Z3ExprFactory z3ef;
         Z3Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
-        if (s.isViolated(ensures, state)) {
+        if (s.isViolated(contract, state)) {
             pass->DM->addDefect(DefectType::ENS_01, &RI);
         }
     }

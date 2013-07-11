@@ -31,7 +31,7 @@ public:
 protected:
 
     Term(id_t id, const std::string& name, borealis::id_t term_type_id) :
-        id(id), name(name), term_type_id(term_type_id) {};
+        id(id), term_type_id(term_type_id), name(name) {};
     Term(const Term&) = default;
     virtual ~Term() {};
 
@@ -79,8 +79,11 @@ public:
 private:
 
     const id_t id;
-    const std::string name;
     const borealis::id_t term_type_id;
+
+protected:
+
+    std::string name;
 
 };
 

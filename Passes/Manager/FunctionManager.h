@@ -20,11 +20,29 @@ namespace borealis {
 
 class FunctionManager : public llvm::ModulePass {
 
+    struct FunctionDesc {
+        PredicateState::Ptr Req;
+        PredicateState::Ptr Bdy;
+        PredicateState::Ptr Ens;
+
+        FunctionDesc(PredicateState::Ptr Req, PredicateState::Ptr Bdy, PredicateState::Ptr Ens) :
+            Req(Req), Bdy(Bdy), Ens(Ens) {}
+
+        FunctionDesc(PredicateState::Ptr state) {
+            auto reqRest = state->splitByTypes({PredicateType::REQUIRES});
+            Req = reqRest.first;
+
+            auto ensRest = reqRest.second->splitByTypes({PredicateType::ENSURES});
+            Ens = ensRest.first;
+            Bdy = ensRest.second;
+        }
+    };
+
 public:
 
     static char ID;
 
-    typedef std::unordered_map<llvm::Function*, PredicateState::Ptr> Data;
+    typedef std::unordered_map<llvm::Function*, FunctionDesc> Data;
     typedef Data::value_type DataEntry;
 
     FunctionManager();
@@ -34,15 +52,29 @@ public:
 
     void put(llvm::Function* F, PredicateState::Ptr state);
     void update(llvm::Function* F, PredicateState::Ptr state);
-    PredicateState::Ptr get(llvm::Function* F);
 
-    PredicateState::Ptr get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    PredicateState::Ptr getReq(llvm::Function* F);
+    PredicateState::Ptr getBdy(llvm::Function* F);
+    PredicateState::Ptr getEns(llvm::Function* F);
+    PredicateState::Ptr getInternalView(llvm::Function* F);
+    PredicateState::Ptr getExternalView(llvm::Function* F);
+
+    PredicateState::Ptr getReq(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    PredicateState::Ptr getBdy(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    PredicateState::Ptr getEns(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    PredicateState::Ptr getInternalView(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+    PredicateState::Ptr getExternalView(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
 
 private:
 
     Data data;
 
     PredicateStateFactory::Ptr PSF;
+
+    FunctionDesc get(llvm::Function* F);
+    FunctionDesc get(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
+
+    FunctionDesc mergeFunctionDesc(const FunctionDesc& d1, const FunctionDesc& d2) const;
 
 };
 
