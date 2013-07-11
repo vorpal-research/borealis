@@ -3,8 +3,10 @@ Dependencies
 
  * clang-debug
  * z3-codeplex
+ * jsoncpp
  * log4cpp
  * libcfgparser
+ * gperftools
  * valgrind (optional)
 
 Build
