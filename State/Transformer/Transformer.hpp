@@ -39,16 +39,22 @@ class Transformer {
 public:
 
     Predicate::Ptr transform(Predicate::Ptr pred) {
+        Predicate::Ptr res;
 #define HANDLE_PREDICATE(NAME, CLASS) \
         if (llvm::isa<CLASS>(pred)) { \
-            return static_cast<SubClass*>(this)-> \
+            res = static_cast<SubClass*>(this)-> \
                 transform##NAME(std::static_pointer_cast<const CLASS>(pred)); \
         }
 #include "Predicate/Predicate.def"
-        BYE_BYE(Predicate::Ptr, "Unsupported predicate type");
+        ASSERT(res, "Unsupported predicate type");
+        return transformPredicate(res);
     }
 
 protected:
+
+    Predicate::Ptr transformPredicate(Predicate::Ptr p) {
+        return p;
+    }
 
 #define HANDLE_PREDICATE(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
@@ -73,16 +79,22 @@ protected:
 public:
 
     Term::Ptr transform(Term::Ptr term) {
+        Term::Ptr res;
 #define HANDLE_TERM(NAME, CLASS) \
         if (llvm::isa<CLASS>(term)) { \
-            return static_cast<SubClass*>(this)-> \
+            res = static_cast<SubClass*>(this)-> \
                 transform##NAME(std::static_pointer_cast<const CLASS>(term)); \
         }
 #include "Term/Term.def"
-        BYE_BYE(Term::Ptr, "Unsupported term type");
+        ASSERT(res, "Unsupported term type");
+        return transformTerm(res);
     }
 
 protected:
+
+    Term::Ptr transformTerm(Term::Ptr t) {
+        return t;
+    }
 
 #define HANDLE_TERM(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
