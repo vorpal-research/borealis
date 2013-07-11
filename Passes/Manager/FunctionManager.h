@@ -56,14 +56,10 @@ public:
     PredicateState::Ptr getReq(llvm::Function* F);
     PredicateState::Ptr getBdy(llvm::Function* F);
     PredicateState::Ptr getEns(llvm::Function* F);
-    PredicateState::Ptr getInternalView(llvm::Function* F);
-    PredicateState::Ptr getExternalView(llvm::Function* F);
 
     PredicateState::Ptr getReq(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
     PredicateState::Ptr getBdy(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
     PredicateState::Ptr getEns(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
-    PredicateState::Ptr getInternalView(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
-    PredicateState::Ptr getExternalView(llvm::CallInst& CI, PredicateFactory* PF, TermFactory* TF);
 
 private:
 

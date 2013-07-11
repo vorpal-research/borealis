@@ -126,16 +126,6 @@ PredicateState::Ptr FunctionManager::getEns(llvm::Function* F) {
     return desc.Ens;
 }
 
-PredicateState::Ptr FunctionManager::getInternalView(llvm::Function* F) {
-    const auto& desc = get(F);
-    return (PSF * desc.Req + desc.Bdy)();
-}
-
-PredicateState::Ptr FunctionManager::getExternalView(llvm::Function* F) {
-    const auto& desc = get(F);
-    return (PSF * desc.Bdy + desc.Ens)();
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 FunctionManager::FunctionDesc FunctionManager::get(
@@ -185,22 +175,6 @@ PredicateState::Ptr FunctionManager::getEns(
         TermFactory* TF) {
     const auto& desc = get(CI, PF, TF);
     return desc.Ens;
-}
-
-PredicateState::Ptr FunctionManager::getInternalView(
-        llvm::CallInst& CI,
-        PredicateFactory* PF,
-        TermFactory* TF) {
-    const auto& desc = get(CI, PF, TF);
-    return (PSF * desc.Req + desc.Bdy)();
-}
-
-PredicateState::Ptr FunctionManager::getExternalView(
-        llvm::CallInst& CI,
-        PredicateFactory* PF,
-        TermFactory* TF) {
-    const auto& desc = get(CI, PF, TF);
-    return (PSF * desc.Bdy + desc.Ens)();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
