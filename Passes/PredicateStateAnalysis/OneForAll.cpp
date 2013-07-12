@@ -73,8 +73,8 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
         initialState = initialState << arg;
     }
 
-    // Initial state goes in nullptr
-    basicBlockStates[nullptr] = initialState;
+    // Save initial state
+    this->initialState = initialState;
 
     // Process basic blocks in topological order
     TopologicalSorter::Result ordered = TopologicalSorter().doit(F);
@@ -96,15 +96,6 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     return false;
 }
 
-void OneForAll::print(llvm::raw_ostream&, const llvm::Module*) const {
-    infos() << "Predicate state analysis results" << endl;
-    for (const auto& e : instructionStates) {
-        infos() << *e.first << endl
-                << e.second << endl;
-    }
-    infos() << "End of predicate state analysis results" << endl;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 void OneForAll::init() {
@@ -123,7 +114,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
     for (const auto& I : view(BB->begin(), BB->end())) {
 
-        auto instructionState = (PSF * inState + PM(&I) << I)();
+        auto instructionState = (PSF * inState + PM(&I))();
         instructionStates[&I] = instructionState;
 
         // Add ensures and summary *after* the CallInst has been processed
@@ -162,7 +153,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
     const auto* idom = (*DT)[BB]->getIDom();
     // Function entry block does not have an idom
     if (!idom) {
-        return basicBlockStates.at(nullptr);
+        return initialState;
     }
 
     const auto* idomBB = idom->getBlock();
@@ -171,7 +162,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         return nullptr;
     }
 
-    auto base = basicBlockStates.at(idom->getBlock());
+    auto base = basicBlockStates.at(idomBB);
     std::vector<PredicateState::Ptr> choices;
 
     for (const auto* predBB : view(pred_begin(BB), pred_end(BB))) {
@@ -187,7 +178,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         for (auto it = BB->begin(); isa<PHINode>(it); ++it) {
             const PHINode* phi = cast<PHINode>(it);
             if (phi->getBasicBlockIndex(predBB) != -1) {
-                stateBuilder += PPM({predBB, phi}) << phi;
+                stateBuilder += PPM({predBB, phi});
             }
         }
 
@@ -224,7 +215,7 @@ PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {
         }
     }
 
-    return res;
+    return res << I;
 }
 
 PredicateState::Ptr OneForAll::PPM(PhiBranch key) {
@@ -239,7 +230,7 @@ PredicateState::Ptr OneForAll::PPM(PhiBranch key) {
         }
     }
 
-    return res;
+    return res << key.second;
 }
 
 PredicateState::Ptr OneForAll::TPM(TerminatorBranch key) {
@@ -254,7 +245,7 @@ PredicateState::Ptr OneForAll::TPM(TerminatorBranch key) {
         }
     }
 
-    return res;
+    return res << key.first;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

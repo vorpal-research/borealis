@@ -32,6 +32,8 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
         AUX<OneForAll>::addRequiredTransitive(AU);
     else
         BYE_BYE_VOID("Unknown PSA mode: " + Mode());
+
+    AUX<FunctionManager>::addRequiredTransitive(AU);
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
@@ -42,11 +44,36 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     else
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
 
+    if ("inline" == Summaries()) {
+        // Save total function state to function manager
+        // for inlining
+
+        auto& FM = GetAnalysis<FunctionManager>::doit(this);
+        auto initial = delegate->getInitialState();
+
+        auto rets = getAllRets(&F);
+        ASSERT(rets.size() == 1,
+               "Unexpected number of ReturnInst for: " + F.getName().str());
+
+        auto* RI = rets.front();
+
+        auto riState = delegate->getInstructionState(RI);
+        ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+
+        auto bdy = riState->sliceOn(initial);
+        ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
+
+        dbgs() << "Updating function state for: " << F.getName().str() << endl
+               << "  with: " << endl << bdy << endl;
+
+        FM.update(&F, bdy);
+    }
+
     return false;
 }
 
 void PredicateStateAnalysis::print(llvm::raw_ostream& O, const llvm::Module* M) const {
-    delegate->print(O, M);
+    delegate->printInstructionStates(O, M);
 }
 
 PredicateState::Ptr PredicateStateAnalysis::getInstructionState(const llvm::Instruction* I) const {
@@ -67,6 +94,11 @@ const std::string PredicateStateAnalysis::Mode() {
 bool PredicateStateAnalysis::CheckUnreachable() {
     static config::ConfigEntry<bool> checkUnreachable("analysis", "psa-check-unreachable");
     return checkUnreachable.get(true);
+}
+
+const std::string PredicateStateAnalysis::Summaries() {
+    static config::ConfigEntry<std::string> mode("analysis", "sum-mode");
+    return mode.get("none");
 }
 
 } /* namespace borealis */

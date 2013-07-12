@@ -66,8 +66,8 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
         initialState = initialState << arg;
     }
 
-    // Initial state goes in nullptr
-    predicateStates[nullptr] = initialState;
+    // Save initial state
+    this->initialState = initialState;
 
     // Queue up entry basic block
     enqueue(nullptr, &F.getEntryBlock(), initialState);
@@ -79,15 +79,6 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     finalize();
 
     return false;
-}
-
-void OneForOne::print(llvm::raw_ostream&, const llvm::Module*) const {
-    infos() << "Predicate state analysis results" << endl;
-    for (auto& e : predicateStates) {
-        infos() << *e.first << endl
-                << e.second << endl;
-    }
-    infos() << "End of predicate state analysis results" << endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -143,13 +134,13 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
     for ( ; isa<PHINode>(iter); ++iter) {
         const PHINode* phi = cast<PHINode>(iter);
         if (phi->getBasicBlockIndex(from) != -1) {
-            inState = (PSF * inState + PPM({from, phi}) << phi)();
+            inState = (PSF * inState + PPM({from, phi}))();
         }
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState::Ptr modifiedInState = (PSF * inState + PM(&I) << I)();
+        PredicateState::Ptr modifiedInState = (PSF * inState + PM(&I))();
         predicateStates[&I].push_back(modifiedInState);
 
         TRACE_MEASUREMENT(
@@ -187,12 +178,10 @@ void OneForOne::processTerminator(
         PredicateState::Ptr state) {
     using namespace::llvm;
 
-    auto s = state << I;
-
     if (isa<BranchInst>(I))
-    { processBranchInst(cast<BranchInst>(I), s); }
+    { processBranchInst(cast<BranchInst>(I), state); }
     else if (isa<SwitchInst>(I))
-    { processSwitchInst(cast<SwitchInst>(I), s); }
+    { processSwitchInst(cast<SwitchInst>(I), state); }
 }
 
 void OneForOne::processBranchInst(
@@ -243,7 +232,7 @@ PredicateState::Ptr OneForOne::PM(const llvm::Instruction* I) {
         }
     }
 
-    return res;
+    return res << I;
 }
 
 PredicateState::Ptr OneForOne::PPM(PhiBranch key) {
@@ -258,7 +247,7 @@ PredicateState::Ptr OneForOne::PPM(PhiBranch key) {
         }
     }
 
-    return res;
+    return res << key.second;
 }
 
 PredicateState::Ptr OneForOne::TPM(TerminatorBranch key) {
@@ -273,7 +262,7 @@ PredicateState::Ptr OneForOne::TPM(TerminatorBranch key) {
         }
     }
 
-    return res;
+    return res << key.first;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -100,7 +100,7 @@ public:
             )();
 
             dbgs() << "Checking: " << CI << endl;
-            dbgs() << "  Assert: " << endl << LA << endl;
+            dbgs() << "  Assert: " << endl << query << endl;
 
             Z3ExprFactory z3ef;
             Z3Solver s(z3ef);

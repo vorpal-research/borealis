@@ -50,7 +50,6 @@ public:
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnFunction(llvm::Function& F) override;
-    virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
 
 private:
 

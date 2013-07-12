@@ -14,6 +14,7 @@
 #include <unordered_map>
 
 #include "Logging/logger.hpp"
+#include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "State/PredicateState.h"
@@ -33,8 +34,20 @@ public:
     AbstractPredicateStateAnalysis();
     virtual ~AbstractPredicateStateAnalysis();
 
-    virtual bool runOnFunction(llvm::Function& F) = 0;
-    virtual void print(llvm::raw_ostream&, const llvm::Module*) const = 0;
+    void printInstructionStates(llvm::raw_ostream&, const llvm::Module*) const {
+        infos() << "Predicate state analysis results" << endl;
+        infos() << "Initial state" << endl
+                << initialState << endl;
+        for (const auto& e : instructionStates) {
+            infos() << *e.first << endl
+                    << e.second << endl;
+        }
+        infos() << "End of predicate state analysis results" << endl;
+    }
+
+    PredicateState::Ptr getInitialState() const {
+        return initialState;
+    }
 
     PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const {
         if (borealis::util::containsKey(instructionStates, I)) {
@@ -46,9 +59,11 @@ public:
 
 protected:
 
+    PredicateState::Ptr initialState;
     InstructionStates instructionStates;
 
     virtual void init() {
+        initialState.reset();
         instructionStates.clear();
     }
 
@@ -58,6 +73,7 @@ protected:
 
 class PredicateStateAnalysis:
         public ProxyFunctionPass,
+        public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
         public ShouldBeModularized {
 
     typedef AbstractPredicateStateAnalysis::InstructionStates InstructionStates;
@@ -65,6 +81,10 @@ class PredicateStateAnalysis:
 public:
 
     static char ID;
+
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("psa")
+#include "Util/unmacros.h"
 
     PredicateStateAnalysis();
     PredicateStateAnalysis(llvm::Pass* pass);
@@ -77,6 +97,7 @@ public:
 
     static const std::string Mode();
     static bool CheckUnreachable();
+    static const std::string Summaries();
 
 private:
 
