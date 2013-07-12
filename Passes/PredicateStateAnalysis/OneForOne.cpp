@@ -66,6 +66,9 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
         initialState = initialState << arg;
     }
 
+    // Initial state goes in nullptr
+    predicateStates[nullptr] = initialState;
+
     // Queue up entry basic block
     enqueue(nullptr, &F.getEntryBlock(), initialState);
 
