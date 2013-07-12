@@ -25,6 +25,8 @@ class FunctionManager : public llvm::ModulePass {
         PredicateState::Ptr Bdy;
         PredicateState::Ptr Ens;
 
+        FunctionDesc() {}
+
         FunctionDesc(PredicateState::Ptr Req, PredicateState::Ptr Bdy, PredicateState::Ptr Ens) :
             Req(Req), Bdy(Bdy), Ens(Ens) {}
 

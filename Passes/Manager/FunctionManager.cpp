@@ -84,16 +84,16 @@ void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
     ASSERT(!containsKey(data, F),
            "Attempt to register function " + F->getName().str() + " twice")
 
-    data.emplace(F, state);
+    data[F] = state;
 }
 
 void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
-        data.emplace(F, mergeFunctionDesc(data.at(F), state));
+        data[F] = mergeFunctionDesc(data.at(F), state);
     } else {
-        data.emplace(F, state);
+        data[F] = state;
     }
 }
 
@@ -105,7 +105,7 @@ FunctionManager::FunctionDesc FunctionManager::get(llvm::Function* F) {
     if (containsKey(data, F)) {
         // Do nothing
     } else {
-        data.emplace(F, PSF->Basic());
+        data[F] = PSF->Basic();
     }
 
     return data.at(F);
@@ -149,7 +149,7 @@ FunctionManager::FunctionDesc FunctionManager::get(
         state = m.getPredicateState(ft, F, PF, TF);
     }
 
-    data.emplace(F, state);
+    data[F] = state;
     return data.at(F);
 }
 
