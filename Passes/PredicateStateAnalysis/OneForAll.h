@@ -54,11 +54,10 @@ public:
 private:
 
     BasicBlockStates basicBlockStates;
+    std::list<AbstractPredicateAnalysis*> PA;
 
     FunctionManager* FM;
     llvm::DominatorTree* DT;
-
-    std::list<AbstractPredicateAnalysis*> PA;
 
     PredicateStateFactory::Ptr PSF;
     PredicateFactory::Ptr PF;

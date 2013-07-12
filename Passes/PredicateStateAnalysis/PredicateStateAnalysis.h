@@ -34,6 +34,8 @@ public:
     AbstractPredicateStateAnalysis();
     virtual ~AbstractPredicateStateAnalysis();
 
+    virtual bool runOnFunction(llvm::Function& F) = 0;
+
     void printInstructionStates(llvm::raw_ostream&, const llvm::Module*) const {
         infos() << "Predicate state analysis results" << endl;
         infos() << "Initial state" << endl

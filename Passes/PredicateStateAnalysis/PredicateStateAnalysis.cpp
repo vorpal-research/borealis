@@ -45,6 +45,10 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
 
     if ("inline" == Summaries()) {
+        // Update total function state
+        // FIXME akhin Fix dep issues and remove manual update
+	    delegate->runOnFunction(F);
+
         // Save total function state to function manager
         // for inlining
 

@@ -87,6 +87,7 @@ void OneForOne::init() {
     AbstractPredicateStateAnalysis::init();
 
     predicateStates.clear();
+    PA.clear();
 
     WorkQueue q;
     std::swap(workQueue, q);

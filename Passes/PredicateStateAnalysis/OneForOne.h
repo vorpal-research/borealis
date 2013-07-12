@@ -61,11 +61,10 @@ private:
 
     PredicateStates predicateStates;
     WorkQueue workQueue;
+    std::list<AbstractPredicateAnalysis*> PA;
 
     FunctionManager* FM;
     llvm::LoopInfo* LI;
-
-    std::list<AbstractPredicateAnalysis*> PA;
 
     PredicateFactory::Ptr PF;
     PredicateStateFactory::Ptr PSF;
