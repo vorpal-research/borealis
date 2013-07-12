@@ -154,6 +154,12 @@ struct dyn_caster {
     auto operator()(const From& from) QUICK_CONST_RETURN(dyn_cast<To>(from));
 };
 
+template<class To>
+struct isaer {
+    template<class From>
+    auto operator()(const From& from) QUICK_CONST_RETURN(isa<To>(from));
+};
+
 template<class T> struct simplify_type< std::shared_ptr<T> > {
     typedef T* SimpleType;
     static SimpleType getSimplifiedValue(const std::shared_ptr<T>& Val) {

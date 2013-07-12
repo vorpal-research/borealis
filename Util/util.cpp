@@ -7,7 +7,6 @@
 
 #include <llvm/Constants.h>
 #include <llvm/InstrTypes.h>
-#include <llvm/Instructions.h>
 #include <llvm/LLVMContext.h>
 
 #include <cstdlib>
@@ -207,6 +206,23 @@ std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI) {
 
 Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
     return LI->getLoopFor(inst->getParent());
+}
+
+std::list<ReturnInst*> getAllRets(Function* F) {
+    using borealis::util::isValid;
+    using borealis::util::takePtr;
+    using borealis::util::viewContainer;
+
+    std::unordered_set<ReturnInst*> rets;
+
+    for (ReturnInst* RI : viewContainer(F).flatten()
+                          .map(takePtr())
+                          .map(dyn_caster<ReturnInst>())
+                          .filter(isValid())) {
+        rets.insert(RI);
+    }
+
+    return std::list<ReturnInst*>(rets.begin(), rets.end());
 }
 
 } // namespace llvm

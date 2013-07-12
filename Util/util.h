@@ -11,6 +11,7 @@
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Constants.h>
 #include <llvm/Function.h>
+#include <llvm/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Value.h>
 
@@ -94,22 +95,24 @@ llvm::ConstantPointerNull* getNullPointer();
 std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
 Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
 
+std::list<ReturnInst*> getAllRets(Function* F);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 inline borealis::Locus instructionLocus(const Instruction* inst) {
     auto node = inst->getMetadata("dbg");
-    if(node) return DILocation(node);
+    if (node) return DILocation(node);
     else return borealis::Locus();
 }
 
 inline std::string valueSummary(const Value* v) {
-    if(!v) {
+    if (!v) {
         return "<nullptr>";
-    } else if(auto* f = llvm::dyn_cast<Function>(v)) {
+    } else if (auto* f = llvm::dyn_cast<Function>(v)) {
         return ("function " + f->getName()).str();
-    } else if(auto* bb = llvm::dyn_cast<BasicBlock>(v)) {
+    } else if (auto* bb = llvm::dyn_cast<BasicBlock>(v)) {
         return ("basic block " + bb->getName()).str();
-    } else if(auto* i = llvm::dyn_cast<Instruction>(v)) {
+    } else if (auto* i = llvm::dyn_cast<Instruction>(v)) {
         return borealis::util::toString(*i).c_str()+2;
     } else return borealis::util::toString(*v);
 }
