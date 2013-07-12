@@ -45,6 +45,10 @@ private:
         return factory.getNoMemoryArray();
     }
     void set(const std::string& id, const MemArray& value) {
+        using borealis::util::containsKey;
+        if (containsKey(memArrays, id)) {
+            memArrays.erase(id);
+        }
         memArrays.emplace(id, value);
     }
 
