@@ -10,7 +10,9 @@
 #include "Passes/PredicateStateAnalysis/OneForOne.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
+#include "State/Transformer/TermRenamer.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -162,13 +164,13 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
                 FM->getBdy(CI, PF.get(), TF.get()) +
                 FM->getEns(CI, PF.get(), TF.get())
             )();
-            CallSiteInitializer csi(CI, TF.get());
+            auto t = TermRenamer(CI) + CallSiteInitializer(CI, TF.get());
 
-            PredicateState::Ptr csiCallState = callState->map(
-                [&csi](Predicate::Ptr p) { return csi.transform(p); }
+            PredicateState::Ptr instantiatedCallState = callState->map(
+                [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            modifiedInState = (PSF * modifiedInState + csiCallState)();
+            modifiedInState = (PSF * modifiedInState + instantiatedCallState)();
         }
 
         inState = modifiedInState;

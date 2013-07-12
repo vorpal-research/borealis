@@ -12,7 +12,9 @@
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
+#include "State/Transformer/TermRenamer.h"
 #include "Util/graph.h"
 #include "Util/util.h"
 
@@ -133,13 +135,13 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
                 FM->getBdy(CI, PF.get(), TF.get()) +
                 FM->getEns(CI, PF.get(), TF.get())
             )();
-            CallSiteInitializer csi(CI, TF.get());
+            auto t = TermRenamer(CI) + CallSiteInitializer(CI, TF.get());
 
-            auto csiCallState = callState->map(
-                [&csi](Predicate::Ptr p) { return csi.transform(p); }
+            auto instantiatedCallState = callState->map(
+                [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            instructionState = (PSF * instructionState + csiCallState)();
+            instructionState = (PSF * instructionState + instantiatedCallState)();
         }
 
         inState = instructionState;

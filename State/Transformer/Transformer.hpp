@@ -39,6 +39,12 @@ class Transformer {
 public:
 
     Predicate::Ptr transform(Predicate::Ptr pred) {
+        DELEGATE(Base, pred);
+    }
+
+protected:
+
+    Predicate::Ptr transformBase(Predicate::Ptr pred) {
         Predicate::Ptr res;
 #define HANDLE_PREDICATE(NAME, CLASS) \
         if (llvm::isa<CLASS>(pred)) { \
@@ -47,10 +53,8 @@ public:
         }
 #include "Predicate/Predicate.def"
         ASSERT(res, "Unsupported predicate type");
-        return transformPredicate(res);
+        DELEGATE(Predicate, res);
     }
-
-protected:
 
     Predicate::Ptr transformPredicate(Predicate::Ptr p) {
         return p;
@@ -79,6 +83,12 @@ protected:
 public:
 
     Term::Ptr transform(Term::Ptr term) {
+        DELEGATE(Base, term);
+    }
+
+protected:
+
+    Term::Ptr transformBase(Term::Ptr term) {
         Term::Ptr res;
 #define HANDLE_TERM(NAME, CLASS) \
         if (llvm::isa<CLASS>(term)) { \
@@ -87,10 +97,8 @@ public:
         }
 #include "Term/Term.def"
         ASSERT(res, "Unsupported term type");
-        return transformTerm(res);
+        DELEGATE(Term, res);
     }
-
-protected:
 
     Term::Ptr transformTerm(Term::Ptr t) {
         return t;

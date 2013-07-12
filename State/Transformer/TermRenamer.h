@@ -12,6 +12,7 @@
 #include <llvm/Instructions.h>
 
 #include "State/Transformer/Transformer.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -20,8 +21,14 @@ class TermRenamer : public borealis::Transformer<TermRenamer> {
 public:
 
     TermRenamer(llvm::CallInst& CI) {
-        auto callerFuncName = CI.getParent()->getParent()->getName().str();
-        auto callerInstName = CI.getName().str();
+        using borealis::util::toString;
+
+        auto* callerFunc = CI.getParent()->getParent();
+        auto* callerInst = &CI;
+
+        auto callerFuncName = callerFunc ? callerFunc->getName().str() : toString(callerFunc);
+        auto callerInstName = callerInst ? callerInst->getName().str() : toString(callerInst);
+
         prefix = callerFuncName + "." + callerInstName + ".";
     }
 
