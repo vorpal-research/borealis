@@ -28,19 +28,43 @@ class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
 public:
 
     CallSiteInitializer(
-            llvm::CallInst& I,
+            llvm::CallInst& CI,
             TermFactory* TF) {
 
-        auto& formalArgs = I.getCalledFunction()->getArgumentList();
-        int argIdx = 0;
+        using borealis::util::toString;
 
-        this->returnValue = &I;
-        for (auto& formal : formalArgs) {
-            auto* actual = I.getArgOperand(argIdx++);
+        this->returnValue = &CI;
+
+        int argIdx = 0;
+        for (auto& formal : CI.getCalledFunction()->getArgumentList()) {
+            auto* actual = CI.getArgOperand(argIdx++);
             callSiteArguments[&formal] = actual;
         }
 
+        auto* callerFunc = CI.getParent()->getParent();
+        auto* callerInst = &CI;
+
+        auto callerFuncName = callerFunc && callerFunc->hasName()
+                              ? callerFunc->getName().str()
+                              : toString(callerFunc);
+        auto callerInstName = callerInst && callerInst->hasName()
+                              ? callerInst->getName().str()
+                              : toString(callerInst);
+
+        prefix = callerFuncName + "." + callerInstName + ".";
+
         this->TF = TF;
+    }
+
+    Predicate::Ptr transformPredicate(Predicate::Ptr p) {
+        switch(p->getType()) {
+        case PredicateType::ENSURES:
+            return Predicate::Ptr(
+                p->clone()->setType(PredicateType::STATE)
+            );
+        default:
+            return p;
+        }
     }
 
     Term::Ptr transformArgumentTerm(ArgumentTermPtr t) {
@@ -58,12 +82,18 @@ public:
         return TF->getValueTerm(returnValue);
     }
 
+    Term::Ptr transformValueTerm(ValueTermPtr t) {
+        auto renamed = prefix + t->getName();
+        return t->withNewName(renamed);
+    }
+
 private:
 
     typedef std::unordered_map<llvm::Argument*, llvm::Value*> CallSiteArguments;
 
     llvm::Value* returnValue;
     CallSiteArguments callSiteArguments;
+    std::string prefix;
 
     TermFactory* TF;
 

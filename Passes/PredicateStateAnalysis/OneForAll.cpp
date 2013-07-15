@@ -14,7 +14,6 @@
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
-#include "State/Transformer/TermRenamer.h"
 #include "Util/graph.h"
 #include "Util/util.h"
 
@@ -127,7 +126,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
                 FM->getBdy(CI, PF.get(), TF.get()) +
                 FM->getEns(CI, PF.get(), TF.get())
             )();
-            auto t = TermRenamer(CI) + CallSiteInitializer(CI, TF.get());
+            auto t = CallSiteInitializer(CI, TF.get());
 
             auto instantiatedCallState = callState->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }

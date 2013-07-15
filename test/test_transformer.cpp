@@ -57,14 +57,26 @@ TEST_F(TransformerTest, CallSiteInitializer) {
         using namespace llvm;
         using llvm::Type;
 
+        Function* Main = Function::Create(
+            FunctionType::get(
+                Type::getVoidTy(*ctx),
+                false
+            ),
+            GlobalValue::LinkageTypes::InternalLinkage,
+            "main"
+        );
+        BasicBlock* BB = BasicBlock::Create(*ctx, "bb.test", Main);
+
         Type* retType = Type::getVoidTy(*ctx);
         Type* argType = Type::getInt1Ty(*ctx);
         Function* F = Function::Create(
-                FunctionType::get(
-                        retType,
-                        argType,
-                        false),
-                GlobalValue::LinkageTypes::ExternalLinkage);
+            FunctionType::get(
+                retType,
+                argType,
+                false),
+            GlobalValue::LinkageTypes::ExternalLinkage,
+            "test"
+        );
 
         Argument* arg = &head(F->getArgumentList());
         arg->setName("mock-arg");
@@ -75,12 +87,12 @@ TEST_F(TransformerTest, CallSiteInitializer) {
         Value* val_1 = GlobalValue::getIntegerValue(argType, APInt(1,1));
         val_1->setName("mock-val-1");
 
-        CallInst* CI = CallInst::Create(F, val_0);
+        CallInst* CI = CallInst::Create(F, val_0, "", BB);
         CallSiteInitializer csi(*CI, TF.get());
 
         auto pred = PF->getEqualityPredicate(
-                TF->getArgumentTerm(arg),
-                TF->getValueTerm(val_1)
+            TF->getArgumentTerm(arg),
+            TF->getValueTerm(val_1)
         );
         EXPECT_EQ("mock-arg=true", pred->toString());
 
