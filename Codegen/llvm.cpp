@@ -64,7 +64,7 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& range) {
+std::string getRawSource(const clang::SourceManager& sm, const LocusRange& range) {
     using namespace clang;
 
     FileManager& fm = sm.getFileManager();
@@ -73,23 +73,30 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
         return "Encountered unknown location, enjoy a smiley =)";
     }
 
-    const FileEntry* begFile = fm.getFile(range.lhv.filename);
+    auto* begFile = fm.getFile(range.lhv.filename);
+    auto* endFile = fm.getFile(range.rhv.filename);
 
     auto begLoc = sm.translateFileLineCol(begFile, range.lhv.loc.line, range.lhv.loc.col);
-    auto endLoc = sm.translateFileLineCol(begFile, range.rhv.loc.line, range.rhv.loc.col);
+    auto endLoc = sm.translateFileLineCol(endFile, range.rhv.loc.line, range.rhv.loc.col);
 
-    clang::FileID BeginFileID;
-    clang::FileID EndFileID;
-    unsigned BeginOffset;
-    unsigned EndOffset;
+    if (begLoc.isInvalid() || endLoc.isInvalid())
+        return "Encountered invalid location, enjoy a smiley =)";
 
-    std::tie(BeginFileID, BeginOffset) = sm.getDecomposedLoc(begLoc);
-    std::tie(EndFileID, EndOffset) = sm.getDecomposedLoc(endLoc);
+    bool StartInvalid = false;
+    bool EndInvalid = false;
+    const char* BufferStart = sm.getCharacterData(begLoc, &StartInvalid);
+    const char* BufferEnd = sm.getCharacterData(endLoc, &EndInvalid);
 
-    bool Invalid = false;
-    const char* BufferStart = sm.getBufferData(BeginFileID, &Invalid).data();
+    if (StartInvalid || EndInvalid)
+        return "Encountered invalid location, enjoy a smiley =)";
 
-    return StringRef{ BufferStart + BeginOffset, EndOffset - BeginOffset };
+    if (BufferEnd < BufferStart) {
+        auto* xchg = BufferStart;
+        BufferStart = BufferEnd;
+        BufferEnd = xchg;
+    }
+
+    return StringRef{ BufferStart, BufferEnd - BufferStart }.str();
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {
