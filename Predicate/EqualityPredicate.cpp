@@ -27,7 +27,7 @@ logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) 
 bool EqualityPredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const EqualityPredicate* o = llvm::dyn_cast<EqualityPredicate>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
     } else {

@@ -52,7 +52,7 @@ logic::Bool AllocaPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
 bool AllocaPredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const AllocaPredicate* o = llvm::dyn_cast<AllocaPredicate>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->numElements == *o->numElements;
     } else {

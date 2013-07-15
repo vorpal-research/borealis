@@ -14,33 +14,40 @@ namespace borealis {
 
 class GlobalsPredicate: public borealis::Predicate {
 
+    typedef GlobalsPredicate Self;
+
 public:
 
     virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const override;
 
     static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<GlobalsPredicate>();
+        return p->getPredicateTypeId() == type_id<Self>();
     }
 
-    static bool classof(const GlobalsPredicate* /* p */) {
+    static bool classof(const Self* /* p */) {
         return true;
     }
 
     template<class SubClass>
-    const GlobalsPredicate* accept(Transformer<SubClass>* t) const {
+    const Self* accept(Transformer<SubClass>* t) const {
         std::vector<Term::Ptr> new_globals;
         new_globals.reserve(globals.size());
         std::transform(globals.begin(), globals.end(), std::back_inserter(new_globals),
             [t](const Term::Ptr& e) { return t->transform(e); }
         );
 
-        return new GlobalsPredicate(
-                new_globals,
-                this->type);
+        return new Self(
+            new_globals,
+            this->type
+        );
     }
 
     virtual bool equals(const Predicate* other) const override;
     virtual size_t hashCode() const override;
+
+    virtual Predicate* clone() const override {
+        return new Self{ *this };
+    }
 
     friend class PredicateFactory;
 
@@ -51,6 +58,7 @@ private:
     GlobalsPredicate(
             const std::vector<Term::Ptr>& globals,
             PredicateType type = PredicateType::STATE);
+    GlobalsPredicate(const Self&) = default;
 
 };
 

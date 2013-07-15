@@ -27,7 +27,7 @@ logic::Bool InequalityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx
 bool InequalityPredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const InequalityPredicate* o = llvm::dyn_cast<InequalityPredicate>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
     } else {

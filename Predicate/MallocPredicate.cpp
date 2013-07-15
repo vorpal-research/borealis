@@ -55,7 +55,7 @@ logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) co
 bool MallocPredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const MallocPredicate* o = llvm::dyn_cast<MallocPredicate>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->lhv == *o->lhv;
     } else {
         return false;

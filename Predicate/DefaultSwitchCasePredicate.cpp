@@ -62,7 +62,7 @@ logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionConte
 bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const DefaultSwitchCasePredicate* o = llvm::dyn_cast<DefaultSwitchCasePredicate>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->cond == *o->cond &&
             std::equal(cases.begin(), cases.end(), o->cases.begin(),
                 [](const Term::Ptr& e1, const Term::Ptr& e2) { return *e1 == *e2; }

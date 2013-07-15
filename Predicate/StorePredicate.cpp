@@ -44,7 +44,7 @@ logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) con
 bool StorePredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const self* o = llvm::dyn_cast<self>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
     } else {

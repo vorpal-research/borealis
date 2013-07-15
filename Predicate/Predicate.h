@@ -45,6 +45,7 @@ public:
 
     Predicate(borealis::id_t predicate_type_id);
     Predicate(borealis::id_t predicate_type_id, PredicateType type);
+    Predicate(const Predicate&) = default;
     virtual ~Predicate() {};
 
     borealis::id_t getPredicateTypeId() const {
@@ -83,6 +84,8 @@ public:
     }
 
     virtual size_t hashCode() const = 0;
+
+    virtual Predicate* clone() const = 0;
 
     const llvm::Instruction* getLocation() const {
         return location;

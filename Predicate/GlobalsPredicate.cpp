@@ -52,7 +52,7 @@ logic::Bool GlobalsPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) c
 bool GlobalsPredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const GlobalsPredicate* o = llvm::dyn_cast<GlobalsPredicate>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return std::equal(globals.begin(), globals.end(), o->globals.begin(),
             [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
         );

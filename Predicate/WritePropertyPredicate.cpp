@@ -57,7 +57,7 @@ logic::Bool WritePropertyPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* 
 bool WritePropertyPredicate::equals(const Predicate* other) const {
     if (other == nullptr) return false;
     if (this == other) return true;
-    if (const self* o = llvm::dyn_cast<self>(other)) {
+    if (const Self* o = llvm::dyn_cast<Self>(other)) {
         return *this->propName == *o->propName &&
                 *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
