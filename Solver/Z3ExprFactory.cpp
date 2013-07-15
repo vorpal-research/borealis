@@ -19,6 +19,8 @@ Z3ExprFactory::Z3ExprFactory() {
     // cfg.set(":proof-mode", 2);
 
     ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
+
+    Z3_set_ast_print_mode(*ctx, Z3_PRINT_SMTLIB2_COMPLIANT);
 }
 
 unsigned int Z3ExprFactory::pointerSize = 32;
