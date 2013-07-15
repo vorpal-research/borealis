@@ -53,7 +53,8 @@ public:
         if (other == nullptr) return false;
         if (this == other) return true;
         return this->id == other->id &&
-                this->term_type_id == other->term_type_id;
+                this->term_type_id == other->term_type_id &&
+                this->name == other->name;
     }
 
     bool operator==(const Term& other) const {

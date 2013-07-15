@@ -64,7 +64,7 @@ protected:
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Predicate::Ptr transform##NAME(CLASS##Ptr p) { \
         CLASS##Ptr pp(p->accept(this)); \
-        DELEGATE(CLASS, pp); \
+        DELEGATE(CLASS, *pp == *p ? p : pp); \
     }
 #include "Predicate/Predicate.def"
 
@@ -108,7 +108,7 @@ protected:
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Term::Ptr transform##NAME(CLASS##Ptr t) { \
         CLASS##Ptr tt(t->accept(this)); \
-        DELEGATE(CLASS, tt); \
+        DELEGATE(CLASS, *tt == *t ? t : tt); \
     }
 #include "Term/Term.def"
 
