@@ -31,41 +31,41 @@ public:
     }
 
     Type::Ptr getBool() {
-        if(!theBool) theBool = Type::Ptr(new Bool());
+        if(!theBool) theBool = Type::Ptr(new type::Bool());
         return theBool;
     }
 
     Type::Ptr getInteger() {
-        if(!theInteger) theInteger = Type::Ptr(new Integer());
+        if(!theInteger) theInteger = Type::Ptr(new type::Integer());
         return theInteger;
     }
 
     Type::Ptr getFloat() {
-        if(!theFloat) theFloat = Type::Ptr(new Float());
+        if(!theFloat) theFloat = Type::Ptr(new type::Float());
         return theFloat;
     }
 
     Type::Ptr getUnknown() {
-        if(!theUnknown) theUnknown = Type::Ptr(new UnknownType());
+        if(!theUnknown) theUnknown = Type::Ptr(new type::UnknownType());
         return theUnknown;
     }
 
     Type::Ptr getPointer(Type::Ptr to) {
-        if(!pointers.count(to)) pointers[to] = Type::Ptr(new Pointer(to));
+        if(!pointers.count(to)) pointers[to] = Type::Ptr(new type::Pointer(to));
         return pointers[to];
     }
 
     Type::Ptr getTypeError(const std::string& message) {
-        if(!errors.count(message)) errors[message] = Type::Ptr(new TypeError(message));
+        if(!errors.count(message)) errors[message] = Type::Ptr(new type::TypeError(message));
         return errors[message];
     }
 
     bool isValid(Type::Ptr type) {
-        return type->getId() != type_id<TypeError>();
+        return type->getId() != type_id<type::TypeError>();
     }
 
     bool isUnknown(Type::Ptr type) {
-        return type->getId() == type_id<UnknownType>();
+        return type->getId() == type_id<type::UnknownType>();
     }
 
     Type::Ptr cast(const llvm::Type* type) {
@@ -88,12 +88,12 @@ public:
         using llvm::isa;
         using llvm::dyn_cast;
 
-        if(isa<Integer>(type)) return "Integer";
-        if(isa<Float>(type)) return "Float";
-        if(isa<Bool>(type)) return "Bool";
-        if(isa<UnknownType>(type)) return "Unknown";
-        if(auto* Ptr = dyn_cast<Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
-        if(auto* Err = dyn_cast<TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
+        if(isa<type::Integer>(type)) return "Integer";
+        if(isa<type::Float>(type)) return "Float";
+        if(isa<type::Bool>(type)) return "Bool";
+        if(isa<type::UnknownType>(type)) return "Unknown";
+        if(auto* Ptr = dyn_cast<type::Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
+        if(auto* Err = dyn_cast<type::TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
 
         BYE_BYE(std::string, "Unknown type");
     }

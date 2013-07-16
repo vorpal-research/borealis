@@ -110,27 +110,23 @@ f::Bool Z3ExprFactory::getDistinct(const std::vector<f::Pointer>& exprs) {
     return logic::distinct(*ctx, exprs);
 }
 
-z3::expr Z3ExprFactory::to_expr(Z3_ast ast) {
-    return z3::to_expr( *ctx, ast );
-}
-
 f::Dynamic Z3ExprFactory::getVarByTypeAndName(
         Type::Ptr type,
         const std::string& name,
         bool fresh) {
     using llvm::isa;
 
-    if (isa<borealis::Integer>(type))
+    if (isa<type::Integer>(type))
         return getIntVar(name, fresh);
-    else if (isa<borealis::Float>(type))
+    else if (isa<type::Float>(type))
         return getRealVar(name, fresh);
-    else if (isa<borealis::Bool>(type))
+    else if (isa<type::Bool>(type))
         return getBoolVar(name, fresh);
-    else if (isa<borealis::Pointer>(type))
+    else if (isa<type::Pointer>(type))
         return getPtrVar(name, fresh);
-    else if (isa<borealis::UnknownType>(type))
+    else if (isa<type::UnknownType>(type))
         BYE_BYE(Dynamic, "Unknown var type in Z3 conversion");
-    else if (isa<borealis::TypeError>(type))
+    else if (isa<type::TypeError>(type))
         BYE_BYE(Dynamic, "Encountered type error in Z3 conversion");
 
     BYE_BYE(Dynamic, "Unreachable!");

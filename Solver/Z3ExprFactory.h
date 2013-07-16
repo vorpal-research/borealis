@@ -47,9 +47,9 @@ public:
 
     static size_t sizeForType(Type::Ptr type) {
         using llvm::isa;
-        return isa<borealis::Integer>(type) ? Integer::bitsize :
-               isa<borealis::Pointer>(type) ? Pointer::bitsize :
-               isa<borealis::Float>(type) ? Real::bitsize :
+        return isa<type::Integer>(type) ? Integer::bitsize :
+               isa<type::Pointer>(type) ? Pointer::bitsize :
+               isa<type::Float>(type) ? Real::bitsize :
                util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                        "Cannot acquire bitsize for type " + util::toString(type));
     }
@@ -103,12 +103,6 @@ public:
             T default_) {
         return logic::switch_(val, cases, default_);
     }
-
-private:
-
-    z3::expr to_expr(Z3_ast ast);
-
-public:
 
     static void initialize(llvm::TargetData* TD);
 

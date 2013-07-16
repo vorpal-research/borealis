@@ -11,6 +11,10 @@ contents = '''\
 
 namespace $namespace {
 
+class TypeFactory;
+
+namespace type {
+
 class $clazz : public $base {
     typedef $clazz self;
     typedef $base base;
@@ -21,11 +25,12 @@ public:
     static bool classof(const self*) { return true; }
     static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
+    friend class ::borealis::TypeFactory;
 
     $members
 };
 
+} // namespace type
 } // namespace $namespace
 
 #endif // $guard

@@ -5,6 +5,10 @@
 
 namespace borealis {
 
+class TypeFactory;
+
+namespace type {
+
 class TypeError : public Type {
     typedef TypeError self;
     typedef Type base;
@@ -15,7 +19,7 @@ public:
     static bool classof(const self*) { return true; }
     static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
+    friend class ::borealis::TypeFactory;
     
 private:
     std::string message;
@@ -25,6 +29,7 @@ public:
 
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // TYPEERROR_H

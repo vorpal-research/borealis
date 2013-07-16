@@ -194,13 +194,13 @@ public:
         Term::Ptr lhvt = pass->TF->getValueTerm(lhv);
         Term::Ptr rhvt = pass->TF->getValueTerm(rhv);
 
-        if (isa<Bool>(lhvt->getTermType()) && ! isa<Bool>(rhvt->getTermType())) {
+        if (isa<type::Bool>(lhvt->getTermType()) && ! isa<type::Bool>(rhvt->getTermType())) {
             rhvt = pass->TF->getCmpTerm(
                     ConditionType::NEQ,
                     rhvt,
                     pass->TF->getIntTerm(0ULL)
             );
-        } else if (! isa<Bool>(lhvt->getTermType()) && isa<Bool>(rhvt->getTermType())) {
+        } else if (! isa<type::Bool>(lhvt->getTermType()) && isa<type::Bool>(rhvt->getTermType())) {
             lhvt = pass->TF->getCmpTerm(
                     ConditionType::NEQ,
                     lhvt,

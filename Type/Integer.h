@@ -5,6 +5,10 @@
 
 namespace borealis {
 
+class TypeFactory;
+
+namespace type {
+
 class Integer : public Type {
     typedef Integer self;
     typedef Type base;
@@ -15,10 +19,11 @@ public:
     static bool classof(const self*) { return true; }
     static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
+    friend class ::borealis::TypeFactory;
     
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // INTEGER_H

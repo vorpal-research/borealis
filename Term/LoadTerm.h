@@ -74,7 +74,7 @@ public:
 
         if (!tf.isValid(ptr)) return ptr;
 
-        if (auto* cst = llvm::dyn_cast<Pointer>(ptr)) {
+        if (auto* cst = llvm::dyn_cast<type::Pointer>(ptr)) {
             return cst->getPointed();
         } else {
             return tf.getTypeError("Load from a non-pointer");
