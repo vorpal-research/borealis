@@ -146,7 +146,8 @@ LIBS := \
 	-lcfgparser \
 	-llog4cpp \
 	-lprofiler \
-	-ljsoncpp
+	-ljsoncpp\
+	-lmathsat -lgmpxx -lgmp
 
 default: all
 
