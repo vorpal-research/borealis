@@ -64,13 +64,13 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-std::string getRawSource(const clang::SourceManager& sm, const LocusRange& range) {
+llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& range) {
     using namespace clang;
 
     FileManager& fm = sm.getFileManager();
 
     if (range.lhv.isUnknown() || range.rhv.isUnknown()) {
-        return "Encountered unknown location, enjoy a smiley =)";
+        return StringRef{ "Encountered unknown location, enjoy a smiley =)" };
     }
 
     auto* begFile = fm.getFile(range.lhv.filename);
@@ -88,7 +88,7 @@ std::string getRawSource(const clang::SourceManager& sm, const LocusRange& range
     const char* BufferEnd = sm.getCharacterData(endLoc, &EndInvalid);
 
     if (StartInvalid || EndInvalid)
-        return "Encountered invalid location, enjoy a smiley =)";
+        return StringRef{ "Encountered invalid location, enjoy a smiley =)" };
 
     if (BufferEnd < BufferStart) {
         auto* xchg = BufferStart;
@@ -96,7 +96,7 @@ std::string getRawSource(const clang::SourceManager& sm, const LocusRange& range
         BufferEnd = xchg;
     }
 
-    return StringRef{ BufferStart, BufferEnd - BufferStart }.str();
+    return StringRef{ BufferStart, BufferEnd - BufferStart };
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {
