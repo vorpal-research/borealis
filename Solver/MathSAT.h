@@ -8,6 +8,7 @@
 #ifndef MATHSAT_H_
 #define MATHSAT_H_
 
+#include <sstream>
 #include <mathsat/mathsat.h>
 
 namespace mathsat{
@@ -16,20 +17,68 @@ class Decl {
 private:
 	msat_decl decl_;
 public:
-	Decl(msat_decl decl) : decl_(decl) {}
+	Decl(const msat_decl& decl) : decl_(decl) {}
 
 	operator msat_decl() const { return decl_; }
 };
+
+//////////////////////////////////////////////////////////////////
 
 class Sort {
 private:
 	msat_type type_;
 public:
-	Sort(msat_type type) : type_(type) {}
+	Sort(const msat_type& type) : type_(type) {}
 
 	operator msat_type() const { return type_; }
 
-}
+};
+
+//////////////////////////////////////////////////////////////////
+
+class Config;
+
+class Env {
+private:
+	msat_env env_;
+
+public:
+	Env(const msat_env& env) : env_(env) {}
+	Env(const Config& config);
+
+	~Env() { msat_destroy_env(env_); }
+
+	operator msat_env() { return env_; }
+};
+
+//////////////////////////////////////////////////////////////////
+
+class Config {
+private:
+	msat_config config_;
+public:
+	Config(const msat_config& config) : config_(config) {}
+	Config() { config_ = msat_create_config(); }
+	Config(const std::string& logic);
+	Config(FILE *f);
+
+	~Config() { msat_destroy_config(config_); }
+
+	operator msat_config() const { return config_; }
+
+	void set(char const *option, char const * value) { msat_set_option(config_, option, value); }
+	void set(char const *option, bool value) { msat_set_option(config_, option, value ? "true" : "false"); }
+	void set(char const *option, int value) {
+		std::ostringstream oss;
+		oss << value;
+		msat_set_option(config_, option, oss.str().c_str());
+	}
+
+	Env env() const { return Env(*this); }
+};
+
+
+//////////////////////////////////////////////////////////////////
 
 class Expr {
 private:
@@ -39,7 +88,9 @@ private:
 	Sort get_type() const { return msat_term_get_type(term_); }
 
 public:
-	Expr(msat_env &env, msat_term& term) : env_(env), term_(term) {}
+	Expr(const msat_env &env, const msat_term& term) : env_(env), term_(term) {}
+
+	operator msat_term() { return term_; }
 
 	bool is_bool() const { return msat_is_bool_type(env_, get_type()); }
 	bool is_int() const { return msat_is_integer_type(env_, get_type()); }
@@ -57,6 +108,53 @@ public:
 
 	Sort arg_type(unsigned i) const;
 
+	friend Expr operator !(Expr const &that);
+	friend Expr operator &&(Expr const &a, Expr const &b);
+	friend Expr operator &&(Expr const &a, bool b);
+	friend Expr operator &&(bool a, Expr const &b);
+	friend Expr operator ||(Expr const &a, Expr const &b);
+	friend Expr operator ||(Expr const &a, bool b);
+	friend Expr operator ||(bool a, Expr const &b);
+	friend Expr operator ==(Expr const &a, Expr const &b);
+	friend Expr operator ==(Expr const &a, int b);
+	friend Expr operator ==(int a, Expr const &b);
+	friend Expr operator +(Expr const &a, Expr const &b);
+	friend Expr operator +(Expr const &a, int b);
+	friend Expr operator +(int a, Expr const &b);
+	friend Expr operator *(Expr const &a, Expr const &b);
+	friend Expr operator *(Expr const &a, int b);
+	friend Expr operator *(int a, Expr const &b);
+	friend Expr operator /(Expr const &a, Expr const &b);
+	friend Expr operator /(Expr const &a, int b);
+	friend Expr operator /(int a, Expr const &b);
+	friend Expr operator -(Expr const &a);
+	friend Expr operator -(Expr const &a, Expr const &b);
+	friend Expr operator -(Expr const &a, int b);
+	friend Expr operator -(int a, Expr const &b);
+	friend Expr operator <=(Expr const &a, Expr const &b);
+	friend Expr operator <=(Expr const &a, int b);
+	friend Expr operator <=(int a, Expr const &b);
+	friend Expr operator >=(Expr const &a, Expr const &b);
+	friend Expr operator >=(Expr const &a, int b);
+	friend Expr operator >=(int a, Expr const &b);
+	friend Expr operator <(Expr const &a, Expr const &b);
+	friend Expr operator <(Expr const &a, int b);
+	friend Expr operator <(int a, Expr const &b);
+	friend Expr operator >(Expr const &a, Expr const &b);
+	friend Expr operator >(Expr const &a, int b);
+	friend Expr operator >(int a, Expr const &b);
+	friend Expr operator &(Expr const &a, Expr const &b);
+	friend Expr operator &(Expr const &a, int b);
+	friend Expr operator &(int a, Expr const &b);
+	friend Expr operator ^(Expr const &a, Expr const &b);
+	friend Expr operator ^(Expr const &a, int b);
+	friend Expr operator ^(int a, Expr const &b);
+	friend Expr operator |(Expr const &a, Expr const &b);
+	friend Expr operator |(Expr const &a, int b);
+	friend Expr operator |(int a, Expr const &b);
+	friend Expr operator ~(Expr const &a);
+
+	friend Expr iff(Expr const &a, Expr const &b);
 }; // class Expr
 
 
