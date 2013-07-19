@@ -18,23 +18,24 @@ class AllocaPredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const override;
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getNumElems() const { return numElements; }
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<Self>();
     }
 
-    static bool classof(const Self* /* p */) {
+    static bool classof(const Self*) {
         return true;
     }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
-        return new Self(
+        return new Self{
             t->transform(lhv),
             t->transform(numElements),
             this->type
-        );
+        };
     }
 
     virtual bool equals(const Predicate* other) const override;
@@ -58,6 +59,38 @@ private:
     AllocaPredicate(const Self&) = default;
 
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, AllocaPredicate> {
+    static Bool<Impl> doit(
+            const AllocaPredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        USING_SMT_IMPL(Impl);
+
+        ASSERTC(ctx != nullptr);
+
+        auto lhve = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
+
+        ASSERT(!lhve.empty(), "Encountered alloca with non-Pointer left side");
+
+        unsigned long long elems = 1;
+        if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(p->getNumElems())) {
+            if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
+                elems = intCnst->getLimitedValue();
+            } else ASSERT(false, "Encountered alloca with non-integer element number");
+        } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(p->getNumElems())) {
+            elems = cnst->getValue();
+        } else ASSERT(false, "Encountered alloca with non-integer/non-constant element number");
+
+        auto lhvp = lhve.getUnsafe();
+        return lhvp == ctx->getDistinctPtr(elems);
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

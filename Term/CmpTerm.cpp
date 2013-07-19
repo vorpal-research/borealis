@@ -6,9 +6,3 @@
  */
 
 #include "Term/CmpTerm.h"
-
-namespace borealis {
-
-CmpTerm::~CmpTerm() {};
-
-} /* namespace borealis */

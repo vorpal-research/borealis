@@ -11,12 +11,12 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
-#include <unordered_set>
 
 #include "Logging/logstream.hpp"
+#include "Logging/tracer.hpp"
 #include "Predicate/Predicate.h"
-#include "Solver/ExecutionContext.h"
-#include "Solver/Z3ExprFactory.h"
+#include "SMT/SMTUtil.h"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -33,7 +33,6 @@ public:
     typedef std::function<bool(Predicate::Ptr)> Filterer;
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const = 0;
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const = 0;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const = 0;
@@ -59,7 +58,7 @@ public:
 
     bool isUnreachable() const;
 
-    static bool classof(const PredicateState* /* ps */) {
+    static bool classof(const PredicateState*) {
         return true;
     }
 
@@ -67,6 +66,7 @@ public:
 
     virtual bool equals(const PredicateState* other) const = 0;
     bool operator==(const PredicateState& other) const {
+        if (this == &other) return true;
         return this->equals(&other);
     }
 

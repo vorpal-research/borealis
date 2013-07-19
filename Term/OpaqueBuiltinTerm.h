@@ -10,11 +10,13 @@
 
 #include "Term/Term.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 class OpaqueBuiltinTerm: public borealis::Term {
 
-    typedef OpaqueBuiltinTerm self;
+    typedef OpaqueBuiltinTerm Self;
 
     const std::string vname;
 
@@ -29,25 +31,24 @@ public:
 
     const std::string& getName() const { return vname; }
 
-    OpaqueBuiltinTerm(const OpaqueBuiltinTerm&) = default;
+    OpaqueBuiltinTerm(const Self&) = default;
+    virtual ~OpaqueBuiltinTerm() {};
 
-#include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
 
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
     virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                   that->vname == vname;
+                    that->vname == vname;
         } else return false;
     }
 
@@ -59,6 +60,18 @@ public:
 
 };
 
+template<class Impl>
+struct SMTImpl<Impl, OpaqueBuiltinTerm> {
+    static Dynamic<Impl> doit(
+            const OpaqueBuiltinTerm*,
+            ExprFactory<Impl>&,
+            ExecutionContext<Impl>*) {
+        BYE_BYE(Dynamic<Impl>, "Should not be called!");
+    }
+};
+
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* OPAQUEBUILTINTERM_H_ */

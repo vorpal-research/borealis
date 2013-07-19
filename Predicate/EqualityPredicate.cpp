@@ -19,20 +19,11 @@ EqualityPredicate::EqualityPredicate(
     this->asString = this->lhv->getName() + "=" + this->rhv->getName();
 }
 
-logic::Bool EqualityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-    return lhv->toZ3(z3ef, ctx) == rhv->toZ3(z3ef, ctx);
-}
-
 bool EqualityPredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const Self* o = llvm::dyn_cast<Self>(other)) {
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
-    } else {
-        return false;
-    }
+    } else return false;
 }
 
 size_t EqualityPredicate::hashCode() const {

@@ -1,18 +1,19 @@
 /*
- * Z3ExprFactory.cpp
+ * ExprFactory.cpp
  *
  *  Created on: Oct 30, 2012
  *      Author: ice-phoenix
  */
 
 #include "Config/config.h"
-#include "Solver/Z3ExprFactory.h"
+#include "SMT/Z3/ExprFactory.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
+namespace z3_ {
 
-Z3ExprFactory::Z3ExprFactory() {
+ExprFactory::ExprFactory() {
     z3::config cfg;
     cfg.set(":lift-ite", 2);
     cfg.set(":ng-lift-ite", 2);
@@ -23,94 +24,91 @@ Z3ExprFactory::Z3ExprFactory() {
     Z3_set_ast_print_mode(*ctx, Z3_PRINT_SMTLIB2_COMPLIANT);
 }
 
-unsigned int Z3ExprFactory::pointerSize = 32;
+unsigned int ExprFactory::pointerSize = 32;
 
-#define BRING_FROM_Z3EXPR_FACTORY(TYPE) typedef Z3ExprFactory::TYPE TYPE;
+////////////////////////////////////////////////////////////////////////////////
 
-namespace f {
-
-BRING_FROM_Z3EXPR_FACTORY(Bool)
-BRING_FROM_Z3EXPR_FACTORY(Integer)
-BRING_FROM_Z3EXPR_FACTORY(Pointer)
-BRING_FROM_Z3EXPR_FACTORY(Real)
-BRING_FROM_Z3EXPR_FACTORY(MemArray)
-BRING_FROM_Z3EXPR_FACTORY(Dynamic)
-
-}
-
-#undef BRING_FROM_Z3EXPR_FACTORY
-
-f::Pointer Z3ExprFactory::getPtrVar(const std::string& name, bool fresh) {
+Z3::Pointer ExprFactory::getPtrVar(const std::string& name, bool fresh) {
     return fresh ? Pointer::mkFreshVar(*ctx, name) : Pointer::mkVar(*ctx, name);
 }
 
-f::Pointer Z3ExprFactory::getPtrConst(int ptr) {
+Z3::Pointer ExprFactory::getPtrConst(int ptr) {
     return Pointer::mkConst(*ctx, ptr);
 }
 
-f::Pointer Z3ExprFactory::getNullPtr() {
+Z3::Pointer ExprFactory::getNullPtr() {
     return Pointer::mkConst(*ctx, 0);
 }
 
-f::Bool Z3ExprFactory::getBoolVar(const std::string& name, bool fresh) {
+////////////////////////////////////////////////////////////////////////////////
+
+Z3::Bool ExprFactory::getBoolVar(const std::string& name, bool fresh) {
     return fresh ? Bool::mkFreshVar(*ctx, name) : Bool::mkVar(*ctx, name);
 }
 
-f::Bool Z3ExprFactory::getBoolConst(bool v) {
+Z3::Bool ExprFactory::getBoolConst(bool v) {
     return Bool::mkConst(*ctx, v);
 }
 
-f::Bool Z3ExprFactory::getTrue() {
+Z3::Bool ExprFactory::getTrue() {
     return getBoolConst(true);
 }
 
-f::Bool Z3ExprFactory::getFalse() {
+Z3::Bool ExprFactory::getFalse() {
     return getBoolConst(false);
 }
 
-f::Integer Z3ExprFactory::getIntVar(const std::string& name, bool fresh) {
+////////////////////////////////////////////////////////////////////////////////
+
+Z3::Integer ExprFactory::getIntVar(const std::string& name, bool fresh) {
     return fresh ? Integer::mkFreshVar(*ctx, name) : Integer::mkVar(*ctx, name);
 }
 
-f::Integer Z3ExprFactory::getIntConst(int v) {
+Z3::Integer ExprFactory::getIntConst(int v) {
     return Integer::mkConst(*ctx, v);
 }
 
-f::Real Z3ExprFactory::getRealVar(const std::string& name, bool fresh) {
+Z3::Real ExprFactory::getRealVar(const std::string& name, bool fresh) {
     return fresh ? Real::mkFreshVar(*ctx, name) : Real::mkVar(*ctx, name);
 }
 
-f::Real Z3ExprFactory::getRealConst(int v) {
+////////////////////////////////////////////////////////////////////////////////
+
+Z3::Real ExprFactory::getRealConst(int v) {
     return Real::mkConst(*ctx, v);
 }
 
-f::Real Z3ExprFactory::getRealConst(double v) {
+Z3::Real ExprFactory::getRealConst(double v) {
     return Real::mkConst(*ctx, (long long int)v);
 }
 
-f::MemArray Z3ExprFactory::getNoMemoryArray() {
+////////////////////////////////////////////////////////////////////////////////
+
+Z3::MemArray ExprFactory::getNoMemoryArray() {
     static config::ConfigEntry<bool> DefaultsToUnknown("analysis", "memory-defaults-to-unknown");
 
-    if (DefaultsToUnknown.get(false) == false) {
-        return MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
-    } else {
+    if (DefaultsToUnknown.get(false)) {
         return MemArray::mkFree(*ctx, "mem");
+    } else {
+        return MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
     }
 }
 
-f::Pointer Z3ExprFactory::getInvalidPtr() {
+Z3::Pointer ExprFactory::getInvalidPtr() {
     return getNullPtr();
 }
 
-f::Bool Z3ExprFactory::isInvalidPtrExpr(f::Pointer ptr) {
+Z3::Bool ExprFactory::isInvalidPtrExpr(Z3::Pointer ptr) {
     return (ptr == getInvalidPtr() || ptr == getNullPtr());
 }
 
-f::Bool Z3ExprFactory::getDistinct(const std::vector<f::Pointer>& exprs) {
-    return logic::distinct(*ctx, exprs);
+Z3::Bool ExprFactory::getDistinct(const std::vector<Z3::Pointer>& exprs) {
+    return z3_::logic::distinct(*ctx, exprs);
 }
 
-f::Dynamic Z3ExprFactory::getVarByTypeAndName(
+////////////////////////////////////////////////////////////////////////////////
+
+Z3::Dynamic ExprFactory::getVarByTypeAndName(
         Type::Ptr type,
         const std::string& name,
         bool fresh) {
@@ -134,10 +132,11 @@ f::Dynamic Z3ExprFactory::getVarByTypeAndName(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Z3ExprFactory::initialize(llvm::TargetData* TD) {
+void ExprFactory::initialize(llvm::TargetData* TD) {
     pointerSize = TD->getPointerSizeInBits();
 }
 
-} /* namespace borealis */
+} // namespace z3_
+} // namespace borealis
 
 #include "Util/unmacros.h"

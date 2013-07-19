@@ -18,24 +18,26 @@ class WritePropertyPredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const override;
+    Term::Ptr getPropertyName() const { return propName; }
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<Self>();
     }
 
-    static bool classof(const Self* /* p */) {
+    static bool classof(const Self*) {
         return true;
     }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
-        return new Self(
+        return new Self{
             t->transform(propName),
             t->transform(lhv),
             t->transform(rhv),
             this->type
-        );
+        };
     }
 
     virtual bool equals(const Predicate* other) const override;
@@ -61,6 +63,40 @@ private:
     WritePropertyPredicate(const Self&) = default;
 
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, WritePropertyPredicate> {
+    static Bool<Impl> doit(
+            const WritePropertyPredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        USING_SMT_IMPL(Impl);
+
+        ASSERTC(ctx != nullptr);
+
+        ASSERT(llvm::isa<ConstTerm>(p->getPropertyName()),
+               "Property write with non-constant property name");
+        auto* constPropName = llvm::cast<ConstTerm>(p->getPropertyName());
+        auto strPropName = getAsCompileTimeString(constPropName->getConstant());
+        ASSERT(!strPropName.empty(),
+               "Property write with unknown property name");
+
+        auto l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
+        auto r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+
+        ASSERT(!l.empty(), "Property write with a non-pointer value");
+
+        auto lp = l.getUnsafe();
+
+        ctx->writeProperty(strPropName.getUnsafe(), lp, r);
+
+        return ef.getTrue();
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

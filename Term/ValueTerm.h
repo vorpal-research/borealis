@@ -28,25 +28,19 @@ public:
         return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const Self* /* t */) {
+    static bool classof(const Self*) {
         return true;
     }
 
-    llvm::Value* getValue() const {
-        return v;
-    }
+    llvm::Value* getValue() const { return v; }
 
     ValueTerm(const Self&) = default;
+    virtual ~ValueTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
-
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getVarByTypeAndName(getTermType(), getName());
-    }
 
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(v->getType());
@@ -66,6 +60,16 @@ private:
 
     llvm::Value* v;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, ValueTerm> {
+    static Dynamic<Impl> doit(
+            const ValueTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getVarByTypeAndName(t->getTermType(), t->getName());
+    }
 };
 
 } /* namespace borealis */

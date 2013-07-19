@@ -10,7 +10,7 @@
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
 #include "Passes/Checker/CheckNullDereferencePass.h"
-#include "Solver/Z3Solver.h"
+#include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
 
 namespace borealis {
@@ -117,8 +117,8 @@ public:
         dbgs() << "Query: " << q->toString() << endl;
         dbgs() << "State: " << ps << endl;
 
-        Z3ExprFactory z3ef;
-        Z3Solver s(z3ef);
+        Z3::ExprFactory z3ef;
+        Z3::Solver s(z3ef);
 
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;

@@ -1,49 +1,28 @@
 /*
- * Z3ExprFactory.h
+ * ExprFactory.h
  *
  *  Created on: Oct 30, 2012
  *      Author: ice-phoenix
  */
 
-#ifndef Z3EXPRFACTORY_H_
-#define Z3EXPRFACTORY_H_
+#ifndef Z3_EXPRFACTORY_H_
+#define Z3_EXPRFACTORY_H_
 
 #include <llvm/Target/TargetData.h>
 #include <z3/z3++.h>
 
-#include "Solver/Logic.hpp"
+#include "SMT/Z3/Z3.h"
 #include "Type/TypeFactory.h"
 #include "Util/util.h"
 
 namespace borealis {
+namespace z3_ {
 
-class Term;
+class ExprFactory {
 
-class Z3ExprFactory {
+    USING_SMT_LOGIC(Z3);
 
 public:
-
-    // a hack: CopyAssignable reference to non-CopyAssignable object
-    // (z3::expr is CopyConstructible, but not CopyAssignable, so no
-    // accumulator-like shit is possible with it)
-    // typedef util::copyref<expr> exprRef;
-
-    typedef borealis::logic::Bool Bool;
-    // logic type to represent pointers
-    typedef borealis::logic::BitVector<32> Pointer;
-    // logic type to represent integers
-    typedef borealis::logic::BitVector<Pointer::bitsize> Integer;
-    // logic type to represent reals
-    typedef borealis::logic::BitVector<Pointer::bitsize> Real;
-    // logic type to represent memory units
-    typedef borealis::logic::BitVector<Pointer::bitsize> Byte;
-    // memory array
-    template<class Elem, class Index> using ArrayImpl = logic::TheoryArray<Elem, Index>;
-    typedef borealis::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
-    // dynamic bit vector
-    typedef borealis::logic::DynBitVectorExpr DynBV;
-    // dynamic logic type
-    typedef borealis::logic::SomeExpr Dynamic;
 
     static size_t sizeForType(Type::Ptr type) {
         using llvm::isa;
@@ -54,7 +33,7 @@ public:
                        "Cannot acquire bitsize for type " + util::toString(type));
     }
 
-    Z3ExprFactory();
+    ExprFactory();
 
     z3::context& unwrap() {
         return *ctx;
@@ -104,6 +83,13 @@ public:
         return logic::switch_(val, cases, default_);
     }
 
+    template<class T>
+    T switch_(
+            const std::vector<std::pair<Bool, T>>& cases,
+            T default_) {
+        return logic::switch_(cases, default_);
+    }
+
     static void initialize(llvm::TargetData* TD);
 
 private:
@@ -114,6 +100,7 @@ private:
 
 };
 
-} /* namespace borealis */
+} // namespace z3_
+} // namespace borealis
 
-#endif /* Z3EXPRFACTORY_H_ */
+#endif /* Z3_EXPRFACTORY_H_ */

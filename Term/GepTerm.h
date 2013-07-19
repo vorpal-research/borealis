@@ -27,12 +27,12 @@ public:
         return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const Self* /* t */) {
+    static bool classof(const Self*) {
         return true;
     }
 
     GepTerm(const Self&) = default;
-    ~GepTerm();
+    virtual ~GepTerm() {};
 
     template<class Sub>
     auto accept(Transformer<Sub>* t) const -> const Self* {
@@ -45,46 +45,27 @@ public:
             }
         );
 
-        return new GepTerm(
+        return new Self{
             t->transform(v),
             transformedShifts,
             type
-        );
+        };
     }
 
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Dynamic Dynamic;
-        typedef Z3ExprFactory::Integer Integer;
-        typedef Z3ExprFactory::Pointer Pointer;
-
-        Dynamic vv = v->toZ3(z3ef, ctx);
-
-        ASSERT(vv.is<Pointer>(),
-               "Encountered a GEP term with non-pointer operand");
-
-        Pointer vp = vv.to<Pointer>().getUnsafe();
-
-        Pointer shift = z3ef.getIntConst(0);
-        for (const auto& s : shifts) {
-            auto by = s.first->toZ3(z3ef, ctx).to<Pointer>();
-            auto size = s.second->toZ3(z3ef, ctx).to<Pointer>();
-
-            ASSERT(!by.empty() && !size.empty(),
-                   "Encountered a GEP term with incorrect shifts");
-
-            shift = shift + by.getUnsafe() * size.getUnsafe();
-        }
-
-        return z3ef.if_(z3ef.isInvalidPtrExpr(vp))
-                   .then_(z3ef.getInvalidPtr())
-                   .else_(
-                       (vp + shift).withAxiom(
-                           !z3ef.isInvalidPtrExpr(vp + shift)
-                       )
-                   );
+    virtual bool equals(const Term* other) const override {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
+                    *that->v == *v &&
+                    std::equal(shifts.begin(), shifts.end(), that->shifts.begin(),
+                        [](const Shift& e1, const Shift& e2) {
+                            return *e1.first == *e2.first && *e1.second == *e2.second;
+                        }
+                    );
+        } else return false;
     }
-#include "Util/unmacros.h"
+
+    Term::Ptr getBase() const { return v; }
+    const Shifts& getShifts() const { return shifts; }
 
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(type);
@@ -99,11 +80,11 @@ private:
     ) : Term(
             v->hashCode() ^ std::hash<Shifts>()(shifts),
             "gep(" + v->getName() + "," +
-            std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
-                [](const std::string& a, const Shift& shift) {
-                    return a + "+" + shift.first->getName() + "*" + shift.second->getName();
-                }
-            ) +
+                std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
+                    [](const std::string& a, const Shift& shift) {
+                        return a + "+" + shift.first->getName() + "*" + shift.second->getName();
+                    }
+                ) +
             ")",
             type_id(*this)
         ), v(v), shifts(shifts), type(type) {}
@@ -113,6 +94,45 @@ private:
     const llvm::Type* type;
 
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, GepTerm> {
+    static Dynamic<Impl> doit(
+            const GepTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+
+        USING_SMT_IMPL(Impl);
+
+        auto base = SMT<Impl>::doit(t->getBase(), ef, ctx).template to<Pointer>();
+
+        ASSERT(!base.empty(),
+               "Encountered a GEP term with non-pointer operand");
+
+        Pointer p = base.getUnsafe();
+        Integer shift = ef.getIntConst(0);
+
+        for (const auto& s : t->getShifts()) {
+            auto by = SMT<Impl>::doit(s.first, ef, ctx).template to<Integer>();
+            auto size = SMT<Impl>::doit(s.second, ef, ctx).template to<Integer>();
+
+            ASSERT(!by.empty() && !size.empty(),
+                   "Encountered a GEP term with incorrect shifts");
+
+            shift = shift + by.getUnsafe() * size.getUnsafe();
+        }
+
+        return ef.if_(ef.isInvalidPtrExpr(p))
+                 .then_(ef.getInvalidPtr())
+                 .else_(
+                     (p + shift).withAxiom(
+                         !ef.isInvalidPtrExpr(p + shift)
+                     )
+                 );
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

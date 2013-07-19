@@ -18,13 +18,14 @@ class DefaultSwitchCasePredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override;
+    Term::Ptr getCond() const { return cond; }
+    const std::vector<Term::Ptr> getCases() const { return cases; }
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<Self>();
     }
 
-    static bool classof(const Self* /* p */) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -36,11 +37,11 @@ public:
             [t](const Term::Ptr& e) { return t->transform(e); }
         );
 
-        return new Self(
+        return new Self{
             t->transform(cond),
             new_cases,
             this->type
-        );
+        };
     }
 
     virtual bool equals(const Predicate* other) const override;
@@ -64,6 +65,31 @@ private:
     DefaultSwitchCasePredicate(const Self&) = default;
 
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, DefaultSwitchCasePredicate> {
+    static Bool<Impl> doit(
+            const DefaultSwitchCasePredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        USING_SMT_IMPL(Impl)
+
+        auto le = SMT<Impl>::doit(p->getCond(), ef, ctx).template to<Integer>();
+        ASSERT(!le.empty(), "Encountered switch with non-Integer condition");
+
+        auto result = ef.getTrue();
+        for (const auto& c : p->getCases()) {
+            auto re = SMT<Impl>::doit(c, ef, ctx).template to<Integer>();
+            ASSERT(!re.empty(), "Encountered switch with non-Integer case");
+            result = result && le.getUnsafe() != re.getUnsafe();
+        }
+        return result;
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

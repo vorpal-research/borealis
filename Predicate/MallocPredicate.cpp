@@ -5,10 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "Config/config.h"
 #include "Predicate/MallocPredicate.h"
-
-#include "Util/macros.h"
 
 namespace borealis {
 
@@ -22,44 +19,10 @@ MallocPredicate::MallocPredicate(
     this->asString = this->lhv->getName() + "=malloc(" + this->numElements->getName() + ")";
 }
 
-logic::Bool MallocPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-
-    typedef Z3ExprFactory::Pointer Pointer;
-
-    ASSERTC(ctx != nullptr);
-
-    auto lhve = lhv->toZ3(z3ef, ctx);
-    ASSERT(lhve.is<Pointer>(),
-           "Malloc produces a non-pointer");
-    auto lhvp = lhve.to<Pointer>().getUnsafe();
-
-    unsigned long long elems = 1;
-    if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(numElements)) {
-        if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
-            elems = intCnst->getLimitedValue();
-        } else ASSERT(false, "Encountered malloc with non-integer element number");
-    } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(numElements)) {
-        elems = cnst->getValue();
-    } else ASSERT(false, "Encountered malloc with non-integer/non-constant element number");
-
-    static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
-
-    if(NullableMallocs.get(true)) {
-        return lhvp == z3ef.getNullPtr() || lhvp == ctx->getDistinctPtr(elems);
-    } else {
-        return lhvp == ctx->getDistinctPtr(elems);
-    }
-}
-
 bool MallocPredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const Self* o = llvm::dyn_cast<Self>(other)) {
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return *this->lhv == *o->lhv;
-    } else {
-        return false;
-    }
+    } else return false;
 }
 
 size_t MallocPredicate::hashCode() const {
@@ -67,5 +30,3 @@ size_t MallocPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"

@@ -28,8 +28,9 @@ class BasicPredicateState :
 
 public:
 
+    const Data& getData() const { return data; }
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const override;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
@@ -43,7 +44,7 @@ public:
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const override;
     virtual PredicateState::Ptr simplify() const override;
 
-    static bool classof(const Self* /* ps */) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -54,16 +55,12 @@ public:
     virtual bool isEmpty() const override;
 
     virtual bool equals(const PredicateState* other) const override {
-        if (this == other) return true;
-
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return std::equal(data.begin(), data.end(), o->data.begin(),
                 [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
                     return *a == *b;
                 });
-        } else {
-            return false;
-        }
+        } else return false;
     }
 
     virtual std::string toString() const override;
@@ -84,6 +81,24 @@ private:
     void addVisitedInPlace(const llvm::Value* loc);
     void addVisitedInPlace(const Locations& locs);
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, BasicPredicateState> {
+    static Bool<Impl> doit(
+            const BasicPredicateState* s,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        auto res = ef.getTrue();
+        for (auto& v : s->getData()) {
+            res = res && SMT<Impl>::doit(v, ef, ctx);
+        }
+        res = res && ctx->toSMT();
+
+        return res;
+    }
 };
 
 } /* namespace borealis */

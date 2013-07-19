@@ -14,54 +14,33 @@ namespace borealis {
 
 class UnaryTerm: public borealis::Term {
 
-    typedef UnaryTerm self;
+    typedef UnaryTerm Self;
 
     llvm::UnaryArithType opcode;
     Term::Ptr rhv;
 
     UnaryTerm(llvm::UnaryArithType opcode, Term::Ptr rhv):
         Term(
-                rhv->hashCode(),
-                llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
-                type_id(*this)
+            rhv->hashCode(),
+            llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
+            type_id(*this)
         ), opcode(opcode), rhv(rhv) {};
 
 public:
 
-    UnaryTerm(const UnaryTerm&) = default;
-    ~UnaryTerm();
+    UnaryTerm(const Self&) = default;
+    virtual ~UnaryTerm() {};
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const self* {
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
         return new UnaryTerm(opcode, tr->transform(rhv));
     }
 
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Bool Bool;
-        typedef Z3ExprFactory::Integer Int;
-
-        auto z3rhv = rhv->toZ3(z3ef, ctx);
-
-        switch(opcode) {
-        case llvm::UnaryArithType::BNOT:
-            ASSERT(z3rhv.is<Int>(), "Bit not: rhv is not an integer");
-            return ~z3rhv.to<Int>().getUnsafe();
-        case llvm::UnaryArithType::NEG:
-            ASSERT(z3rhv.is<Int>(), "Negate: rhv is not an integer");
-            return -z3rhv.to<Int>().getUnsafe();
-        case llvm::UnaryArithType::NOT:
-            ASSERT(z3rhv.is<Bool>(), "Logic not: rhv is not a boolean");
-            return !z3rhv.to<Bool>().getUnsafe();
-        }
-    }
-#include "Util/unmacros.h"
-
     virtual bool equals(const Term* other) const override {
-        if (const UnaryTerm* that = llvm::dyn_cast<UnaryTerm>(other)) {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                   that->opcode == opcode &&
-                   *that->rhv == *rhv;
+                    that->opcode == opcode &&
+                    *that->rhv == *rhv;
         } else return false;
     }
 
@@ -73,7 +52,7 @@ public:
     }
 
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
     virtual Type::Ptr getTermType() const override {
@@ -81,7 +60,41 @@ public:
     }
 
     friend class TermFactory;
+
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, UnaryTerm> {
+    static Dynamic<Impl> doit(
+            const UnaryTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+
+        USING_SMT_IMPL(Impl);
+
+        auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+
+        switch(t->getOpcode()) {
+        case llvm::UnaryArithType::BNOT: {
+            auto rhvi = rhvz3.template to<Integer>();
+            ASSERT(!rhvi.empty(), "Bit not: rhv is not an integer");
+            return ~rhvi.getUnsafe();
+        }
+        case llvm::UnaryArithType::NEG: {
+            auto rhvi = rhvz3.template to<Integer>();
+            ASSERT(!rhvi.empty(), "Negate: rhv is not an integer");
+            return -rhvi.getUnsafe();
+        }
+        case llvm::UnaryArithType::NOT: {
+            auto rhvi = rhvz3.template to<Integer>();
+            ASSERT(!rhvi.empty(), "Logic not: rhv is not a boolean");
+            return !rhvi.getUnsafe();
+        }
+        }
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

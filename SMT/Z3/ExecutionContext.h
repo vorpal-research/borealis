@@ -1,31 +1,28 @@
 /*
- * Z3Context.h
+ * ExecutionContext.h
  *
  *  Created on: Nov 22, 2012
  *      Author: belyaev
  */
 
-#ifndef Z3CONTEXT_H_
-#define Z3CONTEXT_H_
+#ifndef Z3_EXECUTIONCONTEXT_H_
+#define Z3_EXECUTIONCONTEXT_H_
 
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#include "Logging/tracer.hpp"
-#include "Solver/Z3ExprFactory.h"
+#include "SMT/Z3/ExprFactory.h"
 
 namespace borealis {
+namespace z3_ {
 
 class ExecutionContext {
-public:
-    typedef Z3ExprFactory::Bool Bool;
-    typedef Z3ExprFactory::Pointer Pointer;
-    typedef Z3ExprFactory::MemArray MemArray;
-    typedef Z3ExprFactory::Dynamic Dynamic;
 
-private:
-    Z3ExprFactory& factory;
+    USING_SMT_LOGIC(Z3);
+    typedef Z3::ExprFactory ExprFactory;
+
+    ExprFactory& factory;
     std::unordered_map<std::string, MemArray> memArrays;
     unsigned long long currentPtr;
 
@@ -53,63 +50,49 @@ private:
     }
 
     typedef std::unordered_set<std::string> MemArrayIds;
-
     MemArrayIds getMemArrayIds() const {
         auto it = util::iterate_keys(util::begin_end_pair(memArrays));
         return MemArrayIds(it.first, it.second);
     }
 
 public:
-    ExecutionContext(Z3ExprFactory& factory);
+
+    ExecutionContext(ExprFactory& factory);
     ExecutionContext(const ExecutionContext&) = default;
 
     MemArray getCurrentMemoryContents() {
-        TRACE_FUNC;
         return memory();
     }
 
-    inline Pointer getDistinctPtr(size_t ofSize = 1U) {
-        TRACE_FUNC;
-
-        auto ret = Pointer::mkConst(
-            factory.unwrap(),
-            currentPtr
-        );
-
-        currentPtr += ofSize;
-
+    inline Pointer getDistinctPtr(size_t offsetSize = 1U) {
+        auto ret = factory.getPtrConst(currentPtr);
+        currentPtr += offsetSize;
         return ret;
     }
 
 ////////////////////////////////////////////////////////////////////////////////
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
-        TRACE_FUNC;
         return memory().select(ix, bitSize);
     }
     template<class ExprClass>
     ExprClass readExprFromMemory(Pointer ix) {
-        TRACE_FUNC;
         return memory().select<ExprClass>(ix);
     }
     template<class ExprClass>
     void writeExprToMemory(Pointer ix, ExprClass val) {
-        TRACE_FUNC;
         memory( memory().store(ix, val) );
     }
 
     Dynamic readProperty(const std::string& id, Pointer ix, size_t bitSize) {
-        TRACE_FUNC;
         return get(id).select(ix, bitSize);
     }
     template<class ExprClass>
     ExprClass readProperty(const std::string& id, Pointer ix) {
-        TRACE_FUNC;
         return get(id).select<ExprClass>(ix);
     }
     template<class ExprClass>
     void writeProperty(const std::string& id, Pointer ix, ExprClass val) {
-        TRACE_FUNC;
         set( id, get(id).store(ix, val) );
     }
 
@@ -136,7 +119,7 @@ public:
 
         // Merge current pointer
         res.currentPtr = defaultContext.currentPtr;
-        for (auto& e : contexts) {
+        for (const auto& e : contexts) {
             res.currentPtr = std::max(res.currentPtr, e.second.currentPtr);
         }
 
@@ -164,13 +147,16 @@ public:
         return res;
     }
 
-    Bool toZ3();
+////////////////////////////////////////////////////////////////////////////////
+
+    Bool toSMT() const;
 
     friend std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx);
 };
 
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx);
 
-} /* namespace borealis */
+} // namespace z3_
+} // namespace borealis
 
-#endif /* Z3CONTEXT_H_ */
+#endif /* Z3_EXECUTIONCONTEXT_H_ */

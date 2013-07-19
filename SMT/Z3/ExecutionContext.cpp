@@ -1,28 +1,29 @@
 /*
- * Z3Context.cpp
+ * ExecutionContext.cpp
  *
  *  Created on: Nov 22, 2012
  *      Author: belyaev
  */
 
-#include "Solver/ExecutionContext.h"
+#include "SMT/Z3/ExecutionContext.h"
 
 namespace borealis {
+namespace z3_ {
 
-ExecutionContext::ExecutionContext(Z3ExprFactory& factory):
+ExecutionContext::ExecutionContext(ExprFactory& factory):
     factory(factory),
     currentPtr(1U) {};
 
-ExecutionContext::Bool ExecutionContext::toZ3() {
-    TRACE_FUNC;
+Z3::Bool ExecutionContext::toSMT() const {
     return factory.getTrue();
 }
 
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx) {
     using std::endl;
-    return s << "Ctx state:" << endl
+    return s << "ctx state:" << endl
              << "< offset = " << ctx.currentPtr << " >" << endl
              << ctx.memArrays;
 }
 
+} // namespace z3_
 } // namespace borealis

@@ -6,9 +6,3 @@
  */
 
 #include "Term/GepTerm.h"
-
-namespace borealis {
-
-GepTerm::~GepTerm() {}
-
-} /* namespace borealis */

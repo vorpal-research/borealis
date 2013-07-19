@@ -17,32 +17,29 @@ namespace borealis {
 
 class ReturnValueTerm: public borealis::Term {
 
+    typedef ReturnValueTerm Self;
+
 public:
 
     friend class TermFactory;
 
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<ReturnValueTerm>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const ReturnValueTerm* /* t */) {
+    static bool classof(const Self*) {
         return true;
     }
 
-    llvm::Function* getFunction() const {
-        return F;
-    }
+    llvm::Function* getFunction() const { return F; }
 
-    ReturnValueTerm(const ReturnValueTerm&) = default;
+    ReturnValueTerm(const Self&) = default;
+    virtual ~ReturnValueTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getVarByTypeAndName(getTermType(), getName());
-    }
 
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(F->getFunctionType()->getReturnType());
@@ -50,15 +47,25 @@ public:
 
 private:
 
-    ReturnValueTerm(llvm::Function* F, SlotTracker* /* st */) :
+    ReturnValueTerm(llvm::Function* F, SlotTracker*) :
         Term(
-                std::hash<llvm::Function*>()(F),
-                "\\result_" + F->getName().str(),
-                type_id(*this)
+            std::hash<llvm::Function*>()(F),
+            "\\result_" + F->getName().str(),
+            type_id(*this)
         ), F(F) {}
 
     llvm::Function* F;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, ReturnValueTerm> {
+    static Dynamic<Impl> doit(
+            const ReturnValueTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getVarByTypeAndName(t->getTermType(), t->getName());
+    }
 };
 
 } /* namespace borealis */

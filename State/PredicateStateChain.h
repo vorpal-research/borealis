@@ -20,8 +20,10 @@ class PredicateStateChain :
 
 public:
 
+    PredicateState::Ptr getBase() const { return base; }
+    PredicateState::Ptr getCurr() const { return curr; }
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const override;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
@@ -35,7 +37,7 @@ public:
 
     virtual bool isEmpty() const override;
 
-    static bool classof(const Self* /* ps */) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -44,14 +46,10 @@ public:
     }
 
     virtual bool equals(const PredicateState* other) const override {
-        if (this == other) return true;
-
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return *this->base == *o->base &&
                     *this->curr == *o->curr;
-        } else {
-            return false;
-        }
+        } else return false;
     }
 
     virtual std::string toString() const override;
@@ -70,6 +68,21 @@ private:
 
     SelfPtr fmap_(FMapper f) const;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, PredicateStateChain> {
+    static Bool<Impl> doit(
+            const PredicateStateChain* s,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        auto res = ef.getTrue();
+        res = res && SMT<Impl>::doit(s->getBase(), ef, ctx);
+        res = res && SMT<Impl>::doit(s->getCurr(), ef, ctx);
+        return res;
+    }
 };
 
 } /* namespace borealis */

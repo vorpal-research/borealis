@@ -6,9 +6,3 @@
  */
 
 #include "Term/TernaryTerm.h"
-
-namespace borealis {
-
-TernaryTerm::~TernaryTerm() {};
-
-} /* namespace borealis */

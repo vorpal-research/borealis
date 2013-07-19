@@ -7,8 +7,6 @@
 
 #include "Predicate/StorePredicate.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 StorePredicate::StorePredicate(
@@ -21,35 +19,11 @@ StorePredicate::StorePredicate(
     this->asString = "*" + this->lhv->getName() + "=" + this->rhv->getName();
 }
 
-logic::Bool StorePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-
-    typedef Z3ExprFactory::Pointer Pointer;
-
-    ASSERTC(ctx != nullptr);
-
-    auto l = lhv->toZ3(z3ef, ctx);
-    auto r = rhv->toZ3(z3ef, ctx);
-
-    ASSERT(l.is<Pointer>(),
-           "Store dealing with a non-pointer value");
-
-    auto lp = l.to<Pointer>().getUnsafe();
-
-    ctx->writeExprToMemory(lp, r);
-
-    return z3ef.getTrue();
-}
-
 bool StorePredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const Self* o = llvm::dyn_cast<Self>(other)) {
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
-    } else {
-        return false;
-    }
+    } else return false;
 }
 
 size_t StorePredicate::hashCode() const {
@@ -57,5 +31,3 @@ size_t StorePredicate::hashCode() const {
 }
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"

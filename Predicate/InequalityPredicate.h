@@ -18,23 +18,24 @@ class InequalityPredicate: public borealis::Predicate {
 
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override;
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
 
     static bool classof(const Predicate* p) {
         return p->getPredicateTypeId() == type_id<Self>();
     }
 
-    static bool classof(const Self* /* p */) {
+    static bool classof(const Self*) {
         return true;
     }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
-        return new Self(
+        return new Self{
             t->transform(lhv),
             t->transform(rhv),
             this->type
-        );
+        };
     }
 
     virtual bool equals(const Predicate* other) const override;
@@ -57,6 +58,17 @@ private:
             PredicateType type = PredicateType::STATE);
     InequalityPredicate(const Self&) = default;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, InequalityPredicate> {
+    static Bool<Impl> doit(
+            const InequalityPredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+        return SMT<Impl>::doit(p->getLhv(), ef, ctx) != SMT<Impl>::doit(p->getRhv(), ef, ctx);
+    }
 };
 
 } /* namespace borealis */

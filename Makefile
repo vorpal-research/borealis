@@ -76,7 +76,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Logging \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
-	$(PWD)/Solver \
+	$(PWD)/SMT \
 	$(PWD)/State \
 	$(PWD)/Term \
 	$(PWD)/Type \

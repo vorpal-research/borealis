@@ -14,7 +14,7 @@ namespace borealis {
 
 class LoadTerm: public borealis::Term {
 
-    typedef LoadTerm self;
+    typedef LoadTerm Self;
 
     Term::Ptr rhv;
 
@@ -27,45 +27,29 @@ class LoadTerm: public borealis::Term {
 
 public:
 
-    LoadTerm(const self&) = default;
-    ~LoadTerm();
+    LoadTerm(const Self&) = default;
+    virtual ~LoadTerm() {};
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new self(tr->transform(rhv));
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        return new Self{ tr->transform(rhv) };
     }
-
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Pointer Pointer;
-
-        ASSERTC(ctx != nullptr);
-
-        auto r = rhv->toZ3(z3ef, ctx);
-        ASSERT(r.is<Pointer>(),
-               "Load with non-pointer right side");
-
-        auto rp = r.to<Pointer>().getUnsafe();
-
-        return ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType()));
-    }
-#include "Util/unmacros.h"
 
     virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
                     *that->rhv == *rhv;
         } else return false;
     }
 
     Term::Ptr getRhv() const { return rhv; }
 
-    static bool classof(const self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
     virtual Type::Ptr getTermType() const override {
@@ -82,7 +66,31 @@ public:
     }
 
     friend class TermFactory;
+
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, LoadTerm> {
+    static Dynamic<Impl> doit(
+            const LoadTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+
+        USING_SMT_IMPL(Impl);
+
+        ASSERTC(ctx != nullptr);
+
+        auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
+        ASSERT(!r.empty(),
+               "Load with non-pointer right side");
+
+        auto rp = r.getUnsafe();
+
+        return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getTermType()));
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

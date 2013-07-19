@@ -8,7 +8,7 @@
 #include <llvm/Target/TargetData.h>
 
 #include "Passes/Misc/InitializationPass.h"
-#include "Solver/Z3ExprFactory.h"
+#include "SMT/Z3/ExprFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -19,7 +19,7 @@ void InitializationPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 void InitializationPass::initializePass() {
-    Z3ExprFactory::initialize(&GetAnalysis<llvm::TargetData>::doit(this));
+    Z3::ExprFactory::initialize(&GetAnalysis<llvm::TargetData>::doit(this));
 }
 
 char InitializationPass::ID;

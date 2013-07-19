@@ -7,8 +7,6 @@
 
 #include "Predicate/WritePropertyPredicate.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 WritePropertyPredicate::WritePropertyPredicate(
@@ -27,43 +25,12 @@ WritePropertyPredicate::WritePropertyPredicate(
         ")";
 }
 
-logic::Bool WritePropertyPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-
-    typedef Z3ExprFactory::Pointer Pointer;
-
-    ASSERTC(ctx != nullptr);
-
-    ASSERT(llvm::isa<ConstTerm>(propName),
-           "Property write with non-constant property name");
-    auto* constPropName = llvm::cast<ConstTerm>(propName);
-    auto strPropName = getAsCompileTimeString(constPropName->getConstant());
-    ASSERT(!strPropName.empty(),
-           "Property write with unknown property name");
-
-    auto l = lhv->toZ3(z3ef, ctx);
-    auto r = rhv->toZ3(z3ef, ctx);
-
-    ASSERT(l.is<Pointer>(),
-           "Property write with a non-pointer value");
-
-    auto lp = l.to<Pointer>().getUnsafe();
-
-    ctx->writeProperty(strPropName.getUnsafe(), lp, r);
-
-    return z3ef.getTrue();
-}
-
 bool WritePropertyPredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const Self* o = llvm::dyn_cast<Self>(other)) {
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return *this->propName == *o->propName &&
                 *this->lhv == *o->lhv &&
                 *this->rhv == *o->rhv;
-    } else {
-        return false;
-    }
+    } else return false;
 }
 
 size_t WritePropertyPredicate::hashCode() const {
@@ -71,5 +38,3 @@ size_t WritePropertyPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"

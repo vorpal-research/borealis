@@ -8,9 +8,6 @@
 #include <algorithm>
 
 #include "Predicate/DefaultSwitchCasePredicate.h"
-#include "Util/util.h"
-
-#include "Util/macros.h"
 
 namespace borealis {
 
@@ -37,39 +34,13 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
     this->asString = this->cond->getName() + "=not(" + a + ")";
 }
 
-logic::Bool DefaultSwitchCasePredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-
-    typedef Z3ExprFactory::Integer Integer;
-
-    auto result = z3ef.getTrue();
-
-    auto le = cond->toZ3(z3ef, ctx).to<Integer>();
-    ASSERT(!le.empty(),
-           "Encountered switch with non-Integer condition");
-
-    for (const auto& c : cases) {
-        auto re = c->toZ3(z3ef, ctx).to<Integer>();
-        ASSERT(!re.empty(),
-               "Encountered switch with non-Integer case");
-
-        result = result && le.getUnsafe() != re.getUnsafe();
-    }
-
-    return result;
-}
-
 bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const Self* o = llvm::dyn_cast<Self>(other)) {
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return *this->cond == *o->cond &&
             std::equal(cases.begin(), cases.end(), o->cases.begin(),
                 [](const Term::Ptr& e1, const Term::Ptr& e2) { return *e1 == *e2; }
             );
-    } else {
-        return false;
-    }
+    } else return false;
 }
 
 size_t DefaultSwitchCasePredicate::hashCode() const {
@@ -77,5 +48,3 @@ size_t DefaultSwitchCasePredicate::hashCode() const {
 }
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"

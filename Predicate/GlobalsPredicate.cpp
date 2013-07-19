@@ -7,8 +7,6 @@
 
 #include "Predicate/GlobalsPredicate.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 GlobalsPredicate::GlobalsPredicate(
@@ -32,33 +30,12 @@ GlobalsPredicate::GlobalsPredicate(
     this->asString = "globals(" + a + ")";
 }
 
-logic::Bool GlobalsPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-
-    typedef Z3ExprFactory::Pointer Pointer;
-
-    ASSERTC(ctx != nullptr);
-
-    auto res = z3ef.getTrue();
-    for (const auto& g : globals) {
-        auto ge = g->toZ3(z3ef, ctx);
-        ASSERT(ge.is<Pointer>(), "Encountered non-Pointer global value: " + g->getName());
-        auto gp = ge.to<Pointer>().getUnsafe();
-        res = res && gp == ctx->getDistinctPtr();
-    }
-    return res;
-}
-
 bool GlobalsPredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const Self* o = llvm::dyn_cast<Self>(other)) {
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return std::equal(globals.begin(), globals.end(), o->globals.begin(),
             [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
         );
-    } else {
-        return false;
-    }
+    } else return false;
 }
 
 size_t GlobalsPredicate::hashCode() const {
@@ -66,5 +43,3 @@ size_t GlobalsPredicate::hashCode() const {
 }
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"

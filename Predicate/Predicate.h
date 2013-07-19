@@ -14,8 +14,8 @@
 
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
-#include "Solver/ExecutionContext.h"
-#include "Solver/Z3ExprFactory.h"
+#include "Logging/tracer.hpp"
+#include "SMT/SMTUtil.h"
 #include "Term/Term.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
@@ -34,8 +34,8 @@ enum class PredicateType {
 PredicateType predicateType(const Annotation* a);
 
 // Forward declaration
-template<class SubClass>
-class Transformer;
+template<class SubClass> class Transformer;
+// End of forward declaration
 
 class Predicate {
 
@@ -61,6 +61,17 @@ public:
         return this;
     }
 
+    const llvm::Instruction* getLocation() const {
+        return location;
+    }
+
+    Predicate* setLocation(const llvm::Instruction* location) {
+        this->location = location;
+        return this;
+    }
+
+
+
     std::string toString() const {
         switch (type) {
         case PredicateType::REQUIRES: return "@R " + asString;
@@ -72,29 +83,19 @@ public:
         }
     }
 
-    virtual logic::Bool toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const = 0;
-
-    static bool classof(const Predicate* /* t */) {
+    static bool classof(const Predicate*) {
         return true;
     }
 
     virtual bool equals(const Predicate* other) const = 0;
     bool operator==(const Predicate& other) const {
+        if (this == &other) return true;
         return this->equals(&other);
     }
 
     virtual size_t hashCode() const = 0;
 
     virtual Predicate* clone() const = 0;
-
-    const llvm::Instruction* getLocation() const {
-        return location;
-    }
-
-    Predicate* setLocation(const llvm::Instruction* location) {
-        this->location = location;
-        return this;
-    }
 
 protected:
 

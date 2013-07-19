@@ -20,8 +20,9 @@ class PredicateStateChoice :
 
 public:
 
+    const std::vector<PredicateState::Ptr> getChoices() const { return choices; }
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const override;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
@@ -35,7 +36,7 @@ public:
 
     virtual bool isEmpty() const override;;
 
-    static bool classof(const Self* /* ps */) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -44,17 +45,13 @@ public:
     }
 
     virtual bool equals(const PredicateState* other) const override {
-        if (this == other) return true;
-
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return std::equal(choices.begin(), choices.end(), o->choices.begin(),
                 [](PredicateState::Ptr a, PredicateState::Ptr b) {
                     return *a == *b;
                 }
             );
-        } else {
-            return false;
-        }
+        } else return false;
     }
 
     virtual std::string toString() const override;
@@ -73,6 +70,37 @@ private:
 
     SelfPtr fmap_(FMapper f) const;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, PredicateStateChoice> {
+    static Bool<Impl> doit(
+            const PredicateStateChoice* s,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        USING_SMT_IMPL(Impl);
+
+        auto res = ef.getFalse();
+        std::vector<std::pair<Bool, ExecutionContext>> memories;
+        memories.reserve(s->getChoices().size());
+
+        for (const auto& choice : s->getChoices()) {
+            ExecutionContext choiceCtx(*ctx);
+
+            auto path = choice->filterByTypes({PredicateType::PATH});
+            auto z3state = SMT<Impl>::doit(choice, ef, &choiceCtx);
+            auto z3path = SMT<Impl>::doit(path, ef, &choiceCtx);
+
+            res = res || z3state;
+            memories.push_back({z3path, choiceCtx});
+        }
+
+        ctx->switchOn("choice", memories);
+
+        return res;
+    }
 };
 
 } /* namespace borealis */

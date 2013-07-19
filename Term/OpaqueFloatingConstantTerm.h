@@ -14,7 +14,7 @@ namespace borealis {
 
 class OpaqueFloatingConstantTerm: public borealis::Term {
 
-    typedef OpaqueFloatingConstantTerm self;
+    typedef OpaqueFloatingConstantTerm Self;
 
     double value;
 
@@ -29,29 +29,26 @@ public:
 
     double getValue() const { return value; }
 
-    OpaqueFloatingConstantTerm(const self&) = default;
+    OpaqueFloatingConstantTerm(const Self&) = default;
+    virtual ~OpaqueFloatingConstantTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getRealConst(value);
-    }
-
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
     virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                   std::abs(that->value - value) < .01;
+                    std::abs(that->value - value) < .01;
         } else return false;
     }
 
@@ -61,6 +58,16 @@ public:
 
     friend class TermFactory;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, OpaqueFloatingConstantTerm> {
+    static Dynamic<Impl> doit(
+            const OpaqueFloatingConstantTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getRealConst(t->getValue());
+    }
 };
 
 } /* namespace borealis */

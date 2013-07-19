@@ -14,7 +14,7 @@ namespace borealis {
 
 class OpaqueBoolConstantTerm: public borealis::Term {
 
-    typedef OpaqueBoolConstantTerm self;
+    typedef OpaqueBoolConstantTerm Self;
 
     bool value;
 
@@ -29,22 +29,19 @@ public:
 
     bool getValue() const { return value; }
 
-    OpaqueBoolConstantTerm(const self&) = default;
+    OpaqueBoolConstantTerm(const Self&) = default;
+    virtual ~OpaqueBoolConstantTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getBoolConst(value);
-    }
-
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -54,6 +51,16 @@ public:
 
     friend class TermFactory;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, OpaqueBoolConstantTerm> {
+    static Dynamic<Impl> doit(
+            const OpaqueBoolConstantTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getBoolConst(t->getValue());
+    }
 };
 
 } /* namespace borealis */

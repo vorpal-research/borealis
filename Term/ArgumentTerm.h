@@ -17,32 +17,29 @@ namespace borealis {
 
 class ArgumentTerm: public borealis::Term {
 
+    typedef ArgumentTerm Self;
+
 public:
 
     friend class TermFactory;
 
     static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<ArgumentTerm>();
+        return t->getTermTypeId() == type_id<Self>();
     }
 
-    static bool classof(const ArgumentTerm* /* t */) {
+    static bool classof(const Self*) {
         return true;
     }
 
-    llvm::Argument* getArgument() const {
-        return a;
-    }
+    llvm::Argument* getArgument() const { return a; }
 
-    ArgumentTerm(const ArgumentTerm&) = default;
+    ArgumentTerm(const Self&) = default;
+    virtual ~ArgumentTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getVarByTypeAndName(getTermType(), getName());
-    }
 
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(a->getType());
@@ -56,6 +53,16 @@ private:
 
     llvm::Argument* a;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, ArgumentTerm> {
+    static Dynamic<Impl> doit(
+            const ArgumentTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getVarByTypeAndName(t->getTermType(), t->getName());
+    }
 };
 
 } /* namespace borealis */
