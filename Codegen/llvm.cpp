@@ -96,7 +96,9 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
         BufferEnd = xchg;
     }
 
-    return StringRef{ BufferStart, BufferEnd - BufferStart };
+    size_t BufferSize = BufferEnd - BufferStart;
+
+    return StringRef{ BufferStart, BufferSize };
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {
