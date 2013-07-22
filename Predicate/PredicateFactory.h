@@ -109,8 +109,8 @@ public:
 
 
 
-    static Ptr get(SlotTracker* slotTracker) {
-        return Ptr(new PredicateFactory(slotTracker));
+    static PredicateFactory::Ptr get(SlotTracker* slotTracker) {
+        return PredicateFactory::Ptr(new PredicateFactory(slotTracker));
     }
 
 private:

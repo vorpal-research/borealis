@@ -43,12 +43,12 @@ public:
 
     typedef std::shared_ptr<const Predicate> Ptr;
 
-    Predicate(borealis::id_t predicate_type_id);
-    Predicate(borealis::id_t predicate_type_id, PredicateType type);
+    Predicate(id_t predicate_type_id);
+    Predicate(id_t predicate_type_id, PredicateType type);
     Predicate(const Predicate&) = default;
     virtual ~Predicate() {};
 
-    borealis::id_t getPredicateTypeId() const {
+    id_t getPredicateTypeId() const {
         return predicate_type_id;
     }
 
@@ -99,7 +99,7 @@ public:
 
 protected:
 
-    const borealis::id_t predicate_type_id;
+    const id_t predicate_type_id;
     PredicateType type;
     const llvm::Instruction* location;
 
@@ -118,5 +118,22 @@ struct hash<borealis::PredicateType> : public borealis::util::enums::enum_hash<b
 template<>
 struct hash<const borealis::PredicateType> : public borealis::util::enums::enum_hash<borealis::PredicateType> {};
 }
+
+#define MK_COMMON_PREDICATE_IMPL(CLASS) \
+private: \
+    typedef CLASS Self; \
+    CLASS(const Self&) = default; \
+public: \
+    friend class PredicateFactory; \
+    virtual ~CLASS() {}; \
+    static bool classof(const Self*) { \
+        return true; \
+    } \
+    static bool classof(const Predicate* p) { \
+        return p->getPredicateTypeId() == type_id<Self>(); \
+    } \
+    virtual Predicate* clone() const override { \
+        return new Self{ *this }; \
+    }
 
 #endif /* PREDICATE_H_ */

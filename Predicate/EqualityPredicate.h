@@ -14,20 +14,20 @@ namespace borealis {
 
 class EqualityPredicate: public borealis::Predicate {
 
-    typedef EqualityPredicate Self;
+    Term::Ptr lhv;
+    Term::Ptr rhv;
+
+    EqualityPredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv,
+            PredicateType type = PredicateType::STATE);
 
 public:
 
+    MK_COMMON_PREDICATE_IMPL(EqualityPredicate);
+
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
@@ -40,23 +40,6 @@ public:
 
     virtual bool equals(const Predicate* other) const override;
     virtual size_t hashCode() const override;
-
-    virtual Predicate* clone() const override {
-        return new Self{ *this };
-    }
-
-    friend class PredicateFactory;
-
-private:
-
-    Term::Ptr lhv;
-    Term::Ptr rhv;
-
-    EqualityPredicate(
-            Term::Ptr lhv,
-            Term::Ptr rhv,
-            PredicateType type = PredicateType::STATE);
-    EqualityPredicate(const Self&) = default;
 
 };
 

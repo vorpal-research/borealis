@@ -14,20 +14,20 @@ namespace borealis {
 
 class StorePredicate: public borealis::Predicate {
 
-    typedef StorePredicate Self;
+    Term::Ptr lhv;
+    Term::Ptr rhv;
+
+    StorePredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv,
+            PredicateType type = PredicateType::STATE);
 
 public:
 
+    MK_COMMON_PREDICATE_IMPL(StorePredicate);
+
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
@@ -40,23 +40,6 @@ public:
 
     virtual bool equals(const Predicate* other) const override;
     virtual size_t hashCode() const override;
-
-    virtual Predicate* clone() const override {
-        return new Self{ *this };
-    }
-
-    friend class PredicateFactory;
-
-private:
-
-    Term::Ptr lhv;
-    Term::Ptr rhv;
-
-    StorePredicate(
-            Term::Ptr lhv,
-            Term::Ptr rhv,
-            PredicateType type = PredicateType::STATE);
-    StorePredicate(const Self&) = default;
 
 };
 
@@ -74,11 +57,10 @@ struct SMTImpl<Impl, StorePredicate> {
         ASSERTC(ctx != nullptr);
 
         auto l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
-        auto r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
-
         ASSERT(!l.empty(), "Store dealing with a non-pointer value");
-
         auto lp = l.getUnsafe();
+
+        auto r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
 
         ctx->writeExprToMemory(lp, r);
 

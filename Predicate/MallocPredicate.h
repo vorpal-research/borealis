@@ -15,20 +15,20 @@ namespace borealis {
 
 class MallocPredicate: public borealis::Predicate {
 
-    typedef MallocPredicate Self;
+    Term::Ptr lhv;
+    Term::Ptr numElements;
+
+    MallocPredicate(
+            Term::Ptr lhv,
+            Term::Ptr numElements,
+            PredicateType type = PredicateType::STATE);
 
 public:
 
+    MK_COMMON_PREDICATE_IMPL(MallocPredicate);
+
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getNumElems() const { return numElements; }
-
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
@@ -41,23 +41,6 @@ public:
 
     virtual bool equals(const Predicate* other) const override;
     virtual size_t hashCode() const override;
-
-    virtual Predicate* clone() const override {
-        return new Self{ *this };
-    }
-
-    friend class PredicateFactory;
-
-private:
-
-    Term::Ptr lhv;
-    Term::Ptr numElements;
-
-    MallocPredicate(
-            Term::Ptr lhv,
-            Term::Ptr numElements,
-            PredicateType type = PredicateType::STATE);
-    MallocPredicate(const Self&) = default;
 
 };
 
@@ -76,17 +59,20 @@ struct SMTImpl<Impl, MallocPredicate> {
 
         auto lhve = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
         ASSERT(!lhve.empty(), "Malloc produces a non-pointer");
+        auto lhvp = lhve.getUnsafe();
 
         unsigned long long elems = 1;
         if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(p->getNumElems())) {
             if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
                 elems = intCnst->getLimitedValue();
-            } else ASSERT(false, "Encountered malloc with non-integer element number");
+            } else {
+                BYE_BYE(Bool, "Encountered malloc with non-integer element number");
+            }
         } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(p->getNumElems())) {
             elems = cnst->getValue();
-        } else ASSERT(false, "Encountered malloc with non-integer/non-constant element number");
-
-        auto lhvp = lhve.getUnsafe();
+        } else {
+            BYE_BYE(Bool, "Encountered malloc with non-integer/non-constant element number");
+        }
 
         static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
         if(NullableMallocs.get(true)) {

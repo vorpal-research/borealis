@@ -14,31 +14,29 @@ namespace borealis {
 
 class GlobalsPredicate: public borealis::Predicate {
 
-    typedef GlobalsPredicate Self;
-
     typedef std::vector<Term::Ptr> Globals;
+
+    const Globals globals;
+
+    GlobalsPredicate(
+            const Globals& globals,
+            PredicateType type = PredicateType::STATE);
 
 public:
 
+    MK_COMMON_PREDICATE_IMPL(GlobalsPredicate);
+
     const Globals& getGlobals() const { return globals; }
-
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
 
     template<class SubClass>
     const Self* accept(Transformer<SubClass>* t) const {
         Globals transformedGlobals;
         transformedGlobals.reserve(globals.size());
         std::transform(globals.begin(), globals.end(), std::back_inserter(transformedGlobals),
-            [t](const Term::Ptr& e) { return t->transform(e); }
+            [&t](const Term::Ptr& e) { return t->transform(e); }
         );
 
-        // FIXME: Should be `Self{...}`, but clang++ crashes on that...
+        // XXX: Should be `Self{...}`, but clang++ crashes on that...
         return new Self(
             transformedGlobals,
             type
@@ -47,21 +45,6 @@ public:
 
     virtual bool equals(const Predicate* other) const override;
     virtual size_t hashCode() const override;
-
-    virtual Predicate* clone() const override {
-        return new Self{ *this };
-    }
-
-    friend class PredicateFactory;
-
-private:
-
-    const Globals globals;
-
-    GlobalsPredicate(
-            const Globals& globals,
-            PredicateType type = PredicateType::STATE);
-    GlobalsPredicate(const Self&) = default;
 
 };
 
