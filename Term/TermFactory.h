@@ -118,19 +118,24 @@ public:
 
         Term::Ptr v = getValueTerm(base);
 
-        llvm::Type* type = base->getType();
+        llvm::Type* baseType = base->getType();
+        llvm::Type* type = baseType;
+
+        std::vector< llvm::Value* > typeIdxs;
+        typeIdxs.reserve(idxs.size());
 
         std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
-        shifts.reserve(idxs.size() - 1);
+        shifts.reserve(idxs.size());
 
-        for (auto* idx : tail(idxs)) {
+        for (auto* idx : idxs) {
             ASSERT(type, "Incorrect GEP type indices");
 
             Term::Ptr by = getValueTerm(idx);
             Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
             shifts.push_back({by, size});
 
-            type = GetElementPtrInst::getIndexedType(type, idx);
+            typeIdxs.push_back(idx);
+            type = GetElementPtrInst::getIndexedType(baseType, typeIdxs);
         }
 
         type = GetElementPtrInst::getGEPReturnType(base, idxs);
