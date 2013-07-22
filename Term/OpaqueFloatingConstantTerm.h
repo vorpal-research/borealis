@@ -14,8 +14,6 @@ namespace borealis {
 
 class OpaqueFloatingConstantTerm: public borealis::Term {
 
-    typedef OpaqueFloatingConstantTerm Self;
-
     double value;
 
     OpaqueFloatingConstantTerm(double value):
@@ -27,23 +25,14 @@ class OpaqueFloatingConstantTerm: public borealis::Term {
 
 public:
 
-    double getValue() const { return value; }
+    MK_COMMON_TERM_IMPL(OpaqueFloatingConstantTerm);
 
-    OpaqueFloatingConstantTerm(const Self&) = default;
-    virtual ~OpaqueFloatingConstantTerm() {};
+    double getValue() const { return value; }
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
 
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
@@ -55,8 +44,6 @@ public:
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().getFloat();
     }
-
-    friend class TermFactory;
 
 };
 

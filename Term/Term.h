@@ -44,7 +44,7 @@ public:
         return name;
     }
 
-    borealis::id_t getTermTypeId() const {
+    id_t getTermTypeId() const {
         return term_type_id;
     }
 
@@ -99,5 +99,19 @@ struct hash<const borealis::Term::Ptr> {
     }
 };
 } // namespace std
+
+#define MK_COMMON_TERM_IMPL(CLASS) \
+private: \
+    typedef CLASS Self; \
+public: \
+    friend class TermFactory; \
+    CLASS(const CLASS&) = default; \
+    virtual ~CLASS() {}; \
+    static bool classof(const Self*) { \
+        return true; \
+    } \
+    static bool classof(const Term* t) { \
+        return t->getTermTypeId() == type_id<Self>(); \
+    }
 
 #endif /* TERM_H_ */

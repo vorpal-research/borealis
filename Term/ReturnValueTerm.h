@@ -17,24 +17,20 @@ namespace borealis {
 
 class ReturnValueTerm: public borealis::Term {
 
-    typedef ReturnValueTerm Self;
+    llvm::Function* F;
+
+    ReturnValueTerm(llvm::Function* F, SlotTracker*) :
+        Term(
+            std::hash<llvm::Function*>()(F),
+            "\\result_" + F->getName().str(),
+            type_id(*this)
+        ), F(F) {}
 
 public:
 
-    friend class TermFactory;
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
+    MK_COMMON_TERM_IMPL(ReturnValueTerm);
 
     llvm::Function* getFunction() const { return F; }
-
-    ReturnValueTerm(const Self&) = default;
-    virtual ~ReturnValueTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
@@ -44,17 +40,6 @@ public:
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(F->getFunctionType()->getReturnType());
     }
-
-private:
-
-    ReturnValueTerm(llvm::Function* F, SlotTracker*) :
-        Term(
-            std::hash<llvm::Function*>()(F),
-            "\\result_" + F->getName().str(),
-            type_id(*this)
-        ), F(F) {}
-
-    llvm::Function* F;
 
 };
 

@@ -14,8 +14,6 @@ namespace borealis {
 
 class LoadTerm: public borealis::Term {
 
-    typedef LoadTerm Self;
-
     Term::Ptr rhv;
 
     LoadTerm(Term::Ptr rhv):
@@ -27,8 +25,9 @@ class LoadTerm: public borealis::Term {
 
 public:
 
-    LoadTerm(const Self&) = default;
-    virtual ~LoadTerm() {};
+    MK_COMMON_TERM_IMPL(LoadTerm);
+
+    Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -40,16 +39,6 @@ public:
             return Term::equals(other) &&
                     *that->rhv == *rhv;
         } else return false;
-    }
-
-    Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
     }
 
     virtual Type::Ptr getTermType() const override {
@@ -64,8 +53,6 @@ public:
             return tf.getTypeError("Load from a non-pointer");
         }
     }
-
-    friend class TermFactory;
 
 };
 
@@ -82,9 +69,7 @@ struct SMTImpl<Impl, LoadTerm> {
         ASSERTC(ctx != nullptr);
 
         auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!r.empty(),
-               "Load with non-pointer right side");
-
+        ASSERT(!r.empty(), "Load with non-pointer right side");
         auto rp = r.getUnsafe();
 
         return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getTermType()));

@@ -14,23 +14,24 @@ namespace borealis {
 
 class BinaryTerm: public borealis::Term {
 
-    typedef BinaryTerm Self;
-
     llvm::ArithType opcode;
     Term::Ptr lhv;
     Term::Ptr rhv;
 
     BinaryTerm(llvm::ArithType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->hashCode() ^ rhv->hashCode(),
+                lhv->hashCode() ^ rhv->hashCode() ^ std::hash<llvm::ArithType>()(opcode),
                 "(" + lhv->getName() + " " + llvm::arithString(opcode) + " " + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};
 
 public:
 
-    BinaryTerm(const Self&) = default;
-    virtual ~BinaryTerm() {};
+    MK_COMMON_TERM_IMPL(BinaryTerm);
+
+    llvm::ArithType getOpcode() const { return opcode; }
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -46,24 +47,10 @@ public:
         } else return false;
     }
 
-    llvm::ArithType getOpcode() const { return opcode; }
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
     virtual Type::Ptr getTermType() const override {
         auto& tf = TypeFactory::getInstance();
         return tf.merge(lhv->getTermType(), rhv->getTermType());
     }
-
-    friend class TermFactory;
 
 };
 

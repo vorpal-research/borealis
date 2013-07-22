@@ -14,8 +14,6 @@ namespace borealis {
 
 class OpaqueIntConstantTerm: public borealis::Term {
 
-    typedef OpaqueIntConstantTerm Self;
-
     long long value;
 
     OpaqueIntConstantTerm(long long value):
@@ -27,29 +25,18 @@ class OpaqueIntConstantTerm: public borealis::Term {
 
 public:
 
-    long long getValue() const { return value; }
+    MK_COMMON_TERM_IMPL(OpaqueIntConstantTerm);
 
-    OpaqueIntConstantTerm(const Self&) = default;
-    virtual ~OpaqueIntConstantTerm() {};
+    long long getValue() const { return value; }
 
 #include "Util/macros.h"
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
 #include "Util/unmacros.h"
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().getInteger();
     }
-
-    friend class TermFactory;
 
 };
 

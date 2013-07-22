@@ -14,23 +14,24 @@ namespace borealis {
 
 class CmpTerm: public borealis::Term {
 
-    typedef CmpTerm Self;
-
     llvm::ConditionType opcode;
     Term::Ptr lhv;
     Term::Ptr rhv;
 
     CmpTerm(llvm::ConditionType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->hashCode() ^ rhv->hashCode(),
+                lhv->hashCode() ^ rhv->hashCode() ^ std::hash<llvm::ConditionType>()(opcode),
                 "(" + lhv->getName() + " " + llvm::conditionString(opcode) + " " + rhv->getName() + ")",
                 type_id(*this)
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};
 
 public:
 
-    CmpTerm(const Self&) = default;
-    virtual ~CmpTerm() {};
+    MK_COMMON_TERM_IMPL(CmpTerm);
+
+    llvm::ConditionType getOpcode() const { return opcode; }
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -46,10 +47,6 @@ public:
         } else return false;
     }
 
-    llvm::ConditionType getOpcode() const { return opcode; }
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
-
     virtual Type::Ptr getTermType() const override {
         auto& tf = TypeFactory::getInstance();
 
@@ -62,16 +59,6 @@ public:
 
         return tf.getBool();
     }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    friend class TermFactory;
 
 };
 

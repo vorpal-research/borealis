@@ -14,8 +14,6 @@ namespace borealis {
 
 class TernaryTerm: public borealis::Term {
 
-    typedef TernaryTerm Self;
-
     Term::Ptr cnd;
     Term::Ptr tru;
     Term::Ptr fls;
@@ -29,8 +27,11 @@ class TernaryTerm: public borealis::Term {
 
 public:
 
-    TernaryTerm(const Self&) = default;
-    virtual ~TernaryTerm() {};
+    MK_COMMON_TERM_IMPL(TernaryTerm);
+
+    Term::Ptr getCnd() const { return cnd; }
+    Term::Ptr getTru() const { return tru; }
+    Term::Ptr getFls() const { return fls; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -46,24 +47,10 @@ public:
         } else return false;
     }
 
-    Term::Ptr getCnd() const { return cnd; }
-    Term::Ptr getTru() const { return tru; }
-    Term::Ptr getFls() const { return fls; }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
     virtual Type::Ptr getTermType() const override {
         auto& tf = TypeFactory::getInstance();
         return tf.merge(tru->getTermType(), fls->getTermType());
     }
-
-    friend class TermFactory;
 
 };
 

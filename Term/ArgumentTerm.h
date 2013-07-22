@@ -17,24 +17,17 @@ namespace borealis {
 
 class ArgumentTerm: public borealis::Term {
 
-    typedef ArgumentTerm Self;
+    llvm::Argument* a;
+
+    ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
+        Term(std::hash<llvm::Argument*>()(a), st->getLocalName(a), type_id(*this)),
+        a(a) {}
 
 public:
 
-    friend class TermFactory;
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
+    MK_COMMON_TERM_IMPL(ArgumentTerm);
 
     llvm::Argument* getArgument() const { return a; }
-
-    ArgumentTerm(const Self&) = default;
-    virtual ~ArgumentTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
@@ -44,14 +37,6 @@ public:
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(a->getType());
     }
-
-private:
-
-    ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
-        Term(std::hash<llvm::Argument*>()(a), st->getLocalName(a), type_id(*this)),
-        a(a) {}
-
-    llvm::Argument* a;
 
 };
 

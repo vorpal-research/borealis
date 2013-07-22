@@ -14,25 +14,35 @@ namespace borealis {
 
 class GepTerm: public borealis::Term {
 
-    typedef GepTerm Self;
-
     typedef std::pair<Term::Ptr, Term::Ptr> Shift;
     typedef std::vector<Shift> Shifts;
 
+    Term::Ptr v;
+    const Shifts shifts;
+    const llvm::Type* type;
+
+    GepTerm(
+            Term::Ptr v,
+            const Shifts& shifts,
+            const llvm::Type* type
+    ) : Term(
+            v->hashCode() ^ std::hash<Shifts>()(shifts),
+            "gep(" + v->getName() + "," +
+                std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
+                    [](const std::string& a, const Shift& shift) {
+                        return a + "+" + shift.first->getName() + "*" + shift.second->getName();
+                    }
+                ) +
+            ")",
+            type_id(*this)
+        ), v(v), shifts(shifts), type(type) {}
+
 public:
 
-    friend class TermFactory;
+    MK_COMMON_TERM_IMPL(GepTerm);
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    GepTerm(const Self&) = default;
-    virtual ~GepTerm() {};
+    Term::Ptr getBase() const { return v; }
+    const Shifts& getShifts() const { return shifts; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* t) const -> const Self* {
@@ -64,34 +74,9 @@ public:
         } else return false;
     }
 
-    Term::Ptr getBase() const { return v; }
-    const Shifts& getShifts() const { return shifts; }
-
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(type);
     }
-
-private:
-
-    GepTerm(
-            Term::Ptr v,
-            const Shifts& shifts,
-            const llvm::Type* type
-    ) : Term(
-            v->hashCode() ^ std::hash<Shifts>()(shifts),
-            "gep(" + v->getName() + "," +
-                std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
-                    [](const std::string& a, const Shift& shift) {
-                        return a + "+" + shift.first->getName() + "*" + shift.second->getName();
-                    }
-                ) +
-            ")",
-            type_id(*this)
-        ), v(v), shifts(shifts), type(type) {}
-
-    Term::Ptr v;
-    const Shifts shifts;
-    const llvm::Type* type;
 
 };
 

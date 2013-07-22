@@ -14,22 +14,22 @@ namespace borealis {
 
 class UnaryTerm: public borealis::Term {
 
-    typedef UnaryTerm Self;
-
     llvm::UnaryArithType opcode;
     Term::Ptr rhv;
 
     UnaryTerm(llvm::UnaryArithType opcode, Term::Ptr rhv):
         Term(
-            rhv->hashCode(),
+            rhv->hashCode() ^ std::hash<llvm::UnaryArithType>()(opcode),
             llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
             type_id(*this)
         ), opcode(opcode), rhv(rhv) {};
 
 public:
 
-    UnaryTerm(const Self&) = default;
-    virtual ~UnaryTerm() {};
+    MK_COMMON_TERM_IMPL(UnaryTerm);
+
+    llvm::UnaryArithType getOpcode() const { return opcode; }
+    Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -44,22 +44,9 @@ public:
         } else return false;
     }
 
-    llvm::UnaryArithType getOpcode() const { return opcode; }
-    Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const UnaryTerm*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
     virtual Type::Ptr getTermType() const override {
         return rhv->getTermType();
     }
-
-    friend class TermFactory;
 
 };
 

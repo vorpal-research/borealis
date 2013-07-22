@@ -16,8 +16,6 @@ namespace borealis {
 
 class OpaqueVarTerm: public borealis::Term {
 
-    typedef OpaqueVarTerm Self;
-
     std::string vname;
 
     OpaqueVarTerm(const std::string& vname):
@@ -29,21 +27,12 @@ class OpaqueVarTerm: public borealis::Term {
 
 public:
 
-    const std::string& getName() const { return vname; }
+    MK_COMMON_TERM_IMPL(OpaqueVarTerm);
 
-    OpaqueVarTerm(const Self&) = default;
-    virtual ~OpaqueVarTerm() {};
+    const std::string& getName() const { return vname; }
 
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
 
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
@@ -55,8 +44,6 @@ public:
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().getUnknown();
     }
-
-    friend class TermFactory;
 
 };
 

@@ -162,8 +162,8 @@ public:
         return Term::Ptr(new OpaqueBoolConstantTerm(v));
     }
 
-    static Ptr get(SlotTracker* slotTracker) {
-        return Ptr(new TermFactory(slotTracker));
+    static TermFactory::Ptr get(SlotTracker* slotTracker) {
+        return TermFactory::Ptr(new TermFactory(slotTracker));
     }
 
 private:

@@ -19,24 +19,17 @@ namespace borealis {
 
 class ConstTerm: public borealis::Term {
 
-    typedef ConstTerm Self;
+    llvm::Constant* c;
+
+    ConstTerm(llvm::Constant* c, SlotTracker* st) :
+        Term(std::hash<llvm::Constant*>()(c), st->getLocalName(c), type_id(*this)),
+        c(c) {};
 
 public:
 
-    friend class TermFactory;
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
+    MK_COMMON_TERM_IMPL(ConstTerm);
 
     llvm::Constant* getConstant() const { return c; }
-
-    ConstTerm(const Self&) = default;
-    virtual ~ConstTerm() {};
 
     template<class Sub>
     auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
@@ -44,14 +37,6 @@ public:
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(c->getType());
     }
-
-private:
-
-    ConstTerm(llvm::Constant* c, SlotTracker* st) :
-        Term(std::hash<llvm::Constant*>()(c), st->getLocalName(c), type_id(*this)),
-        c(c) {};
-
-    llvm::Constant* c;
 
 };
 

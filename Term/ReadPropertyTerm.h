@@ -16,8 +16,6 @@ namespace borealis {
 
 class ReadPropertyTerm: public borealis::Term {
 
-    typedef ReadPropertyTerm Self;
-
     Term::Ptr propName;
     Term::Ptr rhv;
     Type::Ptr type;
@@ -31,8 +29,11 @@ class ReadPropertyTerm: public borealis::Term {
 
 public:
 
-    ReadPropertyTerm(const Self&) = default;
-    virtual ~ReadPropertyTerm() {};
+    MK_COMMON_TERM_IMPL(ReadPropertyTerm);
+
+    Term::Ptr getPropertyName() const { return propName; }
+    Term::Ptr getRhv() const { return rhv; }
+    Type::Ptr getType() const { return type; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -48,23 +49,9 @@ public:
         } else return false;
     }
 
-    Term::Ptr getPropertyName() const { return propName; }
-    Term::Ptr getRhv() const { return rhv; }
-    Type::Ptr getType() const { return type; }
-
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
     virtual Type::Ptr getTermType() const override {
         return type;
     }
-
-    friend class TermFactory;
 
 };
 
@@ -88,9 +75,7 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
                "Property read with unknown property name");
 
         auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!r.empty(),
-               "Property read with non-pointer right side");
-
+        ASSERT(!r.empty(), "Property read with non-pointer right side");
         auto rp = r.getUnsafe();
 
         return ctx->readProperty(strPropName.getUnsafe(), rp, ExprFactory::sizeForType(t->getType()));

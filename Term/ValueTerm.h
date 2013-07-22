@@ -17,25 +17,19 @@ namespace borealis {
 
 class ValueTerm: public borealis::Term {
 
-    typedef ValueTerm Self;
-    typedef std::unique_ptr<Self> SelfPtr;
+    typedef std::unique_ptr<ValueTerm> SelfPtr;
+
+    llvm::Value* v;
+
+    ValueTerm(llvm::Value* v, SlotTracker* st) :
+        Term(std::hash<llvm::Value*>()(v), st->getLocalName(v), type_id(*this)),
+        v(v) {}
 
 public:
 
-    friend class TermFactory;
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self*) {
-        return true;
-    }
+    MK_COMMON_TERM_IMPL(ValueTerm);
 
     llvm::Value* getValue() const { return v; }
-
-    ValueTerm(const Self&) = default;
-    virtual ~ValueTerm() {};
 
 #include "Util/macros.h"
     template<class Sub>
@@ -47,18 +41,10 @@ public:
     }
 
     Term::Ptr withNewName(const std::string& name) const {
-        auto res = SelfPtr{ util::heap_copy(this) };
+        auto res = SelfPtr{ new Self{ *this } };
         res->name = name;
         return Term::Ptr{ res.release() };
     }
-
-private:
-
-    ValueTerm(llvm::Value* v, SlotTracker* st) :
-        Term(std::hash<llvm::Value*>()(v), st->getLocalName(v), type_id(*this)),
-        v(v) {}
-
-    llvm::Value* v;
 
 };
 
