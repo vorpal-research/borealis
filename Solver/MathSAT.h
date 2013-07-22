@@ -9,34 +9,18 @@
 #define MATHSAT_H_
 
 #include <sstream>
+#include <iostream>
+#include <vector>
 #include <mathsat/mathsat.h>
 
 namespace mathsat{
 
-class Decl {
-private:
-	msat_decl decl_;
-public:
-	Decl(const msat_decl& decl) : decl_(decl) {}
-
-	operator msat_decl() const { return decl_; }
-};
-
-//////////////////////////////////////////////////////////////////
-
-class Sort {
-private:
-	msat_type type_;
-public:
-	Sort(const msat_type& type) : type_(type) {}
-
-	operator msat_type() const { return type_; }
-
-};
-
-//////////////////////////////////////////////////////////////////
-
+class Env;
+class Sort;
+class Decl;
 class Config;
+class Expr;
+class Solver;
 
 class Env {
 private:
@@ -48,7 +32,70 @@ public:
 
 	~Env() { msat_destroy_env(env_); }
 
-	operator msat_env() { return env_; }
+	operator msat_env() const { return env_; }
+
+	void reset();
+
+	Sort bool_sort();
+	Sort int_sort();
+	Sort rat_sort();
+	Sort bv_sort(unsigned size);
+	Sort array_sort(const Sort& idx, const Sort& elm);
+	Sort simple_sort(const std::string& name);
+
+	Expr constant(const std::string& name, const Sort& type);
+	Expr bool_const(const std::string& name);
+	Expr int_const(const std::string& name);
+	Expr rat_const(const std::string& name);
+	Expr bv_const(const std::string& name, const unsigned size);
+
+	Expr bool_val(bool b) const;
+	Expr num_val(int i) const;
+	Expr bv_val(int i, unsigned size) const;
+
+	Decl function(const std::string& name, unsigned arity, const Sort* params, const Sort& ret);
+};
+
+///////////////////////////////////////////////////////////////////
+
+class Sort {
+private:
+	msat_type type_;
+	Env env_;
+public:
+	Sort(const msat_type& type, const Env& env) : type_(type), env_(env) {}
+
+	operator msat_type() const { return type_; }
+
+	bool is_bool() const { return msat_is_bool_type(env_, type_); }
+	bool is_int () const { return msat_is_integer_type(env_, type_); }
+	bool is_rat() const { return msat_is_rational_type(env_, type_); }
+	bool is_arith() const { return is_int() || is_rat(); }
+	bool is_bv() const { return msat_is_bv_type(env_, type_, nullptr); }
+	bool is_array() const { return msat_is_array_type(env_, type_, nullptr, nullptr); }
+	bool equals(Sort that) const { return msat_type_equals(type_, that.type_); }
+
+	unsigned bv_size() const;
+};
+
+/////////////////////////////////////////////////////////////////
+
+class Decl {
+private:
+	msat_decl decl_;
+	Env env_;
+public:
+	Decl(const msat_decl& decl, const Env& env) : decl_(decl), env_(env) {}
+
+	operator msat_decl() const { return decl_; }
+
+	unsigned arity() const { return msat_decl_get_arity(decl_); }
+	Sort domain(unsigned i) const { return Sort(msat_decl_get_arg_type(decl_, i), env_); }
+	Sort range() const { return Sort(msat_decl_get_return_type(decl_), env_); }
+	std::string name() const { return msat_decl_get_name(decl_); }
+
+	Expr operator ()(unsigned arity, const Expr* arg);
+
 };
 
 //////////////////////////////////////////////////////////////////
@@ -82,15 +129,15 @@ public:
 
 class Expr {
 private:
-	msat_env env_;
+	Env env_;
 	msat_term term_;
 
-	Sort get_type() const { return msat_term_get_type(term_); }
+	Sort get_type() const { return Sort(msat_term_get_type(term_), env_); }
 
 public:
-	Expr(const msat_env &env, const msat_term& term) : env_(env), term_(term) {}
+	Expr(const Env &env, const msat_term& term) : env_(env), term_(term) {}
 
-	operator msat_term() { return term_; }
+	operator msat_term() const { return term_; }
 
 	bool is_bool() const { return msat_is_bool_type(env_, get_type()); }
 	bool is_int() const { return msat_is_integer_type(env_, get_type()); }
@@ -155,12 +202,58 @@ public:
 	friend Expr operator ~(Expr const &a);
 
 	friend Expr iff(Expr const &a, Expr const &b);
+
+	friend std::ostream& operator <<(std::ostream &out, const Expr& e) {
+		char *smtlib = msat_to_smtlib2(e.env_, e.term_);
+		out << smtlib;
+		msat_free(smtlib);
+		return out;
+	}
+
+	static Expr from_string(const Env& env, std::string data);
+	static Expr from_smtlib1(const Env& env, std::string data);
+	static Expr from_smtlib2(const Env& env, std::string data);
 }; // class Expr
 
+////////////////////////////////////////////////////////////////
 
+class InterpolationGroup {
+private:
+	int id_;
+public:
+	InterpolationGroup(int id) : id_(id) {}
+
+	int id() { return id_; }
+};
+
+////////////////////////////////////////////////////////////////
+
+class Solver {
+private:
+	Env env_;
+
+public:
+	explicit Solver(Env env) : env_(env) {}
+
+	void add(const Expr& e);
+
+	void push();
+	void pop();
+	unsigned num_backtrack() { return msat_num_backtrack_points(env_); }
+	void reset() { env_.reset(); }
+
+	msat_result check() { return msat_solve(env_); }
+	msat_result check(unsigned i, const Expr* assump);
+
+	std::vector<Expr> assertions();
+	std::vector<Expr> unsat_core();
+
+	InterpolationGroup create_interp_group() { return msat_create_itp_group(env_); }
+	void set_interp_group(InterpolationGroup gr);
+	Expr get_interpolant(InterpolationGroup* groupsA, unsigned size);
+};
 
 
 } // namespace mathsat
-
 
 #endif /* MATHSAT_H_ */
