@@ -13,8 +13,6 @@
 #include "Term/Term.h"
 #include "Util/slottracker.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 class ConstTerm: public borealis::Term {
@@ -32,7 +30,9 @@ public:
     llvm::Constant* getConstant() const { return c; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
+    }
 
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(c->getType());
@@ -40,6 +40,7 @@ public:
 
 };
 
+#include "Util/macros.h"
 template<class Impl>
 struct SMTImpl<Impl, ConstTerm> {
     static Dynamic<Impl> doit(
@@ -84,9 +85,8 @@ struct SMTImpl<Impl, ConstTerm> {
         return ef.getVarByTypeAndName(t->getTermType(), t->getName());
     }
 };
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"
 
 #endif /* CONSTTERM_H_ */

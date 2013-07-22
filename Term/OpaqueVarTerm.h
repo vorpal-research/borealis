@@ -10,8 +10,6 @@
 
 #include "Term/Term.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 class OpaqueVarTerm: public borealis::Term {
@@ -32,7 +30,9 @@ public:
     const std::string& getName() const { return vname; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
+    }
 
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
@@ -47,6 +47,7 @@ public:
 
 };
 
+#include "Util/macros.h"
 template<class Impl>
 struct SMTImpl<Impl, OpaqueVarTerm> {
     static Dynamic<Impl> doit(
@@ -56,9 +57,8 @@ struct SMTImpl<Impl, OpaqueVarTerm> {
         BYE_BYE(Dynamic<Impl>, "Should not be called!");
     }
 };
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"
 
 #endif /* OPAQUEVARTERM_H_ */

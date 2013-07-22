@@ -32,10 +32,10 @@ public:
 
     llvm::Function* getFunction() const { return F; }
 
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
+    }
 
     virtual Type::Ptr getTermType() const override {
         return TypeFactory::getInstance().cast(F->getFunctionType()->getReturnType());

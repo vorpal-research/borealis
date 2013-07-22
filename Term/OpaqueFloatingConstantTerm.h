@@ -29,10 +29,10 @@ public:
 
     double getValue() const { return value; }
 
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
+    }
 
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
