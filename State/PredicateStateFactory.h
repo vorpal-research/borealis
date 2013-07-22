@@ -37,7 +37,7 @@ public:
     PredicateState::Ptr Basic();
 
     static PredicateStateFactory::Ptr get() {
-        return Ptr(new PredicateStateFactory());
+        return PredicateStateFactory::Ptr(new PredicateStateFactory());
     }
 
 private:

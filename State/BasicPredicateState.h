@@ -20,13 +20,12 @@ namespace borealis {
 class BasicPredicateState :
         public PredicateState {
 
-    typedef BasicPredicateState Self;
-    typedef std::unique_ptr<Self> SelfPtr;
-
     typedef std::list<Predicate::Ptr> Data;
     typedef std::unordered_set<const llvm::Value*> Locations;
 
 public:
+
+    MK_COMMON_STATE_IMPL(BasicPredicateState);
 
     const Data& getData() const { return data; }
 
@@ -44,14 +43,6 @@ public:
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const override;
     virtual PredicateState::Ptr simplify() const override;
 
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const PredicateState* ps) {
-        return ps->getPredicateStateTypeId() == type_id<Self>();
-    }
-
     virtual bool isEmpty() const override;
 
     virtual bool equals(const PredicateState* other) const override {
@@ -66,16 +57,12 @@ public:
     virtual std::string toString() const override;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const override;
 
-    friend class PredicateStateFactory;
-
 private:
 
     Data data;
     Locations locs;
 
     BasicPredicateState();
-    BasicPredicateState(const Self& state) = default;
-    BasicPredicateState(Self&& state) = default;
 
     void addPredicateInPlace(Predicate::Ptr pred);
     void addVisitedInPlace(const llvm::Value* loc);

@@ -15,10 +15,9 @@ namespace borealis {
 class PredicateStateChain :
         public PredicateState {
 
-    typedef PredicateStateChain Self;
-    typedef std::unique_ptr<Self> SelfPtr;
-
 public:
+
+    MK_COMMON_STATE_IMPL(PredicateStateChain);
 
     PredicateState::Ptr getBase() const { return base; }
     PredicateState::Ptr getCurr() const { return curr; }
@@ -37,14 +36,6 @@ public:
 
     virtual bool isEmpty() const override;
 
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const PredicateState* ps) {
-        return ps->getPredicateStateTypeId() == type_id<Self>();
-    }
-
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return *this->base == *o->base &&
@@ -55,16 +46,12 @@ public:
     virtual std::string toString() const override;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const override;
 
-    friend class PredicateStateFactory;
-
 private:
 
     PredicateState::Ptr base;
     PredicateState::Ptr curr;
 
     PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr);
-    PredicateStateChain(const Self& state) = default;
-    PredicateStateChain(Self&& state) = default;
 
     SelfPtr fmap_(FMapper f) const;
 

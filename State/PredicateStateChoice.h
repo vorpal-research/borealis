@@ -15,10 +15,9 @@ namespace borealis {
 class PredicateStateChoice :
         public PredicateState {
 
-    typedef PredicateStateChoice Self;
-    typedef std::unique_ptr<Self> SelfPtr;
-
 public:
+
+    MK_COMMON_STATE_IMPL(PredicateStateChoice);
 
     const std::vector<PredicateState::Ptr> getChoices() const { return choices; }
 
@@ -36,14 +35,6 @@ public:
 
     virtual bool isEmpty() const override;;
 
-    static bool classof(const Self*) {
-        return true;
-    }
-
-    static bool classof(const PredicateState* ps) {
-        return ps->getPredicateStateTypeId() == type_id<Self>();
-    }
-
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return std::equal(choices.begin(), choices.end(), o->choices.begin(),
@@ -57,16 +48,12 @@ public:
     virtual std::string toString() const override;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const override;
 
-    friend class PredicateStateFactory;
-
 private:
 
     std::vector<PredicateState::Ptr> choices;
 
     PredicateStateChoice(const std::vector<PredicateState::Ptr>& choices);
     PredicateStateChoice(std::vector<PredicateState::Ptr>&& choices);
-    PredicateStateChoice(const Self& state) = default;
-    PredicateStateChoice(Self&& state) = default;
 
     SelfPtr fmap_(FMapper f) const;
 

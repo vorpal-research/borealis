@@ -29,7 +29,7 @@ public:
 
 protected:
 
-    Term(id_t id, const std::string& name, borealis::id_t term_type_id) :
+    Term(id_t id, const std::string& name, id_t term_type_id) :
         id(id), term_type_id(term_type_id), name(name) {};
     Term(const Term&) = default;
     virtual ~Term() {};
@@ -75,7 +75,7 @@ public:
 private:
 
     const id_t id;
-    const borealis::id_t term_type_id;
+    const id_t term_type_id;
 
 protected:
 
@@ -103,9 +103,9 @@ struct hash<const borealis::Term::Ptr> {
 #define MK_COMMON_TERM_IMPL(CLASS) \
 private: \
     typedef CLASS Self; \
+    CLASS(const CLASS&) = default; \
 public: \
     friend class TermFactory; \
-    CLASS(const CLASS&) = default; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

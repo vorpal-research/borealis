@@ -13,8 +13,6 @@ namespace borealis {
 PredicateState::PredicateState(borealis::id_t predicate_state_type_id) :
         predicate_state_type_id(predicate_state_type_id) {};
 
-PredicateState::~PredicateState() {}
-
 bool PredicateState::isUnreachable() const {
     Z3::ExprFactory z3ef;
     Z3::Solver s(z3ef);

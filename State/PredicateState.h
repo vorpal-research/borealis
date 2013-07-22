@@ -73,16 +73,16 @@ public:
     virtual std::string toString() const = 0;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const = 0;
 
-    PredicateState(borealis::id_t predicate_state_type_id);
-    virtual ~PredicateState();
+    PredicateState(id_t predicate_state_type_id);
+    virtual ~PredicateState() {};
 
-    borealis::id_t getPredicateStateTypeId() const {
+    id_t getPredicateStateTypeId() const {
         return predicate_state_type_id;
     }
 
 protected:
 
-    const borealis::id_t predicate_state_type_id;
+    const id_t predicate_state_type_id;
 
     static PredicateState::Ptr Simplified(const PredicateState* s) {
         return PredicateState::Ptr(s)->simplify();
@@ -103,6 +103,22 @@ PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc);
 
 } /* namespace borealis */
+
+#define MK_COMMON_STATE_IMPL(CLASS) \
+private: \
+    typedef CLASS Self; \
+    typedef std::unique_ptr<Self> SelfPtr; \
+    CLASS(const Self& state) = default; \
+    CLASS(Self&& state) = default; \
+public: \
+    friend class PredicateStateFactory; \
+    virtual ~CLASS() {}; \
+    static bool classof(const Self*) { \
+        return true; \
+    } \
+    static bool classof(const PredicateState* ps) { \
+        return ps->getPredicateStateTypeId() == type_id<Self>(); \
+    }
 
 #include "Util/unmacros.h"
 
