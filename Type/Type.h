@@ -8,6 +8,14 @@
 
 namespace borealis {
 
+/** protobuf -> Type/Type.proto
+package borealis.proto;
+
+message Type {
+    extensions 1 to 15;
+}
+
+**/
 class Type : public ClassTag {
 public:
     Type(id_t id) : ClassTag(id) {};
