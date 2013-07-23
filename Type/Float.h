@@ -9,6 +9,18 @@ class TypeFactory;
 
 namespace type {
 
+/** protobuf -> Type/Type.proto
+import "Type/Type.proto";
+
+package borealis.proto.type;
+
+message Float {
+    extend borealis.proto.Type {
+        optional Float obj = 3;
+    }
+}
+
+**/
 class Float : public Type {
 
     typedef Float Self;

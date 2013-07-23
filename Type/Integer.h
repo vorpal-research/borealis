@@ -9,6 +9,18 @@ class TypeFactory;
 
 namespace type {
 
+/** protobuf -> Type/Type.proto
+import "Type/Type.proto";
+
+package borealis.proto.type;
+
+message Integer {
+    extend borealis.proto.Type {
+        optional Integer obj = 1;
+    }
+}
+
+**/
 class Integer : public Type {
 
     typedef Integer Self;

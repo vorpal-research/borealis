@@ -9,6 +9,18 @@ class TypeFactory;
 
 namespace type {
 
+/** protobuf -> Type/Type.proto
+import "Type/Type.proto";
+
+package borealis.proto.type;
+
+message Bool {
+    extend borealis.proto.Type {
+        optional Bool obj = 2;
+    }
+}
+
+**/
 class Bool : public Type {
 
     typedef Bool Self;

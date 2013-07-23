@@ -9,6 +9,18 @@ class TypeFactory;
 
 namespace type {
 
+/** protobuf -> Type/Type.proto
+import "Type/Type.proto";
+
+package borealis.proto.type;
+
+message Pointer {
+    extend borealis.proto.Type {
+        optional Pointer obj = 4;
+    }
+}
+
+**/
 class Pointer : public Type {
 
     typedef Pointer Self;

@@ -9,6 +9,18 @@ class TypeFactory;
 
 namespace type {
 
+/** protobuf -> Type/Type.proto
+import "Type/Type.proto";
+
+package borealis.proto.type;
+
+message UnknownType {
+    extend borealis.proto.Type {
+        optional UnknownType obj = 5;
+    }
+}
+
+**/
 class UnknownType : public Type {
 
     typedef UnknownType Self;

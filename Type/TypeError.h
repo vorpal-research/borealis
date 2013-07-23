@@ -9,6 +9,18 @@ class TypeFactory;
 
 namespace type {
 
+/** protobuf -> Type/Type.proto
+import "Type/Type.proto";
+
+package borealis.proto.type;
+
+message TypeError {
+    extend borealis.proto.Type {
+        optional TypeError obj = 6;
+    }
+}
+
+**/
 class TypeError : public Type {
 
     typedef TypeError Self;
