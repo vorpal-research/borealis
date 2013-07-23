@@ -43,7 +43,7 @@ static std::vector<std::string> ShortTestFiles(const std::string& dir) {
 }
 
 static std::vector<std::string> LongTestFiles(const std::string& dir) {
-    return getTestFiles(dir, "tests.long.def");
+    return getTestFiles(dir, "tests.def.long");
 }
 
 
