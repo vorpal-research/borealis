@@ -4,6 +4,7 @@ Dependencies
  * clang-debug
  * z3-codeplex
  * jsoncpp
+ * protobuf
  * log4cpp
  * libcfgparser
  * gperftools

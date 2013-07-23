@@ -12,7 +12,7 @@
 
 #include <cstddef>
 
-#include "lib/debugbreak/debugbreak.h"
+#include "debugbreak/debugbreak.h"
 
 #include "Logging/logger.hpp"
 #include "Util/meta.hpp"
