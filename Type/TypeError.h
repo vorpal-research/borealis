@@ -18,6 +18,7 @@ message TypeError {
     extend borealis.proto.Type {
         optional TypeError obj = 6;
     }
+    optional string message = 1;
 }
 
 **/

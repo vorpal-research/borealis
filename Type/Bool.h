@@ -18,6 +18,7 @@ message Bool {
     extend borealis.proto.Type {
         optional Bool obj = 2;
     }
+    
 }
 
 **/

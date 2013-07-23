@@ -18,6 +18,7 @@ message UnknownType {
     extend borealis.proto.Type {
         optional UnknownType obj = 5;
     }
+    
 }
 
 **/

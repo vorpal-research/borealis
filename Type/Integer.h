@@ -18,6 +18,7 @@ message Integer {
     extend borealis.proto.Type {
         optional Integer obj = 1;
     }
+    
 }
 
 **/

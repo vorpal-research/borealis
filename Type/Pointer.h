@@ -18,6 +18,7 @@ message Pointer {
     extend borealis.proto.Type {
         optional Pointer obj = 4;
     }
+    optional borealis.proto.Type pointed = 1;
 }
 
 **/

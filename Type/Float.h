@@ -18,6 +18,7 @@ message Float {
     extend borealis.proto.Type {
         optional Float obj = 3;
     }
+    
 }
 
 **/
