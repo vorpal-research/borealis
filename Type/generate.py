@@ -19,7 +19,7 @@ class TypeFactory;
 
 namespace $nested {
 
-/** protobuf -> $dir/$base.proto
+/** protobuf -> $dir/$clazz.proto
 $protobuf_decl
 **/
 class $clazz : public $base {

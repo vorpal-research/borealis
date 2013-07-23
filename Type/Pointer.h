@@ -9,7 +9,7 @@ class TypeFactory;
 
 namespace type {
 
-/** protobuf -> Type/Type.proto
+/** protobuf -> Type/Pointer.proto
 import "Type/Type.proto";
 
 package borealis.proto.type;
