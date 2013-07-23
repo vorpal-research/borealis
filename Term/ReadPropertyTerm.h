@@ -22,7 +22,7 @@ class ReadPropertyTerm: public borealis::Term {
 
     ReadPropertyTerm(Term::Ptr propName, Term::Ptr rhv, Type::Ptr type):
         Term(
-            propName->hashCode() ^ rhv->hashCode() ^ type->getId(),
+            util::hash::defaultHasher()(propName, rhv, type),
             "read(" + propName->getName() + "," + rhv->getName() + ")",
             type_id(*this)
         ), propName(propName), rhv(rhv), type(type) {};
@@ -45,7 +45,7 @@ public:
             return Term::equals(other) &&
                     *that->propName == *propName &&
                     *that->rhv == *rhv &&
-                    *that->type == *type;
+                    that->type == type;
         } else return false;
     }
 

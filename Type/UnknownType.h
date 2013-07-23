@@ -10,20 +10,25 @@ class TypeFactory;
 namespace type {
 
 class UnknownType : public Type {
-    typedef UnknownType self;
-    typedef Type base;
 
-    UnknownType() : Type(type_id(*this)) {}
+    typedef UnknownType Self;
+    typedef Type Base;
+
+    UnknownType() : Type(class_tag(*this)) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
     friend class ::borealis::TypeFactory;
-
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
+    
 };
 
 } // namespace type
 } // namespace borealis
 
 #endif // UNKNOWNTYPE_H
+
+

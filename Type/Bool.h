@@ -10,20 +10,25 @@ class TypeFactory;
 namespace type {
 
 class Bool : public Type {
-    typedef Bool self;
-    typedef Type base;
 
-    Bool() : Type(type_id(*this)) {}
+    typedef Bool Self;
+    typedef Type Base;
+
+    Bool() : Type(class_tag(*this)) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
     friend class ::borealis::TypeFactory;
-
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
+    
 };
 
 } // namespace type
 } // namespace borealis
 
 #endif // BOOL_H
+
+

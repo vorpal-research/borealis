@@ -16,17 +16,19 @@ class TypeFactory;
 namespace type {
 
 class $clazz : public $base {
-    typedef $clazz self;
-    typedef $base base;
 
-    $clazz($member_params) : $base(type_id(*this))$member_cons {}
+    typedef $clazz Self;
+    typedef $base Base;
+
+    $clazz($member_params) : $base(class_tag(*this))$member_cons {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
     friend class ::borealis::TypeFactory;
-
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
     $members
 };
 

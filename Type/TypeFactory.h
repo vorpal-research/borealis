@@ -61,11 +61,11 @@ public:
     }
 
     bool isValid(Type::Ptr type) {
-        return type->getId() != type_id<type::TypeError>();
+        return type->getClassTag() != class_tag<type::TypeError>();
     }
 
     bool isUnknown(Type::Ptr type) {
-        return type->getId() == type_id<type::UnknownType>();
+        return type->getClassTag() == class_tag<type::UnknownType>();
     }
 
     Type::Ptr cast(const llvm::Type* type) {

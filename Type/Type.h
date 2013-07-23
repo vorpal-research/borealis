@@ -8,19 +8,29 @@
 
 namespace borealis {
 
-class Type {
-    id_t theId;
+class Type : public ClassTag {
 public:
-    Type(id_t id) : theId(id) {};
-    id_t getId() const { return theId; }	
+    Type(id_t id) : ClassTag(id) {};
 
     typedef std::shared_ptr<const Type> Ptr;
 
-    bool operator==(const Type& other) const {
-        return other.theId == theId;
-    }
 };
 
 } // namespace borealis
+
+namespace std {
+template<>
+struct hash<borealis::Type::Ptr> {
+    size_t operator()(const borealis::Type::Ptr& t) const {
+        return reinterpret_cast<size_t>(t.get());
+    }
+};
+template<>
+struct hash<const borealis::Type::Ptr> {
+    size_t operator()(const borealis::Type::Ptr& t) const {
+        return reinterpret_cast<size_t>(t.get());
+    }
+};
+} // namespace std
 
 #endif // TYPE_H

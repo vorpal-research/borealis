@@ -10,20 +10,22 @@ class TypeFactory;
 namespace type {
 
 class Pointer : public Type {
-    typedef Pointer self;
-    typedef Type base;
 
-    Pointer(Type::Ptr pointed) : Type(type_id(*this)), pointed(pointed) {}
+    typedef Pointer Self;
+    typedef Type Base;
+
+    Pointer(Type::Ptr pointed) : Type(class_tag(*this)), pointed(pointed) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
     friend class ::borealis::TypeFactory;
     
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
+    
 private:
     Type::Ptr pointed;
-
 public:
     Type::Ptr getPointed() const { return pointed; }
 
@@ -33,3 +35,5 @@ public:
 } // namespace borealis
 
 #endif // POINTER_H
+
+
