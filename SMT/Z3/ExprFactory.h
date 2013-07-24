@@ -12,7 +12,6 @@
 #include <z3/z3++.h>
 
 #include "SMT/Z3/Z3.h"
-#include "Type/TypeFactory.h"
 #include "Util/util.h"
 
 namespace borealis {
