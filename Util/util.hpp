@@ -120,6 +120,13 @@ T* heap_copy(const T* val) {
 
 
 
+template<class T>
+std::unique_ptr<T> uniq(T* val) {
+    return std::unique_ptr<T>(val);
+}
+
+
+
 namespace impl {
 template<char Sep>
 std::ostringstream& concat_(std::ostringstream& s) {

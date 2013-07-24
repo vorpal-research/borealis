@@ -12,11 +12,11 @@ namespace type {
 /** protobuf -> Type/Integer.proto
 import "Type/Type.proto";
 
-package borealis.proto.type;
+package borealis.type.proto;
 
 message Integer {
     extend borealis.proto.Type {
-        optional Integer obj = 1;
+        optional Integer ext = 1;
     }
     
 }

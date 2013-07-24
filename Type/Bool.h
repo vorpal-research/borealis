@@ -12,11 +12,11 @@ namespace type {
 /** protobuf -> Type/Bool.proto
 import "Type/Type.proto";
 
-package borealis.proto.type;
+package borealis.type.proto;
 
 message Bool {
     extend borealis.proto.Type {
-        optional Bool obj = 2;
+        optional Bool ext = 2;
     }
     
 }

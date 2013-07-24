@@ -12,11 +12,11 @@ namespace type {
 /** protobuf -> Type/Float.proto
 import "Type/Type.proto";
 
-package borealis.proto.type;
+package borealis.type.proto;
 
 message Float {
     extend borealis.proto.Type {
-        optional Float obj = 3;
+        optional Float ext = 3;
     }
     
 }

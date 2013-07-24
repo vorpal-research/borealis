@@ -12,11 +12,11 @@ namespace type {
 /** protobuf -> Type/UnknownType.proto
 import "Type/Type.proto";
 
-package borealis.proto.type;
+package borealis.type.proto;
 
 message UnknownType {
     extend borealis.proto.Type {
-        optional UnknownType obj = 5;
+        optional UnknownType ext = 5;
     }
     
 }

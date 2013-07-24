@@ -81,6 +81,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	
 ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD) \
+	$(PWD)/Protobuf/Gen \
 	$(PWD)/lib \
 	$(PWD)/lib/pegtl/include \
 	$(PWD)/lib/google-test/include
@@ -176,7 +177,7 @@ VALGRIND := valgrind --leak-check=yes --suppressions=valgrind.supp
 # Protobuf
 ################################################################################
 
-PROTO_SOURCE_DIR := $(PWD)/Protobuf
+PROTO_SOURCE_DIR := $(PWD)/Protobuf/Gen
 
 PROTOC := protoc --proto_path=$(PWD) --cpp_out=$(PROTO_SOURCE_DIR)
 

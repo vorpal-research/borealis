@@ -12,11 +12,11 @@ namespace type {
 /** protobuf -> Type/Pointer.proto
 import "Type/Type.proto";
 
-package borealis.proto.type;
+package borealis.type.proto;
 
 message Pointer {
     extend borealis.proto.Type {
-        optional Pointer obj = 4;
+        optional Pointer ext = 4;
     }
     optional borealis.proto.Type pointed = 1;
 }

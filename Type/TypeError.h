@@ -12,11 +12,11 @@ namespace type {
 /** protobuf -> Type/TypeError.proto
 import "Type/Type.proto";
 
-package borealis.proto.type;
+package borealis.type.proto;
 
 message TypeError {
     extend borealis.proto.Type {
-        optional TypeError obj = 6;
+        optional TypeError ext = 6;
     }
     optional string message = 1;
 }

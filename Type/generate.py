@@ -55,11 +55,11 @@ contents = Template(contents)
 protobuf = '''\
 import "$dir/$base.proto";
 
-package $root.proto.$nested;
+package $root.$nested.proto;
 
 message $clazz {
     extend $root.proto.$base {
-        optional $clazz obj = $tag;
+        optional $clazz ext = $tag;
     }
     $field_decls
 }

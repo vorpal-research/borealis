@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "Protobuf/Gen/Type/Type.pb.h"
 #include "Util/typeindex.hpp"
 
 namespace borealis {
@@ -21,6 +22,7 @@ public:
     Type(id_t id) : ClassTag(id) {};
 
     typedef std::shared_ptr<const Type> Ptr;
+    typedef std::unique_ptr<proto::Type> ProtoPtr;
 
 };
 
