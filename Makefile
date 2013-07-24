@@ -78,7 +78,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Type \
 	$(PWD)/Util \
 	$(PWD)/lib/poolalloc/src
-	
+
 ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD) \
 	$(PWD)/Protobuf/Gen \
@@ -90,14 +90,21 @@ CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 
 SOURCES := \
 	$(shell ls $(PWD)/*.cpp) \
-	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
-	
+	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f) \
+	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cc"  -type f)
+
 SOURCES_WITH_MAIN := $(PWD)/wrapper.cpp
 
 SOURCES_WITHOUT_MAIN := $(filter-out $(SOURCES_WITH_MAIN),$(SOURCES))
 
 OBJECTS := $(SOURCES:.cpp=.o)
+OBJECTS := $(OBJECTS:.cc=.o)
+
+OBJECTS_WITHOUT_MAIN := $(SOURCES_WITHOUT_MAIN:.cpp=.o)
+OBJECTS_WITHOUT_MAIN := $(OBJECTS_WITHOUT_MAIN:.cc=.o)
+
 DEPS := $(SOURCES:.cpp=.d)
+DEPS := $(DEPS:.cc=.d)
 
 ################################################################################
 # Tests
@@ -106,7 +113,7 @@ DEPS := $(SOURCES:.cpp=.d)
 TEST_DIRS := $(PWD)/test
 TEST_SOURCES := $(shell find $(TEST_DIRS) -name "*.cpp" -type f)
 
-TEST_OBJECTS := $(SOURCES_WITHOUT_MAIN:.cpp=.o) $(TEST_SOURCES:.cpp=.o)
+TEST_OBJECTS := $(OBJECTS_WITHOUT_MAIN) $(TEST_SOURCES:.cpp=.o)
 TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
 
 TEST_OUTPUT := "test_results.xml"
@@ -154,7 +161,8 @@ LIBS := \
 	-lcfgparser \
 	-llog4cpp \
 	-lprofiler \
-	-ljsoncpp
+	-ljsoncpp \
+	-lprotobuf
 
 ################################################################################
 # Test defs management
@@ -189,6 +197,12 @@ PROTOEXT := $(PWD)/extract-protobuf-desc.awk
 
 %.d: %.cpp
 	@$(CXX) $(CXXFLAGS) -MM $*.cpp > $*.d
+	@mv -f $*.d $*.dd
+	@sed -e 's|.*:|$*.o $*.d:|' < $*.dd > $*.d
+	@rm -f $*.dd
+
+%.d: %.cc
+	@$(CXX) $(CXXFLAGS) -MM $*.cc > $*.d
 	@mv -f $*.d $*.dd
 	@sed -e 's|.*:|$*.o $*.d:|' < $*.dd > $*.d
 	@rm -f $*.dd
