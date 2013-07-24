@@ -230,13 +230,15 @@ all: $(EXES)
 		$(PROTOEXT) $$H; \
 	done
 	@find $(PWD) -name "*.proto" | xargs $(PROTOC)
+	@touch $@
 
 clean.protobuf:
+	@rm -f .protobuf
 	@find $(PWD) -name "*.proto" -delete
 	@rm -rf $(PROTO_SOURCE_DIR)
 
 
-$(EXES): $(OBJECTS)
+$(EXES): $(OBJECTS) .protobuf
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
 
 
@@ -249,7 +251,7 @@ clean.google-test:
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make clean
 
 
-$(TEST_EXES): $(TEST_OBJECTS) .google-test
+$(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
 	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
 
 
