@@ -11,9 +11,11 @@ syntax: glob
 wrapper
 run-tests
 
-test_results.xml
+Protobuf/Gen/*
+*.proto
+
+*.xml
 *.tmp
 *.all
 
 *.png
-*.xml
