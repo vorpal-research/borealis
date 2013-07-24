@@ -53,7 +53,7 @@ public:
 	Expr num_val(int i) const;
 	Expr bv_val(int i, unsigned size) const;
 
-	Decl function(const std::string& name, unsigned arity, const Sort* params, const Sort& ret);
+	Decl function(const std::string& name, const std::vector<Sort> params, const Sort& ret);
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -94,7 +94,7 @@ public:
 	Sort range() const { return Sort(msat_decl_get_return_type(decl_), env_); }
 	std::string name() const { return msat_decl_get_name(decl_); }
 
-	Expr operator ()(unsigned arity, const Expr* arg);
+	Expr operator ()(const std::vector<Expr> arg);
 
 };
 
@@ -127,6 +127,8 @@ public:
 
 //////////////////////////////////////////////////////////////////
 
+typedef std::function<msat_visit_status(Env, Expr, int, void *)> visit_function;
+
 class Expr {
 private:
 	Env env_;
@@ -138,6 +140,7 @@ public:
 	Expr(const Env &env, const msat_term& term) : env_(env), term_(term) {}
 
 	operator msat_term() const { return term_; }
+	Env& env() const { return env_; }
 
 	bool is_bool() const { return msat_is_bool_type(env_, get_type()); }
 	bool is_int() const { return msat_is_integer_type(env_, get_type()); }
@@ -150,10 +153,10 @@ public:
 	bool type_equals(const Expr &that) const { return msat_type_equals(get_type(), that.get_type()); }
 
 	Decl decl() const;
-
 	unsigned num_args() const { return msat_decl_get_arity(decl()); }
-
 	Sort arg_type(unsigned i) const;
+
+	void visit(visit_function func, void* data);
 
 	friend Expr operator !(Expr const &that);
 	friend Expr operator &&(Expr const &a, Expr const &b);

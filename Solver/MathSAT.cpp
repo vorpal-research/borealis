@@ -35,12 +35,9 @@ unsigned Sort::bv_size() const {
 
 /////////////////////////////////////////////////////////////////
 
-Expr Decl::operator ()(unsigned arity, const Expr* arg){
-	msat_term msat_arg[arity];
-	for(unsigned i=0; i < arity; i++) {
-		msat_arg[i] = (msat_term)arg[i];
-	}
-	auto new_term = msat_make_term(env_, decl_, msat_arg);
+Expr Decl::operator ()(const std::vector<Expr> arg) {
+	std::vector<msat_term> msat_arg = arg.data();
+	auto new_term = msat_make_term(env_, decl_, msat_arg.data());
 	ASERTMSAT_TERM
 	return Expr(env_, new_term);
 }
@@ -118,13 +115,9 @@ Expr Env::bv_val(int i, unsigned size) const {
 	return Expr(env_, new_term);
 }
 
-Decl Env::function(const std::string& name, unsigned arity, const Sort* params, const Sort& ret){
-	msat_type msat_param[arity];
-	for(unsigned i=0; i < arity; i++) {
-		msat_param[i] = (msat_type)params[i];
-	}
-
-	Sort func_type = Sort(msat_get_function_type(env_, msat_param, arity, ret), env_);
+Decl Env::function(const std::string& name, const std::vector<Sort> params, const Sort& ret) {
+	std::vector<msat_type> msat_param = params.data();
+	Sort func_type = Sort(msat_get_function_type(env_, msat_param.data(), params.size(), ret), env_);
 	msat_decl new_decl = msat_declare_function(env_, name.c_str(), func_type);
 	ASERTMSAT_DECL
 	return Decl(new_decl, env_);
@@ -145,6 +138,15 @@ Config::Config(FILE *f) {
 }
 
 //////////////////////////////////////////////////////////////////
+
+void Expr::visit(visit_function func, void* data) {
+	msat_visit_status (*wrapper)(msat_env, msat_term, int, void *) =
+			[&func](msat_env env, msat_term term, int preorder, void *data) -> msat_visit_status {
+						return func(Env(env), Expr(env, term), preorder, data);
+		};
+
+	msat_visit_term(env_, term_, wrapper, data);
+}
 
 Decl Expr::decl() const {
 	msat_decl ret = msat_term_get_decl(term_);
