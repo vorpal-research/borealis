@@ -6,7 +6,7 @@ CXX := clang++
 
 RTTIFLAG := -fno-rtti
 
-DEFS :=
+DEFS := -DGOOGLE_PROTOBUF_NO_RTTI
 
 INCLUDE_DIRS := \
 	/usr/include/z3
