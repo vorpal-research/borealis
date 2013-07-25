@@ -11,6 +11,8 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <string>
+#include <functional>
 #include <mathsat/mathsat.h>
 
 namespace mathsat{
@@ -49,21 +51,29 @@ public:
 	Expr rat_const(const std::string& name);
 	Expr bv_const(const std::string& name, const unsigned size);
 
-	Expr bool_val(bool b) const;
-	Expr num_val(int i) const;
-	Expr bv_val(int i, unsigned size) const;
+	Expr bool_val(bool b);
+	Expr num_val(int i);
+	Expr bv_val(int i, unsigned size);
 
 	Decl function(const std::string& name, const std::vector<Sort> params, const Sort& ret);
+	Decl function(const std::string& name, const Sort& param, const Sort& ret);
+	Decl function(const std::string& name, const Sort& param1, const Sort& param2, const Sort& ret);
+	Decl function(const std::string& name, const Sort& param1, const Sort& param2, const Sort& param3,
+			const Sort& ret);
+	Decl function(const std::string& name, const Sort& param1, const Sort& param2, const Sort& param3,
+			const Sort& param4, const Sort& ret);
+	Decl function(const std::string& name, const Sort& param1, const Sort& param2, const Sort& param3,
+			const Sort& param4, const Sort& param5,const Sort& ret);
 };
 
 ///////////////////////////////////////////////////////////////////
 
-class Sort {
+class Sort{
 private:
 	msat_type type_;
-	Env env_;
+	Env& env_;
 public:
-	Sort(const msat_type& type, const Env& env) : type_(type), env_(env) {}
+	Sort(const msat_type& type, Env& env) : type_(type), env_(env) {}
 
 	operator msat_type() const { return type_; }
 
@@ -73,7 +83,8 @@ public:
 	bool is_arith() const { return is_int() || is_rat(); }
 	bool is_bv() const { return msat_is_bv_type(env_, type_, nullptr); }
 	bool is_array() const { return msat_is_array_type(env_, type_, nullptr, nullptr); }
-	bool equals(Sort that) const { return msat_type_equals(type_, that.type_); }
+	bool equals(const Sort& that) const { return msat_type_equals(type_, that.type_); }
+
 
 	unsigned bv_size() const;
 };
@@ -83,9 +94,9 @@ public:
 class Decl {
 private:
 	msat_decl decl_;
-	Env env_;
+	Env& env_;
 public:
-	Decl(const msat_decl& decl, const Env& env) : decl_(decl), env_(env) {}
+	Decl(const msat_decl& decl, Env& env) : decl_(decl), env_(env) {}
 
 	operator msat_decl() const { return decl_; }
 
@@ -95,6 +106,11 @@ public:
 	std::string name() const { return msat_decl_get_name(decl_); }
 
 	Expr operator ()(const std::vector<Expr> arg);
+	Expr operator ()(const Expr& a);
+	Expr operator ()(const Expr& a1, const Expr& a2);
+	Expr operator ()(const Expr& a1, const Expr& a2, const Expr& a3);
+	Expr operator ()(const Expr& a1, const Expr& a2, const Expr& a3, const Expr& a4);
+	Expr operator ()(const Expr& a1, const Expr& a2, const Expr& a3, const Expr& a4, const Expr& a5);
 
 };
 
@@ -113,12 +129,12 @@ public:
 
 	operator msat_config() const { return config_; }
 
-	void set(char const *option, char const * value) { msat_set_option(config_, option, value); }
-	void set(char const *option, bool value) { msat_set_option(config_, option, value ? "true" : "false"); }
-	void set(char const *option, int value) {
+	void set(const std::string& option, char const * value) { msat_set_option(config_, option.c_str(), value); }
+	void set(const std::string& option, bool value) { msat_set_option(config_, option.c_str(), value ? "true" : "false"); }
+	void set(const std::string& option, int value) {
 		std::ostringstream oss;
 		oss << value;
-		msat_set_option(config_, option, oss.str().c_str());
+		msat_set_option(config_, option.c_str(), oss.str().c_str());
 	}
 
 	Env env() const { return Env(*this); }
@@ -127,17 +143,18 @@ public:
 
 //////////////////////////////////////////////////////////////////
 
-typedef std::function<msat_visit_status(Env, Expr, int, void *)> visit_function;
+using visit_function = msat_visit_status(*)(msat_env, msat_term, int, void *);
 
 class Expr {
 private:
-	Env env_;
+	Env& env_;
 	msat_term term_;
 
 	Sort get_type() const { return Sort(msat_term_get_type(term_), env_); }
 
 public:
-	Expr(const Env &env, const msat_term& term) : env_(env), term_(term) {}
+	Expr(Env &env, const msat_term& term) : env_(env), term_(term) {}
+	Expr(const Expr& that) : env_(that.env_), term_(that.term_) {}
 
 	operator msat_term() const { return term_; }
 	Env& env() const { return env_; }
@@ -205,6 +222,30 @@ public:
 	friend Expr operator ~(Expr const &a);
 
 	friend Expr iff(Expr const &a, Expr const &b);
+	friend Expr ite(const Expr& cond, const Expr& then_, const Expr& else_);
+	friend Expr concat(const Expr &a, const Expr &b);
+	friend Expr extract(const Expr &a, unsigned msb, unsigned lsb);
+	friend Expr lshl(const Expr &a, const Expr &b);
+	friend Expr lshr(const Expr &a, const Expr &b);
+	friend Expr ashr(const Expr &a, const Expr &b);
+	friend Expr udiv(const Expr &a, const Expr &b);
+	friend Expr udiv(const Expr &a, const int b);
+	friend Expr udiv(const int a, const Expr &b);
+	friend Expr comp(const Expr &a, const Expr &b);
+	friend Expr rol(const Expr &a, unsigned b);
+	friend Expr ror(const Expr &a, unsigned b);
+	friend Expr ule(const Expr &a, const Expr &b);
+	friend Expr ule(const Expr &a, const int b);
+	friend Expr ule(const int a, const Expr &b);
+	friend Expr ult(const Expr &a, const Expr &b);
+	friend Expr ult(const Expr &a, const int b);
+	friend Expr ult(const int a, const Expr &b);
+	friend Expr uge(const Expr &a, const Expr &b);
+	friend Expr uge(const Expr &a, const int b);
+	friend Expr uge(const int a, const Expr &b);
+	friend Expr ugt(const Expr &a, const Expr &b);
+	friend Expr ugt(const Expr &a, const int b);
+	friend Expr ugt(const int a, const Expr &b);
 
 	friend std::ostream& operator <<(std::ostream &out, const Expr& e) {
 		char *smtlib = msat_to_smtlib2(e.env_, e.term_);
@@ -213,9 +254,9 @@ public:
 		return out;
 	}
 
-	static Expr from_string(const Env& env, std::string data);
-	static Expr from_smtlib1(const Env& env, std::string data);
-	static Expr from_smtlib2(const Env& env, std::string data);
+	static Expr from_string(Env& env, std::string data);
+	static Expr from_smtlib1(Env& env, std::string data);
+	static Expr from_smtlib2(Env& env, std::string data);
 }; // class Expr
 
 ////////////////////////////////////////////////////////////////
@@ -233,17 +274,16 @@ public:
 
 class Solver {
 private:
-	Env env_;
+	Env& env_;
 
 public:
-	explicit Solver(Env env) : env_(env) {}
+	explicit Solver(Env& env) : env_(env) {}
 
 	void add(const Expr& e);
 
 	void push();
 	void pop();
 	unsigned num_backtrack() { return msat_num_backtrack_points(env_); }
-	void reset() { env_.reset(); }
 
 	msat_result check() { return msat_solve(env_); }
 	msat_result check(unsigned i, const Expr* assump);
