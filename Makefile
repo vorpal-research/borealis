@@ -195,13 +195,13 @@ PROTOEXT := $(PWD)/extract-protobuf-desc.awk
 # Deps management
 ################################################################################
 
-%.d: %.cpp
+%.d: %.cpp .protobuf
 	@$(CXX) $(CXXFLAGS) -MM $*.cpp > $*.d
 	@mv -f $*.d $*.dd
 	@sed -e 's|.*:|$*.o $*.d:|' < $*.dd > $*.d
 	@rm -f $*.dd
 
-%.d: %.cc
+%.d: %.cc .protobuf
 	@$(CXX) $(CXXFLAGS) -MM $*.cc > $*.d
 	@mv -f $*.d $*.dd
 	@sed -e 's|.*:|$*.o $*.d:|' < $*.dd > $*.d
