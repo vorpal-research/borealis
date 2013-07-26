@@ -38,7 +38,7 @@ public:
             t->transform(propName),
             t->transform(lhv),
             t->transform(rhv),
-            this->type
+            type
         };
     }
 
@@ -63,7 +63,7 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
         ASSERT(llvm::isa<ConstTerm>(p->getPropertyName()),
                "Property write with non-constant property name");
         auto* constPropName = llvm::cast<ConstTerm>(p->getPropertyName());
-        auto strPropName = getAsCompileTimeString(constPropName->getConstant());
+        auto strPropName = constPropName->getAsString();
         ASSERT(!strPropName.empty(),
                "Property write with unknown property name");
 

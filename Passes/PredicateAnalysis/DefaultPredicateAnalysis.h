@@ -11,10 +11,9 @@
 #include <llvm/Pass.h>
 #include <llvm/Target/TargetData.h>
 
+#include "Factory/Nest.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/Util/ProxyFunctionPass.h"
-#include "Predicate/PredicateFactory.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -38,8 +37,7 @@ public:
 
 private:
 
-    PredicateFactory::Ptr PF;
-    TermFactory::Ptr TF;
+    FactoryNest FN;
     llvm::TargetData* TD;
 
 };

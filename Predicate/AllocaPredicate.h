@@ -34,7 +34,7 @@ public:
         return new Self{
             t->transform(lhv),
             t->transform(numElements),
-            this->type
+            type
         };
     }
 
@@ -61,16 +61,10 @@ struct SMTImpl<Impl, AllocaPredicate> {
         auto lhvp = lhve.getUnsafe();
 
         unsigned long long elems = 1;
-        if (const ConstTerm* cnst = llvm::dyn_cast<ConstTerm>(p->getNumElems())) {
-            if (llvm::ConstantInt* intCnst = llvm::dyn_cast<llvm::ConstantInt>(cnst->getConstant())) {
-                elems = intCnst->getLimitedValue();
-            } else {
-                BYE_BYE(Bool, "Encountered alloca with non-integer element number");
-            }
-        } else if (const OpaqueIntConstantTerm* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(p->getNumElems())) {
+        if (auto* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(p->getNumElems())) {
             elems = cnst->getValue();
         } else {
-            BYE_BYE(Bool, "Encountered alloca with non-integer/non-constant element number");
+            BYE_BYE(Bool, "Encountered alloca with non-integer element number");
         }
 
         return lhvp == ctx->getDistinctPtr(elems);

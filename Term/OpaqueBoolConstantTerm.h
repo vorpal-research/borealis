@@ -16,11 +16,11 @@ class OpaqueBoolConstantTerm: public borealis::Term {
 
     bool value;
 
-    OpaqueBoolConstantTerm(bool value):
+    OpaqueBoolConstantTerm(Type::Ptr type, bool value):
         Term(
-            static_cast<id_t>(value),
-            value ? "true" : "false",
-            type_id(*this)
+            class_tag(*this),
+            type,
+            value ? "true" : "false"
         ), value(value) {};
 
 public:
@@ -32,10 +32,6 @@ public:
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
         return new Self( *this );
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getBool();
     }
 
 };

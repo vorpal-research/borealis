@@ -37,20 +37,16 @@ PredicateType predicateType(const Annotation* a);
 template<class SubClass> class Transformer;
 // End of forward declaration
 
-class Predicate {
+class Predicate : public ClassTag {
 
 public:
 
     typedef std::shared_ptr<const Predicate> Ptr;
 
-    Predicate(id_t predicate_type_id);
-    Predicate(id_t predicate_type_id, PredicateType type);
+    Predicate(id_t classTag);
+    Predicate(id_t classTag, PredicateType type);
     Predicate(const Predicate&) = default;
     virtual ~Predicate() {};
-
-    id_t getPredicateTypeId() const {
-        return predicate_type_id;
-    }
 
     PredicateType getType() const {
         return type;
@@ -87,19 +83,25 @@ public:
         return true;
     }
 
-    virtual bool equals(const Predicate* other) const = 0;
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        return type == other->type &&
+                location == other->location;
+    }
+
     bool operator==(const Predicate& other) const {
         if (this == &other) return true;
         return this->equals(&other);
     }
 
-    virtual size_t hashCode() const = 0;
+    virtual size_t hashCode() const {
+        return util::hash::defaultHasher()(classTag, type, location);
+    }
 
     virtual Predicate* clone() const = 0;
 
 protected:
 
-    const id_t predicate_type_id;
     PredicateType type;
     const llvm::Instruction* location;
 
@@ -130,7 +132,7 @@ public: \
         return true; \
     } \
     static bool classof(const Predicate* p) { \
-        return p->getPredicateTypeId() == type_id<Self>(); \
+        return p->getClassTag() == class_tag<Self>(); \
     } \
     virtual Predicate* clone() const override { \
         return new Self{ *this }; \

@@ -12,7 +12,7 @@ namespace borealis {
 GlobalsPredicate::GlobalsPredicate(
         const std::vector<Term::Ptr>& globals,
         PredicateType type) :
-            Predicate(type_id(*this), type),
+            Predicate(class_tag(*this), type),
             globals(globals) {
 
     using borealis::util::head;
@@ -27,19 +27,20 @@ GlobalsPredicate::GlobalsPredicate(
         }
     }
 
-    this->asString = "globals(" + a + ")";
+    asString = "globals(" + a + ")";
 }
 
 bool GlobalsPredicate::equals(const Predicate* other) const {
     if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return std::equal(globals.begin(), globals.end(), o->globals.begin(),
-            [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
-        );
+        return Predicate::equals(other) &&
+                std::equal(globals.begin(), globals.end(), o->globals.begin(),
+                    [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
+                );
     } else return false;
 }
 
 size_t GlobalsPredicate::hashCode() const {
-    return util::hash::defaultHasher()(type, globals);
+    return util::hash::defaultHasher()(Predicate::hashCode(), globals);
 }
 
 } /* namespace borealis */

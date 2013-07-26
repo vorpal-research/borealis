@@ -16,11 +16,11 @@ class LoadTerm: public borealis::Term {
 
     Term::Ptr rhv;
 
-    LoadTerm(Term::Ptr rhv):
+    LoadTerm(Type::Ptr type, Term::Ptr rhv):
         Term(
-                rhv->hashCode(),
-                "*(" + rhv->getName() + ")",
-                type_id(*this)
+            class_tag(*this),
+            type,
+            "*(" + rhv->getName() + ")"
         ), rhv(rhv) {};
 
 public:
@@ -31,7 +31,9 @@ public:
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
-        return new Self{ tr->transform(rhv) };
+        auto _rhv = tr->transform(rhv);
+        auto _type = getTermType(tr->FN.Type, _rhv);
+        return new Self{ _type, _rhv };
     }
 
     virtual bool equals(const Term* other) const override {
@@ -41,16 +43,21 @@ public:
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
-        auto ptr = rhv->getTermType();
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), rhv);
+    }
 
-        if (!tf.isValid(ptr)) return ptr;
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
+        auto type = rhv->getType();
 
-        if (auto* cst = llvm::dyn_cast<type::Pointer>(ptr)) {
-            return cst->getPointed();
+        if (!TyF->isValid(type)) return type;
+
+        if (auto* ptr = llvm::dyn_cast<type::Pointer>(type)) {
+            return ptr->getPointed();
         } else {
-            return tf.getTypeError("Load from a non-pointer");
+            return TyF->getTypeError(
+                "Load from a non-pointer: " + TyF->toString(*type)
+            );
         }
     }
 
@@ -72,7 +79,7 @@ struct SMTImpl<Impl, LoadTerm> {
         ASSERT(!r.empty(), "Load with non-pointer right side");
         auto rp = r.getUnsafe();
 
-        return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getTermType()));
+        return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getType()));
     }
 };
 #include "Util/unmacros.h"

@@ -14,14 +14,12 @@
 #include <list>
 #include <unordered_map>
 
+#include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Util/ProxyFunctionPass.h"
-#include "Predicate/PredicateFactory.h"
-#include "State/PredicateStateFactory.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -59,9 +57,7 @@ private:
     FunctionManager* FM;
     llvm::DominatorTree* DT;
 
-    PredicateStateFactory::Ptr PSF;
-    PredicateFactory::Ptr PF;
-    TermFactory::Ptr TF;
+    FactoryNest FN;
 
     virtual void init() override;
 

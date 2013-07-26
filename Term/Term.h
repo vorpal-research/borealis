@@ -21,7 +21,7 @@ namespace borealis {
 template<class SubClass> class Transformer;
 // End of forward declarations
 
-class Term {
+class Term : public ClassTag {
 
 public:
 
@@ -29,30 +29,26 @@ public:
 
 protected:
 
-    Term(id_t id, const std::string& name, id_t term_type_id) :
-        id(id), term_type_id(term_type_id), name(name) {};
+    Term(id_t classTag, Type::Ptr type, const std::string& name) :
+        ClassTag(classTag), type(type), name(name) {};
     Term(const Term&) = default;
     virtual ~Term() {};
 
 public:
 
-    id_t getId() const {
-        return id;
+    Type::Ptr getType() const {
+        return type;
     }
 
     const std::string& getName() const {
         return name;
     }
 
-    id_t getTermTypeId() const {
-        return term_type_id;
-    }
-
     virtual bool equals(const Term* other) const {
         if (other == nullptr) return false;
-        return this->id == other->id &&
-                this->term_type_id == other->term_type_id &&
-                this->name == other->name;
+        return classTag == other->classTag &&
+                type == other->type &&
+                name == other->name;
     }
 
     bool operator==(const Term& other) const {
@@ -60,25 +56,17 @@ public:
         return this->equals(&other);
     }
 
-    size_t hashCode() const {
-        return static_cast<size_t>(id) ^
-               static_cast<size_t>(term_type_id) ^
-               std::hash<std::string>()(name);
+    virtual size_t hashCode() const {
+        return util::hash::defaultHasher()(classTag, type, name);
     }
 
     static bool classof(const Term*) {
         return true;
     }
 
-    virtual Type::Ptr getTermType() const = 0;
-
-private:
-
-    const id_t id;
-    const id_t term_type_id;
-
 protected:
 
+    Type::Ptr type;
     std::string name;
 
 };
@@ -111,7 +99,7 @@ public: \
         return true; \
     } \
     static bool classof(const Term* t) { \
-        return t->getTermTypeId() == type_id<Self>(); \
+        return t->getClassTag() == class_tag<Self>(); \
     }
 
 #endif /* TERM_H_ */

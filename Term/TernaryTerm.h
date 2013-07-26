@@ -18,11 +18,11 @@ class TernaryTerm: public borealis::Term {
     Term::Ptr tru;
     Term::Ptr fls;
 
-    TernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls):
+    TernaryTerm(Type::Ptr type, Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls):
         Term(
-            cnd->hashCode() ^ tru->hashCode() ^ fls->hashCode(),
-            "(" + cnd->getName() + " ? " + tru->getName() + " : " + fls->getName() + ")",
-            type_id(*this)
+            class_tag(*this),
+            type,
+            "(" + cnd->getName() + " ? " + tru->getName() + " : " + fls->getName() + ")"
         ), cnd(cnd), tru(tru), fls(fls) {};
 
 public:
@@ -35,7 +35,11 @@ public:
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
-        return new Self{ tr->transform(cnd), tr->transform(tru), tr->transform(fls) };
+        auto _cnd = tr->transform(cnd);
+        auto _tru = tr->transform(tru);
+        auto _fls = tr->transform(fls);
+        auto _type = getTermType(tr->FN.Type, _cnd, _tru, _fls);
+        return new Self{ _type, _cnd, _tru, _fls };
     }
 
     virtual bool equals(const Term* other) const override {
@@ -47,9 +51,12 @@ public:
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
-        return tf.merge(tru->getTermType(), fls->getTermType());
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), cnd, tru, fls);
+    }
+
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr, Term::Ptr tru, Term::Ptr fls) {
+        return TyF->merge(tru->getType(), fls->getType());
     }
 
 };

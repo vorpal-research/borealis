@@ -9,8 +9,8 @@
 
 #include "Util/cast.hpp"
 
+#include "Factory/Nest.h"
 #include "Logging/logger.hpp"
-#include "Term/TermFactory.h"
 
 namespace {
 
@@ -22,10 +22,10 @@ TEST(Cast, visit) {
     {
         using borealis::util::visit;
 
-        auto tf = TermFactory::get(nullptr);
+        auto TF = FactoryNest(nullptr).Term;
         auto check = false;
 
-        auto trm = tf->getOpaqueConstantTerm(true);
+        auto trm = TF->getOpaqueConstantTerm(true);
         visit(*trm)
             .oncase<OpaqueIntConstantTerm>([&](const OpaqueIntConstantTerm&){
                 check = false;
@@ -35,7 +35,7 @@ TEST(Cast, visit) {
             });
         EXPECT_TRUE(check);
 
-        auto trm2 = tf->getOpaqueConstantTerm(false);
+        auto trm2 = TF->getOpaqueConstantTerm(false);
         check = visit(*trm2)
                     .on<OpaqueBoolConstantTerm>([&](const OpaqueBoolConstantTerm& b){
                         return b.getValue();
@@ -48,9 +48,9 @@ TEST(Cast, visit) {
 
 TEST(Cast, pair_matcher) {
     {
-        auto tf = TermFactory::get(nullptr);
-        auto lhv = tf->getOpaqueConstantTerm(true);
-        auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
+        auto TF = FactoryNest(nullptr).Term;
+        auto lhv = TF->getOpaqueConstantTerm(true);
+        auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
         if (auto matched = match_pair<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
             EXPECT_EQ(true, matched->first->getValue());
@@ -68,9 +68,9 @@ TEST(Cast, pair_matcher) {
 
 TEST(Cast, tuple_matcher) {
     {
-        auto tf = TermFactory::get(nullptr);
-        auto lhv = tf->getOpaqueConstantTerm(true);
-        auto rhv = tf->getOpaqueConstantTerm(0xC0DEBEEFLL);
+        auto TF = FactoryNest(nullptr).Term;
+        auto lhv = TF->getOpaqueConstantTerm(true);
+        auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEFLL);
 
         if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
             EXPECT_EQ(true, matched->get<0>()->getValue());

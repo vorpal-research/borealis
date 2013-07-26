@@ -31,15 +31,15 @@ public:
         auto& im = IntrinsicsManager::getInstance();
         if (im.getIntrinsicType(CI) == function_type::INTRINSIC_ANNOTATION) {
             Annotation::Ptr anno =
-                    materialize(Annotation::fromIntrinsic(CI), pass->TF.get(), pass->MI);
+                    materialize(Annotation::fromIntrinsic(CI), pass->FN, pass->MI);
             if (llvm::isa<AssumeAnnotation>(anno)) {
                 LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 pass->PM[&CI] =
-                        pass->PF->getEqualityPredicate(
-                                LA->getTerm(),
-                                pass->TF->getTrueTerm(),
-                                predicateType(LA)
-                        );
+                    pass->FN.Predicate->getEqualityPredicate(
+                        LA->getTerm(),
+                        pass->FN.Term->getTrueTerm(),
+                        predicateType(LA)
+                    );
             }
         }
     }
@@ -70,9 +70,8 @@ bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
 
     MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
 
-    auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    PF = PredicateFactory::get(ST);
-    TF = TermFactory::get(ST);
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     APAInstVisitor visitor(this);
     visitor.visit(F);

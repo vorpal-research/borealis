@@ -14,8 +14,8 @@
 namespace borealis {
 
 class TypeFactory {
+
     TypeFactory();
-    ~TypeFactory();
 
     Type::Ptr theBool;
     Type::Ptr theInteger;
@@ -25,8 +25,11 @@ class TypeFactory {
     std::map<std::string, Type::Ptr> errors;
 
 public:
-    static TypeFactory& getInstance() {
-        static TypeFactory instance;
+
+    typedef std::shared_ptr<TypeFactory> Ptr;
+
+    static TypeFactory::Ptr get() {
+        static TypeFactory::Ptr instance(new TypeFactory());
         return instance;
     }
 
@@ -106,7 +109,11 @@ public:
         if(isUnknown(two)) return one;
         if(one == two) return one;
 
-        BYE_BYE(Type::Ptr, "Unmergeable types");
+        return getTypeError(
+            "Unmergeable types: " +
+            toString(*one) + " and " +
+            toString(*two)
+        );
     }
 #include "Util/unmacros.h"
 

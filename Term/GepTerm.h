@@ -17,65 +17,58 @@ class GepTerm: public borealis::Term {
     typedef std::pair<Term::Ptr, Term::Ptr> Shift;
     typedef std::vector<Shift> Shifts;
 
-    Term::Ptr v;
+    Term::Ptr base;
     const Shifts shifts;
-    const llvm::Type* type;
 
-    GepTerm(
-            Term::Ptr v,
-            const Shifts& shifts,
-            const llvm::Type* type
-    ) : Term(
-            v->hashCode() ^ std::hash<Shifts>()(shifts),
-            "gep(" + v->getName() + "," +
+    GepTerm(Type::Ptr type, Term::Ptr base, const Shifts& shifts) :
+        Term(
+            class_tag(*this),
+            type,
+            "gep(" + base->getName() + "," +
                 std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
                     [](const std::string& a, const Shift& shift) {
                         return a + "+" + shift.first->getName() + "*" + shift.second->getName();
                     }
                 ) +
-            ")",
-            type_id(*this)
-        ), v(v), shifts(shifts), type(type) {}
+            ")"
+        ), base(base), shifts(shifts) {};
 
 public:
 
     MK_COMMON_TERM_IMPL(GepTerm);
 
-    Term::Ptr getBase() const { return v; }
+    Term::Ptr getBase() const { return base; }
     const Shifts& getShifts() const { return shifts; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* t) const -> const Self* {
-        Shifts transformedShifts;
-        transformedShifts.reserve(shifts.size());
-
-        std::transform(shifts.begin(), shifts.end(), std::back_inserter(transformedShifts),
-            [&t](const Shift& shift) {
-                return std::make_pair(t->transform(shift.first), t->transform(shift.second));
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        Shifts _shifts;
+        _shifts.reserve(shifts.size());
+        std::transform(shifts.begin(), shifts.end(), std::back_inserter(_shifts),
+            [&tr](const Shift& shift) {
+                return std::make_pair(tr->transform(shift.first), tr->transform(shift.second));
             }
         );
 
-        return new Self{
-            t->transform(v),
-            transformedShifts,
-            type
-        };
+        auto _base = tr->transform(base);
+        auto _type = type;
+        return new Self{ _type, _base, _shifts };
     }
 
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                    *that->v == *v &&
+                    *that->base == *base &&
                     std::equal(shifts.begin(), shifts.end(), that->shifts.begin(),
-                        [](const Shift& e1, const Shift& e2) {
-                            return *e1.first == *e2.first && *e1.second == *e2.second;
+                        [](const Shift& a, const Shift& b) {
+                            return *a.first == *b.first && *a.second == *b.second;
                         }
                     );
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(type);
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), base, shifts);
     }
 
 };

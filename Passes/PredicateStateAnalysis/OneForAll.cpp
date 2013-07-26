@@ -42,11 +42,8 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
     DT = &GetAnalysis< llvm::DominatorTree >::doit(this, F);
 
-    auto* ST = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
-    PF = PredicateFactory::get(ST);
-    TF = TermFactory::get(ST);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
@@ -58,14 +55,14 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     std::vector<Term::Ptr> globals;
     globals.reserve(globalList.size());
     for (auto& g : globalList) {
-        globals.push_back(TF->getValueTerm(&g));
+        globals.push_back(FN.Term->getValueTerm(&g));
     }
-    Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
+    Predicate::Ptr gPredicate = FN.Predicate->getGlobalsPredicate(globals);
 
     // Register REQUIRES
     PredicateState::Ptr requires = FM->getReq(&F);
 
-    PredicateState::Ptr initialState = (PSF * gPredicate + requires)();
+    PredicateState::Ptr initialState = (FN.State * gPredicate + requires)();
 
     // Register arguments as visited values
     for (const auto& arg : F.getArgumentList()) {
@@ -114,7 +111,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
     for (const auto& I : view(BB->begin(), BB->end())) {
 
-        auto instructionState = (PSF * inState + PM(&I))();
+        auto instructionState = (FN.State * inState + PM(&I))();
         instructionStates[&I] = instructionState;
 
         // Add ensures and summary *after* the CallInst has been processed
@@ -122,17 +119,17 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
             auto& CI = cast<CallInst>(I);
 
             auto callState = (
-                PSF *
-                FM->getBdy(CI, PF.get(), TF.get()) +
-                FM->getEns(CI, PF.get(), TF.get())
+                FN.State *
+                FM->getBdy(CI, FN) +
+                FM->getEns(CI, FN)
             )();
-            auto t = CallSiteInitializer(CI, TF.get());
+            auto t = CallSiteInitializer(CI, FN);
 
             auto instantiatedCallState = callState->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            instructionState = (PSF * instructionState + instantiatedCallState)();
+            instructionState = (FN.State * instructionState + instantiatedCallState)();
         }
 
         inState = instructionState;
@@ -169,7 +166,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         // predecessor is unreachable
         if (!containsKey(basicBlockStates, predBB)) continue;
 
-        auto stateBuilder = PSF * basicBlockStates.at(predBB);
+        auto stateBuilder = FN.State * basicBlockStates.at(predBB);
 
         // Adding path predicate from predBB
         stateBuilder += TPM({predBB->getTerminator(), BB});
@@ -197,16 +194,16 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         return nullptr;
     else
         return (
-            PSF *
+            FN.State *
             base +
-            PSF->Choice(choices)
+            FN.State->Choice(choices)
         )();
 }
 
 PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {
     using borealis::util::containsKey;
 
-    PredicateState::Ptr res = PSF->Basic();
+    PredicateState::Ptr res = FN.State->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPredicateMap();
@@ -221,7 +218,7 @@ PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {
 PredicateState::Ptr OneForAll::PPM(PhiBranch key) {
     using borealis::util::containsKey;
 
-    PredicateState::Ptr res = PSF->Basic();
+    PredicateState::Ptr res = FN.State->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPhiPredicateMap();
@@ -236,7 +233,7 @@ PredicateState::Ptr OneForAll::PPM(PhiBranch key) {
 PredicateState::Ptr OneForAll::TPM(TerminatorBranch key) {
     using borealis::util::containsKey;
 
-    PredicateState::Ptr res = PSF->Basic();
+    PredicateState::Ptr res = FN.State->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getTerminatorPredicateMap();

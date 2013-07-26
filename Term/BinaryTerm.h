@@ -18,11 +18,11 @@ class BinaryTerm: public borealis::Term {
     Term::Ptr lhv;
     Term::Ptr rhv;
 
-    BinaryTerm(llvm::ArithType opcode, Term::Ptr lhv, Term::Ptr rhv):
+    BinaryTerm(Type::Ptr type, llvm::ArithType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->hashCode() ^ rhv->hashCode() ^ std::hash<llvm::ArithType>()(opcode),
-                "(" + lhv->getName() + " " + llvm::arithString(opcode) + " " + rhv->getName() + ")",
-                type_id(*this)
+            class_tag(*this),
+            type,
+            "(" + lhv->getName() + " " + llvm::arithString(opcode) + " " + rhv->getName() + ")"
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};
 
 public:
@@ -35,7 +35,10 @@ public:
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
-        return new Self{ opcode, tr->transform(lhv), tr->transform(rhv) };
+        auto _lhv = tr->transform(lhv);
+        auto _rhv = tr->transform(rhv);
+        auto _type = getTermType(tr->FN.Type, _lhv, _rhv);
+        return new Self{ _type, opcode, _lhv, _rhv };
     }
 
     virtual bool equals(const Term* other) const override {
@@ -47,9 +50,12 @@ public:
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
-        return tf.merge(lhv->getTermType(), rhv->getTermType());
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), opcode, lhv, rhv);
+    }
+
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr lhv, Term::Ptr rhv) {
+        return TyF->merge(lhv->getType(), rhv->getType());
     }
 
 };

@@ -15,9 +15,7 @@
 
 #include <unordered_map>
 
-#include "Predicate/PredicateFactory.h"
 #include "State/Transformer/Transformer.hpp"
-#include "Term/TermFactory.h"
 
 #include "Util/macros.h"
 
@@ -25,20 +23,21 @@ namespace borealis {
 
 class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
 
+    typedef borealis::Transformer<CallSiteInitializer> Base;
+
 public:
 
     CallSiteInitializer(
             llvm::CallInst& CI,
-            TermFactory* TF) {
+            FactoryNest FN) : Base(FN) {
 
         using borealis::util::toString;
 
-        this->returnValue = &CI;
+        returnValue = &CI;
 
-        int argIdx = 0;
-        for (auto& formal : CI.getCalledFunction()->getArgumentList()) {
-            auto* actual = CI.getArgOperand(argIdx++);
-            callSiteArguments[&formal] = actual;
+        int argNum = CI.getCalledFunction()->getArgumentList().size();
+        for (int argIdx = 0; argIdx < argNum; ++argIdx) {
+            callSiteArguments[argIdx] = CI.getArgOperand(argIdx);
         }
 
         auto* callerFunc = CI.getParent()->getParent();
@@ -52,8 +51,6 @@ public:
                               : toString(callerInst);
 
         prefix = callerFuncName + "." + callerInstName + ".";
-
-        this->TF = TF;
     }
 
     Predicate::Ptr transformPredicate(Predicate::Ptr p) {
@@ -68,18 +65,18 @@ public:
     }
 
     Term::Ptr transformArgumentTerm(ArgumentTermPtr t) {
-        auto* formal = t->getArgument();
+        auto argIdx = t->getIdx();
 
-        ASSERT(callSiteArguments.count(formal) > 0,
+        ASSERT(callSiteArguments.count(argIdx) > 0,
                "Cannot find an actual function argument at call site");
 
-        auto* actual = callSiteArguments[formal];
+        auto* actual = callSiteArguments.at(argIdx);
 
-        return TF->getValueTerm(actual);
+        return FN.Term->getValueTerm(actual);
     }
 
     Term::Ptr transformReturnValueTerm(ReturnValueTermPtr) {
-        return TF->getValueTerm(returnValue);
+        return FN.Term->getValueTerm(returnValue);
     }
 
     Term::Ptr transformValueTerm(ValueTermPtr t) {
@@ -89,13 +86,11 @@ public:
 
 private:
 
-    typedef std::unordered_map<llvm::Argument*, llvm::Value*> CallSiteArguments;
+    typedef std::unordered_map<unsigned int, llvm::Value*> CallSiteArguments;
 
     llvm::Value* returnValue;
     CallSiteArguments callSiteArguments;
     std::string prefix;
-
-    TermFactory* TF;
 
 };
 

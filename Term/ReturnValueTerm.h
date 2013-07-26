@@ -17,28 +17,20 @@ namespace borealis {
 
 class ReturnValueTerm: public borealis::Term {
 
-    llvm::Function* F;
-
-    ReturnValueTerm(llvm::Function* F, SlotTracker*) :
+    ReturnValueTerm(Type::Ptr type, const std::string& functionName) :
         Term(
-            std::hash<llvm::Function*>()(F),
-            "\\result_" + F->getName().str(),
-            type_id(*this)
-        ), F(F) {}
+            class_tag(*this),
+            type,
+            "\\result_" + functionName
+        ) {};
 
 public:
 
     MK_COMMON_TERM_IMPL(ReturnValueTerm);
 
-    llvm::Function* getFunction() const { return F; }
-
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
         return new Self( *this );
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(F->getFunctionType()->getReturnType());
     }
 
 };
@@ -49,7 +41,7 @@ struct SMTImpl<Impl, ReturnValueTerm> {
             const ReturnValueTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
-        return ef.getVarByTypeAndName(t->getTermType(), t->getName());
+        return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };
 

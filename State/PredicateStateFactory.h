@@ -10,10 +10,8 @@
 
 #include <memory>
 
-#include "State/BasicPredicateState.h"
 #include "State/PredicateState.h"
-#include "State/PredicateStateChain.h"
-#include "State/PredicateStateChoice.h"
+#include "State/PredicateState.def"
 
 namespace borealis {
 
@@ -37,7 +35,8 @@ public:
     PredicateState::Ptr Basic();
 
     static PredicateStateFactory::Ptr get() {
-        return PredicateStateFactory::Ptr(new PredicateStateFactory());
+        static PredicateStateFactory::Ptr instance(new PredicateStateFactory());
+        return instance;
     }
 
 private:

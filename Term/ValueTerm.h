@@ -19,25 +19,20 @@ class ValueTerm: public borealis::Term {
 
     typedef std::unique_ptr<ValueTerm> SelfPtr;
 
-    llvm::Value* v;
-
-    ValueTerm(llvm::Value* v, SlotTracker* st) :
-        Term(std::hash<llvm::Value*>()(v), st->getLocalName(v), type_id(*this)),
-        v(v) {}
+    ValueTerm(Type::Ptr type, const std::string& name) :
+        Term(
+            class_tag(*this),
+            type,
+            name
+        ) {};
 
 public:
 
     MK_COMMON_TERM_IMPL(ValueTerm);
 
-    llvm::Value* getValue() const { return v; }
-
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
         return new Self( *this );
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(v->getType());
     }
 
     Term::Ptr withNewName(const std::string& name) const {
@@ -54,7 +49,7 @@ struct SMTImpl<Impl, ValueTerm> {
             const ValueTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
-        return ef.getVarByTypeAndName(t->getTermType(), t->getName());
+        return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };
 

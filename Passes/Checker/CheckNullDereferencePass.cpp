@@ -100,10 +100,10 @@ public:
                << "  at: " << where << endl;
 
         PredicateState::Ptr q = (
-            pass->PSF *
-            pass->PF->getInequalityPredicate(
-                pass->TF->getValueTerm(&what),
-                pass->TF->getNullPtrTerm()
+            pass->FN.State *
+            pass->FN.Predicate->getInequalityPredicate(
+                pass->FN.Term->getValueTerm(&what),
+                pass->FN.Term->getNullPtrTerm()
             )
         )();
 
@@ -165,12 +165,9 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
-    ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
 
-    PF = PredicateFactory::get(ST);
-    TF = TermFactory::get(ST);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);

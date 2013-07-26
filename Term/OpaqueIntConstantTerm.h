@@ -16,11 +16,11 @@ class OpaqueIntConstantTerm: public borealis::Term {
 
     long long value;
 
-    OpaqueIntConstantTerm(long long value):
+    OpaqueIntConstantTerm(Type::Ptr type, long long value):
         Term(
-            static_cast<id_t>(value),
-            borealis::util::toString(value),
-            type_id(*this)
+            class_tag(*this),
+            type,
+            util::toString(value)
         ), value(value) {};
 
 public:
@@ -32,10 +32,6 @@ public:
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
         return new Self( *this );
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getInteger();
     }
 
 };

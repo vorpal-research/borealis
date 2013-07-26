@@ -6,8 +6,8 @@
  */
 
 #include "Annotation/AnnotationCast.h"
+#include "Factory/Nest.h"
 #include "Passes/Manager/AnnotationManager.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
@@ -26,13 +26,13 @@ bool AnnotationManager::runOnModule(llvm::Module& M) {
     auto& cmnts = GetAnalysis< comments >::doit(this);
 
     auto* st = GetAnalysis< slots >::doit(this).getSlotTracker(M);
-    auto tf = TermFactory::get(st);
+    auto fn = FactoryNest(st);
 
     for (const auto& c : cmnts.provide().getComments()) {
         const auto& loc = c.first;
         const auto& cmd = c.second;
 
-        annotations.push_back(fromParseResult(loc, cmd, tf.get()));
+        annotations.push_back(fromParseResult(loc, cmd, fn.Term));
     }
 
     return false;

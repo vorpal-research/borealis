@@ -18,11 +18,11 @@ class CmpTerm: public borealis::Term {
     Term::Ptr lhv;
     Term::Ptr rhv;
 
-    CmpTerm(llvm::ConditionType opcode, Term::Ptr lhv, Term::Ptr rhv):
+    CmpTerm(Type::Ptr type, llvm::ConditionType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->hashCode() ^ rhv->hashCode() ^ std::hash<llvm::ConditionType>()(opcode),
-                "(" + lhv->getName() + " " + llvm::conditionString(opcode) + " " + rhv->getName() + ")",
-                type_id(*this)
+            class_tag(*this),
+            type,
+            "(" + lhv->getName() + " " + llvm::conditionString(opcode) + " " + rhv->getName() + ")"
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};
 
 public:
@@ -35,7 +35,10 @@ public:
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
-        return new Self{ opcode, tr->transform(lhv), tr->transform(rhv) };
+        auto _lhv = tr->transform(lhv);
+        auto _rhv = tr->transform(rhv);
+        auto _type = getTermType(tr->FN.Type, _lhv, _rhv);
+        return new Self{ _type, opcode, _lhv, _rhv };
     }
 
     virtual bool equals(const Term* other) const override {
@@ -47,17 +50,15 @@ public:
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), opcode, lhv, rhv);
+    }
 
-        if (!tf.isValid(rhv->getTermType())) return rhv->getTermType();
-        if (!tf.isValid(lhv->getTermType())) return lhv->getTermType();
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr lhv, Term::Ptr rhv) {
+        auto merged = TyF->merge(lhv->getType(), rhv->getType());
 
-        if (rhv->getTermType() != lhv->getTermType()) {
-            return tf.getTypeError("Invalid cmp: types do not correspond");
-        }
-
-        return tf.getBool();
+        if (TyF->isValid(merged)) return TyF->getBool();
+        else return merged;
     }
 
 };

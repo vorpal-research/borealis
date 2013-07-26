@@ -14,27 +14,28 @@ WritePropertyPredicate::WritePropertyPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
         PredicateType type) :
-            Predicate(type_id(*this), type),
+            Predicate(class_tag(*this), type),
             propName(propName),
             lhv(lhv),
             rhv(rhv) {
-    this->asString = "write(" +
-            this->propName->getName() + "," +
-            this->lhv->getName() + "," +
-            this->rhv->getName() +
+    asString = "write(" +
+            propName->getName() + "," +
+            lhv->getName() + "," +
+            rhv->getName() +
         ")";
 }
 
 bool WritePropertyPredicate::equals(const Predicate* other) const {
     if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return *this->propName == *o->propName &&
-                *this->lhv == *o->lhv &&
-                *this->rhv == *o->rhv;
+        return Predicate::equals(other) &&
+                *propName == *o->propName &&
+                *lhv == *o->lhv &&
+                *rhv == *o->rhv;
     } else return false;
 }
 
 size_t WritePropertyPredicate::hashCode() const {
-    return util::hash::defaultHasher()(type, propName, lhv, rhv);
+    return util::hash::defaultHasher()(Predicate::hashCode(), propName, lhv, rhv);
 }
 
 } /* namespace borealis */

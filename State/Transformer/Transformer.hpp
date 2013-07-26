@@ -10,25 +10,32 @@
 
 #include <llvm/Support/Casting.h>
 
-#include "Predicate/PredicateFactory.h"
-#include "Term/TermFactory.h"
+#include "Factory/Nest.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 
-#define HANDLE_PREDICATE(NAME, CLASS) class CLASS;
-#include "Predicate/Predicate.def"
-
-#define HANDLE_TERM(NAME, CLASS) class CLASS;
-#include "Term/Term.def"
-
 #define DELEGATE(CLASS, WHAT) \
     return static_cast<SubClass*>(this)->transform##CLASS(WHAT);
 
 template<class SubClass>
 class Transformer {
+
+#define HANDLE_PREDICATE(NAME, CLASS) friend class CLASS;
+#include "Predicate/Predicate.def"
+
+#define HANDLE_TERM(NAME, CLASS) friend class CLASS;
+#include "Term/Term.def"
+
+protected:
+
+    FactoryNest FN;
+
+public:
+
+    Transformer(FactoryNest FN) : FN(FN) {};
 
     ////////////////////////////////////////////////////////////////////////////
     //

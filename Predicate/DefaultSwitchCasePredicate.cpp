@@ -15,7 +15,7 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         Term::Ptr cond,
         std::vector<Term::Ptr> cases,
         PredicateType type) :
-            Predicate(type_id(*this), type),
+            Predicate(class_tag(*this), type),
             cond(cond),
             cases(cases) {
 
@@ -31,20 +31,21 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         }
     }
 
-    this->asString = this->cond->getName() + "=not(" + a + ")";
+    asString = cond->getName() + "=not(" + a + ")";
 }
 
 bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
     if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return *this->cond == *o->cond &&
-            std::equal(cases.begin(), cases.end(), o->cases.begin(),
-                [](const Term::Ptr& e1, const Term::Ptr& e2) { return *e1 == *e2; }
-            );
+        return Predicate::equals(other) &&
+                *cond == *o->cond &&
+                std::equal(cases.begin(), cases.end(), o->cases.begin(),
+                    [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
+                );
     } else return false;
 }
 
 size_t DefaultSwitchCasePredicate::hashCode() const {
-    return util::hash::defaultHasher()(type, cond, cases);
+    return util::hash::defaultHasher()(Predicate::hashCode(), cond, cases);
 }
 
 } /* namespace borealis */

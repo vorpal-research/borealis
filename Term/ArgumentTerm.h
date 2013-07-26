@@ -17,25 +17,35 @@ namespace borealis {
 
 class ArgumentTerm: public borealis::Term {
 
-    llvm::Argument* a;
+    unsigned int idx;
 
-    ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
-        Term(std::hash<llvm::Argument*>()(a), st->getLocalName(a), type_id(*this)),
-        a(a) {}
+    ArgumentTerm(Type::Ptr type, unsigned int idx, const std::string& name) :
+        Term(
+            class_tag(*this),
+            type,
+            name
+        ), idx(idx) {}
 
 public:
 
     MK_COMMON_TERM_IMPL(ArgumentTerm);
 
-    llvm::Argument* getArgument() const { return a; }
+    unsigned getIdx() const { return idx; }
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
         return new Self( *this );
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(a->getType());
+    virtual bool equals(const Term* other) const override {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
+                    that->idx == idx;
+        } else return false;
+    }
+
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), idx);
     }
 
 };
@@ -46,7 +56,7 @@ struct SMTImpl<Impl, ArgumentTerm> {
             const ArgumentTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
-        return ef.getVarByTypeAndName(t->getTermType(), t->getName());
+        return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };
 

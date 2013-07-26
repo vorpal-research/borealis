@@ -16,11 +16,11 @@ class OpaqueVarTerm: public borealis::Term {
 
     std::string vname;
 
-    OpaqueVarTerm(const std::string& vname):
+    OpaqueVarTerm(Type::Ptr type, const std::string& vname):
         Term(
-             std::hash<std::string>()(vname),
-             vname,
-             type_id(*this)
+            class_tag(*this),
+            type,
+            vname
         ), vname(vname) {};
 
 public:
@@ -32,17 +32,6 @@ public:
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
         return new Self( *this );
-    }
-
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    that->vname == vname;
-        } else return false;
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getUnknown();
     }
 
 };

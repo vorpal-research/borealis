@@ -13,21 +13,22 @@ AllocaPredicate::AllocaPredicate(
         Term::Ptr lhv,
         Term::Ptr numElements,
         PredicateType type) :
-            Predicate(type_id(*this), type),
+            Predicate(class_tag(*this), type),
             lhv(lhv),
             numElements(numElements) {
-    this->asString = this->lhv->getName() + "=alloca(" + this->numElements->getName() + ")";
+    asString = lhv->getName() + "=alloca(" + numElements->getName() + ")";
 }
 
 bool AllocaPredicate::equals(const Predicate* other) const {
     if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return *this->lhv == *o->lhv &&
-                *this->numElements == *o->numElements;
+        return Predicate::equals(other) &&
+                *lhv == *o->lhv &&
+                *numElements == *o->numElements;
     } else return false;
 }
 
 size_t AllocaPredicate::hashCode() const {
-    return util::hash::defaultHasher()(type, lhv, numElements);
+    return util::hash::defaultHasher()(Predicate::hashCode(), lhv, numElements);
 }
 
 } /* namespace borealis */

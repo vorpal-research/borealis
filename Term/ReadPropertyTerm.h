@@ -8,7 +8,6 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
-#include "Codegen/llvm.h"
 #include "Term/ConstTerm.h"
 #include "Term/Term.h"
 
@@ -18,14 +17,13 @@ class ReadPropertyTerm: public borealis::Term {
 
     Term::Ptr propName;
     Term::Ptr rhv;
-    Type::Ptr type;
 
-    ReadPropertyTerm(Term::Ptr propName, Term::Ptr rhv, Type::Ptr type):
+    ReadPropertyTerm(Type::Ptr type, Term::Ptr propName, Term::Ptr rhv):
         Term(
-            util::hash::defaultHasher()(propName, rhv, type),
-            "read(" + propName->getName() + "," + rhv->getName() + ")",
-            type_id(*this)
-        ), propName(propName), rhv(rhv), type(type) {};
+            class_tag(*this),
+            type,
+            "read(" + propName->getName() + "," + rhv->getName() + ")"
+        ), propName(propName), rhv(rhv) {};
 
 public:
 
@@ -33,24 +31,25 @@ public:
 
     Term::Ptr getPropertyName() const { return propName; }
     Term::Ptr getRhv() const { return rhv; }
-    Type::Ptr getType() const { return type; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
-        return new Self{ tr->transform(propName), tr->transform(rhv), type };
+        auto _propName = tr->transform(propName);
+        auto _rhv = tr->transform(rhv);
+        auto _type = type;
+        return new Self{ _type, _propName, _rhv };
     }
 
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
                     *that->propName == *propName &&
-                    *that->rhv == *rhv &&
-                    that->type == type;
+                    *that->rhv == *rhv;
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return type;
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), propName, rhv);
     }
 
 };
@@ -70,7 +69,7 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
         ASSERT(llvm::isa<ConstTerm>(t->getPropertyName()),
                "Property read with non-constant property name");
         auto* constPropName = llvm::cast<ConstTerm>(t->getPropertyName());
-        auto strPropName = getAsCompileTimeString(constPropName->getConstant());
+        auto strPropName = constPropName->getAsString();
         ASSERT(!strPropName.empty(),
                "Property read with unknown property name");
 

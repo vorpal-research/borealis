@@ -12,22 +12,23 @@ namespace borealis {
 class AnnotationMaterializer::AnnotationMaterializerImpl {
 public:
     const LogicAnnotation* A;
-    TermFactory* TF;
+    TermFactory::Ptr TF;
     MetaInfoTracker* MI;
     NameContext nc;
 };
 
 AnnotationMaterializer::AnnotationMaterializer(
         const LogicAnnotation& A,
-        TermFactory* TF,
+        FactoryNest FN,
         MetaInfoTracker* MI) :
+            Base(FN),
             pimpl(
-                    new AnnotationMaterializerImpl {
-                        &A,
-                        TF,
-                        MI,
-                        NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
-                    }
+                new AnnotationMaterializerImpl {
+                    &A,
+                    FN.Term,
+                    MI,
+                    NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
+                }
             ) {
     if (llvm::isa<EnsuresAnnotation>(A) ||
         llvm::isa<RequiresAnnotation>(A) ||
@@ -93,11 +94,11 @@ void AnnotationMaterializer::failWith(const std::string& message) {
 
 Annotation::Ptr materialize(
         Annotation::Ptr annotation,
-        TermFactory* TF,
+        FactoryNest FN,
         MetaInfoTracker* MI
             ) {
     if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation)){
-        AnnotationMaterializer am(*logic, TF, MI);
+        AnnotationMaterializer am(*logic, FN, MI);
         return am.doit();
     } else {
         return annotation;

@@ -14,13 +14,15 @@ namespace borealis {
 
 class OpaqueFloatingConstantTerm: public borealis::Term {
 
+    static constexpr double EPS = 4 * std::numeric_limits<double>::epsilon();
+
     double value;
 
-    OpaqueFloatingConstantTerm(double value):
+    OpaqueFloatingConstantTerm(Type::Ptr type, double value):
         Term(
-            std::hash<double>()(value),
-            borealis::util::toString(value),
-            type_id(*this)
+            class_tag(*this),
+            type,
+            util::toString(value)
         ), value(value) {};
 
 public:
@@ -37,12 +39,12 @@ public:
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                    std::abs(that->value - value) < .01;
+                    std::abs(that->value - value) < EPS;
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getFloat();
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), value);
     }
 
 };

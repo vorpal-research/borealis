@@ -40,7 +40,7 @@ public:
         return new Self{
             t->transform(cond),
             new_cases,
-            this->type
+            type
         };
     }
 

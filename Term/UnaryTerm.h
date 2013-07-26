@@ -17,11 +17,11 @@ class UnaryTerm: public borealis::Term {
     llvm::UnaryArithType opcode;
     Term::Ptr rhv;
 
-    UnaryTerm(llvm::UnaryArithType opcode, Term::Ptr rhv):
+    UnaryTerm(Type::Ptr type, llvm::UnaryArithType opcode, Term::Ptr rhv):
         Term(
-            rhv->hashCode() ^ std::hash<llvm::UnaryArithType>()(opcode),
-            llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")",
-            type_id(*this)
+            class_tag(*this),
+            type,
+            llvm::unaryArithString(opcode) + "(" + rhv->getName() + ")"
         ), opcode(opcode), rhv(rhv) {};
 
 public:
@@ -33,7 +33,9 @@ public:
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
-        return new UnaryTerm(opcode, tr->transform(rhv));
+        auto _rhv = tr->transform(rhv);
+        auto _type = getTermType(tr->FN.Type, _rhv);
+        return new Self{ _type, opcode, _rhv };
     }
 
     virtual bool equals(const Term* other) const override {
@@ -44,8 +46,12 @@ public:
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return rhv->getTermType();
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), opcode, rhv);
+    }
+
+    static Type::Ptr getTermType(TypeFactory::Ptr, Term::Ptr rhv) {
+        return rhv->getType();
     }
 
 };

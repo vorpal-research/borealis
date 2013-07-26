@@ -10,11 +10,10 @@
 
 #include <llvm/Pass.h>
 
+#include "Factory/Nest.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/Tracker/MetaInfoTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
-#include "Predicate/PredicateFactory.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -38,9 +37,8 @@ public:
 
 private:
 
+    FactoryNest FN;
     MetaInfoTracker* MI;
-    PredicateFactory::Ptr PF;
-    TermFactory::Ptr TF;
 
 };
 

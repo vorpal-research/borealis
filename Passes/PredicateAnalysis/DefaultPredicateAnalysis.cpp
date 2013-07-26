@@ -38,11 +38,11 @@ public:
         Value* lhv = &I;
         Value* rhv = I.getPointerOperand();
 
-        pass->PM[&I] = pass->PF->getLoadPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getLoadTerm(
-                        pass->TF->getValueTerm(rhv)
-                )
+        pass->PM[&I] = pass->FN.Predicate->getLoadPredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getLoadTerm(
+                pass->FN.Term->getValueTerm(rhv)
+            )
         );
     }
 
@@ -52,9 +52,9 @@ public:
         Value* lhv = I.getPointerOperand();
         Value* rhv = I.getValueOperand();
 
-        pass->PM[&I] = pass->PF->getStorePredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getValueTerm(rhv)
+        pass->PM[&I] = pass->FN.Predicate->getStorePredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getValueTerm(rhv)
         );
     }
 
@@ -67,13 +67,13 @@ public:
         Value* op2 = I.getOperand(1);
         ConditionType cond = conditionType(I.getPredicate());
 
-        pass->PM[&I] = pass->PF->getICmpPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getCmpTerm(
-                        cond,
-                        pass->TF->getValueTerm(op1),
-                        pass->TF->getValueTerm(op2)
-                )
+        pass->PM[&I] = pass->FN.Predicate->getICmpPredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getCmpTerm(
+                cond,
+                pass->FN.Term->getValueTerm(op1),
+                pass->FN.Term->getValueTerm(op2)
+            )
         );
     }
 
@@ -82,50 +82,50 @@ public:
 
         if (I.isUnconditional()) return;
 
-        Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
+        Term::Ptr condTerm = pass->FN.Term->getValueTerm(I.getCondition());
         const BasicBlock* trueSucc = I.getSuccessor(0);
         const BasicBlock* falseSucc = I.getSuccessor(1);
 
         pass->TPM[{&I, trueSucc}] =
-                pass->PF->getBooleanPredicate(
-                        condTerm,
-                        pass->TF->getTrueTerm()
-                );
+            pass->FN.Predicate->getBooleanPredicate(
+                condTerm,
+                pass->FN.Term->getTrueTerm()
+            );
         pass->TPM[{&I, falseSucc}] =
-                pass->PF->getBooleanPredicate(
-                        condTerm,
-                        pass->TF->getFalseTerm()
-                );
+            pass->FN.Predicate->getBooleanPredicate(
+                condTerm,
+                pass->FN.Term->getFalseTerm()
+            );
     }
 
     void visitSwitchInst(llvm::SwitchInst& I) {
         using llvm::BasicBlock;
 
-        Term::Ptr condTerm = pass->TF->getValueTerm(I.getCondition());
+        Term::Ptr condTerm = pass->FN.Term->getValueTerm(I.getCondition());
 
         std::vector<Term::Ptr> cases;
         cases.reserve(I.getNumCases());
 
         for (auto c = I.case_begin(); c != I.case_end(); ++c) {
-            Term::Ptr caseTerm = pass->TF->getConstTerm(c.getCaseValue());
+            Term::Ptr caseTerm = pass->FN.Term->getConstTerm(c.getCaseValue());
             const BasicBlock* caseSucc = c.getCaseSuccessor();
 
             pass->TPM[{&I, caseSucc}] =
-                    pass->PF->getEqualityPredicate(
-                            condTerm,
-                            caseTerm,
-                            PredicateType::PATH
-                    );
+                pass->FN.Predicate->getEqualityPredicate(
+                    condTerm,
+                    caseTerm,
+                    PredicateType::PATH
+                );
 
             cases.push_back(caseTerm);
         }
 
         const BasicBlock* defaultSucc = I.getDefaultDest();
         pass->TPM[{&I, defaultSucc}] =
-                pass->PF->getDefaultSwitchCasePredicate(
-                        condTerm,
-                        cases
-                );
+            pass->FN.Predicate->getDefaultSwitchCasePredicate(
+                condTerm,
+                cases
+            );
     }
 
     void visitSelectInst(llvm::SelectInst& I) {
@@ -136,13 +136,13 @@ public:
         Value* tru = I.getTrueValue();
         Value* fls = I.getFalseValue();
 
-        pass->PM[&I] = pass->PF->getEqualityPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getTernaryTerm(
-                        pass->TF->getValueTerm(cnd),
-                        pass->TF->getValueTerm(tru),
-                        pass->TF->getValueTerm(fls)
-                )
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getTernaryTerm(
+                pass->FN.Term->getValueTerm(cnd),
+                pass->FN.Term->getValueTerm(tru),
+                pass->FN.Term->getValueTerm(fls)
+            )
         );
     }
 
@@ -161,9 +161,9 @@ public:
 
         ASSERTC(numElems > 0);
 
-        pass->PM[&I] = pass->PF->getAllocaPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getIntTerm(numElems)
+        pass->PM[&I] = pass->FN.Predicate->getAllocaPredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getIntTerm(numElems)
         );
     }
 
@@ -179,9 +179,9 @@ public:
             idxs.push_back(i);
         }
 
-        pass->PM[&I] = pass->PF->getEqualityPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getGepTerm(rhv, idxs)
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getGepTerm(rhv, idxs)
         );
     }
 
@@ -191,26 +191,26 @@ public:
         Value* lhv = &I;
         Value* rhv = I.getOperand(0);
 
-        Term::Ptr lhvt = pass->TF->getValueTerm(lhv);
-        Term::Ptr rhvt = pass->TF->getValueTerm(rhv);
+        Term::Ptr lhvt = pass->FN.Term->getValueTerm(lhv);
+        Term::Ptr rhvt = pass->FN.Term->getValueTerm(rhv);
 
-        if (isa<type::Bool>(lhvt->getTermType()) && ! isa<type::Bool>(rhvt->getTermType())) {
-            rhvt = pass->TF->getCmpTerm(
-                    ConditionType::NEQ,
-                    rhvt,
-                    pass->TF->getIntTerm(0ULL)
+        if (isa<type::Bool>(lhvt->getType()) && ! isa<type::Bool>(rhvt->getType())) {
+            rhvt = pass->FN.Term->getCmpTerm(
+                ConditionType::NEQ,
+                rhvt,
+                pass->FN.Term->getIntTerm(0ULL)
             );
-        } else if (! isa<type::Bool>(lhvt->getTermType()) && isa<type::Bool>(rhvt->getTermType())) {
-            lhvt = pass->TF->getCmpTerm(
-                    ConditionType::NEQ,
-                    lhvt,
-                    pass->TF->getIntTerm(0ULL)
+        } else if (! isa<type::Bool>(lhvt->getType()) && isa<type::Bool>(rhvt->getType())) {
+            lhvt = pass->FN.Term->getCmpTerm(
+                ConditionType::NEQ,
+                lhvt,
+                pass->FN.Term->getIntTerm(0ULL)
             );
         }
 
-        pass->PM[&I] = pass->PF->getEqualityPredicate(
-                lhvt,
-                rhvt
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            lhvt,
+            rhvt
         );
     }
 
@@ -221,9 +221,9 @@ public:
             const BasicBlock* from = I.getIncomingBlock(i);
             Value* v = I.getIncomingValue(i);
 
-            pass->PPM[{from, &I}] = pass->PF->getEqualityPredicate(
-                    pass->TF->getValueTerm(&I),
-                    pass->TF->getValueTerm(v)
+            pass->PPM[{from, &I}] = pass->FN.Predicate->getEqualityPredicate(
+                pass->FN.Term->getValueTerm(&I),
+                pass->FN.Term->getValueTerm(v)
             );
         }
     }
@@ -238,13 +238,13 @@ public:
         Value* op2 = I.getOperand(1);
         ArithType type = arithType(I.getOpcode());
 
-        pass->PM[&I] = pass->PF->getArithPredicate(
-                pass->TF->getValueTerm(lhv),
-                pass->TF->getBinaryTerm(
-                        type,
-                        pass->TF->getValueTerm(op1),
-                        pass->TF->getValueTerm(op2)
-                )
+        pass->PM[&I] = pass->FN.Predicate->getArithPredicate(
+            pass->FN.Term->getValueTerm(lhv),
+            pass->FN.Term->getBinaryTerm(
+                type,
+                pass->FN.Term->getValueTerm(op1),
+                pass->FN.Term->getValueTerm(op2)
+            )
         );
     }
 
@@ -254,9 +254,9 @@ public:
         Value* rv = I.getReturnValue();
         if (rv == nullptr) return;
 
-        pass->PM[&I] = pass->PF->getEqualityPredicate(
-                pass->TF->getReturnValueTerm(I.getParent()->getParent()),
-                pass->TF->getValueTerm(rv)
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            pass->FN.Term->getReturnValueTerm(I.getParent()->getParent()),
+            pass->FN.Term->getValueTerm(rv)
         );
     }
 
@@ -284,9 +284,8 @@ void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
-    auto* ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    PF = PredicateFactory::get(ST);
-    TF = TermFactory::get(ST);
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     TD = &GetAnalysis<llvm::TargetData>::doit(this, F);
 

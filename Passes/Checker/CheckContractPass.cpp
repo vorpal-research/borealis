@@ -40,13 +40,13 @@ public:
     }
 
     void checkContract(llvm::CallInst& CI) {
-        auto contract = pass->FM->getReq(CI, pass->PF.get(), pass->TF.get());
+        auto contract = pass->FM->getReq(CI, pass->FN);
         if (contract->isEmpty()) return;
 
         auto state = pass->PSA->getInstructionState(&CI);
         if (!state) return;
 
-        CallSiteInitializer csi(CI, pass->TF.get());
+        CallSiteInitializer csi(CI, pass->FN);
         auto instantiatedContract = contract->map(
             [&csi](Predicate::Ptr p) { return csi.transform(p); }
         );
@@ -84,17 +84,17 @@ public:
     }
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
-        auto anno = materialize(A, pass->TF.get(), pass->MI);
+        auto anno = materialize(A, pass->FN, pass->MI);
 
         auto state = pass->PSA->getInstructionState(&CI);
         if (!state) return;
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
             auto query = (
-                pass->PSF *
-                pass->PF->getEqualityPredicate(
+                pass->FN.State *
+                pass->FN.Predicate->getEqualityPredicate(
                     LA->getTerm(),
-                    pass->TF->getTrueTerm(),
+                    pass->FN.Term->getTrueTerm(),
                     predicateType(LA)
                 )
             )();
@@ -159,11 +159,8 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    auto* slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    PF = PredicateFactory::get(slotTracker);
-    TF = TermFactory::get(slotTracker);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     CallInstVisitor civ(this);
     civ.visit(F);

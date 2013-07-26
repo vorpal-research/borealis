@@ -17,11 +17,11 @@ TEST(Protobuf, protobuffy) {
     using namespace borealis;
 
     {
-        auto& tf = TypeFactory::getInstance();
+        auto TF = TypeFactory::get();
 
-        auto type = tf.getPointer(
-            tf.getPointer(
-                tf.getFloat()
+        auto type = TF->getPointer(
+            TF->getPointer(
+                TF->getFloat()
             )
         );
 

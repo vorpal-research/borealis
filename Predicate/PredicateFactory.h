@@ -19,7 +19,7 @@ class PredicateFactory {
 
 public:
 
-    typedef std::unique_ptr<PredicateFactory> Ptr;
+    typedef std::shared_ptr<PredicateFactory> Ptr;
 
     Predicate::Ptr getLoadPredicate(
             Term::Ptr lhv,
@@ -109,15 +109,14 @@ public:
 
 
 
-    static PredicateFactory::Ptr get(SlotTracker* slotTracker) {
-        return PredicateFactory::Ptr(new PredicateFactory(slotTracker));
+    static PredicateFactory::Ptr get() {
+        static PredicateFactory::Ptr instance(new PredicateFactory());
+        return instance;
     }
 
 private:
 
-    SlotTracker* slotTracker;
-
-    PredicateFactory(SlotTracker* slotTracker);
+    PredicateFactory() {};
 
 };
 

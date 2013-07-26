@@ -16,7 +16,7 @@ namespace borealis {
 Annotation::Ptr fromParseResult(
         const Locus& locus,
         const anno::command& cmd,
-        TermFactory* tf);
+        TermFactory::Ptr tf);
 
 } /* namespace borealis */
 

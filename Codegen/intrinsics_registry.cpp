@@ -8,7 +8,6 @@
 #include <llvm/Analysis/MemoryBuiltins.h>
 
 #include "Codegen/intrinsics_manager.h"
-#include "State/PredicateStateFactory.h"
 
 #include "Util/macros.h"
 
@@ -19,17 +18,18 @@ namespace borealis {
 
 typedef IntrinsicsManager::RegisterIntrinsic RegisterIntrinsic;
 
-// TODO: akhin Make generator accept PredicateStateFactory from the outside
-
 static RegisterIntrinsic INTRINSIC_PTR_VERSION {
     function_type::INTRINSIC_PTR_VERSION,
     "ptrver",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
         ASSERTC(F->getArgumentList().size() > 0);
-        return PredicateStateFactory::get()->Basic() +
-               PF->getEqualityPredicate(
-                   TF->getReturnValueTerm(F),
-                   TF->getArgumentTerm(F->getArgumentList().begin())
+        return FN.State->Basic() +
+                FN.Predicate->getEqualityPredicate(
+                   FN.Term->getReturnValueTerm(F),
+                   FN.Term->getArgumentTerm(F->getArgumentList().begin())
                );
     }
 };
@@ -57,12 +57,15 @@ static RegisterIntrinsic INTRINSIC_ANNOTATION {
 static RegisterIntrinsic INTRINSIC_MALLOC {
     function_type::INTRINSIC_MALLOC,
     "malloc",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
         ASSERTC(F->getArgumentList().size() > 0);
-        return PredicateStateFactory::get()->Basic() +
-               PF->getMallocPredicate(
-                   TF->getReturnValueTerm(F),
-                   TF->getArgumentTerm(F->getArgumentList().begin())
+        return FN.State->Basic() +
+               FN.Predicate->getMallocPredicate(
+                   FN.Term->getReturnValueTerm(F),
+                   FN.Term->getArgumentTerm(F->getArgumentList().begin())
                );
     }
 };
@@ -70,13 +73,16 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
         ASSERTC(F->getArgumentList().size() > 0);
-        return PredicateStateFactory::get()->Basic() +
-               PF->getInequalityPredicate(
-                    TF->getArgumentTerm(F->getArgumentList().begin()),
-                    TF->getIntTerm(0ULL),
-                    PredicateType::REQUIRES
+        return FN.State->Basic() +
+               FN.Predicate->getInequalityPredicate(
+                   FN.Term->getArgumentTerm(F->getArgumentList().begin()),
+                   FN.Term->getIntTerm(0ULL),
+                   PredicateType::REQUIRES
                );
     },
     [](const IntrinsicsManager&, const llvm::CallInst& ci) {
@@ -89,13 +95,15 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
 static RegisterIntrinsic BUILTIN_BOR_ASSUME {
     function_type::BUILTIN_BOR_ASSUME,
     "borealis_assume",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
-        ASSERTC(F->getArgumentList().size() > 0);
-        return PredicateStateFactory::get()->Basic() +
-               PF->getInequalityPredicate(
-                    TF->getArgumentTerm(F->getArgumentList().begin()),
-                    TF->getIntTerm(0ULL),
-                    PredicateType::ENSURES
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
+        return FN.State->Basic() +
+               FN.Predicate->getInequalityPredicate(
+                   FN.Term->getArgumentTerm(F->getArgumentList().begin()),
+                   FN.Term->getIntTerm(0ULL),
+                   PredicateType::ENSURES
                );
     },
     [](const IntrinsicsManager&, const llvm::CallInst& ci) {
@@ -119,21 +127,24 @@ static RegisterIntrinsic ACTION_DEFECT {
 static RegisterIntrinsic BUILTIN_BOR_GETPROP {
     function_type::BUILTIN_BOR_GETPROP,
     "borealis_get_property",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
         ASSERTC(F->getArgumentList().size() > 1);
 
         auto it = F->arg_begin();
         llvm::Argument* propName = it++;
         llvm::Argument* ptr = it++;
 
-        return PredicateStateFactory::get()->Basic() +
-               PF->getEqualityPredicate(
-                    TF->getReturnValueTerm(F),
-                    TF->getReadPropertyTerm(
-                            TF->getArgumentTerm(propName),
-                            TF->getArgumentTerm(ptr),
-                            TypeFactory::getInstance().cast(F->getReturnType())
-                    )
+        return FN.State->Basic() +
+               FN.Predicate->getEqualityPredicate(
+                   FN.Term->getReturnValueTerm(F),
+                   FN.Term->getReadPropertyTerm(
+                       FN.Type->cast(F->getReturnType()),
+                       FN.Term->getArgumentTerm(propName),
+                       FN.Term->getArgumentTerm(ptr)
+                   )
                );
     },
     [](const IntrinsicsManager&, const llvm::CallInst& ci) {
@@ -146,7 +157,10 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
 static RegisterIntrinsic BUILTIN_BOR_SETPROP {
     function_type::BUILTIN_BOR_SETPROP,
     "borealis_set_property",
-    [](llvm::Function* F, PredicateFactory* PF, TermFactory* TF) -> PredicateState::Ptr {
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
         ASSERTC(F->getArgumentList().size() > 2);
 
         auto it = F->arg_begin();
@@ -154,11 +168,11 @@ static RegisterIntrinsic BUILTIN_BOR_SETPROP {
         llvm::Argument* ptr = it++;
         llvm::Argument* value = it++;
 
-        return PredicateStateFactory::get()->Basic() +
-               PF->getWritePropertyPredicate(
-                        TF->getArgumentTerm(propName),
-                        TF->getArgumentTerm(ptr),
-                        TF->getArgumentTerm(value)
+        return FN.State->Basic() +
+               FN.Predicate->getWritePropertyPredicate(
+                   FN.Term->getArgumentTerm(propName),
+                   FN.Term->getArgumentTerm(ptr),
+                   FN.Term->getArgumentTerm(value)
                );
     },
     [](const IntrinsicsManager&, const llvm::CallInst& ci) {

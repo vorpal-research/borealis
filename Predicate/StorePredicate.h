@@ -34,7 +34,7 @@ public:
         return new Self{
             t->transform(lhv),
             t->transform(rhv),
-            this->type
+            type
         };
     }
 
