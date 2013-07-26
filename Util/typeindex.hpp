@@ -30,7 +30,8 @@ template<class T>
 constexpr id_t type_id() { return type_index<T>::id(); }
 
 class ClassTag {
-    id_t classTag;
+protected:
+    const id_t classTag;
 public:
     ClassTag(id_t classTag) : classTag(classTag) {};
     id_t getClassTag() const { return classTag; }
