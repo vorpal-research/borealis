@@ -112,13 +112,13 @@ struct ConverterImpl<TernaryTerm, proto::TernaryTerm, FN> {
     static proto::TernaryTerm* toProtobuf(const TernaryTerm* t) {
         auto res = util::uniq(new proto::TernaryTerm());
         res->set_allocated_cnd(
-            TermConverter::toProtobuf(t->getCnd())
+            TermConverter::toProtobuf(t->getCnd()).release()
         );
         res->set_allocated_tru(
-            TermConverter::toProtobuf(t->getTru())
+            TermConverter::toProtobuf(t->getTru()).release()
         );
         res->set_allocated_fls(
-            TermConverter::toProtobuf(t->getFls())
+            TermConverter::toProtobuf(t->getFls()).release()
         );
         return res.release();
     }

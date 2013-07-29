@@ -118,7 +118,7 @@ struct ConverterImpl<UnaryTerm, proto::UnaryTerm, FN> {
         auto res = util::uniq(new proto::UnaryTerm());
         res->set_opcode(static_cast<proto::UnaryArithType>(t->getOpcode()));
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv())
+            TermConverter::toProtobuf(t->getRhv()).release()
         );
         return res.release();
     }

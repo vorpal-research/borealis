@@ -109,10 +109,10 @@ struct ConverterImpl<ReadPropertyTerm, proto::ReadPropertyTerm, FN> {
     static proto::ReadPropertyTerm* toProtobuf(const ReadPropertyTerm* t) {
         auto res = util::uniq(new proto::ReadPropertyTerm());
         res->set_allocated_propname(
-            TermConverter::toProtobuf(t->getPropertyName())
+            TermConverter::toProtobuf(t->getPropertyName()).release()
         );
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv())
+            TermConverter::toProtobuf(t->getRhv()).release()
         );
         return res.release();
     }

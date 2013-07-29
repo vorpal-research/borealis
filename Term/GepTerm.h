@@ -140,15 +140,15 @@ struct ConverterImpl<GepTerm, proto::GepTerm, FN> {
         auto res = util::uniq(new proto::GepTerm());
 
         res->set_allocated_base(
-            TermConverter::toProtobuf(t->getBase())
+            TermConverter::toProtobuf(t->getBase()).release()
         );
 
         for (const auto& shift : t->getShifts()) {
             res->mutable_by()->AddAllocated(
-                TermConverter::toProtobuf(shift.first)
+                TermConverter::toProtobuf(shift.first).release()
             );
             res->mutable_size()->AddAllocated(
-                TermConverter::toProtobuf(shift.second)
+                TermConverter::toProtobuf(shift.second).release()
             );
         }
 

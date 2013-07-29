@@ -135,10 +135,10 @@ struct ConverterImpl<CmpTerm, proto::CmpTerm, FN> {
         auto res = util::uniq(new proto::CmpTerm());
         res->set_opcode(static_cast<proto::ConditionType>(t->getOpcode()));
         res->set_allocated_lhv(
-            TermConverter::toProtobuf(t->getLhv())
+            TermConverter::toProtobuf(t->getLhv()).release()
         );
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv())
+            TermConverter::toProtobuf(t->getRhv()).release()
         );
         return res.release();
     }

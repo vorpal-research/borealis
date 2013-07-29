@@ -152,10 +152,10 @@ struct ConverterImpl<BinaryTerm, proto::BinaryTerm, FN> {
         auto res = util::uniq(new proto::BinaryTerm());
         res->set_opcode(static_cast<proto::ArithType>(t->getOpcode()));
         res->set_allocated_lhv(
-            TermConverter::toProtobuf(t->getLhv())
+            TermConverter::toProtobuf(t->getLhv()).release()
         );
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv())
+            TermConverter::toProtobuf(t->getRhv()).release()
         );
         return res.release();
     }

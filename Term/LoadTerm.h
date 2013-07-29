@@ -110,7 +110,7 @@ struct ConverterImpl<LoadTerm, proto::LoadTerm, FN> {
     static proto::LoadTerm* toProtobuf(const LoadTerm* t) {
         auto res = util::uniq(new proto::LoadTerm());
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv())
+            TermConverter::toProtobuf(t->getRhv()).release()
         );
         return res.release();
     }

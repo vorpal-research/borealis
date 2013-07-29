@@ -10,6 +10,8 @@
 
 #include "Protobuf/ConverterUtil.h"
 
+#include "Term/Term.h"
+#include "Term/Term.def"
 #include "Type/Type.h"
 #include "Type/Type.def"
 #include "Type/ConverterImpl.hpp"
@@ -22,6 +24,9 @@ namespace borealis {
 
 Type::ProtoPtr protobuffy(Type::Ptr t);
 Type::Ptr    deprotobuffy(FactoryNest FN, const proto::Type& t);
+
+Term::ProtoPtr protobuffy(Term::Ptr t);
+Term::Ptr    deprotobuffy(FactoryNest FN, const proto::Term& t);
 
 template<class FN>
 struct Converter<Type, proto::Type, FN> {
