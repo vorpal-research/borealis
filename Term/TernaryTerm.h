@@ -14,73 +14,75 @@ namespace borealis {
 
 class TernaryTerm: public borealis::Term {
 
-    typedef TernaryTerm self;
-
     Term::Ptr cnd;
     Term::Ptr tru;
     Term::Ptr fls;
 
-    TernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls):
+    TernaryTerm(Type::Ptr type, Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls):
         Term(
-                cnd->hashCode() ^ tru->hashCode() ^ fls->hashCode(),
-                "(" + cnd->getName() + " ? " + tru->getName() + " : " + fls->getName() + ")",
-                type_id(*this)
+            class_tag(*this),
+            type,
+            "(" + cnd->getName() + " ? " + tru->getName() + " : " + fls->getName() + ")"
         ), cnd(cnd), tru(tru), fls(fls) {};
 
 public:
 
-    TernaryTerm(const TernaryTerm&) = default;
-    ~TernaryTerm();
+    MK_COMMON_TERM_IMPL(TernaryTerm);
+
+    Term::Ptr getCnd() const { return cnd; }
+    Term::Ptr getTru() const { return tru; }
+    Term::Ptr getFls() const { return fls; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new TernaryTerm(tr->transform(cnd), tr->transform(tru), tr->transform(fls));
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        auto _cnd = tr->transform(cnd);
+        auto _tru = tr->transform(tru);
+        auto _fls = tr->transform(fls);
+        auto _type = getTermType(tr->FN.Type, _cnd, _tru, _fls);
+        return new Self{ _type, _cnd, _tru, _fls };
     }
-
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        auto cndz3 = cnd->toZ3(z3ef, ctx);
-        auto truz3 = tru->toZ3(z3ef, ctx);
-        auto flsz3 = fls->toZ3(z3ef, ctx);
-
-        ASSERT(cndz3.isBool(), "Ternary operation with non-Bool condition");
-
-        auto cndb = cndz3.toBool().getUnsafe();
-
-        return z3ef.if_(cndb)
-                   .then_(truz3)
-                   .else_(flsz3);
-    }
-#include "Util/unmacros.h"
 
     virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
                     *that->cnd == *cnd &&
                     *that->tru == *tru &&
                     *that->fls == *fls;
         } else return false;
     }
 
-    Term::Ptr getCnd() const { return cnd; }
-    Term::Ptr getTru() const { return tru; }
-    Term::Ptr getFls() const { return fls; }
-
-    static bool classof(const self*) {
-        return true;
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), cnd, tru, fls);
     }
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr, Term::Ptr tru, Term::Ptr fls) {
+        return TyF->merge(tru->getType(), fls->getType());
     }
 
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
-        return tf.merge(tru->getTermType(), fls->getTermType());
-    }
-
-    friend class TermFactory;
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, TernaryTerm> {
+    static Dynamic<Impl> doit(
+            const TernaryTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+
+        auto cndz3 = SMT<Impl>::doit(t->getCnd(), ef, ctx);
+        auto truz3 = SMT<Impl>::doit(t->getTru(), ef, ctx);
+        auto flsz3 = SMT<Impl>::doit(t->getFls(), ef, ctx);
+
+        ASSERT(cndz3.isBool(), "Ternary operation with non-Bool condition");
+
+        auto cndb = cndz3.toBool().getUnsafe();
+
+        return ef.if_(cndb)
+                 .then_(truz3)
+                 .else_(flsz3);
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

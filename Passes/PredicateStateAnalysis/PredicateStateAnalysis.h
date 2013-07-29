@@ -105,6 +105,8 @@ private:
 
     AbstractPredicateStateAnalysis* delegate;
 
+    void updateInlineSummary(llvm::Function& F);
+
 };
 
 } /* namespace borealis */

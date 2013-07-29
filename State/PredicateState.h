@@ -11,12 +11,12 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
-#include <unordered_set>
 
 #include "Logging/logstream.hpp"
+#include "Logging/tracer.hpp"
 #include "Predicate/Predicate.h"
-#include "Solver/ExecutionContext.h"
-#include "Solver/Z3ExprFactory.h"
+#include "SMT/SMTUtil.h"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -33,7 +33,6 @@ public:
     typedef std::function<bool(Predicate::Ptr)> Filterer;
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const = 0;
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const = 0;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const = 0;
@@ -59,7 +58,7 @@ public:
 
     bool isUnreachable() const;
 
-    static bool classof(const PredicateState* /* ps */) {
+    static bool classof(const PredicateState*) {
         return true;
     }
 
@@ -67,22 +66,23 @@ public:
 
     virtual bool equals(const PredicateState* other) const = 0;
     bool operator==(const PredicateState& other) const {
+        if (this == &other) return true;
         return this->equals(&other);
     }
 
     virtual std::string toString() const = 0;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const = 0;
 
-    PredicateState(borealis::id_t predicate_state_type_id);
-    virtual ~PredicateState();
+    PredicateState(id_t predicate_state_type_id);
+    virtual ~PredicateState() {};
 
-    borealis::id_t getPredicateStateTypeId() const {
+    id_t getPredicateStateTypeId() const {
         return predicate_state_type_id;
     }
 
 protected:
 
-    const borealis::id_t predicate_state_type_id;
+    const id_t predicate_state_type_id;
 
     static PredicateState::Ptr Simplified(const PredicateState* s) {
         return PredicateState::Ptr(s)->simplify();
@@ -103,6 +103,22 @@ PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc
 PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc);
 
 } /* namespace borealis */
+
+#define MK_COMMON_STATE_IMPL(CLASS) \
+private: \
+    typedef CLASS Self; \
+    typedef std::unique_ptr<Self> SelfPtr; \
+    CLASS(const Self& state) = default; \
+    CLASS(Self&& state) = default; \
+public: \
+    friend class PredicateStateFactory; \
+    virtual ~CLASS() {}; \
+    static bool classof(const Self*) { \
+        return true; \
+    } \
+    static bool classof(const PredicateState* ps) { \
+        return ps->getPredicateStateTypeId() == type_id<Self>(); \
+    }
 
 #include "Util/unmacros.h"
 

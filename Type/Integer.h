@@ -5,20 +5,43 @@
 
 namespace borealis {
 
-class Integer : public Type {
-    typedef Integer self;
-    typedef Type base;
+class TypeFactory;
 
-    Integer() : Type(type_id(*this)) {}
+namespace type {
+
+/** protobuf -> Type/Integer.proto
+import "Type/Type.proto";
+
+package borealis.type.proto;
+
+message Integer {
+    extend borealis.proto.Type {
+        optional Integer ext = 1;
+    }
+    
+}
+
+**/
+class Integer : public Type {
+
+    typedef Integer Self;
+    typedef Type Base;
+
+    Integer() : Type(class_tag(*this)) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
+    friend class ::borealis::TypeFactory;
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
     
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // INTEGER_H
+
+

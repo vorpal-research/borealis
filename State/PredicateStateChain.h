@@ -15,13 +15,14 @@ namespace borealis {
 class PredicateStateChain :
         public PredicateState {
 
-    typedef PredicateStateChain Self;
-    typedef std::unique_ptr<Self> SelfPtr;
-
 public:
 
+    MK_COMMON_STATE_IMPL(PredicateStateChain);
+
+    PredicateState::Ptr getBase() const { return base; }
+    PredicateState::Ptr getCurr() const { return curr; }
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx = nullptr) const override;
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
@@ -35,29 +36,15 @@ public:
 
     virtual bool isEmpty() const override;
 
-    static bool classof(const Self* /* ps */) {
-        return true;
-    }
-
-    static bool classof(const PredicateState* ps) {
-        return ps->getPredicateStateTypeId() == type_id<Self>();
-    }
-
     virtual bool equals(const PredicateState* other) const override {
-        if (this == other) return true;
-
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return *this->base == *o->base &&
                     *this->curr == *o->curr;
-        } else {
-            return false;
-        }
+        } else return false;
     }
 
     virtual std::string toString() const override;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const override;
-
-    friend class PredicateStateFactory;
 
 private:
 
@@ -65,11 +52,24 @@ private:
     PredicateState::Ptr curr;
 
     PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr);
-    PredicateStateChain(const Self& state) = default;
-    PredicateStateChain(Self&& state) = default;
 
     SelfPtr fmap_(FMapper f) const;
 
+};
+
+template<class Impl>
+struct SMTImpl<Impl, PredicateStateChain> {
+    static Bool<Impl> doit(
+            const PredicateStateChain* s,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        auto res = ef.getTrue();
+        res = res && SMT<Impl>::doit(s->getBase(), ef, ctx);
+        res = res && SMT<Impl>::doit(s->getCurr(), ef, ctx);
+        return res;
+    }
 };
 
 } /* namespace borealis */

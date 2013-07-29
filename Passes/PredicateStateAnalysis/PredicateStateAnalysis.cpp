@@ -45,35 +45,42 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
 
     if ("inline" == Summaries()) {
-        // Update total function state
-        // FIXME akhin Fix dep issues and remove manual update
-	    delegate->runOnFunction(F);
-
-        // Save total function state to function manager
-        // for inlining
-
-        auto& FM = GetAnalysis<FunctionManager>::doit(this);
-        auto initial = delegate->getInitialState();
-
-        auto rets = getAllRets(&F);
-        ASSERT(rets.size() == 1,
-               "Unexpected number of ReturnInst for: " + F.getName().str());
-
-        auto* RI = rets.front();
-
-        auto riState = delegate->getInstructionState(RI);
-        ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
-
-        auto bdy = riState->sliceOn(initial);
-        ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
-
-        dbgs() << "Updating function state for: " << F.getName().str() << endl
-               << "  with: " << endl << bdy << endl;
-
-        FM.update(&F, bdy);
+        updateInlineSummary(F);
     }
 
     return false;
+}
+
+void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
+    // Update total function state
+    // FIXME akhin Fix dep issues and remove manual update
+    delegate->runOnFunction(F);
+
+    // Save total function state to function manager
+    // for inlining
+
+    auto& FM = GetAnalysis<FunctionManager>::doit(this);
+    auto initial = delegate->getInitialState();
+
+    auto rets = getAllRets(&F);
+    ASSERT(rets.size() <= 1,
+           "Unexpected number of ReturnInst for: " + F.getName().str());
+
+    // Function does not return, therefore has no useful summary
+    if (rets.empty()) return;
+
+    auto* RI = rets.front();
+
+    auto riState = delegate->getInstructionState(RI);
+    ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+
+    auto bdy = riState->sliceOn(initial);
+    ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
+
+    dbgs() << "Updating function state for: " << F.getName().str() << endl
+           << "  with: " << endl << bdy << endl;
+
+    FM.update(&F, bdy);
 }
 
 void PredicateStateAnalysis::print(llvm::raw_ostream& O, const llvm::Module* M) const {

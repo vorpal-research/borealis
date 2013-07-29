@@ -21,13 +21,8 @@ Term::Ptr ConstantPropagator::transformUnaryTerm(UnaryTermPtr term) {
         return propagateTerm(op, t->getValue());
     } else if (auto t = dyn_cast<OpaqueFloatingConstantTerm>(value)) {
         return propagateTerm(op, t->getValue());
-    } else if (auto t = dyn_cast<ConstTerm>(value)) {
-        if (auto constInt = dyn_cast<ConstantInt>(t->getConstant())) {
-            return propagateTerm(op, static_cast<long long>(constInt->getSExtValue()));
-        } else if (auto constFloat = dyn_cast<ConstantFP>(t->getConstant())) {
-            return propagateTerm(op, constFloat->getValueAPF().convertToDouble());
-        }
     }
+
     return term;
 }
 

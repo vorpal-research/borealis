@@ -28,15 +28,6 @@ PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const
     });
 }
 
-logic::Bool PredicateStateChain::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
-    TRACE_FUNC;
-
-    auto res = z3ef.getTrue();
-    res = res && base->toZ3(z3ef, pctx);
-    res = res && curr->toZ3(z3ef, pctx);
-    return res;
-}
-
 PredicateState::Ptr PredicateStateChain::addVisited(const llvm::Value* loc) const {
     return Simplified(new Self{
         this->base,

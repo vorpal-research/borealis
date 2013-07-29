@@ -10,15 +10,13 @@
 
 #include <llvm/Pass.h>
 
+#include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager.h"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Tracker/MetaInfoTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
-#include "Predicate/PredicateFactory.h"
-#include "State/PredicateStateFactory.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -51,9 +49,7 @@ private:
     MetaInfoTracker* MI;
     PredicateStateAnalysis* PSA;
 
-    PredicateFactory::Ptr PF;
-    PredicateStateFactory::Ptr PSF;
-    TermFactory::Ptr TF;
+    FactoryNest FN;
 
 };
 

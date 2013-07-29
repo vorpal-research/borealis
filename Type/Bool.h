@@ -5,20 +5,43 @@
 
 namespace borealis {
 
-class Bool : public Type {
-    typedef Bool self;
-    typedef Type base;
+class TypeFactory;
 
-    Bool() : Type(type_id(*this)) {}
+namespace type {
+
+/** protobuf -> Type/Bool.proto
+import "Type/Type.proto";
+
+package borealis.type.proto;
+
+message Bool {
+    extend borealis.proto.Type {
+        optional Bool ext = 2;
+    }
+    
+}
+
+**/
+class Bool : public Type {
+
+    typedef Bool Self;
+    typedef Type Base;
+
+    Bool() : Type(class_tag(*this)) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
-
+    friend class ::borealis::TypeFactory;
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
+    
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // BOOL_H
+
+

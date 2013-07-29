@@ -46,9 +46,8 @@ function_type IntrinsicsManager::getIntrinsicType(const llvm::CallInst& CI) cons
 PredicateState::Ptr IntrinsicsManager::getPredicateState(
         function_type ft,
         llvm::Function* F,
-        PredicateFactory* PF,
-        TermFactory* TF) const {
-    return getIntrinsicInfo(ft).generator(F, PF, TF);
+        FactoryNest FN) const {
+    return getIntrinsicInfo(ft).generator(F, FN);
 }
 
 const std::string IntrinsicsManager::getFuncName(function_type ft, const std::string& ext) const {

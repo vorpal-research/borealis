@@ -94,12 +94,12 @@ static llvm::UnaryArithType convert(un_opcode op) {
 
 class TermConstructor : public anno::empty_visitor {
 
-    TermFactory* tf;
+    TermFactory::Ptr tf;
     Term::Ptr term;
 
 public:
 
-    TermConstructor(TermFactory* tf): tf(tf) {}
+    TermConstructor(TermFactory::Ptr tf): tf(tf) {}
 
     virtual void onDoubleConstant(double c) {
         term = tf->getOpaqueConstantTerm(c);
@@ -154,7 +154,7 @@ public:
 };
 
 Annotation::Ptr borealis::fromParseResult(
-        const Locus& locus, const anno::command& cmd, TermFactory* tf) {
+        const Locus& locus, const anno::command& cmd, TermFactory::Ptr tf) {
 
     std::vector<Term::Ptr> terms;
     terms.reserve(cmd.args_.size());

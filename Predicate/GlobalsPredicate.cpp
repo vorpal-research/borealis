@@ -7,14 +7,12 @@
 
 #include "Predicate/GlobalsPredicate.h"
 
-#include "Util/macros.h"
-
 namespace borealis {
 
 GlobalsPredicate::GlobalsPredicate(
         const std::vector<Term::Ptr>& globals,
         PredicateType type) :
-            Predicate(type_id(*this), type),
+            Predicate(class_tag(*this), type),
             globals(globals) {
 
     using borealis::util::head;
@@ -29,42 +27,20 @@ GlobalsPredicate::GlobalsPredicate(
         }
     }
 
-    this->asString = "globals(" + a + ")";
-}
-
-logic::Bool GlobalsPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-
-    typedef Z3ExprFactory::Pointer Pointer;
-
-    ASSERTC(ctx != nullptr);
-
-    auto res = z3ef.getTrue();
-    for (const auto& g : globals) {
-        auto ge = g->toZ3(z3ef, ctx);
-        ASSERT(ge.is<Pointer>(), "Encountered non-Pointer global value: " + g->getName());
-        auto gp = ge.to<Pointer>().getUnsafe();
-        res = res && gp == ctx->getDistinctPtr();
-    }
-    return res;
+    asString = "globals(" + a + ")";
 }
 
 bool GlobalsPredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const GlobalsPredicate* o = llvm::dyn_cast<GlobalsPredicate>(other)) {
-        return std::equal(globals.begin(), globals.end(), o->globals.begin(),
-            [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
-        );
-    } else {
-        return false;
-    }
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
+        return Predicate::equals(other) &&
+                std::equal(globals.begin(), globals.end(), o->globals.begin(),
+                    [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
+                );
+    } else return false;
 }
 
 size_t GlobalsPredicate::hashCode() const {
-    return util::hash::defaultHasher()(type, globals);
+    return util::hash::defaultHasher()(Predicate::hashCode(), globals);
 }
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"

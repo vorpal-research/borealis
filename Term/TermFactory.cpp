@@ -9,6 +9,7 @@
 
 namespace borealis {
 
-TermFactory::TermFactory(SlotTracker* slotTracker) : slotTracker(slotTracker) {}
+TermFactory::TermFactory(SlotTracker* st, TypeFactory::Ptr TyF) :
+    st(st), TyF(TyF) {}
 
 } // namespace borealis

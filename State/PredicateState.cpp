@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "Solver/Z3Solver.h"
+#include "SMT/Z3/Solver.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
@@ -13,11 +13,9 @@ namespace borealis {
 PredicateState::PredicateState(borealis::id_t predicate_state_type_id) :
         predicate_state_type_id(predicate_state_type_id) {};
 
-PredicateState::~PredicateState() {}
-
 bool PredicateState::isUnreachable() const {
-    Z3ExprFactory z3ef;
-    Z3Solver s(z3ef);
+    Z3::ExprFactory z3ef;
+    Z3::Solver s(z3ef);
 
     auto split = this->splitByTypes({PredicateType::PATH});
     return s.isPathImpossible(split.first, split.second);

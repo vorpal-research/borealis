@@ -12,7 +12,6 @@
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
-#include "State/Transformer/TermRenamer.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -36,11 +35,8 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
 
-    auto* ST = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
-    PF = PredicateFactory::get(ST);
-    TF = TermFactory::get(ST);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
@@ -52,14 +48,14 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     std::vector<Term::Ptr> globals;
     globals.reserve(globalList.size());
     for (auto& g : globalList) {
-        globals.push_back(TF->getValueTerm(&g));
+        globals.push_back(FN.Term->getValueTerm(&g));
     }
-    Predicate::Ptr gPredicate = PF->getGlobalsPredicate(globals);
+    Predicate::Ptr gPredicate = FN.Predicate->getGlobalsPredicate(globals);
 
     // Register REQUIRES
     PredicateState::Ptr requires = FM->getReq(&F);
 
-    PredicateState::Ptr initialState = (PSF * gPredicate + requires)();
+    PredicateState::Ptr initialState = (FN.State * gPredicate + requires)();
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {
@@ -111,7 +107,7 @@ void OneForOne::processQueue() {
 
 void OneForOne::finalize() {
     for (const auto& e : predicateStates) {
-        instructionStates[e.first] = PSF->Choice(e.second);
+        instructionStates[e.first] = FN.State->Choice(e.second);
     }
 }
 
@@ -135,13 +131,13 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
     for ( ; isa<PHINode>(iter); ++iter) {
         const PHINode* phi = cast<PHINode>(iter);
         if (phi->getBasicBlockIndex(from) != -1) {
-            inState = (PSF * inState + PPM({from, phi}))();
+            inState = (FN.State * inState + PPM({from, phi}))();
         }
     }
 
     for (auto& I : view(iter, bb->end())) {
 
-        PredicateState::Ptr modifiedInState = (PSF * inState + PM(&I))();
+        PredicateState::Ptr modifiedInState = (FN.State * inState + PM(&I))();
         predicateStates[&I].push_back(modifiedInState);
 
         TRACE_MEASUREMENT(
@@ -155,17 +151,17 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
             CallInst& CI = cast<CallInst>(I);
 
             auto callState = (
-                PSF *
-                FM->getBdy(CI, PF.get(), TF.get()) +
-                FM->getEns(CI, PF.get(), TF.get())
+                FN.State *
+                FM->getBdy(CI, FN) +
+                FM->getEns(CI, FN)
             )();
-            auto t = TermRenamer(CI) + CallSiteInitializer(CI, TF.get());
+            auto t = CallSiteInitializer(CI, FN);
 
             PredicateState::Ptr instantiatedCallState = callState->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            modifiedInState = (PSF * modifiedInState + instantiatedCallState)();
+            modifiedInState = (FN.State * modifiedInState + instantiatedCallState)();
         }
 
         inState = modifiedInState;
@@ -200,8 +196,8 @@ void OneForOne::processBranchInst(
         PredicateState::Ptr trueState = TPM({&I, trueSucc});
         PredicateState::Ptr falseState = TPM({&I, falseSucc});
 
-        enqueue(I.getParent(), trueSucc, (PSF * state + trueState)());
-        enqueue(I.getParent(), falseSucc, (PSF * state + falseState)());
+        enqueue(I.getParent(), trueSucc, (FN.State * state + trueState)());
+        enqueue(I.getParent(), falseSucc, (FN.State * state + falseState)());
     }
 }
 
@@ -213,18 +209,18 @@ void OneForOne::processSwitchInst(
     for (auto c = I.case_begin(); c != I.case_end(); ++c) {
         const BasicBlock* caseSucc = c.getCaseSuccessor();
         PredicateState::Ptr caseState = TPM({&I, caseSucc});
-        enqueue(I.getParent(), caseSucc, (PSF * state + caseState)());
+        enqueue(I.getParent(), caseSucc, (FN.State * state + caseState)());
     }
 
     const BasicBlock* defaultSucc = I.getDefaultDest();
     PredicateState::Ptr defaultState = TPM({&I, defaultSucc});
-    enqueue(I.getParent(), defaultSucc, (PSF * state + defaultState)());
+    enqueue(I.getParent(), defaultSucc, (FN.State * state + defaultState)());
 }
 
 PredicateState::Ptr OneForOne::PM(const llvm::Instruction* I) {
     using borealis::util::containsKey;
 
-    PredicateState::Ptr res = PSF->Basic();
+    PredicateState::Ptr res = FN.State->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPredicateMap();
@@ -239,7 +235,7 @@ PredicateState::Ptr OneForOne::PM(const llvm::Instruction* I) {
 PredicateState::Ptr OneForOne::PPM(PhiBranch key) {
     using borealis::util::containsKey;
 
-    PredicateState::Ptr res = PSF->Basic();
+    PredicateState::Ptr res = FN.State->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getPhiPredicateMap();
@@ -254,7 +250,7 @@ PredicateState::Ptr OneForOne::PPM(PhiBranch key) {
 PredicateState::Ptr OneForOne::TPM(TerminatorBranch key) {
     using borealis::util::containsKey;
 
-    PredicateState::Ptr res = PSF->Basic();
+    PredicateState::Ptr res = FN.State->Basic();
 
     for (AbstractPredicateAnalysis* APA : PA) {
         auto& map = APA->getTerminatorPredicateMap();

@@ -6,7 +6,6 @@
  */
 
 #include "State/PredicateStateChoice.h"
-#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -33,31 +32,6 @@ PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
     return fmap([&](PredicateState::Ptr s) { return s + p; });
 }
 
-logic::Bool PredicateStateChoice::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
-    TRACE_FUNC;
-
-    using borealis::logic::Bool;
-
-    auto res = z3ef.getFalse();
-    std::vector<std::pair<Bool, ExecutionContext>> memories;
-    memories.reserve(choices.size());
-
-    for (const auto& choice : choices) {
-        ExecutionContext choiceCtx(*pctx);
-
-        auto path = choice->filterByTypes({PredicateType::PATH});
-        auto z3state = choice->toZ3(z3ef, &choiceCtx);
-        auto z3path = path->toZ3(z3ef, &choiceCtx);
-
-        res = res || z3state;
-        memories.push_back({z3path, choiceCtx});
-    }
-
-    pctx->switchOn("choice", memories);
-
-    return res;
-}
-
 PredicateState::Ptr PredicateStateChoice::addVisited(const llvm::Value* loc) const {
     return fmap([&](PredicateState::Ptr s) { return s << loc; });
 }
@@ -69,7 +43,8 @@ bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> 
 
 bool PredicateStateChoice::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
     for (const auto& choice: choices) {
-        if (choice->hasVisitedFrom(visited)) return true;
+        if (choice->hasVisitedFrom(visited))
+            return true;
     }
     return false;
 }

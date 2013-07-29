@@ -14,50 +14,39 @@ namespace borealis {
 
 class OpaqueVarTerm: public borealis::Term {
 
-    typedef OpaqueVarTerm self;
-
     std::string vname;
 
-    OpaqueVarTerm(const std::string& vname):
+    OpaqueVarTerm(Type::Ptr type, const std::string& vname):
         Term(
-             std::hash<std::string>()(vname),
-             vname,
-             type_id(*this)
+            class_tag(*this),
+            type,
+            vname
         ), vname(vname) {};
 
 public:
 
+    MK_COMMON_TERM_IMPL(OpaqueVarTerm);
+
     const std::string& getName() const { return vname; }
 
-    OpaqueVarTerm(const OpaqueVarTerm&) = default;
-
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
     }
-
-    static bool classof(const self*) {
-        return true;
-    }
-
-    virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
-            return Term::equals(other) &&
-                   that->vname == vname;
-        } else return false;
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getUnknown();
-    }
-
-    friend class TermFactory;
 
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, OpaqueVarTerm> {
+    static Dynamic<Impl> doit(
+            const OpaqueVarTerm*,
+            ExprFactory<Impl>&,
+            ExecutionContext<Impl>*) {
+        BYE_BYE(Dynamic<Impl>, "Should not be called!");
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

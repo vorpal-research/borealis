@@ -10,19 +10,18 @@
 
 #include <string>
 
-#include "Solver/ExecutionContext.h"
-#include "Solver/Z3ExprFactory.h"
+#include "SMT/SMTUtil.h"
 #include "Type/TypeFactory.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
 namespace borealis {
 
-// Forward declaration
-template<class SubClass>
-class Transformer;
+// Forward declarations
+template<class SubClass> class Transformer;
+// End of forward declarations
 
-class Term {
+class Term : public ClassTag {
 
 public:
 
@@ -30,59 +29,44 @@ public:
 
 protected:
 
-    Term(id_t id, const std::string& name, borealis::id_t term_type_id) :
-        id(id), term_type_id(term_type_id), name(name) {};
+    Term(id_t classTag, Type::Ptr type, const std::string& name) :
+        ClassTag(classTag), type(type), name(name) {};
     Term(const Term&) = default;
     virtual ~Term() {};
 
 public:
 
-    id_t getId() const {
-        return id;
+    Type::Ptr getType() const {
+        return type;
     }
 
     const std::string& getName() const {
         return name;
     }
 
-    borealis::id_t getTermTypeId() const {
-        return term_type_id;
-    }
-
     virtual bool equals(const Term* other) const {
         if (other == nullptr) return false;
-        if (this == other) return true;
-        return this->id == other->id &&
-                this->term_type_id == other->term_type_id;
+        return classTag == other->classTag &&
+                type == other->type &&
+                name == other->name;
     }
 
     bool operator==(const Term& other) const {
+        if (this == &other) return true;
         return this->equals(&other);
     }
 
-    size_t hashCode() const {
-        return static_cast<size_t>(id) ^ static_cast<size_t>(term_type_id);
+    virtual size_t hashCode() const {
+        return util::hash::defaultHasher()(classTag, type, name);
     }
 
-    static bool classof(const Term* /* t */) {
+    static bool classof(const Term*) {
         return true;
     }
 
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory&, ExecutionContext*) const {
-        BYE_BYE(Z3ExprFactory::Dynamic, "Should not be called!");
-    }
-#include "Util/unmacros.h"
-
-    virtual Type::Ptr getTermType() const = 0;
-
-private:
-
-    const id_t id;
-    const borealis::id_t term_type_id;
-
 protected:
 
+    Type::Ptr type;
     std::string name;
 
 };
@@ -103,5 +87,19 @@ struct hash<const borealis::Term::Ptr> {
     }
 };
 } // namespace std
+
+#define MK_COMMON_TERM_IMPL(CLASS) \
+private: \
+    typedef CLASS Self; \
+    CLASS(const CLASS&) = default; \
+public: \
+    friend class TermFactory; \
+    virtual ~CLASS() {}; \
+    static bool classof(const Self*) { \
+        return true; \
+    } \
+    static bool classof(const Term* t) { \
+        return t->getClassTag() == class_tag<Self>(); \
+    }
 
 #endif /* TERM_H_ */

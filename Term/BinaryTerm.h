@@ -14,57 +14,92 @@ namespace borealis {
 
 class BinaryTerm: public borealis::Term {
 
-    typedef BinaryTerm self;
-
     llvm::ArithType opcode;
     Term::Ptr lhv;
     Term::Ptr rhv;
 
-    BinaryTerm(llvm::ArithType opcode, Term::Ptr lhv, Term::Ptr rhv):
+    BinaryTerm(Type::Ptr type, llvm::ArithType opcode, Term::Ptr lhv, Term::Ptr rhv):
         Term(
-                lhv->hashCode() ^ rhv->hashCode(),
-                "(" + lhv->getName() + " " + llvm::arithString(opcode) + " " + rhv->getName() + ")",
-                type_id(*this)
+            class_tag(*this),
+            type,
+            "(" + lhv->getName() + " " + llvm::arithString(opcode) + " " + rhv->getName() + ")"
         ), opcode(opcode), lhv(lhv), rhv(rhv) {};
 
 public:
 
-    BinaryTerm(const BinaryTerm&) = default;
-    ~BinaryTerm();
+    MK_COMMON_TERM_IMPL(BinaryTerm);
+
+    llvm::ArithType getOpcode() const { return opcode; }
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new BinaryTerm(opcode, tr->transform(lhv), tr->transform(rhv));
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        auto _lhv = tr->transform(lhv);
+        auto _rhv = tr->transform(rhv);
+        auto _type = getTermType(tr->FN.Type, _lhv, _rhv);
+        return new Self{ _type, opcode, _lhv, _rhv };
     }
 
+    virtual bool equals(const Term* other) const override {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
+                    that->opcode == opcode &&
+                    *that->lhv == *lhv &&
+                    *that->rhv == *rhv;
+        } else return false;
+    }
+
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), opcode, lhv, rhv);
+    }
+
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr lhv, Term::Ptr rhv) {
+        return TyF->merge(lhv->getType(), rhv->getType());
+    }
+
+};
+
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Bool Bool;
-        typedef Z3ExprFactory::DynBV DynBV;
+template<class Impl>
+struct SMTImpl<Impl, BinaryTerm> {
+    static Dynamic<Impl> doit(
+            const BinaryTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
 
-        auto lhvz3 = lhv->toZ3(z3ef, ctx);
-        auto rhvz3 = rhv->toZ3(z3ef, ctx);
+        USING_SMT_IMPL(Impl);
 
-        if(lhvz3.isBool() && rhvz3.isBool()) {
-            auto lhv = lhvz3.to<Bool>().getUnsafe();
-            auto rhv = rhvz3.to<Bool>().getUnsafe();
+        auto lhvz3 = SMT<Impl>::doit(t->getLhv(), ef, ctx);
+        auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);;
 
-            switch(opcode) {
+        auto lhvb = lhvz3.template to<Bool>();
+        auto rhvb = rhvz3.template to<Bool>();
+
+        if(!lhvb.empty() && !rhvb.empty()) {
+            auto lhv = lhvb.getUnsafe();
+            auto rhv = rhvb.getUnsafe();
+
+            switch(t->getOpcode()) {
             case llvm::ArithType::BAND:
             case llvm::ArithType::LAND: return lhv && rhv;
             case llvm::ArithType::BOR:
             case llvm::ArithType::LOR:  return lhv || rhv;
             case llvm::ArithType::XOR:  return lhv ^  rhv;
-            default: BYE_BYE(Z3ExprFactory::Dynamic,
-                             "Unsupported logic opcode: " + llvm::arithString(opcode));
+            default: BYE_BYE(Dynamic,
+                             "Unsupported logic opcode: " +
+                             llvm::arithString(t->getOpcode()));
             }
         }
 
-        if(lhvz3.is<DynBV>() && rhvz3.is<DynBV>()) {
-            auto lhv = lhvz3.to<DynBV>().getUnsafe();
-            auto rhv = rhvz3.to<DynBV>().getUnsafe();
+        auto lhvbv = lhvz3.template to<DynBV>();
+        auto rhvbv = rhvz3.template to<DynBV>();
 
-            switch(opcode) {
+        if(!lhvbv.empty() && !rhvbv.empty()) {
+            auto lhv = lhvbv.getUnsafe();
+            auto rhv = rhvbv.getUnsafe();
+
+            switch(t->getOpcode()) {
             case llvm::ArithType::ADD:  return lhv +  rhv;
             case llvm::ArithType::BAND: return lhv &  rhv;
             case llvm::ArithType::BOR:  return lhv |  rhv;
@@ -76,44 +111,17 @@ public:
             case llvm::ArithType::SUB:  return lhv -  rhv;
             case llvm::ArithType::XOR:  return lhv ^  rhv;
             case llvm::ArithType::LSHR: return lhv.lshr(rhv);
-            default: BYE_BYE(Z3ExprFactory::Dynamic,
-                             "Unsupported bv opcode: " + llvm::arithString(opcode));
+            default: BYE_BYE(Dynamic,
+                             "Unsupported bv opcode: " +
+                             llvm::arithString(t->getOpcode()));
             }
         }
 
-        BYE_BYE(Z3ExprFactory::Dynamic, "Unreachable!");
+        BYE_BYE(Dynamic, "Unreachable!");
     }
+};
 #include "Util/unmacros.h"
 
-    virtual bool equals(const Term* other) const override {
-        if (const BinaryTerm* that = llvm::dyn_cast<BinaryTerm>(other)) {
-            return  Term::equals(other) &&
-                    that->opcode == opcode &&
-                    *that->lhv == *lhv &&
-                    *that->rhv == *rhv;
-        } else return false;
-    }
-
-    llvm::ArithType getOpcode() const { return opcode; }
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const BinaryTerm*) {
-        return true;
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
-        return tf.merge(lhv->getTermType(), rhv->getTermType());
-    }
-
-    friend class TermFactory;
-};
-
-} /* namespace borealis */
+} // namespace borealis
 
 #endif /* BINARYTERM_H_ */

@@ -11,15 +11,13 @@
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/Pass.h>
 
+#include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager.h"
 #include "Passes/Misc/DetectNullPass.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"
-#include "Predicate/PredicateFactory.h"
-#include "State/PredicateStateFactory.h"
-#include "Term/TermFactory.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -54,11 +52,8 @@ private:
     DetectNullPass* DNP;
 
     DefectManager* DM;
-	SlotTracker* ST;
 
-	PredicateFactory::Ptr PF;
-	PredicateStateFactory::Ptr PSF;
-	TermFactory::Ptr TF;
+	FactoryNest FN;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;

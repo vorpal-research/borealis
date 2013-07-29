@@ -29,6 +29,20 @@ constexpr id_t type_id(const T&) { return type_index<T>::id(); }
 template<class T>
 constexpr id_t type_id() { return type_index<T>::id(); }
 
+class ClassTag {
+protected:
+    const id_t classTag;
+public:
+    ClassTag(id_t classTag) : classTag(classTag) {};
+    id_t getClassTag() const { return classTag; }
+};
+
+template<class T>
+constexpr id_t class_tag(const T&) { return type_index<T>::id(); }
+
+template<class T>
+constexpr id_t class_tag() { return type_index<T>::id(); }
+
 } // namespace borealis
 
 namespace std {

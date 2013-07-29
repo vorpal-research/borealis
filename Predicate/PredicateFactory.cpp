@@ -6,9 +6,3 @@
  */
 
 #include "Predicate/PredicateFactory.h"
-
-namespace borealis {
-
-PredicateFactory::PredicateFactory(SlotTracker* slotTracker) : slotTracker(slotTracker) {}
-
-} /* namespace borealis */

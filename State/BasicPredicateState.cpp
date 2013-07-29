@@ -5,9 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include "Logging/tracer.hpp"
 #include "State/BasicPredicateState.h"
-#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -44,18 +42,6 @@ PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const
     return Simplified(res.release());
 }
 
-logic::Bool BasicPredicateState::toZ3(Z3ExprFactory& z3ef, ExecutionContext* pctx) const {
-    TRACE_FUNC;
-
-    auto res = z3ef.getTrue();
-    for (auto& v : data) {
-        res = res && v->toZ3(z3ef, pctx);
-    }
-    res = res && pctx->toZ3();
-
-    return res;
-}
-
 PredicateState::Ptr BasicPredicateState::addVisited(const llvm::Value* loc) const {
     auto res = SelfPtr(new Self{ *this });
     res->addVisitedInPlace(loc);
@@ -68,13 +54,11 @@ bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> l
 }
 
 bool BasicPredicateState::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
-    using borealis::util::containsKey;
-
     auto it = visited.begin();
     auto end = visited.end();
-    for ( ; it != end; ) {
+    for ( ; it != end ; ) {
         if (contains(locs, *it)) {
-            visited.erase(it++);
+            it = visited.erase(it);
         } else {
             ++it;
         }

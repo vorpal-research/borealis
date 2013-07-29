@@ -17,45 +17,47 @@ namespace borealis {
 
 class ArgumentTerm: public borealis::Term {
 
+    unsigned int idx;
+
+    ArgumentTerm(Type::Ptr type, unsigned int idx, const std::string& name) :
+        Term(
+            class_tag(*this),
+            type,
+            name
+        ), idx(idx) {}
+
 public:
 
-    friend class TermFactory;
+    MK_COMMON_TERM_IMPL(ArgumentTerm);
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<ArgumentTerm>();
-    }
+    unsigned getIdx() const { return idx; }
 
-    static bool classof(const ArgumentTerm* /* t */) {
-        return true;
-    }
-
-    llvm::Argument* getArgument() const {
-        return a;
-    }
-
-    ArgumentTerm(const ArgumentTerm&) = default;
-
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getVarByTypeAndName(getTermType(), getName());
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(a->getType());
+    virtual bool equals(const Term* other) const override {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
+                    that->idx == idx;
+        } else return false;
     }
 
-private:
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), idx);
+    }
 
-    ArgumentTerm(llvm::Argument* a, SlotTracker* st) :
-        Term(std::hash<llvm::Argument*>()(a), st->getLocalName(a), type_id(*this)),
-        a(a) {}
+};
 
-    llvm::Argument* a;
-
+template<class Impl>
+struct SMTImpl<Impl, ArgumentTerm> {
+    static Dynamic<Impl> doit(
+            const ArgumentTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getVarByTypeAndName(t->getType(), t->getName());
+    }
 };
 
 } /* namespace borealis */

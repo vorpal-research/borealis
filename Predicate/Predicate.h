@@ -14,8 +14,8 @@
 
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
-#include "Solver/ExecutionContext.h"
-#include "Solver/Z3ExprFactory.h"
+#include "Logging/tracer.hpp"
+#include "SMT/SMTUtil.h"
 #include "Term/Term.h"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
@@ -34,22 +34,19 @@ enum class PredicateType {
 PredicateType predicateType(const Annotation* a);
 
 // Forward declaration
-template<class SubClass>
-class Transformer;
+template<class SubClass> class Transformer;
+// End of forward declaration
 
-class Predicate {
+class Predicate : public ClassTag {
 
 public:
 
     typedef std::shared_ptr<const Predicate> Ptr;
 
-    Predicate(borealis::id_t predicate_type_id);
-    Predicate(borealis::id_t predicate_type_id, PredicateType type);
+    Predicate(id_t classTag);
+    Predicate(id_t classTag, PredicateType type);
+    Predicate(const Predicate&) = default;
     virtual ~Predicate() {};
-
-    borealis::id_t getPredicateTypeId() const {
-        return predicate_type_id;
-    }
 
     PredicateType getType() const {
         return type;
@@ -59,6 +56,17 @@ public:
         this->type = type;
         return this;
     }
+
+    const llvm::Instruction* getLocation() const {
+        return location;
+    }
+
+    Predicate* setLocation(const llvm::Instruction* location) {
+        this->location = location;
+        return this;
+    }
+
+
 
     std::string toString() const {
         switch (type) {
@@ -71,31 +79,29 @@ public:
         }
     }
 
-    virtual logic::Bool toZ3(Z3ExprFactory&, ExecutionContext* = nullptr) const = 0;
-
-    static bool classof(const Predicate* /* t */) {
+    static bool classof(const Predicate*) {
         return true;
     }
 
-    virtual bool equals(const Predicate* other) const = 0;
+    virtual bool equals(const Predicate* other) const {
+        if (other == nullptr) return false;
+        return type == other->type &&
+                location == other->location;
+    }
+
     bool operator==(const Predicate& other) const {
+        if (this == &other) return true;
         return this->equals(&other);
     }
 
-    virtual size_t hashCode() const = 0;
-
-    const llvm::Instruction* getLocation() const {
-        return location;
+    virtual size_t hashCode() const {
+        return util::hash::defaultHasher()(classTag, type, location);
     }
 
-    Predicate* setLocation(const llvm::Instruction* location) {
-        this->location = location;
-        return this;
-    }
+    virtual Predicate* clone() const = 0;
 
 protected:
 
-    const borealis::id_t predicate_type_id;
     PredicateType type;
     const llvm::Instruction* location;
 
@@ -114,5 +120,22 @@ struct hash<borealis::PredicateType> : public borealis::util::enums::enum_hash<b
 template<>
 struct hash<const borealis::PredicateType> : public borealis::util::enums::enum_hash<borealis::PredicateType> {};
 }
+
+#define MK_COMMON_PREDICATE_IMPL(CLASS) \
+private: \
+    typedef CLASS Self; \
+    CLASS(const Self&) = default; \
+public: \
+    friend class PredicateFactory; \
+    virtual ~CLASS() {}; \
+    static bool classof(const Self*) { \
+        return true; \
+    } \
+    static bool classof(const Predicate* p) { \
+        return p->getClassTag() == class_tag<Self>(); \
+    } \
+    virtual Predicate* clone() const override { \
+        return new Self{ *this }; \
+    }
 
 #endif /* PREDICATE_H_ */

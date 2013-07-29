@@ -14,33 +14,6 @@ namespace borealis {
 
 class InequalityPredicate: public borealis::Predicate {
 
-public:
-
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override;
-
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<InequalityPredicate>();
-    }
-
-    static bool classof(const InequalityPredicate* /* p */) {
-        return true;
-    }
-
-    template<class SubClass>
-    const InequalityPredicate* accept(Transformer<SubClass>* t) const {
-        return new InequalityPredicate(
-                t->transform(lhv),
-                t->transform(rhv),
-                this->type);
-    }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
-
-    friend class PredicateFactory;
-
-private:
-
     Term::Ptr lhv;
     Term::Ptr rhv;
 
@@ -49,6 +22,36 @@ private:
             Term::Ptr rhv,
             PredicateType type = PredicateType::STATE);
 
+public:
+
+    MK_COMMON_PREDICATE_IMPL(InequalityPredicate);
+
+    Term::Ptr getLhv() const { return lhv; }
+    Term::Ptr getRhv() const { return rhv; }
+
+    template<class SubClass>
+    const Self* accept(Transformer<SubClass>* t) const {
+        return new Self{
+            t->transform(lhv),
+            t->transform(rhv),
+            type
+        };
+    }
+
+    virtual bool equals(const Predicate* other) const override;
+    virtual size_t hashCode() const override;
+
+};
+
+template<class Impl>
+struct SMTImpl<Impl, InequalityPredicate> {
+    static Bool<Impl> doit(
+            const InequalityPredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+        return SMT<Impl>::doit(p->getLhv(), ef, ctx) != SMT<Impl>::doit(p->getRhv(), ef, ctx);
+    }
 };
 
 } /* namespace borealis */

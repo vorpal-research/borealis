@@ -12,6 +12,7 @@
 
 #include "Codegen/llvm.h"
 #include "Term/Term.def"
+#include "Type/TypeFactory.h"
 #include "Util/slottracker.h"
 
 #include "Util/macros.h"
@@ -24,10 +25,16 @@ class TermFactory {
 
 public:
 
-    typedef std::unique_ptr<TermFactory> Ptr;
+    typedef std::shared_ptr<TermFactory> Ptr;
 
-    Term::Ptr getArgumentTerm(llvm::Argument* a) {
-        return Term::Ptr(new ArgumentTerm(a, slotTracker));
+    Term::Ptr getArgumentTerm(llvm::Argument* arg) {
+        return Term::Ptr{
+            new ArgumentTerm(
+                TyF->cast(arg->getType()),
+                arg->getArgNo(),
+                st->getLocalName(arg)
+            )
+        };
     }
 
     Term::Ptr getConstTerm(llvm::Constant* c) {
@@ -52,17 +59,67 @@ public:
                 }
                 return getGepTerm(base, idxs);
             }
+
+        } else if (auto* null = dyn_cast<ConstantPointerNull>(c)) {
+            return getNullPtrTerm(null);
+
+        } else if (auto* cInt = dyn_cast<ConstantInt>(c)) {
+            if (cInt->getType()->getPrimitiveSizeInBits() == 1) {
+                if (cInt->isOne()) return getTrueTerm();
+                else if (cInt->isZero()) return getFalseTerm();
+            } else {
+                return getIntTerm(cInt->getValue().getZExtValue());
+            }
+
+        } else if (auto* cFP = dyn_cast<ConstantFP>(c)) {
+            auto& fp = cFP->getValueAPF();
+
+            if (&fp.getSemantics() == &APFloat::IEEEsingle) {
+                return getRealTerm(fp.convertToFloat());
+            } else if (&fp.getSemantics() == &APFloat::IEEEdouble) {
+                return getRealTerm(fp.convertToDouble());
+            } else {
+                BYE_BYE(Term::Ptr, "Unsupported semantics of APFloat");
+            }
+
+        } else if (auto* undef = dyn_cast<UndefValue>(c)) {
+            return getUndefTerm(undef);
+
         }
 
-        return Term::Ptr(new ConstTerm(c, slotTracker));
+        return Term::Ptr{
+            new ConstTerm(
+                TyF->cast(c->getType()),
+                st->getLocalName(c),
+                getAsCompileTimeString(c)
+            )
+        };
     }
 
     Term::Ptr getNullPtrTerm() {
-        return getConstTerm(llvm::getNullPointer());
+        return Term::Ptr{
+            new OpaqueNullPtrTerm(TyF->getUnknown())
+        };
+    }
+
+    Term::Ptr getNullPtrTerm(llvm::ConstantPointerNull* n) {
+        return Term::Ptr{
+            new OpaqueNullPtrTerm(TyF->cast(n->getType()))
+        };
+    }
+
+    Term::Ptr getUndefTerm(llvm::UndefValue* u) {
+        return Term::Ptr{
+            new OpaqueUndefTerm(TyF->cast(u->getType()))
+        };
     }
 
     Term::Ptr getBooleanTerm(bool b) {
-        return Term::Ptr(new ConstTerm(llvm::getBoolConstant(b), slotTracker));
+        return Term::Ptr{
+            new OpaqueBoolConstantTerm(
+                TyF->getBool(), b
+            )
+        };
     }
 
     Term::Ptr getTrueTerm() {
@@ -73,12 +130,29 @@ public:
         return getBooleanTerm(false);
     }
 
-    Term::Ptr getIntTerm(uint64_t i) {
-        return Term::Ptr(new ConstTerm(llvm::getIntConstant(i), slotTracker));
+    Term::Ptr getIntTerm(long long i) {
+        return Term::Ptr{
+            new OpaqueIntConstantTerm(
+                TyF->getInteger(), i
+            )
+        };
+    }
+
+    Term::Ptr getRealTerm(double d) {
+        return Term::Ptr{
+            new OpaqueFloatingConstantTerm(
+                TyF->getFloat(), d
+            )
+        };
     }
 
     Term::Ptr getReturnValueTerm(llvm::Function* F) {
-        return Term::Ptr(new ReturnValueTerm(F, slotTracker));
+        return Term::Ptr{
+            new ReturnValueTerm(
+                TyF->cast(F->getFunctionType()->getReturnType()),
+                F->getName().str()
+            )
+        };
     }
 
     Term::Ptr getValueTerm(llvm::Value* v) {
@@ -89,88 +163,143 @@ public:
         else if (auto* arg = dyn_cast<Argument>(v))
             return getArgumentTerm(arg);
 
-        return Term::Ptr(new ValueTerm(v, slotTracker));
+        return Term::Ptr{
+            new ValueTerm(
+                TyF->cast(v->getType()),
+                st->getLocalName(v)
+            )
+        };
     }
 
     Term::Ptr getTernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls) {
-        return Term::Ptr(new TernaryTerm(cnd, tru, fls));
+        return Term::Ptr{
+            new TernaryTerm(
+                TernaryTerm::getTermType(TyF, cnd, tru, fls),
+                cnd, tru, fls
+            )
+        };
     }
 
     Term::Ptr getBinaryTerm(llvm::ArithType opc, Term::Ptr lhv, Term::Ptr rhv) {
-        return Term::Ptr(new BinaryTerm(opc, lhv, rhv));
+        return Term::Ptr{
+            new BinaryTerm(
+                BinaryTerm::getTermType(TyF, lhv, rhv),
+                opc, lhv, rhv
+            )
+        };
     }
 
     Term::Ptr getUnaryTerm(llvm::UnaryArithType opc, Term::Ptr rhv) {
-        return Term::Ptr(new UnaryTerm(opc, rhv));
+        return Term::Ptr{
+            new UnaryTerm(
+                UnaryTerm::getTermType(TyF, rhv),
+                opc, rhv
+            )
+        };
     }
 
     Term::Ptr getLoadTerm(Term::Ptr rhv) {
-        return Term::Ptr(new LoadTerm(rhv));
+        return Term::Ptr{
+            new LoadTerm(
+                LoadTerm::getTermType(TyF, rhv),
+                rhv
+            )
+        };
     }
 
-    Term::Ptr getReadPropertyTerm(Term::Ptr propName, Term::Ptr rhv, Type::Ptr type) {
-        return Term::Ptr(new ReadPropertyTerm(propName, rhv, type));
+    Term::Ptr getReadPropertyTerm(Type::Ptr type, Term::Ptr propName, Term::Ptr rhv) {
+        return Term::Ptr{
+            new ReadPropertyTerm(type, propName, rhv)
+        };
     }
 
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         using namespace llvm;
-        using borealis::util::tail;
 
-        Term::Ptr v = getValueTerm(base);
+        llvm::Type* baseType = base->getType();
 
-        llvm::Type* type = base->getType();
+        llvm::Type* type = baseType;
+        ValueVector typeIdxs;
+        typeIdxs.reserve(idxs.size());
 
         std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
-        shifts.reserve(idxs.size() - 1);
+        shifts.reserve(idxs.size());
 
-        for (auto* idx : tail(idxs)) {
+        for (auto* idx : idxs) {
             ASSERT(type, "Incorrect GEP type indices");
 
             Term::Ptr by = getValueTerm(idx);
             Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
             shifts.push_back({by, size});
 
-            type = GetElementPtrInst::getIndexedType(type, idx);
+            typeIdxs.push_back(idx);
+            type = GetElementPtrInst::getIndexedType(baseType, typeIdxs);
         }
 
         type = GetElementPtrInst::getGEPReturnType(base, idxs);
 
-        return Term::Ptr(new GepTerm(v, shifts, type));
+        return Term::Ptr{
+            new GepTerm(
+                TyF->cast(type),
+                getValueTerm(base),
+                shifts
+            )
+        };
     }
 
     Term::Ptr getCmpTerm(llvm::ConditionType opc, Term::Ptr lhv, Term::Ptr rhv) {
-        return Term::Ptr(new CmpTerm(opc, lhv, rhv));
+        return Term::Ptr{
+            new CmpTerm(
+                CmpTerm::getTermType(TyF, lhv, rhv),
+                opc, lhv, rhv
+            )
+        };
     }
 
     Term::Ptr getOpaqueVarTerm(const std::string& name) {
-        return Term::Ptr(new OpaqueVarTerm(name));
+        return Term::Ptr{
+            new OpaqueVarTerm(TyF->getUnknown(), name)
+        };
     }
 
     Term::Ptr getOpaqueBuiltinTerm(const std::string& name) {
-        return Term::Ptr(new OpaqueBuiltinTerm(name));
+        return Term::Ptr{
+            new OpaqueBuiltinTerm(TyF->getUnknown(), name)
+        };
     }
 
     Term::Ptr getOpaqueConstantTerm(long long v) {
-        return Term::Ptr(new OpaqueIntConstantTerm(v));
+        return Term::Ptr{
+            new OpaqueIntConstantTerm(TyF->getInteger(), v)
+        };
     }
 
     Term::Ptr getOpaqueConstantTerm(double v) {
-        return Term::Ptr(new OpaqueFloatingConstantTerm(v));
+        return Term::Ptr{
+            new OpaqueFloatingConstantTerm(TyF->getFloat(), v)
+        };
     }
 
     Term::Ptr getOpaqueConstantTerm(bool v) {
-        return Term::Ptr(new OpaqueBoolConstantTerm(v));
+        return Term::Ptr{
+            new OpaqueBoolConstantTerm(TyF->getBool(), v)
+        };
     }
 
-    static Ptr get(SlotTracker* slotTracker) {
-        return Ptr(new TermFactory(slotTracker));
+    static TermFactory::Ptr get(
+            SlotTracker* st,
+            TypeFactory::Ptr TyF) {
+        return TermFactory::Ptr{
+            new TermFactory(st, TyF)
+        };
     }
 
 private:
 
-    SlotTracker* slotTracker;
+    SlotTracker* st;
+    TypeFactory::Ptr TyF;
 
-    TermFactory(SlotTracker* slotTracker);
+    TermFactory(SlotTracker* st, TypeFactory::Ptr TyF);
 
 };
 

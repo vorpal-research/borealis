@@ -43,14 +43,11 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     auto& meta =  GetAnalysis< MetaInfoTracker >::doit(this);
     auto& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
-    auto* slots = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
-    auto PF = PredicateFactory::get(slots);
-    auto TF = TermFactory::get(slots);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
+    FN = FactoryNest(st);
 
     for (auto a : annotations) {
-        Annotation::Ptr anno = materialize(a, TF.get(), &meta);
+        Annotation::Ptr anno = materialize(a, FN, &meta);
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
 
             if ( ! (isa<RequiresAnnotation>(logic) ||
@@ -59,10 +56,10 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
                 if (auto* F = dyn_cast<Function>(e.second)) {
                     PredicateState::Ptr ps = (
-                        PSF *
-                        PF->getEqualityPredicate(
+                        FN.State *
+                        FN.Predicate->getEqualityPredicate(
                             logic->getTerm(),
-                            TF->getTrueTerm(),
+                            FN.Term->getTrueTerm(),
                             predicateType(logic)
                         )
                     )();
@@ -105,7 +102,7 @@ FunctionManager::FunctionDesc FunctionManager::get(llvm::Function* F) {
     if (containsKey(data, F)) {
         // Do nothing
     } else {
-        data[F] = PSF->Basic();
+        data[F] = FN.State->Basic();
     }
 
     return data.at(F);
@@ -130,8 +127,7 @@ PredicateState::Ptr FunctionManager::getEns(llvm::Function* F) {
 
 FunctionManager::FunctionDesc FunctionManager::get(
         llvm::CallInst& CI,
-        PredicateFactory* PF,
-        TermFactory* TF) {
+        FactoryNest FN) {
 
     using borealis::util::containsKey;
 
@@ -144,9 +140,9 @@ FunctionManager::FunctionDesc FunctionManager::get(
     auto& m = IntrinsicsManager::getInstance();
     function_type ft = m.getIntrinsicType(CI);
 
-    auto state = PSF->Basic();
+    auto state = FN.State->Basic();
     if (!isUnknown(ft)) {
-        state = m.getPredicateState(ft, F, PF, TF);
+        state = m.getPredicateState(ft, F, FN);
     }
 
     data[F] = state;
@@ -155,25 +151,22 @@ FunctionManager::FunctionDesc FunctionManager::get(
 
 PredicateState::Ptr FunctionManager::getReq(
         llvm::CallInst& CI,
-        PredicateFactory* PF,
-        TermFactory* TF) {
-    const auto& desc = get(CI, PF, TF);
+        FactoryNest FN) {
+    const auto& desc = get(CI, FN);
     return desc.Req;
 }
 
 PredicateState::Ptr FunctionManager::getBdy(
         llvm::CallInst& CI,
-        PredicateFactory* PF,
-        TermFactory* TF) {
-    const auto& desc = get(CI, PF, TF);
+        FactoryNest FN) {
+    const auto& desc = get(CI, FN);
     return desc.Bdy;
 }
 
 PredicateState::Ptr FunctionManager::getEns(
         llvm::CallInst& CI,
-        PredicateFactory* PF,
-        TermFactory* TF) {
-    const auto& desc = get(CI, PF, TF);
+        FactoryNest FN) {
+    const auto& desc = get(CI, FN);
     return desc.Ens;
 }
 
@@ -181,9 +174,9 @@ PredicateState::Ptr FunctionManager::getEns(
 
 FunctionManager::FunctionDesc FunctionManager::mergeFunctionDesc(const FunctionDesc& d1, const FunctionDesc& d2) const {
     return FunctionDesc{
-        (PSF * d1.Req + d2.Req)(),
-        (PSF * d1.Bdy + d2.Bdy)(),
-        (PSF * d1.Ens + d2.Ens)()
+        (FN.State * d1.Req + d2.Req)(),
+        (FN.State * d1.Bdy + d2.Bdy)(),
+        (FN.State * d1.Ens + d2.Ens)()
     };
 }
 

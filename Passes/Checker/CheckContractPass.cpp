@@ -11,7 +11,7 @@
 #include "Codegen/llvm.h"
 #include "Passes/Checker/CheckContractPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
-#include "Solver/Z3Solver.h"
+#include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
@@ -40,13 +40,13 @@ public:
     }
 
     void checkContract(llvm::CallInst& CI) {
-        auto contract = pass->FM->getReq(CI, pass->PF.get(), pass->TF.get());
+        auto contract = pass->FM->getReq(CI, pass->FN);
         if (contract->isEmpty()) return;
 
         auto state = pass->PSA->getInstructionState(&CI);
         if (!state) return;
 
-        CallSiteInitializer csi(CI, pass->TF.get());
+        CallSiteInitializer csi(CI, pass->FN);
         auto instantiatedContract = contract->map(
             [&csi](Predicate::Ptr p) { return csi.transform(p); }
         );
@@ -54,8 +54,8 @@ public:
         dbgs() << "Checking: " << CI << endl;
         dbgs() << "  Requires: " << endl << instantiatedContract << endl;
 
-        Z3ExprFactory z3ef;
-        Z3Solver s(z3ef);
+        Z3::ExprFactory z3ef;
+        Z3::Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
         if (s.isViolated(instantiatedContract, state)) {
@@ -84,17 +84,17 @@ public:
     }
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
-        auto anno = materialize(A, pass->TF.get(), pass->MI);
+        auto anno = materialize(A, pass->FN, pass->MI);
 
         auto state = pass->PSA->getInstructionState(&CI);
         if (!state) return;
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
             auto query = (
-                pass->PSF *
-                pass->PF->getEqualityPredicate(
+                pass->FN.State *
+                pass->FN.Predicate->getEqualityPredicate(
                     LA->getTerm(),
-                    pass->TF->getTrueTerm(),
+                    pass->FN.Term->getTrueTerm(),
                     predicateType(LA)
                 )
             )();
@@ -102,8 +102,8 @@ public:
             dbgs() << "Checking: " << CI << endl;
             dbgs() << "  Assert: " << endl << query << endl;
 
-            Z3ExprFactory z3ef;
-            Z3Solver s(z3ef);
+            Z3::ExprFactory z3ef;
+            Z3::Solver s(z3ef);
 
             dbgs() << "  State: " << endl << state << endl;
             if (s.isViolated(query, state)) {
@@ -122,8 +122,8 @@ public:
         dbgs() << "Checking: " << RI << endl;
         dbgs() << "  Ensures: " << endl << contract << endl;
 
-        Z3ExprFactory z3ef;
-        Z3Solver s(z3ef);
+        Z3::ExprFactory z3ef;
+        Z3::Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
         if (s.isViolated(contract, state)) {
@@ -159,11 +159,8 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    auto* slotTracker = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    PF = PredicateFactory::get(slotTracker);
-    TF = TermFactory::get(slotTracker);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     CallInstVisitor civ(this);
     civ.visit(F);

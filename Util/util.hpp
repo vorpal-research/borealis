@@ -12,7 +12,7 @@
 
 #include <cstddef>
 
-#include "lib/debugbreak/debugbreak.h"
+#include "debugbreak/debugbreak.h"
 
 #include "Logging/logger.hpp"
 #include "Util/meta.hpp"
@@ -116,6 +116,13 @@ QUICK_RETURN(impl::cdr_tuple_step_1(tp, typename util::make_cdr_indexer<Args...>
 template<class T>
 T* heap_copy(const T* val) {
     return new T{ *val };
+}
+
+
+
+template<class T>
+std::unique_ptr<T> uniq(T* val) {
+    return std::unique_ptr<T>(val);
 }
 
 

@@ -70,26 +70,35 @@ llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& r
     FileManager& fm = sm.getFileManager();
 
     if (range.lhv.isUnknown() || range.rhv.isUnknown()) {
-        return "Encountered unknown location, enjoy a smiley =)";
+        return StringRef{ "Encountered unknown location, enjoy a smiley =)" };
     }
 
-    const FileEntry* begFile = fm.getFile(range.lhv.filename);
+    auto* begFile = fm.getFile(range.lhv.filename);
+    auto* endFile = fm.getFile(range.rhv.filename);
 
     auto begLoc = sm.translateFileLineCol(begFile, range.lhv.loc.line, range.lhv.loc.col);
-    auto endLoc = sm.translateFileLineCol(begFile, range.rhv.loc.line, range.rhv.loc.col);
+    auto endLoc = sm.translateFileLineCol(endFile, range.rhv.loc.line, range.rhv.loc.col);
 
-    clang::FileID BeginFileID;
-    clang::FileID EndFileID;
-    unsigned BeginOffset;
-    unsigned EndOffset;
+    if (begLoc.isInvalid() || endLoc.isInvalid())
+        return "Encountered invalid location, enjoy a smiley =)";
 
-    std::tie(BeginFileID, BeginOffset) = sm.getDecomposedLoc(begLoc);
-    std::tie(EndFileID, EndOffset) = sm.getDecomposedLoc(endLoc);
+    bool StartInvalid = false;
+    bool EndInvalid = false;
+    const char* BufferStart = sm.getCharacterData(begLoc, &StartInvalid);
+    const char* BufferEnd = sm.getCharacterData(endLoc, &EndInvalid);
 
-    bool Invalid = false;
-    const char* BufferStart = sm.getBufferData(BeginFileID, &Invalid).data();
+    if (StartInvalid || EndInvalid)
+        return StringRef{ "Encountered invalid location, enjoy a smiley =)" };
 
-    return StringRef{ BufferStart + BeginOffset, EndOffset - BeginOffset };
+    if (BufferEnd < BufferStart) {
+        auto* xchg = BufferStart;
+        BufferStart = BufferEnd;
+        BufferEnd = xchg;
+    }
+
+    size_t BufferSize = BufferEnd - BufferStart;
+
+    return StringRef{ BufferStart, BufferSize };
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {

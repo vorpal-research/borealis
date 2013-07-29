@@ -3,13 +3,10 @@
 ################################################################################
 
 CXX := clang++
-# -stdlib=libc++
-
-LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine executionengine instcombine instrumentation interpreter ipa ipo jit linker mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld scalaropts selectiondag support tablegen target transformutils vectorize linker
 
 RTTIFLAG := -fno-rtti
 
-DEFS :=
+DEFS := -DGOOGLE_PROTOBUF_NO_RTTI
 
 INCLUDE_DIRS := \
 	/usr/include/z3
@@ -28,6 +25,13 @@ CXXFLAGS := \
 	$(RTTIFLAG) \
 	$(INCLUDES) \
 	$(DEFS)
+
+LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter \
+	codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine \
+	executionengine instcombine instrumentation interpreter ipa ipo jit linker \
+	mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld \
+	scalaropts selectiondag support tablegen target transformutils vectorize \
+	linker
 
 LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
 
@@ -48,20 +52,11 @@ WARNINGS_TAE := overloaded-virtual return-stack-address \
 	delete-non-virtual-dtor
 
 ifeq ($(CXX), clang++)
-CXXFLAGS += $(foreach w,$(WARNINGS_ON),-W$(w)) \
+CXXFLAGS += \
+	$(foreach w,$(WARNINGS_ON), -W$(w)) \
 	$(foreach w,$(WARNINGS_OFF),-Wno-$(w)) \
 	$(foreach w,$(WARNINGS_TAE),-Werror-$(w))
 endif
-
-################################################################################
-# Google Test
-################################################################################
-
-GOOGLE_TEST_DIR := $(PWD)/lib/google-test
-
-GOOGLE_TEST_LIB := $(GOOGLE_TEST_DIR)/make/gtest.a
-
-CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
 
 ################################################################################
 # Sources
@@ -76,46 +71,62 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Logging \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
-	$(PWD)/Solver \
+	$(PWD)/Protobuf \
+	$(PWD)/SMT \
 	$(PWD)/State \
 	$(PWD)/Term \
 	$(PWD)/Type \
 	$(PWD)/Util \
-	$(PWD)/lib/range-analysis/src \
 	$(PWD)/lib/poolalloc/src
-	
+
 ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD) \
+	$(PWD)/Protobuf/Gen \
+	$(PWD)/lib \
 	$(PWD)/lib/pegtl/include \
 	$(PWD)/lib/google-test/include
 	
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 
 SOURCES := \
-	$(shell ls *.cpp) \
-	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f)
-	
-SOURCES_WITH_MAIN := wrapper.cpp
+	$(shell ls $(PWD)/*.cpp) \
+	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f) \
+	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cc"  -type f)
+
+SOURCES_WITH_MAIN := $(PWD)/wrapper.cpp
 
 SOURCES_WITHOUT_MAIN := $(filter-out $(SOURCES_WITH_MAIN),$(SOURCES))
 
 OBJECTS := $(SOURCES:.cpp=.o)
-HEADERS := $(SOURCES:.cpp=.h)
+OBJECTS := $(OBJECTS:.cc=.o)
+
+OBJECTS_WITHOUT_MAIN := $(SOURCES_WITHOUT_MAIN:.cpp=.o)
+OBJECTS_WITHOUT_MAIN := $(OBJECTS_WITHOUT_MAIN:.cc=.o)
+
 DEPS := $(SOURCES:.cpp=.d)
+DEPS := $(DEPS:.cc=.d)
 
 ################################################################################
 # Tests
 ################################################################################
 
 TEST_DIRS := $(PWD)/test
-TEST_SOURCES := \
-	$(shell find $(TEST_DIRS) -name "*.cpp" -type f)
+TEST_SOURCES := $(shell find $(TEST_DIRS) -name "*.cpp" -type f)
 
-TEST_OBJECTS := $(SOURCES_WITHOUT_MAIN:.cpp=.o) $(TEST_SOURCES:.cpp=.o)
-TEST_HEADERS := $(TEST_SOURCES:.cpp=.h)
+TEST_OBJECTS := $(OBJECTS_WITHOUT_MAIN) $(TEST_SOURCES:.cpp=.o)
 TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
 
 TEST_OUTPUT := "test_results.xml"
+
+################################################################################
+# Google Test
+################################################################################
+
+GOOGLE_TEST_DIR := $(PWD)/lib/google-test
+
+GOOGLE_TEST_LIB := $(GOOGLE_TEST_DIR)/make/gtest.a
+
+CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
 
 ################################################################################
 # Exes
@@ -123,6 +134,10 @@ TEST_OUTPUT := "test_results.xml"
 
 EXES := wrapper
 TEST_EXES := run-tests
+
+RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
+	--gtest_output="xml:$(TEST_OUTPUT)" \
+	--gtest_color=yes
 
 CLANGLIBS := \
     -lclangCodeGen \
@@ -147,13 +162,8 @@ LIBS := \
 	-llog4cpp \
 	-lprofiler \
 	-ljsoncpp\
+	-lprotobuf\
 	-lmathsat -lgmpxx -lgmp
-
-default: all
-
-.PHONY: all tests regenerate-test-defs check clean .FORCE
-
-.FORCE:
 
 ################################################################################
 # Test defs management
@@ -162,15 +172,9 @@ default: all
 TEST_DEFS := $(shell find $(TEST_DIRS) -name "tests.def")
 
 $(TEST_DEFS): .FORCE
-	ls -1 $(@D) | grep '^.*.c$$' | xargs -n1 basename > $@.all
-	sed 's/^#\s*//' $(@D)/"tests.long.def" > $@.long.all
-	grep -v -x -f $@.long.all $@.all > $@
-
-
-
-RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
-	--gtest_output="xml:$(TEST_OUTPUT)" \
-	--gtest_color=yes
+	@ls -1 $(@D) | grep '^.*.c$$' | xargs -n1 basename > $@.all
+	@sed -e 's|^#\s*||' $(@D)/"tests.def.long" > $@.long.all
+	@grep -v -x -f $@.long.all $@.all > $@
 
 ################################################################################
 # Valgrind
@@ -179,51 +183,99 @@ RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
 VALGRIND := valgrind --leak-check=yes --suppressions=valgrind.supp
 
 ################################################################################
+# Protobuf
+################################################################################
+
+PROTO_SOURCE_DIR := $(PWD)/Protobuf/Gen
+
+PROTOC := protoc --proto_path=$(PWD) --cpp_out=$(PROTO_SOURCE_DIR)
+
+PROTOEXT := $(PWD)/extract-protobuf-desc.awk
+
+################################################################################
 # Deps management
 ################################################################################
-%.d: %.cpp
+
+%.d: %.cpp .protobuf
 	@$(CXX) $(CXXFLAGS) -MM $*.cpp > $*.d
 	@mv -f $*.d $*.dd
-	@sed -e 's|.*:|$*.o:|' < $*.dd > $*.d
-#	@sed -e 's|.*:||' -e 's|\\$$||' < $*.dd | fmt -1 | \
-#	  sed -e 's|^\s*||' -e 's|$$|:|' >> $*.d
+	@sed -e 's|.*:|$*.o $*.d:|' < $*.dd > $*.d
 	@rm -f $*.dd
+
+%.d: %.cc .protobuf
+	@$(CXX) $(CXXFLAGS) -MM $*.cc > $*.d
+	@mv -f $*.d $*.dd
+	@sed -e 's|.*:|$*.o $*.d:|' < $*.dd > $*.d
+	@rm -f $*.dd
+
+################################################################################
+# Meta rules
+################################################################################
+
+.DEFAULT_GOAL := all
+
+.PHONY: .FORCE
+
+.FORCE:
+
 ################################################################################
 # Rules
 ################################################################################
 
 all: $(EXES)
 
-$(EXES): $(OBJECTS)
+
+.protobuf:
+	@mkdir -p $(PROTO_SOURCE_DIR)
+	@for H in `find $(PWD) -name "*.cpp" -o -name "*.h" -o -name "*.hpp"`; do \
+		$(PROTOEXT) $$H; \
+	done
+	@find $(PWD) -name "*.proto" | xargs $(PROTOC)
+	@touch $@
+
+clean.protobuf:
+	@rm -f .protobuf
+	@find $(PWD) -name "*.proto" -delete
+	@rm -rf $(PROTO_SOURCE_DIR)
+
+
+$(EXES): $(OBJECTS) .protobuf
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
 
-google-test:
-	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a
 
-clean-google-test:
+.google-test:
+	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a
+	touch $@
+
+clean.google-test:
+	rm -f .google-test
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make clean
 
-$(TEST_EXES): $(TEST_OBJECTS) google-test
+
+$(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
 	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
+
 
 tests: $(EXES) $(TEST_EXES)
 
-regenerate-test-defs: $(TEST_DEFS)
+.regenerate-test-defs: $(TEST_DEFS)
 
-check: tests regenerate-test-defs
+
+check: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=-*Long/*
 
-check-with-valgrind: tests regenerate-test-defs
+check-with-valgrind: tests .regenerate-test-defs
 	$(VALGRIND) $(RUN_TEST_EXES) --gtest_filter=-*Long/*
 
-check-long: tests regenerate-test-defs
+check-long: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*Long/*
 
-check-all: tests regenerate-test-defs
+check-all: tests .regenerate-test-defs
 	$(RUN_TEST_EXES)
 
-clean: clean-google-test
-	rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_EXES) $(TEST_OUTPUT)
+
+clean:
+	@rm -f $(EXES) $(OBJECTS) $(DEPS) $(TEST_EXES) $(TEST_OBJECTS) $(TEST_DEPS) $(TEST_OUTPUT)
 
 ################################################################################
 -include $(DEPS)

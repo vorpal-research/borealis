@@ -14,46 +14,36 @@ namespace borealis {
 
 class OpaqueBoolConstantTerm: public borealis::Term {
 
-    typedef OpaqueBoolConstantTerm self;
-
     bool value;
 
-    OpaqueBoolConstantTerm(bool value):
+    OpaqueBoolConstantTerm(Type::Ptr type, bool value):
         Term(
-            static_cast<id_t>(value),
-            value ? "true" : "false",
-            type_id(*this)
+            class_tag(*this),
+            type,
+            value ? "true" : "false"
         ), value(value) {};
 
 public:
 
+    MK_COMMON_TERM_IMPL(OpaqueBoolConstantTerm);
+
     bool getValue() const { return value; }
 
-    OpaqueBoolConstantTerm(const self&) = default;
-
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getBoolConst(value);
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
     }
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+};
+
+template<class Impl>
+struct SMTImpl<Impl, OpaqueBoolConstantTerm> {
+    static Dynamic<Impl> doit(
+            const OpaqueBoolConstantTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getBoolConst(t->getValue());
     }
-
-    static bool classof(const self*) {
-        return true;
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getBool();
-    }
-
-    friend class TermFactory;
-
 };
 
 } /* namespace borealis */

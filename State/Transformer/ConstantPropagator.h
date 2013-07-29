@@ -19,18 +19,21 @@
 namespace borealis {
 
 class ConstantPropagator : public borealis::Transformer<ConstantPropagator> {
-private:
+
+    typedef borealis::Transformer<ConstantPropagator> Base;
+
     static constexpr double EPSILON = 4 * std::numeric_limits<double>::epsilon();
-    TermFactory* TF_;
 
 public:
-    ConstantPropagator(TermFactory* TF) : TF_(TF) {}
+
+    ConstantPropagator(FactoryNest FN) : Base(FN) {}
 
     Term::Ptr transformBinaryTerm(BinaryTermPtr);
     Term::Ptr transformUnaryTerm(UnaryTermPtr);
     Term::Ptr transformCmpTerm(CmpTermPtr);
 
 private:
+
     template<class T>
     Term::Ptr transformUnifiedBinaryTerm(T op, Term::Ptr leftTerm, Term::Ptr rightTerm) {
         using namespace llvm;
@@ -39,7 +42,6 @@ private:
         typedef OpaqueBoolConstantTerm Bool;
         typedef OpaqueIntConstantTerm Int;
         typedef OpaqueFloatingConstantTerm Float;
-        typedef ConstTerm Const;
 
         auto lhv = leftTerm;
         auto rhv = rightTerm;
@@ -47,22 +49,6 @@ private:
 #define PROPAGATE(A, B) \
     if (auto matched = match_pair<A, B>(lhv, rhv)) { \
         return propagateTerm(op, matched->first->getValue(), matched->second->getValue()); \
-    }
-#define PROPAGATE_WITH_CONSTANT(A) \
-    if (auto matched = match_pair<A, Const>(lhv, rhv)) { \
-        if (auto constInt = dyn_cast<ConstantInt>(matched->second->getConstant())) { \
-            return propagateTerm(op, matched->first->getValue(), static_cast<long long>(constInt->getSExtValue())); \
-        } else if (auto constFP = dyn_cast<ConstantFP>(matched->second->getConstant())) { \
-            return propagateTerm(op, matched->first->getValue(), constFP->getValueAPF().convertToDouble()); \
-        } \
-    }
-#define PROPAGATE_CONSTANT_WITH(A) \
-    if (auto matched = match_pair<Const, A>(lhv, rhv)) { \
-        if (auto constInt = dyn_cast<ConstantInt>(matched->first->getConstant())) { \
-            return propagateTerm(op, static_cast<long long>(constInt->getSExtValue()), matched->second->getValue()); \
-        } else if (auto constFP = dyn_cast<ConstantFP>(matched->first->getConstant())) { \
-            return propagateTerm(op, constFP->getValueAPF().convertToDouble(), matched->second->getValue()); \
-        } \
     }
 
         PROPAGATE(Bool, Bool);
@@ -75,40 +61,6 @@ private:
         PROPAGATE(Float, Int);
         PROPAGATE(Float, Float);
 
-        PROPAGATE_WITH_CONSTANT(Bool);
-        PROPAGATE_WITH_CONSTANT(Int);
-        PROPAGATE_WITH_CONSTANT(Float);
-        PROPAGATE_CONSTANT_WITH(Bool);
-        PROPAGATE_CONSTANT_WITH(Int);
-        PROPAGATE_CONSTANT_WITH(Float);
-
-        // Very special corner case
-        if (auto m = match_pair<Const, Const>(lhv, rhv)) {
-            if (auto mm = match_pair<ConstantInt, ConstantInt>(m->first->getConstant(), m->second->getConstant())) {
-                return propagateTerm(op,
-                        static_cast<long long>(mm->first->getSExtValue()),
-                        static_cast<long long>(mm->second->getSExtValue())
-                );
-            } else if (auto mm = match_pair<ConstantInt, ConstantFP>(m->first->getConstant(), m->second->getConstant())) {
-                return propagateTerm(op,
-                        static_cast<long long>(mm->first->getSExtValue()),
-                        mm->second->getValueAPF().convertToDouble()
-                );
-            } else if (auto mm = match_pair<ConstantFP, ConstantInt>(m->first->getConstant(), m->second->getConstant())) {
-                return propagateTerm(op,
-                        mm->first->getValueAPF().convertToDouble(),
-                        static_cast<long long>(mm->second->getSExtValue())
-                );
-            } else if (auto mm = match_pair<ConstantFP, ConstantFP>(m->first->getConstant(), m->second->getConstant())) {
-                return propagateTerm(op,
-                        mm->first->getValueAPF().convertToDouble(),
-                        mm->second->getValueAPF().convertToDouble()
-                );
-            }
-        }
-
-#undef PROPAGATE_CONSTANT_WITH
-#undef PROPAGATE_WITH_CONSTANT
 #undef PROPAGATE
 
         return nullptr;
@@ -210,31 +162,31 @@ private:
 
     template<class T>
     Term::Ptr propagateTerm(llvm::UnaryArithType opcode, T operand) {
-        return TF_->getOpaqueConstantTerm(propagate(opcode, operand));
+        return FN.Term->getOpaqueConstantTerm(propagate(opcode, operand));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ArithType opcode, Lhv lhv, Rhv rhv,
             GUARDED(void*, !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value) = nullptr) {
-        return TF_->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
+        return FN.Term->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ConditionType opcode, Lhv lhv, Rhv rhv,
             GUARDED(void*, !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value) = nullptr) {
-        return TF_->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
+        return FN.Term->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ArithType opcode, Lhv lhv, Rhv rhv,
             GUARDED(void*, std::is_floating_point<Lhv>::value || std::is_floating_point<Rhv>::value) = nullptr) {
-        return TF_->getOpaqueConstantTerm(propagateDouble(opcode, lhv, rhv));
+        return FN.Term->getOpaqueConstantTerm(propagateDouble(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ConditionType opcode, Lhv lhv, Rhv rhv,
             GUARDED(void*, std::is_floating_point<Lhv>::value || std::is_floating_point<Rhv>::value) = nullptr) {
-        return TF_->getOpaqueConstantTerm(propagateDouble(opcode, lhv, rhv));
+        return FN.Term->getOpaqueConstantTerm(propagateDouble(opcode, lhv, rhv));
     }
 };
 

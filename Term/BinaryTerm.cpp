@@ -6,9 +6,3 @@
  */
 
 #include "Term/BinaryTerm.h"
-
-namespace borealis {
-
-BinaryTerm::~BinaryTerm() {};
-
-} /* namespace borealis */

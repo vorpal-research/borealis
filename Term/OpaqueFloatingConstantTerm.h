@@ -14,53 +14,49 @@ namespace borealis {
 
 class OpaqueFloatingConstantTerm: public borealis::Term {
 
-    typedef OpaqueFloatingConstantTerm self;
+    static constexpr double EPS = 4 * std::numeric_limits<double>::epsilon();
 
     double value;
 
-    OpaqueFloatingConstantTerm(double value):
+    OpaqueFloatingConstantTerm(Type::Ptr type, double value):
         Term(
-            std::hash<double>()(value),
-            borealis::util::toString(value),
-            type_id(*this)
+            class_tag(*this),
+            type,
+            util::toString(value)
         ), value(value) {};
 
 public:
 
+    MK_COMMON_TERM_IMPL(OpaqueFloatingConstantTerm);
+
     double getValue() const { return value; }
 
-    OpaqueFloatingConstantTerm(const self&) = default;
-
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getRealConst(value);
-    }
-
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
-    }
-
-    static bool classof(const self*) {
-        return true;
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
     }
 
     virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                   std::abs(that->value - value) < .01;
+                    std::abs(that->value - value) < EPS;
         } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().getFloat();
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), value);
     }
 
-    friend class TermFactory;
+};
 
+template<class Impl>
+struct SMTImpl<Impl, OpaqueFloatingConstantTerm> {
+    static Dynamic<Impl> doit(
+            const OpaqueFloatingConstantTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getRealConst(t->getValue());
+    }
 };
 
 } /* namespace borealis */

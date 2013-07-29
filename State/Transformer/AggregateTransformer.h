@@ -19,10 +19,12 @@ template<class First, class Rest, class = GUARD(
 )>
 class AggregateTransformer : public borealis::Transformer<AggregateTransformer<First, Rest>> {
 
+    typedef borealis::Transformer<AggregateTransformer<First, Rest>> Base;
+
 public:
 
     AggregateTransformer(First&& first, Rest&& rest) :
-        first(std::move(first)), rest(std::move(rest)) {}
+        Base(first.FN), first(std::move(first)), rest(std::move(rest)) {}
 
     Predicate::Ptr transformBase(Predicate::Ptr p) {
         auto pp = first.transform(p);

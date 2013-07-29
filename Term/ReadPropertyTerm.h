@@ -8,7 +8,6 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
-#include "Codegen/llvm.h"
 #include "Term/ConstTerm.h"
 #include "Term/Term.h"
 
@@ -16,79 +15,72 @@ namespace borealis {
 
 class ReadPropertyTerm: public borealis::Term {
 
-    typedef ReadPropertyTerm self;
-
     Term::Ptr propName;
     Term::Ptr rhv;
-    Type::Ptr type;
 
-    ReadPropertyTerm(Term::Ptr propName, Term::Ptr rhv, Type::Ptr type):
+    ReadPropertyTerm(Type::Ptr type, Term::Ptr propName, Term::Ptr rhv):
         Term(
-                propName->hashCode() ^ rhv->hashCode() ^ type->getId(),
-                "read(" + propName->getName() + "," + rhv->getName() + ")",
-                type_id(*this)
-        ), propName(propName), rhv(rhv), type(type) {};
+            class_tag(*this),
+            type,
+            "read(" + propName->getName() + "," + rhv->getName() + ")"
+        ), propName(propName), rhv(rhv) {};
 
 public:
 
-    ReadPropertyTerm(const ReadPropertyTerm&) = default;
-    ~ReadPropertyTerm();
-
-    template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new self(tr->transform(propName), tr->transform(rhv), type);
-    }
-
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Pointer Pointer;
-
-        ASSERTC(ctx != nullptr);
-
-        ASSERT(llvm::isa<ConstTerm>(propName),
-               "Property read with non-constant property name");
-        auto* constPropName = llvm::cast<ConstTerm>(propName);
-        auto strPropName = getAsCompileTimeString(constPropName->getConstant());
-        ASSERT(!strPropName.empty(),
-               "Property read with unknown property name");
-
-        auto r = rhv->toZ3(z3ef, ctx);
-        ASSERT(r.is<Pointer>(),
-               "Property read with non-pointer right side");
-
-        auto rp = r.to<Pointer>().getUnsafe();
-
-        return ctx->readProperty(strPropName.getUnsafe(), rp, Z3ExprFactory::sizeForType(type));
-    }
-#include "Util/unmacros.h"
-
-    virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
-                    *that->propName == *propName &&
-                    *that->rhv == *rhv &&
-                    *that->type == *type;
-        } else return false;
-    }
+    MK_COMMON_TERM_IMPL(ReadPropertyTerm);
 
     Term::Ptr getPropertyName() const { return propName; }
     Term::Ptr getRhv() const { return rhv; }
-    Type::Ptr getType() const { return type; }
 
-    static bool classof(const self*) {
-        return true;
+    template<class Sub>
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        auto _propName = tr->transform(propName);
+        auto _rhv = tr->transform(rhv);
+        auto _type = type;
+        return new Self{ _type, _propName, _rhv };
     }
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
+    virtual bool equals(const Term* other) const override {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
+                    *that->propName == *propName &&
+                    *that->rhv == *rhv;
+        } else return false;
     }
 
-    virtual Type::Ptr getTermType() const override {
-        return type;
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), propName, rhv);
     }
 
-    friend class TermFactory;
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, ReadPropertyTerm> {
+    static Dynamic<Impl> doit(
+            const ReadPropertyTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+
+        USING_SMT_IMPL(Impl);
+
+        ASSERTC(ctx != nullptr);
+
+        ASSERT(llvm::isa<ConstTerm>(t->getPropertyName()),
+               "Property read with non-constant property name");
+        auto* constPropName = llvm::cast<ConstTerm>(t->getPropertyName());
+        auto strPropName = constPropName->getAsString();
+        ASSERT(!strPropName.empty(),
+               "Property read with unknown property name");
+
+        auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
+        ASSERT(!r.empty(), "Property read with non-pointer right side");
+        auto rp = r.getUnsafe();
+
+        return ctx->readProperty(strPropName.getUnsafe(), rp, ExprFactory::sizeForType(t->getType()));
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

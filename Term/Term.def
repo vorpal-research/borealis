@@ -21,6 +21,8 @@
 #include "Term/OpaqueIntConstantTerm.h"
 #include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
+#include "Term/OpaqueNullPtrTerm.h"
+#include "Term/OpaqueUndefTerm.h"
 
 #define HANDLE_TERM(NAME, CLASS)
 
@@ -42,6 +44,8 @@ HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
 HANDLE_TERM(OpaqueIntConstant, OpaqueIntConstantTerm)
 HANDLE_TERM(OpaqueBoolConstant, OpaqueBoolConstantTerm)
 HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
+HANDLE_TERM(OpaqueNullPtr, OpaqueNullPtrTerm)
+HANDLE_TERM(OpaqueUndef, OpaqueUndefTerm)
 
 #ifdef HANDLE_TERM
 #undef HANDLE_TERM

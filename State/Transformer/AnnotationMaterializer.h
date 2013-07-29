@@ -12,15 +12,16 @@
 
 #include "Annotation/Annotation.def"
 #include "Passes/Tracker/MetaInfoTracker.h"
-#include "Predicate/PredicateFactory.h"
 #include "State/Transformer/Transformer.hpp"
 #include "Term/NameContext.h"
-#include "Term/TermFactory.h"
 #include "Util/util.h"
 
 namespace borealis {
 
 class AnnotationMaterializer : public borealis::Transformer<AnnotationMaterializer> {
+
+    typedef borealis::Transformer<AnnotationMaterializer> Base;
+
     class AnnotationMaterializerImpl;
     AnnotationMaterializerImpl* pimpl;
 
@@ -28,7 +29,7 @@ public:
 
     AnnotationMaterializer(
             const LogicAnnotation& A,
-            TermFactory* TF,
+            FactoryNest FN,
             MetaInfoTracker* MI);
     ~AnnotationMaterializer();
 
@@ -89,7 +90,7 @@ public:
     }
 };
 
-Annotation::Ptr materialize(Annotation::Ptr, TermFactory*, MetaInfoTracker*);
+Annotation::Ptr materialize(Annotation::Ptr, FactoryNest FN, MetaInfoTracker*);
 
 } /* namespace borealis */
 

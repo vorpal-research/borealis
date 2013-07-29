@@ -258,40 +258,10 @@ std::string SlotTracker::getLocalName(const Value *V) {
     using borealis::logging::wtf;
     using borealis::util::toString;
 
-    // NB: you should keep this piece of code in sync with
-    //     ConstTerm::toZ3() method
-
-    if (isa<ConstantPointerNull>(V)) {
-        return "<null>";
-
-    } else if (auto* cInt = dyn_cast<ConstantInt>(V)) {
-        if (cInt->getType()->getPrimitiveSizeInBits() == 1) {
-            if (cInt->isOne()) return "true";
-            else if (cInt->isZero()) return "false";
-        } else {
-            return toString(cInt->getValue().getZExtValue());
-        }
-
-    } else if (auto* cFP = dyn_cast<ConstantFP>(V)) {
-        auto& fp = cFP->getValueAPF();
-
-        if (&fp.getSemantics() == &APFloat::IEEEsingle) {
-            return toString(fp.convertToFloat());
-        } else if (&fp.getSemantics() == &APFloat::IEEEdouble) {
-            return toString(fp.convertToDouble());
-        } else {
-            BYE_BYE(std::string, "Unsupported semantics of APFloat");
-        }
-
-    } else if (isa<UndefValue>(V)) {
-        return "<undef>";
-
-    } else if (isa<Constant>(V) && !V->hasName()) {
+    if (isa<Constant>(V) && !V->hasName()) {
         wtf() << "Unsupported constant encountered: " << toString(*V) << endl;
         return "?" + toString(V) + "?";
-    }
-
-    if (V->hasName()) {
+    } else if (V->hasName()) {
         return V->getName().str();
     } else {
         int slot = this->getLocalSlot(V);

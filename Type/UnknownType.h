@@ -5,20 +5,43 @@
 
 namespace borealis {
 
-class UnknownType : public Type {
-    typedef UnknownType self;
-    typedef Type base;
+class TypeFactory;
 
-    UnknownType() : Type(type_id(*this)) {}
+namespace type {
+
+/** protobuf -> Type/UnknownType.proto
+import "Type/Type.proto";
+
+package borealis.type.proto;
+
+message UnknownType {
+    extend borealis.proto.Type {
+        optional UnknownType ext = 5;
+    }
+    
+}
+
+**/
+class UnknownType : public Type {
+
+    typedef UnknownType Self;
+    typedef Type Base;
+
+    UnknownType() : Type(class_tag(*this)) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
-
+    friend class ::borealis::TypeFactory;
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
+    
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // UNKNOWNTYPE_H
+
+

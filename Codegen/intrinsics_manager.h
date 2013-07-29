@@ -17,9 +17,7 @@
 #include <unordered_map>
 
 #include "Codegen/intrinsics.h"
-#include "Predicate/PredicateFactory.h"
-#include "State/PredicateStateFactory.h"
-#include "Term/TermFactory.h"
+#include "Factory/Nest.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -28,7 +26,7 @@ class IntrinsicsManager {
 
 public:
 
-    typedef std::function<PredicateState::Ptr(llvm::Function*, PredicateFactory*, TermFactory*)> state_generator;
+    typedef std::function<PredicateState::Ptr(llvm::Function*, FactoryNest)> state_generator;
     typedef std::function<function_type(const IntrinsicsManager&, const llvm::CallInst&)> type_resolver;
 
     struct IntrinsicInfo {
@@ -44,15 +42,16 @@ public:
                 state_generator generator = DefaultGenerator,
                 type_resolver type_resolver = nullptr)
         : IntrinsicInfo{ type, name, generator } {
-                IntrinsicsManager::getInstance().registerIntrinsic(*this);
-                if (type_resolver) {
-                    IntrinsicsManager::getInstance().registerResolver(type_resolver);
-                }
+            IntrinsicsManager::getInstance().registerIntrinsic(*this);
+            if (type_resolver) {
+                IntrinsicsManager::getInstance().registerResolver(type_resolver);
+            }
         }
 
         static PredicateState::Ptr DefaultGenerator(
-                llvm::Function*, PredicateFactory*, TermFactory*) {
-            return PredicateStateFactory::get()->Basic();
+            llvm::Function*, FactoryNest FN
+        ) {
+            return FN.State->Basic();
         }
     };
 
@@ -73,7 +72,7 @@ public:
     }
 
     PredicateState::Ptr getPredicateState(
-            function_type, llvm::Function*, PredicateFactory*, TermFactory*) const;
+        function_type, llvm::Function*, FactoryNest) const;
 
     static IntrinsicsManager& getInstance() {
         static IntrinsicsManager instance;

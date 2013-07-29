@@ -5,26 +5,48 @@
 
 namespace borealis {
 
-class Pointer : public Type {
-    typedef Pointer self;
-    typedef Type base;
+class TypeFactory;
 
-    Pointer(Type::Ptr pointed) : Type(type_id(*this)), pointed(pointed) {}
+namespace type {
+
+/** protobuf -> Type/Pointer.proto
+import "Type/Type.proto";
+
+package borealis.type.proto;
+
+message Pointer {
+    extend borealis.proto.Type {
+        optional Pointer ext = 4;
+    }
+    optional borealis.proto.Type pointed = 1;
+}
+
+**/
+class Pointer : public Type {
+
+    typedef Pointer Self;
+    typedef Type Base;
+
+    Pointer(Type::Ptr pointed) : Type(class_tag(*this)), pointed(pointed) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
+    friend class ::borealis::TypeFactory;
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
     
 private:
     Type::Ptr pointed;
-
 public:
     Type::Ptr getPointed() const { return pointed; }
 
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // POINTER_H
+
+

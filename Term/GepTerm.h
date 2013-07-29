@@ -14,61 +14,86 @@ namespace borealis {
 
 class GepTerm: public borealis::Term {
 
-    typedef GepTerm Self;
-
     typedef std::pair<Term::Ptr, Term::Ptr> Shift;
     typedef std::vector<Shift> Shifts;
 
+    Term::Ptr base;
+    const Shifts shifts;
+
+    GepTerm(Type::Ptr type, Term::Ptr base, const Shifts& shifts) :
+        Term(
+            class_tag(*this),
+            type,
+            "gep(" + base->getName() + "," +
+                std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
+                    [](const std::string& a, const Shift& shift) {
+                        return a + "+" + shift.first->getName() + "*" + shift.second->getName();
+                    }
+                ) +
+            ")"
+        ), base(base), shifts(shifts) {};
+
 public:
 
-    friend class TermFactory;
+    MK_COMMON_TERM_IMPL(GepTerm);
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self* /* t */) {
-        return true;
-    }
-
-    GepTerm(const Self&) = default;
-    ~GepTerm();
+    Term::Ptr getBase() const { return base; }
+    const Shifts& getShifts() const { return shifts; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* t) const -> const Self* {
-        Shifts transformedShifts;
-        transformedShifts.reserve(shifts.size());
-
-        std::transform(shifts.begin(), shifts.end(), std::back_inserter(transformedShifts),
-            [&t](const Shift& shift) {
-                return std::make_pair(t->transform(shift.first), t->transform(shift.second));
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        Shifts _shifts;
+        _shifts.reserve(shifts.size());
+        std::transform(shifts.begin(), shifts.end(), std::back_inserter(_shifts),
+            [&tr](const Shift& shift) {
+                return std::make_pair(tr->transform(shift.first), tr->transform(shift.second));
             }
         );
 
-        return new GepTerm(
-            t->transform(v),
-            transformedShifts,
-            type
-        );
+        auto _base = tr->transform(base);
+        auto _type = type;
+        return new Self{ _type, _base, _shifts };
     }
 
+    virtual bool equals(const Term* other) const override {
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
+                    *that->base == *base &&
+                    std::equal(shifts.begin(), shifts.end(), that->shifts.begin(),
+                        [](const Shift& a, const Shift& b) {
+                            return *a.first == *b.first && *a.second == *b.second;
+                        }
+                    );
+        } else return false;
+    }
+
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), base, shifts);
+    }
+
+};
+
 #include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Dynamic Dynamic;
-        typedef Z3ExprFactory::Integer Integer;
-        typedef Z3ExprFactory::Pointer Pointer;
+template<class Impl>
+struct SMTImpl<Impl, GepTerm> {
+    static Dynamic<Impl> doit(
+            const GepTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
 
-        Dynamic vv = v->toZ3(z3ef, ctx);
+        USING_SMT_IMPL(Impl);
 
-        ASSERT(vv.is<Pointer>(),
+        auto base = SMT<Impl>::doit(t->getBase(), ef, ctx).template to<Pointer>();
+
+        ASSERT(!base.empty(),
                "Encountered a GEP term with non-pointer operand");
 
-        Pointer vp = vv.to<Pointer>().getUnsafe();
+        Pointer p = base.getUnsafe();
+        Integer shift = ef.getIntConst(0);
 
-        Pointer shift = z3ef.getIntConst(0);
-        for (const auto& s : shifts) {
-            auto by = s.first->toZ3(z3ef, ctx).to<Pointer>();
-            auto size = s.second->toZ3(z3ef, ctx).to<Pointer>();
+        for (const auto& s : t->getShifts()) {
+            auto by = SMT<Impl>::doit(s.first, ef, ctx).template to<Integer>();
+            auto size = SMT<Impl>::doit(s.second, ef, ctx).template to<Integer>();
 
             ASSERT(!by.empty() && !size.empty(),
                    "Encountered a GEP term with incorrect shifts");
@@ -76,43 +101,16 @@ public:
             shift = shift + by.getUnsafe() * size.getUnsafe();
         }
 
-        return z3ef.if_(z3ef.isInvalidPtrExpr(vp))
-                   .then_(z3ef.getInvalidPtr())
-                   .else_(
-                       (vp + shift).withAxiom(
-                           !z3ef.isInvalidPtrExpr(vp + shift)
-                       )
-                   );
+        return ef.if_(ef.isInvalidPtrExpr(p))
+                 .then_(ef.getInvalidPtr())
+                 .else_(
+                     (p + shift).withAxiom(
+                         !ef.isInvalidPtrExpr(p + shift)
+                     )
+                 );
     }
-#include "Util/unmacros.h"
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(type);
-    }
-
-private:
-
-    GepTerm(
-            Term::Ptr v,
-            const Shifts& shifts,
-            const llvm::Type* type
-    ) : Term(
-            v->hashCode() ^ std::hash<Shifts>()(shifts),
-            "gep(" + v->getName() + "," +
-            std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
-                [](const std::string& a, const Shift& shift) {
-                    return a + "+" + shift.first->getName() + "*" + shift.second->getName();
-                }
-            ) +
-            ")",
-            type_id(*this)
-        ), v(v), shifts(shifts), type(type) {}
-
-    Term::Ptr v;
-    const Shifts shifts;
-    const llvm::Type* type;
-
 };
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

@@ -7,9 +7,10 @@
 
 #include <sstream>
 
-#include "Solver/Logic.hpp"
+#include "SMT/Z3/Logic.hpp"
 
 namespace borealis {
+namespace z3_ {
 namespace logic {
 
 ConversionException::ConversionException(const std::string& msg) :
@@ -105,7 +106,10 @@ Bool implies(Bool lhv, Bool rhv) {
     z3::expr rhv_raw = z3impl::getExpr(rhv);
     auto& ctx = lhv_raw.ctx();
 
-    return Bool(z3::to_expr(ctx, Z3_mk_implies(ctx, lhv_raw, rhv_raw)), spliceAxioms(lhv, rhv));
+    return Bool{
+        z3::to_expr(ctx, Z3_mk_implies(ctx, lhv_raw, rhv_raw)),
+        z3impl::spliceAxioms(lhv, rhv)
+    };
 }
 
 Bool iff(Bool lhv, Bool rhv) {
@@ -113,13 +117,19 @@ Bool iff(Bool lhv, Bool rhv) {
     z3::expr rhv_raw = z3impl::getExpr(rhv);
     auto& ctx = lhv_raw.ctx();
 
-    return Bool(z3::to_expr(ctx, Z3_mk_iff(ctx, lhv_raw, rhv_raw)), spliceAxioms(lhv, rhv));
+    return Bool{
+        z3::to_expr(ctx, Z3_mk_iff(ctx, lhv_raw, rhv_raw)),
+        z3impl::spliceAxioms(lhv, rhv)
+    };
 }
 
 
 #define REDEF_BOOL_BOOL_OP(OP) \
         Bool operator OP(Bool bv0, Bool bv1) { \
-            return Bool(z3impl::getExpr(bv0) OP z3impl::getExpr(bv1), spliceAxioms(bv0, bv1)); \
+            return Bool{ \
+                z3impl::getExpr(bv0) OP z3impl::getExpr(bv1), \
+                z3impl::spliceAxioms(bv0, bv1) \
+            }; \
         }
 
 REDEF_BOOL_BOOL_OP(==)
@@ -132,20 +142,26 @@ Bool operator^(Bool bv0, Bool bv1) {
     z3::expr bv1_raw = z3impl::getExpr(bv1);
     auto& ctx = bv0_raw.ctx();
 
-    return Bool(z3::to_expr(ctx, Z3_mk_xor(ctx, bv0_raw, bv1_raw)), spliceAxioms(bv0, bv1));
+    return Bool{
+        z3::to_expr(ctx, Z3_mk_xor(ctx, bv0_raw, bv1_raw)),
+        z3impl::spliceAxioms(bv0, bv1)
+    };
 }
 
 #undef REDEF_BOOL_BOOL_OP
 
 
 Bool operator!(Bool bv0) {
-    return Bool(!z3impl::getExpr(bv0), z3impl::getAxiom(bv0));
+    return Bool{ !z3impl::getExpr(bv0), z3impl::getAxiom(bv0) };
 }
 
 
 #define REDEF_OP(OP) \
     Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
-        return Bool(z3impl::getExpr(lhv) OP z3impl::getExpr(rhv), spliceAxioms(lhv, rhv)); \
+        return Bool{ \
+            z3impl::getExpr(lhv) OP z3impl::getExpr(rhv), \
+            z3impl::spliceAxioms(lhv, rhv) \
+        }; \
     }
 
     REDEF_OP(<)
@@ -163,7 +179,10 @@ Bool operator!(Bool bv0) {
         size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize()); \
         DynBitVectorExpr dlhv = lhv.growTo(sz); \
         DynBitVectorExpr drhv = rhv.growTo(sz); \
-        return DynBitVectorExpr(z3impl::getExpr(dlhv) OP z3impl::getExpr(drhv), spliceAxioms(lhv, rhv)); \
+        return DynBitVectorExpr{ \
+            z3impl::getExpr(dlhv) OP z3impl::getExpr(drhv), \
+            z3impl::spliceAxioms(lhv, rhv) \
+        }; \
     }
 
     BIN_OP(+)
@@ -183,8 +202,8 @@ DynBitVectorExpr operator%(const DynBitVectorExpr& lhv, const DynBitVectorExpr& 
     auto& ctx = z3impl::getContext(lhv);
 
     auto res = z3::to_expr(ctx, Z3_mk_bvsmod(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
-    auto axm = spliceAxioms(lhv, rhv);
-    return DynBitVectorExpr(res, axm);
+    auto axm = z3impl::spliceAxioms(lhv, rhv);
+    return DynBitVectorExpr{ res, axm };
 }
 
 DynBitVectorExpr operator>>(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
@@ -194,8 +213,8 @@ DynBitVectorExpr operator>>(const DynBitVectorExpr& lhv, const DynBitVectorExpr&
     auto& ctx = z3impl::getContext(lhv);
 
     auto res = z3::to_expr(ctx, Z3_mk_bvashr(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
-    auto axm = spliceAxioms(lhv, rhv);
-    return DynBitVectorExpr(res, axm);
+    auto axm = z3impl::spliceAxioms(lhv, rhv);
+    return DynBitVectorExpr{ res, axm };
 }
 
 DynBitVectorExpr operator<<(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
@@ -205,9 +224,10 @@ DynBitVectorExpr operator<<(const DynBitVectorExpr& lhv, const DynBitVectorExpr&
     auto& ctx = z3impl::getContext(lhv);
 
     auto res = z3::to_expr(ctx, Z3_mk_bvshl(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
-    auto axm = spliceAxioms(lhv, rhv);
-    return DynBitVectorExpr(res, axm);
+    auto axm = z3impl::spliceAxioms(lhv, rhv);
+    return DynBitVectorExpr{ res, axm };
 }
 
 } // namespace logic
+} // namespace z3_
 } // namespace borealis

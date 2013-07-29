@@ -1,5 +1,5 @@
 /*
- * test_solver.cpp
+ * test_z3.cpp
  *
  *  Created on: Nov 19, 2012
  *      Author: ice-phoenix
@@ -8,9 +8,7 @@
 #include <gtest/gtest.h>
 #include <z3/z3++.h>
 
-#include "Solver/ExecutionContext.h"
-#include "Solver/Z3ExprFactory.h"
-#include "Solver/Z3Solver.h"
+#include "SMT/Z3/Solver.h"
 #include "Util/util.h"
 
 namespace {
@@ -26,12 +24,11 @@ static stream_t infos() {
 
 TEST(Z3ExprFactory, memoryArray) {
     {
-        using namespace borealis::logic;
-        using borealis::logic::Bool;
-        using borealis::Z3ExprFactory;
-        typedef Z3ExprFactory::Byte Byte;
+        using namespace borealis::z3_::logic;
 
-        Z3ExprFactory factory;
+        USING_SMT_IMPL(Z3);
+
+        ExprFactory factory;
         auto mkbyte = [&](int val){ return Byte::mkConst(factory.unwrap(), val); };
 
         auto check_expr = [&](Bool e)->bool {
@@ -54,16 +51,11 @@ TEST(Z3ExprFactory, memoryArray) {
 
 TEST(ExecutionContext, mergeMemory) {
     {
-        using namespace borealis::logic;
+        using namespace borealis::z3_::logic;
 
-        using borealis::ExecutionContext;
-        using borealis::Z3ExprFactory;
+        USING_SMT_IMPL(Z3);
 
-        typedef Z3ExprFactory::Bool Bool;
-        typedef Z3ExprFactory::Integer Integer;
-        typedef Z3ExprFactory::Pointer Pointer;
-
-        Z3ExprFactory factory;
+        ExprFactory factory;
 
         ExecutionContext default_memory(factory);
         ExecutionContext memory_with_a(factory);
@@ -100,12 +92,12 @@ TEST(ExecutionContext, mergeMemory) {
 
             z3::solver s(factory.unwrap());
 
-            s.add(logic::z3impl::asAxiom(in));
+            s.add(z3impl::asAxiom(in));
 
             Bool pred = factory.getBoolVar("$CHECK$");
-            s.add(logic::z3impl::asAxiom(implies(pred, !e)));
+            s.add(z3impl::asAxiom(implies(pred, !e)));
 
-            z3::expr pred_e = logic::z3impl::getExpr(pred);
+            z3::expr pred_e = z3impl::getExpr(pred);
             z3::check_result r = s.check(1, &pred_e);
 
             if (r == z3::sat) {
@@ -140,10 +132,9 @@ TEST(ExecutionContext, mergeMemory) {
 
 TEST(Solver, logic) {
 
-    using namespace borealis::logic;
-    using borealis::logic::Bool;
-    using borealis::logic::BitVector;
-    using borealis::logic::Function;
+    using namespace borealis::z3_::logic;
+
+    USING_SMT_IMPL(Z3);
 
     z3::context ctx;
     auto check_expr = [&](Bool e)->bool {

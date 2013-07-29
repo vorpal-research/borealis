@@ -6,9 +6,3 @@
  */
 
 #include "Term/UnaryTerm.h"
-
-namespace borealis {
-
-UnaryTerm::~UnaryTerm() {}
-
-} /* namespace borealis */

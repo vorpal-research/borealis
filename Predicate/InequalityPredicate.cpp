@@ -13,30 +13,22 @@ InequalityPredicate::InequalityPredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
         PredicateType type) :
-            Predicate(type_id(*this), type),
+            Predicate(class_tag(*this), type),
             lhv(lhv),
             rhv(rhv) {
-    this->asString = this->lhv->getName() + "!=" + this->rhv->getName();
-}
-
-logic::Bool InequalityPredicate::toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const {
-    TRACE_FUNC;
-    return lhv->toZ3(z3ef, ctx) != rhv->toZ3(z3ef, ctx);
+    asString = lhv->getName() + "!=" + rhv->getName();
 }
 
 bool InequalityPredicate::equals(const Predicate* other) const {
-    if (other == nullptr) return false;
-    if (this == other) return true;
-    if (const InequalityPredicate* o = llvm::dyn_cast<InequalityPredicate>(other)) {
-        return *this->lhv == *o->lhv &&
-                *this->rhv == *o->rhv;
-    } else {
-        return false;
-    }
+    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
+        return Predicate::equals(other) &&
+                *lhv == *o->lhv &&
+                *rhv == *o->rhv;
+    } else return false;
 }
 
 size_t InequalityPredicate::hashCode() const {
-    return util::hash::defaultHasher()(type, lhv, rhv);
+    return util::hash::defaultHasher()(Predicate::hashCode(), lhv, rhv);
 }
 
 } /* namespace borealis */

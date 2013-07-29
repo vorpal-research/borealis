@@ -10,7 +10,7 @@
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
 #include "Passes/Checker/CheckNullDereferencePass.h"
-#include "Solver/Z3Solver.h"
+#include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
 
 namespace borealis {
@@ -100,10 +100,10 @@ public:
                << "  at: " << where << endl;
 
         PredicateState::Ptr q = (
-            pass->PSF *
-            pass->PF->getInequalityPredicate(
-                pass->TF->getValueTerm(&what),
-                pass->TF->getNullPtrTerm()
+            pass->FN.State *
+            pass->FN.Predicate->getInequalityPredicate(
+                pass->FN.Term->getValueTerm(&what),
+                pass->FN.Term->getNullPtrTerm()
             )
         )();
 
@@ -117,8 +117,8 @@ public:
         dbgs() << "Query: " << q->toString() << endl;
         dbgs() << "State: " << ps << endl;
 
-        Z3ExprFactory z3ef;
-        Z3Solver s(z3ef);
+        Z3::ExprFactory z3ef;
+        Z3::Solver s(z3ef);
 
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;
@@ -165,12 +165,9 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
-    ST = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
 
-    PF = PredicateFactory::get(ST);
-    TF = TermFactory::get(ST);
-
-    PSF = PredicateStateFactory::get();
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     auto valueSet = DNP->getNullSet(NullType::VALUE);
     auto derefSet = DNP->getNullSet(NullType::DEREF);

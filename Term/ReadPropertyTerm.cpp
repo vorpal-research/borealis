@@ -6,9 +6,3 @@
  */
 
 #include "Term/ReadPropertyTerm.h"
-
-namespace borealis {
-
-ReadPropertyTerm::~ReadPropertyTerm() {}
-
-} /* namespace borealis */

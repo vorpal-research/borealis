@@ -1,0 +1,22 @@
+#ifndef HANDLE_STATE
+#define INCLUDE_MODE
+#endif
+
+#ifdef INCLUDE_MODE
+#undef INCLUDE_MODE
+
+#include "State/BasicPredicateState.h"
+#include "State/PredicateStateChain.h"
+#include "State/PredicateStateChoice.h"
+
+#define HANDLE_STATE(NAME, CLASS)
+
+#endif
+
+HANDLE_STATE(Basic, BasicPredicateState)
+HANDLE_STATE(Chain, PredicateStateChain)
+HANDLE_STATE(Choice, PredicateStateChoice)
+
+#ifdef HANDLE_STATE
+#undef HANDLE_STATE
+#endif

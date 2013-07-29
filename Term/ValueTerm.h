@@ -17,55 +17,40 @@ namespace borealis {
 
 class ValueTerm: public borealis::Term {
 
-    typedef ValueTerm Self;
-    typedef std::unique_ptr<Self> SelfPtr;
+    typedef std::unique_ptr<ValueTerm> SelfPtr;
+
+    ValueTerm(Type::Ptr type, const std::string& name) :
+        Term(
+            class_tag(*this),
+            type,
+            name
+        ) {};
 
 public:
 
-    friend class TermFactory;
+    MK_COMMON_TERM_IMPL(ValueTerm);
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<Self>();
-    }
-
-    static bool classof(const Self* /* t */) {
-        return true;
-    }
-
-    llvm::Value* getValue() const {
-        return v;
-    }
-
-    ValueTerm(const Self&) = default;
-
-#include "Util/macros.h"
     template<class Sub>
-    auto accept(Transformer<Sub>*) QUICK_CONST_RETURN(util::heap_copy(this));
-#include "Util/unmacros.h"
-
-
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override {
-        return z3ef.getVarByTypeAndName(getTermType(), getName());
-    }
-
-    virtual Type::Ptr getTermType() const override {
-        return TypeFactory::getInstance().cast(v->getType());
+    auto accept(Transformer<Sub>*) const -> const Self* {
+        return new Self( *this );
     }
 
     Term::Ptr withNewName(const std::string& name) const {
-        auto res = SelfPtr{ util::heap_copy(this) };
+        auto res = SelfPtr{ new Self{ *this } };
         res->name = name;
         return Term::Ptr{ res.release() };
     }
 
-private:
+};
 
-    ValueTerm(llvm::Value* v, SlotTracker* st) :
-        Term(std::hash<llvm::Value*>()(v), st->getLocalName(v), type_id(*this)),
-        v(v) {}
-
-    llvm::Value* v;
-
+template<class Impl>
+struct SMTImpl<Impl, ValueTerm> {
+    static Dynamic<Impl> doit(
+            const ValueTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>*) {
+        return ef.getVarByTypeAndName(t->getType(), t->getName());
+    }
 };
 
 } /* namespace borealis */

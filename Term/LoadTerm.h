@@ -14,75 +14,75 @@ namespace borealis {
 
 class LoadTerm: public borealis::Term {
 
-    typedef LoadTerm self;
-
     Term::Ptr rhv;
 
-    LoadTerm(Term::Ptr rhv):
+    LoadTerm(Type::Ptr type, Term::Ptr rhv):
         Term(
-                rhv->hashCode(),
-                "*(" + rhv->getName() + ")",
-                type_id(*this)
+            class_tag(*this),
+            type,
+            "*(" + rhv->getName() + ")"
         ), rhv(rhv) {};
 
 public:
 
-    LoadTerm(const self&) = default;
-    ~LoadTerm();
+    MK_COMMON_TERM_IMPL(LoadTerm);
+
+    Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const self* {
-        return new self(tr->transform(rhv));
+    auto accept(Transformer<Sub>* tr) const -> const Self* {
+        auto _rhv = tr->transform(rhv);
+        auto _type = getTermType(tr->FN.Type, _rhv);
+        return new Self{ _type, _rhv };
     }
-
-#include "Util/macros.h"
-    virtual Z3ExprFactory::Dynamic toZ3(Z3ExprFactory& z3ef, ExecutionContext* ctx) const override {
-        typedef Z3ExprFactory::Pointer Pointer;
-
-        ASSERTC(ctx != nullptr);
-
-        auto r = rhv->toZ3(z3ef, ctx);
-        ASSERT(r.is<Pointer>(),
-               "Load with non-pointer right side");
-
-        auto rp = r.to<Pointer>().getUnsafe();
-
-        return ctx->readExprFromMemory(rp, Z3ExprFactory::sizeForType(getTermType()));
-    }
-#include "Util/unmacros.h"
 
     virtual bool equals(const Term* other) const override {
-        if (const self* that = llvm::dyn_cast<self>(other)) {
-            return  Term::equals(other) &&
+        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
+            return Term::equals(other) &&
                     *that->rhv == *rhv;
         } else return false;
     }
 
-    Term::Ptr getRhv() const { return rhv; }
-
-    static bool classof(const self*) {
-        return true;
+    virtual size_t hashCode() const override {
+        return util::hash::defaultHasher()(Term::hashCode(), rhv);
     }
 
-    static bool classof(const Term* t) {
-        return t->getTermTypeId() == type_id<self>();
-    }
+    static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
+        auto type = rhv->getType();
 
-    virtual Type::Ptr getTermType() const override {
-        auto& tf = TypeFactory::getInstance();
-        auto ptr = rhv->getTermType();
+        if (!TyF->isValid(type)) return type;
 
-        if (!tf.isValid(ptr)) return ptr;
-
-        if (auto* cst = llvm::dyn_cast<Pointer>(ptr)) {
-            return cst->getPointed();
+        if (auto* ptr = llvm::dyn_cast<type::Pointer>(type)) {
+            return ptr->getPointed();
         } else {
-            return tf.getTypeError("Load from a non-pointer");
+            return TyF->getTypeError(
+                "Load from a non-pointer: " + TyF->toString(*type)
+            );
         }
     }
 
-    friend class TermFactory;
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, LoadTerm> {
+    static Dynamic<Impl> doit(
+            const LoadTerm* t,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+
+        USING_SMT_IMPL(Impl);
+
+        ASSERTC(ctx != nullptr);
+
+        auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
+        ASSERT(!r.empty(), "Load with non-pointer right side");
+        auto rp = r.getUnsafe();
+
+        return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getType()));
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

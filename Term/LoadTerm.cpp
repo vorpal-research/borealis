@@ -6,9 +6,3 @@
  */
 
 #include "Term/LoadTerm.h"
-
-namespace borealis {
-
-LoadTerm::~LoadTerm() {}
-
-} /* namespace borealis */

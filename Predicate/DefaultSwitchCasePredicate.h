@@ -14,39 +14,6 @@ namespace borealis {
 
 class DefaultSwitchCasePredicate: public borealis::Predicate {
 
-public:
-
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext* = nullptr) const override;
-
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<DefaultSwitchCasePredicate>();
-    }
-
-    static bool classof(const DefaultSwitchCasePredicate* /* p */) {
-        return true;
-    }
-
-    template<class SubClass>
-    const DefaultSwitchCasePredicate* accept(Transformer<SubClass>* t) const {
-        std::vector<Term::Ptr> new_cases;
-        new_cases.reserve(cases.size());
-        std::transform(cases.begin(), cases.end(), std::back_inserter(new_cases),
-            [t](const Term::Ptr& e) { return t->transform(e); }
-        );
-
-        return new DefaultSwitchCasePredicate(
-                t->transform(cond),
-                new_cases,
-                this->type);
-    }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
-
-    friend class PredicateFactory;
-
-private:
-
     Term::Ptr cond;
     const std::vector<Term::Ptr> cases;
 
@@ -55,7 +22,57 @@ private:
             std::vector<Term::Ptr> cases,
             PredicateType type = PredicateType::PATH);
 
+public:
+
+    MK_COMMON_PREDICATE_IMPL(DefaultSwitchCasePredicate);
+
+    Term::Ptr getCond() const { return cond; }
+    const std::vector<Term::Ptr> getCases() const { return cases; }
+
+    template<class SubClass>
+    const Self* accept(Transformer<SubClass>* t) const {
+        std::vector<Term::Ptr> new_cases;
+        new_cases.reserve(cases.size());
+        std::transform(cases.begin(), cases.end(), std::back_inserter(new_cases),
+            [&t](const Term::Ptr& e) { return t->transform(e); }
+        );
+
+        return new Self{
+            t->transform(cond),
+            new_cases,
+            type
+        };
+    }
+
+    virtual bool equals(const Predicate* other) const override;
+    virtual size_t hashCode() const override;
+
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, DefaultSwitchCasePredicate> {
+    static Bool<Impl> doit(
+            const DefaultSwitchCasePredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        USING_SMT_IMPL(Impl)
+
+        auto le = SMT<Impl>::doit(p->getCond(), ef, ctx).template to<Integer>();
+        ASSERT(!le.empty(), "Encountered switch with non-Integer condition");
+
+        auto res = ef.getTrue();
+        for (const auto& c : p->getCases()) {
+            auto re = SMT<Impl>::doit(c, ef, ctx).template to<Integer>();
+            ASSERT(!re.empty(), "Encountered switch with non-Integer case");
+            res = res && le.getUnsafe() != re.getUnsafe();
+        }
+        return res;
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 

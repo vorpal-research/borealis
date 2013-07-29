@@ -16,8 +16,8 @@
 
 #include <gtest/gtest.h>
 
+#include "Factory/Nest.h"
 #include "Term/Term.def"
-#include "Term/TermFactory.h"
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
@@ -46,7 +46,7 @@ TEST(Term, classof) {
         a->setName("mock-arg");
 
         SlotTracker st(&m);
-        auto TF = TermFactory::get(&st);
+        auto TF = FactoryNest(nullptr).Term;
 
         auto t1 = TF->getArgumentTerm(a);
 

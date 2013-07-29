@@ -16,11 +16,10 @@
 
 #include <gtest/gtest.h>
 
-#include "Predicate/PredicateFactory.h"
+#include "Factory/Nest.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/ConstantPropagator.h"
 #include "Term/Term.def"
-#include "Term/TermFactory.h"
 #include "Util/slottracker.h"
 #include "Util/util.h"
 
@@ -40,15 +39,13 @@ protected:
         ctx = &llvm::getGlobalContext();
         M = ModulePtr(new llvm::Module("mock-module", *ctx));
         ST = SlotTrackerPtr(new SlotTracker(M.get()));
-        PF = PredicateFactory::get(ST.get());
-        TF = TermFactory::get(ST.get());
+        FN = FactoryNest(ST.get());
     }
 
     llvm::LLVMContext* ctx;
     ModulePtr M;
     SlotTrackerPtr ST;
-    PredicateFactory::Ptr PF;
-    TermFactory::Ptr TF;
+    FactoryNest FN;
 
 };
 
@@ -57,14 +54,26 @@ TEST_F(TransformerTest, CallSiteInitializer) {
         using namespace llvm;
         using llvm::Type;
 
+        Function* Main = Function::Create(
+            FunctionType::get(
+                Type::getVoidTy(*ctx),
+                false
+            ),
+            GlobalValue::LinkageTypes::InternalLinkage,
+            "main"
+        );
+        BasicBlock* BB = BasicBlock::Create(*ctx, "bb.test", Main);
+
         Type* retType = Type::getVoidTy(*ctx);
         Type* argType = Type::getInt1Ty(*ctx);
         Function* F = Function::Create(
-                FunctionType::get(
-                        retType,
-                        argType,
-                        false),
-                GlobalValue::LinkageTypes::ExternalLinkage);
+            FunctionType::get(
+                retType,
+                argType,
+                false),
+            GlobalValue::LinkageTypes::ExternalLinkage,
+            "test"
+        );
 
         Argument* arg = &head(F->getArgumentList());
         arg->setName("mock-arg");
@@ -75,12 +84,12 @@ TEST_F(TransformerTest, CallSiteInitializer) {
         Value* val_1 = GlobalValue::getIntegerValue(argType, APInt(1,1));
         val_1->setName("mock-val-1");
 
-        CallInst* CI = CallInst::Create(F, val_0);
-        CallSiteInitializer csi(*CI, TF.get());
+        CallInst* CI = CallInst::Create(F, val_0, "", BB);
+        CallSiteInitializer csi(*CI, FN);
 
-        auto pred = PF->getEqualityPredicate(
-                TF->getArgumentTerm(arg),
-                TF->getValueTerm(val_1)
+        auto pred = FN.Predicate->getEqualityPredicate(
+            FN.Term->getArgumentTerm(arg),
+            FN.Term->getValueTerm(val_1)
         );
         EXPECT_EQ("mock-arg=true", pred->toString());
 
@@ -94,14 +103,14 @@ TEST_F(TransformerTest, ConstantPropagatorUnary) {
         using namespace llvm;
 
         // -5.4
-        auto testTerm = TF->getUnaryTerm(
-                UnaryArithType::NEG,
-                TF->getConstTerm(
-                        ConstantFP::get(*ctx, APFloat(5.4))
-                )
+        auto testTerm = FN.Term->getUnaryTerm(
+            UnaryArithType::NEG,
+            FN.Term->getConstTerm(
+                ConstantFP::get(*ctx, APFloat(5.4))
+            )
         );
 
-        ConstantPropagator cp(TF.get());
+        ConstantPropagator cp(FN);
         auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
 
         ASSERT_NE(nullptr, result);
@@ -115,20 +124,20 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         using namespace llvm;
 
         // -5.4 + 8.4
-        auto testTerm = TF->getBinaryTerm(
+        auto testTerm = FN.Term->getBinaryTerm(
             ArithType::ADD,
-            TF->getUnaryTerm(
+            FN.Term->getUnaryTerm(
                 UnaryArithType::NEG,
-                TF->getConstTerm(
-                        ConstantFP::get(*ctx, APFloat(5.4))
+                FN.Term->getConstTerm(
+                    ConstantFP::get(*ctx, APFloat(5.4))
                 )
             ),
-            TF->getConstTerm(
+            FN.Term->getConstTerm(
                 ConstantFP::get(*ctx, APFloat(8.4))
             )
         );
 
-        ConstantPropagator cp(TF.get());
+        ConstantPropagator cp(FN);
         auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
 
         ASSERT_NE(nullptr, result);
@@ -139,24 +148,24 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         using namespace llvm;
 
         // 5 - (20 / -5.4)
-        auto testTerm = TF->getBinaryTerm(
+        auto testTerm = FN.Term->getBinaryTerm(
             ArithType::SUB,
-            TF->getOpaqueConstantTerm(5LL),
-            TF->getBinaryTerm(
+            FN.Term->getOpaqueConstantTerm(5LL),
+            FN.Term->getBinaryTerm(
                 ArithType::DIV,
-                TF->getConstTerm(
+                FN.Term->getConstTerm(
                     ConstantInt::get(*ctx, APInt(32, 20))
                 ),
-                TF->getUnaryTerm(
+                FN.Term->getUnaryTerm(
                     UnaryArithType::NEG,
-                    TF->getConstTerm(
+                    FN.Term->getConstTerm(
                         ConstantFP::get(*ctx, APFloat(5.4))
                     )
                 )
             )
         );
 
-        ConstantPropagator cp(TF.get());
+        ConstantPropagator cp(FN);
         auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
 
         ASSERT_NE(nullptr, result);
@@ -170,24 +179,24 @@ TEST_F(TransformerTest, ConstantPropagator) {
         using namespace llvm;
 
         // 0.3 >= 20 && !(-5.4)
-        auto testTerm = TF->getCmpTerm(
+        auto testTerm = FN.Term->getCmpTerm(
             ConditionType::GE,
-            TF->getOpaqueConstantTerm(0.3),
-            TF->getBinaryTerm(
+            FN.Term->getOpaqueConstantTerm(0.3),
+            FN.Term->getBinaryTerm(
                 ArithType::LAND,
-                TF->getConstTerm(
+                FN.Term->getConstTerm(
                     ConstantInt::get(*ctx, APInt(32, 20))
                 ),
-                TF->getUnaryTerm(
+                FN.Term->getUnaryTerm(
                     UnaryArithType::NOT,
-                    TF->getConstTerm(
+                    FN.Term->getConstTerm(
                         ConstantFP::get(*ctx, APFloat(5.4))
                     )
                 )
             )
         );
 
-        ConstantPropagator cp(TF.get());
+        ConstantPropagator cp(FN);
         auto result = dyn_cast<OpaqueBoolConstantTerm>(cp.transform(testTerm));
 
         ASSERT_NE(nullptr, result);

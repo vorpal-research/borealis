@@ -5,26 +5,48 @@
 
 namespace borealis {
 
-class TypeError : public Type {
-    typedef TypeError self;
-    typedef Type base;
+class TypeFactory;
 
-    TypeError(const std::string& message) : Type(type_id(*this)), message(message) {}
+namespace type {
+
+/** protobuf -> Type/TypeError.proto
+import "Type/Type.proto";
+
+package borealis.type.proto;
+
+message TypeError {
+    extend borealis.proto.Type {
+        optional TypeError ext = 6;
+    }
+    optional string message = 1;
+}
+
+**/
+class TypeError : public Type {
+
+    typedef TypeError Self;
+    typedef Type Base;
+
+    TypeError(const std::string& message) : Type(class_tag(*this)), message(message) {}
 
 public:
-    static bool classof(const self*) { return true; }
-    static bool classof(const base* b) { return b->getId() == type_id<self>(); }
 
-    friend class TypeFactory;
+    friend class ::borealis::TypeFactory;
+    
+    static bool classof(const Self*) { return true; }
+    static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+    
     
 private:
     std::string message;
-
 public:
     const std::string& getMessage() const { return message; }
 
 };
 
+} // namespace type
 } // namespace borealis
 
 #endif // TYPEERROR_H
+
+

@@ -14,45 +14,64 @@ namespace borealis {
 
 class GlobalsPredicate: public borealis::Predicate {
 
+    typedef std::vector<Term::Ptr> Globals;
+
+    const Globals globals;
+
+    GlobalsPredicate(
+            const Globals& globals,
+            PredicateType type = PredicateType::STATE);
+
 public:
 
-    virtual logic::Bool toZ3(Z3ExprFactory& z3ef, ExecutionContext*) const override;
+    MK_COMMON_PREDICATE_IMPL(GlobalsPredicate);
 
-    static bool classof(const Predicate* p) {
-        return p->getPredicateTypeId() == type_id<GlobalsPredicate>();
-    }
-
-    static bool classof(const GlobalsPredicate* /* p */) {
-        return true;
-    }
+    const Globals& getGlobals() const { return globals; }
 
     template<class SubClass>
-    const GlobalsPredicate* accept(Transformer<SubClass>* t) const {
-        std::vector<Term::Ptr> new_globals;
-        new_globals.reserve(globals.size());
-        std::transform(globals.begin(), globals.end(), std::back_inserter(new_globals),
-            [t](const Term::Ptr& e) { return t->transform(e); }
+    const Self* accept(Transformer<SubClass>* t) const {
+        Globals transformedGlobals;
+        transformedGlobals.reserve(globals.size());
+        std::transform(globals.begin(), globals.end(), std::back_inserter(transformedGlobals),
+            [&t](const Term::Ptr& e) { return t->transform(e); }
         );
 
-        return new GlobalsPredicate(
-                new_globals,
-                this->type);
+        // XXX: Should be `Self{...}`, but clang++ crashes on that...
+        return new Self(
+            transformedGlobals,
+            type
+        );
     }
 
     virtual bool equals(const Predicate* other) const override;
     virtual size_t hashCode() const override;
 
-    friend class PredicateFactory;
-
-private:
-
-    const std::vector<Term::Ptr> globals;
-
-    GlobalsPredicate(
-            const std::vector<Term::Ptr>& globals,
-            PredicateType type = PredicateType::STATE);
-
 };
+
+#include "Util/macros.h"
+template<class Impl>
+struct SMTImpl<Impl, GlobalsPredicate> {
+    static Bool<Impl> doit(
+            const GlobalsPredicate* p,
+            ExprFactory<Impl>& ef,
+            ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
+
+        USING_SMT_IMPL(Impl)
+
+        ASSERTC(ctx != nullptr);
+
+        auto res = ef.getTrue();
+        for (const auto& g : p->getGlobals()) {
+            auto ge = SMT<Impl>::doit(g, ef, ctx).template to<Pointer>();
+            ASSERT(!ge.empty(), "Encountered non-Pointer global value: " + g->getName());
+            auto gp = ge.getUnsafe();
+            res = res && gp == ctx->getDistinctPtr();
+        }
+        return res;
+    }
+};
+#include "Util/unmacros.h"
 
 } /* namespace borealis */
 
