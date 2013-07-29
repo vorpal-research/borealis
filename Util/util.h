@@ -39,50 +39,103 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T);
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/** protobuf -> Util/ConditionType.proto
+package borealis.proto;
+
+enum ConditionType {
+    EQ  = 0;
+    NEQ = 1;
+
+    GT  = 2;
+    GE  = 3;
+    LT  = 4;
+    LE  = 5;
+
+    UGT = 6;
+    UGE = 7;
+    ULT = 8;
+    ULE = 9;
+
+    TRUE    = 10;
+    FALSE   = 11;
+    UNKNOWN = 12;
+}
+
+**/
 enum class ConditionType {
-	EQ,
-	NEQ,
+    EQ  = 0,
+    NEQ = 1,
 
-	GT,
-	GE,
-	LT,
-	LE,
+    GT  = 2,
+    GE  = 3,
+    LT  = 4,
+    LE  = 5,
 
-    UGT,
-    UGE,
-    ULT,
-    ULE,
+    UGT = 6,
+    UGE = 7,
+    ULT = 8,
+    ULE = 9,
 
-	TRUE,
-	FALSE,
-	UNKNOWN
+    TRUE    = 10,
+    FALSE   = 11,
+    UNKNOWN = 12
 };
 ConditionType conditionType(int cond);
 std::string conditionString(int cond);
 std::string conditionString(ConditionType cond);
 
+/** protobuf -> Util/ArithType.proto
+package borealis.proto;
+
+enum ArithType {
+    ADD  = 0;
+    SUB  = 1;
+    MUL  = 2;
+    DIV  = 3;
+    REM  = 4;
+    LAND = 5;
+    LOR  = 6;
+    BAND = 7;
+    BOR  = 8;
+    XOR  = 9;
+    SHL  = 10;
+    ASHR = 11;
+    LSHR = 12;
+}
+
+**/
 enum class ArithType {
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    REM,
-    LAND,
-    LOR,
-    BAND,
-    BOR,
-    XOR,
-    SHL,
-    ASHR,
-    LSHR
+    ADD  = 0,
+    SUB  = 1,
+    MUL  = 2,
+    DIV  = 3,
+    REM  = 4,
+    LAND = 5,
+    LOR  = 6,
+    BAND = 7,
+    BOR  = 8,
+    XOR  = 9,
+    SHL  = 10,
+    ASHR = 11,
+    LSHR = 12
 };
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops);
 std::string arithString(ArithType opCode);
 
+/** protobuf -> Util/UnaryArithType.proto
+package borealis.proto;
+
+enum UnaryArithType {
+    NEG  = 0;
+    NOT  = 1;
+    BNOT = 2;
+}
+
+**/
 enum class UnaryArithType {
-    NEG,
-    NOT,
-    BNOT,
+    NEG  = 0,
+    NOT  = 1,
+    BNOT = 2
 };
 std::string unaryArithString(UnaryArithType opCode);
 

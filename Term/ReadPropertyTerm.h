@@ -13,6 +13,21 @@
 
 namespace borealis {
 
+/** protobuf -> Term/ReadPropertyTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ReadPropertyTerm {
+    extend borealis.proto.Term {
+        optional ReadPropertyTerm ext = 29;
+    }
+
+    optional Term propName = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class ReadPropertyTerm: public borealis::Term {
 
     Term::Ptr propName;

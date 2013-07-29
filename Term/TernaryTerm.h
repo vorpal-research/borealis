@@ -12,6 +12,22 @@
 
 namespace borealis {
 
+/** protobuf -> Term/TernaryTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message TernaryTerm {
+    extend borealis.proto.Term {
+        optional TernaryTerm ext = 31;
+    }
+
+    optional Term cnd = 1;
+    optional Term tru = 2;
+    optional Term fls = 3;
+}
+
+**/
 class TernaryTerm: public borealis::Term {
 
     Term::Ptr cnd;

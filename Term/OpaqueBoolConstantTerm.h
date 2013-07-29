@@ -12,6 +12,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueBoolConstantTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueBoolConstantTerm {
+    extend borealis.proto.Term {
+        optional OpaqueBoolConstantTerm ext = 22;
+    }
+
+    optional bool value = 1;
+}
+
+**/
 class OpaqueBoolConstantTerm: public borealis::Term {
 
     bool value;

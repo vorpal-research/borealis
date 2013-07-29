@@ -15,6 +15,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/ArgumentTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ArgumentTerm {
+    extend borealis.proto.Term {
+        optional ArgumentTerm ext = 16;
+    }
+
+    optional uint32 idx = 1;
+}
+
+**/
 class ArgumentTerm: public borealis::Term {
 
     unsigned int idx;

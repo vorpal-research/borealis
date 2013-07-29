@@ -12,6 +12,23 @@
 
 namespace borealis {
 
+/** protobuf -> Term/CmpTerm.proto
+import "Term/Term.proto";
+import "Util/ConditionType.proto";
+
+package borealis.proto;
+
+message CmpTerm {
+    extend borealis.proto.Term {
+        optional CmpTerm ext = 18;
+    }
+
+    optional ConditionType opcode = 1;
+    optional Term lhv = 2;
+    optional Term rhv = 3;
+}
+
+**/
 class CmpTerm: public borealis::Term {
 
     llvm::ConditionType opcode;

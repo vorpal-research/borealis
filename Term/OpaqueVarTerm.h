@@ -12,6 +12,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueVarTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueVarTerm {
+    extend borealis.proto.Term {
+        optional OpaqueVarTerm ext = 28;
+    }
+
+    optional string vname = 1;
+}
+
+**/
 class OpaqueVarTerm: public borealis::Term {
 
     std::string vname;

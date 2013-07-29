@@ -12,6 +12,18 @@
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueUndefTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueUndefTerm {
+    extend borealis.proto.Term {
+        optional OpaqueUndefTerm ext = 27;
+    }
+}
+
+**/
 class OpaqueUndefTerm: public borealis::Term {
 
     OpaqueUndefTerm(Type::Ptr type):

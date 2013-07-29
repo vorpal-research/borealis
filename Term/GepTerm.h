@@ -12,6 +12,22 @@
 
 namespace borealis {
 
+/** protobuf -> Term/GepTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message GepTerm {
+    extend borealis.proto.Term {
+        optional GepTerm ext = 20;
+    }
+
+    optional Term base = 1;
+    repeated Term by = 2;
+    repeated Term size = 3;
+}
+
+**/
 class GepTerm: public borealis::Term {
 
     typedef std::pair<Term::Ptr, Term::Ptr> Shift;

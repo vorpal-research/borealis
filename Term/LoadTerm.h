@@ -12,6 +12,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/LoadTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message LoadTerm {
+    extend borealis.proto.Term {
+        optional LoadTerm ext = 21;
+    }
+
+    optional Term rhv = 1;
+}
+
+**/
 class LoadTerm: public borealis::Term {
 
     Term::Ptr rhv;

@@ -12,6 +12,23 @@
 
 namespace borealis {
 
+/** protobuf -> Term/BinaryTerm.proto
+import "Term/Term.proto";
+import "Util/ArithType.proto";
+
+package borealis.proto;
+
+message BinaryTerm {
+    extend borealis.proto.Term {
+        optional BinaryTerm ext = 17;
+    }
+
+    optional ArithType opcode = 1;
+    optional Term lhv = 2;
+    optional Term rhv = 3;
+}
+
+**/
 class BinaryTerm: public borealis::Term {
 
     llvm::ArithType opcode;

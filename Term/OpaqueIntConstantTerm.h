@@ -12,6 +12,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueIntConstantTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueIntConstantTerm {
+    extend borealis.proto.Term {
+        optional OpaqueIntConstantTerm ext = 25;
+    }
+
+    optional sint64 value = 1;
+}
+
+**/
 class OpaqueIntConstantTerm: public borealis::Term {
 
     long long value;

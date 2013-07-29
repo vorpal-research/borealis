@@ -12,6 +12,22 @@
 
 namespace borealis {
 
+/** protobuf -> Term/UnaryTerm.proto
+import "Term/Term.proto";
+import "Util/UnaryArithType.proto";
+
+package borealis.proto;
+
+message UnaryTerm {
+    extend borealis.proto.Term {
+        optional UnaryTerm ext = 32;
+    }
+
+    optional UnaryArithType opcode = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class UnaryTerm: public borealis::Term {
 
     llvm::UnaryArithType opcode;

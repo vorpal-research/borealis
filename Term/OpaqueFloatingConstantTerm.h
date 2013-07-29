@@ -12,6 +12,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueFloatingConstantTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueFloatingConstantTerm {
+    extend borealis.proto.Term {
+        optional OpaqueFloatingConstantTerm ext = 24;
+    }
+
+    optional double value = 1;
+}
+
+**/
 class OpaqueFloatingConstantTerm: public borealis::Term {
 
     static constexpr double EPS = 4 * std::numeric_limits<double>::epsilon();

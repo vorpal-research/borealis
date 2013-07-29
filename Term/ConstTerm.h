@@ -15,6 +15,20 @@
 
 namespace borealis {
 
+/** protobuf -> Term/ConstTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ConstTerm {
+    extend borealis.proto.Term {
+        optional ConstTerm ext = 19;
+    }
+
+    optional string asString = 1;
+}
+
+**/
 class ConstTerm: public borealis::Term {
 
     util::option<std::string> asString;

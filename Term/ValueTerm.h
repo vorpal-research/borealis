@@ -15,6 +15,18 @@
 
 namespace borealis {
 
+/** protobuf -> Term/ValueTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ValueTerm {
+    extend borealis.proto.Term {
+        optional ValueTerm ext = 33;
+    }
+}
+
+**/
 class ValueTerm: public borealis::Term {
 
     typedef std::unique_ptr<ValueTerm> SelfPtr;

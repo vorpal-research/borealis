@@ -12,6 +12,18 @@
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueNullPtrTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueNullPtrTerm {
+    extend borealis.proto.Term {
+        optional OpaqueNullPtrTerm ext = 26;
+    }
+}
+
+**/
 class OpaqueNullPtrTerm: public borealis::Term {
 
     OpaqueNullPtrTerm(Type::Ptr type):
