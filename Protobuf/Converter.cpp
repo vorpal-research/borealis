@@ -10,7 +10,11 @@
 namespace borealis {
 
 Type::ProtoPtr protobuffy(Type::Ptr t) {
-    return Converter<Type::Ptr, Type::ProtoPtr>::toProtobuf(t);
+    return Converter<Type, proto::Type>::toProtobuf(t);
+}
+
+Type::Ptr deprotobuffy(FactoryNest FN, const proto::Type& t) {
+    return Converter<Type, proto::Type>::fromProtobuf(FN, t);
 }
 
 } // namespace borealis

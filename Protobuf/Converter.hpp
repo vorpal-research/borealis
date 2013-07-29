@@ -8,6 +8,8 @@
 #ifndef PROTOBUF_CONVERTER_HPP_
 #define PROTOBUF_CONVERTER_HPP_
 
+#include "Factory/Nest.h"
+
 #include "Protobuf/ConverterUtil.h"
 
 #include "Type/Type.h"
@@ -21,9 +23,10 @@
 namespace borealis {
 
 Type::ProtoPtr protobuffy(Type::Ptr t);
+Type::Ptr    deprotobuffy(FactoryNest FN, const proto::Type& t);
 
 template<class _>
-struct Converter<Type::Ptr, Type::ProtoPtr, _> {
+struct Converter<Type, proto::Type, _> {
 
     static Type::ProtoPtr toProtobuf(Type::Ptr t) {
         auto res = util::uniq(new proto::Type());
@@ -42,6 +45,17 @@ struct Converter<Type::Ptr, Type::ProtoPtr, _> {
         else BYE_BYE(Type::ProtoPtr, "Should not happen!");
 
         return std::move(res);
+    }
+
+    static Type::Ptr fromProtobuf(FactoryNest FN, const proto::Type& t) {
+#define HANDLE_TYPE(NAME, CLASS) \
+        if (t.HasExtension(type::proto::CLASS::ext)) { \
+            const auto& ext = t.GetExtension(type::proto::CLASS::ext); \
+            return ConverterImpl<type::CLASS, type::proto::CLASS, _> \
+                   ::fromProtobuf(FN, ext); \
+        }
+#include "Type/Type.def"
+        BYE_BYE(Type::Ptr, "Should not happen!");
     }
 
 };

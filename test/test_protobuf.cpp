@@ -7,8 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include "Factory/Nest.h"
 #include "Protobuf/Converter.hpp"
-#include "Type/TypeFactory.h"
 
 namespace {
 
@@ -17,7 +17,8 @@ TEST(Protobuf, protobuffy) {
     using namespace borealis;
 
     {
-        auto TF = TypeFactory::get();
+        auto FN = FactoryNest(nullptr);
+        auto TF = FN.Type;
 
         auto type = TF->getPointer(
             TF->getPointer(
@@ -25,9 +26,7 @@ TEST(Protobuf, protobuffy) {
             )
         );
 
-        auto protobuf = protobuffy(type);
-
-        EXPECT_NE(protobuf, nullptr);
+        EXPECT_EQ(type, deprotobuffy(FN, *protobuffy(type)));
     }
 
 }
