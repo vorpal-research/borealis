@@ -8,6 +8,8 @@
 #ifndef OPAQUEUNDEFTERM_H_
 #define OPAQUEUNDEFTERM_H_
 
+#include "Protobuf/Gen/Term/OpaqueUndefTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
@@ -51,6 +53,26 @@ struct SMTImpl<Impl, OpaqueUndefTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getVarByTypeAndName(t->getType(), t->getName(), true);
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<OpaqueUndefTerm, proto::OpaqueUndefTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::OpaqueUndefTerm* toProtobuf(const OpaqueUndefTerm*) {
+        return util::uniq(new proto::OpaqueUndefTerm()).release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueUndefTerm&) {
+        return Term::Ptr{ new OpaqueUndefTerm(type) };
     }
 };
 

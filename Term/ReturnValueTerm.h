@@ -8,10 +8,9 @@
 #ifndef RETURNVALUETERM_H_
 #define RETURNVALUETERM_H_
 
-#include <llvm/Function.h>
+#include "Protobuf/Gen/Term/ReturnValueTerm.pb.h"
 
 #include "Term/Term.h"
-#include "Util/slottracker.h"
 
 namespace borealis {
 
@@ -60,6 +59,29 @@ struct SMTImpl<Impl, ReturnValueTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getVarByTypeAndName(t->getType(), t->getName());
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<ReturnValueTerm, proto::ReturnValueTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::ReturnValueTerm* toProtobuf(const ReturnValueTerm* t) {
+        auto res = util::uniq(new proto::ReturnValueTerm());
+        res->set_functionname(t->getFunctionName());
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string&,
+            const proto::ReturnValueTerm& t) {
+        auto fName = t.functionname();
+        return Term::Ptr{ new ReturnValueTerm(type, fName) };
     }
 };
 

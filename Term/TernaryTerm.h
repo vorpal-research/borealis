@@ -8,6 +8,8 @@
 #ifndef TERNARYTERM_H_
 #define TERNARYTERM_H_
 
+#include "Protobuf/Gen/Term/TernaryTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
@@ -99,6 +101,39 @@ struct SMTImpl<Impl, TernaryTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<TernaryTerm, proto::TernaryTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::TernaryTerm* toProtobuf(const TernaryTerm* t) {
+        auto res = util::uniq(new proto::TernaryTerm());
+        res->set_allocated_cnd(
+            TermConverter::toProtobuf(t->getCnd())
+        );
+        res->set_allocated_tru(
+            TermConverter::toProtobuf(t->getTru())
+        );
+        res->set_allocated_fls(
+            TermConverter::toProtobuf(t->getFls())
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::TernaryTerm& t) {
+        auto cnd = TermConverter::fromProtobuf(fn, t.cnd());
+        auto tru = TermConverter::fromProtobuf(fn, t.tru());
+        auto fls = TermConverter::fromProtobuf(fn, t.fls());
+        return Term::Ptr{ new TernaryTerm(type, cnd, tru, fls) };
+    }
+};
 
 } /* namespace borealis */
 

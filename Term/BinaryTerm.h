@@ -8,6 +8,8 @@
 #ifndef BINARYTERM_H_
 #define BINARYTERM_H_
 
+#include "Protobuf/Gen/Term/BinaryTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
@@ -138,6 +140,37 @@ struct SMTImpl<Impl, BinaryTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<BinaryTerm, proto::BinaryTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::BinaryTerm* toProtobuf(const BinaryTerm* t) {
+        auto res = util::uniq(new proto::BinaryTerm());
+        res->set_opcode(static_cast<proto::ArithType>(t->getOpcode()));
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(t->getLhv())
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t->getRhv())
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::BinaryTerm& t) {
+        auto opcode = static_cast<llvm::ArithType>(t.opcode());
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new BinaryTerm(type, opcode, lhv, rhv) };
+    }
+};
 
 } // namespace borealis
 

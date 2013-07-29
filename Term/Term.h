@@ -11,6 +11,7 @@
 #include <string>
 
 #include "Protobuf/ConverterUtil.h"
+#include "Protobuf/Gen/Term/Term.pb.h"
 #include "SMT/SMTUtil.h"
 #include "Type/TypeFactory.h"
 #include "Util/typeindex.hpp"
@@ -111,7 +112,7 @@ private: \
     CLASS(const CLASS&) = default; \
 public: \
     friend class TermFactory; \
-    template<class B, class P, class _> friend struct ConverterImpl; \
+    template<class B, class P, class FN> friend struct ConverterImpl; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

@@ -8,6 +8,8 @@
 #ifndef OPAQUEBOOLCONSTANTTERM_H_
 #define OPAQUEBOOLCONSTANTTERM_H_
 
+#include "Protobuf/Gen/Term/OpaqueBoolConstantTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
@@ -57,6 +59,29 @@ struct SMTImpl<Impl, OpaqueBoolConstantTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getBoolConst(t->getValue());
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<OpaqueBoolConstantTerm, proto::OpaqueBoolConstantTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::OpaqueBoolConstantTerm* toProtobuf(const OpaqueBoolConstantTerm* t) {
+        auto res = util::uniq(new proto::OpaqueBoolConstantTerm());
+        res->set_value(t->getValue());
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueBoolConstantTerm& t) {
+        auto value = t.value();
+        return Term::Ptr{ new OpaqueBoolConstantTerm(type, value) };
     }
 };
 

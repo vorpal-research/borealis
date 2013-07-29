@@ -8,6 +8,8 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
+#include "Protobuf/Gen/Term/ReadPropertyTerm.pb.h"
+
 #include "Term/ConstTerm.h"
 #include "Term/Term.h"
 
@@ -96,6 +98,35 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<ReadPropertyTerm, proto::ReadPropertyTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::ReadPropertyTerm* toProtobuf(const ReadPropertyTerm* t) {
+        auto res = util::uniq(new proto::ReadPropertyTerm());
+        res->set_allocated_propname(
+            TermConverter::toProtobuf(t->getPropertyName())
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t->getRhv())
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::ReadPropertyTerm& t) {
+        auto propName = TermConverter::fromProtobuf(fn, t.propname());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new ReadPropertyTerm(type, propName, rhv) };
+    }
+};
 
 } /* namespace borealis */
 

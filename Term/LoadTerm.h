@@ -8,6 +8,8 @@
 #ifndef LOADTERM_H_
 #define LOADTERM_H_
 
+#include "Protobuf/Gen/Term/LoadTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
@@ -97,6 +99,31 @@ struct SMTImpl<Impl, LoadTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<LoadTerm, proto::LoadTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::LoadTerm* toProtobuf(const LoadTerm* t) {
+        auto res = util::uniq(new proto::LoadTerm());
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t->getRhv())
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::LoadTerm& t) {
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new LoadTerm(type, rhv) };
+    }
+};
 
 } /* namespace borealis */
 

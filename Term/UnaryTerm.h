@@ -8,6 +8,8 @@
 #ifndef UNARYTERM_H_
 #define UNARYTERM_H_
 
+#include "Protobuf/Gen/Term/UnaryTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
@@ -104,6 +106,33 @@ struct SMTImpl<Impl, UnaryTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<UnaryTerm, proto::UnaryTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::UnaryTerm* toProtobuf(const UnaryTerm* t) {
+        auto res = util::uniq(new proto::UnaryTerm());
+        res->set_opcode(static_cast<proto::UnaryArithType>(t->getOpcode()));
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t->getRhv())
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::UnaryTerm& t) {
+        auto opcode = static_cast<llvm::UnaryArithType>(t.opcode());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new UnaryTerm(type, opcode, rhv) };
+    }
+};
 
 } /* namespace borealis */
 

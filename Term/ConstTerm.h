@@ -8,10 +8,9 @@
 #ifndef CONSTTERM_H_
 #define CONSTTERM_H_
 
-#include <llvm/Constant.h>
+#include "Protobuf/Gen/Term/ConstTerm.pb.h"
 
 #include "Term/Term.h"
-#include "Util/slottracker.h"
 
 namespace borealis {
 
@@ -65,6 +64,31 @@ struct SMTImpl<Impl, ConstTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<ConstTerm, proto::ConstTerm, FN> {
+    static proto::ConstTerm* toProtobuf(const ConstTerm* t) {
+        auto res = util::uniq(new proto::ConstTerm());
+        for (const auto& v : t->getAsString()) {
+            res->set_asstring(v);
+        }
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string& name,
+            const proto::ConstTerm& t) {
+        util::option<std::string> asString;
+        if (t.has_asstring()) {
+            asString = util::just(t.asstring());
+        }
+        return Term::Ptr{ new ConstTerm(type, name, asString) };
+    }
+};
 
 } /* namespace borealis */
 
