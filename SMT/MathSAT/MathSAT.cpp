@@ -176,10 +176,18 @@ Expr operator !(const Expr& a){
 	return Expr(a.env_, new_term);
 }
 Expr operator -(const Expr& a) {
-    ASSERTC(a.is_bv());
-    msat_term new_term = msat_make_bv_neg(a.env_, a.term_);
-    ASSERTMSAT_TERM(new_term);
-    return Expr(a.env_, new_term);
+	msat_term new_term;
+	if ( a.is_rat() || a.is_int() ) {
+		std::string a_str = msat_term_repr(a);
+		auto str = "(- " + a_str + ")";
+		new_term = msat_from_string(a.env_, str.c_str());
+	} else if (a.is_bv()) {
+		new_term = msat_make_bv_neg(a.env_, a.term_);
+	} else {
+		BYE_BYE(Expr, "Cannot make negation from " + util::toString(a));
+	}
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
 }
 Expr operator ~(const Expr& a){
     ASSERTC(a.is_bool());
@@ -236,6 +244,21 @@ Expr operator ==(const Expr& a, int b){
 Expr operator ==(int a, const Expr& b){
     auto aa = b.env_.num_val(a);
     return aa == b;
+}
+
+Expr operator !=(const Expr& a, const Expr& b) {
+	auto new_term = msat_make_equal(a.env_, a.term_, b.term_);
+	new_term = msat_make_not(a.env_, new_term);
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
+}
+Expr operator !=(const Expr& a, int b){
+	auto bb = a.env_.num_val(b);
+	return a != bb;
+}
+Expr operator !=(int a, const Expr& b){
+    auto aa = b.env_.num_val(a);
+    return aa != b;
 }
 
 #define FORWARD_OP_EXPR_INT(OP, A, B) \
@@ -301,38 +324,43 @@ Expr operator *(int a, const Expr& b) {
 
 Expr operator /(const Expr& a, const Expr& b) {
 	ASSERTC(a.is_bv() && b.is_bv());
+	ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
 	msat_term new_term = msat_make_bv_sdiv(a.env_, a.term_, b.term_);
 	ASSERTMSAT_TERM(new_term);
 	return Expr(a.env_, new_term);
 }
 Expr operator /(const Expr& a, int b){
-	auto b_str = util::toString(b);
-	Expr bb = a.env_.bv_const(b_str, a.get_sort().bv_size());
+	Expr bb = a.env_.bv_val(b, a.get_sort().bv_size());
 	return a / bb;
 }
 Expr operator /(int a, const Expr& b){
-    auto a_str = util::toString(a);
-    Expr aa = b.env_.bv_const(a_str, b.get_sort().bv_size());
-    return aa / b;
+	Expr aa = b.env_.bv_val(a, b.get_sort().bv_size());
+	return aa / b;
 }
 
 
 
 Expr operator -(const Expr& a, const Expr& b) {
-    ASSERTC(a.is_bv() && b.is_bv());
-    msat_term new_term = msat_make_bv_minus(a.env_, a.term_, b.term_);
-    ASSERTMSAT_TERM(new_term);
-    return Expr(a.env_, new_term);
+	msat_term new_term;
+	if (( a.is_rat() || a.is_int() ) && ( b.is_rat() || b.is_int() )) {
+		std::string a_str = msat_term_repr(a);
+		std::string b_str = msat_term_repr(b);
+		auto str = "(- " + a_str + " " + b_str + ")";
+		new_term = msat_from_string(a.env_, str.c_str());
+	} else if (a.is_bv() && b.is_bv()) {
+		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
+		new_term = msat_make_bv_minus(a.env_, a.term_, b.term_);
+	} else {
+	    BYE_BYE(Expr, "Cannot substract " + util::toString(a) + " and " + util::toString(b));
+	}
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
 }
 Expr operator -(const Expr& a, int b){
-    auto b_str = util::toString(b);
-    Expr bb = a.env_.bv_const(b_str, a.get_sort().bv_size());
-    return a - bb;
+    FORWARD_OP_EXPR_INT(-, a, b)
 }
 Expr operator -(int a, const Expr& b){
-    auto a_str = util::toString(a);
-    Expr aa = b.env_.bv_const(a_str, b.get_sort().bv_size());
-    return aa - b;
+	FORWARD_OP_INT_EXPR(-, a, b)
 }
 
 
@@ -493,7 +521,7 @@ Expr operator |(int a, const Expr& b){
 	return aa | b;
 }
 
-// TODO sam Try to implement R/Z div and minus using smtlib
+// TODO (sam) Try to implement R/Z div and minus using smtlib
 
 Expr iff(const Expr& a, const Expr& b) {
 	ASSERTC(a.is_bool() && b.is_bool());

@@ -68,7 +68,6 @@ public:
 
 	Expr bool_val(bool b);
 	Expr num_val(int i);
-	// TODO sam Add real_val?
 	Expr bv_val(int i, unsigned size);
 
 	Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
@@ -196,8 +195,6 @@ public:
 	bool is_rat() const { return msat_is_rational_type(env_, get_sort()); }
 	bool is_bv() const { return msat_is_bv_type(env_, get_sort(), nullptr); }
 	bool is_array() const { return msat_is_array_type(env_, get_sort(), nullptr, nullptr); }
-	bool is_float() const { return msat_is_fp_type(env_, get_sort(), nullptr, nullptr); }
-	bool is_float_round() const { return msat_is_fp_roundingmode_type(env_, get_sort()); }
 
 	Decl decl() const;
 	unsigned num_args() const { return decl().arity(); }
@@ -225,6 +222,7 @@ public:
     friend Expr OP(int a, const Expr& b);
 
     FRIEND_OP_FOR_INT(operator ==);
+    FRIEND_OP_FOR_INT(operator !=);
     FRIEND_OP_FOR_INT(operator +);
     FRIEND_OP_FOR_INT(operator -);
     FRIEND_OP_FOR_INT(operator *);
@@ -260,7 +258,7 @@ public:
 	template<class Streamer>
 	friend Streamer& operator<<(Streamer& out, const Expr& e) {
 		auto smtlib = util::uniq(msat_to_smtlib2(e.env_, e.term_));
-		out << *smtlib;
+		out << smtlib.get();
 		// this is generally fucked up
 		return static_cast<Streamer&>(out);
 	}
