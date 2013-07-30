@@ -105,7 +105,7 @@ struct ConverterImpl<DefaultSwitchCasePredicate, proto::DefaultSwitchCasePredica
             TermConverter::toProtobuf(p->getCond()).release()
         );
         for (const auto& c : p->getCases()) {
-            res->cases().AddAllocated(
+            res->mutable_cases()->AddAllocated(
                 TermConverter::toProtobuf(c).release()
             );
         }

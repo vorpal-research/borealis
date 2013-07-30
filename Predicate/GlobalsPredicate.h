@@ -100,7 +100,7 @@ struct ConverterImpl<GlobalsPredicate, proto::GlobalsPredicate, FN> {
     static proto::GlobalsPredicate* toProtobuf(const GlobalsPredicate* p) {
         auto res = util::uniq(new proto::GlobalsPredicate());
         for (const auto& g : p->getGlobals()) {
-            res->globals().AddAllocated(
+            res->mutable_globals()->AddAllocated(
                 TermConverter::toProtobuf(g).release()
             );
         }

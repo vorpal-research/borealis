@@ -30,6 +30,9 @@ Type::Ptr    deprotobuffy(FactoryNest FN, const proto::Type& t);
 Term::ProtoPtr protobuffy(Term::Ptr t);
 Term::Ptr    deprotobuffy(FactoryNest FN, const proto::Term& t);
 
+Predicate::ProtoPtr protobuffy(Predicate::Ptr p);
+Predicate::Ptr    deprotobuffy(FactoryNest FN, const proto::Predicate& p);
+
 template<class FN>
 struct Converter<Type, proto::Type, FN> {
 
