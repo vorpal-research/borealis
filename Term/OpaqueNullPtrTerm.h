@@ -8,10 +8,24 @@
 #ifndef OPAQUENULLPTRTERM_H_
 #define OPAQUENULLPTRTERM_H_
 
+#include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueNullPtrTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueNullPtrTerm {
+    extend borealis.proto.Term {
+        optional OpaqueNullPtrTerm ext = 26;
+    }
+}
+
+**/
 class OpaqueNullPtrTerm: public borealis::Term {
 
     OpaqueNullPtrTerm(Type::Ptr type):
@@ -39,6 +53,26 @@ struct SMTImpl<Impl, OpaqueNullPtrTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getNullPtr();
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<OpaqueNullPtrTerm, proto::OpaqueNullPtrTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::OpaqueNullPtrTerm* toProtobuf(const OpaqueNullPtrTerm*) {
+        return util::uniq(new proto::OpaqueNullPtrTerm()).release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueNullPtrTerm&) {
+        return Term::Ptr{ new OpaqueNullPtrTerm(type) };
     }
 };
 

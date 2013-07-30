@@ -8,10 +8,29 @@
 #ifndef BINARYTERM_H_
 #define BINARYTERM_H_
 
+#include "Protobuf/Gen/Term/BinaryTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
 
+/** protobuf -> Term/BinaryTerm.proto
+import "Term/Term.proto";
+import "Util/ArithType.proto";
+
+package borealis.proto;
+
+message BinaryTerm {
+    extend borealis.proto.Term {
+        optional BinaryTerm ext = 17;
+    }
+
+    optional ArithType opcode = 1;
+    optional Term lhv = 2;
+    optional Term rhv = 3;
+}
+
+**/
 class BinaryTerm: public borealis::Term {
 
     llvm::ArithType opcode;
@@ -121,6 +140,37 @@ struct SMTImpl<Impl, BinaryTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<BinaryTerm, proto::BinaryTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::BinaryTerm* toProtobuf(const BinaryTerm* t) {
+        auto res = util::uniq(new proto::BinaryTerm());
+        res->set_opcode(static_cast<proto::ArithType>(t->getOpcode()));
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(t->getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t->getRhv()).release()
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::BinaryTerm& t) {
+        auto opcode = static_cast<llvm::ArithType>(t.opcode());
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new BinaryTerm(type, opcode, lhv, rhv) };
+    }
+};
 
 } // namespace borealis
 

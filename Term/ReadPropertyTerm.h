@@ -8,11 +8,28 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
+#include "Protobuf/Gen/Term/ReadPropertyTerm.pb.h"
+
 #include "Term/ConstTerm.h"
 #include "Term/Term.h"
 
 namespace borealis {
 
+/** protobuf -> Term/ReadPropertyTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ReadPropertyTerm {
+    extend borealis.proto.Term {
+        optional ReadPropertyTerm ext = 29;
+    }
+
+    optional Term propName = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class ReadPropertyTerm: public borealis::Term {
 
     Term::Ptr propName;
@@ -81,6 +98,35 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<ReadPropertyTerm, proto::ReadPropertyTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::ReadPropertyTerm* toProtobuf(const ReadPropertyTerm* t) {
+        auto res = util::uniq(new proto::ReadPropertyTerm());
+        res->set_allocated_propname(
+            TermConverter::toProtobuf(t->getPropertyName()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t->getRhv()).release()
+        );
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::ReadPropertyTerm& t) {
+        auto propName = TermConverter::fromProtobuf(fn, t.propname());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new ReadPropertyTerm(type, propName, rhv) };
+    }
+};
 
 } /* namespace borealis */
 

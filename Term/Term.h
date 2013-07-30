@@ -10,6 +10,8 @@
 
 #include <string>
 
+#include "Protobuf/ConverterUtil.h"
+#include "Protobuf/Gen/Term/Term.pb.h"
 #include "SMT/SMTUtil.h"
 #include "Type/TypeFactory.h"
 #include "Util/typeindex.hpp"
@@ -19,13 +21,29 @@ namespace borealis {
 
 // Forward declarations
 template<class SubClass> class Transformer;
+
+namespace proto { class Term; }
 // End of forward declarations
 
+/** protobuf -> Term/Term.proto
+import "Type/Type.proto";
+
+package borealis.proto;
+
+message Term {
+    optional Type type = 1;
+    optional string name = 2;
+
+    extensions 16 to 64;
+}
+
+**/
 class Term : public ClassTag {
 
 public:
 
     typedef std::shared_ptr<const Term> Ptr;
+    typedef std::unique_ptr<proto::Term> ProtoPtr;
 
 protected:
 
@@ -94,6 +112,7 @@ private: \
     CLASS(const CLASS&) = default; \
 public: \
     friend class TermFactory; \
+    template<class B, class P, class FN> friend struct ConverterImpl; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

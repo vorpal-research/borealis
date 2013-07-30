@@ -10,11 +10,27 @@
 
 #include <llvm/Argument.h>
 
+#include "Protobuf/Gen/Term/ArgumentTerm.pb.h"
+
 #include "Term/Term.h"
 #include "Util/slottracker.h"
 
 namespace borealis {
 
+/** protobuf -> Term/ArgumentTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ArgumentTerm {
+    extend borealis.proto.Term {
+        optional ArgumentTerm ext = 16;
+    }
+
+    optional uint32 idx = 1;
+}
+
+**/
 class ArgumentTerm: public borealis::Term {
 
     unsigned int idx;
@@ -57,6 +73,29 @@ struct SMTImpl<Impl, ArgumentTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getVarByTypeAndName(t->getType(), t->getName());
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<ArgumentTerm, proto::ArgumentTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::ArgumentTerm* toProtobuf(const ArgumentTerm* t) {
+        auto res = util::uniq(new proto::ArgumentTerm());
+        res->set_idx(t->getIdx());
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string& name,
+            const proto::ArgumentTerm& t) {
+        auto idx = t.idx();
+        return Term::Ptr{ new ArgumentTerm(type, idx, name) };
     }
 };
 

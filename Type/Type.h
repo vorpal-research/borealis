@@ -9,6 +9,8 @@
 
 namespace borealis {
 
+namespace proto { class Type; }
+
 /** protobuf -> Type/Type.proto
 package borealis.proto;
 

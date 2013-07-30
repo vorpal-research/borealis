@@ -8,10 +8,26 @@
 #ifndef OPAQUEVARTERM_H_
 #define OPAQUEVARTERM_H_
 
+#include "Protobuf/Gen/Term/OpaqueVarTerm.pb.h"
+
 #include "Term/Term.h"
 
 namespace borealis {
 
+/** protobuf -> Term/OpaqueVarTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message OpaqueVarTerm {
+    extend borealis.proto.Term {
+        optional OpaqueVarTerm ext = 28;
+    }
+
+    optional string vname = 1;
+}
+
+**/
 class OpaqueVarTerm: public borealis::Term {
 
     std::string vname;
@@ -27,7 +43,7 @@ public:
 
     MK_COMMON_TERM_IMPL(OpaqueVarTerm);
 
-    const std::string& getName() const { return vname; }
+    const std::string& getVName() const { return vname; }
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
@@ -47,6 +63,29 @@ struct SMTImpl<Impl, OpaqueVarTerm> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<OpaqueVarTerm, proto::OpaqueVarTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::OpaqueVarTerm* toProtobuf(const OpaqueVarTerm* t) {
+        auto res = util::uniq(new proto::OpaqueVarTerm());
+        res->set_vname(t->getVName());
+        return res.release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueVarTerm& t) {
+        auto vname = t.vname();
+        return Term::Ptr{ new OpaqueVarTerm(type, vname) };
+    }
+};
 
 } /* namespace borealis */
 

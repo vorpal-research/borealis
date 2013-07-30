@@ -8,13 +8,24 @@
 #ifndef VALUETERM_H_
 #define VALUETERM_H_
 
-#include <llvm/Value.h>
+#include "Protobuf/Gen/Term/ValueTerm.pb.h"
 
 #include "Term/Term.h"
-#include "Util/slottracker.h"
 
 namespace borealis {
 
+/** protobuf -> Term/ValueTerm.proto
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message ValueTerm {
+    extend borealis.proto.Term {
+        optional ValueTerm ext = 33;
+    }
+}
+
+**/
 class ValueTerm: public borealis::Term {
 
     typedef std::unique_ptr<ValueTerm> SelfPtr;
@@ -50,6 +61,26 @@ struct SMTImpl<Impl, ValueTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getVarByTypeAndName(t->getType(), t->getName());
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<ValueTerm, proto::ValueTerm, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::ValueTerm* toProtobuf(const ValueTerm*) {
+        return util::uniq(new proto::ValueTerm()).release();
+    }
+
+    static Term::Ptr fromProtobuf(
+            FN,
+            Type::Ptr type,
+            const std::string& name,
+            const proto::ValueTerm&) {
+        return Term::Ptr{ new ValueTerm(type, name) };
     }
 };
 

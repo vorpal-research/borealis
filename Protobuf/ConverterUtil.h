@@ -10,10 +10,10 @@
 
 namespace borealis {
 
-template<class B, class P, class _ = void>
+template<class B, class P, class FN>
 struct Converter;
 
-template<class B, class P, class _ = void>
+template<class B, class P, class FN>
 struct ConverterImpl;
 
 } // namespace borealis
