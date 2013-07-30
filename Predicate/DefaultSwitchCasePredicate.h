@@ -37,7 +37,7 @@ class DefaultSwitchCasePredicate: public borealis::Predicate {
 
     DefaultSwitchCasePredicate(
             Term::Ptr cond,
-            std::vector<Term::Ptr> cases,
+            const std::vector<Term::Ptr>& cases,
             PredicateType type = PredicateType::PATH);
 
 public:
@@ -91,6 +91,44 @@ struct SMTImpl<Impl, DefaultSwitchCasePredicate> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<DefaultSwitchCasePredicate, proto::DefaultSwitchCasePredicate, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::DefaultSwitchCasePredicate* toProtobuf(const DefaultSwitchCasePredicate* p) {
+        auto res = util::uniq(new proto::DefaultSwitchCasePredicate());
+        res->set_allocated_cond(
+            TermConverter::toProtobuf(p->getCond()).release()
+        );
+        for (const auto& c : p->getCases()) {
+            res->cases().AddAllocated(
+                TermConverter::toProtobuf(c).release()
+            );
+        }
+        return res.release();
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            FN fn,
+            PredicateType type,
+            const proto::DefaultSwitchCasePredicate& p) {
+        auto cond = TermConverter::fromProtobuf(fn, p.cond());
+
+        std::vector<Term::Ptr> cases;
+        cases.reserve(p.cases_size());
+        for (const auto& c : p.cases()) {
+            cases.push_back(
+                TermConverter::fromProtobuf(fn, c)
+            );
+        }
+
+        return Predicate::Ptr{ new DefaultSwitchCasePredicate(cond, cases, type) };
+    }
+};
 
 } /* namespace borealis */
 

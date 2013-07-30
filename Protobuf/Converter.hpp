@@ -10,6 +10,8 @@
 
 #include "Protobuf/ConverterUtil.h"
 
+#include "Predicate/Predicate.h"
+#include "Predicate/Predicate.def"
 #include "Term/Term.h"
 #include "Term/Term.def"
 #include "Type/Type.h"
@@ -75,6 +77,11 @@ struct Converter<Term, proto::Term, FN> {
     static Term::ProtoPtr toProtobuf(Term::Ptr t) {
         auto res = util::uniq(new proto::Term());
 
+        res->set_allocated_type(
+            Converter<Type, proto::Type, FN>::toProtobuf(t->getType()).release()
+        );
+        res->set_name(t->getName());
+
         if (false) {}
 #define HANDLE_TERM(NAME, CLASS) \
         else if (auto* tt = llvm::dyn_cast<CLASS>(t)) { \
@@ -104,6 +111,49 @@ struct Converter<Term, proto::Term, FN> {
         }
 #include "Term/Term.def"
         BYE_BYE(Term::Ptr, "Should not happen!");
+    }
+
+};
+
+template<class FN>
+struct Converter<Predicate, proto::Predicate, FN> {
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Predicate::Ptr
+    ////////////////////////////////////////////////////////////////////////////
+    static Predicate::ProtoPtr toProtobuf(Predicate::Ptr p) {
+        auto res = util::uniq(new proto::Predicate());
+
+        res->set_type(static_cast<proto::PredicateType>(p->getType()));
+
+        if (false) {}
+#define HANDLE_PREDICATE(NAME, CLASS) \
+        else if (auto* pp = llvm::dyn_cast<CLASS>(p)) { \
+            auto* proto = ConverterImpl<CLASS, proto::CLASS, FN> \
+                          ::toProtobuf(pp); \
+            res->SetAllocatedExtension( \
+                proto::CLASS::ext, \
+                proto \
+            ); \
+        }
+#include "Predicate/Predicate.def"
+        else BYE_BYE(Predicate::ProtoPtr, "Should not happen!");
+
+        return std::move(res);
+    }
+
+    static Predicate::Ptr fromProtobuf(FN fn, const proto::Predicate& p) {
+
+        auto type = static_cast<PredicateType>(p.type());
+
+#define HANDLE_PREDICATE(NAME, CLASS) \
+        if (p.HasExtension(proto::CLASS::ext)) { \
+            const auto& ext = p.GetExtension(proto::CLASS::ext); \
+            return ConverterImpl<CLASS, proto::CLASS, FN> \
+                   ::fromProtobuf(fn, type, ext); \
+        }
+#include "Predicate/Predicate.def"
+        BYE_BYE(Predicate::Ptr, "Should not happen!");
     }
 
 };
