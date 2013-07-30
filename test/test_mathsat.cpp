@@ -17,28 +17,12 @@ namespace{
 using namespace mathsat;
 using std::string;
 
-TEST(MathSatApi, NotBitVector) {
-	Config conf = Config();
-	Env env = Env(conf);
-	Expr x = env.int_const("x");
-	Expr y = env.int_const("y");
-	ASSERT_TRUE(x.is_int());
-	ASSERT_TRUE(y.is_int());
-	ASSERT_FALSE(x.is_bv());
-	ASSERT_FALSE(y.is_bv());
-	std::cout << "asdhkfgbalejwfb" << std::endl;
-//	Expr x = env.bv_const("x", 32);
-//	Expr y = env.bv_const("y", 32);
-	Expr z = -y;
-
-}
-
 TEST(MathSatApi, generatingFormulas) {
-	// Comparing internal representations of two identical formulas:
+	// Comparing two identical formulas:
 	// first created using C++ API
 	// second created using standard C API
 
-	// getting term representation using C++ API
+	// getting term using C++ API
 	Config conf = Config();
 	Env env = Env(conf);
 
@@ -52,41 +36,86 @@ TEST(MathSatApi, generatingFormulas) {
 	Expr y2 = env.rat_const("y2");
 	Expr y3 = env.rat_const("y3");
 
-	Expr A = (x2 + f(x1) - x3 == 0) && (y2 + f(y1) == y3) && (y1 <= x1);
-	char *msat_str = msat_term_repr(A);
-	string cppterm = msat_str;
-	msat_free(msat_str);
+	Expr A = (f(x1) + x2 == x3 ) && (f(y1) + y2 == y3) && (y1 <= x1);
 
-
-	// getting term representation using standard C API
-	msat_config cfg;
-	msat_env menv;
+	// getting term using standard C API
 	msat_term formula;
-	const char *vars[] = {"x1", "x2", "x3", "y1", "y2", "y3"};
-	const char *ufs = "f";
-	unsigned int i;
-	msat_type rat_tp, func_tp;
-	msat_type paramtps[1];
+	formula = msat_from_string(env, "(and (= (+ (f x1) x2) x3) (= (+ (f y1) y2) y3) (<= y1 x1))");
 
-	cfg = msat_create_config();
-	menv = msat_create_env(cfg);
-	msat_destroy_config(cfg);
+	Solver sol = Solver(env);
+	sol.add(A);
+	msat_assert_formula(env, msat_make_not(env, formula));
+	msat_result res = sol.check();
 
-	rat_tp = msat_get_rational_type(menv);
-	paramtps[0] = rat_tp;
-	func_tp = msat_get_function_type(menv, paramtps, 1, rat_tp);
+	ASSERT_EQ(res, MSAT_UNSAT);
+}
 
-	for (i = 0; i < sizeof(vars)/sizeof(vars[0]); ++i) {
-		msat_declare_function(menv, vars[i], rat_tp);
-	}
-	msat_declare_function(menv, ufs, func_tp);
-	formula = msat_from_string(menv, "(and (and (= (+ x2 (f x1)) x3) (= (+ (f y1) y2) y3)) (<= y1 x1))");
-	msat_str = msat_term_repr(formula);
-	string cterm = msat_str;
-	msat_free(msat_str);
-	msat_destroy_env(menv);
+TEST(MathSatApi, generatingInterpolant) {
+	// Comparing two interpolants for same formulas:
+	// first generated using C++ API
+	// second generated using standard C API
 
-	ASSERT_EQ(cppterm, cterm);
+	// generating interpolant using C++ API
+	Config conf = Config();
+	conf.set("interpolation", true);
+
+	Env env = Env(conf);
+
+	Sort rat = env.rat_sort();
+	Decl f = env.function("f", rat, rat);
+	Decl g = env.function("g", rat, rat);
+	Expr x1 = env.rat_const("x1");
+	Expr x2 = env.rat_const("x2");
+	Expr x3 = env.rat_const("x3");
+	Expr y1 = env.rat_const("y1");
+	Expr y2 = env.rat_const("y2");
+	Expr y3 = env.rat_const("y3");
+	Expr b = env.rat_const("b");
+
+	Expr A = (f(x1) + x2 == x3) && (f(y1) + y2 == y3) && (y1 <= x1);
+	Expr B = (g(b) == x2) && (g(b) == y2) && (x1 <= y1) && (x3 < y3);
+
+	Solver sol = Solver(env);
+	sol.push();
+	InterpolationGroup grA = sol.create_interp_group();
+	InterpolationGroup grB = sol.create_interp_group();
+	sol.set_interp_group(grA);
+	sol.add(A);
+	sol.set_interp_group(grB);
+	sol.add(B);
+
+	auto res = sol.check();
+	ASSERT_EQ(res, MSAT_UNSAT);
+	Expr cppinterp = sol.get_interpolant(&grA, 1);
+	sol.pop();
+
+	// generating interpolant using standard C API
+	msat_term formula;
+	msat_push_backtrack_point(env);
+	int group_a, group_b;
+	group_a = msat_create_itp_group(env);
+	group_b = msat_create_itp_group(env);
+
+	formula = msat_from_string(env, "(and (= (+ (f x1) x2) x3) (= (+ (f y1) y2) y3) (<= y1 x1))");
+	msat_set_itp_group(env, group_a);
+	msat_assert_formula(env, formula);
+
+	formula = msat_from_string(env, "(and (= x2 (g b)) (= y2 (g b)) (<= x1 y1) (< x3 y3))");
+	msat_set_itp_group(env, group_b);
+	msat_assert_formula(env, formula);
+
+	res = msat_solve(env);
+	ASSERT_EQ(res, MSAT_UNSAT);
+	int groups_of_a[1] = {group_a};
+	msat_term cinterp = msat_get_interpolant(env, groups_of_a, 1);
+	msat_pop_backtrack_point(env);
+
+	// comparing interpolants
+	sol.add(cppinterp);
+	int r = msat_assert_formula(env, msat_make_not(env, cinterp));
+	ASSERT_EQ(r, 0);
+	res = sol.check();
+	ASSERT_EQ(res, MSAT_UNSAT);
 }
 
 }

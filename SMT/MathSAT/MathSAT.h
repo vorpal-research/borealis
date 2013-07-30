@@ -160,6 +160,7 @@ public:
 
 	operator msat_term() const { return term_; }
 	Env& env() const { return env_; }
+	Expr& operator =(const Expr& that) { env_ = that.env_; term_ = that.term_; return *this; }
 
 	bool is_bool() const { return msat_is_bool_type(env_, get_type()); }
 	bool is_int() const { return msat_is_integer_type(env_, get_type()); }
@@ -263,16 +264,7 @@ public:
 
 ////////////////////////////////////////////////////////////////
 
-class InterpolationGroup {
-private:
-	int id_;
-public:
-	InterpolationGroup(int id) : id_(id) {}
-
-	int id() { return id_; }
-};
-
-////////////////////////////////////////////////////////////////
+typedef int InterpolationGroup;
 
 class Solver {
 private:
@@ -282,6 +274,7 @@ public:
 	explicit Solver(Env& env) : env_(env) {}
 
 	void add(const Expr& e);
+	void reset() { env_.reset(); }
 
 	void push();
 	void pop();

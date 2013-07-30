@@ -434,18 +434,14 @@ Expr operator /(int a, Expr const &b){
 #include <iostream>
 
 Expr operator -(Expr const &a) {
-	std::cout << a.is_bv() << std::endl;
 	ASSERTC( a.is_bv() )
-	std::cout << a.is_bv() << std::endl;
 	msat_term new_term = msat_make_bv_neg(a.env_, a.term_);
 	ASERTMSAT_TERM
 	return Expr(a.env_, new_term);
 }
 
 Expr operator -(Expr const &a, Expr const &b) {
-	std::cout << a.is_bv() << " " << b.is_bv() << std::endl;
 	ASSERTC( a.is_bv() && b.is_bv())
-	std::cout << a.is_bv() << " " << b.is_bv() << std::endl;
 	msat_term new_term = msat_make_bv_minus(a.env_, a.term_, b.term_);
 	ASERTMSAT_TERM
 	return Expr(a.env_, new_term);
@@ -899,6 +895,7 @@ Expr Expr::from_smtlib2(Env& env, std::string data) {
 
 void Solver::add(const Expr& e) {
 	int res = msat_assert_formula(env_, e);
+	std::cout << "res: " << res << std::endl;
 	ASSERTC(!res)
 }
 
@@ -942,14 +939,14 @@ std::vector<Expr> Solver::unsat_core() {
 }
 
 void Solver::set_interp_group(InterpolationGroup gr) {
-	int res = msat_set_itp_group(env_, gr.id());
+	int res = msat_set_itp_group(env_, gr);
 	ASSERTC(!res)
 }
 
 Expr Solver::get_interpolant(InterpolationGroup* groupsA, unsigned size) {
 	int idxs[size];
 	for (unsigned i=0; i < size; i++) {
-		idxs[i] = groupsA[i].id();
+		idxs[i] = groupsA[i];
 	}
 	auto new_term = msat_get_interpolant(env_, idxs, size);
 	ASERTMSAT_TERM
