@@ -21,9 +21,6 @@ BasicPredicateState::BasicPredicateState() :
 
 void BasicPredicateState::addPredicateInPlace(Predicate::Ptr pred) {
     this->data.push_back(pred);
-    if (const auto* loc = pred->getLocation()) {
-        this->locs.insert(loc);
-    }
 }
 
 void BasicPredicateState::addVisitedInPlace(const llvm::Value* loc) {

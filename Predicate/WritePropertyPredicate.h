@@ -8,10 +8,29 @@
 #ifndef WRITEPROPERTYPREDICATE_H_
 #define WRITEPROPERTYPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/WritePropertyPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message WritePropertyPredicate {
+    extend borealis.proto.Predicate {
+        optional WritePropertyPredicate ext = 23;
+    }
+
+    optional Term propName = 1;
+    optional Term lhv = 2;
+    optional Term rhv = 3;
+}
+
+**/
 class WritePropertyPredicate: public borealis::Predicate {
 
     Term::Ptr propName;

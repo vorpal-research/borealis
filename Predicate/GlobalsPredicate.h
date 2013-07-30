@@ -8,10 +8,27 @@
 #ifndef GLOBALSPREDICATE_H_
 #define GLOBALSPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/GlobalsPredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/GlobalsPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message GlobalsPredicate {
+    extend borealis.proto.Predicate {
+        optional GlobalsPredicate ext = 19;
+    }
+
+    repeated Term globals = 1;
+}
+
+**/
 class GlobalsPredicate: public borealis::Predicate {
 
     typedef std::vector<Term::Ptr> Globals;

@@ -8,10 +8,28 @@
 #ifndef ALLOCAPREDICATE_H_
 #define ALLOCAPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/AllocaPredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/AllocaPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message AllocaPredicate {
+    extend borealis.proto.Predicate {
+        optional AllocaPredicate ext = 16;
+    }
+
+    optional Term lhv = 1;
+    optional Term numElements = 2;
+}
+
+**/
 class AllocaPredicate: public borealis::Predicate {
 
     Term::Ptr lhv;

@@ -8,11 +8,29 @@
 #ifndef MALLOCPREDICATE_H_
 #define MALLOCPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/MallocPredicate.pb.h"
+
 #include "Config/config.h"
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/MallocPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message MallocPredicate {
+    extend borealis.proto.Predicate {
+        optional MallocPredicate ext = 21;
+    }
+
+    optional Term lhv = 1;
+    optional Term numElements = 2;
+}
+
+**/
 class MallocPredicate: public borealis::Predicate {
 
     Term::Ptr lhv;

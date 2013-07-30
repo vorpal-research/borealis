@@ -8,10 +8,28 @@
 #ifndef DEFAULTSWITCHCASEPREDICATE_H_
 #define DEFAULTSWITCHCASEPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/DefaultSwitchCasePredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/DefaultSwitchCasePredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message DefaultSwitchCasePredicate {
+    extend borealis.proto.Predicate {
+        optional DefaultSwitchCasePredicate ext = 17;
+    }
+
+    optional Term cond = 1;
+    repeated Term cases = 2;
+}
+
+**/
 class DefaultSwitchCasePredicate: public borealis::Predicate {
 
     Term::Ptr cond;

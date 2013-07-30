@@ -8,10 +8,28 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/StorePredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message StorePredicate {
+    extend borealis.proto.Predicate {
+        optional StorePredicate ext = 22;
+    }
+
+    optional Term lhv = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class StorePredicate: public borealis::Predicate {
 
     Term::Ptr lhv;

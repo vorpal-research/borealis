@@ -15,6 +15,8 @@
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
+#include "Protobuf/ConverterUtil.h"
+#include "Protobuf/Gen/Predicate/Predicate.pb.h"
 #include "SMT/SMTUtil.h"
 #include "Term/Term.h"
 #include "Util/typeindex.hpp"
@@ -22,30 +24,62 @@
 
 namespace borealis {
 
+/** protobuf -> Predicate/PredicateType.proto
+package borealis.proto;
+
+enum PredicateType {
+    PATH     = 0;
+    STATE    = 1;
+    REQUIRES = 2;
+    ENSURES  = 3;
+    ASSERT   = 4;
+    ASSUME   = 5;
+}
+**/
 enum class PredicateType {
-    PATH,
-    STATE,
-    REQUIRES,
-    ENSURES,
-    ASSERT,
-    ASSUME
+    PATH     = 0,
+    STATE    = 1,
+    REQUIRES = 2,
+    ENSURES  = 3,
+    ASSERT   = 4,
+    ASSUME   = 5
 };
 
 PredicateType predicateType(const Annotation* a);
 
 // Forward declaration
 template<class SubClass> class Transformer;
+
+namespace proto { class Predicate; }
 // End of forward declaration
 
+/** protobuf -> Predicate/Predicate.proto
+import "Predicate/PredicateType.proto";
+
+package borealis.proto;
+
+message Predicate {
+    optional PredicateType type = 1;
+
+    extensions 16 to 64;
+}
+
+**/
 class Predicate : public ClassTag {
 
 public:
 
     typedef std::shared_ptr<const Predicate> Ptr;
+    typedef std::unique_ptr<proto::Predicate> ProtoPtr;
+
+protected:
 
     Predicate(id_t classTag);
     Predicate(id_t classTag, PredicateType type);
     Predicate(const Predicate&) = default;
+
+public:
+
     virtual ~Predicate() {};
 
     PredicateType getType() const {
@@ -54,15 +88,6 @@ public:
 
     Predicate* setType(PredicateType type) {
         this->type = type;
-        return this;
-    }
-
-    const llvm::Instruction* getLocation() const {
-        return location;
-    }
-
-    Predicate* setLocation(const llvm::Instruction* location) {
-        this->location = location;
         return this;
     }
 
@@ -85,8 +110,7 @@ public:
 
     virtual bool equals(const Predicate* other) const {
         if (other == nullptr) return false;
-        return type == other->type &&
-                location == other->location;
+        return type == other->type;
     }
 
     bool operator==(const Predicate& other) const {
@@ -95,7 +119,7 @@ public:
     }
 
     virtual size_t hashCode() const {
-        return util::hash::defaultHasher()(classTag, type, location);
+        return util::hash::defaultHasher()(classTag, type);
     }
 
     virtual Predicate* clone() const = 0;
@@ -103,8 +127,6 @@ public:
 protected:
 
     PredicateType type;
-    const llvm::Instruction* location;
-
     // Must be set in subclasses
     std::string asString;
 
@@ -127,6 +149,7 @@ private: \
     CLASS(const Self&) = default; \
 public: \
     friend class PredicateFactory; \
+    template<class B, class P, class FN> friend struct ConverterImpl; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

@@ -8,10 +8,28 @@
 #ifndef INEQUALITYPREDICATE_H_
 #define INEQUALITYPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/InequalityPredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/InequalityPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message InequalityPredicate {
+    extend borealis.proto.Predicate {
+        optional InequalityPredicate ext = 20;
+    }
+
+    optional Term lhv = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class InequalityPredicate: public borealis::Predicate {
 
     Term::Ptr lhv;

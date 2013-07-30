@@ -50,9 +50,10 @@ protected:
     Term(id_t classTag, Type::Ptr type, const std::string& name) :
         ClassTag(classTag), type(type), name(name) {};
     Term(const Term&) = default;
-    virtual ~Term() {};
 
 public:
+
+    virtual ~Term() {};
 
     Type::Ptr getType() const {
         return type;

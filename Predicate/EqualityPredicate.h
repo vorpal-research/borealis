@@ -8,10 +8,28 @@
 #ifndef EQUALITYPREDICATE_H_
 #define EQUALITYPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/EqualityPredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/EqualityPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message EqualityPredicate {
+    extend borealis.proto.Predicate {
+        optional EqualityPredicate ext = 18;
+    }
+
+    optional Term lhv = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class EqualityPredicate: public borealis::Predicate {
 
     Term::Ptr lhv;
