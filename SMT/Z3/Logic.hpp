@@ -366,7 +366,7 @@ REDEF_BV_BIN_OP(*)
 REDEF_BV_BIN_OP(/)
 REDEF_BV_BIN_OP(|)
 REDEF_BV_BIN_OP(&)
-REDEF_BV_BIN_OP(>>)
+REDEF_BV_BIN_OP(>>) // FIXME: z3::expr doesn't have shifts
 REDEF_BV_BIN_OP(<<)
 REDEF_BV_BIN_OP(^)
 
