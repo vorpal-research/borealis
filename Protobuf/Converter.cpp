@@ -39,4 +39,14 @@ Predicate::Ptr deprotobuffy(FactoryNest fn, const proto::Predicate& p) {
     return Converter<Predicate, proto::Predicate, FactoryNest>::fromProtobuf(fn, p);
 }
 
+
+
+PredicateState::ProtoPtr protobuffy(PredicateState::Ptr ps) {
+    return Converter<PredicateState, proto::PredicateState, FactoryNest>::toProtobuf(ps);
+}
+
+PredicateState::Ptr deprotobuffy(FactoryNest fn, const proto::PredicateState& ps) {
+    return Converter<PredicateState, proto::PredicateState, FactoryNest>::fromProtobuf(fn, ps);
+}
+
 } // namespace borealis

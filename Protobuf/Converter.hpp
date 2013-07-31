@@ -12,6 +12,8 @@
 
 #include "Predicate/Predicate.h"
 #include "Predicate/Predicate.def"
+#include "State/PredicateState.h"
+#include "State/PredicateState.def"
 #include "Term/Term.h"
 #include "Term/Term.def"
 #include "Type/Type.h"
@@ -33,7 +35,8 @@ Term::Ptr    deprotobuffy(FactoryNest FN, const proto::Term& t);
 Predicate::ProtoPtr protobuffy(Predicate::Ptr p);
 Predicate::Ptr    deprotobuffy(FactoryNest FN, const proto::Predicate& p);
 
-
+PredicateState::ProtoPtr protobuffy(PredicateState::Ptr p);
+PredicateState::Ptr    deprotobuffy(FactoryNest FN, const proto::PredicateState& p);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Type::Ptr
