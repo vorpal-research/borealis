@@ -12,7 +12,7 @@
 namespace borealis {
 
 PredicateStateChain::PredicateStateChain(PredicateState::Ptr base, PredicateState::Ptr curr) :
-        PredicateState(type_id<Self>()),
+        PredicateState(class_tag<Self>()),
         base(base),
         curr(curr) {
     ASSERTC(base != nullptr);

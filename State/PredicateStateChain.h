@@ -8,10 +8,26 @@
 #ifndef PREDICATESTATECHAIN_H_
 #define PREDICATESTATECHAIN_H_
 
+#include "Protobuf/Gen/State/PredicateStateChain.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 
+/** protobuf -> State/PredicateStateChain.proto
+import "State/PredicateState.proto";
+
+package borealis.proto;
+
+message PredicateStateChain {
+    extend borealis.proto.PredicateState {
+        optional PredicateStateChain ext = 17;
+    }
+
+    optional PredicateState base = 1;
+    optional PredicateState curr = 2;
+}
+
+**/
 class PredicateStateChain :
         public PredicateState {
 
@@ -38,7 +54,8 @@ public:
 
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return *this->base == *o->base &&
+            return PredicateState::equals(other) &&
+                    *this->base == *o->base &&
                     *this->curr == *o->curr;
         } else return false;
     }

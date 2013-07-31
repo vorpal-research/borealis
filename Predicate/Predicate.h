@@ -110,7 +110,8 @@ public:
 
     virtual bool equals(const Predicate* other) const {
         if (other == nullptr) return false;
-        return type == other->type;
+        return classTag == other->classTag &&
+                type == other->type;
     }
 
     bool operator==(const Predicate& other) const {

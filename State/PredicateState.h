@@ -15,6 +15,8 @@
 #include "Logging/logstream.hpp"
 #include "Logging/tracer.hpp"
 #include "Predicate/Predicate.h"
+#include "Protobuf/ConverterUtil.h"
+#include "Protobuf/Gen/State/PredicateState.pb.h"
 #include "SMT/SMTUtil.h"
 #include "Util/util.h"
 
@@ -22,12 +24,26 @@
 
 namespace borealis {
 
+namespace proto { class PredicateState; }
+
+/** protobuf -> State/PredicateState.proto
+
+package borealis.proto;
+
+message PredicateState {
+    extensions 16 to 64;
+}
+
+**/
 class PredicateState :
+    public ClassTag,
     public std::enable_shared_from_this<const PredicateState> {
 
 public:
 
     typedef std::shared_ptr<const PredicateState> Ptr;
+    typedef std::unique_ptr<proto::PredicateState> ProtoPtr;
+
     typedef std::function<PredicateState::Ptr(PredicateState::Ptr)> FMapper;
     typedef std::function<Predicate::Ptr(Predicate::Ptr)> Mapper;
     typedef std::function<bool(Predicate::Ptr)> Filterer;
@@ -64,7 +80,11 @@ public:
 
     virtual bool isEmpty() const = 0;
 
-    virtual bool equals(const PredicateState* other) const = 0;
+    virtual bool equals(const PredicateState* other) const {
+        if (other == nullptr) return false;
+        return classTag == other->classTag;
+    }
+
     bool operator==(const PredicateState& other) const {
         if (this == &other) return true;
         return this->equals(&other);
@@ -73,16 +93,10 @@ public:
     virtual std::string toString() const = 0;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const = 0;
 
-    PredicateState(id_t predicate_state_type_id);
+    PredicateState(id_t classTag);
     virtual ~PredicateState() {};
 
-    id_t getPredicateStateTypeId() const {
-        return predicate_state_type_id;
-    }
-
 protected:
-
-    const id_t predicate_state_type_id;
 
     static PredicateState::Ptr Simplified(const PredicateState* s) {
         return PredicateState::Ptr(s)->simplify();
@@ -112,12 +126,13 @@ private: \
     CLASS(Self&& state) = default; \
 public: \
     friend class PredicateStateFactory; \
+    template<class B, class P, class FN> friend struct ConverterImpl; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \
     } \
     static bool classof(const PredicateState* ps) { \
-        return ps->getPredicateStateTypeId() == type_id<Self>(); \
+        return ps->getClassTag() == class_tag<Self>(); \
     }
 
 #include "Util/unmacros.h"

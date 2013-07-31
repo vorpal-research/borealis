@@ -13,10 +13,26 @@
 #include <list>
 #include <unordered_set>
 
+#include "Protobuf/Gen/State/BasicPredicateState.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 
+/** protobuf -> State/BasicPredicateState.proto
+import "State/PredicateState.proto";
+import "Predicate/Predicate.proto";
+
+package borealis.proto;
+
+message BasicPredicateState {
+    extend borealis.proto.PredicateState {
+        optional BasicPredicateState ext = 16;
+    }
+
+    repeated Predicate data = 1;
+}
+
+**/
 class BasicPredicateState :
         public PredicateState {
 
@@ -47,10 +63,12 @@ public:
 
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return std::equal(data.begin(), data.end(), o->data.begin(),
-                [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
-                    return *a == *b;
-                });
+            return PredicateState::equals(other) &&
+                    std::equal(data.begin(), data.end(), o->data.begin(),
+                        [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
+                            return *a == *b;
+                        }
+                    );
         } else return false;
     }
 

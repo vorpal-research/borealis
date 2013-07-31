@@ -8,10 +8,25 @@
 #ifndef PREDICATESTATECHOICE_H_
 #define PREDICATESTATECHOICE_H_
 
+#include "Protobuf/Gen/State/PredicateStateChoice.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 
+/** protobuf -> State/PredicateStateChoice.proto
+import "State/PredicateState.proto";
+
+package borealis.proto;
+
+message PredicateStateChoice {
+    extend borealis.proto.PredicateState {
+        optional PredicateStateChoice ext = 18;
+    }
+
+    repeated PredicateState choices = 1;
+}
+
+**/
 class PredicateStateChoice :
         public PredicateState {
 
@@ -37,11 +52,12 @@ public:
 
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return std::equal(choices.begin(), choices.end(), o->choices.begin(),
-                [](PredicateState::Ptr a, PredicateState::Ptr b) {
-                    return *a == *b;
-                }
-            );
+            return PredicateState::equals(other) &&
+                    std::equal(choices.begin(), choices.end(), o->choices.begin(),
+                        [](PredicateState::Ptr a, PredicateState::Ptr b) {
+                            return *a == *b;
+                        }
+                    );
         } else return false;
     }
 
