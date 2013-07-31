@@ -137,4 +137,22 @@ TEST(MathSatApi, generatingInterpolant) {
 	ASSERT_EQ(res, MSAT_UNSAT);
 }
 
+TEST(MathSatApi, freshConst) {
+	// Testing fresh_constant() method of Env class
+
+	Config conf = Config();
+	Env env = Env(conf);
+
+	Sort rat = env.rat_sort();
+	Expr x1 = env.rat_const("x1");
+	Expr x2 = env.fresh_constant("x1", rat);
+	Expr x3 = env.fresh_constant("x1", rat);
+	Expr y = env.fresh_constant("y", rat);
+
+	EXPECT_NE(x1.decl().name(), x2.decl().name());
+	EXPECT_NE(x1.decl().name(), x3.decl().name());
+	EXPECT_NE(x2.decl().name(), x3.decl().name());
+	EXPECT_NE(y.decl().name(), x2.decl().name());
+}
+
 } // namespace

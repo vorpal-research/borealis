@@ -61,6 +61,7 @@ public:
 	Sort simple_sort(const std::string& name);
 
 	Expr constant(const std::string& name, const Sort& type);
+	Expr fresh_constant(const std::string& name, const Sort& type);
 	Expr bool_const(const std::string& name);
 	Expr int_const(const std::string& name);
 	Expr rat_const(const std::string& name);
@@ -213,8 +214,12 @@ public:
 
     FRIEND_OP_FOR_BOOL(&&);
     FRIEND_OP_FOR_BOOL(||);
+    FRIEND_OP_FOR_BOOL(^);
 
 #undef FRIEND_OP_FOR_BOOL
+
+    friend Expr operator ^(const Expr& a, int b);
+    friend Expr operator ^(int a, const Expr& b);
 
 #define FRIEND_OP_FOR_INT(OP) \
     friend Expr OP(const Expr& a, const Expr& b); \
@@ -233,7 +238,6 @@ public:
     FRIEND_OP_FOR_INT(operator <=);
     FRIEND_OP_FOR_INT(operator &);
     FRIEND_OP_FOR_INT(operator |);
-    FRIEND_OP_FOR_INT(operator ^);
 
     FRIEND_OP_FOR_INT(ult);
     FRIEND_OP_FOR_INT(ule);
@@ -244,6 +248,7 @@ public:
 
 #undef FRIEND_OP_FOR_INT
 
+    friend Expr implies(const Expr& a, const Expr& b);
 	friend Expr iff(const Expr& a, const Expr& b);
 	friend Expr ite(const Expr& cond, const Expr& then_, const Expr& else_);
 	friend Expr concat(const Expr& a, const Expr& b);

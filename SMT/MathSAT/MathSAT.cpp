@@ -5,6 +5,7 @@
  *      Author: Sam Kolton
  */
 
+#include <cstdlib>
 #include <functional>
 
 #include "SMT/MathSAT/MathSAT.h"
@@ -92,6 +93,16 @@ Expr Env::constant(const std::string& name, const Sort& type) {
 	auto new_term = msat_make_constant(env_, new_decl);
 	ASSERTMSAT(MSAT_ERROR_TERM, new_term)
 	return Expr(*this, new_term);
+}
+
+Expr Env::fresh_constant(const std::string& name, const Sort& type) {
+	std::string rand_name = name;
+	auto new_decl = msat_find_decl(env_, name.c_str());
+	while (!(MSAT_ERROR_DECL(new_decl))) {
+		rand_name = name + util::toString(std::rand());
+		new_decl = msat_find_decl(env_, rand_name.c_str());
+	}
+	return this->constant(rand_name, type);
 }
 
 Expr Env::bool_const(const std::string& name) {
@@ -228,6 +239,38 @@ Expr operator ||(const Expr& a, bool b){
 Expr operator ||(bool a, const Expr& b){
     Expr aa = b.env_.bool_val(a);
     return aa || b;
+}
+
+
+
+Expr operator ^(const Expr& a, const Expr& b){
+	msat_term new_term;
+	if (a.is_bool() && b.is_bool()) {
+		return ( a && (!b) ) || ( (!a) && b );
+	} else if (a.is_bv() && b.is_bv()) {
+		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
+		new_term = msat_make_bv_xor(a.env_, a.term_, b.term_);
+	} else {
+		BYE_BYE(Expr, "Cannot add " + util::toString(a) + " and " + util::toString(b));
+	}
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
+}
+Expr operator ^(const Expr& a, bool b){
+    Expr bb = a.env_.bool_val(b);
+    return a ^ bb;
+}
+Expr operator ^(bool a, const Expr& b){
+    Expr aa = b.env_.bool_val(a);
+    return aa ^ b;
+}
+Expr operator ^(const Expr& a, int b){
+    Expr bb = a.env_.bv_val(b, a.get_sort().bv_size());
+	return a ^ bb;
+}
+Expr operator ^(int a, const Expr& b){
+    Expr aa = b.env_.bv_val(a, b.get_sort().bv_size());
+	return aa ^ b;
 }
 
 
@@ -487,24 +530,6 @@ Expr operator &(int a, const Expr& b){
 
 
 
-Expr operator ^(const Expr& a, const Expr& b){
-	ASSERTC(a.is_bv() && b.is_bv());
-    ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-	auto new_term = msat_make_bv_xor(a.env_, a.term_, b.term_);
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
-}
-Expr operator ^(const Expr& a, int b){
-    Expr bb = a.env_.bv_val(b, a.get_sort().bv_size());
-	return a ^ bb;
-}
-Expr operator ^(int a, const Expr& b){
-    Expr aa = b.env_.bv_val(a, b.get_sort().bv_size());
-	return aa ^ b;
-}
-
-
-
 Expr operator |(const Expr& a, const Expr& b){
 	ASSERTC(a.is_bv()&& b.is_bv())
     ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
@@ -521,7 +546,12 @@ Expr operator |(int a, const Expr& b){
 	return aa | b;
 }
 
-// TODO (sam) Try to implement R/Z div and minus using smtlib
+
+
+Expr implies(const Expr& a, const Expr& b) {
+	ASSERTC(a.is_bool() && b.is_bool());
+	return (!a) && b;
+}
 
 Expr iff(const Expr& a, const Expr& b) {
 	ASSERTC(a.is_bool() && b.is_bool());
