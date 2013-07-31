@@ -33,12 +33,14 @@ Term::Ptr    deprotobuffy(FactoryNest FN, const proto::Term& t);
 Predicate::ProtoPtr protobuffy(Predicate::Ptr p);
 Predicate::Ptr    deprotobuffy(FactoryNest FN, const proto::Predicate& p);
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Type::Ptr
+////////////////////////////////////////////////////////////////////////////////
 template<class FN>
 struct Converter<Type, proto::Type, FN> {
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Type::Ptr
-    ////////////////////////////////////////////////////////////////////////////
     static Type::ProtoPtr toProtobuf(Type::Ptr t) {
         auto res = util::uniq(new proto::Type());
 
@@ -71,12 +73,12 @@ struct Converter<Type, proto::Type, FN> {
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Term::Ptr
+////////////////////////////////////////////////////////////////////////////////
 template<class FN>
 struct Converter<Term, proto::Term, FN> {
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Term::Ptr
-    ////////////////////////////////////////////////////////////////////////////
     static Term::ProtoPtr toProtobuf(Term::Ptr t) {
         auto res = util::uniq(new proto::Term());
 
@@ -118,12 +120,12 @@ struct Converter<Term, proto::Term, FN> {
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Predicate::Ptr
+////////////////////////////////////////////////////////////////////////////////
 template<class FN>
 struct Converter<Predicate, proto::Predicate, FN> {
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Predicate::Ptr
-    ////////////////////////////////////////////////////////////////////////////
     static Predicate::ProtoPtr toProtobuf(Predicate::Ptr p) {
         auto res = util::uniq(new proto::Predicate());
 
@@ -157,6 +159,44 @@ struct Converter<Predicate, proto::Predicate, FN> {
         }
 #include "Predicate/Predicate.def"
         BYE_BYE(Predicate::Ptr, "Should not happen!");
+    }
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// PredicateState::Ptr
+////////////////////////////////////////////////////////////////////////////////
+template<class FN>
+struct Converter<PredicateState, proto::PredicateState, FN> {
+
+    static PredicateState::ProtoPtr toProtobuf(PredicateState::Ptr ps) {
+        auto res = util::uniq(new proto::PredicateState());
+
+        if (false) {}
+#define HANDLE_STATE(NAME, CLASS) \
+        else if (auto* pps = llvm::dyn_cast<CLASS>(ps)) { \
+            auto* proto = ConverterImpl<CLASS, proto::CLASS, FN> \
+                          ::toProtobuf(pps); \
+            res->SetAllocatedExtension( \
+                proto::CLASS::ext, \
+                proto \
+            ); \
+        }
+#include "State/PredicateState.def"
+        else BYE_BYE(PredicateState::ProtoPtr, "Should not happen!");
+
+        return std::move(res);
+    }
+
+    static PredicateState::Ptr fromProtobuf(FN fn, const proto::PredicateState& ps) {
+#define HANDLE_STATE(NAME, CLASS) \
+        if (ps.HasExtension(proto::CLASS::ext)) { \
+            const auto& ext = ps.GetExtension(proto::CLASS::ext); \
+            return ConverterImpl<CLASS, proto::CLASS, FN> \
+                   ::fromProtobuf(fn, ext); \
+        }
+#include "State/PredicateState.def"
+        BYE_BYE(PredicateState::Ptr, "Should not happen!");
     }
 
 };

@@ -106,6 +106,36 @@ struct SMTImpl<Impl, BasicPredicateState> {
     }
 };
 
+
+
+template<class FN>
+struct ConverterImpl<BasicPredicateState, proto::BasicPredicateState, FN> {
+
+    typedef Converter<Predicate, proto::Predicate, FN> PredicateConverter;
+
+    static proto::BasicPredicateState* toProtobuf(const BasicPredicateState* ps) {
+        auto res = util::uniq(new proto::BasicPredicateState());
+        for (const auto& p : ps->getData()) {
+            res->mutable_data()->AddAllocated(
+                PredicateConverter::toProtobuf(p).release()
+            );
+        }
+        return res.release();
+    }
+
+    static PredicateState::Ptr fromProtobuf(
+            FN fn,
+            const proto::BasicPredicateState& ps) {
+        auto res = util::uniq(new BasicPredicateState());
+        for (const auto& p : ps.data()) {
+            res->addPredicateInPlace(
+                PredicateConverter::fromProtobuf(fn, p)
+            );
+        }
+        return PredicateState::Ptr{ res.release() };
+    }
+};
+
 } /* namespace borealis */
 
 #endif /* BASICPREDICATESTATE_H_ */

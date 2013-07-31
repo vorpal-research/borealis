@@ -106,6 +106,37 @@ struct SMTImpl<Impl, PredicateStateChoice> {
     }
 };
 
+
+
+template<class FN>
+struct ConverterImpl<PredicateStateChoice, proto::PredicateStateChoice, FN> {
+
+    typedef Converter<PredicateState, proto::PredicateState, FN> PredicateStateConverter;
+
+    static proto::PredicateStateChoice* toProtobuf(const PredicateStateChoice* ps) {
+        auto res = util::uniq(new proto::PredicateStateChoice());
+        for (const auto& c : ps->getChoices()) {
+            res->mutable_choices()->AddAllocated(
+                PredicateStateConverter::toProtobuf(c).release()
+            );
+        }
+        return res.release();
+    }
+
+    static PredicateState::Ptr fromProtobuf(
+            FN fn,
+            const proto::PredicateStateChoice& ps) {
+        std::vector<PredicateState::Ptr> choices;
+        choices.reserve(ps.choices_size());
+        for (const auto& c : ps.choices()) {
+            choices.push_back(
+                PredicateStateConverter::fromProtobuf(fn, c)
+            );
+        }
+        return PredicateState::Ptr{ new PredicateStateChoice(choices) };
+    }
+};
+
 } /* namespace borealis */
 
 #endif /* PREDICATESTATECHOICE_H_ */
