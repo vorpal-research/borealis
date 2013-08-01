@@ -23,11 +23,11 @@ namespace borealis {
 typedef DataProvider<clang::SourceManager> DPSourceManager;
 
 static llvm::cl::opt<std::string>
-DumpOutput("dump-output", llvm::cl::init(""), llvm::cl::NotHidden,
+DumpOutput("dump-output", llvm::cl::init("json"), llvm::cl::NotHidden,
   llvm::cl::desc("Dump analysis results to JSON/XML"));
 
 static llvm::cl::opt<std::string>
-DumpOutputFile("dump-output-file", llvm::cl::init(""), llvm::cl::NotHidden,
+DumpOutputFile("dump-output-file", llvm::cl::init("borealis.report"), llvm::cl::NotHidden,
   llvm::cl::desc("Output file for analysis results"));
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -84,10 +84,6 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
     }
 
     if (!DumpOutput.empty() || !DumpOutputFile.empty()) {
-        if (DumpOutputFile.empty()) {
-            DumpOutputFile = "borealis.report";
-        }
-
         if ("json" == DumpOutput) {
             std::ofstream json(DumpOutputFile);
             json << util::jsonify(dm.getData());
