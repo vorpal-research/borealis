@@ -33,65 +33,49 @@ struct xml_traits;
 
 template<>
 struct xml_traits<XMLNodePtr> {
-    static XMLNodePtr toXml(XMLDocumentRef, XMLNodePtr node, const std::string& = "") {
+    static XMLNodePtr toXml(XMLNodePtr, XMLNodePtr node) {
         return node;
     }
 };
 
 template<>
 struct xml_traits<const char*> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const char* s, const std::string& name = "string") {
-        auto* res = doc.NewElement(name.c_str());
-        res->InsertFirstChild(
-            doc.NewText(s)
+    static XMLNodePtr toXml(XMLNodePtr p, const char* s) {
+        auto* doc = p->GetDocument();
+        p->InsertEndChild(
+            doc->NewText(s)
         );
-        return res;
+        return p;
     }
 };
 
 template<>
 struct xml_traits<std::string> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const std::string& s, const std::string& name = "string") {
-        auto* res = doc.NewElement(name.c_str());
-        res->InsertFirstChild(
-            doc.NewText(s.c_str())
+    static XMLNodePtr toXml(XMLNodePtr p, const std::string& s) {
+        auto* doc = p->GetDocument();
+        p->InsertFirstChild(
+            doc->NewText(s.c_str())
         );
-        return res;
+        return p;
     }
 };
 
 template<class T>
-struct xml_traits<T, GUARD(std::is_integral<T>::value)> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, T val, const std::string& name = "integer") {
-        auto* res = doc.NewElement(name.c_str());
-        res->InsertFirstChild(
-            doc.NewText(util::toString(val).c_str())
+struct xml_traits<T, GUARD(std::is_arithmetic<T>::value)> {
+    static XMLNodePtr toXml(XMLNodePtr p, T val) {
+        auto* doc = p->GetDocument();
+        p->InsertFirstChild(
+            doc->NewText(util::toString(val).c_str())
         );
-        return res;
-    }
-};
-
-template<class T>
-struct xml_traits<T, GUARD(std::is_floating_point<T>::value)> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, T val, const std::string& name = "float") {
-        auto* res = doc.NewElement(name.c_str());
-        res->InsertFirstChild(
-            doc.NewText(util::toString(val).c_str())
-        );
-        return res;
+        return p;
     }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-XMLNodePtr toXml(XMLDocumentRef doc, const T& val) {
-    return xml_traits<T>::toXml(doc, val);
-}
-
-template<class T>
-XMLNodePtr toXml(XMLDocumentRef doc, const T& val, const std::string& name) {
-    return xml_traits<T>::toXml(doc, val, name);
+XMLNodePtr toXml(XMLNodePtr p, const T& val) {
+    return xml_traits<T>::toXml(p, val);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,17 +107,6 @@ public:
         return ost << p.CStr();
     }
 
-    template<class T>
-    struct Named {
-        const std::string& name;
-        const T& value;
-    };
-
-    template<class T>
-    static Named<T> AsNamed(const std::string& name, const T& value) {
-        return Named<T>{ name, value };
-    }
-
     Xml& operator>>(const std::string& tag) {
         auto* node = doc->NewElement(tag.c_str());
         nodeStack.top()->InsertEndChild(node);
@@ -149,14 +122,27 @@ public:
     }
 
     template<class T>
-    Xml& operator<<(const Named<T>& e) {
-        nodeStack.top()->InsertEndChild(xml_traits<T>::toXml(*doc, e.value, e.name));
+    struct ListDesc {
+        const std::string& elemName;
+        const T& list;
+    };
+
+    template<class T>
+    static ListDesc<T> ListOf(const std::string& elemName, const T& list) {
+        return ListDesc<T>{ elemName, list };
+    }
+
+    template<class T>
+    Xml& operator<<(const ListDesc<T>& desc) {
+        auto* top = nodeStack.top();
+        xml_traits<T>::toXml(top, desc.list, desc.elemName);
         return *this;
     }
 
     template<class T>
     Xml& operator<<(const T& value) {
-        nodeStack.top()->InsertEndChild(xml_traits<T>::toXml(*doc, value));
+        auto* top = nodeStack.top();
+        xml_traits<T>::toXml(top, value);
         return *this;
     }
 };

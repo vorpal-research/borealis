@@ -96,7 +96,8 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
             std::ofstream xml(DumpOutputFile);
             xml << (
                 util::Xml("s2a-report")
-                    << util::Xml::AsNamed("defects", dm.getData())
+                    >> "defects"
+                        << util::Xml::ListOf("defect", dm.getData())
             );
             xml.close();
         }

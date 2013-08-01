@@ -102,24 +102,30 @@ struct json_traits<DefectInfo> {
 ////////////////////////////////////////////////////////////////////////////////
 template<>
 struct xml_traits<DefectType> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const DefectType& val, const std::string& name = "type") {
-        return util::toXml(doc, DefectTypes.at(val).type, name);
+    static XMLNodePtr toXml(XMLNodePtr p, const DefectType& val) {
+        auto* doc = p->GetDocument();
+        p->InsertEndChild(
+            doc->NewText(DefectTypes.at(val).type.c_str())
+        );
+        return p;
     }
 };
 
 template<>
 struct xml_traits<DefectInfo> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const DefectInfo& val, const std::string& name = "defect") {
-        auto* node = doc.NewElement(name.c_str());
-        auto* parentDefect = doc.NewElement("parentDefect");
+    static XMLNodePtr toXml(XMLNodePtr p, const DefectInfo& val) {
+        auto* doc = p->GetDocument();
+        auto* parentDefect = doc->NewElement("parentDefect");
+        auto* type = doc->NewElement("type");
         parentDefect->InsertEndChild(
-            util::toXml(doc, val.type, "type")
+            util::toXml(type, val.type)
         );
+        auto* loc = doc->NewElement("location");
         parentDefect->InsertEndChild(
-            util::toXml(doc, val.location, "location")
+            util::toXml(loc, val.location)
         );
-        node->InsertEndChild(parentDefect);
-        return node;
+        p->InsertEndChild(parentDefect);
+        return p;
     }
 };
 

@@ -15,27 +15,29 @@ namespace util {
 
 template<class T>
 struct xml_traits<std::vector<T>> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const std::vector<T>& vec, const std::string& name = "vector") {
-        auto* res = doc.NewElement(name.c_str());
+    static XMLNodePtr toXml(XMLNodePtr p, const std::vector<T>& vec, const std::string& elemName) {
+        auto* doc = p->GetDocument();
         for (const auto& e : vec) {
-            res->InsertEndChild(
-                util::toXml(doc, e)
+            auto* node = doc->NewElement(elemName.c_str());
+            p->InsertEndChild(
+                util::toXml(node, e)
             );
         }
-        return res;
+        return p;
     }
 };
 
 template<class T>
 struct xml_traits<std::set<T>> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const std::set<T>& set, const std::string& name = "set") {
-        auto* res = doc.NewElement(name.c_str());
+    static XMLNodePtr toXml(XMLNodePtr p, const std::set<T>& set, const std::string& elemName) {
+        auto* doc = p->GetDocument();
         for (const auto& e : set) {
-            res->InsertEndChild(
-                util::toXml(doc, e)
+            auto* node = doc->NewElement(elemName.c_str());
+            p->InsertEndChild(
+                util::toXml(node, e)
             );
         }
-        return res;
+        return p;
     }
 };
 

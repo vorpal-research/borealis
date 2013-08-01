@@ -21,18 +21,21 @@ struct foo {
 
 template<>
 struct xml_traits<foo> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, const foo& val, const std::string& name = "foo") {
-        auto* res = doc.NewElement(name.c_str());
-        res->InsertEndChild(
-            util::toXml(doc, val.i, "i")
+    static XMLNodePtr toXml(XMLNodePtr p, const foo& val) {
+        auto* doc = p->GetDocument();
+        auto* i = doc->NewElement("i");
+        p->InsertEndChild(
+            util::toXml(i, val.i)
         );
-        res->InsertEndChild(
-            util::toXml(doc, val.f, "f")
+        auto* f = doc->NewElement("f");
+        p->InsertEndChild(
+            util::toXml(f, val.f)
         );
-        res->InsertEndChild(
-            util::toXml(doc, val.s, "s")
+        auto* s = doc->NewElement("s");
+        p->InsertEndChild(
+            util::toXml(s, val.s)
         );
-        return res;
+        return p;
     }
 };
 
@@ -50,10 +53,15 @@ TEST(Xml, write) {
 
         auto xml = Xml("root")
                        >> "foo"
-                           << Xml::AsNamed("bar", foo)
+                           >> "bar"
+                               << foo
+                           << Xml::END
                        << Xml::END
                        >> "baz"
                            << foo;
+
+        std::ostringstream str;
+        str << xml;
 
         tinyxml2::XMLDocument xml2;
         xml2.Parse(
@@ -66,16 +74,20 @@ TEST(Xml, write) {
                     "</bar>"
                 "</foo>"
                 "<baz>"
-                    "<foo>"
-                        "<i>3</i>"
-                        "<f>14.15</f>"
-                        "<s>21</s>"
-                    "</foo>"
+                    "<i>3</i>"
+                    "<f>14.15</f>"
+                    "<s>21</s>"
                 "</baz>"
             "</root>"
         );
 
-        EXPECT_TRUE(xml2.RootElement()->ShallowEqual(xml.RootElement()));
+        tinyxml2::XMLPrinter p;
+        xml2.Print(&p);
+
+        std::ostringstream str2;
+        str2 << p.CStr();
+
+        EXPECT_EQ(str2.str(), str.str());
     }
 
 }
