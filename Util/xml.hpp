@@ -33,7 +33,7 @@ struct xml_traits;
 
 template<>
 struct xml_traits<XMLNodePtr> {
-    static XMLNodePtr toXml(XMLDocumentRef doc, XMLNodePtr node, const std::string& name = "") {
+    static XMLNodePtr toXml(XMLDocumentRef, XMLNodePtr node, const std::string& = "") {
         return node;
     }
 };

@@ -16,18 +16,19 @@
 #include "Passes/Util/DataProvider.hpp"
 #include "Util/json.hpp"
 #include "Util/passes.hpp"
+#include "Util/xml.hpp"
 
 namespace borealis {
 
 typedef DataProvider<clang::SourceManager> DPSourceManager;
 
-static llvm::cl::opt<bool>
-DumpOutput("dump-output", llvm::cl::init(false), llvm::cl::NotHidden,
-  llvm::cl::desc("Dump analysis results to JSON"));
+static llvm::cl::opt<std::string>
+DumpOutput("dump-output", llvm::cl::init(""), llvm::cl::NotHidden,
+  llvm::cl::desc("Dump analysis results to JSON/XML"));
 
 static llvm::cl::opt<std::string>
 DumpOutputFile("dump-output-file", llvm::cl::init(""), llvm::cl::NotHidden,
-  llvm::cl::desc("JSON output file for analysis results"));
+  llvm::cl::desc("Output file for analysis results"));
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
@@ -82,14 +83,23 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
                 << getRawSource(sm, after) << endl;
     }
 
-    if (DumpOutput || !DumpOutputFile.empty()) {
+    if (!DumpOutput.empty() || !DumpOutputFile.empty()) {
         if (DumpOutputFile.empty()) {
-            DumpOutputFile = "borealis.json";
+            DumpOutputFile = "borealis.report";
         }
 
-        std::ofstream json(DumpOutputFile);
-        json << util::jsonify(dm.getData());
-        json.close();
+        if ("json" == DumpOutput) {
+            std::ofstream json(DumpOutputFile);
+            json << util::jsonify(dm.getData());
+            json.close();
+        } else if ("xml" == DumpOutput) {
+            std::ofstream xml(DumpOutputFile);
+            xml << (
+                util::Xml("s2a-report")
+                    << util::Xml::AsNamed("defects", dm.getData())
+            );
+            xml.close();
+        }
     }
 
     return false;

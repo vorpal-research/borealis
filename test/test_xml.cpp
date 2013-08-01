@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include "Util/util.h"
-#include "Util/xml.hpp"
 #include "Util/xml_traits.hpp"
 
 namespace borealis {
@@ -23,7 +22,7 @@ struct foo {
 template<>
 struct xml_traits<foo> {
     static XMLNodePtr toXml(XMLDocumentRef doc, const foo& val, const std::string& name = "foo") {
-        auto res = doc.NewElement(name.c_str());
+        auto* res = doc.NewElement(name.c_str());
         res->InsertEndChild(
             util::toXml(doc, val.i, "i")
         );

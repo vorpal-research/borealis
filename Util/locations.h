@@ -16,6 +16,7 @@
 #include <utility>
 
 #include "Util/json_traits.hpp"
+#include "Util/xml_traits.hpp"
 
 namespace borealis {
 
@@ -260,6 +261,12 @@ struct json_traits<Locus> {
         return optional_ptr_t {
             builder.build(json)
         };
+    }
+};
+template<>
+struct xml_traits<Locus> {
+    static XMLNodePtr toXml(XMLDocumentRef doc, const Locus& val, const std::string& name = "location") {
+        return util::toXml(doc, util::toString(val), name);
     }
 };
 } //namespace util
