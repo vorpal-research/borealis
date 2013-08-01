@@ -162,7 +162,8 @@ LIBS := \
 	-llog4cpp \
 	-lprofiler \
 	-ljsoncpp \
-	-lprotobuf
+	-lprotobuf \
+	-ltinyxml2
 
 ################################################################################
 # Test defs management

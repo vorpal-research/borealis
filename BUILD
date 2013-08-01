@@ -4,6 +4,7 @@ Dependencies
  * clang-debug
  * z3-codeplex
  * jsoncpp
+ * tinyxml2-git
  * protobuf
  * log4cpp
  * libcfgparser
