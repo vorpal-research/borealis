@@ -15,14 +15,14 @@ using borealis::util::head;
 using borealis::util::tail;
 
 PredicateStateChoice::PredicateStateChoice(const std::vector<PredicateState::Ptr>& choices) :
-        PredicateState(type_id<Self>()),
+        PredicateState(class_tag<Self>()),
         choices(choices) {
     ASSERTC(std::all_of(choices.begin(), choices.end(),
             [](const PredicateState::Ptr& s) { return s != nullptr; }));
 };
 
 PredicateStateChoice::PredicateStateChoice(std::vector<PredicateState::Ptr>&& choices) :
-        PredicateState(type_id<Self>()),
+        PredicateState(class_tag<Self>()),
         choices(std::move(choices)) {
     ASSERTC(std::all_of(choices.begin(), choices.end(),
             [](const PredicateState::Ptr& s) { return s != nullptr; }));

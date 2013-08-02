@@ -17,13 +17,10 @@ using borealis::util::tail;
 using borealis::util::view;
 
 BasicPredicateState::BasicPredicateState() :
-        PredicateState(type_id<Self>()) {}
+        PredicateState(class_tag<Self>()) {}
 
 void BasicPredicateState::addPredicateInPlace(Predicate::Ptr pred) {
     this->data.push_back(pred);
-    if (const auto* loc = pred->getLocation()) {
-        this->locs.insert(loc);
-    }
 }
 
 void BasicPredicateState::addVisitedInPlace(const llvm::Value* loc) {

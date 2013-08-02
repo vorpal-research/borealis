@@ -56,11 +56,7 @@ public:
                 new MallocPredicate(lhv, numElements));
     }
 
-    Predicate::Ptr getICmpPredicate(
-            Term::Ptr lhv,
-            Term::Ptr cmpTerm) {
-        return getEqualityPredicate(lhv, cmpTerm);
-    }
+
 
     Predicate::Ptr getBooleanPredicate(
             Term::Ptr v,
@@ -79,6 +75,8 @@ public:
         );
     }
 
+
+
     Predicate::Ptr getEqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
@@ -95,11 +93,7 @@ public:
                 new InequalityPredicate(lhv, rhv, type));
     }
 
-    Predicate::Ptr getArithPredicate(
-            Term::Ptr lhv,
-            Term::Ptr arithTerm) {
-        return getEqualityPredicate(lhv, arithTerm);
-    }
+
 
     Predicate::Ptr getGlobalsPredicate(
             const std::vector<Term::Ptr>& globals) {

@@ -8,10 +8,25 @@
 #ifndef PREDICATESTATECHOICE_H_
 #define PREDICATESTATECHOICE_H_
 
+#include "Protobuf/Gen/State/PredicateStateChoice.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 
+/** protobuf -> State/PredicateStateChoice.proto
+import "State/PredicateState.proto";
+
+package borealis.proto;
+
+message PredicateStateChoice {
+    extend borealis.proto.PredicateState {
+        optional PredicateStateChoice ext = 18;
+    }
+
+    repeated PredicateState choices = 1;
+}
+
+**/
 class PredicateStateChoice :
         public PredicateState {
 
@@ -37,11 +52,12 @@ public:
 
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return std::equal(choices.begin(), choices.end(), o->choices.begin(),
-                [](PredicateState::Ptr a, PredicateState::Ptr b) {
-                    return *a == *b;
-                }
-            );
+            return PredicateState::equals(other) &&
+                    std::equal(choices.begin(), choices.end(), o->choices.begin(),
+                        [](PredicateState::Ptr a, PredicateState::Ptr b) {
+                            return *a == *b;
+                        }
+                    );
         } else return false;
     }
 
@@ -87,6 +103,37 @@ struct SMTImpl<Impl, PredicateStateChoice> {
         ctx->switchOn("choice", memories);
 
         return res;
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<PredicateStateChoice, proto::PredicateStateChoice, FN> {
+
+    typedef Converter<PredicateState, proto::PredicateState, FN> PredicateStateConverter;
+
+    static proto::PredicateStateChoice* toProtobuf(const PredicateStateChoice* ps) {
+        auto res = util::uniq(new proto::PredicateStateChoice());
+        for (const auto& c : ps->getChoices()) {
+            res->mutable_choices()->AddAllocated(
+                PredicateStateConverter::toProtobuf(c).release()
+            );
+        }
+        return res.release();
+    }
+
+    static PredicateState::Ptr fromProtobuf(
+            FN fn,
+            const proto::PredicateStateChoice& ps) {
+        std::vector<PredicateState::Ptr> choices;
+        choices.reserve(ps.choices_size());
+        for (const auto& c : ps.choices()) {
+            choices.push_back(
+                PredicateStateConverter::fromProtobuf(fn, c)
+            );
+        }
+        return PredicateState::Ptr{ new PredicateStateChoice(choices) };
     }
 };
 

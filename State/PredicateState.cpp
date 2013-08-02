@@ -10,8 +10,8 @@
 
 namespace borealis {
 
-PredicateState::PredicateState(borealis::id_t predicate_state_type_id) :
-        predicate_state_type_id(predicate_state_type_id) {};
+PredicateState::PredicateState(id_t classTag) :
+        ClassTag(classTag) {};
 
 bool PredicateState::isUnreachable() const {
     Z3::ExprFactory z3ef;

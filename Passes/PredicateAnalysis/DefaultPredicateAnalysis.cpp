@@ -67,7 +67,7 @@ public:
         Value* op2 = I.getOperand(1);
         ConditionType cond = conditionType(I.getPredicate());
 
-        pass->PM[&I] = pass->FN.Predicate->getICmpPredicate(
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getCmpTerm(
                 cond,
@@ -238,7 +238,7 @@ public:
         Value* op2 = I.getOperand(1);
         ArithType type = arithType(I.getOpcode());
 
-        pass->PM[&I] = pass->FN.Predicate->getArithPredicate(
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getBinaryTerm(
                 type,

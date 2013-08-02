@@ -8,10 +8,29 @@
 #ifndef WRITEPROPERTYPREDICATE_H_
 #define WRITEPROPERTYPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/WritePropertyPredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message WritePropertyPredicate {
+    extend borealis.proto.Predicate {
+        optional WritePropertyPredicate ext = 23;
+    }
+
+    optional Term propName = 1;
+    optional Term lhv = 2;
+    optional Term rhv = 3;
+}
+
+**/
 class WritePropertyPredicate: public borealis::Predicate {
 
     Term::Ptr propName;
@@ -79,6 +98,38 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<WritePropertyPredicate, proto::WritePropertyPredicate, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::WritePropertyPredicate* toProtobuf(const WritePropertyPredicate* p) {
+        auto res = util::uniq(new proto::WritePropertyPredicate());
+        res->set_allocated_propname(
+            TermConverter::toProtobuf(p->getPropertyName()).release()
+        );
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(p->getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(p->getRhv()).release()
+        );
+        return res.release();
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            FN fn,
+            PredicateType type,
+            const proto::WritePropertyPredicate& p) {
+        auto propName = TermConverter::fromProtobuf(fn, p.propname());
+        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
+        return Predicate::Ptr{ new WritePropertyPredicate(propName, lhv, rhv, type) };
+    }
+};
 
 } /* namespace borealis */
 

@@ -13,7 +13,7 @@ namespace borealis {
 
 DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         Term::Ptr cond,
-        std::vector<Term::Ptr> cases,
+        const std::vector<Term::Ptr>& cases,
         PredicateType type) :
             Predicate(class_tag(*this), type),
             cond(cond),

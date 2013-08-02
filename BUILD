@@ -5,6 +5,7 @@ Dependencies
  * z3-codeplex
  * mathsat-5
  * jsoncpp
+ * tinyxml2-git
  * protobuf
  * log4cpp
  * libcfgparser

@@ -10,6 +10,7 @@
 
 #include "Util/json_traits.hpp"
 #include "Util/util.h"
+#include "Util/xml_traits.hpp"
 
 namespace borealis {
 
@@ -55,6 +56,9 @@ struct DefectInfo {
 
 namespace util {
 
+////////////////////////////////////////////////////////////////////////////////
+// Json
+////////////////////////////////////////////////////////////////////////////////
 template<>
 struct json_traits<DefectType> {
     typedef std::unique_ptr<DefectType> optional_ptr_t;
@@ -90,6 +94,38 @@ struct json_traits<DefectInfo> {
         return optional_ptr_t {
             builder.build(json)
         };
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// XML
+////////////////////////////////////////////////////////////////////////////////
+template<>
+struct xml_traits<DefectType> {
+    static XMLNodePtr toXml(XMLNodePtr p, const DefectType& val) {
+        auto* doc = p->GetDocument();
+        p->InsertEndChild(
+            doc->NewText(DefectTypes.at(val).type.c_str())
+        );
+        return p;
+    }
+};
+
+template<>
+struct xml_traits<DefectInfo> {
+    static XMLNodePtr toXml(XMLNodePtr p, const DefectInfo& val) {
+        auto* doc = p->GetDocument();
+        auto* parentDefect = doc->NewElement("parentDefect");
+        auto* type = doc->NewElement("type");
+        parentDefect->InsertEndChild(
+            util::toXml(type, val.type)
+        );
+        auto* loc = doc->NewElement("location");
+        parentDefect->InsertEndChild(
+            util::toXml(loc, val.location)
+        );
+        p->InsertEndChild(parentDefect);
+        return p;
     }
 };
 

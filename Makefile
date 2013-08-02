@@ -161,8 +161,9 @@ LIBS := \
 	-lcfgparser \
 	-llog4cpp \
 	-lprofiler \
-	-ljsoncpp\
-	-lprotobuf\
+	-ljsoncpp \
+	-lprotobuf \
+	-ltinyxml2 \
 	-lmathsat -lgmpxx -lgmp
 
 ################################################################################

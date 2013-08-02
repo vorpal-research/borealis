@@ -5,11 +5,16 @@
  *      Author: belyaev
  */
 
-#include "gtest/gtest.h"
+#include <google/protobuf/stubs/common.h>
+#include <gtest/gtest.h>
 
 #include "Config/config.h"
 
 int main(int argc, char** argv) {
+
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+  atexit(google::protobuf::ShutdownProtobufLibrary);
+
   ::testing::InitGoogleTest(&argc, argv);
 
   borealis::config::Config cfg("wrapper.conf");

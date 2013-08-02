@@ -13,10 +13,26 @@
 #include <list>
 #include <unordered_set>
 
+#include "Protobuf/Gen/State/BasicPredicateState.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 
+/** protobuf -> State/BasicPredicateState.proto
+import "State/PredicateState.proto";
+import "Predicate/Predicate.proto";
+
+package borealis.proto;
+
+message BasicPredicateState {
+    extend borealis.proto.PredicateState {
+        optional BasicPredicateState ext = 16;
+    }
+
+    repeated Predicate data = 1;
+}
+
+**/
 class BasicPredicateState :
         public PredicateState {
 
@@ -47,10 +63,12 @@ public:
 
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return std::equal(data.begin(), data.end(), o->data.begin(),
-                [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
-                    return *a == *b;
-                });
+            return PredicateState::equals(other) &&
+                    std::equal(data.begin(), data.end(), o->data.begin(),
+                        [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
+                            return *a == *b;
+                        }
+                    );
         } else return false;
     }
 
@@ -85,6 +103,36 @@ struct SMTImpl<Impl, BasicPredicateState> {
         res = res && ctx->toSMT();
 
         return res;
+    }
+};
+
+
+
+template<class FN>
+struct ConverterImpl<BasicPredicateState, proto::BasicPredicateState, FN> {
+
+    typedef Converter<Predicate, proto::Predicate, FN> PredicateConverter;
+
+    static proto::BasicPredicateState* toProtobuf(const BasicPredicateState* ps) {
+        auto res = util::uniq(new proto::BasicPredicateState());
+        for (const auto& p : ps->getData()) {
+            res->mutable_data()->AddAllocated(
+                PredicateConverter::toProtobuf(p).release()
+            );
+        }
+        return res.release();
+    }
+
+    static PredicateState::Ptr fromProtobuf(
+            FN fn,
+            const proto::BasicPredicateState& ps) {
+        auto res = util::uniq(new BasicPredicateState());
+        for (const auto& p : ps.data()) {
+            res->addPredicateInPlace(
+                PredicateConverter::fromProtobuf(fn, p)
+            );
+        }
+        return PredicateState::Ptr{ res.release() };
     }
 };
 

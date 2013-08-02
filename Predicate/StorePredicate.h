@@ -8,10 +8,28 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
+#include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
+
 #include "Predicate/Predicate.h"
 
 namespace borealis {
 
+/** protobuf -> Predicate/StorePredicate.proto
+import "Predicate/Predicate.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message StorePredicate {
+    extend borealis.proto.Predicate {
+        optional StorePredicate ext = 22;
+    }
+
+    optional Term lhv = 1;
+    optional Term rhv = 2;
+}
+
+**/
 class StorePredicate: public borealis::Predicate {
 
     Term::Ptr lhv;
@@ -68,6 +86,34 @@ struct SMTImpl<Impl, StorePredicate> {
     }
 };
 #include "Util/unmacros.h"
+
+
+
+template<class FN>
+struct ConverterImpl<StorePredicate, proto::StorePredicate, FN> {
+
+    typedef Converter<Term, proto::Term, FN> TermConverter;
+
+    static proto::StorePredicate* toProtobuf(const StorePredicate* p) {
+        auto res = util::uniq(new proto::StorePredicate());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(p->getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(p->getRhv()).release()
+        );
+        return res.release();
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            FN fn,
+            PredicateType type,
+            const proto::StorePredicate& p) {
+        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
+        return Predicate::Ptr{ new StorePredicate(lhv, rhv, type) };
+    }
+};
 
 } /* namespace borealis */
 

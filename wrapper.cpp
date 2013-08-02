@@ -61,6 +61,8 @@
 #include <llvm/Target/TargetLibraryInfo.h>
 #include <llvm/Target/TargetMachine.h>
 
+#include <google/protobuf/stubs/common.h>
+
 #include "Actions/comments.h"
 #include "Config/config.h"
 #include "Logging/logger.hpp"
@@ -121,6 +123,10 @@ struct program_args {
 };
 
 int main(int argc, const char** argv) {
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    atexit(google::protobuf::ShutdownProtobufLibrary);
+
     using namespace clang;
     using namespace llvm;
 
