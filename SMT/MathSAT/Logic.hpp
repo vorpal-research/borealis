@@ -11,6 +11,7 @@
 #include <z3/z3++.h>
 
 #include <functional>
+#include <vector>
 
 #include "Util/util.h"
 #include "Util/macros.h"
@@ -240,7 +241,7 @@ struct generator< BitVector<N> > {
 
     static mathsat::Sort sort(mathsat::Env& env) { return env.bv_sort(N)  ; }
     static bool check(mathsat::Expr e) { return e.is_bv() && e.get_sort().bv_size() == N; }
-    static mathsat::Expr mkConst(mathsat::Env& env, int n) { return env.bv_val(n, N); }
+    static mathsat::Expr mkConst(mathsat::Env& env, int n) { return env.bv_val( n, N); }
 };
 } // namespace impl
 
@@ -274,6 +275,7 @@ constexpr size_t max(size_t N0, size_t N1) {
     return N0 > N1 ? N0 : N1;
 }
 } // namespace impl
+
 
 template<class T0, class T1>
 struct merger;
@@ -310,6 +312,7 @@ struct merger<BitVector<N0>, BitVector<N1>> {
         return grow<M>(bv1);
     }
 };
+
 
 
 #define REDEF_BV_BOOL_OP(OP) \
@@ -353,220 +356,144 @@ REDEF_BV_BIN_OP(/)
 REDEF_BV_BIN_OP(|)
 REDEF_BV_BIN_OP(&)
 REDEF_BV_BIN_OP(^)
+REDEF_BV_BIN_OP(%)
 
 #undef REDEF_BV_BIN_OP
-//
-//
-//template<size_t N0, size_t N1, size_t M = impl::max(N0, N1)>
-//BitVector<M> operator%(BitVector<N0> bv0, BitVector<N1> bv1) {
-//    auto ebv0 = grow<M>(bv0);
-//    auto ebv1 = grow<M>(bv1);
-//    auto& env = msatimpl::getContext(bv0);
-//
-//    auto res = z3::to_expr(env, Z3_mk_bvsmod(env, msatimpl::getExpr(ebv0), msatimpl::getExpr(ebv1)));
-//    auto axm = msatimpl::spliceAxioms(bv0, bv1);
-//    return BitVector<M>{ res, axm };
-//}
-//
-//
-//#define REDEF_BV_INT_BIN_OP(OP) \
-//        template<size_t N> \
-//        BitVector<N> operator OP(BitVector<N> bv, int v1) { \
-//            return BitVector<N>{ \
-//                msatimpl::getExpr(bv) OP v1, \
-//                msatimpl::getAxiom(bv) \
-//            }; \
-//        }
-//
-//
-//REDEF_BV_INT_BIN_OP(+)
-//REDEF_BV_INT_BIN_OP(-)
-//REDEF_BV_INT_BIN_OP(*)
-//REDEF_BV_INT_BIN_OP(/)
-//
-//#undef REDEF_BV_INT_BIN_OP
-//
-//
-//#define REDEF_INT_BV_BIN_OP(OP) \
-//        template<size_t N> \
-//        BitVector<N> operator OP(int v1, BitVector<N> bv) { \
-//            return BitVector<N>{ \
-//                v1 OP msatimpl::getExpr(bv), \
-//                msatimpl::getAxiom(bv) \
-//            }; \
-//        }
-//
-//
-//REDEF_INT_BV_BIN_OP(+)
-//REDEF_INT_BV_BIN_OP(-)
-//REDEF_INT_BV_BIN_OP(*)
-//REDEF_INT_BV_BIN_OP(/)
-//
-//#undef REDEF_INT_BV_BIN_OP
-//
-//
-//#define REDEF_UN_OP(OP) \
-//        template<size_t N> \
-//        BitVector<N> operator OP(BitVector<N> bv) { \
-//            return BitVector<N>{ \
-//                OP msatimpl::getExpr(bv), \
-//                msatimpl::getAxiom(bv) \
-//            }; \
-//        }
-//
-//
-//REDEF_UN_OP(~)
-//REDEF_UN_OP(-)
-//
-//#undef REDEF_UN_OP
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//struct ifer {
-//    template<class E>
-//    struct elser {
-//        Bool cond;
-//        E tbranch;
-//
-//        template<class E2>
-//        inline typename merger<E,E2>::type else_(E2 fbranch) {
-//            auto& env = msatimpl::getContext(cond);
-//            auto tb = merger<E,E2>::app(tbranch);
-//            auto fb = merger<E,E2>::app(fbranch);
-//            return typename merger<E, E2>::type{
-//                   z3::to_expr(
-//                       env,
-//                       Z3_mk_ite(
-//                           env,
-//                           msatimpl::getExpr(cond),
-//                           msatimpl::getExpr(tb),
-//                           msatimpl::getExpr(fb)
-//                       )
-//                   ),
-//                   msatimpl::spliceAxioms(cond, tb, fb)
-//            };
-//        }
-//    };
-//
-//    struct thener {
-//        Bool cond;
-//
-//        template<class E>
-//        inline elser<E> then_(E tbranch) {
-//            return elser<E>{ cond, tbranch };
-//        }
-//    };
-//
-//    thener operator()(Bool cond) {
-//        return thener{ cond };
-//    }
-//};
-//
-//inline ifer::thener if_(Bool cond) {
-//    return ifer()(cond);
-//}
-//
-//template<class T, class U>
-//T switch_(
-//        U cond,
-//        const std::vector<std::pair<U, T>>& cases,
-//        T default_
-//    ) {
-//
-//    auto mkIte = [cond](T b, const std::pair<U, T>& a) {
-//        return if_(cond == a.first)
-//               .then_(a.second)
-//               .else_(b);
-//    };
-//
-//    return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
-//}
-//
-//template<class T>
-//T switch_(
-//        const std::vector<std::pair<Bool, T>>& cases,
-//        T default_
-//    ) {
-//
-//    auto mkIte = [](T b, const std::pair<Bool, T>& a) {
-//        return if_(a.first)
-//               .then_(a.second)
-//               .else_(b);
-//    };
-//
-//    return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
-//}
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//namespace msatimpl {
-//
-//template<class Tl, size_t ...N>
-//std::tuple< util::index_in_type_list_q<N, Tl>... >
-//mkbounds_step_1(mathsat::Env& env, Tl, util::indexer<N...>) {
-//    return std::tuple< util::index_in_type_list_q<N, Tl>... > {
-//        util::index_in_type_list_q<N, Tl>::mkBound(env, N)...
-//    };
-//}
-//
-//template<class ...Args>
-//std::tuple<Args...> mkBounds(mathsat::Env& env) {
-//    return mkbounds_step_1(env, util::type_list<Args...>(), typename util::make_indexer<Args...>::type());
-//}
-//
-//} // namespace msatimpl
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//namespace msatimpl {
-//
-//template<class Res, class ...Args>
-//mathsat::Expr forAll(
-//        mathsat::Env& env,
-//        std::function<Res(Args...)> func
-//    ) {
-//
-//    using borealis::util::toString;
-//    using borealis::util::view;
-//    std::vector<mathsat::Sort> sorts { impl::generator<Args>::sort(env)... };
-//
-//    size_t numBounds = sorts.size();
-//
-//    auto bounds = mkBounds<Args...>(env);
-//    auto body = util::apply_packed(func, bounds);
-//
-//    std::vector<Z3_sort> sort_array(sorts.rbegin(), sorts.rend());
-//
-//    std::vector<Z3_symbol> name_array;
-//    for (size_t i = 0U; i < numBounds; ++i) {
-//        std::string name = "forall_bound_" + toString(numBounds - i - 1);
-//        name_array.push_back(env.str_symbol(name.c_str()));
-//    }
-//
-//    auto axiom = z3::to_expr(
-//            env,
-//            Z3_mk_forall(
-//                    env,
-//                    0,
-//                    0,
-//                    nullptr,
-//                    numBounds,
-//                    &sort_array[0],
-//                    &name_array[0],
-//                    msatimpl::getExpr(body)));
-//    return axiom.simplify();
-//}
-//
-//} // namespace msatimpl
-//
-//////////////////////////////////////////////////////////////////////////////////
+
+
+#define REDEF_BV_INT_BIN_OP(OP) \
+        template<size_t N> \
+        BitVector<N> operator OP(BitVector<N> bv, int v1) { \
+            return BitVector<N>{ \
+                msatimpl::getExpr(bv) OP v1, \
+                msatimpl::getAxiom(bv) \
+            }; \
+        }
+
+
+REDEF_BV_INT_BIN_OP(+)
+REDEF_BV_INT_BIN_OP(-)
+REDEF_BV_INT_BIN_OP(*)
+REDEF_BV_INT_BIN_OP(/)
+
+#undef REDEF_BV_INT_BIN_OP
+
+
+#define REDEF_INT_BV_BIN_OP(OP) \
+        template<size_t N> \
+        BitVector<N> operator OP(int v1, BitVector<N> bv) { \
+            return BitVector<N>{ \
+                v1 OP msatimpl::getExpr(bv), \
+                msatimpl::getAxiom(bv) \
+            }; \
+        }
+
+
+REDEF_INT_BV_BIN_OP(+)
+REDEF_INT_BV_BIN_OP(-)
+REDEF_INT_BV_BIN_OP(*)
+REDEF_INT_BV_BIN_OP(/)
+
+#undef REDEF_INT_BV_BIN_OP
+
+
+#define REDEF_UN_OP(OP) \
+        template<size_t N> \
+        BitVector<N> operator OP(BitVector<N> bv) { \
+            return BitVector<N>{ \
+                OP msatimpl::getExpr(bv), \
+                msatimpl::getAxiom(bv) \
+            }; \
+        }
+
+
+REDEF_UN_OP(~)
+REDEF_UN_OP(-)
+
+#undef REDEF_UN_OP
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct ifer {
+    template<class E>
+    struct elser {
+        Bool cond;
+        E tbranch;
+
+        template<class E2>
+        inline typename merger<E,E2>::type else_(E2 fbranch) {
+            auto tb = merger<E,E2>::app(tbranch);
+            auto fb = merger<E,E2>::app(fbranch);
+            return typename merger<E, E2>::type{
+                mathsat::ite(
+					msatimpl::getExpr(cond),
+					msatimpl::getExpr(tb),
+					msatimpl::getExpr(fb)
+                ),
+				msatimpl::spliceAxioms(cond, tb, fb)
+            };
+        }
+    };
+
+    struct thener {
+        Bool cond;
+
+        template<class E>
+        inline elser<E> then_(E tbranch) {
+            return elser<E>{ cond, tbranch };
+        }
+    };
+
+    thener operator()(Bool cond) {
+        return thener{ cond };
+    }
+};
+
+inline ifer::thener if_(Bool cond) {
+    return ifer()(cond);
+}
+
+
+
+template<class T, class U>
+T switch_(
+        U cond,
+        const std::vector<std::pair<U, T>>& cases,
+        T default_
+    ) {
+
+    auto mkIte = [cond](T b, const std::pair<U, T>& a) {
+        return if_(cond == a.first)
+               .then_(a.second)
+               .else_(b);
+    };
+
+    return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
+}
+
+template<class T>
+T switch_(
+        const std::vector<std::pair<Bool, T>>& cases,
+        T default_
+    ) {
+
+    auto mkIte = [](T b, const std::pair<Bool, T>& a) {
+        return if_(a.first)
+               .then_(a.second)
+               .else_(b);
+    };
+
+    return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //
 //class ComparableExpr;
 //
 //namespace impl {
 //template<>
 //struct generator<ComparableExpr> : generator<BitVector<1>> {
-//    static bool check(mathsat::Expr e) { return e.is_bool() || e.is_bv() || e.is_arith() || e.is_real(); }
+//    static bool check(mathsat::Expr e) { return e.is_bool() || e.is_bv() || e.is_int() || e.is_rat(); }
 //};
 //} // namespace impl
 //
@@ -604,111 +531,109 @@ REDEF_BV_BIN_OP(^)
 //
 //#undef REDEF_OP
 //
-//////////////////////////////////////////////////////////////////////////////////
-//
-//class DynBitVectorExpr;
-//
-//namespace impl {
-//template<>
-//struct generator<DynBitVectorExpr> : generator<BitVector<1>> {
-//    static bool check(mathsat::Expr e) { return e.is_bv(); }
-//};
-//} // namespace impl
-//
-//ASPECT_BEGIN(DynBitVectorExpr)
-//public:
-//    size_t getBitSize() const {
-//        return msatimpl::getSort(this).bv_size();
-//    }
-//
-//    DynBitVectorExpr growTo(size_t n) const {
-//        size_t m = getBitSize();
-//        auto& env = msatimpl::getContext(this);
-//        if (m < n)
-//            return DynBitVectorExpr{
-//                z3::to_expr(env, Z3_mk_sign_ext(env, n-m, msatimpl::getExpr(this))),
-//                msatimpl::getAxiom(this)
-//            };
-//        else return DynBitVectorExpr{ *this };
-//    }
-//
-//    DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
-//        size_t sz = std::max(getBitSize(), shift.getBitSize());
-//        DynBitVectorExpr w = this->growTo(sz);
-//        DynBitVectorExpr s = shift.growTo(sz);
-//        auto& env = msatimpl::getContext(w);
-//
-//        auto res = z3::to_expr(env, Z3_mk_bvlshr(env, msatimpl::getExpr(w), msatimpl::getExpr(s)));
-//        auto axm = msatimpl::spliceAxioms(w, s);
-//        return DynBitVectorExpr{ res, axm };
-//    }
-//ASPECT_END
-//
-//#define BIN_OP(OP) \
-//    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv);
-//
-//    BIN_OP(+)
-//    BIN_OP(-)
-//    BIN_OP(*)
-//    BIN_OP(/)
-//    BIN_OP(|)
-//    BIN_OP(&)
-//    BIN_OP(^)
-//    BIN_OP(%)
-//    BIN_OP(>>)
-//    BIN_OP(<<)
-//
-//#undef BIN_OP
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//// Untyped logic expression
-//class SomeExpr: public ValueExpr {
-//public:
-//    typedef SomeExpr self;
-//
-//    SomeExpr(mathsat::Expr e): ValueExpr(e) {};
-//    SomeExpr(mathsat::Expr e, mathsat::Expr axiom): ValueExpr(e, axiom) {};
-//    SomeExpr(const SomeExpr&) = default;
-//    SomeExpr(const ValueExpr& b): ValueExpr(b) {};
-//
-//    static SomeExpr mkDynamic(Bool b) { return SomeExpr{ b }; }
-//
-//    template<size_t N>
-//    static SomeExpr mkDynamic(BitVector<N> bv) { return SomeExpr{ bv }; }
-//
-//    template<class Aspect>
-//    bool is() {
-//        return impl::generator<Aspect>::check(msatimpl::getExpr(this));
-//    }
-//
-//    template<class Aspect>
-//    util::option<Aspect> to() {
-//        using util::just;
-//        using util::nothing;
-//
-//        if (is<Aspect>()) return just( Aspect{ *this } );
-//        else return nothing();
-//    }
-//
-//    bool isBool() {
-//        return is<Bool>();
-//    }
-//
-//    borealis::util::option<Bool> toBool() {
-//        return to<Bool>();
-//    }
-//
-//    template<size_t N>
-//    bool isBitVector() {
-//        return is<BitVector<N>>();
-//    }
-//
-//    template<size_t N>
-//    borealis::util::option<BitVector<N>> toBitVector() {
-//        return to<BitVector<N>>();
-//    }
-//
+////////////////////////////////////////////////////////////////////////////////
+
+class DynBitVectorExpr;
+
+namespace impl {
+template<>
+struct generator<DynBitVectorExpr> : generator<BitVector<1>> {
+    static bool check(mathsat::Expr e) { return e.is_bv(); }
+};
+} // namespace impl
+
+ASPECT_BEGIN(DynBitVectorExpr)
+public:
+    size_t getBitSize() const {
+        return msatimpl::getSort(this).bv_size();
+    }
+
+    DynBitVectorExpr growTo(size_t n) const {
+        size_t m = getBitSize();
+        if (m < n)
+            return DynBitVectorExpr{
+                mathsat::sext(msatimpl::getExpr(this), n-m),
+                msatimpl::getAxiom(this)
+            };
+        else return DynBitVectorExpr{ *this };
+    }
+
+    DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
+        size_t sz = std::max(getBitSize(), shift.getBitSize());
+        DynBitVectorExpr w = this->growTo(sz);
+        DynBitVectorExpr s = shift.growTo(sz);
+
+        auto res = mathsat::lshr(msatimpl::getExpr(w), msatimpl::getExpr(s));
+        auto axm = msatimpl::spliceAxioms(w, s);
+        return DynBitVectorExpr{ res, axm };
+    }
+ASPECT_END
+
+#define BIN_OP(OP) \
+    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv);
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+    BIN_OP(|)
+    BIN_OP(&)
+    BIN_OP(^)
+    BIN_OP(%)
+    BIN_OP(>>)
+    BIN_OP(<<)
+
+#undef BIN_OP
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Untyped logic expression
+class SomeExpr: public ValueExpr {
+public:
+    typedef SomeExpr self;
+
+    SomeExpr(mathsat::Expr e): ValueExpr(e) {};
+    SomeExpr(mathsat::Expr e, mathsat::Expr axiom): ValueExpr(e, axiom) {};
+    SomeExpr(const SomeExpr&) = default;
+    SomeExpr(const ValueExpr& b): ValueExpr(b) {};
+
+    static SomeExpr mkDynamic(Bool b) { return SomeExpr{ b }; }
+
+    template<size_t N>
+    static SomeExpr mkDynamic(BitVector<N> bv) { return SomeExpr{ bv }; }
+
+    template<class Aspect>
+    bool is() {
+        return impl::generator<Aspect>::check(msatimpl::getExpr(this));
+    }
+
+    template<class Aspect>
+    util::option<Aspect> to() {
+        using util::just;
+        using util::nothing;
+
+        if (is<Aspect>()) return just( Aspect{ *this } );
+        else return nothing();
+    }
+
+    bool isBool() {
+        return is<Bool>();
+    }
+
+    borealis::util::option<Bool> toBool() {
+        return to<Bool>();
+    }
+
+    template<size_t N>
+    bool isBitVector() {
+        return is<BitVector<N>>();
+    }
+
+    template<size_t N>
+    borealis::util::option<BitVector<N>> toBitVector() {
+        return to<BitVector<N>>();
+    }
+
 //    bool isComparable() {
 //        return is<ComparableExpr>();
 //    }
@@ -716,176 +641,90 @@ REDEF_BV_BIN_OP(^)
 //    borealis::util::option<ComparableExpr> toComparable() {
 //        return to<ComparableExpr>();
 //    }
-//
-//    // equality comparison operators are the most general ones
-//    Bool operator==(const SomeExpr& that) {
-//        return Bool{
-//            msatimpl::getExpr(this) == msatimpl::getExpr(that),
-//            msatimpl::spliceAxioms(*this, that)
-//        };
-//    }
-//
-//    Bool operator!=(const SomeExpr& that) {
-//        return Bool{
-//            msatimpl::getExpr(this) != msatimpl::getExpr(that),
-//            msatimpl::spliceAxioms(*this, that)
-//        };
-//    }
-//};
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template<class Elem>
-//Bool distinct(mathsat::Env& env, const std::vector<Elem>& elems) {
-//    if (elems.empty()) return Bool::mkConst(env, true);
-//
-//    std::vector<Z3_ast> cast;
-//    for (const auto& elem : elems) {
-//        cast.push_back(msatimpl::getExpr(elem));
-//    }
-//
-//    mathsat::Expr ret = z3::to_expr(env, Z3_mk_distinct(env, cast.size(), &cast[0]));
-//
-//    mathsat::Expr axiom = msatimpl::getAxiom(elems[0]);
-//    for (const auto& elem : elems) {
-//        axiom = msatimpl::spliceAxioms(axiom, msatimpl::getAxiom(elem));
-//    }
-//
-//    return Bool{ ret, axiom };
-//}
-//
-//template<class ...Args>
-//Bool forAll(
-//        mathsat::Env& env,
-//        std::function<Bool(Args...)> func
-//    ) {
-//    return Bool{ msatimpl::forAll(env, func) };
-//}
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template< class >
-//class Function; // undefined
-//
-//template<class Res, class ...Args>
-//class Function<Res(Args...)> : public Expr {
-//    z3::func_decl inner;
-//    mathsat::Expr axiomatic;
-//
-//    template<class ...CArgs>
-//    inline static mathsat::Expr massAxiomAnd(CArgs... args) {
-//        static_assert(sizeof...(args) > 0, "Trying to massAxiomAnd zero axioms");
-//        return msatimpl::spliceAxioms({ msatimpl::getAxiom(args)... });
-//    }
-//
-//    static z3::func_decl constructFunc(mathsat::Env& env, const std::string& name) {
-//        const size_t N = sizeof...(Args);
-//        mathsat::Sort domain[N] = { impl::generator<Args>::sort(env)... };
-//
-//        return env.function(name.c_str(), N, domain, impl::generator<Res>::sort(env));
-//    }
-//
-//    static z3::func_decl constructFreshFunc(mathsat::Env& env, const std::string& name) {
-//        const size_t N = sizeof...(Args);
-//        Z3_sort domain[N] = { impl::generator<Args>::sort(env)... };
-//        auto fd = Z3_mk_fresh_func_decl(env, name.c_str(), N, domain, impl::generator<Res>::sort(env));
-//
-//        return z3::func_decl(env, fd);
-//    }
-//
-//    static mathsat::Expr constructAxiomatic(
-//            mathsat::Env& env,
-//            z3::func_decl z3func,
-//            std::function<Res(Args...)> realfunc) {
-//
-//        std::function<Bool(Args...)> lam = [=](Args... args) -> Bool {
-//            return Bool(z3func(msatimpl::getExpr(args)...) == msatimpl::getExpr(realfunc(args...)));
-//        };
-//
-//        return msatimpl::forAll<Bool, Args...>(env, lam);
-//    }
-//
-//public:
-//
-//    typedef Function Self;
-//
-//    Function(const Function&) = default;
-//    Function(z3::func_decl inner, mathsat::Expr axiomatic):
-//        inner(inner), axiomatic(axiomatic) {};
-//    explicit Function(z3::func_decl inner):
-//        inner(inner), axiomatic(msatimpl::defaultAxiom(inner.env())) {};
-//    Function(mathsat::Env& env, const std::string& name, std::function<Res(Args...)> f):
-//        inner(constructFunc(env, name)), axiomatic(constructAxiomatic(env, inner, f)){}
-//
-//    z3::func_decl get() const { return inner; }
-//    mathsat::Expr axiom() const { return axiomatic; }
-//    mathsat::Env& env() const { return inner.env(); }
-//
-//    Res operator()(Args... args) const {
-//        return Res(inner(msatimpl::getExpr(args)...), msatimpl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
-//    }
-//
-//    static mathsat::Sort range(mathsat::Env& env) {
-//        return impl::generator<Res>::sort(env);
-//    }
-//
-//    template<size_t N = 0>
-//    static mathsat::Sort domain(mathsat::Env& env) {
-//        return impl::generator< util::index_in_row_q<N, Args...> >::sort(env);
-//    }
-//
-//    static Self mkFunc(mathsat::Env& env, const std::string& name) {
-//        return Self{ constructFunc(env, name) };
-//    }
-//
-//    static Self mkFunc(mathsat::Env& env, const std::string& name, std::function<Res(Args...)> body) {
-//        z3::func_decl f = constructFunc(env, name);
-//        mathsat::Expr ax = constructAxiomatic(env, f, body);
-//        return Self{ f, ax };
-//    }
-//
-//    static Self mkFreshFunc(mathsat::Env& env, const std::string& name) {
-//        return Self{ constructFreshFunc(env, name) };
-//    }
-//
-//    static Self mkFreshFunc(mathsat::Env& env, const std::string& name, std::function<Res(Args...)> body) {
-//        z3::func_decl f = constructFreshFunc(env, name);
-//        mathsat::Expr ax = constructAxiomatic(env, f, body);
-//        return Self{ f, ax };
-//    }
-//
-//    static Self mkDerivedFunc(
-//            mathsat::Env& env,
-//            const std::string& name,
-//            const Self& oldFunc,
-//            std::function<Res(Args...)> body) {
-//        z3::func_decl f = constructFreshFunc(env, name);
-//        mathsat::Expr ax = constructAxiomatic(env, f, body);
-//        return Self{ f, msatimpl::spliceAxioms(oldFunc.axiom(), ax) };
-//    }
-//
-//    static Self mkDerivedFunc(
-//            mathsat::Env& env,
-//            const std::string& name,
-//            const std::vector<Self>& oldFuncs,
-//            std::function<Res(Args...)> body) {
-//        z3::func_decl f = constructFreshFunc(env, name);
-//
-//        std::vector<mathsat::Expr> axs;
-//        axs.reserve(oldFuncs.size() + 1);
-//        std::transform(oldFuncs.begin(), oldFuncs.end(), std::back_inserter(axs),
-//            [](const Self& oldFunc) { return oldFunc.axiom(); });
-//        axs.push_back(constructAxiomatic(env, f, body));
-//
-//        return Self{ f, msatimpl::spliceAxioms(axs) };
-//    }
-//};
-//
-//template<class Res, class ...Args>
-//std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
-//    return ost << f.get() << " assuming " << f.axiom();
-//}
-//
+
+    // equality comparison operators are the most general ones
+    Bool operator==(const SomeExpr& that) {
+        return Bool{
+            msatimpl::getExpr(this) == msatimpl::getExpr(that),
+            msatimpl::spliceAxioms(*this, that)
+        };
+    }
+
+    Bool operator!=(const SomeExpr& that) {
+        return Bool{
+            msatimpl::getExpr(this) != msatimpl::getExpr(that),
+            msatimpl::spliceAxioms(*this, that)
+        };
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< class >
+class Function; // undefined
+
+template<class Res, class ...Args>
+class Function<Res(Args...)> : public Expr {
+	mathsat::Decl inner;
+    mathsat::Expr axiomatic;
+
+    template<class ...CArgs>
+    inline static mathsat::Expr massAxiomAnd(CArgs... args) {
+        static_assert(sizeof...(args) > 0, "Trying to massAxiomAnd zero axioms");
+        return msatimpl::spliceAxioms({ msatimpl::getAxiom(args)... });
+    }
+
+    static mathsat::Decl constructFunc(mathsat::Env& env, const std::string& name) {
+        std::vector<mathsat::Sort> domain = { impl::generator<Args>::sort(env)... };
+        return env.function(name.c_str(), domain, impl::generator<Res>::sort(env));
+    }
+
+    static mathsat::Decl constructFreshFunc(mathsat::Env& env, const std::string& name) {
+        std::vector<mathsat::Sort> domain = { impl::generator<Args>::sort(env)... };
+		return env.fresh_function(name.c_str(), domain, impl::generator<Res>::sort(env));
+    }
+
+public:
+
+    typedef Function Self;
+
+    Function(const Function&) = default;
+    Function(mathsat::Decl inner, mathsat::Expr axiomatic):
+        inner(inner), axiomatic(axiomatic) {};
+    explicit Function(mathsat::Decl inner):
+        inner(inner), axiomatic(msatimpl::defaultAxiom(inner.env())) {};
+
+    mathsat::Decl get() const { return inner; }
+    mathsat::Expr axiom() const { return axiomatic; }
+    mathsat::Env& env() const { return inner.env(); }
+
+    Res operator()(Args... args) const {
+        return Res(inner(msatimpl::getExpr(args)...), msatimpl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
+    }
+
+    static mathsat::Sort range(mathsat::Env& env) {
+        return impl::generator<Res>::sort(env);
+    }
+
+    template<size_t N = 0>
+    static mathsat::Sort domain(mathsat::Env& env) {
+        return impl::generator< util::index_in_row_q<N, Args...> >::sort(env);
+    }
+
+    static Self mkFunc(mathsat::Env& env, const std::string& name) {
+        return Self{ constructFunc(env, name) };
+    }
+
+    static Self mkFreshFunc(mathsat::Env& env, const std::string& name) {
+        return Self{ constructFreshFunc(env, name) };
+    }
+};
+
+template<class Res, class ...Args>
+std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
+    return ost << f.get() << " assuming " << f.axiom();
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 //
 //template<class Elem, class Index>

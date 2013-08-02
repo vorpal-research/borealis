@@ -39,7 +39,7 @@ bool operator==(const Sort& a, const Sort& b) {
 
 Expr Decl::operator()(const std::vector<Expr>& args) {
 	std::vector<msat_term> msat_args(args.begin(), args.end());
-	auto new_term = msat_make_term(env_, decl_, msat_args.data());
+	auto new_term = msat_make_uf(env_, decl_, msat_args.data());
 	ASSERTMSAT_TERM(new_term);
 	return Expr(env_, new_term);
 }
@@ -145,6 +145,16 @@ Decl Env::function(const std::string& name, const std::vector<Sort>& params, con
 	auto new_decl = msat_declare_function(env_, name.c_str(), func_type);
 	ASSERTMSAT_DECL(new_decl);
 	return Decl(*this, new_decl);
+}
+
+Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret) {
+	std::string rand_name = name;
+	auto new_decl = msat_find_decl(env_, name.c_str());
+	while (!(MSAT_ERROR_DECL(new_decl))) {
+		rand_name = name + util::toString(std::rand());
+		new_decl = msat_find_decl(env_, rand_name.c_str());
+	}
+	return this->function(rand_name, params, ret);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -304,6 +314,8 @@ Expr operator !=(int a, const Expr& b){
     return aa != b;
 }
 
+
+
 #define FORWARD_OP_EXPR_INT(OP, A, B) \
     Expr BB = A.env_.bool_val(true); \
     if (A.is_bv()) { \
@@ -320,6 +332,8 @@ Expr operator !=(int a, const Expr& b){
         AA = B.env_.num_val(A); \
     } \
     return AA OP B;
+
+
 
 Expr operator +(const Expr& a, const Expr& b) {
 	msat_term new_term;
@@ -512,6 +526,16 @@ Expr operator >(int a, const Expr& b){
 
 
 
+Expr operator %(const Expr& a, const Expr& b) {
+	ASSERTC(a.is_bv() && b.is_bv());
+	ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
+	auto new_term = msat_make_bv_srem(a.env_, a.term_, b.term_);
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
+}
+
+
+
 Expr operator &(const Expr& a, const Expr& b){
 	ASSERTC(a.is_bv() && b.is_bv());
     ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
@@ -580,6 +604,22 @@ Expr extract(const Expr& a, unsigned msb, unsigned lsb) {
 	ASSERTMSAT_TERM(new_term);
 	return Expr(a.env_, new_term);
 }
+
+Expr sext(const Expr& a, unsigned amount) {
+	ASSERTC(a.is_bv());
+	auto new_term = msat_make_bv_sext(a.env_, amount, a);
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
+}
+
+Expr zext(const Expr& a, unsigned amount) {
+	ASSERTC(a.is_bv());
+	auto new_term = msat_make_bv_zext(a.env_, amount, a);
+	ASSERTMSAT_TERM(new_term);
+	return Expr(a.env_, new_term);
+}
+
+
 
 #define BV_FUNC_GENERATOR(FUNC, MSAT_FUNC) \
     Expr FUNC(const Expr& a, const Expr& b) { \

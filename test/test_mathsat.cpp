@@ -137,8 +137,8 @@ TEST(MathSatApi, generatingInterpolant) {
 	ASSERT_EQ(res, MSAT_UNSAT);
 }
 
-TEST(MathSatApi, freshConst) {
-	// Testing fresh_constant() method of Env class
+TEST(MathSatApi, freshConstFunc) {
+	// Testing fresh_constant() and fresh_function() methods of Env class
 
 	Config conf = Config();
 	Env env = Env(conf);
@@ -153,6 +153,17 @@ TEST(MathSatApi, freshConst) {
 	EXPECT_NE(x1.decl().name(), x3.decl().name());
 	EXPECT_NE(x2.decl().name(), x3.decl().name());
 	EXPECT_NE(y.decl().name(), x2.decl().name());
+
+	Decl f1 = env.function("f1", {rat}, rat);
+	Decl f2 = env.fresh_function("f1", {rat}, rat);
+	Decl f3 = env.fresh_function("f1", {rat}, rat);
+	Decl g = env.fresh_function("g", {rat}, rat);
+
+	EXPECT_NE(f1.name(), f2.name());
+	EXPECT_NE(f1.name(), f3.name());
+	EXPECT_NE(f2.name(), f3.name());
+	EXPECT_NE(g.name(), f2.name());
+
 }
 
 } // namespace

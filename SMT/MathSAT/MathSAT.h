@@ -72,6 +72,7 @@ public:
 	Expr bv_val(int i, unsigned size);
 
 	Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
+	Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -116,6 +117,8 @@ public:
 	Decl(Env& env, const msat_decl& decl_) : decl_(decl_), env_(env) {}
 
 	operator msat_decl() const { return decl_; }
+
+	Env& env() const { return env_; }
 
 	unsigned arity() const { return msat_decl_get_arity(decl_); }
 	Sort domain(unsigned i) const { return Sort(env_, msat_decl_get_arg_type(decl_, i)); }
@@ -220,6 +223,7 @@ public:
 
     friend Expr operator ^(const Expr& a, int b);
     friend Expr operator ^(int a, const Expr& b);
+    friend Expr operator %(const Expr& a, const Expr& b);
 
 #define FRIEND_OP_FOR_INT(OP) \
     friend Expr OP(const Expr& a, const Expr& b); \
@@ -253,6 +257,8 @@ public:
 	friend Expr ite(const Expr& cond, const Expr& then_, const Expr& else_);
 	friend Expr concat(const Expr& a, const Expr& b);
 	friend Expr extract(const Expr& a, unsigned msb, unsigned lsb);
+	friend Expr sext(const Expr& a, unsigned amount);
+	friend Expr zext(const Expr& a, unsigned amount);
 	friend Expr lshl(const Expr& a, const Expr& b);
 	friend Expr lshr(const Expr& a, const Expr& b);
 	friend Expr ashr(const Expr& a, const Expr& b);

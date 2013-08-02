@@ -82,6 +82,8 @@ std::ostream& operator<<(std::ostream& ost, const ValueExpr& v) {
     return ost << msatimpl::getExpr(v) << " assuming " << msatimpl::getAxiom(v);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 Bool implies(Bool lhv, Bool rhv) {
     mathsat::Expr lhv_raw = msatimpl::getExpr(lhv);
     mathsat::Expr rhv_raw = msatimpl::getExpr(rhv);
@@ -117,7 +119,8 @@ REDEF_BOOL_BOOL_OP(^)
 Bool operator!(Bool bv0) {
     return Bool{ !msatimpl::getExpr(bv0), msatimpl::getAxiom(bv0) };
 }
-//
+
+////////////////////////////////////////////////////////////////////////////////
 //
 //#define REDEF_OP(OP) \
 //    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
@@ -136,60 +139,49 @@ Bool operator!(Bool bv0) {
 //
 //#undef REDEF_OP
 //
-//
-//#define BIN_OP(OP) \
-//    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) { \
-//        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize()); \
-//        DynBitVectorExpr dlhv = lhv.growTo(sz); \
-//        DynBitVectorExpr drhv = rhv.growTo(sz); \
-//        return DynBitVectorExpr{ \
-//            msatimpl::getExpr(dlhv) OP msatimpl::getExpr(drhv), \
-//            msatimpl::spliceAxioms(lhv, rhv) \
-//        }; \
-//    }
-//
-//    BIN_OP(+)
-//    BIN_OP(-)
-//    BIN_OP(*)
-//    BIN_OP(/)
-//    BIN_OP(|)
-//    BIN_OP(&)
-//    BIN_OP(^)
-//
-//#undef BIN_OP
-//
-//DynBitVectorExpr operator%(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
-//    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
-//    DynBitVectorExpr dlhv = lhv.growTo(sz);
-//    DynBitVectorExpr drhv = rhv.growTo(sz);
-//    auto& env = msatimpl::getContext(lhv);
-//
-//    auto res = z3::to_expr(env, Z3_mk_bvsmod(env, msatimpl::getExpr(dlhv), msatimpl::getExpr(drhv)));
-//    auto axm = msatimpl::spliceAxioms(lhv, rhv);
-//    return DynBitVectorExpr{ res, axm };
-//}
-//
-//DynBitVectorExpr operator>>(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
-//    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
-//    DynBitVectorExpr dlhv = lhv.growTo(sz);
-//    DynBitVectorExpr drhv = rhv.growTo(sz);
-//    auto& env = msatimpl::getContext(lhv);
-//
-//    auto res = z3::to_expr(env, Z3_mk_bvashr(env, msatimpl::getExpr(dlhv), msatimpl::getExpr(drhv)));
-//    auto axm = msatimpl::spliceAxioms(lhv, rhv);
-//    return DynBitVectorExpr{ res, axm };
-//}
-//
-//DynBitVectorExpr operator<<(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
-//    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
-//    DynBitVectorExpr dlhv = lhv.growTo(sz);
-//    DynBitVectorExpr drhv = rhv.growTo(sz);
-//    auto& env = msatimpl::getContext(lhv);
-//
-//    auto res = z3::to_expr(env, Z3_mk_bvshl(env, msatimpl::getExpr(dlhv), msatimpl::getExpr(drhv)));
-//    auto axm = msatimpl::spliceAxioms(lhv, rhv);
-//    return DynBitVectorExpr{ res, axm };
-//}
+////////////////////////////////////////////////////////////////////////////////
+
+#define BIN_OP(OP) \
+    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) { \
+        size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize()); \
+        DynBitVectorExpr dlhv = lhv.growTo(sz); \
+        DynBitVectorExpr drhv = rhv.growTo(sz); \
+        return DynBitVectorExpr{ \
+            msatimpl::getExpr(dlhv) OP msatimpl::getExpr(drhv), \
+            msatimpl::spliceAxioms(lhv, rhv) \
+        }; \
+    }
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+    BIN_OP(|)
+    BIN_OP(&)
+    BIN_OP(^)
+    BIN_OP(%)
+
+#undef BIN_OP
+
+DynBitVectorExpr operator>>(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
+    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+    DynBitVectorExpr dlhv = lhv.growTo(sz);
+    DynBitVectorExpr drhv = rhv.growTo(sz);
+
+    auto res = mathsat::ashr(msatimpl::getExpr(dlhv), msatimpl::getExpr(drhv));
+    auto axm = msatimpl::spliceAxioms(lhv, rhv);
+    return DynBitVectorExpr{ res, axm };
+}
+
+DynBitVectorExpr operator<<(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv) {
+    size_t sz = std::max(lhv.getBitSize(), rhv.getBitSize());
+    DynBitVectorExpr dlhv = lhv.growTo(sz);
+    DynBitVectorExpr drhv = rhv.growTo(sz);
+
+    auto res = mathsat::lshl(msatimpl::getExpr(dlhv), msatimpl::getExpr(drhv));
+    auto axm = msatimpl::spliceAxioms(lhv, rhv);
+    return DynBitVectorExpr{ res, axm };
+}
 
 } // namespace logic
 } // namespace mathsat
