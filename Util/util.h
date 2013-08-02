@@ -183,6 +183,9 @@ std::string nospaces(const std::string& v);
 std::string nospaces(std::string&& v);
 bool endsWith(const std::string& fullString, const std::string& ending);
 
+std::string nochar(const std::string& v, char c);
+std::string nochar(std::string&& v, char c);
+
 namespace streams {
 
 // copy the standard ostream endl

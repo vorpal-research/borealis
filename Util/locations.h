@@ -266,11 +266,7 @@ struct json_traits<Locus> {
 template<>
 struct xml_traits<Locus> {
     static XMLNodePtr toXml(XMLNodePtr p, const Locus& val) {
-        auto* doc = p->GetDocument();
-        p->InsertEndChild(
-            doc->NewText(util::toString(val).c_str())
-        );
-        return p;
+        return util::toXml(p, util::toString(val));
     }
 };
 } //namespace util

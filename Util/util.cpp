@@ -247,6 +247,15 @@ bool endsWith(const std::string& fullString, const std::string& ending) {
     }
 }
 
+std::string nochar(const std::string& v, char c) {
+    return nochar(std::string(v), c);
+}
+
+std::string nochar(std::string&& v, char c) {
+    v.erase(std::remove_if(v.begin(), v.end(), [&c](char x) { return c == x; }), v.end());
+    return v;
+}
+
 namespace streams {
 
 // copy the standard ostream endl
