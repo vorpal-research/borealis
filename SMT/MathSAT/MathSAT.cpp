@@ -286,7 +286,14 @@ Expr operator ^(int a, const Expr& b){
 
 
 Expr operator ==(const Expr& a, const Expr& b) {
-	auto new_term = msat_make_equal(a.env_, a.term_, b.term_);
+	msat_term new_term;
+	if( a.is_bool() && b.is_bool() ) {
+		new_term = msat_make_iff(a.env_, a.term_, b.term_);
+	} else if ( a.is_bool() || b.is_bool() ) {
+		BYE_BYE(Expr, "Cannot compare bool and not bool");
+	} else {
+		new_term = msat_make_equal(a.env_, a.term_, b.term_);
+	}
 	ASSERTMSAT_TERM(new_term);
 	return Expr(a.env_, new_term);
 }
@@ -300,8 +307,16 @@ Expr operator ==(int a, const Expr& b){
 }
 
 Expr operator !=(const Expr& a, const Expr& b) {
-	auto new_term = msat_make_equal(a.env_, a.term_, b.term_);
-	new_term = msat_make_not(a.env_, new_term);
+	msat_term new_term;
+	if( a.is_bool() && b.is_bool() ) {
+		new_term = msat_make_iff(a.env_, a.term_, b.term_);
+		new_term = msat_make_not(a.env_, new_term);
+	} else if ( a.is_bool() || b.is_bool() ) {
+		BYE_BYE(Expr, "Cannot compare bool and not bool");
+	} else {
+		auto new_term = msat_make_equal(a.env_, a.term_, b.term_);
+		new_term = msat_make_not(a.env_, new_term);
+	}
 	ASSERTMSAT_TERM(new_term);
 	return Expr(a.env_, new_term);
 }

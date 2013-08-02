@@ -12,7 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "SMT/MathSAT/Logic.hpp"
 #include "SMT/MathSAT/MathSAT.h"
+#include "Util/util.h"
 
 namespace {
 
@@ -35,6 +37,11 @@ TEST(MathSatApi, generatingFormulas) {
 	Expr y1 = env.rat_const("y1");
 	Expr y2 = env.rat_const("y2");
 	Expr y3 = env.rat_const("y3");
+
+//	Expr t = env.bool_val(true);
+//	Expr fa = env.bool_val(false);
+//	std::cout << t << std::endl;
+//	std::cout << (t == fa) << std::endl;
 
 	Expr A = (f(x1) - x2 == -x3 ) &&
 	         (f(y1) + y2 == y3) &&
@@ -144,26 +151,80 @@ TEST(MathSatApi, freshConstFunc) {
 	Env env = Env(conf);
 
 	Sort rat = env.rat_sort();
-	Expr x1 = env.rat_const("x1");
-	Expr x2 = env.fresh_constant("x1", rat);
-	Expr x3 = env.fresh_constant("x1", rat);
-	Expr y = env.fresh_constant("y", rat);
+	{
+		Expr x1 = env.rat_const("x1");
+		Expr x2 = env.fresh_constant("x1", rat);
+		Expr x3 = env.fresh_constant("x1", rat);
+		Expr y = env.fresh_constant("y", rat);
 
-	EXPECT_NE(x1.decl().name(), x2.decl().name());
-	EXPECT_NE(x1.decl().name(), x3.decl().name());
-	EXPECT_NE(x2.decl().name(), x3.decl().name());
-	EXPECT_NE(y.decl().name(), x2.decl().name());
+		EXPECT_NE(x1.decl().name(), x2.decl().name());
+		EXPECT_NE(x1.decl().name(), x3.decl().name());
+		EXPECT_NE(x2.decl().name(), x3.decl().name());
+		EXPECT_NE(y.decl().name(), x2.decl().name());
+	};
 
-	Decl f1 = env.function("f1", {rat}, rat);
-	Decl f2 = env.fresh_function("f1", {rat}, rat);
-	Decl f3 = env.fresh_function("f1", {rat}, rat);
-	Decl g = env.fresh_function("g", {rat}, rat);
+	{
+		Decl f1 = env.function("f1", {rat}, rat);
+		Decl f2 = env.fresh_function("f1", {rat}, rat);
+		Decl f3 = env.fresh_function("f1", {rat}, rat);
+		Decl g = env.fresh_function("g", {rat}, rat);
 
-	EXPECT_NE(f1.name(), f2.name());
-	EXPECT_NE(f1.name(), f3.name());
-	EXPECT_NE(f2.name(), f3.name());
-	EXPECT_NE(g.name(), f2.name());
-
+		EXPECT_NE(f1.name(), f2.name());
+		EXPECT_NE(f1.name(), f3.name());
+		EXPECT_NE(f2.name(), f3.name());
+		EXPECT_NE(g.name(), f2.name());
+	};
 }
+
+
+TEST(Solver, logicMathSat) {
+	// Testing MathSAT logic
+    using namespace borealis::mathsat_::logic;
+
+    Config conf = Config();
+	Env env = Env(conf);
+
+	auto check_expr = [&](Bool e)->bool {
+        Solver solver(msatimpl::getEnvironment(e));
+        solver.add(msatimpl::getAxiom(e));
+        solver.add(!msatimpl::getExpr(e));
+        return solver.check() == MSAT_UNSAT;
+    };
+
+    {
+        auto b = Bool::mkConst(env, true);
+        auto c = Bool::mkConst(env, false);
+
+        EXPECT_TRUE(check_expr( ! (b && c) ));
+        EXPECT_TRUE(check_expr(   (b || c) ));
+        EXPECT_TRUE(check_expr( ! (b == c) ));
+        EXPECT_TRUE(check_expr(   (b != c) ));
+    }
+
+    {
+        auto d = BitVector<8>::mkConst(env, 0xff);
+        auto e = BitVector<8>::mkConst(env, 0xff);
+
+        EXPECT_TRUE(check_expr(d == e));
+    }
+
+    {
+        auto d = BitVector<16>::mkConst(env, 0x0f);
+        auto e = BitVector<8>::mkConst(env, 0x0f);
+
+        EXPECT_TRUE(check_expr(d == e));
+    }
+
+    {
+        auto d = BitVector<16>::mkVar(env, "pyish", [&env](BitVector<16> v){
+            return (v == BitVector<16>::mkConst(env, 0x0f));
+        });
+        auto e = BitVector<32>::mkConst(env, 0x0f);
+
+        EXPECT_TRUE(check_expr(d == e));
+    }
+
+} // TEST(Z3ExprFactory, logic)
+
 
 } // namespace

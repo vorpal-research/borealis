@@ -280,6 +280,34 @@ public:
 
 }; // class Expr
 
+
+#define OP_FOR_INT(OP) \
+    Expr OP(const Expr& a, const Expr& b); \
+    Expr OP(const Expr& a, int b); \
+    Expr OP(int a, const Expr& b);
+
+    OP_FOR_INT(ult);
+    OP_FOR_INT(ule);
+    OP_FOR_INT(ugt);
+    OP_FOR_INT(uge);
+
+#undef OP_FOR_INT
+
+Expr implies(const Expr& a, const Expr& b);
+Expr iff(const Expr& a, const Expr& b);
+Expr ite(const Expr& cond, const Expr& then_, const Expr& else_);
+Expr concat(const Expr& a, const Expr& b);
+Expr extract(const Expr& a, unsigned msb, unsigned lsb);
+Expr sext(const Expr& a, unsigned amount);
+Expr zext(const Expr& a, unsigned amount);
+Expr lshl(const Expr& a, const Expr& b);
+Expr lshr(const Expr& a, const Expr& b);
+Expr ashr(const Expr& a, const Expr& b);
+Expr comp(const Expr& a, const Expr& b);
+Expr rol(const Expr& a, unsigned b);
+Expr ror(const Expr& a, unsigned b);
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Solver == z3::solver
 ////////////////////////////////////////////////////////////////////////////////

@@ -8,11 +8,10 @@
 #ifndef MSAT_LOGIC_HPP_
 #define MSAT_LOGIC_HPP_
 
-#include <z3/z3++.h>
-
 #include <functional>
 #include <vector>
 
+#include "SMT/MathSAT/MathSAT.h"
 #include "Util/util.h"
 #include "Util/macros.h"
 
@@ -745,437 +744,284 @@ std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
     return ost << f.get() << " assuming " << f.axiom();
 }
 
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template<class Elem, class Index>
-//class FuncArray {
-//    typedef FuncArray<Elem, Index> Self;
-//    typedef Function<Elem(Index)> inner_t;
-//
-//    std::shared_ptr<std::string> name;
-//    inner_t inner;
-//
-//    FuncArray(const std::string& name, inner_t inner):
-//        name(std::make_shared<std::string>(name)), inner(inner) {};
-//    FuncArray(std::shared_ptr<std::string> name, inner_t inner):
-//        name(name), inner(inner) {};
-//
-//public:
-//
-//    FuncArray(const FuncArray&) = default;
-//    FuncArray(mathsat::Env& env, const std::string& name):
-//        FuncArray(name, inner_t::mkFreshFunc(env, name)) {}
-//    FuncArray(mathsat::Env& env, const std::string& name, std::function<Elem(Index)> f):
-//        FuncArray(name, inner_t::mkFreshFunc(env, name, f)) {}
-//
-//    Elem select    (Index i) const { return inner(i);  }
-//    Elem operator[](Index i) const { return select(i); }
-//
-//    Self store(Index i, Elem e) {
-//        inner_t nf = inner_t::mkDerivedFunc(env(), *name, inner, [=](Index j) {
-//            return if_(j == i).then_(e).else_(this->select(j));
-//        });
-//
-//        return Self{ name, nf };
-//    }
-//
-//    Self store(const std::vector<std::pair<Index, Elem>>& entries) {
-//        inner_t nf = inner_t::mkDerivedFunc(env(), *name, inner, [=](Index j) {
-//            return switch_(j, entries, this->select(j));
-//        });
-//
-//        return Self{ name, nf };
-//    }
-//
-//    mathsat::Env& env() const { return inner.env(); }
-//
-//    static Self mkDefault(mathsat::Env& env, const std::string& name, Elem def) {
-//        return Self{ env, name, [def](Index){ return def; } };
-//    }
-//
-//    static Self mkFree(mathsat::Env& env, const std::string& name) {
-//        return Self{ env, name };
-//    }
-//
-//    static Self merge(
-//            const std::string& name,
-//            Self defaultArray,
-//            const std::vector<std::pair<Bool, Self>>& arrays) {
-//
-//        std::vector<inner_t> inners;
-//        inners.reserve(arrays.size() + 1);
-//        std::transform(arrays.begin(), arrays.end(), std::back_inserter(inners),
-//            [](const std::pair<Bool, Self>& e) { return e.second.inner; });
-//        inners.push_back(defaultArray.inner);
-//
-//        inner_t nf = inner_t::mkDerivedFunc(defaultArray.env(), name, inners,
-//            [=](Index j) -> Elem {
-//                std::vector<std::pair<Bool, Elem>> selected;
-//                selected.reserve(arrays.size());
-//                std::transform(arrays.begin(), arrays.end(), std::back_inserter(selected),
-//                    [&j](const std::pair<Bool, Self>& e) {
-//                        return std::make_pair(e.first, e.second.select(j));
-//                    }
-//                );
-//
-//                return switch_(selected, defaultArray.select(j));
-//            }
-//        );
-//
-//        return Self{ name, nf };
-//    }
-//
-//    friend std::ostream& operator<<(std::ostream& ost, const Self& fa) {
-//        return ost << "funcArray " << *fa.name << " {" << fa.inner << "}";
-//    }
-//};
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template<class Elem, class Index>
-//class TheoryArray: public ValueExpr {
-//
-//public:
-//
-//    TheoryArray(mathsat::Expr inner) : ValueExpr(inner) {
-//        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
-//    };
-//    TheoryArray(mathsat::Expr inner, mathsat::Expr axioms) : ValueExpr(inner, axioms) {
-//        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
-//    };
-//    TheoryArray(const TheoryArray&) = default;
-//
-//    Elem select    (Index i) const { return Elem(z3::select(msatimpl::getExpr(this), msatimpl::getExpr(i)));  }
-//    Elem operator[](Index i) const { return select(i); }
-//
-//    TheoryArray store(Index i, Elem e) {
-//        return z3::store(msatimpl::getExpr(this), msatimpl::getExpr(i), msatimpl::getExpr(e));
-//    }
-//
-//    TheoryArray store(const std::vector<std::pair<Index, Elem>>& entries) {
-//        mathsat::Expr base = msatimpl::getExpr(this);
-//        for (const auto& entry : entries) {
-//            base = z3::store(base, msatimpl::getExpr(entry.first), msatimpl::getExpr(entry.second));
-//        }
-//        return base;
-//    }
-//
-//    mathsat::Env& env() const { return msatimpl::getContext(this); }
-//
-//    static TheoryArray mkDefault(mathsat::Env& env, const std::string&, Elem def) {
-//        return z3::const_array(impl::generator<Index>::sort(env), msatimpl::getExpr(def));
-//    }
-//
-//    static TheoryArray mkFree(mathsat::Env& env, const std::string& name) {
-//        return env.constant(
-//            name.c_str(),
-//            env.array_sort(
-//                impl::generator<Index>::sort(env),
-//                impl::generator<Elem>::sort(env)
-//            )
-//        );
-//    }
-//
-//    static TheoryArray merge(
-//            const std::string&,
-//            TheoryArray defaultArray,
-//            const std::vector<std::pair<Bool, TheoryArray>>& arrays) {
-//        return switch_(arrays, defaultArray);
-//    }
-//};
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template<class Elem, class Index>
-//class InlinedFuncArray {
-//    typedef InlinedFuncArray<Elem, Index> Self;
-//    typedef std::function<Elem(Index)> inner_t;
-//
-//    mathsat::Env* context;
-//    std::shared_ptr<std::string> name;
-//    inner_t inner;
-//
-//    InlinedFuncArray(
-//            mathsat::Env& env,
-//            std::shared_ptr<std::string> name,
-//            inner_t inner
-//    ) : context(&env), name(name), inner(inner) {};
-//
-//public:
-//
-//    InlinedFuncArray(const InlinedFuncArray&) = default;
-//    InlinedFuncArray(mathsat::Env& env, const std::string& name, std::function<Elem(Index)> f):
-//        context(&env), name(std::make_shared<std::string>(name)), inner(f) {}
-//    InlinedFuncArray(mathsat::Env& env, const std::string& name):
-//        context(&env), name(std::make_shared<std::string>(name)) {
-//
-//        // FIXME belyaev this MAY be generally fucked up, but should work for now
-//        // inner = [name,&env](Index ix) -> Elem {
-//        //     auto initial = TheoryArray<Elem, Index>::mkFree(env, name + ".initial");
-//        //     return initial.select(ix);
-//        // };
-//
-//        // FIXME akhin this is as fucked up as before, but also works for now
-//
-//        inner = [name,&env](Index ix) -> Elem {
-//            auto initial = Function<Elem(Index)>::mkFunc(env, "$$__initial_mem__$$");
-//            return initial(ix);
-//        };
-//    }
-//
-//    Elem select    (Index i) const { return inner(i);  }
-//    Elem operator[](Index i) const { return select(i); }
-//
-//    InlinedFuncArray& operator=(const InlinedFuncArray&) = default;
-//
-//    Self store(Index i, Elem e) {
-//        inner_t old = this->inner;
-//        inner_t nf = [=](Index j) {
-//            return if_(j == i).then_(e).else_(old(j));
-//        };
-//
-//        return Self{ *context, name, nf };
-//    }
-//
-//    InlinedFuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
-//        inner_t old = this->inner;
-//        inner_t nf = [=](Index j) {
-//            return switch_(j, entries, old(j));
-//        };
-//
-//        return Self{ *context, name, nf };
-//    }
-//
-//    mathsat::Env& env() const { return *context; }
-//
-//    static Self mkDefault(mathsat::Env& env, const std::string& name, Elem def) {
-//        return Self{ env, name, [def](Index){ return def; } };
-//    }
-//
-//    static Self mkFree(mathsat::Env& env, const std::string& name) {
-//        return Self{ env, name };
-//    }
-//
-//    static Self merge(
-//            const std::string& name,
-//            Self defaultArray,
-//            const std::vector<std::pair<Bool, Self>>& arrays) {
-//
-//        inner_t nf = [=](Index j) -> Elem {
-//            std::vector<std::pair<Bool, Elem>> selected;
-//            selected.reserve(arrays.size());
-//            std::transform(arrays.begin(), arrays.end(), std::back_inserter(selected),
-//                [&j](const std::pair<Bool, Self>& e) {
-//                    return std::make_pair(e.first, e.second.select(j));
-//                }
-//            );
-//
-//            return switch_(selected, defaultArray.select(j));
-//        };
-//
-//        return Self{ defaultArray.env(), name, nf };
-//    }
-//
-//    friend std::ostream& operator<<(std::ostream& ost, const Self& ifa) {
-//        return ost << "inlinedArray " << *ifa.name << " {...}";
-//    }
-//};
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template<size_t ElemSize = 8, size_t N>
-//std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
-//    typedef BitVector<ElemSize> Byte;
-//
-//    if (N <= ElemSize) {
-//        return std::vector<Byte>{ grow<ElemSize>(bv) };
-//    }
-//
-//    mathsat::Env& env = msatimpl::getContext(bv);
-//
-//    std::vector<Byte> ret;
-//    for (size_t ix = 0; ix < N; ix += ElemSize) {
-//        mathsat::Expr e = z3::to_expr(env, Z3_mk_extract(env, ix+ElemSize-1, ix, msatimpl::getExpr(bv)));
-//        ret.push_back(Byte{ e, msatimpl::getAxiom(bv) });
-//    }
-//    return ret;
-//}
-//
-//template<size_t ElemSize = 8>
-//std::vector<BitVector<ElemSize>> splitBytes(SomeExpr bv) {
-//    typedef BitVector<ElemSize> Byte;
-//
-//    auto bv_ = bv.to<DynBitVectorExpr>();
-//    ASSERT(!bv_.empty(), "Non-vector");
-//
-//    DynBitVectorExpr dbv = bv_.getUnsafe();
-//    size_t width = dbv.getBitSize();
-//
-//    if (width <= ElemSize) {
-//        SomeExpr newbv = dbv.growTo(ElemSize);
-//        auto byte = newbv.to<Byte>();
-//        ASSERT(!byte.empty(), "Invalid dynamic BitVector, cannot convert to Byte");
-//        return std::vector<Byte>{ byte.getUnsafe() };
-//    }
-//
-//    mathsat::Env& env = msatimpl::getContext(dbv);
-//
-//    std::vector<Byte> ret;
-//    for (size_t ix = 0; ix < width; ix += ElemSize) {
-//        mathsat::Expr e = z3::to_expr(env, Z3_mk_extract(env, ix+ElemSize-1, ix, msatimpl::getExpr(dbv)));
-//        ret.push_back(Byte{ e, msatimpl::getAxiom(bv) });
-//    }
-//    return ret;
-//}
-//
-//template<size_t N, size_t ElemSize = 8>
-//BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
-//    typedef BitVector<ElemSize> Byte;
-//
-//    using borealis::util::toString;
-//
-//    ASSERT(bytes.size() * ElemSize == N,
-//           "concatBytes failed to merge the resulting BitVector: "
-//           "expected vector of size " + toString(N/ElemSize) +
-//           ", got vector of size " + toString(bytes.size()));
-//
-//    mathsat::Expr head = msatimpl::getExpr(bytes[0]);
-//    mathsat::Env& env = head.env();
-//
-//    for (size_t i = 1; i < bytes.size(); ++i) {
-//        head = mathsat::Expr(env, Z3_mk_concat(env, msatimpl::getExpr(bytes[i]), head));
-//    }
-//
-//    mathsat::Expr axiom = msatimpl::getAxiom(bytes[0]);
-//    for (size_t i = 1; i < bytes.size(); ++i) {
-//        axiom = msatimpl::spliceAxioms(msatimpl::getAxiom(bytes[i]), axiom);
-//    }
-//
-//    return BitVector<N>{ head, axiom };
-//}
-//
-//template<size_t ElemSize = 8>
-//SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
-//    typedef BitVector<ElemSize> Byte;
-//
-//    using borealis::util::toString;
-//
-//    mathsat::Expr head = msatimpl::getExpr(bytes[0]);
-//    mathsat::Env& env = head.env();
-//
-//    for (size_t i = 1; i < bytes.size(); ++i) {
-//        head = mathsat::Expr(env, Z3_mk_concat(env, msatimpl::getExpr(bytes[i]), head));
-//    }
-//
-//    mathsat::Expr axiom = msatimpl::getAxiom(bytes[0]);
-//    for (size_t i = 1; i < bytes.size(); ++i) {
-//        axiom = msatimpl::spliceAxioms(msatimpl::getAxiom(bytes[i]), axiom);
-//    }
-//
-//    return SomeExpr{ head, axiom };
-//}
-//
-//////////////////////////////////////////////////////////////////////////////////
-//
-//template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = TheoryArray>
-//class ScatterArray {
-//    typedef BitVector<ElemSize> Byte;
-//    typedef InnerArray<Byte, Index> Inner;
-//
-//    Inner inner;
-//
-//    ScatterArray(InnerArray<Byte, Index> inner): inner(inner) {};
-//
-//public:
-//
-//    ScatterArray(const ScatterArray&) = default;
-//    ScatterArray(ScatterArray&&) = default;
-//    ScatterArray& operator=(const ScatterArray&) = default;
-//    ScatterArray& operator=(ScatterArray&&) = default;
-//
-//    SomeExpr select(Index i, size_t elemBitSize) {
-//        std::vector<Byte> bytes;
-//        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
-//            bytes.push_back(inner[i+j]);
-//        }
-//        return concatBytesDynamic(bytes);
-//    }
-//
-//    template<class Elem>
-//    Elem select(Index i) {
-//        enum{ elemBitSize = Elem::bitsize };
-//
-//        std::vector<Byte> bytes;
-//        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
-//            bytes.push_back(inner[i+j]);
-//        }
-//        return concatBytes<elemBitSize>(bytes);
-//    }
-//
-//    mathsat::Env& env() const { return inner.env(); }
-//
-//    Byte operator[](Index i) {
-//        return inner[i];
-//    }
-//
-//    Byte operator[](long long i) {
-//        return inner[Index::mkConst(env(), i)];
-//    }
-//
-//    template<class Elem>
-//    inline ScatterArray store(Index i, Elem e, size_t elemBitSize) {
-//        std::vector<Byte> bytes = splitBytes<ElemSize>(e);
-//
-//        std::vector<std::pair<Index, Byte>> cases;
-//        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
-//            cases.push_back({ i+j, bytes[j] });
-//        }
-//        return inner.store(cases);
-//    }
-//
-//    template<class Elem>
-//    ScatterArray store(Index i, Elem e) {
-//        return store(i, e, Elem::bitsize);
-//    }
-//
-//    ScatterArray store(Index i, SomeExpr e) {
-//        auto bv = e.to<DynBitVectorExpr>();
-//        ASSERTC(!bv.empty());
-//        auto bitsize = bv.getUnsafe().getBitSize();
-//        return store(i, e, bitsize);
-//    }
-//
-//    static ScatterArray mkDefault(mathsat::Env& env, const std::string& name, Byte def) {
-//        return ScatterArray{ Inner::mkDefault(env, name, def) };
-//    }
-//
-//    static ScatterArray mkFree(mathsat::Env& env, const std::string& name) {
-//        return ScatterArray{ Inner::mkFree(env, name) };
-//    }
-//
-//    static ScatterArray merge(
-//            const std::string& name,
-//            ScatterArray defaultArray,
-//            const std::vector<std::pair<Bool, ScatterArray>>& arrays
-//        ) {
-//
-//        std::vector<std::pair<Bool, Inner>> inners;
-//        inners.reserve(arrays.size());
-//        std::transform(arrays.begin(), arrays.end(), std::back_inserter(inners),
-//            [](const std::pair<Bool, ScatterArray>& p) {
-//                return std::make_pair(p.first, p.second.inner);
-//            }
-//        );
-//
-//        Inner merged = Inner::merge(name, defaultArray.inner, inners);
-//
-//        return ScatterArray{ merged };
-//    }
-//
-//    friend std::ostream& operator<<(std::ostream& ost, const ScatterArray& arr) {
-//        return ost << arr.inner;
-//    }
-//};
+////////////////////////////////////////////////////////////////////////////////
+
+template<class Elem, class Index>
+class InlinedFuncArray {
+    typedef InlinedFuncArray<Elem, Index> Self;
+    typedef std::function<Elem(Index)> inner_t;
+
+    mathsat::Env* environment;
+    std::shared_ptr<std::string> name;
+    inner_t inner;
+
+    InlinedFuncArray(
+            mathsat::Env& env,
+            std::shared_ptr<std::string> name,
+            inner_t inner
+    ) : environment(&env), name(name), inner(inner) {};
+
+public:
+
+    InlinedFuncArray(const InlinedFuncArray&) = default;
+    InlinedFuncArray(mathsat::Env& env, const std::string& name, std::function<Elem(Index)> f):
+        environment(&env), name(std::make_shared<std::string>(name)), inner(f) {}
+    InlinedFuncArray(mathsat::Env& env, const std::string& name):
+        environment(&env), name(std::make_shared<std::string>(name)) {
+
+        inner = [name,&env](Index ix) -> Elem {
+            auto initial = Function<Elem(Index)>::mkFunc(env, "$$__initial_mem__$$");
+            return initial(ix);
+        };
+    }
+
+    Elem select    (Index i) const { return inner(i);  }
+    Elem operator[](Index i) const { return select(i); }
+
+    InlinedFuncArray& operator=(const InlinedFuncArray&) = default;
+
+    Self store(Index i, Elem e) {
+        inner_t old = this->inner;
+        inner_t nf = [=](Index j) {
+            return if_(j == i).then_(e).else_(old(j));
+        };
+
+        return Self{ *environment, name, nf };
+    }
+
+    InlinedFuncArray<Elem, Index> store(const std::vector<std::pair<Index, Elem>>& entries) {
+        inner_t old = this->inner;
+        inner_t nf = [=](Index j) {
+            return switch_(j, entries, old(j));
+        };
+
+        return Self{ *environment, name, nf };
+    }
+
+    mathsat::Env& env() const { return *environment; }
+
+    static Self mkDefault(mathsat::Env& env, const std::string& name, Elem def) {
+        return Self{ env, name, [def](Index){ return def; } };
+    }
+
+    static Self mkFree(mathsat::Env& env, const std::string& name) {
+        return Self{ env, name };
+    }
+
+    static Self merge(
+            const std::string& name,
+            Self defaultArray,
+            const std::vector<std::pair<Bool, Self>>& arrays) {
+
+        inner_t nf = [=](Index j) -> Elem {
+            std::vector<std::pair<Bool, Elem>> selected;
+            selected.reserve(arrays.size());
+            std::transform(arrays.begin(), arrays.end(), std::back_inserter(selected),
+                [&j](const std::pair<Bool, Self>& e) {
+                    return std::make_pair(e.first, e.second.select(j));
+                }
+            );
+
+            return switch_(selected, defaultArray.select(j));
+        };
+
+        return Self{ defaultArray.env(), name, nf };
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const Self& ifa) {
+        return ost << "inlinedArray " << *ifa.name << " {...}";
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<size_t ElemSize = 8, size_t N>
+std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
+    typedef BitVector<ElemSize> Byte;
+
+    if (N <= ElemSize) {
+        return std::vector<Byte>{ grow<ElemSize>(bv) };
+    }
+
+    std::vector<Byte> ret;
+    for (size_t ix = 0; ix < N; ix += ElemSize) {
+        mathsat::Expr e = mathsat::extract(msatimpl::getExpr(bv), ix+ElemSize-1, ix);
+        ret.push_back(Byte{ e, msatimpl::getAxiom(bv) });
+    }
+    return ret;
+}
+
+template<size_t ElemSize = 8>
+std::vector<BitVector<ElemSize>> splitBytes(SomeExpr bv) {
+    typedef BitVector<ElemSize> Byte;
+
+    auto bv_ = bv.to<DynBitVectorExpr>();
+    ASSERT(!bv_.empty(), "Non-vector");
+
+    DynBitVectorExpr dbv = bv_.getUnsafe();
+    size_t width = dbv.getBitSize();
+
+    if (width <= ElemSize) {
+        SomeExpr newbv = dbv.growTo(ElemSize);
+        auto byte = newbv.to<Byte>();
+        ASSERT(!byte.empty(), "Invalid dynamic BitVector, cannot convert to Byte");
+        return std::vector<Byte>{ byte.getUnsafe() };
+    }
+
+    std::vector<Byte> ret;
+    for (size_t ix = 0; ix < width; ix += ElemSize) {
+        mathsat::Expr e = mathsat::extract(msatimpl::getExpr(dbv), ix+ElemSize-1, ix);
+        ret.push_back(Byte{ e, msatimpl::getAxiom(bv) });
+    }
+    return ret;
+}
+
+template<size_t N, size_t ElemSize = 8>
+BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
+    typedef BitVector<ElemSize> Byte;
+
+    using borealis::util::toString;
+
+    ASSERT(bytes.size() * ElemSize == N,
+           "concatBytes failed to merge the resulting BitVector: "
+           "expected vector of size " + toString(N/ElemSize) +
+           ", got vector of size " + toString(bytes.size()));
+
+    mathsat::Expr head = msatimpl::getExpr(bytes[0]);
+
+    for (size_t i = 1; i < bytes.size(); ++i) {
+        head = mathsat::concat(msatimpl::getExpr(bytes[i]), head);
+    }
+
+    mathsat::Expr axiom = msatimpl::getAxiom(bytes[0]);
+    for (size_t i = 1; i < bytes.size(); ++i) {
+        axiom = msatimpl::spliceAxioms(msatimpl::getAxiom(bytes[i]), axiom);
+    }
+
+    return BitVector<N>{ head, axiom };
+}
+
+template<size_t ElemSize = 8>
+SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
+    typedef BitVector<ElemSize> Byte;
+
+    using borealis::util::toString;
+
+    mathsat::Expr head = msatimpl::getExpr(bytes[0]);
+
+    for (size_t i = 1; i < bytes.size(); ++i) {
+    	head = mathsat::concat(msatimpl::getExpr(bytes[i]), head);
+    }
+
+    mathsat::Expr axiom = msatimpl::getAxiom(bytes[0]);
+    for (size_t i = 1; i < bytes.size(); ++i) {
+        axiom = msatimpl::spliceAxioms(msatimpl::getAxiom(bytes[i]), axiom);
+    }
+
+    return SomeExpr{ head, axiom };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = InlinedFuncArray >
+class ScatterArray {
+    typedef BitVector<ElemSize> Byte;
+    typedef InnerArray<Byte, Index> Inner;
+
+    Inner inner;
+
+    ScatterArray(InnerArray<Byte, Index> inner): inner(inner) {};
+
+public:
+
+    ScatterArray(const ScatterArray&) = default;
+    ScatterArray(ScatterArray&&) = default;
+    ScatterArray& operator=(const ScatterArray&) = default;
+    ScatterArray& operator=(ScatterArray&&) = default;
+
+    SomeExpr select(Index i, size_t elemBitSize) {
+        std::vector<Byte> bytes;
+        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
+            bytes.push_back(inner[i+j]);
+        }
+        return concatBytesDynamic(bytes);
+    }
+
+    template<class Elem>
+    Elem select(Index i) {
+        enum{ elemBitSize = Elem::bitsize };
+
+        std::vector<Byte> bytes;
+        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
+            bytes.push_back(inner[i+j]);
+        }
+        return concatBytes<elemBitSize>(bytes);
+    }
+
+    mathsat::Env& env() const { return inner.env(); }
+
+    Byte operator[](Index i) {
+        return inner[i];
+    }
+
+    Byte operator[](long long i) {
+        return inner[Index::mkConst(env(), i)];
+    }
+
+    template<class Elem>
+    inline ScatterArray store(Index i, Elem e, size_t elemBitSize) {
+        std::vector<Byte> bytes = splitBytes<ElemSize>(e);
+
+        std::vector<std::pair<Index, Byte>> cases;
+        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
+            cases.push_back({ i+j, bytes[j] });
+        }
+        return inner.store(cases);
+    }
+
+    template<class Elem>
+    ScatterArray store(Index i, Elem e) {
+        return store(i, e, Elem::bitsize);
+    }
+
+    ScatterArray store(Index i, SomeExpr e) {
+        auto bv = e.to<DynBitVectorExpr>();
+        ASSERTC(!bv.empty());
+        auto bitsize = bv.getUnsafe().getBitSize();
+        return store(i, e, bitsize);
+    }
+
+    static ScatterArray mkDefault(mathsat::Env& env, const std::string& name, Byte def) {
+        return ScatterArray{ Inner::mkDefault(env, name, def) };
+    }
+
+    static ScatterArray mkFree(mathsat::Env& env, const std::string& name) {
+        return ScatterArray{ Inner::mkFree(env, name) };
+    }
+
+    static ScatterArray merge(
+            const std::string& name,
+            ScatterArray defaultArray,
+            const std::vector<std::pair<Bool, ScatterArray>>& arrays
+        ) {
+
+        std::vector<std::pair<Bool, Inner>> inners;
+        inners.reserve(arrays.size());
+        std::transform(arrays.begin(), arrays.end(), std::back_inserter(inners),
+            [](const std::pair<Bool, ScatterArray>& p) {
+                return std::make_pair(p.first, p.second.inner);
+            }
+        );
+
+        Inner merged = Inner::merge(name, defaultArray.inner, inners);
+
+        return ScatterArray{ merged };
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const ScatterArray& arr) {
+        return ost << arr.inner;
+    }
+};
 
 
 } // namespace logic
@@ -1184,4 +1030,4 @@ std::ostream& operator<<(std::ostream& ost, Function<Res(Args...)> f) {
 
 #include "Util/unmacros.h"
 
-#endif  LOGIC_HPP_
+#endif  //MSAT_LOGIC_HPP_
