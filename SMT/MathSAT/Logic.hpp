@@ -487,50 +487,62 @@ T switch_(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-//class ComparableExpr;
-//
-//namespace impl {
-//template<>
-//struct generator<ComparableExpr> : generator<BitVector<1>> {
-//    static bool check(mathsat::Expr e) { return e.is_bool() || e.is_bv() || e.is_int() || e.is_rat(); }
-//};
-//} // namespace impl
-//
-//ASPECT_BEGIN(ComparableExpr)
-//public:
-//
-//#define DEF_OP(NAME) \
-//Bool NAME(const ComparableExpr& other) { \
-//    auto& env = msatimpl::getContext(this); \
-//    auto l = msatimpl::getExpr(this); \
-//    auto r = msatimpl::getExpr(other); \
-//    auto res = z3::to_expr(env, Z3_mk_bv##NAME(env, l, r)); \
-//    auto axm = msatimpl::spliceAxioms(*this, other); \
-//    return Bool{ res, axm }; \
-//}
-//
-//DEF_OP(ugt)
-//DEF_OP(uge)
-//DEF_OP(ult)
-//DEF_OP(ule)
-//
-//#undef DEF_OP
-//
-//ASPECT_END
-//
-//#define REDEF_OP(OP) \
-//    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv);
-//
-//    REDEF_OP(<)
-//    REDEF_OP(>)
-//    REDEF_OP(>=)
-//    REDEF_OP(<=)
-//    REDEF_OP(==)
-//    REDEF_OP(!=)
-//
-//#undef REDEF_OP
-//
+
+class ComparableExpr;
+
+namespace impl {
+template<>
+struct generator<ComparableExpr> : generator<BitVector<1>> {
+    static bool check(mathsat::Expr e) { return e.is_bool() || e.is_bv() || e.is_int() || e.is_rat(); }
+};
+} // namespace impl
+
+ASPECT(ComparableExpr)
+
+#define REDEF_OP(OP) \
+    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv);
+
+    REDEF_OP(<)
+    REDEF_OP(>)
+    REDEF_OP(>=)
+    REDEF_OP(<=)
+    REDEF_OP(==)
+    REDEF_OP(!=)
+
+#undef REDEF_OP
+
+////////////////////////////////////////////////////////////////////////////////
+
+class UComparableExpr;
+
+namespace impl {
+template<>
+struct generator<UComparableExpr> : generator<BitVector<1>> {
+    static bool check(mathsat::Expr e) { return e.is_bv(); }
+};
+} // namespace impl
+
+ASPECT_BEGIN(UComparableExpr)
+public:
+
+#define DEF_OP(NAME) \
+Bool NAME(const UComparableExpr& other) { \
+    auto l = msatimpl::getExpr(this); \
+    auto r = msatimpl::getExpr(other); \
+    auto res = mathsat::NAME(l, r); \
+    auto axm = msatimpl::spliceAxioms(*this, other); \
+    return Bool{ res, axm }; \
+}
+
+DEF_OP(ugt)
+DEF_OP(uge)
+DEF_OP(ult)
+DEF_OP(ule)
+
+#undef DEF_OP
+
+ASPECT_END
+
 ////////////////////////////////////////////////////////////////////////////////
 
 class DynBitVectorExpr;
@@ -634,13 +646,21 @@ public:
         return to<BitVector<N>>();
     }
 
-//    bool isComparable() {
-//        return is<ComparableExpr>();
-//    }
-//
-//    borealis::util::option<ComparableExpr> toComparable() {
-//        return to<ComparableExpr>();
-//    }
+    bool isComparable() {
+        return is<ComparableExpr>();
+    }
+
+    bool isUnsignedComparable() {
+        return is<UComparableExpr>();
+    }
+
+    borealis::util::option<UComparableExpr> toUnsignedComparable() {
+        return to<UComparableExpr>();
+    }
+
+    borealis::util::option<ComparableExpr> toComparable() {
+        return to<ComparableExpr>();
+    }
 
     // equality comparison operators are the most general ones
     Bool operator==(const SomeExpr& that) {

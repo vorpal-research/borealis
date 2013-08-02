@@ -121,24 +121,24 @@ Bool operator!(Bool bv0) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-//#define REDEF_OP(OP) \
-//    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
-//        return Bool{ \
-//            msatimpl::getExpr(lhv) OP msatimpl::getExpr(rhv), \
-//            msatimpl::spliceAxioms(lhv, rhv) \
-//        }; \
-//    }
-//
-//    REDEF_OP(<)
-//    REDEF_OP(>)
-//    REDEF_OP(>=)
-//    REDEF_OP(<=)
-//    REDEF_OP(==)
-//    REDEF_OP(!=)
-//
-//#undef REDEF_OP
-//
+
+#define REDEF_OP(OP) \
+    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
+        return Bool{ \
+            msatimpl::getExpr(lhv) OP msatimpl::getExpr(rhv), \
+            msatimpl::spliceAxioms(lhv, rhv) \
+        }; \
+    }
+
+    REDEF_OP(<)
+    REDEF_OP(>)
+    REDEF_OP(>=)
+    REDEF_OP(<=)
+    REDEF_OP(==)
+    REDEF_OP(!=)
+
+#undef REDEF_OP
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define BIN_OP(OP) \
