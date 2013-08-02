@@ -586,11 +586,36 @@ struct generator<ComparableExpr> : generator<BitVector<1>> {
 };
 } // namespace impl
 
-ASPECT_BEGIN(ComparableExpr)
+ASPECT(ComparableExpr)
+
+#define REDEF_OP(OP) \
+    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv);
+
+    REDEF_OP(<)
+    REDEF_OP(>)
+    REDEF_OP(>=)
+    REDEF_OP(<=)
+    REDEF_OP(==)
+    REDEF_OP(!=)
+
+#undef REDEF_OP
+
+////////////////////////////////////////////////////////////////////////////////
+
+class UComparableExpr;
+
+namespace impl {
+template<>
+struct generator<UComparableExpr> : generator<BitVector<1>> {
+    static bool check(z3::expr e) { return e.is_bv(); }
+};
+} // namespace impl
+
+ASPECT_BEGIN(UComparableExpr)
 public:
 
 #define DEF_OP(NAME) \
-Bool NAME(const ComparableExpr& other) { \
+Bool NAME(const UComparableExpr& other) { \
     auto& ctx = z3impl::getContext(this); \
     auto l = z3impl::getExpr(this); \
     auto r = z3impl::getExpr(other); \
@@ -607,18 +632,6 @@ DEF_OP(ule)
 #undef DEF_OP
 
 ASPECT_END
-
-#define REDEF_OP(OP) \
-    Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv);
-
-    REDEF_OP(<)
-    REDEF_OP(>)
-    REDEF_OP(>=)
-    REDEF_OP(<=)
-    REDEF_OP(==)
-    REDEF_OP(!=)
-
-#undef REDEF_OP
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -731,6 +744,14 @@ public:
 
     borealis::util::option<ComparableExpr> toComparable() {
         return to<ComparableExpr>();
+    }
+
+    bool isUnsignedComparable() {
+        return is<UComparableExpr>();
+    }
+
+    borealis::util::option<UComparableExpr> toUnsignedComparable() {
+        return to<UComparableExpr>();
     }
 
     // equality comparison operators are the most general ones

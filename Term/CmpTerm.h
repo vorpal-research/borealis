@@ -95,31 +95,40 @@ struct SMTImpl<Impl, CmpTerm> {
         auto lhvz3 = SMT<Impl>::doit(t->getLhv(), ef, ctx);
         auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        ASSERT(lhvz3.isComparable() && rhvz3.isComparable(),
-               "Comparing incomparable expressions");
+        if (lhvz3.isComparable() && rhvz3.isComparable()) {
+            auto lhv = lhvz3.toComparable().getUnsafe();
+            auto rhv = rhvz3.toComparable().getUnsafe();
 
-        auto lhv = lhvz3.toComparable().getUnsafe();
-        auto rhv = rhvz3.toComparable().getUnsafe();
+            switch(t->getOpcode()) {
+            case llvm::ConditionType::EQ:    return lhv == rhv;
+            case llvm::ConditionType::NEQ:   return lhv != rhv;
 
-        switch(t->getOpcode()) {
-        case llvm::ConditionType::EQ:    return lhv == rhv;
-        case llvm::ConditionType::NEQ:   return lhv != rhv;
+            case llvm::ConditionType::GT:    return lhv >  rhv;
+            case llvm::ConditionType::GE:    return lhv >= rhv;
+            case llvm::ConditionType::LT:    return lhv <  rhv;
+            case llvm::ConditionType::LE:    return lhv <= rhv;
 
-        case llvm::ConditionType::GT:    return lhv >  rhv;
-        case llvm::ConditionType::GE:    return lhv >= rhv;
-        case llvm::ConditionType::LT:    return lhv <  rhv;
-        case llvm::ConditionType::LE:    return lhv <= rhv;
+            case llvm::ConditionType::TRUE:  return ef.getTrue();
+            case llvm::ConditionType::FALSE: return ef.getFalse();
 
-        case llvm::ConditionType::UGT:   return lhv.ugt(rhv);
-        case llvm::ConditionType::UGE:   return lhv.uge(rhv);
-        case llvm::ConditionType::ULT:   return lhv.ult(rhv);
-        case llvm::ConditionType::ULE:   return lhv.ule(rhv);
-
-        case llvm::ConditionType::TRUE:  return ef.getTrue();
-        case llvm::ConditionType::FALSE: return ef.getFalse();
-
-        default: BYE_BYE(Dynamic, "Unsupported opcode");
+            default: break; // fall-through and try to unsigned compare
+            }
         }
+
+        if (lhvz3.isUnsignedComparable() && rhvz3.isUnsignedComparable()) {
+            auto lhv = lhvz3.toUnsignedComparable().getUnsafe();
+            auto rhv = rhvz3.toUnsignedComparable().getUnsafe();
+
+            switch(t->getOpcode()) {
+            case llvm::ConditionType::UGT:   return lhv.ugt(rhv);
+            case llvm::ConditionType::UGE:   return lhv.uge(rhv);
+            case llvm::ConditionType::ULT:   return lhv.ult(rhv);
+            case llvm::ConditionType::ULE:   return lhv.ule(rhv);
+            default: break;
+            }
+        }
+
+        BYE_BYE(Dynamic, "Unsupported CmpTerm: " + util::toString(t->getName()));
     }
 };
 #include "Util/unmacros.h"
