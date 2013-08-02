@@ -265,6 +265,7 @@ public:
 	friend Expr comp(const Expr& a, const Expr& b);
 	friend Expr rol(const Expr& a, unsigned b);
 	friend Expr ror(const Expr& a, unsigned b);
+	friend Expr distinct(const std::vector<Expr>& exprs);
 
 	template<class Streamer>
 	friend Streamer& operator<<(Streamer& out, const Expr& e) {
@@ -306,6 +307,7 @@ Expr ashr(const Expr& a, const Expr& b);
 Expr comp(const Expr& a, const Expr& b);
 Expr rol(const Expr& a, unsigned b);
 Expr ror(const Expr& a, unsigned b);
+Expr distinct(const std::vector<Expr>& exprs);
 
 
 ////////////////////////////////////////////////////////////////////////////////

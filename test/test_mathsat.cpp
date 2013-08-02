@@ -38,11 +38,6 @@ TEST(MathSatApi, generatingFormulas) {
 	Expr y2 = env.rat_const("y2");
 	Expr y3 = env.rat_const("y3");
 
-//	Expr t = env.bool_val(true);
-//	Expr fa = env.bool_val(false);
-//	std::cout << t << std::endl;
-//	std::cout << (t == fa) << std::endl;
-
 	Expr A = (f(x1) - x2 == -x3 ) &&
 	         (f(y1) + y2 == y3) &&
 	         (y1 <= x1);

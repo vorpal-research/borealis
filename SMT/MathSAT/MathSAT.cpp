@@ -314,7 +314,7 @@ Expr operator !=(const Expr& a, const Expr& b) {
 	} else if ( a.is_bool() || b.is_bool() ) {
 		BYE_BYE(Expr, "Cannot compare bool and not bool");
 	} else {
-		auto new_term = msat_make_equal(a.env_, a.term_, b.term_);
+		new_term = msat_make_equal(a.env_, a.term_, b.term_);
 		new_term = msat_make_not(a.env_, new_term);
 	}
 	ASSERTMSAT_TERM(new_term);
@@ -730,6 +730,42 @@ Expr ugt(const int a, const Expr &b) {
 }
 
 #undef BV_FUNC_GENERATOR
+
+
+
+Expr distinct(const std::vector<Expr>& exprs) {
+	if (exprs.size() == 0) {
+		BYE_BYE(Expr, "Trying to make distinct from 0 exprs");
+	} else if (exprs.size() == 1) {
+		return  exprs[0].env_.bool_val(true);
+	}
+
+	Sort base_sort = exprs[0].get_sort();
+	for (auto expr: exprs) {
+		if (!(expr.get_sort() == base_sort)) {
+			BYE_BYE(Expr, "All exprs must have same sort.");
+		}
+	}
+
+	if (base_sort.is_bv()) {
+		unsigned base_size = base_sort.bv_size();
+		for (auto expr: exprs) {
+			if (expr.get_sort().bv_size() != base_size) {
+				BYE_BYE(Expr, "All exprs must have same bitvector width");
+			}
+		}
+	}
+
+	Expr res = exprs[0].env_.bool_val(true);
+	for (size_t i=0; i < exprs.size(); ++i) {
+		for (size_t j=i+1; j < exprs.size(); ++j) {
+			res = res && (exprs[i] != exprs[j]);
+		}
+	}
+
+	return res;
+}
+
 
 
 

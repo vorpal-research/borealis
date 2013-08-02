@@ -679,6 +679,27 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template<class Elem>
+Bool distinct(mathsat::Env& env, const std::vector<Elem>& elems) {
+    if (elems.empty()) return Bool::mkConst(env, true);
+
+    std::vector<mathsat::Expr> cast;
+    for (const auto& elem : elems) {
+        cast.push_back(msatimpl::getExpr(elem));
+    }
+
+    auto ret = mathsat::distinct(cast);
+
+    auto axiom = msatimpl::getAxiom(elems[0]);
+    for (const auto& elem : elems) {
+        axiom = msatimpl::spliceAxioms(axiom, msatimpl::getAxiom(elem));
+    }
+
+    return Bool{ ret, axiom };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 template< class >
 class Function; // undefined
 
