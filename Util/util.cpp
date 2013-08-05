@@ -256,6 +256,12 @@ std::string nochar(std::string&& v, char c) {
     return v;
 }
 
+std::string& replace(const std::string& from, const std::string& to, std::string& in) {
+    auto pos = in.find(from);
+    if (pos == std::string::npos) return in;
+    else return in.replace(pos, from.length(), to);
+}
+
 namespace streams {
 
 // copy the standard ostream endl

@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include <clang/Basic/FileManager.h>
 #include <clang/Basic/SourceManager.h>
 #include <llvm/Support/CommandLine.h>
 
@@ -27,7 +28,7 @@ DumpOutput("dump-output", llvm::cl::init("json"), llvm::cl::NotHidden,
   llvm::cl::desc("Dump analysis results to JSON/XML"));
 
 static llvm::cl::opt<std::string>
-DumpOutputFile("dump-output-file", llvm::cl::init("borealis.report"), llvm::cl::NotHidden,
+DumpOutputFile("dump-output-file", llvm::cl::init("%s.report"), llvm::cl::NotHidden,
   llvm::cl::desc("Output file for analysis results"));
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -46,6 +47,8 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
     auto& dm = GetAnalysis<DefectManager>::doit(this);
     auto& sm = GetAnalysis<DPSourceManager>::doit(this).provide();
+
+    auto* mainFileEntry = sm.getFileEntryForID(sm.getMainFileID());
 
     for (auto& defect : dm) {
         Locus origin = defect.location;
@@ -84,6 +87,9 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
     }
 
     if (!DumpOutput.empty() || !DumpOutputFile.empty()) {
+
+        util::replace("%s", mainFileEntry->getName(), DumpOutputFile);
+
         if ("json" == DumpOutput) {
             std::ofstream json(DumpOutputFile);
             json << util::jsonify(dm.getData());
