@@ -114,7 +114,7 @@ struct xml_traits<DefectInfo> {
         auto* parentDefect = doc->NewElement("parentDefect");
         auto* type = doc->NewElement("type");
         parentDefect->InsertEndChild(
-            util::toXml(type, util::nochar(val.type, '-'))
+            util::toXml(type, val.type)
         );
         auto* loc = doc->NewElement("location");
         parentDefect->InsertEndChild(
