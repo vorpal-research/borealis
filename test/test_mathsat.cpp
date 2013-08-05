@@ -14,16 +14,25 @@
 
 #include "SMT/MathSAT/Logic.hpp"
 #include "SMT/MathSAT/MathSAT.h"
+#include "SMT/MathSAT/Solver.h"
 #include "Util/util.h"
 
 namespace {
 
-using namespace borealis::mathsat;
+using namespace borealis::logging;
+using namespace borealis::util;
+using namespace borealis::util::streams;
 
-TEST(MathSatApi, generatingFormulas) {
+static stream_t infos() {
+    return infosFor("test");
+}
+
+TEST(MathSAT, generatingFormulas) {
 	// Comparing two identical formulas:
 	// - first one created using our C++ API
 	// - second one created using standard C API
+
+	using namespace borealis::mathsat;
 
 	// C++ API
 	Config conf = Config();
@@ -58,10 +67,12 @@ TEST(MathSatApi, generatingFormulas) {
 	ASSERT_EQ(res, MSAT_UNSAT);
 }
 
-TEST(MathSatApi, generatingInterpolant) {
+TEST(MathSAT, generatingInterpolant) {
 	// Comparing two interpolants for same formulas:
 	// - first one generated using our C++ API
 	// - second one generated using standard C API
+
+	using namespace borealis::mathsat;
 
 	// C++ API
 	Config conf = Config();
@@ -139,8 +150,10 @@ TEST(MathSatApi, generatingInterpolant) {
 	ASSERT_EQ(res, MSAT_UNSAT);
 }
 
-TEST(MathSatApi, freshConstFunc) {
+TEST(MathSAT, freshConstFunc) {
 	// Testing fresh_constant() and fresh_function() methods of Env class
+
+	using namespace borealis::mathsat;
 
 	Config conf = Config();
 	Env env = Env(conf);
@@ -172,8 +185,9 @@ TEST(MathSatApi, freshConstFunc) {
 }
 
 
-TEST(Solver, logicMathSat) {
+TEST(MathSAT, logic) {
 	// Testing MathSAT logic
+	using namespace borealis::mathsat;
     using namespace borealis::mathsat_::logic;
 
     Config conf = Config();
@@ -181,6 +195,7 @@ TEST(Solver, logicMathSat) {
 
 	auto check_expr = [&](Bool e)->bool {
         Solver solver(msatimpl::getEnvironment(e));
+        solver.add(msatimpl::getEnvironment(e).bool_val(true));
         solver.add(msatimpl::getAxiom(e));
         solver.add(!msatimpl::getExpr(e));
         return solver.check() == MSAT_UNSAT;
@@ -219,7 +234,111 @@ TEST(Solver, logicMathSat) {
         EXPECT_TRUE(check_expr(d == e));
     }
 
-} // TEST(Z3ExprFactory, logic)
+} // TEST(Solver, logicMathSat)
+
+//TEST(MathSAT, memoryArray) {
+//    {
+//    	using namespace borealis::mathsat_::logic;
+//
+//        USING_SMT_IMPL(borealis::MathSAT);
+//
+//        ExprFactory factory;
+//        auto mkbyte = [&](int val){ return Byte::mkConst(factory.unwrap(), val); };
+//
+//        auto check_expr = [&](Bool e)->bool {
+//			borealis::mathsat::Solver solver(msatimpl::getEnvironment(e));
+//        	solver.add(msatimpl::getAxiom(e));
+//			solver.add(!msatimpl::getExpr(e));
+//			return solver.check() == MSAT_UNSAT;
+//		};
+//
+//        EXPECT_NO_THROW(factory.getNoMemoryArray());
+//        EXPECT_NO_FATAL_FAILURE(factory.getNoMemoryArray());
+//
+//        auto arr = factory.getNoMemoryArray();
+//        // empty mem is filled with 0xFFs
+//		for (int i = 0; i < 153; i++) {
+//            EXPECT_TRUE(check_expr(arr[i] == mkbyte(0xFF)));
+//        }
+//    }
+//}
+//
+//TEST(MathSAT, mergeMemory) {
+//    {
+//    	using namespace borealis::mathsat_::logic;
+//
+//        USING_SMT_IMPL(borealis::MathSAT);
+//
+//        ExprFactory factory;
+//
+//        ExecutionContext default_memory(factory);
+//        ExecutionContext memory_with_a(factory);
+//        ExecutionContext memory_with_b(factory);
+//
+//        Pointer ptr = factory.getPtrVar("ptr");
+//        Integer a = factory.getIntConst(0xdeadbeef);
+//        Integer b = factory.getIntConst(0xabcdefff);
+//        Integer z = factory.getIntConst(0xfeedbeef);
+//
+//        Integer cond = factory.getIntVar("cond");
+//        Bool cond_a = cond == a;
+//        Bool cond_b = cond == b;
+//
+//        memory_with_a.writeExprToMemory(ptr, a);
+//        memory_with_b.writeExprToMemory(ptr, b);
+//
+//        ExecutionContext merged = ExecutionContext::mergeMemory(
+//                "merged",
+//                default_memory,
+//                std::vector<std::pair<Bool, ExecutionContext>>{
+//                    { cond_a, memory_with_a },
+//                    { cond_b, memory_with_b }
+//                }
+//        );
+//        Integer c = merged.readExprFromMemory<Integer>(ptr);
+//
+//        auto check_expr_in = [&](Bool e, Bool in)->bool {
+//
+//            infos() << "Checking:" << endl
+//                    << e << endl
+//                    << "  in:" << endl
+//                    << in << endl;
+//
+//            borealis::mathsat::Solver s(factory.unwrap());
+//
+//            s.add(msatimpl::asAxiom(in));
+//
+//            Bool pred = factory.getBoolVar("$CHECK$");
+//            s.add(msatimpl::asAxiom(implies(pred, !e)));
+//
+//            borealis::mathsat::Expr pred_e = msatimpl::getExpr(pred);
+//            msat_result r = s.check({pred_e});
+//
+//            if (r == MSAT_SAT) {
+//                infos() << "SAT" << endl;
+//            } else if (r == MSAT_UNSAT) {
+//                infos() << "UNSAT" << endl;
+//            } else {
+//                infos() << "WTF" << endl;
+//            }
+//
+//            return r == MSAT_UNSAT;
+//        };
+//
+//        EXPECT_TRUE(check_expr_in(
+//            c == a,   // expr
+//            cond == a // in
+//        ));
+//        EXPECT_TRUE(check_expr_in(
+//            c == b,   // expr
+//            cond == b // in
+//        ));
+//        EXPECT_FALSE(check_expr_in(
+//            c == a,   // expr
+//            cond == z // in
+//        ));
+//    }
+//}
 
 
 } // namespace

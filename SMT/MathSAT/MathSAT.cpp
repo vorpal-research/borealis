@@ -37,22 +37,22 @@ bool operator==(const Sort& a, const Sort& b) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Expr Decl::operator()(const std::vector<Expr>& args) {
+Expr Decl::operator()(const std::vector<Expr>& args) const {
 	std::vector<msat_term> msat_args(args.begin(), args.end());
 	auto new_term = msat_make_uf(env_, decl_, msat_args.data());
 	ASSERTMSAT_TERM(new_term);
 	return Expr(env_, new_term);
 }
 
-Expr Decl::operator()(const Expr& arg1) {
+Expr Decl::operator()(const Expr& arg1) const {
     return operator()(std::vector<Expr>({arg1}));
 }
 
-Expr Decl::operator()(const Expr& arg1, const Expr& arg2) {
+Expr Decl::operator()(const Expr& arg1, const Expr& arg2) const {
     return operator()({arg1, arg2});
 }
 
-Expr Decl::operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3) {
+Expr Decl::operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3) const {
     return operator()({arg1, arg2, arg3});
 }
 

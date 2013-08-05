@@ -1,27 +1,27 @@
 /*
  * ExecutionContext.h
  *
- *  Created on: Nov 22, 2012
- *      Author: belyaev
+ *  Created on: Aug 5, 2013
+ *      Author: sam
  */
 
-#ifndef Z3_EXECUTIONCONTEXT_H_
-#define Z3_EXECUTIONCONTEXT_H_
+#ifndef MATHSAT_EXECUTIONCONTEXT_H_
+#define MATHSAT_EXECUTIONCONTEXT_H_
 
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#include "SMT/Z3/ExprFactory.h"
+#include "SMT/MathSAT/ExprFactory.h"
 
 namespace borealis {
-namespace z3_ {
+namespace mathsat_ {
 
 
 class ExecutionContext {
 
-    USING_SMT_LOGIC(Z3);
-    typedef Z3::ExprFactory ExprFactory;
+    USING_SMT_LOGIC(MathSAT);
+    typedef MathSAT::ExprFactory ExprFactory;
 
     ExprFactory& factory;
     std::unordered_map<std::string, MemArray> memArrays;
@@ -157,7 +157,8 @@ public:
 
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx);
 
-} // namespace z3_
+
+} // namespace mathsat_
 } // namespace borealis
 
-#endif /* Z3_EXECUTIONCONTEXT_H_ */
+#endif /* MATHSAT_EXECUTIONCONTEXT_H_ */

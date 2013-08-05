@@ -92,7 +92,7 @@ namespace z3impl {
 
     std::string asSmtLib(const ValueExpr& a) {
         std::ostringstream oss;
-        oss << asAxiom(a);
+        oss << getExpr(a) << "\n" << getAxiom(a);
         return oss.str();
     }
 } // namespace z3impl

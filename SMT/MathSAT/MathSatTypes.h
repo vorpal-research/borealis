@@ -10,11 +10,22 @@
 
 
 #include "SMT/SMT.hpp"
-#include "SMT/Z3/Logic.hpp"
+#include "SMT/MathSAT/Logic.hpp"
 
 namespace borealis {
 
+namespace mathsat_ {
+class ExprFactory;
+class ExecutionContext;
+class Solver;
+}
+
+
 struct MathSAT {
+	typedef mathsat_::ExprFactory ExprFactory;
+	typedef mathsat_::ExecutionContext ExecutionContext;
+	typedef mathsat_::Solver Solver;
+
     // logic type to represent boolean expressions
     typedef mathsat_::logic::Bool Bool;
     // logic type to represent pointers

@@ -125,10 +125,10 @@ public:
 	Sort range() const { return Sort(env_, msat_decl_get_return_type(decl_)); }
 	std::string name() const { return msat_decl_get_name(decl_); }
 
-	Expr operator()(const std::vector<Expr>& args);
-	Expr operator()(const Expr& arg1);
-	Expr operator()(const Expr& arg1, const Expr& arg2);
-	Expr operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3);
+	Expr operator()(const std::vector<Expr>& args) const;
+	Expr operator()(const Expr& arg1) const;
+	Expr operator()(const Expr& arg1, const Expr& arg2) const;
+	Expr operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3) const;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

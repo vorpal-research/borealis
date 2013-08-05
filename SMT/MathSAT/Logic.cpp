@@ -73,7 +73,7 @@ namespace msatimpl {
 
     std::string asSmtLib(const ValueExpr& a) {
         std::ostringstream oss;
-        oss << asAxiom(a);
+        oss << getExpr(a) << "\n" << getAxiom(a);
         return oss.str();
     }
 } // namespace msatimpl

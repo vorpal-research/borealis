@@ -739,7 +739,8 @@ public:
     mathsat::Env& env() const { return inner.env(); }
 
     Res operator()(Args... args) const {
-        return Res(inner(msatimpl::getExpr(args)...), msatimpl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
+    	const std::vector<mathsat::Expr> vec_args = {msatimpl::getExpr(args)...};
+        return Res(inner(vec_args), msatimpl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
     }
 
     static mathsat::Sort range(mathsat::Env& env) {
@@ -796,7 +797,8 @@ public:
         };
     }
 
-    Elem select    (Index i) const { return inner(i);  }
+    Elem select    (Index i) const {
+    	return inner(i);  }
     Elem operator[](Index i) const { return select(i); }
 
     InlinedFuncArray& operator=(const InlinedFuncArray&) = default;
