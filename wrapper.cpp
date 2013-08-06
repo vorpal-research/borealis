@@ -168,7 +168,7 @@ int main(int argc, const char** argv) {
     // args to supply to opt
     args.addOptArguments(opt_args.begin(), opt_args.end());
 
-    llvm::cl::ParseCommandLineOptions(args.opt_argc, args.opt_argv);
+    cl::ParseCommandLineOptions(args.opt_argc, args.opt_argv);
 
     {
         borealis::logging::log_entry out(infos());
@@ -179,17 +179,19 @@ int main(int argc, const char** argv) {
         out << endl;
     }
 
+    CompilerInstance Clang;
+
     DiagnosticOptions DiagOpts;
     auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagOpts);
     auto diags = CompilerInstance::createDiagnostics(DiagOpts, args.compiler_argc, args.compiler_argv, tdp);
+    Clang.setDiagnostics(diags.getPtr());
 
-    std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(args.compiler, diags));
-
-    if (!invoke) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_ILLEGAL_COMPILER_OPTIONS; }
+    Clang.setInvocation(createInvocationFromCommandLine(args.compiler, diags));
+    if (!Clang.hasInvocation()) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_ILLEGAL_COMPILER_OPTIONS; }
 
     // print the argument list from the "real" compiler invocation
     std::vector<std::string> argsFromInvocation;
-    invoke->toArgs(argsFromInvocation);
+    Clang.getInvocation().toArgs(argsFromInvocation);
 
     {
         borealis::logging::log_entry out(infos());
@@ -199,16 +201,6 @@ int main(int argc, const char** argv) {
         }
         out << endl;
     }
-
-    clang::CompilerInstance Clang;
-    Clang.setInvocation(invoke.release());
-
-    auto& stillInvoke = Clang.getInvocation();
-    auto& to = stillInvoke.getTargetOpts();
-    auto* pti = TargetInfo::CreateTargetInfo(*diags, to);
-
-    Clang.setTarget(pti);
-    Clang.setDiagnostics(diags.getPtr());
 
     // first things first
     // fall-through to the regular clang
