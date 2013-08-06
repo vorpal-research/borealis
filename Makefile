@@ -140,18 +140,23 @@ RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
 	--gtest_color=yes
 
 CLANGLIBS := \
-    -lclangCodeGen \
+    -lclangFrontendTool \
     -lclangFrontend \
     -lclangDriver \
     -lclangSerialization \
+    -lclangCodeGen \
     -lclangParse \
     -lclangSema \
+    -lclangStaticAnalyzerFrontend \
+    -lclangStaticAnalyzerCheckers \
+    -lclangStaticAnalyzerCore \
     -lclangAnalysis \
+    -lclangARCMigrate \
     -lclangRewrite \
     -lclangEdit \
     -lclangAST \
     -lclangLex \
-    -lclangBasic 
+    -lclangBasic
 
 LIBS := \
 	$(CLANGLIBS) \

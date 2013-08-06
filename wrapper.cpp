@@ -22,6 +22,7 @@
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Frontend/Utils.h>
+#include <clang/FrontendTool/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Parse/Parser.h>
@@ -179,7 +180,7 @@ int main(int argc, const char** argv) {
     }
 
     DiagnosticOptions DiagOpts;
-    auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagnosticOptions());
+    auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagOpts);
     auto diags = CompilerInstance::createDiagnostics(DiagOpts, args.compiler_argc, args.compiler_argv, tdp);
 
     std::unique_ptr<CompilerInvocation> invoke(createInvocationFromCommandLine(args.compiler, diags));
@@ -201,18 +202,24 @@ int main(int argc, const char** argv) {
 
     clang::CompilerInstance Clang;
     Clang.setInvocation(invoke.release());
-    auto& stillInvoke = Clang.getInvocation();
 
+    auto& stillInvoke = Clang.getInvocation();
     auto& to = stillInvoke.getTargetOpts();
     auto* pti = TargetInfo::CreateTargetInfo(*diags, to);
 
     Clang.setTarget(pti);
     Clang.setDiagnostics(diags.getPtr());
+
+    // first things first
+    // fall-through to the regular clang
+    if (!clang::ExecuteCompilerInvocation(&Clang)) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_CLANG_INVOKE; }
+
+    // setup and execute borealis stuff
+
     // maximize debug metadata
     Clang.getCodeGenOpts().EmitDeclMetadata = true;
     Clang.getCodeGenOpts().DebugInfo = true;
 
-    // create an action and make the compiler instance carry it out
     GatherCommentsAction Proc;
     if (!Clang.ExecuteAction(Proc)) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_GATHER_COMMENTS; }
 
