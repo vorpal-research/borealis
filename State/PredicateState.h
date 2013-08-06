@@ -43,6 +43,7 @@ public:
 
     typedef std::shared_ptr<const PredicateState> Ptr;
     typedef std::unique_ptr<proto::PredicateState> ProtoPtr;
+    typedef std::unordered_set<const llvm::Value*> Locs;
 
     typedef std::function<PredicateState::Ptr(PredicateState::Ptr)> FMapper;
     typedef std::function<Predicate::Ptr(Predicate::Ptr)> Mapper;
@@ -52,7 +53,9 @@ public:
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const = 0;
-    virtual bool hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const = 0;
+    virtual bool hasVisitedFrom(Locs& visited) const = 0;
+
+    virtual Locs getVisited() const = 0;
 
     virtual PredicateState::Ptr fmap(FMapper) const {
         BYE_BYE(PredicateState::Ptr, "Should not be called!");

@@ -40,8 +40,17 @@ bool PredicateStateChain::hasVisited(std::initializer_list<const llvm::Value*> l
     return hasVisitedFrom(visited);
 }
 
-bool PredicateStateChain::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
+bool PredicateStateChain::hasVisitedFrom(Locs& visited) const {
     return curr->hasVisitedFrom(visited) || base->hasVisitedFrom(visited);
+}
+
+PredicateState::Locs PredicateStateChain::getVisited() const {
+    Locs res;
+    auto baseLocs = base->getVisited();
+    res.insert(baseLocs.begin(), baseLocs.end());
+    auto currLocs = curr->getVisited();
+    res.insert(currLocs.begin(), currLocs.end());
+    return res;
 }
 
 PredicateStateChain::SelfPtr PredicateStateChain::fmap_(FMapper f) const {
