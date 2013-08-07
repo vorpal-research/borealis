@@ -159,6 +159,8 @@ int main(int argc, const char** argv) {
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
 
+    ConfigEntry<bool> skipClang("misc", "skipClangDriver");
+
     MultiConfigEntry opt_args("opt", "load");
 
     MultiConfigEntry prePasses("passes", "pre");
@@ -195,7 +197,8 @@ int main(int argc, const char** argv) {
     // fall-through to the regular clang
     if (args.clang != "" &&
         args.clang != "no" &&
-        args.clang != "skip") {
+        args.clang != "skip" &&
+        skipClang.get(false) != true) {
 
         clang::driver::Driver Driver(args.clang, llvm::sys::getDefaultTargetTriple(), "a.out", true, *diags);
 

@@ -32,7 +32,7 @@ TEST(Runner, noFile) {
         .withArg("test/testcases/XXX/iniXX_XX.c")
         .run();
 
-        ASSERT_EQ(E_CLANG_INVOKE, res);
+        ASSERT_EQ(E_GATHER_COMMENTS, res);
     }
 }
 
