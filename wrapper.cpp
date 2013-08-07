@@ -15,6 +15,8 @@
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Basic/Version.h>
 #include <clang/CodeGen/CodeGenAction.h>
+#include <clang/Driver/Compilation.h>
+#include <clang/Driver/Driver.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
 #include <clang/Frontend/DiagnosticOptions.h>
@@ -84,7 +86,11 @@ struct program_args {
     const char** compiler_argv;
     int compiler_argc;
 
-    program_args(int argc, const char** argv) : opt { "wrapper" } {
+    std::string clang;
+
+    program_args(int argc, const char** argv) :
+            opt { "wrapper" },
+            clang { "/usr/bin/clang-3.1" } {
         using borealis::util::view;
 
         for (llvm::StringRef arg : view(argv+1, argv+argc)) {
@@ -92,6 +98,7 @@ struct program_args {
             else if (arg.startswith("-lib")) libs.push_back(arg.drop_front(4).str());
             else if (arg.startswith("-opt")) opt.push_back(arg.drop_front(4).data());
             else if (arg.startswith("-cfg")) config = (arg.drop_front(4).str());
+            else if (arg.startswith("-clang")) clang = (arg.drop_front(6).str());
             else compiler.push_back(arg.data());
         }
         // this is generally fucked up
@@ -119,6 +126,7 @@ struct program_args {
         ost << "opt: " << args.opt << endl;
         ost << "config: " << args.config << endl;
         ost << "compiler: " << args.compiler << endl;
+        ost << "clang: " << args.clang << endl;
         return ost;
     }
 };
@@ -179,17 +187,40 @@ int main(int argc, const char** argv) {
         out << endl;
     }
 
-    CompilerInstance Clang;
-
     DiagnosticOptions DiagOpts;
     auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagOpts);
     auto diags = CompilerInstance::createDiagnostics(DiagOpts, args.compiler_argc, args.compiler_argv, tdp);
-    Clang.setDiagnostics(diags.getPtr());
 
+    // first things first
+    // fall-through to the regular clang
+    if (args.clang != "" &&
+        args.clang != "no" &&
+        args.clang != "skip") {
+
+        clang::driver::Driver Driver(args.clang, llvm::sys::getDefaultTargetTriple(), "a.out", true, *diags);
+
+        std::vector<const char*> compilationArgs;
+        compilationArgs.reserve(1 + args.compiler.size());
+        compilationArgs.push_back(args.clang.c_str());
+        compilationArgs.insert(compilationArgs.end(), args.compiler.begin(), args.compiler.end());
+
+        auto Compilation = borealis::util::uniq(Driver.BuildCompilation(compilationArgs));
+        if (!Compilation) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_CLANG_INVOKE; }
+
+        const clang::driver::Command* FailingCommand;
+        if (Driver.ExecuteCompilation(*Compilation, FailingCommand) < 0) {
+            Driver.generateCompilationDiagnostics(*Compilation, FailingCommand);
+            errs() << error("Fucked up, sorry :(") << endl; return borealis::E_CLANG_INVOKE;
+        }
+    }
+
+    // setup and execute borealis stuff
+    CompilerInstance Clang;
+    Clang.setDiagnostics(diags.getPtr());
     Clang.setInvocation(createInvocationFromCommandLine(args.compiler, diags));
     if (!Clang.hasInvocation()) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_ILLEGAL_COMPILER_OPTIONS; }
 
-    // print the argument list from the "real" compiler invocation
+    // print the argument list from the "borealis" compiler invocation
     std::vector<std::string> argsFromInvocation;
     Clang.getInvocation().toArgs(argsFromInvocation);
 
@@ -201,12 +232,6 @@ int main(int argc, const char** argv) {
         }
         out << endl;
     }
-
-    // first things first
-    // fall-through to the regular clang
-    if (!clang::ExecuteCompilerInvocation(&Clang)) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_CLANG_INVOKE; }
-
-    // setup and execute borealis stuff
 
     // maximize debug metadata
     Clang.getCodeGenOpts().EmitDeclMetadata = true;
