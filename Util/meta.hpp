@@ -321,6 +321,26 @@ using ss_append_chars_q = typename ss_append_chars<SS, wha...>::type;
 template<char ...wha>
 using make_ss = typename ss_append_chars<static_string<>, wha...>::type;
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// a la type_traits
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<class Ptr>
+using make_const_ptr_q = typename std::add_pointer<
+    typename std::add_const<
+        typename std::remove_pointer<Ptr>::type
+    >::type
+>::type;
+
+template<class Ptr>
+using unmake_const_ptr_q = typename std::add_pointer<
+    typename std::remove_const<
+        typename std::remove_pointer<Ptr>::type
+    >::type
+>::type;
+
 } // namespace util
 } // namespace borealis
 

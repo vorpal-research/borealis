@@ -9,9 +9,12 @@
 #define SOURCE_LOCATION_TRACKER_LOCATION_CONTAINER_H
 
 #include <map>
+#include <type_traits>
 #include <unordered_map>
 
 #include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -50,13 +53,26 @@ public:
         return l2t.count(loc) > 0;
     }
 
-    bool contains(T val) const {
+
+    bool contains(const T& val) const {
         return t2l.count(val) > 0;
     }
 
-    const Locus& operator[](T key) const {
+    template<class = GUARD(std::is_pointer<T>::value)>
+    bool contains(util::make_const_ptr_q<T>& val) const {
+        return t2l.count(const_cast<T>(val)) > 0;
+    }
+
+
+    const Locus& operator[](const T& key) const {
         return t2l.at(key);
     }
+
+    template<class = GUARD(std::is_pointer<T>::value)>
+    const Locus& operator[](util::make_const_ptr_q<T>& key) const {
+        return t2l.at(const_cast<T>(key));
+    }
+
 
     const_range range_after(const Locus& loc) const {
         auto start = l2t.upper_bound(loc);
@@ -70,5 +86,7 @@ public:
 };
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif // SOURCE_LOCATION_TRACKER_LOCATION_CONTAINER_H
