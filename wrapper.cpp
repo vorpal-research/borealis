@@ -79,16 +79,18 @@ struct args {
 
     std::string config;
     std::vector<std::string> compiler;
+    std::vector<std::string> opt;
     borealis::config::Config::Overrides overrides;
 
-    args(int argc, const char** argv) {
+    args(int argc, const char** argv) : opt{ "wrapper" } {
         using borealis::util::view;
 
         std::vector<std::string> args;
 
         for (llvm::StringRef arg : view(argv+1, argv+argc)) {
             if (arg.startswith("---config:")) config = arg.drop_front(10);
-            if (arg.startswith("---")) args.push_back(arg.drop_front(3));
+            else if (arg.startswith("---opt:")) opt.push_back(arg.drop_front(7));
+            else if (arg.startswith("---")) args.push_back(arg.drop_front(3));
             else compiler.push_back(arg);
         }
 
@@ -107,6 +109,10 @@ struct args {
         if (config.empty()) config = "wrapper.conf";
         // This is generally fucked up
         compiler.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
+    }
+
+    void addOptArgs(const std::vector<std::string>& extra) {
+        opt.insert(opt.end(), extra.begin(), extra.end());
     }
 };
 
@@ -144,10 +150,10 @@ int main(int argc, const char** argv) {
 
     AppConfiguration::initialize(args.config.c_str(), args.overrides);
 
+    args.addOptArgs(MultiConfigEntry("opt", "load").get());
+
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
-
-    auto opt = MultiConfigEntry("opt", "load").get();
 
     auto prePasses = MultiConfigEntry("passes", "pre").get();
     auto inPasses = MultiConfigEntry("passes", "in").get();
@@ -165,8 +171,8 @@ int main(int argc, const char** argv) {
         borealis::logging::configureZ3Log(op);
     }
 
-    auto opt_ = charify(opt);
-    cl::ParseCommandLineOptions(opt_.size(), opt_.data());
+    auto opt = charify(args.opt);
+    cl::ParseCommandLineOptions(opt.size(), opt.data());
 
     {
         borealis::logging::log_entry out(infos());
