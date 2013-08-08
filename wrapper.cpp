@@ -75,61 +75,49 @@
 
 #include "wrapper.h"
 
-struct program_args {
-    std::vector<std::string> passes;
-    std::vector<std::string> libs;
-    std::vector<const char*> opt;
-    const char** opt_argv;
-    int opt_argc;
+struct args {
+
     std::string config;
-    std::vector<const char*> compiler;
-    const char** compiler_argv;
-    int compiler_argc;
+    std::vector<std::string> compiler;
+    borealis::config::Config::Overrides overrides;
 
-    std::string clang;
-
-    program_args(int argc, const char** argv) :
-            opt { "wrapper" },
-            clang { "/usr/bin/clang-3.1" } {
+    args(int argc, const char** argv) {
         using borealis::util::view;
+
+        std::vector<std::string> args;
 
         for (llvm::StringRef arg : view(argv+1, argv+argc)) {
-            if (arg.startswith("-pass")) passes.push_back(arg.drop_front(5).str());
-            else if (arg.startswith("-lib")) libs.push_back(arg.drop_front(4).str());
-            else if (arg.startswith("-opt")) opt.push_back(arg.drop_front(4).data());
-            else if (arg.startswith("-cfg")) config = (arg.drop_front(4).str());
-            else if (arg.startswith("-clang")) clang = (arg.drop_front(6).str());
-            else compiler.push_back(arg.data());
+            if (arg.startswith("---config:")) config = arg.drop_front(10);
+            if (arg.startswith("---")) args.push_back(arg.drop_front(3));
+            else compiler.push_back(arg);
         }
-        // this is generally fucked up
+
+        for (llvm::StringRef arg : args) {
+
+            llvm::SmallVector<llvm::StringRef, 3> elems;
+            arg.split(elems, ":", 3);
+            if (elems.size() != 3) continue;
+
+            auto& section = elems[0];
+            auto& key = elems[1];
+            auto& value = elems[2];
+            overrides[section][key].push_back(value);
+        }
+
+        if (config.empty()) config = "wrapper.conf";
+        // This is generally fucked up
         compiler.push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
-        compiler_argv = compiler.data();
-        compiler_argc = compiler.size();
-        opt_argv = opt.data();
-        opt_argc = opt.size();
-    }
-
-    template<class InputIterator>
-    program_args& addOptArguments(InputIterator from, InputIterator to) {
-        using borealis::util::view;
-
-        for (const std::string& arg : view(from, to)) opt.push_back(arg.c_str());
-        opt_argv = opt.data();
-        opt_argc = opt.size();
-        return *this;
-    }
-
-    friend std::ostream& operator<<(std::ostream& ost, const program_args& args) {
-        using std::endl;
-        ost << "passes: " << args.passes << endl;
-        ost << "libs: " << args.libs << endl;
-        ost << "opt: " << args.opt << endl;
-        ost << "config: " << args.config << endl;
-        ost << "compiler: " << args.compiler << endl;
-        ost << "clang: " << args.clang << endl;
-        return ost;
     }
 };
+
+std::vector<const char*> charify(const std::vector<std::string>& vec) {
+    std::vector<const char*> res;
+    res.reserve(vec.size());
+    std::transform(vec.begin(), vec.end(), std::back_inserter(res),
+        [](const std::string& e) { return e.c_str(); }
+    );
+    return res;
+}
 
 int main(int argc, const char** argv) {
 
@@ -152,20 +140,22 @@ int main(int argc, const char** argv) {
 
     const std::vector<std::string> empty;
 
-    program_args args(argc, argv);
+    args args(argc, argv);
 
-    AppConfiguration::initialize(args.config.empty() ? "wrapper.conf" : args.config.c_str());
+    AppConfiguration::initialize(args.config.c_str(), args.overrides);
 
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
 
-    ConfigEntry<bool> skipClang("misc", "skipClangDriver");
+    auto opt = MultiConfigEntry("opt", "load").get();
 
-    MultiConfigEntry opt_args("opt", "load");
+    auto prePasses = MultiConfigEntry("passes", "pre").get();
+    auto inPasses = MultiConfigEntry("passes", "in").get();
+    auto postPasses = MultiConfigEntry("passes", "post").get();
+    auto libs = MultiConfigEntry("libs", "load").get();
 
-    MultiConfigEntry prePasses("passes", "pre");
-    MultiConfigEntry postPasses("passes", "post");
-    MultiConfigEntry libs("libs", "load");
+    auto clangExec = StringConfigEntry("run", "clangExec").get("/usr/bin/clang");
+    auto skipClang = BoolConfigEntry("run", "skipClangDriver").get(false);
 
     for (const auto& op : logFile) {
         borealis::logging::configureLoggingFacility(op);
@@ -175,10 +165,8 @@ int main(int argc, const char** argv) {
         borealis::logging::configureZ3Log(op);
     }
 
-    // args to supply to opt
-    args.addOptArguments(opt_args.begin(), opt_args.end());
-
-    cl::ParseCommandLineOptions(args.opt_argc, args.opt_argv);
+    auto opt_ = charify(opt);
+    cl::ParseCommandLineOptions(opt_.size(), opt_.data());
 
     {
         borealis::logging::log_entry out(infos());
@@ -189,25 +177,24 @@ int main(int argc, const char** argv) {
         out << endl;
     }
 
+    auto compiler_args = charify(args.compiler);
+
     DiagnosticOptions DiagOpts;
     auto* tdp = new TextDiagnosticPrinter(llvm::errs(), DiagOpts);
-    auto diags = CompilerInstance::createDiagnostics(DiagOpts, args.compiler_argc, args.compiler_argv, tdp);
+    auto diags = CompilerInstance::createDiagnostics(DiagOpts, compiler_args.size(), compiler_args.data(), tdp);
 
     // first things first
     // fall-through to the regular clang
-    if (args.clang != "" &&
-        args.clang != "no" &&
-        args.clang != "skip" &&
-        skipClang.get(false) != true) {
+    if (!skipClang) {
 
-        clang::driver::Driver Driver(args.clang, llvm::sys::getDefaultTargetTriple(), "a.out", true, *diags);
+        clang::driver::Driver Driver(clangExec, llvm::sys::getDefaultTargetTriple(), "a.out", true, *diags);
 
-        std::vector<const char*> compilationArgs;
-        compilationArgs.reserve(1 + args.compiler.size());
-        compilationArgs.push_back(args.clang.c_str());
-        compilationArgs.insert(compilationArgs.end(), args.compiler.begin(), args.compiler.end());
+        std::vector<const char*> compilation_args;
+        compilation_args.reserve(1 + compiler_args.size());
+        compilation_args.push_back(clangExec.c_str());
+        compilation_args.insert(compilation_args.end(), compiler_args.begin(), compiler_args.end());
 
-        auto Compilation = borealis::util::uniq(Driver.BuildCompilation(compilationArgs));
+        auto Compilation = borealis::util::uniq(Driver.BuildCompilation(compilation_args));
         if (!Compilation) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_CLANG_INVOKE; }
 
         const clang::driver::Command* FailingCommand;
@@ -220,7 +207,7 @@ int main(int argc, const char** argv) {
     // setup and execute borealis stuff
     CompilerInstance Clang;
     Clang.setDiagnostics(diags.getPtr());
-    Clang.setInvocation(createInvocationFromCommandLine(args.compiler, diags));
+    Clang.setInvocation(createInvocationFromCommandLine(compiler_args, diags));
     if (!Clang.hasInvocation()) { errs() << error("Fucked up, sorry :(") << endl; return borealis::E_ILLEGAL_COMPILER_OPTIONS; }
 
     // print the argument list from the "borealis" compiler invocation
@@ -255,19 +242,13 @@ int main(int argc, const char** argv) {
     pm.add(new TargetData(module_ptr.get()));
 
     std::vector<StringRef> passes2run;
-    for (StringRef p : prePasses) {
-        passes2run.push_back(p);
-    }
-    passes2run.insert(passes2run.end(), args.passes.begin(), args.passes.end());
-    for (StringRef p : postPasses) {
-        passes2run.push_back(p);
-    }
+    passes2run.insert(passes2run.end(), prePasses.begin(), prePasses.end());
+    passes2run.insert(passes2run.end(), inPasses.begin(), inPasses.end());
+    passes2run.insert(passes2run.end(), postPasses.begin(), postPasses.end());
 
     std::vector<StringRef> libs2load;
-    for (StringRef l : libs) {
-        libs2load.push_back(l);
-    }
-    libs2load.insert(libs2load.end(), args.libs.begin(), args.libs.end());
+    libs2load.insert(libs2load.end(), libs.begin(), libs.end());
+
     {
         borealis::logging::log_entry out(infos());
         out << "Passes:" << endl;
@@ -309,36 +290,34 @@ int main(int argc, const char** argv) {
     pm.add(provideAsPass(&Clang.getSourceManager()));
 
     using borealis::createPrinterFor;
-    if (!passes2run.empty()) {
-        for (StringRef pass : passes2run) {
-            bool isPrinterPass = pass.endswith("-printer");
-            StringRef passName = isPrinterPass ? pass.drop_back(8) : pass;
+    for (StringRef pass : passes2run) {
+        bool isPrinterPass = pass.endswith("-printer");
+        StringRef passName = isPrinterPass ? pass.drop_back(8) : pass;
 
-            auto* passInfo = reg.getPassInfo(passName);
-            if (passInfo == nullptr) {
-                errs() << "Pass " << passName << " cannot be found" << endl;
-                continue;
-            }
-
-            infos() << pass << ": " << passInfo->getPassName() << endl;
-
-            if (auto* ctor = passInfo->getNormalCtor()) {
-                auto thePass = ctor();
-                pm.add(thePass);
-                if (isPrinterPass) {
-                    pm.add(createPrinterFor(passInfo, thePass));
-                }
-            } else {
-                errs() << "Could not create pass " << passInfo->getPassName() << endl;
-            }
+        auto* passInfo = reg.getPassInfo(passName);
+        if (passInfo == nullptr) {
+            errs() << "Pass " << passName << " cannot be found" << endl;
+            continue;
         }
 
-        pm.run(module);
+        infos() << pass << ": " << passInfo->getPassName() << endl;
 
-        std::string error;
-        if (verifyModule(module, ReturnStatusAction, &error)) {
-            errs() << "Module errors detected: " << error << endl;
+        if (auto* ctor = passInfo->getNormalCtor()) {
+            auto thePass = ctor();
+            pm.add(thePass);
+            if (isPrinterPass) {
+                pm.add(createPrinterFor(passInfo, thePass));
+            }
+        } else {
+            errs() << "Could not create pass " << passInfo->getPassName() << endl;
         }
+    }
+
+    pm.run(module);
+
+    std::string err;
+    if (verifyModule(module, ReturnStatusAction, &err)) {
+        errs() << "Module errors detected: " << err << endl;
     }
 
     return borealis::OK;
