@@ -13,9 +13,9 @@
 namespace borealis {
 namespace mathsat_ {
 
-ExprFactory::ExprFactory() {
-    mathsat::Config cfg = mathsat::Config();
-    cfg.set("interpolation", true);
+ExprFactory::ExprFactory() : cfg() {
+//    mathsat::Config cfg;
+//    cfg.set("interpolation", true);
 
     env = std::unique_ptr<mathsat::Env>(new mathsat::Env(cfg));
 }
@@ -43,7 +43,8 @@ MathSAT::Bool ExprFactory::getBoolVar(const std::string& name, bool fresh) {
 }
 
 MathSAT::Bool ExprFactory::getBoolConst(bool v) {
-    return Bool::mkConst(*env, v);
+	auto res = Bool::mkConst(*env, v);
+	return res;
 }
 
 MathSAT::Bool ExprFactory::getTrue() {

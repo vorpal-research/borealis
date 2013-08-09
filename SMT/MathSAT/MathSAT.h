@@ -13,6 +13,7 @@
 #include <functional>
 #include <initializer_list>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -29,27 +30,96 @@ class Config;
 class Expr;
 class Solver;
 
+
+typedef std::shared_ptr<msat_config> ConfigPointer;
+typedef std::shared_ptr<msat_env> EnvPointer;
+
+
+static ConfigPointer makeConfigPointer(msat_config* config) {
+	auto configDeleter = [](msat_config *cfg_) {
+								msat_destroy_config(*cfg_);
+								delete cfg_;
+							};
+	return ConfigPointer(config,  configDeleter);
+}
+
+static EnvPointer makeEnvPointer(msat_env* env) {
+	auto envDeleter = [](msat_env *env_) {
+							msat_destroy_env(*env_);
+							delete env_;
+						};
+	return EnvPointer(env, envDeleter);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Config == z3::config
+////////////////////////////////////////////////////////////////////////////////
+
+class Config {
+private:
+	ConfigPointer config_;
+
+public:
+	Config();
+	Config(const std::string& logic);
+	Config(FILE* f);
+
+//	Config(const Config&) = default;
+	Config(const Config& that) : config_(that.config_) {};
+	Config(Config&&) = default;
+
+	Config& operator=(const Config&) = default;
+	Config& operator=(Config&&) = default;
+
+	operator msat_config() const { return *config_; }
+
+	void set(const std::string& option, const std::string& value) {
+	    msat_set_option(*config_, option.c_str(), value.c_str());
+	}
+	void set(const std::string& option, bool value) {
+	    msat_set_option(*config_, option.c_str(), value ? "true" : "false");
+	}
+	void set(const std::string& option, int value) {
+		auto str = util::toString(value);
+		msat_set_option(*config_, option.c_str(), str.c_str());
+	}
+
+	Env env();
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // Env == z3::context
 ////////////////////////////////////////////////////////////////////////////////
 
 class Env {
 private:
-	msat_env env_;
+	Config& cfg_;
+	EnvPointer env_;
+
+	Env(Config& cfg, EnvPointer env) : cfg_(cfg), env_(env) {}
 
 public:
-	Env(const msat_env& env) : env_(env) {};
-	Env(const Config& config);
+	Env(Config& config);
 
-	Env(const Env&) = default;
+	Env(const Env& that) = default;
 	Env(Env&&) = default;
 
-	Env& operator=(const Env&) = default;
-	Env& operator=(Env&&) = default;
+	Env& operator=(const Env &that) {
+		this->cfg_ = that.cfg_;
+		this->env_ = that.env_;
+		return *this;
+	}
+	Env& operator=(Env&& that) {
+		cfg_ = that.cfg_;
+		env_ = std::move(that.env_);
+		return *this;
+	}
+//	Env& operator=(const Env &that) = default;
+//	Env& operator=(Env&& that) = default;
 
-	~Env() { msat_destroy_env(env_); }
+	operator msat_env() const { return *env_; }
 
-	operator msat_env() const { return env_; }
+	Config& config() const { return cfg_; }
 
 	void reset();
 
@@ -73,6 +143,8 @@ public:
 
 	Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 	Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
+
+	static std::shared_ptr<Env> share(const Env& that);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,41 +201,6 @@ public:
 	Expr operator()(const Expr& arg1) const;
 	Expr operator()(const Expr& arg1, const Expr& arg2) const;
 	Expr operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3) const;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-// Config == z3::config
-////////////////////////////////////////////////////////////////////////////////
-
-class Config {
-private:
-	msat_config config_;
-
-public:
-	Config(const msat_config& config) : config_(config) {}
-	Config() { config_ = msat_create_config(); }
-	Config(const std::string& logic);
-	Config(FILE* f);
-
-	Config(const Config&) = default;
-	Config(Config&&) = default;
-
-	~Config() { msat_destroy_config(config_); }
-
-	operator msat_config() const { return config_; }
-
-	void set(const std::string& option, const std::string& value) {
-	    msat_set_option(config_, option.c_str(), value.c_str());
-	}
-	void set(const std::string& option, bool value) {
-	    msat_set_option(config_, option.c_str(), value ? "true" : "false");
-	}
-	void set(const std::string& option, int value) {
-		auto str = util::toString(value);
-		msat_set_option(config_, option.c_str(), str.c_str());
-	}
-
-	Env env() const { return Env(*this); }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -316,27 +353,29 @@ Expr distinct(const std::vector<Expr>& exprs);
 
 class Solver {
 private:
-	Env& env_;
+	std::shared_ptr<Env> env_;
 
 public:
 	typedef int InterpolationGroup;
 
-	explicit Solver(Env& env) : env_(env) {}
+	explicit Solver(const Env& env) : env_(Env::share(env)) {};
+
+	Env& env() { return *env_; }
 
 	void add(const Expr&);
-	void reset() { env_.reset(); }
+	void reset() { env_->reset(); }
 
 	void push();
 	void pop();
-	unsigned num_backtrack() { return msat_num_backtrack_points(env_); }
+	unsigned num_backtrack() { return msat_num_backtrack_points(*env_); }
 
-	msat_result check() { return msat_solve(env_); }
+	msat_result check() { return msat_solve(*env_); }
 	msat_result check(const std::vector<Expr>& assumptions);
 
 	std::vector<Expr> assertions();
 	std::vector<Expr> unsat_core();
 
-	InterpolationGroup create_interp_group() { return msat_create_itp_group(env_); }
+	InterpolationGroup create_interp_group() { return msat_create_itp_group(*env_); }
 	void set_interp_group(InterpolationGroup gr);
 	Expr get_interpolant(const std::vector<InterpolationGroup>& A);
 };

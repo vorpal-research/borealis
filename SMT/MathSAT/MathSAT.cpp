@@ -18,6 +18,8 @@
     ASSERTMSAT(MSAT_ERROR_TERM, arg)
 #define ASSERTMSAT_DECL(arg) \
     ASSERTMSAT(MSAT_ERROR_DECL, arg)
+#define ASSERTMSAT_ENV(arg) \
+    ASSERTMSAT(MSAT_ERROR_ENV, arg)
 
 namespace borealis {
 namespace mathsat {
@@ -58,49 +60,70 @@ Expr Decl::operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3) cons
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Env::Env(const Config& config) {
-	env_ = msat_create_env(config);
-	ASSERTMSAT(MSAT_ERROR_ENV, env_);
+Config::Config() : config_(makeConfigPointer(new msat_config)) {
+	*config_ = msat_create_config();
+	ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
+}
+
+Config::Config(const std::string& logic) : config_(makeConfigPointer(new msat_config)) {
+	*config_ = msat_create_default_config(logic.c_str());
+	ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
+}
+
+Config::Config(FILE* f) : config_(makeConfigPointer(new msat_config)){
+	*config_ = msat_parse_config_file(f);
+	ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
+}
+
+Env Config::env() {
+	return Env(*this);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Env::Env(Config& config) : cfg_(config), env_(makeEnvPointer(new msat_env)) {
+	*env_ = msat_create_env(cfg_);
+	ASSERTMSAT_ENV( *env_ );
 }
 
 void Env::reset() {
-	int res = msat_reset_env(env_);
+	int res = msat_reset_env(*env_);
 	ASSERTC(!res);
 }
 
 Sort Env::bool_sort() {
-	return Sort(*this, msat_get_bool_type(env_));
+	return Sort(*this, msat_get_bool_type(*env_));
 }
 Sort Env::int_sort() {
-	return Sort(*this, msat_get_integer_type(env_));
+	return Sort(*this, msat_get_integer_type(*env_));
 }
 Sort Env::rat_sort() {
-	return Sort(*this, msat_get_rational_type(env_));
+	return Sort(*this, msat_get_rational_type(*env_));
 }
 Sort Env::bv_sort(unsigned size) {
-	return Sort(*this, msat_get_bv_type(env_, size));
+	return Sort(*this, msat_get_bv_type(*env_, size));
 }
 Sort Env::array_sort(const Sort& idx, const Sort& elm) {
-	return Sort(*this, msat_get_array_type(env_, idx, elm));
+	return Sort(*this, msat_get_array_type(*env_, idx, elm));
 }
 Sort Env::simple_sort(const std::string& name) {
-	return Sort(*this, msat_get_simple_type(env_, name.c_str()));
+	return Sort(*this, msat_get_simple_type(*env_, name.c_str()));
 }
 
 Expr Env::constant(const std::string& name, const Sort& type) {
-	auto new_decl = msat_declare_function(env_, name.c_str(), type);
+	auto new_decl = msat_declare_function(*env_, name.c_str(), type);
 	ASSERTMSAT_DECL(new_decl);
-	auto new_term = msat_make_constant(env_, new_decl);
+	auto new_term = msat_make_constant(*env_, new_decl);
 	ASSERTMSAT(MSAT_ERROR_TERM, new_term)
 	return Expr(*this, new_term);
 }
 
 Expr Env::fresh_constant(const std::string& name, const Sort& type) {
 	std::string rand_name = name;
-	auto new_decl = msat_find_decl(env_, name.c_str());
+	auto new_decl = msat_find_decl(*env_, name.c_str());
 	while (!(MSAT_ERROR_DECL(new_decl))) {
 		rand_name = name + util::toString(std::rand());
-		new_decl = msat_find_decl(env_, rand_name.c_str());
+		new_decl = msat_find_decl(*env_, rand_name.c_str());
 	}
 	return this->constant(rand_name, type);
 }
@@ -119,54 +142,59 @@ Expr Env::bv_const(const std::string& name, unsigned size) {
 }
 
 Expr Env::bool_val(bool b) {
-	auto new_term = b ? msat_make_true(env_) : msat_make_false(env_);
+	auto new_term = b ? msat_make_true(*env_) : msat_make_false(*env_);
 	ASSERTMSAT_TERM(new_term);
 	return Expr(*this, new_term);
 }
 
 Expr Env::num_val(int i) {
 	auto int_str = util::toString(i);
-	auto new_term = msat_make_number(env_, int_str.c_str());
+	auto new_term = msat_make_number(*env_, int_str.c_str());
 	ASSERTMSAT_TERM(new_term);
 	return Expr(*this, new_term);
 }
 
 Expr Env::bv_val(int i, unsigned size) {
-    auto int_str = util::toString(i);
-	auto new_term = msat_make_bv_number(env_, int_str.c_str(), size, 10);
-	ASSERTMSAT_TERM(new_term)
+    msat_term new_term;
+	if (i >= 0) {
+    	auto int_str = util::toString(i);
+    	new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
+    	ASSERTMSAT_TERM(new_term);
+    } else {
+    	auto int_str = util::toString(-i);
+    	new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
+    	ASSERTMSAT_TERM(new_term);
+    	new_term = msat_make_bv_neg(*env_, new_term);
+    	ASSERTMSAT_TERM(new_term);
+    }
 	return Expr(*this, new_term);
 }
 
 Decl Env::function(const std::string& name, const std::vector<Sort>& params, const Sort& ret) {
 	std::vector<msat_type> msat_param(params.begin(), params.end());
-	auto type = msat_get_function_type(env_, msat_param.data(), msat_param.size(), ret);
+	auto type = msat_get_function_type(*env_, msat_param.data(), msat_param.size(), ret);
 	auto func_type = Sort(*this, type);
-	auto new_decl = msat_declare_function(env_, name.c_str(), func_type);
+	auto new_decl = msat_declare_function(*env_, name.c_str(), func_type);
 	ASSERTMSAT_DECL(new_decl);
 	return Decl(*this, new_decl);
 }
 
 Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret) {
 	std::string rand_name = name;
-	auto new_decl = msat_find_decl(env_, name.c_str());
+	auto new_decl = msat_find_decl(*env_, name.c_str());
 	while (!(MSAT_ERROR_DECL(new_decl))) {
 		rand_name = name + util::toString(std::rand());
-		new_decl = msat_find_decl(env_, rand_name.c_str());
+		new_decl = msat_find_decl(*env_, rand_name.c_str());
 	}
 	return this->function(rand_name, params, ret);
 }
 
-////////////////////////////////////////////////////////////////////////////////
 
-Config::Config(const std::string& logic) {
-	config_ = msat_create_default_config(logic.c_str());
-	ASSERTMSAT(MSAT_ERROR_CONFIG, config_);
-}
-
-Config::Config(FILE* f) {
-	config_ = msat_parse_config_file(f);
-	ASSERTMSAT(MSAT_ERROR_CONFIG, config_);
+std::shared_ptr<Env> Env::share(const Env& that) {
+	auto shared = makeEnvPointer(new msat_env);
+	*shared = msat_create_shared_env(that.cfg_, *that.env_);
+	ASSERTMSAT( MSAT_ERROR_ENV, *shared );
+	return std::shared_ptr<Env>(new Env(that.cfg_, shared));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -589,7 +617,7 @@ Expr operator |(int a, const Expr& b){
 
 Expr implies(const Expr& a, const Expr& b) {
 	ASSERTC(a.is_bool() && b.is_bool());
-	return (!a) && b;
+	return (!a) || b;
 }
 
 Expr iff(const Expr& a, const Expr& b) {
@@ -790,61 +818,65 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Solver::add(const Expr& e) {
-	int res = msat_assert_formula(env_, e);
+	int res = msat_assert_formula(*env_, e);
 	ASSERTC(!res)
 }
 
 void Solver::push() {
-	int res = msat_push_backtrack_point(env_);
+	int res = msat_push_backtrack_point(*env_);
 	ASSERTC(!res)
 }
 void Solver::pop() {
-	int res = msat_pop_backtrack_point(env_);
+	int res = msat_pop_backtrack_point(*env_);
 	ASSERTC(!res)
 }
 
 msat_result Solver::check(const std::vector<Expr>& assumptions) {
-    std::vector<msat_term> msat_assumptions(assumptions.begin(), assumptions.end());
-	return msat_solve_with_assumptions(env_, msat_assumptions.data(), msat_assumptions.size());
+    push();
+    for (const auto& e : assumptions) add(e);
+    auto res = check();
+    pop();
+	return res;
 }
 
 std::vector<Expr> Solver::assertions() {
 	size_t size;
-	auto msat_exprs = util::uniq(msat_get_asserted_formulas(env_, &size));
+	auto msat_exprs = util::uniq(msat_get_asserted_formulas(*env_, &size));
 	std::vector<Expr> exprs;
 	exprs.reserve(size);
 	for (unsigned idx = 0; idx < size; ++idx) {
-		exprs.emplace_back(env_, (msat_exprs.get())[idx]);
+		exprs.emplace_back(*env_, (msat_exprs.get())[idx]);
 	}
 	return exprs;
 }
 
 std::vector<Expr> Solver::unsat_core() {
 	size_t size;
-	auto msat_exprs = util::uniq(msat_get_unsat_core(env_, &size));
+	auto msat_exprs = util::uniq(msat_get_unsat_assumptions(*env_, &size));
 	std::vector<Expr> exprs;
 	exprs.reserve(size);
 	for (unsigned idx = 0; idx < size; ++idx) {
-		exprs.emplace_back(env_, (msat_exprs.get())[idx]);
+		exprs.emplace_back(*env_, (msat_exprs.get())[idx]);
 	}
 	return exprs;
 }
 
 void Solver::set_interp_group(InterpolationGroup gr) {
-	int res = msat_set_itp_group(env_, gr);
+	int res = msat_set_itp_group(*env_, gr);
 	ASSERTC(!res)
 }
 
 Expr Solver::get_interpolant(const std::vector<InterpolationGroup>& A) {
     std::vector<InterpolationGroup> AA(A.begin(), A.end());
-	auto new_term = msat_get_interpolant(env_, AA.data(), AA.size());
+	auto new_term = msat_get_interpolant(*env_, AA.data(), AA.size());
 	ASSERTMSAT_TERM(new_term);
-	return Expr(env_, new_term);
+	return Expr(*env_, new_term);
 }
 
 } // namespace mathsat
 } // namespace borealis
 
+#undef ASSERTMSAT_ENV
 #undef ASSERTMSAT_DECL
 #undef ASSERTMSAT_TERM
 #undef ASSERTMSAT

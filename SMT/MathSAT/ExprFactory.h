@@ -94,6 +94,7 @@ public:
 private:
 
     std::unique_ptr<mathsat::Env> env;
+    mathsat::Config cfg;
 
     static unsigned int pointerSize;
 
