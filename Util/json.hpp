@@ -38,8 +38,22 @@ struct json_traits<Json::Value> {
     }
 };
 
+template<>
+struct json_traits<bool> {
+    typedef std::unique_ptr<bool> optional_ptr_t;
+
+    static Json::Value toJson(bool val) {
+        return Json::Value(val);
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& json) {
+        return json.isBool() ? optional_ptr_t{ new bool{json.asBool()} } :
+                               nullptr;
+    }
+};
+
 template< class T >
-struct json_traits<T, GUARD(std::is_same<T, bool>::value || std::is_floating_point<T>::value)> {
+struct json_traits<T, GUARD(std::is_floating_point<T>::value)> {
     typedef std::unique_ptr<T> optional_ptr_t;
 
     static Json::Value toJson(T val) {
@@ -47,14 +61,14 @@ struct json_traits<T, GUARD(std::is_same<T, bool>::value || std::is_floating_poi
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isBool()   ? optional_ptr_t{ new T{json.asBool()} } :
-               json.isDouble() ? optional_ptr_t{ new T{json.asDouble()} } :
-                                 nullptr;
+        return json.isDouble() || json.isIntegral()
+               ? optional_ptr_t{ new T{json.asDouble()} }
+               : nullptr;
     }
 };
 
 template< class T >
-struct json_traits<T, GUARD(std::is_arithmetic<T>::value && std::is_signed<T>::value)> {
+struct json_traits<T, GUARD(std::is_integral<T>::value && std::is_signed<T>::value)> {
     typedef std::unique_ptr<T> optional_ptr_t;
 
     static Json::Value toJson(T val) {
@@ -68,7 +82,7 @@ struct json_traits<T, GUARD(std::is_arithmetic<T>::value && std::is_signed<T>::v
 };
 
 template< class T >
-struct json_traits<T, GUARD(std::is_arithmetic<T>::value && std::is_unsigned<T>::value)> {
+struct json_traits<T, GUARD(std::is_integral<T>::value && std::is_unsigned<T>::value)> {
     typedef std::unique_ptr<T> optional_ptr_t;
 
     static Json::Value toJson(T val) {
