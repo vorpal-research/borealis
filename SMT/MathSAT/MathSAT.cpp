@@ -81,7 +81,7 @@ Env Config::env() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Env::Env(Config& config) : cfg_(config), env_(makeEnvPointer(new msat_env)) {
+Env::Env(const Config& config) : cfg_(config), env_(makeEnvPointer(new msat_env)) {
 	*env_ = msat_create_env(cfg_);
 	ASSERTMSAT_ENV( *env_ );
 }
@@ -141,20 +141,20 @@ Expr Env::bv_const(const std::string& name, unsigned size) {
 	return constant(name, bv_sort(size));
 }
 
-Expr Env::bool_val(bool b) {
+Expr Env::bool_val(bool b) const {
 	auto new_term = b ? msat_make_true(*env_) : msat_make_false(*env_);
 	ASSERTMSAT_TERM(new_term);
 	return Expr(*this, new_term);
 }
 
-Expr Env::num_val(int i) {
+Expr Env::num_val(int i) const {
 	auto int_str = util::toString(i);
 	auto new_term = msat_make_number(*env_, int_str.c_str());
 	ASSERTMSAT_TERM(new_term);
 	return Expr(*this, new_term);
 }
 
-Expr Env::bv_val(int i, unsigned size) {
+Expr Env::bv_val(int i, unsigned size) const {
     msat_term new_term;
 	if (i >= 0) {
     	auto int_str = util::toString(i);

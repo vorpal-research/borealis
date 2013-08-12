@@ -271,6 +271,7 @@ TEST(MathSAT, memoryArray) {
 
         auto check_expr = [&](Bool e)->bool {
         	borealis::mathsat::Solver solver(msatimpl::getEnvironment(e));
+        	solver.create_and_set_itp_group();
         	solver.add(msatimpl::getAxiom(e));
 			solver.add(!msatimpl::getExpr(e));
 			return solver.check() == MSAT_UNSAT;
@@ -332,6 +333,7 @@ TEST(MathSAT, mergeMemory) {
                     << in << endl;
 
             borealis::mathsat::Solver s(factory.unwrap());
+            s.create_and_set_itp_group();
 
             s.add(msatimpl::asAxiom(in));
 
@@ -343,8 +345,6 @@ TEST(MathSAT, mergeMemory) {
 
             borealis::mathsat::Expr pred_e = msatimpl::getExpr(pred);
             msat_result r = s.check({pred_e});
-
-            infos() << s.assertions() << endl;
 
             if (r == MSAT_SAT) {
                 infos() << "SAT" << endl;

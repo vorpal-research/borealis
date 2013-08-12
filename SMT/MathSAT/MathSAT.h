@@ -64,8 +64,7 @@ public:
 	Config(const std::string& logic);
 	Config(FILE* f);
 
-//	Config(const Config&) = default;
-	Config(const Config& that) : config_(that.config_) {};
+	Config(const Config&) = default;
 	Config(Config&&) = default;
 
 	Config& operator=(const Config&) = default;
@@ -93,33 +92,23 @@ public:
 
 class Env {
 private:
-	Config& cfg_;
+	Config cfg_;
 	EnvPointer env_;
 
-	Env(Config& cfg, EnvPointer env) : cfg_(cfg), env_(env) {}
+	Env(const Config& cfg, EnvPointer env) : cfg_(cfg), env_(env) {}
 
 public:
-	Env(Config& config);
+	Env(const Config& config);
 
 	Env(const Env& that) = default;
 	Env(Env&&) = default;
 
-	Env& operator=(const Env &that) {
-		this->cfg_ = that.cfg_;
-		this->env_ = that.env_;
-		return *this;
-	}
-	Env& operator=(Env&& that) {
-		cfg_ = that.cfg_;
-		env_ = std::move(that.env_);
-		return *this;
-	}
-//	Env& operator=(const Env &that) = default;
-//	Env& operator=(Env&& that) = default;
+	Env& operator=(const Env &that) = default;
+	Env& operator=(Env&& that) = default;
 
 	operator msat_env() const { return *env_; }
 
-	Config& config() const { return cfg_; }
+	const Config& config() const { return cfg_; }
 
 	void reset();
 
@@ -137,9 +126,9 @@ public:
 	Expr rat_const(const std::string& name);
 	Expr bv_const(const std::string& name, const unsigned size);
 
-	Expr bool_val(bool b);
-	Expr num_val(int i);
-	Expr bv_val(int i, unsigned size);
+	Expr bool_val(bool b) const;
+	Expr num_val(int i) const;
+	Expr bv_val(int i, unsigned size) const;
 
 	Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 	Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
@@ -154,10 +143,10 @@ public:
 class Sort {
 private:
 	msat_type type_;
-	Env& env_;
+	Env env_;
 
 public:
-	Sort(Env& env, const msat_type& type) : type_(type), env_(env) {}
+	Sort(const Env& env, const msat_type& type) : type_(type), env_(env) {}
 
 	Sort(const Sort&) = default;
 	Sort(Sort&&) = default;
@@ -183,14 +172,14 @@ public:
 class Decl {
 private:
 	msat_decl decl_;
-	Env& env_;
+	Env env_;
 
 public:
-	Decl(Env& env, const msat_decl& decl_) : decl_(decl_), env_(env) {}
+	Decl(const Env& env, const msat_decl& decl_) : decl_(decl_), env_(env) {}
 
 	operator msat_decl() const { return decl_; }
 
-	Env& env() const { return env_; }
+	const Env& env() const { return env_; }
 
 	unsigned arity() const { return msat_decl_get_arity(decl_); }
 	Sort domain(unsigned i) const { return Sort(env_, msat_decl_get_arg_type(decl_, i)); }
@@ -211,17 +200,17 @@ using visit_function = msat_visit_status(*)(msat_env, msat_term, int, void*);
 
 class Expr {
 private:
-	Env& env_;
+	Env env_;
 	msat_term term_;
 
 public:
-	Expr(Env &env, const msat_term& term) : env_(env), term_(term) {}
+	Expr(const Env &env, const msat_term& term) : env_(env), term_(term) {}
 	Expr(const Expr&) = default;
 	Expr(Expr&&) = default;
 
 	operator msat_term() const { return term_; }
 
-	Env& env() const { return env_; }
+	const Env& env() const { return env_; }
 
 	Expr& operator=(const Expr& that) {
 	    this->env_ = that.env_;
@@ -377,6 +366,11 @@ public:
 
 	InterpolationGroup create_interp_group() { return msat_create_itp_group(*env_); }
 	void set_interp_group(InterpolationGroup gr);
+	InterpolationGroup create_and_set_itp_group() {
+		auto group = create_interp_group();
+		set_interp_group(group);
+		return group;
+	}
 	Expr get_interpolant(const std::vector<InterpolationGroup>& A);
 };
 

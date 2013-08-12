@@ -25,10 +25,10 @@ class Expr {};
 
 
 namespace msatimpl {
-    inline mathsat::Expr defaultAxiom(mathsat::Env& env) {
+    inline mathsat::Expr defaultAxiom(const mathsat::Env& env) {
         return env.bool_val(true);
     }
-    inline mathsat::Expr defaultAxiom(mathsat::Expr& e) {
+    inline mathsat::Expr defaultAxiom(const mathsat::Expr& e) {
         return defaultAxiom(e.env());
     }
     inline mathsat::Expr spliceAxioms(mathsat::Expr e0, mathsat::Expr e1) {
@@ -59,7 +59,7 @@ namespace msatimpl {
     mathsat::Expr getExpr(const ValueExpr& a);
     mathsat::Expr getAxiom(const ValueExpr& a);
     mathsat::Sort getSort(const ValueExpr& a);
-    mathsat::Env& getEnvironment(const ValueExpr& a);
+    const mathsat::Env& getEnvironment(const ValueExpr& a);
     mathsat::Expr asAxiom(const ValueExpr& e);
     std::string asSmtLib(const ValueExpr& e);
 
@@ -72,7 +72,7 @@ namespace msatimpl {
     inline mathsat::Sort getSort(const ValueExpr* a) {
         ASSERTC(a != nullptr); return getSort(*a);
     }
-    inline mathsat::Env& getEnvironment(const ValueExpr* a) {
+    inline const mathsat::Env& getEnvironment(const ValueExpr* a) {
         ASSERTC(a != nullptr); return getEnvironment(*a);
     }
     inline mathsat::Expr asAxiom(const ValueExpr* e) {
@@ -108,7 +108,7 @@ public:
     friend mathsat::Expr msatimpl::getAxiom(const ValueExpr& a);
     friend mathsat::Expr msatimpl::asAxiom(const ValueExpr& a);
     friend mathsat::Sort msatimpl::getSort(const ValueExpr& a);
-    friend mathsat::Env& msatimpl::getEnvironment(const ValueExpr& a);
+    friend const mathsat::Env& msatimpl::getEnvironment(const ValueExpr& a);
 
     void swap(ValueExpr&);
 
@@ -261,7 +261,7 @@ template<size_t N0, size_t N1>
 inline
 GUARDED(BitVector<N0>, N0 > N1)
 grow(BitVector<N1> bv) {
-    mathsat::Env& env = msatimpl::getEnvironment(bv);
+    mathsat::Env env = msatimpl::getEnvironment(bv);
 
     return BitVector<N0>{
         mathsat::Expr(env, msat_make_bv_sext(env, N0-N1, msatimpl::getExpr(bv))),

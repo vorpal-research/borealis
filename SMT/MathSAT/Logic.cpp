@@ -63,7 +63,7 @@ namespace msatimpl {
         return a.pimpl->inner.get_sort();
     }
 
-    mathsat::Env& getEnvironment(const ValueExpr& a) {
+    const mathsat::Env& getEnvironment(const ValueExpr& a) {
         return a.pimpl->inner.env();
     }
 

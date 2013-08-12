@@ -13,9 +13,9 @@
 namespace borealis {
 namespace mathsat_ {
 
-ExprFactory::ExprFactory() : cfg() {
-//    mathsat::Config cfg;
-//    cfg.set("interpolation", true);
+ExprFactory::ExprFactory() {
+    mathsat::Config cfg;
+    cfg.set("interpolation", true);
 
     env = std::unique_ptr<mathsat::Env>(new mathsat::Env(cfg));
 }
