@@ -58,7 +58,6 @@ public:
         return t2l.count(val) > 0;
     }
 
-    template<class = GUARD(std::is_pointer<T>::value)>
     bool contains(util::make_const_ptr_q<T>& val) const {
         return t2l.count(const_cast<T>(val)) > 0;
     }
@@ -68,7 +67,6 @@ public:
         return t2l.at(key);
     }
 
-    template<class = GUARD(std::is_pointer<T>::value)>
     const Locus& operator[](util::make_const_ptr_q<T>& key) const {
         return t2l.at(const_cast<T>(key));
     }
