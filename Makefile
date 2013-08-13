@@ -168,7 +168,8 @@ LIBS := \
 	-lprofiler \
 	-ljsoncpp \
 	-lprotobuf \
-	-ltinyxml2
+	-ltinyxml2 \
+	-lyaml-cpp
 
 ################################################################################
 # Test defs management
