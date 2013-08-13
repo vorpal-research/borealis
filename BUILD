@@ -5,6 +5,7 @@ Dependencies
  * z3-codeplex
  * jsoncpp
  * tinyxml2-git
+ * yaml-cpp
  * protobuf
  * log4cpp
  * libcfgparser
