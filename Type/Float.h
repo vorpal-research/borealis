@@ -29,7 +29,7 @@ package borealis.type.proto;
 
 message Float {
     extend borealis.proto.Type {
-        optional Float ext = 2;
+        optional Float ext = 3;
     }
 }
 

@@ -29,7 +29,7 @@ package borealis.type.proto;
 
 message Integer {
     extend borealis.proto.Type {
-        optional Integer ext = 0;
+        optional Integer ext = 1;
     }
 }
 

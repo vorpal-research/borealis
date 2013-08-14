@@ -29,7 +29,7 @@ package borealis.type.proto;
 
 message Pointer {
     extend borealis.proto.Type {
-        optional Pointer ext = 4;
+        optional Pointer ext = 5;
     }
     optional borealis.proto.Type pointed = 1;
 }

@@ -30,7 +30,7 @@ package borealis.type.proto;
 
 message TypeError {
     extend borealis.proto.Type {
-        optional TypeError ext = 5;
+        optional TypeError ext = 6;
     }
     optional string message = 1;
 }

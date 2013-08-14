@@ -29,7 +29,7 @@ package borealis.type.proto;
 
 message UnknownType {
     extend borealis.proto.Type {
-        optional UnknownType ext = 3;
+        optional UnknownType ext = 4;
     }
 }
 

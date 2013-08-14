@@ -145,7 +145,8 @@ main = do
                                               <+= ("source_file", source_file)
                                               <+= ("type", datatype)
                                               <+= ("constr", constructor)
-                                              <+= ("index", ix)
+                                              <+= ("index", ix+1)
+                                              <+= ("index0", ix)
                                               <+= ("template",combine dir $ thrine fname <.> extension fname <.> secondExtension fname)
         writeFile outname $ render filled_derived
 
