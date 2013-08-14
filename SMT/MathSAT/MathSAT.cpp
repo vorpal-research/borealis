@@ -498,9 +498,9 @@ Expr operator >=(const Expr& a, const Expr& b) {
 	} else if (a.is_bv() && b.is_bv()) {
 		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
 		new_term = msat_make_bv_sleq(a.env_, a.term_, b.term_);
-		new_term = msat_make_bv_not(a.env_, new_term);
+		new_term = msat_make_not(a.env_, new_term);
 		auto eq_term = msat_make_equal(a.env_, a.term_, b.term_);
-		new_term = msat_make_bv_or(a.env_, new_term, eq_term);
+		new_term = msat_make_or(a.env_, new_term, eq_term);
 	} else {
 	    BYE_BYE(Expr, "Cannot compare " + util::toString(a) + " and " + util::toString(b));
 	}
@@ -527,8 +527,8 @@ Expr operator <(const Expr& a, const Expr& b) {
 		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
 		new_term = msat_make_bv_sleq(a.env_, a.term_, b.term_);
 		auto eq_term = msat_make_equal(a.env_, a.term_, b.term_);
-		eq_term = msat_make_bv_not(a.env_, eq_term);
-		new_term = msat_make_bv_and(a.env_, new_term, eq_term);
+		eq_term = msat_make_not(a.env_, eq_term);
+		new_term = msat_make_and(a.env_, new_term, eq_term);
 	}
 	else {
 	    BYE_BYE(Expr, "Cannot compare " + util::toString(a) + " and " + util::toString(b));
@@ -553,7 +553,7 @@ Expr operator >(const Expr& a, const Expr& b) {
 	} else if (a.is_bv() && b.is_bv()) {
 		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
 		new_term = msat_make_bv_sleq(a.env_, a.term_, b.term_);
-		new_term = msat_make_bv_not(a.env_, new_term);
+		new_term = msat_make_not(a.env_, new_term);
 	} else {
 	    BYE_BYE(Expr, "Cannot compare " + util::toString(a) + " and " + util::toString(b));
 	}
@@ -629,6 +629,13 @@ Expr iff(const Expr& a, const Expr& b) {
 
 Expr ite(const Expr& cond, const Expr& then_, const Expr& else_) {
 	ASSERTC(cond.is_bool());
+	bool types_compare = 	(then_.is_bv() && else_.is_bv())
+		||	(then_.is_bool() && else_.is_bool())
+		||	( (then_.is_int() || then_.is_rat()) && ((else_.is_int() || else_.is_rat())) );
+	ASSERTC(types_compare);
+	if (then_.is_bool() && else_.is_bool()) {
+		return (cond && then_) || (!cond && else_);
+	}
 	auto new_term = msat_make_term_ite(cond.env_, cond, then_, else_);
 	ASSERTMSAT_TERM(new_term);
 	return Expr(cond.env_, new_term);
@@ -728,7 +735,7 @@ Expr ult(const int a, const Expr& b) {
 Expr uge(const Expr& a, const Expr& b) {
 	ASSERTC(a.is_bv() && b.is_bv());
 	ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-	auto new_term = msat_make_bv_not(a.env_, msat_make_bv_ult(a.env_, a, b));
+	auto new_term = msat_make_not(a.env_, msat_make_bv_ult(a.env_, a, b));
 	ASSERTMSAT_TERM(new_term);
 	return Expr(a.env_, new_term);
 }
@@ -744,7 +751,7 @@ Expr uge(const int a, const Expr& b) {
 Expr ugt(const Expr& a, const Expr& b) {
 	ASSERTC(a.is_bv() && b.is_bv());
 	ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-	auto new_term = msat_make_bv_not(a.env_, msat_make_bv_uleq(a.env_, a, b));
+	auto new_term = msat_make_not(a.env_, msat_make_bv_uleq(a.env_, a, b));
 	ASSERTMSAT_TERM(new_term);
 	return Expr(a.env_, new_term);
 }
@@ -832,10 +839,9 @@ void Solver::pop() {
 }
 
 msat_result Solver::check(const std::vector<Expr>& assumptions) {
-    push();
-    for (const auto& e : assumptions) add(e);
-    auto res = check();
-    pop();
+	std::vector<msat_term> terms(assumptions.begin(), assumptions.end());
+    auto res = msat_solve_with_assumptions(*env_, terms.data(), terms.size());
+
 	return res;
 }
 

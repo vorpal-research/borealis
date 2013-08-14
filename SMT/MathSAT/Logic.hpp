@@ -1046,6 +1046,9 @@ public:
     }
 };
 
+#undef ASPECT
+#undef ASPECT_END
+#undef ASPECT_BEGIN
 
 } // namespace logic
 } // namespace mathsat_

@@ -23,6 +23,7 @@ msat_result Solver::check(
     TRACE_FUNC;
 
     mathsat::Solver s(msatef.unwrap());
+    s.create_and_set_itp_group();
     auto dbg = dbgs();
 
     s.add(msatimpl::asAxiom(msatstate_));
@@ -30,15 +31,16 @@ msat_result Solver::check(
     dbg << "  Query: " << endl << msatquery_ << endl;
     dbg << "  State: " << endl << msatstate_ << endl;
     dbg << end;
-
     Bool pred = msatef.getBoolVar("$CHECK$");
     s.add(msatimpl::asAxiom(implies(pred, msatquery_)));
+//	s.add(msatimpl::asAxiom(msatquery_));
 
     {
         TRACE_BLOCK("mathsat::check");
 
         mathsat::Expr pred_e = logic::msatimpl::getExpr(pred);
         msat_result r = s.check({pred_e});
+//        msat_result r = s.check();
         dbg << "Acquired result: "
             << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
             << endl;
