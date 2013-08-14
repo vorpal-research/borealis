@@ -13,19 +13,17 @@
 
 #include "State/PredicateState.h"
 
-
 namespace borealis {
 
 class LocationManager: public llvm::ModulePass {
 public:
     typedef PredicateState::Locs Locations;
 
-
     static char ID;
 
     LocationManager();
-    virtual bool runOnModule(llvm::Module&) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage&) const override;
+    virtual bool runOnModule(llvm::Module&) override;
     virtual ~LocationManager() = default;
 
     void addLocations(const Locations&);
@@ -36,4 +34,5 @@ private:
 };
 
 } /* namespace borealis */
+
 #endif /* LOCATIONMANAGER_H_ */

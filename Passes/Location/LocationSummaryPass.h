@@ -12,7 +12,6 @@
 
 #include "Logging/logger.hpp"
 
-
 namespace borealis {
 
 class LocationSummaryPass:
@@ -32,4 +31,5 @@ public:
 };
 
 } /* namespace borealis */
+
 #endif /* LOCATIONSUMMARYPASS_H_ */

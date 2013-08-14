@@ -5,8 +5,9 @@
  *      Author: snowball
  */
 
-#include "LocationManager.h"
+#include "Passes/Location/LocationManager.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
+
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -25,10 +26,10 @@ void LocationManager::addLocations(const PredicateState::Locs& locs) {
     locs_.insert(locs.begin(), locs.end());
 }
 
-char LocationManager::ID;
 LocationManager::Locations LocationManager::locs_;
+
+char LocationManager::ID;
 static RegisterPass<LocationManager>
-X("location-manager", "Pass that manages locations which other passes visited");
+X("location-manager", "Pass that manages visited locations");
 
 } /* namespace borealis */
-
