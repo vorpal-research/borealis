@@ -24,7 +24,7 @@ namespace borealis {
 typedef DataProvider<clang::SourceManager> DPSourceManager;
 
 static llvm::cl::opt<std::string>
-DumpOutput("dump-output", llvm::cl::init("json"), llvm::cl::NotHidden,
+DumpOutput("dump-output", llvm::cl::init(""), llvm::cl::NotHidden,
   llvm::cl::desc("Dump analysis results to JSON/XML"));
 
 static llvm::cl::opt<std::string>
