@@ -5,12 +5,11 @@
 #pragma once
 #endif
 
-
+#include "yaml-cpp/noncopyable.h"
 #include "yaml-cpp/dll.h"
 #include "yaml-cpp/node/iterator.h"
 #include "yaml-cpp/node/ptr.h"
 #include "yaml-cpp/node/type.h"
-#include <boost/utility.hpp>
 #include <list>
 #include <utility>
 #include <vector>
@@ -19,7 +18,7 @@ namespace YAML
 {
 	namespace detail
 	{
-		class node_data: private boost::noncopyable
+		class node_data: private noncopyable
 		{
 		public:
 			node_data();

@@ -132,7 +132,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS_DEBUG "-g")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
 	#
-	set(GCC_EXTRA_OPTIONS "")
+	set(GCC_EXTRA_OPTIONS "-std=c++11")
 	#
 	set(FLAG_TESTED "-Wextra")
 	check_cxx_compiler_flag(${FLAG_TESTED} FLAG_WEXTRA)

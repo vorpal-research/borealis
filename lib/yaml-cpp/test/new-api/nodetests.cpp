@@ -1,6 +1,5 @@
 #include "nodetests.h"
 #include "yaml-cpp/yaml.h"
-#include <boost/foreach.hpp>
 #include <iostream>
 
 namespace {
@@ -388,7 +387,7 @@ namespace Test
             YAML::Node node = YAML::Load("[1, 3, 5, 7]");
             int seq[] = {1, 3, 5, 7};
             int i = 0;
-            BOOST_FOREACH(const YAML::Node &item, node) {
+            for (const YAML::Node &item : node) {
                 int x = seq[i++];
                 YAML_ASSERT(item.as<int>() == x);
             }
@@ -398,7 +397,7 @@ namespace Test
         TEST ForEachMap()
         {
             YAML::Node node = YAML::Load("{a: A, b: B, c: C}");
-            BOOST_FOREACH(const YAML::const_iterator::value_type &p, node) {
+            for (const YAML::const_iterator::value_type &p : node) {
                 YAML_ASSERT(p.first.as<char>() + 'A' - 'a' == p.second.as<char>());
             }
             return true;

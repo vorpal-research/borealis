@@ -2,6 +2,7 @@
 #include "yaml-cpp/node/detail/memory.h"
 #include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/exceptions.h"
+#include <cassert>
 #include <sstream>
 
 namespace YAML
@@ -97,7 +98,7 @@ namespace YAML
 		{
 			kv_pairs::iterator it = m_undefinedPairs.begin();
 			while(it != m_undefinedPairs.end()) {
-				kv_pairs::iterator jt = boost::next(it);
+				kv_pairs::iterator jt = std::next(it);
 				if(it->first->is_defined() && it->second->is_defined())
 					m_undefinedPairs.erase(it);
 				it = jt;

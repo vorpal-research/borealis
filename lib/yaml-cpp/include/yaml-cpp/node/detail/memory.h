@@ -7,7 +7,7 @@
 
 #include "yaml-cpp/node/ptr.h"
 #include <set>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace YAML
 {
@@ -31,7 +31,7 @@ namespace YAML
 			void merge(memory_holder& rhs);
 			
 		private:
-			boost::shared_ptr<memory> m_pMemory;
+			std::shared_ptr<memory> m_pMemory;
 		};
 	}
 }

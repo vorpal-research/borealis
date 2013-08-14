@@ -5,18 +5,17 @@
 #pragma once
 #endif
 
-
+#include "yaml-cpp/noncopyable.h"
 #include "yaml-cpp/dll.h"
 #include "yaml-cpp/node/type.h"
 #include "yaml-cpp/node/ptr.h"
 #include "yaml-cpp/node/detail/node_data.h"
-#include <boost/utility.hpp>
 
 namespace YAML
 {
 	namespace detail
 	{
-		class node_ref: private boost::noncopyable
+		class node_ref: private noncopyable
 		{
 		public:
 			node_ref(): m_pData(new node_data) {}
