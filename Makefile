@@ -267,7 +267,7 @@ clean.yaml-cpp:
 	$(MAKE) CXX=$(CXX) -C $(YAML_CPP_DIR) clean
 
 
-$(EXES): $(OBJECTS) .protobuf
+$(EXES): $(OBJECTS) .protobuf .yaml-cpp
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
 
 
