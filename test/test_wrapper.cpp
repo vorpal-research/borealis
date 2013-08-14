@@ -66,6 +66,7 @@ protected:
 TEST_P(WrapperTest, basic) {
     int res = borealis::Runner("wrapper")
     .withArg("---config:wrapper.tests.conf")
+    .withArg("---opt:-dump-output=json")
     .withArg("---opt:-dump-output-file=" + actualF)
     .withArg(inputF)
     .run();

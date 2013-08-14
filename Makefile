@@ -84,8 +84,9 @@ ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD)/Protobuf/Gen \
 	$(PWD)/lib \
 	$(PWD)/lib/pegtl/include \
-	$(PWD)/lib/google-test/include
-	
+	$(PWD)/lib/google-test/include \
+	$(PWD)/lib/yaml-cpp/include
+
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 
 SOURCES := \
@@ -106,6 +107,8 @@ OBJECTS_WITHOUT_MAIN := $(OBJECTS_WITHOUT_MAIN:.cc=.o)
 DEPS := $(SOURCES:.cpp=.d)
 DEPS := $(DEPS:.cc=.d)
 
+ARCHIVES :=
+
 ################################################################################
 # Tests
 ################################################################################
@@ -125,8 +128,18 @@ TEST_OUTPUT := "test_results.xml"
 GOOGLE_TEST_DIR := $(PWD)/lib/google-test
 
 GOOGLE_TEST_LIB := $(GOOGLE_TEST_DIR)/make/gtest.a
+ARCHIVES += $(GOOGLE_TEST_LIB)
 
 CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
+
+################################################################################
+# yaml-cpp
+################################################################################
+
+YAML_CPP_DIR := $(PWD)/lib/yaml-cpp
+
+YAML_CPP_LIB := $(YAML_CPP_DIR)/build/libyaml-cpp.a
+ARCHIVES += $(YAML_CPP_LIB)
 
 ################################################################################
 # Exes
@@ -160,6 +173,7 @@ CLANGLIBS := \
 
 LIBS := \
 	$(CLANGLIBS) \
+	$(ARCHIVES) \
 	-lz3 \
 	-ldl \
 	-lrt \
@@ -242,6 +256,15 @@ clean.protobuf:
 	@rm -f .protobuf
 	@find $(PWD) -name "*.proto" -delete
 	@rm -rf $(PROTO_SOURCE_DIR)
+
+
+.yaml-cpp:
+	$(MAKE) CXX=$(CXX) -C $(YAML_CPP_DIR) all
+	touch $@
+
+clean.yaml-cpp:
+	rm -f .yaml-cpp
+	$(MAKE) CXX=$(CXX) -C $(YAML_CPP_DIR) clean
 
 
 $(EXES): $(OBJECTS) .protobuf

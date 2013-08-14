@@ -19,3 +19,5 @@ Protobuf/Gen/*
 *.all
 
 *.png
+
+lib/yaml-cpp/build
