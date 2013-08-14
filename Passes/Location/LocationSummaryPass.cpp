@@ -53,18 +53,23 @@ bool LocationSummaryPass::runOnModule(llvm::Module&) {
 
         auto& llvmLocs = lm.getLocations();
 
-        std::map<std::string, std::set<std::string>> locMap;
+        std::map<std::string, std::list<Locus>> locMap;
 
         auto& normalLocs = locMap["normal"];
         for (const auto& v : llvmLocs) {
-            auto& loc = slt.getLocFor(v);
-            std::ostringstream oss;
-            oss << "!SourceCodeLocation " << loc;
-            normalLocs.insert(oss.str());
+            auto loc = slt.getLocFor(v);
+            if (loc.isUnknown()) continue;
+            normalLocs.push_back(loc);
         }
 
+        locMap["deadCode"] = locMap["chop"] = locMap["killed"];
+
         YAML::Emitter yaml;
+        yaml.SetSeqFormat(YAML::Block);
+
+        yaml << YAML::BeginDoc;
         yaml << locMap;
+        yaml << YAML::EndDoc;
 
         std::ofstream output(DumpCoverageFile);
         output << yaml.c_str();
@@ -72,6 +77,12 @@ bool LocationSummaryPass::runOnModule(llvm::Module&) {
     }
 
     return false;
+}
+
+YAML::Emitter& operator<<(YAML::Emitter& yaml, const Locus& loc) {
+    std::ostringstream oss;
+    oss << loc;
+    return yaml << YAML::LocalTag("SCL") << YAML::SingleQuoted << oss.str();
 }
 
 char LocationSummaryPass::ID;
