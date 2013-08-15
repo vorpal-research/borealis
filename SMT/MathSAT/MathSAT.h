@@ -48,7 +48,8 @@ static EnvPointer makeEnvPointer(msat_env* env) {
 							msat_destroy_env(*env_);
 							delete env_;
 						};
-	return EnvPointer(env, envDeleter);
+	auto res =  EnvPointer(env, envDeleter);
+	return res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +134,7 @@ public:
 	Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 	Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 
-	static std::shared_ptr<Env> share(const Env& that);
+	static Env share(const Env& that);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,11 +213,7 @@ public:
 
 	const Env& env() const { return env_; }
 
-	Expr& operator=(const Expr& that) {
-	    this->env_ = that.env_;
-	    this->term_ = that.term_;
-	    return *this;
-	}
+	Expr& operator=(const Expr& that) = default;
 
     Sort get_sort() const { return Sort(env_, msat_term_get_type(term_)); }
 
@@ -342,29 +339,30 @@ Expr distinct(const std::vector<Expr>& exprs);
 
 class Solver {
 private:
-	std::shared_ptr<Env> env_;
+	Env env_orig_;
+	Env env_;
 
 public:
 	typedef int InterpolationGroup;
 
-	explicit Solver(const Env& env) : env_(Env::share(env)) {};
+	explicit Solver(const Env& env) : env_orig_(env), env_(Env::share(env)) {};
 
-	Env& env() { return *env_; }
+	Env& env() { return env_; }
 
 	void add(const Expr&);
-	void reset() { env_->reset(); }
+	void reset() { env_.reset(); }
 
 	void push();
 	void pop();
-	unsigned num_backtrack() { return msat_num_backtrack_points(*env_); }
+	unsigned num_backtrack() { return msat_num_backtrack_points(env_); }
 
-	msat_result check() { return msat_solve(*env_); }
+	msat_result check() { return msat_solve(env_); }
 	msat_result check(const std::vector<Expr>& assumptions);
 
 	std::vector<Expr> assertions();
 	std::vector<Expr> unsat_core();
 
-	InterpolationGroup create_interp_group() { return msat_create_itp_group(*env_); }
+	InterpolationGroup create_interp_group() { return msat_create_itp_group(env_); }
 	void set_interp_group(InterpolationGroup gr);
 	InterpolationGroup create_and_set_itp_group() {
 		auto group = create_interp_group();

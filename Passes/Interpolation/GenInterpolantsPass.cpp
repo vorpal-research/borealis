@@ -5,6 +5,8 @@
  *      Author: sam
  */
 
+#include <memory>
+
 #include <llvm/Support/InstVisitor.h>
 
 #include "Passes/Interpolation/GenInterpolantsPass.h"
@@ -32,10 +34,11 @@ public:
     }
 
     mathsat::Expr generateInterpolant(
+//    void generateInterpolant(
             llvm::Instruction& where,
             llvm::Value& what) {
 
-    	MathSAT::ExprFactory msatef;
+		MathSAT::ExprFactory msatef;
 
     	PredicateState::Ptr query = (
             pass->FN.State *
@@ -49,6 +52,7 @@ public:
     	PredicateState::Ptr state = pass->PSA->getInstructionState(&where);
 		if (!state) {
 			return msatef.unwrap().bool_val(false);
+//			return;
 		}
 
         dbgs() << "Generating interpolant: " << endl
@@ -57,10 +61,12 @@ public:
 				<< "State: " << state << endl;
 
         MathSAT::Solver s(msatef);
-		auto interpol = s.getInterpolant(query, state);
+
+        auto interpol = s.getInterpolant(query, state);
 		dbgs()  << "Interpolant: " << endl
 				<< interpol;
 		return interpol;
+//		return;
     }
 
 private:

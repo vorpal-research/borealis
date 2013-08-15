@@ -190,11 +190,11 @@ Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& param
 }
 
 
-std::shared_ptr<Env> Env::share(const Env& that) {
+Env Env::share(const Env& that) {
 	auto shared = makeEnvPointer(new msat_env);
 	*shared = msat_create_shared_env(that.cfg_, *that.env_);
 	ASSERTMSAT( MSAT_ERROR_ENV, *shared );
-	return std::shared_ptr<Env>(new Env(that.cfg_, shared));
+	return Env(that.cfg_, shared);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -825,58 +825,58 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Solver::add(const Expr& e) {
-	int res = msat_assert_formula(*env_, e);
+	int res = msat_assert_formula(env_, e);
 	ASSERTC(!res)
 }
 
 void Solver::push() {
-	int res = msat_push_backtrack_point(*env_);
+	int res = msat_push_backtrack_point(env_);
 	ASSERTC(!res)
 }
 void Solver::pop() {
-	int res = msat_pop_backtrack_point(*env_);
+	int res = msat_pop_backtrack_point(env_);
 	ASSERTC(!res)
 }
 
 msat_result Solver::check(const std::vector<Expr>& assumptions) {
 	std::vector<msat_term> terms(assumptions.begin(), assumptions.end());
-    auto res = msat_solve_with_assumptions(*env_, terms.data(), terms.size());
+    auto res = msat_solve_with_assumptions(env_, terms.data(), terms.size());
 
 	return res;
 }
 
 std::vector<Expr> Solver::assertions() {
 	size_t size;
-	auto msat_exprs = util::uniq(msat_get_asserted_formulas(*env_, &size));
+	auto msat_exprs = util::uniq(msat_get_asserted_formulas(env_, &size));
 	std::vector<Expr> exprs;
 	exprs.reserve(size);
 	for (unsigned idx = 0; idx < size; ++idx) {
-		exprs.emplace_back(*env_, (msat_exprs.get())[idx]);
+		exprs.emplace_back(env_orig_, (msat_exprs.get())[idx]);
 	}
 	return exprs;
 }
 
 std::vector<Expr> Solver::unsat_core() {
 	size_t size;
-	auto msat_exprs = util::uniq(msat_get_unsat_assumptions(*env_, &size));
+	auto msat_exprs = util::uniq(msat_get_unsat_assumptions(env_, &size));
 	std::vector<Expr> exprs;
 	exprs.reserve(size);
 	for (unsigned idx = 0; idx < size; ++idx) {
-		exprs.emplace_back(*env_, (msat_exprs.get())[idx]);
+		exprs.emplace_back(env_orig_, (msat_exprs.get())[idx]);
 	}
 	return exprs;
 }
 
 void Solver::set_interp_group(InterpolationGroup gr) {
-	int res = msat_set_itp_group(*env_, gr);
+	int res = msat_set_itp_group(env_, gr);
 	ASSERTC(!res)
 }
 
 Expr Solver::get_interpolant(const std::vector<InterpolationGroup>& A) {
     std::vector<InterpolationGroup> AA(A.begin(), A.end());
-	auto new_term = msat_get_interpolant(*env_, AA.data(), AA.size());
+	auto new_term = msat_get_interpolant(env_, AA.data(), AA.size());
 	ASSERTMSAT_TERM(new_term);
-	return Expr(*env_, new_term);
+	return Expr(env_orig_, new_term);
 }
 
 } // namespace mathsat
