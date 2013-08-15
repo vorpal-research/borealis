@@ -81,45 +81,45 @@ bool Solver::isPathImpossible(
 }
 
 mathsat::Expr Solver::getInterpolant(
-		PredicateState::Ptr query,
+        PredicateState::Ptr query,
         PredicateState::Ptr state) {
 
-	using namespace logic;
+    using namespace logic;
 
-	TRACE_FUNC;
+    TRACE_FUNC;
 
-	ExecutionContext ctx(msatef);
-	auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
-	auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+    ExecutionContext ctx(msatef);
+    auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
+    auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
-	dbgs() 	<< "Interpolating:" << endl
-			<< msatquery << endl
-			<< "in:" << endl
-			<< msatstate << endl;
+    dbgs()     << "Interpolating:" << endl
+            << msatquery << endl
+            << "in:" << endl
+            << msatstate << endl;
 
-	mathsat::Solver s(msatef.unwrap());
+    mathsat::Solver s(msatef.unwrap());
 
-	auto a = s.create_and_set_itp_group();
-	s.add(msatimpl::asAxiom(msatstate));
+    auto a = s.create_and_set_itp_group();
+    s.add(msatimpl::asAxiom(msatstate));
 
-	s.create_and_set_itp_group();
-	s.add(msatimpl::asAxiom(msatquery));
+    s.create_and_set_itp_group();
+    s.add(msatimpl::asAxiom(msatquery));
 
-	{
-		TRACE_BLOCK("mathsat::interpol");
-		msat_result r = s.check();
+    {
+        TRACE_BLOCK("mathsat::interpol");
+        msat_result r = s.check();
 
-		dbgs() << "Acquired result: "
-			<< ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
-			<< endl;
+        dbgs() << "Acquired result: "
+            << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
+            << endl;
 
-		if (r != MSAT_UNSAT) {
-			return msatef.unwrap().bool_val(true);
-		}
+        if (r != MSAT_UNSAT) {
+            return msatef.unwrap().bool_val(true);
+        }
 
-		auto interpol = s.get_interpolant({a});
-		return interpol;
-	}
+        auto interpol = s.get_interpolant({a});
+        return interpol;
+    }
 }
 
 } // namespace mathsat_

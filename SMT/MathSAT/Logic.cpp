@@ -87,14 +87,14 @@ Bool implies(Bool lhv, Bool rhv) {
     mathsat::Expr lhv_raw = msatimpl::getExpr(lhv);
     mathsat::Expr rhv_raw = msatimpl::getExpr(rhv);
     return Bool(mathsat::implies(lhv_raw, rhv_raw),
-    			msatimpl::spliceAxioms(lhv, rhv));
+                msatimpl::spliceAxioms(lhv, rhv));
 }
 
 Bool iff(Bool lhv, Bool rhv) {
     mathsat::Expr lhv_raw = msatimpl::getExpr(lhv);
     mathsat::Expr rhv_raw = msatimpl::getExpr(rhv);
     return Bool(mathsat::iff(lhv_raw, rhv_raw),
-    			msatimpl::spliceAxioms(lhv, rhv));
+                msatimpl::spliceAxioms(lhv, rhv));
 }
 
 

@@ -423,11 +423,11 @@ struct ifer {
             auto fb = merger<E,E2>::app(fbranch);
             return typename merger<E, E2>::type{
                 mathsat::ite(
-					msatimpl::getExpr(cond),
-					msatimpl::getExpr(tb),
-					msatimpl::getExpr(fb)
+                    msatimpl::getExpr(cond),
+                    msatimpl::getExpr(tb),
+                    msatimpl::getExpr(fb)
                 ),
-				msatimpl::spliceAxioms(cond, tb, fb)
+                msatimpl::spliceAxioms(cond, tb, fb)
             };
         }
     };
@@ -703,7 +703,7 @@ class Function; // undefined
 
 template<class Res, class ...Args>
 class Function<Res(Args...)> : public Expr {
-	mathsat::Decl inner;
+    mathsat::Decl inner;
     mathsat::Expr axiomatic;
 
     template<class ...CArgs>
@@ -719,7 +719,7 @@ class Function<Res(Args...)> : public Expr {
 
     static mathsat::Decl constructFreshFunc(mathsat::Env& env, const std::string& name) {
         std::vector<mathsat::Sort> domain = { impl::generator<Args>::sort(env)... };
-		return env.fresh_function(name.c_str(), domain, impl::generator<Res>::sort(env));
+        return env.fresh_function(name.c_str(), domain, impl::generator<Res>::sort(env));
     }
 
 public:
@@ -737,7 +737,7 @@ public:
     mathsat::Env& env() const { return inner.env(); }
 
     Res operator()(Args... args) const {
-    	const std::vector<mathsat::Expr> vec_args = {msatimpl::getExpr(args)...};
+        const std::vector<mathsat::Expr> vec_args = {msatimpl::getExpr(args)...};
         return Res(inner(vec_args), msatimpl::spliceAxioms(axiom(), massAxiomAnd(args...)));
     }
 
@@ -932,7 +932,7 @@ SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
     mathsat::Expr head = msatimpl::getExpr(bytes[0]);
 
     for (size_t i = 1; i < bytes.size(); ++i) {
-    	head = mathsat::concat(msatimpl::getExpr(bytes[i]), head);
+        head = mathsat::concat(msatimpl::getExpr(bytes[i]), head);
     }
 
     mathsat::Expr axiom = msatimpl::getAxiom(bytes[0]);

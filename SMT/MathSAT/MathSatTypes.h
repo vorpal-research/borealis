@@ -20,9 +20,9 @@ class Solver;
 }
 
 struct MathSAT {
-	typedef mathsat_::ExprFactory ExprFactory;
-	typedef mathsat_::ExecutionContext ExecutionContext;
-	typedef mathsat_::Solver Solver;
+    typedef mathsat_::ExprFactory ExprFactory;
+    typedef mathsat_::ExecutionContext ExecutionContext;
+    typedef mathsat_::Solver Solver;
 
     // logic type to represent boolean expressions
     typedef mathsat_::logic::Bool Bool;

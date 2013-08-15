@@ -40,7 +40,7 @@ public:
             PredicateState::Ptr state);
 
     mathsat::Expr getInterpolant(
-    		PredicateState::Ptr query,
+            PredicateState::Ptr query,
             PredicateState::Ptr state);
 
 private:

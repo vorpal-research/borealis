@@ -51,8 +51,8 @@ MathSAT::Bool ExprFactory::getBoolVar(const std::string& name, bool fresh) {
 }
 
 MathSAT::Bool ExprFactory::getBoolConst(bool v) {
-	auto res = Bool::mkConst(*env, v);
-	return res;
+    auto res = Bool::mkConst(*env, v);
+    return res;
 }
 
 MathSAT::Bool ExprFactory::getTrue() {
@@ -95,7 +95,7 @@ MathSAT::MemArray ExprFactory::getNoMemoryArray() {
     if (DefaultsToUnknown.get(false)) {
         return MemArray::mkFree(*env, "mem");
     } else {
-    	return MemArray::mkDefault(*env, "mem", Byte::mkConst(*env, 0xff));
+        return MemArray::mkDefault(*env, "mem", Byte::mkConst(*env, 0xff));
     }
 }
 

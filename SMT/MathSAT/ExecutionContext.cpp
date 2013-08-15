@@ -11,8 +11,7 @@ namespace borealis {
 namespace mathsat_ {
 
 ExecutionContext::ExecutionContext(ExprFactory& factory):
-    factory(factory),
-    currentPtr(1U) {};
+    factory(factory), currentPtr(1U) {};
 
 MathSAT::Bool ExecutionContext::toSMT() const {
     return factory.getTrue();
@@ -27,5 +26,3 @@ std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx) {
 
 } // namespace mathsat_
 } // namespace borealis
-
-
