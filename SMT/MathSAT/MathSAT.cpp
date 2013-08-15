@@ -776,9 +776,8 @@ void Solver::pop() {
 }
 
 msat_result Solver::check(const std::vector<Expr>& assumptions) {
-	std::vector<msat_term> terms(assumptions.begin(), assumptions.end());
+    std::vector<msat_term> terms(assumptions.begin(), assumptions.end());
     auto res = msat_solve_with_assumptions(env_, terms.data(), terms.size());
-
 	return res;
 }
 

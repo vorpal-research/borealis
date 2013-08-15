@@ -17,7 +17,7 @@ ExprFactory::ExprFactory() {
     mathsat::Config cfg;
     cfg.set("interpolation", true);
     cfg.set("theory.eq_propagation", false);
-//    cfg.set("theory.bv.eager", false);
+    // cfg.set("theory.bv.eager", false);
     cfg.set("theory.euf.dyn_ack", 0);
 
     cfg.set("preprocessor.simplification", 3);
@@ -128,7 +128,7 @@ MathSAT::Dynamic ExprFactory::getVarByTypeAndName(
     else if (isa<type::Pointer>(type))
         return getPtrVar(name, fresh);
     else if (isa<type::UnknownType>(type))
-    	BYE_BYE(Dynamic, "Unknown var type in MathSAT conversion");
+        BYE_BYE(Dynamic, "Unknown var type in MathSAT conversion");
     else if (isa<type::TypeError>(type))
         BYE_BYE(Dynamic, "Encountered type error in MathSAT conversion");
 

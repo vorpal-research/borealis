@@ -1359,7 +1359,6 @@ public:
 #undef ASPECT_END
 #undef ASPECT_BEGIN
 
-
 } // namespace logic
 } // namespace z3_
 } // namespace borealis
