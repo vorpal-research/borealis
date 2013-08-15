@@ -23,12 +23,14 @@ namespace borealis {
 
 typedef DataProvider<clang::SourceManager> DPSourceManager;
 
+static std::string DumpCoverageFileDefault = "%s.coverage";
+
 static llvm::cl::opt<bool>
 DumpCoverage("dump-coverage", llvm::cl::init(false), llvm::cl::NotHidden,
   llvm::cl::desc("Dump analysis coverage"));
 
 static llvm::cl::opt<std::string>
-DumpCoverageFile("dump-coverage-file", llvm::cl::init("%s.coverage"), llvm::cl::NotHidden,
+DumpCoverageFile("dump-coverage-file", llvm::cl::init(DumpCoverageFileDefault), llvm::cl::NotHidden,
   llvm::cl::desc("Output file for analysis coverage"));
 
 LocationSummaryPass::LocationSummaryPass(): ModulePass(ID) {}
@@ -47,7 +49,7 @@ bool LocationSummaryPass::runOnModule(llvm::Module&) {
 
     auto* mainFileEntry = sm.getFileEntryForID(sm.getMainFileID());
 
-    if (DumpCoverage || !DumpCoverageFile.empty()) {
+    if (DumpCoverage || DumpCoverageFile != DumpCoverageFileDefault) {
 
         util::replace("%s", mainFileEntry->getName(), DumpCoverageFile);
 
