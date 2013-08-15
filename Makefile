@@ -119,6 +119,8 @@ TEST_SOURCES := $(shell find $(TEST_DIRS) -name "*.cpp" -type f)
 TEST_OBJECTS := $(OBJECTS_WITHOUT_MAIN) $(TEST_SOURCES:.cpp=.o)
 TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
 
+TEST_ARCHIVES :=
+
 TEST_OUTPUT := "test_results.xml"
 
 ################################################################################
@@ -128,7 +130,7 @@ TEST_OUTPUT := "test_results.xml"
 GOOGLE_TEST_DIR := $(PWD)/lib/google-test
 
 GOOGLE_TEST_LIB := $(GOOGLE_TEST_DIR)/make/gtest.a
-ARCHIVES += $(GOOGLE_TEST_LIB)
+TEST_ARCHIVES += $(GOOGLE_TEST_LIB)
 
 CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
 
@@ -173,7 +175,6 @@ CLANGLIBS := \
 
 LIBS := \
 	$(CLANGLIBS) \
-	$(ARCHIVES) \
 	-lz3 \
 	-ldl \
 	-lrt \
@@ -268,7 +269,7 @@ clean.yaml-cpp:
 
 
 $(EXES): $(OBJECTS) .protobuf .yaml-cpp
-	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS)
+	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 
 .google-test:
@@ -281,7 +282,7 @@ clean.google-test:
 
 
 $(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
-	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(GOOGLE_TEST_LIB)
+	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(TEST_ARCHIVES)
 
 
 tests: $(EXES) $(TEST_EXES)
