@@ -282,7 +282,7 @@ clean.google-test:
 
 
 $(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
-	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(TEST_ARCHIVES)
+	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES) $(TEST_ARCHIVES)
 
 
 tests: $(EXES) $(TEST_EXES)
