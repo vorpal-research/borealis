@@ -11,6 +11,7 @@
 #include "Codegen/llvm.h"
 #include "Passes/Checker/CheckContractPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
+#include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"
@@ -54,8 +55,10 @@ public:
         dbgs() << "Checking: " << CI << endl;
         dbgs() << "  Requires: " << endl << instantiatedContract << endl;
 
-        Z3::ExprFactory z3ef;
-        Z3::Solver s(z3ef);
+//		Z3::ExprFactory z3ef;
+//		Z3::Solver s(z3ef);
+		MathSAT::ExprFactory z3ef;
+		MathSAT::Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
         if (s.isViolated(instantiatedContract, state)) {
@@ -102,8 +105,10 @@ public:
             dbgs() << "Checking: " << CI << endl;
             dbgs() << "  Assert: " << endl << query << endl;
 
-            Z3::ExprFactory z3ef;
-            Z3::Solver s(z3ef);
+//			Z3::ExprFactory z3ef;
+//			Z3::Solver s(z3ef);
+			MathSAT::ExprFactory z3ef;
+			MathSAT::Solver s(z3ef);
 
             dbgs() << "  State: " << endl << state << endl;
             if (s.isViolated(query, state)) {
@@ -122,8 +127,10 @@ public:
         dbgs() << "Checking: " << RI << endl;
         dbgs() << "  Ensures: " << endl << contract << endl;
 
-        Z3::ExprFactory z3ef;
-        Z3::Solver s(z3ef);
+//		Z3::ExprFactory z3ef;
+//		Z3::Solver s(z3ef);
+		MathSAT::ExprFactory z3ef;
+		MathSAT::Solver s(z3ef);
 
         dbgs() << "  State: " << endl << state << endl;
         if (s.isViolated(contract, state)) {

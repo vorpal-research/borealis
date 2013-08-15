@@ -575,6 +575,13 @@ Expr iff(const Expr& a, const Expr& b) {
 
 Expr ite(const Expr& cond, const Expr& then_, const Expr& else_) {
 	ASSERTC(cond.is_bool());
+	bool types_compare = 	(then_.is_bv() && else_.is_bv())
+		||	(then_.is_bool() && else_.is_bool())
+		||	( (then_.is_int() || then_.is_rat()) && ((else_.is_int() || else_.is_rat())) );
+	ASSERTC(types_compare);
+	if (then_.is_bool() && else_.is_bool()) {
+		return (cond && then_) || (!cond && else_);
+	}
 	auto new_term = msat_make_term_ite(cond.env_, cond, then_, else_);
 	ASSERTMSAT_TERM(new_term);
 	return Expr(cond.env_, new_term);
@@ -769,10 +776,9 @@ void Solver::pop() {
 }
 
 msat_result Solver::check(const std::vector<Expr>& assumptions) {
-    push();
-    for (const auto& e : assumptions) add(e);
-    auto res = check();
-    pop();
+	std::vector<msat_term> terms(assumptions.begin(), assumptions.end());
+    auto res = msat_solve_with_assumptions(env_, terms.data(), terms.size());
+
 	return res;
 }
 
@@ -782,7 +788,7 @@ std::vector<Expr> Solver::assertions() {
 	std::vector<Expr> exprs;
 	exprs.reserve(size);
 	for (unsigned idx = 0; idx < size; ++idx) {
-		exprs.emplace_back(env_, (msat_exprs.get())[idx]);
+		exprs.emplace_back(env_orig_, (msat_exprs.get())[idx]);
 	}
 	return exprs;
 }
@@ -793,7 +799,7 @@ std::vector<Expr> Solver::unsat_core() {
 	std::vector<Expr> exprs;
 	exprs.reserve(size);
 	for (unsigned idx = 0; idx < size; ++idx) {
-		exprs.emplace_back(env_, (msat_exprs.get())[idx]);
+		exprs.emplace_back(env_orig_, (msat_exprs.get())[idx]);
 	}
 	return exprs;
 }
@@ -807,7 +813,7 @@ Expr Solver::get_interpolant(const std::vector<InterpolationGroup>& A) {
     std::vector<InterpolationGroup> AA(A.begin(), A.end());
 	auto new_term = msat_get_interpolant(env_, AA.data(), AA.size());
 	ASSERTMSAT_TERM(new_term);
-	return Expr(env_, new_term);
+	return Expr(env_orig_, new_term);
 }
 
 } // namespace mathsat

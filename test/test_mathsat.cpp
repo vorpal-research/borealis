@@ -17,6 +17,19 @@
 #include "SMT/MathSAT/Solver.h"
 #include "Util/util.h"
 
+#include <llvm/LLVMContext.h>
+#include <llvm/Argument.h>
+#include <llvm/Function.h>
+#include <llvm/Instruction.h>
+#include <llvm/Instructions.h>
+#include <llvm/Module.h>
+#include <llvm/Type.h>
+#include <llvm/Value.h>
+
+#include "Factory/Nest.h"
+#include "Term/Term.def"
+#include "Util/slottracker.h"
+
 namespace {
 
 using namespace borealis::logging;
@@ -371,6 +384,42 @@ TEST(MathSAT, mergeMemory) {
             cond == z // in
         ));
     }
+}
+
+
+
+
+TEST(MathSAT, termToLogic) {
+	using namespace borealis;
+	using namespace borealis::mathsat_::logic;
+
+	USING_SMT_IMPL(MathSAT);
+
+    ExprFactory factory;
+    ExecutionContext context(factory);
+
+	llvm::LLVMContext& ctx = llvm::getGlobalContext();
+	llvm::Module m("mock-module", ctx);
+
+	llvm::Function* f = llvm::Function::Create(
+			llvm::FunctionType::get(
+					llvm::Type::getInt1Ty(ctx),
+					llvm::Type::getInt32Ty(ctx),
+					false),
+			llvm::GlobalValue::LinkageTypes::ExternalLinkage);
+	llvm::Argument* a = &head(f->getArgumentList());
+	a->setName("mock-arg");
+
+	SlotTracker st(&m);
+	auto TF = FactoryNest(nullptr).Term;
+
+	auto tr = TF->getIntTerm(24);
+
+	EXPECT_TRUE(llvm::isa<Term>(tr));
+
+	auto* tru = llvm::dyn_cast<OpaqueIntConstantTerm>(tr);
+	auto expr = SMTImpl<MathSAT, OpaqueIntConstantTerm>::doit(tru, factory, &context);
+	std::cout << expr << std::endl;
 }
 
 

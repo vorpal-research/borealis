@@ -341,12 +341,13 @@ Expr distinct(const std::vector<Expr>& exprs);
 
 class Solver {
 private:
-    Env env_;
+	Env env_orig_;
+	Env env_;
 
 public:
 	typedef int InterpolationGroup;
 
-	explicit Solver(const Env& env) : env_(Env::share(env)) {};
+	explicit Solver(const Env& env) : env_orig_(env), env_(Env::share(env)) {};
 
 	Env& env() { return env_; }
 

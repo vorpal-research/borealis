@@ -39,6 +39,10 @@ public:
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 
+    mathsat::Expr getInterpolant(
+    		PredicateState::Ptr query,
+            PredicateState::Ptr state);
+
 private:
 
     ExprFactory& msatef;
