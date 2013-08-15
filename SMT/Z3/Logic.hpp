@@ -278,7 +278,7 @@ grow(BitVector<N1> bv) {
     z3::context& ctx = z3impl::getContext(bv);
 
     return BitVector<N0>{
-        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))),
+        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))), // FIXME: Do we want zext or sext?
         z3impl::getAxiom(bv)
     };
 }
@@ -859,7 +859,7 @@ public:
     z3::context& ctx() const { return inner.ctx(); }
 
     Res operator()(Args... args) const {
-        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
+        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(axiom(), massAxiomAnd(args...)));
     }
 
     static z3::sort range(z3::context& ctx) {
@@ -1095,7 +1095,7 @@ public:
 
         // FIXME akhin this is as fucked up as before, but also works for now
 
-        inner = [name,&ctx](Index ix) -> Elem {
+        inner = [&ctx](Index ix) -> Elem {
             auto initial = Function<Elem(Index)>::mkFunc(ctx, "$$__initial_mem__$$");
             return initial(ix);
         };

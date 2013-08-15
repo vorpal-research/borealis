@@ -27,7 +27,7 @@ public:
         using llvm::isa;
         return isa<type::Integer>(type) ? Integer::bitsize :
                isa<type::Pointer>(type) ? Pointer::bitsize :
-               isa<type::Float>(type) ? Real::bitsize :
+               isa<type::Float>(type)   ? Real::bitsize :
                util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                        "Cannot acquire bitsize for type " + util::toString(type));
     }
@@ -101,6 +101,5 @@ private:
 
 } // namespace mathsat_
 } // namespace borealis
-
 
 #endif /* MATHSAT_EXPRFACTORY_H_ */

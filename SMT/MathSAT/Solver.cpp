@@ -5,7 +5,6 @@
  *      Author: sam
  */
 
-
 #include "Logging/tracer.hpp"
 #include "SMT/MathSAT/Solver.h"
 
@@ -125,4 +124,3 @@ mathsat::Expr Solver::getInterpolant(
 
 } // namespace mathsat_
 } // namespace borealis
-

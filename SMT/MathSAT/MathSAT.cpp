@@ -37,6 +37,10 @@ bool operator==(const Sort& a, const Sort& b) {
     return msat_type_equals(a.type_, b.type_);
 }
 
+bool operator!=(const Sort& a, const Sort& b) {
+    return ! (a == b);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 Expr Decl::operator()(const std::vector<Expr>& args) const {
@@ -60,17 +64,17 @@ Expr Decl::operator()(const Expr& arg1, const Expr& arg2, const Expr& arg3) cons
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Config::Config() : config_(makeConfigPointer(new msat_config)) {
+Config::Config() : config_(makeConfigPointer(new msat_config())) {
 	*config_ = msat_create_config();
 	ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
 }
 
-Config::Config(const std::string& logic) : config_(makeConfigPointer(new msat_config)) {
+Config::Config(const std::string& logic) : config_(makeConfigPointer(new msat_config())) {
 	*config_ = msat_create_default_config(logic.c_str());
 	ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
 }
 
-Config::Config(FILE* f) : config_(makeConfigPointer(new msat_config)){
+Config::Config(FILE* f) : config_(makeConfigPointer(new msat_config())){
 	*config_ = msat_parse_config_file(f);
 	ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
 }
@@ -81,7 +85,7 @@ Env Config::env() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Env::Env(const Config& config) : cfg_(config), env_(makeEnvPointer(new msat_env)) {
+Env::Env(const Config& config) : cfg_(config), env_(makeEnvPointer(new msat_env())) {
 	*env_ = msat_create_env(cfg_);
 	ASSERTMSAT_ENV( *env_ );
 }
@@ -114,7 +118,7 @@ Expr Env::constant(const std::string& name, const Sort& type) {
 	auto new_decl = msat_declare_function(*env_, name.c_str(), type);
 	ASSERTMSAT_DECL(new_decl);
 	auto new_term = msat_make_constant(*env_, new_decl);
-	ASSERTMSAT(MSAT_ERROR_TERM, new_term)
+	ASSERTMSAT_TERM(new_term);
 	return Expr(*this, new_term);
 }
 
@@ -191,9 +195,9 @@ Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& param
 
 
 Env Env::share(const Env& that) {
-	auto shared = makeEnvPointer(new msat_env);
+	auto shared = makeEnvPointer(new msat_env());
 	*shared = msat_create_shared_env(that.cfg_, *that.env_);
-	ASSERTMSAT( MSAT_ERROR_ENV, *shared );
+	ASSERTMSAT_ENV( *shared );
 	return Env(that.cfg_, shared);
 }
 
@@ -206,7 +210,7 @@ void Expr::visit(visit_function func, void* data) {
 
 Decl Expr::decl() const {
 	msat_decl ret = msat_term_get_decl(term_);
-	ASSERTMSAT(MSAT_ERROR_DECL, ret);
+	ASSERTMSAT_DECL(ret);
 	return Decl(env_, ret);
 }
 
@@ -335,26 +339,13 @@ Expr operator ==(int a, const Expr& b){
 }
 
 Expr operator !=(const Expr& a, const Expr& b) {
-	msat_term new_term;
-	if( a.is_bool() && b.is_bool() ) {
-		new_term = msat_make_iff(a.env_, a.term_, b.term_);
-		new_term = msat_make_not(a.env_, new_term);
-	} else if ( a.is_bool() || b.is_bool() ) {
-		BYE_BYE(Expr, "Cannot compare bool and not bool");
-	} else {
-		new_term = msat_make_equal(a.env_, a.term_, b.term_);
-		new_term = msat_make_not(a.env_, new_term);
-	}
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
+	return ! (a == b);
 }
 Expr operator !=(const Expr& a, int b){
-	auto bb = a.env_.num_val(b);
-	return a != bb;
+    return ! (a == b);
 }
 Expr operator !=(int a, const Expr& b){
-    auto aa = b.env_.num_val(a);
-    return aa != b;
+    return ! (a == b);
 }
 
 
@@ -489,23 +480,7 @@ Expr operator <=(int a, const Expr& b){
 
 
 Expr operator >=(const Expr& a, const Expr& b) {
-	msat_term new_term;
-	if (( a.is_rat() || a.is_int() ) && ( b.is_rat() || b.is_int() )) {
-		new_term = msat_make_leq(a.env_, a.term_, b.term_);
-		new_term = msat_make_not(a.env_, new_term);
-		auto eq_term = msat_make_equal(a.env_, a.term_, b.term_);
-		new_term = msat_make_or(a.env_, new_term, eq_term);
-	} else if (a.is_bv() && b.is_bv()) {
-		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-		new_term = msat_make_bv_sleq(a.env_, a.term_, b.term_);
-		new_term = msat_make_not(a.env_, new_term);
-		auto eq_term = msat_make_equal(a.env_, a.term_, b.term_);
-		new_term = msat_make_or(a.env_, new_term, eq_term);
-	} else {
-	    BYE_BYE(Expr, "Cannot compare " + util::toString(a) + " and " + util::toString(b));
-	}
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
+	return (! (a <= b)) || (a == b);
 }
 Expr operator >=(const Expr& a, int b) {
     FORWARD_OP_EXPR_INT(>=, a, b)
@@ -517,24 +492,7 @@ Expr operator >=(int a, const Expr& b){
 
 
 Expr operator <(const Expr& a, const Expr& b) {
-	msat_term new_term;
-	if (( a.is_rat() || a.is_int() ) && ( b.is_rat() || b.is_int() )) {
-		new_term = msat_make_leq(a.env_, a.term_, b.term_);
-		auto eq_term = msat_make_equal(a.env_, a.term_, b.term_);
-		eq_term = msat_make_not(a.env_, eq_term);
-		new_term = msat_make_and(a.env_, new_term, eq_term);
-	} else if (a.is_bv() && b.is_bv()) {
-		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-		new_term = msat_make_bv_sleq(a.env_, a.term_, b.term_);
-		auto eq_term = msat_make_equal(a.env_, a.term_, b.term_);
-		eq_term = msat_make_not(a.env_, eq_term);
-		new_term = msat_make_and(a.env_, new_term, eq_term);
-	}
-	else {
-	    BYE_BYE(Expr, "Cannot compare " + util::toString(a) + " and " + util::toString(b));
-	}
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
+    return (a <= b) && (a != b);
 }
 Expr operator <(const Expr& a, int b){
     FORWARD_OP_EXPR_INT(<, a, b)
@@ -546,19 +504,7 @@ Expr operator <(int a, const Expr& b){
 
 
 Expr operator >(const Expr& a, const Expr& b) {
-	msat_term new_term;
-	if (( a.is_rat() || a.is_int() ) && ( b.is_rat() || b.is_int() )) {
-		new_term = msat_make_leq(a.env_, a.term_, b.term_);
-		new_term = msat_make_not(a.env_, new_term);
-	} else if (a.is_bv() && b.is_bv()) {
-		ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-		new_term = msat_make_bv_sleq(a.env_, a.term_, b.term_);
-		new_term = msat_make_not(a.env_, new_term);
-	} else {
-	    BYE_BYE(Expr, "Cannot compare " + util::toString(a) + " and " + util::toString(b));
-	}
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
+    return (! a <= b);
 }
 Expr operator >(const Expr& a, int b){
     FORWARD_OP_EXPR_INT(>, a, b)
@@ -733,11 +679,7 @@ Expr ult(const int a, const Expr& b) {
 }
 
 Expr uge(const Expr& a, const Expr& b) {
-	ASSERTC(a.is_bv() && b.is_bv());
-	ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-	auto new_term = msat_make_not(a.env_, msat_make_bv_ult(a.env_, a, b));
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
+	return ! ult(a, b);
 }
 Expr uge(const Expr& a, const int b) {
 	auto bb = a.env_.num_val(b);
@@ -749,11 +691,7 @@ Expr uge(const int a, const Expr& b) {
 }
 
 Expr ugt(const Expr& a, const Expr& b) {
-	ASSERTC(a.is_bv() && b.is_bv());
-	ASSERTC(a.get_sort().bv_size() == b.get_sort().bv_size());
-	auto new_term = msat_make_not(a.env_, msat_make_bv_uleq(a.env_, a, b));
-	ASSERTMSAT_TERM(new_term);
-	return Expr(a.env_, new_term);
+	return ! ule(a, b);
 }
 Expr ugt(const Expr &a, const int b) {
 	auto bb = a.env_.num_val(b);
@@ -772,35 +710,34 @@ Expr distinct(const std::vector<Expr>& exprs) {
 	if (exprs.size() == 0) {
 		BYE_BYE(Expr, "Trying to make distinct from 0 exprs");
 	} else if (exprs.size() == 1) {
-		return  exprs[0].env_.bool_val(true);
+		return exprs[0].env_.bool_val(true);
 	}
 
 	Sort base_sort = exprs[0].get_sort();
-	for (auto expr: exprs) {
-		if (!(expr.get_sort() == base_sort)) {
-			BYE_BYE(Expr, "All exprs must have same sort.");
+	for (const auto& expr : exprs) {
+		if (expr.get_sort() != base_sort) {
+			BYE_BYE(Expr, "All exprs must have the same sort");
 		}
 	}
 
 	if (base_sort.is_bv()) {
 		unsigned base_size = base_sort.bv_size();
-		for (auto expr: exprs) {
+		for (const auto& expr : exprs) {
 			if (expr.get_sort().bv_size() != base_size) {
-				BYE_BYE(Expr, "All exprs must have same bitvector width");
+				BYE_BYE(Expr, "All exprs must have the same bit vector width");
 			}
 		}
 	}
 
 	Expr res = exprs[0].env_.bool_val(true);
-	for (size_t i=0; i < exprs.size(); ++i) {
-		for (size_t j=i+1; j < exprs.size(); ++j) {
+	for (auto i = 0U; i < exprs.size(); ++i) {
+		for (auto j = i+1; j < exprs.size(); ++j) {
 			res = res && (exprs[i] != exprs[j]);
 		}
 	}
 
 	return res;
 }
-
 
 
 

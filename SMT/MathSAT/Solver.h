@@ -19,6 +19,7 @@ namespace mathsat_ {
 class Solver : public borealis::logging::ClassLevelLogging<Solver> {
 
     USING_SMT_LOGIC(MathSAT);
+
     typedef MathSAT::ExprFactory ExprFactory;
     typedef MathSAT::ExecutionContext ExecutionContext;
 
@@ -54,6 +55,5 @@ private:
 
 } // namespace mathsat_
 } // namespace borealis
-
 
 #endif /* MATHSAT_SOLVER_H_ */

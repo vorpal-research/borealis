@@ -36,20 +36,21 @@ typedef std::shared_ptr<msat_env> EnvPointer;
 
 
 static ConfigPointer makeConfigPointer(msat_config* config) {
-	auto configDeleter = [](msat_config *cfg_) {
-								msat_destroy_config(*cfg_);
-								delete cfg_;
-							};
+	auto configDeleter =
+        [](msat_config* cfg_) {
+	        msat_destroy_config(*cfg_);
+            delete cfg_;
+        };
 	return ConfigPointer(config,  configDeleter);
 }
 
 static EnvPointer makeEnvPointer(msat_env* env) {
-	auto envDeleter = [](msat_env *env_) {
-							msat_destroy_env(*env_);
-							delete env_;
-						};
-	auto res =  EnvPointer(env, envDeleter);
-	return res;
+	auto envDeleter =
+        [](msat_env* env_) {
+            msat_destroy_env(*env_);
+            delete env_;
+        };
+	return EnvPointer(env, envDeleter);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,6 +165,7 @@ public:
 	unsigned bv_size() const;
 
 	friend bool operator==(const Sort& a, const Sort& b);
+	friend bool operator!=(const Sort& a, const Sort& b);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -172,11 +174,11 @@ public:
 
 class Decl {
 private:
+    Env env_;
 	msat_decl decl_;
-	Env env_;
 
 public:
-	Decl(const Env& env, const msat_decl& decl_) : decl_(decl_), env_(env) {}
+	Decl(const Env& env, const msat_decl& decl_) : env_(env), decl_(decl_) {}
 
 	operator msat_decl() const { return decl_; }
 
@@ -213,7 +215,8 @@ public:
 
 	const Env& env() const { return env_; }
 
-	Expr& operator=(const Expr& that) = default;
+	Expr& operator=(const Expr&) = default;
+	Expr& operator=(Expr&&) = default;
 
     Sort get_sort() const { return Sort(env_, msat_term_get_type(term_)); }
 
@@ -331,7 +334,6 @@ Expr comp(const Expr& a, const Expr& b);
 Expr rol(const Expr& a, unsigned b);
 Expr ror(const Expr& a, unsigned b);
 Expr distinct(const std::vector<Expr>& exprs);
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Solver == z3::solver
