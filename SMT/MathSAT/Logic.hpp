@@ -13,16 +13,14 @@
 
 #include "SMT/MathSAT/MathSAT.h"
 #include "Util/util.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
 namespace mathsat_ {
 namespace logic {
 
-
 class Expr {};
-
-
 
 namespace msatimpl {
     inline mathsat::Expr defaultAxiom(const mathsat::Env& env) {
@@ -49,7 +47,6 @@ namespace msatimpl {
         return accum;
     }
 } // namespace msatimpl
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -238,9 +235,9 @@ template<size_t N>
 struct generator< BitVector<N> > {
     typedef long long basetype;
 
-    static mathsat::Sort sort(mathsat::Env& env) { return env.bv_sort(N)  ; }
+    static mathsat::Sort sort(mathsat::Env& env) { return env.bv_sort(N); }
     static bool check(mathsat::Expr e) { return e.is_bv() && e.get_sort().bv_size() == N; }
-    static mathsat::Expr mkConst(mathsat::Env& env, int n) { return env.bv_val( n, N); }
+    static mathsat::Expr mkConst(mathsat::Env& env, int n) { return env.bv_val(n, N); }
 };
 } // namespace impl
 
@@ -264,7 +261,7 @@ grow(BitVector<N1> bv) {
     mathsat::Env env = msatimpl::getEnvironment(bv);
 
     return BitVector<N0>{
-        mathsat::Expr(env, msat_make_bv_sext(env, N0-N1, msatimpl::getExpr(bv))),
+        mathsat::Expr(env, msat_make_bv_sext(env, N0-N1, msatimpl::getExpr(bv))), // FIXME: Do we want zext or sext?
         msatimpl::getAxiom(bv)
     };
 }
@@ -274,6 +271,7 @@ constexpr size_t max(size_t N0, size_t N1) {
     return N0 > N1 ? N0 : N1;
 }
 } // namespace impl
+
 
 
 template<class T0, class T1>
@@ -740,7 +738,7 @@ public:
 
     Res operator()(Args... args) const {
     	const std::vector<mathsat::Expr> vec_args = {msatimpl::getExpr(args)...};
-        return Res(inner(vec_args), msatimpl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
+        return Res(inner(vec_args), msatimpl::spliceAxioms(axiom(), massAxiomAnd(args...)));
     }
 
     static mathsat::Sort range(mathsat::Env& env) {
@@ -791,14 +789,15 @@ public:
     InlinedFuncArray(mathsat::Env& env, const std::string& name):
         environment(&env), name(std::make_shared<std::string>(name)) {
 
-        inner = [name,&env](Index ix) -> Elem {
+        // FIXME akhin this is as fucked up as before, but also works for now
+
+        inner = [&env](Index ix) -> Elem {
             auto initial = Function<Elem(Index)>::mkFunc(env, "$$__initial_mem__$$");
             return initial(ix);
         };
     }
 
-    Elem select    (Index i) const {
-    	return inner(i);  }
+    Elem select    (Index i) const { return inner(i);  }
     Elem operator[](Index i) const { return select(i); }
 
     InlinedFuncArray& operator=(const InlinedFuncArray&) = default;
@@ -946,7 +945,7 @@ SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = InlinedFuncArray >
+template<class Index, size_t ElemSize = 8, template<class, class> class InnerArray = InlinedFuncArray>
 class ScatterArray {
     typedef BitVector<ElemSize> Byte;
     typedef InnerArray<Byte, Index> Inner;
@@ -1045,7 +1044,6 @@ public:
         return ost << arr.inner;
     }
 };
-
 
 } // namespace logic
 } // namespace mathsat_

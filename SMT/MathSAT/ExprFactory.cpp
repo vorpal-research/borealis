@@ -137,5 +137,3 @@ void ExprFactory::initialize(llvm::TargetData* TD) {
 } // namespace borealis
 
 #include "Util/unmacros.h"
-
-

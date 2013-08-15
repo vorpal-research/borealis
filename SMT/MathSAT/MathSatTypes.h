@@ -8,7 +8,6 @@
 #ifndef BOREALIS_MATHSATTYPES_H_
 #define BOREALIS_MATHSATTYPES_H_
 
-
 #include "SMT/SMT.hpp"
 #include "SMT/MathSAT/Logic.hpp"
 
@@ -19,7 +18,6 @@ class ExprFactory;
 class ExecutionContext;
 class Solver;
 }
-
 
 struct MathSAT {
 	typedef mathsat_::ExprFactory ExprFactory;
@@ -44,7 +42,6 @@ struct MathSAT {
     // memory array
     template<class Elem, class Index> using ArrayImpl = mathsat_::logic::InlinedFuncArray<Elem, Index>;
     typedef mathsat_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
-
 };
 
 } // namespace borealis

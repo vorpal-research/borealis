@@ -4,6 +4,7 @@
  *  Created on: Jul 31, 2013
  *      Author: Sam Kolton
  */
+
 #include <sstream>
 
 #include "SMT/MathSAT/Logic.hpp"
@@ -11,7 +12,6 @@
 namespace borealis {
 namespace mathsat_ {
 namespace logic {
-
 
 struct ValueExpr::Impl {
     mathsat::Expr inner;
@@ -48,7 +48,6 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
 std::string ValueExpr::toSmtLib() const {
     return msatimpl::asSmtLib(this);
 }
-
 
 namespace msatimpl {
     mathsat::Expr getExpr(const ValueExpr& a) {
@@ -186,4 +185,3 @@ DynBitVectorExpr operator<<(const DynBitVectorExpr& lhv, const DynBitVectorExpr&
 } // namespace logic
 } // namespace mathsat
 } // namespace borealis
-

@@ -17,10 +17,10 @@
 namespace borealis {
 namespace mathsat_ {
 
-
 class ExecutionContext {
 
     USING_SMT_LOGIC(MathSAT);
+
     typedef MathSAT::ExprFactory ExprFactory;
 
     ExprFactory& factory;
@@ -156,7 +156,6 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx);
-
 
 } // namespace mathsat_
 } // namespace borealis

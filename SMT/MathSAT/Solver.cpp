@@ -5,7 +5,6 @@
  *      Author: sam
  */
 
-
 #include "Logging/tracer.hpp"
 #include "SMT/MathSAT/Solver.h"
 
@@ -81,4 +80,3 @@ bool Solver::isPathImpossible(
 
 } // namespace mathsat_
 } // namespace borealis
-
