@@ -218,6 +218,7 @@ struct commands :
             assert_c,
             skip_c,
             ignore_c,
+            inline_c,
             stack_depth_c,
             unroll_c,
             mask_c,
