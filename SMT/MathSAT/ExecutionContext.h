@@ -71,7 +71,7 @@ public:
         return ret;
     }
 
-////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
         return memory().select(ix, bitSize);
@@ -97,7 +97,7 @@ public:
         set( id, get(id).store(ix, val) );
     }
 
-////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 
     typedef std::pair<Bool, ExecutionContext> Choice;
 
@@ -126,12 +126,12 @@ public:
 
         // Collect all active memory array ids
         auto memArrayIds = std::accumulate(contexts.begin(), contexts.end(),
-            defaultContext.getMemArrayIds(),
-            [](MemArrayIds a, Choice e) -> MemArrayIds {
-                auto ids = e.second.getMemArrayIds();
-                a.insert(ids.begin(), ids.end());
-                return a;
-            }
+                defaultContext.getMemArrayIds(),
+                [](MemArrayIds a, Choice e) -> MemArrayIds {
+                    auto ids = e.second.getMemArrayIds();
+                    a.insert(ids.begin(), ids.end());
+                    return a;
+                }
         );
 
         // Merge memory arrays
@@ -139,7 +139,7 @@ public:
             std::vector<std::pair<Bool, MemArray>> alternatives;
             alternatives.reserve(contexts.size());
             std::transform(contexts.begin(), contexts.end(), std::back_inserter(alternatives),
-                [&id](const Choice& p) { return std::make_pair(p.first, p.second.get(id)); }
+                    [&id](const Choice& p) { return std::make_pair(p.first, p.second.get(id)); }
             );
 
             res.set(id, MemArray::merge(name, defaultContext.get(id), alternatives));
@@ -148,7 +148,7 @@ public:
         return res;
     }
 
-////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 
     Bool toSMT() const;
 
