@@ -21,15 +21,16 @@ struct nothing_t {};
 template<class T>
 class option {
     typedef T* pointer;
-    typedef option<T> self;
+    typedef option self;
 
-    std::shared_ptr<T> holder;
+    std::unique_ptr<T> holder;
 
 public:
     option() : holder(nullptr) {}
     option(nothing_t) : holder(nullptr) {}
     explicit option(const T& val) : holder(new T(val)) {}
-    explicit option(const std::function<std::shared_ptr<T>()>& generator) : holder(generator()) {}
+    explicit option(T&& val) : holder(new T(val)) {}
+    explicit option(const std::function<std::unique_ptr<T>()>& generator) : holder(generator()) {}
     option(const self& that) {
         if (that.empty()) {
             holder.reset();
@@ -96,6 +97,10 @@ public:
         return !empty();
     }
 
+    bool operator!() const {
+        return empty();
+    }
+
     const T* get() const {
         return holder.get();
     }
@@ -120,11 +125,15 @@ public:
     }
 
     const T& getUnsafe() const {
-        return *holder.get();
+        return *holder;
     }
 
     T& getUnsafe() {
-        return *holder.get();
+        return *holder;
+    }
+
+    T&& moveUnsafe() {
+        return std::move(*holder);
     }
 
     struct option_iterator {
@@ -225,13 +234,8 @@ public:
 };
 
 template<class T>
-option<T> just(const T& val) {
-    return option<T>(val);
-}
-
-template<class T>
-option<T> just(T&& val) {
-    return option<T>(val);
+option<typename std::decay<T>::type> just(T&& val) {
+    return option<typename std::decay<T>::type>(std::forward<T>(val));
 }
 
 inline nothing_t nothing() {
