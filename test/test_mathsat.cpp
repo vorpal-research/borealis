@@ -15,20 +15,8 @@
 #include "SMT/MathSAT/Logic.hpp"
 #include "SMT/MathSAT/MathSAT.h"
 #include "SMT/MathSAT/Solver.h"
+#include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "Util/util.h"
-
-#include <llvm/LLVMContext.h>
-#include <llvm/Argument.h>
-#include <llvm/Function.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
-#include <llvm/Module.h>
-#include <llvm/Type.h>
-#include <llvm/Value.h>
-
-#include "Factory/Nest.h"
-#include "Term/Term.def"
-#include "Util/slottracker.h"
 
 namespace {
 
@@ -360,6 +348,40 @@ TEST(MathSAT, mergeMemory) {
         cond == z // in
                 ));
     }
+}
+
+TEST(MathSAT, Unlogic) {
+    using namespace borealis::mathsat;
+
+    Config conf = Config();
+    Env env = Env(conf);
+
+    Sort bv = env.bv_sort(32);
+    Decl f = env.function("f", { bv }, bv);
+    Expr x1 = env.bv_const("x1", 32);
+    Expr x2 = env.bv_const("x2", 32);
+    Expr x3 = env.bv_const("x3", 32);
+    Expr y1 = env.bv_const("y1", 32);
+    Expr y2 = env.bv_const("y2", 32);
+    Expr y3 = env.bv_const("y3", 32);
+
+//    Expr A = ((f(x1 + x2) - x2 == -x3) && (f(y1) + y2 == y3) && (y1 <= x1));
+    Expr A = f(x1 + x2) - x2 == -x3;
+
+    Sort rat = env.rat_sort();
+    Decl frat = env.function("frat", { rat }, rat);
+    Expr x1rat = env.rat_const("x1rat");
+    Expr x2rat = env.rat_const("x2rat");
+    Expr x3rat = env.rat_const("x3rat");
+    Expr y1rat = env.rat_const("y1rat");
+    Expr y2rat = env.rat_const("y2rat");
+    Expr y3rat = env.rat_const("y3rat");
+
+    Expr Arat = (frat(x1rat) - x2rat == -x3rat) && (frat(y1rat) + y2rat == y3rat) && (y1rat <= x1rat);
+
+    undoThat(A);
+    std::cout << std::endl;
+    undoThat(Arat);
 }
 
 } // namespace

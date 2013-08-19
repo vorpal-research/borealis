@@ -17,7 +17,7 @@ ExprFactory::ExprFactory() {
     mathsat::Config cfg;
     cfg.set("interpolation", true);
     cfg.set("theory.eq_propagation", false);
-     cfg.set("theory.bv.eager", false);
+    cfg.set("theory.bv.eager", false);
     cfg.set("theory.euf.dyn_ack", 0);
 
     cfg.set("preprocessor.simplification", 3);
