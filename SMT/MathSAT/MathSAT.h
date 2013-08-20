@@ -199,7 +199,14 @@ public:
 // Expr == z3::expr
 ////////////////////////////////////////////////////////////////////////////////
 
-using visit_function = msat_visit_status(*)(msat_env, msat_term, int, void*);
+enum VISIT_STATUS{
+    PROCESS,
+    SKIP,
+    ABORT,
+} typedef VISIT_STATUS;
+
+using visit_function = std::function<VISIT_STATUS(Expr, void*)>;
+
 
 class Expr {
 private:
@@ -227,8 +234,9 @@ public:
     bool is_array() const { return msat_is_array_type(env_, get_sort(), nullptr, nullptr); }
 
     Decl decl() const;
-    unsigned num_args() const { return decl().arity(); }
+    unsigned num_args() const { return msat_term_arity(term_); }
     Sort arg_sort(unsigned i) const;
+    Expr arg(unsigned i) const;
 
     void visit(visit_function func, void* data);
 

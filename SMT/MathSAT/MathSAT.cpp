@@ -203,9 +203,24 @@ Env Env::share(const Env& that) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void pr_visit(Expr expr, visit_function func, void* data) {
+    for (unsigned i = 0; i < expr.num_args(); ++i) {
+        auto res = func(expr.arg(i), data);
+        if( res == SKIP ) {
+            continue;
+        } else if( res == ABORT ) {
+            break;
+        }
+        pr_visit(expr.arg(i), func, data);
+    }
+}
+
 void Expr::visit(visit_function func, void* data) {
-    int ret = msat_visit_term(env_, term_, func, data);
-    ASSERTC(!ret);
+    auto res = func(*this, data);
+    if (res == SKIP || res == ABORT) {
+        return;
+    }
+    pr_visit(*this, func, data);
 }
 
 Decl Expr::decl() const {
@@ -215,11 +230,16 @@ Decl Expr::decl() const {
 }
 
 Sort Expr::arg_sort(unsigned i) const {
-    ASSERTC(num_args() < i)
+    ASSERTC(i < num_args());
     auto type = msat_decl_get_arg_type(decl(), i);
     return Sort(env_, type);
 }
 
+Expr Expr::arg(unsigned i) const {
+    ASSERTC(i < num_args());
+    auto arg = msat_term_get_arg(term_, i);
+    return Expr(env_, arg);
+}
 
 
 Expr operator !(const Expr& a){

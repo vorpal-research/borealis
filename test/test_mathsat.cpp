@@ -365,8 +365,9 @@ TEST(MathSAT, Unlogic) {
     Expr y2 = env.bv_const("y2", 32);
     Expr y3 = env.bv_const("y3", 32);
 
-//    Expr A = ((f(x1 + x2) - x2 == -x3) && (f(y1) + y2 == y3) && (y1 <= x1));
-    Expr A = f(x1 + x2) - x2 == -x3;
+    Expr A = ((f(x1 + x2) - x2 == -x3) && (f(y1) + y2 == y3) && (y1 <= x1));
+//    Expr A = f(x1 + x2) - x2 == -x3;
+
 
     Sort rat = env.rat_sort();
     Decl frat = env.function("frat", { rat }, rat);
