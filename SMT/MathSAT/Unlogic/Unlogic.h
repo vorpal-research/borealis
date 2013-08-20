@@ -12,11 +12,13 @@
 #include "State/PredicateState.h"
 
 namespace borealis {
-namespace mathsat {
+namespace mathsat_ {
+namespace unlogic {
 
-PredicateState::Ptr undoThat(Expr& expr);
+PredicateState::Ptr undoThat(mathsat::Expr& expr);
 
-} //namespace mathsat
+} // namespace unlogic
+} //namespace mathsat_
 } //namespace borealis
 
 

@@ -188,6 +188,7 @@ public:
     Sort domain(unsigned i) const { return Sort(env_, msat_decl_get_arg_type(decl_, i)); }
     Sort range() const { return Sort(env_, msat_decl_get_return_type(decl_)); }
     std::string name() const { return msat_decl_get_name(decl_); }
+    msat_symbol_tag tag() const { return msat_decl_get_tag(env_, decl_); }
 
     Expr operator()(const std::vector<Expr>& args) const;
     Expr operator()(const Expr& arg1) const;
@@ -199,7 +200,7 @@ public:
 // Expr == z3::expr
 ////////////////////////////////////////////////////////////////////////////////
 
-enum VISIT_STATUS{
+enum class VISIT_STATUS{
     PROCESS,
     SKIP,
     ABORT,

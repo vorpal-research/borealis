@@ -7,95 +7,73 @@
 
 #include <stack>
 
+#include "Predicate/PredicateFactory.h"
+#include "SMT/MathSAT/Unlogic/Symbols.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
+#include "Util/util.h"
+#include "Util/macros.h"
 
 namespace borealis {
-namespace mathsat {
+namespace mathsat_ {
+namespace unlogic {
 
 
-struct callback_data {
-    std::stack<msat_term>* termStack;
-    size_t* term_id;
-
-    callback_data(std::stack<msat_term>* stack, size_t *id) : termStack(stack), term_id(id) {}
-} typedef callback_data;
-
-//msat_visit_status callback(msat_env env, msat_term term, int preorder, void* data) {
-//    callback_data* cd = static_cast< callback_data *>(data);
-//    std::stack<msat_term>* termStack = cd->termStack;
-//    if((1 == preorder) && ( cd->term_id == nullptr || (*cd->term_id != msat_term_id(term)))) {
-//        termStack->push(term);
-//        if (0 != msat_decl_get_arity(msat_term_get_decl(term))) {
-//        // FIXME sam Не знаю насколько нужна эта проверка.
-//        // Она позволяет уменьшить количество рекурсивных вызовов: для терминальных
-//        // узлов не будет вызываться msat_visit_term. Без этой проверки также работает,
-//        // но окончание рекурсии определяется в предыдущей проверке с дополнительным
-//        // рекурсивным вызовом.
-//            auto id = msat_term_id(term);
-//            callback_data pcd(termStack, &id);
-//            msat_visit_term(env, term, callback, &pcd);
-//            return MSAT_VISIT_SKIP;
-//        }
-//    }
-//    return MSAT_VISIT_PROCESS;
-//}
-
-VISIT_STATUS callback(Expr expr, void* data) {
-    std::stack<Expr> * exprStack = static_cast<std::stack<Expr> *>(data);
-    exprStack->push(expr);
-    return PROCESS;
+mathsat::VISIT_STATUS callback(mathsat::Expr expr, void* data) {
+    std::stack<AbstractSymbol::Ptr> *symbolStack = static_cast<std::stack<AbstractSymbol::Ptr> *>(data);
+    symbolStack->push(SymbolFactory(expr));
+    return mathsat::VISIT_STATUS::PROCESS;
 }
 
 
-PredicateState::Ptr undoThat(Expr& expr) {
-    std::cout << std::endl;
-    std::stack<Expr> exprStack;
-    expr.visit(callback, &exprStack);
-    std::cout << exprStack.size() << std::endl;
-    while(!exprStack.empty()) {
-        std::cout << msat_term_repr(exprStack.top()) << std::endl;
-        exprStack.pop();
+AbstractSymbol::Ptr makeSymbol(std::stack<AbstractSymbol::Ptr>& symbolStack) {
+    std::stack<AbstractSymbol::Ptr> terminalStack;
+    while (!symbolStack.empty()) {
+        auto& symbol = symbolStack.top();
+        std::cout << msat_term_repr(symbol->expr()) << std::endl;
+        if (symbol->isTerminal()) {
+            terminalStack.push(symbol);
+        } else {
+            ASSERTC(terminalStack.size() >= symbol->numArgs());
+            for (unsigned i = 0; i < symbol->numArgs(); ++i) {
+                symbol->setArg(i, terminalStack.top());
+                terminalStack.pop();
+            }
+            terminalStack.push(symbol);
+        }
+        symbolStack.pop();
     }
+    ASSERTC(terminalStack.size() == 1);
+    return terminalStack.top();
+
+}
+
+
+PredicateState::Ptr undoThat(mathsat::Expr& expr) {
+    std::stack<AbstractSymbol::Ptr> symbolStack;
+    expr.visit(callback, &symbolStack);
+
+    auto jointSymbol = makeSymbol(symbolStack);
+    auto jointTerm = jointSymbol->undoThat();
+
+    auto TF = TermFactory::get(nullptr, TypeFactory::get());
     auto PSF = PredicateStateFactory::get();
-    auto basic = PSF->Basic();
-    return PredicateStateBuilder(PSF, basic)();
+    auto PF = PredicateFactory::get();
+    auto predicate = (
+            PSF *
+            PF->getEqualityPredicate(
+                    jointTerm,
+                    TF->getBooleanTerm(true)
+            )
+    )();
+    return predicate;
+//    auto basic = PSF->Basic();
+//    return PredicateStateBuilder(PSF, basic)();
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-
-
-class AbstractSymbol {
-protected:
-    msat_symbol_tag symbolTag_;
-    std::vector<AbstractSymbol *> args_;
-    Expr expr_;
+} // namespace unlogic
+} // namespace mathsat_
+} // namespace borealis
 
 
-public:
-    AbstractSymbol(msat_symbol_tag symbolTag, unsigned numArgs, const Expr& expr)
-                    : symbolTag_(symbolTag), args_(std::vector<AbstractSymbol *>()),
-                      expr_(expr) {
-        args_.reserve(numArgs);
-    }
-
-    virtual ~AbstractSymbol() {}
-
-    msat_symbol_tag symbolTag() const { return symbolTag_; };
-
-    unsigned numArgs() const { return args_.size(); }
-
-    bool isTerminal() const { return args_.size() == 0; }
-
-    const Expr& expr() const { return expr_; }
-
-    const std::vector<AbstractSymbol *>& args() const { return args_; }
-
-    void setArg(unsigned num, AbstractSymbol* symbol) { args_[num] = symbol; }
-
-    virtual borealis::Term::Ptr undoThat() const = 0;
-};
-
-} //namespace mathsat
-} //namespace borealis
+#include "Util/unmacros.h"

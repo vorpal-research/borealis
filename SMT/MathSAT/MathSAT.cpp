@@ -206,9 +206,9 @@ Env Env::share(const Env& that) {
 void pr_visit(Expr expr, visit_function func, void* data) {
     for (unsigned i = 0; i < expr.num_args(); ++i) {
         auto res = func(expr.arg(i), data);
-        if( res == SKIP ) {
+        if( res == VISIT_STATUS::SKIP ) {
             continue;
-        } else if( res == ABORT ) {
+        } else if( res == VISIT_STATUS::ABORT ) {
             break;
         }
         pr_visit(expr.arg(i), func, data);
@@ -217,7 +217,7 @@ void pr_visit(Expr expr, visit_function func, void* data) {
 
 void Expr::visit(visit_function func, void* data) {
     auto res = func(*this, data);
-    if (res == SKIP || res == ABORT) {
+    if (res == VISIT_STATUS::SKIP || res == VISIT_STATUS::ABORT) {
         return;
     }
     pr_visit(*this, func, data);

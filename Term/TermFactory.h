@@ -171,6 +171,12 @@ public:
         };
     }
 
+    Term::Ptr getValueTerm(Type::Ptr type, const std::string& name) {
+        return Term::Ptr{
+            new ValueTerm(type, name)
+        };
+    }
+
     Term::Ptr getTernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls) {
         return Term::Ptr{
             new TernaryTerm(

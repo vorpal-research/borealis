@@ -352,6 +352,7 @@ TEST(MathSAT, mergeMemory) {
 
 TEST(MathSAT, Unlogic) {
     using namespace borealis::mathsat;
+    using namespace borealis::mathsat_::unlogic;
 
     Config conf = Config();
     Env env = Env(conf);
@@ -365,9 +366,8 @@ TEST(MathSAT, Unlogic) {
     Expr y2 = env.bv_const("y2", 32);
     Expr y3 = env.bv_const("y3", 32);
 
-    Expr A = ((f(x1 + x2) - x2 == -x3) && (f(y1) + y2 == y3) && (y1 <= x1));
-//    Expr A = f(x1 + x2) - x2 == -x3;
-
+//    Expr A = ((f(x1 + x2) - x2 == -x3) && (f(y1) + y2 == y3) && (y1 <= x1));
+    Expr A = x1 + x2 == env.bv_val(32, 32);
 
     Sort rat = env.rat_sort();
     Decl frat = env.function("frat", { rat }, rat);
@@ -380,9 +380,9 @@ TEST(MathSAT, Unlogic) {
 
     Expr Arat = (frat(x1rat) - x2rat == -x3rat) && (frat(y1rat) + y2rat == y3rat) && (y1rat <= x1rat);
 
-    undoThat(A);
+    std::cout << undoThat(A) << std::endl;
     std::cout << std::endl;
-    undoThat(Arat);
+//    undoThat(Arat);
 }
 
 } // namespace
