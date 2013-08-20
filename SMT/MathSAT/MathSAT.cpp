@@ -44,6 +44,7 @@ bool operator!=(const Sort& a, const Sort& b) {
 ////////////////////////////////////////////////////////////////////////////////
 
 Expr Decl::operator()(const std::vector<Expr>& args) const {
+    ASSERTC(arity() == args.size());
     std::vector<msat_term> msat_args(args.begin(), args.end());
     auto new_term = msat_make_uf(env_, decl_, msat_args.data());
     ASSERTMSAT_TERM(new_term);
