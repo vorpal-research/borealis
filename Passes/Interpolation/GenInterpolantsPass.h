@@ -35,17 +35,19 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("gen-interpolants")
 #include "Util/unmacros.h"
 
-	GenInterpolantsPass();
+    GenInterpolantsPass();
     GenInterpolantsPass(llvm::Pass* pass);
-	virtual bool runOnFunction(llvm::Function& F) override;
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
-	virtual ~GenInterpolantsPass();
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+    virtual ~GenInterpolantsPass();
+
+    static bool checkInterpolation();
 
 private:
 
-	FunctionManager* FM;
-	PredicateStateAnalysis* PSA;
-	FactoryNest FN;
+    FunctionManager* FM;
+    PredicateStateAnalysis* PSA;
+    FactoryNest FN;
 
 };
 

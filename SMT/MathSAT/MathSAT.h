@@ -188,6 +188,7 @@ public:
     Sort domain(unsigned i) const { return Sort(env_, msat_decl_get_arg_type(decl_, i)); }
     Sort range() const { return Sort(env_, msat_decl_get_return_type(decl_)); }
     std::string name() const { return msat_decl_get_name(decl_); }
+    msat_symbol_tag tag() const { return msat_decl_get_tag(env_, decl_); }
 
     Expr operator()(const std::vector<Expr>& args) const;
     Expr operator()(const Expr& arg1) const;
@@ -199,7 +200,14 @@ public:
 // Expr == z3::expr
 ////////////////////////////////////////////////////////////////////////////////
 
-using visit_function = msat_visit_status(*)(msat_env, msat_term, int, void*);
+enum class VISIT_STATUS{
+    PROCESS,
+    SKIP,
+    ABORT,
+} typedef VISIT_STATUS;
+
+using visit_function = std::function<VISIT_STATUS(Expr, void*)>;
+
 
 class Expr {
 private:
@@ -227,8 +235,9 @@ public:
     bool is_array() const { return msat_is_array_type(env_, get_sort(), nullptr, nullptr); }
 
     Decl decl() const;
-    unsigned num_args() const { return decl().arity(); }
+    unsigned num_args() const { return msat_term_arity(term_); }
     Sort arg_sort(unsigned i) const;
+    Expr arg(unsigned i) const;
 
     void visit(visit_function func, void* data);
 
