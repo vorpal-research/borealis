@@ -200,11 +200,11 @@ public:
 // Expr == z3::expr
 ////////////////////////////////////////////////////////////////////////////////
 
-enum class VISIT_STATUS{
+enum class VISIT_STATUS {
     PROCESS,
     SKIP,
     ABORT,
-} typedef VISIT_STATUS;
+};
 
 using visit_function = std::function<VISIT_STATUS(Expr, void*)>;
 
