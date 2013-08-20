@@ -243,7 +243,7 @@ Expr operator -(const Expr& a) {
     return Expr(a.env_, new_term);
 }
 Expr operator ~(const Expr& a){
-    ASSERTC(a.is_bool());
+    ASSERTC(a.is_bv());
     auto new_term = msat_make_bv_not(a.env_, a.term_);
     ASSERTMSAT_TERM(new_term);
     return Expr(a.env_, new_term);
@@ -504,7 +504,7 @@ Expr operator <(int a, const Expr& b){
 
 
 Expr operator >(const Expr& a, const Expr& b) {
-    return (! a <= b);
+    return ! (a <= b);
 }
 Expr operator >(const Expr& a, int b){
     FORWARD_OP_EXPR_INT(>, a, b)

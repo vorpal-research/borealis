@@ -33,6 +33,8 @@ public:
     }
 
     ExprFactory();
+    ExprFactory(const ExprFactory&) = delete;
+    ExprFactory(ExprFactory&&) = delete;
 
     mathsat::Env& unwrap() {
         return *env;

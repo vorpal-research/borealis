@@ -295,7 +295,7 @@ public:
 
     template<class Streamer>
     friend Streamer& operator<<(Streamer& out, const Expr& e) {
-        auto smtlib = util::uniq(msat_to_smtlib2(e.env_, e.term_));
+        auto smtlib = util::uniq(msat_to_smtlib2_ext(e.env_, e.term_, nullptr, 0));
         out << smtlib.get();
         // this is generally fucked up
         return static_cast<Streamer&>(out);

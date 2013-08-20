@@ -51,8 +51,7 @@ MathSAT::Bool ExprFactory::getBoolVar(const std::string& name, bool fresh) {
 }
 
 MathSAT::Bool ExprFactory::getBoolConst(bool v) {
-    auto res = Bool::mkConst(*env, v);
-    return res;
+    return Bool::mkConst(*env, v);
 }
 
 MathSAT::Bool ExprFactory::getTrue() {
@@ -73,11 +72,11 @@ MathSAT::Integer ExprFactory::getIntConst(int v) {
     return Integer::mkConst(*env, v);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 MathSAT::Real ExprFactory::getRealVar(const std::string& name, bool fresh) {
     return fresh ? Real::mkFreshVar(*env, name) : Real::mkVar(*env, name);
 }
-
-////////////////////////////////////////////////////////////////////////////////
 
 MathSAT::Real ExprFactory::getRealConst(int v) {
     return Real::mkConst(*env, v);
