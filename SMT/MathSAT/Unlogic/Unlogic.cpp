@@ -30,7 +30,6 @@ AbstractSymbol::Ptr makeSymbol(std::stack<AbstractSymbol::Ptr>& symbolStack) {
     std::stack<AbstractSymbol::Ptr> terminalStack;
     while (!symbolStack.empty()) {
         auto& symbol = symbolStack.top();
-        std::cout << msat_term_repr(symbol->expr()) << std::endl;
         if (symbol->isTerminal()) {
             terminalStack.push(symbol);
         } else {
@@ -49,7 +48,8 @@ AbstractSymbol::Ptr makeSymbol(std::stack<AbstractSymbol::Ptr>& symbolStack) {
 }
 
 
-PredicateState::Ptr undoThat(mathsat::Expr& expr) {
+PredicateState::Ptr undoThat(Dynamic& dyn) {
+    mathsat::Expr expr = mathsat_::logic::msatimpl::getExpr(dyn);
     std::stack<AbstractSymbol::Ptr> symbolStack;
     expr.visit(callback, &symbolStack);
 
@@ -67,8 +67,6 @@ PredicateState::Ptr undoThat(mathsat::Expr& expr) {
             )
     )();
     return predicate;
-//    auto basic = PSF->Basic();
-//    return PredicateStateBuilder(PSF, basic)();
 }
 
 } // namespace unlogic

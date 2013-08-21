@@ -164,16 +164,42 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class EqualitySymbol : public AbstractSymbol {
+class UnaryOperationSymbol : public AbstractSymbol {
 public:
-    EqualitySymbol(const mathsat::Expr& expr)
-        : AbstractSymbol(MSAT_TAG_EQ, 2, expr) {}
+    UnaryOperationSymbol(msat_symbol_tag tag, const mathsat::Expr& expr)
+        : AbstractSymbol(tag, 1, expr) {}
 
     virtual Term::Ptr undoThat() const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
-        return TFP->getCmpTerm(llvm::ConditionType::EQ,
+        return TFP->getUnaryTerm(unaryType(),
+                                  args_[0]->undoThat());
+    }
+
+private:
+    llvm::UnaryArithType unaryType() const {
+        using llvm::UnaryArithType;
+        switch (symbolTag_) {
+        case MSAT_TAG_NOT: return UnaryArithType::NOT;
+        case MSAT_TAG_BV_NOT: return UnaryArithType::BNOT;
+        case MSAT_TAG_BV_NEG: return UnaryArithType::NEG;
+        default: BYE_BYE(llvm::UnaryArithType, "Unsupported unary operation.");
+        }
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class IffOperationSymbol : public AbstractSymbol {
+public:
+    IffOperationSymbol(const mathsat::Expr& expr)
+        : AbstractSymbol(MSAT_TAG_IFF, 2, expr) {}
+
+    virtual Term::Ptr undoThat() const override {
+        auto TFP = TermFactory::get(nullptr, TypeFactory::get());
+        auto xor_ = TFP->getBinaryTerm(llvm::ArithType::XOR,
                                   args_[0]->undoThat(),
                                   args_[1]->undoThat());
+        return TFP->getUnaryTerm(llvm::UnaryArithType::NOT, xor_);
     }
 };
 
@@ -213,6 +239,50 @@ private:
     }
 };
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+class CmpOperationSymbol : public AbstractSymbol {
+public:
+    CmpOperationSymbol(msat_symbol_tag tag, const mathsat::Expr& expr)
+        : AbstractSymbol(tag, 2, expr) {}
+
+    virtual Term::Ptr undoThat() const override {
+        auto TFP = TermFactory::get(nullptr, TypeFactory::get());
+        return TFP->getCmpTerm(conditionType(),
+                                  args_[0]->undoThat(),
+                                  args_[1]->undoThat());
+    }
+
+private:
+    llvm::ConditionType conditionType() const {
+        using llvm::ConditionType;
+        switch (symbolTag_) {
+        case MSAT_TAG_EQ: return ConditionType::EQ;
+        case MSAT_TAG_LEQ: case MSAT_TAG_BV_SLE:  return ConditionType::LE;
+        case MSAT_TAG_BV_SLT:  return ConditionType::LT;
+        case MSAT_TAG_BV_ULE: return ConditionType::ULE;
+        case MSAT_TAG_BV_ULT:  return ConditionType::ULT;
+        default: BYE_BYE(llvm::ConditionType, "Unsupported comparison operation.");
+        }
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class IteOperationSymbol : public AbstractSymbol {
+public:
+    IteOperationSymbol(const mathsat::Expr& expr)
+        : AbstractSymbol(MSAT_TAG_ITE, 3, expr) {}
+
+    virtual Term::Ptr undoThat() const override {
+        auto TFP = TermFactory::get(nullptr, TypeFactory::get());
+        return TFP->getTernaryTerm(args_[0]->undoThat(),
+                                   args_[1]->undoThat(),
+                                   args_[2]->undoThat());
+    }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
@@ -234,6 +304,15 @@ AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
 
     auto tag = expr.decl().tag();
     switch (tag) {
+    case MSAT_TAG_ITE:
+        return AbstractSymbol::Ptr{ new IteOperationSymbol(expr) };
+
+    case MSAT_TAG_IFF:
+        return AbstractSymbol::Ptr{ new IffOperationSymbol(expr) };
+
+    case MSAT_TAG_NOT: case MSAT_TAG_BV_NOT: case MSAT_TAG_BV_NEG:
+        return AbstractSymbol::Ptr{ new UnaryOperationSymbol(tag, expr) };
+
     case MSAT_TAG_AND: case MSAT_TAG_OR: case MSAT_TAG_TIMES: case MSAT_TAG_BV_MUL:
     case MSAT_TAG_PLUS: case MSAT_TAG_BV_ADD: case MSAT_TAG_BV_AND: case MSAT_TAG_BV_OR:
     case MSAT_TAG_BV_XOR: case MSAT_TAG_BV_SUB: case MSAT_TAG_BV_UDIV: case MSAT_TAG_BV_SDIV:
@@ -241,7 +320,10 @@ AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     case MSAT_TAG_BV_ASHR:
         return AbstractSymbol::Ptr{ new BinaryOperationSymbol(tag, expr) };
 
-    case MSAT_TAG_EQ: return AbstractSymbol::Ptr{ new EqualitySymbol(expr) };
+    case MSAT_TAG_EQ: case MSAT_TAG_LEQ: case MSAT_TAG_BV_SLE:
+    case MSAT_TAG_BV_SLT: case MSAT_TAG_BV_ULE: case MSAT_TAG_BV_ULT:
+        return AbstractSymbol::Ptr{ new CmpOperationSymbol(tag, expr) };
+
     default: BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type.");
     }
 }

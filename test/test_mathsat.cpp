@@ -16,6 +16,7 @@
 #include "SMT/MathSAT/MathSAT.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
+#include "SMT/SMT.hpp"
 #include "Util/util.h"
 
 namespace {
@@ -352,10 +353,21 @@ TEST(MathSAT, mergeMemory) {
 
 TEST(MathSAT, Unlogic) {
     using namespace borealis::mathsat;
-    using namespace borealis::mathsat_::unlogic;
+    using namespace borealis::mathsat_;
 
-    Config conf = Config();
-    Env env = Env(conf);
+    USING_SMT_IMPL(borealis::MathSAT);
+
+    auto check_expr = [](Bool e)->bool {
+        borealis::mathsat::Solver solver(logic::msatimpl::getEnvironment(e));
+        solver.create_and_set_itp_group();
+        solver.add(logic::msatimpl::getAxiom(e));
+        solver.add(!logic::msatimpl::getExpr(e));
+        return solver.check() == MSAT_UNSAT;
+    };
+
+
+    ExprFactory factory;
+    Env env = factory.unwrap();
 
     Sort bv = env.bv_sort(32);
     Decl f = env.function("f", { bv }, bv);
@@ -366,22 +378,17 @@ TEST(MathSAT, Unlogic) {
     Expr y2 = env.bv_const("y2", 32);
     Expr y3 = env.bv_const("y3", 32);
 
-    Expr A = ((x1 + x2) == -env.bv_val(32, 32)) || ((y1 * y2 / y3) == (x3 & x1));
+    Expr A = ((x1 + x2 - x3) >= -env.bv_val(32, 32)) || ((y1 * y2 / y3) == (x3 & x1));
 
-    Sort rat = env.rat_sort();
-    Decl frat = env.function("frat", { rat }, rat);
-    Expr x1rat = env.rat_const("x1rat");
-    Expr x2rat = env.rat_const("x2rat");
-    Expr x3rat = env.rat_const("x3rat");
-    Expr y1rat = env.rat_const("y1rat");
-    Expr y2rat = env.rat_const("y2rat");
-    Expr y3rat = env.rat_const("y3rat");
+    Dynamic dynA(A);
 
-    Expr Arat = (frat(x1rat) - x2rat == -x3rat) && (frat(y1rat) + y2rat == y3rat) && (y1rat <= x1rat);
+    auto undoed = unlogic::undoThat(dynA);
 
-    std::cout << undoThat(A) << std::endl;
-    std::cout << std::endl;
-//    undoThat(Arat);
+    ExecutionContext ctx(factory);
+    auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, factory, &ctx);
+
+    EXPECT_TRUE(check_expr(dynA == Dynamic(redoed)));
+
 }
 
 } // namespace

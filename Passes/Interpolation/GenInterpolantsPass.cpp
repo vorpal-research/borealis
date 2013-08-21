@@ -11,6 +11,7 @@
 
 #include "Passes/Interpolation/GenInterpolantsPass.h"
 #include "SMT/MathSAT/Solver.h"
+#include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
 
 namespace borealis {
@@ -37,7 +38,7 @@ class RetInstVisitor :
                     << "old one: " << endl
                     << pass->FM->getBdy(function) << endl;
 
-            pass->FM->update(function, predicateFromInterpolant(interpol, *ret));
+            pass->FM->update(function, mathsat_::unlogic::undoThat(interpol));
 
             dbgs() <<"New function body" << endl
                     << pass->FM->getBdy(function) << endl;
@@ -74,27 +75,6 @@ class RetInstVisitor :
         dbgs()  << "Interpolant: " << endl
                 << interpol;
         return interpol;
-    }
-
-
-    PredicateState::Ptr predicateFromInterpolant(
-            const Dynamic& interpol,
-            llvm::Value& what) {
-        using mathsat_::logic::msatimpl::getExpr;
-        auto expr = getExpr(interpol);
-        if (msat_term_is_true(expr.env(), expr)) {
-            auto PSF = PredicateStateFactory::get();
-            auto basic = PSF->Basic();
-            return PredicateStateBuilder(PSF, basic)();
-        } else {
-            return (
-                    pass->FN.State *
-                    pass->FN.Predicate->getInequalityPredicate(
-                            pass->FN.Term->getValueTerm(&what),
-                            pass->FN.Term->getNullPtrTerm()
-                    )
-            )();
-        }
     }
 
 private:
