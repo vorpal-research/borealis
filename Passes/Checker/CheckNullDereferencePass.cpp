@@ -118,10 +118,13 @@ public:
         dbgs() << "Query: " << q->toString() << endl;
         dbgs() << "State: " << ps << endl;
 
-        Z3::ExprFactory z3ef;
-        Z3::Solver s(z3ef);
-//        MathSAT::ExprFactory z3ef;
-//        MathSAT::Solver s(z3ef);
+#if defined USE_MATHSAT_SOLVER
+        MathSAT::ExprFactory ef;
+        MathSAT::Solver s(ef);
+#else
+        Z3::ExprFactory ef;
+        Z3::Solver s(ef);
+#endif
 
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;
