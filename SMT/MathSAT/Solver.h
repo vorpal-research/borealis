@@ -39,7 +39,7 @@ public:
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 
-    mathsat::Expr getInterpolant(
+    Dynamic getInterpolant(
             PredicateState::Ptr query,
             PredicateState::Ptr state);
 

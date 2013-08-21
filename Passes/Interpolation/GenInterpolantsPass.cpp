@@ -20,6 +20,8 @@ class RetInstVisitor :
         public llvm::InstVisitor<RetInstVisitor>,
         public borealis::logging::ClassLevelLogging<RetInstVisitor> {
 
+    USING_SMT_LOGIC(MathSAT);
+
         public:
 
     RetInstVisitor(GenInterpolantsPass* pass) : pass(pass) {}
@@ -42,7 +44,7 @@ class RetInstVisitor :
         }
     }
 
-    mathsat::Expr generateInterpolant(
+    Dynamic generateInterpolant(
             llvm::Instruction& where,
             llvm::Value& what) {
 
@@ -58,7 +60,7 @@ class RetInstVisitor :
 
         PredicateState::Ptr state = pass->PSA->getInstructionState(&where);
         if (!state) {
-            return msatef.unwrap().bool_val(true);
+            return msatef.getTrue();
         }
 
         dbgs() << "Generating interpolant: " << endl
@@ -76,10 +78,11 @@ class RetInstVisitor :
 
 
     PredicateState::Ptr predicateFromInterpolant(
-            const mathsat::Expr& interpol,
+            const Dynamic& interpol,
             llvm::Value& what) {
-        auto res = msat_term_is_true(interpol.env(), interpol);
-        if (res) {
+        using mathsat_::logic::msatimpl::getExpr;
+        auto expr = getExpr(interpol);
+        if (msat_term_is_true(expr.env(), expr)) {
             auto PSF = PredicateStateFactory::get();
             auto basic = PSF->Basic();
             return PredicateStateBuilder(PSF, basic)();

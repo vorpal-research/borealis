@@ -179,16 +179,37 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class BvPlusSymbol : public AbstractSymbol {
+class BinaryOperationSymbol : public AbstractSymbol {
 public:
-    BvPlusSymbol(const mathsat::Expr& expr)
-        : AbstractSymbol(MSAT_TAG_BV_ADD, 2, expr) {}
+    BinaryOperationSymbol(msat_symbol_tag tag, const mathsat::Expr& expr)
+        : AbstractSymbol(tag, 2, expr) {}
 
     virtual Term::Ptr undoThat() const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
-        return TFP->getBinaryTerm(llvm::ArithType::ADD,
+        return TFP->getBinaryTerm(arithType(),
                                   args_[0]->undoThat(),
                                   args_[1]->undoThat());
+    }
+
+private:
+    llvm::ArithType arithType() const {
+        using llvm::ArithType;
+        switch (symbolTag_) {
+        case MSAT_TAG_AND: return ArithType::LAND;
+        case MSAT_TAG_OR: return ArithType::LOR;
+        case MSAT_TAG_TIMES: case MSAT_TAG_BV_MUL: return ArithType::MUL;
+        case MSAT_TAG_PLUS: case MSAT_TAG_BV_ADD: return ArithType::ADD;
+        case MSAT_TAG_BV_AND: return ArithType::BAND;
+        case MSAT_TAG_BV_OR: return ArithType::BOR;
+        case MSAT_TAG_BV_XOR: return ArithType::XOR;
+        case MSAT_TAG_BV_SUB: return ArithType::SUB;
+        case MSAT_TAG_BV_UDIV: case MSAT_TAG_BV_SDIV: return ArithType::DIV;
+        case MSAT_TAG_BV_UREM: case MSAT_TAG_BV_SREM: return ArithType::REM;
+        case MSAT_TAG_BV_LSHL: return ArithType::SHL;
+        case MSAT_TAG_BV_LSHR: return ArithType::LSHR;
+        case MSAT_TAG_BV_ASHR: return ArithType::ASHR;
+        default: BYE_BYE(llvm::ArithType, "Unsupported binary operation.");
+        }
     }
 };
 
@@ -196,25 +217,30 @@ public:
 
 AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     if (expr.num_args() == 0) {
-        switch (expr.decl().tag()) {
-        case MSAT_TAG_TRUE: return AbstractSymbol::Ptr{ new TrueSymbol(expr) };
-        case MSAT_TAG_FALSE: return AbstractSymbol::Ptr{ new FalseSymbol(expr) };
-        case MSAT_TAG_UNKNOWN:
-            if (msat_term_is_uf(expr.env(), expr)) {
-                BYE_BYE(AbstractSymbol::Ptr, "Can't revert uinterpreted function.");
-            } else if (msat_term_is_number(expr.env(), expr)) {
-                return AbstractSymbol::Ptr{ new ConstantSymbol(expr) };
-            } else if (msat_term_is_constant(expr.env(), expr)) {
-                return AbstractSymbol::Ptr{ new ValueSymbol(expr) };
-            } else {
-                BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type with 0 arguments.");
-            }
-        default: BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type with 0 arguments.");
+        if (msat_term_is_true(expr.env(), expr)) {
+            return AbstractSymbol::Ptr{ new TrueSymbol(expr) };
+        } else if (msat_term_is_false(expr.env(), expr)) {
+            return AbstractSymbol::Ptr{ new FalseSymbol(expr) };
+        } else if (msat_term_is_uf(expr.env(), expr)) {
+            BYE_BYE(AbstractSymbol::Ptr, "Can't revert uinterpreted function.");
+        } else if (msat_term_is_number(expr.env(), expr)) {
+            return AbstractSymbol::Ptr{ new ConstantSymbol(expr) };
+        } else if (msat_term_is_constant(expr.env(), expr)) {
+            return AbstractSymbol::Ptr{ new ValueSymbol(expr) };
+        } else {
+            BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type with 0 arguments.");
         }
     }
 
-    switch (expr.decl().tag()) {
-    case MSAT_TAG_BV_ADD: return AbstractSymbol::Ptr{ new BvPlusSymbol(expr) };
+    auto tag = expr.decl().tag();
+    switch (tag) {
+    case MSAT_TAG_AND: case MSAT_TAG_OR: case MSAT_TAG_TIMES: case MSAT_TAG_BV_MUL:
+    case MSAT_TAG_PLUS: case MSAT_TAG_BV_ADD: case MSAT_TAG_BV_AND: case MSAT_TAG_BV_OR:
+    case MSAT_TAG_BV_XOR: case MSAT_TAG_BV_SUB: case MSAT_TAG_BV_UDIV: case MSAT_TAG_BV_SDIV:
+    case MSAT_TAG_BV_UREM: case MSAT_TAG_BV_SREM: case MSAT_TAG_BV_LSHL: case MSAT_TAG_BV_LSHR:
+    case MSAT_TAG_BV_ASHR:
+        return AbstractSymbol::Ptr{ new BinaryOperationSymbol(tag, expr) };
+
     case MSAT_TAG_EQ: return AbstractSymbol::Ptr{ new EqualitySymbol(expr) };
     default: BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type.");
     }

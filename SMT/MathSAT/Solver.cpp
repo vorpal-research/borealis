@@ -80,7 +80,9 @@ bool Solver::isPathImpossible(
     return check(msatpath, msatstate) == MSAT_UNSAT;
 }
 
-mathsat::Expr Solver::getInterpolant(
+USING_SMT_LOGIC(MathSAT);
+
+Dynamic Solver::getInterpolant(
         PredicateState::Ptr query,
         PredicateState::Ptr state) {
 
@@ -114,11 +116,11 @@ mathsat::Expr Solver::getInterpolant(
             << endl;
 
         if (r != MSAT_UNSAT) {
-            return msatef.unwrap().bool_val(true);
+            return msatef.getTrue();
         }
 
         auto interpol = s.get_interpolant({a});
-        return interpol;
+        return Dynamic(interpol);
     }
 }
 
