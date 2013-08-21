@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "State/PredicateState.h"
 
@@ -14,8 +15,14 @@ PredicateState::PredicateState(id_t classTag) :
         ClassTag(classTag) {};
 
 bool PredicateState::isUnreachable() const {
-    Z3::ExprFactory z3ef;
-    Z3::Solver s(z3ef);
+
+#if defined USE_MATHSAT_SOLVER
+        MathSAT::ExprFactory ef;
+        MathSAT::Solver s(ef);
+#else
+        Z3::ExprFactory ef;
+        Z3::Solver s(ef);
+#endif
 
     auto split = this->splitByTypes({PredicateType::PATH});
     return s.isPathImpossible(split.first, split.second);

@@ -6,7 +6,9 @@ CXX := clang++
 
 RTTIFLAG := -fno-rtti
 
-DEFS := -DGOOGLE_PROTOBUF_NO_RTTI
+DEFS := \
+	-DGOOGLE_PROTOBUF_NO_RTTI \
+#	-DUSE_MATHSAT_SOLVER
 
 INCLUDE_DIRS := \
 	/usr/include/z3
