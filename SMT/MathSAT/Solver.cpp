@@ -24,7 +24,6 @@ msat_result Solver::check(
     auto dbg = dbgs();
 
     mathsat::Solver s(msatef.unwrap());
-    s.create_and_set_itp_group();
 
     s.add(msatimpl::asAxiom(msatstate_));
 
@@ -99,7 +98,7 @@ Dynamic Solver::getInterpolant(
             << "in:" << endl
             << msatstate << endl;
 
-    mathsat::Solver s(msatef.unwrap());
+    mathsat::ISolver s(msatef.unwrap());
 
     auto a = s.create_and_set_itp_group();
     s.add(msatimpl::asAxiom(msatstate));

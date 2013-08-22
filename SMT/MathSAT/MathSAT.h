@@ -63,8 +63,8 @@ private:
 
 public:
     Config();
-    Config(const std::string& logic);
-    Config(FILE* f);
+    explicit Config(const std::string& logic);
+    explicit Config(FILE* f);
 
     Config(const Config&) = default;
     Config(Config&&) = default;
@@ -85,7 +85,9 @@ public:
         msat_set_option(*config_, option.c_str(), str.c_str());
     }
 
-    Env env();
+    static Config Default();
+    static Config Interpolation();
+    static Config Diversification();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,13 +96,12 @@ public:
 
 class Env {
 private:
-    Config cfg_;
     EnvPointer env_;
 
-    Env(const Config& cfg, EnvPointer env) : cfg_(cfg), env_(env) {}
+    explicit Env(EnvPointer env) : env_(env) {}
 
 public:
-    Env(const Config& config);
+    explicit Env(const Config& cfg);
 
     Env(const Env& that) = default;
     Env(Env&&) = default;
@@ -109,8 +110,6 @@ public:
     Env& operator=(Env&& that) = default;
 
     operator msat_env() const { return *env_; }
-
-    const Config& config() const { return cfg_; }
 
     void reset();
 
@@ -135,7 +134,7 @@ public:
     Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
     Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 
-    static Env share(const Env& that);
+    static Env share(const Env& that, const Config& cfg);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -153,7 +152,12 @@ public:
     Sort(const Sort&) = default;
     Sort(Sort&&) = default;
 
+    Sort& operator=(const Sort&) = default;
+    Sort& operator=(Sort&&) = default;
+
     operator msat_type() const { return type_; }
+
+    const Env& env() const { return env_; }
 
     bool is_bool() const { return msat_is_bool_type(env_, type_); }
     bool is_int () const { return msat_is_integer_type(env_, type_); }
@@ -179,6 +183,12 @@ private:
 
 public:
     Decl(const Env& env, const msat_decl& decl_) : env_(env), decl_(decl_) {}
+
+    Decl(const Decl&) = default;
+    Decl(Decl&&) = default;
+
+    Decl& operator=(const Decl&) = default;
+    Decl& operator=(Decl&&) = default;
 
     operator msat_decl() const { return decl_; }
 
@@ -216,15 +226,16 @@ private:
 
 public:
     Expr(const Env &env, const msat_term& term) : env_(env), term_(term) {}
+
     Expr(const Expr&) = default;
     Expr(Expr&&) = default;
+
+    Expr& operator=(const Expr&) = default;
+    Expr& operator=(Expr&&) = default;
 
     operator msat_term() const { return term_; }
 
     const Env& env() const { return env_; }
-
-    Expr& operator=(const Expr&) = default;
-    Expr& operator=(Expr&&) = default;
 
     Sort get_sort() const { return Sort(env_, msat_term_get_type(term_)); }
 
@@ -349,41 +360,80 @@ Expr distinct(const std::vector<Expr>& exprs);
 ////////////////////////////////////////////////////////////////////////////////
 
 class Solver {
-private:
+protected:
     Env env_orig_;
     Env env_;
 
-public:
-    typedef int InterpolationGroup;
+    Solver(const Env& env_orig, const Env& env) :
+        env_orig_(env_orig), env_(env) {};
 
-    explicit Solver(const Env& env) : env_orig_(env), env_(Env::share(env)) {};
+public:
+
+    explicit Solver(const Env& env) :
+        Solver(env, Env::share(env, Config::Default())) {};
 
     Env& env() { return env_; }
 
     void add(const Expr&);
-    void reset() { env_.reset(); }
+    std::vector<Expr> assertions();
 
     void push();
     void pop();
     unsigned num_backtrack() { return msat_num_backtrack_points(env_); }
+    void reset() { env_.reset(); }
 
     msat_result check() { return msat_solve(env_); }
     msat_result check(const std::vector<Expr>& assumptions);
 
-    std::vector<Expr> assertions();
     std::vector<Expr> unsat_core();
+    std::vector<Expr> unsat_assumptions();
+};
 
-    InterpolationGroup create_interp_group() { return msat_create_itp_group(env_); }
-    void set_interp_group(InterpolationGroup gr);
+class ISolver : public Solver {
+public:
+    typedef int InterpolationGroup;
+
+    explicit ISolver(const Env& env) :
+        Solver(env, Env::share(env, Config::Interpolation())) {};
+
+    InterpolationGroup create_itp_group() { return msat_create_itp_group(env_); }
+
+    void set_itp_group(InterpolationGroup gr);
+
     InterpolationGroup create_and_set_itp_group() {
-        auto group = create_interp_group();
-        set_interp_group(group);
+        auto group = create_itp_group();
+        set_itp_group(group);
         return group;
     }
+
     Expr get_interpolant(const std::vector<InterpolationGroup>& A);
+};
+
+class DSolver : public Solver {
+public:
+
+    explicit DSolver(const Env& env) :
+        Solver(env, Env::share(env, Config::Diversification())) {};
+
+    std::vector<Expr> diversify(const std::vector<Expr>& diversifiers);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Misc
+////////////////////////////////////////////////////////////////////////////////
+
+struct msat_term_less {
+    bool operator()(const msat_term& a, const msat_term& b) const {
+        return a.repr < b.repr;
+    }
 };
 
 } // namespace mathsat
 } // namespace borealis
+
+namespace std {
+template<>
+struct less<msat_term> : public borealis::mathsat::msat_term_less {};
+} // namespace std
 
 #endif /* SMT_MATHSAT_H_ */

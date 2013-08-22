@@ -77,7 +77,8 @@ TEST(MathSAT, generatingFormulas) {
 
     // C API
     msat_term formula;
-    formula = msat_from_string(env, "(and (= (- (f x1) x2) (- x3))"
+    formula = msat_from_string(env,
+            "(and (= (- (f x1) x2) (- x3))"
             "(= (+ (f y1) y2) y3)"
             "(<= y1 x1))");
 
@@ -86,7 +87,7 @@ TEST(MathSAT, generatingFormulas) {
     msat_assert_formula(sol.env(), msat_make_not(env, formula));
 
     msat_result res = sol.check();
-    ASSERT_EQ(res, MSAT_UNSAT);
+    ASSERT_EQ(MSAT_UNSAT, res);
 }
 
 TEST(MathSAT, generatingInterpolant) {
@@ -97,10 +98,7 @@ TEST(MathSAT, generatingInterpolant) {
     using namespace borealis::mathsat;
 
     // C++ API
-    Config conf = Config();
-    conf.set("interpolation", true);
-
-    Env env = Env(conf);
+    Env env(Config::Interpolation());
 
     Sort rat = env.rat_sort();
     Decl f = env.function("f", { rat }, rat);
@@ -116,18 +114,16 @@ TEST(MathSAT, generatingInterpolant) {
     Expr A = (f(x1) + x2 == x3) && (f(y1) + y2 == y3) && (y1 <= x1);
     Expr B = (g(b) == x2) && (g(b) == y2) && (x1 <= y1) && (x3 < y3);
 
-    Solver sol(env);
+    ISolver sol(env);
     sol.push();
-    Solver::InterpolationGroup grA = sol.create_interp_group();
-    Solver::InterpolationGroup grB = sol.create_interp_group();
-    sol.set_interp_group(grA);
+    auto grA = sol.create_and_set_itp_group();
     sol.add(A);
-    sol.set_interp_group(grB);
+    sol.create_and_set_itp_group();
     sol.add(B);
 
     auto res = sol.check();
-    ASSERT_EQ(res, MSAT_UNSAT);
-    Expr cppInterp = sol.get_interpolant( { grA });
+    ASSERT_EQ(MSAT_UNSAT, res);
+    Expr cppInterp = sol.get_interpolant({ grA });
     sol.pop();
 
     // C API
@@ -136,13 +132,15 @@ TEST(MathSAT, generatingInterpolant) {
     int group_a = msat_create_itp_group(sol.env());
     int group_b = msat_create_itp_group(sol.env());
 
-    formula = msat_from_string(sol.env(), "(and (= (+ (f x1) x2) x3)"
+    formula = msat_from_string(sol.env(),
+            "(and (= (+ (f x1) x2) x3)"
             "(= (+ (f y1) y2) y3)"
             "(<= y1 x1))");
     msat_set_itp_group(sol.env(), group_a);
     msat_assert_formula(sol.env(), formula);
 
-    formula = msat_from_string(sol.env(), "(and (= x2 (g b))"
+    formula = msat_from_string(sol.env(),
+            "(and (= x2 (g b))"
             "(= y2 (g b))"
             "(<= x1 y1)"
             "(< x3 y3))");
@@ -150,17 +148,15 @@ TEST(MathSAT, generatingInterpolant) {
     msat_assert_formula(sol.env(), formula);
 
     res = msat_solve(sol.env());
-    ASSERT_EQ(res, MSAT_UNSAT);
+    ASSERT_EQ(MSAT_UNSAT, res);
     msat_term cInterp = msat_get_interpolant(sol.env(), &group_a, 1);
     msat_pop_backtrack_point(sol.env());
 
     // Comparing interpolants
     sol.add(cppInterp);
-    int r = msat_assert_formula(sol.env(), msat_make_not(sol.env(), cInterp));
-    ASSERT_EQ(r, 0);
-
+    msat_assert_formula(sol.env(), msat_make_not(sol.env(), cInterp));
     res = sol.check();
-    ASSERT_EQ(res, MSAT_UNSAT);
+    ASSERT_EQ(MSAT_UNSAT, res);
 }
 
 TEST(MathSAT, freshConstFunc) {
@@ -260,7 +256,6 @@ TEST(MathSAT, memoryArray) {
 
         auto check_expr = [&](Bool e)->bool {
             borealis::mathsat::Solver solver(msatimpl::getEnvironment(e));
-            solver.create_and_set_itp_group();
             solver.add(msatimpl::getAxiom(e));
             solver.add(!msatimpl::getExpr(e));
             return solver.check() == MSAT_UNSAT;
@@ -315,7 +310,6 @@ TEST(MathSAT, mergeMemory) {
             << in << endl;
 
             borealis::mathsat::Solver s(factory.unwrap());
-            s.create_and_set_itp_group();
 
             s.add(msatimpl::asAxiom(in));
 
@@ -339,15 +333,18 @@ TEST(MathSAT, mergeMemory) {
             return r == MSAT_UNSAT;
         };
 
-        EXPECT_TRUE(check_expr_in(c == a,   // expr
-        cond == a // in
-                ));
-        EXPECT_TRUE(check_expr_in(c == b,   // expr
-        cond == b // in
-                ));
-        EXPECT_FALSE(check_expr_in(c == a,   // expr
-        cond == z // in
-                ));
+        EXPECT_TRUE(check_expr_in(
+            c == a,   // expr
+            cond == a // in
+        ));
+        EXPECT_TRUE(check_expr_in(
+            c == b,   // expr
+            cond == b // in
+        ));
+        EXPECT_FALSE(check_expr_in(
+            c == a,   // expr
+            cond == z // in
+        ));
     }
 }
 
@@ -359,7 +356,6 @@ TEST(MathSAT, Unlogic) {
 
     auto check_expr = [](Bool e)->bool {
         borealis::mathsat::Solver solver(logic::msatimpl::getEnvironment(e));
-        solver.create_and_set_itp_group();
         solver.add(logic::msatimpl::getAxiom(e));
         solver.add(!logic::msatimpl::getExpr(e));
         return solver.check() == MSAT_UNSAT;
@@ -389,6 +385,40 @@ TEST(MathSAT, Unlogic) {
 
     EXPECT_TRUE(check_expr(dynA == Dynamic(redoed)));
 
+}
+
+TEST(MathSAT, diversify) {
+    {
+        USING_SMT_IMPL(borealis::MathSAT);
+
+        using borealis::mathsat_::logic::msatimpl::asAxiom;
+        using borealis::mathsat_::logic::msatimpl::getExpr;
+
+        ExprFactory ef;
+
+        auto a = ef.getIntVar("a");
+        auto b = ef.getIntVar("b");
+        auto c = ef.getIntVar("c");
+
+        auto zero = ef.getIntConst(0);
+        auto one =  ef.getIntConst(1);
+        auto two =  ef.getIntConst(2);
+
+        auto query = c != zero;
+        auto state = c == ef.if_(a > b)
+                            .then_(zero)
+                            .else_(one);
+
+        borealis::mathsat::DSolver s(ef.unwrap());
+        s.add(asAxiom(query));
+        s.add(asAxiom(state));
+
+        auto res = s.check();
+        ASSERT_EQ(msat_result::MSAT_SAT, res);
+
+        auto models = s.diversify({getExpr(a), getExpr(b)});
+        ASSERT_EQ(4, models.size());
+    }
 }
 
 } // namespace

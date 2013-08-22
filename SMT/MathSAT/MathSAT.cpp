@@ -80,14 +80,38 @@ Config::Config(FILE* f) : config_(makeConfigPointer(new msat_config())){
     ASSERTMSAT(MSAT_ERROR_CONFIG, *config_);
 }
 
-Env Config::env() {
-    return Env(*this);
+Config Config::Default() {
+    Config cfg;
+    return cfg;
+}
+
+Config Config::Interpolation() {
+    Config cfg;
+
+    cfg.set("interpolation", true);
+    cfg.set("theory.eq_propagation", false);
+    cfg.set("theory.bv.eager", false);
+    cfg.set("theory.euf.dyn_ack", 0);
+
+    cfg.set("preprocessor.simplification", 3);
+    cfg.set("theory.bv.bit_blast_mode", 0);
+    cfg.set("theory.bv.interpolation_mode", 0);
+    cfg.set("theory.euf.enabled", true);
+
+    return cfg;
+}
+
+Config Config::Diversification() {
+    Config cfg;
+    cfg.set("model_generation", true);
+    cfg.set("proof_generation", false);
+    return cfg;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Env::Env(const Config& config) : cfg_(config), env_(makeEnvPointer(new msat_env())) {
-    *env_ = msat_create_env(cfg_);
+Env::Env(const Config& cfg) : env_(makeEnvPointer(new msat_env())) {
+    *env_ = msat_create_env(cfg);
     ASSERTMSAT_ENV( *env_ );
 }
 
@@ -194,12 +218,11 @@ Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& param
     return this->function(rand_name, params, ret);
 }
 
-
-Env Env::share(const Env& that) {
+Env Env::share(const Env& that, const Config& cfg) {
     auto shared = makeEnvPointer(new msat_env());
-    *shared = msat_create_shared_env(that.cfg_, *that.env_);
+    *shared = msat_create_shared_env(cfg, that);
     ASSERTMSAT_ENV( *shared );
-    return Env(that.cfg_, shared);
+    return Env(shared);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -815,6 +838,17 @@ std::vector<Expr> Solver::assertions() {
 
 std::vector<Expr> Solver::unsat_core() {
     size_t size;
+    auto msat_exprs = util::uniq(msat_get_unsat_core(env_, &size));
+    std::vector<Expr> exprs;
+    exprs.reserve(size);
+    for (unsigned idx = 0; idx < size; ++idx) {
+        exprs.emplace_back(env_orig_, (msat_exprs.get())[idx]);
+    }
+    return exprs;
+}
+
+std::vector<Expr> Solver::unsat_assumptions() {
+    size_t size;
     auto msat_exprs = util::uniq(msat_get_unsat_assumptions(env_, &size));
     std::vector<Expr> exprs;
     exprs.reserve(size);
@@ -824,12 +858,58 @@ std::vector<Expr> Solver::unsat_core() {
     return exprs;
 }
 
-void Solver::set_interp_group(InterpolationGroup gr) {
+////////////////////////////////////////////////////////////////////////////////
+
+struct diversify_data {
+    Env env;
+    std::set<msat_term> dvrs;
+    std::vector<Expr> models;
+    unsigned int limit;
+
+    diversify_data(const Env& env, const std::vector<msat_term>& dvrs) :
+        env(env), dvrs(dvrs.begin(), dvrs.end()), limit(pow(2, dvrs.size())) {}
+};
+
+int collect_diversified_models(msat_model_iterator it, void* data) {
+
+    diversify_data* d = (diversify_data*)data;
+
+    Expr valuation = d->env.bool_val(true);
+    while (msat_model_iterator_has_next(it)) {
+        msat_term t;
+        msat_term v;
+        int res = msat_model_iterator_next(it, &t, &v);
+        ASSERTC(!res);
+        if (d->dvrs.count(t) > 0) {
+            valuation = valuation && Expr(d->env, t) == Expr(d->env, v);
+        }
+    }
+    d->models.push_back(valuation);
+
+    return d->models.size() < d->limit;
+}
+
+std::vector<Expr> DSolver::diversify(const std::vector<Expr>& diversifiers) {
+    std::vector<msat_term> dvrs(diversifiers.begin(), diversifiers.end());
+
+    diversify_data data(env_, dvrs);
+
+    push();
+    auto res = msat_solve_diversify(env_, dvrs.data(), dvrs.size(), collect_diversified_models, &data);
+    ASSERTC(res != -1);
+    pop();
+
+    return data.models;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ISolver::set_itp_group(InterpolationGroup gr) {
     int res = msat_set_itp_group(env_, gr);
     ASSERTC(!res)
 }
 
-Expr Solver::get_interpolant(const std::vector<InterpolationGroup>& A) {
+Expr ISolver::get_interpolant(const std::vector<InterpolationGroup>& A) {
     std::vector<InterpolationGroup> AA(A.begin(), A.end());
     auto new_term = msat_get_interpolant(env_, AA.data(), AA.size());
     ASSERTMSAT_TERM(new_term);
