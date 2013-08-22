@@ -165,6 +165,14 @@ public:
     }
 
     template<class U>
+    borealis::util::option<U> get() const {
+        for(const auto& op : this->get()) {
+            return borealis::util::just(U(op));
+        }
+        return borealis::util::nothing();
+    }
+
+    template<class U>
     auto get(U&& def) const -> decltype(cached.getOrElse(std::forward<U>(def))) {
         auto& conf = AppConfiguration::instance().globalConfig;
         if (!conf) return def;

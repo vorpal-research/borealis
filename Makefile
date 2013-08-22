@@ -68,6 +68,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Annotation \
 	$(PWD)/Codegen \
 	$(PWD)/Config \
+	$(PWD)/Driver \
 	$(PWD)/Logging \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \

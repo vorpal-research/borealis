@@ -71,7 +71,6 @@ public:
         return t2l.at(const_cast<T>(key));
     }
 
-
     const_range range_after(const Locus& loc) const {
         auto start = l2t.upper_bound(loc);
         auto end = start;

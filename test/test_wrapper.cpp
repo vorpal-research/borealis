@@ -12,18 +12,19 @@
 #include <string>
 #include <vector>
 
+#include "Driver/runner.h"
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "Util/json.hpp"
 #include "Util/json_traits.hpp"
 #include "Util/util.h"
 
-#include "runner.h"
 #include "wrapper.h"
 
 namespace {
 
 using namespace borealis;
 using namespace borealis::util;
+using namespace borealis::driver;
 
 
 
@@ -64,12 +65,13 @@ protected:
 
 
 TEST_P(WrapperTest, basic) {
-    int res = borealis::Runner("wrapper")
-    .withArg("---config:wrapper.tests.conf")
-    .withArg("---opt:-dump-output=json")
-    .withArg("---opt:-dump-output-file=" + actualF)
-    .withArg(inputF)
-    .run();
+    int res = Runner("wrapper")
+        .withArg("---config:wrapper.tests.conf")
+        .withArg("---opt:-dump-output=json")
+        .withArg("---opt:-dump-output-file=" + actualF)
+        .withArg("-c")
+        .withArg(inputF)
+        .run();
 
     ASSERT_EQ(OK, res);
 

@@ -15,7 +15,9 @@
 
 using namespace borealis;
 
-static bool isCompare(bin_opcode op) {
+namespace  {
+
+bool isCompare(bin_opcode op) {
     switch(op) {
     case bin_opcode::OPCODE_EQ:
     case bin_opcode::OPCODE_NE:
@@ -29,7 +31,7 @@ static bool isCompare(bin_opcode op) {
     }
 }
 
-static llvm::ConditionType convertCT(bin_opcode op) {
+llvm::ConditionType convertCT(bin_opcode op) {
     switch(op) {
     case bin_opcode::OPCODE_EQ:
         return llvm::ConditionType::EQ;
@@ -48,7 +50,7 @@ static llvm::ConditionType convertCT(bin_opcode op) {
     }
 }
 
-static llvm::ArithType convertAT(bin_opcode op) {
+llvm::ArithType convertAT(bin_opcode op) {
     switch(op) {
     case bin_opcode::OPCODE_PLUS:
         return llvm::ArithType::ADD;
@@ -79,7 +81,7 @@ static llvm::ArithType convertAT(bin_opcode op) {
     }
 }
 
-static llvm::UnaryArithType convert(un_opcode op) {
+llvm::UnaryArithType convert(un_opcode op) {
     switch(op) {
     case un_opcode::OPCODE_BNOT:
         return llvm::UnaryArithType::BNOT;
@@ -152,6 +154,8 @@ public:
 
     Term::Ptr getTerm() { return term; }
 };
+
+} // namespace
 
 Annotation::Ptr borealis::fromParseResult(
         const Locus& locus, const anno::command& cmd, TermFactory::Ptr tf) {

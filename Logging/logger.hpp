@@ -28,6 +28,10 @@ private:
     static std::string logger;
 
 protected:
+    const std::string& getLoggerDomain() const {
+        return logger;
+    }
+
     static stream_t dbgs() {
         return dbgsFor(logger);
     }
@@ -70,13 +74,15 @@ private:
     mutable std::string logger;
 
 protected:
+    const std::string& getLoggerDomain() const {
+        return logger;
+    }
+
     void assignLogger(const std::string& domain) {
         logger = domain;
     }
 
-    ObjectLevelLogging(const std::string& domain) {
-        assignLogger(domain);
-    }
+    ObjectLevelLogging(const std::string& domain): logger(domain) {}
 
     stream_t dbgs() const { return dbgsFor(logger); }
     stream_t infos() const { return infosFor(logger); }
@@ -87,6 +93,13 @@ protected:
     stream_t logs(priority_t ll = priority_t::DEBUG) const {
         return logsFor(ll, logger);
     }
+};
+
+template<class T>
+class DelegateLogging: public ObjectLevelLogging<T> {
+protected:
+    template<class U>
+    explicit DelegateLogging(const U& that): ObjectLevelLogging<T>{that.getLoggerDomain()} {};
 };
 
 inline stream_t dbgs() { return dbgsFor(""); }
