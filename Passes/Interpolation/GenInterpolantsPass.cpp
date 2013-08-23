@@ -5,79 +5,80 @@
  *      Author: sam
  */
 
-#include <memory>
-
 #include <llvm/Support/InstVisitor.h>
 
+#include <memory>
+
 #include "Passes/Interpolation/GenInterpolantsPass.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
 
 namespace borealis {
 
-
 class RetInstVisitor :
         public llvm::InstVisitor<RetInstVisitor>,
-        public borealis::logging::ClassLevelLogging<RetInstVisitor> {
+        // this is by design (i.e., sharing logging facilities)
+        public borealis::logging::ClassLevelLogging<GenInterpolantsPass> {
 
-    USING_SMT_LOGIC(MathSAT);
+    USING_SMT_IMPL(MathSAT);
 
-        public:
+public:
 
     RetInstVisitor(GenInterpolantsPass* pass) : pass(pass) {}
 
     void visitReturnInst(llvm::ReturnInst& I) {
+        using borealis::mathsat_::unlogic::undoThat;
         using llvm::Value;
 
-        Value* ret = I.getReturnValue();
-        if (ret != nullptr  &&  ret->getType()->isPointerTy()) {
-            auto interpol = generateInterpolant(I, *ret);
-            auto* function = I.getParent()->getParent();
-            dbgs()  << "Updating function body: " << endl
-                    << "old one: " << endl
-                    << pass->FM->getBdy(function) << endl;
+        auto* ret = I.getReturnValue();
+        if (ret == nullptr || ret->getType()->isPointerTy()) return;
 
-            pass->FM->update(function, mathsat_::unlogic::undoThat(interpol));
+        auto ITP = generateInterpolant(I, *ret);
+        auto* F = I.getParent()->getParent();
+        dbgs() << "Updating function: " << F->getName() << endl
+               << "from: " << endl
+               << pass->FM->getBdy(F) << endl;
 
-            dbgs() <<"New function body" << endl
-                    << pass->FM->getBdy(function) << endl;
-        }
+        pass->FM->update(F, undoThat(ITP));
+
+        dbgs() << "to: " << endl
+               << pass->FM->getBdy(F) << endl;
     }
 
     Dynamic generateInterpolant(
             llvm::Instruction& where,
             llvm::Value& what) {
 
-        MathSAT::ExprFactory msatef;
+        ExprFactory msatef;
 
         PredicateState::Ptr query = (
-                pass->FN.State *
-                pass->FN.Predicate->getEqualityPredicate(
-                        pass->FN.Term->getValueTerm(&what),
-                        pass->FN.Term->getNullPtrTerm()
-                )
+            pass->FN.State *
+            pass->FN.Predicate->getEqualityPredicate(
+                pass->FN.Term->getValueTerm(&what),
+                pass->FN.Term->getNullPtrTerm()
+            )
         )();
 
         PredicateState::Ptr state = pass->PSA->getInstructionState(&where);
-        if (!state) {
-            return msatef.getTrue();
-        }
+        if (!state) return msatef.getTrue();
 
         dbgs() << "Generating interpolant: " << endl
-                << "Ret: " << what << endl
-                << "Query: " << query << endl
-                << "State: " << state << endl;
+               << "  At: " << what << endl
+               << "  Query: " << query << endl
+               << "  State: " << state << endl;
 
-        MathSAT::Solver s(msatef);
+        Solver s(msatef);
 
         auto interpol = s.getInterpolant(query, state);
         dbgs()  << "Interpolant: " << endl
-                << interpol;
+                << interpol << endl;
         return interpol;
     }
 
 private:
+
     GenInterpolantsPass* pass;
 
 };
@@ -96,9 +97,8 @@ void GenInterpolantsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool GenInterpolantsPass::runOnFunction(llvm::Function& F) {
-    if ( !checkInterpolation() ) {
-        return false;
-    }
+    if ( ! doInterpolation() ) return false;
+
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
@@ -111,12 +111,14 @@ bool GenInterpolantsPass::runOnFunction(llvm::Function& F) {
     return false;
 }
 
-bool GenInterpolantsPass::checkInterpolation() {
-    static config::ConfigEntry<bool> interpol("interpolation", "enable_interpolation");
+bool GenInterpolantsPass::doInterpolation() {
+    static config::ConfigEntry<bool> interpol("interpolation", "enable-interpolation");
     return interpol.get(false);
 }
 
 GenInterpolantsPass::~GenInterpolantsPass() {}
+
+////////////////////////////////////////////////////////////////////////////////
 
 char GenInterpolantsPass::ID;
 static RegisterPass<GenInterpolantsPass>

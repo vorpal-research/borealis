@@ -14,7 +14,6 @@
 #include "Logging/logger.hpp"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
-#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
@@ -41,7 +40,7 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
     virtual ~GenInterpolantsPass();
 
-    static bool checkInterpolation();
+    static bool doInterpolation();
 
 private:
 
