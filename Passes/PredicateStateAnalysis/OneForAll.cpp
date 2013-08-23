@@ -129,7 +129,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            instructionState = (FN.State * instructionState + instantiatedCallState)();
+            instructionState = (FN.State * instructionState + instantiatedCallState << I)();
         }
 
         inState = instructionState;

@@ -161,7 +161,7 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            modifiedInState = (FN.State * modifiedInState + instantiatedCallState)();
+            modifiedInState = (FN.State * modifiedInState + instantiatedCallState << I)();
         }
 
         inState = modifiedInState;
