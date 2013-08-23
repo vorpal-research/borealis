@@ -98,7 +98,7 @@ struct SMTImpl<Impl, UnaryTerm> {
             return -rhvi.getUnsafe();
         }
         case llvm::UnaryArithType::NOT: {
-            auto rhvi = rhvz3.template to<Integer>();
+            auto rhvi = rhvz3.toBool();
             ASSERT(!rhvi.empty(), "Logic not: rhv is not a boolean");
             return !rhvi.getUnsafe();
         }
