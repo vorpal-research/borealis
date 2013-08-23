@@ -375,6 +375,8 @@ public:
     Env& env() { return env_; }
 
     void add(const Expr&);
+    template<class Container>
+    void add(const Container& con) { for (const auto& e : con) add(e); }
     std::vector<Expr> assertions();
 
     void push();

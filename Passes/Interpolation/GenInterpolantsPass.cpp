@@ -5,79 +5,90 @@
  *      Author: sam
  */
 
-#include <memory>
-
 #include <llvm/Support/InstVisitor.h>
 
+#include <memory>
+
 #include "Passes/Interpolation/GenInterpolantsPass.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
 
 namespace borealis {
 
-
 class RetInstVisitor :
         public llvm::InstVisitor<RetInstVisitor>,
-        public borealis::logging::ClassLevelLogging<RetInstVisitor> {
+        // this is by design (i.e., sharing logging facilities)
+        public borealis::logging::ClassLevelLogging<GenInterpolantsPass> {
 
-    USING_SMT_LOGIC(MathSAT);
+    USING_SMT_IMPL(MathSAT);
 
-        public:
+public:
 
     RetInstVisitor(GenInterpolantsPass* pass) : pass(pass) {}
 
     void visitReturnInst(llvm::ReturnInst& I) {
+        using borealis::mathsat_::unlogic::undoThat;
         using llvm::Value;
 
-        Value* ret = I.getReturnValue();
-        if (ret != nullptr  &&  ret->getType()->isPointerTy()) {
-            auto interpol = generateInterpolant(I, *ret);
-            auto* function = I.getParent()->getParent();
-            dbgs()  << "Updating function body: " << endl
-                    << "old one: " << endl
-                    << pass->FM->getBdy(function) << endl;
+        auto* F = I.getParent()->getParent();
 
-            pass->FM->update(function, mathsat_::unlogic::undoThat(interpol));
+        auto* ret = I.getReturnValue();
+        if (ret == nullptr || ! ret->getType()->isPointerTy()) return;
 
-            dbgs() <<"New function body" << endl
-                    << pass->FM->getBdy(function) << endl;
-        }
+        auto ITP = generateSummary(*F, I, *ret);
+        dbgs() << "Updating function: " << F->getName() << endl
+               << "from: " << endl
+               << pass->FM->getBdy(F) << endl;
+
+        pass->FM->update(F, undoThat(ITP));
+
+        dbgs() << "to: " << endl
+               << pass->FM->getBdy(F) << endl;
     }
 
-    Dynamic generateInterpolant(
+    Dynamic generateSummary(
+            llvm::Function& F,
             llvm::Instruction& where,
             llvm::Value& what) {
 
-        MathSAT::ExprFactory msatef;
+        using borealis::util::view;
+
+        std::vector<Term::Ptr> args;
+        args.reserve(F.arg_size());
+        for (auto& arg : view(F.arg_begin(), F.arg_end())) {
+            args.push_back(pass->FN.Term->getArgumentTerm(&arg));
+        }
+
+        ExprFactory msatef;
 
         PredicateState::Ptr query = (
-                pass->FN.State *
-                pass->FN.Predicate->getEqualityPredicate(
-                        pass->FN.Term->getValueTerm(&what),
-                        pass->FN.Term->getNullPtrTerm()
-                )
+            pass->FN.State *
+            pass->FN.Predicate->getEqualityPredicate(
+                pass->FN.Term->getValueTerm(&what),
+                pass->FN.Term->getNullPtrTerm()
+            )
         )();
 
         PredicateState::Ptr state = pass->PSA->getInstructionState(&where);
-        if (!state) {
-            return msatef.getTrue();
-        }
+        if (!state) return msatef.getTrue();
 
-        dbgs() << "Generating interpolant: " << endl
-                << "Ret: " << what << endl
-                << "Query: " << query << endl
-                << "State: " << state << endl;
+        dbgs() << "Generating summary: " << endl
+               << "  At: " << what << endl
+               << "  Query: " << query << endl
+               << "  State: " << state << endl;
 
-        MathSAT::Solver s(msatef);
+        Solver s(msatef);
 
-        auto interpol = s.getInterpolant(query, state);
-        dbgs()  << "Interpolant: " << endl
-                << interpol;
+        auto interpol = s.getSummary(args, query, state);
+        dbgs()  << "Summary: " << endl
+                << interpol << endl;
         return interpol;
     }
 
 private:
+
     GenInterpolantsPass* pass;
 
 };
@@ -96,9 +107,8 @@ void GenInterpolantsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool GenInterpolantsPass::runOnFunction(llvm::Function& F) {
-    if ( !checkInterpolation() ) {
-        return false;
-    }
+    if ( ! doInterpolation() ) return false;
+
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
@@ -111,12 +121,14 @@ bool GenInterpolantsPass::runOnFunction(llvm::Function& F) {
     return false;
 }
 
-bool GenInterpolantsPass::checkInterpolation() {
-    static config::ConfigEntry<bool> interpol("interpolation", "enable_interpolation");
+bool GenInterpolantsPass::doInterpolation() {
+    static config::ConfigEntry<bool> interpol("interpolation", "enable-interpolation");
     return interpol.get(false);
 }
 
 GenInterpolantsPass::~GenInterpolantsPass() {}
+
+////////////////////////////////////////////////////////////////////////////////
 
 char GenInterpolantsPass::ID;
 static RegisterPass<GenInterpolantsPass>
