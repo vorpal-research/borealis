@@ -67,30 +67,23 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 class ValueSymbol : public AbstractSymbol {
+private:
+    std::string name_;
 public:
     ValueSymbol(const mathsat::Expr& expr)
-        : AbstractSymbol(MSAT_TAG_UNKNOWN, 0, expr) {}
+        : AbstractSymbol(MSAT_TAG_UNKNOWN, 0, expr), name_(expr_.decl().name()) {}
+
+    std::string name() const { return name_; }
 
     virtual Term::Ptr undoThat() const override {
-        USING_SMT_LOGIC(MathSAT);
         auto TyFP = TypeFactory::get();
         auto TFP = TermFactory::get(nullptr, TyFP);
 
-        auto name = expr_.decl().name();
         if (expr_.is_bool()) {
-            return TFP->getValueTerm(TyFP->getBool(), name);
+            return TFP->getValueTerm(TyFP->getBool(), name_);
         }
-
-        auto size = expr_.get_sort().bv_size();
-        if ( Pointer::bitsize == size ) {
-            //Pointer to Integer by default.
-            return TFP->getValueTerm(TyFP->getPointer(TyFP->getInteger()), name);
-        }else if ( Integer::bitsize == size ) {
-            return TFP->getValueTerm(TyFP->getInteger(), name);
-        }else if ( Real::bitsize == size ) {
-            return TFP->getValueTerm(TyFP->getFloat(), name);
-        }
-        BYE_BYE(Term::Ptr, "Unknown value type");
+        // FIXME sam Values always converts to Integers.
+        return TFP->getValueTerm(TyFP->getInteger(), name_);
     }
 };
 
@@ -285,6 +278,29 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class LoadSymbol : public AbstractSymbol {
+public:
+    LoadSymbol(const mathsat::Expr& expr)
+        : AbstractSymbol(MSAT_TAG_UNKNOWN, expr.num_args(), expr) {}
+
+    virtual Term::Ptr undoThat() const override {
+        ASSERT(expr_.decl().name() == "$$__initial_mem__$$",
+                "Can convert only $$_initial_mem_$$ function to load term.");
+        ASSERT(numArgs_ == 1,
+                "Can convert only $$_initial_mem_$$ function to load term.");
+
+        auto TyFP = TypeFactory::get();
+        auto TFP = TermFactory::get(nullptr, TyFP);
+
+        dbgs() << "Expr: " << expr_ << endl;
+        auto argTerm = args_[0]->undoThat();
+        auto ptr = TFP->getValueTerm(TyFP->getPointer(TyFP->getInteger()), argTerm->getName());
+        return TFP->getLoadTerm(ptr);
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     if (expr.num_args() == 0) {
         if (msat_term_is_true(expr.env(), expr)) {
@@ -324,7 +340,11 @@ AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     case MSAT_TAG_BV_SLT: case MSAT_TAG_BV_ULE: case MSAT_TAG_BV_ULT:
         return AbstractSymbol::Ptr{ new CmpOperationSymbol(tag, expr) };
 
-    default: BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type.");
+    default:
+        if (msat_term_is_uf(expr.env(), expr)) {
+            return AbstractSymbol::Ptr{ new LoadSymbol(expr) };
+        }
+        BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type.");
     }
 }
 

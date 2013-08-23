@@ -7,6 +7,9 @@
 
 #include "Logging/tracer.hpp"
 #include "SMT/MathSAT/Solver.h"
+#include "SMT/MathSAT/Unlogic/Unlogic.h"
+#include "Util/util.h"
+#include "Util/macros.h"
 
 namespace borealis {
 namespace mathsat_ {
@@ -60,6 +63,24 @@ bool Solver::isViolated(
     ExecutionContext ctx(msatef);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+
+//    auto check_undo = [&](Dynamic e)->bool {
+//        auto undoed = unlogic::undoThat(e);
+//        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, msatef, &ctx);
+//        std::cout << "Original state: " << state << std::endl;
+//        std::cout << "Original: " << msat_term_repr(logic::msatimpl::getExpr(msatstate)) << std::endl;
+//        std::cout << "Undoed state: " << undoed << std::endl;
+//        std::cout << "Undoed: " << msat_term_repr(logic::msatimpl::getExpr(redoed)) << std::endl;
+//        auto b = (e == Dynamic(redoed));
+//
+//        borealis::mathsat::Solver solver(logic::msatimpl::getEnvironment(b));
+//        solver.add(logic::msatimpl::getAxiom(b));
+//        solver.add(!logic::msatimpl::getExpr(b));
+//        return solver.check() == MSAT_UNSAT;
+//    };
+//    ASSERTC(check_undo(msatstate));
+
+
     return check(!msatquery, msatstate) != MSAT_UNSAT;
 }
 

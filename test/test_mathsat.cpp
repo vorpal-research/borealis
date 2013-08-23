@@ -354,37 +354,52 @@ TEST(MathSAT, Unlogic) {
 
     USING_SMT_IMPL(borealis::MathSAT);
 
-    auto check_expr = [](Bool e)->bool {
-        borealis::mathsat::Solver solver(logic::msatimpl::getEnvironment(e));
-        solver.add(logic::msatimpl::getAxiom(e));
-        solver.add(!logic::msatimpl::getExpr(e));
+    ExprFactory factory;
+    Env env = factory.unwrap();
+
+    auto check_undo = [&](Expr e)->bool {
+        ExecutionContext ctx(factory);
+        Dynamic dynE(e);
+        auto undoed = unlogic::undoThat(dynE);
+        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, factory, &ctx);
+        auto b = (dynE == Dynamic(redoed));
+
+        borealis::mathsat::Solver solver(logic::msatimpl::getEnvironment(b));
+        solver.add(logic::msatimpl::getAxiom(b));
+        solver.add(!logic::msatimpl::getExpr(b));
         return solver.check() == MSAT_UNSAT;
     };
 
 
-    ExprFactory factory;
-    Env env = factory.unwrap();
-
     Sort bv = env.bv_sort(32);
-    Decl f = env.function("f", { bv }, bv);
     Expr x1 = env.bv_const("x1", 32);
     Expr x2 = env.bv_const("x2", 32);
     Expr x3 = env.bv_const("x3", 32);
     Expr y1 = env.bv_const("y1", 32);
     Expr y2 = env.bv_const("y2", 32);
     Expr y3 = env.bv_const("y3", 32);
+    Expr c1 = env.bv_val(32, 32);
+    Expr c2 = env.bv_val(-32, 32);
 
-    Expr A = ((x1 + x2 - x3) >= -env.bv_val(32, 32)) || ((y1 * y2 / y3) == (x3 & x1));
+    {
+        Expr A = x1 == x2;
+        EXPECT_TRUE(check_undo(A));
+    }
 
-    Dynamic dynA(A);
+    {
+        Expr A = c1 == -c2;
+        EXPECT_TRUE(check_undo(A));
+    }
 
-    auto undoed = unlogic::undoThat(dynA);
+    {
+        Expr A = (x1 >= c1) && (x2 <= c2);
+        EXPECT_TRUE(check_undo(A));
+    }
 
-    ExecutionContext ctx(factory);
-    auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, factory, &ctx);
-
-    EXPECT_TRUE(check_expr(dynA == Dynamic(redoed)));
-
+    {
+        Expr A = ((x1 + x2 - x3) >= -c1) || ((y1 * y2 / y3) == (x3 & x1));
+        EXPECT_TRUE(check_undo(A));
+    }
 }
 
 TEST(MathSAT, diversify) {
