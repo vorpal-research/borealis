@@ -32,11 +32,12 @@ public:
         using borealis::mathsat_::unlogic::undoThat;
         using llvm::Value;
 
-        auto* ret = I.getReturnValue();
-        if (ret == nullptr || ret->getType()->isPointerTy()) return;
-
-        auto ITP = generateInterpolant(I, *ret);
         auto* F = I.getParent()->getParent();
+
+        auto* ret = I.getReturnValue();
+        if (ret == nullptr || ! ret->getType()->isPointerTy()) return;
+
+        auto ITP = generateSummary(*F, I, *ret);
         dbgs() << "Updating function: " << F->getName() << endl
                << "from: " << endl
                << pass->FM->getBdy(F) << endl;
@@ -47,9 +48,18 @@ public:
                << pass->FM->getBdy(F) << endl;
     }
 
-    Dynamic generateInterpolant(
+    Dynamic generateSummary(
+            llvm::Function& F,
             llvm::Instruction& where,
             llvm::Value& what) {
+
+        using borealis::util::view;
+
+        std::vector<Term::Ptr> args;
+        args.reserve(F.arg_size());
+        for (auto& arg : view(F.arg_begin(), F.arg_end())) {
+            args.push_back(pass->FN.Term->getArgumentTerm(&arg));
+        }
 
         ExprFactory msatef;
 
@@ -64,15 +74,15 @@ public:
         PredicateState::Ptr state = pass->PSA->getInstructionState(&where);
         if (!state) return msatef.getTrue();
 
-        dbgs() << "Generating interpolant: " << endl
+        dbgs() << "Generating summary: " << endl
                << "  At: " << what << endl
                << "  Query: " << query << endl
                << "  State: " << state << endl;
 
         Solver s(msatef);
 
-        auto interpol = s.getInterpolant(query, state);
-        dbgs()  << "Interpolant: " << endl
+        auto interpol = s.getSummary(args, query, state);
+        dbgs()  << "Summary: " << endl
                 << interpol << endl;
         return interpol;
     }

@@ -41,7 +41,12 @@ public:
 
     Dynamic getInterpolant(
             PredicateState::Ptr query,
-            PredicateState::Ptr state);
+            PredicateState::Ptr body);
+
+    Dynamic getSummary(
+            const std::vector<Term::Ptr>& args,
+            PredicateState::Ptr query,
+            PredicateState::Ptr body);
 
 private:
 
