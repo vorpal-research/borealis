@@ -51,6 +51,7 @@ public:
     ref() : ptr(nullptr) {};
     ref(const ref& that) = default;
     explicit ref(const T& v) : ptr(&v) {};
+    explicit ref(T& v) : ptr(&v) {};
 
     ref& operator=(const ref& that) = default;
     ref& operator=(T& v) {
@@ -60,7 +61,12 @@ public:
 
     const T& get() const { return *ptr; }
     T& get() { return *ptr; }
+    const T* getPtr() const { return ptr; }
+    T* getPtr() { return ptr; }
+
+
     operator T&() { return get(); }
+
 };
 
 // copying reference

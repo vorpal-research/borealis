@@ -34,6 +34,7 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
         BYE_BYE_VOID("Unknown PSA mode: " + Mode());
 
     AUX<FunctionManager>::addRequiredTransitive(AU);
+    AUX<LocationManager>::addRequiredTransitive(AU);
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
@@ -43,6 +44,8 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         delegate = &GetAnalysis<OneForAll>::doit(this, F);
     else
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
+
+    updateVisitedLocs(F);
 
     if ("inline" == Summaries()) {
         updateInlineSummary(F);
@@ -60,6 +63,7 @@ void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
     // for inlining
 
     auto& FM = GetAnalysis<FunctionManager>::doit(this);
+
     auto initial = delegate->getInitialState();
 
     auto rets = getAllRets(&F);
@@ -81,6 +85,23 @@ void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
            << "  with: " << endl << bdy << endl;
 
     FM.update(&F, bdy);
+}
+
+void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {
+    delegate->runOnFunction(F);
+
+    auto& LM = GetAnalysis<LocationManager>::doit(this);
+
+    auto initial = delegate->getInitialState();
+
+    auto rets = getAllRets(&F);
+    ASSERT(rets.size() <= 1, "Unexpected number of ReturnInst for: " + F.getName().str());
+
+    if (rets.empty()) return;
+    auto RI = rets.front();
+    auto riState = delegate->getInstructionState(RI);
+    ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+    LM.addLocations(riState->getVisited());
 }
 
 void PredicateStateAnalysis::print(llvm::raw_ostream& O, const llvm::Module* M) const {
@@ -113,5 +134,6 @@ const std::string PredicateStateAnalysis::Summaries() {
 }
 
 } /* namespace borealis */
+
 
 #include "Util/unmacros.h"

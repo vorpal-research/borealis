@@ -18,6 +18,7 @@
 #include "Annotation/AssumeAnnotation.h"
 #include "Annotation/SkipAnnotation.h"
 #include "Annotation/IgnoreAnnotation.h"
+#include "Annotation/InlineAnnotation.h"
 #include "Annotation/StackDepthAnnotation.h"
 #include "Annotation/UnrollAnnotation.h"
 #include "Annotation/MaskAnnotation.h"
@@ -35,6 +36,7 @@ HANDLE_ANNOTATION_WITH_BASE("assert", LogicAnnotation, AssertAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("assume", LogicAnnotation, AssumeAnnotation)
 HANDLE_ANNOTATION("skip", SkipAnnotation)
 HANDLE_ANNOTATION("ignore", IgnoreAnnotation)
+HANDLE_ANNOTATION("inline", InlineAnnotation)
 HANDLE_ANNOTATION("stack-depth", StackDepthAnnotation)
 HANDLE_ANNOTATION("unroll", UnrollAnnotation)
 HANDLE_ANNOTATION("mask", MaskAnnotation)

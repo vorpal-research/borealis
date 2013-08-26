@@ -8,19 +8,21 @@
 #ifndef ENUMS_HPP_
 #define ENUMS_HPP_
 
+#include "Util/type_traits.hpp"
+
 namespace borealis {
 namespace util {
 namespace enums {
 
 template<typename Enum>
-inline typename std::underlying_type<Enum>::type asInteger(Enum e) {
-    return static_cast<typename std::underlying_type<Enum>::type>(e);
+inline underlying_type_t<Enum> asInteger(Enum e) {
+    return static_cast< underlying_type_t<Enum> >(e);
 }
 
 // generalized hash for enum classes
 template<class Enum>
 struct enum_hash {
-    typedef typename std::underlying_type<Enum>::type raw;
+    typedef underlying_type_t<Enum> raw;
     std::hash<raw> delegate;
 
     inline size_t operator()( Enum e ) const {

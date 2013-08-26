@@ -36,53 +36,53 @@ begin_end_pair(const Container& c) {
 
 template<class RootIt, class UnaryFunc>
 class mapped_iterator {
-  RootIt current;
-  UnaryFunc Fn;
+    RootIt current;
+    UnaryFunc Fn;
 public:
-  typedef typename std::iterator_traits<RootIt>::iterator_category
-          iterator_category;
-  typedef typename std::iterator_traits<RootIt>::difference_type
-          difference_type;
-  typedef decltype(Fn(*current)) value_type;
+    typedef typename std::iterator_traits<RootIt>::iterator_category
+            iterator_category;
+    typedef typename std::iterator_traits<RootIt>::difference_type
+            difference_type;
+    typedef decltype(Fn(*current)) value_type;
 
-  typedef struct{} pointer;
-  // typedef typename UnaryFunc::result_type* pointer;
-  typedef value_type reference; // Can't modify value returned by Fn
+    typedef struct{} pointer;
+    // typedef typename UnaryFunc::result_type* pointer;
+    typedef value_type reference; // Can't modify value returned by Fn
 
-  typedef RootIt iterator_type;
-  typedef mapped_iterator<RootIt, UnaryFunc> _Self;
+    typedef RootIt iterator_type;
+    typedef mapped_iterator<RootIt, UnaryFunc> _Self;
 
-  inline const RootIt& getCurrent() const { return current; }
-  inline const UnaryFunc& getFunc() const { return Fn; }
+    inline const RootIt& getCurrent() const { return current; }
+    inline const UnaryFunc& getFunc() const { return Fn; }
 
-  inline mapped_iterator(const RootIt& I, UnaryFunc F) : current(I), Fn(F) {}
-  inline mapped_iterator(const mapped_iterator& It) = default;
+    inline mapped_iterator(const RootIt& I, UnaryFunc F) : current(I), Fn(F) {}
+    inline mapped_iterator(const mapped_iterator& It) = default;
 
-  inline value_type operator*() const {    // All this work to do this
-    return Fn(*current);                   // little change
-  }
+    inline value_type operator*() const {    // All this work to do this
+        return Fn(*current);                   // little change
+    }
 
-  _Self& operator++() { ++current; return *this; }
-  _Self& operator--() { --current; return *this; }
-  _Self  operator++(int) { _Self __tmp = *this; ++current; return __tmp; }
-  _Self  operator--(int) { _Self __tmp = *this; --current; return __tmp; }
+    _Self& operator++() { ++current; return *this; }
+    _Self& operator--() { --current; return *this; }
+    _Self  operator++(int) { _Self __tmp = *this; ++current; return __tmp; }
+    _Self  operator--(int) { _Self __tmp = *this; --current; return __tmp; }
 
-  _Self  operator+ (difference_type n) const {
-    return _Self(current + n, Fn);
-  }
-  _Self& operator+=(difference_type n) { current += n; return *this; }
-  _Self  operator- (difference_type n) const {
-    return _Self(current - n, Fn);
-  }
-  _Self& operator-=(difference_type n) { current -= n; return *this; }
+    _Self  operator+ (difference_type n) const {
+        return _Self(current + n, Fn);
+    }
+    _Self& operator+=(difference_type n) { current += n; return *this; }
+    _Self  operator- (difference_type n) const {
+        return _Self(current - n, Fn);
+    }
+    _Self& operator-=(difference_type n) { current -= n; return *this; }
 
-  inline bool operator!=(const _Self& X) const { return !operator==(X); }
-  inline bool operator==(const _Self& X) const { return current == X.current; }
-  inline bool operator< (const _Self& X) const { return current <  X.current; }
+    inline bool operator!=(const _Self& X) const { return !operator==(X); }
+    inline bool operator==(const _Self& X) const { return current == X.current; }
+    inline bool operator< (const _Self& X) const { return current <  X.current; }
 
-  inline difference_type operator-(const _Self& X) const {
-    return current - X.current;
-  }
+    inline difference_type operator-(const _Self& X) const {
+        return current - X.current;
+    }
 };
 
 template<class _Iterator, class Func>

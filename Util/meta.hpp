@@ -177,6 +177,24 @@ struct is_T_in<T> : std::false_type {};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// is_T_not_in
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<class T, class ...List>
+struct is_T_not_in;
+
+template<class T, class ...Tail>
+struct is_T_not_in<T, T, Tail...> : std::false_type {};
+
+template<class T, class H, class ...Tail>
+struct is_T_not_in<T, H, Tail...> : is_T_not_in<T, Tail...> {};
+
+template<class T>
+struct is_T_not_in<T> : std::true_type {};
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // index_in_row
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -320,6 +338,26 @@ using ss_append_chars_q = typename ss_append_chars<SS, wha...>::type;
 
 template<char ...wha>
 using make_ss = typename ss_append_chars<static_string<>, wha...>::type;
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// a la type_traits
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<class Ptr>
+using make_const_ptr_q = typename std::add_pointer<
+    typename std::add_const<
+        typename std::remove_pointer<Ptr>::type
+    >::type
+>::type;
+
+template<class Ptr>
+using unmake_const_ptr_q = typename std::add_pointer<
+    typename std::remove_const<
+        typename std::remove_pointer<Ptr>::type
+    >::type
+>::type;
 
 } // namespace util
 } // namespace borealis

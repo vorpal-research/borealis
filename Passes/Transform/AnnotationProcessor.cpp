@@ -63,7 +63,8 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
             isa<AssignsAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
-                    /* insertBeforeWithLocus(tmpl, F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime(), anno->getLocus()); */
+                    // FIXME akhin Fix annotation location business in SourceLocationTracker / MetaInfoTracker
+                    // insertBeforeWithLocus(tmpl, F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime(), anno->getLocus());
                     tmpl->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
                     break;
                 }
@@ -74,13 +75,17 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                 if (Function* F = dyn_cast<Function>(e.second)) {
                     // this is generally fucked up, BUT we have to insert the template somewhere
                     // otherwise it cannot be properly deleted
-                    /* insertBeforeWithLocus(tmpl, F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime(), anno->getLocus()); */
+                    //
+                    // FIXME akhin Fix annotation location business in SourceLocationTracker / MetaInfoTracker
+                    // insertBeforeWithLocus(tmpl, F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime(), anno->getLocus());
                     tmpl->insertBefore(F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime());
                     for (auto& BB : *F) {
                         if (isa<ReturnInst>(BB.getTerminator()) || isa<UnreachableInst>(BB.getTerminator())) {
                             // insert clones at the actual rets
                             // no need to clone MDNodes, they are copied in templ->clone()
-                            /* insertBeforeWithLocus(tmpl->clone(), BB.getTerminator(), anno->getLocus()); */
+                            //
+                            // FIXME akhin Fix annotation location business in SourceLocationTracker / MetaInfoTracker
+                            // insertBeforeWithLocus(tmpl->clone(), BB.getTerminator(), anno->getLocus());
                             tmpl->clone()->insertBefore(BB.getTerminator());
                         }
                     }
@@ -92,8 +97,9 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
         } else if (isa<AssertAnnotation>(anno) || isa<AssumeAnnotation>(anno)) {
             for (auto& e : view(locs.getRangeFor(anno->getLocus()))) {
                 if (Instruction* I = dyn_cast<Instruction>(e.second)) {
-                    /* insertBeforeWithLocus(tmpl, I, anno->getLocus()); */
-                    tmpl->insertBefore(I);
+                    // FIXME akhin Fix annotation location business in SourceLocationTracker / MetaInfoTracker
+                    insertBeforeWithLocus(tmpl, I, anno->getLocus());
+                    // tmpl->insertBefore(I);
                     break;
                 }
             }

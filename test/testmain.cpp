@@ -17,10 +17,10 @@ int main(int argc, char** argv) {
 
   ::testing::InitGoogleTest(&argc, argv);
 
-  borealis::config::Config cfg("wrapper.conf");
-  auto logCFG = cfg.getValue<std::string>("logging", "ini");
-  if (!logCFG.empty()) {
-      borealis::logging::configureLoggingFacility(*logCFG.get());
+  borealis::config::Config cfg("wrapper.tests.conf");
+  auto logFile = cfg.getValue<std::string>("logging", "ini");
+  for (const auto& op : logFile) {
+      borealis::logging::configureLoggingFacility(op);
   }
 
   return RUN_ALL_TESTS();

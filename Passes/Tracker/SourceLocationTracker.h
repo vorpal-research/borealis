@@ -40,11 +40,11 @@ public:
 
     virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
 
-	const std::string& getFilenameFor(llvm::Value* val) const;
-	unsigned getLineFor(llvm::Value* val) const;
-	unsigned getColumnFor(llvm::Value* val) const;
-	const Locus& getLocFor(llvm::Value* val) const;
-	const Locus& getLocFor(llvm::Loop* loop) const;
+	const std::string& getFilenameFor(const llvm::Value* val) const;
+	unsigned getLineFor(const llvm::Value* val) const;
+	unsigned getColumnFor(const llvm::Value* val) const;
+	const Locus& getLocFor(const llvm::Value* val) const;
+	const Locus& getLocFor(const llvm::Loop* loop) const;
 
 	valueDebugMap::const_range getRangeFor(const Locus& loc) const;
 	const std::vector<llvm::BasicBlock*>& getLoopFor(const Locus& loc) const;

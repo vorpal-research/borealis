@@ -247,6 +247,21 @@ bool endsWith(const std::string& fullString, const std::string& ending) {
     }
 }
 
+std::string nochar(const std::string& v, char c) {
+    return nochar(std::string(v), c);
+}
+
+std::string nochar(std::string&& v, char c) {
+    v.erase(std::remove_if(v.begin(), v.end(), [&c](char x) { return c == x; }), v.end());
+    return v;
+}
+
+std::string& replace(const std::string& from, const std::string& to, std::string& in) {
+    auto pos = in.find(from);
+    if (pos == std::string::npos) return in;
+    else return in.replace(pos, from.length(), to);
+}
+
 namespace streams {
 
 // copy the standard ostream endl

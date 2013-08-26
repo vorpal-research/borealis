@@ -11,7 +11,10 @@
 #include <cfgparser.h>
 #include <configwrapper.h>
 
+#include <sstream>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "Util/util.h"
 
@@ -28,7 +31,59 @@ class Config {
 
 public:
 
-    Config(const std::string& file): valid(parser.readFile(file) == 0) {}
+    typedef std::unordered_map<
+        std::string,
+        std::unordered_map<
+            std::string,
+            std::vector<std::string>
+        >
+    > Overrides;
+
+private:
+
+    Overrides overrides;
+
+    bool getOverride(const std::string& section, const std::string& option, bool& value) {
+        auto vals = overrides[section][option];
+        if (vals.empty()) return false;
+
+        auto& v = vals[vals.size()-1];
+        if (v == "1" || v == "true" || v == "on" || v == "yes") {
+            value = true;
+            return true;
+        }
+        if (v == "0" || v == "false" || v == "off" || v == "no") {
+            value = false;
+            return true;
+        }
+        return false;
+    }
+
+    bool getOverride(const std::string& section, const std::string& option, std::vector<std::string>& value) {
+        auto vals = overrides[section][option];
+        if (vals.empty()) return false;
+
+        value.insert(value.begin(), vals.begin(), vals.end());
+        return true;
+    }
+
+    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string)>
+    bool getOverride(const std::string& section, const std::string& option, T& value) {
+        auto vals = overrides[section][option];
+        if (vals.empty()) return false;
+
+        auto& v = vals[vals.size()-1];
+        std::istringstream iss(v);
+        iss >> value;
+        return !iss.fail();
+    }
+
+public:
+
+    Config(const std::string& file, const Overrides& overrides) :
+        valid(parser.readFile(file) == 0), overrides(overrides) {}
+    Config(const std::string& file) :
+        valid(parser.readFile(file) == 0) {}
     Config(const Config&) = default;
     Config(Config&&) = default;
 
@@ -38,9 +93,14 @@ public:
         using borealis::util::nothing;
 
         T ret;
-        if (valid && parser.getValue(section, option, &ret)) {
+
+        if (getOverride(section, option, ret))
             return just(std::move(ret));
-        } else return nothing();
+
+        if (valid && parser.getValue(section, option, &ret))
+            return just(std::move(ret));
+
+        return nothing();
     }
 
     std::multimap<std::string, std::string> optionsFor(const std::string& name) {
@@ -68,6 +128,10 @@ public:
     static AppConfiguration& instance() {
         static AppConfiguration ac;
         return ac;
+    }
+
+    static void initialize(const std::string& filename, const Config::Overrides& overrides) {
+        instance().globalConfig.reset(new Config(filename, overrides));
     }
 
     static void initialize(const std::string& filename) {
@@ -98,6 +162,14 @@ public:
             cached = conf->getValue<T>(section, key);
         }
         return cached;
+    }
+
+    template<class U>
+    borealis::util::option<U> get() const {
+        for(const auto& op : this->get()) {
+            return borealis::util::just(U(op));
+        }
+        return borealis::util::nothing();
     }
 
     template<class U>
@@ -151,6 +223,7 @@ public:
     auto operator[](size_t index) QUICK_CONST_RETURN(get()[index])
 };
 
+typedef ConfigEntry<bool> BoolConfigEntry;
 typedef ConfigEntry<> StringConfigEntry;
 typedef ConfigEntry<std::vector<std::string>> MultiConfigEntry;
 
