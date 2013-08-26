@@ -76,8 +76,8 @@ struct json_traits<T, GUARD(std::is_integral<T>::value && std::is_signed<T>::val
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isInt() ? optional_ptr_t{ new T{json.asInt()} } :
-                              nullptr;
+        return json.isIntegral() ? optional_ptr_t{ new T{json.asInt()} } :
+                                   nullptr;
     }
 };
 
@@ -90,8 +90,8 @@ struct json_traits<T, GUARD(std::is_integral<T>::value && std::is_unsigned<T>::v
     }
 
     static optional_ptr_t fromJson(const Json::Value& json) {
-        return json.isUInt() ? optional_ptr_t{ new T{json.asUInt()} } :
-                               nullptr;
+        return json.isIntegral() ? optional_ptr_t{ new T{json.asUInt()} } :
+                                   nullptr;
     }
 };
 
