@@ -417,7 +417,7 @@ TEST(MathSAT, diversify) {
         ASSERT_EQ(msat_result::MSAT_SAT, res);
 
         auto models = s.diversify({getExpr(a), getExpr(b)});
-        ASSERT_EQ(4, models.size());
+        ASSERT_EQ(32, models.size());
     }
 }
 
