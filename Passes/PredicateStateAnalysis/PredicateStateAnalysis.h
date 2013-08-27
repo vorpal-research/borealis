@@ -77,7 +77,7 @@ protected:
 class PredicateStateAnalysis:
         public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
-        public ShouldBeModularized {
+        public ShouldBeLazyModularized {
 
     typedef AbstractPredicateStateAnalysis::InstructionStates InstructionStates;
 
