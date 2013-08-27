@@ -55,10 +55,6 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
 }
 
 void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
-    // Update total function state
-    // FIXME akhin Fix dep issues and remove manual update
-    delegate->runOnFunction(F);
-
     // Save total function state to function manager
     // for inlining
 
