@@ -19,12 +19,10 @@
 #include "Util/macros.h"
 
 namespace borealis {
+namespace impl_ {
 
-// Should not be used explicitly!
-// Use ShouldBeModularized / ShouldBeLazyModularized marker traits
-// from Util/passes.hpp instead.
-template<class SubPass, bool Lazy = false>
-class PassModularizer : public SCCPass {
+template<class SubPass, bool Lazy>
+class PassModularizerImpl : public SCCPass {
 
     typedef std::unique_ptr<SubPass> subptr;
 
@@ -39,7 +37,7 @@ public:
 
     static char ID;
 
-    PassModularizer() : SCCPass(ID), defaultPass(new SubPass(this)) {}
+    PassModularizerImpl() : SCCPass(ID), defaultPass(new SubPass(this)) {}
 
     virtual bool runOnSCC(CallGraphSCC& SCC) {
         using namespace llvm;
@@ -85,10 +83,19 @@ public:
 };
 
 template<class SubPass, bool Lazy>
-char PassModularizer<SubPass, Lazy>::ID;
+char PassModularizerImpl<SubPass, Lazy>::ID;
+
+} // namespace impl_
+
+// Should not be used explicitly!
+// Use ShouldBeModularized / ShouldBeLazyModularized marker traits
+// from Util/passes.hpp instead.
 
 template<class SubPass>
-using LazyPassModularizer = PassModularizer<SubPass, true>;
+using PassModularizer = impl_::PassModularizerImpl<SubPass, false>;
+
+template<class SubPass>
+using LazyPassModularizer = impl_::PassModularizerImpl<SubPass, true>;
 
 } // namespace borealis
 
