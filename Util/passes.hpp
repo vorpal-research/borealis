@@ -19,7 +19,18 @@
 
 namespace borealis {
 
-class ShouldBeModularized {};
+struct ShouldBeModularized {};
+
+struct ShouldBeLazyModularized {};
+
+namespace impl_ {
+enum class PassType {
+    LAZY_MODULARIZED,
+    MODULARIZED,
+    FUNCTION,
+    OTHER
+};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -27,51 +38,39 @@ class ShouldBeModularized {};
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class P, bool isModularized = std::is_base_of<ShouldBeModularized, P>::value>
-struct AUX;
-
+namespace impl_ {
 template<class P>
-struct AUX<P, false> {
+struct AUX {
     static void addRequiredTransitive(llvm::AnalysisUsage& AU) {
         AU.addRequiredTransitive< P >();
     }
-
     static void addRequired(llvm::AnalysisUsage& AU) {
         AU.addRequired< P >();
     }
-
     static void addPreserved(llvm::AnalysisUsage& AU) {
         AU.addPreserved< P >();
     }
 };
-
-template<class P>
-struct AUX<P, true> {
-
-    typedef PassModularizer<P> PP;
-
-    static void addRequiredTransitive(llvm::AnalysisUsage& AU) {
-        AU.addRequiredTransitive< PP >();
-    }
-
-    static void addRequired(llvm::AnalysisUsage& AU) {
-        AU.addRequired< PP >();
-    }
-
-    static void addPreserved(llvm::AnalysisUsage& AU) {
-        AU.addPreserved< PP >();
-    }
-};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace impl_ {
-enum class PassType {
-    MODULARIZED,
-    FUNCTION,
-    OTHER
-};
-}
+template<
+    class P,
+    impl_::PassType pType = std::is_base_of<ShouldBeLazyModularized, P>::value ? impl_::PassType::LAZY_MODULARIZED :
+                            std::is_base_of<ShouldBeModularized, P>::value ? impl_::PassType::MODULARIZED :
+                            impl_::PassType::OTHER
+>
+struct AUX;
+
+template<class P>
+struct AUX<P, impl_::PassType::OTHER> : public impl_::AUX< P > {};
+
+template<class P>
+struct AUX<P, impl_::PassType::MODULARIZED> : public impl_::AUX< PassModularizer<P> > {};
+
+template<class P>
+struct AUX<P, impl_::PassType::LAZY_MODULARIZED> : public impl_::AUX< LazyPassModularizer<P> > {};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -81,22 +80,40 @@ enum class PassType {
 
 template<
     class P, // Pass which we try to get
-    impl_::PassType pType = std::is_base_of<ShouldBeModularized, P>::value ? impl_::PassType::MODULARIZED :
+    impl_::PassType pType = std::is_base_of<ShouldBeLazyModularized, P>::value ? impl_::PassType::LAZY_MODULARIZED :
+                            std::is_base_of<ShouldBeModularized, P>::value ? impl_::PassType::MODULARIZED :
                             std::is_base_of<llvm::FunctionPass, P>::value ? impl_::PassType::FUNCTION :
                             impl_::PassType::OTHER
 >
 struct GetAnalysis;
 
 template<class P>
-struct GetAnalysis<P, impl_::PassType::MODULARIZED> {
-    static P& doit(const llvm::Pass* pass, llvm::Function& F) {
-        ASSERTC(!F.isDeclaration());
-        return pass->getAnalysis< PassModularizer<P> >().getResultsForFunction(&F);
-    }
+struct GetAnalysis<P, impl_::PassType::LAZY_MODULARIZED> {
 
-    static P& doit(const borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+    typedef LazyPassModularizer<P> PP;
+
+    static P& doit(llvm::Pass* pass, llvm::Function& F) {
         ASSERTC(!F.isDeclaration());
-        return pass->getAnalysis< PassModularizer<P> >().getResultsForFunction(&F);
+        return pass->getAnalysis< PP >(F).getResultsForFunction(&F);
+    }
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
+        return pass->getAnalysis< PP >(F).getResultsForFunction(&F);
+    }
+};
+
+template<class P>
+struct GetAnalysis<P, impl_::PassType::MODULARIZED>{
+
+    typedef PassModularizer<P> PP;
+
+    static P& doit(llvm::Pass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
+        return pass->getAnalysis< PP >(F).getResultsForFunction(&F);
+    }
+    static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
+        ASSERTC(!F.isDeclaration());
+        return pass->getAnalysis< PP >(F).getResultsForFunction(&F);
     }
 };
 
@@ -106,7 +123,6 @@ struct GetAnalysis<P, impl_::PassType::FUNCTION> {
         ASSERTC(!F.isDeclaration());
         return pass->getAnalysis< P >(F);
     }
-
     static P& doit(borealis::ProxyFunctionPass* pass, llvm::Function& F) {
         ASSERTC(!F.isDeclaration());
         return pass->getAnalysis< P >(F);
@@ -118,15 +134,12 @@ struct GetAnalysis<P, impl_::PassType::OTHER> {
     static P& doit(const llvm::Pass* pass) {
         return pass->getAnalysis< P >();
     }
-
     static P& doit(const llvm::Pass* pass, llvm::Function&) {
         return pass->getAnalysis< P >();
     }
-
     static P& doit(const borealis::ProxyFunctionPass* pass) {
         return pass->getAnalysis< P >();
     }
-
     static P& doit(const borealis::ProxyFunctionPass* pass, llvm::Function&) {
         return pass->getAnalysis< P >();
     }
@@ -138,35 +151,60 @@ struct GetAnalysis<P, impl_::PassType::OTHER> {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-template<class P, bool isModularized = std::is_base_of<ShouldBeModularized, P>::value>
-struct RegisterPass;
-
+namespace impl_ {
 template<class P>
-struct RegisterPass<P, false> {
+struct RegisterPass {
     RegisterPass(
             const char* PassArg,
             const char* Name,
-            bool CFGOnly = false,
-            bool isAnalysis = false) {
+            bool CFGOnly,
+            bool isAnalysis) {
 
         static llvm::RegisterPass< P >
         MX(PassArg, Name, CFGOnly, isAnalysis);
 
     }
 };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<
+    class P,
+    impl_::PassType pType = std::is_base_of<ShouldBeLazyModularized, P>::value ? impl_::PassType::LAZY_MODULARIZED :
+                            std::is_base_of<ShouldBeModularized, P>::value ? impl_::PassType::MODULARIZED :
+                            impl_::PassType::OTHER
+>
+struct RegisterPass;
 
 template<class P>
-struct RegisterPass<P, true> {
+struct RegisterPass<P, impl_::PassType::OTHER> : public impl_::RegisterPass< P > {
     RegisterPass(
             const char* PassArg,
             const char* Name,
             bool CFGOnly = false,
-            bool isAnalysis = false) {
+            bool isAnalysis = false) :
+    impl_::RegisterPass<P>(PassArg, Name, CFGOnly, isAnalysis) {};
+};
 
-        static llvm::RegisterPass< PassModularizer<P> >
-        MX(PassArg, Name, CFGOnly, isAnalysis);
+template<class P>
+struct RegisterPass<P, impl_::PassType::MODULARIZED> : public impl_::RegisterPass< PassModularizer<P> > {
+    RegisterPass(
+            const char* PassArg,
+            const char* Name,
+            bool CFGOnly = false,
+            bool isAnalysis = false) :
+    impl_::RegisterPass< PassModularizer<P> >(PassArg, Name, CFGOnly, isAnalysis) {};
+};
 
-    }
+template<class P>
+struct RegisterPass<P, impl_::PassType::LAZY_MODULARIZED> : public impl_::RegisterPass< LazyPassModularizer<P> > {
+    RegisterPass(
+            const char* PassArg,
+            const char* Name,
+            bool CFGOnly = false,
+            bool isAnalysis = false) :
+    impl_::RegisterPass< LazyPassModularizer<P> >(PassArg, Name, CFGOnly, isAnalysis) {};
 };
 
 } // namespace borealis
