@@ -67,16 +67,15 @@ bool Solver::isViolated(
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
 //    auto check_undo = [&](Dynamic e)->bool {
-//
 //        ExecutionContext context(msatef);
 //        auto undoed = unlogic::undoThat(e);
 //        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, msatef, &context);
-//        std::cout << "Original state: " << state << std::endl;
+////        std::cout << "Original state: " << state << std::endl;
 ////        std::cout << "Original: " << msat_term_repr(logic::msatimpl::asAxiom(msatstate)) << std::endl;
-//        std::cout << "Original: " << logic::msatimpl::asAxiom(msatstate) << std::endl;
-//        std::cout << "Undoed state: " << undoed << std::endl;
+////        std::cout << "Original: " << logic::msatimpl::asAxiom(msatstate) << std::endl;
+////        std::cout << "Undoed state: " << undoed << std::endl;
 ////        std::cout << "Undoed: " << msat_term_repr(logic::msatimpl::asAxiom(redoed)) << std::endl;
-//        std::cout << "Undoed: " << logic::msatimpl::asAxiom(redoed) << std::endl;
+////        std::cout << "Undoed: " << logic::msatimpl::asAxiom(redoed) << std::endl;
 //        auto boolE = e.to<Bool>().getUnsafe();
 //        auto b = boolE ^ redoed;
 //

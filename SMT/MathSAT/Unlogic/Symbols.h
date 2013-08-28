@@ -306,7 +306,8 @@ public:
             LoadSymbol::idx_++;
             auto idx = TFP->getValueTerm(TyFP->getPointer(TyFP->getInteger()), name);
             auto equal = TFP->getCmpTerm(llvm::ConditionType::EQ, idx, args_[0]->undoThat(stateBuilder));
-            stateBuilder += PF->getEqualityPredicate(equal, TFP->getBooleanTerm(true));
+            auto axiom = TFP->getAxiomTerm(TFP->getTrueTerm(), equal);
+            stateBuilder += PF->getEqualityPredicate(axiom, TFP->getBooleanTerm(true));
             return TFP->getLoadTerm(idx);
         }
     }

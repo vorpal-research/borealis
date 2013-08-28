@@ -24,6 +24,7 @@
 #include "Term/OpaqueNullPtrTerm.h"
 #include "Term/OpaqueUndefTerm.h"
 #include "Term/SignTerm.h"
+#include "Term/AxiomTerm.h"
 
 #define HANDLE_TERM(NAME, CLASS)
 
@@ -48,6 +49,7 @@ HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
 HANDLE_TERM(OpaqueNullPtr, OpaqueNullPtrTerm)
 HANDLE_TERM(OpaqueUndef, OpaqueUndefTerm)
 HANDLE_TERM(Sign, SignTerm)
+HANDLE_TERM(Sign, AxiomTerm)
 
 #ifdef HANDLE_TERM
 #undef HANDLE_TERM
