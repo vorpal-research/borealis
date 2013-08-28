@@ -67,18 +67,32 @@ bool Solver::isViolated(
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
 //    auto check_undo = [&](Dynamic e)->bool {
+//        ExecutionContext context(msatef);
 //        auto undoed = unlogic::undoThat(e);
-//        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, msatef, &ctx);
+//        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, msatef, &context);
 //        std::cout << "Original state: " << state << std::endl;
-//        std::cout << "Original: " << msat_term_repr(logic::msatimpl::getExpr(msatstate)) << std::endl;
+//        std::cout << "Original: " << msat_term_repr(logic::msatimpl::asAxiom(msatstate)) << std::endl;
 //        std::cout << "Undoed state: " << undoed << std::endl;
-//        std::cout << "Undoed: " << msat_term_repr(logic::msatimpl::getExpr(redoed)) << std::endl;
-//        auto b = (e == Dynamic(redoed));
+//        std::cout << "Undoed: " << msat_term_repr(logic::msatimpl::asAxiom(redoed)) << std::endl;
+//        auto boolE = e.to<Bool>().getUnsafe();
+//        auto b = boolE ^ redoed;
 //
-//        borealis::mathsat::Solver solver(logic::msatimpl::getEnvironment(b));
-//        solver.add(logic::msatimpl::getAxiom(b));
-//        solver.add(!logic::msatimpl::getExpr(b));
-//        return solver.check() == MSAT_UNSAT;
+//        borealis::mathsat::DSolver solver(logic::msatimpl::getEnvironment(b));
+//        solver.add(logic::msatimpl::asAxiom(b));
+//
+//        auto res = solver.check();
+//
+//        if(res == MSAT_SAT) {
+//            borealis::mathsat::ModelIterator iter(solver.env());
+//            std::cout << std::endl;
+//            while (iter.hasNext()) {
+//                iter++;
+//                auto& pair = *iter;
+//                std::cout << msat_term_repr(pair.first) << " = "
+//                          << msat_term_repr(pair.second) << std::endl;
+//            }
+//        }
+//        return res == MSAT_UNSAT;
 //    };
 //    ASSERTC(check_undo(msatstate));
 

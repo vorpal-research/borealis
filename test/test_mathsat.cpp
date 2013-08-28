@@ -19,6 +19,12 @@
 #include "SMT/SMT.hpp"
 #include "Util/util.h"
 
+#include "Term/TermFactory.h"
+#include "Type/TypeFactory.h"
+#include "Predicate/PredicateFactory.h"
+#include "State/PredicateStateFactory.h"
+#include "State/PredicateStateBuilder.h"
+
 namespace {
 
 using namespace borealis::logging;
@@ -399,6 +405,26 @@ TEST(MathSAT, Unlogic) {
     {
         Expr A = ((x1 + x2 - x3) >= -c1) || ((y1 * y2 / y3) == (x3 & x1));
         EXPECT_TRUE(check_undo(A));
+    }
+
+    {
+        Expr A = (x1 == x2 && x2 == x3);
+        Expr B = (x1 == x3);
+
+        borealis::mathsat::DSolver s(env);
+        s.add(A && !B);
+
+        auto res = s.check();
+        if (res == MSAT_SAT) {
+            borealis::mathsat::ModelIterator iter(s.env());
+            std::cout << std::endl;
+            while (iter.hasNext()) {
+                iter++;
+                auto& pair = *iter;
+                std::cout << msat_term_repr(pair.first) << " = "
+                          << msat_term_repr(pair.second) << std::endl;
+            }
+        }
     }
 }
 

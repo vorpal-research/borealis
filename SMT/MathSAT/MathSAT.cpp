@@ -98,6 +98,8 @@ Config Config::Interpolation() {
     cfg.set("theory.bv.interpolation_mode", 0);
     cfg.set("theory.euf.enabled", true);
 
+    cfg.set("model_generation", true);
+
     return cfg;
 }
 
@@ -801,6 +803,32 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
     auto new_term = msat_from_smtlib2(env, data.c_str());
     ASSERTMSAT_TERM(new_term);
     return Expr(env, new_term);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+ModelIterator::ModelIterator(const Env& env) : env_(env),
+        iterator_(makeModelIteratorPointer(new msat_model_iterator())),
+        currentValue_(env_.bool_val(true), env_.bool_val(true)) {
+    *iterator_ = msat_create_model_iterator(env_);
+    ASSERT(!MSAT_ERROR_MODEL_ITERATOR(*iterator_), "Can't create model iterator. "
+            "You should set model_generation option and environment must be SAT.");
+    ASSERTC(hasNext());
+}
+
+term_value& ModelIterator::operator *() {
+    return currentValue_;
+}
+
+ModelIterator& ModelIterator::operator ++(int) {
+    if (hasNext()) {
+        msat_term term;
+        msat_term value;
+        auto res = msat_model_iterator_next(*iterator_, &term, &value);
+        ASSERTC(!res);
+        currentValue_ = term_value(Expr(env_, term), Expr(env_, value));
+    }
+    return *this;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
