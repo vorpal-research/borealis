@@ -15,6 +15,7 @@
 
 #include "Logging/logger.hpp"
 #include "Passes/Manager/FunctionManager.h"
+#include "Passes/Location/LocationManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "State/PredicateState.h"
@@ -76,7 +77,7 @@ protected:
 class PredicateStateAnalysis:
         public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
-        public ShouldBeModularized {
+        public ShouldBeLazyModularized {
 
     typedef AbstractPredicateStateAnalysis::InstructionStates InstructionStates;
 
@@ -106,6 +107,7 @@ private:
     AbstractPredicateStateAnalysis* delegate;
 
     void updateInlineSummary(llvm::Function& F);
+    void updateVisitedLocs(llvm::Function&);
 
 };
 

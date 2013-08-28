@@ -37,7 +37,6 @@ class BasicPredicateState :
         public PredicateState {
 
     typedef std::list<Predicate::Ptr> Data;
-    typedef std::unordered_set<const llvm::Value*> Locations;
 
 public:
 
@@ -49,7 +48,9 @@ public:
 
     virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
     virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
-    virtual bool hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const override;
+    virtual bool hasVisitedFrom(Locs& visited) const override;
+
+    virtual Locs getVisited() const override;
 
     virtual PredicateState::Ptr map(Mapper m) const override;
     virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const override;
@@ -78,13 +79,13 @@ public:
 private:
 
     Data data;
-    Locations locs;
+    Locs locs;
 
     BasicPredicateState();
 
     void addPredicateInPlace(Predicate::Ptr pred);
     void addVisitedInPlace(const llvm::Value* loc);
-    void addVisitedInPlace(const Locations& locs);
+    void addVisitedInPlace(const Locs& locs);
 
 };
 

@@ -6,6 +6,7 @@ Dependencies
  * mathsat-5
  * jsoncpp
  * tinyxml2-git
+ * yaml-cpp
  * protobuf
  * log4cpp
  * libcfgparser

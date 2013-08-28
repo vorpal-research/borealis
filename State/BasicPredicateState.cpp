@@ -27,7 +27,7 @@ void BasicPredicateState::addVisitedInPlace(const llvm::Value* loc) {
     this->locs.insert(loc);
 }
 
-void BasicPredicateState::addVisitedInPlace(const Locations& locs) {
+void BasicPredicateState::addVisitedInPlace(const Locs& locs) {
     this->locs.insert(locs.begin(), locs.end());
 }
 
@@ -50,7 +50,7 @@ bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> l
         [this](const llvm::Value* loc) { return contains(this->locs, loc); });
 }
 
-bool BasicPredicateState::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
+bool BasicPredicateState::hasVisitedFrom(Locs& visited) const {
     auto it = visited.begin();
     auto end = visited.end();
     for ( ; it != end ; ) {
@@ -62,6 +62,10 @@ bool BasicPredicateState::hasVisitedFrom(std::unordered_set<const llvm::Value*>&
     }
 
     return visited.empty();
+}
+
+PredicateState::Locs BasicPredicateState::getVisited() const {
+    return locs;
 }
 
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {

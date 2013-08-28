@@ -41,12 +41,21 @@ bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> 
     return hasVisitedFrom(visited);
 }
 
-bool PredicateStateChoice::hasVisitedFrom(std::unordered_set<const llvm::Value*>& visited) const {
-    for (const auto& choice: choices) {
+bool PredicateStateChoice::hasVisitedFrom(Locs& visited) const {
+    for (const auto& choice : choices) {
         if (choice->hasVisitedFrom(visited))
             return true;
     }
     return false;
+}
+
+PredicateState::Locs PredicateStateChoice::getVisited() const {
+    Locs res;
+    for (const auto& choice : choices) {
+        auto choiceLocs = choice->getVisited();
+        res.insert(choiceLocs.begin(), choiceLocs.end());
+    }
+    return res;
 }
 
 PredicateStateChoice::SelfPtr PredicateStateChoice::fmap_(FMapper f) const {

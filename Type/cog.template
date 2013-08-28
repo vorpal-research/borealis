@@ -1,7 +1,0 @@
-/*[[[cog
-
-import generate
-generate.spawn(cog.outFile)
-
-]]]*/
-/*[[[end]]]*/

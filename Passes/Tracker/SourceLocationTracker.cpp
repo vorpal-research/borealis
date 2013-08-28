@@ -86,7 +86,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
     return false;
 }
 
-const std::string& SourceLocationTracker::getFilenameFor(llvm::Value* val) const {
+const std::string& SourceLocationTracker::getFilenameFor(const llvm::Value* val) const {
     static std::string empty_string = "";
 
     if (val && valueDebugInfo.contains(val)) {
@@ -94,19 +94,19 @@ const std::string& SourceLocationTracker::getFilenameFor(llvm::Value* val) const
     } else return empty_string;
 }
 
-unsigned SourceLocationTracker::getLineFor(llvm::Value* val) const {
+unsigned SourceLocationTracker::getLineFor(const llvm::Value* val) const {
     if (val && valueDebugInfo.contains(val)) {
         return valueDebugInfo[val].loc.line;
     } else return unsigned(-1);
 }
 
-unsigned SourceLocationTracker::getColumnFor(llvm::Value* val) const {
+unsigned SourceLocationTracker::getColumnFor(const llvm::Value* val) const {
     if (val && valueDebugInfo.contains(val)) {
         return valueDebugInfo[val].loc.col;
     } else return unsigned(-1);
 }
 
-const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
+const Locus& SourceLocationTracker::getLocFor(const llvm::Value* val) const {
     const static Locus empty;
 
     if (val && valueDebugInfo.contains(val)) {
@@ -114,7 +114,7 @@ const Locus& SourceLocationTracker::getLocFor(llvm::Value* val) const {
     } else return empty;
 }
 
-const Locus& SourceLocationTracker::getLocFor(llvm::Loop* loop) const {
+const Locus& SourceLocationTracker::getLocFor(const llvm::Loop* loop) const {
     const static Locus empty;
 
     if (loop && loopDebugInfo.contains(loop->getBlocks())) {
@@ -141,17 +141,14 @@ void SourceLocationTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 void SourceLocationTracker::print(llvm::raw_ostream&, const llvm::Module*) const {
 
-    typedef std::pair<Locus, llvm::Value*> valueDebugMapEntry;
-    typedef std::pair<Locus, std::vector<llvm::BasicBlock*>> loopDebugMapEntry;
-
     auto info = infos();
 
-    for (const valueDebugMapEntry& val : valueDebugInfo.getFrom()) {
+    for (const auto& val : valueDebugInfo.getFrom()) {
         info << " " << llvm::valueSummary(val.second) << " ==> " << getLocFor(val.second) << endl;
     }
 
     info << "loops:" << endl;
-    for (const loopDebugMapEntry& val : loopDebugInfo.getFrom()) {
+    for (const auto& val : loopDebugInfo.getFrom()) {
         info << " " << val.second << " ==> " << loopDebugInfo[val.second] << endl;
     }
 }

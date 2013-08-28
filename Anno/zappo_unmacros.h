@@ -13,6 +13,8 @@
 #error "zappo_macros.h not included!"
 #endif
 
+#undef ZAPPO_MACROS_DEFINED
+
 #undef _PS
 #undef G
 #undef S

@@ -22,12 +22,24 @@
 #include <unordered_set>
 #include <vector>
 
-#include <Util/collections.hpp>
+#include "Util/collections.hpp"
+#include "Util/option.hpp"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace util {
+
+struct byte_output {
+    const char* bytes;
+    size_t length;
+};
+
+template<class Streamer>
+Streamer& operator<<(Streamer& str, const byte_output& bytes) {
+    str.write(bytes.bytes, bytes.length);
+    return str;
+}
 
 template<class T>
 struct is_using_llvm_output {
@@ -96,6 +108,61 @@ inline std::string toString(const T& t) {
     return Stringifier<T, UseLLVMOstreams<T>::value>::toString(t);
 }
 
+template<class T, class SFINAE = void>
+struct Destringifier {
+    static option<T> fromString(const std::string& str) {
+        std::istringstream is(str);
+        T val;
+        is >> val;
+        if (!is) return nothing();
+        return just(val);
+    }
+};
+
+template<>
+struct Destringifier<std::string> {
+    static option<std::string> fromString(const std::string& str) {
+        return just(str);
+    }
+};
+
+template<>
+struct Destringifier<bool> {
+    static option<bool> fromString(const std::string& str) {
+        return ("true" == str) ? just(true) :
+               ("false" == str) ? just(false) :
+               nothing();
+    }
+};
+
+template<class T>
+struct Destringifier<T, GUARD(std::is_integral<T>::value)> {
+    static option<T> fromString(const std::string& str) {
+        auto mod = std::dec;
+        auto shift = 0;
+        if (str.substr(0, 2) == "0x") {
+            mod = std::hex;
+            shift = 2;
+        }
+        // seems to be replaced by sexpr[0] == '0', but substr is safer
+        else if (str.substr(0, 1) == "0" && str != "0") {
+            mod = std::oct;
+            shift = 1;
+        }
+        // we rely on shift being 0 if the string is empty
+        std::istringstream is(str.c_str() + shift);
+        long long val;
+        is >> mod >> val;
+        if (!is) return nothing();
+        return just(val);
+    }
+};
+
+template<class T>
+inline option<T> fromString(const std::string& str) {
+    return Destringifier<T>::fromString(str);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // borealis::util::streams
@@ -144,6 +211,24 @@ std::ostream& output_using_llvm(std::ostream& ost, const T& val) {
     ostt << val;
     return ost << ostt.str();
 }
+
+template<class Streamer>
+class llvm_stream_wrapper : public llvm::raw_ostream {
+    Streamer* str;
+public:
+    llvm_stream_wrapper() = default;
+    llvm_stream_wrapper(Streamer& str): str(&str) {};
+
+    virtual void write_impl(const char *Ptr, size_t Size) {
+        (*str) << byte_output{ Ptr, Size };
+    }
+
+    /// current_pos - Return the current position within the stream, not
+    /// counting the bytes currently in the buffer.
+    // FIXME: how?!?
+    virtual uint64_t current_pos() const { return 0xDEADBEEF; }
+};
+
 
 } // namespace streams
 } // namespace util

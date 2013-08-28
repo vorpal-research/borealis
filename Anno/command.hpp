@@ -29,11 +29,11 @@ std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& ost, const comman
     ost << com.name_;
     if(com.args_.empty()) return ost;
 
-    ost << "(";
-    for(const prod_t& args : borealis::util::view(com.args_.begin(), --com.args_.end())) {
-        ost << *args << ",";
+    ost << "(" << *borealis::util::head(com.args_);
+    for(const prod_t& args : borealis::util::tail(com.args_)) {
+        ost <<  "," << *args;
     }
-    ost << *(com.args_.back()) << ")";
+    ost << ")";
     return ost;
 }
 

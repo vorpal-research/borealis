@@ -9,18 +9,19 @@
 
 #include "Util/util.h"
 
-#include "runner.h"
+#include "Driver/runner.h"
 #include "wrapper.h"
 
 namespace {
 
 using namespace borealis;
+using namespace borealis::driver;
 
 TEST(Runner, noProgram) {
     {
-        int res = borealis::Runner("foo")
-        .withArg("bar")
-        .run();
+        int res = Runner("foo")
+            .withArg("bar")
+            .run();
 
         ASSERT_EQ(E_EXEC_ERROR, res);
     }
@@ -28,9 +29,9 @@ TEST(Runner, noProgram) {
 
 TEST(Runner, noFile) {
     {
-        int res = borealis::Runner("wrapper")
-        .withArg("test/testcases/XXX/iniXX_XX.c")
-        .run();
+        int res = Runner("wrapper")
+            .withArg("test/testcases/XXX/iniXX_XX.c")
+            .run();
 
         ASSERT_EQ(E_GATHER_COMMENTS, res);
     }
@@ -38,9 +39,9 @@ TEST(Runner, noFile) {
 
 TEST(Runner, basic) {
     {
-        int res = borealis::Runner("wrapper")
-        .withArg("test/testcases/aegis/ini01_01.c")
-        .run();
+        int res = Runner("wrapper")
+            .withArg("test/testcases/aegis/ini01_01.c")
+            .run();
 
         ASSERT_EQ(OK, res);
     }

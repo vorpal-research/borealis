@@ -895,7 +895,7 @@ struct diversify_data {
     unsigned int limit;
 
     diversify_data(const Env& env, const std::vector<msat_term>& dvrs) :
-        env(env), dvrs(dvrs.begin(), dvrs.end()), limit(pow(2, dvrs.size())) {}
+        env(env), dvrs(dvrs.begin(), dvrs.end()), limit(std::max(32.0, pow(2, dvrs.size()))) {}
 };
 
 int collect_diversified_models(msat_model_iterator it, void* data) {

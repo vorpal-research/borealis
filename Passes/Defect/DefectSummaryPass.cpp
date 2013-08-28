@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include <clang/Basic/FileManager.h>
 #include <clang/Basic/SourceManager.h>
 #include <llvm/Support/CommandLine.h>
 
@@ -22,12 +23,15 @@ namespace borealis {
 
 typedef DataProvider<clang::SourceManager> DPSourceManager;
 
+static std::string DumpOutputDefault = "";
+static std::string DumpOutputFileDefault = "%s.report";
+
 static llvm::cl::opt<std::string>
-DumpOutput("dump-output", llvm::cl::init("json"), llvm::cl::NotHidden,
+DumpOutput("dump-output", llvm::cl::init(DumpOutputDefault), llvm::cl::NotHidden,
   llvm::cl::desc("Dump analysis results to JSON/XML"));
 
 static llvm::cl::opt<std::string>
-DumpOutputFile("dump-output-file", llvm::cl::init("borealis.report"), llvm::cl::NotHidden,
+DumpOutputFile("dump-output-file", llvm::cl::init(DumpOutputFileDefault), llvm::cl::NotHidden,
   llvm::cl::desc("Output file for analysis results"));
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -46,6 +50,8 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
     auto& dm = GetAnalysis<DefectManager>::doit(this);
     auto& sm = GetAnalysis<DPSourceManager>::doit(this).provide();
+
+    auto* mainFileEntry = sm.getFileEntryForID(sm.getMainFileID());
 
     for (auto& defect : dm) {
         Locus origin = defect.location;
@@ -83,7 +89,10 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
                 << getRawSource(sm, after) << endl;
     }
 
-    if (!DumpOutput.empty() || !DumpOutputFile.empty()) {
+    if (DumpOutput != DumpOutputDefault || DumpOutputFile != DumpOutputFileDefault) {
+
+        util::replace("%s", mainFileEntry->getName(), DumpOutputFile);
+
         if ("json" == DumpOutput) {
             std::ofstream json(DumpOutputFile);
             json << util::jsonify(dm.getData());
