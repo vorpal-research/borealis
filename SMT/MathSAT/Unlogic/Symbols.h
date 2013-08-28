@@ -10,8 +10,10 @@
 
 #include <gmp.h>
 
+#include "Predicate/PredicateFactory.h"
 #include "SMT/MathSAT/MathSAT.h"
 #include "SMT/MathSAT/MathSatTypes.h"
+#include "State/PredicateStateBuilder.h"
 #include "Term/Term.h"
 #include "Term/TermFactory.h"
 #include "Util/macros.h"
@@ -51,7 +53,6 @@ public:
 
     const std::vector<AbstractSymbol::Ptr>& args() const { return args_; }
 
-//    void setArg(unsigned num, AbstractSymbol::Ptr symbol) { args_[num] = symbol; }
     void setArg(unsigned num, AbstractSymbol::Ptr symbol) {
         ASSERTC(num < numArgs_);
         if ( num + 1 > args_.size() ) {
@@ -61,7 +62,7 @@ public:
         args_[num] = symbol;
     }
 
-    virtual Term::Ptr undoThat() const = 0;
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +76,7 @@ public:
 
     std::string name() const { return name_; }
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder&) const override {
         auto TyFP = TypeFactory::get();
         auto TFP = TermFactory::get(nullptr, TyFP);
 
@@ -94,7 +95,7 @@ public:
     TrueSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_TRUE, 0, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder&) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
         return TFP->getBooleanTerm(true);
     }
@@ -107,7 +108,7 @@ public:
     FalseSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_FALSE, 0, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder&) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
         return TFP->getBooleanTerm(false);
     }
@@ -120,7 +121,7 @@ public:
     ConstantSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_FALSE, 0, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder&) const override {
         USING_SMT_LOGIC(MathSAT);
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
 
@@ -162,10 +163,10 @@ public:
     UnaryOperationSymbol(msat_symbol_tag tag, const mathsat::Expr& expr)
         : AbstractSymbol(tag, 1, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
         return TFP->getUnaryTerm(unaryType(),
-                                  args_[0]->undoThat());
+                                  args_[0]->undoThat(stateBuilder));
     }
 
 private:
@@ -187,11 +188,11 @@ public:
     IffOperationSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_IFF, 2, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
         auto xor_ = TFP->getBinaryTerm(llvm::ArithType::XOR,
-                                  args_[0]->undoThat(),
-                                  args_[1]->undoThat());
+                                  args_[0]->undoThat(stateBuilder),
+                                  args_[1]->undoThat(stateBuilder));
         return TFP->getUnaryTerm(llvm::UnaryArithType::NOT, xor_);
     }
 };
@@ -203,11 +204,11 @@ public:
     BinaryOperationSymbol(msat_symbol_tag tag, const mathsat::Expr& expr)
         : AbstractSymbol(tag, 2, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
         return TFP->getBinaryTerm(arithType(),
-                                  args_[0]->undoThat(),
-                                  args_[1]->undoThat());
+                                  args_[0]->undoThat(stateBuilder),
+                                  args_[1]->undoThat(stateBuilder));
     }
 
 private:
@@ -240,11 +241,11 @@ public:
     CmpOperationSymbol(msat_symbol_tag tag, const mathsat::Expr& expr)
         : AbstractSymbol(tag, 2, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
         return TFP->getCmpTerm(conditionType(),
-                                  args_[0]->undoThat(),
-                                  args_[1]->undoThat());
+                                  args_[0]->undoThat(stateBuilder),
+                                  args_[1]->undoThat(stateBuilder));
     }
 
 private:
@@ -268,22 +269,25 @@ public:
     IteOperationSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_ITE, 3, expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
         auto TFP = TermFactory::get(nullptr, TypeFactory::get());
-        return TFP->getTernaryTerm(args_[0]->undoThat(),
-                                   args_[1]->undoThat(),
-                                   args_[2]->undoThat());
+        return TFP->getTernaryTerm(args_[0]->undoThat(stateBuilder),
+                                   args_[1]->undoThat(stateBuilder),
+                                   args_[2]->undoThat(stateBuilder));
     }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class LoadSymbol : public AbstractSymbol {
+
+    static int idx_;
+
 public:
     LoadSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_UNKNOWN, expr.num_args(), expr) {}
 
-    virtual Term::Ptr undoThat() const override {
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
         ASSERT(expr_.decl().name() == "$$__initial_mem__$$",
                 "Can convert only $$_initial_mem_$$ function to load term.");
         ASSERT(numArgs_ == 1,
@@ -291,11 +295,35 @@ public:
 
         auto TyFP = TypeFactory::get();
         auto TFP = TermFactory::get(nullptr, TyFP);
+        auto PF = PredicateFactory::get();
 
-        dbgs() << "Expr: " << expr_ << endl;
-        auto argTerm = args_[0]->undoThat();
-        auto ptr = TFP->getValueTerm(TyFP->getPointer(TyFP->getInteger()), argTerm->getName());
-        return TFP->getLoadTerm(ptr);
+        if (args_[0]->isTerminal()) {
+            auto argTerm = args_[0]->undoThat(stateBuilder);
+            auto ptr = TFP->getValueTerm(TyFP->getPointer(TyFP->getInteger()), argTerm->getName());
+            return TFP->getLoadTerm(ptr);
+        } else {
+            auto name = "$$__initial_mem_idx_" + util::toString(LoadSymbol::idx_) + "__$$";
+            LoadSymbol::idx_++;
+            auto idx = TFP->getValueTerm(TyFP->getPointer(TyFP->getInteger()), name);
+            auto equal = TFP->getCmpTerm(llvm::ConditionType::EQ, idx, args_[0]->undoThat(stateBuilder));
+            stateBuilder += PF->getEqualityPredicate(equal, TFP->getBooleanTerm(true));
+            return TFP->getLoadTerm(idx);
+        }
+    }
+};
+
+int LoadSymbol::idx_ = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+
+class ExtractSymbol : public AbstractSymbol {
+public:
+    ExtractSymbol(const mathsat::Expr& expr)
+        : AbstractSymbol(MSAT_TAG_BV_EXTRACT, 1, expr) {}
+
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
+        auto TFP = TermFactory::get(nullptr, TypeFactory::get());
+        return TFP->getSignTerm(args_[0]->undoThat(stateBuilder));
     }
 };
 
@@ -340,10 +368,14 @@ AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     case MSAT_TAG_BV_SLT: case MSAT_TAG_BV_ULE: case MSAT_TAG_BV_ULT:
         return AbstractSymbol::Ptr{ new CmpOperationSymbol(tag, expr) };
 
+    case MSAT_TAG_BV_EXTRACT:
+        return AbstractSymbol::Ptr{ new ExtractSymbol(expr) };
+
     default:
         if (msat_term_is_uf(expr.env(), expr)) {
             return AbstractSymbol::Ptr{ new LoadSymbol(expr) };
         }
+        dbgs() << "Unknown expr: " << expr << endl;
         BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type.");
     }
 }

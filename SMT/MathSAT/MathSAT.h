@@ -13,6 +13,7 @@
 #include <functional>
 #include <initializer_list>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -33,6 +34,7 @@ class Solver;
 
 typedef std::shared_ptr<msat_config> ConfigPointer;
 typedef std::shared_ptr<msat_env> EnvPointer;
+typedef std::shared_ptr<msat_model_iterator> ModelIteratorPointer;
 
 
 static ConfigPointer makeConfigPointer(msat_config* config) {
@@ -51,6 +53,15 @@ static EnvPointer makeEnvPointer(msat_env* env) {
             delete env_;
         };
     return EnvPointer(env, envDeleter);
+}
+
+static ModelIteratorPointer makeModelIteratorPointer(msat_model_iterator* iter) {
+    auto iterDeleter =
+        [](msat_model_iterator* iter_) {
+            msat_destroy_model_iterator(*iter_);
+            delete iter_;
+        };
+    return ModelIteratorPointer(iter, iterDeleter);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -354,6 +365,51 @@ Expr comp(const Expr& a, const Expr& b);
 Expr rol(const Expr& a, unsigned b);
 Expr ror(const Expr& a, unsigned b);
 Expr distinct(const std::vector<Expr>& exprs);
+
+////////////////////////////////////////////////////////////////////////////////
+// ModelIterator == z3::model
+////////////////////////////////////////////////////////////////////////////////
+
+typedef std::pair<Expr, Expr> term_value;
+
+class ModelIterator {
+private:
+    Env env_;
+    ModelIteratorPointer iterator_;
+    term_value currentValue_;
+
+public:
+
+    typedef std::input_iterator_tag iterator_category;
+
+    explicit ModelIterator(const Env& env);
+
+    ModelIterator(const ModelIterator&) = default;
+    ModelIterator(ModelIterator&&) = default;
+
+    ModelIterator& operator=(const ModelIterator&) = default;
+    ModelIterator& operator=(ModelIterator&&) = default;
+
+    bool operator ==(const ModelIterator& that) const {
+        return this->iterator_ == that.iterator_;
+    }
+
+    bool operator !=(const ModelIterator& that) const {
+        return this->iterator_ != that.iterator_;
+    }
+
+    term_value& operator *();
+    term_value& operator ->() { return *(*this); }
+
+    ModelIterator& operator ++(int);
+    ModelIterator& operator ++() {
+        return (*this)++;
+    }
+
+    bool hasNext() const {
+        return msat_model_iterator_has_next(*iterator_);
+    }
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Solver == z3::solver

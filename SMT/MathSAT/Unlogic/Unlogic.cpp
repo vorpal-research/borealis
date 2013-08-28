@@ -53,14 +53,17 @@ PredicateState::Ptr undoThat(Dynamic& dyn) {
     std::stack<AbstractSymbol::Ptr> symbolStack;
     expr.visit(callback, &symbolStack);
 
-    auto jointSymbol = makeSymbol(symbolStack);
-    auto jointTerm = jointSymbol->undoThat();
-
     auto TF = TermFactory::get(nullptr, TypeFactory::get());
     auto PSF = PredicateStateFactory::get();
     auto PF = PredicateFactory::get();
+
+    PredicateStateBuilder PSB(PSF, PSF->Basic());
+
+    auto jointSymbol = makeSymbol(symbolStack);
+    auto jointTerm = jointSymbol->undoThat(PSB);
+
     auto predicate = (
-            PSF *
+            PSB +=
             PF->getEqualityPredicate(
                     jointTerm,
                     TF->getBooleanTerm(true)
