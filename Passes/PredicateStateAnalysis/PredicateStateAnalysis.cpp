@@ -88,13 +88,15 @@ void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {
 
     auto initial = delegate->getInitialState();
 
-    auto rets = getAllRets(&F);
-    ASSERT(rets.size() <= 1, "Unexpected number of ReturnInst for: " + F.getName().str());
+    auto retOpt = getSingleRetOpt(&F);
 
-    if (rets.empty()) return;
-    auto RI = rets.front();
+    if (retOpt.empty()) return;
+
+    auto* RI = retOpt.getUnsafe();
+
     auto riState = delegate->getInstructionState(RI);
     ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+
     LM.addLocations(riState->getVisited());
 }
 
