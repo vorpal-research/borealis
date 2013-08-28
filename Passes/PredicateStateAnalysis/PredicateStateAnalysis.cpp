@@ -62,14 +62,12 @@ void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
 
     auto initial = delegate->getInitialState();
 
-    auto rets = getAllRets(&F);
-    ASSERT(rets.size() <= 1,
-           "Unexpected number of ReturnInst for: " + F.getName().str());
+    auto retOpt = getSingleRetOpt(&F);
 
     // Function does not return, therefore has no useful summary
-    if (rets.empty()) return;
+    if (retOpt.empty()) return;
 
-    auto* RI = rets.front();
+    auto* RI = retOpt.getUnsafe();
 
     auto riState = delegate->getInstructionState(RI);
     ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
