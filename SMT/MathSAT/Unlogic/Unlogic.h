@@ -8,20 +8,17 @@
 #ifndef MATHSAT_UNLOGIC_H_
 #define MATHSAT_UNLOGIC_H_
 
-#include "SMT/MathSAT/MathSAT.h"
+#include "SMT/MathSAT/MathSatTypes.h"
 #include "State/PredicateState.h"
 
 namespace borealis {
 namespace mathsat_ {
 namespace unlogic {
 
-USING_SMT_LOGIC(MathSAT)
-
-PredicateState::Ptr undoThat(Dynamic& dyn);
+PredicateState::Ptr undoThat(borealis::MathSAT::Dynamic dyn);
 
 } // namespace unlogic
-} //namespace mathsat_
-} //namespace borealis
-
+} // namespace mathsat_
+} // namespace borealis
 
 #endif /* MATHSAT_UNLOGIC_H_ */
