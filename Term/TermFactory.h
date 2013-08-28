@@ -295,7 +295,7 @@ public:
     Term::Ptr getSignTerm(Term::Ptr rhv) {
         return Term::Ptr{
             new SignTerm(
-                    SignTerm::getTermType(TyF, rhv),
+                SignTerm::getTermType(TyF, rhv),
                 rhv
             )
         };

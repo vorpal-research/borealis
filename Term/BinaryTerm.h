@@ -90,7 +90,7 @@ struct SMTImpl<Impl, BinaryTerm> {
         USING_SMT_IMPL(Impl);
 
         auto lhvz3 = SMT<Impl>::doit(t->getLhv(), ef, ctx);
-        auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);;
+        auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
         auto lhvb = lhvz3.template to<Bool>();
         auto rhvb = rhvz3.template to<Bool>();

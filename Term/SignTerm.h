@@ -88,13 +88,15 @@ struct SMTImpl<Impl, SignTerm> {
 
         USING_SMT_IMPL(Impl);
 
-        ASSERTC(ctx != nullptr);
-
         auto rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
-        ASSERT(rhvsmt.template is<DynBV>(), "Sign for not bit-vector");
-        auto rhvbv = rhvsmt.template to<DynBV>().getUnsafe();
-        auto size = rhvbv.getBitSize();
-        return rhvbv.extract(size-1, size-1).zgrowTo(Integer::bitsize);
+
+        auto rhvbv = rhvsmt.template to<DynBV>();
+        ASSERT(!rhvbv.empty(), "Sign for non bit-vector");
+
+        auto rhv = rhvbv.getUnsafe();
+        auto size = rhv.getBitSize();
+
+        return rhv.extract(size-1, size-1).zgrowTo(Integer::bitsize);
     }
 };
 #include "Util/unmacros.h"
