@@ -311,9 +311,11 @@ public:
                 idx,
                 args_[0]->undoThat(FN)
             );
-            // FIXME akhin Add axs as axiom
-            return FN.Term->getLoadTerm(
-                idx
+            return FN.Term->getAxiomTerm(
+                FN.Term->getLoadTerm(
+                    idx
+                ),
+                axs
             );
         }
     }

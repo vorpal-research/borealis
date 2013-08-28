@@ -301,6 +301,15 @@ public:
         };
     }
 
+    Term::Ptr getAxiomTerm(Term::Ptr lhv, Term::Ptr rhv) {
+        return Term::Ptr{
+            new AxiomTerm(
+                AxiomTerm::getTermType(TyF, lhv, rhv),
+                lhv, rhv
+            )
+        };
+    }
+
     static TermFactory::Ptr get(
             SlotTracker* st,
             TypeFactory::Ptr TyF) {

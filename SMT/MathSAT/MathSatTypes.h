@@ -42,6 +42,7 @@ struct MathSAT {
     // memory array
     template<class Elem, class Index> using ArrayImpl = mathsat_::logic::InlinedFuncArray<Elem, Index>;
     typedef mathsat_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
+
 };
 
 } // namespace borealis
