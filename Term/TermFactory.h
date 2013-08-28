@@ -292,6 +292,15 @@ public:
         };
     }
 
+    Term::Ptr getSignTerm(Term::Ptr rhv) {
+        return Term::Ptr{
+            new SignTerm(
+                    SignTerm::getTermType(TyF, rhv),
+                rhv
+            )
+        };
+    }
+
     static TermFactory::Ptr get(
             SlotTracker* st,
             TypeFactory::Ptr TyF) {

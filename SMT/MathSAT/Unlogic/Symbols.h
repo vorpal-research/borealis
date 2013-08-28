@@ -316,6 +316,19 @@ int LoadSymbol::idx_ = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class ExtractSymbol : public AbstractSymbol {
+public:
+    ExtractSymbol(const mathsat::Expr& expr)
+        : AbstractSymbol(MSAT_TAG_BV_EXTRACT, 1, expr) {}
+
+    virtual Term::Ptr undoThat(PredicateStateBuilder& stateBuilder) const override {
+        auto TFP = TermFactory::get(nullptr, TypeFactory::get());
+        return TFP->getSignTerm(args_[0]->undoThat(stateBuilder));
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     if (expr.num_args() == 0) {
         if (msat_term_is_true(expr.env(), expr)) {
@@ -355,10 +368,14 @@ AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     case MSAT_TAG_BV_SLT: case MSAT_TAG_BV_ULE: case MSAT_TAG_BV_ULT:
         return AbstractSymbol::Ptr{ new CmpOperationSymbol(tag, expr) };
 
+    case MSAT_TAG_BV_EXTRACT:
+        return AbstractSymbol::Ptr{ new ExtractSymbol(expr) };
+
     default:
         if (msat_term_is_uf(expr.env(), expr)) {
             return AbstractSymbol::Ptr{ new LoadSymbol(expr) };
         }
+        dbgs() << "Unknown expr: " << expr << endl;
         BYE_BYE(AbstractSymbol::Ptr, "Unknown expr type.");
     }
 }

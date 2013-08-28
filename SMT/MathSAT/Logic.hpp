@@ -567,6 +567,26 @@ public:
         else return DynBitVectorExpr{ *this };
     }
 
+    DynBitVectorExpr zgrowTo(size_t n) const {
+        size_t m = getBitSize();
+        if (m < n)
+            return DynBitVectorExpr{
+                mathsat::zext(msatimpl::getExpr(this), n-m),
+                msatimpl::getAxiom(this)
+            };
+        else return DynBitVectorExpr{ *this };
+    }
+
+    DynBitVectorExpr extract(size_t high, size_t low) const {
+        size_t m = getBitSize();
+        ASSERT(high < m, "High must be less then bit-vector size.");
+        ASSERT(low <= high, "Low mustn't be greater then high.");
+        return DynBitVectorExpr{
+            mathsat::extract(msatimpl::getExpr(this), high, low),
+            msatimpl::getAxiom(this)
+        };
+    }
+
     DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
         size_t sz = std::max(getBitSize(), shift.getBitSize());
         DynBitVectorExpr w = this->growTo(sz);

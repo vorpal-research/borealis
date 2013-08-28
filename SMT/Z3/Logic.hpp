@@ -655,10 +655,33 @@ public:
         auto& ctx = z3impl::getContext(this);
         if (m < n)
             return DynBitVectorExpr{
+                z3::to_expr(ctx, Z3_mk_zero_ext(ctx, n-m, z3impl::getExpr(this))),
+                z3impl::getAxiom(this)
+            };
+        else return DynBitVectorExpr{ *this };
+    }
+
+    DynBitVectorExpr zgrowTo(size_t n) const {
+        size_t m = getBitSize();
+        auto& ctx = z3impl::getContext(this);
+        if (m < n)
+            return DynBitVectorExpr{
                 z3::to_expr(ctx, Z3_mk_sign_ext(ctx, n-m, z3impl::getExpr(this))),
                 z3impl::getAxiom(this)
             };
         else return DynBitVectorExpr{ *this };
+    }
+
+    DynBitVectorExpr extract(size_t high, size_t low) const {
+        size_t m = getBitSize();
+        ASSERT(high < m, "High must be less then bit-vector size.");
+        ASSERT(low <= high, "Low mustn't be greater then high.");
+
+        auto& ctx = z3impl::getContext(this);
+        return DynBitVectorExpr{
+            z3::to_expr(ctx, Z3_mk_extract(ctx, high, low, z3impl::getExpr(this))),
+            z3impl::getAxiom(this)
+        };
     }
 
     DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
