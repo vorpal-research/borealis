@@ -8,6 +8,7 @@
 #include "Config/config.h"
 #include "Passes/PredicateStateAnalysis/Defines.def"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
+#include "Passes/Tracker/NameTracker.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
@@ -39,6 +40,7 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<LocationManager>::addRequiredTransitive(AU);
+    AUX<NameTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
@@ -94,6 +96,8 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     USING_SMT_IMPL(MathSAT);
 
     auto& FM = GetAnalysis<FunctionManager>::doit(this);
+    // TODO akhin Use NameTracker in Unlogic magic
+    // auto& NT = GetAnalysis<NameTracker>::doit(this);
 
     auto retOpt = getSingleRetOpt(&F);
     // Function does not return, therefore has no useful summary
