@@ -29,7 +29,7 @@ class OneForOne:
         public AbstractPredicateStateAnalysis,
         public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<OneForOne>,
-        public ShouldBeModularized {
+        public ShouldBeLazyModularized {
 
     typedef std::vector<PredicateState::Ptr> PredicateStateVector;
     typedef std::unordered_map<const llvm::Instruction*, PredicateStateVector> PredicateStates;
