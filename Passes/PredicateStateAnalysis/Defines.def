@@ -1,3 +1,7 @@
+// NB! All PSAs should be lazy (i.e., ShouldBeLazyModularized)
+//     for the function manager updates to be visible
+//     in between functions
+
 #ifndef HANDLE_PSA
 #define INCLUDE_MODE
 #endif

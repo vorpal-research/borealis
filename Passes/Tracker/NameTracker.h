@@ -13,9 +13,13 @@
 
 #include <unordered_map>
 
+#include "Logging/logger.hpp"
+
 namespace borealis {
 
-class NameTracker : public llvm::ModulePass {
+class NameTracker :
+        public llvm::ModulePass,
+        public borealis::logging::ClassLevelLogging<NameTracker> {
 
 public:
 
@@ -31,10 +35,16 @@ public:
 
 	static char ID;
 
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("name-tracker")
+#include "Util/unmacros.h"
+
 	NameTracker() : ModulePass(ID) {};
-	virtual bool runOnModule(llvm::Module& M) override;
+    virtual ~NameTracker() {}
+
 	virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
-	virtual ~NameTracker() {}
+	virtual bool runOnModule(llvm::Module& M) override;
+	virtual void print(llvm::raw_ostream& O , const llvm::Module* M) const override;
 
 	const nameResolver_t& getGlobalResolver() {
 		return globalResolver;
