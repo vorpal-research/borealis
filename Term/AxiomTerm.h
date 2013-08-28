@@ -29,7 +29,6 @@ message AxiomTerm {
 }
 
 **/
-
 class AxiomTerm: public borealis::Term {
 
     Term::Ptr lhv;
@@ -85,10 +84,10 @@ struct SMTImpl<Impl, AxiomTerm> {
 
         USING_SMT_IMPL(Impl);
 
-        ASSERTC(ctx != nullptr);
-
         auto lhvsmt = SMT<Impl>::doit(t->getLhv(), ef, ctx);
         auto rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+
+        // FIXME: Add withAxiom(...) to Dynamic
 
         if (lhvsmt.template is<Bool>()) {
             auto lhvb = lhvsmt.template to<Bool>();
@@ -97,7 +96,7 @@ struct SMTImpl<Impl, AxiomTerm> {
             auto lhvbv = lhvsmt.template to<DynBV>();
             return lhvbv.getUnsafe().withAxiom(rhvsmt);
         } else {
-            BYE_BYE(Dynamic, "Unknown lhv type.");
+            BYE_BYE(Dynamic, "Unknown lhv type");
         }
     }
 };

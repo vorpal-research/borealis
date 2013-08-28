@@ -6,5 +6,3 @@
  */
 
 #include "Term/AxiomTerm.h"
-
-
