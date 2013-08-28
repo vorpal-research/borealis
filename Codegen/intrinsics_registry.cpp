@@ -25,11 +25,11 @@ static RegisterIntrinsic INTRINSIC_PTR_VERSION {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->getArgumentList().size() > 0);
+        ASSERTC(F->arg_size() > 0);
         return FN.State->Basic() +
                 FN.Predicate->getEqualityPredicate(
                    FN.Term->getReturnValueTerm(F),
-                   FN.Term->getArgumentTerm(F->getArgumentList().begin())
+                   FN.Term->getArgumentTerm(F->arg_begin())
                );
     }
 };
@@ -61,11 +61,11 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->getArgumentList().size() > 0);
+        ASSERTC(F->arg_size() > 0);
         return FN.State->Basic() +
                FN.Predicate->getMallocPredicate(
                    FN.Term->getReturnValueTerm(F),
-                   FN.Term->getArgumentTerm(F->getArgumentList().begin())
+                   FN.Term->getArgumentTerm(F->arg_begin())
                );
     }
 };
@@ -77,10 +77,10 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->getArgumentList().size() > 0);
+        ASSERTC(F->arg_size() > 0);
         return FN.State->Basic() +
                FN.Predicate->getInequalityPredicate(
-                   FN.Term->getArgumentTerm(F->getArgumentList().begin()),
+                   FN.Term->getArgumentTerm(F->arg_begin()),
                    FN.Term->getIntTerm(0ULL),
                    PredicateType::REQUIRES
                );
@@ -99,9 +99,10 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
+        ASSERTC(F->arg_size() > 0);
         return FN.State->Basic() +
                FN.Predicate->getInequalityPredicate(
-                   FN.Term->getArgumentTerm(F->getArgumentList().begin()),
+                   FN.Term->getArgumentTerm(F->arg_begin()),
                    FN.Term->getIntTerm(0ULL),
                    PredicateType::ENSURES
                );
@@ -131,7 +132,7 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->getArgumentList().size() > 1);
+        ASSERTC(F->arg_size() > 1);
 
         auto it = F->arg_begin();
         llvm::Argument* propName = it++;
@@ -161,7 +162,7 @@ static RegisterIntrinsic BUILTIN_BOR_SETPROP {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->getArgumentList().size() > 2);
+        ASSERTC(F->arg_size() > 2);
 
         auto it = F->arg_begin();
         llvm::Argument* propName = it++;

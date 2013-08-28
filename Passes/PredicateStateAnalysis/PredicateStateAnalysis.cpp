@@ -100,6 +100,8 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     if (retOpt.empty()) return;
 
     auto* RI = retOpt.getUnsafe();
+    // Function returns void, therefore has no useful summary
+    if (RI->getReturnValue() == nullptr) return;
 
     std::vector<Term::Ptr> args;
     args.reserve(F.arg_size());
@@ -123,7 +125,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
 
     dbgs() << "Generating summary: " << endl
-           << "  At: " << RI << endl
+           << "  At: " << llvm::valueSummary(RI) << endl
            << "  Query: " << query << endl
            << "  State: " << bdy << endl;
 
