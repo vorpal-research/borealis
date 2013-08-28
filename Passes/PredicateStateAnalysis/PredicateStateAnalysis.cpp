@@ -8,6 +8,10 @@
 #include "Config/config.h"
 #include "Passes/PredicateStateAnalysis/Defines.def"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
+#include "SMT/MathSAT/Solver.h"
+#include "SMT/MathSAT/Unlogic/Unlogic.h"
+#include "State/PredicateStateBuilder.h"
 
 #include "Util/macros.h"
 
@@ -35,6 +39,7 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<LocationManager>::addRequiredTransitive(AU);
+    AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
@@ -45,51 +50,96 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     else
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
 
-    updateVisitedLocs(F);
+    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+    FN = FactoryNest(st);
 
     if ("inline" == Summaries()) {
         updateInlineSummary(F);
+    } else if ("interpol" == Summaries()) {
+        updateInterpolSummary(F);
     }
+
+    updateVisitedLocs(F);
 
     return false;
 }
 
+// Save total function state for inlining
 void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
-    // Save total function state to function manager
-    // for inlining
 
     auto& FM = GetAnalysis<FunctionManager>::doit(this);
 
-    auto initial = delegate->getInitialState();
-
     auto retOpt = getSingleRetOpt(&F);
-
     // Function does not return, therefore has no useful summary
     if (retOpt.empty()) return;
 
     auto* RI = retOpt.getUnsafe();
 
+    auto initial = delegate->getInitialState();
     auto riState = delegate->getInstructionState(RI);
     ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
 
     auto bdy = riState->sliceOn(initial);
     ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
 
-    dbgs() << "Updating function state for: " << F.getName().str() << endl
-           << "  with: " << endl << bdy << endl;
-
     FM.update(&F, bdy);
 }
 
-void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {
-    delegate->runOnFunction(F);
+// Generate interpolation-based function summary
+void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
 
-    auto& LM = GetAnalysis<LocationManager>::doit(this);
+    using borealis::mathsat_::unlogic::undoThat;
+    using borealis::util::view;
 
-    auto initial = delegate->getInitialState();
+    USING_SMT_IMPL(MathSAT);
+
+    auto& FM = GetAnalysis<FunctionManager>::doit(this);
 
     auto retOpt = getSingleRetOpt(&F);
+    // Function does not return, therefore has no useful summary
+    if (retOpt.empty()) return;
 
+    auto* RI = retOpt.getUnsafe();
+
+    std::vector<Term::Ptr> args;
+    args.reserve(F.arg_size());
+    for (auto& arg : view(F.arg_begin(), F.arg_end())) {
+        args.push_back(FN.Term->getArgumentTerm(&arg));
+    }
+
+    PredicateState::Ptr query = (
+        FN.State *
+        FN.Predicate->getEqualityPredicate(
+            FN.Term->getValueTerm(RI->getReturnValue()),
+            FN.Term->getNullPtrTerm()
+        )
+    )();
+
+    auto initial = delegate->getInitialState();
+    auto riState = delegate->getInstructionState(RI);
+    ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+
+    auto bdy = riState->sliceOn(initial);
+    ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
+
+    dbgs() << "Generating summary: " << endl
+           << "  At: " << RI << endl
+           << "  Query: " << query << endl
+           << "  State: " << bdy << endl;
+
+    ExprFactory ef;
+    Solver s(ef);
+
+    auto itp = s.getSummary(args, query, bdy);
+    auto summ = undoThat(itp);
+
+    FM.update(&F, summ);
+}
+
+void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {
+    auto& LM = GetAnalysis<LocationManager>::doit(this);
+
+    auto retOpt = getSingleRetOpt(&F);
     if (retOpt.empty()) return;
 
     auto* RI = retOpt.getUnsafe();
@@ -130,6 +180,5 @@ const std::string PredicateStateAnalysis::Summaries() {
 }
 
 } /* namespace borealis */
-
 
 #include "Util/unmacros.h"

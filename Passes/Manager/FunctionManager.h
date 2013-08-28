@@ -13,10 +13,13 @@
 #include <unordered_map>
 
 #include "Factory/Nest.h"
+#include "Logging/logger.hpp"
 
 namespace borealis {
 
-class FunctionManager : public llvm::ModulePass {
+class FunctionManager :
+        public llvm::ModulePass,
+        public borealis::logging::ClassLevelLogging<FunctionManager> {
 
     struct FunctionDesc {
         PredicateState::Ptr Req;
@@ -41,6 +44,10 @@ class FunctionManager : public llvm::ModulePass {
 public:
 
     static char ID;
+
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("fm")
+#include "Util/unmacros.h"
 
     typedef std::unordered_map<llvm::Function*, FunctionDesc> Data;
     typedef Data::value_type DataEntry;

@@ -13,6 +13,7 @@
 
 #include <unordered_map>
 
+#include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/Location/LocationManager.h"
@@ -106,7 +107,10 @@ private:
 
     AbstractPredicateStateAnalysis* delegate;
 
+    FactoryNest FN;
+
     void updateInlineSummary(llvm::Function& F);
+    void updateInterpolSummary(llvm::Function& F);
     void updateVisitedLocs(llvm::Function&);
 
 };
