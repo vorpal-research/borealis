@@ -13,6 +13,7 @@
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/TermRebinder.h"
 
 #include "Util/macros.h"
 
@@ -96,16 +97,20 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     USING_SMT_IMPL(MathSAT);
 
     auto& FM = GetAnalysis<FunctionManager>::doit(this);
-    // TODO akhin Use NameTracker in Unlogic magic
-    // auto& NT = GetAnalysis<NameTracker>::doit(this);
+    auto& NT = GetAnalysis<NameTracker>::doit(this);
+
+    // No summary if:
+    // - function does not return
+    // - function returns void
+    // - function returns non-pointer
 
     auto retOpt = getSingleRetOpt(&F);
-    // Function does not return, therefore has no useful summary
     if (retOpt.empty()) return;
 
     auto* RI = retOpt.getUnsafe();
-    // Function returns void, therefore has no useful summary
-    if (RI->getReturnValue() == nullptr) return;
+    auto* retVal = RI->getReturnValue();
+    if (retVal == nullptr) return;
+    if ( ! retVal->getType()->isPointerTy() ) return;
 
     std::vector<Term::Ptr> args;
     args.reserve(F.arg_size());
@@ -116,7 +121,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     PredicateState::Ptr query = (
         FN.State *
         FN.Predicate->getEqualityPredicate(
-            FN.Term->getValueTerm(RI->getReturnValue()),
+            FN.Term->getReturnValueTerm(&F),
             FN.Term->getNullPtrTerm()
         )
     )();
@@ -137,7 +142,12 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     Solver s(ef);
 
     auto itp = s.getSummary(args, query, bdy);
-    auto summ = undoThat(itp);
+
+    auto t = TermRebinder(F, &NT, FN);
+
+    auto summ = undoThat(itp)->map(
+        [&t](Predicate::Ptr p) { return t.transform(p); }
+    );
 
     FM.update(&F, summ);
 }
