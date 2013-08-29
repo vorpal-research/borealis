@@ -22,6 +22,11 @@ Runner& Runner::withArg(const std::string& arg) {
     return *this;
 }
 
+Runner& Runner::withArgs(const std::vector<std::string>& args) {
+    this->args.insert(this->args.end(), args.begin(), args.end());
+    return *this;
+}
+
 int Runner::run() {
 
     int pid = fork();

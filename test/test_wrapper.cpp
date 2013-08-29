@@ -55,20 +55,33 @@ public:
         inputF = GetParam();
         expectedF = inputF + ".expected";
         actualF = inputF + ".tmp";
+        paramF = inputF + ".params";
     }
 protected:
     std::string inputF;
     std::string expectedF;
     std::string actualF;
+    std::string paramF;
 };
 
 
 
 TEST_P(WrapperTest, basic) {
+
+    std::vector<std::string> additionalArgs;
+
+    std::ifstream paramS(paramF);
+    while (paramS.good()) {
+        std::string arg;
+        std::getline(paramS, arg);
+        additionalArgs.push_back(arg);
+    }
+
     int res = Runner("wrapper")
         .withArg("---config:wrapper.tests.conf")
         .withArg("---opt:-dump-output=json")
         .withArg("---opt:-dump-output-file=" + actualF)
+        .withArgs(additionalArgs)
         .withArg("-c")
         .withArg(inputF)
         .run();
