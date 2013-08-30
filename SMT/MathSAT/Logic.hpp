@@ -626,6 +626,10 @@ public:
     SomeExpr(const SomeExpr&) = default;
     SomeExpr(const ValueExpr& b): ValueExpr(b) {};
 
+    SomeExpr withAxiom(const ValueExpr& axiom) const {
+        return addAxiom(*this, axiom);
+    }
+
     static SomeExpr mkDynamic(Bool b) { return SomeExpr{ b }; }
 
     template<size_t N>

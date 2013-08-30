@@ -724,6 +724,10 @@ public:
     SomeExpr(const SomeExpr&) = default;
     SomeExpr(const ValueExpr& b): ValueExpr(b) {};
 
+    SomeExpr withAxiom(const ValueExpr& axiom) const {
+        return addAxiom(*this, axiom);
+    }
+
     static SomeExpr mkDynamic(Bool b) { return SomeExpr{ b }; }
 
     template<size_t N>
@@ -1109,12 +1113,6 @@ public:
         context(&ctx), name(std::make_shared<std::string>(name)), inner(f) {}
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         context(&ctx), name(std::make_shared<std::string>(name)) {
-
-        // FIXME belyaev this MAY be generally fucked up, but should work for now
-        // inner = [name,&ctx](Index ix) -> Elem {
-        //     auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
-        //     return initial.select(ix);
-        // };
 
         // FIXME akhin this is as fucked up as before, but also works for now
 

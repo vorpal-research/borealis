@@ -12,6 +12,8 @@
 
 #include "Term/Term.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 /** protobuf -> Term/AxiomTerm.proto
@@ -39,7 +41,9 @@ class AxiomTerm: public borealis::Term {
             class_tag(*this),
             type,
             "(" + lhv->getName() + " with axiom " + rhv->getName() + ")"
-        ), lhv(lhv), rhv(rhv) {};
+        ), lhv(lhv), rhv(rhv) {
+        ASSERT(llvm::isa<type::Bool>(rhv->getType()), "Attempt to add a non-Bool axiom term");
+    };
 
 public:
 
@@ -74,7 +78,6 @@ public:
 
 };
 
-#include "Util/macros.h"
 template<class Impl>
 struct SMTImpl<Impl, AxiomTerm> {
     static Dynamic<Impl> doit(
@@ -87,20 +90,9 @@ struct SMTImpl<Impl, AxiomTerm> {
         auto lhvsmt = SMT<Impl>::doit(t->getLhv(), ef, ctx);
         auto rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        // FIXME: Add withAxiom(...) to Dynamic
-
-        if (lhvsmt.template is<Bool>()) {
-            auto lhvb = lhvsmt.template to<Bool>();
-            return lhvb.getUnsafe().withAxiom(rhvsmt);
-        } else if (lhvsmt.template is<DynBV>()) {
-            auto lhvbv = lhvsmt.template to<DynBV>();
-            return lhvbv.getUnsafe().withAxiom(rhvsmt);
-        } else {
-            BYE_BYE(Dynamic, "Unknown lhv type");
-        }
+        return lhvsmt.withAxiom(rhvsmt);
     }
 };
-#include "Util/unmacros.h"
 
 
 
@@ -132,5 +124,7 @@ struct ConverterImpl<AxiomTerm, proto::AxiomTerm, FN> {
 };
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* AXIOMTERM_H_ */
