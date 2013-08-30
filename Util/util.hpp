@@ -8,12 +8,6 @@
 #ifndef UTIL_HPP_
 #define UTIL_HPP_
 
-#include <llvm/Support/ManagedStatic.h>
-
-#include <cstddef>
-
-#include "debugbreak/debugbreak.h"
-
 #include "Logging/logger.hpp"
 #include "Util/meta.hpp"
 #include "Util/streams.hpp"
@@ -28,19 +22,6 @@
 
 namespace borealis {
 namespace util {
-
-template<typename RetTy = void>
-RetTy sayonara(const std::string& file, int line, const std::string& where, const std::string& reason) {
-    using namespace borealis::logging;
-
-    debug_break();
-
-    errs() << file << ":" << toString(line) << endl
-            << "\t" << where << endl
-            << "\t" << reason << endl;
-    llvm::llvm_shutdown();
-    std::exit(EXIT_FAILURE);
-}
 
 // java-style reference
 template<class T>

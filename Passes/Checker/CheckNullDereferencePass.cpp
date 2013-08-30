@@ -11,7 +11,11 @@
 
 #include "Passes/Checker/CheckNullDereferencePass.h"
 #include "SMT/Z3/Solver.h"
+#include "SMT/MathSAT/Solver.h"
 #include "State/PredicateStateBuilder.h"
+
+
+#define USE_MATHSAT_SOLVER
 
 namespace borealis {
 
@@ -117,8 +121,13 @@ public:
         dbgs() << "Query: " << q->toString() << endl;
         dbgs() << "State: " << ps << endl;
 
-        Z3::ExprFactory z3ef;
-        Z3::Solver s(z3ef);
+#if defined USE_MATHSAT_SOLVER
+        MathSAT::ExprFactory ef;
+        MathSAT::Solver s(ef);
+#else
+        Z3::ExprFactory ef;
+        Z3::Solver s(ef);
+#endif
 
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;

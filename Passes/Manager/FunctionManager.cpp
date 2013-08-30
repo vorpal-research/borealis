@@ -87,6 +87,9 @@ void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
 void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
+    dbgs() << "Updating function state for: " << F->getName().str() << endl
+           << "  with: " << endl << state << endl;
+
     if (containsKey(data, F)) {
         data[F] = mergeFunctionDesc(data.at(F), state);
     } else {

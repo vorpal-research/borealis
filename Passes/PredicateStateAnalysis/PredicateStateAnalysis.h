@@ -13,6 +13,7 @@
 
 #include <unordered_map>
 
+#include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/Location/LocationManager.h"
@@ -77,7 +78,7 @@ protected:
 class PredicateStateAnalysis:
         public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
-        public ShouldBeModularized {
+        public ShouldBeLazyModularized {
 
     typedef AbstractPredicateStateAnalysis::InstructionStates InstructionStates;
 
@@ -106,7 +107,10 @@ private:
 
     AbstractPredicateStateAnalysis* delegate;
 
+    FactoryNest FN;
+
     void updateInlineSummary(llvm::Function& F);
+    void updateInterpolSummary(llvm::Function& F);
     void updateVisitedLocs(llvm::Function&);
 
 };

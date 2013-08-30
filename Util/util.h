@@ -25,6 +25,7 @@
 #include "Util/locations.h"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
+#include "Util/sayonara.hpp"
 #include "Util/streams.hpp"
 #include "Util/util.hpp"
 
@@ -149,6 +150,7 @@ std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
 Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
 
 std::list<ReturnInst*> getAllRets(Function* F);
+borealis::util::option<ReturnInst*> getSingleRetOpt(Function* F);
 
 ////////////////////////////////////////////////////////////////////////////////
 

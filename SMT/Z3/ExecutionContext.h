@@ -17,6 +17,7 @@
 namespace borealis {
 namespace z3_ {
 
+
 class ExecutionContext {
 
     USING_SMT_LOGIC(Z3);

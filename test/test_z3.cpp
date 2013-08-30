@@ -97,6 +97,9 @@ TEST(ExecutionContext, mergeMemory) {
             Bool pred = factory.getBoolVar("$CHECK$");
             s.add(z3impl::asAxiom(implies(pred, !e)));
 
+            infos() << "$CHECK$:" << endl
+            		<< implies(pred, !e) << endl;
+
             z3::expr pred_e = z3impl::getExpr(pred);
             z3::check_result r = s.check(1, &pred_e);
 

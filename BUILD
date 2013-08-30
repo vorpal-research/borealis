@@ -3,6 +3,7 @@ Dependencies
 
  * clang-debug
  * z3-codeplex
+ * mathsat-5
  * jsoncpp
  * tinyxml2-git
  * yaml-cpp

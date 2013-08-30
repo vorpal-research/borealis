@@ -171,6 +171,12 @@ public:
         };
     }
 
+    Term::Ptr getValueTerm(Type::Ptr type, const std::string& name) {
+        return Term::Ptr{
+            new ValueTerm(type, name)
+        };
+    }
+
     Term::Ptr getTernaryTerm(Term::Ptr cnd, Term::Ptr tru, Term::Ptr fls) {
         return Term::Ptr{
             new TernaryTerm(
@@ -283,6 +289,24 @@ public:
     Term::Ptr getOpaqueConstantTerm(bool v) {
         return Term::Ptr{
             new OpaqueBoolConstantTerm(TyF->getBool(), v)
+        };
+    }
+
+    Term::Ptr getSignTerm(Term::Ptr rhv) {
+        return Term::Ptr{
+            new SignTerm(
+                SignTerm::getTermType(TyF, rhv),
+                rhv
+            )
+        };
+    }
+
+    Term::Ptr getAxiomTerm(Term::Ptr lhv, Term::Ptr rhv) {
+        return Term::Ptr{
+            new AxiomTerm(
+                AxiomTerm::getTermType(TyF, lhv, rhv),
+                lhv, rhv
+            )
         };
     }
 

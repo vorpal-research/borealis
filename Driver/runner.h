@@ -27,6 +27,7 @@ public:
 
     Runner(const std::string& program);
     Runner& withArg(const std::string& arg);
+    Runner& withArgs(const std::vector<std::string>& args);
     int run();
 
 private:

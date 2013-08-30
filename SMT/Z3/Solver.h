@@ -25,7 +25,7 @@ class Solver : public borealis::logging::ClassLevelLogging<Solver> {
 public:
 
 #include "Util/macros.h"
-    static constexpr auto loggerDomain() QUICK_RETURN("z3solver")
+    static constexpr auto loggerDomain() QUICK_RETURN("z3-solver")
 #include "Util/unmacros.h"
 
     Solver(ExprFactory& z3ef);

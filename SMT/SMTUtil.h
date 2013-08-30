@@ -53,7 +53,7 @@ BRING_FROM_IMPL(MemArray)
     typedef typename IMPL::MemArray MemArray; \
     typedef typename IMPL::ExprFactory ExprFactory; \
     typedef typename IMPL::ExecutionContext ExecutionContext; \
-    typedef typename IMPL::Solver Solver;
+    typedef typename IMPL::Solver Solver; \
 
 
 

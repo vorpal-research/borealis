@@ -90,7 +90,7 @@ struct SMTImpl<Impl, BinaryTerm> {
         USING_SMT_IMPL(Impl);
 
         auto lhvz3 = SMT<Impl>::doit(t->getLhv(), ef, ctx);
-        auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);;
+        auto rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
         auto lhvb = lhvz3.template to<Bool>();
         auto rhvb = rhvz3.template to<Bool>();
@@ -135,7 +135,25 @@ struct SMTImpl<Impl, BinaryTerm> {
                              llvm::arithString(t->getOpcode()));
             }
         }
+        static int i=0;
+        if (lhvz3.isBool())
+            std::cout << "bool " << i << std::endl;
+        else if (lhvz3.template is<DynBV>())
+            std::cout << "bit-vector " << i << std::endl;
+        else if (lhvz3.isComparable())
+            std::cout << "comparable " << i << std::endl;
+        else
+            std::cout << "хз " << i << std::endl;
 
+        if (rhvz3.isBool())
+            std::cout << "bool " << i << std::endl;
+        else if (rhvz3.template is<DynBV>())
+            std::cout << "bit-vector " << i << std::endl;
+        else if (rhvz3.isComparable())
+            std::cout << "comparable " << i << std::endl;
+        else
+            std::cout << "хз " << i << std::endl;
+        i++;
         BYE_BYE(Dynamic, "Unreachable!");
     }
 };

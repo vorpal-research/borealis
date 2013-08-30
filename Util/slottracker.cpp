@@ -265,7 +265,12 @@ std::string SlotTracker::getLocalName(const Value *V) {
         return V->getName().str();
     } else {
         int slot = this->getLocalSlot(V);
-        return "%" + toString(slot);
+        if (slot != -1) {
+            return "%" + toString(slot);
+        } else {
+            wtf() << "Unknown slot encountered for: " << toString(*V) << endl;
+            return "NO_LOCAL_SLOT_FOR_" + toString(V);
+        }
     }
 }
 

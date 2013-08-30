@@ -28,7 +28,7 @@ class OneForAll:
         public AbstractPredicateStateAnalysis,
         public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<OneForAll>,
-        public ShouldBeModularized {
+        public ShouldBeLazyModularized {
 
     typedef AbstractPredicateAnalysis::PhiBranch PhiBranch;
     typedef AbstractPredicateAnalysis::TerminatorBranch TerminatorBranch;

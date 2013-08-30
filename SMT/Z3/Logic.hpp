@@ -264,6 +264,8 @@ ASPECT_BEGIN(BitVector)
     size_t getBitSize() const { return bitsize; }
 ASPECT_END
 
+// FIXME: Implement zgrow (zext)
+
 template<size_t N0, size_t N1>
 inline
 GUARDED(BitVector<N0>, N0 == N1)
@@ -366,8 +368,6 @@ REDEF_BV_BIN_OP(*)
 REDEF_BV_BIN_OP(/)
 REDEF_BV_BIN_OP(|)
 REDEF_BV_BIN_OP(&)
-REDEF_BV_BIN_OP(>>) // FIXME: z3::expr doesn't have shifts
-REDEF_BV_BIN_OP(<<)
 REDEF_BV_BIN_OP(^)
 
 #undef REDEF_BV_BIN_OP
@@ -661,6 +661,29 @@ public:
         else return DynBitVectorExpr{ *this };
     }
 
+    DynBitVectorExpr zgrowTo(size_t n) const {
+        size_t m = getBitSize();
+        auto& ctx = z3impl::getContext(this);
+        if (m < n)
+            return DynBitVectorExpr{
+                z3::to_expr(ctx, Z3_mk_zero_ext(ctx, n-m, z3impl::getExpr(this))),
+                z3impl::getAxiom(this)
+            };
+        else return DynBitVectorExpr{ *this };
+    }
+
+    DynBitVectorExpr extract(size_t high, size_t low) const {
+        size_t m = getBitSize();
+        ASSERT(high < m, "High must be less then bit-vector size.");
+        ASSERT(low <= high, "Low mustn't be greater then high.");
+
+        auto& ctx = z3impl::getContext(this);
+        return DynBitVectorExpr{
+            z3::to_expr(ctx, Z3_mk_extract(ctx, high, low, z3impl::getExpr(this))),
+            z3impl::getAxiom(this)
+        };
+    }
+
     DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
         size_t sz = std::max(getBitSize(), shift.getBitSize());
         DynBitVectorExpr w = this->growTo(sz);
@@ -701,10 +724,18 @@ public:
     SomeExpr(const SomeExpr&) = default;
     SomeExpr(const ValueExpr& b): ValueExpr(b) {};
 
+    SomeExpr withAxiom(const ValueExpr& axiom) const {
+        return addAxiom(*this, axiom);
+    }
+
     static SomeExpr mkDynamic(Bool b) { return SomeExpr{ b }; }
 
     template<size_t N>
     static SomeExpr mkDynamic(BitVector<N> bv) { return SomeExpr{ bv }; }
+
+    SomeExpr withAxiom(const ValueExpr& axiom) const {
+        return addAxiom(*this, axiom);
+    }
 
     template<class Aspect>
     bool is() {
@@ -859,7 +890,7 @@ public:
     z3::context& ctx() const { return inner.ctx(); }
 
     Res operator()(Args... args) const {
-        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(this->axiom(), massAxiomAnd(args...)));
+        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(axiom(), massAxiomAnd(args...)));
     }
 
     static z3::sort range(z3::context& ctx) {
@@ -1087,15 +1118,9 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         context(&ctx), name(std::make_shared<std::string>(name)) {
 
-        // FIXME belyaev this MAY be generally fucked up, but should work for now
-        // inner = [name,&ctx](Index ix) -> Elem {
-        //     auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
-        //     return initial.select(ix);
-        // };
+        // XXX akhin this is as fucked up as before, but also works for now
 
-        // FIXME akhin this is as fucked up as before, but also works for now
-
-        inner = [name,&ctx](Index ix) -> Elem {
+        inner = [&ctx](Index ix) -> Elem {
             auto initial = Function<Elem(Index)>::mkFunc(ctx, "$$__initial_mem__$$");
             return initial(ix);
         };
@@ -1354,6 +1379,10 @@ public:
         return ost << arr.inner;
     }
 };
+
+#undef ASPECT
+#undef ASPECT_END
+#undef ASPECT_BEGIN
 
 } // namespace logic
 } // namespace z3_
