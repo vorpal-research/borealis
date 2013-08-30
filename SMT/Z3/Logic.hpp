@@ -366,8 +366,6 @@ REDEF_BV_BIN_OP(*)
 REDEF_BV_BIN_OP(/)
 REDEF_BV_BIN_OP(|)
 REDEF_BV_BIN_OP(&)
-REDEF_BV_BIN_OP(>>) // FIXME: z3::expr doesn't have shifts
-REDEF_BV_BIN_OP(<<)
 REDEF_BV_BIN_OP(^)
 
 #undef REDEF_BV_BIN_OP
@@ -655,7 +653,7 @@ public:
         auto& ctx = z3impl::getContext(this);
         if (m < n)
             return DynBitVectorExpr{
-                z3::to_expr(ctx, Z3_mk_zero_ext(ctx, n-m, z3impl::getExpr(this))),
+                z3::to_expr(ctx, Z3_mk_sign_ext(ctx, n-m, z3impl::getExpr(this))),
                 z3impl::getAxiom(this)
             };
         else return DynBitVectorExpr{ *this };
@@ -666,7 +664,7 @@ public:
         auto& ctx = z3impl::getContext(this);
         if (m < n)
             return DynBitVectorExpr{
-                z3::to_expr(ctx, Z3_mk_sign_ext(ctx, n-m, z3impl::getExpr(this))),
+                z3::to_expr(ctx, Z3_mk_zero_ext(ctx, n-m, z3impl::getExpr(this))),
                 z3impl::getAxiom(this)
             };
         else return DynBitVectorExpr{ *this };
