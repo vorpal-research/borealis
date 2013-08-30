@@ -59,8 +59,12 @@ struct SMTImpl<Impl, ConstTerm> {
             const ConstTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
-        // FIXME: this is generally fucked up
-        return ef.getVarByTypeAndName(t->getType(), t->getName());
+        using borealis::logging::endl;
+        using borealis::logging::wtf;
+        // ConstTerm means we have an unsupported LLVM constant somewhere...
+        auto res = ef.getVarByTypeAndName(t->getType(), t->getName());
+        wtf() << "Got " << res << " for " << t->getName() << endl;
+        return res;
     }
 };
 #include "Util/unmacros.h"

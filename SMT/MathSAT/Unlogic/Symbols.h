@@ -115,31 +115,10 @@ public:
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
         USING_SMT_LOGIC(MathSAT);
 
-        // FIXME sam This is VERY FUCKED UP!
-        // Первый способ получить значение константы - это парсить
-        // строковое представление ее имени:
-        // - для бит-векторов это "a_b", где
-        //     a - это значение бит-вектора,
-        //     b - это размерность бит-вектора.
-        // - для арифметических констант это "а", где
-        //     а - это значение константы.
-        //
-        // if (expr_.is_bv()) {
-        //     auto name = expr_.decl().name();
-        //     auto value = name.substr(0, name.find("_"));
-        //     auto size = expr_.get_sort().bv_size();
-        //     if ( Integer::bitsize == size ) {
-        //         return TFP->getIntTerm(std::stoi(value));
-        //     } else if ( Real::bitsize == size ) {
-        //         return TFP->getRealTerm(std::stod(value));
-        //     }
-        //     BYE_BYE(Term::Ptr, "Unknown value type");
-        // }
-
-        // FIXME sam Второй способ получения значения константы - при помощи msat_term_to_number()
         mpq_t q;
         mpq_init(q);
         msat_term_to_number(expr_.env(), expr_, q);
+        // if q = m / 1, q is an integer
         if (mpz_get_si(mpq_denref(q)) == 1) {
             return FN.Term->getIntTerm(mpz_get_si(mpq_numref(q)));
         } else {

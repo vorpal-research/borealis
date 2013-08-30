@@ -264,6 +264,8 @@ ASPECT_BEGIN(BitVector)
     size_t getBitSize() const { return bitsize; }
 ASPECT_END
 
+// FIXME: Implement zgrow (zext)
+
 template<size_t N0, size_t N1>
 inline
 GUARDED(BitVector<N0>, N0 == N1)
@@ -278,7 +280,7 @@ grow(BitVector<N1> bv) {
     z3::context& ctx = z3impl::getContext(bv);
 
     return BitVector<N0>{
-        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))), // FIXME: Do we want zext or sext?
+        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))),
         z3impl::getAxiom(bv)
     };
 }
@@ -366,8 +368,6 @@ REDEF_BV_BIN_OP(*)
 REDEF_BV_BIN_OP(/)
 REDEF_BV_BIN_OP(|)
 REDEF_BV_BIN_OP(&)
-REDEF_BV_BIN_OP(>>) // FIXME: z3::expr doesn't have shifts
-REDEF_BV_BIN_OP(<<)
 REDEF_BV_BIN_OP(^)
 
 #undef REDEF_BV_BIN_OP
@@ -655,7 +655,7 @@ public:
         auto& ctx = z3impl::getContext(this);
         if (m < n)
             return DynBitVectorExpr{
-                z3::to_expr(ctx, Z3_mk_zero_ext(ctx, n-m, z3impl::getExpr(this))),
+                z3::to_expr(ctx, Z3_mk_sign_ext(ctx, n-m, z3impl::getExpr(this))),
                 z3impl::getAxiom(this)
             };
         else return DynBitVectorExpr{ *this };
@@ -666,7 +666,7 @@ public:
         auto& ctx = z3impl::getContext(this);
         if (m < n)
             return DynBitVectorExpr{
-                z3::to_expr(ctx, Z3_mk_sign_ext(ctx, n-m, z3impl::getExpr(this))),
+                z3::to_expr(ctx, Z3_mk_zero_ext(ctx, n-m, z3impl::getExpr(this))),
                 z3impl::getAxiom(this)
             };
         else return DynBitVectorExpr{ *this };
@@ -723,6 +723,10 @@ public:
     SomeExpr(z3::expr e, z3::expr axiom): ValueExpr(e, axiom) {};
     SomeExpr(const SomeExpr&) = default;
     SomeExpr(const ValueExpr& b): ValueExpr(b) {};
+
+    SomeExpr withAxiom(const ValueExpr& axiom) const {
+        return addAxiom(*this, axiom);
+    }
 
     static SomeExpr mkDynamic(Bool b) { return SomeExpr{ b }; }
 
@@ -1114,13 +1118,7 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         context(&ctx), name(std::make_shared<std::string>(name)) {
 
-        // FIXME belyaev this MAY be generally fucked up, but should work for now
-        // inner = [name,&ctx](Index ix) -> Elem {
-        //     auto initial = TheoryArray<Elem, Index>::mkFree(ctx, name + ".initial");
-        //     return initial.select(ix);
-        // };
-
-        // FIXME akhin this is as fucked up as before, but also works for now
+        // XXX akhin this is as fucked up as before, but also works for now
 
         inner = [&ctx](Index ix) -> Elem {
             auto initial = Function<Elem(Index)>::mkFunc(ctx, "$$__initial_mem__$$");

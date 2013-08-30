@@ -133,6 +133,8 @@ int main(int argc, const char** argv) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     atexit(google::protobuf::ShutdownProtobufLibrary);
 
+    atexit(llvm::llvm_shutdown);
+
     using namespace clang;
     using namespace llvm;
 
