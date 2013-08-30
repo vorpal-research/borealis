@@ -24,6 +24,7 @@
 
 #include "Util/collections.hpp"
 #include "Util/option.hpp"
+#include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
 
@@ -225,8 +226,11 @@ public:
 
     /// current_pos - Return the current position within the stream, not
     /// counting the bytes currently in the buffer.
-    // FIXME: how?!?
-    virtual uint64_t current_pos() const { return 0xDEADBEEF; }
+    virtual uint64_t current_pos() const {
+        // FIXME: std::ostream::tellp() should work in most cases
+        //        BUT! log4cpp::CategoryStream does not have that
+        return static_cast<uint64_t>(-1);
+    }
 };
 
 

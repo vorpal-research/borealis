@@ -25,6 +25,7 @@
 #include "Util/locations.h"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
+#include "Util/sayonara.hpp"
 #include "Util/streams.hpp"
 #include "Util/util.hpp"
 
