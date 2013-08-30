@@ -401,10 +401,12 @@ public:
     term_value& operator *();
     term_value& operator ->() { return *(*this); }
 
-    ModelIterator& operator ++(int);
-    ModelIterator& operator ++() {
-        return (*this)++;
+    ModelIterator operator ++(int) {
+        ModelIterator old(*this);
+        ++*this;
+        return old;
     }
+    ModelIterator& operator ++();
 
     bool hasNext() const {
         return msat_model_iterator_has_next(*iterator_);
@@ -445,6 +447,8 @@ public:
 
     std::vector<Expr> unsat_core();
     std::vector<Expr> unsat_assumptions();
+
+    ModelIterator getModel() { return ModelIterator(env_); }
 };
 
 class ISolver : public Solver {

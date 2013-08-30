@@ -15,7 +15,7 @@
 #include "State/PredicateStateBuilder.h"
 
 
-//#define USE_MATHSAT_SOLVER
+#define USE_MATHSAT_SOLVER
 
 namespace borealis {
 

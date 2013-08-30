@@ -820,7 +820,7 @@ term_value& ModelIterator::operator *() {
     return currentValue_;
 }
 
-ModelIterator& ModelIterator::operator ++(int) {
+ModelIterator& ModelIterator::operator ++() {
     if (hasNext()) {
         msat_term term;
         msat_term value;

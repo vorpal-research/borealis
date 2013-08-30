@@ -729,6 +729,10 @@ public:
     template<size_t N>
     static SomeExpr mkDynamic(BitVector<N> bv) { return SomeExpr{ bv }; }
 
+    SomeExpr withAxiom(const ValueExpr& axiom) const {
+        return addAxiom(*this, axiom);
+    }
+
     template<class Aspect>
     bool is() {
         return impl::generator<Aspect>::check(z3impl::getExpr(this));

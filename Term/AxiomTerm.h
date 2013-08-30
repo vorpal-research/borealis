@@ -87,17 +87,7 @@ struct SMTImpl<Impl, AxiomTerm> {
         auto lhvsmt = SMT<Impl>::doit(t->getLhv(), ef, ctx);
         auto rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        // FIXME: Add withAxiom(...) to Dynamic
-
-        if (lhvsmt.template is<Bool>()) {
-            auto lhvb = lhvsmt.template to<Bool>();
-            return lhvb.getUnsafe().withAxiom(rhvsmt);
-        } else if (lhvsmt.template is<DynBV>()) {
-            auto lhvbv = lhvsmt.template to<DynBV>();
-            return lhvbv.getUnsafe().withAxiom(rhvsmt);
-        } else {
-            BYE_BYE(Dynamic, "Unknown lhv type");
-        }
+        return lhvsmt.withAxiom(rhvsmt);
     }
 };
 #include "Util/unmacros.h"
