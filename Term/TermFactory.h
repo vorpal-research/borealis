@@ -98,7 +98,7 @@ public:
 
     Term::Ptr getNullPtrTerm() {
         return Term::Ptr{
-            new OpaqueNullPtrTerm(TyF->getUnknown())
+            new OpaqueNullPtrTerm(TyF->getUnknownType())
         };
     }
 
@@ -258,13 +258,13 @@ public:
 
     Term::Ptr getOpaqueVarTerm(const std::string& name) {
         return Term::Ptr{
-            new OpaqueVarTerm(TyF->getUnknown(), name)
+            new OpaqueVarTerm(TyF->getUnknownType(), name)
         };
     }
 
     Term::Ptr getOpaqueBuiltinTerm(const std::string& name) {
         return Term::Ptr{
-            new OpaqueBuiltinTerm(TyF->getUnknown(), name)
+            new OpaqueBuiltinTerm(TyF->getUnknownType(), name)
         };
     }
 

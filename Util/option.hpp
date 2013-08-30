@@ -176,6 +176,13 @@ public:
         return empty();
     }
 
+    typedef struct unspec_{} *unspecified_pointer_type;
+    operator unspecified_pointer_type() {
+        static unspec_ unspec;
+        if(empty()) return nullptr;
+        else return &unspec;
+    }
+
     const T* get() const {
         return holder.get();
     }
@@ -231,8 +238,8 @@ public:
 };
 
 template<class T>
-option<decay_t<T>> just(T&& val) {
-    return option<decay_t<T>>{ std::forward<T>(val) };
+option<remove_const_reference_t<T>> just(T&& val) {
+    return option<remove_const_reference_t<T>>{ std::forward<T>(val) };
 }
 
 template<class T>
@@ -310,6 +317,13 @@ public:
 
     bool operator!=(const nothing_t&) const {
         return !empty();
+    }
+
+    typedef struct unspec_{} *unspecified_pointer_type;
+    operator unspecified_pointer_type() {
+        static unspec_ unspec;
+        if(empty()) return nullptr;
+        else return &unspec;
     }
 
     bool operator!() const {

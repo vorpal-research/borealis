@@ -151,7 +151,7 @@ struct Destringifier<T, GUARD(std::is_integral<T>::value)> {
         }
         // we rely on shift being 0 if the string is empty
         std::istringstream is(str.c_str() + shift);
-        long long val;
+        T val;
         is >> mod >> val;
         if (!is) return nothing();
         return just(val);

@@ -10,11 +10,11 @@
 
 namespace borealis {
 
-template<class B, class P, class FN>
-struct Converter;
+template<class B>
+struct protobuf_traits;
 
-template<class B, class P, class FN>
-struct ConverterImpl;
+template<class B>
+struct protobuf_traits_impl;
 
 } // namespace borealis
 

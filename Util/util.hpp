@@ -124,14 +124,15 @@ T* heap_copy(const T* val) {
     return new T{ *val };
 }
 
-
-
 template<class T>
 std::unique_ptr<T> uniq(T* val) {
     return std::unique_ptr<T>(val);
 }
 
-
+template<class T, class D>
+std::unique_ptr<T, D> uniq(T* val, D deleter) {
+    return std::unique_ptr<T, D>(val, deleter);
+}
 
 namespace impl {
 template<char Sep>

@@ -129,7 +129,7 @@ private: \
     CLASS(Self&& state) = default; \
 public: \
     friend class PredicateStateFactory; \
-    template<class B, class P, class FN> friend struct ConverterImpl; \
+    template<class B> friend struct protobuf_traits_impl; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

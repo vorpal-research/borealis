@@ -17,7 +17,9 @@ int main(int argc, char** argv) {
 
   ::testing::InitGoogleTest(&argc, argv);
 
-  borealis::config::Config cfg("wrapper.tests.conf");
+  borealis::config::Config cfg{
+      new borealis::config::FileConfigSource("wrapper.tests.conf")
+  };
   auto logFile = cfg.getValue<std::string>("logging", "ini");
   for (const auto& op : logFile) {
       borealis::logging::configureLoggingFacility(op);

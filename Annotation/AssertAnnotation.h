@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/AssertAnnotation.proto
+import "Annotation/LogicAnnotation.proto";
+
+package borealis.proto;
+
+message AssertAnnotation {
+    extend borealis.proto.LogicAnnotation {
+        optional AssertAnnotation ext = 2;
+    }
+}
+
+**/
 class AssertAnnotation: public LogicAnnotation {
     typedef AssertAnnotation self;
 

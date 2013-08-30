@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/EndMaskAnnotation.proto
+import "Annotation/Annotation.proto";
+
+package borealis.proto;
+
+message EndMaskAnnotation {
+    extend borealis.proto.Annotation {
+        optional EndMaskAnnotation ext = 2;
+    }
+}
+
+**/
 class EndMaskAnnotation: public Annotation {
     typedef EndMaskAnnotation self;
 

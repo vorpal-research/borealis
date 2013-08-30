@@ -13,6 +13,21 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/MaskAnnotation.proto
+import "Annotation/Annotation.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message MaskAnnotation {
+    extend borealis.proto.Annotation {
+        optional MaskAnnotation ext = 6;
+    }
+
+    repeated borealis.proto.Term masks = 1;
+}
+
+**/
 class MaskAnnotation: public Annotation {
     typedef MaskAnnotation self;
 
@@ -31,6 +46,8 @@ public:
     static bool classof(const self*) {
         return true;
     }
+
+    const std::vector<Term::Ptr>& getMasks() const { return masks; }
 
     virtual std::string argToString() const {
         using borealis::util::head;

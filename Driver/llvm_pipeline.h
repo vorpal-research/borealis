@@ -15,7 +15,7 @@
 namespace borealis {
 namespace driver {
 
-class llvm_pipeline: public logging::ClassLevelLogging<llvm_pipeline> {
+class llvm_pipeline: public logging::DelegateLogging {
     struct impl;
     std::unique_ptr<impl> pimpl;
 

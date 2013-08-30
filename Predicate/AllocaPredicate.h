@@ -90,34 +90,6 @@ struct SMTImpl<Impl, AllocaPredicate> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<AllocaPredicate, proto::AllocaPredicate, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::AllocaPredicate* toProtobuf(const AllocaPredicate* p) {
-        auto res = util::uniq(new proto::AllocaPredicate());
-        res->set_allocated_lhv(
-            TermConverter::toProtobuf(p->getLhv()).release()
-        );
-        res->set_allocated_numelements(
-            TermConverter::toProtobuf(p->getNumElems()).release()
-        );
-        return res.release();
-    }
-
-    static Predicate::Ptr fromProtobuf(
-            FN fn,
-            PredicateType type,
-            const proto::AllocaPredicate& p) {
-        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
-        auto numElems = TermConverter::fromProtobuf(fn, p.numelements());
-        return Predicate::Ptr{ new AllocaPredicate(lhv, numElems, type) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* ALLOCAPREDICATE_H_ */

@@ -20,6 +20,20 @@
 
 namespace borealis {
 
+namespace proto { class Annotation; }
+/** protobuf -> Annotation/Annotation.proto
+import "Util/locations.proto";
+
+package borealis.proto;
+
+message Annotation {
+    optional Locus locus = 1;
+
+    extensions 2 to 16;
+}
+
+**/
+
 class Annotation : public std::enable_shared_from_this<Annotation> {
 private:
     typedef Annotation self;
@@ -33,6 +47,7 @@ protected:
 
 public:
     typedef std::shared_ptr<self> Ptr;
+    typedef std::unique_ptr<proto::Annotation> ProtoPtr;
 
     Annotation(borealis::id_t annotation_type_id, keyword_t keyword, Locus locus):
         annotation_type_id(annotation_type_id),

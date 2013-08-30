@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/AssumeAnnotation.proto
+import "Annotation/LogicAnnotation.proto";
+
+package borealis.proto;
+
+message AssumeAnnotation {
+    extend borealis.proto.LogicAnnotation {
+        optional AssumeAnnotation ext = 4;
+    }
+}
+
+**/
 class AssumeAnnotation: public LogicAnnotation {
     typedef AssumeAnnotation self;
 

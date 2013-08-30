@@ -96,34 +96,6 @@ struct SMTImpl<Impl, MallocPredicate> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<MallocPredicate, proto::MallocPredicate, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::MallocPredicate* toProtobuf(const MallocPredicate* p) {
-        auto res = util::uniq(new proto::MallocPredicate());
-        res->set_allocated_lhv(
-            TermConverter::toProtobuf(p->getLhv()).release()
-        );
-        res->set_allocated_numelements(
-            TermConverter::toProtobuf(p->getNumElems()).release()
-        );
-        return res.release();
-    }
-
-    static Predicate::Ptr fromProtobuf(
-            FN fn,
-            PredicateType type,
-            const proto::MallocPredicate& p) {
-        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
-        auto numElems = TermConverter::fromProtobuf(fn, p.numelements());
-        return Predicate::Ptr{ new MallocPredicate(lhv, numElems, type) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* MALLOCPREDICATE_H_ */

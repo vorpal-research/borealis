@@ -18,8 +18,31 @@
 #include "Util/json_traits.hpp"
 #include "Util/xml_traits.hpp"
 
+#include "Protobuf/Gen/Util/locations.pb.h"
+
 namespace borealis {
 
+////////////////////////////////////////////////////////////////////////////////
+
+/** protobuf -> Util/locations.proto
+package borealis.proto;
+
+message LocalLocus {
+    optional uint32 line = 1;
+    optional uint32 col = 2;
+}
+
+message Locus {
+    optional borealis.proto.LocalLocus loc = 1;
+    optional string filename = 2;
+}
+
+message LocusRange {
+    optional borealis.proto.Locus lhv = 1;
+    optional borealis.proto.Locus rhv = 2;
+}
+
+**/
 struct LocalLocus {
     enum class measure{ line, col };
     static constexpr unsigned UNKNOWN_LOC = ~0U;
@@ -176,7 +199,9 @@ struct Locus {
     Locus(Locus&& that) = default;
     explicit Locus(const LocalLocus& that): filename(UNKNOWN_NAME), loc(that) {};
     explicit Locus(LocalLocus&& that): filename(UNKNOWN_NAME), loc(std::move(that)) {};
-    Locus(const clang::PresumedLoc& that): filename(that.getFilename()), loc(that.getLine(), that.getColumn()) {};
+    Locus(const clang::PresumedLoc& that): filename([](const char* fn){ return fn?fn:""; }(that.getFilename())), loc(that.getLine(), that.getColumn()) {};
+    Locus(const clang::SourceLocation& enc, const clang::SourceManager& mgr):
+        Locus(mgr.getPresumedLoc(enc)) {};
     Locus(const llvm::DILocation& that): filename(that.getFilename()), loc(that.getLineNumber(), that.getColumnNumber()) {};
     Locus(const std::string& filename, const LocalLocus& loc): filename(filename), loc(loc) {};
     Locus(const std::string& filename, unsigned line, unsigned col): filename(filename), loc(line, col) {};

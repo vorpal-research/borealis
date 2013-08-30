@@ -7,4 +7,3 @@
 
 #include "Config/config.h"
 
-borealis::config::Config::~Config() {}

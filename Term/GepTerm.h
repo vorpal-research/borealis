@@ -129,54 +129,6 @@ struct SMTImpl<Impl, GepTerm> {
     }
 };
 
-
-
-template<class FN>
-struct ConverterImpl<GepTerm, proto::GepTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::GepTerm* toProtobuf(const GepTerm* t) {
-        auto res = util::uniq(new proto::GepTerm());
-
-        res->set_allocated_base(
-            TermConverter::toProtobuf(t->getBase()).release()
-        );
-
-        for (const auto& shift : t->getShifts()) {
-            res->mutable_by()->AddAllocated(
-                TermConverter::toProtobuf(shift.first).release()
-            );
-            res->mutable_size()->AddAllocated(
-                TermConverter::toProtobuf(shift.second).release()
-            );
-        }
-
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN fn,
-            Type::Ptr type,
-            const std::string&,
-            const proto::GepTerm& t) {
-
-        auto base = TermConverter::fromProtobuf(fn, t.base());
-
-        ASSERT(t.by_size() == t.size_size(),
-               "Mismatching sizes for GepTerm::by and GepTerm::size");
-
-        GepTerm::Shifts shifts;
-        shifts.reserve(t.by_size());
-        for (int i = 0; i < t.by_size(); ++i) {
-            auto by = TermConverter::fromProtobuf(fn, t.by(i));
-            auto size = TermConverter::fromProtobuf(fn, t.size(i));
-            shifts.push_back({by, size});
-        }
-
-        return Term::Ptr{ new GepTerm(type, base, shifts) };
-    }
-};
 #include "Util/unmacros.h"
 
 } /* namespace borealis */

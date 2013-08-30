@@ -90,38 +90,6 @@ struct SMTImpl<Impl, GlobalsPredicate> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<GlobalsPredicate, proto::GlobalsPredicate, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::GlobalsPredicate* toProtobuf(const GlobalsPredicate* p) {
-        auto res = util::uniq(new proto::GlobalsPredicate());
-        for (const auto& g : p->getGlobals()) {
-            res->mutable_globals()->AddAllocated(
-                TermConverter::toProtobuf(g).release()
-            );
-        }
-        return res.release();
-    }
-
-    static Predicate::Ptr fromProtobuf(
-            FN fn,
-            PredicateType type,
-            const proto::GlobalsPredicate& p) {
-        std::vector<Term::Ptr> globals;
-        globals.reserve(p.globals_size());
-        for (const auto& g : p.globals()) {
-            globals.push_back(
-                TermConverter::fromProtobuf(fn, g)
-            );
-        }
-        return Predicate::Ptr{ new GlobalsPredicate(globals, type) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* GLOBALSPREDICATE_H_ */

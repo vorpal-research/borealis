@@ -10,8 +10,10 @@
 
 #include <iterator>
 #include <list>
+#include <memory>
 
 #include "Util/meta.hpp"
+#include "Util/option.hpp"
 
 namespace borealis {
 namespace util {
@@ -37,15 +39,25 @@ begin_end_pair(const Container& c) {
 template<class RootIt, class UnaryFunc>
 class mapped_iterator {
     RootIt current;
-    UnaryFunc Fn;
+    std::shared_ptr<UnaryFunc> Fn;
+
+    const UnaryFunc& fn() const { return *Fn; }
+
 public:
     typedef typename std::iterator_traits<RootIt>::iterator_category
             iterator_category;
     typedef typename std::iterator_traits<RootIt>::difference_type
             difference_type;
-    typedef decltype(Fn(*current)) value_type;
+    typedef decltype(some<UnaryFunc>()(*current)) value_type;
 
-    typedef struct{} pointer;
+    struct pointer{
+        value_type val;
+
+        value_type* operator->() {
+            return &val;
+        }
+    };
+
     // typedef typename UnaryFunc::result_type* pointer;
     typedef value_type reference; // Can't modify value returned by Fn
 
@@ -53,13 +65,20 @@ public:
     typedef mapped_iterator<RootIt, UnaryFunc> _Self;
 
     inline const RootIt& getCurrent() const { return current; }
-    inline const UnaryFunc& getFunc() const { return Fn; }
+    inline const UnaryFunc& getFunc() const { return fn(); }
 
-    inline mapped_iterator(const RootIt& I, UnaryFunc F) : current(I), Fn(F) {}
+    mapped_iterator() = default;
+    inline mapped_iterator(const RootIt& I, UnaryFunc F) :
+            current(I), Fn(std::make_shared<UnaryFunc>(F)) {}
     inline mapped_iterator(const mapped_iterator& It) = default;
 
     inline value_type operator*() const {    // All this work to do this
-        return Fn(*current);                   // little change
+        if(!Fn) throw 0;
+        return fn()(*current);                   // little change
+    }
+
+    inline pointer operator->() const {
+        return pointer{ **this };
     }
 
     _Self& operator++() { ++current; return *this; }
@@ -145,7 +164,7 @@ public:
     typedef RootIt iterator_type;
     typedef glued_iterator self;
 
-    inline glued_iterator() {};
+    glued_iterator() = default;
     inline explicit glued_iterator(const Ranges& ranges) : rest(ranges) {
         validate();
     }
@@ -204,13 +223,13 @@ class flattened_iterator {
 
     typedef decltype(std::begin(*current)) ChildIt;
 
-    ChildIt child;
+    option<ChildIt> child;
 
     void validate() {
         while (current != end && child == current->end()) {
             ++current;
             if (current != end) {
-                child = current->begin();
+                child = just(current->begin());
             }
         }
     }
@@ -232,11 +251,13 @@ public:
     typedef flattened_iterator<RootIt> self;
 
     inline const RootIt& getCurrent() const { return current; }
-    inline ChildIt& getChild() { return child; }
-    inline const ChildIt& getChild() const { return child; }
+    inline ChildIt& getChild() { if(!child) throw 0; return child.getUnsafe(); }
+    inline const ChildIt& getChild() const { if(!child) throw 0; return child.getUnsafe(); }
+
+    flattened_iterator() = default;
 
     inline flattened_iterator(const RootIt& I, const RootIt& E)
-    : current(I), end(E), child(I != E ? I->begin() : ChildIt()) {
+    : current(I), end(E), child(I != E ? just(I->begin()) : nothing()) {
         validate();
     }
 
@@ -246,11 +267,13 @@ public:
     inline flattened_iterator(const flattened_iterator& It) = default;
 
     inline reference operator*() const {
-        return *child;
+        if(!child) throw 0;
+        return **(child.get());
     }
 
-    inline pointer operator->() const {
-        return &*child;
+    inline ChildIt operator->() const {
+        if(!child) throw 0;
+        return child.getUnsafe();
     }
 
     self& operator++() {
@@ -344,11 +367,15 @@ template<class RootIt, class Pred>
 class filtered_iterator {
     RootIt current;
     RootIt end;
-    Pred pred;
+    std::shared_ptr<Pred> pred;
+
+    const Pred& predf() const {
+        return *pred;
+    }
 
     // restore the invariant ( pred(*current) == true || current == end )
     void validate() {
-        while ((current != end) && !(pred(*current))) ++current;
+        while ((current != end) && !(predf()(*current))) ++current;
     }
 
 public:
@@ -369,8 +396,9 @@ public:
 
     inline const RootIt& getCurrent() const { return current; }
 
+    filtered_iterator() = default;
     inline filtered_iterator(const RootIt& I, const RootIt& E, Pred pred)
-    : current(I), end(E), pred(pred) {
+    : current(I), end(E), pred(std::make_shared<Pred>(pred)) {
         validate();
     }
 
@@ -434,6 +462,7 @@ public:
     typedef value_type* pointer;
     typedef value_type& reference;
 
+    key_iterator() = default;
     key_iterator(const key_iterator&) = default;
     key_iterator(key_iterator&&) = default;
     key_iterator(const Iterator& base) : base(base) {};
@@ -484,6 +513,7 @@ public:
     typedef value_type* pointer;
     typedef value_type& reference;
 
+    value_iterator() = default;
     value_iterator(const value_iterator&) = default;
     value_iterator(value_iterator&&) = default;
     value_iterator(const Iterator& base) : base(base) {};
@@ -534,6 +564,7 @@ public:
     typedef const value_type* pointer;
     typedef const value_type& reference;
 
+    value_citerator() = default;
     value_citerator(const value_citerator&) = default;
     value_citerator(value_citerator&&) = default;
     value_citerator(const Iterator& base) : base(base) {};

@@ -27,11 +27,12 @@ class ClassLevelLogging {
 private:
     static std::string logger;
 
-protected:
+public:
     const std::string& getLoggerDomain() const {
         return logger;
     }
 
+protected:
     static stream_t dbgs() {
         return dbgsFor(logger);
     }
@@ -73,11 +74,12 @@ class ObjectLevelLogging {
 private:
     mutable std::string logger;
 
-protected:
+public:
     const std::string& getLoggerDomain() const {
         return logger;
     }
 
+protected:
     void assignLogger(const std::string& domain) {
         logger = domain;
     }
@@ -95,11 +97,39 @@ protected:
     }
 };
 
-template<class T>
-class DelegateLogging: public ObjectLevelLogging<T> {
+class DelegateLogging {
+    std::function<const std::string&()> keeper;
+
+    static const std::string& def() {
+        static std::string empty = "";
+        return empty;
+    }
+public:
+    template<class T>
+    void assignLogger(const T& domain) {
+        keeper = [&]{ return domain.getLoggerDomain(); };
+    }
+
+    const std::string& getLoggerDomain() const {
+        return keeper();
+    }
+
 protected:
-    template<class U>
-    explicit DelegateLogging(const U& that): ObjectLevelLogging<T>{that.getLoggerDomain()} {};
+
+    template<class T>
+    DelegateLogging(const T& domain): keeper([&]{ return domain.getLoggerDomain(); }) {}
+    DelegateLogging(const std::string& domain): keeper([domain]{ return domain; }) {}
+    DelegateLogging(): keeper(def) {}
+
+    stream_t dbgs() const { return dbgsFor(getLoggerDomain()); }
+    stream_t infos() const { return infosFor(getLoggerDomain()); }
+    stream_t warns() const { return warnsFor(getLoggerDomain()); }
+    stream_t errs() const { return errsFor(getLoggerDomain()); }
+    stream_t criticals() const { return criticalsFor(getLoggerDomain()); }
+
+    stream_t logs(priority_t ll = priority_t::DEBUG) const {
+        return logsFor(ll, getLoggerDomain());
+    }
 };
 
 inline stream_t dbgs() { return dbgsFor(""); }

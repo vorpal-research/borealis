@@ -99,35 +99,6 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<ReadPropertyTerm, proto::ReadPropertyTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::ReadPropertyTerm* toProtobuf(const ReadPropertyTerm* t) {
-        auto res = util::uniq(new proto::ReadPropertyTerm());
-        res->set_allocated_propname(
-            TermConverter::toProtobuf(t->getPropertyName()).release()
-        );
-        res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv()).release()
-        );
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN fn,
-            Type::Ptr type,
-            const std::string&,
-            const proto::ReadPropertyTerm& t) {
-        auto propName = TermConverter::fromProtobuf(fn, t.propname());
-        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
-        return Term::Ptr{ new ReadPropertyTerm(type, propName, rhv) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* READPROPERTYTERM_H_ */

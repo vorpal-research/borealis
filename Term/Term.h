@@ -113,7 +113,7 @@ private: \
     CLASS(const CLASS&) = default; \
 public: \
     friend class TermFactory; \
-    template<class B, class P, class FN> friend struct ConverterImpl; \
+    template<class B> friend struct protobuf_traits_impl; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

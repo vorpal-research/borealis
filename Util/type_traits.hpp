@@ -25,6 +25,12 @@ using add_lvalue_reference_t = typename std::add_lvalue_reference<T>::type;
 template<class T>
 using underlying_type_t = typename std::underlying_type<T>::type;
 
+template<class T>
+using remove_cv_t = typename std::remove_cv<T>::type;
+
+template<class T>
+using remove_const_reference_t = remove_cv_t<remove_reference_t<T>>;
+
 } // namespace util
 } // namespace borealis
 

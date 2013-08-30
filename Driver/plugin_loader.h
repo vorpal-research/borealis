@@ -11,10 +11,12 @@
 #include <memory>
 #include <string>
 
+#include "Logging/logger.hpp"
+
 namespace borealis {
 namespace driver {
 
-class plugin_loader {
+class plugin_loader: public borealis::logging::DelegateLogging {
     struct impl;
     std::unique_ptr<impl> pimpl;
 public:

@@ -12,6 +12,7 @@
 #include "State/PredicateStateFactory.h"
 #include "Term/TermFactory.h"
 #include "Type/TypeFactory.h"
+#include "Util/slottracker.h"
 
 namespace borealis {
 
@@ -19,23 +20,20 @@ class FactoryNest {
 
 public:
 
-    TypeFactory::Ptr Type;
-    TermFactory::Ptr Term;
-    PredicateFactory::Ptr Predicate;
-    PredicateStateFactory::Ptr State;
+    std::shared_ptr<TypeFactory> Type;
+    std::shared_ptr<TermFactory> Term;
+    std::shared_ptr<PredicateFactory> Predicate;
+    std::shared_ptr<PredicateStateFactory> State;
 
-    FactoryNest() {};
-    FactoryNest(const FactoryNest&) = default;
-    FactoryNest(FactoryNest&&) = default;
+    FactoryNest();
+    FactoryNest(const FactoryNest&);
+    FactoryNest(FactoryNest&&);
+    ~FactoryNest();
 
-    FactoryNest& operator=(const FactoryNest&) = default;
-    FactoryNest& operator=(FactoryNest&&) = default;
+    FactoryNest& operator=(const FactoryNest&);
+    FactoryNest& operator=(FactoryNest&&);
 
-    FactoryNest(SlotTracker* st) :
-        Type(TypeFactory::get()),
-        Term(TermFactory::get(st, Type)),
-        Predicate(PredicateFactory::get()),
-        State(PredicateStateFactory::get()) {};
+    FactoryNest(SlotTracker* st);
 
 };
 

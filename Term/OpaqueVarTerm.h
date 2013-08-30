@@ -64,29 +64,6 @@ struct SMTImpl<Impl, OpaqueVarTerm> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<OpaqueVarTerm, proto::OpaqueVarTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::OpaqueVarTerm* toProtobuf(const OpaqueVarTerm* t) {
-        auto res = util::uniq(new proto::OpaqueVarTerm());
-        res->set_vname(t->getVName());
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN,
-            Type::Ptr type,
-            const std::string&,
-            const proto::OpaqueVarTerm& t) {
-        auto vname = t.vname();
-        return Term::Ptr{ new OpaqueVarTerm(type, vname) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* OPAQUEVARTERM_H_ */

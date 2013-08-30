@@ -48,7 +48,7 @@ public:
         return theFloat;
     }
 
-    Type::Ptr getUnknown() {
+    Type::Ptr getUnknownType() {
         if(!theUnknown) theUnknown = Type::Ptr(new type::UnknownType());
         return theUnknown;
     }

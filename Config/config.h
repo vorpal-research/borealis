@@ -24,13 +24,106 @@ namespace config {
 #define RESTRICT_PARAMETER_TO(PARAM, ...) class PARAM##Resolver = \
     std::enable_if< borealis::util::is_T_in<PARAM, __VA_ARGS__>::value >
 
-class Config {
+class ConfigSource {
+public:
+    template<class T>
+    using option = borealis::util::option<T>;
 
+    ConfigSource(){};
+    virtual ~ConfigSource(){};
+    virtual option<int> getIntValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<bool> getBoolValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<std::string> getStringValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<double> getDoubleValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<std::vector<std::string>> getVectorValue(const std::string& section, const std::string& option) const = 0;
+};
+
+class FileConfigSource: public ConfigSource {
     ConfigParser_t parser;
     bool valid;
 
 public:
+    FileConfigSource(const std::string& file) :
+        parser{},
+        valid{ parser.readFile(file) == 0 } {}
+    FileConfigSource(const char* file) :
+        parser{},
+        valid{ parser.readFile(file) == 0 } {}
 
+    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, bool, std::string, std::vector<std::string>)>
+    borealis::util::option<T> getValue(const std::string& section, const std::string& option) const {
+        using borealis::util::just;
+        using borealis::util::nothing;
+
+        T ret;
+
+        if (valid && parser.getValue(section, option, &ret))
+            return just(std::move(ret));
+
+        return nothing();
+    }
+
+    virtual option<int> getIntValue(const std::string& section, const std::string& option) const override {
+        return getValue<int>(section, option);
+    }
+    virtual option<bool> getBoolValue(const std::string& section, const std::string& option) const override {
+        return getValue<bool>(section, option);
+    }
+    virtual option<std::string> getStringValue(const std::string& section, const std::string& option) const override {
+        return getValue<std::string>(section, option);
+    }
+    virtual option<double> getDoubleValue(const std::string& section, const std::string& option) const override {
+        return getValue<double>(section, option);
+    }
+    virtual option<std::vector<std::string>> getVectorValue(const std::string& section, const std::string& option) const override {
+        return getValue<std::vector<std::string>>(section, option);
+    }
+};
+
+namespace impl{
+
+template<class, class>
+struct valueAcquire;
+
+template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string)>
+struct valueAcquire {
+    static borealis::util::option<T> doit(const std::vector<std::string>& opts) {
+        using namespace borealis::util;
+        if(opts.empty()) return nothing();
+        else return fromString<T>(opts.back());
+    }
+};
+
+template<>
+struct valueAcquire<std::vector<std::string>> {
+    static borealis::util::option<std::vector<std::string>> doit(const std::vector<std::string>& opts) {
+        using namespace borealis::util;
+        if(opts.empty()) return nothing();
+        else return just(opts);
+    }
+};
+
+template<>
+struct valueAcquire<bool> {
+    static borealis::util::option<bool> doit(const std::vector<std::string>& opts) {
+        using namespace borealis::util;
+        if(opts.empty()) return nothing();
+
+        const auto& v = opts.back();
+        if (v == "1" || v == "true" || v == "on" || v == "yes") {
+            return just(true);
+        }
+        if (v == "0" || v == "false" || v == "off" || v == "no") {
+            return just(false);
+        }
+        return nothing();
+    }
+};
+
+
+}
+class StructuredConfigSource: public ConfigSource {
+public:
     typedef std::unordered_map<
         std::string,
         std::unordered_map<
@@ -40,78 +133,178 @@ public:
     > Overrides;
 
 private:
-
     Overrides overrides;
 
-    bool getOverride(const std::string& section, const std::string& option, bool& value) {
-        auto vals = overrides[section][option];
-        if (vals.empty()) return false;
+public:
+    StructuredConfigSource(const Overrides& overrides): overrides(overrides){};
+    virtual ~StructuredConfigSource(){};
 
-        auto& v = vals[vals.size()-1];
-        if (v == "1" || v == "true" || v == "on" || v == "yes") {
-            value = true;
-            return true;
+    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string, bool, std::vector<std::string>)>
+    borealis::util::option<T> getValue(const std::string& section, const std::string& option) const {
+        for(const auto& sec : util::at(overrides, section)) {
+            for(const auto& opt : util::at(sec, option)) {
+                return impl::valueAcquire<T>::doit(opt);
+            }
         }
-        if (v == "0" || v == "false" || v == "off" || v == "no") {
-            value = false;
-            return true;
+        return borealis::util::nothing();
+    }
+
+    virtual option<int> getIntValue(const std::string& section, const std::string& option) const override {
+        return getValue<int>(section, option);
+    }
+    virtual option<bool> getBoolValue(const std::string& section, const std::string& option) const override {
+        return getValue<bool>(section, option);
+    }
+    virtual option<std::string> getStringValue(const std::string& section, const std::string& option) const override {
+        return getValue<std::string>(section, option);
+    }
+    virtual option<double> getDoubleValue(const std::string& section, const std::string& option) const override {
+        return getValue<double>(section, option);
+    }
+    virtual option<std::vector<std::string>> getVectorValue(const std::string& section, const std::string& option) const override {
+        return getValue<std::vector<std::string>>(section, option);
+    }
+};
+
+class CommandLineConfigSource: public StructuredConfigSource {
+public:
+    CommandLineConfigSource(const std::vector<std::string>& opts):
+        StructuredConfigSource{ [&opts]() -> StructuredConfigSource::Overrides{
+            StructuredConfigSource::Overrides ret;
+
+            for(const auto& opt: opts) {
+                auto fst = opt.find(':');
+                auto snd = opt.find(':', fst+1);
+
+                if(fst == std::string::npos || snd == std::string::npos) continue;
+
+                ret[opt.substr(0, fst-1)]
+                   [opt.substr(fst+1,snd-fst-1)]
+                   .push_back(opt.substr(snd+1));
+            }
+
+            return ret;
+        }() }{}
+};
+
+namespace impl_ {
+    template<class T>
+    struct accessor;
+
+    template<>
+    struct accessor<int> {
+        borealis::util::option<int> operator()(
+                const ConfigSource& src,
+                const std::string& section,
+                const std::string& option
+        ) const {
+            return src.getIntValue(section, option);
         }
-        return false;
-    }
+    };
 
-    bool getOverride(const std::string& section, const std::string& option, std::vector<std::string>& value) {
-        auto vals = overrides[section][option];
-        if (vals.empty()) return false;
+    template<>
+    struct accessor<bool> {
+        borealis::util::option<bool> operator()(
+                const ConfigSource& src,
+                const std::string& section,
+                const std::string& option
+        ) const {
+            return src.getBoolValue(section, option);
+        }
+    };
 
-        value.insert(value.begin(), vals.begin(), vals.end());
-        return true;
-    }
+    template<>
+    struct accessor<double> {
+        borealis::util::option<double> operator()(
+                const ConfigSource& src,
+                const std::string& section,
+                const std::string& option
+        ) const {
+            return src.getDoubleValue(section, option);
+        }
+    };
 
-    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string)>
-    bool getOverride(const std::string& section, const std::string& option, T& value) {
-        auto vals = overrides[section][option];
-        if (vals.empty()) return false;
+    template<>
+    struct accessor<std::string> {
+        borealis::util::option<std::string> operator()(
+                const ConfigSource& src,
+                const std::string& section,
+                const std::string& option
+        ) const {
+            return src.getStringValue(section, option);
+        }
+    };
 
-        auto& v = vals[vals.size()-1];
-        std::istringstream iss(v);
-        iss >> value;
-        return !iss.fail();
-    }
+    template<>
+    struct accessor<std::vector<std::string>> {
+        borealis::util::option<std::vector<std::string>> operator()(
+                const ConfigSource& src,
+                const std::string& section,
+                const std::string& option
+        ) const {
+            return src.getVectorValue(section, option);
+        }
+    };
+
+    template<class T>
+    struct combiner {
+        borealis::util::option<T> operator() (
+                const std::vector<std::unique_ptr<ConfigSource>>& sources,
+                const std::string& section,
+                const std::string& option
+        ) {
+            borealis::util::option<T> ret{};
+            for(const auto& source: sources) {
+                if(ret) return ret;
+                ret = impl_::accessor<T>()(*source, section, option);
+            }
+            return std::move(ret);
+        }
+    };
+
+    template<>
+    struct combiner<std::vector<std::string>> {
+        borealis::util::option<std::vector<std::string>> operator() (
+                const std::vector<std::unique_ptr<ConfigSource>>& sources,
+                const std::string& section,
+                const std::string& option
+        ) {
+            std::vector<std::string> ret{};
+            for(const auto& source: sources) {
+                for(const auto& vec:
+                        accessor<std::vector<std::string>>()(*source, section, option)) {
+                    ret.reserve(ret.size() + vec.size());
+                    ret.insert(std::end(ret), std::begin(vec), std::end(vec));
+                }
+            }
+            return util::just(std::move(ret));
+        }
+    };
+}
+
+class Config {
+    typedef std::unique_ptr<ConfigSource> uniq;
+    std::vector<uniq> sources;
 
 public:
-
-    Config(const std::string& file, const Overrides& overrides) :
-        valid(parser.readFile(file) == 0), overrides(overrides) {}
-    Config(const std::string& file) :
-        valid(parser.readFile(file) == 0) {}
+    Config() = default;
     Config(const Config&) = default;
     Config(Config&&) = default;
 
-    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, bool, std::string, std::vector<std::string>)>
-    borealis::util::option<T> getValue(const std::string& section, const std::string& option) {
-        using borealis::util::just;
-        using borealis::util::nothing;
+    template<class ...Ptrs>
+    Config(Ptrs... sources) : sources{}{
+        std::vector<ConfigSource*> tmp{ sources... };
+        for(auto ptr: tmp) this->sources.emplace_back(ptr);
+    };
+    ~Config() {};
 
-        T ret;
-
-        if (getOverride(section, option, ret))
-            return just(std::move(ret));
-
-        if (valid && parser.getValue(section, option, &ret))
-            return just(std::move(ret));
-
-        return nothing();
+    template<class T>
+    borealis::util::option<T> getValue(
+            const std::string& section,
+            const std::string& option) const {
+        return impl_::combiner<T>()(sources, section, option);
     }
 
-    std::multimap<std::string, std::string> optionsFor(const std::string& name) {
-        return parser.getOptions(name);
-    }
-
-    inline bool ok() {
-        return valid;
-    }
-
-    ~Config();
 };
 
 #undef RESTRICT_PARAMETER_TO
@@ -119,7 +312,9 @@ public:
 #include "Util/macros.h"
 
 class AppConfiguration {
-    std::unique_ptr<Config> globalConfig;
+    typedef Config Cfg;
+
+    std::unique_ptr<Cfg> globalConfig;
 
     AppConfiguration(): globalConfig(nullptr) {};
     ~AppConfiguration() {};
@@ -130,12 +325,9 @@ public:
         return ac;
     }
 
-    static void initialize(const std::string& filename, const Config::Overrides& overrides) {
-        instance().globalConfig.reset(new Config(filename, overrides));
-    }
-
-    static void initialize(const std::string& filename) {
-        instance().globalConfig.reset(new Config(filename));
+    template<class ...Sources>
+    static void initialize(const Sources& ...sources) {
+        instance().globalConfig.reset(new Cfg({ sources... }));
     }
 
     template<class T>

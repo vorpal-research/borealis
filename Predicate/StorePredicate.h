@@ -87,34 +87,6 @@ struct SMTImpl<Impl, StorePredicate> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<StorePredicate, proto::StorePredicate, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::StorePredicate* toProtobuf(const StorePredicate* p) {
-        auto res = util::uniq(new proto::StorePredicate());
-        res->set_allocated_lhv(
-            TermConverter::toProtobuf(p->getLhv()).release()
-        );
-        res->set_allocated_rhv(
-            TermConverter::toProtobuf(p->getRhv()).release()
-        );
-        return res.release();
-    }
-
-    static Predicate::Ptr fromProtobuf(
-            FN fn,
-            PredicateType type,
-            const proto::StorePredicate& p) {
-        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
-        auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
-        return Predicate::Ptr{ new StorePredicate(lhv, rhv, type) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* STOREPREDICATE_H_ */

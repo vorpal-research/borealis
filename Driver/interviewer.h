@@ -21,7 +21,7 @@
 namespace borealis {
 namespace driver {
 
-class interviewer: public borealis::logging::ObjectLevelLogging<interviewer> {
+class interviewer: public borealis::logging::DelegateLogging {
     struct impl;
     std::unique_ptr<impl> pimpl;
 public:

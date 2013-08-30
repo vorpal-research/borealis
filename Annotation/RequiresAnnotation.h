@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/RequiresAnnotation.proto
+import "Annotation/LogicAnnotation.proto";
+
+package borealis.proto;
+
+message RequiresAnnotation {
+    extend borealis.proto.LogicAnnotation {
+        optional RequiresAnnotation ext = 6;
+    }
+}
+
+**/
 class RequiresAnnotation: public LogicAnnotation {
     typedef RequiresAnnotation self;
 

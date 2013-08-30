@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/SkipAnnotation.proto
+import "Annotation/Annotation.proto";
+
+package borealis.proto;
+
+message SkipAnnotation {
+    extend borealis.proto.Annotation {
+        optional SkipAnnotation ext = 7;
+    }
+}
+
+**/
 class SkipAnnotation: public Annotation {
     typedef SkipAnnotation self;
 

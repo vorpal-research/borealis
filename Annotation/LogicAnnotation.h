@@ -12,6 +12,22 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/LogicAnnotation.proto
+import "Annotation/Annotation.proto";
+import "Term/Term.proto";
+
+package borealis.proto;
+
+message LogicAnnotation {
+    extend borealis.proto.Annotation {
+        optional LogicAnnotation ext = 5;
+    }
+
+    optional borealis.proto.Term term = 1;
+    extensions 2 to 16;
+}
+
+**/
 class LogicAnnotation: public Annotation {
     typedef LogicAnnotation self;
 

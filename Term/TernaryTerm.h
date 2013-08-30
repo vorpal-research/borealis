@@ -102,39 +102,6 @@ struct SMTImpl<Impl, TernaryTerm> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<TernaryTerm, proto::TernaryTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::TernaryTerm* toProtobuf(const TernaryTerm* t) {
-        auto res = util::uniq(new proto::TernaryTerm());
-        res->set_allocated_cnd(
-            TermConverter::toProtobuf(t->getCnd()).release()
-        );
-        res->set_allocated_tru(
-            TermConverter::toProtobuf(t->getTru()).release()
-        );
-        res->set_allocated_fls(
-            TermConverter::toProtobuf(t->getFls()).release()
-        );
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN fn,
-            Type::Ptr type,
-            const std::string&,
-            const proto::TernaryTerm& t) {
-        auto cnd = TermConverter::fromProtobuf(fn, t.cnd());
-        auto tru = TermConverter::fromProtobuf(fn, t.tru());
-        auto fls = TermConverter::fromProtobuf(fn, t.fls());
-        return Term::Ptr{ new TernaryTerm(type, cnd, tru, fls) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* TERNARYTERM_H_ */

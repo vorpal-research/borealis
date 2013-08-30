@@ -317,6 +317,16 @@ TEST(Util, iterators) {
     }
 
     {
+        std::vector<std::list<int>> con {
+            { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 }
+        };
+
+        std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        EXPECT_EQ(pat, viewContainer(con).flatten().to<std::vector<int>>());
+    }
+
+    {
         std::vector<std::list<std::vector<int>>> con {
             { { 1, 2, 3 }, { 4, 5, 6 } }, { { 7 } }, { { 8, 9 } }
         };

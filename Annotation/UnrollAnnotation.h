@@ -13,6 +13,20 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/UnrollAnnotation.proto
+import "Annotation/Annotation.proto";
+
+package borealis.proto;
+
+message UnrollAnnotation {
+    extend borealis.proto.Annotation {
+        optional UnrollAnnotation ext = 9;
+    }
+
+    optional uint32 level = 1;
+}
+
+**/
 class UnrollAnnotation: public Annotation {
     typedef UnrollAnnotation self;
     size_t level;

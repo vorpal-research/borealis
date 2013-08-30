@@ -19,7 +19,7 @@
 namespace borealis {
 namespace driver {
 
-class clang_pipeline: public logging::ClassLevelLogging<clang_pipeline> {
+class clang_pipeline: public logging::DelegateLogging {
     struct impl;
     std::unique_ptr<impl> pimpl;
 

@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/InlineAnnotation.proto
+import "Annotation/Annotation.proto";
+
+package borealis.proto;
+
+message InlineAnnotation {
+    extend borealis.proto.Annotation {
+        optional InlineAnnotation ext = 4;
+    }
+}
+
+**/
 class InlineAnnotation: public Annotation {
     typedef InlineAnnotation self;
 

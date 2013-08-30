@@ -41,11 +41,11 @@ public:
 
     void failWith(const std::string& message);
     inline void failWith(llvm::Twine twine) {
-        return failWith(twine.str());
+        failWith(twine.str());
     }
     // resolving ambiguity
     inline void failWith(const char* r) {
-        return failWith(std::string(r));
+        failWith(std::string(r));
     }
 
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm) {

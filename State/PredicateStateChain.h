@@ -91,33 +91,6 @@ struct SMTImpl<Impl, PredicateStateChain> {
     }
 };
 
-
-
-template<class FN>
-struct ConverterImpl<PredicateStateChain, proto::PredicateStateChain, FN> {
-
-    typedef Converter<PredicateState, proto::PredicateState, FN> PredicateStateConverter;
-
-    static proto::PredicateStateChain* toProtobuf(const PredicateStateChain* ps) {
-        auto res = util::uniq(new proto::PredicateStateChain());
-        res->set_allocated_base(
-            PredicateStateConverter::toProtobuf(ps->getBase()).release()
-        );
-        res->set_allocated_curr(
-            PredicateStateConverter::toProtobuf(ps->getCurr()).release()
-        );
-        return res.release();
-    }
-
-    static PredicateState::Ptr fromProtobuf(
-            FN fn,
-            const proto::PredicateStateChain& ps) {
-        auto base = PredicateStateConverter::fromProtobuf(fn, ps.base());
-        auto curr = PredicateStateConverter::fromProtobuf(fn, ps.curr());
-        return PredicateState::Ptr{ new PredicateStateChain(base, curr) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* PREDICATESTATECHAIN_H_ */

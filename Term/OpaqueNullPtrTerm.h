@@ -56,26 +56,6 @@ struct SMTImpl<Impl, OpaqueNullPtrTerm> {
     }
 };
 
-
-
-template<class FN>
-struct ConverterImpl<OpaqueNullPtrTerm, proto::OpaqueNullPtrTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::OpaqueNullPtrTerm* toProtobuf(const OpaqueNullPtrTerm*) {
-        return util::uniq(new proto::OpaqueNullPtrTerm()).release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN,
-            Type::Ptr type,
-            const std::string&,
-            const proto::OpaqueNullPtrTerm&) {
-        return Term::Ptr{ new OpaqueNullPtrTerm(type) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* OPAQUENULLPTRTERM_H_ */

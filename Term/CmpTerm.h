@@ -133,37 +133,6 @@ struct SMTImpl<Impl, CmpTerm> {
 };
 #include "Util/unmacros.h"
 
-
-
-template<class FN>
-struct ConverterImpl<CmpTerm, proto::CmpTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::CmpTerm* toProtobuf(const CmpTerm* t) {
-        auto res = util::uniq(new proto::CmpTerm());
-        res->set_opcode(static_cast<proto::ConditionType>(t->getOpcode()));
-        res->set_allocated_lhv(
-            TermConverter::toProtobuf(t->getLhv()).release()
-        );
-        res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv()).release()
-        );
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN fn,
-            Type::Ptr type,
-            const std::string&,
-            const proto::CmpTerm& t) {
-        auto opcode = static_cast<llvm::ConditionType>(t.opcode());
-        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
-        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
-        return Term::Ptr{ new CmpTerm(type, opcode, lhv, rhv) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* CMPTERM_H_ */

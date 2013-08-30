@@ -8,7 +8,11 @@
 #include "Driver/interviewer.h"
 
 #include <clang/Basic/Diagnostic.h>
+#include <clang/Driver/Arg.h>
+#include <clang/Driver/ArgList.h>
 #include <clang/Driver/Compilation.h>
+#include <clang/Driver/Option.h>
+#include <clang/Driver/Options.h>
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/Program.h>
@@ -50,8 +54,7 @@ interviewer::interviewer(
     const std::vector<const char*>& args,
     const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags,
     const borealis::config::StringConfigEntry& config
-): borealis::logging::ObjectLevelLogging<interviewer>{ "derigeto." + what },
-   pimpl{ new impl { what, args, diags, config }}
+): pimpl{ new impl { what, args, diags, config }}
     {
 
     auto invoke_args = std::vector<const char*>{};
@@ -64,6 +67,16 @@ interviewer::interviewer(
     });
 
     pimpl->theCompilation = borealis::util::uniq(pimpl->theDriver->BuildCompilation(invoke_args));
+
+    if (pimpl->theCompilation->getArgs().hasArg(clang::driver::options::OPT_c)) {
+        errs() << "Hello!!!!" << endl;
+    }
+
+    for(const auto& inp :
+            borealis::util::view(pimpl->theCompilation->getArgs().filtered_begin(clang::driver::options::OPT_INPUT),
+                                 pimpl->theCompilation->getArgs().filtered_end())) {
+        errs() << inp->getValue(pimpl->theCompilation->getArgs()) << endl;
+    }
 };
 
 util::option_ref<const clang::driver::DerivedArgList> interviewer::getRealArgs() const {

@@ -77,28 +77,6 @@ struct SMTImpl<Impl, ArgumentTerm> {
 };
 
 
-
-template<class FN>
-struct ConverterImpl<ArgumentTerm, proto::ArgumentTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::ArgumentTerm* toProtobuf(const ArgumentTerm* t) {
-        auto res = util::uniq(new proto::ArgumentTerm());
-        res->set_idx(t->getIdx());
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN,
-            Type::Ptr type,
-            const std::string& name,
-            const proto::ArgumentTerm& t) {
-        auto idx = t.idx();
-        return Term::Ptr{ new ArgumentTerm(type, idx, name) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* ARGUMENTTERM_H_ */

@@ -75,29 +75,6 @@ struct SMTImpl<Impl, OpaqueFloatingConstantTerm> {
     }
 };
 
-
-
-template<class FN>
-struct ConverterImpl<OpaqueFloatingConstantTerm, proto::OpaqueFloatingConstantTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::OpaqueFloatingConstantTerm* toProtobuf(const OpaqueFloatingConstantTerm* t) {
-        auto res = util::uniq(new proto::OpaqueFloatingConstantTerm());
-        res->set_value(t->getValue());
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN,
-            Type::Ptr type,
-            const std::string&,
-            const proto::OpaqueFloatingConstantTerm& t) {
-        auto value = t.value();
-        return Term::Ptr{ new OpaqueFloatingConstantTerm(type, value) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* OPAQUEFLOATINGCONSTANTTERM_H_ */

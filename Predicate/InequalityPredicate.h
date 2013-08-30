@@ -72,34 +72,6 @@ struct SMTImpl<Impl, InequalityPredicate> {
     }
 };
 
-
-
-template<class FN>
-struct ConverterImpl<InequalityPredicate, proto::InequalityPredicate, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::InequalityPredicate* toProtobuf(const InequalityPredicate* p) {
-        auto res = util::uniq(new proto::InequalityPredicate());
-        res->set_allocated_lhv(
-            TermConverter::toProtobuf(p->getLhv()).release()
-        );
-        res->set_allocated_rhv(
-            TermConverter::toProtobuf(p->getRhv()).release()
-        );
-        return res.release();
-    }
-
-    static Predicate::Ptr fromProtobuf(
-            FN fn,
-            PredicateType type,
-            const proto::InequalityPredicate& p) {
-        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
-        auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
-        return Predicate::Ptr{ new InequalityPredicate(lhv, rhv, type) };
-    }
-};
-
 } /* namespace borealis */
 
 #endif /* INEQUALITYPREDICATE_H_ */

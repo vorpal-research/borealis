@@ -13,6 +13,20 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/StackDepthAnnotation.proto
+import "Annotation/Annotation.proto";
+
+package borealis.proto;
+
+message StackDepthAnnotation {
+    extend borealis.proto.Annotation {
+        optional StackDepthAnnotation ext = 8;
+    }
+
+    optional uint32 depth = 1;
+}
+
+**/
 class StackDepthAnnotation: public Annotation {
     typedef StackDepthAnnotation self;
     size_t depth;
@@ -26,6 +40,8 @@ public:
     virtual std::string argToString() const {
         return " " + std::to_string(depth);
     }
+
+    size_t getDepth() const { return depth; }
 
     static bool classof(const Annotation* a) {
         return a->getTypeId() == type_id<self>();

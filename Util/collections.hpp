@@ -55,6 +55,11 @@ public:
     CollectionView<filtered_iterator<ContainerIter, Pred>> filter(Pred pred) const {
         return CollectionView<filtered_iterator<ContainerIter, Pred>>{filter_iterator(begin_, end_, pred), filter_iterator(end_, pred)};
     }
+
+    template<class Con>
+    Con to() {
+        return Con(this->begin(), this->end());
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -214,32 +219,39 @@ bool contains(const Container& con, const T& t) {
     return std::find(std::begin(con), end, t) != end;
 }
 
+template<class M, class K>
+auto at(M&& m, K&& k) -> decltype(justRef(m.at(k))) {
+    auto it = m.find(k);
+    if(it != std::end(m)) {
+        return justRef(m.at(k));
+    }
+    return nothing();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace impl_ {
-namespace {
 
 template<class Tup, class Op, size_t N = std::tuple_size<Tup>::value>
 struct tuple_for_each_helper {
     enum{ tsize = std::tuple_size<Tup>::value };
-    inline static void apply(Tup& tup, Op op) {
-        op(std::get<tsize-N>(tup));
-        tuple_for_each_helper<Tup, Op, N-1>::apply(tup, op);
+    inline static void apply(Tup&& tup, Op op) {
+        op(std::get<tsize-N>(std::forward(tup)));
+        tuple_for_each_helper<Tup, Op, N-1>::apply(std::forward(tup), op);
     }
 };
 
 template<class Tup, class Op>
 struct tuple_for_each_helper<Tup, Op, 0> {
-    inline static void apply(Tup&, Op) {};
+    inline static void apply(Tup&&, Op) {};
 };
 
-} // namespace
 } // namespace impl_
 
 template<class Tup, class Op>
-void tuple_for_each(Tup& tup, Op op) {
+void tuple_for_each(Tup&& tup, Op op) {
     typedef impl_::tuple_for_each_helper<Tup, Op> delegate;
-    return delegate::apply(tup, op);
+    return delegate::apply(std::forward(tup), op);
 }
 
 } // namespace util

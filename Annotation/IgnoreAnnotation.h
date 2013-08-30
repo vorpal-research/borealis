@@ -13,6 +13,18 @@
 
 namespace borealis {
 
+/** protobuf -> Annotation/IgnoreAnnotation.proto
+import "Annotation/Annotation.proto";
+
+package borealis.proto;
+
+message IgnoreAnnotation {
+    extend borealis.proto.Annotation {
+        optional IgnoreAnnotation ext = 3;
+    }
+}
+
+**/
 class IgnoreAnnotation: public Annotation {
     typedef IgnoreAnnotation self;
 
