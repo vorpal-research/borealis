@@ -264,6 +264,8 @@ ASPECT_BEGIN(BitVector)
     size_t getBitSize() const { return bitsize; }
 ASPECT_END
 
+// FIXME: Implement zgrow (zext)
+
 template<size_t N0, size_t N1>
 inline
 GUARDED(BitVector<N0>, N0 == N1)
@@ -278,7 +280,7 @@ grow(BitVector<N1> bv) {
     z3::context& ctx = z3impl::getContext(bv);
 
     return BitVector<N0>{
-        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))), // FIXME: Do we want zext or sext?
+        z3::to_expr(ctx, Z3_mk_sign_ext(ctx, N0-N1, z3impl::getExpr(bv))),
         z3impl::getAxiom(bv)
     };
 }
@@ -1112,7 +1114,7 @@ public:
     InlinedFuncArray(z3::context& ctx, const std::string& name):
         context(&ctx), name(std::make_shared<std::string>(name)) {
 
-        // FIXME akhin this is as fucked up as before, but also works for now
+        // XXX akhin this is as fucked up as before, but also works for now
 
         inner = [&ctx](Index ix) -> Elem {
             auto initial = Function<Elem(Index)>::mkFunc(ctx, "$$__initial_mem__$$");

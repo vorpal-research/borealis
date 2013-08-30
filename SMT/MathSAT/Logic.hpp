@@ -247,6 +247,8 @@ ASPECT_BEGIN(BitVector)
     size_t getBitSize() const { return bitsize; }
 ASPECT_END
 
+// FIXME: Implement zgrow (zext)
+
 template<size_t N0, size_t N1>
 inline
 GUARDED(BitVector<N0>, N0 == N1)
@@ -261,7 +263,7 @@ grow(BitVector<N1> bv) {
     mathsat::Env env = msatimpl::getEnvironment(bv);
 
     return BitVector<N0>{
-        mathsat::Expr(env, msat_make_bv_sext(env, N0-N1, msatimpl::getExpr(bv))), // FIXME: Do we want zext or sext?
+        mathsat::Expr(env, msat_make_bv_sext(env, N0-N1, msatimpl::getExpr(bv))),
         msatimpl::getAxiom(bv)
     };
 }
@@ -813,7 +815,7 @@ public:
     InlinedFuncArray(mathsat::Env& env, const std::string& name):
         environment(&env), name(std::make_shared<std::string>(name)) {
 
-        // FIXME akhin this is as fucked up as before, but also works for now
+        // XXX akhin this is as fucked up as before, but also works for now
 
         inner = [&env](Index ix) -> Elem {
             auto initial = Function<Elem(Index)>::mkFunc(env, "$$__initial_mem__$$");

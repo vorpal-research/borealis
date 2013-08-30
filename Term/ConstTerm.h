@@ -61,7 +61,7 @@ struct SMTImpl<Impl, ConstTerm> {
             ExecutionContext<Impl>*) {
         using borealis::logging::endl;
         using borealis::logging::wtf;
-        // FIXME: this is generally fucked up
+        // ConstTerm means we have an unsupported LLVM constant somewhere...
         auto res = ef.getVarByTypeAndName(t->getType(), t->getName());
         wtf() << "Got " << res << " for " << t->getName() << endl;
         return res;
