@@ -59,8 +59,12 @@ struct SMTImpl<Impl, ConstTerm> {
             const ConstTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        using borealis::logging::endl;
+        using borealis::logging::wtf;
         // FIXME: this is generally fucked up
-        return ef.getVarByTypeAndName(t->getType(), t->getName());
+        auto res = ef.getVarByTypeAndName(t->getType(), t->getName());
+        wtf() << "Got " << res << " for " << t->getName() << endl;
+        return res;
     }
 };
 #include "Util/unmacros.h"
