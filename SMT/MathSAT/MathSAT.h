@@ -396,7 +396,7 @@ public:
             env_(env),
             it_(makeModelIteratorPointer(new msat_model_iterator())) {
         *it_ = msat_create_model_iterator(env_);
-        ASSERTС(!MSAT_ERROR_MODEL_ITERATOR(*it_));
+        ASSERTC(!MSAT_ERROR_MODEL_ITERATOR(*it_));
 
         ++*this; // load the first model element from msat
     }
