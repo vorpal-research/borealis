@@ -5,27 +5,27 @@
 #ifdef INCLUDE_MODE
 #undef INCLUDE_MODE
 
+#include "Predicate/AllocaPredicate.h"
+#include "Predicate/DefaultSwitchCasePredicate.h"
 #include "Predicate/EqualityPredicate.h"
+#include "Predicate/GlobalsPredicate.h"
 #include "Predicate/InequalityPredicate.h"
+#include "Predicate/MallocPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/WritePropertyPredicate.h"
-#include "Predicate/AllocaPredicate.h"
-#include "Predicate/MallocPredicate.h"
-#include "Predicate/DefaultSwitchCasePredicate.h"
-#include "Predicate/GlobalsPredicate.h"
 
 #define HANDLE_PREDICATE(NAME, CLASS)
 
 #endif
 
+HANDLE_PREDICATE(Alloca, AllocaPredicate)
+HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)
 HANDLE_PREDICATE(Equality, EqualityPredicate)
+HANDLE_PREDICATE(Globals, GlobalsPredicate)
 HANDLE_PREDICATE(Inequality, InequalityPredicate)
+HANDLE_PREDICATE(Malloc, MallocPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(WriteProperty, WritePropertyPredicate)
-HANDLE_PREDICATE(Alloca, AllocaPredicate)
-HANDLE_PREDICATE(Malloc, MallocPredicate)
-HANDLE_PREDICATE(DefaultSwitchCase, DefaultSwitchCasePredicate)
-HANDLE_PREDICATE(Globals, GlobalsPredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE

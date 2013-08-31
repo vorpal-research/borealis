@@ -8,8 +8,6 @@
 #ifndef EQUALITYPREDICATE_H_
 #define EQUALITYPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/EqualityPredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {

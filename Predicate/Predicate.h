@@ -15,8 +15,6 @@
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
-#include "Protobuf/ConverterUtil.h"
-#include "Protobuf/Gen/Predicate/Predicate.pb.h"
 #include "SMT/SMTUtil.h"
 #include "Term/Term.h"
 #include "Util/typeindex.hpp"
@@ -47,12 +45,9 @@ enum class PredicateType {
 
 PredicateType predicateType(const Annotation* a);
 
-// Forward declaration
 template<class SubClass> class Transformer;
 
 namespace proto { class Predicate; }
-// End of forward declaration
-
 /** protobuf -> Predicate/Predicate.proto
 import "Predicate/PredicateType.proto";
 
@@ -90,8 +85,6 @@ public:
         this->type = type;
         return this;
     }
-
-
 
     std::string toString() const {
         switch (type) {
@@ -150,7 +143,7 @@ private: \
     CLASS(const Self&) = default; \
 public: \
     friend class PredicateFactory; \
-    template<class B> friend struct protobuf_traits_impl; \
+    template<> friend struct protobuf_traits_impl<CLASS>; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

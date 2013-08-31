@@ -8,7 +8,6 @@
 #ifndef PREDICATESTATECHOICE_H_
 #define PREDICATESTATECHOICE_H_
 
-#include "Protobuf/Gen/State/PredicateStateChoice.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {

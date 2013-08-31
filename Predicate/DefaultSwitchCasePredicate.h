@@ -8,8 +8,6 @@
 #ifndef DEFAULTSWITCHCASEPREDICATE_H_
 #define DEFAULTSWITCHCASEPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/DefaultSwitchCasePredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {

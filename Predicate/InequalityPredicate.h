@@ -8,8 +8,6 @@
 #ifndef INEQUALITYPREDICATE_H_
 #define INEQUALITYPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/InequalityPredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {

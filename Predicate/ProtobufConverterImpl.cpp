@@ -14,7 +14,7 @@ namespace borealis {
 // Predicate::Ptr
 ////////////////////////////////////////////////////////////////////////////////
 Predicate::ProtoPtr protobuf_traits<Predicate>::toProtobuf(const normal_t& p) {
-    auto res = util::uniq(new proto::Predicate());
+    auto res = util::uniq(new proto_t());
 
     res->set_type(static_cast<proto::PredicateType>(p.getType()));
 
@@ -22,7 +22,7 @@ Predicate::ProtoPtr protobuf_traits<Predicate>::toProtobuf(const normal_t& p) {
 #define HANDLE_PREDICATE(NAME, CLASS) \
     else if (auto* pp = llvm::dyn_cast<CLASS>(&p)) { \
         auto proto = protobuf_traits_impl<CLASS> \
-                      ::toProtobuf(*pp); \
+                     ::toProtobuf(*pp); \
         res->SetAllocatedExtension( \
             proto::CLASS::ext, \
             proto.release() \
@@ -34,7 +34,7 @@ Predicate::ProtoPtr protobuf_traits<Predicate>::toProtobuf(const normal_t& p) {
     return std::move(res);
 }
 
-Predicate::Ptr protobuf_traits<Predicate>::fromProtobuf(const context_t& fn, const proto::Predicate& p) {
+Predicate::Ptr protobuf_traits<Predicate>::fromProtobuf(const context_t& fn, const proto_t& p) {
     auto type = static_cast<PredicateType>(p.type());
 
 #define HANDLE_PREDICATE(NAME, CLASS) \
@@ -50,4 +50,3 @@ Predicate::Ptr protobuf_traits<Predicate>::fromProtobuf(const context_t& fn, con
 } // namespace borealis
 
 #include "Util/unmacros.h"
-

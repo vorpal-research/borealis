@@ -8,8 +8,6 @@
 #ifndef AXIOMTERM_H_
 #define AXIOMTERM_H_
 
-#include "Protobuf/Gen/Term/AxiomTerm.pb.h"
-
 #include "Term/Term.h"
 
 #include "Util/macros.h"
@@ -91,35 +89,6 @@ struct SMTImpl<Impl, AxiomTerm> {
         auto rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
         return lhvsmt.withAxiom(rhvsmt);
-    }
-};
-
-
-
-template<class FN>
-struct ConverterImpl<AxiomTerm, proto::AxiomTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::AxiomTerm* toProtobuf(const AxiomTerm* t) {
-        auto res = util::uniq(new proto::AxiomTerm());
-        res->set_allocated_lhv(
-            TermConverter::toProtobuf(t->getLhv()).release()
-        );
-        res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv()).release()
-        );
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN fn,
-            Type::Ptr type,
-            const std::string&,
-            const proto::AxiomTerm& t) {
-        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
-        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
-        return Term::Ptr{ new AxiomTerm(type, lhv, rhv) };
     }
 };
 

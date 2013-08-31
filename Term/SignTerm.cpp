@@ -6,5 +6,3 @@
  */
 
 #include "Term/SignTerm.h"
-
-

@@ -6,50 +6,50 @@
 #undef INCLUDE_MODE
 
 #include "Term/ArgumentTerm.h"
-#include "Term/ConstTerm.h"
-#include "Term/ReturnValueTerm.h"
-#include "Term/ValueTerm.h"
-#include "Term/TernaryTerm.h"
+#include "Term/AxiomTerm.h"
 #include "Term/BinaryTerm.h"
-#include "Term/UnaryTerm.h"
 #include "Term/CmpTerm.h"
-#include "Term/LoadTerm.h"
-#include "Term/ReadPropertyTerm.h"
+#include "Term/ConstTerm.h"
 #include "Term/GepTerm.h"
-#include "Term/OpaqueVarTerm.h"
-#include "Term/OpaqueBuiltinTerm.h"
-#include "Term/OpaqueIntConstantTerm.h"
+#include "Term/LoadTerm.h"
 #include "Term/OpaqueBoolConstantTerm.h"
+#include "Term/OpaqueBuiltinTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
+#include "Term/OpaqueIntConstantTerm.h"
 #include "Term/OpaqueNullPtrTerm.h"
 #include "Term/OpaqueUndefTerm.h"
+#include "Term/OpaqueVarTerm.h"
+#include "Term/ReadPropertyTerm.h"
+#include "Term/ReturnValueTerm.h"
 #include "Term/SignTerm.h"
-#include "Term/AxiomTerm.h"
+#include "Term/TernaryTerm.h"
+#include "Term/UnaryTerm.h"
+#include "Term/ValueTerm.h"
 
 #define HANDLE_TERM(NAME, CLASS)
 
 #endif
 
 HANDLE_TERM(Argument, ArgumentTerm)
-HANDLE_TERM(Const, ConstTerm)
-HANDLE_TERM(ReturnValue, ReturnValueTerm)
-HANDLE_TERM(Value, ValueTerm)
-HANDLE_TERM(Ternary, TernaryTerm)
+HANDLE_TERM(Axiom, AxiomTerm)
 HANDLE_TERM(Binary, BinaryTerm)
-HANDLE_TERM(Unary, UnaryTerm)
 HANDLE_TERM(Cmp, CmpTerm)
-HANDLE_TERM(Load, LoadTerm)
-HANDLE_TERM(ReadProperty, ReadPropertyTerm)
+HANDLE_TERM(Const, ConstTerm)
 HANDLE_TERM(Gep, GepTerm)
-HANDLE_TERM(OpaqueVar, OpaqueVarTerm)
-HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
-HANDLE_TERM(OpaqueIntConstant, OpaqueIntConstantTerm)
+HANDLE_TERM(Load, LoadTerm)
 HANDLE_TERM(OpaqueBoolConstant, OpaqueBoolConstantTerm)
+HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
 HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
+HANDLE_TERM(OpaqueIntConstant, OpaqueIntConstantTerm)
 HANDLE_TERM(OpaqueNullPtr, OpaqueNullPtrTerm)
 HANDLE_TERM(OpaqueUndef, OpaqueUndefTerm)
+HANDLE_TERM(OpaqueVar, OpaqueVarTerm)
+HANDLE_TERM(ReadProperty, ReadPropertyTerm)
+HANDLE_TERM(ReturnValue, ReturnValueTerm)
 HANDLE_TERM(Sign, SignTerm)
-HANDLE_TERM(Axiom, AxiomTerm)
+HANDLE_TERM(Ternary, TernaryTerm)
+HANDLE_TERM(Unary, UnaryTerm)
+HANDLE_TERM(Value, ValueTerm)
 
 #ifdef HANDLE_TERM
 #undef HANDLE_TERM

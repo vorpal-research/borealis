@@ -10,6 +10,8 @@
 
 #include "Protobuf/ConverterUtil.h"
 
+#include "Protobuf/Gen/Predicate/Predicate.pb.h"
+
 #include "Protobuf/Gen/Predicate/AllocaPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/DefaultSwitchCasePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/EqualityPredicate.pb.h"
@@ -19,11 +21,11 @@
 #include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
 
-#include "Factory/Nest.h"
-
 #include "Term/ProtobufConverterImpl.hpp"
 
+#include "Factory/Nest.h"
 #include "Util/util.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -35,7 +37,7 @@ struct protobuf_traits<Predicate> {
     typedef borealis::FactoryNest context_t;
 
     static Predicate::ProtoPtr toProtobuf(const normal_t& p);
-    static Predicate::Ptr fromProtobuf(const context_t& fn, const proto::Predicate& p);
+    static Predicate::Ptr fromProtobuf(const context_t& fn, const proto_t& p);
 };
 
 template<>

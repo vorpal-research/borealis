@@ -8,8 +8,6 @@
 #ifndef RETURNVALUETERM_H_
 #define RETURNVALUETERM_H_
 
-#include "Protobuf/Gen/Term/ReturnValueTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

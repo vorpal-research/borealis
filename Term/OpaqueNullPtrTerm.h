@@ -8,8 +8,6 @@
 #ifndef OPAQUENULLPTRTERM_H_
 #define OPAQUENULLPTRTERM_H_
 
-#include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

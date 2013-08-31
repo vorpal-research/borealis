@@ -8,12 +8,7 @@
 #ifndef ARGUMENTTERM_H_
 #define ARGUMENTTERM_H_
 
-#include <llvm/Argument.h>
-
-#include "Protobuf/Gen/Term/ArgumentTerm.pb.h"
-
 #include "Term/Term.h"
-#include "Util/slottracker.h"
 
 namespace borealis {
 

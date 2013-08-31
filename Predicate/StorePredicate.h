@@ -8,8 +8,6 @@
 #ifndef STOREPREDICATE_H_
 #define STOREPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {

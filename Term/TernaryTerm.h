@@ -8,8 +8,6 @@
 #ifndef TERNARYTERM_H_
 #define TERNARYTERM_H_
 
-#include "Protobuf/Gen/Term/TernaryTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

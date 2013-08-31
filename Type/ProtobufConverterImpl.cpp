@@ -21,7 +21,7 @@ Type::ProtoPtr protobuf_traits<Type>::toProtobuf(const normal_t& t) {
 #define HANDLE_TYPE(NAME, CLASS) \
     else if (auto* tt = llvm::dyn_cast<type::CLASS>(&t)) { \
         auto proto = protobuf_traits_impl<type::CLASS> \
-                      ::toProtobuf(*tt); \
+                     ::toProtobuf(*tt); \
         res->SetAllocatedExtension( \
             type::proto::CLASS::ext, \
             proto.release() \
@@ -47,4 +47,3 @@ Type::Ptr protobuf_traits<Type>::fromProtobuf(const context_t& fn, const proto_t
 } // namespace borealis
 
 #include "Util/unmacros.h"
-

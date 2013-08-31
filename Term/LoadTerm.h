@@ -8,8 +8,6 @@
 #ifndef LOADTERM_H_
 #define LOADTERM_H_
 
-#include "Protobuf/Gen/Term/LoadTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

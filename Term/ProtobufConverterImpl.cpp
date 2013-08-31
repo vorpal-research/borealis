@@ -4,6 +4,7 @@
  *  Created on: Jul 24, 2013
  *      Author: ice-phoenix
  */
+
 #include "Term/ProtobufConverterImpl.hpp"
 
 #include "Util/macros.h"
@@ -13,6 +14,7 @@ namespace borealis {
 // Term::Ptr
 ////////////////////////////////////////////////////////////////////////////////
 Term::ProtoPtr protobuf_traits<Term>::toProtobuf(const normal_t& t) {
+
     auto res = util::uniq(new proto_t());
 
     res->set_allocated_type(
@@ -24,7 +26,7 @@ Term::ProtoPtr protobuf_traits<Term>::toProtobuf(const normal_t& t) {
 #define HANDLE_TERM(NAME, CLASS) \
     else if (auto* tt = llvm::dyn_cast<CLASS>(&t)) { \
         auto proto = protobuf_traits_impl<CLASS> \
-                      ::toProtobuf(*tt); \
+                     ::toProtobuf(*tt); \
         res->SetAllocatedExtension( \
             proto::CLASS::ext, \
             proto.release() \
@@ -36,7 +38,7 @@ Term::ProtoPtr protobuf_traits<Term>::toProtobuf(const normal_t& t) {
     return std::move(res);
 }
 
-Term::Ptr protobuf_traits<Term>::fromProtobuf(const context_t& fn, const proto::Term& t) {
+Term::Ptr protobuf_traits<Term>::fromProtobuf(const context_t& fn, const proto_t& t) {
 
     auto type = protobuf_traits<Type>::fromProtobuf(fn, t.type());
     const auto& name = t.name();

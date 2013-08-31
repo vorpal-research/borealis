@@ -8,8 +8,6 @@
 #ifndef WRITEPROPERTYPREDICATE_H_
 #define WRITEPROPERTYPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {

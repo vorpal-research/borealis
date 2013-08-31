@@ -8,8 +8,6 @@
 #ifndef OPAQUEVARTERM_H_
 #define OPAQUEVARTERM_H_
 
-#include "Protobuf/Gen/Term/OpaqueVarTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

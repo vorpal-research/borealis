@@ -8,8 +8,6 @@
 #ifndef MALLOCPREDICATE_H_
 #define MALLOCPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/MallocPredicate.pb.h"
-
 #include "Config/config.h"
 #include "Predicate/Predicate.h"
 

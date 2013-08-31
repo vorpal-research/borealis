@@ -14,11 +14,11 @@
 #include "Protobuf/Gen/State/PredicateStateChain.pb.h"
 #include "Protobuf/Gen/State/PredicateStateChoice.pb.h"
 
-#include "Factory/Nest.h"
-
 #include "Predicate/ProtobufConverterImpl.hpp"
 
+#include "Factory/Nest.h"
 #include "Util/util.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -30,8 +30,7 @@ struct protobuf_traits<PredicateState> {
     typedef borealis::FactoryNest context_t;
 
     static PredicateState::ProtoPtr toProtobuf(const normal_t& ps);
-
-    static PredicateState::Ptr fromProtobuf(const context_t& fn, const proto::PredicateState& ps);
+    static PredicateState::Ptr fromProtobuf(const context_t& fn, const proto_t& ps);
 };
 
 template<>

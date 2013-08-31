@@ -8,8 +8,6 @@
 #ifndef GEPTERM_H_
 #define GEPTERM_H_
 
-#include "Protobuf/Gen/Term/GepTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

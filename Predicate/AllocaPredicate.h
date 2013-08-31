@@ -8,8 +8,6 @@
 #ifndef ALLOCAPREDICATE_H_
 #define ALLOCAPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/AllocaPredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {

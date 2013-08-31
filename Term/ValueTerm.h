@@ -8,8 +8,6 @@
 #ifndef VALUETERM_H_
 #define VALUETERM_H_
 
-#include "Protobuf/Gen/Term/ValueTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

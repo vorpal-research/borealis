@@ -8,8 +8,6 @@
 #ifndef SIGNTERM_H_
 #define SIGNTERM_H_
 
-#include "Protobuf/Gen/Term/SignTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {
@@ -28,7 +26,6 @@ message SignTerm {
 }
 
 **/
-
 class SignTerm: public borealis::Term {
 
     Term::Ptr rhv;
@@ -100,31 +97,6 @@ struct SMTImpl<Impl, SignTerm> {
     }
 };
 #include "Util/unmacros.h"
-
-
-
-template<class FN>
-struct ConverterImpl<SignTerm, proto::SignTerm, FN> {
-
-    typedef Converter<Term, proto::Term, FN> TermConverter;
-
-    static proto::SignTerm* toProtobuf(const SignTerm* t) {
-        auto res = util::uniq(new proto::SignTerm());
-        res->set_allocated_rhv(
-            TermConverter::toProtobuf(t->getRhv()).release()
-        );
-        return res.release();
-    }
-
-    static Term::Ptr fromProtobuf(
-            FN fn,
-            Type::Ptr type,
-            const std::string&,
-            const proto::SignTerm& t) {
-        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
-        return Term::Ptr{ new SignTerm(type, rhv) };
-    }
-};
 
 } /* namespace borealis */
 

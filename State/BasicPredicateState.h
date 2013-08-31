@@ -13,7 +13,6 @@
 #include <list>
 #include <unordered_set>
 
-#include "Protobuf/Gen/State/BasicPredicateState.pb.h"
 #include "State/PredicateState.h"
 
 namespace borealis {

@@ -8,8 +8,6 @@
 #ifndef CONSTTERM_H_
 #define CONSTTERM_H_
 
-#include "Protobuf/Gen/Term/ConstTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {
@@ -61,7 +59,7 @@ struct SMTImpl<Impl, ConstTerm> {
             ExecutionContext<Impl>*) {
         using borealis::logging::endl;
         using borealis::logging::wtf;
-        // ConstTerm means we have an unsupported LLVM constant somewhere...
+        // XXX: ConstTerm means we have an unsupported LLVM constant somewhere...
         auto res = ef.getVarByTypeAndName(t->getType(), t->getName());
         wtf() << "Got " << res << " for " << t->getName() << endl;
         return res;

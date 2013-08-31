@@ -8,8 +8,6 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
-#include "Protobuf/Gen/Term/ReadPropertyTerm.pb.h"
-
 #include "Term/ConstTerm.h"
 #include "Term/Term.h"
 

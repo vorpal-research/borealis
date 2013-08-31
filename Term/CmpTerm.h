@@ -8,8 +8,6 @@
 #ifndef CMPTERM_H_
 #define CMPTERM_H_
 
-#include "Protobuf/Gen/Term/CmpTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

@@ -8,8 +8,6 @@
 #ifndef OPAQUEINTCONSTANTTERM_H_
 #define OPAQUEINTCONSTANTTERM_H_
 
-#include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

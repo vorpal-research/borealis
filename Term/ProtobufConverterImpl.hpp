@@ -10,7 +10,10 @@
 
 #include "Protobuf/ConverterUtil.h"
 
+#include "Protobuf/Gen/Term/Term.pb.h"
+
 #include "Protobuf/Gen/Term/ArgumentTerm.pb.h"
+#include "Protobuf/Gen/Term/AxiomTerm.pb.h"
 #include "Protobuf/Gen/Term/BinaryTerm.pb.h"
 #include "Protobuf/Gen/Term/CmpTerm.pb.h"
 #include "Protobuf/Gen/Term/ConstTerm.pb.h"
@@ -25,6 +28,7 @@
 #include "Protobuf/Gen/Term/OpaqueVarTerm.pb.h"
 #include "Protobuf/Gen/Term/ReadPropertyTerm.pb.h"
 #include "Protobuf/Gen/Term/ReturnValueTerm.pb.h"
+#include "Protobuf/Gen/Term/SignTerm.pb.h"
 #include "Protobuf/Gen/Term/TernaryTerm.pb.h"
 #include "Protobuf/Gen/Term/UnaryTerm.pb.h"
 #include "Protobuf/Gen/Term/ValueTerm.pb.h"
@@ -33,7 +37,6 @@
 #include "Util/ProtobufConverterImpl.hpp"
 
 #include "Factory/Nest.h"
-
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -47,12 +50,12 @@ struct protobuf_traits<Term> {
     typedef borealis::FactoryNest context_t;
 
     static Term::ProtoPtr toProtobuf(const normal_t& t);
-
-    static Term::Ptr fromProtobuf(const context_t& fn, const proto::Term& t);
+    static Term::Ptr fromProtobuf(const context_t& fn, const proto_t& t);
 };
 
 template<>
 struct protobuf_traits_impl<ArgumentTerm> {
+
     typedef protobuf_traits<Term> TermConverter;
 
     static std::unique_ptr<proto::ArgumentTerm> toProtobuf(const ArgumentTerm& t) {
@@ -61,11 +64,39 @@ struct protobuf_traits_impl<ArgumentTerm> {
         return std::move(res);
     }
 
-    static Term::Ptr fromProtobuf(const FactoryNest&,
-            const Type::Ptr& type,
+    static Term::Ptr fromProtobuf(
+            const FactoryNest&,
+            Type::Ptr type,
             const std::string& name,
             const proto::ArgumentTerm& t) {
         return Term::Ptr{ new ArgumentTerm(type, t.idx(), name) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<AxiomTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::AxiomTerm> toProtobuf(const AxiomTerm& t) {
+        auto res = util::uniq(new proto::AxiomTerm());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(t.getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t.getRhv()).release()
+        );
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::AxiomTerm& t) {
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new AxiomTerm(type, lhv, rhv) };
     }
 };
 
@@ -129,6 +160,9 @@ struct protobuf_traits_impl<CmpTerm> {
 
 template<>
 struct protobuf_traits_impl<ConstTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
     static std::unique_ptr<proto::ConstTerm> toProtobuf(const ConstTerm& t) {
         auto res = util::uniq(new proto::ConstTerm());
         for (const auto& v : t.getAsString()) {
@@ -406,6 +440,29 @@ struct protobuf_traits_impl<ReturnValueTerm> {
             const proto::ReturnValueTerm& t) {
         auto fName = t.functionname();
         return Term::Ptr{ new ReturnValueTerm(type, fName) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<SignTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::SignTerm> toProtobuf(const SignTerm& t) {
+        auto res = util::uniq(new proto::SignTerm());
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(t.getRhv()).release()
+        );
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::SignTerm& t) {
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new SignTerm(type, rhv) };
     }
 };
 

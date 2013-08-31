@@ -12,11 +12,9 @@
 #include <initializer_list>
 #include <memory>
 
-#include "Logging/logstream.hpp"
+#include "Logging/logger.hpp"
 #include "Logging/tracer.hpp"
 #include "Predicate/Predicate.h"
-#include "Protobuf/ConverterUtil.h"
-#include "Protobuf/Gen/State/PredicateState.pb.h"
 #include "SMT/SMTUtil.h"
 #include "Util/util.h"
 
@@ -25,7 +23,6 @@
 namespace borealis {
 
 namespace proto { class PredicateState; }
-
 /** protobuf -> State/PredicateState.proto
 
 package borealis.proto;
@@ -129,7 +126,7 @@ private: \
     CLASS(Self&& state) = default; \
 public: \
     friend class PredicateStateFactory; \
-    template<class B> friend struct protobuf_traits_impl; \
+    template<> friend struct protobuf_traits_impl<CLASS>; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \

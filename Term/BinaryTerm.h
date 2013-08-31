@@ -8,8 +8,6 @@
 #ifndef BINARYTERM_H_
 #define BINARYTERM_H_
 
-#include "Protobuf/Gen/Term/BinaryTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {
@@ -135,31 +133,11 @@ struct SMTImpl<Impl, BinaryTerm> {
                              llvm::arithString(t->getOpcode()));
             }
         }
-        static int i=0;
-        if (lhvz3.isBool())
-            std::cout << "bool " << i << std::endl;
-        else if (lhvz3.template is<DynBV>())
-            std::cout << "bit-vector " << i << std::endl;
-        else if (lhvz3.isComparable())
-            std::cout << "comparable " << i << std::endl;
-        else
-            std::cout << "хз " << i << std::endl;
 
-        if (rhvz3.isBool())
-            std::cout << "bool " << i << std::endl;
-        else if (rhvz3.template is<DynBV>())
-            std::cout << "bit-vector " << i << std::endl;
-        else if (rhvz3.isComparable())
-            std::cout << "comparable " << i << std::endl;
-        else
-            std::cout << "хз " << i << std::endl;
-        i++;
         BYE_BYE(Dynamic, "Unreachable!");
     }
 };
 #include "Util/unmacros.h"
-
-
 
 } // namespace borealis
 

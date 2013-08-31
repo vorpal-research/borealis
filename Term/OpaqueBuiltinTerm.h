@@ -8,8 +8,6 @@
 #ifndef OPAQUEBUILTINTERM_H_
 #define OPAQUEBUILTINTERM_H_
 
-#include "Protobuf/Gen/Term/OpaqueBuiltinTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

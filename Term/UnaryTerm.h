@@ -8,8 +8,6 @@
 #ifndef UNARYTERM_H_
 #define UNARYTERM_H_
 
-#include "Protobuf/Gen/Term/UnaryTerm.pb.h"
-
 #include "Term/Term.h"
 
 namespace borealis {

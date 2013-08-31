@@ -10,8 +10,8 @@
 
 #include <memory>
 
-#include "State/PredicateState.h"
 #include "State/PredicateState.def"
+#include "State/PredicateState.h"
 
 namespace borealis {
 

@@ -8,8 +8,6 @@
 #ifndef GLOBALSPREDICATE_H_
 #define GLOBALSPREDICATE_H_
 
-#include "Protobuf/Gen/Predicate/GlobalsPredicate.pb.h"
-
 #include "Predicate/Predicate.h"
 
 namespace borealis {
