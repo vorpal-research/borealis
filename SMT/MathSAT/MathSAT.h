@@ -21,6 +21,8 @@
 
 #include "Util/util.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 namespace mathsat {
 
@@ -528,5 +530,7 @@ namespace std {
 template<>
 struct less<msat_term> : public borealis::mathsat::msat_term_less {};
 } // namespace std
+
+#include "Util/unmacros.h"
 
 #endif /* SMT_MATHSAT_H_ */
