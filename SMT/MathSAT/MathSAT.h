@@ -370,35 +370,51 @@ Expr distinct(const std::vector<Expr>& exprs);
 // ModelIterator == z3::model
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::pair<Expr, Expr> term_value;
+struct ModelElem {
+    Expr term;
+    Expr value;
+};
 
 class ModelIterator {
 private:
     Env env_;
-    ModelIteratorPointer iterator_;
-    term_value currentValue_;
+    ModelIteratorPointer it_;
 
 public:
 
-    typedef std::input_iterator_tag iterator_category;
+    typedef std::forward_iterator_tag iterator_category;
 
-    explicit ModelIterator(const Env& env);
+    explicit ModelIterator(const Env& env) :
+            env_(env),
+            it_(makeModelIteratorPointer(new msat_model_iterator())) {
+        *it_ = msat_create_model_iterator(env_);
+        ASSERTС(!MSAT_ERROR_MODEL_ITERATOR(*it_));
+    }
 
+    ModelIterator() {};
     ModelIterator(const ModelIterator&) = default;
     ModelIterator(ModelIterator&&) = default;
 
     ModelIterator& operator=(const ModelIterator&) = default;
     ModelIterator& operator=(ModelIterator&&) = default;
 
+    operator msat_model_iterator() const { return *it_; }
+
     bool operator ==(const ModelIterator& that) const {
-        return this->iterator_ == that.iterator_;
+        return this->it_ == that.it_;
     }
 
     bool operator !=(const ModelIterator& that) const {
-        return this->iterator_ != that.iterator_;
+        return this->it_ != that.it_;
     }
 
-    term_value& operator *() { return currentValue_; }
+    term_value& operator *() {
+        msat_term term;
+        msat_term value;
+        auto res = msat_model_iterator_next(*iterator_, &term, &value);
+        ASSERTC(!res);
+        currentValue_ = term_value(Expr(env_, term), Expr(env_, value));
+    }
     term_value* operator ->() { return &currentValue_; }
 
     ModelIterator operator ++(int) {
@@ -407,10 +423,6 @@ public:
         return old;
     }
     ModelIterator& operator ++();
-
-    bool hasNext() const {
-        return msat_model_iterator_has_next(*iterator_);
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

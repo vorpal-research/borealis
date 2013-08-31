@@ -145,7 +145,8 @@ template<class Streamer>
 Streamer& operator<<(Streamer& s, const Xml& xml) {
     tinyxml2::XMLPrinter p;
     xml.ToDocument()->Print(&p);
-    return s << p.CStr();
+    // this is generally fucked up
+    return static_cast<Streamer&>(s << p.CStr());
 }
 
 } // namespace util

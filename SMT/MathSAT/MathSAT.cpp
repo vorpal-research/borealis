@@ -807,14 +807,6 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ModelIterator::ModelIterator(const Env& env) : env_(env),
-        iterator_(makeModelIteratorPointer(new msat_model_iterator())),
-        currentValue_(env_.bool_val(true), env_.bool_val(true)) {
-    *iterator_ = msat_create_model_iterator(env_);
-    ASSERTС(!MSAT_ERROR_MODEL_ITERATOR(*iterator_));
-    ASSERTC(hasNext()); // FIXME: Really?
-}
-
 ModelIterator& ModelIterator::operator ++() {
     if (hasNext()) {
         msat_term term;
