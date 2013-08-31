@@ -97,13 +97,13 @@ TEST(MathSAT, modelIterator) {
     Config conf = Config();
     Env env = Env(conf);
 
-    Expr a = env.rat_const("a");
-    Expr b = env.rat_const("b");
-    Expr c = env.rat_const("c");
+    Expr a = env.int_const("a");
+    Expr b = env.int_const("b");
+    Expr c = env.int_const("c");
 
-    Expr one = env.rat_val(1);
+    Expr one = env.num_val(1);
 
-    Solver solver(e.env());
+    Solver solver(env);
     solver.add(a == b * c);
     solver.add(a == b);
     solver.add(b == c);
