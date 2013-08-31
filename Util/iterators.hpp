@@ -475,7 +475,7 @@ public:
     bool operator!=(const key_iterator& that) { return base != that.base; };
 
     reference operator*() const { return base->first; }
-    reference operator->() const { return &base->first; }
+    pointer operator->() const { return &base->first; }
 
     key_iterator& operator++() { ++base; return *this; }
     key_iterator& operator--() { --base; return *this; }
@@ -526,7 +526,7 @@ public:
     bool operator!=(const value_iterator& that) { return base != that.base; };
 
     reference operator*() { return base->second; }
-    reference operator->() { return &base->second; }
+    pointer operator->() { return &base->second; }
 
     value_iterator& operator++() { ++base; return *this; }
     value_iterator& operator--() { --base; return *this; }
@@ -577,7 +577,7 @@ public:
     bool operator!=(const value_citerator& that) { return base != that.base; };
 
     reference operator*() const { return base->second; }
-    reference operator->() const { return &base->second; }
+    pointer operator->() const { return &base->second; }
 
     value_citerator& operator++() { ++base; return *this; }
     value_citerator& operator--() { --base; return *this; }
