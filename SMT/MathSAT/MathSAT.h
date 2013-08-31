@@ -379,16 +379,24 @@ class ModelIterator {
 private:
     Env env_;
     ModelIteratorPointer it_;
+    ModelElem curr_;
+
+    typedef ModelIterator self;
 
 public:
 
-    typedef std::forward_iterator_tag iterator_category;
+    typedef std::input_iterator_tag iterator_category;
+    typedef ModelElem value_type;
+    typedef ModelElem& reference;
+    typedef ModelElem* pointer;
 
     explicit ModelIterator(const Env& env) :
             env_(env),
             it_(makeModelIteratorPointer(new msat_model_iterator())) {
         *it_ = msat_create_model_iterator(env_);
         ASSERTС(!MSAT_ERROR_MODEL_ITERATOR(*it_));
+
+        ++*this; // load the first model element from msat
     }
 
     ModelIterator() {};
@@ -408,21 +416,31 @@ public:
         return this->it_ != that.it_;
     }
 
-    term_value& operator *() {
-        msat_term term;
-        msat_term value;
-        auto res = msat_model_iterator_next(*iterator_, &term, &value);
-        ASSERTC(!res);
-        currentValue_ = term_value(Expr(env_, term), Expr(env_, value));
-    }
-    term_value* operator ->() { return &currentValue_; }
+    reference operator *() { return curr_; }
+    pointer operator ->() { return &curr_; }
 
-    ModelIterator operator ++(int) {
-        ModelIterator old(*this);
+    self operator ++(int) {
+        self old(*this);
         ++*this;
         return old;
     }
-    ModelIterator& operator ++();
+
+    self& operator ++() {
+        if (!it_) return *this;
+
+        if (msat_model_iterator_has_next(*it_)) {
+            msat_term term;
+            msat_term value;
+            auto res = msat_model_iterator_next(*it_, &term, &value);
+            ASSERTC(!res);
+            curr_ = value_type{ Expr(env_, term), Expr(env_, value) };
+        } else {
+            it_.reset(nullptr);
+            curr_ = value_type{};
+        }
+
+        return *this;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -460,7 +478,8 @@ public:
     std::vector<Expr> unsat_core();
     std::vector<Expr> unsat_assumptions();
 
-    ModelIterator getModel() { return ModelIterator(env_); }
+    ModelIterator model_begin() { return ModelIterator(env_); }
+    ModelIterator model_end()   { return ModelIterator(); }
 };
 
 class ISolver : public Solver {

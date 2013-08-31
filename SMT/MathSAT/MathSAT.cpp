@@ -807,19 +807,6 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ModelIterator& ModelIterator::operator ++() {
-    if (hasNext()) {
-        msat_term term;
-        msat_term value;
-        auto res = msat_model_iterator_next(*iterator_, &term, &value);
-        ASSERTC(!res);
-        currentValue_ = term_value(Expr(env_, term), Expr(env_, value));
-    }
-    return *this;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 void Solver::add(const Expr& e) {
     int res = msat_assert_formula(env_, e);
     ASSERTC(!res)
