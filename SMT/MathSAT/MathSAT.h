@@ -404,7 +404,6 @@ public:
         }
     }
 
-    ModelIterator() {};
     ModelIterator(const ModelIterator&) = default;
     ModelIterator(ModelIterator&&) = default;
 
