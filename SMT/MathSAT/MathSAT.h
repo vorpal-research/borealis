@@ -379,7 +379,7 @@ class ModelIterator {
 private:
     Env env_;
     ModelIteratorPointer it_;
-    ModelElem curr_;
+    std::unique_ptr<ModelElem> curr_;
 
     typedef ModelIterator self;
 
@@ -416,8 +416,8 @@ public:
         return this->it_ != that.it_;
     }
 
-    reference operator *() { return curr_; }
-    pointer operator ->() { return &curr_; }
+    reference operator *() { return *curr_; }
+    pointer operator ->() { return &*curr_; }
 
     self operator ++(int) {
         self old(*this);
@@ -433,10 +433,10 @@ public:
             msat_term value;
             auto res = msat_model_iterator_next(*it_, &term, &value);
             ASSERTC(!res);
-            curr_ = value_type{ Expr(env_, term), Expr(env_, value) };
+            curr_.reset(new value_type{ Expr(env_, term), Expr(env_, value) });
         } else {
-            it_.reset(nullptr);
-            curr_ = value_type{};
+            it_.reset();
+            curr_.reset();
         }
 
         return *this;
