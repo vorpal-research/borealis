@@ -95,8 +95,6 @@ TEST(MathSAT, modelIterator) {
     using borealis::util::view;
 
     Config conf = Config::Default();
-    conf.set("model_generation", true);
-
     Env env = Env(conf);
 
     Expr a = env.int_const("a");
@@ -105,7 +103,7 @@ TEST(MathSAT, modelIterator) {
 
     Expr one = env.num_val(1);
 
-    Solver solver(env);
+    DSolver solver(env); // FIXME: maybe have model_generation on by default?
     solver.add(a == b * c);
     solver.add(a == b);
     solver.add(b == c);
