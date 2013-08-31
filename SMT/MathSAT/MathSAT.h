@@ -381,7 +381,7 @@ class ModelIterator {
 private:
     Env env_;
     ModelIteratorPointer it_;
-    std::unique_ptr<ModelElem> curr_;
+    std::shared_ptr<ModelElem> curr_;
 
     typedef ModelIterator self;
 
@@ -392,13 +392,16 @@ public:
     typedef ModelElem& reference;
     typedef ModelElem* pointer;
 
-    explicit ModelIterator(const Env& env) :
+    explicit ModelIterator(const Env& env, bool isEnd = false) :
             env_(env),
             it_(makeModelIteratorPointer(new msat_model_iterator())) {
-        *it_ = msat_create_model_iterator(env_);
-        ASSERTC(!MSAT_ERROR_MODEL_ITERATOR(*it_));
-
-        ++*this; // load the first model element from msat
+        if (isEnd) {
+            it_.reset();
+        } else {
+            *it_ = msat_create_model_iterator(env_);
+            ASSERTC(!MSAT_ERROR_MODEL_ITERATOR(*it_));
+            ++*this; // load the first model element from msat
+        }
     }
 
     ModelIterator() {};
@@ -481,7 +484,7 @@ public:
     std::vector<Expr> unsat_assumptions();
 
     ModelIterator model_begin() { return ModelIterator(env_); }
-    ModelIterator model_end()   { return ModelIterator(); }
+    ModelIterator model_end()   { return ModelIterator(env_, true); }
 };
 
 class ISolver : public Solver {
