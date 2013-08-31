@@ -101,12 +101,14 @@ TEST(MathSAT, modelIterator) {
     Expr b = env.int_const("b");
     Expr c = env.int_const("c");
 
+    Expr zero = env.num_val(0);
     Expr one = env.num_val(1);
 
     DSolver solver(env); // FIXME: maybe have model_generation on by default?
     solver.add(a == b * c);
     solver.add(a == b);
     solver.add(b == c);
+    solver.add(c != zero);
     
     ASSERT_EQ(MSAT_SAT, solver.check());
 
