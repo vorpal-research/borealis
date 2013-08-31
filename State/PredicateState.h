@@ -22,6 +22,8 @@
 
 namespace borealis {
 
+template<class T> struct protobuf_traits_impl;
+
 namespace proto { class PredicateState; }
 /** protobuf -> State/PredicateState.proto
 
@@ -126,7 +128,7 @@ private: \
     CLASS(Self&& state) = default; \
 public: \
     friend class PredicateStateFactory; \
-    template<> friend struct protobuf_traits_impl<CLASS>; \
+    friend struct protobuf_traits_impl<CLASS>; \
     virtual ~CLASS() {}; \
     static bool classof(const Self*) { \
         return true; \
