@@ -95,6 +95,8 @@ TEST(MathSAT, modelIterator) {
     using borealis::util::view;
 
     Config conf = Config::Default();
+    conf.set("model_generation", true);
+
     Env env = Env(conf);
 
     Expr a = env.int_const("a");
