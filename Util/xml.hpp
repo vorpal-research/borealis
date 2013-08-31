@@ -93,11 +93,11 @@ public:
         nodeStack.push(rootNode);
     }
 
-    tinyxml2::XMLDocument* ToDocument() {
+    const tinyxml2::XMLDocument* ToDocument() const {
         return doc.get();
     }
 
-    tinyxml2::XMLElement* RootElement() {
+    const tinyxml2::XMLElement* RootElement() const {
         return doc->RootElement();
     }
 
