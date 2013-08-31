@@ -14,9 +14,6 @@
 #include "SMT/MathSAT/Solver.h"
 #include "State/PredicateStateBuilder.h"
 
-
-#define USE_MATHSAT_SOLVER
-
 namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -17,8 +17,6 @@
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
 
-#define USE_MATHSAT_SOLVER
-
 namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
