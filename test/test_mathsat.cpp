@@ -32,7 +32,7 @@ static stream_t infos() {
 TEST(MathSAT, constants) {
     using namespace borealis::mathsat;
 
-    Config conf = Config();
+    Config conf = Config::Default();
     Env env = Env(conf);
 
     Expr a = env.num_val(1234);
@@ -60,7 +60,7 @@ TEST(MathSAT, generatingFormulas) {
     using namespace borealis::mathsat;
 
     // C++ API
-    Config conf = Config();
+    Config conf = Config::Default();
     Env env = Env(conf);
 
     Sort rat = env.rat_sort();
@@ -94,7 +94,7 @@ TEST(MathSAT, modelIterator) {
     using borealis::util::toString;
     using borealis::util::view;
 
-    Config conf = Config();
+    Config conf = Config::Default();
     Env env = Env(conf);
 
     Expr a = env.int_const("a");
@@ -197,7 +197,7 @@ TEST(MathSAT, freshConstFunc) {
 
     using namespace borealis::mathsat;
 
-    Config conf = Config();
+    Config conf = Config::Default();
     Env env = Env(conf);
 
     Sort rat = env.rat_sort();
@@ -231,7 +231,7 @@ TEST(MathSAT, logic) {
     using namespace borealis::mathsat;
     using namespace borealis::mathsat_::logic;
 
-    Config conf = Config();
+    Config conf = Config::Default();
     Env env = Env(conf);
 
     auto check_expr = [&](Bool e)->bool {
