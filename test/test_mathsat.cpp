@@ -19,12 +19,6 @@
 #include "SMT/SMT.hpp"
 #include "Util/util.h"
 
-#include "Term/TermFactory.h"
-#include "Type/TypeFactory.h"
-#include "Predicate/PredicateFactory.h"
-#include "State/PredicateStateFactory.h"
-#include "State/PredicateStateBuilder.h"
-
 namespace {
 
 using namespace borealis::logging;
@@ -49,7 +43,6 @@ TEST(MathSAT, constants) {
     auto check_expr = [&](Expr e)->bool {
         Solver solver(e.env());
         solver.add(!e);
-        solver.add(e.env().bool_val(true));
         return solver.check() == MSAT_UNSAT;
     };
 
@@ -94,6 +87,40 @@ TEST(MathSAT, generatingFormulas) {
 
     msat_result res = sol.check();
     ASSERT_EQ(MSAT_UNSAT, res);
+}
+
+TEST(MathSAT, modelIterator) {
+    using namespace borealis::mathsat;
+    using borealis::util::toString;
+    using borealis::util::view;
+
+    Config conf = Config();
+    Env env = Env(conf);
+
+    Expr a = env.rat_const("a");
+    Expr b = env.rat_const("b");
+    Expr c = env.rat_const("c");
+
+    Expr one = env.rat_val(1);
+
+    Solver solver(e.env());
+    solver.add(a == b * c);
+    solver.add(a == b);
+    solver.add(b == c);
+    
+    ASSERT_EQ(MSAT_SAT, solver.check());
+
+    auto check_expr = [&](Expr e)->bool {
+        Solver solver(e.env());
+        solver.add(!e);
+        return solver.check() == MSAT_UNSAT;
+    };
+
+    for (const auto& e : view(solver.model_begin(), solver.model_end())) {
+        auto termName = e.term.decl().name();
+        ASSERT_TRUE("a" == termName || "b" == termName || "c" == termName);
+        ASSERT_TRUE(check_expr(e.value == one));
+    }
 }
 
 TEST(MathSAT, generatingInterpolant) {
@@ -247,7 +274,7 @@ TEST(MathSAT, logic) {
         EXPECT_TRUE(check_expr(d == e));
     }
 
-} // TEST(Solver, logicMathSat)
+} // TEST(MathSAT, logic)
 
 TEST(MathSAT, memoryArray) {
     {
@@ -376,7 +403,6 @@ TEST(MathSAT, Unlogic) {
         return solver.check() == MSAT_UNSAT;
     };
 
-
     Sort bv = env.bv_sort(32);
     Expr x1 = env.bv_const("x1", 32);
     Expr x2 = env.bv_const("x2", 32);
@@ -414,17 +440,7 @@ TEST(MathSAT, Unlogic) {
         borealis::mathsat::DSolver s(env);
         s.add(A && !B);
 
-        auto res = s.check();
-        if (res == MSAT_SAT) {
-            borealis::mathsat::ModelIterator iter(s.env());
-            std::cout << std::endl;
-            while (iter.hasNext()) {
-                iter++;
-                auto& pair = *iter;
-                std::cout << msat_term_repr(pair.first) << " = "
-                          << msat_term_repr(pair.second) << std::endl;
-            }
-        }
+        EXPECT_EQ(MSAT_UNSAT, s.check());
     }
 }
 
