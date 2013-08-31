@@ -51,8 +51,7 @@ public:
             log << buf->str();
             log.flush();
 
-            auto empty = std::unique_ptr<std::ostringstream>();
-            buf.swap(empty);
+            buf.reset(nullptr);
         }
     }
 

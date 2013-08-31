@@ -97,6 +97,7 @@ protected:
     }
 };
 
+
 class DelegateLogging {
     std::function<const std::string&()> keeper;
 
@@ -104,7 +105,9 @@ class DelegateLogging {
         static std::string empty = "";
         return empty;
     }
+
 public:
+
     template<class T>
     void assignLogger(const T& domain) {
         keeper = [&]{ return domain.getLoggerDomain(); };
@@ -131,6 +134,7 @@ protected:
         return logsFor(ll, getLoggerDomain());
     }
 };
+
 
 inline stream_t dbgs() { return dbgsFor(""); }
 inline stream_t infos() { return infosFor(""); }

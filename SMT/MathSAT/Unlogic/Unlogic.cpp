@@ -61,7 +61,7 @@ PredicateState::Ptr undoThat(Dynamic dyn) {
         FN.State *
         FN.Predicate->getEqualityPredicate(
             jointTerm,
-            FN.Term->getBooleanTerm(true)
+            FN.Term->getTrueTerm()
         )
     )();
     return state;

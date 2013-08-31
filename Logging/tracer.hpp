@@ -47,7 +47,7 @@ public:
 } // namespace logging
 } // namespace borealis
 
-#ifndef NO_TRACE_FUNC
+#ifndef NO_TRACING
 
 #define TRACE_FUNC \
     borealis::logging::func_tracer ftracer( \

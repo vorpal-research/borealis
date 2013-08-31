@@ -811,13 +811,8 @@ ModelIterator::ModelIterator(const Env& env) : env_(env),
         iterator_(makeModelIteratorPointer(new msat_model_iterator())),
         currentValue_(env_.bool_val(true), env_.bool_val(true)) {
     *iterator_ = msat_create_model_iterator(env_);
-    ASSERT(!MSAT_ERROR_MODEL_ITERATOR(*iterator_), "Can't create model iterator. "
-            "You should set model_generation option and environment must be SAT.");
-    ASSERTC(hasNext());
-}
-
-term_value& ModelIterator::operator *() {
-    return currentValue_;
+    ASSERTС(!MSAT_ERROR_MODEL_ITERATOR(*iterator_));
+    ASSERTC(hasNext()); // FIXME: Really?
 }
 
 ModelIterator& ModelIterator::operator ++() {

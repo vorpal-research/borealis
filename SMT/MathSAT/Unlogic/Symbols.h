@@ -89,7 +89,7 @@ public:
         : AbstractSymbol(MSAT_TAG_TRUE, 0, expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
-        return FN.Term->getBooleanTerm(true);
+        return FN.Term->getTrueTerm();
     }
 };
 
@@ -101,7 +101,7 @@ public:
         : AbstractSymbol(MSAT_TAG_FALSE, 0, expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
-        return FN.Term->getBooleanTerm(false);
+        return FN.Term->getFalseTerm();
     }
 };
 

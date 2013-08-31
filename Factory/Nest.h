@@ -20,10 +20,10 @@ class FactoryNest {
 
 public:
 
-    std::shared_ptr<TypeFactory> Type;
-    std::shared_ptr<TermFactory> Term;
-    std::shared_ptr<PredicateFactory> Predicate;
-    std::shared_ptr<PredicateStateFactory> State;
+    TypeFactory::Ptr Type;
+    TermFactory::Ptr Term;
+    PredicateFactory:Ptr Predicate;
+    PredicateStateFactory::Ptr State;
 
     FactoryNest();
     FactoryNest(const FactoryNest&);

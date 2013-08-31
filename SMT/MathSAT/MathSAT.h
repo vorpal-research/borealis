@@ -398,8 +398,8 @@ public:
         return this->iterator_ != that.iterator_;
     }
 
-    term_value& operator *();
-    term_value& operator ->() { return *(*this); }
+    term_value& operator *() { return currentValue_; }
+    term_value* operator ->() { return &currentValue_; }
 
     ModelIterator operator ++(int) {
         ModelIterator old(*this);

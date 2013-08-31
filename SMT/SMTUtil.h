@@ -40,7 +40,7 @@ BRING_FROM_IMPL(MemArray)
     typedef typename IMPL::Real Real; \
     typedef typename IMPL::DynBV DynBV; \
     typedef typename IMPL::Dynamic Dynamic; \
-    typedef typename IMPL::MemArray MemArray; \
+    typedef typename IMPL::MemArray MemArray;
 
 #define USING_SMT_IMPL(IMPL) \
     typedef typename IMPL::Bool Bool; \
@@ -53,7 +53,7 @@ BRING_FROM_IMPL(MemArray)
     typedef typename IMPL::MemArray MemArray; \
     typedef typename IMPL::ExprFactory ExprFactory; \
     typedef typename IMPL::ExecutionContext ExecutionContext; \
-    typedef typename IMPL::Solver Solver; \
+    typedef typename IMPL::Solver Solver;
 
 
 

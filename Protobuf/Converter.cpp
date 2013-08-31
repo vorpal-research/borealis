@@ -127,8 +127,8 @@ std::unique_ptr<LocusRange> deprotobuffy(const proto::LocusRange& p) {
     return protobuf_traits<LocusRange>::fromProtobuf(cat, p);
 }
 
-#undef PUN0
-#undef PUN1
 #undef PUN
+#undef PUN1
+#undef RAWSTR
 
 } // namespace borealis
