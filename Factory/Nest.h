@@ -22,7 +22,7 @@ public:
 
     TypeFactory::Ptr Type;
     TermFactory::Ptr Term;
-    PredicateFactory:Ptr Predicate;
+    PredicateFactory::Ptr Predicate;
     PredicateStateFactory::Ptr State;
 
     FactoryNest();
