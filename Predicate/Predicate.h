@@ -46,6 +46,7 @@ enum class PredicateType {
 PredicateType predicateType(const Annotation* a);
 
 template<class SubClass> class Transformer;
+template<class T> struct protobuf_traits_impl;
 
 namespace proto { class Predicate; }
 /** protobuf -> Predicate/Predicate.proto

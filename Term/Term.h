@@ -18,6 +18,7 @@
 namespace borealis {
 
 template<class SubClass> class Transformer;
+template<class T> struct protobuf_traits_impl;
 
 namespace proto { class Term; }
 /** protobuf -> Term/Term.proto
