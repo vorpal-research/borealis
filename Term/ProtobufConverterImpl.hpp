@@ -81,10 +81,10 @@ struct protobuf_traits_impl<AxiomTerm> {
     static std::unique_ptr<proto::AxiomTerm> toProtobuf(const AxiomTerm& t) {
         auto res = util::uniq(new proto::AxiomTerm());
         res->set_allocated_lhv(
-            TermConverter::toProtobuf(t.getLhv()).release()
+            TermConverter::toProtobuf(*t.getLhv()).release()
         );
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t.getRhv()).release()
+            TermConverter::toProtobuf(*t.getRhv()).release()
         );
         return std::move(res);
     }
@@ -451,7 +451,7 @@ struct protobuf_traits_impl<SignTerm> {
     static std::unique_ptr<proto::SignTerm> toProtobuf(const SignTerm& t) {
         auto res = util::uniq(new proto::SignTerm());
         res->set_allocated_rhv(
-            TermConverter::toProtobuf(t.getRhv()).release()
+            TermConverter::toProtobuf(*t.getRhv()).release()
         );
         return std::move(res);
     }
