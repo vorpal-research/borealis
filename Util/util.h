@@ -27,6 +27,7 @@
 #include "Util/option.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/streams.hpp"
+#include "Util/type_traits.hpp"
 #include "Util/util.hpp"
 
 namespace llvm {

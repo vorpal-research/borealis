@@ -9,7 +9,6 @@
 #define SOURCE_LOCATION_TRACKER_LOCATION_CONTAINER_H
 
 #include <map>
-#include <type_traits>
 #include <unordered_map>
 
 #include "Util/util.h"
@@ -58,7 +57,7 @@ public:
         return t2l.count(val) > 0;
     }
 
-    bool contains(util::make_const_ptr_q<T>& val) const {
+    bool contains(util::make_const_ptr_t<T>& val) const {
         return t2l.count(const_cast<T>(val)) > 0;
     }
 
@@ -67,7 +66,7 @@ public:
         return t2l.at(key);
     }
 
-    const Locus& operator[](util::make_const_ptr_q<T>& key) const {
+    const Locus& operator[](util::make_const_ptr_t<T>& key) const {
         return t2l.at(const_cast<T>(key));
     }
 

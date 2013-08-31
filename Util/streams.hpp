@@ -188,8 +188,6 @@ std::ostream& operator<<(std::ostream& s, const error_printer<T>& v) {
 template<class T>
 error_printer<T> error(const T& val) { return error_printer<T>(val); }
 
-
-
 template<class Func>
 std::string with_stream(Func f) {
     std::ostringstream ost;
@@ -220,7 +218,7 @@ public:
     llvm_stream_wrapper() = default;
     llvm_stream_wrapper(Streamer& str): str(&str) {};
 
-    virtual void write_impl(const char *Ptr, size_t Size) {
+    virtual void write_impl(const char* Ptr, size_t Size) {
         (*str) << byte_output{ Ptr, Size };
     }
 
@@ -232,7 +230,6 @@ public:
         return static_cast<uint64_t>(-1);
     }
 };
-
 
 } // namespace streams
 } // namespace util

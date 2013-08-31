@@ -15,10 +15,10 @@
 #include <iostream>
 #include <utility>
 
+#include "Protobuf/Gen/Util/locations.pb.h"
+
 #include "Util/json_traits.hpp"
 #include "Util/xml_traits.hpp"
-
-#include "Protobuf/Gen/Util/locations.pb.h"
 
 namespace borealis {
 
@@ -186,7 +186,7 @@ struct json_traits<LocalLocus> {
         };
     }
 };
-} //namespace util
+} // namespace util
 
 struct Locus {
     static constexpr auto UNKNOWN_NAME = "";
@@ -266,6 +266,7 @@ Streamer& operator<<(Streamer& ost, const Locus& ll) {
 }
 
 namespace util {
+
 template<>
 struct json_traits<Locus> {
     typedef std::unique_ptr<Locus> optional_ptr_t;
@@ -288,13 +289,15 @@ struct json_traits<Locus> {
         };
     }
 };
+
 template<>
 struct xml_traits<Locus> {
     static XMLNodePtr toXml(XMLNodePtr p, const Locus& val) {
         return util::toXml(p, util::toString(val));
     }
 };
-} //namespace util
+
+} // namespace util
 
 struct LocusRange {
     Locus lhv;
@@ -323,6 +326,6 @@ public:
         return h2 + (h1 << 16);
     }
 };
-}
+} // namespace std
 
 #endif /* LOCATIONS_H_ */

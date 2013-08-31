@@ -41,7 +41,10 @@ class mapped_iterator {
     RootIt current;
     std::shared_ptr<UnaryFunc> Fn;
 
-    const UnaryFunc& fn() const { return *Fn; }
+    const UnaryFunc& fn() const { 
+        if (!Fn) throw 0;
+        return *Fn;
+    }
 
 public:
     typedef typename std::iterator_traits<RootIt>::iterator_category
@@ -50,15 +53,13 @@ public:
             difference_type;
     typedef decltype(some<UnaryFunc>()(*current)) value_type;
 
-    struct pointer{
+    struct pointer {
         value_type val;
 
         value_type* operator->() {
             return &val;
         }
     };
-
-    // typedef typename UnaryFunc::result_type* pointer;
     typedef value_type reference; // Can't modify value returned by Fn
 
     typedef RootIt iterator_type;
@@ -73,8 +74,7 @@ public:
     inline mapped_iterator(const mapped_iterator& It) = default;
 
     inline value_type operator*() const {    // All this work to do this
-        if(!Fn) throw 0;
-        return fn()(*current);                   // little change
+        return fn()(*current);               // little change
     }
 
     inline pointer operator->() const {
@@ -251,8 +251,8 @@ public:
     typedef flattened_iterator<RootIt> self;
 
     inline const RootIt& getCurrent() const { return current; }
-    inline ChildIt& getChild() { if(!child) throw 0; return child.getUnsafe(); }
-    inline const ChildIt& getChild() const { if(!child) throw 0; return child.getUnsafe(); }
+    inline ChildIt& getChild() { if (!child) throw 0; return child.getUnsafe(); }
+    inline const ChildIt& getChild() const { if (!child) throw 0; return child.getUnsafe(); }
 
     flattened_iterator() = default;
 
@@ -267,12 +267,12 @@ public:
     inline flattened_iterator(const flattened_iterator& It) = default;
 
     inline reference operator*() const {
-        if(!child) throw 0;
+        if (!child) throw 0;
         return **(child.get());
     }
 
     inline ChildIt operator->() const {
-        if(!child) throw 0;
+        if (!child) throw 0;
         return child.getUnsafe();
     }
 
@@ -370,6 +370,7 @@ class filtered_iterator {
     std::shared_ptr<Pred> pred;
 
     const Pred& predf() const {
+        if (!pred) throw 0;
         return *pred;
     }
 

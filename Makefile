@@ -188,7 +188,9 @@ LIBS := \
 	-ljsoncpp \
 	-lprotobuf \
 	-ltinyxml2 \
-	-lmathsat -lgmpxx -lgmp
+	-lmathsat \
+	-lgmpxx \
+	-lgmp
 
 ################################################################################
 # Test defs management
@@ -293,6 +295,7 @@ $(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
 tests: $(EXES) $(TEST_EXES)
 
 .regenerate-test-defs: $(TEST_DEFS)
+	@find $(TEST_DIRS) -name "*.tmp" -delete
 
 
 check: tests .regenerate-test-defs

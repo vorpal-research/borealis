@@ -11,8 +11,12 @@
 namespace borealis {
 namespace util {
 
-// smart ptr class similar to std::shared_ptr, but with value-based comparisons and hash
-// intended to be used in maps and unordered maps
+/*******************************************************************************
+ *
+ * smart ptr class similar to std::shared_ptr, but with value-based comparisons and hash
+ * intended to be used in maps and unordered maps
+ *
+ ******************************************************************************/
 template<class T>
 class key_holder_ptr {
     std::shared_ptr<T> inner;
@@ -51,13 +55,17 @@ struct hash<borealis::util::key_holder_ptr<T>> {
     }
 };
 
-}// namespace std
+} // namespace std
 
 namespace borealis {
 namespace util {
 
-// ptr class adapter with value-based comparisons and hash
-// intended to be used in maps and unordered maps
+/*******************************************************************************
+ *
+ * ptr class adapter with value-based comparisons and hash
+ * intended to be used in maps and unordered maps
+ *
+ ******************************************************************************/
 template<class T>
 class key_ptr {
     const T* inner;
@@ -92,6 +100,6 @@ template<class T> struct hash<borealis::util::key_ptr<T>> {
     }
 };
 
-}// namespace std
+} // namespace std
 
 #endif /* KEY_PTR_HPP_ */

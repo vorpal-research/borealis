@@ -14,18 +14,20 @@
 
 /*******************************************************************************
  *
- * a rather meaningless but useful smart ptr that just copies the object
- * along with itself
- * does not work for arrays 'cos nobody knows how to copy them
+ * Rather meaningless but useful smart ptr that copies the object
+ * along with itself.
+ * Does not work for arrays 'cos nobody knows how to copy them.
  *
  ******************************************************************************/
+ // FIXME: pointer- or value-based equality?
+ //        atm equals and hash contradict each other
 namespace borealis {
-namespace util{
+namespace util {
 
 template<class T>
 struct default_copy {
     T* operator()(const T* val) const {
-        if(!val) return nullptr;
+        if (!val) return nullptr;
         return new T(*val);
     }
 };
@@ -33,12 +35,14 @@ struct default_copy {
 template<
     class T,
     class Deleter = std::default_delete<T>,
-    class Copier = default_copy<T> >
-class copying_ptr {
+    class Copier = default_copy<T>
+> class copying_ptr {
+
     typedef std::unique_ptr<T, Deleter> holder_t;
     holder_t inner;
 
     typedef copying_ptr self;
+
 public:
     typedef typename holder_t::pointer pointer;
     typedef typename holder_t::element_type element_type;
@@ -48,7 +52,7 @@ public:
     copying_ptr(std::nullptr_t) noexcept: inner{ nullptr } {};
     copying_ptr(pointer hld) noexcept: inner{ hld } {};
     copying_ptr(const holder_t& hld) noexcept: inner{ hld } {};
-    copying_ptr(const self& that): inner{ Copier()(that.inner.get()) } {}
+    copying_ptr(const self& that): inner{ copier_type()(that.inner.get()) } {};
     copying_ptr(self&&) = default;
     copying_ptr() = default;
 
@@ -67,15 +71,15 @@ public:
         return *this;
     }
 
-    pointer release() noexcept{
+    pointer release() noexcept {
         return inner.release();
     }
 
-    pointer get() const noexcept{
+    pointer get() const noexcept {
         return inner.get();
     }
 
-    Deleter get_deleter() const noexcept{
+    deleter_type get_deleter() const noexcept {
         return inner.get_deleter();
     }
 
@@ -83,11 +87,11 @@ public:
         return *inner;
     }
 
-    holder_t operator->() noexcept{
+    holder_t operator->() noexcept {
         return inner;
     }
 
-    operator bool() const noexcept{
+    operator bool() const noexcept {
         return !!inner;
     }
 
@@ -97,7 +101,7 @@ public:
 
     template<class T2, class D2, class C2>
     bool equals(const copying_ptr<T2, D2, C2>& that) {
-        if(!that) return !this->inner;
+        if (!that) return !inner;
         return *inner == *that.inner;
     }
 };
@@ -139,17 +143,18 @@ namespace std {
 
 template<class T, class D, class C>
 void swap(const borealis::util::copying_ptr<T, D, C>& ptr1,
-        const borealis::util::copying_ptr<T, D, C>& ptr2) noexcept {
-    return ptr1.swap(ptr2);
+          const borealis::util::copying_ptr<T, D, C>& ptr2) noexcept {
+    ptr1.swap(ptr2);
+    return;
 }
 
 template<class T, class D, class C>
 struct hash<borealis::util::copying_ptr<T, D, C>> {
-    size_t operator()(const borealis::util::copying_ptr<T, D, C>& ptr) const noexcept{
+    size_t operator()(const borealis::util::copying_ptr<T, D, C>& ptr) const noexcept {
         return std::hash<T*>()(ptr.get());
     }
 };
 
-}
+} // namespace std
 
 #endif /* COPYING_PTR_HPP_ */

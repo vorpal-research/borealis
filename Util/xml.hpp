@@ -53,7 +53,7 @@ template<>
 struct xml_traits<std::string> {
     static XMLNodePtr toXml(XMLNodePtr p, const std::string& s) {
         auto* doc = p->GetDocument();
-        p->InsertFirstChild(
+        p->InsertEndChild(
             doc->NewText(s.c_str())
         );
         return p;
@@ -64,7 +64,7 @@ template<class T>
 struct xml_traits<T, GUARD(std::is_arithmetic<T>::value)> {
     static XMLNodePtr toXml(XMLNodePtr p, T val) {
         auto* doc = p->GetDocument();
-        p->InsertFirstChild(
+        p->InsertEndChild(
             doc->NewText(util::toString(val).c_str())
         );
         return p;
@@ -89,7 +89,7 @@ public:
 
     Xml(const std::string& root) : doc(new tinyxml2::XMLDocument()) {
         auto* rootNode = doc->NewElement(root.c_str());
-        doc->InsertFirstChild(rootNode);
+        doc->InsertEndChild(rootNode);
         nodeStack.push(rootNode);
     }
 
@@ -99,12 +99,6 @@ public:
 
     tinyxml2::XMLElement* RootElement() {
         return doc->RootElement();
-    }
-
-    friend std::ostream& operator<<(std::ostream& ost, Xml xml) {
-        tinyxml2::XMLPrinter p;
-        xml.doc->Print(&p);
-        return ost << p.CStr();
     }
 
     Xml& operator>>(const std::string& tag) {
@@ -146,6 +140,13 @@ public:
         return *this;
     }
 };
+
+template<class Streamer>
+Streamer& operator<<(Streamer& s, const Xml& xml) {
+    tinyxml2::XMLPrinter p;
+    xml.ToDocument()->Print(&p);
+    return s << p.CStr();
+}
 
 } // namespace util
 } // namespace borealis

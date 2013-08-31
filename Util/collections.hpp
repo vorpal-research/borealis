@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "Util/iterators.hpp"
+#include "Util/type_traits.hpp"
 
 #include "Util/macros.h"
 
@@ -143,15 +144,15 @@ inline auto reverse(Container* c) -> decltype(reverse(*c)) {
 
 template<class Container>
 inline auto tail(const Container& con) -> CollectionView<decltype(std::begin(con))> {
-    // fix the issue for initializer_list in which begin() is not assignable
-    // with std::next
+    // FIXME: Does not work for std::initializer_list
+    // in which begin() is not assignable with std::next
     return view(std::next(std::begin(con)), std::end(con));
 }
 
 template<class Container>
 inline auto tail(Container& con) -> CollectionView<decltype(std::begin(con))> {
-    // fix the issue for initializer_list in which begin() is not assignable
-    // with std::next
+    // FIXME: Does not work for std::initializer_list
+    // in which begin() is not assignable with std::next
     return view(std::next(std::begin(con)), std::end(con));
 }
 
@@ -173,24 +174,18 @@ std::list<T> filter_not(const std::list<T>& lst, const Pred pred) {
     return filter_not(copy(lst), pred);
 }
 
-template<class T>
-using add_const_ref_q =
-    typename std::add_lvalue_reference<
-        typename std::add_const<T>::type
-    >::type;
-
 template<class K, class _>
-bool containsKey(const std::map<K, _>& map, add_const_ref_q<K> k) {
+bool containsKey(const std::map<K, _>& map, add_const_reference_t<K> k) {
     return map.find(k) != map.end();
 }
 
 template<class K, class _>
-bool containsKey(const std::unordered_map<K, _>& map, add_const_ref_q<K> k) {
+bool containsKey(const std::unordered_map<K, _>& map, add_const_reference_t<K> k) {
     return map.find(k) != map.end();
 }
 
 template<class K, class V>
-void removeFromMultimap(std::multimap<K, V>& map, add_const_ref_q<K> k, add_const_ref_q<V> v) {
+void removeFromMultimap(std::multimap<K, V>& map, add_const_reference_t<K> k, add_const_reference_t<V> v) {
     auto range = map.equal_range(k);
 
     for (auto it = range.first; it != range.second; ++it) {
@@ -202,7 +197,7 @@ void removeFromMultimap(std::multimap<K, V>& map, add_const_ref_q<K> k, add_cons
 }
 
 template<class K, class V>
-void removeFromMultimap(std::unordered_multimap<K, V>& map, add_const_ref_q<K> k, add_const_ref_q<V> v) {
+void removeFromMultimap(std::unordered_multimap<K, V>& map, add_const_reference_t<K> k, add_const_reference_t<V> v) {
     auto range = map.equal_range(k);
 
     for (auto it = range.first; it != range.second; ++it) {

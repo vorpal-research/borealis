@@ -53,17 +53,17 @@ inline static size_t hash_combiner(size_t left, size_t right) // replaceable
 { return left^right; }
 
 template<int Index, class ...Types>
-struct hash_impl {
+struct tuple_hash_impl {
     size_t operator()(size_t a, const std::tuple<Types...>& t) const {
         typedef typename std::tuple_element<Index, std::tuple<Types...>>::type nexttype;
-        hash_impl<Index-1, Types...> next;
+        tuple_hash_impl<Index-1, Types...> next;
         size_t b = std::hash<nexttype>()(std::get<Index>(t));
         return next(hash_combiner(a, b), t);
     }
 };
 
 template<class ...Types>
-struct hash_impl<0, Types...> {
+struct tuple_hash_impl<0, Types...> {
     size_t operator()(size_t a, const std::tuple<Types...>& t) const {
         typedef typename std::tuple_element<0, std::tuple<Types...>>::type nexttype;
         size_t b = std::hash<nexttype>()(std::get<0>(t));
@@ -105,14 +105,14 @@ template<class... Types>
 struct hash<std::tuple<Types...>> {
     size_t operator()(const std::tuple<Types...>& t) const {
         const size_t begin = std::tuple_size<std::tuple<Types...>>::value-1;
-        return borealis::util::hash::impl_::hash_impl<begin, Types...>()(59, t);
+        return borealis::util::hash::impl_::tuple_hash_impl<begin, Types...>()(59, t);
     }
 };
 
 template<class T, class U>
 struct hash<std::pair<T, U>> {
     size_t operator()(const std::pair<T, U >& t) const {
-        return borealis::util::hash::impl_::hash_impl<1, T, U>()(59, t);
+        return borealis::util::hash::impl_::tuple_hash_impl<1, T, U>()(59, t);
     }
 };
 

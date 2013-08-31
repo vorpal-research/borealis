@@ -105,7 +105,6 @@ struct const_option_iterator {
     }
 };
 
-
 template<class T>
 class option {
     typedef option self;
@@ -176,10 +175,10 @@ public:
         return empty();
     }
 
-    typedef struct unspec_{} *unspecified_pointer_type;
+    typedef struct unspec_{}* unspecified_pointer_type;
     operator unspecified_pointer_type() {
         static unspec_ unspec;
-        if(empty()) return nullptr;
+        if( empty() ) return nullptr;
         else return &unspec;
     }
 
@@ -219,7 +218,7 @@ public:
     }
 
     const_iterator begin() const {
-        if (this->empty()) return const_iterator();
+        if ( empty() ) return const_iterator();
         else return const_iterator(this);
     }
 
@@ -228,7 +227,7 @@ public:
     }
 
     iterator begin() {
-        if (this->empty()) return iterator();
+        if ( empty() ) return iterator();
         else return iterator(this);
     }
 
@@ -319,10 +318,10 @@ public:
         return !empty();
     }
 
-    typedef struct unspec_{} *unspecified_pointer_type;
+    typedef struct unspec_{}* unspecified_pointer_type;
     operator unspecified_pointer_type() {
         static unspec_ unspec;
-        if(empty()) return nullptr;
+        if( empty() ) return nullptr;
         else return &unspec;
     }
 
@@ -366,7 +365,7 @@ public:
     }
 
     const_iterator begin() const {
-        if (this->empty()) return const_iterator();
+        if ( empty() ) return const_iterator();
         else return const_iterator(this);
     }
 
@@ -375,7 +374,7 @@ public:
     }
 
     iterator begin() {
-        if (this->empty()) return iterator();
+        if ( empty() ) return iterator();
         else return iterator(this);
     }
 
