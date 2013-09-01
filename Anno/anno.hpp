@@ -15,7 +15,6 @@ namespace borealis {
 namespace anno {
 namespace calculator {
 
-
 template<class Location = pegtl::ascii_location>
 std::vector< command_type > parse_command(const std::string& command) {
 

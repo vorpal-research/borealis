@@ -96,6 +96,7 @@ struct read_uop_m;
 template<typename O, typename A, int ...Chars>
 struct read_uop_m< pegtl::string< Chars... >, O, A > :
         ifapply< seq< strpad< pegtl::string< Chars... > >, O >, op_uaction< A > > {};
+
 #define READ_UNARY(op, o, a) \
     read_uop_m< _PS(#op), o, a <expression_type> >
 
@@ -171,6 +172,9 @@ using read_lor2 = GRAMMAR( G(read_land2) >> *G(read_lor) );
 struct read_expr :
         read_lor2 {};
 
+#undef READ_UNARY
+#undef READ_BINARY
+
 // mask := +(ALPHA) *(DIGIT)
 using mask = GRAMMAR( +(G(alpha)) >> *(G(digit)) );
 // mask is just an identifier, can push it right away
@@ -236,15 +240,15 @@ struct annotated_commentary :
 struct read_calc :
         seq< commands, space_until_eof > {};
 
-}
-}
-}
+} // namespace calculator
+} // namespace anno
+} // namespace borealis
 
-#undef PUSH
-#undef OR_G
-#undef OR
-#undef SEQ_G
 #undef SEQ
+#undef SEQ_G
+#undef OR
+#undef OR_G
+#undef PUSH
 
 #include "Util/unmacros.h"
 #include "Anno/zappo_unmacros.h"

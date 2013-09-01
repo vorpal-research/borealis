@@ -32,7 +32,7 @@ public:
 
     location(const expanded_location& loc) : inner_(new expanded_location(loc)) {}
     location(const location& loc) : inner_(new expanded_location(*loc.inner_)) {}
-    location() : inner_(new expanded_location()){}
+    location() : inner_(new expanded_location()) {}
 
     const location& operator=(const location& that) {
         location temp(that);
@@ -44,7 +44,7 @@ public:
         return *inner_;
     }
 
-    void operator()(const int v) {
+    void operator()(int v) {
         if(v == '\r') return;
 
         if(v == '\n') {
@@ -100,7 +100,7 @@ public:
                 vars_.push_back(name);
             }
         public:
-            const std::list<std::string>& vars() { return vars_; }
+            const std::list<std::string>& vars() const { return vars_; }
         };
 
         var_visitor v;
@@ -118,7 +118,7 @@ public:
                 bs_.push_back(name);
             }
         public:
-            const std::list<std::string>& builtins() { return bs_; }
+            const std::list<std::string>& builtins() const { return bs_; }
         };
 
         builtin_visitor v;

@@ -5,9 +5,11 @@
  *      Author: belyaev
  */
 
+#include <ostream>
+
 #include "Anno/production.h"
 
-#include <ostream>
+// FIXME: move to borealis::anno from default namespace?
 
 using std::boolalpha;
 using std::make_shared;

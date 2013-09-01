@@ -11,10 +11,11 @@
 #include <string>
 
 #include "Util/streams.hpp"
+
 #include "Util/macros.h"
 
 namespace borealis {
-namespace anno{
+namespace anno {
 
 // bad string cast exception, no additional info provided, sorry =)
 class bad_string_cast : public std::exception {};

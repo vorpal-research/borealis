@@ -18,6 +18,7 @@
 #undef _PS
 #undef G
 #undef S
+#undef PSS
 #undef GRAMMAR
 #undef LITERALGRAMMAR
 #undef CH

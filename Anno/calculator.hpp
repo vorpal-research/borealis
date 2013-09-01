@@ -18,13 +18,11 @@
 #include "Anno/command.hpp"
 #include "Anno/locator.hpp"
 #include "Anno/production.h"
+#include "Anno/string_cast.hpp"
+#include "Anno/zappo.hpp"
 #include "Util/util.h"
 
-#include "Anno/zappo.hpp"
 #include "Anno/zappo_macros.h"
-
-#include "Anno/string_cast.hpp"
-
 #include "Util/macros.h"
 
 namespace borealis {
@@ -210,10 +208,10 @@ struct ask_arguments :
 
 }   // namespace calculator
 
-#include "Util/unmacros.h"
-#include "Anno/zappo_unmacros.h"
-
 }   // namespace anno
 }   // namespace borealis
+
+#include "Util/unmacros.h"
+#include "Anno/zappo_unmacros.h"
 
 #endif // ANNO_CALCULATOR_HPP

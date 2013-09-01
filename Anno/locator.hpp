@@ -41,7 +41,7 @@ public:
      // this is (logically) a move constructor, but who cares
      calc_exception(const calc_exception&) = default;
 
-     explicit calc_exception(const Location& loc) : loc_(loc){
+     explicit calc_exception(const Location& loc) : loc_(loc) {
          str_rep = std::make_shared<std::ostringstream>();
          rule_stack_trace = std::make_shared<rule_stack>();
          *str_rep << loc << std::endl;
@@ -86,7 +86,7 @@ struct anno_guard : private pegtl::nocopy< anno_guard< Rule, Input, Debug > >
         m_counter.leave();
     }
 
-    bool operator()(const bool result, const bool) const {
+    bool operator()(bool result, bool) const {
         return result;
     }
 
