@@ -25,7 +25,7 @@ Streamer& operator<<(Streamer& str, const CommandLine& cl) {
 }
 
 std::ostream& operator<<(std::ostream& s, const CommandLine& cl) {
-    return operator<< <std::ostream> (s, cl);
+    return operator<<(s, cl);
 }
 
 } /* namespace driver */
