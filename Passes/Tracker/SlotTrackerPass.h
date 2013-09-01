@@ -17,33 +17,33 @@ namespace borealis {
 
 class SlotTrackerPass : public llvm::ModulePass {
 
-	typedef std::unique_ptr<SlotTracker> ptr_t;
+    typedef std::unique_ptr<SlotTracker> ptr_t;
 
-	ptr_t globals;
-	std::map<const llvm::Function*, ptr_t> funcs;
+    ptr_t globals;
+    std::map<const llvm::Function*, ptr_t> funcs;
 
 public:
 
-	static char ID;
+    static char ID;
 
-	SlotTrackerPass() : llvm::ModulePass(ID) {}
+    SlotTrackerPass() : llvm::ModulePass(ID) {}
 
-	bool doInitialization(llvm::Module& M);
-	virtual bool runOnModule(llvm::Module& M) override;
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+    bool doInitialization(llvm::Module& M);
+    virtual bool runOnModule(llvm::Module& M) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
 
-	SlotTracker* getSlotTracker (const llvm::Function* func) const;
-	SlotTracker* getSlotTracker (const llvm::Module* _) const;
-	SlotTracker* getSlotTracker (const llvm::BasicBlock* bb) const;
-	SlotTracker* getSlotTracker (const llvm::Instruction* inst) const;
-	SlotTracker* getSlotTracker (const llvm::Argument* arg) const;
-	SlotTracker* getSlotTracker (const llvm::Function& func) const;
-	SlotTracker* getSlotTracker (const llvm::Module& _) const;
-	SlotTracker* getSlotTracker (const llvm::BasicBlock& bb) const;
-	SlotTracker* getSlotTracker (const llvm::Instruction& inst) const;
-	SlotTracker* getSlotTracker (const llvm::Argument& arg) const;
+    SlotTracker* getSlotTracker (const llvm::Function* func) const;
+    SlotTracker* getSlotTracker (const llvm::Module* _) const;
+    SlotTracker* getSlotTracker (const llvm::BasicBlock* bb) const;
+    SlotTracker* getSlotTracker (const llvm::Instruction* inst) const;
+    SlotTracker* getSlotTracker (const llvm::Argument* arg) const;
+    SlotTracker* getSlotTracker (const llvm::Function& func) const;
+    SlotTracker* getSlotTracker (const llvm::Module& _) const;
+    SlotTracker* getSlotTracker (const llvm::BasicBlock& bb) const;
+    SlotTracker* getSlotTracker (const llvm::Instruction& inst) const;
+    SlotTracker* getSlotTracker (const llvm::Argument& arg) const;
 
-	virtual ~SlotTrackerPass() {}
+    virtual ~SlotTrackerPass() {}
 };
 
 } // namespace borealis

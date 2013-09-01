@@ -70,11 +70,11 @@
 #include "Actions/comments.h"
 #include "Config/config.h"
 #include "Codegen/DiagnosticLogger.h"
+#include "Driver/cl.h"
 #include "Driver/clang_pipeline.h"
 #include "Driver/interviewer.h"
 #include "Driver/llvm_pipeline.h"
 #include "Driver/plugin_loader.h"
-#include "Driver/cl.h"
 #include "Logging/logger.hpp"
 #include "Passes/Misc/PrinterPasses.h"
 #include "Passes/Util/DataProvider.hpp"
@@ -87,6 +87,8 @@ int gestalt::main(int argc, const char** argv) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     atexit(google::protobuf::ShutdownProtobufLibrary);
 
+    atexit(llvm::llvm_shutdown);
+
     using namespace clang;
     using namespace llvm;
 
@@ -94,39 +96,34 @@ int gestalt::main(int argc, const char** argv) {
 
     using borealis::comments::GatherCommentsAction;
     using borealis::endl;
-    using borealis::util::streams::error;
 
     const std::vector<std::string> empty;
 
-    borealis::driver::CommandLine args(argc, argv);
+    CommandLine args(argc, argv);
 
     AppConfiguration::initialize(
         new borealis::config::CommandLineConfigSource{ args.suffixes("---").stlRep() },
         new borealis::config::FileConfigSource{ args.suffixes("---config:").single("wrapper.conf") }
     );
 
-    borealis::driver::CommandLine opt =
-            args.suffixes("---opt:") +
-            MultiConfigEntry("opt", "load").get();
-
+    CommandLine opt = args.suffixes("---opt:") +
+        MultiConfigEntry("opt", "load").get();
     llvm::cl::ParseCommandLineOptions(opt.argc(), opt.argv());
 
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
-
-    auto prePasses = MultiConfigEntry("passes", "pre").get();
-    auto inPasses = MultiConfigEntry("passes", "in").get();
-    auto postPasses = MultiConfigEntry("passes", "post").get();
-    auto libs = MultiConfigEntry("libs", "load").get();
-
-    auto skipClang = BoolConfigEntry("run", "skipClangDriver").get(false);
-
     for (const auto& op : logFile) {
         borealis::logging::configureLoggingFacility(op);
     }
     for (const auto& op : z3log) {
         borealis::logging::configureZ3Log(op);
     }
+
+    auto prePasses = MultiConfigEntry("passes", "pre").get();
+    auto inPasses = MultiConfigEntry("passes", "in").get();
+    auto postPasses = MultiConfigEntry("passes", "post").get();
+    auto libs = MultiConfigEntry("libs", "load").get();
+    auto skipClang = BoolConfigEntry("run", "skipClangDriver").get(false);
 
     CommandLine compilerArgs = args.tail().unprefix("---").
             push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
@@ -137,32 +134,30 @@ int gestalt::main(int argc, const char** argv) {
     DiagOpts.ShowCarets = 0;
 
     auto diagBuffer = borealis::util::uniq(new DiagnosticLogger(*this));
-
     auto diags = CompilerInstance::createDiagnostics(DiagOpts,
             compilerArgs.argc(), compilerArgs.argv(),
             diagBuffer.get(), /* ownClient = */false, /* cloneClient = */false);
 
+    // first things first
+    // fall-through to the regular clang
+
     auto nativeClangCfg = borealis::config::StringConfigEntry("run", "clangExec");
+
     interviewer nativeClang{ "clang", compilerArgs.data(), diags, nativeClangCfg };
     nativeClang.assignLogger(*this);
 
-    //infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
+    infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
 
-    // setup and execute borealis stuff
+    if (!skipClang) if (nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
+
+    // prep for borealis business
+    // compile sources to llvm::Module
+
     clang_pipeline clang { "clang", compilerArgs.data(), diags };
     clang.assignLogger(*this);
 
-    plugin_loader pl;
-    pl.assignLogger(*this);
-
-    // first things first
-    // fall-through to the regular clang
-    if (!skipClang) {
-        if(nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
-    }
-
     borealis::driver::CommandLine clangRealArgs = clang.getInvocationArgs();
-    if(clangRealArgs.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
+    if (clangRealArgs.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
 
     infos() << "Clang lib arguments: " << clangRealArgs << endl;
 
@@ -172,9 +167,9 @@ int gestalt::main(int argc, const char** argv) {
     clang.add(gather_comments);
     clang.add(compile_to_llvm);
 
-    if (clang.run() == clang_pipeline::status::FAILURE) {
-        return E_GATHER_COMMENTS;
-    }
+    if (clang.run() == clang_pipeline::status::FAILURE) return E_GATHER_COMMENTS;
+
+    // collect passes
 
     std::shared_ptr<llvm::Module> module_ptr(compile_to_llvm.takeModule());
 
@@ -204,11 +199,16 @@ int gestalt::main(int argc, const char** argv) {
         }
     }
 
+    // load .so plugins
+
+    plugin_loader pl;
+    pl.assignLogger(*this);
     for (const auto& lib : libs2load) {
         pl.add(lib.str());
     }
-
     pl.run();
+
+    // run llvm passes
 
     llvm_pipeline llvm { module_ptr };
     llvm.assignLogger(*this);
@@ -220,6 +220,8 @@ int gestalt::main(int argc, const char** argv) {
     }
 
     llvm.run();
+
+    // verify we didn't screw up the module structure
 
     std::string err;
     if (verifyModule(*module_ptr, ReturnStatusAction, &err)) {

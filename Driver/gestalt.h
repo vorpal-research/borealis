@@ -21,13 +21,10 @@ enum {
     E_CLANG_INVOKE               = 0x0004
 };
 
-/*
- *
- */
 class gestalt: public borealis::logging::ObjectLevelLogging<gestalt> {
 public:
     gestalt(const std::string& loggingDomain):
-        borealis::logging::ObjectLevelLogging<gestalt>(loggingDomain){}
+        borealis::logging::ObjectLevelLogging<gestalt>(loggingDomain) {}
 
     int main(int argc, const char** argv);
 
@@ -36,4 +33,5 @@ public:
 
 } /* namespace driver */
 } /* namespace borealis */
+
 #endif /* GESTALT_H_ */

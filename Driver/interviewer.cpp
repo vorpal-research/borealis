@@ -5,8 +5,6 @@
  *      Author: belyaev
  */
 
-#include "Driver/interviewer.h"
-
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Driver/Arg.h>
 #include <clang/Driver/ArgList.h>
@@ -19,8 +17,9 @@
 #include <llvm/Support/Host.h> // getDefaultTargetTriple
 
 #include "Config/config.h"
+#include "Driver/interviewer.h"
 #include "Logging/logger.hpp"
-#include "Util/util.hpp"
+#include "Util/util.h"
 
 namespace borealis {
 namespace driver {
@@ -36,26 +35,23 @@ struct interviewer::impl {
         const std::vector<const char*>&,
         const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags,
         const borealis::config::StringConfigEntry& config
-    ): pathToExecutable{
-           config
-                .get<llvm::sys::Path>()
-                .getOrElse(llvm::sys::Program::FindProgramByName(what))
-       },
-       diags{ diags },
-       theDriver{},
-       theCompilation{} {};
-
+    ) : pathToExecutable{
+            config.get<llvm::sys::Path>()
+                  .getOrElse(llvm::sys::Program::FindProgramByName(what))
+        },
+        diags{ diags },
+        theDriver{},
+        theCompilation{} {};
 };
 
-interviewer::~interviewer(){};
+interviewer::~interviewer() {};
 
 interviewer::interviewer(
     const std::string& what,
     const std::vector<const char*>& args,
     const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags,
     const borealis::config::StringConfigEntry& config
-): pimpl{ new impl { what, args, diags, config }}
-    {
+) : pimpl{ new impl{ what, args, diags, config } } {
 
     auto invoke_args = std::vector<const char*>{};
     invoke_args.reserve(args.size() + 1);
@@ -65,17 +61,18 @@ interviewer::interviewer(
     pimpl->theDriver = borealis::util::uniq(new clang::driver::Driver{
         invoke_args.front(), llvm::sys::getDefaultTargetTriple(), "a.out", true, *diags
     });
-
     pimpl->theCompilation = borealis::util::uniq(pimpl->theDriver->BuildCompilation(invoke_args));
 
-    if (pimpl->theCompilation->getArgs().hasArg(clang::driver::options::OPT_c)) {
-        errs() << "Hello!!!!" << endl;
-    }
+    // FIXME: Huh?
+    // if (pimpl->theCompilation->getArgs().hasArg(clang::driver::options::OPT_c)) {
+    //     errs() << "Hello!" << endl;
+    // }
 
-    for(const auto& inp :
+    for (const auto& inp :
             borealis::util::view(pimpl->theCompilation->getArgs().filtered_begin(clang::driver::options::OPT_INPUT),
-                                 pimpl->theCompilation->getArgs().filtered_end())) {
-        errs() << inp->getValue(pimpl->theCompilation->getArgs()) << endl;
+                                 pimpl->theCompilation->getArgs().filtered_end())
+    ) {
+        dbgs() << inp->getValue(pimpl->theCompilation->getArgs()) << endl;
     }
 };
 

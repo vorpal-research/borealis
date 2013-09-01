@@ -10,7 +10,6 @@
 
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Driver/Driver.h>
-
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/Path.h>
 
@@ -24,7 +23,10 @@ namespace driver {
 class interviewer: public borealis::logging::DelegateLogging {
     struct impl;
     std::unique_ptr<impl> pimpl;
+
 public:
+    enum class status { SUCCESS, FAILURE };
+
     interviewer(
         const std::string& what,
         const std::vector<const char*>& args,
@@ -33,10 +35,9 @@ public:
     );
     ~interviewer();
 
-    enum class status { SUCCESS, FAILURE };
+    util::option_ref<const clang::driver::DerivedArgList> getRealArgs() const;
 
     interviewer::status run() const;
-    util::option_ref<const clang::driver::DerivedArgList> getRealArgs() const;
 };
 
 } // namespace driver

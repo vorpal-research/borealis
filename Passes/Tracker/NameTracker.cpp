@@ -30,27 +30,27 @@ bool NameTracker::runOnModule(llvm::Module& M) {
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this).getSlotTracker(M);
     auto& resolver = globalResolver;
 
-	for (auto& G : M.getGlobalList()) {
-	    addName(st, G, resolver);
-	}
+    for (auto& G : M.getGlobalList()) {
+        addName(st, G, resolver);
+    }
 
-	for (auto& F : M) {
+    for (auto& F : M) {
 
-	    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-	    auto& resolver = localResolvers[&F];
+        auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
+        auto& resolver = localResolvers[&F];
 
-	    addName(st, F, resolver);
-		for (auto& A : F.getArgumentList()) {
-		    addName(st, A, resolver);
-		}
-		for (auto& BB : F) {
-			for (auto& I : BB) {
-			    addName(st, I, resolver);
-			}
-		}
-	}
+        addName(st, F, resolver);
+        for (auto& A : F.getArgumentList()) {
+            addName(st, A, resolver);
+        }
+        for (auto& BB : F) {
+            for (auto& I : BB) {
+                addName(st, I, resolver);
+            }
+        }
+    }
 
-	return false;
+    return false;
 }
 
 void NameTracker::print(llvm::raw_ostream&, const llvm::Module*) const {

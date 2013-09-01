@@ -5,12 +5,11 @@
  *      Author: belyaev
  */
 
-#include "Driver/llvm_pipeline.h"
-
 #include <llvm/InitializePasses.h>
 #include <llvm/PassManager.h>
 #include <llvm/Target/TargetData.h>
 
+#include "Driver/llvm_pipeline.h"
 #include "Passes/Misc/PrinterPasses.h"
 
 namespace borealis {
@@ -22,7 +21,7 @@ llvm::PassRegistry& initPassRegistry() {
     using namespace llvm;
     static bool didInit = false;
     static auto& reg = *PassRegistry::getPassRegistry();
-    if(!didInit) {
+    if (!didInit) {
         didInit = true;
         // initialize passes
         initializeCore(reg);
@@ -38,7 +37,7 @@ llvm::PassRegistry& initPassRegistry() {
     return reg;
 }
 
-}
+} // namespace
 
 struct llvm_pipeline::impl {
     llvm::PassManager pm;
@@ -47,12 +46,12 @@ struct llvm_pipeline::impl {
     impl(const std::shared_ptr<llvm::Module>& m): pm{}, module{m} {};
 };
 
+llvm_pipeline::~llvm_pipeline() {};
+
 llvm_pipeline::llvm_pipeline(const std::shared_ptr<llvm::Module>& m)
-    : pimpl{ new impl{m} }{
+    : pimpl{ new impl{m} } {
     pimpl->pm.add(new llvm::TargetData(m.get()));
 };
-
-llvm_pipeline::~llvm_pipeline(){};
 
 void llvm_pipeline::addPass(llvm::Pass* pass) {
     pimpl->pm.add(pass);
@@ -85,10 +84,9 @@ void llvm_pipeline::add(const std::string& pname) {
 }
 
 llvm_pipeline::status llvm_pipeline::run() {
-    if(pimpl->pm.run(*pimpl->module)) return status::SUCCESS;
+    if (pimpl->pm.run(*pimpl->module)) return status::SUCCESS;
     else return status::FAILURE;
 }
-
 
 } // namespace driver
 } // namespace borealis

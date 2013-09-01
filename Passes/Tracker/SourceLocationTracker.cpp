@@ -127,7 +127,7 @@ SourceLocationTracker::valueDebugMap::const_range SourceLocationTracker::getRang
 }
 
 const std::vector<llvm::BasicBlock*>& SourceLocationTracker::getLoopFor(const Locus& loc) const {
-	const static std::vector<llvm::BasicBlock*> empty;
+    const static std::vector<llvm::BasicBlock*> empty;
 
     auto range = loopDebugInfo.range_after(loc);
     if (range.first == range.second) return empty;

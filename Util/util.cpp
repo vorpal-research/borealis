@@ -20,9 +20,9 @@ namespace llvm {
 
 // copy the standard ostream behavior with functions
 llvm::raw_ostream& operator<<(
-		llvm::raw_ostream& ost,
-		llvm::raw_ostream& (*op)(llvm::raw_ostream&)) {
-	return op(ost);
+        llvm::raw_ostream& ost,
+        llvm::raw_ostream& (*op)(llvm::raw_ostream&)) {
+    return op(ost);
 }
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T) {
@@ -35,62 +35,62 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T) {
 typedef std::pair<std::string, ConditionType> ConditionDescription;
 
 ConditionDescription analyzeCondition(const int cond) {
-	typedef CmpInst::Predicate P;
-	typedef ConditionType CT;
+    typedef CmpInst::Predicate P;
+    typedef ConditionType CT;
 
-	switch (cond) {
-	case P::ICMP_EQ:
-	case P::FCMP_OEQ:
-		return {"=", CT::EQ};
-	case P::FCMP_UEQ:
-		return {"?=", CT::EQ};
+    switch (cond) {
+    case P::ICMP_EQ:
+    case P::FCMP_OEQ:
+        return {"=", CT::EQ};
+    case P::FCMP_UEQ:
+        return {"?=", CT::EQ};
 
-	case P::ICMP_NE:
-	case P::FCMP_ONE:
-		return {"~=", CT::NEQ};
-	case P::FCMP_UNE:
-		return {"?~=", CT::NEQ};
+    case P::ICMP_NE:
+    case P::FCMP_ONE:
+        return {"~=", CT::NEQ};
+    case P::FCMP_UNE:
+        return {"?~=", CT::NEQ};
 
-	case P::ICMP_SGE:
-	case P::FCMP_OGE:
-		return {">=", CT::GE};
-	case P::ICMP_UGE:
-		return {"+>=", CT::UGE};
-	case P::FCMP_UGE:
-		return {"?>=", CT::GE};
+    case P::ICMP_SGE:
+    case P::FCMP_OGE:
+        return {">=", CT::GE};
+    case P::ICMP_UGE:
+        return {"+>=", CT::UGE};
+    case P::FCMP_UGE:
+        return {"?>=", CT::GE};
 
-	case P::ICMP_SGT:
-	case P::FCMP_OGT:
-		return {">", CT::GT};
-	case P::ICMP_UGT:
-		return {"+>", CT::UGT};
-	case P::FCMP_UGT:
-		return {"?>", CT::GT};
+    case P::ICMP_SGT:
+    case P::FCMP_OGT:
+        return {">", CT::GT};
+    case P::ICMP_UGT:
+        return {"+>", CT::UGT};
+    case P::FCMP_UGT:
+        return {"?>", CT::GT};
 
-	case P::ICMP_SLE:
-	case P::FCMP_OLE:
-		return {"<=", CT::LE};
-	case P::ICMP_ULE:
-		return {"+<=", CT::ULE};
-	case P::FCMP_ULE:
-		return {"?<=", CT::LE};
+    case P::ICMP_SLE:
+    case P::FCMP_OLE:
+        return {"<=", CT::LE};
+    case P::ICMP_ULE:
+        return {"+<=", CT::ULE};
+    case P::FCMP_ULE:
+        return {"?<=", CT::LE};
 
-	case P::ICMP_SLT:
-	case P::FCMP_OLT:
-		return {"<", CT::LT};
-	case P::ICMP_ULT:
-		return {"+<", CT::ULT};
-	case P::FCMP_ULT:
-		return {"?<", CT::LT};
+    case P::ICMP_SLT:
+    case P::FCMP_OLT:
+        return {"<", CT::LT};
+    case P::ICMP_ULT:
+        return {"+<", CT::ULT};
+    case P::FCMP_ULT:
+        return {"?<", CT::LT};
 
-	case P::FCMP_TRUE:
-		return {"true", CT::TRUE};
-	case P::FCMP_FALSE:
-		return {"false", CT::FALSE};
+    case P::FCMP_TRUE:
+        return {"true", CT::TRUE};
+    case P::FCMP_FALSE:
+        return {"false", CT::FALSE};
 
-	default:
-	    BYE_BYE(ConditionDescription, "Unreachable!");
-	}
+    default:
+        BYE_BYE(ConditionDescription, "Unreachable!");
+    }
 }
 
 ConditionType conditionType(int cond) {
@@ -98,7 +98,7 @@ ConditionType conditionType(int cond) {
 }
 
 std::string conditionString(int cond) {
-	return analyzeCondition(cond).first;
+    return analyzeCondition(cond).first;
 }
 
 std::string conditionString(ConditionType cond) {
@@ -241,12 +241,12 @@ namespace borealis {
 namespace util {
 
 std::string nospaces(const std::string& v) {
-	return nospaces(std::string(v));
+    return nospaces(std::string(v));
 }
 
 std::string nospaces(std::string&& v) {
-	v.erase(std::remove_if(v.begin(), v.end(), isspace), v.end());
-	return v;
+    v.erase(std::remove_if(v.begin(), v.end(), isspace), v.end());
+    return v;
 }
 
 bool endsWith(const std::string& fullString, const std::string& ending) {
@@ -276,9 +276,9 @@ namespace streams {
 
 // copy the standard ostream endl
 llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
-	ost << '\n';
-	ost.flush();
-	return ost;
+    ost << '\n';
+    ost.flush();
+    return ost;
 }
 
 } // namespace streams

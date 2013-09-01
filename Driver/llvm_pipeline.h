@@ -9,7 +9,6 @@
 #define LLVM_PIPELINE_H_
 
 #include "Logging/logger.hpp"
-
 #include "Passes/Util/DataProvider.hpp"
 
 namespace borealis {
@@ -22,11 +21,11 @@ class llvm_pipeline: public logging::DelegateLogging {
     void addPass(llvm::Pass*);
 
 public:
-    llvm_pipeline(const std::shared_ptr<llvm::Module>& m);
-    ~llvm_pipeline(); // the empty custom destructor is needed for pimpl
-
     enum class status { SUCCESS, FAILURE };
 
+    llvm_pipeline(const std::shared_ptr<llvm::Module>& m);
+    ~llvm_pipeline();
+    
 #include "Util/macros.h"
     template<class T, class = GUARD(std::is_base_of<llvm::Pass, T>::value)>
     void add(T* pass) {

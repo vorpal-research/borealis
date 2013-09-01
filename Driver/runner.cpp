@@ -8,7 +8,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "runner.h"
+#include "Driver/runner.h"
 
 namespace borealis {
 namespace driver {

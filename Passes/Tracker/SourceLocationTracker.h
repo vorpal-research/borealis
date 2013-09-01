@@ -20,34 +20,34 @@ class SourceLocationTracker : public llvm::ModulePass {
 
 public:
 
-	typedef Locus location_t;
-	typedef location_container< llvm::Value* > valueDebugMap;
-	typedef location_container< std::vector<llvm::BasicBlock*> > loopDebugMap;
+    typedef Locus location_t;
+    typedef location_container< llvm::Value* > valueDebugMap;
+    typedef location_container< std::vector<llvm::BasicBlock*> > loopDebugMap;
 
 private:
 
-	valueDebugMap valueDebugInfo;
-	loopDebugMap loopDebugInfo;
+    valueDebugMap valueDebugInfo;
+    loopDebugMap loopDebugInfo;
 
 public:
 
-	static char ID;
+    static char ID;
 
-	SourceLocationTracker() : llvm::ModulePass(ID) {}
-	virtual bool runOnModule(llvm::Module& M) override;
+    SourceLocationTracker() : llvm::ModulePass(ID) {}
+    virtual bool runOnModule(llvm::Module& M) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~SourceLocationTracker() {}
 
     virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
 
-	const std::string& getFilenameFor(const llvm::Value* val) const;
-	unsigned getLineFor(const llvm::Value* val) const;
-	unsigned getColumnFor(const llvm::Value* val) const;
-	const Locus& getLocFor(const llvm::Value* val) const;
-	const Locus& getLocFor(const llvm::Loop* loop) const;
+    const std::string& getFilenameFor(const llvm::Value* val) const;
+    unsigned getLineFor(const llvm::Value* val) const;
+    unsigned getColumnFor(const llvm::Value* val) const;
+    const Locus& getLocFor(const llvm::Value* val) const;
+    const Locus& getLocFor(const llvm::Loop* loop) const;
 
-	valueDebugMap::const_range getRangeFor(const Locus& loc) const;
-	const std::vector<llvm::BasicBlock*>& getLoopFor(const Locus& loc) const;
+    valueDebugMap::const_range getRangeFor(const Locus& loc) const;
+    const std::vector<llvm::BasicBlock*>& getLoopFor(const Locus& loc) const;
 };
 
 } // namespace borealis

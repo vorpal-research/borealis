@@ -24,27 +24,23 @@ class clang_pipeline: public logging::DelegateLogging {
     std::unique_ptr<impl> pimpl;
 
 public:
+    enum class status { SUCCESS, FAILURE };
+
     clang_pipeline(
         const std::string& what,
         const std::vector<const char*>& args,
         const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags
     );
-
     ~clang_pipeline();
 
-    enum class status { SUCCESS, FAILURE };
-
     std::vector<std::string> getInvocationArgs() const;
-
     clang::SourceManager& getSourceManager() const;
 
     void add(clang::FrontendAction& action);
-
     clang_pipeline::status run();
 };
 
 } // namespace driver
 } // namespace borealis
-
 
 #endif /* CLANG_PIPELINE_H_ */

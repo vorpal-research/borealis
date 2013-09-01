@@ -5,11 +5,11 @@
  *      Author: belyaev
  */
 
-#include "plugin_loader.h"
-
 #include <llvm/Support/PluginLoader.h>
 
 #include <vector>
+
+#include "Driver/plugin_loader.h"
 
 namespace borealis {
 namespace driver {
@@ -24,12 +24,14 @@ plugin_loader::~plugin_loader() {}
 void plugin_loader::add(const std::string& libname) {
     pimpl->libs.push_back(libname);
 }
+
 void plugin_loader::add(std::string&& libname) {
     pimpl->libs.push_back(libname);
 }
+
 plugin_loader::status plugin_loader::run() {
     llvm::PluginLoader pl;
-    for(const auto& lib: pimpl->libs) {
+    for (const auto& lib : pimpl->libs) {
         pl = lib;
     }
     return status::SUCCESS;
@@ -37,5 +39,3 @@ plugin_loader::status plugin_loader::run() {
 
 } // namespace driver
 } // namespace borealis
-
-

@@ -16,20 +16,20 @@ struct PrintModulePass :
         public llvm::ModulePass,
         public borealis::logging::ObjectLevelLogging<PrintModulePass> {
 
-	static char ID;
+    static char ID;
 
-	PrintModulePass() : llvm::ModulePass(ID), ObjectLevelLogging("module-printer") {}
+    PrintModulePass() : llvm::ModulePass(ID), ObjectLevelLogging("module-printer") {}
 
-	virtual bool runOnModule(llvm::Module& M) {
-		infos() << endl << M << endl;
-		return false;
-	}
+    virtual bool runOnModule(llvm::Module& M) {
+        infos() << endl << M << endl;
+        return false;
+    }
 
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-		AU.setPreservesAll();
-	}
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+        AU.setPreservesAll();
+    }
 
-	virtual ~PrintModulePass() {}
+    virtual ~PrintModulePass() {}
 };
 
 char PrintModulePass::ID;

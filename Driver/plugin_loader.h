@@ -19,11 +19,12 @@ namespace driver {
 class plugin_loader: public borealis::logging::DelegateLogging {
     struct impl;
     std::unique_ptr<impl> pimpl;
+
 public:
+    enum class status { SUCCESS, FAILURE };
+	
     plugin_loader();
     ~plugin_loader();
-
-    enum class status { SUCCESS, FAILURE };
 
     void add(const std::string& libname);
     void add(std::string&& libname);

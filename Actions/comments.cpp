@@ -19,41 +19,41 @@ using borealis::Locus;
 typedef GatherCommentsAction::comment_container comment_container;
 
 static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, clang::SourceRange Range) {
-	if (SourceMgr.isInSystemHeader(Range.getBegin())) {
-		return comment_container();
-	}
+    if (SourceMgr.isInSystemHeader(Range.getBegin())) {
+        return comment_container();
+    }
 
-   clang::FileID BeginFileID;
-   clang::FileID EndFileID;
-   unsigned BeginOffset;
-   unsigned EndOffset;
+    clang::FileID BeginFileID;
+    clang::FileID EndFileID;
+    unsigned BeginOffset;
+    unsigned EndOffset;
 
-   std::tie(BeginFileID, BeginOffset) =
+    std::tie(BeginFileID, BeginOffset) =
        SourceMgr.getDecomposedLoc(Range.getBegin());
-   std::tie(EndFileID, EndOffset) =
+    std::tie(EndFileID, EndOffset) =
        SourceMgr.getDecomposedLoc(Range.getEnd());
 
-   const unsigned Length = EndOffset - BeginOffset;
-   if (Length < 2) return comment_container();
+    const unsigned Length = EndOffset - BeginOffset;
+    if (Length < 2) return comment_container();
 
-   ASSERT(BeginFileID == EndFileID,
+    ASSERT(BeginFileID == EndFileID,
           "Comment can't begin in one file and end in another one");
 
-   bool Invalid = false;
-   const char* BufferStart =
+    bool Invalid = false;
+    const char* BufferStart =
        SourceMgr.getBufferData(BeginFileID, &Invalid).data();
-   if (Invalid) return comment_container();
+    if (Invalid) return comment_container();
 
-   auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
-   auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
-   auto commands = borealis::anno::parse(comment.str());
+    auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
+    auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
+    auto commands = borealis::anno::parse(comment.str());
 
-   auto ret = comment_container();
-   for (auto& cmd : commands) {
-	   ret.insert({locus, std::move(cmd)});
-   }
+    auto ret = comment_container();
+    for (auto& cmd : commands) {
+     ret.insert({locus, std::move(cmd)});
+    }
 
-   return ret;
+    return ret;
 }
 
 bool GatherCommentsAction::CommentKeeper::HandleComment(clang::Preprocessor &PP, clang::SourceRange Comment) {

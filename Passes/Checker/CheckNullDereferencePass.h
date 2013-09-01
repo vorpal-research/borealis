@@ -38,22 +38,22 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("check-null-deref")
 #include "Util/unmacros.h"
 
-	CheckNullDereferencePass();
+    CheckNullDereferencePass();
     CheckNullDereferencePass(llvm::Pass* pass);
-	virtual bool runOnFunction(llvm::Function& F) override;
-	virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
-	virtual ~CheckNullDereferencePass();
+    virtual bool runOnFunction(llvm::Function& F) override;
+    virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
+    virtual ~CheckNullDereferencePass();
 
 private:
 
-	llvm::AliasAnalysis* AA;
+    llvm::AliasAnalysis* AA;
 
-	PredicateStateAnalysis* PSA;
+    PredicateStateAnalysis* PSA;
     DetectNullPass* DNP;
 
     DefectManager* DM;
 
-	FactoryNest FN;
+    FactoryNest FN;
 
     DetectNullPass::NullPtrSet* ValueNullSet;
     DetectNullPass::NullPtrSet* DerefNullSet;

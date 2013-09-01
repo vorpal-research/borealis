@@ -8,16 +8,15 @@
 #ifndef CL_H_
 #define CL_H_
 
-#include <vector>
-#include <string>
-
 #include <llvm/ADT/StringRef.h>
+
+#include <string>
+#include <vector>
 
 #include "Util/util.h"
 
 namespace borealis {
 namespace driver {
-using llvm::StringRef;
 
 class CommandLine {
 public:
@@ -30,21 +29,23 @@ private:
     typedef CommandLine self;
 
     CommandLine(const args_t& args, const std::vector<std::string>& additional_data):
-        args(args),
-        additional_data(additional_data) {};
+            args{args},
+            additional_data{additional_data} {};
     CommandLine(args_t&& args, std::vector<std::string>&& additional_data):
-        args(std::move(args)),
-        additional_data(std::move(additional_data)) {};
+            args{std::move(args)},
+            additional_data{std::move(additional_data)} {};
+
 public:
     CommandLine(int argc, const char** argv):
-        args(argv, argv + argc),
+        args{argv, argv + argc},
         additional_data{} {};
+
     CommandLine(const char* singleton):
-        args{singleton},
-        additional_data{} {};
+            args{singleton},
+            additional_data{} {};
     CommandLine(const std::string& str):
-        args{},
-        additional_data{} {
+            args{},
+            additional_data{} {
         additional_data.push_back(str);
         args.push_back(additional_data.back().c_str());
     }
@@ -53,24 +54,23 @@ public:
     CommandLine(self&&) = default;
 
     CommandLine(const std::vector<const char*>& theArgs):
-        args{theArgs},
-        additional_data{} {};
-
+            args{theArgs},
+            additional_data{} {};
     CommandLine(std::vector<const char*>&& theArgs):
-        args{std::move(theArgs)},
-        additional_data{} {};
-
+            args{std::move(theArgs)},
+            additional_data{} {};
 
     CommandLine(const std::vector<std::string>& theArgs):
-        args{}, additional_data(theArgs) {
+            args{},
+            additional_data{theArgs} {
         args.reserve(additional_data.size());
-        for(const auto& arg: additional_data) args.push_back(arg.c_str());
+        for (const auto& arg: additional_data) args.push_back(arg.c_str());
     };
-
     CommandLine(std::vector<std::string>&& theArgs):
-        args{}, additional_data(std::move(theArgs)) {
+            args{},
+            additional_data{std::move(theArgs)} {
         args.reserve(additional_data.size());
-        for(const auto& arg: additional_data) args.push_back(arg.c_str());
+        for (const auto& arg: additional_data) args.push_back(arg.c_str());
     };
 
     template<size_t N>
@@ -80,8 +80,8 @@ public:
 
     self suffixes(const char* prefix, size_t len) const {
         args_t newArgs;
-        for(StringRef sr: args) {
-            if(sr.startswith(prefix)) {
+        for (llvm::StringRef sr : args) {
+            if (sr.startswith(prefix)) {
                 newArgs.push_back(sr.drop_front(len).data());
             }
         }
@@ -89,14 +89,14 @@ public:
     }
 
     template<size_t N>
-    self unprefix(const char (&prefix) [N]) const {
+    self unprefix(const char (&prefix)[N]) const {
         return unprefix(prefix);
     }
 
     self unprefix(const char* prefix) const {
         args_t newArgs;
-        for(StringRef sr: args) {
-            if(!sr.startswith(prefix)) {
+        for (llvm::StringRef sr : args) {
+            if (!sr.startswith(prefix)) {
                 newArgs.push_back(sr.data());
             }
         }
@@ -124,7 +124,7 @@ public:
     }
 
     self ifempty(const self& data) const {
-        if(args.empty()) return data;
+        if (args.empty()) return data;
         else return *this;
     }
 
@@ -149,19 +149,19 @@ public:
     }
 
     borealis::util::option<const char*> single() const {
-        if(args.empty()) return util::nothing();
+        if (args.empty()) return util::nothing();
         return util::just(args.front());
     }
 
     const char* single(const char* else_) const {
-        if(args.empty()) return else_;
+        if (args.empty()) return else_;
         return args.front();
     }
 
     std::vector<std::string> stlRep() const {
         std::vector<std::string> ret{};
         ret.reserve(args.size());
-        for(const auto& arg: args) ret.push_back(arg);
+        for (const auto& arg : args) ret.push_back(arg);
         return std::move(ret);
     }
 
@@ -171,24 +171,15 @@ public:
 
     self operator+(const self& that) const {
         self ret = *this;
-        ret.args.reserve(args.size() + that.args.size());
-        ret.args.insert(ret.args.end(), that.args.begin(), that.args.end());
+        for (const auto& arg : that.args) res.push_back(arg);
         return std::move(ret);
     }
 
-    friend std::ostream& operator<<(std::ostream& str, const self& r) {
-        if(r.empty()) str << "<empty command line invocation>";
-
-        str << util::head(r.args);
-        for(const auto& arg : util::tail(r.args)) {
-            str << " " << arg;
-        }
-        return str;
-    }
-
-
+    template<class Streamer>
+    friend Streamer& operator<<(Streamer& str, const CommandLine& cl);
 };
 
 } /* namespace driver */
 } /* namespace borealis */
+
 #endif /* CL_H_ */

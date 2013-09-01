@@ -27,9 +27,9 @@ class PtrSsa :
 
 public:
 
-	static char ID;
+    static char ID;
 
-	PtrSsa() : base(ID) {}
+    PtrSsa() : base(ID) {}
 
     virtual bool runOnFunction(llvm::Function& F) {
         auto& phis = getChildAnalysis<phis_t>();

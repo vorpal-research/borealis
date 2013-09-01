@@ -12,64 +12,64 @@ namespace borealis {
 
 bool SlotTrackerPass::doInitialization(llvm::Module& M) {
     if (!globals) globals.reset(new SlotTracker(&M));
-	return false;
+    return false;
 }
 
 bool SlotTrackerPass::runOnModule(llvm::Module& M) {
     doInitialization(M);
 
-	for (auto& F : M)
-	    funcs[&F] = ptr_t{ new SlotTracker(&F) };
+    for (auto& F : M)
+        funcs[&F] = ptr_t{ new SlotTracker(&F) };
 
-	return false;
+    return false;
 }
 
 void SlotTrackerPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-	AU.setPreservesAll();
+    AU.setPreservesAll();
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker(const llvm::Function* func) const {
-	if (func && borealis::util::containsKey(funcs, func)) {
-		return funcs.at(func).get();
-	} else {
-		return nullptr;
-	}
+    if (func && borealis::util::containsKey(funcs, func)) {
+        return funcs.at(func).get();
+    } else {
+        return nullptr;
+    }
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module*) const{
-	return globals.get();
+    return globals.get();
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::BasicBlock* bb) const{
-	return getSlotTracker(bb->getParent());
+    return getSlotTracker(bb->getParent());
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Instruction* inst) const{
-	return getSlotTracker(inst->getParent());
+    return getSlotTracker(inst->getParent());
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Argument* arg) const{
-	return getSlotTracker(arg->getParent());
+    return getSlotTracker(arg->getParent());
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function& func) const{
-	return getSlotTracker(&func);
+    return getSlotTracker(&func);
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Module&) const{
-	return globals.get();
+    return globals.get();
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::BasicBlock& bb) const{
-	return getSlotTracker(&bb);
+    return getSlotTracker(&bb);
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Instruction& inst) const{
-	return getSlotTracker(&inst);
+    return getSlotTracker(&inst);
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Argument& arg) const{
-	return getSlotTracker(&arg);
+    return getSlotTracker(&arg);
 }
 
 char SlotTrackerPass::ID;
