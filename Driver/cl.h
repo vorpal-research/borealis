@@ -174,6 +174,9 @@ public:
         for (const auto& arg : that.args) ret.push_back(arg);
         return std::move(ret);
     }
+
+    template<class Streamer>
+    friend Streamer& operator<<(Streamer& str, const CommandLine& cl);
 };
 
 template<class Streamer>
