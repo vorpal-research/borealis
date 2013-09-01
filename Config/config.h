@@ -261,7 +261,7 @@ namespace impl_ {
             borealis::util::option<T> ret{};
             for (const auto& source : sources) {
                 ret = accessor<T>()(*source, section, option);
-                if (ret) return ret;
+                if (ret) break;
             }
             return std::move(ret);
         }
