@@ -87,7 +87,7 @@ public:
 
 namespace impl_ {
 
-template<class T, class SFINAE = void>
+template<class T, class SFINAE>
 struct valueAcquire;
 
 template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string)>
