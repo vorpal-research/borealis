@@ -146,7 +146,8 @@ int gestalt::main(int argc, const char** argv) {
     interviewer nativeClang{ "clang", compilerArgs.data(), diags, nativeClangCfg };
     nativeClang.assignLogger(*this);
 
-    infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
+    // FIXME: operator<< for clang::driver::DerivedArgList
+    // infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
 
     if (!skipClang) if (nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
 
@@ -184,7 +185,7 @@ int gestalt::main(int argc, const char** argv) {
     {
         borealis::logging::log_entry out(infos());
         out << "Passes:" << endl;
-        if (passes2run.empty()) out << "  " << error("None") << endl;
+        if (passes2run.empty()) out << "  " << "None" << endl;
         for (const auto& pass : passes2run) {
             out << "  " << pass << endl;
         }
@@ -193,7 +194,7 @@ int gestalt::main(int argc, const char** argv) {
     {
         borealis::logging::log_entry out(infos());
         out << "Dynamic libraries:" << endl;
-        if (libs2load.empty()) out << "  " << error("None") << endl;
+        if (libs2load.empty()) out << "  " << "None" << endl;
         for (const auto& lib : libs2load) {
             out << "  " << lib << endl;
         }
