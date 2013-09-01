@@ -53,20 +53,20 @@ public:
     CommandLine(const self&) = default;
     CommandLine(self&&) = default;
 
-    explicit CommandLine(const std::vector<const char*>& theArgs):
+    CommandLine(const std::vector<const char*>& theArgs):
             args{theArgs},
             additional_data{} {};
-    explicit CommandLine(std::vector<const char*>&& theArgs):
+    CommandLine(std::vector<const char*>&& theArgs):
             args{std::move(theArgs)},
             additional_data{} {};
 
-    explicit CommandLine(const std::vector<std::string>& theArgs):
+    CommandLine(const std::vector<std::string>& theArgs):
             args{},
             additional_data{theArgs} {
         args.reserve(additional_data.size());
         for (const auto& arg: additional_data) args.push_back(arg.c_str());
     };
-    explicit CommandLine(std::vector<std::string>&& theArgs):
+    CommandLine(std::vector<std::string>&& theArgs):
             args{},
             additional_data{std::move(theArgs)} {
         args.reserve(additional_data.size());
