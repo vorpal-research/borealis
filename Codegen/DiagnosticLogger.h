@@ -21,12 +21,13 @@ public:
     DiagnosticLogger();
     DiagnosticLogger(const DiagnosticLogger&) = default;
     template<class T>
-    DiagnosticLogger(const T& value): DelegateLogging(value){};
+    DiagnosticLogger(const T& value): DelegateLogging(value) {};
 
-    virtual clang::DiagnosticConsumer *clone(clang::DiagnosticsEngine &Diags) const;
+    virtual clang::DiagnosticConsumer* clone(clang::DiagnosticsEngine& Diags) const;
 
-    virtual void HandleDiagnostic(clang::DiagnosticsEngine::Level Level, const clang::Diagnostic &Info);
+    virtual void HandleDiagnostic(clang::DiagnosticsEngine::Level Level, const clang::Diagnostic& Info);
 };
 
 } /* namespace borealis */
+
 #endif /* DIAGNOSTICLOGGER_H_ */

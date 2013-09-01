@@ -5,23 +5,22 @@
  *      Author: belyaev
  */
 
-#include "DiagnosticLogger.h"
-
 #include <llvm/ADT/SmallString.h>
 
+#include "Codegen/DiagnosticLogger.h"
 #include "Util/locations.h"
 
 namespace borealis {
 
 DiagnosticLogger::DiagnosticLogger():
         clang::DiagnosticConsumer(),
-        logging::DelegateLogging(){};
+        logging::DelegateLogging() {};
 
-clang::DiagnosticConsumer *DiagnosticLogger::clone(clang::DiagnosticsEngine&) const {
+clang::DiagnosticConsumer* DiagnosticLogger::clone(clang::DiagnosticsEngine&) const {
     return new DiagnosticLogger(*this);
 }
 
-void DiagnosticLogger::HandleDiagnostic(clang::DiagnosticsEngine::Level Level, const clang::Diagnostic &Info) {
+void DiagnosticLogger::HandleDiagnostic(clang::DiagnosticsEngine::Level Level, const clang::Diagnostic& Info) {
 
     DiagnosticConsumer::HandleDiagnostic(Level, Info);
 
@@ -43,7 +42,7 @@ void DiagnosticLogger::HandleDiagnostic(clang::DiagnosticsEngine::Level Level, c
         criticals() << "[Compiler fatal error] " << location << ": " << Buf.c_str() << endl; break;
     default:
 #include "Util/macros.h"
-        BYE_BYE_VOID("Some strange level encountered during clang diag processing");
+        BYE_BYE_VOID("Unknown diag level encountered during clang diag processing");
 #include "Util/unmacros.h"
     }
 }
