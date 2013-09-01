@@ -40,10 +40,10 @@ public:
         args{argv, argv + argc},
         additional_data{} {};
 
-    CommandLine(const char* singleton):
+    explicit CommandLine(const char* singleton):
             args{singleton},
             additional_data{} {};
-    CommandLine(const std::string& str):
+    explicit CommandLine(const std::string& str):
             args{},
             additional_data{} {
         additional_data.push_back(str);
@@ -53,20 +53,20 @@ public:
     CommandLine(const self&) = default;
     CommandLine(self&&) = default;
 
-    CommandLine(const std::vector<const char*>& theArgs):
+    explicit CommandLine(const std::vector<const char*>& theArgs):
             args{theArgs},
             additional_data{} {};
-    CommandLine(std::vector<const char*>&& theArgs):
+    explicit CommandLine(std::vector<const char*>&& theArgs):
             args{std::move(theArgs)},
             additional_data{} {};
 
-    CommandLine(const std::vector<std::string>& theArgs):
+    explicit CommandLine(const std::vector<std::string>& theArgs):
             args{},
             additional_data{theArgs} {
         args.reserve(additional_data.size());
         for (const auto& arg: additional_data) args.push_back(arg.c_str());
     };
-    CommandLine(std::vector<std::string>&& theArgs):
+    explicit CommandLine(std::vector<std::string>&& theArgs):
             args{},
             additional_data{std::move(theArgs)} {
         args.reserve(additional_data.size());
