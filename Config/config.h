@@ -182,9 +182,9 @@ public:
                 auto fst = opt.find(':');
                 auto snd = opt.find(':', fst+1);
 
-                if(fst == std::string::npos || snd == std::string::npos) continue;
+                if (fst == std::string::npos || snd == std::string::npos) continue;
 
-                ret[opt.substr(0, fst-1)]
+                ret[opt.substr(0, fst)]
                    [opt.substr(fst+1,snd-fst-1)]
                    .push_back(opt.substr(snd+1));
             }
