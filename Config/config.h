@@ -29,13 +29,18 @@ public:
     template<class T>
     using option = borealis::util::option<T>;
 
-    ConfigSource(){};
-    virtual ~ConfigSource(){};
-    virtual option<int> getIntValue(const std::string& section, const std::string& option) const = 0;
-    virtual option<bool> getBoolValue(const std::string& section, const std::string& option) const = 0;
-    virtual option<std::string> getStringValue(const std::string& section, const std::string& option) const = 0;
-    virtual option<double> getDoubleValue(const std::string& section, const std::string& option) const = 0;
-    virtual option<std::vector<std::string>> getVectorValue(const std::string& section, const std::string& option) const = 0;
+    ConfigSource() {};
+    virtual ~ConfigSource() {};
+    virtual option<int>
+    getIntValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<bool>
+    getBoolValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<std::string>
+    getStringValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<double>
+    getDoubleValue(const std::string& section, const std::string& option) const = 0;
+    virtual option<std::vector<std::string>>
+    getVectorValue(const std::string& section, const std::string& option) const = 0;
 };
 
 class FileConfigSource: public ConfigSource {
@@ -80,16 +85,16 @@ public:
     }
 };
 
-namespace impl{
+namespace impl_ {
 
-template<class, class>
+template<class T, class SFINAE = void>
 struct valueAcquire;
 
 template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string)>
 struct valueAcquire {
     static borealis::util::option<T> doit(const std::vector<std::string>& opts) {
         using namespace borealis::util;
-        if(opts.empty()) return nothing();
+        if (opts.empty()) return nothing();
         else return fromString<T>(opts.back());
     }
 };
@@ -98,7 +103,7 @@ template<>
 struct valueAcquire<std::vector<std::string>> {
     static borealis::util::option<std::vector<std::string>> doit(const std::vector<std::string>& opts) {
         using namespace borealis::util;
-        if(opts.empty()) return nothing();
+        if (opts.empty()) return nothing();
         else return just(opts);
     }
 };
@@ -107,7 +112,7 @@ template<>
 struct valueAcquire<bool> {
     static borealis::util::option<bool> doit(const std::vector<std::string>& opts) {
         using namespace borealis::util;
-        if(opts.empty()) return nothing();
+        if (opts.empty()) return nothing();
 
         const auto& v = opts.back();
         if (v == "1" || v == "true" || v == "on" || v == "yes") {
@@ -120,8 +125,8 @@ struct valueAcquire<bool> {
     }
 };
 
+} // namespace impl_
 
-}
 class StructuredConfigSource: public ConfigSource {
 public:
     typedef std::unordered_map<
@@ -136,17 +141,19 @@ private:
     Overrides overrides;
 
 public:
-    StructuredConfigSource(const Overrides& overrides): overrides(overrides){};
-    virtual ~StructuredConfigSource(){};
+    StructuredConfigSource(const Overrides& overrides): overrides(overrides) {};
+    StructuredConfigSource(Overrides&& overrides): overrides(std::move(overrides)) {};
+    virtual ~StructuredConfigSource() {};
 
     template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, std::string, bool, std::vector<std::string>)>
     borealis::util::option<T> getValue(const std::string& section, const std::string& option) const {
-        for(const auto& sec : util::at(overrides, section)) {
-            for(const auto& opt : util::at(sec, option)) {
-                return impl::valueAcquire<T>::doit(opt);
+        using namespace borealis::util;
+        for (const auto& sec : at(overrides, section)) {
+            for (const auto& opt : at(sec, option)) {
+                return impl_::valueAcquire<T>::doit(opt);
             }
         }
-        return borealis::util::nothing();
+        return nothing();
     }
 
     virtual option<int> getIntValue(const std::string& section, const std::string& option) const override {
@@ -169,10 +176,9 @@ public:
 class CommandLineConfigSource: public StructuredConfigSource {
 public:
     CommandLineConfigSource(const std::vector<std::string>& opts):
-        StructuredConfigSource{ [&opts]() -> StructuredConfigSource::Overrides{
+        StructuredConfigSource{ [&opts]() -> StructuredConfigSource::Overrides {
             StructuredConfigSource::Overrides ret;
-
-            for(const auto& opt: opts) {
+            for (const auto& opt : opts) {
                 auto fst = opt.find(':');
                 auto snd = opt.find(':', fst+1);
 
@@ -182,9 +188,8 @@ public:
                    [opt.substr(fst+1,snd-fst-1)]
                    .push_back(opt.substr(snd+1));
             }
-
             return ret;
-        }() }{}
+        }() } {}
 };
 
 namespace impl_ {
@@ -254,9 +259,9 @@ namespace impl_ {
                 const std::string& option
         ) {
             borealis::util::option<T> ret{};
-            for(const auto& source: sources) {
-                if(ret) return ret;
-                ret = impl_::accessor<T>()(*source, section, option);
+            for (const auto& source : sources) {
+                ret = accessor<T>()(*source, section, option);
+                if (ret) return ret;
             }
             return std::move(ret);
         }
@@ -270,9 +275,8 @@ namespace impl_ {
                 const std::string& option
         ) {
             std::vector<std::string> ret{};
-            for(const auto& source: sources) {
-                for(const auto& vec:
-                        accessor<std::vector<std::string>>()(*source, section, option)) {
+            for (const auto& source : sources) {
+                for (const auto& vec : accessor<std::vector<std::string>>()(*source, section, option)) {
                     ret.reserve(ret.size() + vec.size());
                     ret.insert(std::end(ret), std::begin(vec), std::end(vec));
                 }
@@ -292,9 +296,9 @@ public:
     Config(Config&&) = default;
 
     template<class ...Ptrs>
-    Config(Ptrs... sources) : sources{}{
+    Config(Ptrs... sources) : sources{} {
         std::vector<ConfigSource*> tmp{ sources... };
-        for(auto ptr: tmp) this->sources.emplace_back(ptr);
+        for (auto* ptr : tmp) this->sources.emplace_back(ptr);
     };
     ~Config() {};
 
@@ -389,6 +393,7 @@ class ConfigEntry<std::vector<std::string>> {
     std::string section;
     std::string key;
     mutable std::vector<std::string> cached;
+
 public:
     ConfigEntry(const std::string& section, const std::string& key):
         section(section), key(key) {};
@@ -415,8 +420,8 @@ public:
     auto operator[](size_t index) QUICK_CONST_RETURN(get()[index])
 };
 
-typedef ConfigEntry<bool> BoolConfigEntry;
-typedef ConfigEntry<> StringConfigEntry;
+typedef ConfigEntry<bool>                     BoolConfigEntry;
+typedef ConfigEntry<std::string>              StringConfigEntry;
 typedef ConfigEntry<std::vector<std::string>> MultiConfigEntry;
 
 } // namespace config

@@ -24,5 +24,9 @@ Streamer& operator<<(Streamer& str, const CommandLine& cl) {
     return static_cast<Streamer&>(str);
 }
 
+std::ostream& operator<<(std::ostream& s, const CommandLine& cl) {
+    return operator<< <std::ostream> (s, cl);
+}
+
 } /* namespace driver */
 } /* namespace borealis */

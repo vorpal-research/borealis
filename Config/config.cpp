@@ -6,4 +6,3 @@
  */
 
 #include "Config/config.h"
-
