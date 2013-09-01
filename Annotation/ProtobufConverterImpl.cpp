@@ -23,7 +23,7 @@ Annotation::ProtoPtr protobuf_traits<Annotation>::toProtobuf(const normal_t& t) 
 #define HANDLE_ANNOTATION(KW, CLASS) \
     else if (auto* tt = llvm::dyn_cast<CLASS>(&t)) { \
         auto proto = protobuf_traits_impl<CLASS> \
-                      ::toProtobuf(*tt); \
+                     ::toProtobuf(*tt); \
         res->SetAllocatedExtension( \
             proto::CLASS::ext, \
             proto.release() \
@@ -35,8 +35,8 @@ Annotation::ProtoPtr protobuf_traits<Annotation>::toProtobuf(const normal_t& t) 
     return std::move(res);
 }
 
-Annotation::Ptr protobuf_traits<Annotation>::fromProtobuf(const context_t& fn, const proto::Annotation& t) {
-    const auto& locus = LocusConverter::fromProtobuf(nullptr, t.locus());
+Annotation::Ptr protobuf_traits<Annotation>::fromProtobuf(const context_t& fn, const proto_t& t) {
+    auto locus = LocusConverter::fromProtobuf(nullptr, t.locus());
 
 #define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, CLASS) // ignore the non-standard bases
 #define HANDLE_ANNOTATION(KW, CLASS) \

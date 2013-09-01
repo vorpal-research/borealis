@@ -33,7 +33,6 @@ message Annotation {
 }
 
 **/
-
 class Annotation : public std::enable_shared_from_this<Annotation> {
 private:
     typedef Annotation self;

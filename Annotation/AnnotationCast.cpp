@@ -15,7 +15,7 @@
 
 using namespace borealis;
 
-namespace  {
+namespace {
 
 bool isCompare(bin_opcode op) {
     switch(op) {

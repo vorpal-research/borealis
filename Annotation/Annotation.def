@@ -11,36 +11,38 @@
 #ifdef INCLUDE_MODE
 #undef INCLUDE_MODE
 
-#include "Annotation/RequiresAnnotation.h"
-#include "Annotation/EnsuresAnnotation.h"
-#include "Annotation/AssignsAnnotation.h"
 #include "Annotation/AssertAnnotation.h"
+#include "Annotation/AssignsAnnotation.h"
 #include "Annotation/AssumeAnnotation.h"
-#include "Annotation/SkipAnnotation.h"
+#include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/RequiresAnnotation.h"
+
+#include "Annotation/EndMaskAnnotation.h"
 #include "Annotation/IgnoreAnnotation.h"
 #include "Annotation/InlineAnnotation.h"
+#include "Annotation/MaskAnnotation.h"
+#include "Annotation/SkipAnnotation.h"
 #include "Annotation/StackDepthAnnotation.h"
 #include "Annotation/UnrollAnnotation.h"
-#include "Annotation/MaskAnnotation.h"
-#include "Annotation/EndMaskAnnotation.h"
 
 #define HANDLE_ANNOTATION(CMD, CLASS)
 #define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, CLASS)
 
 #endif // INCLUDE_MODE
 
-HANDLE_ANNOTATION_WITH_BASE("requires", LogicAnnotation, RequiresAnnotation)
-HANDLE_ANNOTATION_WITH_BASE("ensures", LogicAnnotation, EnsuresAnnotation)
-HANDLE_ANNOTATION_WITH_BASE("assigns", LogicAnnotation, AssignsAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("assert", LogicAnnotation, AssertAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("assigns", LogicAnnotation, AssignsAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("assume", LogicAnnotation, AssumeAnnotation)
-HANDLE_ANNOTATION("skip", SkipAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("ensures", LogicAnnotation, EnsuresAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("requires", LogicAnnotation, RequiresAnnotation)
+
+HANDLE_ANNOTATION("endmask", EndMaskAnnotation)
 HANDLE_ANNOTATION("ignore", IgnoreAnnotation)
 HANDLE_ANNOTATION("inline", InlineAnnotation)
+HANDLE_ANNOTATION("skip", SkipAnnotation)
 HANDLE_ANNOTATION("stack-depth", StackDepthAnnotation)
-HANDLE_ANNOTATION("unroll", UnrollAnnotation)
 HANDLE_ANNOTATION("mask", MaskAnnotation)
-HANDLE_ANNOTATION("endmask", EndMaskAnnotation)
+HANDLE_ANNOTATION("unroll", UnrollAnnotation)
 
 #undef HANDLE_ANNOTATION
 #undef HANDLE_ANNOTATION_WITH_BASE
