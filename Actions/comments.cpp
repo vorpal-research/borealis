@@ -37,11 +37,11 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
     if (Length < 2) return comment_container();
 
     ASSERT(BeginFileID == EndFileID,
-          "Comment can't begin in one file and end in another one");
+           "Comment can't begin in one file and end in another one");
 
     bool Invalid = false;
     const char* BufferStart =
-       SourceMgr.getBufferData(BeginFileID, &Invalid).data();
+        SourceMgr.getBufferData(BeginFileID, &Invalid).data();
     if (Invalid) return comment_container();
 
     auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
@@ -50,7 +50,7 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
 
     auto ret = comment_container();
     for (auto& cmd : commands) {
-     ret.insert({locus, std::move(cmd)});
+        ret.insert({locus, std::move(cmd)});
     }
 
     return ret;

@@ -102,8 +102,8 @@ int gestalt::main(int argc, const char** argv) {
     CommandLine args(argc, argv);
 
     AppConfiguration::initialize(
-        new borealis::config::CommandLineConfigSource{ args.suffixes("---").stlRep() },
-        new borealis::config::FileConfigSource{ args.suffixes("---config:").single("wrapper.conf") }
+        new CommandLineConfigSource{ args.suffixes("---").stlRep() },
+        new FileConfigSource{ args.suffixes("---config:").single("wrapper.conf") }
     );
 
     CommandLine opt = args.suffixes("---opt:") +
@@ -157,7 +157,7 @@ int gestalt::main(int argc, const char** argv) {
     clang_pipeline clang { "clang", compilerArgs.data(), diags };
     clang.assignLogger(*this);
 
-    borealis::driver::CommandLine clangRealArgs = clang.getInvocationArgs();
+    CommandLine clangRealArgs = clang.getInvocationArgs();
     if (clangRealArgs.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
 
     infos() << "Clang lib arguments: " << clangRealArgs << endl;
