@@ -171,7 +171,10 @@ public:
 
     self operator+(const self& that) const {
         self ret = *this;
-        for (const auto& arg : that.args) ret.push_back(arg);
+        for (const auto& arg : that.args) {
+            ret.additional_data.push_back(data);
+            ret.args.push_back(ret.additional_data.back().c_str());
+        }
         return std::move(ret);
     }
 
