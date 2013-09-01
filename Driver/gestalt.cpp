@@ -106,7 +106,8 @@ int gestalt::main(int argc, const char** argv) {
         new FileConfigSource{ args.suffixes("---config:").single("wrapper.conf") }
     );
 
-    CommandLine opt = args.suffixes("---opt:") +
+    CommandLine opt = CommandLine("wrapper") +
+        args.suffixes("---opt:") +
         MultiConfigEntry("opt", "load").get();
     llvm::cl::ParseCommandLineOptions(opt.argc(), opt.argv());
 
