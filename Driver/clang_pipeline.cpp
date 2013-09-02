@@ -153,6 +153,7 @@ clang_pipeline::status clang_pipeline::run() {
 
     for (auto& action : pimpl->actions) {
         success &= pimpl->ci.ExecuteAction(action);
+        if (!success) break;
     }
 
     return success ? status::SUCCESS : status::FAILURE;

@@ -31,20 +31,19 @@ void DiagnosticLogger::HandleDiagnostic(clang::DiagnosticsEngine::Level Level, c
     if(Info.hasSourceManager())
         location = Locus{ Info.getLocation(), Info.getSourceManager() };
 
-    switch(Level) {
-    case clang::DiagnosticsEngine::Note:
-        infos()     << "[Compiler message] "     << location << ": " << Buf.c_str() << endl; break;
-    case clang::DiagnosticsEngine::Warning:
-        warns()     << "[Compiler warning] "     << location << ": " << Buf.c_str() << endl; break;
-    case clang::DiagnosticsEngine::Error:
-        errs()      << "[Compiler error] "       << location << ": " << Buf.c_str() << endl; break;
-    case clang::DiagnosticsEngine::Fatal:
-        criticals() << "[Compiler fatal error] " << location << ": " << Buf.c_str() << endl; break;
-    default:
-#include "Util/macros.h"
-        BYE_BYE_VOID("Unknown diag level encountered during clang diag processing");
-#include "Util/unmacros.h"
-    }
+    auto infos_     = infos();
+    auto warns_     = warns();
+    auto errs_      = errs();
+    auto criticals_ = criticals();
+
+    auto& stream = (Level == clang::DiagnosticsEngine::Note)    ? (infos_     << "[Compiler message] ") :
+                   (Level == clang::DiagnosticsEngine::Warning) ? (warns_     << "[Compiler warning] ") :
+                   (Level == clang::DiagnosticsEngine::Error)   ? (errs_      << "[Compiler error] ") :
+                   (Level == clang::DiagnosticsEngine::Fatal)   ? (criticals_ << "[Compiler fatal error] ") :
+                   util::sayonara<decltype(infos_)&>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+                           "Unknown diag level encountered during clang diag processing");
+    if(!location.isUnknown()) stream << location << ": ";
+    stream << Buf.c_str() << endl;
 }
 
 } /* namespace borealis */
