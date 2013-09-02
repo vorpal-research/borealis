@@ -73,6 +73,10 @@ createInvocationFromCommandLine(
     //     std::cerr << std::endl;
     // }
 
+    if(Jobs.size() == 0) {
+        return 0;
+    }
+
     const driver::Command* Cmd = cast<driver::Command>(*Jobs.begin());
     if (StringRef(Cmd->getCreator().getName()) != "clang") {
         Diags->Report(diag::err_fe_expected_clang_command);
