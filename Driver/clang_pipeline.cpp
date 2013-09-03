@@ -73,7 +73,7 @@ createInvocationFromCommandLine(
     //     std::cerr << std::endl;
     // }
 
-    if(Jobs.size() == 0) {
+    if (Jobs.size() == 0) {
         return 0;
     }
 
