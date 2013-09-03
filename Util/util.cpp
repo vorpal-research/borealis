@@ -225,13 +225,13 @@ std::list<ReturnInst*> getAllRets(Function* F) {
     return std::list<ReturnInst*>(rets.begin(), rets.end());
 }
 
-borealis::util::option<ReturnInst*> getSingleRetOpt(Function* F) {
+ReturnInst* getSingleRetOpt(Function* F) {
     auto rets = getAllRets(F);
 
     if (rets.size() == 1) {
-        return borealis::util::just(rets.front());
+        return rets.front();
     } else {
-        return borealis::util::nothing();
+        return nullptr;
     }
 }
 
