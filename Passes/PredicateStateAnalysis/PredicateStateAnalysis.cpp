@@ -120,7 +120,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
 
     PredicateState::Ptr query = (
         FN.State *
-        FN.Predicate->getEqualityPredicate(
+        FN.Predicate->getInequalityPredicate(
             FN.Term->getReturnValueTerm(&F),
             FN.Term->getNullPtrTerm()
         )
