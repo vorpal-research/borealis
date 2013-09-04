@@ -48,9 +48,6 @@ public:
             if (opcode >= Instruction::CastOpsBegin && opcode <= Instruction::CastOpsEnd) {
                 return getValueTerm(cE->getOperand(0));
             } else if (opcode == Instruction::GetElementPtr) {
-                auto* stripped = cE->stripPointerCasts();
-                if (stripped != cE) return getValueTerm(stripped);
-
                 auto* base = cE->getOperand(0);
                 ValueVector idxs;
                 idxs.reserve(cE->getNumOperands() - 1);
@@ -90,8 +87,7 @@ public:
         return Term::Ptr{
             new ConstTerm(
                 TyF->cast(c->getType()),
-                st->getLocalName(c),
-                getAsCompileTimeString(c)
+                st->getLocalName(c)
             )
         };
     }
@@ -244,11 +240,14 @@ public:
 
         type = GetElementPtrInst::getGEPReturnType(base, idxs);
 
+        auto asString = getAsCompileTimeString(base);
+
         return Term::Ptr{
             new GepTerm(
                 TyF->cast(type),
                 getValueTerm(base),
-                shifts
+                shifts,
+                asString
             )
         };
     }
