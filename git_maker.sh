@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 if [ $# -ne 2 ]
 then
@@ -16,4 +16,4 @@ ln -fs "$wrapper_prefix/wrapper"
 ln -fs "$wrapper_prefix/wrapper.conf"
 ln -fs "$wrapper_prefix/log.ini"
 
-make CC=./wrapper
+make CC=./wrapper CXX=./wrapper
