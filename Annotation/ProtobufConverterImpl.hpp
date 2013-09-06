@@ -9,6 +9,7 @@
 #define ANNOTATION_PROTOBUF_CONVERTER_IMPL_HPP_
 
 #include "Annotation/Annotation.def"
+#include "Annotation/AnnotationContainer.h"
 
 #include "Protobuf/ConverterUtil.h"
 
@@ -24,6 +25,7 @@
 #include "Protobuf/Gen/Annotation/StackDepthAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/RequiresAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/UnrollAnnotation.pb.h"
+#include "Protobuf/Gen/Annotation/AnnotationContainer.pb.h"
 
 #include "Term/ProtobufConverterImpl.hpp"
 
@@ -206,6 +208,30 @@ struct protobuf_traits_impl<LogicAnnotation> {
 #include "Annotation/Annotation.def"
 #undef HANDLE_LogicAnnotation
         BYE_BYE(Annotation::Ptr, "Should not happen!");
+    }
+};
+
+template<>
+struct protobuf_traits<AnnotationContainer> {
+    typedef AnnotationContainer normal_t;
+    typedef proto::AnnotationContainer proto_t;
+    typedef borealis::FactoryNest context_t;
+
+    typedef protobuf_traits<Annotation> AnnotationConverter;
+
+    static AnnotationContainer::ProtoPtr toProtobuf(const normal_t& t) {
+        auto res = util::uniq(new proto_t());
+        for(const auto& a: t) {
+            res->mutable_data()->AddAllocated(AnnotationConverter::toProtobuf(*a).release());
+        }
+        return std::move(res);
+    }
+    static AnnotationContainer::Ptr fromProtobuf(const context_t& fn, const proto_t& t) {
+        AnnotationContainer::Ptr res { new AnnotationContainer() };
+        for(auto i = 0; i < t.data_size(); ++i) {
+            res->push_back(AnnotationConverter::fromProtobuf(fn, t.data(i)));
+        }
+        return std::move(res);
     }
 };
 

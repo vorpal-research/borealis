@@ -5,162 +5,211 @@
  *      Author: belyaev
  */
 
-#include "clang/Driver/Arg.h"
-#include "clang/Driver/ArgList.h"
-#include "clang/Driver/Compilation.h"
-#include "clang/Driver/Driver.h"
-#include "clang/Driver/Options.h"
-#include "clang/Driver/Tool.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/DiagnosticOptions.h"
-#include "clang/Frontend/FrontendDiagnostic.h"
-#include "clang/Frontend/Utils.h"
-#include "llvm/Support/Host.h"
+#include <clang/CodeGen/CodeGenAction.h>
+#include <clang/Driver/Arg.h>
+#include <clang/Driver/ArgList.h>
+#include <clang/Driver/Compilation.h>
+#include <clang/Driver/Driver.h>
+#include <clang/Driver/Options.h>
+#include <clang/Driver/Tool.h>
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/DiagnosticOptions.h>
+#include <clang/Frontend/FrontendDiagnostic.h>
+#include <clang/Frontend/Utils.h>
+#include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/IRReader.h>
+#include <llvm/Linker.h>
 
-#include <iostream>
+#include <fstream>
+#include <unordered_map>
 
 #include "Driver/clang_pipeline.h"
+
+#include "Factory/Nest.h"
+#include "Protobuf/Converter.hpp"
+
 #include "Util/util.hpp"
 
 #include "Util/macros.h"
 
 using namespace clang;
 
-// XXX: Gracefully taken from clang sources
-
-static CompilerInvocation*
-createInvocationFromCommandLine(
-      ArrayRef<const char *> ArgList,
-      IntrusiveRefCntPtr<DiagnosticsEngine> Diags) {
-
-    if (!Diags.getPtr()) {
-        // No diagnostics engine was provided, so create our own diagnostics object
-        // with the default options.
-        DiagnosticOptions DiagOpts;
-        Diags = CompilerInstance::createDiagnostics(DiagOpts, ArgList.size(), ArgList.begin());
-    }
-
-    SmallVector<const char *, 16> Args;
-    Args.push_back("<clang>"); // FIXME: Remove dummy argument.
-    Args.insert(Args.end(), ArgList.begin(), ArgList.end());
-
-    // FIXME: We shouldn't have to pass in the path info.
-    driver::Driver TheDriver("clang", llvm::sys::getDefaultTargetTriple(),
-                             "a.out", false, *Diags);
-
-    // Don't check that inputs exist, they may have been remapped.
-    TheDriver.setCheckInputsExist(false);
-
-    OwningPtr<driver::Compilation> C(TheDriver.BuildCompilation(Args));
-
-    // FIXME: remove the comments after the compile-link stuff have been sorted out
-    // std::cerr << "compile ";
-    // for (const auto& arg : C->getArgsForToolChain(&C->getDefaultToolChain(), nullptr)) {
-    //     std::cerr << arg->getAsString(C->getArgs()) << " ";
-    // }
-    // std::cerr << std::endl;
-
-    const driver::JobList& Jobs = C->getJobs();
-
-    // for (const auto& job : Jobs) {
-    //     const driver::Command* Cmd = cast<driver::Command>(job);
-    //     const driver::ArgStringList &CCArgs = Cmd->getArguments();
-    //
-    //     std::cerr << Cmd->getCreator().getName() << " ";
-    //     for (const auto& arg : CCArgs) {
-    //         std::cerr << arg << " ";
-    //     }
-    //     std::cerr << std::endl;
-    // }
-
-    if(Jobs.size() == 0) {
-        return 0;
-    }
-
-    const driver::Command* Cmd = cast<driver::Command>(*Jobs.begin());
-    if (StringRef(Cmd->getCreator().getName()) != "clang") {
-        Diags->Report(diag::err_fe_expected_clang_command);
-        return 0;
-    }
-
-    const driver::ArgStringList& CCArgs = Cmd->getArguments();
-    OwningPtr<CompilerInvocation> CI(new CompilerInvocation());
-    if (!CompilerInvocation::CreateFromArgs(
-          *CI,
-          CCArgs.data(),
-          CCArgs.data() + CCArgs.size(),
-          *Diags)
-    ) return 0;
-
-    return CI.take();
-}
-
-
-
 namespace borealis {
 namespace driver {
 
-struct clang_pipeline::impl {
+struct clang_pipeline::impl: public DelegateLogging {
     clang::CompilerInstance ci;
-    std::vector<util::ref<clang::FrontendAction>> actions;
+    std::unordered_map<std::string, AnnotatedModule::Ptr> fileCache;
+    FactoryNest fn;
+
+    impl(clang_pipeline* abs): DelegateLogging(*abs), fn(nullptr) {};
+
+    void compile(const CommandLine& args) {
+        std::unique_ptr<CompilerInvocation> CI { new CompilerInvocation() };
+        ASSERT(
+            CompilerInvocation::CreateFromArgs(
+              *CI,
+              args.argv(),
+              args.argv() + args.argc(),
+              ci.getDiagnostics()
+            ),
+            "No CompilerInvocation for clang_pipeline"
+        );
+
+        ci.setInvocation(CI.release());
+
+        ASSERT(ci.hasInvocation(), "No CompilerInvocation for clang_pipeline");
+
+        ci.getCodeGenOpts().EmitDeclMetadata = true;
+        ci.getCodeGenOpts().DebugInfo = true;
+        ci.getDiagnosticOpts().ShowCarets = false;
+
+        clang::EmitLLVMOnlyAction compile_to_llvm;
+        borealis::comments::GatherCommentsAction gatherAnnotations;
+
+        ASSERTC(ci.ExecuteAction(compile_to_llvm));
+        std::unique_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
+
+        ASSERTC(ci.ExecuteAction(gatherAnnotations));
+        AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
+
+        fileCache[ci.getFrontendOpts().OutputFile] = AnnotatedModule::Ptr{
+            new AnnotatedModule{ std::move(module), std::move(annotations) }
+        };
+    }
+
+    void claim(const std::string& fname) {
+        fileCache.erase(fname);
+    }
+
+    void readFor(const std::string& fname) {
+        auto bcfile = fname + ".bc";
+        auto annofile = fname + ".anno";
+
+        llvm::SMDiagnostic diag;
+        std::unique_ptr<llvm::Module> module{ llvm::ParseIRFile(bcfile, diag, llvm::getGlobalContext() ) };
+
+        std::ifstream annoStream(annofile, std::iostream::in | std::iostream::binary);
+        AnnotationContainer::ProtoPtr proto { new proto::AnnotationContainer() };
+        proto->ParseFromIstream(&annoStream);
+        AnnotationContainer::Ptr annotations = deprotobuffy(fn, *proto);
+
+        fileCache[fname] = AnnotatedModule::Ptr{
+            new AnnotatedModule{ std::move(module), std::move(annotations) }
+        };
+    }
+
+    void writeFor(const std::string& fname) {
+        auto bcfile = fname + ".bc";
+        auto annofile = fname + ".anno";
+
+        auto annotatedModule = fileCache[fname];
+
+        std::string error;
+        llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error);
+        llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
+
+        std::ofstream annoStream(annofile, std::iostream::out | std::iostream::binary);
+
+        AnnotationContainer::ProtoPtr proto = protobuffy(annotatedModule->annotations);
+        proto->SerializeToOstream(&annoStream);
+
+        claim(fname);
+    }
+
+    AnnotatedModule::Ptr get(const std::string& name) {
+        auto it = fileCache.find(name);
+        if(it != fileCache.end()) return it->second;
+
+        readFor(name);
+        it = fileCache.find(name);
+        if(it != fileCache.end()) return it->second;
+
+        return nullptr;
+    }
+
+    void link(const CommandLine& args) {
+        std::string moduleName;
+        clang::driver::InputArgList inputs(args.argv(), args.argv()+args.argc());
+        for(const auto& arg: util::view(
+                                inputs.filtered_begin(clang::driver::options::OPT_o),
+                                inputs.filtered_end()
+                             )) {
+            for(const auto& subarg: arg->getValues()) {
+                moduleName = subarg;
+            }
+        }
+
+        llvm::Linker linker("wrapper", moduleName, llvm::getGlobalContext(), llvm::Linker::DestroySource);
+        AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
+
+        for(const auto& arg: util::view(
+                                inputs.filtered_begin(clang::driver::options::OPT_INPUT),
+                                inputs.filtered_end()
+                             )) {
+            for(const auto& subarg: arg->getValues()) {
+                const auto& am = get(subarg);
+
+                if(!am) {
+                    errs() << subarg << ": file or module not found" << endl;
+                    continue;
+                }
+
+                linker.LinkInModule(am->module.get());
+                annotations->mergeIn(am->annotations);
+                claim(subarg);
+            }
+        }
+
+        fileCache["<output>"] = AnnotatedModule::Ptr{
+            new AnnotatedModule{ util::uniq(linker.releaseModule()), std::move(annotations) }
+        };
+    }
+
+    AnnotatedModule::Ptr result() {
+        auto it = fileCache.find("<output>");
+        if(it != fileCache.end()) return it->second;
+        else return nullptr;
+    }
+
+    ~impl () {
+        try {
+            for(const auto& pfile : fileCache) {
+                writeFor(pfile.first);
+            }
+        } catch (...) {
+            errs() << "Something awful happened while writing intermediate results" << endl;
+        }
+    }
 };
 
 clang_pipeline::~clang_pipeline() {};
 
 clang_pipeline::clang_pipeline(
         const std::string&,
-        const std::vector<const char*>& args,
         const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags):
-      pimpl{ new impl{} } {
+      pimpl{ new impl{ this } } {
 
     pimpl->ci.setDiagnostics(diags.getPtr());
-    pimpl->ci.setInvocation(::createInvocationFromCommandLine(args, diags));
+}
 
-    if (pimpl->ci.hasInvocation()) {
-        pimpl->ci.getCodeGenOpts().EmitDeclMetadata = true;
-        pimpl->ci.getCodeGenOpts().DebugInfo = true;
-        pimpl->ci.getDiagnosticOpts().ShowCarets = false;
-    } else {
-        ASSERT(false, "No CompilerInvocation for clang_pipeline");
+void clang_pipeline::invoke(const command& cmd) {
+    if(cmd.operation == command::COMPILE) pimpl->compile(cmd.cl);
+    else if (cmd.operation == command::LINK) pimpl->link(cmd.cl);
+}
+
+void clang_pipeline::invoke(const std::vector<command>& cmds) {
+    using namespace std::placeholders;
+
+    for(const auto& cmd: cmds) {
+        invoke(cmd);
     }
 }
 
-std::vector<std::string> clang_pipeline::getInvocationArgs() const {
-    // this is generally fucked up
-    // we deliberately remove const-ness from ci because
-    //   ci.getInvocation() is not const
-    auto& ci = const_cast<clang::CompilerInstance&>(pimpl->ci);
-    // hereby we solemnly swear to Bible that we won't change anything in ci
-    // amen
-
-    if (!ci.hasInvocation()) return std::vector<std::string>{};
-
-    std::vector<std::string> ret;
-    // both getInvocation() and toArgs() are not declared const
-    // for some dirty-dirty reason
-    ci.getInvocation().toArgs(ret);
-    return std::move(ret);
-}
-
-clang::SourceManager& clang_pipeline::getSourceManager() const {
-    return pimpl->ci.getSourceManager();
-}
-
-void clang_pipeline::add(clang::FrontendAction& action) {
-    pimpl->actions.push_back(util::ref<clang::FrontendAction>(action));
-}
-
-clang_pipeline::status clang_pipeline::run() {
-    if (!pimpl->ci.hasInvocation()) return status::FAILURE;
-
-    bool success = true;
-
-    for (auto& action : pimpl->actions) {
-        success &= pimpl->ci.ExecuteAction(action);
-        if (!success) break;
-    }
-
-    return success ? status::SUCCESS : status::FAILURE;
+AnnotatedModule::Ptr clang_pipeline::result() {
+    return pimpl->result();
 }
 
 } // namespace driver

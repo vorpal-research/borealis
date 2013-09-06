@@ -6,6 +6,7 @@
  */
 
 #include <clang/Basic/Diagnostic.h>
+#include <clang/Driver/Action.h>
 #include <clang/Driver/Arg.h>
 #include <clang/Driver/ArgList.h>
 #include <clang/Driver/Compilation.h>
@@ -63,28 +64,40 @@ interviewer::interviewer(
     });
     pimpl->theCompilation = borealis::util::uniq(pimpl->theDriver->BuildCompilation(invoke_args));
 
-    // FIXME: Huh?
-    // if (pimpl->theCompilation->getArgs().hasArg(clang::driver::options::OPT_c)) {
-    //     errs() << "Hello!" << endl;
-    // }
-
-    for (const auto& inp :
-            borealis::util::view(pimpl->theCompilation->getArgs().filtered_begin(clang::driver::options::OPT_INPUT),
-                                 pimpl->theCompilation->getArgs().filtered_end())
-    ) {
-        dbgs() << inp->getValue(pimpl->theCompilation->getArgs()) << endl;
-    }
 };
 
-util::option_ref<const clang::driver::DerivedArgList> interviewer::getRealArgs() const {
+std::vector<command> interviewer::getCompileCommands() {
     using borealis::util::streams::error;
+
+    std::vector<command> ret;
 
     if (!pimpl->theCompilation) {
         errs() << error("Fucked up, sorry :(") << endl;
-        return util::nothing();
+        return std::move(ret);
     }
 
-    return util::justRef(pimpl->theCompilation->getArgs());
+    auto& jobs = pimpl->theCompilation->getJobs();
+    for(auto* job : jobs) {
+        if(auto* command = clang::dyn_cast<clang::driver::Command>(job)) {
+            borealis::driver::command toPut;
+            const auto& args = command->getArguments();
+
+            toPut.cl = CommandLine::keepAll(args.size(), args.data());
+
+            if(command->getSource().getKind() == clang::driver::Action::CompileJobClass ||
+                    command->getSource().getKind() == clang::driver::Action::AssembleJobClass) {
+                toPut.operation = command::COMPILE;
+            } else if(command->getSource().getKind() == clang::driver::Action::LinkJobClass) {
+                toPut.operation = command::LINK;
+            } else toPut.operation = command::NOP;
+
+            ret.push_back(toPut);
+        }
+    }
+
+    std::cerr << ret << std::endl;
+
+    return std::move(ret);
 }
 
 interviewer::status interviewer::run() const {

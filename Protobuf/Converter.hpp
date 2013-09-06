@@ -33,6 +33,9 @@ Predicate::Ptr    deprotobuffy(FactoryNest FN, const proto::Predicate& p);
 Annotation::ProtoPtr protobuffy(Annotation::Ptr p);
 Annotation::Ptr    deprotobuffy(FactoryNest FN, const proto::Annotation& p);
 
+AnnotationContainer::ProtoPtr protobuffy(AnnotationContainer::Ptr p);
+AnnotationContainer::Ptr    deprotobuffy(FactoryNest FN, const proto::AnnotationContainer& p);
+
 PredicateState::ProtoPtr protobuffy(PredicateState::Ptr p);
 PredicateState::Ptr    deprotobuffy(FactoryNest FN, const proto::PredicateState& p);
 

@@ -126,8 +126,7 @@ int gestalt::main(int argc, const char** argv) {
     auto libs = MultiConfigEntry("libs", "load").get();
     auto skipClang = BoolConfigEntry("run", "skipClangDriver").get(false);
 
-    CommandLine compilerArgs = args.tail().unprefix("---").
-            push_back("-I/usr/lib/clang/" CLANG_VERSION_STRING "/include");
+    CommandLine compilerArgs = args.tail().unprefix("---");
 
     infos() << "Invoking clang with: " << compilerArgs << endl;
 
@@ -147,6 +146,8 @@ int gestalt::main(int argc, const char** argv) {
     interviewer nativeClang{ "clang", compilerArgs.data(), diags, nativeClangCfg };
     nativeClang.assignLogger(*this);
 
+    auto compileCommands = nativeClang.getCompileCommands();
+
     // FIXME: operator<< for clang::driver::DerivedArgList
     // infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
 
@@ -155,25 +156,16 @@ int gestalt::main(int argc, const char** argv) {
     // prep for borealis business
     // compile sources to llvm::Module
 
-    clang_pipeline clang { "clang", compilerArgs.data(), diags };
+    clang_pipeline clang { "clang", diags };
     clang.assignLogger(*this);
 
-    CommandLine clangRealArgs = clang.getInvocationArgs();
-    if (clangRealArgs.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
+    clang.invoke(compileCommands);
 
-    infos() << "Clang lib arguments: " << clangRealArgs << endl;
-
-    GatherCommentsAction gather_comments;
-    EmitLLVMOnlyAction compile_to_llvm;
-
-    clang.add(gather_comments);
-    clang.add(compile_to_llvm);
-
-    if (clang.run() == clang_pipeline::status::FAILURE) return E_GATHER_COMMENTS;
+    auto annotatedModule = clang.result();
 
     // collect passes
 
-    std::shared_ptr<llvm::Module> module_ptr(compile_to_llvm.takeModule());
+    auto module_ptr = annotatedModule->module;
 
     std::vector<StringRef> passes2run;
     passes2run.insert(passes2run.end(), prePasses.begin(), prePasses.end());
@@ -215,8 +207,8 @@ int gestalt::main(int argc, const char** argv) {
     llvm_pipeline llvm { module_ptr };
     llvm.assignLogger(*this);
 
-    llvm.add(gather_comments);
-    llvm.add(clang.getSourceManager());
+    llvm.add(annotatedModule->annotations);
+    llvm.add(new clang::FileManager(FileSystemOptions()));
     for (StringRef pass : passes2run) {
         llvm.add(pass.str());
     }

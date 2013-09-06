@@ -14,11 +14,28 @@
 #include <llvm/Support/Path.h>
 
 #include "Config/config.h"
+#include "Driver/cl.h"
 #include "Logging/logger.hpp"
 #include "Util/option.hpp"
 
 namespace borealis {
 namespace driver {
+
+struct command {
+    enum { COMPILE, LINK, NOP } operation;
+    CommandLine cl;
+
+    friend std::ostream& operator<<(std::ostream& ost, const command& cmd) {
+        switch(cmd.operation) {
+        case COMPILE: ost << "cc "; break;
+        case LINK: ost << "ld "; break;
+        case NOP: ost << "/dev/null "; break;
+        default: break;
+        }
+        ost << cmd.cl;
+        return ost;
+    }
+};
 
 class interviewer: public borealis::logging::DelegateLogging {
     struct impl;
@@ -35,7 +52,7 @@ public:
     );
     ~interviewer();
 
-    util::option_ref<const clang::driver::DerivedArgList> getRealArgs() const;
+    std::vector<command> getCompileCommands();
 
     interviewer::status run() const;
 };

@@ -28,6 +28,8 @@ public:
     typedef std::shared_ptr<TermFactory> Ptr;
 
     Term::Ptr getArgumentTerm(llvm::Argument* arg) {
+        ASSERT(st, "Missing SlotTracker");
+
         return Term::Ptr{
             new ArgumentTerm(
                 TyF->cast(arg->getType()),
@@ -38,6 +40,8 @@ public:
     }
 
     Term::Ptr getConstTerm(llvm::Constant* c) {
+        ASSERT(st, "Missing SlotTracker");
+
         using namespace llvm;
         using borealis::util::tail;
         using borealis::util::view;
@@ -147,6 +151,8 @@ public:
     }
 
     Term::Ptr getReturnValueTerm(llvm::Function* F) {
+        ASSERT(st, "Missing SlotTracker");
+
         return Term::Ptr{
             new ReturnValueTerm(
                 TyF->cast(F->getFunctionType()->getReturnType()),
@@ -156,6 +162,7 @@ public:
     }
 
     Term::Ptr getValueTerm(llvm::Value* v) {
+        ASSERT(st, "Missing SlotTracker");
         using namespace llvm;
 
         if (auto* c = dyn_cast<Constant>(v))
@@ -220,6 +227,8 @@ public:
     }
 
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
+        ASSERT(st, "Missing SlotTracker");
+
         using namespace llvm;
 
         llvm::Type* baseType = base->getType();
@@ -315,6 +324,12 @@ public:
             TypeFactory::Ptr TyF) {
         return TermFactory::Ptr{
             new TermFactory(st, TyF)
+        };
+    }
+
+    static TermFactory::Ptr get(TypeFactory::Ptr TyF) {
+        return TermFactory::Ptr{
+            new TermFactory(nullptr, TyF)
         };
     }
 

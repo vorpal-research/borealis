@@ -15,6 +15,9 @@
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 
 #include "Logging/logger.hpp"
+#include "Driver/cl.h"
+#include "Driver/AnnotatedModule.h"
+#include "Driver/interviewer.h"
 
 namespace borealis {
 namespace driver {
@@ -28,16 +31,13 @@ public:
 
     clang_pipeline(
         const std::string& what,
-        const std::vector<const char*>& args,
         const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags
     );
     ~clang_pipeline();
 
-    std::vector<std::string> getInvocationArgs() const;
-    clang::SourceManager& getSourceManager() const;
-
-    void add(clang::FrontendAction& action);
-    clang_pipeline::status run();
+    void invoke(const command&);
+    void invoke(const std::vector<command>&);
+    AnnotatedModule::Ptr result();
 };
 
 } // namespace driver

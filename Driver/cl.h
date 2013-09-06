@@ -36,6 +36,7 @@ private:
             additional_data{std::move(additional_data)} {};
 
 public:
+    CommandLine() = default;
     CommandLine(int argc, const char** argv):
         args{argv, argv + argc},
         additional_data{} {};
@@ -72,6 +73,19 @@ public:
         args.reserve(additional_data.size());
         for (const auto& arg: additional_data) args.push_back(arg.c_str());
     };
+
+    CommandLine& operator=(CommandLine&&) = default;
+    CommandLine& operator=(const CommandLine&) = default;
+
+    static CommandLine keepAll(int argc, const char* const* argv) {
+        CommandLine ret;
+        ret.additional_data.insert(ret.additional_data.begin(), argv, argv+argc);
+        ret.args.reserve(argc);
+        for(const auto& datum: ret.additional_data) {
+            ret.args.push_back(datum.c_str());
+        }
+        return std::move(ret);
+    }
 
     template<size_t N>
     self suffixes(const char (&prefix)[N]) const {

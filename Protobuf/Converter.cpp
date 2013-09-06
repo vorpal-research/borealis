@@ -42,6 +42,14 @@ Annotation::Ptr deprotobuffy(FactoryNest fn, const proto::Annotation& p) {
     return protobuf_traits<Annotation>::fromProtobuf(fn, p);
 }
 
+AnnotationContainer::ProtoPtr protobuffy(AnnotationContainer::Ptr p) {
+    return protobuf_traits<AnnotationContainer>::toProtobuf(*p);
+}
+AnnotationContainer::Ptr deprotobuffy(FactoryNest fn, const proto::AnnotationContainer& p) {
+    return protobuf_traits<AnnotationContainer>::fromProtobuf(fn, p);
+}
+
+
 PredicateState::ProtoPtr protobuffy(PredicateState::Ptr ps) {
     return protobuf_traits<PredicateState>::toProtobuf(*ps);
 }
