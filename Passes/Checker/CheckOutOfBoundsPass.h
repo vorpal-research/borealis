@@ -8,6 +8,7 @@
 #ifndef CHECKOUTOFBOUNDPASS_H_
 #define CHECKOUTOFBOUNDPASS_H_
 
+#include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/Pass.h>
 
 #include "Factory/Nest.h"
@@ -27,6 +28,7 @@ class CheckOutOfBoundsPass :
         public ShouldBeModularized {
 
     friend class GepInstVisitor;
+    friend class AllocaInstVisitor;
 
 public:
 
@@ -38,16 +40,20 @@ public:
 
     CheckOutOfBoundsPass();
     CheckOutOfBoundsPass(llvm::Pass* pass);
+    virtual bool doInitialization(llvm::Module& module) override;
     virtual bool runOnFunction(llvm::Function& F) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~CheckOutOfBoundsPass();
 
 private:
 
+    llvm::AliasAnalysis* AA;
     DefectManager* DM;
     PredicateStateAnalysis* PSA;
 
     FactoryNest FN;
+
+    std::vector<llvm::Value*> globalArrays_;
 
 };
 
