@@ -72,11 +72,14 @@ void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
 
     auto& FM = GetAnalysis<FunctionManager>::doit(this);
 
-    auto retOpt = getSingleRetOpt(&F);
-    // Function does not return, therefore has no useful summary
-    if (retOpt.empty()) return;
+    // No summary if:
+    // - function does not return
+    // - function returns void
+    // - function returns non-pointer
 
-    auto* RI = retOpt.getUnsafe();
+    auto* RI = getSingleRetOpt(&F);
+    // Function does not return, therefore has no useful summary
+    if (!RI) return;
 
     auto initial = delegate->getInitialState();
     auto riState = delegate->getInstructionState(RI);
@@ -104,10 +107,9 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     // - function returns void
     // - function returns non-pointer
 
-    auto retOpt = getSingleRetOpt(&F);
-    if (retOpt.empty()) return;
+    auto* RI = getSingleRetOpt(&F);
+    if (!RI) return;
 
-    auto* RI = retOpt.getUnsafe();
     auto* retVal = RI->getReturnValue();
     if (retVal == nullptr) return;
     if ( ! retVal->getType()->isPointerTy() ) return;
@@ -120,7 +122,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
 
     PredicateState::Ptr query = (
         FN.State *
-        FN.Predicate->getEqualityPredicate(
+        FN.Predicate->getInequalityPredicate(
             FN.Term->getReturnValueTerm(&F),
             FN.Term->getNullPtrTerm()
         )
@@ -155,10 +157,8 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
 void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {
     auto& LM = GetAnalysis<LocationManager>::doit(this);
 
-    auto retOpt = getSingleRetOpt(&F);
-    if (retOpt.empty()) return;
-
-    auto* RI = retOpt.getUnsafe();
+    auto* RI = getSingleRetOpt(&F);
+    if (!RI) return;
 
     auto riState = delegate->getInstructionState(RI);
     ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));

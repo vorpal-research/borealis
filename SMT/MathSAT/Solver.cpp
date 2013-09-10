@@ -148,9 +148,9 @@ Dynamic Solver::getSummary(
     mathsat::ISolver s(msatef.unwrap());
 
     auto B = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(msatbody));
+    s.add(msatimpl::asAxiom(   msatbody));
     auto Q = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(msatquery));
+    s.add(msatimpl::asAxiom( ! msatquery));
 
     std::vector<mathsat::Expr> argExprs;
     argExprs.reserve(args.size());
@@ -178,8 +178,8 @@ Dynamic Solver::getSummary(
 
         } else if (r == MSAT_SAT) {
             mathsat::DSolver d(msatef.unwrap());
-            d.add(msatimpl::asAxiom(   msatbody  ));
-            d.add(msatimpl::asAxiom( ! msatquery ));
+            d.add(msatimpl::asAxiom( msatbody  ));
+            d.add(msatimpl::asAxiom( msatquery ));
 
             auto models = d.diversify(argExprs);
             dbgs() << "Models: " << endl
@@ -188,9 +188,9 @@ Dynamic Solver::getSummary(
             auto ms = msatef.getFalse();
             for (const auto& m : models) {
                 mathsat::Solver s(msatef.unwrap());
-                s.add(msatimpl::asAxiom( msatbody  ));
-                s.add(msatimpl::asAxiom( msatquery ));
-                s.add(msatimpl::asAxiom( m ));
+                s.add(msatimpl::asAxiom(   msatbody  ));
+                s.add(msatimpl::asAxiom( ! msatquery ));
+                s.add(msatimpl::asAxiom(   m ));
 
                 if (MSAT_SAT == s.check()) continue;
 
@@ -202,7 +202,7 @@ Dynamic Solver::getSummary(
 
             r = s.check();
             if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
-            else dbgs() << "Oops, got MSAT_SAT for (B && Q && models)..." << endl;
+            else dbgs() << "Oops, got MSAT_SAT for (B && not Q && models)..." << endl;
 
         }
 

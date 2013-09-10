@@ -199,7 +199,9 @@ struct Locus {
     Locus(Locus&& that) = default;
     explicit Locus(const LocalLocus& that): filename(UNKNOWN_NAME), loc(that) {};
     explicit Locus(LocalLocus&& that): filename(UNKNOWN_NAME), loc(std::move(that)) {};
-    Locus(const clang::PresumedLoc& that): filename([](const char* fn){ return fn?fn:""; }(that.getFilename())), loc(that.getLine(), that.getColumn()) {};
+    Locus(const clang::PresumedLoc& that):
+        filename(that.isValid() ? that.getFilename() : UNKNOWN_NAME),
+        loc(that.isValid() ? LocalLocus{ that.getLine(), that.getColumn() } : LocalLocus{}) {};
     Locus(const clang::SourceLocation& enc, const clang::SourceManager& mgr):
         Locus(mgr.getPresumedLoc(enc)) {};
     Locus(const llvm::DILocation& that): filename(that.getFilename()), loc(that.getLineNumber(), that.getColumnNumber()) {};

@@ -163,24 +163,16 @@ struct protobuf_traits_impl<ConstTerm> {
 
     typedef protobuf_traits<Term> TermConverter;
 
-    static std::unique_ptr<proto::ConstTerm> toProtobuf(const ConstTerm& t) {
-        auto res = util::uniq(new proto::ConstTerm());
-        for (const auto& v : t.getAsString()) {
-            res->set_asstring(v);
-        }
-        return std::move(res);
+    static std::unique_ptr<proto::ConstTerm> toProtobuf(const ConstTerm&) {
+        return util::uniq(new proto::ConstTerm());
     }
 
     static Term::Ptr fromProtobuf(
             const FactoryNest&,
             Type::Ptr type,
             const std::string& name,
-            const proto::ConstTerm& t) {
-        util::option<std::string> asString;
-        if (t.has_asstring()) {
-            asString = util::just(t.asstring());
-        }
-        return Term::Ptr{ new ConstTerm(type, name, asString) };
+            const proto::ConstTerm&) {
+        return Term::Ptr{ new ConstTerm(type, name) };
     }
 };
 
@@ -205,6 +197,10 @@ struct protobuf_traits_impl<GepTerm> {
             );
         }
 
+        for (const auto& v : t.getAsString()) {
+            res->set_asstring(v);
+        }
+
         return std::move(res);
     }
 
@@ -227,7 +223,12 @@ struct protobuf_traits_impl<GepTerm> {
             shifts.push_back({by, size});
         }
 
-        return Term::Ptr{ new GepTerm(type, base, shifts) };
+        util::option<std::string> asString;
+        if (t.has_asstring()) {
+            asString = util::just(t.asstring());
+        }
+
+        return Term::Ptr{ new GepTerm(type, base, shifts, asString) };
     }
 };
 

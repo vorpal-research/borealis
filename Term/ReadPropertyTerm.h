@@ -8,7 +8,7 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
-#include "Term/ConstTerm.h"
+#include "Term/GepTerm.h"
 #include "Term/Term.h"
 
 namespace borealis {
@@ -81,10 +81,10 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
 
         ASSERTC(ctx != nullptr);
 
-        ASSERT(llvm::isa<ConstTerm>(t->getPropertyName()),
-               "Property read with non-constant property name");
-        auto* constPropName = llvm::cast<ConstTerm>(t->getPropertyName());
-        auto strPropName = constPropName->getAsString();
+        ASSERT(llvm::isa<GepTerm>(t->getPropertyName()),
+               "Property read with non-string property name");
+        auto* gepPropName = llvm::cast<GepTerm>(t->getPropertyName());
+        auto strPropName = gepPropName->getAsString();
         ASSERT(!strPropName.empty(),
                "Property read with unknown property name");
 

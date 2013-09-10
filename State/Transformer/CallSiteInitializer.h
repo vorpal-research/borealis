@@ -35,9 +35,11 @@ public:
 
         returnValue = &CI;
 
-        int argNum = CI.getCalledFunction()->getArgumentList().size();
-        for (int argIdx = 0; argIdx < argNum; ++argIdx) {
-            callSiteArguments[argIdx] = CI.getArgOperand(argIdx);
+        if (auto* calledFunc = CI.getCalledFunction()) {
+            int argNum = calledFunc->arg_size();
+            for (int argIdx = 0; argIdx < argNum; ++argIdx) {
+                callSiteArguments[argIdx] = CI.getArgOperand(argIdx);
+            }
         }
 
         auto* callerFunc = CI.getParent()->getParent();

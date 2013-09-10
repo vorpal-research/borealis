@@ -77,10 +77,10 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        ASSERT(llvm::isa<ConstTerm>(p->getPropertyName()),
-               "Property write with non-constant property name");
-        auto* constPropName = llvm::cast<ConstTerm>(p->getPropertyName());
-        auto strPropName = constPropName->getAsString();
+        ASSERT(llvm::isa<GepTerm>(p->getPropertyName()),
+               "Property write with non-string property name");
+        auto* gepPropName = llvm::cast<GepTerm>(p->getPropertyName());
+        auto strPropName = gepPropName->getAsString();
         ASSERT(!strPropName.empty(),
                "Property write with unknown property name");
 
