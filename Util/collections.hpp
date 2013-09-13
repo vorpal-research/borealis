@@ -156,6 +156,15 @@ inline auto tail(Container& con) -> CollectionView<decltype(std::begin(con))> {
     return view(std::next(std::begin(con)), std::end(con));
 }
 
+template<class Container>
+inline auto take(unsigned int count, Container&& con) ->
+        CollectionView<decltype(std::begin(std::forward<Container>(con)))> {
+    auto begin = std::begin(std::forward<Container>(con));
+    auto end = std::begin(std::forward<Container>(con));
+    std::advance(end, count);
+    return view(begin, end);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
