@@ -29,20 +29,12 @@ using borealis::util::option;
 using borealis::util::nothing;
 using borealis::util::just;
 
-static VarInfo mkVI(const clang::SourceManager& sm,
+static VarInfo mkVI(const clang::FileManager& sm,
         clang::Decl* ast = nullptr, bool allocated = false) {
-    if (auto* decl = dyn_cast_or_null<clang::NamedDecl>(ast)) {
-        return VarInfo{
-            just(decl->getName().str()),
-            just(Locus(sm.getPresumedLoc(ast->getLocation()))),
-            allocated ? VarInfo::Allocated : VarInfo::Plain,
-            ast
-        };
-    }
     return VarInfo{};
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& node,
+static VarInfo mkVI(const clang::FileManager& sm, const llvm::DISubprogram& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
@@ -53,7 +45,7 @@ static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DISubprogram& no
     return ret.overwriteBy(mkVI(sm, ast, allocated));
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable& node,
+static VarInfo mkVI(const clang::FileManager& sm, const llvm::DIGlobalVariable& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
@@ -64,7 +56,7 @@ static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIGlobalVariable
     return ret.overwriteBy(mkVI(sm, ast, allocated));
 }
 
-static VarInfo mkVI(const clang::SourceManager& sm, const llvm::DIVariable& node,
+static VarInfo mkVI(const clang::FileManager& sm, const llvm::DIVariable& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
@@ -155,6 +147,24 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                 DIVariable var(inst->getMetadata("var"));
 
                 auto vi = mkVI(sm, var);
+
+                // debug value has additional location data attached through
+                // dbg metadata
+                if (auto* nodeloc = inst->getMetadata("dbg")) {
+                    DILocation dloc(nodeloc);
+
+                    for (auto& locus: vi.originalLocus) {
+                        locus.loc.line = dloc.getLineNumber();
+                        locus.loc.col = dloc.getColumnNumber();
+                    }
+                }
+
+                vars.put(val, vi);
+            } else if (intrinsic_manager.getIntrinsicType(*inst) == function_type::INTRINSIC_DECLARE) {
+                auto* val = inst->getArgOperand(0);
+                DIVariable var(inst->getMetadata("var"));
+
+                auto vi = mkVI(sm, var, nullptr, true);
 
                 // debug value has additional location data attached through
                 // dbg metadata

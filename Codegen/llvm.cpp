@@ -64,41 +64,10 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& range) {
+llvm::StringRef getRawSource(const clang::FileManager& fm, const LocusRange& range) {
     using namespace clang;
 
-    FileManager& fm = sm.getFileManager();
-
-    if (range.lhv.isUnknown() || range.rhv.isUnknown()) {
-        return StringRef{ "Encountered unknown location, enjoy a smiley =)" };
-    }
-
-    auto* begFile = fm.getFile(range.lhv.filename);
-    auto* endFile = fm.getFile(range.rhv.filename);
-
-    auto begLoc = sm.translateFileLineCol(begFile, range.lhv.loc.line, range.lhv.loc.col);
-    auto endLoc = sm.translateFileLineCol(endFile, range.rhv.loc.line, range.rhv.loc.col);
-
-    if (begLoc.isInvalid() || endLoc.isInvalid())
-        return "Encountered invalid location, enjoy a smiley =)";
-
-    bool StartInvalid = false;
-    bool EndInvalid = false;
-    const char* BufferStart = sm.getCharacterData(begLoc, &StartInvalid);
-    const char* BufferEnd = sm.getCharacterData(endLoc, &EndInvalid);
-
-    if (StartInvalid || EndInvalid)
-        return StringRef{ "Encountered invalid location, enjoy a smiley =)" };
-
-    if (BufferEnd < BufferStart) {
-        auto* xchg = BufferStart;
-        BufferStart = BufferEnd;
-        BufferEnd = xchg;
-    }
-
-    size_t BufferSize = BufferEnd - BufferStart;
-
-    return StringRef{ BufferStart, BufferSize };
+    return StringRef{ };
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {

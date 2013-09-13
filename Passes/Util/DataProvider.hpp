@@ -56,7 +56,7 @@ public:
         return *value;
     }
 
-    friend DataProvider<T>* provideAsPass<>(const T* value);
+    friend DataProvider<T>* provideAsPass(const T* value);
 };
 
 template<class T>

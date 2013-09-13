@@ -28,12 +28,7 @@ bool AnnotationManager::runOnModule(llvm::Module& M) {
     auto* st = GetAnalysis< slots >::doit(this).getSlotTracker(M);
     auto fn = FactoryNest(st);
 
-    for (const auto& c : cmnts.provide().getComments()) {
-        const auto& loc = c.first;
-        const auto& cmd = c.second;
-
-        annotations.push_back(fromParseResult(loc, cmd, fn.Term));
-    }
+    annotations = cmnts.provide().data();
 
     return false;
 }

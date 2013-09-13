@@ -26,6 +26,10 @@ public:
 
     virtual bool runOnModule(llvm::Module&) override;
 
+    static llvm::Value* liftDebugIntrinsic(llvm::Module& M, llvm::Value*);
+    static llvm::Value* unliftDebugIntrinsic(llvm::Module& M, llvm::Value*);
+    static void liftAllDebugIntrinsics(llvm::Module& M);
+    static void unliftAllDebugIntrinsics(llvm::Module& M);
 };
 
 } /* namespace borealis */

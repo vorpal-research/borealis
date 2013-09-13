@@ -21,7 +21,7 @@
 
 namespace borealis {
 
-typedef DataProvider<clang::SourceManager> DPSourceManager;
+typedef DataProvider<clang::FileManager> DPFileManager;
 
 static std::string DumpCoverageFileDefault = "%s.coverage";
 
@@ -39,19 +39,19 @@ void LocationSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
     AUX<LocationManager>::addRequiredTransitive(AU);
-    AUX<DPSourceManager>::addRequiredTransitive(AU);
+    AUX<DPFileManager>::addRequiredTransitive(AU);
 }
 
-bool LocationSummaryPass::runOnModule(llvm::Module&) {
+bool LocationSummaryPass::runOnModule(llvm::Module& M) {
     auto& slt = GetAnalysis<SourceLocationTracker>::doit(this);
     auto& lm = GetAnalysis<LocationManager>::doit(this);
-    auto& sm = GetAnalysis<DPSourceManager>::doit(this).provide();
+    auto& sm = GetAnalysis<DPFileManager>::doit(this).provide();
 
-    auto* mainFileEntry = sm.getFileEntryForID(sm.getMainFileID());
+    auto* mainFileEntry = M.getModuleIdentifier().c_str();
 
     if (DumpCoverage || DumpCoverageFile != DumpCoverageFileDefault) {
 
-        util::replace("%s", mainFileEntry->getName(), DumpCoverageFile);
+        util::replace("%s", mainFileEntry, DumpCoverageFile);
 
         auto& llvmLocs = lm.getLocations();
 

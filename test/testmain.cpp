@@ -9,21 +9,34 @@
 #include <gtest/gtest.h>
 
 #include "Config/config.h"
+#include <string>
+
+namespace borealis{ namespace util {
+
+void ondie(const char*, void(*hndl)(const char*));
+
+}}
+
+void handleDie(const char* m) {
+    throw std::logic_error(m);
+}
 
 int main(int argc, char** argv) {
 
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-  atexit(google::protobuf::ShutdownProtobufLibrary);
+    borealis::util::ondie(nullptr, handleDie);
 
-  ::testing::InitGoogleTest(&argc, argv);
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    atexit(google::protobuf::ShutdownProtobufLibrary);
 
-  borealis::config::Config cfg{
-      new borealis::config::FileConfigSource("wrapper.tests.conf")
-  };
-  auto logFile = cfg.getValue<std::string>("logging", "ini");
-  for (const auto& op : logFile) {
-      borealis::logging::configureLoggingFacility(op);
-  }
+    ::testing::InitGoogleTest(&argc, argv);
 
-  return RUN_ALL_TESTS();
+    borealis::config::Config cfg{
+        new borealis::config::FileConfigSource("wrapper.tests.conf")
+    };
+    auto logFile = cfg.getValue<std::string>("logging", "ini");
+    for (const auto& op : logFile) {
+        borealis::logging::configureLoggingFacility(op);
+    }
+
+    return RUN_ALL_TESTS();
 }

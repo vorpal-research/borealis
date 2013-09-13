@@ -36,6 +36,11 @@ class CollectionView {
     ContainerIter end_;
 
 public:
+    struct defaultPredicate {
+        template<class T>
+        bool operator()(const T& v) const { return static_cast<bool>(v); }
+    };
+
     CollectionView(ContainerIter begin, ContainerIter end) : begin_(begin), end_(end) {}
     CollectionView(std::pair<ContainerIter, ContainerIter> iters) : begin_(iters.first), end_(iters.second) {}
 
@@ -55,6 +60,10 @@ public:
     template<class Pred>
     CollectionView<filtered_iterator<ContainerIter, Pred>> filter(Pred pred) const {
         return CollectionView<filtered_iterator<ContainerIter, Pred>>{filter_iterator(begin_, end_, pred), filter_iterator(end_, pred)};
+    }
+
+    CollectionView<filtered_iterator<ContainerIter, defaultPredicate>> filter() const {
+        return filter(defaultPredicate());
     }
 
     template<class Con>

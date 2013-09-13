@@ -46,13 +46,24 @@ struct clang_pipeline::impl: public DelegateLogging {
 
     impl(clang_pipeline* abs): DelegateLogging(*abs), fn(nullptr) {};
 
-    void compile(const CommandLine& args) {
+    void compile(const clang::driver::InputArgList& args) {
+        std::cerr << "cc ";
+
         std::unique_ptr<CompilerInvocation> CI { new CompilerInvocation() };
+        std::vector<const char*> ccArgs;
+        ccArgs.reserve(args.getNumInputArgStrings());
+        for(auto i = 0U, size = args.getNumInputArgStrings(); i < size; ++i) {
+            auto* arg = args.getArgString(i);
+            ccArgs.push_back(arg);
+            std::cerr << arg << " ";
+        }
+        std::cerr << std::endl;
+
         ASSERT(
             CompilerInvocation::CreateFromArgs(
               *CI,
-              args.argv(),
-              args.argv() + args.argc(),
+              const_cast<const char **>(ccArgs.data()),
+              const_cast<const char **>(ccArgs.data()) + ccArgs.size(),
               ci.getDiagnostics()
             ),
             "No CompilerInvocation for clang_pipeline"
@@ -66,18 +77,30 @@ struct clang_pipeline::impl: public DelegateLogging {
         ci.getCodeGenOpts().DebugInfo = true;
         ci.getDiagnosticOpts().ShowCarets = false;
 
-        clang::EmitLLVMOnlyAction compile_to_llvm;
+        clang::EmitLLVMOnlyAction compile_to_llvm{ &llvm::getGlobalContext() };
         borealis::comments::GatherCommentsAction gatherAnnotations;
 
         ASSERTC(ci.ExecuteAction(compile_to_llvm));
-        std::unique_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
+        std::shared_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
 
         ASSERTC(ci.ExecuteAction(gatherAnnotations));
         AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
 
+        std::cerr << "Gathered module" << ci.getFrontendOpts().OutputFile << ": "
+                << std::endl << util::toString(*module) << std::endl;
+
         fileCache[ci.getFrontendOpts().OutputFile] = AnnotatedModule::Ptr{
-            new AnnotatedModule{ std::move(module), std::move(annotations) }
+            new AnnotatedModule{ module, annotations }
         };
+
+        std::cerr << "Gathered module" << ci.getFrontendOpts().OutputFile << ": "
+                << std::endl << util::toString(*get(ci.getFrontendOpts().OutputFile)->module) << std::endl;
+
+        std::cerr << "The file cache:" << std::endl;
+        for(const auto& file: fileCache) {
+            std::cerr << file.first << " : " << util::toString(*file.second->module) << std::endl;
+        }
+
     }
 
     void claim(const std::string& fname) {
@@ -89,19 +112,25 @@ struct clang_pipeline::impl: public DelegateLogging {
         auto annofile = fname + ".anno";
 
         llvm::SMDiagnostic diag;
-        std::unique_ptr<llvm::Module> module{ llvm::ParseIRFile(bcfile, diag, llvm::getGlobalContext() ) };
+        std::shared_ptr<llvm::Module> module{ llvm::ParseIRFile(bcfile, diag, llvm::getGlobalContext() ) };
+        if(!module) return;
 
         std::ifstream annoStream(annofile, std::iostream::in | std::iostream::binary);
-        AnnotationContainer::ProtoPtr proto { new proto::AnnotationContainer() };
+        if(!annoStream) return;
+
+        AnnotationContainer::ProtoPtr proto { new proto::AnnotationContainer{} };
         proto->ParseFromIstream(&annoStream);
         AnnotationContainer::Ptr annotations = deprotobuffy(fn, *proto);
 
+        if(!annotations) return;
+
         fileCache[fname] = AnnotatedModule::Ptr{
-            new AnnotatedModule{ std::move(module), std::move(annotations) }
+            new AnnotatedModule{ module, annotations }
         };
     }
 
     void writeFor(const std::string& fname) {
+        std::cerr << "Writing " << fname << std::endl;
         auto bcfile = fname + ".bc";
         auto annofile = fname + ".anno";
 
@@ -110,18 +139,19 @@ struct clang_pipeline::impl: public DelegateLogging {
         std::string error;
         llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error);
         llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
+        std::cerr << error << std::endl;
 
         std::ofstream annoStream(annofile, std::iostream::out | std::iostream::binary);
 
         AnnotationContainer::ProtoPtr proto = protobuffy(annotatedModule->annotations);
         proto->SerializeToOstream(&annoStream);
-
-        claim(fname);
     }
 
     AnnotatedModule::Ptr get(const std::string& name) {
         auto it = fileCache.find(name);
         if(it != fileCache.end()) return it->second;
+
+        std::cerr << "FUCKA" << std::endl;
 
         readFor(name);
         it = fileCache.find(name);
@@ -130,12 +160,15 @@ struct clang_pipeline::impl: public DelegateLogging {
         return nullptr;
     }
 
-    void link(const CommandLine& args) {
+    void link(const clang::driver::InputArgList& args) {
+        std::cerr << "Linker called!" << std::endl;
         std::string moduleName;
-        clang::driver::InputArgList inputs(args.argv(), args.argv()+args.argc());
+
+        for(const auto& arg: args) std::cerr << arg->getAsString(args) << std::endl;
+
         for(const auto& arg: util::view(
-                                inputs.filtered_begin(clang::driver::options::OPT_o),
-                                inputs.filtered_end()
+                args.filtered_begin(clang::driver::options::OPT_o),
+                                args.filtered_end()
                              )) {
             for(const auto& subarg: arg->getValues()) {
                 moduleName = subarg;
@@ -146,18 +179,28 @@ struct clang_pipeline::impl: public DelegateLogging {
         AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
 
         for(const auto& arg: util::view(
-                                inputs.filtered_begin(clang::driver::options::OPT_INPUT),
-                                inputs.filtered_end()
+                                args.filtered_begin(clang::driver::options::OPT_INPUT),
+                                args.filtered_end()
                              )) {
+            std::cerr << "ARG" << std::endl;
             for(const auto& subarg: arg->getValues()) {
+                std::cerr << subarg << std::endl;
+
                 const auto& am = get(subarg);
+                std::cerr << am.get() << std::endl;
 
                 if(!am) {
-                    errs() << subarg << ": file or module not found" << endl;
+                    std::cerr << subarg << ": file or module not found" << std::endl;
                     continue;
                 }
 
+
+                std::cerr << util::toString(*am->module) << std::endl;
+
                 linker.LinkInModule(am->module.get());
+
+                errs() << *linker.getModule();
+
                 annotations->mergeIn(am->annotations);
                 claim(subarg);
             }
@@ -176,8 +219,10 @@ struct clang_pipeline::impl: public DelegateLogging {
 
     ~impl () {
         try {
+            claim("<output>");
             for(const auto& pfile : fileCache) {
                 writeFor(pfile.first);
+                // not claim anything, we are in the destructor anywayz
             }
         } catch (...) {
             errs() << "Something awful happened while writing intermediate results" << endl;
@@ -196,13 +241,11 @@ clang_pipeline::clang_pipeline(
 }
 
 void clang_pipeline::invoke(const command& cmd) {
-    if(cmd.operation == command::COMPILE) pimpl->compile(cmd.cl);
-    else if (cmd.operation == command::LINK) pimpl->link(cmd.cl);
+    if(cmd.operation == command::COMPILE) pimpl->compile(*cmd.cl);
+    else if (cmd.operation == command::LINK) pimpl->link(*cmd.cl);
 }
 
 void clang_pipeline::invoke(const std::vector<command>& cmds) {
-    using namespace std::placeholders;
-
     for(const auto& cmd: cmds) {
         invoke(cmd);
     }

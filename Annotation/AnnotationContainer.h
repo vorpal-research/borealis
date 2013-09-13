@@ -32,7 +32,7 @@ message AnnotationContainer {
 
 class AnnotationContainer {
     typedef std::vector<Annotation::Ptr> data_t;
-    data_t data;
+    data_t data_;
 public:
     using Ptr = std::shared_ptr<AnnotationContainer>;
     using ProtoPtr = std::unique_ptr<proto::AnnotationContainer>;
@@ -47,30 +47,34 @@ public:
     AnnotationContainer(const borealis::comments::GatherCommentsAction& act,
             const borealis::TermFactory::Ptr& tf) {
         const auto& comments = act.getComments();
-        data.reserve(comments.size());
+        data_.reserve(comments.size());
         for(const auto& comment: comments) {
-            data.push_back(fromParseResult(comment.first, comment.second, tf));
+            data_.push_back(fromParseResult(comment.first, comment.second, tf));
         }
     }
 
-    auto begin() QUICK_RETURN(data.begin());
-    auto begin() QUICK_CONST_RETURN(data.begin());
-    auto end() QUICK_RETURN(data.end());
-    auto end() QUICK_CONST_RETURN(data.begin());
+    auto begin() QUICK_RETURN(data_.begin());
+    auto begin() QUICK_CONST_RETURN(data_.begin());
+    auto end() QUICK_RETURN(data_.end());
+    auto end() QUICK_CONST_RETURN(data_.begin());
 
-    Annotation& operator[](size_t ix) { return *data[ix]; }
-    const Annotation& operator[](size_t ix) const { return *data.at(ix); }
+    Annotation& operator[](size_t ix) { return *data_[ix]; }
+    const Annotation& operator[](size_t ix) const { return *data_.at(ix); }
 
     void push_back(const Annotation::Ptr& ptr) {
-        data.push_back(ptr);
+        data_.push_back(ptr);
     }
 
     void push_back(Annotation::Ptr&& ptr) {
-        data.push_back(std::move(ptr));
+        data_.push_back(std::move(ptr));
     }
 
     void mergeIn(const AnnotationContainer::Ptr& other) {
-        data.insert(data.begin(), other->data.begin(), other->data.end());
+        data_.insert(data_.begin(), other->data_.begin(), other->data_.end());
+    }
+
+    const data_t& data() const {
+        return data_;
     }
 };
 

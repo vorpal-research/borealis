@@ -159,9 +159,13 @@ int gestalt::main(int argc, const char** argv) {
     clang_pipeline clang { "clang", diags };
     clang.assignLogger(*this);
 
+    std::cerr << compileCommands << std::endl;
+
     clang.invoke(compileCommands);
 
     auto annotatedModule = clang.result();
+
+    if(!annotatedModule) return OK;
 
     // collect passes
 
@@ -207,8 +211,9 @@ int gestalt::main(int argc, const char** argv) {
     llvm_pipeline llvm { module_ptr };
     llvm.assignLogger(*this);
 
-    llvm.add(annotatedModule->annotations);
-    llvm.add(new clang::FileManager(FileSystemOptions()));
+    llvm.add(*annotatedModule->annotations);
+    clang::FileManager files{ FileSystemOptions() };
+    llvm.add(files);
     for (StringRef pass : passes2run) {
         llvm.add(pass.str());
     }

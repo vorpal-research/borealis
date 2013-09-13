@@ -12,8 +12,7 @@
 
 #include <vector>
 
-#include "Actions/comments.h"
-#include "Anno/anno.h"
+#include "Annotation/AnnotationContainer.h"
 #include "Annotation/Annotation.h"
 #include "Logging/logger.hpp"
 #include "Passes/Tracker/SlotTrackerPass.h"
@@ -35,7 +34,7 @@ public:
     AnnotationManager() : llvm::ModulePass(ID) {};
     virtual ~AnnotationManager() {};
 
-    typedef DataProvider<borealis::comments::GatherCommentsAction> comments;
+    typedef DataProvider<borealis::AnnotationContainer> comments;
     typedef SlotTrackerPass slots;
     typedef std::vector< Annotation::Ptr > annotation_container;
 

@@ -39,6 +39,11 @@ static RegisterIntrinsic INTRINSIC_VALUE {
     "value"
 };
 
+static RegisterIntrinsic INTRINSIC_DECLARE {
+    function_type::INTRINSIC_DECLARE,
+    "declare"
+};
+
 static RegisterIntrinsic INTRINSIC_GLOBAL_DESCRIPTOR_TABLE {
     function_type::INTRINSIC_GLOBAL_DESCRIPTOR_TABLE,
     "globals"

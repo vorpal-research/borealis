@@ -12,6 +12,7 @@
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Option.h>
 #include <clang/Driver/Options.h>
+#include <clang/Driver/OptTable.h>
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/Program.h>
@@ -70,6 +71,7 @@ std::vector<command> interviewer::getCompileCommands() {
     using borealis::util::streams::error;
 
     std::vector<command> ret;
+    const auto& optTable = pimpl->theDriver->getOpts();
 
     if (!pimpl->theCompilation) {
         errs() << error("Fucked up, sorry :(") << endl;
@@ -82,7 +84,12 @@ std::vector<command> interviewer::getCompileCommands() {
             borealis::driver::command toPut;
             const auto& args = command->getArguments();
 
-            toPut.cl = CommandLine::keepAll(args.size(), args.data());
+            unsigned missingArgIndex, missingArgCount;
+
+            toPut.cl = std::shared_ptr<clang::driver::InputArgList>{
+                 optTable.ParseArgs(args.data(), args.data()+args.size(),
+                         missingArgIndex, missingArgCount)
+            };
 
             if(command->getSource().getKind() == clang::driver::Action::CompileJobClass ||
                     command->getSource().getKind() == clang::driver::Action::AssembleJobClass) {

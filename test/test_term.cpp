@@ -46,7 +46,7 @@ TEST(Term, classof) {
         a->setName("mock-arg");
 
         SlotTracker st(&m);
-        auto TF = FactoryNest(nullptr).Term;
+        auto TF = FactoryNest(&st).Term;
 
         auto t1 = TF->getArgumentTerm(a);
 

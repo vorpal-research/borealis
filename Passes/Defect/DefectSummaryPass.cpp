@@ -21,7 +21,7 @@
 
 namespace borealis {
 
-typedef DataProvider<clang::SourceManager> DPSourceManager;
+typedef DataProvider<clang::FileManager> DPFileManager;
 
 static std::string DumpOutputDefault = "";
 static std::string DumpOutputFileDefault = "%s.report";
@@ -38,20 +38,20 @@ void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<DefectManager>::addRequiredTransitive(AU);
-    AUX<DPSourceManager>::addRequiredTransitive(AU);
+    AUX<DPFileManager>::addRequiredTransitive(AU);
 
 #define HANDLE_CHECKER(Checker) \
     AUX<Checker>::addRequiredTransitive(AU);
 #include "Passes/Checker/Defines.def"
 }
 
-bool DefectSummaryPass::runOnModule(llvm::Module&) {
+bool DefectSummaryPass::runOnModule(llvm::Module& M) {
     using clang::SourceManager;
 
     auto& dm = GetAnalysis<DefectManager>::doit(this);
-    auto& sm = GetAnalysis<DPSourceManager>::doit(this).provide();
+    auto& sm = GetAnalysis<DPFileManager>::doit(this).provide();
 
-    auto* mainFileEntry = sm.getFileEntryForID(sm.getMainFileID());
+    auto* mainFileEntry = M.getModuleIdentifier().c_str();
 
     for (auto& defect : dm) {
         Locus origin = defect.location;
@@ -91,7 +91,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module&) {
 
     if (DumpOutput != DumpOutputDefault || DumpOutputFile != DumpOutputFileDefault) {
 
-        util::replace("%s", mainFileEntry->getName(), DumpOutputFile);
+        util::replace("%s", mainFileEntry, DumpOutputFile);
 
         if ("json" == DumpOutput) {
             std::ofstream json(DumpOutputFile);

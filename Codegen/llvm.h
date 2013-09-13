@@ -28,7 +28,7 @@ void setDebugLocusWithCopiedScope(
 llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr);
 void* MDNode2Ptr(llvm::MDNode* ptr);
 
-llvm::StringRef getRawSource(const clang::SourceManager& sm, const LocusRange& range);
+llvm::StringRef getRawSource(const clang::FileManager& sm, const LocusRange& range);
 
 unsigned long long getTypeSizeInElems(llvm::Type* type);
 
