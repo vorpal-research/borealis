@@ -22,10 +22,14 @@ class ExecutionContext {
 
     USING_SMT_LOGIC(Z3);
     typedef Z3::ExprFactory ExprFactory;
+    typedef z3_::logic::Function<Pointer(Pointer)> BoundsFunction;
+    typedef std::vector<std::pair<Pointer, size_t> >  PointersBounds;
 
     ExprFactory& factory;
     std::unordered_map<std::string, MemArray> memArrays;
     unsigned long long currentPtr;
+    PointersBounds bounds_;
+    BoundsFunction boundsFunction_;
 
     static constexpr auto MEMORY_ID = "$$__MEMORY__$$";
     MemArray memory() const {
@@ -65,9 +69,10 @@ public:
         return memory();
     }
 
-    inline Pointer getDistinctPtr(size_t offsetSize = 1U) {
+    inline Pointer getDistinctPtr(const Pointer& p, size_t offsetSize = 1U) {
         auto ret = factory.getPtrConst(currentPtr);
         currentPtr += offsetSize;
+        bounds_.emplace_back(p, offsetSize);
         return ret;
     }
 
@@ -146,6 +151,12 @@ public:
         }
 
         return res;
+    }
+
+////////////////////////////////////////////////////////////////////////////////
+
+    Pointer getBound(const Pointer& p) {
+        return boundsFunction_(p);
     }
 
 ////////////////////////////////////////////////////////////////////////////////

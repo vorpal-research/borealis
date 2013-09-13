@@ -23,13 +23,11 @@ class AllocaInstVisitor : public llvm::InstVisitor<AllocaInstVisitor> {
 
 public:
 
-    AllocaInstVisitor(CheckOutOfBoundsPass* pass, llvm::ValueSymbolTable* vst)
-                        : pass(pass), arrays_(), vst_(vst) {}
+    AllocaInstVisitor(CheckOutOfBoundsPass* pass) : pass(pass), arrays_() {}
 
     void visitAllocaInst(llvm::AllocaInst &I) {
         if (I.getAllocatedType()->isArrayTy()) {
-            auto value = vst_->lookup(I.getName());
-            arrays_.push_back(value);
+            arrays_.push_back(&I);
         }
     }
 
@@ -42,8 +40,6 @@ private:
 
     CheckOutOfBoundsPass* pass;
     std::vector<llvm::Value*> arrays_;
-    llvm::ValueSymbolTable* vst_;
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +99,7 @@ private:
         using llvm::GetElementPtrInst;
         for (const auto& array: arrays) {
             auto aliasRes = pass->AA->alias(array, value.second);
-            if (aliasRes == AliasAnalysis::AliasResult::MustAlias) {
+            if (aliasRes == AliasAnalysis::AliasResult::MayAlias) {
                 auto pointedType = GetElementPtrInst::getIndexedType(array->getType(),
                                                     std::vector<llvm::Constant*>());
                 auto arrType = llvm::dyn_cast<llvm::ArrayType>(pointedType);
@@ -199,7 +195,6 @@ CheckOutOfBoundsPass::CheckOutOfBoundsPass(llvm::Pass* pass) :
         globalArrays_() {}
 
 bool CheckOutOfBoundsPass::doInitialization(llvm::Module& module) {
-    std::cout << "hi" << std::endl;
     auto end = module.getGlobalList().end();
     for ( auto iter = module.getGlobalList().begin(); iter != end; ++iter) {
         auto type = (*iter).getType();
@@ -221,10 +216,6 @@ void CheckOutOfBoundsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
-    for (auto global: globalArrays_) {
-        std::cout << *global->getType() << " : " << *global << std::endl;
-    }
-
     AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
@@ -233,7 +224,7 @@ bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);
 
-    AllocaInstVisitor aiv(this, &F.getValueSymbolTable());
+    AllocaInstVisitor aiv(this);
     aiv.visit(F);
     GepInstVisitor giv(this, aiv);
     giv.visit(F);

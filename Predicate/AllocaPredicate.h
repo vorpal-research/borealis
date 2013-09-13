@@ -83,7 +83,7 @@ struct SMTImpl<Impl, AllocaPredicate> {
             BYE_BYE(Bool, "Encountered alloca with non-integer element number");
         }
 
-        return lhvp == ctx->getDistinctPtr(elems);
+        return lhvp == ctx->getDistinctPtr(lhvp, elems);
     }
 };
 #include "Util/unmacros.h"
