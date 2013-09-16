@@ -217,6 +217,8 @@ public:
 
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         using namespace llvm;
+        using borealis::util::take;
+        using borealis::util::view;
 
         llvm::Type* baseType = base->getType();
 
@@ -230,9 +232,34 @@ public:
         for (auto* idx : idxs) {
             ASSERT(type, "Incorrect GEP type indices");
 
-            Term::Ptr by = getValueTerm(idx);
-            Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
-            shifts.push_back({by, size});
+            if (auto* structType = dyn_cast<llvm::StructType>(type)) {
+                if (auto* cInt = dyn_cast<ConstantInt>(idx)) {
+                    auto cIdx = cInt->getLimitedValue();
+
+                    auto res = 0ULL;
+                    for (auto* structElem :
+                            take(cIdx, view(structType->element_begin(), structType->element_end()))) {
+                        res += getTypeSizeInElems(structElem);
+                    }
+
+                    Term::Ptr by = getIntTerm(res);
+                    Term::Ptr size = getIntTerm(1);
+                    shifts.push_back({by, size});
+
+                } else {
+                    BYE_BYE(Term::Ptr, "Non-constant index in struct GEP");
+                }
+
+            } else if (auto* arrayType = dyn_cast<llvm::ArrayType>(type)) {
+                Term::Ptr by = getValueTerm(idx);
+                Term::Ptr size = getIntTerm(getTypeSizeInElems(arrayType->getArrayElementType()));
+                shifts.push_back({by, size});
+
+            } else {
+                Term::Ptr by = getValueTerm(idx);
+                Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
+                shifts.push_back({by, size});
+            }
 
             typeIdxs.push_back(idx);
             type = GetElementPtrInst::getIndexedType(baseType, typeIdxs);

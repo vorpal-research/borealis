@@ -31,7 +31,7 @@ class PassModularizerImpl : public SCCPass {
 
     subptr createSubPass(llvm::Module& M) {
         auto res = util::uniq( new SubPass(this) );
-        res->doInitialization(M);
+        res->doInitialization(M); // FIXME: do not do initialization more than once?
         return std::move(res);
     }
 
