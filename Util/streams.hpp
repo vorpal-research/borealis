@@ -313,14 +313,13 @@ struct containerPrettyPrinter {
         typedef elemPrettyPrinter<Elem> epp;
 
         using namespace std::impl_;
-        using borealis::util::view;
+        using borealis::util::head;
+        using borealis::util::tail;
 
         s << LB;
         if (!con.empty()) {
-            ConstIter iter = con.begin();
-            const Elem& el = *iter++;
-            epp::doit(s, el);
-            for (const auto& e : view(iter, con.end())) {
+            epp::doit(s, head(con));
+            for (const auto& e : tail(con)) {
                 s << ELEMENT_DELIMITER;
                 epp::doit(s, e);
             }

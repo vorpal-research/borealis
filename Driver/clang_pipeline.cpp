@@ -25,9 +25,11 @@
 #include <fstream>
 #include <unordered_map>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Driver/clang_pipeline.h"
 
 #include "Factory/Nest.h"
+#include "Passes/Transform/MetaInserter.h"
 #include "Protobuf/Converter.hpp"
 
 #include "Util/util.hpp"
@@ -47,17 +49,21 @@ struct clang_pipeline::impl: public DelegateLogging {
     impl(clang_pipeline* abs): DelegateLogging(*abs), fn(nullptr) {};
 
     void compile(const clang::driver::InputArgList& args) {
-        std::cerr << "cc ";
-
         std::unique_ptr<CompilerInvocation> CI { new CompilerInvocation() };
         std::vector<const char*> ccArgs;
         ccArgs.reserve(args.getNumInputArgStrings());
+
         for(auto i = 0U, size = args.getNumInputArgStrings(); i < size; ++i) {
             auto* arg = args.getArgString(i);
             ccArgs.push_back(arg);
-            std::cerr << arg << " ";
         }
-        std::cerr << std::endl;
+
+        {
+            auto info = infos();
+            info << "cc " << borealis::util::head(ccArgs);
+            for(const auto& arg: borealis::util::tail(ccArgs)) info << " " << arg;
+            info << endl;
+        }
 
         ASSERT(
             CompilerInvocation::CreateFromArgs(
@@ -83,24 +89,14 @@ struct clang_pipeline::impl: public DelegateLogging {
         ASSERTC(ci.ExecuteAction(compile_to_llvm));
         std::shared_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
 
+        MetaInserter::liftAllDebugIntrinsics(*module);
+
         ASSERTC(ci.ExecuteAction(gatherAnnotations));
         AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
-
-        std::cerr << "Gathered module" << ci.getFrontendOpts().OutputFile << ": "
-                << std::endl << util::toString(*module) << std::endl;
 
         fileCache[ci.getFrontendOpts().OutputFile] = AnnotatedModule::Ptr{
             new AnnotatedModule{ module, annotations }
         };
-
-        std::cerr << "Gathered module" << ci.getFrontendOpts().OutputFile << ": "
-                << std::endl << util::toString(*get(ci.getFrontendOpts().OutputFile)->module) << std::endl;
-
-        std::cerr << "The file cache:" << std::endl;
-        for(const auto& file: fileCache) {
-            std::cerr << file.first << " : " << util::toString(*file.second->module) << std::endl;
-        }
-
     }
 
     void claim(const std::string& fname) {
@@ -139,7 +135,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         std::string error;
         llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error);
         llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
-        std::cerr << error << std::endl;
+        errs() << error << endl;
 
         std::ofstream annoStream(annofile, std::iostream::out | std::iostream::binary);
 
@@ -151,8 +147,6 @@ struct clang_pipeline::impl: public DelegateLogging {
         auto it = fileCache.find(name);
         if(it != fileCache.end()) return it->second;
 
-        std::cerr << "FUCKA" << std::endl;
-
         readFor(name);
         it = fileCache.find(name);
         if(it != fileCache.end()) return it->second;
@@ -161,10 +155,9 @@ struct clang_pipeline::impl: public DelegateLogging {
     }
 
     void link(const clang::driver::InputArgList& args) {
-        std::cerr << "Linker called!" << std::endl;
         std::string moduleName;
 
-        for(const auto& arg: args) std::cerr << arg->getAsString(args) << std::endl;
+        for(const auto& arg: args) errs() << arg->getAsString(args) << endl;
 
         for(const auto& arg: util::view(
                 args.filtered_begin(clang::driver::options::OPT_o),
@@ -175,39 +168,33 @@ struct clang_pipeline::impl: public DelegateLogging {
             }
         }
 
-        llvm::Linker linker("wrapper", moduleName, llvm::getGlobalContext(), llvm::Linker::DestroySource);
+        llvm::Linker linker("wrapper", moduleName, llvm::getGlobalContext(), llvm::Linker::PreserveSource);
         AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
 
         for(const auto& arg: util::view(
                                 args.filtered_begin(clang::driver::options::OPT_INPUT),
                                 args.filtered_end()
                              )) {
-            std::cerr << "ARG" << std::endl;
             for(const auto& subarg: arg->getValues()) {
-                std::cerr << subarg << std::endl;
-
                 const auto& am = get(subarg);
-                std::cerr << am.get() << std::endl;
-
                 if(!am) {
-                    std::cerr << subarg << ": file or module not found" << std::endl;
+                    errs() << subarg << ": file or module not found" << endl;
                     continue;
                 }
 
-
-                std::cerr << util::toString(*am->module) << std::endl;
-
                 linker.LinkInModule(am->module.get());
-
-                errs() << *linker.getModule();
 
                 annotations->mergeIn(am->annotations);
                 claim(subarg);
             }
         }
 
+        auto module = util::uniq(linker.releaseModule());
+        IntrinsicsManager::getInstance().updateForModule(*module);
+        MetaInserter::unliftAllDebugIntrinsics(*module);
+
         fileCache["<output>"] = AnnotatedModule::Ptr{
-            new AnnotatedModule{ util::uniq(linker.releaseModule()), std::move(annotations) }
+            new AnnotatedModule{ std::move(module), std::move(annotations) }
         };
     }
 
@@ -236,7 +223,7 @@ clang_pipeline::clang_pipeline(
         const std::string&,
         const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags):
       pimpl{ new impl{ this } } {
-
+    pimpl->assignLogger(*this);
     pimpl->ci.setDiagnostics(diags.getPtr());
 }
 

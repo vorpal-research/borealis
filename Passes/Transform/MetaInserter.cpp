@@ -67,7 +67,7 @@ llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) 
         );
 
         auto* current = intrinsic_manager.createIntrinsic(
-            function_type::INTRINSIC_VALUE,
+            function_type::INTRINSIC_DECLARE,
             toString(*addr->getType()->getPointerElementType()),
             ty,
             &M
@@ -99,6 +99,7 @@ llvm::Value* MetaInserter::unliftDebugIntrinsic(llvm::Module& M, llvm::Value* ci
         if(intrinsic_manager.getIntrinsicType(*inst) == function_type::INTRINSIC_DECLARE) {
             auto* val = inst->getArgOperand(0);
             auto* varMD = inst->getMetadata("var");
+            inst->dump();
 
             auto llvmIntr = llvm::Intrinsic::getDeclaration(&M, llvm::Intrinsic::dbg_declare);
 

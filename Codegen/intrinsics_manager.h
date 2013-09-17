@@ -65,6 +65,7 @@ public:
 
     void registerIntrinsic(const IntrinsicInfo& info) {
         info_cache[info.type] = info;
+        name_cache[info.name] = info.type;
     }
 
     void registerResolver(type_resolver& resolver) {
@@ -81,9 +82,12 @@ public:
 
     const std::string getFuncName(function_type ft, const std::string& ext) const;
 
+    void updateForModule(llvm::Module& M);
+
 private:
 
-    typedef std::unordered_map< std::pair<function_type, llvm::FunctionType*>, llvm::Function*> typed_intrinsics_cache;
+    typedef std::unordered_map< std::tuple<function_type, llvm::FunctionType*, llvm::Module*>, llvm::Function*> typed_intrinsics_cache;
+    typedef std::unordered_map< std::string, function_type > function_name_cache;
     typedef std::unordered_map<llvm::Function*, function_type> function_type_cache;
     typedef std::unordered_map<function_type, IntrinsicInfo> intrinsic_info_cache;
     typedef std::list<type_resolver> type_resolvers;
@@ -91,6 +95,7 @@ private:
     typed_intrinsics_cache intrinsics_cache;
     function_type_cache type_cache;
     intrinsic_info_cache info_cache;
+    function_name_cache name_cache;
 
     static function_type default_resolver(const IntrinsicsManager& m, const llvm::CallInst& CI) {
         return m.getIntrinsicType(CI.getCalledFunction());

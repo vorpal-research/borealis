@@ -17,9 +17,12 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
         llvm::FunctionType* funtype,
         llvm::Module* module) {
     using borealis::util::containsKey;
+    auto key = std::make_tuple(ft, funtype, module);
 
-    if (containsKey(intrinsics_cache, {ft, funtype})) {
-        return intrinsics_cache.at({ft, funtype});
+    std::cerr << util::toString(type_cache) << std::endl;
+
+    if (containsKey(intrinsics_cache, key)) {
+        return intrinsics_cache.at(key);
     }
 
     auto* f = llvm::Function::Create(
@@ -29,7 +32,7 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
             module
     );
 
-    intrinsics_cache[{ft, funtype}] = f;
+    intrinsics_cache[key] = f;
     type_cache[f] = ft;
 
     return f;
@@ -75,6 +78,23 @@ IntrinsicsManager::IntrinsicInfo IntrinsicsManager::getIntrinsicInfo(function_ty
     }
 
     BYE_BYE(IntrinsicsManager::IntrinsicInfo, "Unknown function type");
+}
+
+void IntrinsicsManager::updateForModule(llvm::Module& M) {
+    type_cache.clear();
+    intrinsics_cache.clear();
+
+    for(llvm::Function& F : M) {
+        llvm::StringRef borealis, name, ext;
+        std::tie(borealis, name) = F.getName().split('.');
+        std::tie(name, ext) = name.split('.');
+        if(borealis == "borealis" && !name.empty()) {
+            for(auto type: util::at(name_cache, name)) {
+                type_cache[&F] = type;
+                intrinsics_cache[std::make_tuple(type, F.getFunctionType(), &M)] = &F;
+            }
+        }
+    }
 }
 
 } // namespace borealis

@@ -41,6 +41,8 @@ public:
         bool operator()(const T& v) const { return static_cast<bool>(v); }
     };
 
+    CollectionView(const CollectionView&) = default;
+    CollectionView(CollectionView&&) = default;
     CollectionView(ContainerIter begin, ContainerIter end) : begin_(begin), end_(end) {}
     CollectionView(std::pair<ContainerIter, ContainerIter> iters) : begin_(iters.first), end_(iters.second) {}
 
@@ -66,9 +68,35 @@ public:
         return filter(defaultPredicate());
     }
 
+    CollectionView<ContainerIter> drop(size_t n) const {
+        auto nbegin = begin_;
+        for(auto i = 0U; i < n && nbegin != end_; ++i, ++nbegin);
+        return CollectionView{ nbegin, end_ };
+    }
+
+    CollectionView<ContainerIter> take(size_t n) const {
+        auto nend = begin_;
+        for(auto i = 0U; i < n && nend != end_; ++i, ++nend);
+        return CollectionView{ begin_, nend };
+    }
+
     template<class Con>
     Con to() {
         return Con(this->begin(), this->end());
+    }
+
+    typedef typename std::iterator_traits<ContainerIter>::value_type value_type;
+
+    std::list<value_type> toList() {
+        return to<std::list<value_type>>();
+    }
+
+    std::vector<value_type> toVector() {
+        return to<std::vector<value_type>>();
+    }
+
+    std::set<value_type> toSet() {
+        return to<std::set<value_type>>();
     }
 };
 

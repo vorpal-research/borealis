@@ -14,6 +14,20 @@
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
+// Fixing llvm stupidity
+// XXX: move this spec somewhere else if you want to reuse scc_iterator
+// with util::view
+namespace std {
+    template<class T, class GT>
+    struct iterator_traits<llvm::scc_iterator<T, GT>> {
+        typedef std::forward_iterator_tag iterator_category;
+        typedef std::vector<typename GT::NodeType> value_type;
+        typedef ptrdiff_t   difference_type;
+        typedef value_type* pointer;
+        typedef value_type& reference;
+    };
+}
+
 namespace borealis {
 
 SCCPass::SCCPass(char& ID) : llvm::ModulePass(ID) {}
