@@ -17,31 +17,27 @@ namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
 class GepInstVisitor : public llvm::InstVisitor<GepInstVisitor> {
 
 public:
 
     GepInstVisitor(CheckOutOfBoundsPass* pass) : pass(pass) {}
 
-
-    void visitGetElementPtrInst(llvm::GetElementPtrInst &GI) {
+    void visitGetElementPtrInst(llvm::GetElementPtrInst& GI) {
         if (checkOutOfBounds(GI)) {
             reportOutOfBounds(GI);
         }
     }
 
-
 private:
 
     bool checkOutOfBounds(llvm::Instruction& where) {
 
-
         PredicateState::Ptr q = (
             pass->FN.State *
             pass->FN.Predicate->getInequalityPredicate(
-                    pass->FN.Term->getValueTerm(&where),
-                    pass->FN.Term->getInvalidPtrTerm()
+                pass->FN.Term->getValueTerm(&where),
+                pass->FN.Term->getInvalidPtrTerm()
             )
         )();
 
@@ -68,11 +64,11 @@ private:
     }
 
     void reportOutOfBounds(llvm::Instruction& where) {
-        pass->DM->addDefect(DefectType::BUF_05, &where);
+        pass->DM->addDefect(DefectType::BUF_01, &where);
     }
 
-
 private:
+
     CheckOutOfBoundsPass* pass;
 
 };
