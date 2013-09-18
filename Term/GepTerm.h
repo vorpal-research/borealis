@@ -129,9 +129,9 @@ struct SMTImpl<Impl, GepTerm> {
         return ef.if_(ef.isInvalidPtrExpr(p) || (shift >= bound))
                  .then_(ef.getInvalidPtr())
                  .else_(
-                       (p + shift).withAxiom(
-                            !ef.isInvalidPtrExpr(p + shift)
-                        )
+                     (p + shift).withAxiom(
+                         !ef.isInvalidPtrExpr(p + shift)
+                     )
                  );
     }
 };

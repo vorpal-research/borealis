@@ -30,7 +30,7 @@ class InvalidPtrTerm: public borealis::Term {
         Term(
             class_tag(*this),
             type,
-            "<invalidptr>"
+            "<invalid>"
         ) {};
 
 public:

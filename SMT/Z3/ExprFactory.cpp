@@ -95,7 +95,7 @@ Z3::MemArray ExprFactory::getNoMemoryArray() {
 }
 
 Z3::Pointer ExprFactory::getInvalidPtr() {
-    return getPtrConst(0xffffffff);
+    return getPtrConst(~0U);
 }
 
 Z3::Bool ExprFactory::isInvalidPtrExpr(Z3::Pointer ptr) {
