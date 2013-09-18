@@ -391,6 +391,7 @@ public:
     typedef ModelElem value_type;
     typedef ModelElem& reference;
     typedef ModelElem* pointer;
+    typedef ptrdiff_t difference_type;
 
     explicit ModelIterator(const Env& env, bool isEnd = false) :
             env_(env),

@@ -8,6 +8,7 @@
 #include <llvm/Support/InstVisitor.h>
 
 #include "Passes/Checker/CheckUndefValuesPass.h"
+#include "Codegen/intrinsics_manager.h"
 
 namespace borealis {
 
@@ -22,6 +23,11 @@ public:
     void visitInstruction(llvm::Instruction& I) {
         using namespace llvm;
         using borealis::util::view;
+
+        auto& intrinsic_manager = borealis::IntrinsicsManager::getInstance();
+        if(auto call = dyn_cast<llvm::CallInst>(&I))
+            if(intrinsic_manager.getIntrinsicType(*call) != function_type::UNKNOWN)
+                return;
 
         for (Value* op : view(I.op_begin(), I.op_end())) {
             if (isa<UndefValue>(op)) {

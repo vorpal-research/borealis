@@ -19,17 +19,15 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
     using borealis::util::containsKey;
     auto key = std::make_tuple(ft, funtype, module);
 
-    std::cerr << util::toString(type_cache) << std::endl;
-
     if (containsKey(intrinsics_cache, key)) {
         return intrinsics_cache.at(key);
     }
 
     auto* f = llvm::Function::Create(
-            funtype,
-            llvm::GlobalValue::ExternalLinkage,
-            getFuncName(ft, ext),
-            module
+        funtype,
+        llvm::GlobalValue::ExternalLinkage,
+        getFuncName(ft, ext),
+        module
     );
 
     intrinsics_cache[key] = f;
@@ -85,9 +83,9 @@ void IntrinsicsManager::updateForModule(llvm::Module& M) {
     intrinsics_cache.clear();
 
     for(llvm::Function& F : M) {
-        llvm::StringRef borealis, name, ext;
+        llvm::StringRef borealis, name;
         std::tie(borealis, name) = F.getName().split('.');
-        std::tie(name, ext) = name.split('.');
+        std::tie(name, std::ignore) = name.split('.');
         if(borealis == "borealis" && !name.empty()) {
             for(auto type: util::at(name_cache, name)) {
                 type_cache[&F] = type;

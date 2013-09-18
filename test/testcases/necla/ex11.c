@@ -6,6 +6,7 @@ int main(){
 
    int i;
 
+// @assume i == (23 + 42)
 
    while(__NONDET__()){
      

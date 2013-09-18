@@ -83,7 +83,6 @@ TEST_P(WrapperTest, basic) {
         .withArg("---opt:-dump-output=json")
         .withArg("---opt:-dump-output-file=" + actualF)
         .withArgs(additionalArgs)
-        .withArg("-c")
         .withArg(inputF)
         .run();
 

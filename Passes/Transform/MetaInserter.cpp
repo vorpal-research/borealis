@@ -10,82 +10,120 @@
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
+#include "Util/macros.h"
+
+#define ASSERTA(wha, mes) ASSERT(wha, #wha " in " + mes)
+
 namespace borealis {
 
 MetaInserter::MetaInserter() : ModulePass(ID) {}
 
 MetaInserter::~MetaInserter() {}
 
+static llvm::Value* mkBorealisValue(llvm::Module&M, llvm::Instruction* existingCall,
+        llvm::MDNode* var, llvm::Value* offset, llvm::Value* val) {
+    auto& intrinsic_manager = IntrinsicsManager::getInstance();
+    using namespace borealis::util;
+    using llvm::dyn_cast;
+
+    llvm::Type* types[]{ offset->getType(), val->getType() };
+    auto* ty = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(M.getContext()),
+        llvm::makeArrayRef(types),
+        false
+    );
+
+    auto* current = intrinsic_manager.createIntrinsic(
+        function_type::INTRINSIC_VALUE,
+        toString(*val->getType()),
+        ty,
+        &M
+    );
+
+    llvm::Value* args[]{ offset, val };
+    auto* newCall = llvm::CallInst::Create(
+        current,
+        llvm::makeArrayRef(args),
+        "",
+        existingCall
+    );
+    newCall->setMetadata("var", var);
+    newCall->setDebugLoc(existingCall->getDebugLoc());
+    newCall->setMetadata("dbg", existingCall->getMetadata("dbg"));
+
+    existingCall->replaceAllUsesWith(newCall);
+    existingCall->eraseFromParent();
+    return newCall;
+}
+
+static llvm::Value* mkBorealisDeclare(llvm::Module&M, llvm::Instruction* existingCall,
+        llvm::MDNode* var, llvm::Value* addr) {
+    auto& intrinsic_manager = IntrinsicsManager::getInstance();
+    using namespace borealis::util;
+    using llvm::dyn_cast;
+
+    auto* ty = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(M.getContext()),
+        addr->getType(),
+        false
+    );
+
+    auto* current = intrinsic_manager.createIntrinsic(
+        function_type::INTRINSIC_DECLARE,
+        toString(*addr->getType()->getPointerElementType()),
+        ty,
+        &M
+    );
+
+    auto* newCall = llvm::CallInst::Create(
+        current,
+        addr,
+        "",
+        existingCall
+    );
+    newCall->setDebugLoc(existingCall->getDebugLoc());
+    newCall->setMetadata("dbg", existingCall->getMetadata("dbg"));
+    newCall->setMetadata("var", var);
+
+    existingCall->replaceAllUsesWith(newCall);
+    existingCall->eraseFromParent();
+    return newCall;
+}
+
 llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) {
     using namespace borealis::util;
     using llvm::dyn_cast;
-    auto& intrinsic_manager = IntrinsicsManager::getInstance();
+
 
     if(auto* call = dyn_cast<llvm::DbgValueInst>(ci)) {
         auto* var = call->getVariable();
         auto* offset = call->getArgOperand(1);
         auto* val = call->getValue();
 
-        llvm::Type* types[]{ offset->getType(), val->getType() };
-        auto* ty = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(M.getContext()),
-            llvm::makeArrayRef(types),
-            false
-        );
+        ASSERTA(var != nullptr, util::toString(*call));
+        ASSERTA(offset != nullptr, util::toString(*call));
 
-        auto* current = intrinsic_manager.createIntrinsic(
-            function_type::INTRINSIC_VALUE,
-            toString(*val->getType()),
-            ty,
-            &M
-        );
+        if(!val) { // the value have been optimized out
+            return mkBorealisValue(M, call, var, offset,
+                    llvm::UndefValue::get(llvm::Type::getMetadataTy(M.getContext())));
+        }
 
-        llvm::Value* args[]{ offset, val };
-        auto* newCall = llvm::CallInst::Create(
-            current,
-            llvm::makeArrayRef(args),
-            "",
-            call
-        );
-        newCall->setDebugLoc(call->getDebugLoc());
-        newCall->setMetadata("dbg", call->getMetadata("dbg"));
-        newCall->setMetadata("var", var);
-
-        call->replaceAllUsesWith(newCall);
-        call->eraseFromParent();
-        return newCall;
+        return mkBorealisValue(M, call, var, offset, val);
     }
 
     if(auto* call = dyn_cast<llvm::DbgDeclareInst>(ci)) {
         auto* var = call->getVariable();
         auto* addr = call->getAddress();
 
-        auto* ty = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(M.getContext()),
-            addr->getType(),
-            false
-        );
+        ASSERTA(var != nullptr, util::toString(*call))
 
-        auto* current = intrinsic_manager.createIntrinsic(
-            function_type::INTRINSIC_DECLARE,
-            toString(*addr->getType()->getPointerElementType()),
-            ty,
-            &M
-        );
+        if(!addr) { // the value have been optimized out
+            return mkBorealisValue(M, call, var,
+                    llvm::ConstantInt::get(llvm::IntegerType::getInt64Ty(M.getContext()), 0, false),
+                    llvm::UndefValue::get(llvm::Type::getMetadataTy(M.getContext())));
+        }
 
-        auto* newCall = llvm::CallInst::Create(
-            current,
-            addr,
-            "",
-            call
-        );
-        newCall->setDebugLoc(call->getDebugLoc());
-        newCall->setMetadata("dbg", call->getMetadata("dbg"));
-        newCall->setMetadata("var", var);
-
-        call->replaceAllUsesWith(newCall);
-        call->eraseFromParent();
-        return newCall;
+        return mkBorealisDeclare(M, call, var, addr);
     }
 
     return ci;
@@ -178,6 +216,8 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
     using borealis::util::viewContainer;
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
+    errs() << "MetaInserter received module:" << endl;
+    errs() << M << endl;
 
     llvm::DebugInfoFinder dfi;
     dfi.processModule(M);
@@ -228,6 +268,8 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
 
     return false;
 }
+
+#include "Util/unmacros.h"
 
 char MetaInserter::ID;
 static RegisterPass<MetaInserter>
