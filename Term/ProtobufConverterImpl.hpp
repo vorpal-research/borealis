@@ -18,6 +18,7 @@
 #include "Protobuf/Gen/Term/CmpTerm.pb.h"
 #include "Protobuf/Gen/Term/ConstTerm.pb.h"
 #include "Protobuf/Gen/Term/GepTerm.pb.h"
+#include "Protobuf/Gen/Term/InvalidPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/LoadTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBoolConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBuiltinTerm.pb.h"
@@ -229,6 +230,25 @@ struct protobuf_traits_impl<GepTerm> {
         }
 
         return Term::Ptr{ new GepTerm(type, base, shifts, asString) };
+    }
+};
+
+
+template<>
+struct protobuf_traits_impl<InvalidPtrTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::InvalidPtrTerm> toProtobuf(const InvalidPtrTerm&) {
+        return util::uniq(new proto::InvalidPtrTerm());
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest&,
+            Type::Ptr type,
+            const std::string&,
+            const proto::InvalidPtrTerm&) {
+        return Term::Ptr{ new InvalidPtrTerm(type) };
     }
 };
 

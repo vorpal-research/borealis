@@ -126,12 +126,12 @@ struct SMTImpl<Impl, GepTerm> {
 
         Pointer bound = ctx->getBound(p);
 
-        return ef.if_(ef.isInvalidPtrExpr(p) || shift >= bound)
+        return ef.if_(ef.isInvalidPtrExpr(p) || (shift >= bound))
                  .then_(ef.getInvalidPtr())
                  .else_(
-                     (p + shift).withAxiom(
-                         !ef.isInvalidPtrExpr(p + shift)
-                     )
+                       (p + shift).withAxiom(
+                            !ef.isInvalidPtrExpr(p + shift)
+                        )
                  );
     }
 };

@@ -336,6 +336,12 @@ public:
         };
     }
 
+    Term::Ptr getInvalidPtrTerm() {
+        return Term::Ptr{
+            new InvalidPtrTerm(TyF->getUnknownType())
+        };
+    }
+
     static TermFactory::Ptr get(
             SlotTracker* st,
             TypeFactory::Ptr TyF) {

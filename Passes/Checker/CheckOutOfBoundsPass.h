@@ -8,15 +8,12 @@
 #ifndef CHECKOUTOFBOUNDPASS_H_
 #define CHECKOUTOFBOUNDPASS_H_
 
-#include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/Pass.h>
 
 #include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager.h"
-#include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
-#include "Passes/Tracker/MetaInfoTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
@@ -28,7 +25,6 @@ class CheckOutOfBoundsPass :
         public ShouldBeModularized {
 
     friend class GepInstVisitor;
-    friend class AllocaInstVisitor;
 
 public:
 
@@ -40,21 +36,16 @@ public:
 
     CheckOutOfBoundsPass();
     CheckOutOfBoundsPass(llvm::Pass* pass);
-    virtual bool doInitialization(llvm::Module& module) override;
     virtual bool runOnFunction(llvm::Function& F) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~CheckOutOfBoundsPass();
 
 private:
 
-    llvm::AliasAnalysis* AA;
     DefectManager* DM;
     PredicateStateAnalysis* PSA;
 
     FactoryNest FN;
-
-    std::vector<llvm::Value*> globalArrays_;
-
 };
 
 } /* namespace borealis */
