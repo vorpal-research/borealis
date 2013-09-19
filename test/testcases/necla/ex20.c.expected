@@ -1,16 +1,1 @@
-
-[
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex20.c",
-			"loc" : 
-			{
-				"col" : 7,
-				"line" : 19
-			}
-		},
-		"type" : "NDF-01"
-	}
-]
+[]

@@ -8,19 +8,6 @@
 			"loc" : 
 			{
 				"col" : 5,
-				"line" : 4
-			}
-		},
-		"type" : "NDF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/aegis/ini03_03.c",
-			"loc" : 
-			{
-				"col" : 5,
 				"line" : 5
 			}
 		},

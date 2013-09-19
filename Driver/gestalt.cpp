@@ -152,14 +152,13 @@ int gestalt::main(int argc, const char** argv) {
     // infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
 
     if (!skipClang) if (nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
+    if(compileCommands.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
 
     // prep for borealis business
     // compile sources to llvm::Module
 
     clang_pipeline clang { "clang", diags };
     clang.assignLogger(*this);
-
-    std::cerr << compileCommands << std::endl;
 
     clang.invoke(compileCommands);
 

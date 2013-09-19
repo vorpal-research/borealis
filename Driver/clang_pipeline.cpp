@@ -126,7 +126,7 @@ struct clang_pipeline::impl: public DelegateLogging {
     }
 
     void writeFor(const std::string& fname) {
-        std::cerr << "Writing " << fname << std::endl;
+        infos() << "Writing " << fname << endl;
         auto bcfile = fname + ".bc";
         auto annofile = fname + ".anno";
 
@@ -157,12 +157,17 @@ struct clang_pipeline::impl: public DelegateLogging {
     void link(const clang::driver::InputArgList& args) {
         std::string moduleName;
 
-        for(const auto& arg: args) errs() << arg->getAsString(args) << endl;
+        {
+            auto info = infos();
+            info << "ld " << borealis::util::head(args)->getAsString(args);
+            for(const auto& arg: borealis::util::tail(args)) info << " " << arg->getAsString(args);
+            info << endl;
+        }
 
         for(const auto& arg: util::view(
-                args.filtered_begin(clang::driver::options::OPT_o),
-                                args.filtered_end()
-                             )) {
+            args.filtered_begin(clang::driver::options::OPT_o),
+            args.filtered_end()
+        )) {
             for(const auto& subarg: arg->getValues()) {
                 moduleName = subarg;
             }
@@ -172,13 +177,13 @@ struct clang_pipeline::impl: public DelegateLogging {
         AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
 
         for(const auto& arg: util::view(
-                                args.filtered_begin(clang::driver::options::OPT_INPUT),
-                                args.filtered_end()
-                             )) {
+            args.filtered_begin(clang::driver::options::OPT_INPUT),
+            args.filtered_end()
+        )) {
             for(const auto& subarg: arg->getValues()) {
                 const auto& am = get(subarg);
                 if(!am) {
-                    errs() << subarg << ": file or module not found" << endl;
+                    warns() << subarg << ": file or module not found" << endl;
                     continue;
                 }
 

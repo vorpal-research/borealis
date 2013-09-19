@@ -82,6 +82,8 @@ public:
             return getPointer(cast(type->getPointerElementType()));
         else if (type->isArrayTy())
             return getPointer(cast(type->getArrayElementType()));
+        else if (type->isMetadataTy()) // we use metadata for unknown stuff
+            return getUnknownType();
         else
             return getTypeError("Unsupported llvm type: " + toString(*type));
     }

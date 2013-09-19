@@ -33,7 +33,7 @@ TEST(Runner, noFile) {
             .withArg("test/testcases/XXX/iniXX_XX.c")
             .run();
 
-        ASSERT_EQ(E_GATHER_COMMENTS, res);
+        ASSERT_EQ(E_ILLEGAL_COMPILER_OPTIONS, res);
     }
 }
 

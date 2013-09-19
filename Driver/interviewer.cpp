@@ -102,8 +102,6 @@ std::vector<command> interviewer::getCompileCommands() {
         }
     }
 
-    std::cerr << ret << std::endl;
-
     return std::move(ret);
 }
 
@@ -111,6 +109,7 @@ interviewer::status interviewer::run() const {
     using borealis::util::streams::error;
 
     if (!pimpl->theCompilation) {
+        // FIXME: error message
         errs() << error("Fucked up, sorry :(") << endl;
         return status::FAILURE;
     }
@@ -118,6 +117,7 @@ interviewer::status interviewer::run() const {
     const clang::driver::Command* FailingCommand;
     if (pimpl->theDriver->ExecuteCompilation(*pimpl->theCompilation, FailingCommand) < 0) {
         pimpl->theDriver->generateCompilationDiagnostics(*pimpl->theCompilation, FailingCommand);
+        // FIXME: error message
         errs() << error("Fucked up, sorry :(") << endl;
         return status::FAILURE;
     }

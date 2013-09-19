@@ -1,33 +1,7 @@
 
 [
-	
 	{
-		"location" : 
-		{
-			"filename" : "test/testcases/aegis/ini03_05.c",
-			"loc" : 
-			{
-				"col" : 16,
-				"line" : 4
-			}
-		},
-		"type" : "NDF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/aegis/ini03_05.c",
-			"loc" : 
-			{
-				"col" : 15,
-				"line" : 5
-			}
-		},
-		"type" : "NDF-01"
-	},
-	
-	{
+		"comment" : "FIXME: This is what it's like now",
 		"location" : 
 		{
 			"filename" : "test/testcases/aegis/ini03_05.c",
@@ -38,5 +12,49 @@
 			}
 		},
 		"type" : "NDF-01"
-	}
+	},
+	{
+		comment: "FIXME: this was expected before, but for a wrong reason",
+		what: 	
+		[ 
+			{
+				"location" : 
+				{
+					"filename" : "test/testcases/aegis/ini03_05.c",
+					"loc" : 
+					{
+						"col" : 16,
+						"line" : 4
+					}
+				},
+				"type" : "NDF-01"
+			},
+			
+			{
+				"location" : 
+				{
+					"filename" : "test/testcases/aegis/ini03_05.c",
+					"loc" : 
+					{
+						"col" : 15,
+						"line" : 5
+					}
+				},
+				"type" : "NDF-01"
+			},
+			
+			{
+				"location" : 
+				{
+					"filename" : "test/testcases/aegis/ini03_05.c",
+					"loc" : 
+					{
+						"col" : 5,
+						"line" : 7
+					}
+				},
+				"type" : "NDF-01"
+			} 
+		]
+	},
 ]

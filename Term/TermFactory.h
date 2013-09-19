@@ -88,7 +88,6 @@ public:
 
         } else if (auto* undef = dyn_cast<UndefValue>(c)) {
             return getUndefTerm(undef);
-
         }
 
         return Term::Ptr{

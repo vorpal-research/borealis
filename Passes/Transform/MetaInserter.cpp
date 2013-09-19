@@ -137,7 +137,6 @@ llvm::Value* MetaInserter::unliftDebugIntrinsic(llvm::Module& M, llvm::Value* ci
         if(intrinsic_manager.getIntrinsicType(*inst) == function_type::INTRINSIC_DECLARE) {
             auto* val = inst->getArgOperand(0);
             auto* varMD = inst->getMetadata("var");
-            inst->dump();
 
             auto llvmIntr = llvm::Intrinsic::getDeclaration(&M, llvm::Intrinsic::dbg_declare);
 
@@ -216,8 +215,6 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
     using borealis::util::viewContainer;
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
-    errs() << "MetaInserter received module:" << endl;
-    errs() << M << endl;
 
     llvm::DebugInfoFinder dfi;
     dfi.processModule(M);
