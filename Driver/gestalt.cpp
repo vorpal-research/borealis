@@ -100,10 +100,15 @@ int gestalt::main(int argc, const char** argv) {
     const std::vector<std::string> empty;
 
     CommandLine args(argc, argv);
+    llvm::sys::Path selfPath = llvm::sys::Program::FindProgramByName(argv[0]);
+    llvm::SmallString<64> selfDir = selfPath.getDirname();
+    llvm::sys::path::append(selfDir, "wrapper.conf");
+
+    std::cerr << selfDir << std::endl;
 
     AppConfiguration::initialize(
         new CommandLineConfigSource{ args.suffixes("---").stlRep() },
-        new FileConfigSource{ args.suffixes("---config:").single("wrapper.conf") }
+        new FileConfigSource{ args.suffixes("---config:").single(selfDir.c_str()) }
     );
 
     CommandLine opt = CommandLine("wrapper") +

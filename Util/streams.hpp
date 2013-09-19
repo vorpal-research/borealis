@@ -42,6 +42,7 @@ Streamer& operator<<(Streamer& str, const byte_output& bytes) {
     return str;
 }
 
+
 template<class T>
 struct is_using_llvm_output {
     enum { value =
@@ -49,6 +50,7 @@ struct is_using_llvm_output {
             std::is_base_of<llvm::Value, T>::value ||
             std::is_base_of<llvm::Type, T>::value ||
             std::is_base_of<llvm::StringRef, T>::value ||
+            std::is_base_of<llvm::SmallVectorBase, T>::value ||
             std::is_base_of<llvm::Twine, T>::value ||
             std::is_base_of<llvm::Module, T>::value ||
             std::is_base_of<llvm::Pass, T>::value
