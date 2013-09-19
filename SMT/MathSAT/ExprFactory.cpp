@@ -89,7 +89,7 @@ MathSAT::MemArray ExprFactory::getNoMemoryArray() {
 }
 
 MathSAT::Pointer ExprFactory::getInvalidPtr() {
-    return getPtrConst(0xffffffff);
+    return getPtrConst(~0U);
 }
 
 MathSAT::Bool ExprFactory::isInvalidPtrExpr(MathSAT::Pointer ptr) {
