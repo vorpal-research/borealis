@@ -11,17 +11,11 @@ namespace borealis {
 namespace mathsat_ {
 
 ExecutionContext::ExecutionContext(ExprFactory& factory):
-    factory(factory), currentPtr(1U), bounds_(),
-    boundsFunction_(BoundsFunction::mkFunc(factory.unwrap(), "$$__gep_bound__$$")) {};
+    factory(factory), currentPtr(1U) {};
 
 MathSAT::Bool ExecutionContext::toSMT() const {
-    MathSAT::Bool axiom = factory.getTrue();
-    for (auto bound: bounds_) {
-        auto bConst = factory.getIntConst(bound.second);
-        axiom = axiom && (boundsFunction_(bound.first) == bConst);
-    }
     MathSAT::Bool res = factory.getTrue();
-    return res.withAxiom(axiom);
+    return res;
 }
 
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx) {

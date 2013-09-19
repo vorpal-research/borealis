@@ -22,14 +22,10 @@ class ExecutionContext {
     USING_SMT_LOGIC(MathSAT);
 
     typedef MathSAT::ExprFactory ExprFactory;
-    typedef mathsat_::logic::Function<Pointer(Pointer)> BoundsFunction;
-    typedef std::vector<std::pair<Pointer, size_t> >  PointersBounds;
 
     ExprFactory& factory;
     std::unordered_map<std::string, MemArray> memArrays;
     unsigned long long currentPtr;
-    PointersBounds bounds_;
-    BoundsFunction boundsFunction_;
 
     static constexpr auto MEMORY_ID = "$$__MEMORY__$$";
     MemArray memory() const {
@@ -37,6 +33,14 @@ class ExecutionContext {
     }
     void memory(const MemArray& value) {
         set(MEMORY_ID, value);
+    }
+
+    static constexpr auto GEP_BOUNDS_ID = "$$__gep_bound__$$";
+    MemArray gepBounds() const {
+        return get(GEP_BOUNDS_ID);
+    }
+    void gepBounds(const MemArray& value) {
+        set(GEP_BOUNDS_ID, value);
     }
 
     MemArray get(const std::string& id) const {
@@ -69,10 +73,11 @@ public:
         return memory();
     }
 
-    inline Pointer getDistinctPtr(Pointer p, size_t offsetSize = 1U) {
+    inline Pointer getDistinctPtr(const Pointer& p, size_t offsetSize = 1U) {
         auto ret = factory.getPtrConst(currentPtr);
         currentPtr += offsetSize;
-        bounds_.emplace_back(p, offsetSize);
+        auto offset = factory.getPtrConst(offsetSize);
+        gepBounds( gepBounds().store(p, offset) );
         return ret;
     }
 
@@ -155,8 +160,8 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-    Pointer getBound(Pointer p) {
-        return boundsFunction_(p);
+    Pointer getBound(const Pointer& p) {
+        return readProperty<Pointer>(GEP_BOUNDS_ID, p);
     }
 
 ////////////////////////////////////////////////////////////////////////////////
