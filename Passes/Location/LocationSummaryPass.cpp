@@ -49,7 +49,6 @@ bool LocationSummaryPass::runOnModule(llvm::Module& M) {
     // XXX: Maybe we'll need this in the future...
     // auto& fm = GetAnalysis<DPFileManager>::doit(this).provide();
 
-
     auto* mainFileEntry = M.getModuleIdentifier().c_str();
 
     if (DumpCoverage || DumpCoverageFile != DumpCoverageFileDefault) {
