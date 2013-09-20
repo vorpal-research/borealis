@@ -64,10 +64,9 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-llvm::StringRef getRawSource(const clang::FileManager& fm, const LocusRange& range) {
-    using namespace clang;
-
-    return StringRef{ };
+llvm::StringRef getRawSource(const clang::FileManager&, const LocusRange&) {
+    // FIXME: You know what to do...
+    return llvm::StringRef{};
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {

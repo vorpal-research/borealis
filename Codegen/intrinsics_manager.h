@@ -93,9 +93,9 @@ private:
     typedef std::list<type_resolver> type_resolvers;
 
     typed_intrinsics_cache intrinsics_cache;
+    function_name_cache name_cache;
     function_type_cache type_cache;
     intrinsic_info_cache info_cache;
-    function_name_cache name_cache;
 
     static function_type default_resolver(const IntrinsicsManager& m, const llvm::CallInst& CI) {
         return m.getIntrinsicType(CI.getCalledFunction());

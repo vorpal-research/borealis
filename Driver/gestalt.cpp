@@ -5,8 +5,6 @@
  *      Author: belyaev
  */
 
-#include "Driver/gestalt.h"
-
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/Basic/Diagnostic.h>
@@ -72,6 +70,7 @@
 #include "Codegen/DiagnosticLogger.h"
 #include "Driver/cl.h"
 #include "Driver/clang_pipeline.h"
+#include "Driver/gestalt.h"
 #include "Driver/interviewer.h"
 #include "Driver/llvm_pipeline.h"
 #include "Driver/plugin_loader.h"
@@ -94,17 +93,17 @@ int gestalt::main(int argc, const char** argv) {
 
     using namespace borealis::config;
 
-    using borealis::comments::GatherCommentsAction;
     using borealis::endl;
 
     const std::vector<std::string> empty;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     CommandLine args(argc, argv);
     llvm::sys::Path selfPath = llvm::sys::Program::FindProgramByName(argv[0]);
     llvm::SmallString<64> selfDir = selfPath.getDirname();
     llvm::sys::path::append(selfDir, "wrapper.conf");
-
-    std::cerr << selfDir << std::endl;
+#pragma clang diagnostic pop
 
     AppConfiguration::initialize(
         new CommandLineConfigSource{ args.suffixes("---").stlRep() },
@@ -136,7 +135,7 @@ int gestalt::main(int argc, const char** argv) {
     infos() << "Invoking clang with: " << compilerArgs << endl;
 
     DiagnosticOptions DiagOpts;
-    DiagOpts.ShowCarets = 0;
+    DiagOpts.ShowCarets = false;
 
     auto diagBuffer = borealis::util::uniq(new DiagnosticLogger(*this));
     auto diags = CompilerInstance::createDiagnostics(DiagOpts,
@@ -157,19 +156,21 @@ int gestalt::main(int argc, const char** argv) {
     // infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
 
     if (!skipClang) if (nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
-    if(compileCommands.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
 
     // prep for borealis business
     // compile sources to llvm::Module
 
+    if (compileCommands.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
+
     clang_pipeline clang { "clang", diags };
     clang.assignLogger(*this);
-
     clang.invoke(compileCommands);
 
     auto annotatedModule = clang.result();
 
-    if(!annotatedModule) return OK;
+    if (!annotatedModule) return OK;
+    // TODO: Distinct between cases when we fucked up and when
+    //       we were supposed to fuck up
 
     // collect passes
 

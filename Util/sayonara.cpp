@@ -25,9 +25,9 @@ namespace {
     }
 }
 
-void ondie(const char* m, diehandler hndl = 0) {
+void ondie(const char* m, diehandler hndl = nullptr) {
     static diehandler inner = defaultDie;
-    if(!hndl) inner(m);
+    if (!hndl) inner(m);
     inner = hndl;
 }
 
@@ -36,7 +36,5 @@ void ondie(const char* m, diehandler hndl = 0) {
     throw 0;
 }
 
-}
-}
-
-
+} // namespace util
+} // namespace borealis

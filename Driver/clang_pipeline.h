@@ -14,10 +14,10 @@
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 
-#include "Logging/logger.hpp"
-#include "Driver/cl.h"
 #include "Driver/AnnotatedModule.h"
+#include "Driver/cl.h"
 #include "Driver/interviewer.h"
+#include "Logging/logger.hpp"
 
 namespace borealis {
 namespace driver {

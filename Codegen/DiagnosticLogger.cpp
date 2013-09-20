@@ -28,7 +28,7 @@ void DiagnosticLogger::HandleDiagnostic(clang::DiagnosticsEngine::Level Level, c
     Info.FormatDiagnostic(Buf);
 
     Locus location;
-    if(Info.hasSourceManager())
+    if (Info.hasSourceManager())
         location = Locus{ Info.getLocation(), Info.getSourceManager() };
 
     auto infos_     = infos();
@@ -41,8 +41,8 @@ void DiagnosticLogger::HandleDiagnostic(clang::DiagnosticsEngine::Level Level, c
                    (Level == clang::DiagnosticsEngine::Error)   ? (errs_      << "[Compiler error] ") :
                    (Level == clang::DiagnosticsEngine::Fatal)   ? (criticals_ << "[Compiler fatal error] ") :
                    util::sayonara<decltype(infos_)&>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
-                           "Unknown diag level encountered during clang diag processing");
-    if(!location.isUnknown()) stream << location << ": ";
+                       "Unknown diag level encountered during clang diag processing");
+    if (!location.isUnknown()) stream << location << ": ";
     stream << Buf.c_str() << endl;
 }
 

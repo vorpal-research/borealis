@@ -14,7 +14,6 @@
 #include <clang/Driver/Options.h>
 #include <clang/Driver/OptTable.h>
 
-#include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/Program.h>
 #include <llvm/Support/Host.h> // getDefaultTargetTriple
 
@@ -22,6 +21,8 @@
 #include "Driver/interviewer.h"
 #include "Logging/logger.hpp"
 #include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace driver {
@@ -74,31 +75,36 @@ std::vector<command> interviewer::getCompileCommands() {
     const auto& optTable = pimpl->theDriver->getOpts();
 
     if (!pimpl->theCompilation) {
+        // FIXME: error message
         errs() << error("Fucked up, sorry :(") << endl;
         return std::move(ret);
     }
 
     auto& jobs = pimpl->theCompilation->getJobs();
-    for(auto* job : jobs) {
-        if(auto* command = clang::dyn_cast<clang::driver::Command>(job)) {
+    for (auto* job : jobs) {
+        if (auto* command = clang::dyn_cast<clang::driver::Command>(job)) {
             borealis::driver::command toPut;
             const auto& args = command->getArguments();
 
             unsigned missingArgIndex, missingArgCount;
 
             toPut.cl = std::shared_ptr<clang::driver::InputArgList>{
-                 optTable.ParseArgs(args.data(), args.data()+args.size(),
-                         missingArgIndex, missingArgCount)
+                 optTable.ParseArgs(
+                     args.data(), args.data() + args.size(),
+                     missingArgIndex, missingArgCount
+                 )
             };
 
-            if(command->getSource().getKind() == clang::driver::Action::CompileJobClass ||
-                    command->getSource().getKind() == clang::driver::Action::AssembleJobClass) {
+            if (command->getSource().getKind() == clang::driver::Action::CompileJobClass ||
+                command->getSource().getKind() == clang::driver::Action::AssembleJobClass) {
                 toPut.operation = command::COMPILE;
             } else if(command->getSource().getKind() == clang::driver::Action::LinkJobClass) {
                 toPut.operation = command::LINK;
             } else toPut.operation = command::NOP;
 
             ret.push_back(toPut);
+        } else {
+            BYE_BYE(decltype(ret), "Encountered a non-Command Job");
         }
     }
 
@@ -127,3 +133,5 @@ interviewer::status interviewer::run() const {
 
 } // namespace driver
 } // namespace borealis
+
+#include "Util/unmacros.h"

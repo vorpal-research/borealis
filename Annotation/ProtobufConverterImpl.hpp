@@ -221,14 +221,14 @@ struct protobuf_traits<AnnotationContainer> {
 
     static AnnotationContainer::ProtoPtr toProtobuf(const normal_t& t) {
         auto res = util::uniq(new proto_t());
-        for(const auto& a: t) {
+        for (const auto& a: t) {
             res->mutable_data()->AddAllocated(AnnotationConverter::toProtobuf(*a).release());
         }
         return std::move(res);
     }
     static AnnotationContainer::Ptr fromProtobuf(const context_t& fn, const proto_t& t) {
         AnnotationContainer::Ptr res { new AnnotationContainer() };
-        for(auto i = 0; i < t.data_size(); ++i) {
+        for (auto i = 0; i < t.data_size(); ++i) {
             res->push_back(AnnotationConverter::fromProtobuf(fn, t.data(i)));
         }
         return std::move(res);

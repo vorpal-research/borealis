@@ -82,12 +82,12 @@ void IntrinsicsManager::updateForModule(llvm::Module& M) {
     type_cache.clear();
     intrinsics_cache.clear();
 
-    for(llvm::Function& F : M) {
+    for (llvm::Function& F : M) {
         llvm::StringRef borealis, name;
         std::tie(borealis, name) = F.getName().split('.');
         std::tie(name, std::ignore) = name.split('.');
-        if(borealis == "borealis" && !name.empty()) {
-            for(auto type: util::at(name_cache, name)) {
+        if (borealis == "borealis" && !name.empty()) {
+            for (auto type : util::at(name_cache, name)) {
                 type_cache[&F] = type;
                 intrinsics_cache[std::make_tuple(type, F.getFunctionType(), &M)] = &F;
             }

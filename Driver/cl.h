@@ -81,7 +81,7 @@ public:
         CommandLine ret;
         ret.additional_data.insert(ret.additional_data.begin(), argv, argv+argc);
         ret.args.reserve(argc);
-        for(const auto& datum: ret.additional_data) {
+        for (const auto& datum : ret.additional_data) {
             ret.args.push_back(datum.c_str());
         }
         return std::move(ret);

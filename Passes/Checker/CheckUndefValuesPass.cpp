@@ -25,8 +25,8 @@ public:
         using borealis::util::view;
 
         auto& intrinsic_manager = borealis::IntrinsicsManager::getInstance();
-        if(auto call = dyn_cast<llvm::CallInst>(&I))
-            if(intrinsic_manager.getIntrinsicType(*call) != function_type::UNKNOWN)
+        if (auto* call = dyn_cast<llvm::CallInst>(&I))
+            if (intrinsic_manager.getIntrinsicType(*call) != function_type::UNKNOWN)
                 return;
 
         for (Value* op : view(I.op_begin(), I.op_end())) {

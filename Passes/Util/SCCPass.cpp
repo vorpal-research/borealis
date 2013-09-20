@@ -15,8 +15,7 @@
 #include "Util/util.h"
 
 // Fixing llvm stupidity
-// XXX: move this spec somewhere else if you want to reuse scc_iterator
-// with util::view
+// XXX: move this spec somewhere else if you want to reuse scc_iterator in util::view
 namespace std {
     template<class T, class GT>
     struct iterator_traits<llvm::scc_iterator<T, GT>> {

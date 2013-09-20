@@ -43,7 +43,7 @@ struct llvm_pipeline::impl {
     llvm::PassManager pm;
     std::shared_ptr<llvm::Module> module;
 
-    impl(const std::shared_ptr<llvm::Module>& m): pm{}, module{m} {};
+    impl(const std::shared_ptr<llvm::Module>& m): module{m} {};
 };
 
 llvm_pipeline::~llvm_pipeline() {};

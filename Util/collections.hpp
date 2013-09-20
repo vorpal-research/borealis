@@ -70,13 +70,13 @@ public:
 
     CollectionView<ContainerIter> drop(size_t n) const {
         auto nbegin = begin_;
-        for(auto i = 0U; i < n && nbegin != end_; ++i, ++nbegin);
+        for (auto i = 0U; i < n && nbegin != end_; ++i, ++nbegin);
         return CollectionView{ nbegin, end_ };
     }
 
     CollectionView<ContainerIter> take(size_t n) const {
         auto nend = begin_;
-        for(auto i = 0U; i < n && nend != end_; ++i, ++nend);
+        for (auto i = 0U; i < n && nend != end_; ++i, ++nend);
         return CollectionView{ begin_, nend };
     }
 

@@ -8,6 +8,10 @@
 #ifndef ANNOTATEDMODULE_H_
 #define ANNOTATEDMODULE_H_
 
+#include <llvm/Module.h>
+
+#include <memory>
+
 #include "Annotation/AnnotationContainer.h"
 
 namespace borealis {
@@ -20,7 +24,7 @@ struct AnnotatedModule {
     typedef std::shared_ptr<AnnotatedModule> Ptr;
 };
 
-}
-}
+} // namespace driver
+} // namespace borealis
 
 #endif /* ANNOTATEDMODULE_H_ */

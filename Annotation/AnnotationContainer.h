@@ -8,15 +8,15 @@
 #ifndef ANNOTATIONCONTAINER_H_
 #define ANNOTATIONCONTAINER_H_
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "Actions/comments.h"
 #include "Annotation/AnnotationCast.h"
-
 #include "Protobuf/Gen/Annotation/AnnotationContainer.pb.h"
 
 #include "Util/macros.h"
+
 namespace borealis {
 
 /** protobuf -> Annotation/AnnotationContainer.proto
@@ -29,7 +29,6 @@ message AnnotationContainer {
 }
 
 **/
-
 class AnnotationContainer {
     typedef std::vector<Annotation::Ptr> data_t;
     data_t data_;
@@ -44,11 +43,12 @@ public:
     AnnotationContainer()                           = default;
     AnnotationContainer(const AnnotationContainer&) = default;
     AnnotationContainer(AnnotationContainer&&)      = default;
-    AnnotationContainer(const borealis::comments::GatherCommentsAction& act,
+    AnnotationContainer(
+            const borealis::comments::GatherCommentsAction& act,
             const borealis::TermFactory::Ptr& tf) {
         const auto& comments = act.getComments();
         data_.reserve(comments.size());
-        for(const auto& comment: comments) {
+        for (const auto& comment: comments) {
             data_.push_back(fromParseResult(comment.first, comment.second, tf));
         }
     }
@@ -79,6 +79,7 @@ public:
 };
 
 } /* namespace borealis */
+
 #include "Util/unmacros.h"
 
 #endif /* ANNOTATIONCONTAINER_H_ */
