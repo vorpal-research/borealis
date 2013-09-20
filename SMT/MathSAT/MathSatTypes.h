@@ -39,8 +39,9 @@ struct MathSAT {
     // dynamic logic type
     typedef mathsat_::logic::SomeExpr Dynamic;
 
-    // memory array
     template<class Elem, class Index> using ArrayImpl = mathsat_::logic::InlinedFuncArray<Elem, Index>;
+
+    // memory array
     typedef mathsat_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
 
 };
