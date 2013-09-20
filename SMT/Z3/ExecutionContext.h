@@ -17,7 +17,6 @@
 namespace borealis {
 namespace z3_ {
 
-
 class ExecutionContext {
 
     USING_SMT_LOGIC(Z3);
@@ -76,12 +75,11 @@ public:
         return gepBounds();
     }
 
-    inline Pointer getDistinctPtr(const Pointer& p, size_t offsetSize = 1U) {
-        auto ret = factory.getPtrConst(currentPtr);
+    inline Pointer getDistinctPtr(size_t offsetSize = 1U) {
+        auto res = factory.getPtrConst(currentPtr);
         currentPtr += offsetSize;
-        auto offset = factory.getPtrConst(offsetSize);
-        gepBounds( gepBounds().store(p, offset) );
-        return ret;
+        gepBounds( gepBounds().store(res, factory.getPtrConst(offsetSize)) );
+        return res;
     }
 
 ////////////////////////////////////////////////////////////////////////////////

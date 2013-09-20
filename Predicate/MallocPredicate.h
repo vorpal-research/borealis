@@ -86,9 +86,9 @@ struct SMTImpl<Impl, MallocPredicate> {
 
         static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
         if(NullableMallocs.get(true)) {
-            return lhvp == ef.getNullPtr() || lhvp == ctx->getDistinctPtr(lhvp, elems);
+            return lhvp == ef.getNullPtr() || lhvp == ctx->getDistinctPtr(elems);
         } else {
-            return lhvp == ctx->getDistinctPtr(lhvp, elems);
+            return lhvp == ctx->getDistinctPtr(elems);
         }
     }
 };

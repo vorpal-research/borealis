@@ -81,7 +81,7 @@ struct SMTImpl<Impl, GlobalsPredicate> {
             auto ge = SMT<Impl>::doit(g, ef, ctx).template to<Pointer>();
             ASSERT(!ge.empty(), "Encountered non-Pointer global value: " + g->getName());
             auto gp = ge.getUnsafe();
-            res = res && gp == ctx->getDistinctPtr(gp);
+            res = res && gp == ctx->getDistinctPtr();
         }
         return res;
     }

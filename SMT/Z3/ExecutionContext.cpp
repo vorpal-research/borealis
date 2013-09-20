@@ -15,7 +15,7 @@ ExecutionContext::ExecutionContext(ExprFactory& factory):
     currentPtr(1U) {};
 
 Z3::Bool ExecutionContext::toSMT() const {
-    Z3::Bool res = factory.getTrue();
+    auto res = factory.getTrue();
     return res;
 }
 

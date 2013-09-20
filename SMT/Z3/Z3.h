@@ -41,8 +41,7 @@ struct Z3 {
     typedef z3_::logic::SomeExpr Dynamic;
 
     // memory array
-//    template<class Elem, class Index> using ArrayImpl = z3_::logic::TheoryArray<Elem, Index>;
-    template<class Elem, class Index> using ArrayImpl = z3_::logic::FuncArray<Elem, Index>;
+    template<class Elem, class Index> using ArrayImpl = z3_::logic::TheoryArray<Elem, Index>;
     typedef z3_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
 
 };

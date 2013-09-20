@@ -11,10 +11,11 @@ namespace borealis {
 namespace mathsat_ {
 
 ExecutionContext::ExecutionContext(ExprFactory& factory):
-    factory(factory), currentPtr(1U) {};
+    factory(factory),
+    currentPtr(1U) {};
 
 MathSAT::Bool ExecutionContext::toSMT() const {
-    MathSAT::Bool res = factory.getTrue();
+    auto res = factory.getTrue();
     return res;
 }
 
