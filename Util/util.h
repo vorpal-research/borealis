@@ -151,7 +151,7 @@ std::list<Loop*> getAllLoops(Function* F, LoopInfo* LI);
 Loop* getLoopFor(Instruction* Inst, LoopInfo* LI);
 
 std::list<ReturnInst*> getAllRets(Function* F);
-borealis::util::option<ReturnInst*> getSingleRetOpt(Function* F);
+ReturnInst* getSingleRetOpt(Function* F);
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -21,27 +21,21 @@ message ConstTerm {
     extend borealis.proto.Term {
         optional ConstTerm ext = 19;
     }
-
-    optional string asString = 1;
 }
 
 **/
 class ConstTerm: public borealis::Term {
 
-    util::option<std::string> asString;
-
-    ConstTerm(Type::Ptr type, const std::string& name, util::option<std::string> asString) :
+    ConstTerm(Type::Ptr type, const std::string& name) :
         Term(
                 class_tag(*this),
                 type,
                 name
-        ), asString(asString) {};
+        ) {};
 
 public:
 
     MK_COMMON_TERM_IMPL(ConstTerm);
-
-    util::option<std::string> getAsString() const { return asString; }
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {

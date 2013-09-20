@@ -18,6 +18,12 @@ namespace borealis {
 
 typedef IntrinsicsManager::RegisterIntrinsic RegisterIntrinsic;
 
+std::string getCalledFunctionName(const llvm::CallInst& ci) {
+    const llvm::Value* F = ci.getCalledFunction();
+    F = F ? F : ci.getCalledValue();
+    return F->hasName() ? F->getName() : "";
+}
+
 static RegisterIntrinsic INTRINSIC_PTR_VERSION {
     function_type::INTRINSIC_PTR_VERSION,
     "ptrver",
@@ -90,8 +96,9 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
                    PredicateType::REQUIRES
                );
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
-        return ci.getCalledFunction()->getName() == "borealis_assert"
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
+        auto name = getCalledFunctionName(ci);
+        return name == "borealis_assert"
                ? function_type::BUILTIN_BOR_ASSERT
                : function_type::UNKNOWN;
     }
@@ -112,8 +119,9 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
                    PredicateType::ENSURES
                );
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
-        return ci.getCalledFunction()->getName() == "borealis_assume"
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
+        auto name = getCalledFunctionName(ci);
+        return name == "borealis_assume"
                ? function_type::BUILTIN_BOR_ASSUME
                : function_type::UNKNOWN;
     }
@@ -123,8 +131,9 @@ static RegisterIntrinsic ACTION_DEFECT {
     function_type::ACTION_DEFECT,
     "borealis_action_defect",
     RegisterIntrinsic::DefaultGenerator,
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
-        return ci.getCalledFunction()->getName() == "borealis_action_defect"
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
+        auto name = getCalledFunctionName(ci);
+        return name == "borealis_action_defect"
                ? function_type::ACTION_DEFECT
                : function_type::UNKNOWN;
     }
@@ -153,8 +162,9 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
                    )
                );
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
-        return ci.getCalledFunction()->getName() == "borealis_get_property"
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
+        auto name = getCalledFunctionName(ci);
+        return name == "borealis_get_property"
                ? function_type::BUILTIN_BOR_GETPROP
                : function_type::UNKNOWN;
     }
@@ -181,8 +191,9 @@ static RegisterIntrinsic BUILTIN_BOR_SETPROP {
                    FN.Term->getArgumentTerm(value)
                );
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) {
-        return ci.getCalledFunction()->getName() == "borealis_set_property"
+    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
+        auto name = getCalledFunctionName(ci);
+        return name == "borealis_set_property"
                ? function_type::BUILTIN_BOR_SETPROP
                : function_type::UNKNOWN;
     }

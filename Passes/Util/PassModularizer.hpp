@@ -29,8 +29,10 @@ class PassModularizerImpl : public SCCPass {
     std::unordered_map<llvm::Function*, subptr> passes;
     subptr defaultPass;
 
-    subptr createSubPass() {
-        return subptr{ new SubPass(this) };
+    subptr createSubPass(llvm::Module& M) {
+        auto res = util::uniq( new SubPass(this) );
+        res->doInitialization(M); // FIXME: do not do initialization more than once?
+        return std::move(res);
     }
 
 public:
@@ -49,7 +51,7 @@ public:
             Function* F = node->getFunction();
             // Do not run on declarations
             if (F && !F->isDeclaration()) {
-                subptr ptr(createSubPass());
+                subptr ptr(createSubPass(*F->getParent()));
                 changed |= ptr->runOnFunction(*F);
                 passes[F] = std::move(ptr);
             }
@@ -72,7 +74,7 @@ public:
         if (passes.count(F) > 0) {
             return *passes[F];
         } else if (Lazy) {
-            subptr ptr(createSubPass());
+            subptr ptr(createSubPass(*F->getParent()));
             ptr->runOnFunction(*F);
             passes[F] = std::move(ptr);
             return *passes[F];
