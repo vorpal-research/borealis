@@ -40,8 +40,15 @@ struct Z3 {
     // dynamic logic type
     typedef z3_::logic::SomeExpr Dynamic;
 
-    // memory array
+#if defined USE_FUNC_ARRAY
+    template<class Elem, class Index> using ArrayImpl = z3_::logic::FuncArray<Elem, Index>;
+#elif defined USE_INLINED_FUNC_ARRAY
+    template<class Elem, class Index> using ArrayImpl = z3_::logic::InlinedFuncArray<Elem, Index>;
+#else
     template<class Elem, class Index> using ArrayImpl = z3_::logic::TheoryArray<Elem, Index>;
+#endif
+
+    // memory array
     typedef z3_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
 
 };
