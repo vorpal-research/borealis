@@ -45,7 +45,10 @@ void LocationSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool LocationSummaryPass::runOnModule(llvm::Module& M) {
     auto& slt = GetAnalysis<SourceLocationTracker>::doit(this);
     auto& lm = GetAnalysis<LocationManager>::doit(this);
-    auto& sm = GetAnalysis<DPFileManager>::doit(this).provide();
+
+    // XXX: Maybe we'll need this in the future...
+    // auto& fm = GetAnalysis<DPFileManager>::doit(this).provide();
+
 
     auto* mainFileEntry = M.getModuleIdentifier().c_str();
 

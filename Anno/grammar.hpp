@@ -171,6 +171,8 @@ using read_lor2 = GRAMMAR( G(read_land2) >> *G(read_lor) );
 //      if we do, it will be right below lor2
 struct read_expr :
         read_lor2 {};
+using read_expr_list = GRAMMAR( G(read_expr) >> *( CH(',') >> G(read_expr) ) );
+using read_call = GRAMMAR( G(push_builtin) >> CH('(') >> G(read_expr_list) >> CH(')') );
 
 #undef READ_UNARY
 #undef READ_BINARY

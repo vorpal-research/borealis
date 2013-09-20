@@ -29,8 +29,8 @@ using borealis::util::option;
 using borealis::util::nothing;
 using borealis::util::just;
 
-static VarInfo mkVI(const clang::FileManager& sm,
-        clang::Decl* ast = nullptr, bool allocated = false) {
+static VarInfo mkVI(const clang::FileManager&,
+        clang::Decl* = nullptr, bool = false) {
     return VarInfo{};
 }
 
