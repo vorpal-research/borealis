@@ -86,7 +86,8 @@ struct anno_guard : private pegtl::nocopy< anno_guard< Rule, Input, Debug > >
         m_counter.leave();
     }
 
-    bool operator()(bool result, bool) const {
+    bool operator()(bool result, bool must) const {
+        if(!result && must) return false;
         return result;
     }
 
@@ -110,31 +111,20 @@ struct anno_debug : public pegtl::debug_base {
     template<bool Must, typename Rule, typename Input, typename ...States>
     bool match(Input& in, States&&... st) {
         const anno_guard< Rule, Input, anno_debug > d( in.location(), m_counter );
-        bool res;
 
-        if (!unrecover) {
-            res = d( Rule::template match< Must >( in, *this, std::forward< States >( st )... ), Must );
-        } else return false;
+        bool res = d( Rule::template match< Must >( in, *this, std::forward< States >( st )... ), Must );
 
-        if (unrecover) {
+
+
+        if (!res && (Must || unrecover)) {
+            unrecover = true;
             trace.push_back(streamify([&](std::ostream& oss) {
                 oss << d.location() << ":"
                     << m_counter.nest() << ": expected "
                     << m_printer.template rule< Rule >();
             }));
-            return false;
         }
-
-        if (!res && Must) {
-            trace.push_back(streamify([&](std::ostream& oss) {
-                oss << d.location() << ":"
-                    << m_counter.nest() << ": expected "
-                    << m_printer.template rule< Rule >();
-            }));
-            return false;
-        } else {
-            return res;
-        }
+        return res;
     }
 
 protected:

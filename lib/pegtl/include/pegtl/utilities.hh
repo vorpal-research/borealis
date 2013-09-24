@@ -200,7 +200,10 @@ namespace pegtl
 #ifdef __GXX_RTTI
       return demangle_impl( typeid( T ).name() );
 #else
-      return "demangled";
+      std::string func = __PRETTY_FUNCTION__;
+      auto fst = func.find("[T = ") + 5;
+      auto snd = func.find("]");
+      return func.substr(fst, snd-fst);
 #endif
    }
 
