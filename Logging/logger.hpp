@@ -125,7 +125,7 @@ protected:
     DelegateLogging(): keeper(def) {}
 
     // this copy-string business looks like a bug in gcc
-    // gcc version does not compile without it =(
+    // gcc version crashes without it though it does not do anything at all =(
     stream_t dbgs() const { return dbgsFor(std::string(getLoggerDomain())); }
     stream_t infos() const { return infosFor(std::string(getLoggerDomain())); }
     stream_t warns() const { return warnsFor(std::string(getLoggerDomain())); }
