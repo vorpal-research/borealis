@@ -124,14 +124,16 @@ protected:
     DelegateLogging(const std::string& domain): keeper([domain]{ return domain; }) {}
     DelegateLogging(): keeper(def) {}
 
-    stream_t dbgs() const { return dbgsFor(getLoggerDomain()); }
-    stream_t infos() const { return infosFor(getLoggerDomain()); }
-    stream_t warns() const { return warnsFor(getLoggerDomain()); }
-    stream_t errs() const { return errsFor(getLoggerDomain()); }
-    stream_t criticals() const { return criticalsFor(getLoggerDomain()); }
+    // this copy-string business looks like a bug in gcc
+    // gcc version does not compile without it =(
+    stream_t dbgs() const { return dbgsFor(std::string(getLoggerDomain())); }
+    stream_t infos() const { return infosFor(std::string(getLoggerDomain())); }
+    stream_t warns() const { return warnsFor(std::string(getLoggerDomain())); }
+    stream_t errs() const { return errsFor(std::string(getLoggerDomain())); }
+    stream_t criticals() const { return criticalsFor(std::string(getLoggerDomain())); }
 
     stream_t logs(priority_t ll = priority_t::DEBUG) const {
-        return logsFor(ll, getLoggerDomain());
+        return logsFor(ll, std::string(getLoggerDomain()));
     }
 };
 

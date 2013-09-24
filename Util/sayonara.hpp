@@ -8,12 +8,15 @@
 #ifndef SAYONARA_HPP_
 #define SAYONARA_HPP_
 
+#include <string>
+
 #include "Util/streams.hpp"
+#include "Util/macros.h"
 
 namespace borealis {
 namespace util {
 
-[[noreturn]] void diediedie(const char*);
+NORETURN void diediedie(const char*);
 
 template<typename RetTy = void>
 RetTy sayonara(const std::string& file, int line, const std::string& where, const std::string& reason) {
@@ -28,5 +31,7 @@ RetTy sayonara(const std::string& file, int line, const std::string& where, cons
 
 } // namespace util
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* SAYONARA_HPP_ */

@@ -28,6 +28,8 @@
 #define PSS(STR) borealis::zappo::tag<STR>()
 
 #define GRAMMAR(...) borealis::zappo::untag<decltype((__VA_ARGS__))>
+#define SGRAMMAR(RULE, ...) GRAMMAR(__VA_ARGS__) {};
+
 #define LITERALGRAMMAR(...) pegtl::pad<borealis::zappo::untag<decltype((__VA_ARGS__))>, pegtl::space>
 #define CH(...) G(pegtl::one<__VA_ARGS__>)
 #define RANGE(from, to) G(pegtl::range<from, to>)

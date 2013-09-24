@@ -77,13 +77,17 @@ class empty_visitor : public productionVisitor {
     virtual void onVariable(const std::string&) {}
     virtual void onBuiltin(const std::string&) {}
     virtual void onMask(const std::string&) {}
+    virtual void onList(const std::list<std::shared_ptr<production>>& data) {
+        for(const auto& prod: data)
+            prod->accept(*this);
+    }
 
     virtual void onBinary(bin_opcode, const std::shared_ptr<production>& op0, const std::shared_ptr<production>& op1) {
-        (*op0).accept(*this);
-        (*op1).accept(*this);
+        op0->accept(*this);
+        op1->accept(*this);
     }
     virtual void onUnary(un_opcode, const std::shared_ptr<production>& op0) {
-        (*op0).accept(*this);
+        op0->accept(*this);
     }
 
 public:

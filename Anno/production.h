@@ -11,7 +11,9 @@
 #include <exception>
 #include <memory>
 #include <string>
+#include <vector>
 
+#include "Util/util.h"
 // FIXME: move to borealis::anno from default namespace?
 
 class productionVisitor;
@@ -20,7 +22,7 @@ class production {
 protected:
     class notImplemented: public virtual std::exception {
     public:
-        virtual const char* what() const noexcept {
+        virtual const char* what() const noexcept override {
             return "production: method not implemented";
         }
     };
@@ -50,7 +52,9 @@ enum class bin_opcode {
     OPCODE_BOR,
     OPCODE_XOR,
     OPCODE_LSH,
-    OPCODE_RSH
+    OPCODE_RSH,
+    OPCODE_CALL, // operator()
+    OPCODE_INDEX // operator[]
 };
 
 enum class un_opcode {
@@ -73,16 +77,17 @@ class productionVisitor {
 protected:
     class notImplemented: public std::exception {
     public:
-        virtual const char* what() const noexcept {
+        virtual const char* what() const noexcept override {
             return "productionVisitor: method not implemented";
         }
     };
 
     inline void unimplement() { throw notImplemented(); }
-
 public:
 
     virtual ~productionVisitor();
+    virtual void defaultBehaviour();
+
     virtual void onDoubleConstant(double);
     virtual void onIntConstant(int);
     virtual void onBoolConstant(bool);
@@ -90,6 +95,8 @@ public:
     virtual void onVariable(const std::string&);
     virtual void onBuiltin(const std::string&);
     virtual void onMask(const std::string&);
+
+    virtual void onList(const std::list<prod_t>& data);
 
     virtual void onBinary(
             bin_opcode op,
@@ -104,19 +111,19 @@ class doubleConstant: public virtual production {
     long double value_;
 public:
     doubleConstant(long double value);
-    virtual void accept(productionVisitor& pv) const;
+    virtual void accept(productionVisitor& pv) const override;
 };
 class intConstant: public virtual production {
     long long value_;
 public:
     intConstant(long long value);
-    virtual void accept(productionVisitor& pv) const;
+    virtual void accept(productionVisitor& pv) const override;
 };
 class boolConstant: public virtual production {
     bool value_;
 public:
     boolConstant(bool value);
-    virtual void accept(productionVisitor& pv) const;
+    virtual void accept(productionVisitor& pv) const override;
 };
 
 class mask: public virtual production {
@@ -124,15 +131,23 @@ class mask: public virtual production {
 public:
     explicit mask(const std::string& mask);
     explicit mask(std::string&& mask);
-    virtual void accept(productionVisitor& pv) const;
+    virtual void accept(productionVisitor& pv) const override;
 };
 
 class builtin: public virtual production {
     std::string vname_;
 public:
-    explicit builtin(const std::string& vname);    ;
+    explicit builtin(const std::string& vname);
     explicit builtin(std::string&& vname);
-    virtual void accept(productionVisitor& pv) const;
+    virtual void accept(productionVisitor& pv) const override;
+};
+
+class productionList: public virtual production {
+    std::list<prod_t> data_;
+public:
+    explicit productionList(const std::list<prod_t>& data);
+    explicit productionList(std::list<prod_t>&& data);
+    virtual void accept(productionVisitor& pv) const override;
 };
 
 class variable: public virtual production {
@@ -140,7 +155,7 @@ class variable: public virtual production {
 public:
     explicit variable(const std::string& vname);
     explicit variable(std::string&& vname);
-    virtual void accept(productionVisitor& pv) const;
+    virtual void accept(productionVisitor& pv) const override;
 };
 
 class binary: public virtual production {
@@ -148,16 +163,16 @@ class binary: public virtual production {
     prod_t op0_;
     prod_t op1_;
 public:
-    binary(bin_opcode code, prod_t&& op0, prod_t&& op1);
-    virtual void accept(productionVisitor& pv) const;
+    binary(bin_opcode code, const prod_t& op0, const prod_t& op1);
+    virtual void accept(productionVisitor& pv) const override;
 };
 
 class unary: public virtual production {
     un_opcode code_;
     prod_t op_;
 public:
-    unary(un_opcode code, prod_t&& op);
-    virtual void accept(productionVisitor& pv) const;
+    unary(un_opcode code, const prod_t& op);
+    virtual void accept(productionVisitor& pv) const override;
 };
 
 class productionFactory {
@@ -167,56 +182,60 @@ public:
     static prod_t bind(bool v);
     // solving ambiguity that results into bind("") being bind(true) instead of bind(string(""))
     static prod_t bind(const char* v);
-    static prod_t bind(std::string v);
+    static prod_t bind(const std::string& v);
 
     static prod_t createDouble(double v);
     static prod_t createInt(int v);
     static prod_t createBool(bool v);
-    static prod_t createVar(std::string v);
-    static prod_t createBuiltin(std::string v);
-    static prod_t createMask(std::string v);
-    static prod_t createBinary(bin_opcode code, prod_t&& op0, prod_t&& op1);
-    static prod_t createUnary(un_opcode code, prod_t&& op);
+    static prod_t createVar(const std::string& v);
+    static prod_t createBuiltin(const std::string& v);
+    static prod_t createMask(const std::string& v);
+    static prod_t createList(const prod_t& op0, const prod_t& op1);
+    static prod_t createBinary(bin_opcode code, const prod_t& op0, const prod_t& op1);
+    static prod_t createUnary(un_opcode code, const prod_t& op);
 };
 
 class printingVisitor: public virtual productionVisitor {
     std::ostream& ost_;
 
-    virtual void onDoubleConstant(double v);
-    virtual void onIntConstant(int v);
-    virtual void onBoolConstant(bool v);
-    virtual void onVariable(const std::string& name);
-    virtual void onBuiltin(const std::string& name);
-    virtual void onMask(const std::string& mask);
-    virtual void onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1);
-    virtual void onUnary(un_opcode opc, const prod_t& op0);
+    virtual void onDoubleConstant(double v) override;
+    virtual void onIntConstant(int v) override;
+    virtual void onBoolConstant(bool v) override;
+    virtual void onVariable(const std::string& name) override;
+    virtual void onBuiltin(const std::string& name) override;
+    virtual void onList(const std::list<prod_t>& data) override;
+    virtual void onMask(const std::string& mask) override;
+    virtual void onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1) override;
+    virtual void onUnary(un_opcode opc, const prod_t& op0) override;
 public:
     printingVisitor(std::ostream& ost);
 };
 
 std::ostream& operator<<(std::ostream& ost, const production& prod);
 
-prod_t operator+ (prod_t&& op0, prod_t&& op1);
-prod_t operator- (prod_t&& op0, prod_t&& op1);
-prod_t operator* (prod_t&& op0, prod_t&& op1);
-prod_t operator/ (prod_t&& op0, prod_t&& op1);
-prod_t operator% (prod_t&& op0, prod_t&& op1);
-prod_t operator==(prod_t&& op0, prod_t&& op1);
-prod_t operator!=(prod_t&& op0, prod_t&& op1);
-prod_t operator> (prod_t&& op0, prod_t&& op1);
-prod_t operator< (prod_t&& op0, prod_t&& op1);
-prod_t operator>=(prod_t&& op0, prod_t&& op1);
-prod_t operator<=(prod_t&& op0, prod_t&& op1);
-prod_t operator&&(prod_t&& op0, prod_t&& op1);
-prod_t operator||(prod_t&& op0, prod_t&& op1);
-prod_t operator& (prod_t&& op0, prod_t&& op1);
-prod_t operator| (prod_t&& op0, prod_t&& op1);
-prod_t operator^ (prod_t&& op0, prod_t&& op1);
-prod_t operator<<(prod_t&& op0, prod_t&& op1);
-prod_t operator>>(prod_t&& op0, prod_t&& op1);
-prod_t deref     (prod_t&& op0);
-prod_t operator! (prod_t&& op0);
-prod_t operator- (prod_t&& op0);
-prod_t operator~ (prod_t&& op0);
+prod_t index(const prod_t&, const prod_t&);
+prod_t call(const prod_t&, const prod_t&);
+prod_t operator+ (const prod_t&, const prod_t&);
+prod_t operator- (const prod_t&, const prod_t&);
+prod_t operator* (const prod_t&, const prod_t&);
+prod_t operator/ (const prod_t&, const prod_t&);
+prod_t operator% (const prod_t&, const prod_t&);
+prod_t operator==(const prod_t&, const prod_t&);
+prod_t operator!=(const prod_t&, const prod_t&);
+prod_t operator> (const prod_t&, const prod_t&);
+prod_t operator< (const prod_t&, const prod_t&);
+prod_t operator>=(const prod_t&, const prod_t&);
+prod_t operator<=(const prod_t&, const prod_t&);
+prod_t operator&&(const prod_t&, const prod_t&);
+prod_t operator||(const prod_t&, const prod_t&);
+prod_t operator& (const prod_t&, const prod_t&);
+prod_t operator| (const prod_t&, const prod_t&);
+prod_t operator^ (const prod_t&, const prod_t&);
+prod_t operator<<(const prod_t&, const prod_t&);
+prod_t operator>>(const prod_t&, const prod_t&);
+prod_t deref     (const prod_t&);
+prod_t operator! (const prod_t&);
+prod_t operator- (const prod_t&);
+prod_t operator~ (const prod_t&);
 
 #endif // PRODUCTION_H_

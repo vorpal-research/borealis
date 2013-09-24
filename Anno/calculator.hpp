@@ -68,6 +68,20 @@ struct logical_not :
     { return !move(x); }
 };
 
+template<class T>
+struct indices :
+        std::binary_function< T, T, T > {
+    T operator()(T&& x, T&& y) const
+    { return index(move(x), move(y)); }
+};
+
+template<class T>
+struct calls :
+        std::binary_function< T, T, T > {
+    T operator()(T&& x, T&& y) const
+    { return call(move(x), move(y)); }
+};
+
 // binary ops
 #define DEFBINARY(NAME, OP) \
     template <class T> \
@@ -128,7 +142,7 @@ ExprType pull(std::stack< ExprType >& s) {
     ASSERTC( !s.empty() );
     ExprType nrv(std::move(s.top()));
     s.pop();
-    return nrv;
+    return std::move(nrv);
 }
 
 template<class Prim>
@@ -151,6 +165,16 @@ struct store_command :
     static void apply(const std::string&, expr_stack& s, command_type& com, commands_t& coms) {
         while (!s.empty()) s.pop();
         coms.push_back(std::move(com));
+    }
+};
+
+struct op_collect_list:
+        action_base<op_collect_list> {
+
+    static void apply(const std::string&, expr_stack& s, command_type&, commands_t&) {
+        auto rhs = pull(s);
+        auto lhs = pull(s);
+        s.push(productionFactory::createList(std::move(lhs), std::move(rhs)));
     }
 };
 

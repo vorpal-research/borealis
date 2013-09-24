@@ -44,7 +44,8 @@ namespace pegtl
 #ifdef __GXX_RTTI
 	 return typeid( typename Rule::key_type ).name();
 #else
-	 return "rule#";
+	 static auto demangled = demangle< Rule >();
+	 return demangled.c_str();
 #endif //_GXX_RTTI
       }
 

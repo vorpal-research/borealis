@@ -27,7 +27,7 @@ using integer = GRAMMAR(
     CH('0') >> CH('x', 'X') >= +G(xdigit) | CH('0') >= *RANGE('0', '7') | RANGE('1', '9') >> *G(digit)
 );
 using push_integer = LITERALGRAMMAR( G(integer) & PUSH(long long) );
-using boolean = GRAMMAR( S("true") | S("false") );
+struct boolean : SGRAMMAR(boolean, S("true") | S("false") );
 using push_boolean = LITERALGRAMMAR( G(boolean) & PUSH(bool) );
 // FP grammar
 // exponent := ('e'|'E') ('+'|'-') +(DIGIT)
@@ -35,7 +35,7 @@ using exponent = GRAMMAR( CH('e', 'E') >= CH('+', '-') >= +G(digit));
 // floating := +(DIGIT) exponent                    // 1e+2
 // floating := *(DIGIT) '.' +(DIGIT) ?exponent      // .23
 // floating := +(DIGIT) '.' *(DIGIT) ?exponent      // 1.
-using floating = GRAMMAR(
+struct floating: SGRAMMAR(floating,
       +G(digit) >> G(exponent)                          /* 1e+2 */
     | *G(digit) >> CH('.') >> +G(digit) >> ~G(exponent) /* .23 */
     | +G(digit) >> CH('.') >> *G(digit) >> ~G(exponent) /* 1. */
@@ -62,13 +62,35 @@ using literal = LITERALGRAMMAR( G(Grammar) );
 
 // opening paren
 using read_open = chpad< '(' >;
+using read_sq_open = chpad< '[' >;
 // closing paren
 using read_close = chpad< ')' >;
+using read_sq_close = chpad< ']' >;
+using read_comma = chpad< ',' >;
 
 // forward decl for the whole expression
 struct read_expr;
 // an atom is a primitive or a parentified expr
-using  read_atom = GRAMMAR( G(push_primitive) | SEQ(read_open, read_expr, read_close));
+struct read_atom : SGRAMMAR(read_atom, G(push_primitive) | SEQ(read_open, read_expr, read_close));
+
+struct read_expr_list : SGRAMMAR(read_expr_list,
+    (G(read_comma) >= G(read_expr)) & G(op_collect_list)
+);
+
+struct read_expr_list2: SGRAMMAR(read_expr_list2,
+    G(read_expr) >> *G(read_expr_list)
+);
+
+struct read_index_expr: SGRAMMAR(read_index_expr,
+    (G(read_sq_open) >= G(read_expr) >= G(read_sq_close)) & G(op_baction<indices<expression_type>>)
+);
+struct read_calling_expr: SGRAMMAR(read_calling_expr,
+    (G(read_open) >= G(read_expr_list2) >= G(read_close)) & G(op_baction<calls<expression_type>>)
+);
+
+struct read_postfix_expr : SGRAMMAR(read_postfix_expr,
+    G(read_atom) >> *(G(read_index_expr) | G(read_calling_expr))
+);
 
 // binary operation rule with oper sign being one char
 // eq to:
@@ -86,7 +108,7 @@ struct read_bop_m< pegtl::string< Chars... >, O, A > :
         ifapply< seq< strpad< pegtl::string< Chars... > >, O >, op_baction< A > > {};
 
 #define READ_BINARY(op, o, a) \
-    read_bop_m< _PS(#op), o, a <expression_type> >
+    read_bop_m< _PS(#op), o, a <expression_type> > {};
 
 // unary operation rule
 // eq to:
@@ -98,81 +120,79 @@ struct read_uop_m< pegtl::string< Chars... >, O, A > :
         ifapply< seq< strpad< pegtl::string< Chars... > >, O >, op_uaction< A > > {};
 
 #define READ_UNARY(op, o, a) \
-    read_uop_m< _PS(#op), o, a <expression_type> >
+    read_uop_m< _PS(#op), o, a <expression_type> > {};
 
 // load := '*' atom
-using read_load = READ_UNARY(*, read_atom, load);
+struct read_load: READ_UNARY(*, read_postfix_expr, load);
 // neg := '-' atom
-using read_neg  = READ_UNARY(-, read_atom, negate);
+struct read_neg: READ_UNARY(-, read_postfix_expr, negate);
 // not := '!' atom
-using read_not  = READ_UNARY(!, read_atom, logical_not);
+struct read_not: READ_UNARY(!, read_postfix_expr, logical_not);
 // bnot := '~' atom
-using read_bnot = READ_UNARY(~, read_atom, bit_not);
+struct read_bnot: READ_UNARY(~, read_postfix_expr, bit_not);
 // an unary op is just an atom, neg, not or bnot
-struct read_unary : OR_G(read_load, read_neg, read_not, read_bnot, read_atom) {};
+struct read_unary: OR_G(read_load, read_neg, read_not, read_bnot, read_postfix_expr) {};
 // mul := '*' unary
-using read_mul = READ_BINARY(*, read_unary, multiplies);
+struct read_mul: READ_BINARY(*, read_unary, multiplies);
 // div := '/' unary
-using read_div = READ_BINARY(/, read_unary, divides);
+struct read_div: READ_BINARY(/, read_unary, divides);
 // mod := '%' unary
-using read_mod = READ_BINARY(%, read_unary, modulus);
+struct read_mod: READ_BINARY(%, read_unary, modulus);
 // prod = unary *(mul | div | mod)
-using read_prod = GRAMMAR( G(read_unary) >> *(OR(read_mul, read_div, read_mod)) );
+struct read_prod: SGRAMMAR(read_prod, G(read_unary) >> *(OR(read_mul, read_div, read_mod)) );
 // add := '+' prod
-using read_add = READ_BINARY(+, read_prod, pluss);
+struct read_add: READ_BINARY(+, read_prod, pluss);
 // sub := '-' prod
-using read_sub = READ_BINARY(-, read_prod, minus);
+struct read_sub: READ_BINARY(-, read_prod, minus);
 // sum := prod *(add | sub)
-using read_sum = GRAMMAR( G(read_prod) >> *(G(read_add) | G(read_sub)) );
+struct read_sum: SGRAMMAR(read_sum, G(read_prod) >> *(G(read_add) | G(read_sub)) );
 // lsh := '<<' sum
-using read_lsh = READ_BINARY(<<, read_sum, left_shift);
+struct read_lsh: READ_BINARY(<<, read_sum, left_shift);
 // rsh := '>>' sum
-using read_rsh = READ_BINARY(>>, read_sum, left_shift);
+struct read_rsh: READ_BINARY(>>, read_sum, left_shift);
 // shift := sum *(lsh | rsh)
-using read_shift = GRAMMAR(G(read_sum) >> (*(G(read_lsh) | G(read_rsh))));
+struct read_shift: SGRAMMAR(read_shift, G(read_sum) >> (*(G(read_lsh) | G(read_rsh))));
 // gt := '>' shift
-using read_gt = READ_BINARY(>, read_shift, greater);
+struct read_gt: READ_BINARY(>, read_shift, greater);
 // lt := '<' shift
-using read_lt = READ_BINARY(<, read_shift, less);
+struct read_lt: READ_BINARY(<, read_shift, less);
 // lt := '>=' shift
-using read_ge = READ_BINARY(>=, read_shift, greater_or_equal);
+struct read_ge: READ_BINARY(>=, read_shift, greater_or_equal);
 // lt := '<=' shift
-using read_le = READ_BINARY(<=, read_shift, less_or_equal);
+struct read_le: READ_BINARY(<=, read_shift, less_or_equal);
 // inequality := shift *(gt | lt | ge | le)
-using read_inequality = GRAMMAR( G(read_shift) >> *(OR(read_ge, read_gt, read_le, read_lt)) );
+struct read_inequality: SGRAMMAR(read_inequality, G(read_shift) >> *(OR(read_ge, read_gt, read_le, read_lt)) );
 // eq = '==' inequality
-using read_eq = READ_BINARY(==, read_inequality, equal);
+struct read_eq: READ_BINARY(==, read_inequality, equal);
 // neq = '!=' inequality
-using read_neq = READ_BINARY(!=, read_inequality, nequal);
+struct read_neq: READ_BINARY(!=, read_inequality, nequal);
 // equality := inequality *(eq | neq)
-using read_equality = GRAMMAR( G(read_inequality) >> *(G(read_eq) | G(read_neq)) );
+struct read_equality: SGRAMMAR(read_equality, G(read_inequality) >> *(G(read_eq) | G(read_neq)) );
 // bitand := '&' equality
-using read_bitand = READ_BINARY(&, read_equality, bit_and);
+struct read_bitand: READ_BINARY(&, read_equality, bit_and);
 // bitand2 := equality *(bitand)
-using read_bitand2 = GRAMMAR(G(read_equality) >> *(G(read_bitand)));
+struct read_bitand2: SGRAMMAR(read_bitand2, G(read_equality) >> *(G(read_bitand)));
 // bitxor := '^' bitand2
-using read_bitxor = READ_BINARY(^, read_bitand2, bit_xor);
+struct read_bitxor: READ_BINARY(^, read_bitand2, bit_xor);
 // bitxor2 := bitand2 *(bitxor)
-using read_bitxor2 = GRAMMAR(G(read_bitand2) >> *(G(read_bitxor)));
+struct read_bitxor2: SGRAMMAR(read_bitxor2, G(read_bitand2) >> *(G(read_bitxor)));
 // bitor := '|' bitxor2
-using read_bitor = READ_BINARY(|, read_bitxor2, bit_or);
+struct read_bitor: READ_BINARY(|, read_bitxor2, bit_or);
 // bitor2 := bitxor2 *(bitor)
-using read_bitor2 = GRAMMAR( G(read_bitxor2) >> *G(read_bitor) );
+struct read_bitor2: SGRAMMAR(read_bitor2, G(read_bitxor2) >> *G(read_bitor) );
 // land := '&&' bitor2
-using read_land = READ_BINARY(&&, read_bitor2, logical_and);
+struct read_land: READ_BINARY(&&, read_bitor2, logical_and);
 // land2 := bitor2 *(land)
-using read_land2 = GRAMMAR( G(read_bitor2) >> *G(read_land) );
+struct read_land2: SGRAMMAR(read_land2, G(read_bitor2) >> *G(read_land) );
 // lor := '||' land2
-using read_lor = READ_BINARY(||, read_land2, logical_or);
+struct read_lor: READ_BINARY(||, read_land2, logical_or);
 // lor2 := land2 *(lor)
-using read_lor2 = GRAMMAR( G(read_land2) >> *G(read_lor) );
+struct read_lor2: SGRAMMAR(read_lor2, G(read_land2) >> *G(read_lor) );
 // lor2 is the root of all expressions (as we don't consider even less bound ones)
 // XXX: do we need to implement ternary operator (?:)
 //      if we do, it will be right below lor2
 struct read_expr :
         read_lor2 {};
-using read_expr_list = GRAMMAR( G(read_expr) >> *( CH(',') >> G(read_expr) ) );
-using read_call = GRAMMAR( G(push_builtin) >> CH('(') >> G(read_expr_list) >> CH(')') );
 
 #undef READ_UNARY
 #undef READ_BINARY
