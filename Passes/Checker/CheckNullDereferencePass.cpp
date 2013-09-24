@@ -115,7 +115,7 @@ public:
             return false;
         }
 
-        dbgs() << "Query: " << q->toString() << endl;
+        dbgs() << "Query: " << q << endl;
         dbgs() << "State: " << ps << endl;
 
 #if defined USE_MATHSAT_SOLVER
@@ -128,6 +128,20 @@ public:
 
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;
+
+            MathSAT::ExprFactory cef;
+            MathSAT::Solver cs(cef);
+
+            auto& F = *where.getParent()->getParent();
+
+            std::vector<Term::Ptr> args;
+            args.reserve(F.arg_size());
+            for (auto& arg : borealis::util::view(F.arg_begin(), F.arg_end())) {
+                args.push_back(pass->FN.Term->getArgumentTerm(&arg));
+            }
+
+            cs.getContract(args, q, ps);
+
             return true;
         } else {
             dbgs() << "Passed!" << endl;

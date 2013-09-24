@@ -48,6 +48,11 @@ public:
             PredicateState::Ptr query,
             PredicateState::Ptr body);
 
+    Dynamic getContract(
+                const std::vector<Term::Ptr>& args,
+                PredicateState::Ptr query,
+                PredicateState::Ptr body);
+
 private:
 
     ExprFactory& msatef;
