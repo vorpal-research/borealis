@@ -10,6 +10,8 @@ DEFS := \
 	-DGOOGLE_PROTOBUF_NO_RTTI \
 #	-DUSE_MATHSAT_SOLVER
 
+USER_DEFS :=
+
 INCLUDE_DIRS := \
 	/usr/include/z3
 
@@ -26,7 +28,8 @@ CXXFLAGS := \
 	-g \
 	$(RTTIFLAG) \
 	$(INCLUDES) \
-	$(DEFS)
+	$(DEFS) \
+	$(USER_DEFS)
 
 LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter \
 	codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine \
