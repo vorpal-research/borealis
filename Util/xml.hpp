@@ -87,7 +87,7 @@ class Xml {
 
 public:
 
-    Xml(const std::string& root) : doc(new tinyxml2::XMLDocument()) {
+    explicit Xml(const std::string& root) : doc(new tinyxml2::XMLDocument()) {
         auto* rootNode = doc->NewElement(root.c_str());
         doc->InsertEndChild(rootNode);
         nodeStack.push(rootNode);

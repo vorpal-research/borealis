@@ -19,6 +19,8 @@
 #undef GUARD
 #undef GUARDED
 #undef STATIC_STRING
+#undef NORETURN
+#undef COMPILER
 #undef BOREALIS_MACROS_DEFINED
 #else
 #error "unmacros.h is included without corresponding macros.h include!"

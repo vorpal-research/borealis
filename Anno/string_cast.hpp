@@ -18,7 +18,7 @@ namespace borealis {
 namespace anno {
 
 // bad string cast exception, no additional info provided, sorry =)
-class bad_string_cast : public std::exception {};
+class bad_string_cast : public virtual std::exception {};
 
 // the casting function itself
 // throws bad_string_cast

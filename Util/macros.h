@@ -164,5 +164,15 @@ borealis::util::at(S,79) \
 >
 
 //[[[end]]]
+// XXX: change this to [[noreturn]] when mother..cking G++ supports it
+#define NORETURN __attribute__((noreturn))
+
+#ifdef __clang__
+#define COMPILER clang
+#elif defined(__GNUC__)
+#define COMPILER gcc
+#else
+#error "You are trying to use an unsupported compiler. Either add it to macros.h or quit trying"
+#endif
 
 // #endif /* MACROS_H_ */

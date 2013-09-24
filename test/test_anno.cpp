@@ -46,6 +46,12 @@ TEST(Parse, annotation) {
 
         ASSERT_EQ(toString(cmd.at(0)), "requires((x | y))");
 
+        ASSERT_EQ(toString(parse_command("/* @assert x */")               [0]), "assert(x)");
+        ASSERT_EQ(toString(parse_command("/* @assert x+2 */")             [0]), "assert((x + 2))");
+        ASSERT_EQ(toString(parse_command("/* @assert x(y) */")            [0]), "assert(x(y))");
+        ASSERT_EQ(toString(parse_command("/* @assert x[y] */")            [0]), "assert(x[y])");
+        ASSERT_EQ(toString(parse_command("/* @assert x[y+1] */")          [0]), "assert(x[(y + 1)])");
+        ASSERT_EQ(toString(parse_command("/* @assert x[y(1, 2, 3)][2] */")[0]), "assert(x[y(1, 2, 3)][2])");
     }
 }
 

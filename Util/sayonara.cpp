@@ -10,6 +10,7 @@
 
 #include "Logging/logger.hpp"
 #include "Util/util.h"
+#include "Util/macros.h"
 
 namespace borealis {
 namespace util {
@@ -17,7 +18,7 @@ namespace util {
 namespace {
     using diehandler = void(*)(const char*);
 
-    [[noreturn]] void defaultDie(const char* m) {
+    NORETURN void defaultDie(const char* m) {
         errs() << m;
 
         debug_break();
@@ -31,10 +32,11 @@ void ondie(const char* m, diehandler hndl = nullptr) {
     inner = hndl;
 }
 
-[[noreturn]] void diediedie(const char* m) {
+NORETURN void diediedie(const char* m) {
     ondie(m);
     throw 0;
 }
 
+#include "Util/unmacros.h"
 } // namespace util
 } // namespace borealis

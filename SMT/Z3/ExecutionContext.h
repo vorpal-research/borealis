@@ -24,7 +24,7 @@ class ExecutionContext {
     typedef Z3::ExprFactory ExprFactory;
 
     ExprFactory& factory;
-    std::unordered_map<std::string, MemArray> memArrays;
+    mutable std::unordered_map<std::string, MemArray> memArrays;
     unsigned long long currentPtr;
 
     static constexpr auto MEMORY_ID = "$$__MEMORY__$$";
@@ -40,7 +40,9 @@ class ExecutionContext {
         if (containsKey(memArrays, id)) {
             return memArrays.at(id);
         }
-        return factory.getNoMemoryArray();
+        auto ret = factory.getNoMemoryArray();
+        memArrays.emplace(id, ret);
+        return ret;
     }
     void set(const std::string& id, const MemArray& value) {
         using borealis::util::containsKey;

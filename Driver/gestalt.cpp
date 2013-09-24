@@ -97,13 +97,13 @@ int gestalt::main(int argc, const char** argv) {
 
     const std::vector<std::string> empty;
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CommandLine args(argc, argv);
     llvm::sys::Path selfPath = llvm::sys::Program::FindProgramByName(argv[0]);
     llvm::SmallString<64> selfDir = selfPath.getDirname();
     llvm::sys::path::append(selfDir, "wrapper.conf");
-#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 
     AppConfiguration::initialize(
         new CommandLineConfigSource{ args.suffixes("---").stlRep() },
