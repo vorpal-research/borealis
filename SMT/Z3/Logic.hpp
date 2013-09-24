@@ -1072,13 +1072,14 @@ public:
     }
 
     static TheoryArray mkFree(z3::context& ctx, const std::string& name) {
-        return ctx.constant(
+        return z3::to_expr(ctx, Z3_mk_fresh_const(
+            ctx,
             name.c_str(),
             ctx.array_sort(
                 impl::generator<Index>::sort(ctx),
                 impl::generator<Elem>::sort(ctx)
             )
-        );
+        ));
     }
 
     static TheoryArray merge(
@@ -1117,7 +1118,7 @@ public:
         // XXX akhin this is as fucked up as before, but also works for now
 
         inner = [&ctx](Index ix) -> Elem {
-            auto initial = Function<Elem(Index)>::mkFunc(ctx, "$$__initial_mem__$$");
+            auto initial = Function<Elem(Index)>::mkFreshFunc(ctx, "$$__initial_mem__$$");
             return initial(ix);
         };
     }
