@@ -60,7 +60,7 @@ class ExecutionContext {
 
 public:
 
-    ExecutionContext(ExprFactory& factory);
+    ExecutionContext(ExprFactory& factory, unsigned long long memoryStart = 1ULL);
     ExecutionContext(const ExecutionContext&) = default;
 
     MemArray getCurrentMemoryContents() {

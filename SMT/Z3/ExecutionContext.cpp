@@ -10,9 +10,8 @@
 namespace borealis {
 namespace z3_ {
 
-ExecutionContext::ExecutionContext(ExprFactory& factory):
-    factory(factory),
-    currentPtr(1U) {};
+ExecutionContext::ExecutionContext(ExprFactory& factory, unsigned long long memoryStart):
+    factory(factory), currentPtr(memoryStart) {};
 
 Z3::Bool ExecutionContext::toSMT() const {
     return factory.getTrue();

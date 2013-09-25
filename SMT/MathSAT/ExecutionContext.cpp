@@ -10,8 +10,8 @@
 namespace borealis {
 namespace mathsat_ {
 
-ExecutionContext::ExecutionContext(ExprFactory& factory):
-    factory(factory), currentPtr(1U) {};
+ExecutionContext::ExecutionContext(ExprFactory& factory, unsigned long long memoryStart):
+    factory(factory), currentPtr(memoryStart) {};
 
 MathSAT::Bool ExecutionContext::toSMT() const {
     return factory.getTrue();
