@@ -47,7 +47,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     FN = FactoryNest(st);
 
     unsigned int i = 0;
-    for (auto* F : M) ids[F] = i++;
+    for (auto& F : M) ids[&F] = i++;
 
     for (auto a : annotations) {
         Annotation::Ptr anno = materialize(a, FN, &meta);
