@@ -133,8 +133,15 @@ public:
         //      CmpTerm from annotations is signed by default,
         //      need to change that to unsigned when needed
         if (auto match = match_pair<type::Integer, type::Integer>(lhvt, rhvt)) {
-            if (match->first->getSignedness() == llvm::Signedness::Unsigned &&
-                match->second->getSignedness() == llvm::Signedness::Unsigned) {
+            if (
+                    (
+                        match->first->getSignedness() == llvm::Signedness::Unsigned &&
+                        match->second->getSignedness() != llvm::Signedness::Signed
+                    ) || (
+                        match->second->getSignedness() == llvm::Signedness::Unsigned &&
+                        match->first->getSignedness() != llvm::Signedness::Signed
+                    )
+            ) {
                 return factory().getCmpTerm(
                     llvm::forceUnsigned(trm->getOpcode()),
                     trm->getLhv(),
