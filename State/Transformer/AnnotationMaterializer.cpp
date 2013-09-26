@@ -77,6 +77,10 @@ TermFactory& AnnotationMaterializer::factory() const {
     return *pimpl->TF;
 }
 
+MetaInfoTracker::ValueDescriptors AnnotationMaterializer::forValue(llvm::Value* value) const {
+    return pimpl->MI->locate(value);
+}
+
 void AnnotationMaterializer::failWith(const std::string& message) {
     static std::string buf;
 

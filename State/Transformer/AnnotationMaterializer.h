@@ -16,6 +16,8 @@
 #include "Term/NameContext.h"
 #include "Util/util.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 class AnnotationMaterializer : public borealis::Transformer<AnnotationMaterializer> {
@@ -37,6 +39,13 @@ public:
     const NameContext& nameContext() const;
     TermFactory& factory() const;
 
+    MetaInfoTracker::ValueDescriptors forValue(llvm::Value* value) const;
+    MetaInfoTracker::ValueDescriptor forValueSingle(llvm::Value* value) const {
+        auto descs = forValue(value);
+        ASSERTC(descs.size() == 1);
+        return descs.front();
+    }
+
     Annotation::Ptr doit();
 
     void failWith(const std::string& message);
@@ -52,10 +61,12 @@ public:
         auto ret = forName(trm->getName());
         if (ret.isInvalid()) failWith(trm->getName() + " : variable not found in scope");
 
+        auto var = factory().getValueTerm(ret.val, ret.signedness);
+
         if (ret.shouldBeDereferenced) {
-            return factory().getLoadTerm(factory().getValueTerm(ret.val));
+            return factory().getLoadTerm(var);
         } else {
-            return factory().getValueTerm(ret.val);
+            return var;
         }
     }
 
@@ -65,7 +76,8 @@ public:
 
         if (name == "result") {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
-                return factory().getReturnValueTerm(ctx.func);
+                auto desc = forValueSingle(ctx.func);
+                return factory().getReturnValueTerm(ctx.func, desc.signedness);
             } else {
                 failWith("\result can only be bound to functions' outer scope");
             }
@@ -78,7 +90,9 @@ public:
                 auto argIt = ctx.func->arg_begin();
                 std::advance(argIt, val);
 
-                return factory().getArgumentTerm(argIt);
+                auto desc = forValueSingle(argIt);
+
+                return factory().getArgumentTerm(argIt, desc.signedness);
             } else {
                 failWith("\arg# can only be bound to functions' outer scope");
             }
@@ -88,10 +102,35 @@ public:
 
         return trm;
     }
+
+    Term::Ptr transformCmpTerm(CmpTermPtr trm) {
+        using borealis::util::match_pair;
+
+        auto lhvt = trm->getLhv()->getType();
+        auto rhvt = trm->getRhv()->getType();
+
+        // XXX: Tricky stuff follows...
+        //      CmpTerm from annotations is signed by default,
+        //      need to change that to unsigned when needed
+        if (auto match = match_pair<type::Integer, type::Integer>(lhvt, rhvt)) {
+            if (match->first->getSignedness() == llvm::Signedness::Unsigned &&
+                match->second->getSignedness() == llvm::Signedness::Unsigned) {
+                return factory().getCmpTerm(
+                    llvm::forceUnsigned(trm->getOpcode()),
+                    trm->getLhv(),
+                    trm->getRhv()
+                );
+            }
+        }
+
+        return trm;
+    }
 };
 
 Annotation::Ptr materialize(Annotation::Ptr, FactoryNest FN, MetaInfoTracker*);
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* ANNOTATIONMATERIALIZER_H_ */

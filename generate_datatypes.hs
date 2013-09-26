@@ -63,6 +63,7 @@ adjustType "LongLong" = CppTypeDescription "long long int" "sint64" "long long i
 adjustType "ULongLong" = CppTypeDescription "unsigned long long int" "uint64" "unsigned long long int" True ""
 adjustType "Bool" = CppTypeDescription "bool" "bool" "bool" True ""
 adjustType "Float" = CppTypeDescription "double" "double" "double" True ""
+adjustType "LLVMSignedness" = CppTypeDescription "llvm::Signedness" "Signedness" "llvm::Signedness" False "#include \"Util/util.h\""
 adjustType dt = CppTypeDescription (dt ++ "::Ptr") dt (dt ++ "::Ptr") False ""
 
 

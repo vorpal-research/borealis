@@ -27,19 +27,19 @@ public:
 
     typedef std::shared_ptr<TermFactory> Ptr;
 
-    Term::Ptr getArgumentTerm(llvm::Argument* arg) {
+    Term::Ptr getArgumentTerm(llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         return Term::Ptr{
             new ArgumentTerm(
-                TyF->cast(arg->getType()),
+                TyF->cast(arg->getType(), sign),
                 arg->getArgNo(),
                 st->getLocalName(arg)
             )
         };
     }
 
-    Term::Ptr getConstTerm(llvm::Constant* c) {
+    Term::Ptr getConstTerm(llvm::Constant* c, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         using namespace llvm;
@@ -69,7 +69,7 @@ public:
                 if (cInt->isOne()) return getTrueTerm();
                 else if (cInt->isZero()) return getFalseTerm();
             } else {
-                return getIntTerm(cInt->getValue().getZExtValue());
+                return getIntTerm(cInt->getValue().getZExtValue(), sign);
             }
 
         } else if (auto* cFP = dyn_cast<ConstantFP>(c)) {
@@ -130,10 +130,10 @@ public:
         return getBooleanTerm(false);
     }
 
-    Term::Ptr getIntTerm(long long i) {
+    Term::Ptr getIntTerm(long long i, llvm::Signedness sign = llvm::Signedness::Unknown) {
         return Term::Ptr{
             new OpaqueIntConstantTerm(
-                TyF->getInteger(), i
+                TyF->getInteger(sign), i
             )
         };
     }
@@ -146,29 +146,29 @@ public:
         };
     }
 
-    Term::Ptr getReturnValueTerm(llvm::Function* F) {
+    Term::Ptr getReturnValueTerm(llvm::Function* F, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         return Term::Ptr{
             new ReturnValueTerm(
-                TyF->cast(F->getFunctionType()->getReturnType()),
+                TyF->cast(F->getFunctionType()->getReturnType(), sign),
                 F->getName().str()
             )
         };
     }
 
-    Term::Ptr getValueTerm(llvm::Value* v) {
+    Term::Ptr getValueTerm(llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
         using namespace llvm;
 
         if (auto* c = dyn_cast<Constant>(v))
-            return getConstTerm(c);
+            return getConstTerm(c, sign);
         else if (auto* arg = dyn_cast<Argument>(v))
-            return getArgumentTerm(arg);
+            return getArgumentTerm(arg, sign);
 
         return Term::Ptr{
             new ValueTerm(
-                TyF->cast(v->getType()),
+                TyF->cast(v->getType(), sign),
                 st->getLocalName(v)
             )
         };

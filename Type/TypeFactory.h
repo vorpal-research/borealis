@@ -9,6 +9,7 @@
 #define TYPEFACTORY_H_
 
 #include "Type/Type.def"
+#include "Util/cast.hpp"
 #include "Util/util.h"
 
 namespace borealis {
@@ -18,9 +19,9 @@ class TypeFactory {
     TypeFactory();
 
     Type::Ptr theBool;
-    Type::Ptr theInteger;
     Type::Ptr theFloat;
     Type::Ptr theUnknown;
+    std::map<llvm::Signedness, Type::Ptr> integers;
     std::map<Type::Ptr, Type::Ptr> pointers;
     std::map<std::string, Type::Ptr> errors;
 
@@ -38,9 +39,9 @@ public:
         return theBool;
     }
 
-    Type::Ptr getInteger() {
-        if(!theInteger) theInteger = Type::Ptr(new type::Integer());
-        return theInteger;
+    Type::Ptr getInteger(llvm::Signedness sign = llvm::Signedness::Unknown) {
+        if(!integers.count(sign)) integers[sign] = Type::Ptr(new type::Integer(sign));
+        return integers[sign];
     }
 
     Type::Ptr getFloat() {
@@ -71,11 +72,11 @@ public:
         return type->getClassTag() == class_tag<type::UnknownType>();
     }
 
-    Type::Ptr cast(const llvm::Type* type) {
+    Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) {
         using borealis::util::toString;
 
         if(type->isIntegerTy())
-            return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger();
+            return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger(sign);
         else if(type->isFloatingPointTy())
             return getFloat();
         else if(type->isPointerTy())
@@ -104,12 +105,20 @@ public:
     }
 
     Type::Ptr merge(Type::Ptr one, Type::Ptr two) {
+        using borealis::util::match_pair;
+
         if(!isValid(one)) return one;
         if(!isValid(two)) return two;
 
         if(isUnknown(one)) return two;
         if(isUnknown(two)) return one;
         if(one == two) return one;
+
+        if(auto match = match_pair<type::Integer, type::Integer>(one, two)) {
+            // XXX: atm signedness is used only in AnnotationMaterializer,
+            //      therefore we don't need to do any merge per se
+            return getInteger(llvm::Signedness::Unknown);
+        }
 
         return getTypeError(
             "Unmergeable types: " +

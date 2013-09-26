@@ -31,12 +31,15 @@ public:
 
     struct ValueDescriptor {
         llvm::Value* val;
+        llvm::Signedness signedness;
         bool shouldBeDereferenced;
 
         bool isInvalid() {
             return val == nullptr;
         }
     };
+
+    using ValueDescriptors = std::vector<ValueDescriptor>;
 
 private:
 
@@ -51,23 +54,25 @@ private:
 
         // fnd :: (Locus, llvm::Value*)
         auto fnd = std::find_if(begin, end, f);
-        if (fnd == end) return ValueDescriptor{ nullptr, false };
+        if (fnd == end) return ValueDescriptor{ nullptr, llvm::Signedness::Unknown, false };
 
         Value* foundValue = fnd->second;
         const Locus& foundLocus = *fnd->first;
 
+        llvm::Signedness sign = llvm::Signedness::Unknown;
         bool deref = false;
 
         // vars :: llvm::Value* -> (llvm::Value*, VarInfo)
         for (auto& pr : view(vars.get(foundValue))) {
             const VarInfo& varInfo = pr.second;
             if (varInfo.originalLocus == foundLocus) {
+                sign = varInfo.signedness;
                 deref = (varInfo.treatment == VarInfo::Allocated);
                 break;
             }
         }
 
-        return ValueDescriptor{ foundValue, deref };
+        return ValueDescriptor{ foundValue, sign, deref };
     }
 
     template<class Iter>
@@ -100,13 +105,17 @@ private:
                     const VarInfo& varInfo = pr.second;
                     if (varInfo.originalLocus == foundLocus &&
                         varInfo.originalName == foundName) {
-                        return ValueDescriptor{ foundValue, (varInfo.treatment == VarInfo::Allocated) };
+                        return ValueDescriptor{
+                            foundValue,
+                            varInfo.signedness,
+                            (varInfo.treatment == VarInfo::Allocated)
+                        };
                     }
                 }
             }
         }
 
-        return ValueDescriptor{ nullptr, false };
+        return ValueDescriptor{ nullptr, llvm::Signedness::Unknown, false };
     }
 
     static bool isFunc(VarInfoContainer::loc_value_iterator::reference pr) {
@@ -131,6 +140,18 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnModule(llvm::Module&) override;
     virtual void print(llvm::raw_ostream&, const llvm::Module* M) const override;
+
+    ValueDescriptors locate(llvm::Value* v) const {
+        return borealis::util::view(vars.get(v)).map(
+            [](const std::pair<llvm::Value*, VarInfo>& e) {
+                return ValueDescriptor {
+                    e.first,
+                    e.second.signedness,
+                    e.second.treatment == VarInfo::Allocated
+                };
+            }
+        ).toVector();
+    }
 
     ValueDescriptor locate(const Locus& loc, DiscoveryPolicy policy) const {
         switch(policy) {

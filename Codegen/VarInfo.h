@@ -36,7 +36,8 @@ enum class DiscoveryPolicy {
 struct VarInfo {
     borealis::util::option<std::string> originalName;
     borealis::util::option<borealis::Locus> originalLocus;
-    enum { Allocated, Plain } treatment;
+    enum { Plain, Allocated } treatment;
+    llvm::Signedness signedness;
     clang::Decl* ast;
 
     const VarInfo& overwriteBy(const VarInfo& vi) {
@@ -50,13 +51,19 @@ struct VarInfo {
         if (vi.ast) {
             ast = vi.ast;
         }
-        if (vi.treatment) {
-            treatment = vi.treatment;
-        }
+
+        treatment = vi.treatment;
+        signedness = vi.signedness;
 
         return *this;
     }
 };
+
+inline llvm::Signedness meta2sign(llvm::DIType type) {
+    return type.isValid()
+        ? (type.isUnsignedDIType() ? llvm::Signedness::Unsigned : llvm::Signedness::Signed)
+        : (llvm::Signedness::Unknown);
+}
 
 inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
     using borealis::util::just;
@@ -71,6 +78,7 @@ inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
             }
         ),
         VarInfo::Plain,
+        meta2sign(dd.getType()),
         ast
     };
 }
@@ -84,6 +92,12 @@ Streamer& operator<<(Streamer& ost, const VarInfo& vi) {
     else ost << vi.originalLocus.getUnsafe();
 
     if (vi.treatment == VarInfo::Allocated) ost << " (alloca)";
+
+    switch (vi.signedness) {
+    case llvm::Signedness::Signed:   ost << " (signed)";   break;
+    case llvm::Signedness::Unsigned: ost << " (unsigned)"; break;
+    case llvm::Signedness::Unknown:  ost << " (unknown)";  break;
+    }
 
     if (vi.ast) ost << " : " << *vi.ast;
     return ost;

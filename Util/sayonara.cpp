@@ -6,10 +6,12 @@
  */
 
 #include <debugbreak/debugbreak.h>
+
 #include <cstdlib>
 
 #include "Logging/logger.hpp"
 #include "Util/util.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -38,5 +40,6 @@ NORETURN void diediedie(const char* m) {
 }
 
 #include "Util/unmacros.h"
+
 } // namespace util
 } // namespace borealis
