@@ -25,6 +25,7 @@ namespace type {
 
 /** protobuf -> Type/Integer.proto
 import "Type/Type.proto";
+import "Util/Signedness.proto";
 
 package borealis.type.proto;
 
