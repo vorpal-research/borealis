@@ -26,6 +26,7 @@ class MetaInfoTracker : public llvm::ModulePass {
     typedef DataProvider<clang::FileManager> sm_t;
 
     VarInfoContainer vars;
+    llvm::LLVMContext* ctx;
 
 public:
 
@@ -37,6 +38,8 @@ public:
             return val == nullptr;
         }
     };
+
+    llvm::LLVMContext& getLLVMContext() const { return *ctx; }
 
 private:
 

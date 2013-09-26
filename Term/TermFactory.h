@@ -222,6 +222,26 @@ public:
         };
     }
 
+    // FIXME: naming
+    Term::Ptr getNaiveGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
+        Type::Ptr tp = base->getType();
+        for(const auto& _ : shifts) {
+            util::use(_);
+            if(auto ptr = llvm::dyn_cast<type::Pointer>(tp)) {
+                tp = ptr->getPointed();
+            } else tp = TyF->getTypeError("Incorrect type dereference" );
+        }
+
+        return Term::Ptr{new GepTerm{
+            tp,
+            base,
+            util::viewContainer(shifts).map([this](Term::Ptr elem){
+                return std::make_pair(elem, getIntTerm(1));
+            }).toVector(),
+            util::nothing()
+        }};
+    }
+
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
         ASSERT(st, "Missing SlotTracker");
 
@@ -324,6 +344,16 @@ public:
     Term::Ptr getOpaqueConstantTerm(bool v) {
         return Term::Ptr{
             new OpaqueBoolConstantTerm(TyF->getBool(), v)
+        };
+    }
+
+    Term::Ptr getOpaqueIndexingTerm(Term::Ptr lhv, Term::Ptr rhv) {
+        return Term::Ptr{
+            new OpaqueIndexingTerm(
+                TyF->getUnknownType(),
+                lhv,
+                rhv
+            )
         };
     }
 

@@ -59,6 +59,10 @@ Annotation::Ptr AnnotationMaterializer::doit() {
     return pimpl->A->clone(trm);
 }
 
+llvm::LLVMContext& AnnotationMaterializer::getLLVMContext() const {
+    return pimpl->MI->getLLVMContext();
+}
+
 MetaInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
     switch(pimpl->nc.placement) {
     case NameContext::Placement::GlobalScope:

@@ -33,6 +33,9 @@ message $type.dtname$ {
 **/
 
 class $type.dtname$ : public ClassTag {
+protected:
+    $type.dtname$(const $type.dtname$&) = default;
+    
 public:
     $type.dtname$(id_t id) : ClassTag(id) {};
 

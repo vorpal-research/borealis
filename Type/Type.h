@@ -33,6 +33,9 @@ message Type {
 **/
 
 class Type : public ClassTag {
+protected:
+    Type(const Type&) = default;
+    
 public:
     Type(id_t id) : ClassTag(id) {};
 
