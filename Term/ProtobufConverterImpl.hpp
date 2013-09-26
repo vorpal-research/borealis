@@ -22,6 +22,7 @@
 #include "Protobuf/Gen/Term/OpaqueBoolConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBuiltinTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueFloatingConstantTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueIndexingTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueUndefTerm.pb.h"
@@ -315,6 +316,33 @@ struct protobuf_traits_impl<OpaqueFloatingConstantTerm> {
             const proto::OpaqueFloatingConstantTerm& t) {
         auto value = t.value();
         return Term::Ptr{ new OpaqueFloatingConstantTerm(type, value) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<OpaqueIndexingTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::OpaqueIndexingTerm> toProtobuf(const OpaqueIndexingTerm& t) {
+        auto res = util::uniq(new proto::OpaqueIndexingTerm());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(*t.getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(*t.getRhv()).release()
+        );
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueIndexingTerm& t) {
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new OpaqueIndexingTerm(type, lhv, rhv) };
     }
 };
 

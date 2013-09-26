@@ -75,7 +75,6 @@ protected:
     Predicate(const Predicate&) = default;
 
 public:
-
     virtual ~Predicate() {};
 
     PredicateType getType() const {

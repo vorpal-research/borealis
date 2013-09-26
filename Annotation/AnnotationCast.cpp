@@ -134,6 +134,8 @@ public:
 
         if (isCompare(op)) {
             term = tf->getCmpTerm(convertCT(op), lhvtc.term, rhvtc.term );
+        } else if( op == bin_opcode::OPCODE_INDEX)  {
+            term = tf->getOpaqueIndexingTerm(lhvtc.term, rhvtc.term);
         } else {
             term = tf->getBinaryTerm(convertAT(op), lhvtc.term, rhvtc.term );
         }

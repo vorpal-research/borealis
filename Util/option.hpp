@@ -21,7 +21,7 @@ namespace util {
 
 struct nothing_t {};
 
-inline nothing_t nothing() {
+constexpr nothing_t nothing() {
     return nothing_t();
 }
 

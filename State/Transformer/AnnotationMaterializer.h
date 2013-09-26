@@ -35,6 +35,7 @@ public:
             MetaInfoTracker* MI);
     ~AnnotationMaterializer();
 
+    llvm::LLVMContext& getLLVMContext() const;
     MetaInfoTracker::ValueDescriptor forName(const std::string& name) const;
     const NameContext& nameContext() const;
     TermFactory& factory() const;
@@ -57,9 +58,26 @@ public:
         failWith(std::string(r));
     }
 
+
+    // note this is using the more general visitor form (not taking the args into account)
+    Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
+        // FIXME: decide and handle the multidimensional array case
+
+        auto gep = factory().getNaiveGepTerm(trm->getLhv(), util::make_vector(trm->getRhv()));
+
+        // check typing
+        if(const auto* terr = llvm::dyn_cast<type::TypeError>(gep->getType())){
+            failWith(terr->getMessage());
+        } else if(llvm::isa<type::Pointer>(gep->getType())) {
+            return factory().getLoadTerm(gep);
+        } else failWith("Type not dereferenceable");
+
+        return trm;
+    }
+
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
-        auto ret = forName(trm->getName());
-        if (ret.isInvalid()) failWith(trm->getName() + " : variable not found in scope");
+        auto ret = forName(trm->getVName());
+        if (ret.isInvalid()) failWith(trm->getVName() + " : variable not found in scope");
 
         auto var = factory().getValueTerm(ret.val, ret.signedness);
 
@@ -81,6 +99,8 @@ public:
             } else {
                 failWith("\result can only be bound to functions' outer scope");
             }
+        } else if (name == "null" || name == "nullptr") {
+            return factory().getNullPtrTerm();
         } else if (name.startswith("arg")) {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 std::istringstream ist(name.drop_front(3).str());
