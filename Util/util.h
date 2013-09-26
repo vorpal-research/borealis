@@ -148,9 +148,9 @@ std::string unaryArithString(UnaryArithType opCode);
 package borealis.proto;
 
 enum Signedness {
-    Unknown  = 0,
-    Unsigned = 1,
-    Signed   = 2
+    Unknown  = 0;
+    Unsigned = 1;
+    Signed   = 2;
 }
 
 **/
