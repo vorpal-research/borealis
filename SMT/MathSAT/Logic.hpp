@@ -817,8 +817,8 @@ public:
 
         // XXX akhin this is as fucked up as before, but also works for now
 
-        inner = [&env](Index ix) -> Elem {
-            auto initial = Function<Elem(Index)>::mkFreshFunc(env, "$$__initial_mem__$$");
+        auto initial = Function<Elem(Index)>::mkFreshFunc(env, "$$__initial_mem__$$");
+        inner = [initial,&env](Index ix) -> Elem {
             return initial(ix);
         };
     }
