@@ -17,7 +17,8 @@ namespace mathsat_ {
 
 USING_SMT_IMPL(MathSAT);
 
-Solver::Solver(ExprFactory& msatef) : msatef(msatef) {}
+Solver::Solver(ExprFactory& msatef, unsigned long long memoryStart) :
+        msatef(msatef), memoryStart(memoryStart) {}
 
 msat_result Solver::check(
         const Bool& msatquery_,
@@ -63,7 +64,7 @@ bool Solver::isViolated(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
     return check(!msatquery, msatstate) != MSAT_UNSAT;
@@ -79,7 +80,7 @@ bool Solver::isPathImpossible(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
     return check(msatpath, msatstate) == MSAT_UNSAT;
@@ -93,7 +94,7 @@ Dynamic Solver::getInterpolant(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -136,7 +137,7 @@ Dynamic Solver::getSummary(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -156,7 +157,7 @@ Dynamic Solver::getSummary(
     argExprs.reserve(args.size());
     std::transform(args.begin(), args.end(), std::back_inserter(argExprs),
         [this](const Term::Ptr& arg) -> mathsat::Expr {
-            ExecutionContext ctx(msatef);
+            ExecutionContext ctx(msatef, memoryStart);
             return msatimpl::getExpr(
                 SMT<MathSAT>::doit(arg, msatef, &ctx)
             );
@@ -221,7 +222,7 @@ Dynamic Solver::getContract(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -242,7 +243,7 @@ Dynamic Solver::getContract(
     argExprs.reserve(args.size());
     std::transform(args.begin(), args.end(), std::back_inserter(argExprs),
         [this](const Term::Ptr& arg) -> mathsat::Expr {
-            ExecutionContext ctx(msatef);
+            ExecutionContext ctx(msatef, memoryStart);
             return msatimpl::getExpr(
                 SMT<MathSAT>::doit(arg, msatef, &ctx)
             );

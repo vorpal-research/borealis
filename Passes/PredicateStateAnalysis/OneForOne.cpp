@@ -121,9 +121,9 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
     const BasicBlock* bb = std::get<1>(wqe);
     PredicateState::Ptr inState = std::get<2>(wqe);
 
-    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachable()) {
-        return;
-    }
+    auto fMemId = FM->getMemoryStart(bb->getParent());
+
+    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachableIn(fMemId)) return;
 
     auto iter = bb->begin();
 

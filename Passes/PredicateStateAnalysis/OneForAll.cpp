@@ -106,8 +106,10 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
     auto inState = BBM(BB);
 
+    auto fMemId = FM->getMemoryStart(BB->getParent());
+
     if (inState == nullptr) return;
-    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachable()) return;
+    if (PredicateStateAnalysis::CheckUnreachable() && inState->isUnreachableIn(fMemId)) return;
 
     for (const auto& I : view(BB->begin(), BB->end())) {
 

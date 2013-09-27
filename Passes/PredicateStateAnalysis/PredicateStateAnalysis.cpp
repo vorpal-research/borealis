@@ -140,8 +140,10 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
            << "  Query: " << query << endl
            << "  State: " << bdy << endl;
 
+    auto fMemId = FM.getMemoryStart(&F);
+
     ExprFactory ef;
-    Solver s(ef);
+    Solver s(ef, fMemId);
 
     auto itp = s.getSummary(args, query, bdy);
 

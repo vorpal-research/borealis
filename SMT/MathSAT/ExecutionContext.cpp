@@ -10,8 +10,8 @@
 namespace borealis {
 namespace mathsat_ {
 
-ExecutionContext::ExecutionContext(ExprFactory& factory, unsigned long long memoryStart):
-    factory(factory), currentPtr(memoryStart) {};
+ExecutionContext::ExecutionContext(ExprFactory& factory, unsigned long long localMemory):
+    factory(factory), globalPtr(1ULL), localPtr(localMemory) {};
 
 MathSAT::Bool ExecutionContext::toSMT() const {
     return factory.getTrue();
@@ -20,7 +20,8 @@ MathSAT::Bool ExecutionContext::toSMT() const {
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx) {
     using std::endl;
     return s << "ctx state:" << endl
-             << "< offset = " << ctx.currentPtr << " >" << endl
+             << "< global offset = " << ctx.globalPtr << " >" << endl
+             << "< local offset = " << ctx.localPtr << " >" << endl
              << ctx.memArrays;
 }
 

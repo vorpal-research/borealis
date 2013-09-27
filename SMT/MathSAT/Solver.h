@@ -29,7 +29,7 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("mathsat-solver")
 #include "Util/unmacros.h"
 
-    Solver(ExprFactory& msatef);
+    Solver(ExprFactory& msatef, unsigned long long memoryStart);
 
     bool isViolated(
             PredicateState::Ptr query,
@@ -56,6 +56,7 @@ public:
 private:
 
     ExprFactory& msatef;
+    unsigned long long memoryStart;
 
     msat_result check(
             const Bool& msatquery,

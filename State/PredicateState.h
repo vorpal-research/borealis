@@ -74,7 +74,7 @@ public:
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const = 0;
     virtual PredicateState::Ptr simplify() const = 0;
 
-    bool isUnreachable() const;
+    bool isUnreachableIn(unsigned long long memoryStart) const;
 
     static bool classof(const PredicateState*) {
         return true;

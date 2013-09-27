@@ -118,19 +118,21 @@ public:
         dbgs() << "Query: " << q << endl;
         dbgs() << "State: " << ps << endl;
 
+        auto fMemId = pass->FM->getMemoryStart(where.getParent()->getParent());
+
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef);
+        MathSAT::Solver s(ef, fMemId);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef);
+        Z3::Solver s(ef, fMemId);
 #endif
 
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;
 
             MathSAT::ExprFactory cef;
-            MathSAT::Solver cs(cef);
+            MathSAT::Solver cs(cef, fMemId);
 
             auto& F = *where.getParent()->getParent();
 
@@ -174,6 +176,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
     AUX<DetectNullPass>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
+    AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
@@ -185,6 +188,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
+    FM = &GetAnalysis<FunctionManager>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);

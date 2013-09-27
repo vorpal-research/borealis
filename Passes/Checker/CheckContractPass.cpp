@@ -55,12 +55,14 @@ public:
         dbgs() << "Checking: " << CI << endl;
         dbgs() << "  Requires: " << endl << instantiatedContract << endl;
 
+        auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
+
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef);
+        MathSAT::Solver s(ef, fMemId);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef);
+        Z3::Solver s(ef, fMemId);
 #endif
 
         dbgs() << "  State: " << endl << state << endl;
@@ -78,7 +80,9 @@ public:
         dbgs() << "Checking: " << CI << endl;
         dbgs() << "  State: " << endl << state << endl;
 
-        if (!state->isUnreachable()) {
+        auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
+
+        if (!state->isUnreachableIn(fMemId)) {
             auto* op0 = CI.getArgOperand(0);
             auto* op1 = CI.getArgOperand(1);
 
@@ -108,12 +112,14 @@ public:
             dbgs() << "Checking: " << CI << endl;
             dbgs() << "  Assert: " << endl << query << endl;
 
+            auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
+
 #if defined USE_MATHSAT_SOLVER
             MathSAT::ExprFactory ef;
-            MathSAT::Solver s(ef);
+            MathSAT::Solver s(ef, fMemId);
 #else
             Z3::ExprFactory ef;
-            Z3::Solver s(ef);
+            Z3::Solver s(ef, fMemId);
 #endif
 
             dbgs() << "  State: " << endl << state << endl;
@@ -133,12 +139,14 @@ public:
         dbgs() << "Checking: " << RI << endl;
         dbgs() << "  Ensures: " << endl << contract << endl;
 
+        auto fMemId = pass->FM->getMemoryStart(RI.getParent()->getParent());
+
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef);
+        MathSAT::Solver s(ef, fMemId);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef);
+        Z3::Solver s(ef, fMemId);
 #endif
 
         dbgs() << "  State: " << endl << state << endl;

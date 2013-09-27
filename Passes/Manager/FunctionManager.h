@@ -52,7 +52,7 @@ public:
     typedef std::unordered_map<llvm::Function*, FunctionDesc> Data;
     typedef Data::value_type DataEntry;
 
-    typedef std::unordered_map<llvm::Function*, unsigned int> Ids;
+    typedef std::unordered_map<const llvm::Function*, unsigned int> Ids;
 
     FunctionManager();
     virtual bool runOnModule(llvm::Module&) override;
@@ -70,8 +70,8 @@ public:
     PredicateState::Ptr getBdy(llvm::CallInst& CI, FactoryNest FN);
     PredicateState::Ptr getEns(llvm::CallInst& CI, FactoryNest FN);
 
-    unsigned int getId(llvm::Function* F) const;
-    unsigned int getMemoryStart(llvm::Function* F) const;
+    unsigned int getId(const llvm::Function* F) const;
+    unsigned int getMemoryStart(const llvm::Function* F) const;
 
 private:
 

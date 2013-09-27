@@ -57,9 +57,9 @@ TEST(ExecutionContext, mergeMemory) {
 
         ExprFactory factory;
 
-        ExecutionContext default_memory(factory);
-        ExecutionContext memory_with_a(factory);
-        ExecutionContext memory_with_b(factory);
+        ExecutionContext default_memory(factory, (1 << 16) + 1);
+        ExecutionContext memory_with_a(factory,  (1 << 16) + 1);
+        ExecutionContext memory_with_b(factory,  (1 << 16) + 1);
 
         Pointer ptr = factory.getPtrVar("ptr");
         Integer a = factory.getIntConst(0xdeadbeef);
