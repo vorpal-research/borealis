@@ -82,6 +82,20 @@ struct calls :
     { return call(move(x), move(y)); }
 };
 
+template<class T>
+struct dots :
+        std::binary_function< T, T, T > {
+    T operator()(T&& x, T&& y) const
+    { return property_access(move(x), move(y)); }
+};
+
+template<class T>
+struct arrows :
+        std::binary_function< T, T, T > {
+    T operator()(T&& x, T&& y) const
+    { return property_indirect_access(move(x), move(y)); }
+};
+
 // binary ops
 #define DEFBINARY(NAME, OP) \
     template <class T> \

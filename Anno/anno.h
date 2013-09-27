@@ -70,23 +70,17 @@ Streamer& operator<<(Streamer& ost, const location& loc){
 }
 
 class empty_visitor : public productionVisitor {
-    virtual void onDoubleConstant(double) {}
-    virtual void onIntConstant(int) {}
-    virtual void onBoolConstant(bool) {}
-
-    virtual void onVariable(const std::string&) {}
-    virtual void onBuiltin(const std::string&) {}
-    virtual void onMask(const std::string&) {}
-    virtual void onList(const std::list<std::shared_ptr<production>>& data) {
+    virtual void defaultBehaviour() override {}
+    virtual void onList(const std::list<std::shared_ptr<production>>& data) override {
         for(const auto& prod: data)
             prod->accept(*this);
     }
 
-    virtual void onBinary(bin_opcode, const std::shared_ptr<production>& op0, const std::shared_ptr<production>& op1) {
+    virtual void onBinary(bin_opcode, const std::shared_ptr<production>& op0, const std::shared_ptr<production>& op1) override {
         op0->accept(*this);
         op1->accept(*this);
     }
-    virtual void onUnary(un_opcode, const std::shared_ptr<production>& op0) {
+    virtual void onUnary(un_opcode, const std::shared_ptr<production>& op0) override {
         op0->accept(*this);
     }
 

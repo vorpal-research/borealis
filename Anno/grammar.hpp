@@ -67,6 +67,8 @@ using read_sq_open = chpad< '[' >;
 using read_close = chpad< ')' >;
 using read_sq_close = chpad< ']' >;
 using read_comma = chpad< ',' >;
+using read_dot = chpad< '.' >;
+using read_arrow = LITERALGRAMMAR( S("->") );
 
 // forward decl for the whole expression
 struct read_expr;
@@ -81,6 +83,12 @@ struct read_expr_list2: SGRAMMAR(read_expr_list2,
     G(read_expr) >> *G(read_expr_list)
 );
 
+struct read_property_expr: SGRAMMAR(read_property_expr,
+    (G(read_dot) >> G(push_variable)) & G(op_baction<dots<expression_type>>)
+);
+struct read_indirect_property_expr: SGRAMMAR(read_indirect_property_expr,
+    (G(read_arrow) >> G(push_variable)) & G(op_baction<arrows<expression_type>>)
+);
 struct read_index_expr: SGRAMMAR(read_index_expr,
     (G(read_sq_open) >= G(read_expr) >= G(read_sq_close)) & G(op_baction<indices<expression_type>>)
 );
@@ -89,7 +97,7 @@ struct read_calling_expr: SGRAMMAR(read_calling_expr,
 );
 
 struct read_postfix_expr : SGRAMMAR(read_postfix_expr,
-    G(read_atom) >> *(G(read_index_expr) | G(read_calling_expr))
+    G(read_atom) >> *(G(read_index_expr) | G(read_calling_expr) | G(read_property_expr) | G(read_indirect_property_expr))
 );
 
 // binary operation rule with oper sign being one char

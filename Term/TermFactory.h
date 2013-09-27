@@ -357,6 +357,16 @@ public:
         };
     }
 
+    Term::Ptr getOpaqueCallTerm(Term::Ptr lhv, const std::vector<Term::Ptr>& rhv) {
+        return Term::Ptr{
+            new OpaqueCallTerm(
+                TyF->getUnknownType(),
+                lhv,
+                rhv
+            )
+        };
+    }
+
     Term::Ptr getSignTerm(Term::Ptr rhv) {
         return Term::Ptr{
             new SignTerm(

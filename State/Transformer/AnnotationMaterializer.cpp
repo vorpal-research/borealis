@@ -50,9 +50,7 @@ AnnotationMaterializer::AnnotationMaterializer(
     }
 };
 
-AnnotationMaterializer::~AnnotationMaterializer() {
-    delete pimpl;
-}
+AnnotationMaterializer::~AnnotationMaterializer() {}
 
 Annotation::Ptr AnnotationMaterializer::doit() {
     auto trm = transform(pimpl->A->getTerm());

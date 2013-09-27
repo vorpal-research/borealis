@@ -136,6 +136,27 @@ public:
             term = tf->getCmpTerm(convertCT(op), lhvtc.term, rhvtc.term );
         } else if( op == bin_opcode::OPCODE_INDEX)  {
             term = tf->getOpaqueIndexingTerm(lhvtc.term, rhvtc.term);
+        } else if( op == bin_opcode::OPCODE_CALL) {
+            std::vector<Term::Ptr> args;
+            struct list_expander: empty_visitor {
+                std::list<prod_t> ret;
+                virtual void onList(const std::list<prod_t>& elems) override {
+                    ret = elems;
+                }
+            };
+            list_expander list_expander;
+            rhv->accept(list_expander);
+            if(list_expander.ret.empty()) list_expander.ret = { rhv };
+
+            args.reserve(list_expander.ret.size());
+
+            for(const auto& prod: list_expander.ret) {
+                TermConstructor prodtc(tf);
+                prod->accept(prodtc);
+                args.push_back(prodtc.term);
+            }
+
+            term = tf->getOpaqueCallTerm(lhvtc.term, args);
         } else {
             term = tf->getBinaryTerm(convertAT(op), lhvtc.term, rhvtc.term );
         }

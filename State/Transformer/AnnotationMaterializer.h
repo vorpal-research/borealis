@@ -8,6 +8,7 @@
 #ifndef ANNOTATIONMATERIALIZER_H_
 #define ANNOTATIONMATERIALIZER_H_
 
+#include <memory>
 #include <sstream>
 
 #include "Annotation/Annotation.def"
@@ -25,7 +26,7 @@ class AnnotationMaterializer : public borealis::Transformer<AnnotationMaterializ
     typedef borealis::Transformer<AnnotationMaterializer> Base;
 
     class AnnotationMaterializerImpl;
-    AnnotationMaterializerImpl* pimpl;
+    std::unique_ptr<AnnotationMaterializerImpl> pimpl;
 
 public:
 
@@ -59,7 +60,17 @@ public:
     }
 
 
-    // note this is using the more general visitor form (not taking the args into account)
+    // note this is called without a "Term" at the end, meaning
+    // it is called before (and instead) transforming children
+    Term::Ptr transformOpaqueCall(OpaqueCallTermPtr trm) {
+        if(auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
+            // FIXME: implement some calls
+            util::use(builtin);
+            failWith("Cannot call " + trm->getName() + ": no builtin calls supported yet");
+        } else failWith("Cannot call " + trm->getName() + ": only builtins can be called in this way");
+        return trm;
+    }
+
     Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
         // FIXME: decide and handle the multidimensional array case
 

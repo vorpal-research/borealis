@@ -238,7 +238,20 @@ void printingVisitor::onBinary(bin_opcode opc, const prod_t& op0, const prod_t& 
         op1->accept(*this);
         ost_ << "]";
         return;
-    // end of special handling
+
+    // property access are special only to provide more sugar
+    case op::OPCODE_PROPERTY:
+        (*op0).accept(*this);
+        ost_ << ".";
+        (*op1).accept(*this);
+        return;
+    case op::OPCODE_INDIR_PROPERTY:
+        (*op0).accept(*this);
+        ost_ << "->";
+        (*op1).accept(*this);
+        return;
+   // end of special handling
+
 
     default:
         ops = "???"; break;
@@ -347,6 +360,14 @@ prod_t call(const prod_t& op0, const prod_t& op1) {
 
 prod_t index(const prod_t& op0, const prod_t& op1) {
     return productionFactory::createBinary(bin_opcode::OPCODE_INDEX, op0, op1);
+}
+
+prod_t property_access(const prod_t& op0, const prod_t& op1) {
+    return productionFactory::createBinary(bin_opcode::OPCODE_PROPERTY, op0, op1);
+}
+
+prod_t property_indirect_access(const prod_t& op0, const prod_t& op1) {
+    return productionFactory::createBinary(bin_opcode::OPCODE_INDIR_PROPERTY, op0, op1);
 }
 
 prod_t deref(const prod_t& op0) {
