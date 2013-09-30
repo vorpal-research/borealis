@@ -8,6 +8,7 @@
 #include "Passes/Checker/CheckNullDereferencePass.h"
 #include "Passes/Checker/CheckContractPass.h"
 #include "Passes/Checker/CheckUndefValuesPass.h"
+#include "Passes/Checker/CheckOutOfBoundsPass.h"
 
 #define HANDLE_CHECKER(CLASS)
 
@@ -16,6 +17,7 @@
 HANDLE_CHECKER(CheckNullDereferencePass)
 HANDLE_CHECKER(CheckContractPass)
 HANDLE_CHECKER(CheckUndefValuesPass)
+HANDLE_CHECKER(CheckOutOfBoundsPass)
 
 #ifdef HANDLE_CHECKER
 #undef HANDLE_CHECKER

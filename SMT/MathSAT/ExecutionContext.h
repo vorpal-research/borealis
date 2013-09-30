@@ -20,7 +20,6 @@ namespace mathsat_ {
 class ExecutionContext {
 
     USING_SMT_LOGIC(MathSAT);
-
     typedef MathSAT::ExprFactory ExprFactory;
 
     ExprFactory& factory;
@@ -33,6 +32,14 @@ class ExecutionContext {
     }
     void memory(const MemArray& value) {
         set(MEMORY_ID, value);
+    }
+
+    static constexpr auto GEP_BOUNDS_ID = "$$__gep_bound__$$";
+    MemArray gepBounds() const {
+        return get(GEP_BOUNDS_ID);
+    }
+    void gepBounds(const MemArray& value) {
+        set(GEP_BOUNDS_ID, value);
     }
 
     MemArray get(const std::string& id) const {
@@ -68,12 +75,13 @@ public:
     }
 
     inline Pointer getDistinctPtr(size_t offsetSize = 1U) {
-        auto ret = factory.getPtrConst(currentPtr);
+        auto res = factory.getPtrConst(currentPtr);
         currentPtr += offsetSize;
-        return ret;
+        gepBounds( gepBounds().store(res, factory.getPtrConst(offsetSize)) );
+        return res;
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
         return memory().select(ix, bitSize);
@@ -99,7 +107,7 @@ public:
         set( id, get(id).store(ix, val) );
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
     typedef std::pair<Bool, ExecutionContext> Choice;
 
@@ -150,7 +158,13 @@ public:
         return res;
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+    Pointer getBound(const Pointer& p) {
+        return readProperty<Pointer>(GEP_BOUNDS_ID, p);
+    }
+
+////////////////////////////////////////////////////////////////////////////////
 
     Bool toSMT() const;
 

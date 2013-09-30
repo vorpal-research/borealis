@@ -124,7 +124,9 @@ struct SMTImpl<Impl, GepTerm> {
             shift = shift + by.getUnsafe() * size.getUnsafe();
         }
 
-        return ef.if_(ef.isInvalidPtrExpr(p))
+        Pointer bound = ctx->getBound(p);
+
+        return ef.if_(ef.isInvalidPtrExpr(p) || (shift >= bound))
                  .then_(ef.getInvalidPtr())
                  .else_(
                      (p + shift).withAxiom(
