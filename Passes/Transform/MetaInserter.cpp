@@ -110,7 +110,9 @@ llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) 
 
         if (!val) { // the value has been optimized out
             return mkBorealisValue(M, call, var, offset,
-                llvm::UndefValue::get(llvm::Type::getMetadataTy(M.getContext())) // FIXME: What's the undef type used for?
+                llvm::UndefValue::get(
+                    llvm::Type::getInt64Ty(M.getContext())
+                ) // FIXME: What's the undef type used for?
             );
         }
 
@@ -125,8 +127,10 @@ llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) 
 
         if (!addr) { // the value has been optimized out
             return mkBorealisValue(M, call, var,
-                llvm::ConstantInt::get(llvm::IntegerType::getInt64Ty(M.getContext()), 0, false),
-                llvm::UndefValue::get(llvm::Type::getMetadataTy(M.getContext())) // FIXME: What's the undef type used for?
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(M.getContext()), 0, false),
+                llvm::UndefValue::get(
+                    llvm::Type::getInt64Ty(M.getContext())
+                ) // FIXME: What's the undef type used for?
             );
         }
 
