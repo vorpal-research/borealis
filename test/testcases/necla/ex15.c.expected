@@ -11,6 +11,32 @@
 				"line" : 13
 			}
 		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex15.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 14
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex15.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 13
+			}
+		},
 		"type" : "INI-03"
 	},
 	

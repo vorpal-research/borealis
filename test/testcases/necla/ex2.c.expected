@@ -7,6 +7,19 @@
 			"filename" : "test/testcases/necla/ex2.c",
 			"loc" : 
 			{
+				"col" : 9,
+				"line" : 9
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex2.c",
+			"loc" : 
+			{
 				"col" : 7,
 				"line" : 10
 			}

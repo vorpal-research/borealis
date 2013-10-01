@@ -7,6 +7,32 @@
 			"filename" : "test/testcases/necla/inf3.c",
 			"loc" : 
 			{
+				"col" : 8,
+				"line" : 9
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf3.c",
+			"loc" : 
+			{
+				"col" : 8,
+				"line" : 22
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf3.c",
+			"loc" : 
+			{
 				"col" : 5,
 				"line" : 56
 			}

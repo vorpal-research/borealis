@@ -8,6 +8,123 @@
 			"loc" : 
 			{
 				"col" : 5,
+				"line" : 30
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 32
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 33
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 34
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 37
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 38
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 39
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 41
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 55
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex44.c",
+			"loc" : 
+			{
+				"col" : 5,
 				"line" : 32
 			}
 		},
