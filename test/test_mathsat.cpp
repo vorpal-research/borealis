@@ -130,9 +130,6 @@ TEST(MathSAT, generatingInterpolant) {
     // - first one generated using our C++ API
     // - second one generated using standard C API
 
-    // FIXME sam: make it work, then come back
-    return;
-
     using namespace borealis::mathsat;
 
     // C++ API
@@ -149,8 +146,8 @@ TEST(MathSAT, generatingInterpolant) {
     Expr y3 = env.rat_const("y3");
     Expr b = env.rat_const("b");
 
-    Expr A = (f(x1) + x2 == x3) && (f(y1) + y2 == y3) && (y1 <= x1);
-    Expr B = (g(b) == x2) && (g(b) == y2) && (x1 <= y1) && (x3 < y3);
+    Expr A = (f(x1) == x2) && (f(x3) <= y1) && (y2 > y3);
+    Expr B = (g(x1) != x2) && (g(x3) < y1) && (y2 + b == y3) && (f(x1) != x2);
 
     ISolver sol(env);
     sol.push();
@@ -171,17 +168,17 @@ TEST(MathSAT, generatingInterpolant) {
     int group_b = msat_create_itp_group(sol.env());
 
     formula = msat_from_string(sol.env(),
-            "(and (= (+ (f x1) x2) x3)"
-            "(= (+ (f y1) y2) y3)"
-            "(<= y1 x1))");
+                "(and (= (f x1) x2)"
+                "(<= (f x3) y1)"
+                "(> y2 y3))");
     msat_set_itp_group(sol.env(), group_a);
     msat_assert_formula(sol.env(), formula);
 
     formula = msat_from_string(sol.env(),
-            "(and (= x2 (g b))"
-            "(= y2 (g b))"
-            "(<= x1 y1)"
-            "(< x3 y3))");
+                "(and (not (= x2 (g x1)))"
+                "(< y1 (g x3))"
+                "(= (+ y2 b) y3)"
+                "(not (= (f x1) x2)))");
     msat_set_itp_group(sol.env(), group_b);
     msat_assert_formula(sol.env(), formula);
 
