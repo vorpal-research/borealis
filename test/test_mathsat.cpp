@@ -130,9 +130,6 @@ TEST(MathSAT, generatingInterpolant) {
     // - first one generated using our C++ API
     // - second one generated using standard C API
 
-    // FIXME sam: make it work, then come back
-    return;
-
     using namespace borealis::mathsat;
 
     // C++ API
