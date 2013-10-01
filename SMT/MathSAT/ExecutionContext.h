@@ -81,12 +81,14 @@ public:
     inline Pointer getGlobalPtr(size_t offsetSize = 1U) {
         auto ret = factory.getPtrConst(globalPtr);
         globalPtr += offsetSize;
+        gepBounds( gepBounds().store(ret, factory.getIntConst(offsetSize)));
         return ret;
     }
 
     inline Pointer getLocalPtr(size_t offsetSize = 1U) {
         auto ret = factory.getPtrConst(localPtr);
         localPtr += offsetSize;
+        gepBounds( gepBounds().store(ret, factory.getIntConst(offsetSize)));
         return ret;
     }
 

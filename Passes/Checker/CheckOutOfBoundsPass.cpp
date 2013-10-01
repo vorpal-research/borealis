@@ -46,12 +46,14 @@ private:
         dbgs() << "Query: " << q->toString() << endl;
         dbgs() << "State: " << ps << endl;
 
+        auto fMemId = pass->FM->getMemoryStart(where.getParent()->getParent());
+
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef);
+        MathSAT::Solver s(ef, fMemId);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef);
+        Z3::Solver s(ef, fMemId);
 #endif
 
         if (s.isViolated(q, ps)) {
@@ -83,6 +85,7 @@ void CheckOutOfBoundsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<DefectManager>::addRequiredTransitive(AU);
+    AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
@@ -90,6 +93,7 @@ void CheckOutOfBoundsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
+    FM = &GetAnalysis<FunctionManager>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);

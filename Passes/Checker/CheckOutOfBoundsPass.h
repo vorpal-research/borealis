@@ -13,6 +13,7 @@
 #include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager.h"
+#include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
@@ -43,6 +44,7 @@ public:
 private:
 
     DefectManager* DM;
+    FunctionManager* FM;
     PredicateStateAnalysis* PSA;
 
     FactoryNest FN;
