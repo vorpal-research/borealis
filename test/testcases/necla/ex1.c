@@ -5,7 +5,8 @@
 int A[N];
 int B[N/2];
 
-// @requires p != 0
+// @requires (p) != 0
+// @requires (p + 1) != 0
 int pair (int* p) {
   return *p + p[1];
 }

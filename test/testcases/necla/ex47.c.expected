@@ -7,11 +7,24 @@
 			"filename" : "test/testcases/necla/ex47.c",
 			"loc" : 
 			{
+				"col" : 9,
+				"line" : 23
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex47.c",
+			"loc" : 
+			{
 				"col" : 5,
 				"line" : 26
 			}
 		},
-		"type" : "INI-03"
+		"type" : "BUF-01"
 	},
 	
 	{

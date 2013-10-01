@@ -1,8 +1,9 @@
 #include "defines.h"
+
 extern int __NONDET__();
   
 extern char x[101], y[101], z[201];
-int from,to,i,j,k;
+int from, to, i, j, k;
 
 void mainFunc() {  
   from = __NONDET__();
@@ -11,7 +12,7 @@ void mainFunc() {
 
   i = from;
   j = 0;
-  while(x[i] != 0 && i < to){
+  while (x[i] != 0 && i < to) {
     z[j] = x[i];
     i++;
     j++;
