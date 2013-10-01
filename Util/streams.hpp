@@ -233,6 +233,37 @@ public:
     }
 };
 
+template<class Container>
+struct separated_printer {
+    const Container& con;
+    std::string sep;
+};
+
+template<class Con>
+separated_printer<Con> delimited(const Con& con, const std::string& sep) {
+    return separated_printer<Con>{ con, sep };
+}
+
+template<class Con>
+separated_printer<Con> delimited(const Con& con) {
+    return delimited(con, ", ");
+}
+
+template<typename Con, typename Streamer>
+Streamer& operator<<(Streamer& s, const separated_printer<Con>& pp) {
+    using borealis::util::head;
+    using borealis::util::tail;
+
+    if (std::begin(pp.con) != std::end(pp.con)) {
+        s << head(pp.con);
+        for (const auto& e : tail(pp.con)) {
+            s << pp.sep << e;
+        }
+    }
+
+    return s;
+}
+
 } // namespace streams
 } // namespace util
 } // namespace borealis
@@ -256,6 +287,7 @@ const auto TUPLE_LEFT_BRACE = '{';
 const auto TUPLE_RIGHT_BRACE = '}';
 const auto NULL_REPR = "<NULL>";
 } // namespace impl_
+
 
 
 

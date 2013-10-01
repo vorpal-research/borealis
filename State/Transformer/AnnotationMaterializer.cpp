@@ -50,13 +50,15 @@ AnnotationMaterializer::AnnotationMaterializer(
     }
 };
 
-AnnotationMaterializer::~AnnotationMaterializer() {
-    delete pimpl;
-}
+AnnotationMaterializer::~AnnotationMaterializer() {}
 
 Annotation::Ptr AnnotationMaterializer::doit() {
     auto trm = transform(pimpl->A->getTerm());
     return pimpl->A->clone(trm);
+}
+
+llvm::LLVMContext& AnnotationMaterializer::getLLVMContext() const {
+    return pimpl->MI->getLLVMContext();
 }
 
 MetaInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
@@ -75,6 +77,10 @@ const NameContext& AnnotationMaterializer::nameContext() const {
 
 TermFactory& AnnotationMaterializer::factory() const {
     return *pimpl->TF;
+}
+
+MetaInfoTracker::ValueDescriptors AnnotationMaterializer::forValue(llvm::Value* value) const {
+    return pimpl->MI->locate(value);
 }
 
 void AnnotationMaterializer::failWith(const std::string& message) {

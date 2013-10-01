@@ -22,6 +22,8 @@
 #include "Protobuf/Gen/Term/OpaqueBoolConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBuiltinTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueFloatingConstantTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueIndexingTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueCallTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueUndefTerm.pb.h"
@@ -315,6 +317,65 @@ struct protobuf_traits_impl<OpaqueFloatingConstantTerm> {
             const proto::OpaqueFloatingConstantTerm& t) {
         auto value = t.value();
         return Term::Ptr{ new OpaqueFloatingConstantTerm(type, value) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<OpaqueIndexingTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::OpaqueIndexingTerm> toProtobuf(const OpaqueIndexingTerm& t) {
+        auto res = util::uniq(new proto::OpaqueIndexingTerm());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(*t.getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(*t.getRhv()).release()
+        );
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueIndexingTerm& t) {
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new OpaqueIndexingTerm(type, lhv, rhv) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<OpaqueCallTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::OpaqueCallTerm> toProtobuf(const OpaqueCallTerm& t) {
+        auto res = util::uniq(new proto::OpaqueCallTerm());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(*t.getLhv()).release()
+        );
+        for(auto arg: t.getRhv()) {
+            res->mutable_rhvs()->AddAllocated(TermConverter::toProtobuf(*arg).release());
+        }
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueCallTerm& t) {
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        auto rhv = std::vector<Term::Ptr>{};
+
+        for(auto arg: t.rhvs()) {
+            rhv.push_back(TermConverter::fromProtobuf(fn, arg));
+        }
+
+        return Term::Ptr{ new OpaqueCallTerm(type, lhv, rhv) };
     }
 };
 

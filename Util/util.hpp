@@ -23,6 +23,14 @@
 namespace borealis {
 namespace util {
 
+template<class T>
+inline void use(const T&) {}
+
+template<class ...Args>
+std::vector<typename std::common_type<Args...>::type> make_vector(Args&& ...args) {
+    return std::vector<typename std::common_type<Args...>::type>{ std::forward<Args>(args)... };
+}
+
 // java-style reference
 template<class T>
 class ref {

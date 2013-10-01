@@ -2,7 +2,7 @@
  * Type/Integer.h
  * This file is generated from the following haskell datatype representation:
  * 
- * data Type = Integer | Bool | Float | UnknownType | Pointer { pointed :: Type } | TypeError { message :: String } deriving (Show, Eq, Data, Typeable)
+ * data Type = Integer { signedness :: LLVMSignedness } | Bool | Float | UnknownType | Pointer { pointed :: Type } | TypeError { message :: String } deriving (Show, Eq, Data, Typeable)
  * 
  * stored in Type/Type.datatype
  * using the template file Type/derived.h.hst
@@ -15,6 +15,7 @@
 
 #include "Type/Type.h"
 
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -24,6 +25,7 @@ namespace type {
 
 /** protobuf -> Type/Integer.proto
 import "Type/Type.proto";
+import "Util/Signedness.proto";
 
 package borealis.type.proto;
 
@@ -31,6 +33,7 @@ message Integer {
     extend borealis.proto.Type {
         optional Integer ext = 1;
     }
+    optional borealis.proto.Signedness signedness = 1;
 }
 
 **/
@@ -39,13 +42,19 @@ class Integer : public Type {
     typedef Integer Self;
     typedef Type Base;
 
-    Integer(): Type(class_tag(*this)) {}
+    Integer(llvm::Signedness signedness): Type(class_tag(*this)), signedness(signedness) {}
 
 public:
     friend class ::borealis::TypeFactory;
     
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
+
+private:
+    llvm::Signedness signedness;
+
+public:
+    llvm::Signedness getSignedness() const { return this->signedness; }
 
 };
 

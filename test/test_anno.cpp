@@ -52,6 +52,7 @@ TEST(Parse, annotation) {
         ASSERT_EQ(toString(parse_command("/* @assert x[y] */")            [0]), "assert(x[y])");
         ASSERT_EQ(toString(parse_command("/* @assert x[y+1] */")          [0]), "assert(x[(y + 1)])");
         ASSERT_EQ(toString(parse_command("/* @assert x[y(1, 2, 3)][2] */")[0]), "assert(x[y(1, 2, 3)][2])");
+        ASSERT_EQ(toString(parse_command("/* @assert x.y[0]->z(1) */")    [0]), "assert(x.y[0]->z(1))");
     }
 }
 

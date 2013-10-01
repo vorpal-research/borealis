@@ -29,42 +29,43 @@ using borealis::util::option;
 using borealis::util::nothing;
 using borealis::util::just;
 
-static VarInfo mkVI(const clang::FileManager&,
-        clang::Decl* = nullptr, bool = false) {
-    return VarInfo{};
+static VarInfo mkVI(const clang::FileManager&, const llvm::DISubprogram& node,
+        clang::Decl* ast = nullptr, bool allocated = false) {
+
+    DIType nodeType(node.getType().getTypeArray().getElement(0));
+
+    VarInfo ret{
+        just(node.getName().str()),
+        just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
+        meta2sign(DIType(node.getType().getTypeArray().getElement(0))),
+        ast
+    };
+    return ret;
 }
 
-static VarInfo mkVI(const clang::FileManager& sm, const llvm::DISubprogram& node,
+static VarInfo mkVI(const clang::FileManager&, const llvm::DIGlobalVariable& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
+        meta2sign(node.getType()),
         ast
     };
-    return ret.overwriteBy(mkVI(sm, ast, allocated));
+    return ret;
 }
 
-static VarInfo mkVI(const clang::FileManager& sm, const llvm::DIGlobalVariable& node,
-        clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret{
-        just(node.getName().str()),
-        just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
-        allocated ? VarInfo::Allocated : VarInfo::Plain,
-        ast
-    };
-    return ret.overwriteBy(mkVI(sm, ast, allocated));
-}
-
-static VarInfo mkVI(const clang::FileManager& sm, const llvm::DIVariable& node,
+static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
+        meta2sign(node.getType()),
         ast
     };
-    return ret.overwriteBy(mkVI(sm, ast, allocated));
+    return ret;
 }
 
 bool MetaInfoTracker::runOnModule(llvm::Module& M) {
@@ -72,6 +73,8 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
     using borealis::util::takePtr;
     using borealis::util::view;
     using borealis::util::viewContainer;
+
+    ctx = &M.getContext();
 
     DebugInfoFinder dfi;
     dfi.processModule(M);

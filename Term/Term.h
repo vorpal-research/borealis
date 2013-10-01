@@ -48,7 +48,6 @@ protected:
     Term(const Term&) = default;
 
 public:
-
     virtual ~Term() {};
 
     Type::Ptr getType() const {

@@ -86,6 +86,9 @@ ConditionType conditionType(int cond);
 std::string conditionString(int cond);
 std::string conditionString(ConditionType cond);
 
+ConditionType forceSigned(ConditionType cond);
+ConditionType forceUnsigned(ConditionType cond);
+
 /** protobuf -> Util/ArithType.proto
 package borealis.proto;
 
@@ -140,6 +143,22 @@ enum class UnaryArithType {
     BNOT = 2
 };
 std::string unaryArithString(UnaryArithType opCode);
+
+/** protobuf -> Util/Signedness.proto
+package borealis.proto;
+
+enum Signedness {
+    Unknown  = 0;
+    Unsigned = 1;
+    Signed   = 2;
+}
+
+**/
+enum class Signedness {
+    Unknown  = 0,
+    Unsigned = 1,
+    Signed   = 2
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 

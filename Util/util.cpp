@@ -122,6 +122,28 @@ std::string conditionString(ConditionType cond) {
     }
 }
 
+ConditionType forceSigned(ConditionType cond) {
+    switch(cond) {
+    case ConditionType::UGT: return ConditionType::GT;
+    case ConditionType::UGE: return ConditionType::GE;
+    case ConditionType::ULT: return ConditionType::LT;
+    case ConditionType::ULE: return ConditionType::LE;
+    default: return cond;
+    }
+}
+
+ConditionType forceUnsigned(ConditionType cond) {
+    switch(cond) {
+    case ConditionType::GT: return ConditionType::UGT;
+    case ConditionType::GE: return ConditionType::UGE;
+    case ConditionType::LT: return ConditionType::ULT;
+    case ConditionType::LE: return ConditionType::ULE;
+    default: return cond;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {
     typedef llvm::BinaryOperator::BinaryOps ops;
 
