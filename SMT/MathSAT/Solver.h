@@ -29,7 +29,7 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("mathsat-solver")
 #include "Util/unmacros.h"
 
-    Solver(ExprFactory& msatef);
+    Solver(ExprFactory& msatef, unsigned long long memoryStart);
 
     bool isViolated(
             PredicateState::Ptr query,
@@ -48,9 +48,15 @@ public:
             PredicateState::Ptr query,
             PredicateState::Ptr body);
 
+    Dynamic getContract(
+                const std::vector<Term::Ptr>& args,
+                PredicateState::Ptr query,
+                PredicateState::Ptr body);
+
 private:
 
     ExprFactory& msatef;
+    unsigned long long memoryStart;
 
     msat_result check(
             const Bool& msatquery,

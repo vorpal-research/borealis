@@ -46,6 +46,9 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     auto* st = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M);
     FN = FactoryNest(st);
 
+    unsigned int i = 1;
+    for (auto& F : M) ids[&F] = i++;
+
     for (auto a : annotations) {
         Annotation::Ptr anno = materialize(a, FN, &meta);
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
@@ -171,6 +174,15 @@ PredicateState::Ptr FunctionManager::getEns(
         FactoryNest FN) {
     const auto& desc = get(CI, FN);
     return desc.Ens;
+}
+
+unsigned int FunctionManager::getId(const llvm::Function* F) const {
+    ASSERTC(borealis::util::containsKey(ids, F));
+    return ids.at(F);
+}
+
+unsigned int FunctionManager::getMemoryStart(const llvm::Function* F) const {
+    return (getId(F) << 16) + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

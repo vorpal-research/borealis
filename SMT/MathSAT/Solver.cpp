@@ -17,7 +17,8 @@ namespace mathsat_ {
 
 USING_SMT_IMPL(MathSAT);
 
-Solver::Solver(ExprFactory& msatef) : msatef(msatef) {}
+Solver::Solver(ExprFactory& msatef, unsigned long long memoryStart) :
+        msatef(msatef), memoryStart(memoryStart) {}
 
 msat_result Solver::check(
         const Bool& msatquery_,
@@ -63,7 +64,7 @@ bool Solver::isViolated(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
     return check(!msatquery, msatstate) != MSAT_UNSAT;
@@ -79,7 +80,7 @@ bool Solver::isPathImpossible(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
     return check(msatpath, msatstate) == MSAT_UNSAT;
@@ -93,7 +94,7 @@ Dynamic Solver::getInterpolant(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -136,7 +137,7 @@ Dynamic Solver::getSummary(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef);
+    ExecutionContext ctx(msatef, memoryStart);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -156,7 +157,7 @@ Dynamic Solver::getSummary(
     argExprs.reserve(args.size());
     std::transform(args.begin(), args.end(), std::back_inserter(argExprs),
         [this](const Term::Ptr& arg) -> mathsat::Expr {
-            ExecutionContext ctx(msatef);
+            ExecutionContext ctx(msatef, memoryStart);
             return msatimpl::getExpr(
                 SMT<MathSAT>::doit(arg, msatef, &ctx)
             );
@@ -198,6 +199,92 @@ Dynamic Solver::getSummary(
             }
 
             s.set_itp_group(Q);
+            s.add(msatimpl::asAxiom(ms));
+
+            r = s.check();
+            if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
+            else dbgs() << "Oops, got MSAT_SAT for (B && not Q && models)..." << endl;
+
+        }
+
+        dbgs() << "Got: " << endl
+               << interpol << endl;
+        return Dynamic(interpol);
+    }
+}
+
+Dynamic Solver::getContract(
+        const std::vector<Term::Ptr>& args,
+        PredicateState::Ptr query,
+        PredicateState::Ptr body) {
+
+    using namespace logic;
+
+    TRACE_FUNC;
+
+    ExecutionContext ctx(msatef, memoryStart);
+    auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
+    auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+
+    dbgs() << "Generating contract for: " << endl
+           << msatquery << endl
+           << "in: " << endl
+           << msatbody << endl;
+
+    mathsat::ISolver s(msatef.unwrap());
+
+    auto B = s.create_and_set_itp_group();
+
+    /* auto Q = */ s.create_and_set_itp_group();
+    s.add(msatimpl::asAxiom(   msatbody));
+    s.add(msatimpl::asAxiom( ! msatquery));
+
+    std::vector<mathsat::Expr> argExprs;
+    argExprs.reserve(args.size());
+    std::transform(args.begin(), args.end(), std::back_inserter(argExprs),
+        [this](const Term::Ptr& arg) -> mathsat::Expr {
+            ExecutionContext ctx(msatef, memoryStart);
+            return msatimpl::getExpr(
+                SMT<MathSAT>::doit(arg, msatef, &ctx)
+            );
+        }
+    );
+
+    {
+        TRACE_BLOCK("mathsat::contract");
+        msat_result r = s.check();
+
+        dbgs() << "Acquired result: "
+               << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
+               << endl;
+
+        mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
+
+        if (r == MSAT_UNSAT) {
+            // Do nothing
+
+        } else if (r == MSAT_SAT) {
+            mathsat::DSolver d(msatef.unwrap());
+            d.add(msatimpl::asAxiom( msatbody  ));
+            d.add(msatimpl::asAxiom( msatquery ));
+
+            auto models = d.diversify(argExprs);
+            dbgs() << "Models: " << endl
+                   << models << endl;
+
+            auto ms = msatef.getFalse();
+            for (const auto& m : models) {
+                mathsat::Solver s(msatef.unwrap());
+                s.add(msatimpl::asAxiom(   msatbody  ));
+                s.add(msatimpl::asAxiom( ! msatquery ));
+                s.add(msatimpl::asAxiom(   m ));
+
+                if (MSAT_SAT == s.check()) continue;
+
+                ms = ms || m;
+            }
+
+            s.set_itp_group(B);
             s.add(msatimpl::asAxiom(ms));
 
             r = s.check();

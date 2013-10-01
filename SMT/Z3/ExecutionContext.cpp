@@ -10,9 +10,8 @@
 namespace borealis {
 namespace z3_ {
 
-ExecutionContext::ExecutionContext(ExprFactory& factory):
-    factory(factory),
-    currentPtr(1U) {};
+ExecutionContext::ExecutionContext(ExprFactory& factory, unsigned long long localMemory):
+    factory(factory), globalPtr(1ULL), localPtr(localMemory) {};
 
 Z3::Bool ExecutionContext::toSMT() const {
     auto res = factory.getTrue();
@@ -22,7 +21,8 @@ Z3::Bool ExecutionContext::toSMT() const {
 std::ostream& operator<<(std::ostream& s, const ExecutionContext& ctx) {
     using std::endl;
     return s << "ctx state:" << endl
-             << "< offset = " << ctx.currentPtr << " >" << endl
+             << "< global offset = " << ctx.globalPtr << " >" << endl
+             << "< local offset = " << ctx.localPtr << " >" << endl
              << ctx.memArrays;
 }
 

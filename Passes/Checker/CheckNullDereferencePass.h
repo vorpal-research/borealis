@@ -14,6 +14,7 @@
 #include "Factory/Nest.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager.h"
+#include "Passes/Manager/FunctionManager.h"
 #include "Passes/Misc/DetectNullPass.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
@@ -52,6 +53,7 @@ private:
     DetectNullPass* DNP;
 
     DefectManager* DM;
+    FunctionManager* FM;
 
     FactoryNest FN;
 

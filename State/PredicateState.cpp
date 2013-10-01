@@ -14,14 +14,14 @@ namespace borealis {
 PredicateState::PredicateState(id_t classTag) :
         ClassTag(classTag) {};
 
-bool PredicateState::isUnreachable() const {
+bool PredicateState::isUnreachableIn(unsigned long long memoryStart) const {
 
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef);
+        MathSAT::Solver s(ef, memoryStart);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef);
+        Z3::Solver s(ef, memoryStart);
 #endif
 
     auto split = this->splitByTypes({PredicateType::PATH});

@@ -11,7 +11,8 @@
 namespace borealis {
 namespace z3_ {
 
-Solver::Solver(ExprFactory& z3ef) : z3ef(z3ef) {}
+Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart) :
+        z3ef(z3ef), memoryStart(memoryStart) {}
 
 z3::check_result Solver::check(
         const Bool& z3query_,
@@ -72,7 +73,7 @@ bool Solver::isViolated(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(z3ef);
+    ExecutionContext ctx(z3ef, memoryStart);
     auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
     auto z3query = SMT<Z3>::doit(query, z3ef, &ctx);
     return check(!z3query, z3state) != z3::unsat;
@@ -88,7 +89,7 @@ bool Solver::isPathImpossible(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(z3ef);
+    ExecutionContext ctx(z3ef, memoryStart);
     auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
     auto z3path = SMT<Z3>::doit(path, z3ef, &ctx);
     return check(z3path, z3state) == z3::unsat;

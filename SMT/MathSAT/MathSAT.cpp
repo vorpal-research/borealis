@@ -882,7 +882,13 @@ int collect_diversified_models(msat_model_iterator it, void* data) {
         msat_term v;
         int res = msat_model_iterator_next(it, &t, &v);
         ASSERTC(!res);
-        if (d->dvrs.count(t) > 0) {
+
+        auto t_is_uf = msat_term_is_uf(d->env, t);
+
+        if (
+                (d->dvrs.count(t) > 0) ||
+                (t_is_uf)
+        ) {
             valuation = valuation && Expr(d->env, t) == Expr(d->env, v);
         }
     }
