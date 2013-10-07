@@ -42,20 +42,13 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
 #include "Passes/PredicateAnalysis/Defines.def"
 
-    // Register globals in our predicate states
-    auto& globalList = F.getParent()->getGlobalList();
-
-    std::vector<Term::Ptr> globals;
-    globals.reserve(globalList.size());
-    for (auto& g : globalList) {
-        globals.push_back(FN.Term->getValueTerm(&g));
-    }
-    Predicate::Ptr gPredicate = FN.Predicate->getGlobalsPredicate(globals);
+    // Register globals in our predicate state
+    PredicateState::Ptr gState = FN.getGlobalState(F.getParent());
 
     // Register REQUIRES
     PredicateState::Ptr requires = FM->getReq(&F);
 
-    PredicateState::Ptr initialState = (FN.State * gPredicate + requires)();
+    PredicateState::Ptr initialState = (FN.State * gState + requires)();
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {

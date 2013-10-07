@@ -6,6 +6,7 @@
  */
 
 #include "Factory/Nest.h"
+#include "State/PredicateStateBuilder.h"
 
 namespace borealis {
 
@@ -23,4 +24,14 @@ FactoryNest::FactoryNest(SlotTracker* st) :
     Predicate(PredicateFactory::get()),
     State(PredicateStateFactory::get()) {};
 
+PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
+    auto& globals = M->getGlobalList();
+    Predicate::Ptr gPredicate = Predicate->getGlobalsPredicate(
+        util::viewContainer(globals)
+            .map([this](llvm::GlobalVariable& g) { return Term->getValueTerm(&g); })
+            .toVector()
+    );
+    return (State * gPredicate)();
 }
+
+} // namespace borealis
