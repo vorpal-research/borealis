@@ -11,12 +11,12 @@
 #include "Term/CmpTerm.h"
 #include "Term/ConstTerm.h"
 #include "Term/GepTerm.h"
-#include "Term/InvalidPtrTerm.h"
 #include "Term/LoadTerm.h"
 #include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
 #include "Term/OpaqueIndexingTerm.h"
+#include "Term/OpaqueInvalidPtrTerm.h"
 #include "Term/OpaqueCallTerm.h"
 #include "Term/OpaqueIntConstantTerm.h"
 #include "Term/OpaqueNullPtrTerm.h"
@@ -39,12 +39,12 @@ HANDLE_TERM(Binary, BinaryTerm)
 HANDLE_TERM(Cmp, CmpTerm)
 HANDLE_TERM(Const, ConstTerm)
 HANDLE_TERM(Gep, GepTerm)
-HANDLE_TERM(InvalidPtr, InvalidPtrTerm)
 HANDLE_TERM(Load, LoadTerm)
 HANDLE_TERM(OpaqueBoolConstant, OpaqueBoolConstantTerm)
 HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
 HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
 HANDLE_TERM(OpaqueIndexing, OpaqueIndexingTerm)
+HANDLE_TERM(OpaqueInvalidPtr, OpaqueInvalidPtrTerm)
 HANDLE_TERM(OpaqueCall, OpaqueCallTerm)
 HANDLE_TERM(OpaqueIntConstant, OpaqueIntConstantTerm)
 HANDLE_TERM(OpaqueNullPtr, OpaqueNullPtrTerm)

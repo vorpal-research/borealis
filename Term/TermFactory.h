@@ -225,21 +225,25 @@ public:
     // FIXME: naming
     Term::Ptr getNaiveGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
         Type::Ptr tp = base->getType();
-        for(const auto& _ : shifts) {
+        for (const auto& _ : shifts) {
             util::use(_);
-            if(auto ptr = llvm::dyn_cast<type::Pointer>(tp)) {
+            if (auto ptr = llvm::dyn_cast<type::Pointer>(tp)) {
                 tp = ptr->getPointed();
-            } else tp = TyF->getTypeError("Incorrect type dereference" );
+            } else tp = TyF->getTypeError("Incorrect type dereference");
         }
 
-        return Term::Ptr{new GepTerm{
-            tp,
-            base,
-            util::viewContainer(shifts).map([this](Term::Ptr elem){
-                return std::make_pair(elem, getIntTerm(1));
-            }).toVector(),
-            util::nothing()
-        }};
+        auto one = getIntTerm(1);
+
+        return Term::Ptr{
+            new GepTerm{
+                tp,
+                base,
+                util::viewContainer(shifts).map([&one](Term::Ptr elem){
+                    return std::make_pair(elem, one);
+                }).toVector(),
+                util::nothing()
+            }
+        };
     }
 
     Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
@@ -387,7 +391,7 @@ public:
 
     Term::Ptr getInvalidPtrTerm() {
         return Term::Ptr{
-            new InvalidPtrTerm(TyF->getUnknownType())
+            new OpaqueInvalidPtrTerm(TyF->getUnknownType())
         };
     }
 

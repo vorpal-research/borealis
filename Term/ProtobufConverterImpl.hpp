@@ -18,12 +18,12 @@
 #include "Protobuf/Gen/Term/CmpTerm.pb.h"
 #include "Protobuf/Gen/Term/ConstTerm.pb.h"
 #include "Protobuf/Gen/Term/GepTerm.pb.h"
-#include "Protobuf/Gen/Term/InvalidPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/LoadTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBoolConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBuiltinTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueFloatingConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIndexingTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueInvalidPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueCallTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
@@ -237,20 +237,20 @@ struct protobuf_traits_impl<GepTerm> {
 
 
 template<>
-struct protobuf_traits_impl<InvalidPtrTerm> {
+struct protobuf_traits_impl<OpaqueInvalidPtrTerm> {
 
     typedef protobuf_traits<Term> TermConverter;
 
-    static std::unique_ptr<proto::InvalidPtrTerm> toProtobuf(const InvalidPtrTerm&) {
-        return util::uniq(new proto::InvalidPtrTerm());
+    static std::unique_ptr<proto::OpaqueInvalidPtrTerm> toProtobuf(const OpaqueInvalidPtrTerm&) {
+        return util::uniq(new proto::OpaqueInvalidPtrTerm());
     }
 
     static Term::Ptr fromProtobuf(
             const FactoryNest&,
             Type::Ptr type,
             const std::string&,
-            const proto::InvalidPtrTerm&) {
-        return Term::Ptr{ new InvalidPtrTerm(type) };
+            const proto::OpaqueInvalidPtrTerm&) {
+        return Term::Ptr{ new OpaqueInvalidPtrTerm(type) };
     }
 };
 

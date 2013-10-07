@@ -1,32 +1,32 @@
 /*
- * InvalidPtrTerm.h
+ * OpaqueInvalidPtrTerm.h
  *
  *  Created on: Sep 17, 2013
  *      Author: sam
  */
 
-#ifndef INVALIDPTRTERM_H_
-#define INVALIDPTRTERM_H_
+#ifndef OPAQUEINVALIDPTRTERM_H_
+#define OPAQUEINVALIDPTRTERM_H_
 
 #include "Term/Term.h"
 
 namespace borealis {
 
-/** protobuf -> Term/InvalidPtrTerm.proto
+/** protobuf -> Term/OpaqueInvalidPtrTerm.proto
 import "Term/Term.proto";
 
 package borealis.proto;
 
-message InvalidPtrTerm {
+message OpaqueInvalidPtrTerm {
     extend borealis.proto.Term {
-        optional InvalidPtrTerm ext = 38;
+        optional OpaqueInvalidPtrTerm ext = 38;
     }
 }
 
 **/
-class InvalidPtrTerm: public borealis::Term {
+class OpaqueInvalidPtrTerm: public borealis::Term {
 
-    InvalidPtrTerm(Type::Ptr type):
+    OpaqueInvalidPtrTerm(Type::Ptr type):
         Term(
             class_tag(*this),
             type,
@@ -35,7 +35,7 @@ class InvalidPtrTerm: public borealis::Term {
 
 public:
 
-    MK_COMMON_TERM_IMPL(InvalidPtrTerm);
+    MK_COMMON_TERM_IMPL(OpaqueInvalidPtrTerm);
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> const Self* {
@@ -45,9 +45,9 @@ public:
 };
 
 template<class Impl>
-struct SMTImpl<Impl, InvalidPtrTerm> {
+struct SMTImpl<Impl, OpaqueInvalidPtrTerm> {
     static Dynamic<Impl> doit(
-            const InvalidPtrTerm*,
+            const OpaqueInvalidPtrTerm*,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         return ef.getInvalidPtr();
@@ -56,4 +56,4 @@ struct SMTImpl<Impl, InvalidPtrTerm> {
 
 } /* namespace borealis */
 
-#endif /* INVALIDPTRTERM_H_ */
+#endif /* OPAQUEINVALIDPTRTERM_H_ */
