@@ -86,6 +86,15 @@ public:
         } else if (auto* undef = dyn_cast<UndefValue>(c)) {
             return getUndefTerm(undef);
 
+        } else if (auto* seqData = dyn_cast<ConstantDataSequential>(c)) {
+            // These guys should be processed separately by SeqDataPredicate
+            return Term::Ptr{
+                new ValueTerm(
+                    TyF->cast(seqData->getType()),
+                    st->getLocalName(seqData)
+                )
+            };
+
         }
 
         return Term::Ptr{

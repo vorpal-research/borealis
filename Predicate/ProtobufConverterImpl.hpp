@@ -18,6 +18,7 @@
 #include "Protobuf/Gen/Predicate/GlobalsPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/InequalityPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/MallocPredicate.pb.h"
+#include "Protobuf/Gen/Predicate/SeqDataPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
 
@@ -207,6 +208,42 @@ struct protobuf_traits_impl<MallocPredicate> {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto numElems = TermConverter::fromProtobuf(fn, p.numelements());
         return Predicate::Ptr{ new MallocPredicate(lhv, numElems, type) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<SeqDataPredicate> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::SeqDataPredicate> toProtobuf(const SeqDataPredicate& p) {
+        auto res = util::uniq(new proto::SeqDataPredicate());
+        res->set_allocated_base(
+            TermConverter::toProtobuf(*p.getBase()).release()
+        );
+        for (const auto& d : p.getData()) {
+            res->mutable_data()->AddAllocated(
+                TermConverter::toProtobuf(*d).release()
+            );
+        }
+        return std::move(res);
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            PredicateType type,
+            const proto::SeqDataPredicate& p) {
+        auto base = TermConverter::fromProtobuf(fn, p.base());
+
+        std::vector<Term::Ptr> data;
+        data.reserve(p.data_size());
+        for (const auto& d : p.data()) {
+            data.push_back(
+                TermConverter::fromProtobuf(fn, d)
+            );
+        }
+
+        return Predicate::Ptr{ new SeqDataPredicate(base, data, type) };
     }
 };
 

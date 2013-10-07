@@ -11,6 +11,7 @@
 #include "Predicate/GlobalsPredicate.h"
 #include "Predicate/InequalityPredicate.h"
 #include "Predicate/MallocPredicate.h"
+#include "Predicate/SeqDataPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/WritePropertyPredicate.h"
 
@@ -24,6 +25,7 @@ HANDLE_PREDICATE(Equality, EqualityPredicate)
 HANDLE_PREDICATE(Globals, GlobalsPredicate)
 HANDLE_PREDICATE(Inequality, InequalityPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
+HANDLE_PREDICATE(SeqData, SeqDataPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(WriteProperty, WritePropertyPredicate)
 

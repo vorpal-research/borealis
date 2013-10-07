@@ -101,6 +101,13 @@ public:
                 new GlobalsPredicate(globals));
     }
 
+    Predicate::Ptr getSeqDataPredicate(
+            Term::Ptr base,
+            const std::vector<Term::Ptr>& data) {
+        return Predicate::Ptr(
+                new SeqDataPredicate(base, data));
+    }
+
 
 
     static PredicateFactory::Ptr get() {
