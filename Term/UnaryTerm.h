@@ -20,7 +20,7 @@ package borealis.proto;
 
 message UnaryTerm {
     extend borealis.proto.Term {
-        optional UnaryTerm ext = 32;
+        optional UnaryTerm ext = $COUNTER_TERM;
     }
 
     optional UnaryArithType opcode = 1;

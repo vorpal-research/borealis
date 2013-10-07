@@ -19,7 +19,7 @@ package borealis.proto;
 
 message OpaqueCallTerm {
     extend borealis.proto.Term {
-        optional OpaqueCallTerm ext = 37;
+        optional OpaqueCallTerm ext = $COUNTER_TERM;
     }
 
     optional Term lhv = 1;

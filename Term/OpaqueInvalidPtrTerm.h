@@ -19,7 +19,7 @@ package borealis.proto;
 
 message OpaqueInvalidPtrTerm {
     extend borealis.proto.Term {
-        optional OpaqueInvalidPtrTerm ext = 38;
+        optional OpaqueInvalidPtrTerm ext = $COUNTER_TERM;
     }
 }
 

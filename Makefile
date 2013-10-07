@@ -257,9 +257,7 @@ all: $(EXES)
 
 .protobuf:
 	@mkdir -p $(PROTO_SOURCE_DIR)
-	@for H in `find $(PWD) -name "*.cpp" -o -name "*.h" -o -name "*.hpp"`; do \
-		$(PROTOEXT) $$H; \
-	done
+	@$(PROTOEXT) `find $(PWD) -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | sort`
 	@find $(PWD) -name "*.proto" | xargs $(PROTOC)
 	@touch $@
 

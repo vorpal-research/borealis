@@ -20,7 +20,7 @@ package borealis.proto;
 
 message InequalityPredicate {
     extend borealis.proto.Predicate {
-        optional InequalityPredicate ext = 20;
+        optional InequalityPredicate ext = $COUNTER_PRED;
     }
 
     optional Term lhv = 1;

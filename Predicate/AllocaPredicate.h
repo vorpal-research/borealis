@@ -20,7 +20,7 @@ package borealis.proto;
 
 message AllocaPredicate {
     extend borealis.proto.Predicate {
-        optional AllocaPredicate ext = 16;
+        optional AllocaPredicate ext = $COUNTER_PRED;
     }
 
     optional Term lhv = 1;

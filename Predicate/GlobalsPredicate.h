@@ -20,7 +20,7 @@ package borealis.proto;
 
 message GlobalsPredicate {
     extend borealis.proto.Predicate {
-        optional GlobalsPredicate ext = 19;
+        optional GlobalsPredicate ext = $COUNTER_PRED;
     }
 
     repeated Term globals = 1;

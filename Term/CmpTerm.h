@@ -20,7 +20,7 @@ package borealis.proto;
 
 message CmpTerm {
     extend borealis.proto.Term {
-        optional CmpTerm ext = 18;
+        optional CmpTerm ext = $COUNTER_TERM;
     }
 
     optional ConditionType opcode = 1;

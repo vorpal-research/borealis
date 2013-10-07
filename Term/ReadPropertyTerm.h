@@ -20,7 +20,7 @@ package borealis.proto;
 
 message ReadPropertyTerm {
     extend borealis.proto.Term {
-        optional ReadPropertyTerm ext = 29;
+        optional ReadPropertyTerm ext = $COUNTER_TERM;
     }
 
     optional Term propName = 1;

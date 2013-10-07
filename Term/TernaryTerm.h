@@ -19,7 +19,7 @@ package borealis.proto;
 
 message TernaryTerm {
     extend borealis.proto.Term {
-        optional TernaryTerm ext = 31;
+        optional TernaryTerm ext = $COUNTER_TERM;
     }
 
     optional Term cnd = 1;

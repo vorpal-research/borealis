@@ -19,7 +19,7 @@ package borealis.proto;
 
 message ReturnValueTerm {
     extend borealis.proto.Term {
-        optional ReturnValueTerm ext = 30;
+        optional ReturnValueTerm ext = $COUNTER_TERM;
     }
 
     optional string functionName = 1;

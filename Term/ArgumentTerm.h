@@ -19,7 +19,7 @@ package borealis.proto;
 
 message ArgumentTerm {
     extend borealis.proto.Term {
-        optional ArgumentTerm ext = 16;
+        optional ArgumentTerm ext = $COUNTER_TERM;
     }
 
     optional uint32 idx = 1;

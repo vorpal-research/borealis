@@ -20,7 +20,7 @@ package borealis.proto;
 
 message WritePropertyPredicate {
     extend borealis.proto.Predicate {
-        optional WritePropertyPredicate ext = 23;
+        optional WritePropertyPredicate ext = $COUNTER_PRED;
     }
 
     optional Term propName = 1;

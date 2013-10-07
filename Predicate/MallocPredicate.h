@@ -21,7 +21,7 @@ package borealis.proto;
 
 message MallocPredicate {
     extend borealis.proto.Predicate {
-        optional MallocPredicate ext = 21;
+        optional MallocPredicate ext = $COUNTER_PRED;
     }
 
     optional Term lhv = 1;

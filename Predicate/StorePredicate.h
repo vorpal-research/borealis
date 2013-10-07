@@ -20,7 +20,7 @@ package borealis.proto;
 
 message StorePredicate {
     extend borealis.proto.Predicate {
-        optional StorePredicate ext = 22;
+        optional StorePredicate ext = $COUNTER_PRED;
     }
 
     optional Term lhv = 1;

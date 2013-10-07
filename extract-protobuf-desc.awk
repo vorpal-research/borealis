@@ -1,10 +1,13 @@
 #!/bin/awk -f
 
-BEGIN { PROTOBUF_DESC=0; }
+BEGIN {
+    PROTOBUF_DESC=0;
+    cMap[""]=-1;
+}
 
 /^\/\*\*\s*protobuf\s*->/ {
     PROTOBUF_DESC=$4;
-    printf "" > PROTOBUF_DESC;
+    print "" > PROTOBUF_DESC;
     next;
 }
 
@@ -14,5 +17,16 @@ BEGIN { PROTOBUF_DESC=0; }
 }
 
 PROTOBUF_DESC != 0 {
+    cRegex = "\\$COUNTER\\_(\\w+)";
+
+    hasCounter = match($0, cRegex, m);
+    if (hasCounter != 0) {
+        cName = m[1];
+        cValue = cMap[cName];
+        if (cValue == "") cValue = 16;
+        sub(cRegex, cValue, $0);
+        cMap[cName] = cValue + 1;
+    }
+    
     print >> PROTOBUF_DESC;
 }

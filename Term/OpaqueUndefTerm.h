@@ -19,7 +19,7 @@ package borealis.proto;
 
 message OpaqueUndefTerm {
     extend borealis.proto.Term {
-        optional OpaqueUndefTerm ext = 27;
+        optional OpaqueUndefTerm ext = $COUNTER_TERM;
     }
 }
 

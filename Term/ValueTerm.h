@@ -19,7 +19,7 @@ package borealis.proto;
 
 message ValueTerm {
     extend borealis.proto.Term {
-        optional ValueTerm ext = 33;
+        optional ValueTerm ext = $COUNTER_TERM;
     }
 }
 

@@ -20,7 +20,7 @@ package borealis.proto;
 
 message BinaryTerm {
     extend borealis.proto.Term {
-        optional BinaryTerm ext = 17;
+        optional BinaryTerm ext = $COUNTER_TERM;
     }
 
     optional ArithType opcode = 1;

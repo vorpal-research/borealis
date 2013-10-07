@@ -20,7 +20,7 @@ package borealis.proto;
 
 message SeqDataPredicate {
     extend borealis.proto.Predicate {
-        optional SeqDataPredicate ext = 24;
+        optional SeqDataPredicate ext = $COUNTER_PRED;
     }
 
     optional Term base = 1;

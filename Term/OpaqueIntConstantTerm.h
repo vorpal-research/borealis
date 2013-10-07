@@ -19,7 +19,7 @@ package borealis.proto;
 
 message OpaqueIntConstantTerm {
     extend borealis.proto.Term {
-        optional OpaqueIntConstantTerm ext = 25;
+        optional OpaqueIntConstantTerm ext = $COUNTER_TERM;
     }
 
     optional sint64 value = 1;

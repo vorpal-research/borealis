@@ -20,7 +20,7 @@ package borealis.proto;
 
 message DefaultSwitchCasePredicate {
     extend borealis.proto.Predicate {
-        optional DefaultSwitchCasePredicate ext = 17;
+        optional DefaultSwitchCasePredicate ext = $COUNTER_PRED;
     }
 
     optional Term cond = 1;

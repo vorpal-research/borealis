@@ -19,7 +19,7 @@ package borealis.proto;
 
 message LoadTerm {
     extend borealis.proto.Term {
-        optional LoadTerm ext = 21;
+        optional LoadTerm ext = $COUNTER_TERM;
     }
 
     optional Term rhv = 1;

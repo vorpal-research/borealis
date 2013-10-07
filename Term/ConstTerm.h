@@ -19,7 +19,7 @@ package borealis.proto;
 
 message ConstTerm {
     extend borealis.proto.Term {
-        optional ConstTerm ext = 19;
+        optional ConstTerm ext = $COUNTER_TERM;
     }
 }
 

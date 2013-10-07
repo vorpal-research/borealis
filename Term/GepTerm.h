@@ -19,7 +19,7 @@ package borealis.proto;
 
 message GepTerm {
     extend borealis.proto.Term {
-        optional GepTerm ext = 20;
+        optional GepTerm ext = $COUNTER_TERM;
     }
 
     optional Term base = 1;

@@ -19,7 +19,7 @@ package borealis.proto;
 
 message SignTerm {
     extend borealis.proto.Term {
-        optional SignTerm ext = 34;
+        optional SignTerm ext = $COUNTER_TERM;
     }
 
     optional Term rhv = 1;

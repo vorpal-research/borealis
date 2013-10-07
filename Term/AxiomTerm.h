@@ -21,7 +21,7 @@ package borealis.proto;
 
 message AxiomTerm {
     extend borealis.proto.Term {
-        optional AxiomTerm ext = 35;
+        optional AxiomTerm ext = $COUNTER_TERM;
     }
 
     optional Term lhv = 1;
