@@ -273,11 +273,10 @@ template<class C1, class C2, class BinaryPred>
 bool equal(const C1& c1, const C2& c2, BinaryPred pred) {
     auto c1beg = std::begin(c1), c1end = std::end(c1);
     auto c2beg = std::begin(c2), c2end = std::end(c2);
-    bool res = true;
-    for(; c1beg != c1end && c2beg != c2end ; ++c1beg, ++c2beg) {
-        res &= pred(*c1beg, *c2beg);
+    for( ; c1beg != c1end && c2beg != c2end ; ++c1beg, ++c2beg) {
+        if (!pred(*c1beg, *c2beg)) return false;
     }
-    return res;
+    return c1beg == c1end && c2beg == c2end;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
