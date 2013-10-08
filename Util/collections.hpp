@@ -194,20 +194,29 @@ inline auto tail(Container& con) -> CollectionView<decltype(std::begin(con))> {
 }
 
 template<class Container>
-inline auto take(unsigned int count, Container&& con) ->
-        CollectionView<decltype(std::begin(std::forward<Container>(con)))> {
-    auto begin = std::begin(std::forward<Container>(con));
-    auto end = std::begin(std::forward<Container>(con));
+inline auto take(unsigned int count, const Container& con) ->
+        CollectionView<decltype(std::begin(con))> {
+    auto begin = std::begin(con);
+    auto end = std::begin(con);
+    std::advance(end, count);
+    return view(begin, end);
+}
+
+template<class Container>
+inline auto take(unsigned int count, Container& con) ->
+        CollectionView<decltype(std::begin(con))> {
+    auto begin = std::begin(con);
+    auto end = std::begin(con);
     std::advance(end, count);
     return view(begin, end);
 }
 
 template<class Elem>
-inline auto range(Elem&& from, Elem&& to) ->
+inline auto range(const Elem& from, const Elem& to) ->
         CollectionView<counting_iterator<Elem>> {
     return view<counting_iterator<Elem>>(
-        counting_iterator<Elem>(std::forward<Elem>(from)),
-        counting_iterator<Elem>(std::forward<Elem>(to))
+        counting_iterator<Elem>(from),
+        counting_iterator<Elem>(to)
     );
 }
 
