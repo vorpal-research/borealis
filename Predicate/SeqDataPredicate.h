@@ -79,7 +79,7 @@ struct SMTImpl<Impl, SeqDataPredicate> {
         auto lp = l.getUnsafe();
 
         auto base = ctx->getGlobalPtr(p->getData().size());
-        ctx->writeExprToMemory(lp, base);
+        auto res = lp == base;
 
         for (const auto& datum : p->getData()) {
             auto d = SMT<Impl>::doit(datum, ef, ctx);
@@ -87,7 +87,7 @@ struct SMTImpl<Impl, SeqDataPredicate> {
             base = base + 1;
         }
 
-        return ef.getTrue();
+        return res;
     }
 };
 #include "Util/unmacros.h"

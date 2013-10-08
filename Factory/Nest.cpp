@@ -24,29 +24,52 @@ FactoryNest::FactoryNest(SlotTracker* st) :
     Predicate(PredicateFactory::get()),
     State(PredicateStateFactory::get()) {};
 
+Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
+    using namespace llvm;
+
+    if (gv.hasInitializer()) {
+        auto* ini = gv.getInitializer();
+
+        auto base = FN.Term->getValueTerm(&gv);
+
+        if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
+            auto data = util::range(0U, cds->getNumElements())
+                .map([&cds](unsigned i) { return cds->getElementAsConstant(i); })
+                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+                .toVector();
+            return FN.Predicate->getSeqDataPredicate(base, data);
+
+        } else if (auto* caz = dyn_cast<ConstantAggregateZero>(ini)) {
+            auto numElements = 1U;
+            if (auto* type = dyn_cast<StructType>(caz->getType())) {
+                numElements = type->getNumElements();
+            } else if (auto* type = dyn_cast<ArrayType>(caz->getType())) {
+                numElements = type->getNumElements();
+            } else if (auto* type = dyn_cast<VectorType>(caz->getType())) {
+                numElements = type->getNumElements();
+            }
+
+            auto data = util::range(0U, numElements)
+                .map([&caz](unsigned i) { return caz->getElementValue(i); })
+                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+                .toVector();
+            return FN.Predicate->getSeqDataPredicate(base, data);
+
+        }
+    }
+
+    return nullptr;
+}
+
 PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
     auto& globals = M->getGlobalList();
 
-    auto gs = util::viewContainer(globals)
-        .map([this](llvm::GlobalVariable& g) { return Term->getValueTerm(&g); })
-        .toVector();
-
-    auto gPredicate = Predicate->getGlobalsPredicate(gs);
-
     auto seqDataPredicates = util::viewContainer(globals)
-        .filter(llvm::isaer<llvm::ConstantDataSequential>())
-        .map(llvm::caster<llvm::ConstantDataSequential>())
-        .map([this](llvm::ConstantDataSequential& d) -> Predicate::Ptr {
-            auto base = Term->getValueTerm(&d);
-            auto data = util::range(0U, d.getNumElements())
-                .map([this,&d](unsigned i) { return d.getElementAsConstant(i); })
-                .map([this](llvm::Constant* c) { return Term->getValueTerm(c); })
-                .toVector();
-            return Predicate->getSeqDataPredicate(base, data);
-        })
+        .map([this](llvm::GlobalVariable& gv) { return fromGlobalVariable(*this, gv); })
+        .filter(util::isValid())
         .toVector();
 
-    return (State * gPredicate + seqDataPredicates)();
+    return (State * State->Basic() + seqDataPredicates)();
 }
 
 } // namespace borealis

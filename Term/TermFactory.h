@@ -86,12 +86,13 @@ public:
         } else if (auto* undef = dyn_cast<UndefValue>(c)) {
             return getUndefTerm(undef);
 
-        } else if (auto* seqData = dyn_cast<ConstantDataSequential>(c)) {
+        } else if (auto* gv = dyn_cast<GlobalVariable>(c)) {
             // These guys should be processed separately by SeqDataPredicate
+            // XXX: Keep in sync with FactoryNest
             return Term::Ptr{
                 new ValueTerm(
-                    TyF->cast(seqData->getType()),
-                    st->getLocalName(seqData)
+                    TyF->cast(gv->getType()),
+                    st->getLocalName(gv)
                 )
             };
 

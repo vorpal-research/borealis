@@ -26,7 +26,7 @@ SeqDataPredicate::SeqDataPredicate(
         }
     }
 
-    asString = "*" + base->getName() + "=(" + a + ")";
+    asString = base->getName() + "=(" + a + ")";
 }
 
 bool SeqDataPredicate::equals(const Predicate* other) const {
