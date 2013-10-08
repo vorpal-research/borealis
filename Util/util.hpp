@@ -154,13 +154,19 @@ namespace llvm {
 template<class To>
 struct dyn_caster {
     template<class From>
-    auto operator()(const From& from) QUICK_CONST_RETURN(dyn_cast<To>(from));
+    auto operator()(From&& from) QUICK_CONST_RETURN(dyn_cast<To>(std::forward<From>(from)));
+};
+
+template<class To>
+struct caster {
+    template<class From>
+    auto operator()(From&& from) QUICK_CONST_RETURN(cast<To>(std::forward<From>(from)));
 };
 
 template<class To>
 struct isaer {
     template<class From>
-    auto operator()(const From& from) QUICK_CONST_RETURN(isa<To>(from));
+    auto operator()(From&& from) QUICK_CONST_RETURN(isa<To>(std::forward<From>(from)));
 };
 
 template<class T> struct simplify_type< std::shared_ptr<T> > {

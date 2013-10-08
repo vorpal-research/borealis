@@ -24,7 +24,9 @@ class AggregateTransformer : public borealis::Transformer<AggregateTransformer<F
 public:
 
     AggregateTransformer(First&& first, Rest&& rest) :
-        Base(first.FN), first(std::forward(first)), rest(std::forward(rest)) {}
+        Base(first.FN),
+        first(std::forward<First>(first)),
+        rest(std::forward<Rest>(rest)) {}
 
     Predicate::Ptr transformBase(Predicate::Ptr p) {
         auto pp = first.transform(p);
@@ -45,7 +47,10 @@ private:
 
 template<class First, class Rest>
 AggregateTransformer<First, Rest> operator+(First&& first, Rest&& rest) {
-    return AggregateTransformer<First, Rest>(std::forward(first), std::forward(rest));
+    return AggregateTransformer<First, Rest>(
+        std::forward<First>(first),
+        std::forward<Rest>(rest)
+    );
 }
 
 } /* namespace borealis */

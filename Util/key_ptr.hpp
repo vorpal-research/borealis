@@ -40,7 +40,7 @@ public:
 
 template<class T, class ...Args>
 key_holder_ptr<T> make_key_holder(Args&&... args) {
-    return key_holder_ptr<T>{ std::make_shared(std::forward(args)...) };
+    return key_holder_ptr<T>{ std::make_shared(std::forward<Args>(args)...) };
 }
 
 } // namespace util

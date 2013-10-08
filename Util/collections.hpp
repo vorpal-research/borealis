@@ -202,6 +202,15 @@ inline auto take(unsigned int count, Container&& con) ->
     return view(begin, end);
 }
 
+template<class Elem>
+inline auto range(Elem&& from, Elem&& to) ->
+        CollectionView<counting_iterator<Elem>> {
+    return view<counting_iterator<Elem>>(
+        counting_iterator<Elem>(std::forward<Elem>(from)),
+        counting_iterator<Elem>(std::forward<Elem>(to))
+    );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
@@ -287,8 +296,8 @@ template<class Tup, class Op, size_t N = std::tuple_size<Tup>::value>
 struct tuple_for_each_helper {
     enum{ tsize = std::tuple_size<Tup>::value };
     inline static void apply(Tup&& tup, Op op) {
-        op(std::get<tsize-N>(std::forward(tup)));
-        tuple_for_each_helper<Tup, Op, N-1>::apply(std::forward(tup), op);
+        op(std::get<tsize-N>(std::forward<Tup>(tup)));
+        tuple_for_each_helper<Tup, Op, N-1>::apply(std::forward<Tup>(tup), op);
     }
 };
 
@@ -302,7 +311,7 @@ struct tuple_for_each_helper<Tup, Op, 0> {
 template<class Tup, class Op>
 void tuple_for_each(Tup&& tup, Op op) {
     typedef impl_::tuple_for_each_helper<Tup, Op> delegate;
-    return delegate::apply(std::forward(tup), op);
+    return delegate::apply(std::forward<Tup>(tup), op);
 }
 
 } // namespace util

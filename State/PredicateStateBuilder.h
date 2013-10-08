@@ -46,6 +46,15 @@ PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
 PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value* loc);
 PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value& loc);
 
+template<class Container>
+PredicateStateBuilder operator+(PredicateStateBuilder PSB, Container&& c) {
+    PredicateStateBuilder res{PSB};
+    for (const auto& p : c) {
+        res += p;
+    }
+    return res;
+}
+
 } /* namespace borealis */
 
 #endif /* PREDICATESTATEBUILDER_H_ */

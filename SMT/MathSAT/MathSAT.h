@@ -389,9 +389,9 @@ public:
 
     typedef std::input_iterator_tag iterator_category;
     typedef ModelElem value_type;
-    typedef ModelElem& reference;
-    typedef ModelElem* pointer;
-    typedef ptrdiff_t difference_type;
+    typedef const value_type& reference;
+    typedef const value_type* pointer;
+    typedef std::ptrdiff_t difference_type;
 
     explicit ModelIterator(const Env& env, bool isEnd = false) :
             env_(env),
@@ -421,8 +421,8 @@ public:
         return this->it_ != that.it_;
     }
 
-    reference operator *() { return *curr_; }
-    pointer operator ->() { return &*curr_; }
+    reference operator *() const { return *curr_; }
+    pointer operator ->() const { return &*curr_; }
 
     self operator ++(int) {
         self old(*this);

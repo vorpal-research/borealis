@@ -445,6 +445,42 @@ filtered_iterator<It, Pred> filter_iterator(It end, Pred pred) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Counting iterator
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename Elem>
+class counting_iterator {
+    Elem e;
+public:
+    typedef std::forward_iterator_tag iterator_category;
+    typedef Elem value_type;
+    typedef std::ptrdiff_t difference_type;
+
+    typedef const value_type* pointer;
+    typedef const value_type& reference;
+
+    counting_iterator() = default;
+    counting_iterator(const counting_iterator&) = default;
+    counting_iterator(counting_iterator&&) = default;
+
+    counting_iterator(const Elem& e) : e(e) {};
+    counting_iterator(Elem&& e) : e(std::move(e)) {};
+
+    counting_iterator& operator=(const counting_iterator&) = default;
+    counting_iterator& operator=(counting_iterator&&) = default;
+
+    bool operator==(const counting_iterator& that) const { return e == that.e; };
+    bool operator!=(const counting_iterator& that) const { return e != that.e; };
+
+    reference operator*() const { return e; }
+    pointer operator->() const { return &e; }
+
+    counting_iterator& operator++() { ++e; return *this; }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // Key iterator
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -471,8 +507,8 @@ public:
     key_iterator& operator=(const key_iterator&) = default;
     key_iterator& operator=(key_iterator&&) = default;
 
-    bool operator==(const key_iterator& that) { return base == that.base; };
-    bool operator!=(const key_iterator& that) { return base != that.base; };
+    bool operator==(const key_iterator& that) const { return base == that.base; };
+    bool operator!=(const key_iterator& that) const { return base != that.base; };
 
     reference operator*() const { return base->first; }
     pointer operator->() const { return &base->first; }
@@ -522,8 +558,8 @@ public:
     value_iterator& operator=(const value_iterator&) = default;
     value_iterator& operator=(value_iterator&&) = default;
 
-    bool operator==(const value_iterator& that) { return base == that.base; };
-    bool operator!=(const value_iterator& that) { return base != that.base; };
+    bool operator==(const value_iterator& that) const { return base == that.base; };
+    bool operator!=(const value_iterator& that) const { return base != that.base; };
 
     reference operator*() { return base->second; }
     pointer operator->() { return &base->second; }
@@ -573,8 +609,8 @@ public:
     value_citerator& operator=(const value_citerator&) = default;
     value_citerator& operator=(value_citerator&&) = default;
 
-    bool operator==(const value_citerator& that) { return base == that.base; };
-    bool operator!=(const value_citerator& that) { return base != that.base; };
+    bool operator==(const value_citerator& that) const { return base == that.base; };
+    bool operator!=(const value_citerator& that) const { return base != that.base; };
 
     reference operator*() const { return base->second; }
     pointer operator->() const { return &base->second; }
