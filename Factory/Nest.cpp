@@ -26,12 +26,27 @@ FactoryNest::FactoryNest(SlotTracker* st) :
 
 PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
     auto& globals = M->getGlobalList();
-    Predicate::Ptr gPredicate = Predicate->getGlobalsPredicate(
-        util::viewContainer(globals)
-            .map([this](llvm::GlobalVariable& g) { return Term->getValueTerm(&g); })
-            .toVector()
-    );
-    return (State * gPredicate)();
+
+    auto gs = util::viewContainer(globals)
+        .map([this](llvm::GlobalVariable& g) { return Term->getValueTerm(&g); })
+        .toVector();
+
+    auto gPredicate = Predicate->getGlobalsPredicate(gs);
+
+    auto seqDataPredicates = util::viewContainer(globals)
+        .filter(llvm::isaer<llvm::ConstantDataSequential>())
+        .map(llvm::caster<llvm::ConstantDataSequential>())
+        .map([this](llvm::ConstantDataSequential& d) -> Predicate::Ptr {
+            auto base = Term->getValueTerm(&d);
+            auto data = util::range(0U, d.getNumElements())
+                .map([this,&d](unsigned i) { return d.getElementAsConstant(i); })
+                .map([this](llvm::Constant* c) { return Term->getValueTerm(c); })
+                .toVector();
+            return Predicate->getSeqDataPredicate(base, data);
+        })
+        .toVector();
+
+    return (State * gPredicate + seqDataPredicates)();
 }
 
 } // namespace borealis
