@@ -16,29 +16,32 @@ namespace borealis {
 namespace logging {
 
 class func_tracer {
-
     const char* fname_;
     borealis::logging::logstream log;
-    std::chrono::time_point<std::chrono::system_clock> start;
 
 public:
 
     static const std::string logDomain;
 
-    func_tracer(
-        const char* fname,
-        borealis::logging::logstream log):
-            fname_(fname), log(log), start(std::chrono::system_clock::now()) {
-        log << "> " << fname_ << borealis::logging::endl;
+    func_tracer(const char* fname, borealis::logging::logstream log):
+            fname_(fname), log(log) {
+        using namespace std::chrono;
+        auto micros = duration_cast<microseconds>(system_clock::now().time_since_epoch());
+        log << "> "
+            << fname_
+            << " : "
+            << micros.count()
+            << " µs"
+            << borealis::logging::endl;
     }
 
     ~func_tracer() {
-        auto end = std::chrono::system_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
+        using namespace std::chrono;
+        auto micros = duration_cast<microseconds>(system_clock::now().time_since_epoch());
         log << "< "
             << fname_
             << " : "
-            << duration
+            << micros.count()
             << " µs"
             << borealis::logging::endl;
     }
