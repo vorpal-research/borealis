@@ -25,17 +25,15 @@ public:
 
     func_tracer(const char* fname, borealis::logging::logstream log):
             fname_(fname), log(log) {
-        using namespace std::chrono;
-        auto micros = duration_cast<microseconds>(system_clock::now().time_since_epoch());
-        log << "> "
-            << fname_
-            << " : "
-            << micros.count()
-            << " µs"
-            << borealis::logging::endl;
+        printTime();
     }
 
     ~func_tracer() {
+        printTime();
+    }
+
+private:
+    void printTime() {
         using namespace std::chrono;
         auto micros = duration_cast<microseconds>(system_clock::now().time_since_epoch());
         log << "< "
