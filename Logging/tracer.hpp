@@ -25,11 +25,11 @@ public:
 
     func_tracer(const char* fname, borealis::logging::logstream log):
             fname_(fname), log(log) {
-        printTime('<');
+        printTime('>');
     }
 
     ~func_tracer() {
-        printTime('>');
+        printTime('<');
     }
 
 private:
