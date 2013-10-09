@@ -27,10 +27,10 @@ FactoryNest::FactoryNest(SlotTracker* st) :
 Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
     using namespace llvm;
 
+    auto base = FN.Term->getValueTerm(&gv);
+
     if (gv.hasInitializer()) {
         auto* ini = gv.getInitializer();
-
-        auto base = FN.Term->getValueTerm(&gv);
 
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
             auto data = util::range(0U, cds->getNumElements())
@@ -58,18 +58,20 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
         }
     }
 
-    return nullptr;
+    return FN.Predicate->getGlobalsPredicate({base});
 }
 
 PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
     auto& globals = M->getGlobalList();
 
-    auto seqDataPredicates = util::viewContainer(globals)
+    // FIXME: Marker predicate
+    auto init = Predicate->getGlobalsPredicate({});
+
+    auto gvPredicates = util::viewContainer(globals)
         .map([this](llvm::GlobalVariable& gv) { return fromGlobalVariable(*this, gv); })
-        .filter(util::isValid())
         .toVector();
 
-    return (State * State->Basic() + seqDataPredicates)();
+    return (State * init + gvPredicates)();
 }
 
 } // namespace borealis
