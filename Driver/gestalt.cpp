@@ -86,8 +86,8 @@ int gestalt::main(int argc, const char** argv) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     atexit(google::protobuf::ShutdownProtobufLibrary);
 
-    // FIXME: this is causing "pure virtual method called" on sayonara
-    // atexit(llvm::llvm_shutdown);
+    // XXX: sometimes this is causing "pure virtual method called" on sayonara
+    atexit(llvm::llvm_shutdown);
 
     using namespace clang;
     using namespace llvm;
