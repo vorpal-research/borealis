@@ -33,11 +33,12 @@ public:
         using namespace llvm;
 
         auto* v = resolver->resolve(t->getName(), context);
-        if (auto* ri = dyn_cast<ReturnInst>(v))
+        if (auto* ri = dyn_cast_or_null<ReturnInst>(v))
             return FN.Term->getReturnValueTerm(ri->getParent()->getParent());
         else if (v)
             return FN.Term->getValueTerm(v);
-        else return t;
+        else
+            return t;
     }
 
 };
