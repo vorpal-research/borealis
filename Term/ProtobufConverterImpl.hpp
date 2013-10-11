@@ -12,6 +12,7 @@
 
 #include "Protobuf/Gen/Term/Term.pb.h"
 
+#include "Protobuf/Gen/Term/ArgumentKind.pb.h"
 #include "Protobuf/Gen/Term/ArgumentTerm.pb.h"
 #include "Protobuf/Gen/Term/AxiomTerm.pb.h"
 #include "Protobuf/Gen/Term/BinaryTerm.pb.h"
@@ -64,6 +65,7 @@ struct protobuf_traits_impl<ArgumentTerm> {
     static std::unique_ptr<proto::ArgumentTerm> toProtobuf(const ArgumentTerm& t) {
         auto res = util::uniq(new proto::ArgumentTerm());
         res->set_idx(t.getIdx());
+        res->set_kind(static_cast<proto::ArgumentKind>(t.getKind()));
         return std::move(res);
     }
 
@@ -72,7 +74,7 @@ struct protobuf_traits_impl<ArgumentTerm> {
             Type::Ptr type,
             const std::string& name,
             const proto::ArgumentTerm& t) {
-        return Term::Ptr{ new ArgumentTerm(type, t.idx(), name) };
+        return Term::Ptr{ new ArgumentTerm(type, t.idx(), name, static_cast<ArgumentKind>(t.kind())) };
     }
 };
 

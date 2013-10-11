@@ -39,6 +39,19 @@ public:
         };
     }
 
+    Term::Ptr getStringArgumentTerm(llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown) {
+        ASSERT(st, "Missing SlotTracker");
+
+        return Term::Ptr{
+            new ArgumentTerm(
+                TyF->cast(arg->getType(), sign),
+                arg->getArgNo(),
+                st->getLocalName(arg),
+                ArgumentKind::STRING
+            )
+        };
+    }
+
     Term::Ptr getConstTerm(llvm::Constant* c, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
