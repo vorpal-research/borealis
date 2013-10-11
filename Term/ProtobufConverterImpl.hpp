@@ -22,12 +22,13 @@
 #include "Protobuf/Gen/Term/LoadTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBoolConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueBuiltinTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueCallTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueFloatingConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIndexingTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueInvalidPtrTerm.pb.h"
-#include "Protobuf/Gen/Term/OpaqueCallTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueStringConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueUndefTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueVarTerm.pb.h"
 #include "Protobuf/Gen/Term/ReadPropertyTerm.pb.h"
@@ -202,10 +203,6 @@ struct protobuf_traits_impl<GepTerm> {
             );
         }
 
-        for (const auto& v : t.getAsString()) {
-            res->set_asstring(v);
-        }
-
         return std::move(res);
     }
 
@@ -228,12 +225,7 @@ struct protobuf_traits_impl<GepTerm> {
             shifts.push_back({by, size});
         }
 
-        util::option<std::string> asString;
-        if (t.has_asstring()) {
-            asString = util::just(t.asstring());
-        }
-
-        return Term::Ptr{ new GepTerm(type, base, shifts, asString) };
+        return Term::Ptr{ new GepTerm(type, base, shifts) };
     }
 };
 
@@ -419,6 +411,27 @@ struct protobuf_traits_impl<OpaqueIntConstantTerm> {
             const proto::OpaqueIntConstantTerm& t) {
         auto value = t.value();
         return Term::Ptr{ new OpaqueIntConstantTerm(type, value) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<OpaqueStringConstantTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::OpaqueStringConstantTerm> toProtobuf(const OpaqueStringConstantTerm& t) {
+        auto res = util::uniq(new proto::OpaqueStringConstantTerm());
+        res->set_value(t.getValue());
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest&,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueStringConstantTerm& t) {
+        auto value = t.value();
+        return Term::Ptr{ new OpaqueStringConstantTerm(type, value) };
     }
 };
 

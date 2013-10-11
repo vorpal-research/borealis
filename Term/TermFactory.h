@@ -263,8 +263,7 @@ public:
                 base,
                 util::viewContainer(shifts).map([&one](Term::Ptr elem){
                     return std::make_pair(elem, one);
-                }).toVector(),
-                util::nothing()
+                }).toVector()
             }
         };
     }
@@ -323,14 +322,11 @@ public:
 
         type = GetElementPtrInst::getGEPReturnType(base, idxs);
 
-        auto asString = getAsCompileTimeString(base);
-
         return Term::Ptr{
             new GepTerm(
                 TyF->cast(type),
                 getValueTerm(base),
-                shifts,
-                asString
+                shifts
             )
         };
     }
@@ -371,6 +367,14 @@ public:
     Term::Ptr getOpaqueConstantTerm(bool v) {
         return Term::Ptr{
             new OpaqueBoolConstantTerm(TyF->getBool(), v)
+        };
+    }
+
+    Term::Ptr getOpaqueConstantTerm(const std::string& v) {
+        return Term::Ptr{
+            new OpaqueStringConstantTerm(
+                TyF->getUnknownType(), v
+            )
         };
     }
 

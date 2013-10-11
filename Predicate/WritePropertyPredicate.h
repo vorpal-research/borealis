@@ -77,12 +77,10 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        ASSERT(llvm::isa<GepTerm>(p->getPropertyName()),
+        ASSERT(llvm::isa<OpaqueStringConstantTerm>(p->getPropertyName()),
                "Property write with non-string property name");
-        auto* gepPropName = llvm::cast<GepTerm>(p->getPropertyName());
-        auto strPropName = gepPropName->getAsString();
-        ASSERT(!strPropName.empty(),
-               "Property write with unknown property name");
+        auto* propName = llvm::cast<OpaqueStringConstantTerm>(p->getPropertyName());
+        auto strPropName = propName->getValue();
 
         auto l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
         ASSERT(!l.empty(), "Property write with a non-pointer value");
@@ -90,7 +88,7 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
 
         auto r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
 
-        ctx->writeProperty(strPropName.getUnsafe(), lp, r);
+        ctx->writeProperty(strPropName, lp, r);
 
         return ef.getTrue();
     }

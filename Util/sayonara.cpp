@@ -20,11 +20,10 @@ namespace util {
 namespace {
     using diehandler = void(*)(const char*);
 
-    NORETURN void defaultDie(const char* m) {
+    void defaultDie(const char* m) {
         errs() << m;
 
         debug_break();
-        std::exit(EXIT_FAILURE);
     }
 }
 
@@ -36,7 +35,7 @@ void ondie(const char* m, diehandler hndl = nullptr) {
 
 NORETURN void diediedie(const char* m) {
     ondie(m);
-    throw 0;
+    std::exit(EXIT_FAILURE);
 }
 
 #include "Util/unmacros.h"

@@ -74,7 +74,17 @@ public:
 
         auto* actual = callSiteArguments.at(argIdx);
 
-        return FN.Term->getValueTerm(actual);
+        switch (t->getKind()) {
+        case ArgumentKind::STRING: {
+            auto argAsString = getAsCompileTimeString(actual);
+            ASSERT(!argAsString.empty(),
+                   "Non-string actual argument for ArgumentKind::STRING");
+            return FN.Term->getOpaqueConstantTerm(*argAsString.get());
+        }
+        default: {
+            return FN.Term->getValueTerm(actual);
+        }
+        }
     }
 
     Term::Ptr transformReturnValueTerm(ReturnValueTermPtr) {

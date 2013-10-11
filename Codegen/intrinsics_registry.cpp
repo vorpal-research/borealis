@@ -157,7 +157,7 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
                    FN.Term->getReturnValueTerm(F),
                    FN.Term->getReadPropertyTerm(
                        FN.Type->cast(F->getReturnType()),
-                       FN.Term->getArgumentTerm(propName),
+                       FN.Term->getStringArgumentTerm(propName),
                        FN.Term->getArgumentTerm(ptr)
                    )
                );
@@ -186,7 +186,7 @@ static RegisterIntrinsic BUILTIN_BOR_SETPROP {
 
         return FN.State->Basic() +
                FN.Predicate->getWritePropertyPredicate(
-                   FN.Term->getArgumentTerm(propName),
+                   FN.Term->getStringArgumentTerm(propName),
                    FN.Term->getArgumentTerm(ptr),
                    FN.Term->getArgumentTerm(value)
                );

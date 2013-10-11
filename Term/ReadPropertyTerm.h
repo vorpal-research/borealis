@@ -8,7 +8,7 @@
 #ifndef READPROPERTYTERM_H_
 #define READPROPERTYTERM_H_
 
-#include "Term/GepTerm.h"
+#include "Term/OpaqueStringConstantTerm.h"
 #include "Term/Term.h"
 
 namespace borealis {
@@ -81,18 +81,16 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
 
         ASSERTC(ctx != nullptr);
 
-        ASSERT(llvm::isa<GepTerm>(t->getPropertyName()),
+        ASSERT(llvm::isa<OpaqueStringConstantTerm>(t->getPropertyName()),
                "Property read with non-string property name");
-        auto* gepPropName = llvm::cast<GepTerm>(t->getPropertyName());
-        auto strPropName = gepPropName->getAsString();
-        ASSERT(!strPropName.empty(),
-               "Property read with unknown property name");
+        auto* propName = llvm::cast<OpaqueStringConstantTerm>(t->getPropertyName());
+        auto strPropName = propName->getValue();
 
         auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
         ASSERT(!r.empty(), "Property read with non-pointer right side");
         auto rp = r.getUnsafe();
 
-        return ctx->readProperty(strPropName.getUnsafe(), rp, ExprFactory::sizeForType(t->getType()));
+        return ctx->readProperty(strPropName, rp, ExprFactory::sizeForType(t->getType()));
     }
 };
 #include "Util/unmacros.h"

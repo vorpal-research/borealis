@@ -25,8 +25,6 @@ message GepTerm {
     optional Term base = 1;
     repeated Term by = 2;
     repeated Term size = 3;
-
-    optional string asString = 4;
 }
 
 **/
@@ -38,9 +36,7 @@ class GepTerm: public borealis::Term {
     Term::Ptr base;
     const Shifts shifts;
 
-    util::option<std::string> asString;
-
-    GepTerm(Type::Ptr type, Term::Ptr base, const Shifts& shifts, const util::option<std::string>& asString) :
+    GepTerm(Type::Ptr type, Term::Ptr base, const Shifts& shifts) :
         Term(
             class_tag(*this),
             type,
@@ -51,7 +47,7 @@ class GepTerm: public borealis::Term {
                     }
                 ) +
             ")"
-        ), base(base), shifts(shifts), asString(asString) {};
+        ), base(base), shifts(shifts) {};
 
 public:
 
@@ -59,8 +55,6 @@ public:
 
     Term::Ptr getBase() const { return base; }
     const Shifts& getShifts() const { return shifts; }
-
-    util::option<std::string> getAsString() const { return asString; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> const Self* {
@@ -74,8 +68,7 @@ public:
 
         auto _base = tr->transform(base);
         auto _type = type;
-        auto _asString = asString;
-        return new Self{ _type, _base, _shifts, _asString };
+        return new Self{ _type, _base, _shifts };
     }
 
     virtual bool equals(const Term* other) const override {
