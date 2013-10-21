@@ -78,13 +78,13 @@ MathSAT::Real ExprFactory::getRealConst(double v) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-MathSAT::MemArray ExprFactory::getNoMemoryArray() {
+MathSAT::MemArray ExprFactory::getNoMemoryArray(const std::string& id) {
     static config::ConfigEntry<bool> DefaultsToUnknown("analysis", "memory-defaults-to-unknown");
 
     if (DefaultsToUnknown.get(false)) {
-        return MemArray::mkFree(*env, "mem");
+        return MemArray::mkFree(*env, id);
     } else {
-        return MemArray::mkDefault(*env, "mem", Byte::mkConst(*env, 0xff));
+        return MemArray::mkDefault(*env, id, Byte::mkConst(*env, 0xff));
     }
 }
 

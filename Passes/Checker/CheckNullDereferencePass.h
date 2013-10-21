@@ -17,6 +17,7 @@
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/Misc/DetectNullPass.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
+#include "Passes/Tracker/NameTracker.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
@@ -54,6 +55,7 @@ private:
 
     DefectManager* DM;
     FunctionManager* FM;
+    NameTracker* NT;
 
     FactoryNest FN;
 

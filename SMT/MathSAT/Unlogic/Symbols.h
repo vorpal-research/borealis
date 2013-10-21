@@ -269,8 +269,8 @@ public:
         : AbstractSymbol(MSAT_TAG_UNKNOWN, expr.num_args(), expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
-        ASSERT("$$__initial_mem__$$" == expr_.decl().name() && 1 == numArgs_,
-               "Only $$_initial_mem_$$ UF is supported");
+        ASSERT("(initial)$$__memory__$$" == expr_.decl().name() && 1 == numArgs_,
+               "Only (initial)$$__memory__$$ UF is supported");
 
         if (args_[0]->isTerminal()) {
             return FN.Term->getLoadTerm(
@@ -280,7 +280,7 @@ public:
                 )
             );
         } else {
-            auto name = "$$__initial_mem_idx_" + util::toString(LoadSymbol::idx_++) + "__$$";
+            auto name = "(initial)$$__memory__$$(idx:" + util::toString(LoadSymbol::idx_++) + ")";
             auto idx = FN.Term->getValueTerm(
                 FN.Type->getPointer(FN.Type->getInteger()),
                 name
