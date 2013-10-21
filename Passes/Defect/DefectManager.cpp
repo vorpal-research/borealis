@@ -32,7 +32,7 @@ void DefectManager::addDefect(DefectInfo info) {
 }
 
 DefectInfo DefectManager::getDefect(DefectType type, llvm::Instruction* where) const {
-    getDefect(DefectTypes.at(type).type, where);
+    return getDefect(DefectTypes.at(type).type, where);
 }
 
 DefectInfo DefectManager::getDefect(const std::string& type, llvm::Instruction* where) const {

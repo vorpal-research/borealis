@@ -28,7 +28,6 @@ public:
 #include "Util/unmacros.h"
 
     typedef std::set<DefectInfo> DefectData;
-    typedef DefectData::value_type DefectDataEntry;
 
     static char ID;
 
