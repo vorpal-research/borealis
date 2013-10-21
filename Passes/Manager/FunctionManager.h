@@ -49,7 +49,7 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("fm")
 #include "Util/unmacros.h"
 
-    typedef std::unordered_map<llvm::Function*, FunctionDesc> Data;
+    typedef std::unordered_map<const llvm::Function*, FunctionDesc> Data;
     typedef Data::value_type DataEntry;
 
     typedef std::unordered_map<const llvm::Function*, unsigned int> Ids;
@@ -59,29 +59,29 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~FunctionManager() {};
 
-    void put(llvm::Function* F, PredicateState::Ptr state);
-    void update(llvm::Function* F, PredicateState::Ptr state);
+    void put(const llvm::Function* F, PredicateState::Ptr state);
+    void update(const llvm::Function* F, PredicateState::Ptr state);
 
-    PredicateState::Ptr getReq(llvm::Function* F);
-    PredicateState::Ptr getBdy(llvm::Function* F);
-    PredicateState::Ptr getEns(llvm::Function* F);
+    PredicateState::Ptr getReq(const llvm::Function* F) const;
+    PredicateState::Ptr getBdy(const llvm::Function* F) const;
+    PredicateState::Ptr getEns(const llvm::Function* F) const;
 
-    PredicateState::Ptr getReq(llvm::CallInst& CI, FactoryNest FN);
-    PredicateState::Ptr getBdy(llvm::CallInst& CI, FactoryNest FN);
-    PredicateState::Ptr getEns(llvm::CallInst& CI, FactoryNest FN);
+    PredicateState::Ptr getReq(const llvm::CallInst& CI, FactoryNest FN) const;
+    PredicateState::Ptr getBdy(const llvm::CallInst& CI, FactoryNest FN) const;
+    PredicateState::Ptr getEns(const llvm::CallInst& CI, FactoryNest FN) const;
 
     unsigned int getId(const llvm::Function* F) const;
     unsigned int getMemoryStart(const llvm::Function* F) const;
 
 private:
 
-    Data data;
+    mutable Data data;
     Ids ids;
 
     FactoryNest FN;
 
-    FunctionDesc get(llvm::Function* F);
-    FunctionDesc get(llvm::CallInst& CI, FactoryNest FN);
+    FunctionDesc get(const llvm::Function* F) const;
+    FunctionDesc get(const llvm::CallInst& CI, FactoryNest FN) const;
 
     FunctionDesc mergeFunctionDesc(const FunctionDesc& d1, const FunctionDesc& d2) const;
 
