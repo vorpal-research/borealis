@@ -20,12 +20,24 @@ void DefectManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 void DefectManager::addDefect(DefectType type, llvm::Instruction* where) {
-    addDefect(DefectTypes.at(type).type, where);
+    addDefect(getDefect(type, where));
 }
 
-void DefectManager::addDefect(std::string type, llvm::Instruction* where) {
+void DefectManager::addDefect(const std::string& type, llvm::Instruction* where) {
+    addDefect(getDefect(type, where));
+}
+
+void DefectManager::addDefect(DefectInfo info) {
+    data.insert(info);
+}
+
+DefectInfo DefectManager::getDefect(DefectType type, llvm::Instruction* where) const {
+    getDefect(DefectTypes.at(type).type, where);
+}
+
+DefectInfo DefectManager::getDefect(const std::string& type, llvm::Instruction* where) const {
     auto* locs = &GetAnalysis<SourceLocationTracker>::doit(this);
-    data.insert({type, locs->getLocFor(where)});
+    return {type, locs->getLocFor(where)};
 }
 
 void DefectManager::print(llvm::raw_ostream& O, const llvm::Module*) const {

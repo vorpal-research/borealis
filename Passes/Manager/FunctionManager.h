@@ -14,6 +14,7 @@
 
 #include "Factory/Nest.h"
 #include "Logging/logger.hpp"
+#include "Passes/Defect/DefectManager/DefectInfo.h"
 
 namespace borealis {
 
@@ -49,10 +50,15 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("fm")
 #include "Util/unmacros.h"
 
-    typedef std::unordered_map<const llvm::Function*, FunctionDesc> Data;
-    typedef Data::value_type DataEntry;
-
+    typedef std::unordered_map<const llvm::Function*, FunctionDesc> FunctionData;
     typedef std::unordered_map<const llvm::Function*, unsigned int> Ids;
+    typedef std::unordered_multimap<
+        const llvm::Function*,
+        std::pair<
+            PredicateState::Ptr,
+            DefectInfo
+        >
+    > FunctionBonds;
 
     FunctionManager();
     virtual bool runOnModule(llvm::Module&) override;
@@ -73,10 +79,13 @@ public:
     unsigned int getId(const llvm::Function* F) const;
     unsigned int getMemoryStart(const llvm::Function* F) const;
 
+    void addBond(const llvm::Function* F, const std::pair<PredicateState::Ptr, DefectInfo>& bond);
+
 private:
 
-    mutable Data data;
+    mutable FunctionData data;
     Ids ids;
+    FunctionBonds bonds;
 
     FactoryNest FN;
 

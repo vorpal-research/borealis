@@ -176,6 +176,8 @@ PredicateState::Ptr FunctionManager::getEns(
     return desc.Ens;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 unsigned int FunctionManager::getId(const llvm::Function* F) const {
     ASSERTC(borealis::util::containsKey(ids, F));
     return ids.at(F);
@@ -183,6 +185,14 @@ unsigned int FunctionManager::getId(const llvm::Function* F) const {
 
 unsigned int FunctionManager::getMemoryStart(const llvm::Function* F) const {
     return (getId(F) << 16) + 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void FunctionManager::addBond(
+        const llvm::Function* F,
+        const std::pair<PredicateState::Ptr, DefectInfo>& bond) {
+    bonds.insert({F, bond});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

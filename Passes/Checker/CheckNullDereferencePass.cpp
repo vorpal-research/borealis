@@ -69,7 +69,9 @@ public:
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 auto res = checkNullDereference(I, *ptr, *nullValue);
                 if (res.first) {
-                    reportNullDereference(I, *ptr, *nullValue);
+                    auto di = pass->DM->getDefect(DefectType::INI_03, &I);
+                    pass->DM->addDefect(di);
+                    pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
                     break;
                 }
             }
@@ -87,7 +89,9 @@ public:
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
                 auto res = checkNullDereference(I, *ptr, *nullValue);
                 if (res.first) {
-                    reportNullDereference(I, *ptr, *nullValue);
+                    auto di = pass->DM->getDefect(DefectType::INI_03, &I);
+                    pass->DM->addDefect(di);
+                    pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
                     break;
                 }
             }
@@ -159,13 +163,6 @@ public:
             dbgs() << "Passed!" << endl;
             return {false, nullptr};
         }
-    }
-
-    void reportNullDereference(
-            llvm::Instruction& where,
-            llvm::Value& /* what */,
-            llvm::Value& /* from */) {
-        pass->DM->addDefect(DefectType::INI_03, &where);
     }
 
 private:
