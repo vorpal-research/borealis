@@ -67,7 +67,8 @@ public:
 
         for (auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                if (checkNullDereference(I, *ptr, *nullValue)) {
+                auto res = checkNullDereference(I, *ptr, *nullValue);
+                if (res.first) {
                     reportNullDereference(I, *ptr, *nullValue);
                     break;
                 }
@@ -84,7 +85,8 @@ public:
 
         for (auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                if (checkNullDereference(I, *ptr, *nullValue)) {
+                auto res = checkNullDereference(I, *ptr, *nullValue);
+                if (res.first) {
                     reportNullDereference(I, *ptr, *nullValue);
                     break;
                 }
@@ -92,7 +94,7 @@ public:
         }
     }
 
-    bool checkNullDereference(
+    std::pair<bool, PredicateState::Ptr> checkNullDereference(
             llvm::Instruction& where,
             llvm::Value& what,
             llvm::Value& why) {
@@ -117,7 +119,7 @@ public:
 
         if (!ps || !ps->hasVisited({&where, &what, &why})) {
             dbgs() << "Infeasible!" << endl;
-            return false;
+            return {false, nullptr};
         }
 
         dbgs() << "Query: " << q << endl;
@@ -152,10 +154,10 @@ public:
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            return true;
+            return {true, contract};
         } else {
             dbgs() << "Passed!" << endl;
-            return false;
+            return {false, nullptr};
         }
     }
 
