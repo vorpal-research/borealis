@@ -188,7 +188,8 @@ Dynamic Solver::getSummary(
 
             auto ms = msatef.getFalse();
             for (const auto& m : models) {
-                mathsat::Solver s(msatef.unwrap());
+                mathsat::ISolver s(msatef.unwrap());
+                s.create_and_set_itp_group();
                 s.add(msatimpl::asAxiom(   msatbody  ));
                 s.add(msatimpl::asAxiom( ! msatquery ));
                 s.add(msatimpl::asAxiom(   m ));
@@ -197,6 +198,9 @@ Dynamic Solver::getSummary(
 
                 ms = ms || m;
             }
+
+            dbgs() << "Pruned: " << endl
+                   << ms << endl;
 
             s.set_itp_group(Q);
             s.add(msatimpl::asAxiom(ms));
@@ -274,7 +278,8 @@ Dynamic Solver::getContract(
 
             auto ms = msatef.getFalse();
             for (const auto& m : models) {
-                mathsat::Solver s(msatef.unwrap());
+                mathsat::ISolver s(msatef.unwrap());
+                s.create_and_set_itp_group();
                 s.add(msatimpl::asAxiom(   msatbody  ));
                 s.add(msatimpl::asAxiom( ! msatquery ));
                 s.add(msatimpl::asAxiom(   m ));
@@ -283,6 +288,9 @@ Dynamic Solver::getContract(
 
                 ms = ms || m;
             }
+
+            dbgs() << "Pruned: " << endl
+                   << ms << endl;
 
             s.set_itp_group(B);
             s.add(msatimpl::asAxiom(ms));

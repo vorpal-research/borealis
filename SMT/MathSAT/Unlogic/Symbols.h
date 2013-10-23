@@ -9,6 +9,7 @@
 #define MATHSAT_SYMBOLS_H_
 
 #include <gmp.h>
+#include <regex>
 
 #include "Factory/Nest.h"
 #include "Logging/logger.hpp"
@@ -269,18 +270,27 @@ public:
         : AbstractSymbol(MSAT_TAG_UNKNOWN, expr.num_args(), expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
-        ASSERT("(initial)$$__memory__$$" == expr_.decl().name() && 1 == numArgs_,
-               "Only (initial)$$__memory__$$ UF is supported");
+        // FIXME: The blackest of black magics...
+
+        std::regex r("\\(initial\\)(.*)");
+        std::smatch mr;
+        auto valid = std::regex_match(expr_.decl().name(), mr, r);
+
+        ASSERT(valid && 1 == numArgs_, "Only (initial)<...> UF is supported");
+
+        auto memory_name = mr[1].str();
 
         if (args_[0]->isTerminal()) {
-            return FN.Term->getLoadTerm(
+            return FN.Term->getReadPropertyTerm(
+                FN.Type->getInteger(),
+                FN.Term->getOpaqueConstantTerm(memory_name),
                 FN.Term->getValueTerm(
                     FN.Type->getPointer(FN.Type->getInteger()),
                     args_[0]->undoThat(FN)->getName()
                 )
             );
         } else {
-            auto name = "(initial)$$__memory__$$(idx:" + util::toString(LoadSymbol::idx_++) + ")";
+            auto name = "(initial)" + memory_name + "(idx:" + util::toString(LoadSymbol::idx_++) + ")";
             auto idx = FN.Term->getValueTerm(
                 FN.Type->getPointer(FN.Type->getInteger()),
                 name
@@ -291,7 +301,9 @@ public:
                 args_[0]->undoThat(FN)
             );
             return FN.Term->getAxiomTerm(
-                FN.Term->getLoadTerm(
+                FN.Term->getReadPropertyTerm(
+                    FN.Type->getInteger(),
+                    FN.Term->getOpaqueConstantTerm(memory_name),
                     idx
                 ),
                 axs
