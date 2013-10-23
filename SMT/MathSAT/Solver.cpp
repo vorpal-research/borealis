@@ -182,21 +182,24 @@ Dynamic Solver::getSummary(
             d.add(msatimpl::asAxiom( msatbody  ));
             d.add(msatimpl::asAxiom( msatquery ));
 
-            auto models = d.diversify(argExprs);
-            dbgs() << "Models: " << endl
-                   << models << endl;
-
             auto ms = msatef.getFalse();
-            for (const auto& m : models) {
-                mathsat::ISolver s(msatef.unwrap());
-                s.create_and_set_itp_group();
-                s.add(msatimpl::asAxiom(   msatbody  ));
-                s.add(msatimpl::asAxiom( ! msatquery ));
-                s.add(msatimpl::asAxiom(   m ));
+            auto count = 0;
 
-                if (MSAT_SAT == s.check()) continue;
+            while (count < 32) {
+                auto models = d.diversify_unsafe(argExprs, 32);
 
-                ms = ms || m;
+                for (const auto& m : models) {
+                    mathsat::ISolver s(msatef.unwrap());
+                    s.create_and_set_itp_group();
+                    s.add(msatimpl::asAxiom(   msatbody  ));
+                    s.add(msatimpl::asAxiom( ! msatquery ));
+                    s.add(msatimpl::asAxiom(   m ));
+
+                    if (MSAT_SAT == s.check()) continue;
+
+                    ms = ms || m;
+                    ++count;
+                }
             }
 
             dbgs() << "Pruned: " << endl
@@ -272,21 +275,24 @@ Dynamic Solver::getContract(
             d.add(msatimpl::asAxiom( msatbody  ));
             d.add(msatimpl::asAxiom( msatquery ));
 
-            auto models = d.diversify(argExprs);
-            dbgs() << "Models: " << endl
-                   << models << endl;
-
             auto ms = msatef.getFalse();
-            for (const auto& m : models) {
-                mathsat::ISolver s(msatef.unwrap());
-                s.create_and_set_itp_group();
-                s.add(msatimpl::asAxiom(   msatbody  ));
-                s.add(msatimpl::asAxiom( ! msatquery ));
-                s.add(msatimpl::asAxiom(   m ));
+            auto count = 0;
 
-                if (MSAT_SAT == s.check()) continue;
+            while (count < 32) {
+                auto models = d.diversify_unsafe(argExprs, 32);
 
-                ms = ms || m;
+                for (const auto& m : models) {
+                    mathsat::ISolver s(msatef.unwrap());
+                    s.create_and_set_itp_group();
+                    s.add(msatimpl::asAxiom(   msatbody  ));
+                    s.add(msatimpl::asAxiom( ! msatquery ));
+                    s.add(msatimpl::asAxiom(   m ));
+
+                    if (MSAT_SAT == s.check()) continue;
+
+                    ms = ms || m;
+                    ++count;
+                }
             }
 
             dbgs() << "Pruned: " << endl
