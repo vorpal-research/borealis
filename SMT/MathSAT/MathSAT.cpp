@@ -868,8 +868,8 @@ struct diversify_data {
     std::vector<Expr> models;
     unsigned int limit;
 
-    diversify_data(const Env& env, const std::vector<msat_term>& dvrs) :
-        env(env), dvrs(dvrs.begin(), dvrs.end()), limit(std::max(32.0, pow(2, dvrs.size()))) {}
+    diversify_data(const Env& env, const std::vector<msat_term>& dvrs, unsigned int limit) :
+        env(env), dvrs(dvrs.begin(), dvrs.end()), limit(limit) {}
 };
 
 int collect_diversified_models(msat_model_iterator it, void* data) {
@@ -898,14 +898,22 @@ int collect_diversified_models(msat_model_iterator it, void* data) {
 }
 
 std::vector<Expr> DSolver::diversify(const std::vector<Expr>& diversifiers) {
-    std::vector<msat_term> dvrs(diversifiers.begin(), diversifiers.end());
-
-    diversify_data data(env_, dvrs);
+    unsigned int limit = std::max(32.0, pow(2, diversifiers.size()));
 
     push();
+    auto res = diversify_unsafe(diversifiers, limit);
+    pop();
+
+    return res;
+}
+
+std::vector<Expr> DSolver::diversify_unsafe(const std::vector<Expr>& diversifiers, unsigned int limit) {
+    std::vector<msat_term> dvrs(diversifiers.begin(), diversifiers.end());
+
+    diversify_data data(env_, dvrs, limit);
+
     auto res = msat_solve_diversify(env_, dvrs.data(), dvrs.size(), collect_diversified_models, &data);
     ASSERTC(res != -1);
-    pop();
 
     return data.models;
 }
