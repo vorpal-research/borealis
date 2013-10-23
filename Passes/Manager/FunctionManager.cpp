@@ -195,6 +195,11 @@ void FunctionManager::addBond(
     bonds.insert({F, bond});
 }
 
+util::CollectionView<FunctionManager::FunctionBonds::const_iterator>
+FunctionManager::getBonds(const llvm::Function* F) const {
+    return bonds.equal_range(F);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 FunctionManager::FunctionDesc FunctionManager::mergeFunctionDesc(const FunctionDesc& d1, const FunctionDesc& d2) const {

@@ -52,13 +52,8 @@ public:
 
     typedef std::unordered_map<const llvm::Function*, FunctionDesc> FunctionData;
     typedef std::unordered_map<const llvm::Function*, unsigned int> Ids;
-    typedef std::unordered_multimap<
-        const llvm::Function*,
-        std::pair<
-            PredicateState::Ptr,
-            DefectInfo
-        >
-    > FunctionBonds;
+    typedef std::pair<PredicateState::Ptr, DefectInfo> Bond;
+    typedef std::unordered_multimap<const llvm::Function*, Bond> FunctionBonds;
 
     FunctionManager();
     virtual bool runOnModule(llvm::Module&) override;
@@ -80,6 +75,7 @@ public:
     unsigned int getMemoryStart(const llvm::Function* F) const;
 
     void addBond(const llvm::Function* F, const std::pair<PredicateState::Ptr, DefectInfo>& bond);
+    util::CollectionView<FunctionBonds::const_iterator> getBonds(const llvm::Function* F) const;
 
 private:
 
