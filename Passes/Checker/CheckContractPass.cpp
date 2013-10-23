@@ -36,7 +36,45 @@ public:
         case function_type::ACTION_DEFECT:
             checkActionDefect(CI); break;
         default:
-            checkContract(CI); break;
+            checkContract(CI);
+            checkBonds(CI);
+            break;
+        }
+    }
+
+    void checkBonds(llvm::CallInst& CI) {
+        auto bonds = pass->FM->getBonds(CI.getCalledFunction());
+        if (bonds.empty()) return;
+
+        auto state = pass->PSA->getInstructionState(&CI);
+        if (!state) return;
+
+        for (auto& e : bonds) {
+            auto bond = e.second.first;
+            auto defect = e.second.second;
+
+            CallSiteInitializer csi(CI, pass->FN);
+            auto instantiatedBond = bond->map(
+                [&csi](Predicate::Ptr p) { return csi.transform(p); }
+            );
+
+            dbgs() << "Checking: " << CI << endl;
+            dbgs() << "  Bond: " << endl << instantiatedBond << endl;
+
+            auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
+
+    #if defined USE_MATHSAT_SOLVER
+            MathSAT::ExprFactory ef;
+            MathSAT::Solver s(ef, fMemId);
+    #else
+            Z3::ExprFactory ef;
+            Z3::Solver s(ef, fMemId);
+    #endif
+
+            dbgs() << "  State: " << endl << state << endl;
+            if (s.isViolated(instantiatedBond, state)) {
+                pass->DM->addDefect(defect);
+            }
         }
     }
 
