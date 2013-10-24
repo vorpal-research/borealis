@@ -48,7 +48,7 @@ class ExecutionContext {
         if (containsKey(memArrays, id)) {
             return memArrays.at(id);
         }
-        auto ret = factory.getNoMemoryArray();
+        auto ret = factory.getNoMemoryArray(id);
         memArrays.emplace(id, ret);
         return ret;
     }

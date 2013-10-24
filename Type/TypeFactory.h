@@ -149,9 +149,10 @@ public:
             auto str = llvm::dyn_cast<llvm::StructType>(type);
             // FIXME: this is fucked up, literal (unnamed) structs are uniqued
             //        as structural types (they are rare though)
-            auto name = str->hasName() ?
+            auto name = !str->hasName() ?
                  ("bor.literalStruct." + util::toString(literalStructs++)) :
                  str->getName().str();
+
             if(str->isOpaque() || visitedStructs.count(name)) return getRecord(name);
             else {
                 visitedStructs.insert(name);
