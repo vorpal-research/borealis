@@ -103,12 +103,15 @@ int gestalt::main(int argc, const char** argv) {
     CommandLine args(argc, argv);
     llvm::sys::Path selfPath = llvm::sys::Program::FindProgramByName(argv[0]);
     llvm::SmallString<64> selfDir = selfPath.getDirname();
-    llvm::sys::path::append(selfDir, "wrapper.conf");
+    auto configPath = selfDir;
+    llvm::sys::path::append(configPath, "wrapper.conf");
+    auto defaultLogIni = selfDir;
+    llvm::sys::path::append(defaultLogIni, "log.ini");
 #pragma GCC diagnostic pop
 
     AppConfiguration::initialize(
         new CommandLineConfigSource{ args.suffixes("---").stlRep() },
-        new FileConfigSource{ args.suffixes("---config:").single(selfDir.c_str()) }
+        new FileConfigSource{ args.suffixes("---config:").single(configPath.c_str()) }
     );
 
     CommandLine opt = CommandLine("wrapper") +
@@ -118,9 +121,12 @@ int gestalt::main(int argc, const char** argv) {
 
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
-    for (const auto& op : logFile) {
-        borealis::logging::configureLoggingFacility(op);
-    }
+
+
+    borealis::logging::configureLoggingFacility(
+        logFile.get().getOrElse(defaultLogIni.str())
+    );
+
     for (const auto& op : z3log) {
         borealis::logging::configureZ3Log(op);
     }
