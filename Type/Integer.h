@@ -2,7 +2,16 @@
  * Type/Integer.h
  * This file is generated from the following haskell datatype representation:
  * 
- * data Type = Integer { signedness :: LLVMSignedness } | Bool | Float | UnknownType | Pointer { pointed :: Type } | TypeError { message :: String } deriving (Show, Eq, Data, Typeable)
+ * data Type = 
+    Integer { signedness :: LLVMSignedness } |
+    Bool |
+    Float |
+    UnknownType |
+    Pointer { pointed :: Type } |
+    Array { element :: Type, size :: Maybe Size } |
+    Record { name :: String, body :: RecordBodyRef } |
+    TypeError { message :: String }
+      deriving (Show, Eq, Data, Typeable)
  * 
  * stored in Type/Type.datatype
  * using the template file Type/derived.h.hst
@@ -14,6 +23,7 @@
 #define INTEGER_H
 
 #include "Type/Type.h"
+#include "Type/RecordBody.h" // including this is generally fucked up
 
 #include "Util/util.h"
 
@@ -25,6 +35,8 @@ namespace type {
 
 /** protobuf -> Type/Integer.proto
 import "Type/Type.proto";
+import "Type/RecordBodyRef.proto";
+
 import "Util/Signedness.proto";
 
 package borealis.type.proto;
@@ -33,6 +45,7 @@ message Integer {
     extend borealis.proto.Type {
         optional Integer ext = 1;
     }
+
     optional borealis.proto.Signedness signedness = 1;
 }
 

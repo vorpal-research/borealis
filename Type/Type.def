@@ -2,7 +2,16 @@
  * Type/Type.def
  * This file is generated from the following haskell datatype representation:
  * 
- * data Type = Integer { signedness :: LLVMSignedness } | Bool | Float | UnknownType | Pointer { pointed :: Type } | TypeError { message :: String } deriving (Show, Eq, Data, Typeable)
+ * data Type = 
+    Integer { signedness :: LLVMSignedness } |
+    Bool |
+    Float |
+    UnknownType |
+    Pointer { pointed :: Type } |
+    Array { element :: Type, size :: Maybe Size } |
+    Record { name :: String, body :: RecordBodyRef } |
+    TypeError { message :: String }
+      deriving (Show, Eq, Data, Typeable)
  * 
  * stored in Type/Type.datatype
  * using the template file Type/base.def.hst
@@ -22,6 +31,8 @@
 #include "Type/Float.h"
 #include "Type/UnknownType.h"
 #include "Type/Pointer.h"
+#include "Type/Array.h"
+#include "Type/Record.h"
 #include "Type/TypeError.h"
 
 #define HANDLE_TYPE(NAME, CLASS)
@@ -33,6 +44,8 @@ HANDLE_TYPE(Bool, Bool)
 HANDLE_TYPE(Float, Float)
 HANDLE_TYPE(UnknownType, UnknownType)
 HANDLE_TYPE(Pointer, Pointer)
+HANDLE_TYPE(Array, Array)
+HANDLE_TYPE(Record, Record)
 HANDLE_TYPE(TypeError, TypeError)
 
 #ifdef HANDLE_TYPE

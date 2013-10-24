@@ -9,7 +9,7 @@
 
 namespace borealis {
 
-TypeFactory::TypeFactory() {}
+TypeFactory::TypeFactory() : recordBodies{ new type::RecordRegistry{} } {}
 
 std::ostream& operator<<(std::ostream& ost, Type::Ptr tp) {
     return ost << TypeFactory::get()->toString(*tp);

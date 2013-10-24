@@ -2,7 +2,16 @@
  * Type/Type.h
  * This file is generated from the following haskell datatype representation:
  * 
- * data Type = Integer { signedness :: LLVMSignedness } | Bool | Float | UnknownType | Pointer { pointed :: Type } | TypeError { message :: String } deriving (Show, Eq, Data, Typeable)
+ * data Type = 
+    Integer { signedness :: LLVMSignedness } |
+    Bool |
+    Float |
+    UnknownType |
+    Pointer { pointed :: Type } |
+    Array { element :: Type, size :: Maybe Size } |
+    Record { name :: String, body :: RecordBodyRef } |
+    TypeError { message :: String }
+      deriving (Show, Eq, Data, Typeable)
  * 
  * stored in Type/Type.datatype
  * using the template file Type/base.h.hst

@@ -2,7 +2,16 @@
  * Type/TypeError.h
  * This file is generated from the following haskell datatype representation:
  * 
- * data Type = Integer { signedness :: LLVMSignedness } | Bool | Float | UnknownType | Pointer { pointed :: Type } | TypeError { message :: String } deriving (Show, Eq, Data, Typeable)
+ * data Type = 
+    Integer { signedness :: LLVMSignedness } |
+    Bool |
+    Float |
+    UnknownType |
+    Pointer { pointed :: Type } |
+    Array { element :: Type, size :: Maybe Size } |
+    Record { name :: String, body :: RecordBodyRef } |
+    TypeError { message :: String }
+      deriving (Show, Eq, Data, Typeable)
  * 
  * stored in Type/Type.datatype
  * using the template file Type/derived.h.hst
@@ -14,6 +23,7 @@
 #define TYPEERROR_H
 
 #include "Type/Type.h"
+#include "Type/RecordBody.h" // including this is generally fucked up
 
 #include <string>
 
@@ -25,13 +35,17 @@ namespace type {
 
 /** protobuf -> Type/TypeError.proto
 import "Type/Type.proto";
+import "Type/RecordBodyRef.proto";
+
+
 
 package borealis.type.proto;
 
 message TypeError {
     extend borealis.proto.Type {
-        optional TypeError ext = 6;
+        optional TypeError ext = 8;
     }
+
     optional string message = 1;
 }
 

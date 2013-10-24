@@ -14,7 +14,7 @@ namespace borealis {
 ////////////////////////////////////////////////////////////////////////////////
 // Type
 ////////////////////////////////////////////////////////////////////////////////
-Type::ProtoPtr protobuf_traits<Type>::toProtobuf(const normal_t& t) {
+Type::ProtoPtr protobuf_traits_impl<Type>::toProtobuf(const normal_t& t) {
     auto res = util::uniq(new proto_t());
 
     if (false) {}
@@ -33,7 +33,7 @@ Type::ProtoPtr protobuf_traits<Type>::toProtobuf(const normal_t& t) {
     return std::move(res);
 }
 
-Type::Ptr protobuf_traits<Type>::fromProtobuf(const context_t& fn, const proto_t& t) {
+Type::Ptr protobuf_traits_impl<Type>::fromProtobuf(const context_t& fn, const proto_t& t) {
 #define HANDLE_TYPE(NAME, CLASS) \
     if (t.HasExtension(type::proto::CLASS::ext)) { \
         const auto& ext = t.GetExtension(type::proto::CLASS::ext); \
