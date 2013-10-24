@@ -272,13 +272,14 @@ public:
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
         // FIXME: The blackest of black magics...
 
-        std::regex r("\\(initial\\)(.*)");
-        std::smatch mr;
-        auto valid = std::regex_match(expr_.decl().name(), mr, r);
+        std::string _ = expr_.decl().name();
+        llvm::StringRef orig_name(_);
 
-        ASSERT(valid && 1 == numArgs_, "Only (initial)<...> UF is supported");
+        if ( ! (orig_name.startswith("(initial)") && numArgs_ == 1) ) {
+            BYE_BYE(Term::Ptr, "Only (initial)<...> UF is supported");
+        }
 
-        auto memory_name = mr[1].str();
+        auto memory_name = orig_name.drop_front(9).str();
 
         if (args_[0]->isTerminal()) {
             return FN.Term->getReadPropertyTerm(
