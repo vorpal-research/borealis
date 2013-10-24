@@ -59,14 +59,60 @@ public:
         failWith(std::string(r));
     }
 
-
     // note this is called without a "Term" at the end, meaning
     // it is called before (and instead) transforming children
     Term::Ptr transformOpaqueCall(OpaqueCallTermPtr trm) {
         if(auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
             // FIXME: implement some calls
-            util::use(builtin);
-            failWith("Cannot call " + trm->getName() + ": no builtin calls supported yet");
+            if(builtin->getVName() == "property") {
+                auto rhv = trm->getRhv();
+                if(rhv.size() != 2) failWith("Illegal property access " + trm->getName() + ": exactly two operands expected");
+
+                auto val = this->transform(rhv[0]);
+                auto prop = llvm::dyn_cast<OpaqueVarTerm>(rhv[1]);
+                if(!prop) failWith("Illegal property access " + trm->getName() + ": second operand must be a property name");
+
+                auto transformed_prop = FN.Term->getOpaqueConstantTerm(prop->getVName());
+
+                return FN.Term->getReadPropertyTerm(FN.Type->getUnknownType(), transformed_prop, val);
+            }
+            if(builtin->getVName() == "bound") {
+                auto rhv = trm->getRhv();
+                if(rhv.size() != 1) failWith("Illegal bound access " + trm->getName() + ": exactly one operand expected");
+
+                auto val = this->transform(rhv[0]);
+
+                return FN.Term->getBoundTerm(val);
+            }
+            if(builtin->getVName() == "is_valid_ptr") {
+                auto rhv = trm->getRhv();
+                if(rhv.size() != 1) failWith("Illegal is_valid_ptr access " + trm->getName() + ": exactly one operand expected");
+
+                auto val = this->transform(rhv[0]);
+
+                return FN.Term->getBinaryTerm(
+                    llvm::ArithType::LAND,
+                    FN.Term->getCmpTerm(
+                        llvm::ConditionType::NEQ,
+                        val,
+                        FN.Term->getNullPtrTerm()
+                    ),
+                    FN.Term->getBinaryTerm(
+                        llvm::ArithType::LAND,
+                        FN.Term->getCmpTerm(
+                            llvm::ConditionType::NEQ,
+                            val,
+                            FN.Term->getInvalidPtrTerm()
+                        ),
+                        FN.Term->getCmpTerm(
+                            llvm::ConditionType::GE,
+                            FN.Term->getBoundTerm(val),
+                            FN.Term->getOpaqueConstantTerm(42LL)
+                        )
+                    )
+                );
+            }
+            failWith("Cannot call " + trm->getName() + ": not supported");
         } else failWith("Cannot call " + trm->getName() + ": only builtins can be called in this way");
         return trm;
     }
