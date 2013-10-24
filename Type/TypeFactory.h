@@ -145,7 +145,7 @@ public:
         else if (type->isArrayTy())
             return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
         else if (type->isStructTy()) {
-#include "macros.h"
+#include "Util/macros.h"
             auto str = llvm::dyn_cast<llvm::StructType>(type);
             // FIXME: this is fucked up, literal (unnamed) structs are uniqued
             //        as structural types (they are rare though)
@@ -166,7 +166,7 @@ public:
                 }
                 return hasBody ? getRecord(name) : getRecord(name, body);
             }
-#include "unmacros.h"
+#include "Util/unmacros.h"
         }
         else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
