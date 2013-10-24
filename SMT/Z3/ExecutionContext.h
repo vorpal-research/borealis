@@ -172,8 +172,8 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-    Pointer getBound(const Pointer& p) {
-        return readProperty<Pointer>(GEP_BOUNDS_ID, p);
+    Integer getBound(const Pointer& p) {
+        return readProperty<Integer>(GEP_BOUNDS_ID, p);
     }
 
 ////////////////////////////////////////////////////////////////////////////////
