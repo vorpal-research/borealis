@@ -183,9 +183,10 @@ Dynamic Solver::getSummary(
             d.add(msatimpl::asAxiom( msatquery ));
 
             auto ms = msatef.getFalse();
-            auto count = 0;
+            auto count = 0U;
+            auto attempts = 0U;
 
-            while (count < 32) {
+            while (count < 32 && attempts < 8) {
                 auto models = d.diversify_unsafe(argExprs, 32);
 
                 for (const auto& m : models) {
@@ -200,6 +201,8 @@ Dynamic Solver::getSummary(
                     ms = ms || m;
                     ++count;
                 }
+
+                ++attempts;
             }
 
             dbgs() << "Pruned: " << endl
@@ -276,9 +279,10 @@ Dynamic Solver::getContract(
             d.add(msatimpl::asAxiom( msatquery ));
 
             auto ms = msatef.getFalse();
-            auto count = 0;
+            auto count = 0U;
+            auto attempts = 0U;
 
-            while (count < 32) {
+            while (count < 32 && attempts < 8) {
                 auto models = d.diversify_unsafe(argExprs, 32);
 
                 for (const auto& m : models) {
@@ -293,6 +297,8 @@ Dynamic Solver::getContract(
                     ms = ms || m;
                     ++count;
                 }
+
+                ++attempts;
             }
 
             dbgs() << "Pruned: " << endl
