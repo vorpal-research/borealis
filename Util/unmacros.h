@@ -21,6 +21,10 @@
 #undef STATIC_STRING
 #undef NORETURN
 #undef COMPILER
+#undef DEFAULT_CONSTRUCTOR_AND_ASSIGN
+#undef ON_SCOPE_EXIT
+#undef PRETOKENPASTE
+#undef TOKENPASTE
 #undef BOREALIS_MACROS_DEFINED
 #else
 #error "unmacros.h is included without corresponding macros.h include!"

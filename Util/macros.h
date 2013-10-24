@@ -167,6 +167,20 @@ borealis::util::at(S,79) \
 // XXX: change this to [[noreturn]] when mother..cking G++ supports it
 #define NORETURN __attribute__((noreturn))
 
+#define DEFAULT_CONSTRUCTOR_AND_ASSIGN(CLASSNAME) \
+    \
+    CLASSNAME() = default; \
+    CLASSNAME(const CLASSNAME&) = default; \
+    CLASSNAME(CLASSNAME&&) = default; \
+    CLASSNAME& operator=(const CLASSNAME&) = default; \
+    CLASSNAME& operator=(CLASSNAME&&) = default;
+
+#define PRETOKENPASTE(x, y) x ## y
+#define TOKENPASTE(x, y) PRETOKENPASTE(x, y)
+#define ON_SCOPE_EXIT(LAMBDA) \
+    auto TOKENPASTE(local_scope_guard_packed_lambda, __LINE__) = [&](){ LAMBDA; }; \
+    ::borealis::util::scope_guard<decltype(TOKENPASTE(local_scope_guard_packed_lambda, __LINE__))> TOKENPASTE(local_scope_guard, __LINE__) { TOKENPASTE(local_scope_guard_packed_lambda, __LINE__) };
+
 #ifdef __clang__
 #define COMPILER clang
 #elif defined(__GNUC__)
