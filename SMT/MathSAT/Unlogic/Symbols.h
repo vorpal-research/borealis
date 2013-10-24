@@ -285,10 +285,7 @@ public:
             return FN.Term->getReadPropertyTerm(
                 FN.Type->getInteger(),
                 FN.Term->getOpaqueConstantTerm(memory_name),
-                FN.Term->getValueTerm(
-                    FN.Type->getPointer(FN.Type->getInteger()),
-                    args_[0]->undoThat(FN)->getName()
-                )
+                args_[0]->undoThat(FN)
             );
         } else {
             auto name = "(initial)" + memory_name + "(idx:" + util::toString(LoadSymbol::idx_++) + ")";
