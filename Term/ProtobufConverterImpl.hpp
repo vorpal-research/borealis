@@ -16,6 +16,7 @@
 #include "Protobuf/Gen/Term/ArgumentTerm.pb.h"
 #include "Protobuf/Gen/Term/AxiomTerm.pb.h"
 #include "Protobuf/Gen/Term/BinaryTerm.pb.h"
+#include "Protobuf/Gen/Term/BoundTerm.pb.h"
 #include "Protobuf/Gen/Term/CmpTerm.pb.h"
 #include "Protobuf/Gen/Term/ConstTerm.pb.h"
 #include "Protobuf/Gen/Term/GepTerm.pb.h"
@@ -132,6 +133,29 @@ struct protobuf_traits_impl<BinaryTerm> {
         auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
         auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
         return Term::Ptr{ new BinaryTerm(type, opcode, lhv, rhv) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<BoundTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::BoundTerm> toProtobuf(const BoundTerm& t) {
+        auto res = util::uniq(new proto::BoundTerm());
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(*t.getRhv()).release()
+        );
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::BoundTerm& t) {
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        return Term::Ptr{ new BoundTerm(type, rhv) };
     }
 };
 
