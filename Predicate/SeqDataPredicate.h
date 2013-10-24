@@ -8,6 +8,7 @@
 #ifndef SEQDATAPREDICATE_H_
 #define SEQDATAPREDICATE_H_
 
+#include "Config/config.h"
 #include "Predicate/Predicate.h"
 
 namespace borealis {
@@ -81,10 +82,13 @@ struct SMTImpl<Impl, SeqDataPredicate> {
         auto base = ctx->getGlobalPtr(p->getData().size());
         auto res = lp == base;
 
-        for (const auto& datum : p->getData()) {
-            auto d = SMT<Impl>::doit(datum, ef, ctx);
-            ctx->writeExprToMemory(base, d);
-            base = base + 1;
+        static config::ConfigEntry<bool> SkipStaticInit("analysis", "skip-static-init");
+        if ( ! SkipStaticInit.get(true)) {
+            for (const auto& datum : p->getData()) {
+                auto d = SMT<Impl>::doit(datum, ef, ctx);
+                ctx->writeExprToMemory(base, d);
+                base = base + 1;
+            }
         }
 
         return res;
