@@ -1117,7 +1117,7 @@ public:
 
         // XXX akhin this is as fucked up as before, but also works for now
 
-        auto initial = Function<Elem(Index)>::mkFreshFunc(ctx, "$$__initial_mem__$$");
+        auto initial = Function<Elem(Index)>::mkFreshFunc(ctx, "(initial)" + name);
         inner = [initial,&ctx](Index ix) -> Elem {
             return initial(ix);
         };

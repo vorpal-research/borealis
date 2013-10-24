@@ -28,7 +28,6 @@ public:
 #include "Util/unmacros.h"
 
     typedef std::set<DefectInfo> DefectData;
-    typedef DefectData::value_type DefectDataEntry;
 
     static char ID;
 
@@ -38,7 +37,11 @@ public:
     virtual ~DefectManager() {};
 
     void addDefect(DefectType type, llvm::Instruction* where);
-    void addDefect(std::string type, llvm::Instruction* where);
+    void addDefect(const std::string& type, llvm::Instruction* where);
+    void addDefect(DefectInfo info);
+
+    DefectInfo getDefect(DefectType type, llvm::Instruction* where) const;
+    DefectInfo getDefect(const std::string& type, llvm::Instruction* where) const;
 
     virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
 

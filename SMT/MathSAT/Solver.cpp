@@ -261,7 +261,7 @@ Dynamic Solver::getContract(
         mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
 
         if (r == MSAT_UNSAT) {
-            // Do nothing
+            BYE_BYE(Dynamic, "No contract exists for UNSAT formula");
 
         } else if (r == MSAT_SAT) {
             mathsat::DSolver d(msatef.unwrap());

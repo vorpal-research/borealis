@@ -84,13 +84,13 @@ Z3::Real ExprFactory::getRealConst(double v) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Z3::MemArray ExprFactory::getNoMemoryArray() {
+Z3::MemArray ExprFactory::getNoMemoryArray(const std::string& id) {
     static config::ConfigEntry<bool> DefaultsToUnknown("analysis", "memory-defaults-to-unknown");
 
     if (DefaultsToUnknown.get(false)) {
-        return MemArray::mkFree(*ctx, "mem");
+        return MemArray::mkFree(*ctx, id);
     } else {
-        return MemArray::mkDefault(*ctx, "mem", Byte::mkConst(*ctx, 0xff));
+        return MemArray::mkDefault(*ctx, id, Byte::mkConst(*ctx, 0xff));
     }
 }
 

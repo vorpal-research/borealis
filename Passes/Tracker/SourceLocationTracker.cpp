@@ -41,6 +41,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
             valueDebugInfo.put(Locus(glob.getFilename().str(), glob.getLineNumber(), 0U), glob.getGlobal());
     }
 
+    Locus lastSeen;
 
     for (auto& I : viewContainer(M).flatten().flatten()) {
         Value* func = I.getParent()->getParent();
@@ -57,6 +58,13 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
                 DILocation diloc(locmd);
                 retloc = diloc;
             }
+
+            // Assume locations are in strictly increasing order
+            // FIXME: Do better
+            if (retloc.isUnknown()) {
+                retloc = lastSeen;
+            }
+            lastSeen = retloc;
 
             valueDebugInfo.put(retloc, &I);
         }

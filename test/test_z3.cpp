@@ -38,10 +38,10 @@ TEST(Z3ExprFactory, memoryArray) {
             return solver.check() == z3::unsat;
         };
 
-        EXPECT_NO_THROW(factory.getNoMemoryArray());
-        EXPECT_NO_FATAL_FAILURE(factory.getNoMemoryArray());
+        EXPECT_NO_THROW(factory.getNoMemoryArray("mem"));
+        EXPECT_NO_FATAL_FAILURE(factory.getNoMemoryArray("mem"));
 
-        auto arr = factory.getNoMemoryArray();
+        auto arr = factory.getNoMemoryArray("mem");
         // empty mem is filled with 0xFFs
         for (int i = 0; i < 153; i++) {
             EXPECT_TRUE(check_expr(arr[i] == mkbyte(0xFF)));

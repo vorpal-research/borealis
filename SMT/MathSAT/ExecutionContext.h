@@ -27,7 +27,7 @@ class ExecutionContext {
     unsigned long long globalPtr;
     unsigned long long localPtr;
 
-    static constexpr auto MEMORY_ID = "$$__MEMORY__$$";
+    static constexpr auto MEMORY_ID = "$$__memory__$$";
     MemArray memory() const {
         return get(MEMORY_ID);
     }

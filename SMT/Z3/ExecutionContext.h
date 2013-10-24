@@ -27,7 +27,7 @@ class ExecutionContext {
     unsigned long long globalPtr;
     unsigned long long localPtr;
 
-    static constexpr auto MEMORY_ID = "$$__MEMORY__$$";
+    static constexpr auto MEMORY_ID = "$$__memory__$$";
     MemArray memory() const {
         return get(MEMORY_ID);
     }
@@ -45,12 +45,10 @@ class ExecutionContext {
 
     MemArray get(const std::string& id) const {
         using borealis::util::containsKey;
-        if (containsKey(memArrays, id)) {
-            return memArrays.at(id);
+        if (!containsKey(memArrays, id)) {
+            memArrays.emplace(id, factory.getNoMemoryArray(id));
         }
-        auto ret = factory.getNoMemoryArray();
-        memArrays.emplace(id, ret);
-        return ret;
+        return memArrays.at(id);
     }
     void set(const std::string& id, const MemArray& value) {
         using borealis::util::containsKey;

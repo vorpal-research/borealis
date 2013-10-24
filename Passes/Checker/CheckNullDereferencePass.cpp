@@ -12,7 +12,9 @@
 #include "Passes/Checker/CheckNullDereferencePass.h"
 #include "SMT/Z3/Solver.h"
 #include "SMT/MathSAT/Solver.h"
+#include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/TermRebinder.h"
 
 namespace borealis {
 
@@ -65,8 +67,11 @@ public:
 
         for (auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                if (checkNullDereference(I, *ptr, *nullValue)) {
-                    reportNullDereference(I, *ptr, *nullValue);
+                auto res = checkNullDereference(I, *ptr, *nullValue);
+                if (res.first) {
+                    auto di = pass->DM->getDefect(DefectType::INI_03, &I);
+                    pass->DM->addDefect(di);
+                    pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
                     break;
                 }
             }
@@ -82,18 +87,24 @@ public:
 
         for (auto* nullValue : *(pass->ValueNullSet)) {
             if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                if (checkNullDereference(I, *ptr, *nullValue)) {
-                    reportNullDereference(I, *ptr, *nullValue);
+                auto res = checkNullDereference(I, *ptr, *nullValue);
+                if (res.first) {
+                    auto di = pass->DM->getDefect(DefectType::INI_03, &I);
+                    pass->DM->addDefect(di);
+                    pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
                     break;
                 }
             }
         }
     }
 
-    bool checkNullDereference(
+    std::pair<bool, PredicateState::Ptr> checkNullDereference(
             llvm::Instruction& where,
             llvm::Value& what,
             llvm::Value& why) {
+
+        using borealis::mathsat_::unlogic::undoThat;
+        using borealis::util::view;
 
         dbgs() << "Checking: " << endl
                << "  ptr: " << what << endl
@@ -112,7 +123,7 @@ public:
 
         if (!ps || !ps->hasVisited({&where, &what, &why})) {
             dbgs() << "Infeasible!" << endl;
-            return false;
+            return {false, nullptr};
         }
 
         dbgs() << "Query: " << q << endl;
@@ -136,26 +147,22 @@ public:
 
             auto& F = *where.getParent()->getParent();
 
-            std::vector<Term::Ptr> args;
-            args.reserve(F.arg_size());
-            for (auto& arg : borealis::util::view(F.arg_begin(), F.arg_end())) {
-                args.push_back(pass->FN.Term->getArgumentTerm(&arg));
-            }
+            auto args =
+                view(F.arg_begin(), F.arg_end())
+                .map([this](llvm::Argument& arg) { return pass->FN.Term->getArgumentTerm(&arg); })
+                .toVector();
 
-            cs.getContract(args, q, ps);
+            auto c = cs.getContract(args, q, ps);
+            auto t = TermRebinder(F, pass->NT, pass->FN);
+            auto contract = undoThat(c)->map(
+                [&t](Predicate::Ptr p) { return t.transform(p); }
+            );
 
-            return true;
+            return {true, contract};
         } else {
             dbgs() << "Passed!" << endl;
-            return false;
+            return {false, nullptr};
         }
-    }
-
-    void reportNullDereference(
-            llvm::Instruction& where,
-            llvm::Value& /* what */,
-            llvm::Value& /* from */) {
-        pass->DM->addDefect(DefectType::INI_03, &where);
     }
 
 private:
@@ -177,6 +184,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<DetectNullPass>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
+    AUX<NameTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
@@ -189,6 +197,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
+    NT = &GetAnalysis<NameTracker>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);

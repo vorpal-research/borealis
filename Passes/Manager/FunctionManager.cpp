@@ -78,7 +78,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
+void FunctionManager::put(const llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     ASSERT(!containsKey(data, F),
@@ -87,7 +87,7 @@ void FunctionManager::put(llvm::Function* F, PredicateState::Ptr state) {
     data[F] = state;
 }
 
-void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
+void FunctionManager::update(const llvm::Function* F, PredicateState::Ptr state) {
     using borealis::util::containsKey;
 
     dbgs() << "Updating function state for: " << F->getName().str() << endl
@@ -102,7 +102,7 @@ void FunctionManager::update(llvm::Function* F, PredicateState::Ptr state) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-FunctionManager::FunctionDesc FunctionManager::get(llvm::Function* F) {
+FunctionManager::FunctionDesc FunctionManager::get(const llvm::Function* F) const {
     using borealis::util::containsKey;
 
     if (containsKey(data, F)) {
@@ -114,17 +114,17 @@ FunctionManager::FunctionDesc FunctionManager::get(llvm::Function* F) {
     return data.at(F);
 }
 
-PredicateState::Ptr FunctionManager::getReq(llvm::Function* F) {
+PredicateState::Ptr FunctionManager::getReq(const llvm::Function* F) const {
     const auto& desc = get(F);
     return desc.Req;
 }
 
-PredicateState::Ptr FunctionManager::getBdy(llvm::Function* F) {
+PredicateState::Ptr FunctionManager::getBdy(const llvm::Function* F) const {
     const auto& desc = get(F);
     return desc.Bdy;
 }
 
-PredicateState::Ptr FunctionManager::getEns(llvm::Function* F) {
+PredicateState::Ptr FunctionManager::getEns(const llvm::Function* F) const {
     const auto& desc = get(F);
     return desc.Ens;
 }
@@ -132,12 +132,12 @@ PredicateState::Ptr FunctionManager::getEns(llvm::Function* F) {
 ////////////////////////////////////////////////////////////////////////////////
 
 FunctionManager::FunctionDesc FunctionManager::get(
-        llvm::CallInst& CI,
-        FactoryNest FN) {
+        const llvm::CallInst& CI,
+        FactoryNest FN) const {
 
     using borealis::util::containsKey;
 
-    llvm::Function* F = CI.getCalledFunction();
+    auto* F = CI.getCalledFunction();
 
     if (containsKey(data, F)) {
         return data.at(F);
@@ -156,25 +156,27 @@ FunctionManager::FunctionDesc FunctionManager::get(
 }
 
 PredicateState::Ptr FunctionManager::getReq(
-        llvm::CallInst& CI,
-        FactoryNest FN) {
+        const llvm::CallInst& CI,
+        FactoryNest FN) const {
     const auto& desc = get(CI, FN);
     return desc.Req;
 }
 
 PredicateState::Ptr FunctionManager::getBdy(
-        llvm::CallInst& CI,
-        FactoryNest FN) {
+        const llvm::CallInst& CI,
+        FactoryNest FN) const {
     const auto& desc = get(CI, FN);
     return desc.Bdy;
 }
 
 PredicateState::Ptr FunctionManager::getEns(
-        llvm::CallInst& CI,
-        FactoryNest FN) {
+        const llvm::CallInst& CI,
+        FactoryNest FN) const {
     const auto& desc = get(CI, FN);
     return desc.Ens;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 unsigned int FunctionManager::getId(const llvm::Function* F) const {
     ASSERTC(borealis::util::containsKey(ids, F));
@@ -183,6 +185,14 @@ unsigned int FunctionManager::getId(const llvm::Function* F) const {
 
 unsigned int FunctionManager::getMemoryStart(const llvm::Function* F) const {
     return (getId(F) << 16) + 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void FunctionManager::addBond(
+        const llvm::Function* F,
+        const std::pair<PredicateState::Ptr, DefectInfo>& bond) {
+    bonds.insert({F, bond});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

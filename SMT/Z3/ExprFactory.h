@@ -56,7 +56,7 @@ public:
     Real getRealConst(int v);
     Real getRealConst(double v);
     // Memory
-    MemArray getNoMemoryArray();
+    MemArray getNoMemoryArray(const std::string& id);
 
     // Generic functions
     Dynamic getVarByTypeAndName(
