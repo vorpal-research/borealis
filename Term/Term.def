@@ -7,6 +7,7 @@
 
 #include "Term/ArgumentTerm.h"
 #include "Term/AxiomTerm.h"
+#include "Term/BoundTerm.h"
 #include "Term/BinaryTerm.h"
 #include "Term/CmpTerm.h"
 #include "Term/ConstTerm.h"
@@ -36,6 +37,7 @@
 
 HANDLE_TERM(Argument, ArgumentTerm)
 HANDLE_TERM(Axiom, AxiomTerm)
+HANDLE_TERM(Bound, BoundTerm)
 HANDLE_TERM(Binary, BinaryTerm)
 HANDLE_TERM(Cmp, CmpTerm)
 HANDLE_TERM(Const, ConstTerm)

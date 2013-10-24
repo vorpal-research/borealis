@@ -416,6 +416,15 @@ public:
         };
     }
 
+    Term::Ptr getBoundTerm(Term::Ptr rhv) {
+        return Term::Ptr{
+            new BoundTerm{
+                TyF->getInteger(),
+                rhv
+            }
+        };
+    }
+
     Term::Ptr getInvalidPtrTerm() {
         return Term::Ptr{
             new OpaqueInvalidPtrTerm(TyF->getUnknownType())
