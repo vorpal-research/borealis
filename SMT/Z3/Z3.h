@@ -37,6 +37,8 @@ struct Z3 {
     typedef z3_::logic::BitVector<Pointer::bitsize> Real;
     // dynamic bit vector
     typedef z3_::logic::DynBitVectorExpr DynBV;
+    // unsigned comparable type
+    typedef z3_::logic::UComparableExpr UComparable;
     // dynamic logic type
     typedef z3_::logic::SomeExpr Dynamic;
 

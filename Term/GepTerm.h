@@ -119,7 +119,7 @@ struct SMTImpl<Impl, GepTerm> {
 
         Integer bound = ctx->getBound(p);
 
-        return ef.if_(ef.isInvalidPtrExpr(p) || (shift >= bound))
+        return ef.if_(ef.isInvalidPtrExpr(p) || UComparable(shift).uge(bound))
                  .then_(ef.getInvalidPtr())
                  .else_(
                      (p + shift).withAxiom(
