@@ -18,7 +18,7 @@
 namespace borealis {
 
 #define DELEGATE(CLASS, WHAT) \
-    return static_cast<SubClass*>(this)->transform##CLASS(WHAT);
+    return static_cast<SubClass*>(this)->transform##CLASS(WHAT)
 
 template<class SubClass>
 class Transformer {

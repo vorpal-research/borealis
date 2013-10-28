@@ -14,8 +14,11 @@
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
+#include "State/Transformer/ContractTransmogrifier.h"
+#include "State/Transformer/Simplifier.h"
 
 namespace borealis {
 
@@ -53,9 +56,11 @@ public:
             auto bond = e.second.first;
             auto defect = e.second.second;
 
-            CallSiteInitializer csi(CI, pass->FN);
+            auto t = Simplifier(pass->FN) +
+                     ContractTransmogrifier(pass->FN) +
+                     CallSiteInitializer(CI, pass->FN);
             auto instantiatedBond = bond->map(
-                [&csi](Predicate::Ptr p) { return csi.transform(p); }
+                [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
             dbgs() << "Checking: " << CI << endl;
