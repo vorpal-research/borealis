@@ -43,11 +43,13 @@ Term::Ptr protobuf_traits<Term>::fromProtobuf(const context_t& fn, const proto_t
     auto type = protobuf_traits<Type>::fromProtobuf(fn, t.type());
     const auto& name = t.name();
 
+    Term::Ptr base = Term::Ptr{ new Term(-1UL, type, name) };
+
 #define HANDLE_TERM(NAME, CLASS) \
     if (t.HasExtension(proto::CLASS::ext)) { \
         const auto& ext = t.GetExtension(proto::CLASS::ext); \
         return protobuf_traits_impl<CLASS> \
-               ::fromProtobuf(fn, type, name, ext); \
+               ::fromProtobuf(fn, base, ext); \
     }
 #include "Term/Term.def"
     BYE_BYE(Term::Ptr, "Should not happen!");

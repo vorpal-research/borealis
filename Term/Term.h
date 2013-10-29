@@ -18,6 +18,7 @@
 namespace borealis {
 
 template<class SubClass> class Transformer;
+template<class T> struct protobuf_traits;
 template<class T> struct protobuf_traits_impl;
 
 namespace proto { class Term; }
@@ -46,6 +47,8 @@ protected:
     Term(id_t classTag, Type::Ptr type, const std::string& name) :
         ClassTag(classTag), type(type), name(name) {};
     Term(const Term&) = default;
+
+    friend struct protobuf_traits<Term>;
 
 public:
     virtual ~Term() {};
