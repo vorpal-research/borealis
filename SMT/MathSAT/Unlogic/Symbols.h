@@ -324,6 +324,8 @@ public:
         : AbstractSymbol(MSAT_TAG_BV_EXTRACT, 1, expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
+        // TODO: Extract can be used for purposes other than sign detection.
+        //       Need to account for that.
         return FN.Term->getSignTerm(
             args_[0]->undoThat(FN)
         );
