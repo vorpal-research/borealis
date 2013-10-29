@@ -234,7 +234,8 @@ public:
         return Term::Ptr{
             new LoadTerm(
                 TyF->getInteger(),
-                rhv
+                rhv,
+                /* retypable = */false
             )
         };
     }

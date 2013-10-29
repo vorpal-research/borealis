@@ -289,7 +289,7 @@ struct protobuf_traits_impl<LoadTerm> {
             Term::Ptr base,
             const proto::LoadTerm& t) {
         auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
-        return Term::Ptr{ new LoadTerm(base->getType(), rhv) };
+        return Term::Ptr{ new LoadTerm(base->getType(), rhv, base->isRetypable()) };
     }
 };
 
