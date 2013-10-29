@@ -272,7 +272,7 @@ public:
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
         // FIXME: The blackest of black magics...
 
-        std::string _ = expr_.decl().name();
+        auto _ = expr_.decl().name(); // XXX: Do NOT remove this!
         llvm::StringRef orig_name(_);
 
         if ( ! (orig_name.startswith("(initial)") && numArgs_ == 1) ) {
@@ -281,16 +281,26 @@ public:
 
         auto memory_name = orig_name.drop_front(9).str();
 
+        // FIXME: Fix this crap.
+        static const std::string memory_id = "$$__memory__$$";
+        static const std::string gep_bound_id = "$$__gep_bound__$$";
+
+        std::function<Term::Ptr(Term::Ptr)> ctor;
+
+        if (memory_name == memory_id) {
+            ctor = std::bind(&TermFactory::getUnlogicLoadTerm, FN.Term, std::placeholders::_1);
+        } else if (memory_name == gep_bound_id) {
+            ctor = std::bind(&TermFactory::getBoundTerm, FN.Term, std::placeholders::_1);
+        } else {
+            BYE_BYE(Term::Ptr, "Unknown memory: " + memory_name);
+        }
+
         if (args_[0]->isTerminal()) {
-            return FN.Term->getReadPropertyTerm(
-                FN.Type->getInteger(),
-                FN.Term->getOpaqueConstantTerm(memory_name),
-                args_[0]->undoThat(FN)
-            );
+            return ctor(args_[0]->undoThat(FN));
         } else {
             auto name = "(initial)" + memory_name + "(idx:" + util::toString(LoadSymbol::idx_++) + ")";
             auto idx = FN.Term->getValueTerm(
-                FN.Type->getPointer(FN.Type->getInteger()),
+                FN.Type->getInteger(),
                 name
             );
             auto axs = FN.Term->getCmpTerm(
@@ -299,11 +309,7 @@ public:
                 args_[0]->undoThat(FN)
             );
             return FN.Term->getAxiomTerm(
-                FN.Term->getReadPropertyTerm(
-                    FN.Type->getInteger(),
-                    FN.Term->getOpaqueConstantTerm(memory_name),
-                    idx
-                ),
+                ctor(idx),
                 axs
             );
         }

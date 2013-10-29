@@ -230,6 +230,15 @@ public:
         };
     }
 
+    Term::Ptr getUnlogicLoadTerm(Term::Ptr rhv) {
+        return Term::Ptr{
+            new LoadTerm(
+                TyF->getInteger(),
+                rhv
+            )
+        };
+    }
+
     Term::Ptr getLoadTerm(Term::Ptr rhv) {
         return Term::Ptr{
             new LoadTerm(
@@ -250,7 +259,7 @@ public:
         Type::Ptr tp = base->getType();
         for (const auto& _ : shifts) {
             util::use(_);
-            if (auto ptr = llvm::dyn_cast<type::Pointer>(tp)) {
+            if (auto* ptr = llvm::dyn_cast<type::Pointer>(tp)) {
                 tp = ptr->getPointed();
             } else tp = TyF->getTypeError("Incorrect type dereference");
         }
