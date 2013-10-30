@@ -28,13 +28,13 @@ public:
         if (op == llvm::ConditionType::EQ) {
             if (isa<BoundTerm>(t->getLhv())) {
                 return FN.Term->getCmpTerm(
-                    llvm::ConditionType::GE,
+                    llvm::ConditionType::UGE,
                     t->getLhv(),
                     t->getRhv()
                 );
             } else if (isa<BoundTerm>(t->getRhv())) {
                 return FN.Term->getCmpTerm(
-                    llvm::ConditionType::GE,
+                    llvm::ConditionType::UGE,
                     t->getRhv(),
                     t->getLhv()
                 );
