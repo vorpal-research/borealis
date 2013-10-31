@@ -55,6 +55,23 @@ public:
         return t->getLhv();
     }
 
+    Term::Ptr transformUnaryTerm(UnaryTermPtr t) {
+        auto op = t->getOpcode();
+        auto rhv = t->getRhv();
+
+        if (op == llvm::UnaryArithType::NOT) {
+            if (auto* cmp = llvm::dyn_cast<CmpTerm>(rhv)) {
+                return FN.Term->getCmpTerm(
+                    makeNot(cmp->getOpcode()),
+                    cmp->getLhv(),
+                    cmp->getRhv()
+                );
+            }
+        }
+
+        return t;
+    }
+
 };
 
 } /* namespace borealis */
