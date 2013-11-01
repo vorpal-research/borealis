@@ -40,14 +40,15 @@ public:
     MK_COMMON_TERM_IMPL(ValueTerm);
 
     template<class Sub>
-    auto accept(Transformer<Sub>*) const -> const Self* {
-        return new Self( *this );
+    auto accept(Transformer<Sub>*) const -> Term::Ptr {
+        return this->shared_from_this();
     }
 
     Term::Ptr withNewName(const std::string& name) const {
-        auto res = SelfPtr{ new Self{ *this } };
-        res->name = name;
-        return Term::Ptr{ res.release() };
+        ON_CHANGED(
+            this->name != name,
+            new Self(this->type, name)
+        );
     }
 
 };

@@ -8,6 +8,7 @@
 #ifndef TERM_H_
 #define TERM_H_
 
+#include <memory>
 #include <string>
 
 #include "SMT/SMTUtil.h"
@@ -36,7 +37,7 @@ message Term {
 }
 
 **/
-class Term : public ClassTag {
+class Term : public ClassTag, public std::enable_shared_from_this<Term> {
 
 public:
 
@@ -126,5 +127,9 @@ public: \
     static bool classof(const Term* t) { \
         return t->getClassTag() == class_tag<Self>(); \
     }
+
+#define ON_CHANGED(COND, CTOR) \
+    if (COND) return Term::Ptr{ CTOR }; \
+    else return this->shared_from_this();
 
 #endif /* TERM_H_ */

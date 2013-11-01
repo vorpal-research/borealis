@@ -44,8 +44,8 @@ public:
     std::string getValue() const { return value; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>*) const -> const Self* {
-        return new Self( *this );
+    auto accept(Transformer<Sub>*) const -> Term::Ptr {
+        return this->shared_from_this();
     }
 
 };

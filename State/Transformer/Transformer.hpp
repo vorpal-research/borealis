@@ -114,8 +114,8 @@ protected:
 #define HANDLE_TERM(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Term::Ptr transform##NAME(CLASS##Ptr t) { \
-        CLASS##Ptr tt(t->accept(this)); \
-        DELEGATE(CLASS, *tt == *t ? t : tt); \
+        CLASS##Ptr tt = std::static_pointer_cast<const CLASS>(t->accept(this)); \
+        DELEGATE(CLASS, tt); \
     }
 #include "Term/Term.def"
 

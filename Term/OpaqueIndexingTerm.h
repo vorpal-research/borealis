@@ -46,11 +46,14 @@ public:
     Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _lhv = tr->transform(lhv);
         auto _rhv = tr->transform(rhv);
         auto _type = tr->FN.Type->getUnknownType();
-        return new Self{ _type, _lhv, _rhv };
+        ON_CHANGED(
+            lhv != _lhv || rhv != _rhv,
+            new Self( _type, _lhv, _rhv )
+        );
     }
 
     virtual bool equals(const Term* other) const override {
