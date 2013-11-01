@@ -133,8 +133,8 @@ Bool getProbeModels(
         Bool body,
         Bool query,
         const std::vector<mathsat::Expr>& args,
-        unsigned int countLimit,
-        unsigned int attemptLimit) {
+        unsigned int countLimit = 16,
+        unsigned int attemptLimit = 100) {
     using namespace logic;
 
     mathsat::DSolver d(msatef.unwrap());
@@ -159,6 +159,8 @@ Bool getProbeModels(
 
             ms = ms || m;
             ++count;
+
+            if (count >= countLimit) break;
         }
 
         ++attempt;
@@ -215,7 +217,7 @@ Dynamic Solver::getSummary(
             interpol = s.get_interpolant({B});
 
         } else if (r == MSAT_SAT) {
-            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, 16, 100);
+            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs);
 
             dbgs() << "Probes: " << endl
                    << ms << endl;
@@ -284,7 +286,7 @@ Dynamic Solver::getContract(
             BYE_BYE(Dynamic, "No contract exists for UNSAT formula");
 
         } else if (r == MSAT_SAT) {
-            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, 16, 100);
+            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs);
 
             dbgs() << "Probes: " << endl
                    << ms << endl;
