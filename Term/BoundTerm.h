@@ -47,7 +47,7 @@ public:
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _rhv = tr->transform(rhv);
         auto _type = type;
-        ON_CHANGED(
+        TERM_ON_CHANGED(
             rhv != _rhv,
             new Self( _type, _rhv )
         );

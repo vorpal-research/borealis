@@ -52,7 +52,7 @@ public:
         auto _propName = tr->transform(propName);
         auto _rhv = tr->transform(rhv);
         auto _type = type;
-        ON_CHANGED(
+        TERM_ON_CHANGED(
             propName != _propName || rhv != _rhv,
             new Self( _type, _propName, _rhv )
         );

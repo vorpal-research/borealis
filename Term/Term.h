@@ -128,7 +128,7 @@ public: \
         return t->getClassTag() == class_tag<Self>(); \
     }
 
-#define ON_CHANGED(COND, CTOR) \
+#define TERM_ON_CHANGED(COND, CTOR) \
     if (COND) return Term::Ptr{ CTOR }; \
     else return this->shared_from_this();
 

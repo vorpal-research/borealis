@@ -55,7 +55,7 @@ public:
         auto _tru = tr->transform(tru);
         auto _fls = tr->transform(fls);
         auto _type = getTermType(tr->FN.Type, _cnd, _tru, _fls);
-        ON_CHANGED(
+        TERM_ON_CHANGED(
             cnd != _cnd || tru != _tru || fls != _fls,
             new Self( _type, _cnd, _tru, _fls )
         );

@@ -45,7 +45,7 @@ public:
     }
 
     Term::Ptr withNewName(const std::string& name) const {
-        ON_CHANGED(
+        TERM_ON_CHANGED(
             this->name != name,
             new Self(this->type, name)
         );

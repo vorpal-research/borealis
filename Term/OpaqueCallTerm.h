@@ -56,7 +56,7 @@ public:
             return tr->transform(arg);
         }).toVector();
         auto _type = tr->FN.Type->getUnknownType();
-        ON_CHANGED(
+        TERM_ON_CHANGED(
             lhv != _lhv || rhv != _rhv,
             new Self( _type, _lhv, _rhv )
         );

@@ -65,7 +65,7 @@ public:
             }
         ).toVector();
         auto _type = type;
-        ON_CHANGED(
+        TERM_ON_CHANGED(
             base != _base || shifts != _shifts,
             new Self( _type, _base, _shifts )
         );
