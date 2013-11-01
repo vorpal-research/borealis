@@ -70,8 +70,8 @@ protected:
 #define HANDLE_PREDICATE(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Predicate::Ptr transform##NAME(CLASS##Ptr p) { \
-        CLASS##Ptr pp(p->accept(this)); \
-        DELEGATE(CLASS, *pp == *p ? p : pp); \
+        CLASS##Ptr pp = std::static_pointer_cast<const CLASS>(p->accept(this)); \
+        DELEGATE(CLASS, pp); \
     }
 #include "Predicate/Predicate.def"
 

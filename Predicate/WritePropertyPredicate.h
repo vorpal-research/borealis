@@ -50,13 +50,15 @@ public:
     Term::Ptr getRhv() const { return rhv; }
 
     template<class SubClass>
-    const Self* accept(Transformer<SubClass>* t) const {
-        return new Self{
-            t->transform(propName),
-            t->transform(lhv),
-            t->transform(rhv),
-            type
-        };
+    Predicate::Ptr accept(Transformer<SubClass>* t) const {
+        auto _propName = t->transform(propName);
+        auto _lhv = t->transform(lhv);
+        auto _rhv = t->transform(rhv);
+        auto _type = type;
+        PREDICATE_ON_CHANGED(
+            propName != _propName || lhv != _lhv || rhv != _rhv,
+            new Self( _propName, _lhv, _rhv, _type )
+        );
     }
 
     virtual bool equals(const Predicate* other) const override;
