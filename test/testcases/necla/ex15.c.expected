@@ -8,45 +8,6 @@
 			"loc" : 
 			{
 				"col" : 4,
-				"line" : 13
-			}
-		},
-		"type" : "BUF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex15.c",
-			"loc" : 
-			{
-				"col" : 4,
-				"line" : 14
-			}
-		},
-		"type" : "BUF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex15.c",
-			"loc" : 
-			{
-				"col" : 4,
-				"line" : 13
-			}
-		},
-		"type" : "INI-03"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex15.c",
-			"loc" : 
-			{
-				"col" : 4,
 				"line" : 14
 			}
 		},
@@ -60,7 +21,20 @@
 			"loc" : 
 			{
 				"col" : 4,
-				"line" : 35
+				"line" : 15
+			}
+		},
+		"type" : "INI-03"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex15.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 36
 			}
 		},
 		"type" : "REQ-01"
