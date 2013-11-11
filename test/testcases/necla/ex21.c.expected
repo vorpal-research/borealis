@@ -1,16 +1,1 @@
-
-[
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex21.c",
-			"loc" : 
-			{
-				"col" : 4,
-				"line" : 10
-			}
-		},
-		"type" : "BUF-01"
-	}
-]
+null
