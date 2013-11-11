@@ -77,7 +77,7 @@ private:
 #else
 #define TRACE_FUNC
 #define TRACE_BLOCK(ID)
-#define TRACE_MEASURMENT(M...)
+#define TRACE_MEASUREMENT(M...)
 #define TRACE_UP(M...)
 #define TRACE_DOWN(M...)
 #endif
