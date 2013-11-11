@@ -2,7 +2,9 @@
 
 int* a;
 
-// @requires n != 0
+// @requires \is_valid_ptr(n)
+// @requires \is_valid_ptr(a)
+// @requires \bound(a) >= *n
 int test(int* n) {
    int i;
 
