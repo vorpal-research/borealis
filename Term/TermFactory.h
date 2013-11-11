@@ -320,11 +320,11 @@ public:
                 Term::Ptr size = getIntTerm(getTypeSizeInElems(arrayType->getArrayElementType()));
                 shifts.push_back({by, size});
 
-            } else {
+            } else if (auto* ptrType = dyn_cast<llvm::PointerType>(type)) {
                 Term::Ptr by = getValueTerm(idx);
-                Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
+                Term::Ptr size = getIntTerm(getTypeSizeInElems(ptrType->getPointerElementType()));
                 shifts.push_back({by, size});
-            }
+            } else BYE_BYE(Term::Ptr, "Unexpected type in GEP: " + util::toString(type));
 
             typeIdxs.push_back(idx);
             type = GetElementPtrInst::getIndexedType(baseType, typeIdxs);
