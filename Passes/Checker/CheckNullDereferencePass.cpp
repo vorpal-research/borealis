@@ -71,7 +71,7 @@ public:
                 if (res.first) {
                     auto di = pass->DM->getDefect(DefectType::INI_03, &I);
                     pass->DM->addDefect(di);
-                    pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
+                    // pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
                     break;
                 }
             }
@@ -91,7 +91,7 @@ public:
                 if (res.first) {
                     auto di = pass->DM->getDefect(DefectType::INI_03, &I);
                     pass->DM->addDefect(di);
-                    pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
+                    // pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
                     break;
                 }
             }
@@ -142,23 +142,23 @@ public:
         if (s.isViolated(q, ps)) {
             dbgs() << "Violated!" << endl;
 
-            MathSAT::ExprFactory cef;
-            MathSAT::Solver cs(cef, fMemId);
+//            MathSAT::ExprFactory cef;
+//            MathSAT::Solver cs(cef, fMemId);
+//
+//            auto& F = *where.getParent()->getParent();
+//
+//            auto args =
+//                view(F.arg_begin(), F.arg_end())
+//                .map([this](llvm::Argument& arg) { return pass->FN.Term->getArgumentTerm(&arg); })
+//                .toVector();
+//
+//            auto c = cs.getContract(args, q, ps);
+//            auto t = TermRebinder(F, pass->NT, pass->FN);
+//            auto contract = undoThat(c)->map(
+//                [&t](Predicate::Ptr p) { return t.transform(p); }
+//            );
 
-            auto& F = *where.getParent()->getParent();
-
-            auto args =
-                view(F.arg_begin(), F.arg_end())
-                .map([this](llvm::Argument& arg) { return pass->FN.Term->getArgumentTerm(&arg); })
-                .toVector();
-
-            auto c = cs.getContract(args, q, ps);
-            auto t = TermRebinder(F, pass->NT, pass->FN);
-            auto contract = undoThat(c)->map(
-                [&t](Predicate::Ptr p) { return t.transform(p); }
-            );
-
-            return {true, contract};
+            return {true, pass->FN.State->Basic()};
         } else {
             dbgs() << "Passed!" << endl;
             return {false, nullptr};
