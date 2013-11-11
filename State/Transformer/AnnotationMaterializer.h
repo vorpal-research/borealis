@@ -97,18 +97,10 @@ public:
                         val,
                         FN.Term->getNullPtrTerm()
                     ),
-                    FN.Term->getBinaryTerm(
-                        llvm::ArithType::LAND,
-                        FN.Term->getCmpTerm(
-                            llvm::ConditionType::NEQ,
-                            val,
-                            FN.Term->getInvalidPtrTerm()
-                        ),
-                        FN.Term->getCmpTerm(
-                            llvm::ConditionType::GE,
-                            FN.Term->getBoundTerm(val),
-                            FN.Term->getOpaqueConstantTerm(42LL)
-                        )
+                    FN.Term->getCmpTerm(
+                        llvm::ConditionType::NEQ,
+                        val,
+                        FN.Term->getInvalidPtrTerm()
                     )
                 );
             }
