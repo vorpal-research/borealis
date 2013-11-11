@@ -132,6 +132,10 @@ private:
         return llvm::isa<llvm::Argument>(pr.second);
     }
 
+    static bool isGlobal(VarInfoContainer::loc_value_iterator::reference pr) {
+        return llvm::isa<llvm::GlobalValue>(pr.second);
+    }
+
 public:
 
     static char ID;
@@ -156,41 +160,64 @@ public:
     }
 
     ValueDescriptor locate(const Locus& loc, DiscoveryPolicy policy) const {
+        ValueDescriptor res;
+
         switch(policy) {
         case DiscoveryPolicy::NextVal:
-            return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isNotFunc);
+            res = locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isNotFunc);
+            break;
         case DiscoveryPolicy::PreviousVal:
-            return locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isNotFunc);
+            res = locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isNotFunc);
+            break;
         case DiscoveryPolicy::NextFunction:
-            return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
+            res = locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
+            break;
         case DiscoveryPolicy::PreviousFunction:
-            return locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
+            res = locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
+            break;
         case DiscoveryPolicy::NextArgument:
-            return locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isArg);
+            res = locate_simple(vars.byLocFwd(loc), vars.byLocEnd(), isArg);
+            break;
         case DiscoveryPolicy::PreviousArgument:
-            return locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
+            res = locate_simple(vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
+            break;
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");
         }
+
+        return res;
     }
 
     ValueDescriptor locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const {
+        ValueDescriptor res;
+
         switch(policy) {
         case DiscoveryPolicy::NextVal:
-            return locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isNotFunc);
+            res = locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isNotFunc);
+            break;
         case DiscoveryPolicy::PreviousVal:
-            return locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isNotFunc);
+            res = locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isNotFunc);
+            break;
         case DiscoveryPolicy::NextFunction:
-            return locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
+            res = locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isFunc);
+            break;
         case DiscoveryPolicy::PreviousFunction:
-            return locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
+            res = locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isFunc);
+            break;
         case DiscoveryPolicy::NextArgument:
-            return locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isArg);
+            res = locate_simple(name, vars.byLocFwd(loc), vars.byLocEnd(), isArg);
+            break;
         case DiscoveryPolicy::PreviousArgument:
-            return locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
+            res = locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
+            break;
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");
         }
+
+        // Fallback to globals if we can't find anything...
+        if (res.isInvalid()) res = locate_simple(name, vars.byLocBegin(), vars.byLocEnd(), isGlobal);
+
+        return res;
     }
 };
 

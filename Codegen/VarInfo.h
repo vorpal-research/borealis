@@ -30,7 +30,8 @@ enum class DiscoveryPolicy {
     PreviousFunction,
     NextArgument,
     PreviousArgument,
-    Loop
+    Loop,
+    Global // TODO: Use this!
 };
 
 struct VarInfo {
