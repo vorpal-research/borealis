@@ -449,7 +449,7 @@ public:
     Term::Ptr getBoundTerm(Term::Ptr rhv) {
         return Term::Ptr{
             new BoundTerm{
-                TyF->getInteger(),
+                TyF->getInteger(llvm::Signedness::Unsigned),
                 rhv
             }
         };
