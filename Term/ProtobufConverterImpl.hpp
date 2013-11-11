@@ -631,15 +631,17 @@ struct protobuf_traits_impl<ValueTerm> {
 
     typedef protobuf_traits<Term> TermConverter;
 
-    static std::unique_ptr<proto::ValueTerm> toProtobuf(const ValueTerm&) {
-        return util::uniq(new proto::ValueTerm());
+    static std::unique_ptr<proto::ValueTerm> toProtobuf(const ValueTerm& t) {
+        auto res = util::uniq(new proto::ValueTerm());
+        res->set_global(t.isGlobal());
+        return std::move(res);
     }
 
     static Term::Ptr fromProtobuf(
             const FactoryNest&,
             Term::Ptr base,
-            const proto::ValueTerm&) {
-        return Term::Ptr{ new ValueTerm(base->getType(), base->getName()) };
+            const proto::ValueTerm& t) {
+        return Term::Ptr{ new ValueTerm(base->getType(), base->getName(), t.global()) };
     }
 };
 

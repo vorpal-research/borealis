@@ -137,6 +137,12 @@ public:
         };
     }
 
+    Term::Ptr getInvalidPtrTerm() {
+        return Term::Ptr{
+            new OpaqueInvalidPtrTerm(TyF->getUnknownType())
+        };
+    }
+
     Term::Ptr getBooleanTerm(bool b) {
         return Term::Ptr{
             new OpaqueBoolConstantTerm(
@@ -184,22 +190,36 @@ public:
         ASSERT(st, "Missing SlotTracker");
         using namespace llvm;
 
-        if (auto* c = dyn_cast<Constant>(v))
+        if (auto* gv = dyn_cast<GlobalValue>(v))
+            return getGlobalValueTerm(gv, sign);
+        else if (auto* c = dyn_cast<Constant>(v))
             return getConstTerm(c, sign);
         else if (auto* arg = dyn_cast<Argument>(v))
             return getArgumentTerm(arg, sign);
+        else
+            return getLocalValueTerm(v, sign);
+    }
 
+    Term::Ptr getValueTerm(Type::Ptr type, const std::string& name) {
+        return Term::Ptr{ new ValueTerm(type, name) };
+    }
+
+    Term::Ptr getGlobalValueTerm(llvm::GlobalValue* gv, llvm::Signedness sign = llvm::Signedness::Unknown) {
+        return Term::Ptr{
+            new ValueTerm(
+                TyF->cast(gv->getType(), sign),
+                st->getLocalName(gv),
+                /* global = */true
+            )
+        };
+    }
+
+    Term::Ptr getLocalValueTerm(llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown) {
         return Term::Ptr{
             new ValueTerm(
                 TyF->cast(v->getType(), sign),
                 st->getLocalName(v)
             )
-        };
-    }
-
-    Term::Ptr getValueTerm(Type::Ptr type, const std::string& name) {
-        return Term::Ptr{
-            new ValueTerm(type, name)
         };
     }
 
@@ -432,12 +452,6 @@ public:
                 TyF->getInteger(),
                 rhv
             }
-        };
-    }
-
-    Term::Ptr getInvalidPtrTerm() {
-        return Term::Ptr{
-            new OpaqueInvalidPtrTerm(TyF->getUnknownType())
         };
     }
 

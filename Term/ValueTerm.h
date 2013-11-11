@@ -21,6 +21,8 @@ message ValueTerm {
     extend borealis.proto.Term {
         optional ValueTerm ext = $COUNTER_TERM;
     }
+
+    optional bool global = 1;
 }
 
 **/
@@ -28,16 +30,20 @@ class ValueTerm: public borealis::Term {
 
     typedef std::unique_ptr<ValueTerm> SelfPtr;
 
-    ValueTerm(Type::Ptr type, const std::string& name) :
+    bool global;
+
+    ValueTerm(Type::Ptr type, const std::string& name, bool global = false) :
         Term(
             class_tag(*this),
             type,
             name
-        ) {};
+        ), global(global) {};
 
 public:
 
     MK_COMMON_TERM_IMPL(ValueTerm);
+
+    bool isGlobal() const { return global; }
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
@@ -47,7 +53,7 @@ public:
     Term::Ptr withNewName(const std::string& name) const {
         TERM_ON_CHANGED(
             this->name != name,
-            new Self(this->type, name)
+            new Self(this->type, name, global)
         );
     }
 
