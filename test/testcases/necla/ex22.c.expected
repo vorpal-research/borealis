@@ -7,11 +7,11 @@
 			"filename" : "test/testcases/necla/ex22.c",
 			"loc" : 
 			{
-				"col" : 9,
-				"line" : 25
+				"col" : 4,
+				"line" : 39
 			}
 		},
-		"type" : "BUF-01"
+		"type" : "REQ-01"
 	},
 	
 	{
@@ -21,9 +21,9 @@
 			"loc" : 
 			{
 				"col" : 4,
-				"line" : 28
+				"line" : 40
 			}
 		},
-		"type" : "BUF-01"
+		"type" : "REQ-01"
 	}
 ]

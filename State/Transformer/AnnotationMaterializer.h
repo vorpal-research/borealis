@@ -150,6 +150,8 @@ public:
             }
         } else if (name == "null" || name == "nullptr") {
             return factory().getNullPtrTerm();
+        } else if (name == "invalid" || name == "invalidptr") {
+            return factory().getInvalidPtrTerm();
         } else if (name.startswith("arg")) {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 std::istringstream ist(name.drop_front(3).str());
