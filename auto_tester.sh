@@ -12,12 +12,18 @@ function error() {
     exit 1
 }
 
-ARGS=$(getopt -o "hw:" -l "git:,svn:,help" -n "$0" -- "$@")
+function run_make() {
+    ln -fs "$wrapper_prefix/wrapper"
+    ln -fs "$wrapper_prefix/wrapper.conf"
+    ln -fs "$wrapper_prefix/log.ini"
 
+    make CC=./wrapper CXX=./wrapper || true
+}
+
+ARGS=$(getopt -o "hw:" -l "git:,svn:,help" -n "$0" -- "$@")
 if [[ $? != 0 ]]; then
     exit 1
 fi
-
 eval set -- "$ARGS"
 
 while true; do
@@ -29,11 +35,11 @@ while true; do
             wrapper_prefix=$(readlink -f $2)
             shift 2;;
         --svn)
-            dir=${2##*/}
+            dir=$(readlink -f $(basename $2))
             svn checkout $2
             shift 2;;
         --git)
-            dir=${2##*/}
+            dir=$(readlink -f $(basename $2))
             git clone $2
             shift 2;;
         --)
@@ -49,9 +55,24 @@ if [[ ! -d "$dir" ]]; then
     error "repo not specified"
 fi
 
-cd $dir
-ln -fs "$wrapper_prefix/wrapper"
-ln -fs "$wrapper_prefix/wrapper.conf"
-ln -fs "$wrapper_prefix/log.ini"
+cd "$dir"
 
-make CC=./wrapper CXX=./wrapper
+for conf in $(find . -name configure); do
+    configure_dir=$(dirname "$conf")
+
+    echo -e "\nRunning configure in $(readlink -f $configure_dir):\n\n"
+
+    cd "$configure_dir"
+    ./configure || true
+    cd "$dir"
+done
+
+for mfile in $(find . -name Makefile -o -name makefile -o -name GNUmakefile); do
+    makefile_dir=$(dirname "$mfile")
+
+    echo -e "\nCompiling $(readlink -f $makefile_dir):\n\n"
+
+    cd "$makefile_dir"
+    run_make
+    cd "$dir"
+done
