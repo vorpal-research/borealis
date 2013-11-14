@@ -130,7 +130,15 @@ public:
 
         auto var = factory().getValueTerm(ret.val, ret.signedness);
 
-        if (ret.shouldBeDereferenced) {
+        auto shouldBeDereferenced = ret.shouldBeDereferenced;
+
+        // FIXME: Need to sort out memory model
+        //        Global arrays and structures break things...
+        if (auto* ptrType = llvm::dyn_cast<llvm::PointerType>(ret.val->getType())) {
+            shouldBeDereferenced &= ptrType->getPointerElementType()->isPrimitiveType();
+        }
+
+        if (shouldBeDereferenced) {
             return factory().getLoadTerm(var);
         } else {
             return var;
