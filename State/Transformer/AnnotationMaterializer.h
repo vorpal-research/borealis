@@ -135,7 +135,7 @@ public:
         // FIXME: Need to sort out memory model
         //        Global arrays and structures break things...
         if (auto* ptrType = llvm::dyn_cast<llvm::PointerType>(ret.val->getType())) {
-            shouldBeDereferenced &= ptrType->getPointerElementType()->isPrimitiveType();
+            shouldBeDereferenced &= ptrType->getPointerElementType()->isSingleValueType();
         }
 
         if (shouldBeDereferenced) {
