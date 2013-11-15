@@ -8,7 +8,9 @@
 #ifndef TYPEFACTORY_H_
 #define TYPEFACTORY_H_
 
+#include "Type/Type.h"
 #include "Type/Type.def"
+#include "Type/TypeVisitor.hpp"
 #include "Type/RecordBody.h"
 #include "Util/cast.hpp"
 #include "Util/util.h"
@@ -19,15 +21,17 @@ class TypeFactory {
 
     TypeFactory();
 
-    Type::Ptr theBool;
-    Type::Ptr theFloat;
-    Type::Ptr theUnknown;
-    std::map<llvm::Signedness, Type::Ptr> integers;
-    std::map<Type::Ptr, Type::Ptr> pointers;
-    std::map<std::pair<Type::Ptr, size_t>, Type::Ptr> arrays;
-    std::map<std::string, Type::Ptr> records;
-    type::RecordRegistry::StrongPtr recordBodies;
-    std::map<std::string, Type::Ptr> errors;
+    mutable Type::Ptr theBool;
+    mutable Type::Ptr theFloat;
+    mutable Type::Ptr theUnknown;
+
+    mutable std::map<llvm::Signedness,             Type::Ptr> integers;
+    mutable std::map<Type::Ptr,                    Type::Ptr> pointers;
+    mutable std::map<std::pair<Type::Ptr, size_t>, Type::Ptr> arrays;
+    mutable std::map<std::string,                  Type::Ptr> errors;
+
+    mutable std::map<std::string, Type::Ptr> records;
+    mutable type::RecordRegistry::StrongPtr recordBodies;
 
 public:
 
@@ -38,54 +42,52 @@ public:
         return instance;
     }
 
-    Type::Ptr getBool() {
-        if(!theBool) theBool = Type::Ptr(new type::Bool());
+    Type::Ptr getBool() const {
+        if(!theBool) return theBool = Type::Ptr(new type::Bool());
         return theBool;
     }
 
-    Type::Ptr getInteger(llvm::Signedness sign = llvm::Signedness::Unknown) {
-        if(!integers.count(sign)) integers[sign] = Type::Ptr(new type::Integer(sign));
+    Type::Ptr getInteger(llvm::Signedness sign = llvm::Signedness::Unknown) const {
+        if(!integers.count(sign)) return integers[sign] = Type::Ptr(new type::Integer(sign));
         return integers[sign];
     }
 
-    Type::Ptr getFloat() {
-        if(!theFloat) theFloat = Type::Ptr(new type::Float());
+    Type::Ptr getFloat() const {
+        if(!theFloat) return theFloat = Type::Ptr(new type::Float());
         return theFloat;
     }
 
-    Type::Ptr getUnknownType() {
-        if(!theUnknown) theUnknown = Type::Ptr(new type::UnknownType());
+    Type::Ptr getUnknownType() const {
+        if(!theUnknown) return theUnknown = Type::Ptr(new type::UnknownType());
         return theUnknown;
     }
 
-    Type::Ptr getPointer(Type::Ptr to) {
+    Type::Ptr getPointer(Type::Ptr to) const {
         if(!isValid(to)) return to;
 
         if(!pointers.count(to)) return pointers[to] = Type::Ptr(new type::Pointer(to));
         return pointers[to];
     }
 
-    Type::Ptr getArray(Type::Ptr elem, size_t size) {
+    Type::Ptr getArray(Type::Ptr elem, size_t size) const {
         if(!isValid(elem)) return elem;
 
         if(size == 0U) return getArray(elem);
 
         auto pair = make_pair(elem, size);
-        if(auto existing = util::at(arrays, pair)) {
-            return existing.getUnsafe();
-        } else return arrays[pair] = Type::Ptr(new type::Array(elem, util::just(size)));
+        if(auto existing = util::at(arrays, pair)) return existing.getUnsafe();
+        else return arrays[pair] = Type::Ptr(new type::Array(elem, util::just(size)));
     }
 
-    Type::Ptr getArray(Type::Ptr elem) {
+    Type::Ptr getArray(Type::Ptr elem) const {
         if(!isValid(elem)) return elem;
 
         auto pair = make_pair(elem, 0U);
-        if(auto existing = util::at(arrays, pair)) {
-            return existing.getUnsafe();
-        } else return arrays[pair] = Type::Ptr(new type::Array(elem, util::nothing()));
+        if(auto existing = util::at(arrays, pair)) return existing.getUnsafe();
+        else return arrays[pair] = Type::Ptr(new type::Array(elem, util::nothing()));
     }
 
-    Type::Ptr getRecord(const std::string& name) {
+    Type::Ptr getRecord(const std::string& name) const {
         if(auto existing = util::at(records, name)) {
             return existing.getUnsafe();
         } else {
@@ -104,7 +106,7 @@ public:
     }
 
 #include "Util/macros.h"
-    Type::Ptr getRecord(const std::string& name, const type::RecordBody& body) {
+    Type::Ptr getRecord(const std::string& name, const type::RecordBody& body) const {
         Type::Ptr ret = getRecord(name);
 
         // FIXME: do something to check body compatibility if exists
@@ -113,27 +115,26 @@ public:
     }
 #include "Util/unmacros.h"
 
-    type::RecordRegistry::Ptr getRecordRegistry() {
+    type::RecordRegistry::Ptr getRecordRegistry() const {
         return recordBodies;
     }
 
-    Type::Ptr getTypeError(const std::string& message) {
-        if(!errors.count(message)) errors[message] = Type::Ptr(new type::TypeError(message));
+    Type::Ptr getTypeError(const std::string& message) const {
+        if(!errors.count(message)) return errors[message] = Type::Ptr(new type::TypeError(message));
         return errors[message];
     }
 
-    bool isValid(Type::Ptr type) {
+    bool isValid(Type::Ptr type) const {
         return type->getClassTag() != class_tag<type::TypeError>();
     }
 
-    bool isUnknown(Type::Ptr type) {
+    bool isUnknown(Type::Ptr type) const {
         return type->getClassTag() == class_tag<type::UnknownType>();
     }
 
-    Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) {
-        using borealis::util::toString;
+    Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const {
 
-        static std::set<std::string> visitedStructs {};
+        static std::set<std::string> visitedStructs{};
         static long literalStructs = 0;
 
         if(type->isIntegerTy())
@@ -149,34 +150,33 @@ public:
             auto str = llvm::dyn_cast<llvm::StructType>(type);
             // FIXME: this is fucked up, literal (unnamed) structs are uniqued
             //        as structural types (they are rare though)
-            auto name = !str->hasName() ?
-                 ("bor.literalStruct." + util::toString(literalStructs++)) :
-                 str->getName().str();
+            auto name = str->hasName() ?
+                str->getName().str() :
+                ("bor.literalStruct." + util::toString(literalStructs++));
 
-            if(str->isOpaque() || visitedStructs.count(name)) return getRecord(name);
-            else {
+            if(str->isOpaque() || visitedStructs.count(name)) {
+                return getRecord(name);
+            } else {
                 visitedStructs.insert(name);
                 ON_SCOPE_EXIT(visitedStructs.erase(name));
 
                 type::RecordBody body;
-                bool hasBody = false;
-                for(auto elem : util::view(str->element_begin(), str->element_end())) {
-                    hasBody = true;
+                for(auto* elem : util::view(str->element_begin(), str->element_end())) {
                     auto me = cast(elem);
                     body.push_back(type::RecordField{me});
                 }
-                return hasBody ? getRecord(name) : getRecord(name, body);
+                return body.empty() ? getRecord(name) : getRecord(name, body);
             }
 #include "Util/unmacros.h"
         }
         else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
         else
-            return getTypeError("Unsupported llvm type: " + toString(*type));
+            return getTypeError("Unsupported llvm type: " + util::toString(type));
     }
 
 #include "Util/macros.h"
-    std::string toString(const Type& type) {
+    std::string toString(const Type& type) const {
         using llvm::isa;
         using llvm::dyn_cast;
 
@@ -203,7 +203,33 @@ public:
         BYE_BYE(std::string, "Unknown type");
     }
 
-    Type::Ptr merge(Type::Ptr one, Type::Ptr two) {
+    unsigned long long getElemSize(Type::Ptr type) const {
+        return TypeSizer().visit(type);
+    }
+
+    unsigned long long getElemSize(const llvm::Type* type) const {
+        return getElemSize(cast(type));
+    }
+
+    Type::Ptr getIndexedType(Type::Ptr type, unsigned long long idx) const {
+        using llvm::dyn_cast;
+
+        if (auto* Ptr = dyn_cast<type::Pointer>(type))
+            return Ptr->getPointed();
+        if (auto* Arr = dyn_cast<type::Array>(type))
+            return Arr->getElement(); // TODO: Bounds checking?
+        if (auto* Rec = dyn_cast<type::Record>(type)) {
+            for (auto fieldType : Rec->getBody()->get().getFieldByIdx(idx)) {
+                return fieldType;
+            }
+        }
+
+        BYE_BYE(Type::Ptr,
+                "Cannot get indexed type for " + util::toString(type) +
+                " at index " + util::toString(idx));
+    }
+
+    Type::Ptr merge(Type::Ptr one, Type::Ptr two) const {
         using borealis::util::match_pair;
 
         if(!isValid(one)) return one;

@@ -30,8 +30,6 @@ void* MDNode2Ptr(llvm::MDNode* ptr);
 
 llvm::StringRef getRawSource(const clang::FileManager& sm, const LocusRange& range);
 
-unsigned long long getTypeSizeInElems(llvm::Type* type);
-
 util::option<std::string> getAsCompileTimeString(llvm::Value* value);
 
 } // namespace borealis

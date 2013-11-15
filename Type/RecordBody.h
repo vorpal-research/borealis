@@ -51,6 +51,7 @@ public:
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordBody);
     auto begin() QUICK_CONST_RETURN(fields.begin());
     auto end() QUICK_CONST_RETURN(fields.end());
+    auto empty() QUICK_CONST_RETURN(fields.empty());
 #include "Util/unmacros.h"
 
     void push_back(const RecordField& fld) {
@@ -60,7 +61,11 @@ public:
         }
     }
 
-    util::option_ref<Type::Ptr> getFieldByName(const std::string& name) {
+    util::option_ref<const Type::Ptr> getFieldByIdx(unsigned long long idx) const {
+        return fields.size() > idx ? util::justRef(fields.at(idx).getType()) : util::nothing();
+    }
+
+    util::option_ref<const Type::Ptr> getFieldByName(const std::string& name) const {
         return util::at(naming, name);
     }
 

@@ -12,6 +12,7 @@
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Passes/Transform/MallocMutator.h"
+#include "Type/TypeFactory.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
@@ -49,17 +50,18 @@ void MallocMutator::eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI)
     using borealis::util::toString;
     using borealis::util::view;
 
+    auto TyF = TypeFactory::get();
     auto& TD = GetAnalysis<TargetData>::doit(this);
     auto& intrinsics_manager = IntrinsicsManager::getInstance();
     auto* size_type = llvm::Type::getInt64Ty(M.getContext());
 
     auto* arraySize = getMallocArraySize(CI, &TD, true);
     auto* mallocType = getMallocBitcastType(CI);
-    auto elemSize = getTypeSizeInElems(mallocType->getElementType());
+    auto elemSize = TyF->getElemSize(mallocType->getElementType());
 
     unsigned long long resolvedArraySize;
     if (auto* constantArraySize = dyn_cast_or_null<ConstantInt>(arraySize)) {
-        resolvedArraySize = constantArraySize->getZExtValue();
+        resolvedArraySize = constantArraySize->getLimitedValue();
     } else {
         resolvedArraySize = DefaultMallocSize;
     }
@@ -102,17 +104,18 @@ void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
     using borealis::util::toString;
     using borealis::util::view;
 
+    auto TyF = TypeFactory::get();
     TargetData& TD = GetAnalysis<TargetData>::doit(this);
     auto& intrinsics_manager = IntrinsicsManager::getInstance();
     auto* size_type = llvm::Type::getInt64Ty(M.getContext());
 
     auto* arraySize = getMallocArraySize(CI, &TD, true);
     auto* mallocType = CI->getType();
-    auto elemSize = getTypeSizeInElems(getMallocAllocatedType(CI));
+    auto elemSize = TyF->getElemSize(getMallocAllocatedType(CI));
 
     unsigned long long resolvedArraySize;
     if (auto* constantArraySize = dyn_cast_or_null<ConstantInt>(arraySize)) {
-        resolvedArraySize = constantArraySize->getZExtValue();
+        resolvedArraySize = constantArraySize->getLimitedValue();
     } else {
         resolvedArraySize = DefaultMallocSize;
     }

@@ -220,7 +220,7 @@ struct protobuf_traits_impl<GepTerm> {
         );
 
         for (const auto& shift : t.getShifts()) {
-            res->mutable_by()->AddAllocated(
+            res->mutable_idx()->AddAllocated(
                 TermConverter::toProtobuf(*shift.first).release()
             );
             res->mutable_size()->AddAllocated(
@@ -238,15 +238,15 @@ struct protobuf_traits_impl<GepTerm> {
 
         auto ptr = TermConverter::fromProtobuf(fn, t.base());
 
-        ASSERT(t.by_size() == t.size_size(),
-               "Mismatching sizes for GepTerm::by and GepTerm::size");
+        ASSERT(t.idx_size() == t.size_size(),
+               "Mismatching sizes for GepTerm::idx and GepTerm::size");
 
         GepTerm::Shifts shifts;
-        shifts.reserve(t.by_size());
-        for (int i = 0; i < t.by_size(); ++i) {
-            auto by = TermConverter::fromProtobuf(fn, t.by(i));
+        shifts.reserve(t.idx_size());
+        for (int i = 0; i < t.idx_size(); ++i) {
+            auto idx = TermConverter::fromProtobuf(fn, t.idx(i));
             auto size = TermConverter::fromProtobuf(fn, t.size(i));
-            shifts.push_back({by, size});
+            shifts.push_back({idx, size});
         }
 
         return Term::Ptr{ new GepTerm(base->getType(), ptr, shifts) };

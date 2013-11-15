@@ -292,69 +292,64 @@ public:
                 tp,
                 base,
                 util::viewContainer(shifts).map([&one](Term::Ptr elem){
-                    return std::make_pair(elem, one);
+                    return std::make_pair(one, elem);
                 }).toVector()
             }
         };
     }
 
-    Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
+    Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& inds) {
         ASSERT(st, "Missing SlotTracker");
 
         using namespace llvm;
         using borealis::util::take;
         using borealis::util::view;
 
-        llvm::Type* baseType = base->getType();
-
-        llvm::Type* type = baseType;
-        ValueVector typeIdxs;
-        typeIdxs.reserve(idxs.size());
+        Type::Ptr type = TyF->cast(base->getType());
 
         std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
-        shifts.reserve(idxs.size());
+        shifts.reserve(inds.size());
 
-        for (auto* idx : idxs) {
+        for (auto* ind : inds) {
             ASSERT(type, "Incorrect GEP type indices");
 
-            if (auto* structType = dyn_cast<llvm::StructType>(type)) {
-                if (auto* cInt = dyn_cast<ConstantInt>(idx)) {
+            if (auto* structType = dyn_cast<type::Record>(type)) {
+                if (auto* cInt = dyn_cast<ConstantInt>(ind)) {
                     auto cIdx = cInt->getLimitedValue();
 
                     auto res = 0ULL;
-                    for (auto* structElem :
-                            take(cIdx, view(structType->element_begin(), structType->element_end()))) {
-                        res += getTypeSizeInElems(structElem);
+                    for (const auto& structElem : take(cIdx, structType->getBody()->get())) {
+                        res += TyF->getElemSize(structElem.getType());
                     }
 
-                    Term::Ptr by = getIntTerm(res);
-                    Term::Ptr size = getIntTerm(1);
-                    shifts.push_back({by, size});
+                    Term::Ptr idx = getIntTerm(1);
+                    Term::Ptr size = getIntTerm(res);
+                    shifts.push_back({idx, size});
+
+                    type = TyF->getIndexedType(type, cIdx);
+                    continue;
 
                 } else {
                     BYE_BYE(Term::Ptr, "Non-constant index in struct GEP");
                 }
 
-            } else if (auto* arrayType = dyn_cast<llvm::ArrayType>(type)) {
-                Term::Ptr by = getValueTerm(idx);
-                Term::Ptr size = getIntTerm(getTypeSizeInElems(arrayType->getArrayElementType()));
-                shifts.push_back({by, size});
+            } else if (auto* arrayType = dyn_cast<type::Array>(type)) {
+                Term::Ptr idx = getValueTerm(ind);
+                Term::Ptr size = getIntTerm(TyF->getElemSize(arrayType->getElement()));
+                shifts.push_back({idx, size});
 
-            } else if (auto* ptrType = dyn_cast<llvm::PointerType>(type)) {
-                Term::Ptr by = getValueTerm(idx);
-                Term::Ptr size = getIntTerm(getTypeSizeInElems(ptrType->getPointerElementType()));
-                shifts.push_back({by, size});
+            } else if (auto* ptrType = dyn_cast<type::Pointer>(type)) {
+                Term::Ptr idx = getValueTerm(ind);
+                Term::Ptr size = getIntTerm(TyF->getElemSize(ptrType->getPointed()));
+                shifts.push_back({idx, size});
             } else BYE_BYE(Term::Ptr, "Unexpected type in GEP: " + util::toString(type));
 
-            typeIdxs.push_back(idx);
-            type = GetElementPtrInst::getIndexedType(baseType, typeIdxs);
+            type = TyF->getIndexedType(type, 0ULL);
         }
-
-        type = GetElementPtrInst::getGEPReturnType(base, idxs);
 
         return Term::Ptr{
             new GepTerm(
-                TyF->cast(type),
+                TyF->getPointer(type),
                 getValueTerm(base),
                 shifts
             )

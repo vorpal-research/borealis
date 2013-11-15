@@ -69,25 +69,6 @@ llvm::StringRef getRawSource(const clang::FileManager&, const LocusRange&) {
     return llvm::StringRef{};
 }
 
-unsigned long long getTypeSizeInElems(llvm::Type* type) {
-    using namespace llvm;
-    using borealis::util::view;
-
-    auto res = 0ULL;
-
-    if (auto* structType = dyn_cast_or_null<StructType>(type)) {
-        for (auto* structElem : view(structType->element_begin(), structType->element_end())) {
-            res += getTypeSizeInElems(structElem);
-        }
-    } else if (auto* arrayType = dyn_cast_or_null<ArrayType>(type)) {
-        res += arrayType->getArrayNumElements() * getTypeSizeInElems(arrayType->getArrayElementType());
-    } else {
-        res = 1ULL;
-    }
-
-    return res;
-}
-
 util::option<std::string> getAsCompileTimeString(llvm::Value* value) {
     using namespace llvm;
 

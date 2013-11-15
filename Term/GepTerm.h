@@ -23,7 +23,7 @@ message GepTerm {
     }
 
     optional Term base = 1;
-    repeated Term by = 2;
+    repeated Term idx = 2;
     repeated Term size = 3;
 }
 
@@ -108,13 +108,13 @@ struct SMTImpl<Impl, GepTerm> {
         Integer shift = ef.getIntConst(0);
 
         for (const auto& s : t->getShifts()) {
-            auto by = SMT<Impl>::doit(s.first, ef, ctx).template to<Integer>();
+            auto idx = SMT<Impl>::doit(s.first, ef, ctx).template to<Integer>();
             auto size = SMT<Impl>::doit(s.second, ef, ctx).template to<Integer>();
 
-            ASSERT(!by.empty() && !size.empty(),
+            ASSERT(!idx.empty() && !size.empty(),
                    "Encountered a GEP term with incorrect shifts");
 
-            shift = shift + by.getUnsafe() * size.getUnsafe();
+            shift = shift + idx.getUnsafe() * size.getUnsafe();
         }
 
         Integer bound = ctx->getBound(p);
