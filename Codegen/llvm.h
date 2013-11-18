@@ -32,6 +32,8 @@ llvm::StringRef getRawSource(const clang::FileManager& sm, const LocusRange& ran
 
 util::option<std::string> getAsCompileTimeString(llvm::Value* value);
 
+std::list<llvm::Constant*> getAsSeqData(llvm::Constant* value);
+
 } // namespace borealis
 
 #endif /* CODEGEN_LLVM_H_ */

@@ -85,4 +85,37 @@ util::option<std::string> getAsCompileTimeString(llvm::Value* value) {
     return util::nothing();
 }
 
+std::list<llvm::Constant*> getAsSeqData(llvm::Constant* value) {
+    std::list<llvm::Constant*> res;
+
+    auto* type = value->getType();
+
+    if (type->isSingleValueType()) {
+        res.push_back(value);
+
+    } else if (auto* arrType = llvm::dyn_cast<llvm::ArrayType>(type)) {
+        auto nested = util::range(0UL, arrType->getArrayNumElements())
+            .map([&value](unsigned long i) { return value->getAggregateElement(i); })
+            .map([](llvm::Constant* c) { return getAsSeqData(c); })
+            .toList();
+        for (const auto& n : nested) {
+            res.insert(res.end(), n.begin(), n.end());
+        }
+
+    } else if (auto* structType = llvm::dyn_cast<llvm::StructType>(type)) {
+        auto nested = util::range(0U, structType->getStructNumElements())
+            .map([&value](unsigned i) { return value->getAggregateElement(i); })
+            .map([](llvm::Constant* c) { return getAsSeqData(c); })
+            .toList();
+        for (const auto& n : nested) {
+            res.insert(res.end(), n.begin(), n.end());
+        }
+
+#include "Util/macros.h"
+    } else BYE_BYE(decltype(res), "Unsupported constant-as-seq-data type: " + util::toString(type));
+#include "Util/unmacros.h"
+
+    return std::move(res);
+}
+
 } // namespace borealis

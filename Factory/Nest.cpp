@@ -8,6 +8,8 @@
 #include "Factory/Nest.h"
 #include "State/PredicateStateBuilder.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 FactoryNest::FactoryNest() {};
@@ -49,6 +51,14 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
+        } else if (auto* c = dyn_cast<Constant>(ini)) {
+            auto numElements = FN.Type->getElemSize(c->getType());
+
+            auto data = util::viewContainer(getAsSeqData(c))
+                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+                .toVector();
+            ASSERTC(numElements == data.size());
+            return FN.Predicate->getSeqDataPredicate(base, data);
         }
     }
 
@@ -69,3 +79,5 @@ PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
 }
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
