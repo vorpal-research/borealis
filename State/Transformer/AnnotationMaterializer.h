@@ -15,6 +15,7 @@
 #include "Passes/Tracker/MetaInfoTracker.h"
 #include "State/Transformer/Transformer.hpp"
 #include "Term/NameContext.h"
+#include "Term/TermBuilder.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -60,7 +61,7 @@ public:
     }
 
     // note this is called without a "Term" at the end, meaning
-    // it is called before (and instead) transforming children
+    // it is called before (and instead of) transforming children
     Term::Ptr transformOpaqueCall(OpaqueCallTermPtr trm) {
         if(auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
             // FIXME: implement some calls
@@ -68,60 +69,72 @@ public:
                 auto rhv = trm->getRhv();
                 if(rhv.size() != 2) failWith("Illegal property access " + trm->getName() + ": exactly two operands expected");
 
-                auto val = this->transform(rhv[0]);
-                auto prop = llvm::dyn_cast<OpaqueVarTerm>(rhv[1]);
-                if(!prop) failWith("Illegal property access " + trm->getName() + ": second operand must be a property name");
+                auto prop = FN.Term->getOpaqueConstantTerm(rhv[0]->getName());
+                auto val = this->transform(rhv[1]);
 
-                auto transformed_prop = FN.Term->getOpaqueConstantTerm(prop->getVName());
+                return FN.Term->getReadPropertyTerm(FN.Type->getUnknownType(), prop, val);
 
-                return FN.Term->getReadPropertyTerm(FN.Type->getUnknownType(), transformed_prop, val);
-            }
-            if(builtin->getVName() == "bound") {
+            } else if(builtin->getVName() == "bound") {
                 auto rhv = trm->getRhv();
                 if(rhv.size() != 1) failWith("Illegal bound access " + trm->getName() + ": exactly one operand expected");
 
                 auto val = this->transform(rhv[0]);
 
                 return FN.Term->getBoundTerm(val);
-            }
-            if(builtin->getVName() == "is_valid_ptr") {
+
+            } else if(builtin->getVName() == "is_valid_ptr") {
                 auto rhv = trm->getRhv();
                 if(rhv.size() != 1) failWith("Illegal is_valid_ptr access " + trm->getName() + ": exactly one operand expected");
 
                 auto val = this->transform(rhv[0]);
+                auto type = val->getType();
 
-                return FN.Term->getBinaryTerm(
-                    llvm::ArithType::LAND,
-                    FN.Term->getCmpTerm(
-                        llvm::ConditionType::NEQ,
-                        val,
-                        FN.Term->getNullPtrTerm()
-                    ),
-                    FN.Term->getCmpTerm(
-                        llvm::ConditionType::NEQ,
-                        val,
-                        FN.Term->getInvalidPtrTerm()
-                    )
-                );
-            }
-            failWith("Cannot call " + trm->getName() + ": not supported");
+                if (auto ptrType = llvm::dyn_cast<type::Pointer>(type)) {
+                    auto pointed = ptrType->getPointed();
+
+                    return (
+                        FN.Term *
+                        FN.Term->getCmpTerm(
+                            llvm::ConditionType::NEQ,
+                            val,
+                            FN.Term->getNullPtrTerm()
+                        ) &&
+                        FN.Term->getCmpTerm(
+                            llvm::ConditionType::NEQ,
+                            val,
+                            FN.Term->getInvalidPtrTerm()
+                        ) &&
+                        FN.Term->getCmpTerm(
+                            llvm::ConditionType::UGE,
+                            FN.Term->getBoundTerm(val),
+                            FN.Term->getOpaqueConstantTerm(
+                                (long long)FN.Type->getElemSize(pointed) // FIXME: How should we store Integers?
+                            )
+                        )
+                    )();
+
+                } else failWith("Illegal is_valid_ptr access " + trm->getName() + ": called on non-pointer");
+
+            } else failWith("Cannot call " + trm->getName() + ": not supported");
+
         } else failWith("Cannot call " + trm->getName() + ": only builtins can be called in this way");
-        return trm;
+
+        BYE_BYE(Term::Ptr, "Unreachable!");
     }
 
     Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
-        // FIXME: decide and handle the multidimensional array case
+        // FIXME: decide how to handle multidimensional arrays
 
         auto gep = factory().getNaiveGepTerm(trm->getLhv(), util::make_vector(trm->getRhv()));
 
-        // check typing
-        if(const auto* terr = llvm::dyn_cast<type::TypeError>(gep->getType())){
+        // check types
+        if(auto* terr = llvm::dyn_cast<type::TypeError>(gep->getType())) {
             failWith(terr->getMessage());
         } else if(llvm::isa<type::Pointer>(gep->getType())) {
             return factory().getLoadTerm(gep);
-        } else failWith("Type not dereferenceable");
+        } else failWith("Type " + util::toString(gep->getType()) + " not dereferenceable");
 
-        return trm;
+        BYE_BYE(Term::Ptr, "Unreachable!");
     }
 
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
@@ -153,15 +166,18 @@ public:
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 auto desc = forValueSingle(ctx.func);
                 return factory().getReturnValueTerm(ctx.func, desc.signedness);
-            } else {
-                failWith("\result can only be bound to functions' outer scope");
-            }
+
+            } else failWith("\result can only be bound to functions' outer scope");
+
         } else if (name == "null" || name == "nullptr") {
             return factory().getNullPtrTerm();
+
         } else if (name == "invalid" || name == "invalidptr") {
             return factory().getInvalidPtrTerm();
+
         } else if (name.startswith("arg")) {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
+                // FIXME: Better sanity checks for args
                 std::istringstream ist(name.drop_front(3).str());
                 unsigned val = 0U;
                 ist >> val;
@@ -172,14 +188,12 @@ public:
                 auto desc = forValueSingle(argIt);
 
                 return factory().getArgumentTerm(argIt, desc.signedness);
-            } else {
-                failWith("\arg# can only be bound to functions' outer scope");
-            }
-        } else {
-            failWith("\\" + name + " : unknown builtin");
-        }
 
-        return trm;
+            } else failWith("\argXXX can only be bound to functions' outer scope");
+
+        } else failWith("\\" + name + " : unknown builtin");
+
+        BYE_BYE(Term::Ptr, "Unreachable!");
     }
 
     Term::Ptr transformCmpTerm(CmpTermPtr trm) {
