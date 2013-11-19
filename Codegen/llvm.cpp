@@ -98,18 +98,14 @@ std::list<llvm::Constant*> getAsSeqData(llvm::Constant* value) {
             .map([&value](unsigned long i) { return value->getAggregateElement(i); })
             .map([](llvm::Constant* c) { return getAsSeqData(c); })
             .toList();
-        for (const auto& n : nested) {
-            res.insert(res.end(), n.begin(), n.end());
-        }
+        res = util::viewContainer(nested).flatten().toList();
 
     } else if (auto* structType = llvm::dyn_cast<llvm::StructType>(type)) {
         auto nested = util::range(0U, structType->getStructNumElements())
             .map([&value](unsigned i) { return value->getAggregateElement(i); })
             .map([](llvm::Constant* c) { return getAsSeqData(c); })
             .toList();
-        for (const auto& n : nested) {
-            res.insert(res.end(), n.begin(), n.end());
-        }
+        res = util::viewContainer(nested).flatten().toList();
 
 #include "Util/macros.h"
     } else BYE_BYE(decltype(res), "Unsupported constant-as-seq-data type: " + util::toString(type));
