@@ -152,7 +152,7 @@ struct protobuf_traits_impl<type::Record> {
             auto pbody = util::uniq(new proto::RecordBodyRef_RecordBody());
             pbody->set_id(name);
 
-            for (const auto& field : registry->at(name)) {
+            for (const auto& field : (*registry)[name]) {
                 auto pfield = util::uniq(new proto::RecordBodyRef_RecordField());
                 auto fieldType = protobuf_traits_impl<Type>::toProtobuf(*field.getType());
                 pfield->set_allocated_type(fieldType.release());
@@ -180,10 +180,12 @@ struct protobuf_traits_impl<type::Record> {
         discardAllBodies = true;
         for(const auto& pbody : p.body().bodytable()) {
             type::RecordBody body;
+            auto ix = 0U;
             for (const auto& pfield : pbody.fields()) {
                 type::RecordField field {
                     protobuf_traits_impl<Type>::fromProtobuf(fn, pfield.type()),
-                    std::vector<std::string>{ pfield.ids().begin(), pfield.ids().end() }
+                    std::vector<std::string>{ pfield.ids().begin(), pfield.ids().end() },
+                    ix++
                 };
                 body.push_back(field);
             }

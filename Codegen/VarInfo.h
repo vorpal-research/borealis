@@ -13,6 +13,7 @@
 
 #include <string>
 
+#include "Codegen/llvm.h"
 #include "Logging/logger.hpp"
 #include "Util/util.h"
 
@@ -37,8 +38,9 @@ struct VarInfo {
     borealis::util::option<std::string> originalName;
     borealis::util::option<borealis::Locus> originalLocus;
     enum { Plain, Allocated } treatment;
-    llvm::Signedness signedness;
+    DIType type;
     clang::Decl* ast;
+
 
     const VarInfo& overwriteBy(const VarInfo& vi) {
 
@@ -53,7 +55,7 @@ struct VarInfo {
         }
 
         treatment = vi.treatment;
-        signedness = vi.signedness;
+        if(vi.type) type = vi.type;
 
         return *this;
     }
@@ -78,7 +80,7 @@ inline VarInfo meta2vi(const llvm::DIVariable& dd, clang::Decl* ast = nullptr) {
             }
         ),
         VarInfo::Plain,
-        meta2sign(dd.getType()),
+        DIType{ dd.getType() },
         ast
     };
 }
@@ -93,7 +95,7 @@ Streamer& operator<<(Streamer& ost, const VarInfo& vi) {
 
     if (vi.treatment == VarInfo::Allocated) ost << " (alloca)";
 
-    switch (vi.signedness) {
+    switch (vi.type.getSignedness()) {
     case llvm::Signedness::Signed:   ost << " (signed)";   break;
     case llvm::Signedness::Unsigned: ost << " (unsigned)"; break;
     case llvm::Signedness::Unknown:  ost << " (unknown)";  break;

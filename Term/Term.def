@@ -24,6 +24,7 @@
 #include "Term/OpaqueStringConstantTerm.h"
 #include "Term/OpaqueUndefTerm.h"
 #include "Term/OpaqueVarTerm.h"
+#include "Term/OpaqueMemberAccessTerm.h"
 #include "Term/ReadPropertyTerm.h"
 #include "Term/ReturnValueTerm.h"
 #include "Term/SignTerm.h"
@@ -54,6 +55,7 @@ HANDLE_TERM(OpaqueNullPtr, OpaqueNullPtrTerm)
 HANDLE_TERM(OpaqueStringConstant, OpaqueStringConstantTerm)
 HANDLE_TERM(OpaqueUndef, OpaqueUndefTerm)
 HANDLE_TERM(OpaqueVar, OpaqueVarTerm)
+HANDLE_TERM(OpaqueMemberAccess, OpaqueMemberAccessTerm)
 HANDLE_TERM(ReadProperty, ReadPropertyTerm)
 HANDLE_TERM(ReturnValue, ReturnValueTerm)
 HANDLE_TERM(Sign, SignTerm)

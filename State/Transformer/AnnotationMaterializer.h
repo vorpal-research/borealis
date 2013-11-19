@@ -107,7 +107,7 @@ public:
                         FN.Term->getCmpTerm(
                             llvm::ConditionType::GE,
                             FN.Term->getBoundTerm(val),
-                            FN.Term->getOpaqueConstantTerm(42LL)
+                            FN.Term->getOpaqueConstantTerm(42LL) // FIXME: 42
                         )
                     )
                 );
@@ -115,6 +115,90 @@ public:
             failWith("Cannot call " + trm->getName() + ": not supported");
         } else failWith("Cannot call " + trm->getName() + ": only builtins can be called in this way");
         return trm;
+    }
+
+    Term::Ptr transformDirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
+        auto load = llvm::dyn_cast<LoadTerm>(trm->getLhv());
+        if(!load && !trm->getIsIndirect()) failWith(
+            "Cannot access member " +
+            trm->getProperty() +
+            ": term is not an instance of load"
+        );
+
+        auto daStruct = llvm::dyn_cast<type::Record>(load->getType());
+        if(!daStruct) failWith(
+            "Cannot access member " +
+            trm->getProperty() +
+            ": term is not a structure type"
+        );
+
+        auto field = daStruct->getBody()->get().getFieldByName(trm->getProperty());
+        if(!field) failWith(
+            "Cannot access member " +
+            trm->getProperty() +
+            ": no such member defined or structure not available"
+        );
+
+        return factory().getLoadTerm(
+            factory().getNaiveGepTerm(
+                load->getRhv(),
+                std::vector<Term::Ptr> {
+                    factory().getOpaqueConstantTerm(0LL),
+                    factory().getOpaqueConstantTerm(static_cast<long long>(field.getUnsafe().getIndex()))
+                }
+            )
+        );
+    }
+
+    Term::Ptr transformIndirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
+        auto arg = trm->getLhv();
+
+        std::cerr << trm->getName() << std::endl;
+        std::cerr << arg->getType() << std::endl;
+
+        auto daPointer = llvm::dyn_cast<type::Pointer>(arg->getType());
+        if(!daPointer) failWith(
+            "Cannot access member " +
+            trm->getProperty() +
+            ": term is not a pointer"
+        );
+
+        auto daStruct = llvm::dyn_cast<type::Record>(daPointer->getPointed());
+        if(!daStruct) failWith(
+            "Cannot access member " +
+            trm->getProperty() +
+            ": term is not a pointer to structure type"
+        );
+
+        auto field = daStruct->getBody()->get().getFieldByName(trm->getProperty());
+        if(!field) failWith(
+            "Cannot access member " +
+            trm->getProperty() +
+            ": no such member defined or structure not available"
+        );
+
+        std::cerr << field.getUnsafe().getIndex() << std::endl;
+
+        return factory().getLoadTerm(
+            factory().getNaiveGepTerm(
+                arg,
+                std::vector<Term::Ptr> {
+                    factory().getOpaqueConstantTerm(0LL),
+                    factory().getOpaqueConstantTerm(static_cast<long long>(field.getUnsafe().getIndex()))
+                }
+            )
+        );
+    }
+
+    Term::Ptr transformOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
+        auto arg = trm->getLhv();
+
+        // this argument MUST be a load from a pointer to structure in
+        // well-formed expression
+
+        return trm->getIsIndirect() ?
+                   transformIndirectOpaqueMemberAccessTerm(trm) :
+                   transformDirectOpaqueMemberAccessTerm(trm);
     }
 
     Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
@@ -136,7 +220,14 @@ public:
         auto ret = forName(trm->getVName());
         if (ret.isInvalid()) failWith(trm->getVName() + " : variable not found in scope");
 
-        auto var = factory().getValueTerm(ret.val, ret.signedness);
+        auto bcType = ret.val -> getType();
+        if(ret.shouldBeDereferenced) {
+            if(!bcType->isPointerTy()) failWith("wtf");
+            bcType = bcType->getPointerElementType();
+        }
+        FN.Type->cast(bcType, ret.type);
+
+        auto var = factory().getValueTerm(ret.val, ret.type.getSignedness());
 
         if (ret.shouldBeDereferenced) {
             return factory().getLoadTerm(var);
@@ -152,7 +243,7 @@ public:
         if (name == "result") {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 auto desc = forValueSingle(ctx.func);
-                return factory().getReturnValueTerm(ctx.func, desc.signedness);
+                return factory().getReturnValueTerm(ctx.func, desc.type.getSignedness());
             } else {
                 failWith("\result can only be bound to functions' outer scope");
             }
@@ -169,7 +260,7 @@ public:
 
                 auto desc = forValueSingle(argIt);
 
-                return factory().getArgumentTerm(argIt, desc.signedness);
+                return factory().getArgumentTerm(argIt, desc.type.getSignedness());
             } else {
                 failWith("\arg# can only be bound to functions' outer scope");
             }
@@ -191,13 +282,13 @@ public:
         //      need to change that to unsigned when needed
         if (auto match = match_pair<type::Integer, type::Integer>(lhvt, rhvt)) {
             if (
-                    (
-                        match->first->getSignedness() == llvm::Signedness::Unsigned &&
-                        match->second->getSignedness() != llvm::Signedness::Signed
-                    ) || (
-                        match->second->getSignedness() == llvm::Signedness::Unsigned &&
-                        match->first->getSignedness() != llvm::Signedness::Signed
-                    )
+                (
+                    match->first->getSignedness() == llvm::Signedness::Unsigned &&
+                    match->second->getSignedness() != llvm::Signedness::Signed
+                ) || (
+                    match->second->getSignedness() == llvm::Signedness::Unsigned &&
+                    match->first->getSignedness() != llvm::Signedness::Signed
+                )
             ) {
                 return factory().getCmpTerm(
                     llvm::forceUnsigned(trm->getOpcode()),

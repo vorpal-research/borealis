@@ -9,6 +9,7 @@
 #define GEPTERM_H_
 
 #include "Term/Term.h"
+#include "Term/OpaqueIntConstantTerm.h"
 
 namespace borealis {
 
@@ -24,13 +25,12 @@ message GepTerm {
 
     optional Term base = 1;
     repeated Term by = 2;
-    repeated Term size = 3;
 }
 
 **/
 class GepTerm: public borealis::Term {
 
-    typedef std::pair<Term::Ptr, Term::Ptr> Shift;
+    typedef Term::Ptr Shift;
     typedef std::vector<Shift> Shifts;
 
     Term::Ptr base;
@@ -43,7 +43,7 @@ class GepTerm: public borealis::Term {
             "gep(" + base->getName() + "," +
                 std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
                     [](const std::string& a, const Shift& shift) {
-                        return a + "+" + shift.first->getName() + "*" + shift.second->getName();
+                        return a + "+" + shift->getName();
                     }
                 ) +
             ")"
@@ -62,7 +62,7 @@ public:
         _shifts.reserve(shifts.size());
         std::transform(shifts.begin(), shifts.end(), std::back_inserter(_shifts),
             [&tr](const Shift& shift) {
-                return std::make_pair(tr->transform(shift.first), tr->transform(shift.second));
+                return tr->transform(shift);
             }
         );
 
@@ -77,7 +77,7 @@ public:
                     *that->base == *base &&
                     std::equal(shifts.begin(), shifts.end(), that->shifts.begin(),
                         [](const Shift& a, const Shift& b) {
-                            return *a.first == *b.first && *a.second == *b.second;
+                            return *a == *b;
                         }
                     );
         } else return false;
@@ -87,6 +87,20 @@ public:
         return util::hash::defaultHasher()(Term::hashCode(), base, shifts);
     }
 
+    static Type::Ptr getGepChild(Type::Ptr parent, Term::Ptr index) {
+        auto intIndexTerm = llvm::dyn_cast<OpaqueIntConstantTerm>(index);
+        auto realIndex = intIndexTerm ? intIndexTerm->getValue() : ~0LL;
+
+        return TypeFactory::getGepChild(parent, (unsigned)realIndex);
+    }
+
+    static Type::Ptr getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& index) {
+        auto ret = parent;
+        for(auto ix : util::tail(index)) {
+            ret = getGepChild(ret, ix);
+        }
+        return ret;
+    }
 };
 
 #include "Util/macros.h"
@@ -106,15 +120,24 @@ struct SMTImpl<Impl, GepTerm> {
 
         Pointer p = base.getUnsafe();
         Integer shift = ef.getIntConst(0);
+        auto tp = t->getBase()->getType();
+        tp = llvm::dyn_cast<type::Pointer>(tp)->getPointed();
 
+        auto iter = 0U;
         for (const auto& s : t->getShifts()) {
-            auto by = SMT<Impl>::doit(s.first, ef, ctx).template to<Integer>();
-            auto size = SMT<Impl>::doit(s.second, ef, ctx).template to<Integer>();
+            auto by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
+            auto byIx = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
+            auto ix = byIx? byIx->getValue() : ~0U;
 
-            ASSERT(!by.empty() && !size.empty(),
+            if (iter != 0U) tp = TypeFactory::getGepChild(tp, ix);
+            iter++;
+
+            auto size = TypeFactory::getTypeSizeInElems(tp);
+
+            ASSERT(!by.empty(),
                    "Encountered a GEP term with incorrect shifts");
 
-            shift = shift + by.getUnsafe() * size.getUnsafe();
+            shift = shift + by.getUnsafe() * size;
         }
 
         Integer bound = ctx->getBound(p);

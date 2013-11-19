@@ -12,6 +12,7 @@
 #include <list>
 #include <memory>
 
+#include "Util/sayonara.hpp"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
 
@@ -442,6 +443,62 @@ template<class It, class Pred>
 filtered_iterator<It, Pred> filter_iterator(It end, Pred pred) {
     return filtered_iterator<It, Pred>(end, end, pred);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Zipping iterator
+// NB: Does not control buffer overflows!!!
+//
+////////////////////////////////////////////////////////////////////////////////
+
+#include "Util/macros.h"
+
+template<typename Iter1, typename Iter2>
+class zipping_iterator {
+    Iter1 iter1;
+    Iter2 iter2;
+
+public:
+    typedef std::forward_iterator_tag iterator_category;
+    typedef std::pair<typename std::iterator_traits<Iter1>::reference,
+                      typename std::iterator_traits<Iter2>::reference> value_type;
+    typedef std::ptrdiff_t difference_type;
+
+    typedef value_type reference;
+
+    struct pointer {
+        value_type val;
+
+        value_type* operator->() {
+            return &val;
+        }
+    };
+
+
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(zipping_iterator);
+
+    zipping_iterator(const Iter1& i1, const Iter2& i2) : iter1(i1), iter2(i2) {};
+
+    bool operator==(const zipping_iterator& that) const {
+        if(iter1 != that.iter1) return false;
+
+        ASSERT(iter2 == that.iter2, "Malformed zip iterator!")
+        return true;
+    };
+    bool operator!=(const zipping_iterator& that) const { return !operator==(that); };
+
+    reference operator*() const { return reference{ *iter1, *iter2 }; }
+    pointer operator->() const { return pointer{ *this }; }
+
+    zipping_iterator& operator++() { ++iter1; ++iter2; return *this; }
+};
+
+template<class Iter1, class Iter2>
+zipping_iterator<Iter1, Iter2> zip(Iter1 i1, Iter2 i2) {
+    return zipping_iterator<Iter1, Iter2>{ i1, i2 };
+}
+
+#include "Util/unmacros.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //

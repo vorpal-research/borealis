@@ -18,17 +18,21 @@ namespace type {
 class RecordField {
     Type::Ptr type;
     std::vector<std::string> ids;
+    size_t index = 0U;
 public:
 #include "Util/macros.h"
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordField);
 #include "Util/unmacros.h"
-    RecordField(Type::Ptr type) :
-        type{type}, ids{} {};
-    RecordField(Type::Ptr type, const std::vector<std::string>& ids) :
-        type{type}, ids{ids} {};
+    RecordField(Type::Ptr type, size_t index) :
+        type{type}, ids{}, index{index} {};
+    RecordField(Type::Ptr type, const std::vector<std::string>& ids, size_t index) :
+        type{type}, ids{ids}, index{index} {};
 
     const Type::Ptr& getType() const noexcept { return type; }
     void setType(const Type::Ptr& type) noexcept { this->type = type; }
+
+    size_t getIndex() const noexcept { return index; };
+    void setIndex(size_t ix) noexcept { index = ix; }
 
     const std::vector<std::string>& getIds() const noexcept { return ids; }
     void setIds(const std::vector<std::string>& ids) noexcept { this->ids = ids; }
@@ -37,12 +41,16 @@ public:
 
 class RecordBody {
     std::vector<RecordField> fields;
-    std::unordered_map<std::string, Type::Ptr> naming;
+    std::unordered_map<std::string, size_t> naming;
 public:
     RecordBody(const std::vector<RecordField>& fields): fields(fields) {
-        for(const auto& fld : fields) {
-            for(const auto& name : fld.getIds()) {
-                naming[name] = fld.getType();
+        for(auto i = 0U; i < fields.size(); ++i) {
+            this->fields.at(i).setIndex(i);
+        }
+
+        for(auto i = 0U; i < fields.size(); ++i) {
+            for(const auto& name : fields.at(i).getIds()) {
+                naming[name] = i;
             }
         }
     }
@@ -55,13 +63,26 @@ public:
 
     void push_back(const RecordField& fld) {
         fields.push_back(fld);
-        for(const auto& name : fld.getIds()) {
-            naming[name] = fld.getType();
+        auto& inserted = fields.back();
+        auto index = fields.size() - 1;
+        inserted.setIndex(index);
+        for(const auto& name : inserted.getIds()) {
+            naming[name] = index;
         }
     }
 
-    util::option_ref<Type::Ptr> getFieldByName(const std::string& name) {
-        return util::at(naming, name);
+    size_t getNumFields() const { return fields.size(); }
+
+    util::option_ref<const RecordField> getFieldByName(const std::string& name) const {
+        for(auto index: util::at(naming, name)) return util::justRef(fields.at(index));
+        return util::nothing();
+    }
+
+    RecordField& at(size_t ix) {
+        return fields.at(ix);
+    }
+    const RecordField& at(size_t ix) const {
+        return fields.at(ix);
     }
 
     ~RecordBody(){}
@@ -88,9 +109,6 @@ public:
         return util::at(data, type);
     }
 
-    RecordBody& at(const std::string& type) {
-        return data[type];
-    }
 };
 
 /** protobuf -> Type/RecordBodyRef.proto
@@ -130,7 +148,7 @@ public:
 
     const RecordBody& get() const {
         auto registry = this->registry.lock();
-        return registry->at(name);
+        return (*registry)[name];
     }
 
     RecordRegistry::Ptr getRegistry() const { return registry; }

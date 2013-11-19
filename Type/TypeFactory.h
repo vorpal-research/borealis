@@ -12,6 +12,7 @@
 #include "Type/RecordBody.h"
 #include "Util/cast.hpp"
 #include "Util/util.h"
+#include "Codegen/llvm.h"
 
 namespace borealis {
 
@@ -37,6 +38,74 @@ public:
         static TypeFactory::Ptr instance(new TypeFactory());
         return instance;
     }
+
+    static unsigned long long getTypeSizeInElems(const Type::Ptr& type) {
+        using namespace borealis::type;
+        auto res = 0ULL;
+
+        if (auto structType = llvm::dyn_cast<type::Record>(type)) {
+            for (const auto& structElem : structType->body->get()) {
+                res += getTypeSizeInElems(structElem.getType());
+            }
+        } else if (auto* arrayType = llvm::dyn_cast<type::Array>(type)) {
+            res += arrayType->getSize().getOrElse(1U) * getTypeSizeInElems(arrayType->getElement());
+        } else {
+            res = 1ULL;
+        }
+
+        return res;
+    }
+
+#include "Util/macros.h"
+    static std::string toString(const Type& type) {
+        using llvm::isa;
+        using llvm::dyn_cast;
+
+        if(isa<type::Integer>(type)) return "Integer";
+        if(isa<type::Float>(type)) return "Float";
+        if(isa<type::Bool>(type)) return "Bool";
+        if(isa<type::UnknownType>(type)) return "Unknown";
+        if(auto* Ptr = dyn_cast<type::Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
+        if(auto* Err = dyn_cast<type::TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
+        if(auto* Arr = dyn_cast<type::Array>(&type)) {
+            std::string ret = toString(*Arr->getElement()) + "[";
+            for(const auto& size : Arr->getSize()) {
+                ret += util::toString(size);
+            }
+            ret += "]";
+            return std::move(ret);
+        }
+        if(auto* Rec = dyn_cast<type::Record>(&type)) {
+            std::string ret = Rec->getName() + "{";
+            ret += "}";
+            return std::move(ret);
+        }
+
+        BYE_BYE(std::string, "Unknown type");
+    }
+
+    static Type::Ptr getGepChild(Type::Ptr parent, unsigned index) {
+
+        if (auto structType = llvm::dyn_cast<type::Record>(parent)) {
+            const auto& body = structType->getBody()->get();
+
+            ASSERTC(index < body.getNumFields());
+
+            return body.at(index).getType();
+        } else if (auto* arrayType = llvm::dyn_cast<type::Array>(parent)) {
+            const auto& sz = arrayType->getSize();
+            // XXX: let's not try to replace defect detector with out petty logic
+            // ASSERTC(!sz || (sz.getUnsafe() > index));
+            if(!!sz && (sz.getUnsafe() <= index)) {
+                dbgs() << "Should-be defect: array index overflow" << endl;
+            }
+            return arrayType->getElement();
+        } else {
+            return nullptr;
+        }
+    }
+
+#include "Util/unmacros.h"
 
     Type::Ptr getBool() {
         if(!theBool) theBool = Type::Ptr(new type::Bool());
@@ -153,6 +222,8 @@ public:
                  ("bor.literalStruct." + util::toString(literalStructs++)) :
                  str->getName().str();
 
+            if(recordBodies->at(name)) return getRecord(name);
+
             if(str->isOpaque() || visitedStructs.count(name)) return getRecord(name);
             else {
                 visitedStructs.insert(name);
@@ -160,14 +231,15 @@ public:
 
                 type::RecordBody body;
                 bool hasBody = false;
+                auto ix = 0U;
                 for(auto elem : util::view(str->element_begin(), str->element_end())) {
                     hasBody = true;
                     auto me = cast(elem);
-                    body.push_back(type::RecordField{me});
+                    body.push_back(type::RecordField{me, ix++});
                 }
-                return hasBody ? getRecord(name) : getRecord(name, body);
+                auto ret = hasBody ? getRecord(name, body) : getRecord(name);
+                return ret;
             }
-#include "Util/unmacros.h"
         }
         else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
@@ -175,32 +247,40 @@ public:
             return getTypeError("Unsupported llvm type: " + toString(*type));
     }
 
-#include "Util/macros.h"
-    std::string toString(const Type& type) {
-        using llvm::isa;
-        using llvm::dyn_cast;
+    Type::Ptr castNoRecurse(llvm::Type* type, DIType meta) {
+        if(type->isStructTy()) {
+            using std::placeholders::_1;
 
-        if(isa<type::Integer>(type)) return "Integer";
-        if(isa<type::Float>(type)) return "Float";
-        if(isa<type::Bool>(type)) return "Bool";
-        if(isa<type::UnknownType>(type)) return "Unknown";
-        if(auto* Ptr = dyn_cast<type::Pointer>(&type)) return toString(*Ptr->getPointed()) + "*";
-        if(auto* Err = dyn_cast<type::TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
-        if(auto* Arr = dyn_cast<type::Array>(&type)) {
-            std::string ret = toString(*Arr->getElement()) + "[";
-            for(const auto& size : Arr->getSize()) {
-                ret += util::toString(size);
+            meta = stripAliases(meta);
+
+            DIStructType str = meta;
+            ASSERTC(!!str);
+
+            auto members = str.getMembers();
+
+            ASSERTC(members.getNumElements() == type->getStructNumElements());
+
+            using Members = decltype(members);
+            type::RecordBody body;
+
+            auto ix = 0U;
+            for(auto mem :
+                util::view(type->subtype_begin(), type->subtype_end())
+              ^ util::range(0U, members.getNumElements()).map(std::bind(&Members::getElement, members, _1))) {
+                body.push_back(type::RecordField{ cast(mem.first), std::vector<std::string>{ mem.second.getName() }, ix++});
             }
-            ret += "]";
-            return std::move(ret);
-        }
-        if(auto* Rec = dyn_cast<type::Record>(&type)) {
-            std::string ret = Rec->getName() + "{";
-            ret += "}";
-            return std::move(ret);
-        }
 
-        BYE_BYE(std::string, "Unknown type");
+            return getRecord(type->getStructName(), body);
+        }
+        return cast(type, meta.isUnsignedDIType() ? llvm::Signedness::Unsigned : llvm::Signedness::Signed );
+    }
+
+    Type::Ptr cast(llvm::Type* type, DIType meta) {
+        auto expandedTypes = flattenTypeTree(std::make_pair(type, meta));
+        for(const auto& expanded : expandedTypes) {
+            castNoRecurse(expanded.first, expanded.second); // just for the side effects
+        }
+        return cast(type);
     }
 
     Type::Ptr merge(Type::Ptr one, Type::Ptr two) {

@@ -247,23 +247,16 @@ public:
 
     // FIXME: naming
     Term::Ptr getNaiveGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
-        Type::Ptr tp = base->getType();
-        for (const auto& _ : shifts) {
-            util::use(_);
-            if (auto ptr = llvm::dyn_cast<type::Pointer>(tp)) {
-                tp = ptr->getPointed();
-            } else tp = TyF->getTypeError("Incorrect type dereference");
-        }
+        auto daPointerType = llvm::dyn_cast<type::Pointer>(base->getType());
+        ASSERT(!!daPointerType, "getNaiveGepTerm: argument not a pointer");
 
-        auto one = getIntTerm(1);
+        Type::Ptr tp = GepTerm::getGepChild(daPointerType->getPointed(), shifts);
 
         return Term::Ptr{
             new GepTerm{
-                tp,
+                TyF->getPointer(tp),
                 base,
-                util::viewContainer(shifts).map([&one](Term::Ptr elem){
-                    return std::make_pair(elem, one);
-                }).toVector()
+                shifts
             }
         };
     }
@@ -275,58 +268,15 @@ public:
         using borealis::util::take;
         using borealis::util::view;
 
-        llvm::Type* baseType = base->getType();
-
-        llvm::Type* type = baseType;
-        ValueVector typeIdxs;
-        typeIdxs.reserve(idxs.size());
-
-        std::vector< std::pair<Term::Ptr, Term::Ptr> > shifts;
-        shifts.reserve(idxs.size());
-
-        for (auto* idx : idxs) {
-            ASSERT(type, "Incorrect GEP type indices");
-
-            if (auto* structType = dyn_cast<llvm::StructType>(type)) {
-                if (auto* cInt = dyn_cast<ConstantInt>(idx)) {
-                    auto cIdx = cInt->getLimitedValue();
-
-                    auto res = 0ULL;
-                    for (auto* structElem :
-                            take(cIdx, view(structType->element_begin(), structType->element_end()))) {
-                        res += getTypeSizeInElems(structElem);
-                    }
-
-                    Term::Ptr by = getIntTerm(res);
-                    Term::Ptr size = getIntTerm(1);
-                    shifts.push_back({by, size});
-
-                } else {
-                    BYE_BYE(Term::Ptr, "Non-constant index in struct GEP");
-                }
-
-            } else if (auto* arrayType = dyn_cast<llvm::ArrayType>(type)) {
-                Term::Ptr by = getValueTerm(idx);
-                Term::Ptr size = getIntTerm(getTypeSizeInElems(arrayType->getArrayElementType()));
-                shifts.push_back({by, size});
-
-            } else {
-                Term::Ptr by = getValueTerm(idx);
-                Term::Ptr size = getIntTerm(getTypeSizeInElems(type));
-                shifts.push_back({by, size});
-            }
-
-            typeIdxs.push_back(idx);
-            type = GetElementPtrInst::getIndexedType(baseType, typeIdxs);
-        }
-
-        type = GetElementPtrInst::getGEPReturnType(base, idxs);
+        auto type = GetElementPtrInst::getGEPReturnType(base, idxs);
 
         return Term::Ptr{
             new GepTerm(
                 TyF->cast(type),
                 getValueTerm(base),
-                shifts
+                util::viewContainer(idxs)
+                   .map([this](llvm::Value* idx){ return getValueTerm(idx); })
+                   .toVector()
             )
         };
     }
@@ -384,6 +334,17 @@ public:
                 TyF->getUnknownType(),
                 lhv,
                 rhv
+            )
+        };
+    }
+
+    Term::Ptr getOpaqueMemberAccessTerm(Term::Ptr lhv, const std::string& property, bool isIndirect = false) {
+        return Term::Ptr{
+            new OpaqueMemberAccessTerm(
+                TyF->getUnknownType(),
+                lhv,
+                property,
+                isIndirect
             )
         };
     }

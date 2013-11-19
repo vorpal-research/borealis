@@ -26,6 +26,7 @@
 #include "Protobuf/Gen/Term/OpaqueCallTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueFloatingConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIndexingTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueMemberAccessTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueInvalidPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
@@ -220,10 +221,7 @@ struct protobuf_traits_impl<GepTerm> {
 
         for (const auto& shift : t.getShifts()) {
             res->mutable_by()->AddAllocated(
-                TermConverter::toProtobuf(*shift.first).release()
-            );
-            res->mutable_size()->AddAllocated(
-                TermConverter::toProtobuf(*shift.second).release()
+                TermConverter::toProtobuf(*shift).release()
             );
         }
 
@@ -238,15 +236,11 @@ struct protobuf_traits_impl<GepTerm> {
 
         auto base = TermConverter::fromProtobuf(fn, t.base());
 
-        ASSERT(t.by_size() == t.size_size(),
-               "Mismatching sizes for GepTerm::by and GepTerm::size");
-
         GepTerm::Shifts shifts;
         shifts.reserve(t.by_size());
         for (int i = 0; i < t.by_size(); ++i) {
             auto by = TermConverter::fromProtobuf(fn, t.by(i));
-            auto size = TermConverter::fromProtobuf(fn, t.size(i));
-            shifts.push_back({by, size});
+            shifts.push_back(by);
         }
 
         return Term::Ptr{ new GepTerm(type, base, shifts) };
@@ -382,6 +376,31 @@ struct protobuf_traits_impl<OpaqueIndexingTerm> {
         auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
         auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
         return Term::Ptr{ new OpaqueIndexingTerm(type, lhv, rhv) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<OpaqueMemberAccessTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::OpaqueMemberAccessTerm> toProtobuf(const OpaqueMemberAccessTerm& t) {
+        auto res = util::uniq(new proto::OpaqueMemberAccessTerm());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(*t.getLhv()).release()
+        );
+        res->set_property(t.getProperty());
+        res->set_isindirect(t.getIsIndirect());
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Type::Ptr type,
+            const std::string&,
+            const proto::OpaqueMemberAccessTerm& t) {
+        auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
+        return Term::Ptr{ new OpaqueMemberAccessTerm(type, lhv, t.property(), t.isindirect()) };
     }
 };
 

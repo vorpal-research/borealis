@@ -32,13 +32,11 @@ using borealis::util::just;
 static VarInfo mkVI(const clang::FileManager&, const llvm::DISubprogram& node,
         clang::Decl* ast = nullptr, bool allocated = false) {
 
-    DIType nodeType(node.getType().getTypeArray().getElement(0));
-
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        meta2sign(DIType(node.getType().getTypeArray().getElement(0))),
+        DIType(node.getType().getTypeArray().getElement(0)),
         ast
     };
     return ret;
@@ -50,7 +48,7 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIGlobalVariable& nod
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        meta2sign(node.getType()),
+        node.getType(),
         ast
     };
     return ret;
@@ -62,7 +60,7 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        meta2sign(node.getType()),
+        node.getType(),
         ast
     };
     return ret;

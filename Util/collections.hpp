@@ -80,6 +80,11 @@ public:
         return CollectionView{ begin_, nend };
     }
 
+    template<class OtherIter>
+    CollectionView<zipping_iterator<ContainerIter, OtherIter>> operator^ (const CollectionView<OtherIter>& that) const {
+        return view(zip(begin(), that.begin()), zip(end(), that.end()));
+    }
+
     template<class Con>
     Con to() {
         return Con(this->begin(), this->end());
@@ -98,6 +103,8 @@ public:
     std::set<value_type> toSet() {
         return to<std::set<value_type>>();
     }
+
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -64,9 +64,10 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-llvm::StringRef getRawSource(const clang::FileManager&, const LocusRange&) {
+std::string getRawSource(const clang::FileManager&, const LocusRange& lc) {
     // FIXME: You know what to do...
-    return llvm::StringRef{};
+
+    return std::string{};
 }
 
 unsigned long long getTypeSizeInElems(llvm::Type* type) {
@@ -102,6 +103,70 @@ util::option<std::string> getAsCompileTimeString(llvm::Value* value) {
     }
 
     return util::nothing();
+}
+
+std::set<DIType>& flattenTypeTree(DIType di, std::set<DIType>& collected) {
+    if(collected.count(di)) return collected;
+    collected.insert(di);
+
+    if(DICompositeType struct_ = di) {
+        auto members = struct_.getTypeArray();
+        for(size_t i = 0U; i < members.getNumElements(); ++i) {
+            auto mem = members.getElement(i);
+            flattenTypeTree(mem, collected);
+        }
+    } else if(DIDerivedType derived = di) {
+        flattenTypeTree(derived.getTypeDerivedFrom(), collected);
+    }
+
+    return collected;
+}
+
+std::set<DIType> flattenTypeTree(DIType di) {
+    std::set<DIType> collected;
+    flattenTypeTree(di, collected);
+    return std::move(collected);
+}
+
+DIType stripAliases(DIType tp) {
+    if(DIAlias alias = tp) {
+        return stripAliases(alias.getOriginal());
+    } else return tp;
+}
+
+#include "Util/macros.h"
+std::map<llvm::Type*, DIType>& flattenTypeTree(
+    const std::pair<llvm::Type*, DIType>& tp,
+    std::map<llvm::Type*, DIType>& collected) {
+
+    std::cerr << "getting " << tp.second.getName() << std::endl;
+
+    if(collected.count(tp.first)) return collected;
+    collected.insert(tp);
+
+    if(DIAlias alias_ = tp.second) {
+        flattenTypeTree(std::make_pair(tp.first, alias_.getOriginal()), collected);
+    } else if(DICompositeType mstruct_ = tp.second) {
+        auto mmembers = mstruct_.getTypeArray();
+        ASSERTC(mmembers.getNumElements() == tp.first->getNumContainedTypes());
+
+        for(size_t i = 0U; i < mmembers.getNumElements(); ++i) {
+            auto mmem = mmembers.getElement(i);
+            auto mem = tp.first->getContainedType(i);
+            flattenTypeTree(std::make_pair(mem, mmem), collected);
+        }
+    } else if(DIDerivedType derived = tp.second) {
+        flattenTypeTree(std::make_pair(tp.first->getContainedType(0), derived.getTypeDerivedFrom()), collected);
+    }
+
+    return collected;
+}
+#include "Util/unmacros.h"
+
+std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DIType>& tp) {
+    std::map<llvm::Type*, DIType> collected;
+    flattenTypeTree(tp, collected);
+    return std::move(collected);
 }
 
 } // namespace borealis

@@ -157,6 +157,16 @@ public:
             }
 
             term = tf->getOpaqueCallTerm(lhvtc.term, args);
+        } else if( op == bin_opcode::OPCODE_PROPERTY) {
+            ASSERTC(llvm::isa<OpaqueVarTerm>(rhvtc.term));
+
+            auto prop = llvm::dyn_cast<OpaqueVarTerm>(rhvtc.term);
+            term = tf->getOpaqueMemberAccessTerm(lhvtc.term, prop->getVName());
+        } else if( op == bin_opcode::OPCODE_INDIR_PROPERTY) {
+            ASSERTC(llvm::isa<OpaqueVarTerm>(rhvtc.term));
+
+            auto prop = llvm::dyn_cast<OpaqueVarTerm>(rhvtc.term);
+            term = tf->getOpaqueMemberAccessTerm(lhvtc.term, prop->getVName(), true);
         } else {
             term = tf->getBinaryTerm(convertAT(op), lhvtc.term, rhvtc.term );
         }

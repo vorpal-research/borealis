@@ -24,7 +24,7 @@ int main(Addr *addr, Buffer *buf)
    return f1(addr, buf);
 }
 
-// @requires addr != 0
+// @requires addr != \nullptr
 int f1(Addr *addr, Buffer *buf) 
 {
   int i;

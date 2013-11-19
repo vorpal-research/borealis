@@ -8,6 +8,8 @@
 #ifndef METAINFOTRACKERPASS_H_
 #define METAINFOTRACKERPASS_H_
 
+#include <unordered_map>
+
 #include <llvm/Pass.h>
 
 #include "Codegen/VarInfoContainer.h"
@@ -32,7 +34,7 @@ public:
 
     struct ValueDescriptor {
         llvm::Value* val;
-        llvm::Signedness signedness;
+        borealis::DIType type;
         bool shouldBeDereferenced;
 
         bool isInvalid() {
@@ -40,7 +42,6 @@ public:
         }
     };
     using ValueDescriptors = std::vector<ValueDescriptor>;
-
     llvm::LLVMContext& getLLVMContext() const { return *ctx; }
 
 private:
@@ -56,25 +57,25 @@ private:
 
         // fnd :: (Locus, llvm::Value*)
         auto fnd = std::find_if(begin, end, f);
-        if (fnd == end) return ValueDescriptor{ nullptr, llvm::Signedness::Unknown, false };
+        if (fnd == end) return ValueDescriptor{ nullptr, DIType{}, false };
 
         Value* foundValue = fnd->second;
         const Locus& foundLocus = *fnd->first;
 
-        llvm::Signedness sign = llvm::Signedness::Unknown;
+        DIType type;
         bool deref = false;
 
         // vars :: llvm::Value* -> (llvm::Value*, VarInfo)
         for (auto& pr : view(vars.get(foundValue))) {
             const VarInfo& varInfo = pr.second;
             if (varInfo.originalLocus == foundLocus) {
-                sign = varInfo.signedness;
+                type = varInfo.type;
                 deref = (varInfo.treatment == VarInfo::Allocated);
                 break;
             }
         }
 
-        return ValueDescriptor{ foundValue, sign, deref };
+        return ValueDescriptor{ foundValue, type, deref };
     }
 
     template<class Iter>
@@ -109,7 +110,7 @@ private:
                         varInfo.originalName == foundName) {
                         return ValueDescriptor{
                             foundValue,
-                            varInfo.signedness,
+                            varInfo.type,
                             (varInfo.treatment == VarInfo::Allocated)
                         };
                     }
@@ -117,7 +118,7 @@ private:
             }
         }
 
-        return ValueDescriptor{ nullptr, llvm::Signedness::Unknown, false };
+        return ValueDescriptor{ nullptr, DIType{}, false };
     }
 
     static bool isFunc(VarInfoContainer::loc_value_iterator::reference pr) {
@@ -148,7 +149,7 @@ public:
             [](const std::pair<llvm::Value*, VarInfo>& e) {
                 return ValueDescriptor {
                     e.first,
-                    e.second.signedness,
+                    e.second.type,
                     e.second.treatment == VarInfo::Allocated
                 };
             }
