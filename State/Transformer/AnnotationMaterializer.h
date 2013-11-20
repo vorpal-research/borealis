@@ -153,9 +153,6 @@ public:
     Term::Ptr transformIndirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
         auto arg = trm->getLhv();
 
-        std::cerr << trm->getName() << std::endl;
-        std::cerr << arg->getType() << std::endl;
-
         auto daPointer = llvm::dyn_cast<type::Pointer>(arg->getType());
         if(!daPointer) failWith(
             "Cannot access member " +
@@ -176,8 +173,6 @@ public:
             trm->getProperty() +
             ": no such member defined or structure not available"
         );
-
-        std::cerr << field.getUnsafe().getIndex() << std::endl;
 
         return factory().getLoadTerm(
             factory().getNaiveGepTerm(

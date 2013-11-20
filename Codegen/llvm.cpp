@@ -139,8 +139,6 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
     const std::pair<llvm::Type*, DIType>& tp,
     std::map<llvm::Type*, DIType>& collected) {
 
-    std::cerr << "getting " << tp.second.getName() << std::endl;
-
     if(collected.count(tp.first)) return collected;
     collected.insert(tp);
 
