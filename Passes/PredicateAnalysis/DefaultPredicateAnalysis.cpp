@@ -157,7 +157,9 @@ public:
         ASSERTC(isa<ConstantInt>(arraySize));
 
         auto numElems = cast<ConstantInt>(arraySize)->getLimitedValue();
-        auto elemSize = pass->FN.Type->getElemSize(allocatedType);
+        auto elemSize = pass->FN.Type->getTypeSizeInElems(
+            pass->FN.Type->cast(allocatedType)
+        );
 
         auto size = numElems * elemSize;
 

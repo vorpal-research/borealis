@@ -49,9 +49,12 @@ public:
     bool getIsIndirect() const { return isIndirect; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _lhv = tr->transform(lhv);
-        return new Self{ getType(), _lhv, property, isIndirect };
+        TERM_ON_CHANGED(
+            lhv != _lhv,
+            new Self( type, _lhv, property, isIndirect )
+        );
     }
 
     virtual bool equals(const Term* other) const override {

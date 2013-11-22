@@ -35,7 +35,9 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
         auto* ini = gv.getInitializer();
 
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
-            auto numElements = FN.Type->getElemSize(cds->getType());
+            auto numElements = FN.Type->getTypeSizeInElems(
+                FN.Type->cast(cds->getType())
+            );
 
             auto data = util::range(0ULL, numElements)
                 .map([&cds](unsigned i) { return cds->getElementAsConstant(i); })
@@ -44,7 +46,9 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* caz = dyn_cast<ConstantAggregateZero>(ini)) {
-            auto numElements = FN.Type->getElemSize(caz->getType());
+            auto numElements = FN.Type->getTypeSizeInElems(
+                FN.Type->cast(caz->getType())
+            );
 
             auto data = util::range(0ULL, numElements)
                 .map([&FN](unsigned) { return FN.Term->getIntTerm(0); })
@@ -52,7 +56,9 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {
-            auto numElements = FN.Type->getElemSize(c->getType());
+            auto numElements = FN.Type->getTypeSizeInElems(
+                FN.Type->cast(c->getType())
+            );
 
             auto data = util::viewContainer(getAsSeqData(c))
                 .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })

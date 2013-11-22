@@ -108,7 +108,7 @@ public:
                             llvm::ConditionType::UGE,
                             FN.Term->getBoundTerm(val),
                             FN.Term->getOpaqueConstantTerm(
-                                (long long)FN.Type->getElemSize(pointed) // FIXME: How should we store Integers?
+                                (long long)FN.Type->getTypeSizeInElems(pointed) // FIXME: How should we store Integers?
                         )
                     )
                     )();

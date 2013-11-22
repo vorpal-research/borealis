@@ -61,7 +61,7 @@ public:
         auto _base = tr->transform(base);
         auto _shifts = util::viewContainer(shifts).map(
             [&tr](const Shift& shift) { return tr->transform(shift); }
-        );
+        ).toVector();
         auto _type = type;
         TERM_ON_CHANGED(
             base != _base || shifts != _shifts,

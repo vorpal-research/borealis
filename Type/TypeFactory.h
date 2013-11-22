@@ -8,13 +8,15 @@
 #ifndef TYPEFACTORY_H_
 #define TYPEFACTORY_H_
 
+#include "Codegen/llvm.h"
 #include "Type/Type.h"
 #include "Type/Type.def"
 #include "Type/TypeVisitor.hpp"
 #include "Type/RecordBody.h"
 #include "Util/cast.hpp"
 #include "Util/util.h"
-#include "Codegen/llvm.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -106,7 +108,6 @@ public:
         }
     }
 
-#include "Util/macros.h"
     Type::Ptr getRecord(const std::string& name, const type::RecordBody& body) const {
         Type::Ptr ret = getRecord(name);
 
@@ -114,7 +115,6 @@ public:
         (*recordBodies)[name] = body;
         return ret;
     }
-#include "Util/unmacros.h"
 
     type::RecordRegistry::Ptr getRecordRegistry() const {
         return recordBodies;
@@ -147,7 +147,6 @@ public:
         else if (type->isArrayTy())
             return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
         else if (type->isStructTy()) {
-#include "Util/macros.h"
             auto str = llvm::dyn_cast<llvm::StructType>(type);
             // FIXME: this is fucked up, literal (unnamed) structs are uniqued
             //        as structural types (they are rare though)
@@ -170,12 +169,11 @@ public:
                 }
                 return body.empty() ? getRecord(name) : getRecord(name, body);
             }
-#include "Util/unmacros.h"
         }
         else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
         else
-            return getTypeError("Unsupported llvm type: " + toString(*type));
+            return getTypeError("Unsupported llvm type: " + util::toString(*type));
     }
 
     Type::Ptr castNoRecurse(llvm::Type* type, DIType meta) {
@@ -214,7 +212,6 @@ public:
         return cast(type);
     }
 
-#include "Util/macros.h"
     std::string toString(const Type& type) {
         using llvm::isa;
         using llvm::dyn_cast;
@@ -240,6 +237,10 @@ public:
         }
 
         BYE_BYE(std::string, "Unknown type");
+    }
+
+    static unsigned long long getTypeSizeInElems(Type::Ptr type) {
+        return TypeSizer().visit(type);
     }
 
     static Type::Ptr getGepChild(Type::Ptr parent, unsigned index) {
@@ -289,12 +290,13 @@ public:
             toString(*two)
         );
     }
-#include "Util/unmacros.h"
 
 };
 
 std::ostream& operator<<(std::ostream& ost, Type::Ptr tp);
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* TYPEFACTORY_H_ */

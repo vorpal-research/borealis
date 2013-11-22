@@ -221,11 +221,8 @@ struct protobuf_traits_impl<GepTerm> {
         );
 
         for (const auto& shift : t.getShifts()) {
-            res->mutable_idx()->AddAllocated(
-                TermConverter::toProtobuf(*shift.first).release()
-            );
-            res->mutable_size()->AddAllocated(
-                TermConverter::toProtobuf(*shift.second).release()
+            res->mutable_by()->AddAllocated(
+                TermConverter::toProtobuf(*shift).release()
             );
         }
 
