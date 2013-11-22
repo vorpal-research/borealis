@@ -64,29 +64,9 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-std::string getRawSource(const clang::FileManager&, const LocusRange& lc) {
+llvm::StringRef getRawSource(const clang::FileManager&, const LocusRange&) {
     // FIXME: You know what to do...
-
-    return std::string{};
-}
-
-unsigned long long getTypeSizeInElems(llvm::Type* type) {
-    using namespace llvm;
-    using borealis::util::view;
-
-    auto res = 0ULL;
-
-    if (auto* structType = dyn_cast_or_null<StructType>(type)) {
-        for (auto* structElem : view(structType->element_begin(), structType->element_end())) {
-            res += getTypeSizeInElems(structElem);
-        }
-    } else if (auto* arrayType = dyn_cast_or_null<ArrayType>(type)) {
-        res += arrayType->getArrayNumElements() * getTypeSizeInElems(arrayType->getArrayElementType());
-    } else {
-        res = 1ULL;
-    }
-
-    return res;
+    return llvm::StringRef{};
 }
 
 util::option<std::string> getAsCompileTimeString(llvm::Value* value) {
@@ -103,6 +83,35 @@ util::option<std::string> getAsCompileTimeString(llvm::Value* value) {
     }
 
     return util::nothing();
+}
+
+std::list<llvm::Constant*> getAsSeqData(llvm::Constant* value) {
+    std::list<llvm::Constant*> res;
+
+    auto* type = value->getType();
+
+    if (type->isSingleValueType()) {
+        res.push_back(value);
+
+    } else if (auto* arrType = llvm::dyn_cast<llvm::ArrayType>(type)) {
+        auto nested = util::range(0UL, arrType->getArrayNumElements())
+            .map([&value](unsigned long i) { return value->getAggregateElement(i); })
+            .map([](llvm::Constant* c) { return getAsSeqData(c); })
+            .toList();
+        res = util::viewContainer(nested).flatten().toList();
+
+    } else if (auto* structType = llvm::dyn_cast<llvm::StructType>(type)) {
+        auto nested = util::range(0U, structType->getStructNumElements())
+            .map([&value](unsigned i) { return value->getAggregateElement(i); })
+            .map([](llvm::Constant* c) { return getAsSeqData(c); })
+            .toList();
+        res = util::viewContainer(nested).flatten().toList();
+
+#include "Util/macros.h"
+    } else BYE_BYE(decltype(res), "Unsupported constant-as-seq-data type: " + util::toString(type));
+#include "Util/unmacros.h"
+
+    return std::move(res);
 }
 
 std::set<DIType>& flattenTypeTree(DIType di, std::set<DIType>& collected) {

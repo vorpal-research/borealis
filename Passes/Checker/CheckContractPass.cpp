@@ -14,8 +14,11 @@
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
+#include "State/Transformer/ContractTransmogrifier.h"
+#include "State/Transformer/Simplifier.h"
 
 namespace borealis {
 
@@ -36,7 +39,47 @@ public:
         case function_type::ACTION_DEFECT:
             checkActionDefect(CI); break;
         default:
-            checkContract(CI); break;
+            checkContract(CI);
+            checkBonds(CI);
+            break;
+        }
+    }
+
+    void checkBonds(llvm::CallInst& CI) {
+        auto bonds = pass->FM->getBonds(CI.getCalledFunction());
+        if (bonds.empty()) return;
+
+        auto state = pass->PSA->getInstructionState(&CI);
+        if (!state) return;
+
+        for (auto& e : bonds) {
+            auto bond = e.second.first;
+            auto defect = e.second.second;
+
+            auto t = Simplifier(pass->FN) +
+                     ContractTransmogrifier(pass->FN) +
+                     CallSiteInitializer(CI, pass->FN);
+            auto instantiatedBond = bond->map(
+                [&t](Predicate::Ptr p) { return t.transform(p); }
+            );
+
+            dbgs() << "Checking: " << CI << endl;
+            dbgs() << "  Bond: " << endl << instantiatedBond << endl;
+
+            auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
+
+    #if defined USE_MATHSAT_SOLVER
+            MathSAT::ExprFactory ef;
+            MathSAT::Solver s(ef, fMemId);
+    #else
+            Z3::ExprFactory ef;
+            Z3::Solver s(ef, fMemId);
+    #endif
+
+            dbgs() << "  State: " << endl << state << endl;
+            if (s.isViolated(instantiatedBond, state)) {
+                pass->DM->addDefect(defect);
+            }
         }
     }
 

@@ -27,6 +27,7 @@ public:
         using llvm::isa;
         return isa<type::Integer>(type) ? Integer::bitsize :
                isa<type::Pointer>(type) ? Pointer::bitsize :
+               isa<type::Array>(type)   ? Pointer::bitsize : // FIXME: ???
                isa<type::Float>(type)   ? Real::bitsize :
                util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                        "Cannot acquire bitsize for type " + util::toString(type));

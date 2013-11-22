@@ -5,7 +5,8 @@ int foo(int x);
 int a[100];
 int b[200];
 
-// @requires x != 0
+// @requires \is_valid_ptr(x)
+// @requires \bound(x) > y && y >= 0
 void g(int* x, int y) {
    x[y] = 0;
 }

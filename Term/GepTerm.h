@@ -57,18 +57,16 @@ public:
     const Shifts& getShifts() const { return shifts; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
-        Shifts _shifts;
-        _shifts.reserve(shifts.size());
-        std::transform(shifts.begin(), shifts.end(), std::back_inserter(_shifts),
-            [&tr](const Shift& shift) {
-                return tr->transform(shift);
-            }
-        );
-
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _base = tr->transform(base);
+        auto _shifts = util::viewContainer(shifts).map(
+            [&tr](const Shift& shift) { return tr->transform(shift); }
+        );
         auto _type = type;
-        return new Self{ _type, _base, _shifts };
+        TERM_ON_CHANGED(
+            base != _base || shifts != _shifts,
+            new Self( _type, _base, _shifts )
+        );
     }
 
     virtual bool equals(const Term* other) const override {
@@ -142,7 +140,7 @@ struct SMTImpl<Impl, GepTerm> {
 
         Integer bound = ctx->getBound(p);
 
-        return ef.if_(ef.isInvalidPtrExpr(p) || (shift >= bound))
+        return ef.if_(ef.isInvalidPtrExpr(p) || UComparable(shift).uge(bound))
                  .then_(ef.getInvalidPtr())
                  .else_(
                      (p + shift).withAxiom(

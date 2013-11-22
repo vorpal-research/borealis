@@ -44,17 +44,14 @@ public:
     const Globals& getGlobals() const { return globals; }
 
     template<class SubClass>
-    const Self* accept(Transformer<SubClass>* t) const {
-        Globals transformedGlobals;
-        transformedGlobals.reserve(globals.size());
-        std::transform(globals.begin(), globals.end(), std::back_inserter(transformedGlobals),
+    Predicate::Ptr accept(Transformer<SubClass>* t) const {
+        auto _globals = util::viewContainer(globals).map(
             [&t](const Term::Ptr& e) { return t->transform(e); }
-        );
-
-        // XXX: Should be `Self{...}`, but clang++ crashes on that...
-        return new Self(
-            transformedGlobals,
-            type
+        ).toVector();
+        auto _type = type;
+        PREDICATE_ON_CHANGED(
+            globals != _globals,
+            new Self( _globals, _type )
         );
     }
 

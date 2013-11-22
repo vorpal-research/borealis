@@ -13,7 +13,7 @@
 
 namespace borealis {
 
-template<class Derived>
+template<class Derived, typename RetTy = void>
 class TypeVisitor {
 public:
     TypeVisitor() {}
@@ -21,8 +21,7 @@ public:
     Derived* self() { return static_cast<Derived*>(this); }
     const Derived* self() const { return static_cast<const Derived*>(this); }
 
-
-    void visit(Type::Ptr theType) {
+    RetTy visit(Type::Ptr theType) {
         if(false) {}
 #define HANDLE_TYPE(NAME, CLASS) \
         else if(auto resolved = llvm::dyn_cast<type::CLASS>(theType)) { \
@@ -30,11 +29,11 @@ public:
         }
 #include "Type/Type.def"
 #include "Util/macros.h"
-        BYE_BYE(void, "Unknown type in TypeVisitor");
+        BYE_BYE(RetTy, "Unknown type in TypeVisitor");
 #include "Util/unmacros.h"
     }
 
-    void visit(const Type& theType) {
+    RetTy visit(const Type& theType) {
         if(false) {}
 #define HANDLE_TYPE(NAME, CLASS) \
         else if(auto resolved = llvm::dyn_cast<type::CLASS>(&theType)) { \
@@ -42,14 +41,12 @@ public:
         }
 #include "Type/Type.def"
 #include "Util/macros.h"
-        BYE_BYE(void, "Unknown type in TypeVisitor");
+        BYE_BYE(RetTy, "Unknown type in TypeVisitor");
 #include "Util/unmacros.h"
     }
 
 #define HANDLE_TYPE(NAME, CLASS) \
-    void visit ## NAME (const type::CLASS&) { \
-    \
-    }
+    RetTy visit ## NAME (const type::CLASS&) { return (RetTy)0; }
 #include "Type/Type.def"
 
     ~TypeVisitor() {}
@@ -69,9 +66,7 @@ public:
     }
 #include "Type/Type.def"
 #define HANDLE_TYPE(NAME, CLASS) \
-    void postVisit ## NAME (const type::CLASS&) { \
-    \
-    }
+    void postVisit ## NAME (const type::CLASS&) {}
 #include "Type/Type.def"
 
 #define SIMPLE_VISIT(NAME, CLASS) \
@@ -79,7 +74,6 @@ public:
         if(!self() -> preVisit ## NAME (tp)) return; \
         self() -> postVisit ## NAME (tp); \
     }
-
     SIMPLE_VISIT(Bool, Bool);
     SIMPLE_VISIT(Integer, Integer);
     SIMPLE_VISIT(Float, Float);
@@ -88,12 +82,12 @@ public:
 #undef SIMPLE_VISIT
 
     void visitPointer(const type::Pointer& ptr) {
-        if(!self() -> preVisitPointer (ptr)) return;
+        if(!self() -> preVisitPointer(ptr)) return;
         self() -> visit(ptr.getPointed());
         self() -> postVisitPointer(ptr);
     }
     void visitArray(const type::Array& arr) {
-        if(!self() -> preVisitArray (arr)) return;
+        if(!self() -> preVisitArray(arr)) return;
         self() -> visit(arr.getElement());
         self() -> postVisitArray(arr);
     }
@@ -119,5 +113,39 @@ public:
     }
 };
 
+class TypeSizer : public TypeVisitor<TypeSizer, unsigned long long> {
+
+    using RetTy = unsigned long long;
+
+public:
+#define SIMPLE_VISIT(NAME, CLASS) \
+    RetTy visit ## NAME(const type::CLASS&) { \
+        return 1; \
+    }
+    SIMPLE_VISIT(Bool, Bool);
+    SIMPLE_VISIT(Integer, Integer);
+    SIMPLE_VISIT(Float, Float);
+    SIMPLE_VISIT(Pointer, Pointer);
+    SIMPLE_VISIT(UnknownType, UnknownType);
+    SIMPLE_VISIT(TypeError, TypeError);
+#undef SIMPLE_VISIT
+
+    RetTy visitArray(const type::Array& arr) {
+        auto res = self()->visit(arr.getElement());
+        for(const auto& size : arr.getSize()) {
+            res *= size;
+        }
+        return res;
+    }
+    RetTy visitRecord(const type::Record& rec) {
+        auto res = 0ULL;
+        for(const auto& fld : rec.getBody()->get()) {
+            res += self()->visit(fld.getType());
+        }
+        return res != 0 ? res : 1;
+    }
+};
+
 } /* namespace borealis */
+
 #endif /* TYPEVISITOR_HPP_ */

@@ -46,18 +46,16 @@ public:
     const std::vector<Term::Ptr> getCases() const { return cases; }
 
     template<class SubClass>
-    const Self* accept(Transformer<SubClass>* t) const {
-        std::vector<Term::Ptr> new_cases;
-        new_cases.reserve(cases.size());
-        std::transform(cases.begin(), cases.end(), std::back_inserter(new_cases),
+    Predicate::Ptr accept(Transformer<SubClass>* t) const {
+        auto _cond = t->transform(cond);
+        auto _cases = util::viewContainer(cases).map(
             [&t](const Term::Ptr& e) { return t->transform(e); }
+        ).toVector();
+        auto _type = type;
+        PREDICATE_ON_CHANGED(
+            cond != _cond || cases != _cases,
+            new Self( _cond, _cases, _type )
         );
-
-        return new Self{
-            t->transform(cond),
-            new_cases,
-            type
-        };
     }
 
     virtual bool equals(const Predicate* other) const override;

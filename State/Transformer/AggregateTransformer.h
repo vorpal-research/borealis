@@ -24,7 +24,8 @@ class AggregateTransformer : public borealis::Transformer<AggregateTransformer<F
 public:
 
     AggregateTransformer(First&& first, Rest&& rest) :
-        Base(first.FN),
+        Base(FactoryNest()), // XXX: Placeholder FactoryNest.
+                             //      Should not be used. Ever.
         first(std::forward<First>(first)),
         rest(std::forward<Rest>(rest)) {}
 

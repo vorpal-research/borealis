@@ -92,8 +92,9 @@ public:
     }
 
     Term::Ptr transformValueTerm(ValueTermPtr t) {
-        auto renamed = prefix + t->getName();
-        return t->withNewName(renamed);
+        if (t->isGlobal()) return t;
+
+        return t->withNewName(prefix + t->getName());
     }
 
 private:

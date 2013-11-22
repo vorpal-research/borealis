@@ -5,7 +5,7 @@ int foo(int x);
 int a[100];
 int b[200];
 
-// @requires x != 0
+// @requires \is_valid_ptr(x)
 void g(int* x, int y) {
    if (x == a)
       x[y] = 0;

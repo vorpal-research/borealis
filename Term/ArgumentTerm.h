@@ -61,8 +61,8 @@ public:
     ArgumentKind getKind() const { return kind; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>*) const -> const Self* {
-        return new Self( *this );
+    auto accept(Transformer<Sub>*) const -> Term::Ptr {
+        return this->shared_from_this();
     }
 
     virtual bool equals(const Term* other) const override {

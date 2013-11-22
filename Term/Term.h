@@ -8,6 +8,7 @@
 #ifndef TERM_H_
 #define TERM_H_
 
+#include <memory>
 #include <string>
 
 #include "SMT/SMTUtil.h"
@@ -18,6 +19,7 @@
 namespace borealis {
 
 template<class SubClass> class Transformer;
+template<class T> struct protobuf_traits;
 template<class T> struct protobuf_traits_impl;
 
 namespace proto { class Term; }
@@ -29,12 +31,13 @@ package borealis.proto;
 message Term {
     optional Type type = 1;
     optional string name = 2;
+    optional bool retypable = 3;
 
     extensions 16 to 64;
 }
 
 **/
-class Term : public ClassTag {
+class Term : public ClassTag, public std::enable_shared_from_this<Term> {
 
 public:
 
@@ -43,9 +46,11 @@ public:
 
 protected:
 
-    Term(id_t classTag, Type::Ptr type, const std::string& name) :
-        ClassTag(classTag), type(type), name(name) {};
+    Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable = true) :
+        ClassTag(classTag), type(type), name(name), retypable(retypable) {};
     Term(const Term&) = default;
+
+    friend struct protobuf_traits<Term>;
 
 public:
     virtual ~Term() {};
@@ -58,11 +63,16 @@ public:
         return name;
     }
 
+    bool isRetypable() const {
+        return retypable;
+    }
+
     virtual bool equals(const Term* other) const {
         if (other == nullptr) return false;
         return classTag == other->classTag &&
                 type == other->type &&
-                name == other->name;
+                name == other->name &&
+                retypable == other->retypable;
     }
 
     bool operator==(const Term& other) const {
@@ -71,7 +81,7 @@ public:
     }
 
     virtual size_t hashCode() const {
-        return util::hash::defaultHasher()(classTag, type, name);
+        return util::hash::defaultHasher()(classTag, type, name, retypable);
     }
 
     static bool classof(const Term*) {
@@ -82,6 +92,7 @@ protected:
 
     Type::Ptr type;
     std::string name;
+    bool retypable;
 
 };
 
@@ -116,5 +127,9 @@ public: \
     static bool classof(const Term* t) { \
         return t->getClassTag() == class_tag<Self>(); \
     }
+
+#define TERM_ON_CHANGED(COND, CTOR) \
+    if (COND) return Term::Ptr{ CTOR }; \
+    else return this->shared_from_this();
 
 #endif /* TERM_H_ */

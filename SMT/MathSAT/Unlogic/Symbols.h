@@ -9,6 +9,7 @@
 #define MATHSAT_SYMBOLS_H_
 
 #include <gmp.h>
+#include <regex>
 
 #include "Factory/Nest.h"
 #include "Logging/logger.hpp"
@@ -269,20 +270,37 @@ public:
         : AbstractSymbol(MSAT_TAG_UNKNOWN, expr.num_args(), expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
-        ASSERT("(initial)$$__memory__$$" == expr_.decl().name() && 1 == numArgs_,
-               "Only (initial)$$__memory__$$ UF is supported");
+        // FIXME: The blackest of black magics...
+
+        auto _ = expr_.decl().name(); // XXX: Do NOT remove this!
+        llvm::StringRef orig_name(_);
+
+        if ( ! (orig_name.startswith("(initial)") && numArgs_ == 1) ) {
+            BYE_BYE(Term::Ptr, "Only (initial)<...> UF is supported");
+        }
+
+        auto memory_name = orig_name.drop_front(9).str();
+
+        // FIXME: Fix this crap.
+        static const std::string memory_id = "$$__memory__$$";
+        static const std::string gep_bound_id = "$$__gep_bound__$$";
+
+        std::function<Term::Ptr(Term::Ptr)> ctor;
+
+        if (memory_name == memory_id) {
+            ctor = std::bind(&TermFactory::getUnlogicLoadTerm, FN.Term, std::placeholders::_1);
+        } else if (memory_name == gep_bound_id) {
+            ctor = std::bind(&TermFactory::getBoundTerm, FN.Term, std::placeholders::_1);
+        } else {
+            BYE_BYE(Term::Ptr, "Unknown memory: " + memory_name);
+        }
 
         if (args_[0]->isTerminal()) {
-            return FN.Term->getLoadTerm(
-                FN.Term->getValueTerm(
-                    FN.Type->getPointer(FN.Type->getInteger()),
-                    args_[0]->undoThat(FN)->getName()
-                )
-            );
+            return ctor(args_[0]->undoThat(FN));
         } else {
-            auto name = "(initial)$$__memory__$$(idx:" + util::toString(LoadSymbol::idx_++) + ")";
+            auto name = "(initial)" + memory_name + "(idx:" + util::toString(LoadSymbol::idx_++) + ")";
             auto idx = FN.Term->getValueTerm(
-                FN.Type->getPointer(FN.Type->getInteger()),
+                FN.Type->getInteger(),
                 name
             );
             auto axs = FN.Term->getCmpTerm(
@@ -291,9 +309,7 @@ public:
                 args_[0]->undoThat(FN)
             );
             return FN.Term->getAxiomTerm(
-                FN.Term->getLoadTerm(
-                    idx
-                ),
+                ctor(idx),
                 axs
             );
         }
@@ -308,6 +324,8 @@ public:
         : AbstractSymbol(MSAT_TAG_BV_EXTRACT, 1, expr) {}
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
+        // TODO: Extract can be used for purposes other than sign detection.
+        //       Need to account for that.
         return FN.Term->getSignTerm(
             args_[0]->undoThat(FN)
         );

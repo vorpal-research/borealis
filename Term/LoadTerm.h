@@ -30,11 +30,12 @@ class LoadTerm: public borealis::Term {
 
     Term::Ptr rhv;
 
-    LoadTerm(Type::Ptr type, Term::Ptr rhv):
+    LoadTerm(Type::Ptr type, Term::Ptr rhv, bool retypable = true):
         Term(
             class_tag(*this),
             type,
-            "*(" + rhv->getName() + ")"
+            "*(" + rhv->getName() + ")",
+            retypable
         ), rhv(rhv) {};
 
 public:
@@ -44,10 +45,13 @@ public:
     Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _rhv = tr->transform(rhv);
-        auto _type = getTermType(tr->FN.Type, _rhv);
-        return new Self{ _type, _rhv };
+        auto _type = retypable ? getTermType(tr->FN.Type, _rhv) : type;
+        TERM_ON_CHANGED(
+            rhv != _rhv,
+            new Self( _type, _rhv, retypable )
+        );
     }
 
     virtual bool equals(const Term* other) const override {

@@ -142,6 +142,27 @@ ConditionType forceUnsigned(ConditionType cond) {
     }
 }
 
+ConditionType makeNot(ConditionType cond) {
+    switch(cond) {
+    case ConditionType::EQ:    return ConditionType::NEQ;
+    case ConditionType::NEQ:   return ConditionType::EQ;
+
+    case ConditionType::GT:    return ConditionType::LE;
+    case ConditionType::GE:    return ConditionType::LT;
+    case ConditionType::LT:    return ConditionType::GE;
+    case ConditionType::LE:    return ConditionType::GT;
+
+    case ConditionType::UGT:   return ConditionType::ULE;
+    case ConditionType::UGE:   return ConditionType::ULT;
+    case ConditionType::ULT:   return ConditionType::UGE;
+    case ConditionType::ULE:   return ConditionType::UGT;
+
+    case ConditionType::TRUE:  return ConditionType::FALSE;
+    case ConditionType::FALSE: return ConditionType::TRUE;
+    default: BYE_BYE(ConditionType, "Unreachable!");
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops) {

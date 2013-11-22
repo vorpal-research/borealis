@@ -61,7 +61,7 @@ message Predicate {
 }
 
 **/
-class Predicate : public ClassTag {
+class Predicate : public ClassTag, public std::enable_shared_from_this<Predicate> {
 
 public:
 
@@ -154,5 +154,9 @@ public: \
     virtual Predicate* clone() const override { \
         return new Self{ *this }; \
     }
+
+#define PREDICATE_ON_CHANGED(COND, CTOR) \
+    if (COND) return Predicate::Ptr{ CTOR }; \
+    else return this->shared_from_this();
 
 #endif /* PREDICATE_H_ */

@@ -222,7 +222,7 @@ class flattened_iterator {
     RootIt current;
     RootIt end;
 
-    typedef decltype(std::begin(*current)) ChildIt;
+    typedef decltype(current->begin()) ChildIt;
 
     option<ChildIt> child;
 

@@ -514,6 +514,7 @@ public:
         Solver(env, Env::share(env, Config::Diversification())) {};
 
     std::vector<Expr> diversify(const std::vector<Expr>& diversifiers);
+    std::vector<Expr> diversify_unsafe(const std::vector<Expr>& diversifiers, unsigned int limit);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

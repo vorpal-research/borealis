@@ -44,10 +44,13 @@ public:
     Term::Ptr getRhv() const { return rhv; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _rhv = tr->transform(rhv);
         auto _type = getTermType(tr->FN.Type, _rhv);
-        return new Self{ _type, _rhv };
+        TERM_ON_CHANGED(
+            rhv != _rhv,
+            new Self( _type, _rhv )
+        );
     }
 
     virtual bool equals(const Term* other) const override {
@@ -64,7 +67,7 @@ public:
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
         auto type = rhv->getType();
 
-        if (!TyF->isValid(type) || TyF->isUnknown(type)) return type;
+        if (!TyF->isValid(type)) return type;
 
         if (llvm::isa<type::Integer>(type) || llvm::isa<type::Float>(type)) {
             return TyF->getInteger();

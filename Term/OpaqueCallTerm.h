@@ -50,13 +50,16 @@ public:
     const std::vector<Term::Ptr>& getRhv() const { return rhv; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _lhv = tr->transform(lhv);
         auto _rhv = util::viewContainer(rhv).map([tr](Term::Ptr arg){
             return tr->transform(arg);
         }).toVector();
         auto _type = tr->FN.Type->getUnknownType();
-        return new Self{ _type, _lhv, std::move(_rhv) };
+        TERM_ON_CHANGED(
+            lhv != _lhv || rhv != _rhv,
+            new Self( _type, _lhv, _rhv )
+        );
     }
 
     virtual bool equals(const Term* other) const override {

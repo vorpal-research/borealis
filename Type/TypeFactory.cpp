@@ -12,7 +12,8 @@ namespace borealis {
 TypeFactory::TypeFactory() : recordBodies{ new type::RecordRegistry{} } {}
 
 std::ostream& operator<<(std::ostream& ost, Type::Ptr tp) {
-    return ost << TypeFactory::get()->toString(*tp);
+    static TypeFactory::Ptr TyF{ TypeFactory::get() };
+    return ost << TyF->toString(*tp);
 }
 
 } /* namespace borealis */

@@ -156,14 +156,16 @@ public:
 
         ASSERTC(isa<ConstantInt>(arraySize));
 
-        unsigned long long numElems = cast<ConstantInt>(arraySize)->getZExtValue();
-        numElems = numElems * getTypeSizeInElems(allocatedType);
+        auto numElems = cast<ConstantInt>(arraySize)->getLimitedValue();
+        auto elemSize = pass->FN.Type->getElemSize(allocatedType);
 
-        ASSERTC(numElems > 0);
+        auto size = numElems * elemSize;
+
+        ASSERTC(size > 0);
 
         pass->PM[&I] = pass->FN.Predicate->getAllocaPredicate(
             pass->FN.Term->getValueTerm(lhv),
-            pass->FN.Term->getIntTerm(numElems)
+            pass->FN.Term->getIntTerm(size)
         );
     }
 

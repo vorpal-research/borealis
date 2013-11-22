@@ -36,6 +36,8 @@ struct MathSAT {
     typedef mathsat_::logic::BitVector<Pointer::bitsize> Real;
     // dynamic bit vector
     typedef mathsat_::logic::DynBitVectorExpr DynBV;
+    // unsigned comparable type
+    typedef mathsat_::logic::UComparableExpr UComparable;
     // dynamic logic type
     typedef mathsat_::logic::SomeExpr Dynamic;
 

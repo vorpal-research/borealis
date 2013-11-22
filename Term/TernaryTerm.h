@@ -50,12 +50,15 @@ public:
     Term::Ptr getFls() const { return fls; }
 
     template<class Sub>
-    auto accept(Transformer<Sub>* tr) const -> const Self* {
+    auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _cnd = tr->transform(cnd);
         auto _tru = tr->transform(tru);
         auto _fls = tr->transform(fls);
         auto _type = getTermType(tr->FN.Type, _cnd, _tru, _fls);
-        return new Self{ _type, _cnd, _tru, _fls };
+        TERM_ON_CHANGED(
+            cnd != _cnd || tru != _tru || fls != _fls,
+            new Self( _type, _cnd, _tru, _fls )
+        );
     }
 
     virtual bool equals(const Term* other) const override {

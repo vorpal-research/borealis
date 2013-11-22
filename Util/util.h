@@ -89,6 +89,8 @@ std::string conditionString(ConditionType cond);
 ConditionType forceSigned(ConditionType cond);
 ConditionType forceUnsigned(ConditionType cond);
 
+ConditionType makeNot(ConditionType cond);
+
 /** protobuf -> Util/ArithType.proto
 package borealis.proto;
 

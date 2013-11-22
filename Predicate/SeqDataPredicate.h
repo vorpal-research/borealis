@@ -8,6 +8,7 @@
 #ifndef SEQDATAPREDICATE_H_
 #define SEQDATAPREDICATE_H_
 
+#include "Config/config.h"
 #include "Predicate/Predicate.h"
 
 namespace borealis {
@@ -46,14 +47,16 @@ public:
     const std::vector<Term::Ptr>& getData() const { return data; }
 
     template<class SubClass>
-    const Self* accept(Transformer<SubClass>* t) const {
-        return new Self{
-            t->transform(base),
-            util::viewContainer(data)
-                .map([&t](const Term::Ptr& d) { return t->transform(d); })
-                .toVector(),
-            type
-        };
+    Predicate::Ptr accept(Transformer<SubClass>* t) const {
+        auto _base = t->transform(base);
+        auto _data = util::viewContainer(data).map(
+            [&t](const Term::Ptr& d) { return t->transform(d); }
+        ).toVector();
+        auto _type = type;
+        PREDICATE_ON_CHANGED(
+            base != _base || data != _data,
+            new Self( _base, _data, _type )
+        );
     }
 
     virtual bool equals(const Predicate* other) const override;
@@ -81,10 +84,13 @@ struct SMTImpl<Impl, SeqDataPredicate> {
         auto base = ctx->getGlobalPtr(p->getData().size());
         auto res = lp == base;
 
-        for (const auto& datum : p->getData()) {
-            auto d = SMT<Impl>::doit(datum, ef, ctx);
-            ctx->writeExprToMemory(base, d);
-            base = base + 1;
+        static config::ConfigEntry<bool> SkipStaticInit("analysis", "skip-static-init");
+        if ( ! SkipStaticInit.get(true)) {
+            for (const auto& datum : p->getData()) {
+                auto d = SMT<Impl>::doit(datum, ef, ctx);
+                ctx->writeExprToMemory(base, d);
+                base = base + 1;
+            }
         }
 
         return res;

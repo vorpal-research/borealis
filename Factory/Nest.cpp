@@ -8,6 +8,8 @@
 #include "Factory/Nest.h"
 #include "State/PredicateStateBuilder.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 FactoryNest::FactoryNest() {};
@@ -33,28 +35,30 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
         auto* ini = gv.getInitializer();
 
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
-            auto data = util::range(0U, cds->getNumElements())
+            auto numElements = FN.Type->getElemSize(cds->getType());
+
+            auto data = util::range(0ULL, numElements)
                 .map([&cds](unsigned i) { return cds->getElementAsConstant(i); })
                 .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* caz = dyn_cast<ConstantAggregateZero>(ini)) {
-            auto numElements = 1U;
-            if (auto* type = dyn_cast<StructType>(caz->getType())) {
-                numElements = type->getNumElements();
-            } else if (auto* type = dyn_cast<ArrayType>(caz->getType())) {
-                numElements = type->getNumElements();
-            } else if (auto* type = dyn_cast<VectorType>(caz->getType())) {
-                numElements = type->getNumElements();
-            }
+            auto numElements = FN.Type->getElemSize(caz->getType());
 
-            auto data = util::range(0U, numElements)
-                .map([&caz](unsigned i) { return caz->getElementValue(i); })
-                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+            auto data = util::range(0ULL, numElements)
+                .map([&FN](unsigned) { return FN.Term->getIntTerm(0); })
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
+        } else if (auto* c = dyn_cast<Constant>(ini)) {
+            auto numElements = FN.Type->getElemSize(c->getType());
+
+            auto data = util::viewContainer(getAsSeqData(c))
+                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+                .toVector();
+            ASSERTC(numElements == data.size());
+            return FN.Predicate->getSeqDataPredicate(base, data);
         }
     }
 
@@ -75,3 +79,5 @@ PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
 }
 
 } // namespace borealis
+
+#include "Util/unmacros.h"

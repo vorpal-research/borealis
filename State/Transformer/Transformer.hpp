@@ -18,7 +18,7 @@
 namespace borealis {
 
 #define DELEGATE(CLASS, WHAT) \
-    return static_cast<SubClass*>(this)->transform##CLASS(WHAT);
+    return static_cast<SubClass*>(this)->transform##CLASS(WHAT)
 
 template<class SubClass>
 class Transformer {
@@ -70,8 +70,8 @@ protected:
 #define HANDLE_PREDICATE(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Predicate::Ptr transform##NAME(CLASS##Ptr p) { \
-        CLASS##Ptr pp(p->accept(this)); \
-        DELEGATE(CLASS, *pp == *p ? p : pp); \
+        CLASS##Ptr pp = std::static_pointer_cast<const CLASS>(p->accept(this)); \
+        DELEGATE(CLASS, pp); \
     }
 #include "Predicate/Predicate.def"
 
@@ -114,8 +114,8 @@ protected:
 #define HANDLE_TERM(NAME, CLASS) \
     typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
     Term::Ptr transform##NAME(CLASS##Ptr t) { \
-        CLASS##Ptr tt(t->accept(this)); \
-        DELEGATE(CLASS, *tt == *t ? t : tt); \
+        CLASS##Ptr tt = std::static_pointer_cast<const CLASS>(t->accept(this)); \
+        DELEGATE(CLASS, tt); \
     }
 #include "Term/Term.def"
 

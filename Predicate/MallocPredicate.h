@@ -47,12 +47,14 @@ public:
     Term::Ptr getNumElems() const { return numElements; }
 
     template<class SubClass>
-    const Self* accept(Transformer<SubClass>* t) const {
-        return new Self{
-            t->transform(lhv),
-            t->transform(numElements),
-            type
-        };
+    Predicate::Ptr accept(Transformer<SubClass>* t) const {
+        auto _lhv = t->transform(lhv);
+        auto _numElements = t->transform(numElements);
+        auto _type = type;
+        PREDICATE_ON_CHANGED(
+            lhv != _lhv || numElements != _numElements,
+            new Self( _lhv, _numElements, _type )
+        );
     }
 
     virtual bool equals(const Predicate* other) const override;
