@@ -12,10 +12,10 @@ namespace borealis {
 TermBuilder::TermBuilder(
         TermFactory::Ptr TF,
         Term::Ptr term) :
-        TF(TF), Term(term) {};
+        TF(TF), term(term) {};
 
 Term::Ptr TermBuilder::operator()() const {
-    return Term;
+    return term;
 }
 
 TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term) {
@@ -26,7 +26,7 @@ TermBuilder operator&&(TermBuilder TB, Term::Ptr term) {
     TermBuilder res{TB};
     res.Term = res.TF->getBinaryTerm(
         llvm::ArithType::LAND,
-        res.Term,
+        res.term,
         term
     );
     return res;

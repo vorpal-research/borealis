@@ -17,7 +17,7 @@ class TermBuilder {
 private:
 
     TermFactory::Ptr TF;
-    Term::Ptr Term;
+    Term::Ptr term;
 
 public:
 
