@@ -24,7 +24,7 @@ TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term) {
 
 TermBuilder operator&&(TermBuilder TB, Term::Ptr term) {
     TermBuilder res{TB};
-    res.Term = res.TF->getBinaryTerm(
+    res.term = res.TF->getBinaryTerm(
         llvm::ArithType::LAND,
         res.term,
         term
