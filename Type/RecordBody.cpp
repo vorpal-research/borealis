@@ -6,4 +6,3 @@
  */
 
 #include "Type/RecordBody.h"
-

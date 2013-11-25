@@ -35,7 +35,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
         auto* ini = gv.getInitializer();
 
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
-            auto numElements = FN.Type->getTypeSizeInElems(
+            auto numElements = TypeUtils::getTypeSizeInElems(
                 FN.Type->cast(cds->getType())
             );
 
@@ -46,7 +46,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* caz = dyn_cast<ConstantAggregateZero>(ini)) {
-            auto numElements = FN.Type->getTypeSizeInElems(
+            auto numElements = TypeUtils::getTypeSizeInElems(
                 FN.Type->cast(caz->getType())
             );
 
@@ -56,7 +56,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {
-            auto numElements = FN.Type->getTypeSizeInElems(
+            auto numElements = TypeUtils::getTypeSizeInElems(
                 FN.Type->cast(c->getType())
             );
 

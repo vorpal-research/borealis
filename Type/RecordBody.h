@@ -10,7 +10,8 @@
 
 #include "Type/Type.h"
 #include "Util/util.h"
-#include "Util/option.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace type {
@@ -20,12 +21,11 @@ class RecordField {
     std::vector<std::string> ids;
     size_t index = 0U;
 public:
-#include "Util/macros.h"
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordField);
-#include "Util/unmacros.h"
-    RecordField(Type::Ptr type, size_t index) :
+
+    RecordField(Type::Ptr type, size_t index = 0U) :
         type{type}, ids{}, index{index} {};
-    RecordField(Type::Ptr type, const std::vector<std::string>& ids, size_t index) :
+    RecordField(Type::Ptr type, const std::vector<std::string>& ids, size_t index = 0U) :
         type{type}, ids{ids}, index{index} {};
 
     const Type::Ptr& getType() const noexcept { return type; }
@@ -43,24 +43,15 @@ class RecordBody {
     std::vector<RecordField> fields;
     std::unordered_map<std::string, size_t> naming;
 public:
-    RecordBody(const std::vector<RecordField>& fields): fields(fields) {
-        for(auto i = 0U; i < fields.size(); ++i) {
-            this->fields.at(i).setIndex(i);
-        }
-
-        for(auto i = 0U; i < fields.size(); ++i) {
-            for(const auto& name : fields.at(i).getIds()) {
-                naming[name] = i;
-            }
-        }
+    RecordBody(const std::vector<RecordField>& flds) : fields{} {
+        for(const auto& fld : flds) { push_back(fld); }
     }
 
-#include "Util/macros.h"
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordBody);
+
     auto begin() QUICK_CONST_RETURN(fields.begin());
     auto end() QUICK_CONST_RETURN(fields.end());
     auto empty() QUICK_CONST_RETURN(fields.empty());
-#include "Util/unmacros.h"
 
     void push_back(const RecordField& fld) {
         fields.push_back(fld);
@@ -72,10 +63,10 @@ public:
         }
     }
 
-    size_t getNumFields() const { return fields.size(); }
+    size_t getNumFields() const noexcept { return fields.size(); }
 
     util::option_ref<const RecordField> getFieldByName(const std::string& name) const {
-        for(auto index: util::at(naming, name)) return util::justRef(fields.at(index));
+        for(auto index : util::at(naming, name)) return util::justRef(fields.at(index));
         return util::nothing();
     }
 
@@ -86,7 +77,6 @@ public:
         return fields.at(ix);
     }
 
-    ~RecordBody(){}
 };
 
 class RecordRegistry {
@@ -94,13 +84,9 @@ public:
     using self = RecordRegistry;
     using Ptr = std::weak_ptr<self>;
     using StrongPtr = std::shared_ptr<self>;
-
 private:
     std::map<std::string, RecordBody> data;
 public:
-    util::option_ref<const RecordBody> operator[](const std::string& type) const {
-        return util::at(data, type);
-    }
 
     RecordBody& operator[](const std::string& type) {
         return data[type];
@@ -124,7 +110,7 @@ message RecordBodyRef {
     };
 
     message RecordBody {
-        required string id = 1;
+        optional string id = 1;
         repeated RecordField fields = 2;
     };
 
@@ -133,8 +119,6 @@ message RecordBodyRef {
 };
 
 **/
-#include "Util/macros.h"
-
 class RecordBodyRef {
 public:
     using self = RecordBodyRef;
@@ -144,19 +128,23 @@ private:
     std::string name;
 public:
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordBodyRef);
-    RecordBodyRef(RecordRegistry::Ptr registry, const std::string& name):
+
+    RecordBodyRef(RecordRegistry::Ptr registry, const std::string& name) :
         registry(registry), name(name) {};
 
     const RecordBody& get() const {
         auto registry = this->registry.lock();
-        return (*registry)[name];
+        auto res = registry->at(name);
+        ASSERTC(!res.empty());
+        return res.getUnsafe();
     }
 
-    RecordRegistry::Ptr getRegistry() const { return registry; }
+    RecordRegistry::Ptr getRegistry() const noexcept { return registry; }
 };
-
-#include "Util/unmacros.h"
 
 } /* namespace type */
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
+
 #endif /* RECORDBODY_H_ */

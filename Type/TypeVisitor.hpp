@@ -49,7 +49,6 @@ public:
     RetTy visit ## NAME (const type::CLASS&) { return (RetTy)0; }
 #include "Type/Type.def"
 
-    ~TypeVisitor() {}
 };
 
 template<class Derived>

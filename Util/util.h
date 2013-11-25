@@ -210,7 +210,7 @@ std::string& replace(const std::string& from, const std::string& to, std::string
 template<class Lambda>
 struct scope_guard {
     Lambda lam;
-    scope_guard(Lambda lam): lam{lam} {};
+    scope_guard(Lambda lam): lam(lam) {};
     ~scope_guard() { lam(); }
 };
 

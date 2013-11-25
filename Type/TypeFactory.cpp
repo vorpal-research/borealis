@@ -6,14 +6,14 @@
  */
 
 #include "Type/TypeFactory.h"
+#include "Type/TypeUtils.h"
 
 namespace borealis {
 
 TypeFactory::TypeFactory() : recordBodies{ new type::RecordRegistry{} } {}
 
-std::ostream& operator<<(std::ostream& ost, Type::Ptr tp) {
-    static TypeFactory::Ptr TyF{ TypeFactory::get() };
-    return ost << TyF->toString(*tp);
+std::ostream& operator<<(std::ostream& ost, const Type& tp) {
+    return ost << TypeUtils::toString(tp);
 }
 
 } /* namespace borealis */

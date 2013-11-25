@@ -94,10 +94,10 @@ public:
 
                     return (
                         FN.Term *
-                    FN.Term->getCmpTerm(
-                        llvm::ConditionType::NEQ,
-                        val,
-                        FN.Term->getNullPtrTerm()
+                        FN.Term->getCmpTerm(
+                            llvm::ConditionType::NEQ,
+                            val,
+                            FN.Term->getNullPtrTerm()
                         ) &&
                         FN.Term->getCmpTerm(
                             llvm::ConditionType::NEQ,
@@ -108,9 +108,9 @@ public:
                             llvm::ConditionType::UGE,
                             FN.Term->getBoundTerm(val),
                             FN.Term->getOpaqueConstantTerm(
-                                (long long)FN.Type->getTypeSizeInElems(pointed) // FIXME: How should we store Integers?
+                                (long long)TypeUtils::getTypeSizeInElems(pointed) // FIXME: How should we store Integers?
+                            )
                         )
-                    )
                     )();
 
                 } else failWith("Illegal is_valid_ptr access " + trm->getName() + ": called on non-pointer");

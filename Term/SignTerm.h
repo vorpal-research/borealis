@@ -67,12 +67,12 @@ public:
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
         auto type = rhv->getType();
 
-        if (!TyF->isValid(type)) return type;
+        if (TypeUtils::isInvalid(type)) return type;
 
         if (llvm::isa<type::Integer>(type) || llvm::isa<type::Float>(type)) {
             return TyF->getInteger();
         } else {
-            return TyF->getTypeError("Sign for non-numerical: " + TyF->toString(*type));
+            return TyF->getTypeError("Sign for non-numerical: " + util::toString(*type));
         }
     }
 

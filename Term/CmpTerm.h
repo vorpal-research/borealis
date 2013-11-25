@@ -77,7 +77,7 @@ public:
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr lhv, Term::Ptr rhv) {
         auto merged = TyF->merge(lhv->getType(), rhv->getType());
 
-        if (TyF->isValid(merged)) return TyF->getBool();
+        if (TypeUtils::isValid(merged)) return TyF->getBool();
         else return merged;
     }
 

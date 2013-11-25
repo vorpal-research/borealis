@@ -68,13 +68,13 @@ public:
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
         auto type = rhv->getType();
 
-        if (!TyF->isValid(type)) return type;
+        if (TypeUtils::isInvalid(type)) return type;
 
         if (auto* ptr = llvm::dyn_cast<type::Pointer>(type)) {
             return ptr->getPointed();
         } else {
             return TyF->getTypeError(
-                "Load from a non-pointer: " + TyF->toString(*type)
+                "Load from a non-pointer: " + util::toString(*type)
             );
         }
     }

@@ -57,7 +57,7 @@ void MallocMutator::eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI)
 
     auto* arraySize = getMallocArraySize(CI, &TD, true);
     auto* mallocType = getMallocBitcastType(CI);
-    auto elemSize = TyF->getTypeSizeInElems(
+    auto elemSize = TypeUtils::getTypeSizeInElems(
         TyF->cast(mallocType->getElementType())
     );
 
@@ -113,7 +113,7 @@ void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
 
     auto* arraySize = getMallocArraySize(CI, &TD, true);
     auto* mallocType = CI->getType();
-    auto elemSize = TyF->getTypeSizeInElems(
+    auto elemSize = TypeUtils::getTypeSizeInElems(
         TyF->cast(getMallocAllocatedType(CI))
     );
 

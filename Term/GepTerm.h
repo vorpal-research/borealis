@@ -89,7 +89,7 @@ public:
         auto intIndexTerm = llvm::dyn_cast<OpaqueIntConstantTerm>(index);
         auto realIndex = intIndexTerm ? intIndexTerm->getValue() : ~0LL;
 
-        return TypeFactory::getGepChild(parent, (unsigned)realIndex);
+        return TypeUtils::getGepChild(parent, (unsigned)realIndex);
     }
 
     static Type::Ptr getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& index) {
@@ -127,10 +127,10 @@ struct SMTImpl<Impl, GepTerm> {
             auto byIx = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
             auto ix = byIx? byIx->getValue() : ~0U;
 
-            if (iter != 0U) tp = TypeFactory::getGepChild(tp, ix);
+            if (iter != 0U) tp = TypeUtils::getGepChild(tp, ix);
             iter++;
 
-            auto size = TypeFactory::getTypeSizeInElems(tp);
+            auto size = TypeUtils::getTypeSizeInElems(tp);
 
             ASSERT(!by.empty(),
                    "Encountered a GEP term with incorrect shifts");
