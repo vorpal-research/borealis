@@ -67,7 +67,6 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
 }
 
 bool MetaInfoTracker::runOnModule(llvm::Module& M) {
-    using borealis::util::isValid;
     using borealis::util::takePtr;
     using borealis::util::view;
     using borealis::util::viewContainer;
@@ -91,7 +90,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                          .flatten()
                          .map(takePtr())
                          .map(llvm::dyn_caster<CallInst>())
-                         .filter(isValid())) {
+                         .filter()) {
         if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {
             DIGlobalVariable glob(call->getMetadata("var"));
             auto* garg = call->getArgOperand(0);

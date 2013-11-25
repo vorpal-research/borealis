@@ -9,6 +9,7 @@
 #define COLLECTIONS_HPP_
 
 #include <algorithm>
+#include <iterator>
 #include <list>
 #include <map>
 #include <set>
@@ -44,24 +45,33 @@ public:
     CollectionView(const CollectionView&) = default;
     CollectionView(CollectionView&&) = default;
     CollectionView(ContainerIter begin, ContainerIter end) : begin_(begin), end_(end) {}
-    CollectionView(std::pair<ContainerIter, ContainerIter> iters) : begin_(iters.first), end_(iters.second) {}
+    CollectionView(const std::pair<ContainerIter, ContainerIter>& iters) : begin_(iters.first), end_(iters.second) {}
 
     ContainerIter begin() const { return begin_; }
     ContainerIter end() const { return end_; }
     bool empty() const { return begin_ == end_; }
 
     CollectionView<flattened_iterator<ContainerIter>> flatten() const {
-        return CollectionView<flattened_iterator<ContainerIter>>{flat_iterator(begin_, end_), flat_iterator(end_)};
+        return view(
+            borealis::util::flat_iterator(begin_, end_),
+            borealis::util::flat_iterator(end_)
+        );
     }
 
     template<class Mapping>
     CollectionView<mapped_iterator<ContainerIter, Mapping>> map(Mapping mapping) const {
-        return CollectionView<mapped_iterator<ContainerIter, Mapping>>{borealis::util::map_iterator(begin_, mapping), borealis::util::map_iterator(end_, mapping)};
+        return view(
+            borealis::util::map_iterator(begin_, mapping),
+            borealis::util::map_iterator(end_, mapping)
+        );
     }
 
     template<class Pred>
     CollectionView<filtered_iterator<ContainerIter, Pred>> filter(Pred pred) const {
-        return CollectionView<filtered_iterator<ContainerIter, Pred>>{filter_iterator(begin_, end_, pred), filter_iterator(end_, pred)};
+        return view(
+            borealis::util::filter_iterator(begin_, end_, pred),
+            borealis::util::filter_iterator(end_, pred)
+        );
     }
 
     CollectionView<filtered_iterator<ContainerIter, defaultPredicate>> filter() const {
@@ -82,12 +92,15 @@ public:
 
     template<class OtherIter>
     CollectionView<zipping_iterator<ContainerIter, OtherIter>> operator^ (const CollectionView<OtherIter>& that) const {
-        return view(zip(begin(), that.begin()), zip(end(), that.end()));
+        return view(
+            zip(begin_, that.begin()),
+            zip(end_, that.end())
+        );
     }
 
     template<class Con>
     Con to() {
-        return Con(this->begin(), this->end());
+        return Con(begin_, end_);
     }
 
     typedef typename std::iterator_traits<ContainerIter>::value_type value_type;
@@ -104,17 +117,9 @@ public:
         return to<std::set<value_type>>();
     }
 
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-
-struct isValid {
-    template<class T>
-    bool operator()(const T& val) const {
-        return val ? true : false;
-    }
-};
 
 struct deref {
     template<class T>
@@ -152,13 +157,14 @@ inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
 }
 
 template<class Iter>
-inline auto view(const std::pair<Iter,Iter>& is) -> CollectionView<Iter> {
+inline auto view(const std::pair<Iter, Iter>& is) -> CollectionView<Iter> {
     return CollectionView<Iter>(is);
 }
 
+
 template<class Container>
 inline auto viewContainer(const Container& con) -> CollectionView<decltype(std::begin(con))> {
-    return CollectionView<decltype(std::begin(con))>{ std::begin(con), std::end(con) };
+    return view( std::begin(con), std::end(con) );
 }
 
 template<class Container>
@@ -168,7 +174,7 @@ inline auto viewContainer(const Container* con) -> decltype(viewContainer(*con))
 
 template<class Container>
 inline auto viewContainer(Container& con) -> CollectionView<decltype(std::begin(con))> {
-    return CollectionView<decltype(std::begin(con))>{ std::begin(con), std::end(con) };
+    return view( std::begin(con), std::end(con) );
 }
 
 template<class Container>
@@ -176,9 +182,10 @@ inline auto viewContainer(Container* con) -> decltype(viewContainer(*con)) {
     return viewContainer(*con);
 }
 
+
 template<class Container>
-inline auto reverse(Container& c) -> CollectionView<decltype(c.rbegin())> {
-    return view(c.rbegin(), c.rend());
+inline auto reverse(Container& con) -> CollectionView<decltype(con.rbegin())> {
+    return view( con.rbegin(), con.rend() );
 }
 
 template<class Container>
@@ -186,42 +193,43 @@ inline auto reverse(Container* c) -> decltype(reverse(*c)) {
     return reverse(*c);
 }
 
+
 template<class Container>
-inline auto tail(const Container& con) -> CollectionView<decltype(std::begin(con))> {
-    // FIXME: Does not work for std::initializer_list
-    // in which begin() is not assignable with std::next
-    return view(std::next(std::begin(con)), std::end(con));
+inline auto tail(const Container& con) -> decltype(viewContainer(con)) {
+    return viewContainer(con).drop(1);
 }
 
 template<class Container>
-inline auto tail(Container& con) -> CollectionView<decltype(std::begin(con))> {
-    // FIXME: Does not work for std::initializer_list
-    // in which begin() is not assignable with std::next
-    return view(std::next(std::begin(con)), std::end(con));
+inline auto tail(const Container* con) -> decltype(tail(*con)) {
+    return tail(*con);
 }
 
 template<class Container>
-inline auto take(unsigned int count, const Container& con) ->
-        CollectionView<decltype(std::begin(con))> {
-    auto begin = std::begin(con);
-    auto end = std::begin(con);
-    std::advance(end, count);
-    return view(begin, end);
+inline auto tail(Container& con) -> decltype(viewContainer(con)) {
+    return viewContainer(con).drop(1);
 }
 
 template<class Container>
-inline auto take(unsigned int count, Container& con) ->
-        CollectionView<decltype(std::begin(con))> {
-    auto begin = std::begin(con);
-    auto end = std::begin(con);
-    std::advance(end, count);
-    return view(begin, end);
+inline auto tail(Container* con) -> decltype(tail(*con)) {
+    return tail(*con);
 }
+
+
+template<class Container>
+inline auto take(unsigned int count, const Container& con) -> decltype(viewContainer(con)) {
+    return viewContainer(con).take(count);
+}
+
+template<class Container>
+inline auto take(unsigned int count, Container& con) -> decltype(viewContainer(con)) {
+    return viewContainer(con).take(count);
+}
+
 
 template<class Elem>
 inline auto range(const Elem& from, const Elem& to) ->
         CollectionView<counting_iterator<Elem>> {
-    return view<counting_iterator<Elem>>(
+    return view(
         counting_iterator<Elem>(from),
         counting_iterator<Elem>(to)
     );

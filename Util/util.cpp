@@ -252,7 +252,6 @@ Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
 }
 
 std::list<ReturnInst*> getAllRets(Function* F) {
-    using borealis::util::isValid;
     using borealis::util::takePtr;
     using borealis::util::viewContainer;
 
@@ -261,7 +260,7 @@ std::list<ReturnInst*> getAllRets(Function* F) {
     for (ReturnInst* RI : viewContainer(F).flatten()
                           .map(takePtr())
                           .map(dyn_caster<ReturnInst>())
-                          .filter(isValid())) {
+                          .filter()) {
         rets.insert(RI);
     }
 
