@@ -50,7 +50,7 @@ typedef hasher<3, 17> defaultHasher;
 namespace impl_ {
 
 inline static size_t hash_combiner(size_t left, size_t right) // replaceable
-{ return left^right; }
+{ return left ^ right; }
 
 template<int Index, class ...Types>
 struct tuple_hash_impl {
@@ -81,10 +81,11 @@ namespace std {
 
 template<class T>
 struct hash< std::vector<T> > {
+    std::hash<T> h;
     size_t operator()(const std::vector<T>& vec) const {
         size_t res = 3;
         for (const T& t : vec) {
-            res = 17 * res + std::hash<T>()(t);
+            res = 17 * res + h(t);
         }
         return res;
     }
@@ -92,10 +93,11 @@ struct hash< std::vector<T> > {
 
 template<class T>
 struct hash< const std::vector<T> > {
+    std::hash<T> h;
     size_t operator()(const std::vector<T>& vec) const {
         size_t res = 3;
         for (const T& t : vec) {
-            res = 17 * res + std::hash<T>()(t);
+            res = 17 * res + h(t);
         }
         return res;
     }
@@ -104,7 +106,8 @@ struct hash< const std::vector<T> > {
 template<class... Types>
 struct hash<std::tuple<Types...>> {
     size_t operator()(const std::tuple<Types...>& t) const {
-        const size_t begin = std::tuple_size<std::tuple<Types...>>::value-1;
+        // FIXME: Tuple may be empty => begin == -1 => BOOM!
+        const auto begin = std::tuple_size<std::tuple<Types...>>::value-1;
         return borealis::util::hash::impl_::tuple_hash_impl<begin, Types...>()(59, t);
     }
 };
