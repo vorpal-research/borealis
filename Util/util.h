@@ -32,11 +32,6 @@
 
 namespace llvm {
 
-// copy the standard ostream behavior with functions
-llvm::raw_ostream& operator<<(
-        llvm::raw_ostream& ost,
-        llvm::raw_ostream& (*op)(llvm::raw_ostream&));
-
 llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -219,12 +214,6 @@ struct scope_guard {
     ~scope_guard() { lam(); }
 };
 
-namespace streams {
-
-// copy the standard ostream endl
-llvm::raw_ostream& endl(llvm::raw_ostream& ost);
-
-} // namespace streams
 } // namespace util
 } // namespace borealis
 

@@ -43,16 +43,15 @@ public:
     explicit ref(T& v) : ptr(&v) {};
 
     ref& operator=(const ref& that) = default;
-    ref& operator=(T& v) {
+    ref& operator=(T& v) noexcept {
         ptr = &v;
         return *this;
     }
 
     const T& get() const { return *ptr; }
     T& get() { return *ptr; }
-    const T* getPtr() const { return ptr; }
-    T* getPtr() { return ptr; }
-
+    const T* getPtr() const noexcept { return ptr; }
+    T* getPtr() noexcept { return ptr; }
 
     operator T&() { return get(); }
 

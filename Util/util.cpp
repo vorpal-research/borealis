@@ -18,13 +18,6 @@
 
 namespace llvm {
 
-// copy the standard ostream behavior with functions
-llvm::raw_ostream& operator<<(
-        llvm::raw_ostream& ost,
-        llvm::raw_ostream& (*op)(llvm::raw_ostream&)) {
-    return op(ost);
-}
-
 llvm::raw_ostream& operator<<(llvm::raw_ostream& OS, const llvm::Type& T) {
     T.print(OS);
     return OS;
@@ -257,7 +250,8 @@ std::list<ReturnInst*> getAllRets(Function* F) {
 
     std::unordered_set<ReturnInst*> rets;
 
-    for (ReturnInst* RI : viewContainer(F).flatten()
+    for (ReturnInst* RI : viewContainer(F)
+                          .flatten()
                           .map(takePtr())
                           .map(dyn_caster<ReturnInst>())
                           .filter()) {
@@ -314,16 +308,6 @@ std::string& replace(const std::string& from, const std::string& to, std::string
     else return in.replace(pos, from.length(), to);
 }
 
-namespace streams {
-
-// copy the standard ostream endl
-llvm::raw_ostream& endl(llvm::raw_ostream& ost) {
-    ost << '\n';
-    ost.flush();
-    return ost;
-}
-
-} // namespace streams
 } // namespace util
 } // namespace borealis
 

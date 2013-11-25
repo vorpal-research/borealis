@@ -40,9 +40,9 @@ DefectInfo DefectManager::getDefect(const std::string& type, llvm::Instruction* 
     return {type, locs->getLocFor(where)};
 }
 
-void DefectManager::print(llvm::raw_ostream& O, const llvm::Module*) const {
+void DefectManager::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& defect : data) {
-        O << defect.type << " at " << defect.location << util::streams::endl;
+        infos() << defect.type << " at " << defect.location << endl;
     }
 }
 
