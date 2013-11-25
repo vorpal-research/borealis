@@ -13,8 +13,8 @@ namespace util {
 
 /*******************************************************************************
  *
- * smart ptr class similar to std::shared_ptr, but with value-based comparisons and hash
- * intended to be used in maps and unordered maps
+ * smart ptr class similar to std::shared_ptr, but with value-based comparisons
+ * and hashing intended to be used in maps and unordered maps
  *
  ******************************************************************************/
 template<class T>
@@ -28,7 +28,7 @@ public:
     T* get() { return inner.get(); }
     const T* get() const { return inner.get(); }
 
-    bool operator==(const key_holder_ptr& that) const { return *inner == *that.inner; }
+    bool operator==(const key_holder_ptr& that) const { return inner.get() == that.inner.get() || *inner == *that.inner; }
     bool operator<(const key_holder_ptr& that) const { return *inner < *that.inner; }
 
     T& operator*() { return *inner; }
@@ -62,7 +62,7 @@ namespace util {
 
 /*******************************************************************************
  *
- * ptr class adapter with value-based comparisons and hash
+ * ptr class adapter with value-based comparisons and hashing
  * intended to be used in maps and unordered maps
  *
  ******************************************************************************/

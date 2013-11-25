@@ -129,7 +129,7 @@ public:
 
     bool empty() const { return holder == nullptr; }
 
-    void swap(self& that) {
+    void swap(self& that) noexcept {
         holder.swap(that.holder);
     }
 
@@ -268,7 +268,7 @@ public:
 
     bool empty() const { return holder == nullptr; }
 
-    void swap(self& that) {
+    void swap(self& that) noexcept {
         std::swap(holder, that.holder);
     }
 
@@ -277,15 +277,8 @@ public:
         swap(temp);
         return *this;
     }
-    self& operator=(const self& that) {
-        self temp(that); // exception safety
-        swap(temp);
-        return *this;
-    }
-    self& operator=(self&& that) {
-        holder = std::move(that.holder);
-        return *this;
-    }
+    self& operator=(const self& that) = default;
+    self& operator=(self&& that) = default;
 
     void push_back(T& val) {
         operator=(option_ref(val));

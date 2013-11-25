@@ -12,9 +12,11 @@
 #include <list>
 #include <memory>
 
-#include "Util/sayonara.hpp"
 #include "Util/meta.hpp"
 #include "Util/option.hpp"
+#include "Util/sayonara.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace util {
@@ -69,10 +71,10 @@ public:
     inline const RootIt& getCurrent() const { return current; }
     inline const UnaryFunc& getFunc() const { return fn(); }
 
-    mapped_iterator() = default;
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(mapped_iterator);
+
     inline mapped_iterator(const RootIt& I, UnaryFunc F) :
             current(I), Fn(std::make_shared<UnaryFunc>(F)) {}
-    inline mapped_iterator(const mapped_iterator& It) = default;
 
     inline value_type operator*() const {    // All this work to do this
         return fn()(*current);               // little change
@@ -109,7 +111,8 @@ template<class _Iterator, class Func>
 inline mapped_iterator<_Iterator, Func>
 operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
           const mapped_iterator<_Iterator, Func>& X) {
-  return mapped_iterator<_Iterator, Func>(X.getCurrent() - N, X.getFunc());
+    // FIXME: Why `-` and not `+`???
+    return mapped_iterator<_Iterator, Func>(X.getCurrent() - N, X.getFunc());
 }
 
 // map_iterator - provides a convenient way to create mapped_iterators,
@@ -117,7 +120,7 @@ operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
 //
 template<class ItTy, class FuncTy>
 inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy& I, FuncTy F) {
-  return mapped_iterator<ItTy, FuncTy>(I, F);
+    return mapped_iterator<ItTy, FuncTy>{ I, F };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,17 +168,14 @@ public:
     typedef RootIt iterator_type;
     typedef glued_iterator self;
 
-    glued_iterator() = default;
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(glued_iterator);
+
     inline explicit glued_iterator(const Ranges& ranges) : rest(ranges) {
         validate();
     }
-
     inline explicit glued_iterator(Ranges&& ranges) : rest(std::move(ranges)) {
         validate();
     }
-
-    inline glued_iterator(const glued_iterator& It) = default;
-    inline glued_iterator(glued_iterator&& It) = default;
 
     inline reference operator*() const {
         return *current();
@@ -208,7 +208,7 @@ template<class ...It>
 glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It, It>&... pairs) {
     typedef util::head_of_row_q<It...> RealIt;
     typedef std::pair<RealIt, RealIt> pair_t;
-    return glued_iterator<RealIt>{std::list<pair_t>{pairs...}};
+    return glued_iterator<RealIt>{ std::list<pair_t>{pairs...} };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -222,15 +222,15 @@ class flattened_iterator {
     RootIt current;
     RootIt end;
 
-    typedef decltype(current->begin()) ChildIt;
+    typedef decltype(std::begin(*current)) ChildIt;
 
     option<ChildIt> child;
 
     void validate() {
-        while (current != end && child == current->end()) {
+        while (current != end && child == std::end(*current)) {
             ++current;
             if (current != end) {
-                child = just(current->begin());
+                child = just(std::begin(*current));
             }
         }
     }
@@ -255,21 +255,18 @@ public:
     inline ChildIt& getChild() { if (!child) throw 0; return child.getUnsafe(); }
     inline const ChildIt& getChild() const { if (!child) throw 0; return child.getUnsafe(); }
 
-    flattened_iterator() = default;
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(flattened_iterator);
 
     inline flattened_iterator(const RootIt& I, const RootIt& E)
-    : current(I), end(E), child(I != E ? just(I->begin()) : nothing()) {
+    : current(I), end(E), child(I != E ? just(std::begin(*I)) : nothing()) {
         validate();
     }
-
     inline explicit flattened_iterator(const std::pair<RootIt, RootIt>& P)
     : flattened_iterator(P.first, P.second) {}
 
-    inline flattened_iterator(const flattened_iterator& It) = default;
-
     inline reference operator*() const {
         if (!child) throw 0;
-        return **(child.get());
+        return *child.getUnsafe();
     }
 
     inline ChildIt operator->() const {
@@ -286,12 +283,12 @@ public:
         return *this;
     }
 
-    self operator++(int) { self tmp = *this; return self(++tmp); }
+    self operator++(int) { self tmp{ *this }; return self{ ++tmp }; }
 
     inline bool operator!=(const self& X) const { return !operator==(X); }
     inline bool operator==(const self& X) const {
         if (current != X.current) return false;
-        return (current == end && X.current == end) ||
+        return (current == end && X.current == X.end) ||
                (current == X.current && getChild() == X.getChild());
     }
 };
@@ -398,16 +395,14 @@ public:
 
     inline const RootIt& getCurrent() const { return current; }
 
-    filtered_iterator() = default;
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(filtered_iterator);
+
     inline filtered_iterator(const RootIt& I, const RootIt& E, Pred pred)
     : current(I), end(E), pred(std::make_shared<Pred>(pred)) {
         validate();
     }
-
     inline filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
     : filtered_iterator(P.first, P.second, pred) {}
-
-    inline filtered_iterator(const filtered_iterator& It) = default;
 
     inline reference operator*() const {
         return *current;
@@ -426,7 +421,7 @@ public:
         return *this;
     }
 
-    self operator++(int) { self tmp = *this; return self(++tmp); }
+    self operator++(int) { self tmp{ *this }; return self{ ++tmp }; }
 
     inline bool operator!=(const self& X) const { return !operator==(X); }
     inline bool operator==(const self& X) const {
@@ -450,8 +445,6 @@ filtered_iterator<It, Pred> filter_iterator(It end, Pred pred) {
 // NB: Does not control buffer overflows!!!
 //
 ////////////////////////////////////////////////////////////////////////////////
-
-#include "Util/macros.h"
 
 template<typename Iter1, typename Iter2>
 class zipping_iterator {
@@ -479,13 +472,12 @@ public:
 
     zipping_iterator(const Iter1& i1, const Iter2& i2) : iter1(i1), iter2(i2) {};
 
+    bool operator!=(const zipping_iterator& that) const { return !operator==(that); };
     bool operator==(const zipping_iterator& that) const {
-        if(iter1 != that.iter1) return false;
-
+        if (iter1 != that.iter1) return false;
         ASSERT(iter2 == that.iter2, "Malformed zip iterator!")
         return true;
     };
-    bool operator!=(const zipping_iterator& that) const { return !operator==(that); };
 
     reference operator*() const { return reference{ *iter1, *iter2 }; }
     pointer operator->() const { return pointer{ *this }; }
@@ -497,8 +489,6 @@ template<class Iter1, class Iter2>
 zipping_iterator<Iter1, Iter2> zip(Iter1 i1, Iter2 i2) {
     return zipping_iterator<Iter1, Iter2>{ i1, i2 };
 }
-
-#include "Util/unmacros.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -517,15 +507,10 @@ public:
     typedef const value_type* pointer;
     typedef const value_type& reference;
 
-    counting_iterator() = default;
-    counting_iterator(const counting_iterator&) = default;
-    counting_iterator(counting_iterator&&) = default;
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(counting_iterator);
 
     counting_iterator(const Elem& e) : e(e) {};
     counting_iterator(Elem&& e) : e(std::move(e)) {};
-
-    counting_iterator& operator=(const counting_iterator&) = default;
-    counting_iterator& operator=(counting_iterator&&) = default;
 
     bool operator==(const counting_iterator& that) const { return e == that.e; };
     bool operator!=(const counting_iterator& that) const { return e != that.e; };
@@ -556,13 +541,9 @@ public:
     typedef value_type* pointer;
     typedef value_type& reference;
 
-    key_iterator() = default;
-    key_iterator(const key_iterator&) = default;
-    key_iterator(key_iterator&&) = default;
-    key_iterator(const Iterator& base) : base(base) {};
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(key_iterator);
 
-    key_iterator& operator=(const key_iterator&) = default;
-    key_iterator& operator=(key_iterator&&) = default;
+    key_iterator(const Iterator& base) : base(base) {};
 
     bool operator==(const key_iterator& that) const { return base == that.base; };
     bool operator!=(const key_iterator& that) const { return base != that.base; };
@@ -607,13 +588,9 @@ public:
     typedef value_type* pointer;
     typedef value_type& reference;
 
-    value_iterator() = default;
-    value_iterator(const value_iterator&) = default;
-    value_iterator(value_iterator&&) = default;
-    value_iterator(const Iterator& base) : base(base) {};
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(value_iterator);
 
-    value_iterator& operator=(const value_iterator&) = default;
-    value_iterator& operator=(value_iterator&&) = default;
+    value_iterator(const Iterator& base) : base(base) {};
 
     bool operator==(const value_iterator& that) const { return base == that.base; };
     bool operator!=(const value_iterator& that) const { return base != that.base; };
@@ -658,13 +635,9 @@ public:
     typedef const value_type* pointer;
     typedef const value_type& reference;
 
-    value_citerator() = default;
-    value_citerator(const value_citerator&) = default;
-    value_citerator(value_citerator&&) = default;
-    value_citerator(const Iterator& base) : base(base) {};
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(value_citerator);
 
-    value_citerator& operator=(const value_citerator&) = default;
-    value_citerator& operator=(value_citerator&&) = default;
+    value_citerator(const Iterator& base) : base(base) {};
 
     bool operator==(const value_citerator& that) const { return base == that.base; };
     bool operator!=(const value_citerator& that) const { return base != that.base; };
@@ -691,5 +664,7 @@ std::pair<value_citerator<Iterator>, value_citerator<Iterator>> citerate_values(
 
 } // namespace util
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* ITERATORS_HPP_ */

@@ -217,7 +217,6 @@ template<class Streamer>
 class llvm_stream_wrapper : public llvm::raw_ostream {
     Streamer* str;
 public:
-    llvm_stream_wrapper() = default;
     llvm_stream_wrapper(Streamer& str): str(&str) {};
 
     virtual void write_impl(const char* Ptr, size_t Size) {
@@ -380,6 +379,12 @@ template<typename T, typename Streamer>
 Streamer& operator<<(Streamer& s, const std::unordered_set<T>& set) {
     typedef std::unordered_set<T> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, set);
+}
+
+template<typename K, typename V, typename Streamer>
+Streamer& operator<<(Streamer& s, const std::map<K, V>& map) {
+    typedef std::map<K, V> Container;
+    return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, map);
 }
 
 template<typename K, typename V, typename Streamer>

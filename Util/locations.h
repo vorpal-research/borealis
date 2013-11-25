@@ -17,6 +17,7 @@
 
 #include "Protobuf/Gen/Util/locations.pb.h"
 
+#include "Util/hash.hpp"
 #include "Util/json_traits.hpp"
 #include "Util/xml_traits.hpp"
 
@@ -313,9 +314,7 @@ template<>
 class hash<borealis::LocalLocus> {
 public:
     size_t operator()(const borealis::LocalLocus &l) const {
-        size_t h1 = std::hash<unsigned>()(l.line);
-        size_t h2 = std::hash<unsigned>()(l.col);
-        return h2 + (h1 << 16);
+        return borealis::util::hash::defaultHasher()(l.line, l.col);
     }
 };
 
@@ -323,9 +322,7 @@ template<>
 class hash<borealis::Locus> {
 public:
     size_t operator()(const borealis::Locus &l) const {
-        size_t h1 = std::hash<std::string>()(l.filename);
-        size_t h2 = std::hash<borealis::LocalLocus>()(l.loc);
-        return h2 + (h1 << 16);
+        return borealis::util::hash::defaultHasher()(l.filename, l.loc);
     }
 };
 } // namespace std

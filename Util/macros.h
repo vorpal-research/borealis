@@ -17,7 +17,7 @@
 
 /*
  * Macro for quick-writing one-liners with tricky typing.
- * This can be used to replace this (note the same `a+b` used twice):
+ * This can be used to replace the following (note the same `a+b` used twice):
  *
  * template<class A, class B>
  * auto plus(A a, B b) -> decltype(a+b) { return a+b; }
@@ -164,7 +164,7 @@ borealis::util::at(S,79) \
 >
 
 //[[[end]]]
-// XXX: change this to [[noreturn]] when mother..cking G++ supports it
+// XXX: change this to [[noreturn]] when mother..cking g++ supports it
 #define NORETURN __attribute__((noreturn))
 
 #define DEFAULT_CONSTRUCTOR_AND_ASSIGN(CLASSNAME) \
@@ -186,7 +186,7 @@ borealis::util::at(S,79) \
 #elif defined(__GNUC__)
 #define COMPILER gcc
 #else
-#error "You are trying to use an unsupported compiler. Either add it to macros.h or quit trying"
+#error "You are trying to use an unsupported compiler. Either add it to macros.h or quit trying."
 #endif
 
 // #endif /* MACROS_H_ */
