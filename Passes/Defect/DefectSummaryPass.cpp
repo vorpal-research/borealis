@@ -21,8 +21,6 @@
 
 namespace borealis {
 
-typedef DataProvider<clang::FileManager> DPFileManager;
-
 static std::string DumpOutputDefault = "";
 static std::string DumpOutputFileDefault = "%s.report";
 
@@ -38,7 +36,6 @@ void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<DefectManager>::addRequiredTransitive(AU);
-    AUX<DPFileManager>::addRequiredTransitive(AU);
 
 #define HANDLE_CHECKER(Checker) \
     AUX<Checker>::addRequiredTransitive(AU);
@@ -46,10 +43,8 @@ void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool DefectSummaryPass::runOnModule(llvm::Module& M) {
-    using clang::SourceManager;
 
     auto& dm = GetAnalysis<DefectManager>::doit(this);
-    auto& sm = GetAnalysis<DPFileManager>::doit(this).provide();
 
     auto* mainFileEntry = M.getModuleIdentifier().c_str();
 
@@ -72,8 +67,8 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
         LocusRange line   { prev, next };
         LocusRange after  { next, end  };
 
-        llvm::StringRef ln = getRawSource(sm, line);
-        std::string pt = ln.str();
+        auto ln = getRawSource(line);
+        auto pt = ln;
 
         for (auto i = ln.find_first_not_of("\t\n "); i < ln.size(); ++i) {
             pt[i] = '~';
@@ -83,10 +78,11 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
 
         infos() << defect.type
                 << " at " << origin << endl
-                << getRawSource(sm, before)
+                << getRawSource(before)
                 << ln
                 << pt << endl
-                << getRawSource(sm, after) << endl;
+                << getRawSource(after) << endl
+                ;
     }
 
     if (DumpOutput != DumpOutputDefault || DumpOutputFile != DumpOutputFileDefault) {

@@ -18,6 +18,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Type.h>
 
+#include "Codegen/FileManager.h"
 #include "Codegen/llvm.h"
 
 namespace borealis {
@@ -64,9 +65,9 @@ void* MDNode2Ptr(llvm::MDNode* ptr) {
     return nullptr;
 }
 
-llvm::StringRef getRawSource(const clang::FileManager&, const LocusRange&) {
-    // FIXME: You know what to do...
-    return llvm::StringRef{};
+std::string getRawSource(const LocusRange& lr) {
+    static FileManager fm;
+    return fm.read(lr);
 }
 
 util::option<std::string> getAsCompileTimeString(llvm::Value* value) {

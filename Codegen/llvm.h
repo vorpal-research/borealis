@@ -28,7 +28,7 @@ void setDebugLocusWithCopiedScope(
 llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr);
 void* MDNode2Ptr(llvm::MDNode* ptr);
 
-llvm::StringRef getRawSource(const clang::FileManager&, const LocusRange&);
+std::string getRawSource(const LocusRange&);
 
 util::option<std::string> getAsCompileTimeString(llvm::Value* value);
 
