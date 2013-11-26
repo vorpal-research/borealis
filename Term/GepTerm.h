@@ -11,6 +11,8 @@
 #include "Term/Term.h"
 #include "Term/OpaqueIntConstantTerm.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 /** protobuf -> Term/GepTerm.proto
@@ -73,7 +75,7 @@ public:
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
                     *that->base == *base &&
-                    std::equal(shifts.begin(), shifts.end(), that->shifts.begin(),
+                    util::equal(shifts, that->shifts,
                         [](const Shift& a, const Shift& b) {
                             return *a == *b;
                         }
@@ -85,23 +87,42 @@ public:
         return util::hash::defaultHasher()(Term::hashCode(), base, shifts);
     }
 
-    static Type::Ptr getGepChild(Type::Ptr parent, Term::Ptr index) {
-        auto intIndexTerm = llvm::dyn_cast<OpaqueIntConstantTerm>(index);
-        auto realIndex = intIndexTerm ? intIndexTerm->getValue() : ~0LL;
+    static Type::Ptr getAggregateElement(Type::Ptr parent, Term::Ptr idx) {
+        if (auto* structType = llvm::dyn_cast<type::Record>(parent)) {
+            const auto& body = structType->getBody()->get();
+            auto cIdx = llvm::dyn_cast<OpaqueIntConstantTerm>(idx);
+            ASSERTC(!!cIdx);
+            auto index = cIdx->getValue();
+            ASSERTC(index >= 0);
+            auto uIndex = (unsigned long long)index;
+            ASSERTC(uIndex < body.getNumFields());
+            return body.at(uIndex).getType();
+        } else if (auto* arrayType = llvm::dyn_cast<type::Array>(parent)) {
+//            const auto& sz = arrayType->getSize();
+//            if(!!sz && sz.getUnsafe() <= idx) {
+//                dbgs() << "Should be detected: array index overflow"
+//                       << "  Index: " << util::toString(idx)
+//                       << "  Type: " << TypeUtils::toString(*arrayType)
+//                       << endl;
+//            }
+            return arrayType->getElement();
+        }
 
-        return TypeUtils::getGepChild(parent, (unsigned)realIndex);
+        BYE_BYE(Type::Ptr, "getAggregateElement on non-aggregate type: " + TypeUtils::toString(*parent));
     }
 
     static Type::Ptr getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& index) {
-        auto ret = parent;
+        auto ptrType = llvm::dyn_cast<type::Pointer>(parent);
+        ASSERT(!!ptrType, "getGepChild argument is not a pointer");
+        auto ret = ptrType->getPointed();
         for(auto ix : util::tail(index)) {
-            ret = getGepChild(ret, ix);
+            ret = getAggregateElement(ret, ix);
         }
         return ret;
     }
+
 };
 
-#include "Util/macros.h"
 template<class Impl>
 struct SMTImpl<Impl, GepTerm> {
     static Dynamic<Impl> doit(
@@ -118,24 +139,30 @@ struct SMTImpl<Impl, GepTerm> {
 
         Pointer p = base.getUnsafe();
         Integer shift = ef.getIntConst(0);
-        auto tp = t->getBase()->getType();
-        tp = llvm::dyn_cast<type::Pointer>(tp)->getPointed();
 
-        auto iter = 0U;
-        for (const auto& s : t->getShifts()) {
-            auto by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
-            auto byIx = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
-            auto ix = byIx? byIx->getValue() : ~0U;
+        auto* baseType = llvm::dyn_cast<type::Pointer>(t->getBase()->getType());
+        ASSERTC(!!baseType);
 
-            if (iter != 0U) tp = TypeUtils::getGepChild(tp, ix);
-            iter++;
+        if (!t->getShifts().empty()) {
+            auto h = util::head(t->getShifts());
 
+            auto tp = baseType->getPointed();
+
+            auto by = SMT<Impl>::doit(h, ef, ctx).template to<Integer>();
             auto size = TypeUtils::getTypeSizeInElems(tp);
-
             ASSERT(!by.empty(),
                    "Encountered a GEP term with incorrect shifts");
-
             shift = shift + by.getUnsafe() * size;
+
+            for (const auto& s : util::tail(t->getShifts())) {
+                tp = GepTerm::getAggregateElement(tp, s);
+
+                auto by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
+                auto size = TypeUtils::getTypeSizeInElems(tp);
+                ASSERT(!by.empty(),
+                       "Encountered a GEP term with incorrect shifts");
+                shift = shift + by.getUnsafe() * size;
+            }
         }
 
         Integer bound = ctx->getBound(p);
@@ -150,8 +177,8 @@ struct SMTImpl<Impl, GepTerm> {
     }
 };
 
-#include "Util/unmacros.h"
-
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* GEPTERM_H_ */

@@ -1,5 +1,5 @@
 /*
- * ArgumentTerm.h
+  * ArgumentTerm.h
  *
  *  Created on: Nov 19, 2012
  *      Author: ice-phoenix
@@ -88,7 +88,6 @@ struct SMTImpl<Impl, ArgumentTerm> {
         return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };
-
 
 } /* namespace borealis */
 

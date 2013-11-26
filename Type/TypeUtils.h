@@ -67,27 +67,6 @@ struct TypeUtils {
         return TypeSizer().visit(type);
     }
 
-    static Type::Ptr getGepChild(Type::Ptr parent, unsigned index) {
-        if (auto* structType = llvm::dyn_cast<type::Record>(parent)) {
-            const auto& body = structType->getBody()->get();
-            ASSERTC(index < body.getNumFields());
-            return body.at(index).getType();
-        } else if (auto* arrayType = llvm::dyn_cast<type::Array>(parent)) {
-            const auto& sz = arrayType->getSize();
-            if(!!sz && sz.getUnsafe() <= index) {
-                dbgs() << "Should be detected: array index overflow"
-                       << "  Index: " << util::toString(index)
-                       << "  Type: " << TypeUtils::toString(*arrayType)
-                       << endl;
-            }
-            return arrayType->getElement();
-        } else if (auto* ptrType = llvm::dyn_cast<type::Pointer>(parent)) {
-            return ptrType->getPointed();
-        }
-
-        BYE_BYE(Type::Ptr, "GEP on incorrect type: " + TypeUtils::toString(*parent));
-    }
-
 };
 
 } // namespace borealis
