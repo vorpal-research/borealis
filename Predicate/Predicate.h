@@ -90,11 +90,12 @@ public:
     std::string toString() const {
         switch (type) {
         case PredicateType::REQUIRES: return "@R " + asString;
-        case PredicateType::ENSURES: return "@E " + asString;
-        case PredicateType::ASSERT: return "@A " + asString;
-        case PredicateType::ASSUME: return "@U " + asString;
-        case PredicateType::PATH: return "@P " + asString;
-        default: return "@?" + asString;
+        case PredicateType::ENSURES:  return "@E " + asString;
+        case PredicateType::ASSERT:   return "@A " + asString;
+        case PredicateType::ASSUME:   return "@U " + asString;
+        case PredicateType::PATH:     return "@P " + asString;
+        case PredicateType::STATE:    return asString;
+        default:                      return "@?" + asString;
         }
     }
 
