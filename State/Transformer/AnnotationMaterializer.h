@@ -93,17 +93,11 @@ public:
                     auto pointed = ptrType->getPointed();
 
                     return (
-                        FN.Term *
-                        FN.Term->getCmpTerm(
-                            llvm::ConditionType::NEQ,
-                            val,
-                            FN.Term->getNullPtrTerm()
-                        ) &&
-                        FN.Term->getCmpTerm(
-                            llvm::ConditionType::NEQ,
-                            val,
-                            FN.Term->getInvalidPtrTerm()
-                        ) &&
+                        FN.Term * val != FN.Term->getNullPtrTerm()
+                        &&
+                        FN.Term * val != FN.Term->getInvalidPtrTerm()
+                        &&
+                        // FIXME: Make our DSL even more awesome
                         FN.Term->getCmpTerm(
                             llvm::ConditionType::UGE,
                             FN.Term->getBoundTerm(val),
@@ -123,8 +117,10 @@ public:
     }
 
     Term::Ptr transformDirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
-        auto load = llvm::dyn_cast<LoadTerm>(trm->getLhv());
-        if(!load && !trm->isIndirect()) failWith(
+        auto arg = trm->getLhv();
+
+        auto load = llvm::dyn_cast<LoadTerm>(arg);
+        if(!load) failWith(
             "Cannot access member " +
             trm->getProperty() +
             ": term is not an instance of load"
@@ -147,10 +143,10 @@ public:
         return factory().getLoadTerm(
             factory().getGepTerm(
                 load->getRhv(),
-                std::vector<Term::Ptr> {
+                util::make_vector(
                     factory().getOpaqueConstantTerm(0LL),
                     factory().getOpaqueConstantTerm(static_cast<long long>(field.getUnsafe().getIndex()))
-                }
+                )
             )
         );
     }
@@ -169,7 +165,7 @@ public:
         if(!daStruct) failWith(
             "Cannot access member " +
             trm->getProperty() +
-            ": term is not a pointer to structure type"
+            ": term is not a pointer to a structure type"
         );
 
         auto field = daStruct->getBody()->get().getFieldByName(trm->getProperty());
@@ -182,23 +178,18 @@ public:
         return factory().getLoadTerm(
             factory().getGepTerm(
                 arg,
-                std::vector<Term::Ptr> {
+                util::make_vector(
                     factory().getOpaqueConstantTerm(0LL),
                     factory().getOpaqueConstantTerm(static_cast<long long>(field.getUnsafe().getIndex()))
-                }
+                )
             )
         );
     }
 
     Term::Ptr transformOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
-        auto arg = trm->getLhv();
-
-        // this argument MUST be a load from a pointer to structure in
-        // well-formed expression
-
         return trm->isIndirect() ?
-                   transformIndirectOpaqueMemberAccessTerm(trm) :
-                   transformDirectOpaqueMemberAccessTerm(trm);
+               transformIndirectOpaqueMemberAccessTerm(trm) :
+               transformDirectOpaqueMemberAccessTerm(trm);
     }
 
     Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
@@ -225,17 +216,16 @@ public:
             if(!bcType->isPointerTy()) failWith("wtf");
             bcType = bcType->getPointerElementType();
         }
-        FN.Type->cast(bcType, ret.type); // Loading type metadata
-
-        auto var = factory().getValueTerm(ret.val, ret.type.getSignedness());
+        FN.Type->cast(bcType, ret.type); // side-effecting to load type metadata
 
         auto shouldBeDereferenced = ret.shouldBeDereferenced;
-
         // FIXME: Need to sort out memory model
         //        Global arrays and structures break things...
         if (auto* ptrType = llvm::dyn_cast<llvm::PointerType>(ret.val->getType())) {
             shouldBeDereferenced &= ptrType->getPointerElementType()->isSingleValueType();
         }
+
+        auto var = factory().getValueTerm(ret.val, ret.type.getSignedness());
 
         if (shouldBeDereferenced) {
             return factory().getLoadTerm(var);
@@ -263,20 +253,22 @@ public:
 
         } else if (name.startswith("arg")) {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
-                // FIXME: Better sanity checks for args
                 std::istringstream ist(name.drop_front(3).str());
                 unsigned val = 0U;
                 ist >> val;
 
-                auto argIt = ctx.func->arg_begin();
-                std::advance(argIt, val);
+                ASSERTC(val < ctx.func->arg_size());
 
-                auto desc = forValueSingle(argIt);
+                auto arg = ctx.func->arg_begin();
+                std::advance(arg, val);
 
-                return factory().getArgumentTerm(argIt, desc.type.getSignedness());
+                auto desc = forValueSingle(arg);
+
+                return factory().getArgumentTerm(arg, desc.type.getSignedness());
             } else {
                 failWith("\argXXX can only be bound to functions' outer scope");
             }
+
         } else {
             failWith("\\" + name + " : unknown builtin");
         }

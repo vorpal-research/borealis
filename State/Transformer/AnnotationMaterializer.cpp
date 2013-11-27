@@ -102,7 +102,7 @@ Annotation::Ptr materialize(
         Annotation::Ptr annotation,
         FactoryNest FN,
         MetaInfoTracker* MI
-            ) {
+) {
     if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation)){
         AnnotationMaterializer am(*logic, FN, MI);
         return am.doit();

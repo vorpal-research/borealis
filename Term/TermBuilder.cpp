@@ -32,4 +32,14 @@ TermBuilder operator&&(TermBuilder TB, Term::Ptr term) {
     return res;
 }
 
+TermBuilder operator!=(TermBuilder TB, Term::Ptr term) {
+    TermBuilder res{TB};
+    res.term = res.TF->getCmpTerm(
+        llvm::ConditionType::NEQ,
+        res.term,
+        term
+    );
+    return res;
+}
+
 } /* namespace borealis */
