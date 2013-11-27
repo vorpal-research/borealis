@@ -33,7 +33,7 @@ GlobalsPredicate::GlobalsPredicate(
 bool GlobalsPredicate::equals(const Predicate* other) const {
     if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return Predicate::equals(other) &&
-                std::equal(globals.begin(), globals.end(), o->globals.begin(),
+                util::equal(globals, o->globals,
                     [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
                 );
     } else return false;

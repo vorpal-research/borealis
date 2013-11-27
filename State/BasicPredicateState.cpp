@@ -20,34 +20,34 @@ BasicPredicateState::BasicPredicateState() :
         PredicateState(class_tag<Self>()) {}
 
 void BasicPredicateState::addPredicateInPlace(Predicate::Ptr pred) {
-    this->data.push_back(pred);
+    data.push_back(pred);
 }
 
-void BasicPredicateState::addVisitedInPlace(const llvm::Value* loc) {
-    this->locs.insert(loc);
+void BasicPredicateState::addVisitedInPlace(const llvm::Value* l) {
+    locs.insert(l);
 }
 
-void BasicPredicateState::addVisitedInPlace(const Locs& locs) {
-    this->locs.insert(locs.begin(), locs.end());
+void BasicPredicateState::addVisitedInPlace(const Locs& ls) {
+    locs.insert(ls.begin(), ls.end());
 }
 
 PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
 
-    auto res = SelfPtr(new Self{ *this });
+    auto res = util::uniq(new Self{ *this });
     res->addPredicateInPlace(pred);
     return Simplified(res.release());
 }
 
 PredicateState::Ptr BasicPredicateState::addVisited(const llvm::Value* loc) const {
-    auto res = SelfPtr(new Self{ *this });
+    auto res = util::uniq(new Self{ *this });
     res->addVisitedInPlace(loc);
     return Simplified(res.release());
 }
 
-bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
-    return std::all_of(locs.begin(), locs.end(),
-        [this](const llvm::Value* loc) { return contains(this->locs, loc); });
+bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> ls) const {
+    return std::all_of(ls.begin(), ls.end(),
+        [this](const llvm::Value* loc) { return contains(locs, loc); });
 }
 
 bool BasicPredicateState::hasVisitedFrom(Locs& visited) const {
@@ -69,51 +69,51 @@ PredicateState::Locs BasicPredicateState::getVisited() const {
 }
 
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
-    auto res = SelfPtr(new Self{});
-    for (auto& p : data) {
+    auto res = util::uniq(new Self{});
+    for (const auto& p : data) {
         res->addPredicateInPlace(m(p));
     }
-    res->addVisitedInPlace(this->locs);
+    res->addVisitedInPlace(locs);
     return Simplified(res.release());
 }
 
 PredicateState::Ptr BasicPredicateState::filterByTypes(std::initializer_list<PredicateType> types) const {
-    auto res = SelfPtr(new Self{});
-    for (auto& p : data) {
+    auto res = util::uniq(new Self{});
+    for (const auto& p : data) {
         if (std::any_of(types.begin(), types.end(),
             [&](const PredicateType& type) { return p->getType() == type; }
         )) res->addPredicateInPlace(p);
     }
-    res->addVisitedInPlace(this->locs);
+    res->addVisitedInPlace(locs);
     return Simplified(res.release());
 }
 
 PredicateState::Ptr BasicPredicateState::filter(Filterer f) const {
-    auto res = SelfPtr(new Self{});
-    for (auto& p : data) {
+    auto res = util::uniq(new Self{});
+    for (const auto& p : data) {
         if (f(p))
             res->addPredicateInPlace(p);
     }
-    res->addVisitedInPlace(this->locs);
+    res->addVisitedInPlace(locs);
     return Simplified(res.release());
 }
 
 std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitByTypes(std::initializer_list<PredicateType> types) const {
-    auto yes = SelfPtr(new Self{});
-    auto no = SelfPtr(new Self{});
-    for (auto& p : data) {
+    auto yes = util::uniq(new Self{});
+    auto no = util::uniq(new Self{});
+    for (const auto& p : data) {
         if (std::any_of(types.begin(), types.end(),
             [&](const PredicateType& type) { return p->getType() == type; }
         )) yes->addPredicateInPlace(p);
         else no->addPredicateInPlace(p);
     }
-    yes->addVisitedInPlace(this->locs);
-    no->addVisitedInPlace(this->locs);
+    yes->addVisitedInPlace(locs);
+    no->addVisitedInPlace(locs);
     return std::make_pair(Simplified(yes.release()), Simplified(no.release()));
 }
 
-PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr base) const {
-    if (*this == *base) {
+PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr on) const {
+    if (*this == *on) {
         return Simplified(new Self{});
     }
     return nullptr;
@@ -134,9 +134,9 @@ borealis::logging::logstream& BasicPredicateState::dump(borealis::logging::logst
 
     s << '(';
     s << il << endl;
-    if (!this->isEmpty()) {
-        s << head(this->data)->toString();
-        for (auto& e : tail(this->data)) {
+    if (!isEmpty()) {
+        s << head(data)->toString();
+        for (auto& e : tail(data)) {
             s << ',' << endl << e->toString();
         }
     }
@@ -152,9 +152,9 @@ std::string BasicPredicateState::toString() const {
     std::ostringstream s;
 
     s << '(' << endl;
-    if (!this->isEmpty()) {
-        s << "  " << head(this->data)->toString();
-        for (auto& e : tail(this->data)) {
+    if (!isEmpty()) {
+        s << "  " << head(data)->toString();
+        for (auto& e : tail(data)) {
             s << ',' << endl << "  " << e->toString();
         }
     }

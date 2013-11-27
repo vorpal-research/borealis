@@ -32,12 +32,12 @@ PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
     return fmap([&](PredicateState::Ptr s) { return s + p; });
 }
 
-PredicateState::Ptr PredicateStateChoice::addVisited(const llvm::Value* loc) const {
-    return fmap([&](PredicateState::Ptr s) { return s << loc; });
+PredicateState::Ptr PredicateStateChoice::addVisited(const llvm::Value* l) const {
+    return fmap([&](PredicateState::Ptr s) { return s << l; });
 }
 
-bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
-    auto visited = std::unordered_set<const llvm::Value*>(locs.begin(), locs.end());
+bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> ls) const {
+    auto visited = std::unordered_set<const llvm::Value*>(ls.begin(), ls.end());
     return hasVisitedFrom(visited);
 }
 
@@ -63,7 +63,7 @@ PredicateStateChoice::SelfPtr PredicateStateChoice::fmap_(FMapper f) const {
     mapped.reserve(choices.size());
     std::transform(choices.begin(), choices.end(), std::back_inserter(mapped),
         [&](const PredicateState::Ptr& choice) { return f(choice); });
-    return SelfPtr(new Self{ mapped });
+    return util::uniq(new Self{ mapped });
 }
 
 PredicateState::Ptr PredicateStateChoice::fmap(FMapper f) const {

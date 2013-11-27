@@ -45,8 +45,8 @@ public:
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
 
-    virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const override;
-    virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const override;
+    virtual PredicateState::Ptr addVisited(const llvm::Value* l) const override;
+    virtual bool hasVisited(std::initializer_list<const llvm::Value*> ls) const override;
     virtual bool hasVisitedFrom(Locs& visited) const override;
 
     virtual Locs getVisited() const override;
@@ -56,7 +56,7 @@ public:
     virtual PredicateState::Ptr filter(Filterer f) const override;
 
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const override;
-    virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const override;
+    virtual PredicateState::Ptr sliceOn(PredicateState::Ptr on) const override;
     virtual PredicateState::Ptr simplify() const override;
 
     virtual bool isEmpty() const override;
@@ -64,7 +64,7 @@ public:
     virtual bool equals(const PredicateState* other) const override {
         if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
             return PredicateState::equals(other) &&
-                    std::equal(data.begin(), data.end(), o->data.begin(),
+                    util::equal(data, o->data,
                         [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
                             return *a == *b;
                         }

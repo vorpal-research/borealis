@@ -24,7 +24,7 @@ bool PredicateState::isUnreachableIn(unsigned long long memoryStart) const {
         Z3::Solver s(ef, memoryStart);
 #endif
 
-    auto split = this->splitByTypes({PredicateType::PATH});
+    auto split = splitByTypes({PredicateType::PATH});
     return s.isPathImpossible(split.first, split.second);
 }
 
