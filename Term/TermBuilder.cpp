@@ -18,6 +18,10 @@ Term::Ptr TermBuilder::operator()() const {
     return term;
 }
 
+TermBuilder::operator Term::Ptr() const {
+    return term;
+}
+
 TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term) {
     return TermBuilder{TF, term};
 }
