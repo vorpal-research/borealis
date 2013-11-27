@@ -19,8 +19,6 @@
  * Does not work for arrays 'cos nobody knows how to copy them.
  *
  ******************************************************************************/
- // FIXME: pointer- or value-based equality?
- //        atm equals and hash contradict each other
 namespace borealis {
 namespace util {
 
@@ -93,7 +91,7 @@ public:
         return inner;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return !!inner;
     }
 
@@ -153,7 +151,8 @@ void swap(const borealis::util::copying_ptr<T, D, C>& ptr1,
 template<class T, class D, class C>
 struct hash<borealis::util::copying_ptr<T, D, C>> {
     size_t operator()(const borealis::util::copying_ptr<T, D, C>& ptr) const noexcept {
-        return std::hash<T*>()(ptr.get());
+
+        return ptr? std::hash<T>{}(*ptr) : std::hash<T*>{}(nullptr);
     }
 };
 

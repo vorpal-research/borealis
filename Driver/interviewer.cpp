@@ -115,8 +115,7 @@ interviewer::status interviewer::run() const {
     using borealis::util::streams::error;
 
     if (!pimpl->theCompilation) {
-        // FIXME: error message
-        errs() << error("Fucked up, sorry :(") << endl;
+        errs() << error("Creating compilation object failed") << endl;
         return status::FAILURE;
     }
 
@@ -124,7 +123,7 @@ interviewer::status interviewer::run() const {
     if (pimpl->theDriver->ExecuteCompilation(*pimpl->theCompilation, FailingCommand) < 0) {
         pimpl->theDriver->generateCompilationDiagnostics(*pimpl->theCompilation, FailingCommand);
         // FIXME: error message
-        errs() << error("Fucked up, sorry :(") << endl;
+        errs() << error("Compilation failed") << endl;
         return status::FAILURE;
     }
 

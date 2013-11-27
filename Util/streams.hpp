@@ -182,7 +182,7 @@ struct error_printer {
 
 template<class T>
 std::ostream& operator<<(std::ostream& s, const error_printer<T>& v) {
-    return s << "!" << v.val << "!";
+    return s << v.val;
 }
 
 // prints values in red:

@@ -133,6 +133,10 @@ public:
         holder.swap(that.holder);
     }
 
+    size_t hash() const noexcept {
+        return std::hash<decltype(holder)>{}(holder);
+    }
+
     self& operator=(nothing_t) {
         holder.reset();
         return *this;
@@ -272,6 +276,10 @@ public:
         std::swap(holder, that.holder);
     }
 
+    size_t hash() const noexcept {
+        return std::hash<decltype(holder)>{}(holder);
+    }
+
     self& operator=(nothing_t) {
         self temp; // exception safety
         swap(temp);
@@ -311,11 +319,8 @@ public:
         return !empty();
     }
 
-    typedef struct unspec_{}* unspecified_pointer_type;
-    operator unspecified_pointer_type() {
-        static unspec_ unspec;
-        if( empty() ) return nullptr;
-        else return &unspec;
+    explicit operator bool() {
+        return !empty();
     }
 
     bool operator!() const {
@@ -388,5 +393,37 @@ inline option_ref<T> nothingRef() {
 
 } // namespace util
 } // namespace borealis
+
+namespace std {
+
+template<class T>
+void swap(const borealis::util::option<T>& opt1,
+          const borealis::util::option<T>& opt2) noexcept {
+    opt1.swap(opt2);
+    return;
+}
+
+template<class T>
+void swap(const borealis::util::option_ref<T>& opt1,
+          const borealis::util::option_ref<T>& opt2) noexcept {
+    opt1.swap(opt2);
+    return;
+}
+
+template<class T>
+struct hash<borealis::util::option<T>> {
+    size_t operator()(const borealis::util::option<T>& opt) const noexcept {
+        return opt.hash();
+    }
+};
+
+template<class T>
+struct hash<borealis::util::option_ref<T>> {
+    size_t operator()(const borealis::util::option_ref<T>& opt) const noexcept {
+        return opt.hash();
+    }
+};
+
+} // namespace std
 
 #endif /* OPTION_HPP_ */
