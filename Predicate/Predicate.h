@@ -46,6 +46,7 @@ enum class PredicateType {
 PredicateType predicateType(const Annotation* a);
 
 template<class SubClass> class Transformer;
+template<class T> struct protobuf_traits;
 template<class T> struct protobuf_traits_impl;
 
 namespace proto { class Predicate; }
@@ -93,7 +94,7 @@ public:
         case PredicateType::ASSERT: return "@A " + asString;
         case PredicateType::ASSUME: return "@U " + asString;
         case PredicateType::PATH: return "@P " + asString;
-        default: return asString;
+        default: return "@?" + asString;
         }
     }
 

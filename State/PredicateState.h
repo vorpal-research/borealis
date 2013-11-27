@@ -22,6 +22,7 @@
 
 namespace borealis {
 
+template<class T> struct protobuf_traits;
 template<class T> struct protobuf_traits_impl;
 
 namespace proto { class PredicateState; }
@@ -71,7 +72,7 @@ public:
     }
 
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const = 0;
-    virtual PredicateState::Ptr sliceOn(PredicateState::Ptr base) const = 0;
+    virtual PredicateState::Ptr sliceOn(PredicateState::Ptr on) const = 0;
     virtual PredicateState::Ptr simplify() const = 0;
 
     bool isUnreachableIn(unsigned long long memoryStart) const;

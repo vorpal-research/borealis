@@ -38,7 +38,7 @@ bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
     if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
         return Predicate::equals(other) &&
                 *cond == *o->cond &&
-                std::equal(cases.begin(), cases.end(), o->cases.begin(),
+                util::equal(cases, o->cases,
                     [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
                 );
     } else return false;

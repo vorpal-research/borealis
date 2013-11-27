@@ -28,15 +28,15 @@ PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const
     });
 }
 
-PredicateState::Ptr PredicateStateChain::addVisited(const llvm::Value* loc) const {
+PredicateState::Ptr PredicateStateChain::addVisited(const llvm::Value* l) const {
     return Simplified(new Self{
         this->base,
-        this->curr << loc
+        this->curr << l
     });
 }
 
-bool PredicateStateChain::hasVisited(std::initializer_list<const llvm::Value*> locs) const {
-    auto visited = std::unordered_set<const llvm::Value*>(locs.begin(), locs.end());
+bool PredicateStateChain::hasVisited(std::initializer_list<const llvm::Value*> ls) const {
+    auto visited = std::unordered_set<const llvm::Value*>(ls.begin(), ls.end());
     return hasVisitedFrom(visited);
 }
 
@@ -54,9 +54,9 @@ PredicateState::Locs PredicateStateChain::getVisited() const {
 }
 
 PredicateStateChain::SelfPtr PredicateStateChain::fmap_(FMapper f) const {
-    return SelfPtr(new Self{
-        f(this->base),
-        f(this->curr)
+    return util::uniq(new Self{
+        f(base),
+        f(curr)
     });
 }
 
@@ -65,8 +65,8 @@ PredicateState::Ptr PredicateStateChain::fmap(FMapper f) const {
 }
 
 std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitByTypes(std::initializer_list<PredicateType> types) const {
-    auto baseSplit = this->base->splitByTypes(types);
-    auto currSplit = this->curr->splitByTypes(types);
+    auto baseSplit = base->splitByTypes(types);
+    auto currSplit = curr->splitByTypes(types);
 
     return std::make_pair(
         Simplified(new Self{ baseSplit.first, currSplit.first }),
@@ -74,14 +74,14 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitBy
     );
 }
 
-PredicateState::Ptr PredicateStateChain::sliceOn(PredicateState::Ptr base) const {
-    if (*this->base == *base) {
-        return this->curr;
+PredicateState::Ptr PredicateStateChain::sliceOn(PredicateState::Ptr on) const {
+    if (*base == *on) {
+        return curr;
     }
 
-    auto slice = this->base->sliceOn(base);
+    auto slice = base->sliceOn(on);
     if (slice != nullptr) {
-        return Simplified(new Self{ slice, this->curr });
+        return Simplified(new Self{ slice, curr });
     }
 
     return nullptr;
