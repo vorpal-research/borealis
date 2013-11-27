@@ -34,32 +34,26 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
     if (gv.hasInitializer()) {
         auto* ini = gv.getInitializer();
 
-        if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
-            auto numElements = TypeUtils::getTypeSizeInElems(
-                FN.Type->cast(cds->getType())
-            );
+        auto numElements = TypeUtils::getTypeSizeInElems(
+            FN.Type->cast(ini->getType())
+        );
 
+        if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
             auto data = util::range(0ULL, numElements)
-                .map([&cds](unsigned i) { return cds->getElementAsConstant(i); })
+                .map([&cds](unsigned long long i) { return cds->getElementAsConstant(i); })
                 .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
-        } else if (auto* caz = dyn_cast<ConstantAggregateZero>(ini)) {
-            auto numElements = TypeUtils::getTypeSizeInElems(
-                FN.Type->cast(caz->getType())
-            );
-
+        } else if (auto* _ = dyn_cast<ConstantAggregateZero>(ini)) {
+            util::use(_);
+            auto zero = FN.Term->getIntTerm(0);
             auto data = util::range(0ULL, numElements)
-                .map([&FN](unsigned) { return FN.Term->getIntTerm(0); })
+                .map([&zero](unsigned long long _) { return util::use(_), zero; })
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {
-            auto numElements = TypeUtils::getTypeSizeInElems(
-                FN.Type->cast(c->getType())
-            );
-
             auto data = util::viewContainer(getAsSeqData(c))
                 .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
                 .toVector();
