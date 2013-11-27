@@ -37,7 +37,9 @@ class OpaqueCallTerm: public borealis::Term {
             type,
             lhv->getName() + util::toString(
                 util::streams::delimited(
-                    util::viewContainer(rhv).map([](Term::Ptr trm){ return trm->getName(); })
+                    util::viewContainer(rhv).map(
+                        [](Term::Ptr trm){ return trm->getName(); }
+                    )
                 )
             )
         ), lhv(lhv), rhv(rhv) {};
@@ -66,10 +68,8 @@ public:
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
                     *that->lhv == *lhv &&
-                    util::equal(
-                        that->rhv,
-                        rhv,
-                        [](Term::Ptr thatptr, Term::Ptr thisptr){ return *thatptr == *thisptr; }
+                    util::equal(that->rhv, rhv,
+                        [](Term::Ptr b, Term::Ptr a){ return *b == *a; }
                     );
         } else return false;
     }
@@ -86,8 +86,7 @@ struct SMTImpl<Impl, OpaqueCallTerm> {
             const OpaqueCallTerm*,
             ExprFactory<Impl>&,
             ExecutionContext<Impl>*) {
-        USING_SMT_IMPL(Impl);
-        BYE_BYE(Dynamic, "Should not be called!");
+        BYE_BYE(Dynamic<Impl>, "Should not be called!");
     }
 };
 #include "Util/unmacros.h"

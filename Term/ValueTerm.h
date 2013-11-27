@@ -28,8 +28,6 @@ message ValueTerm {
 **/
 class ValueTerm: public borealis::Term {
 
-    typedef std::unique_ptr<ValueTerm> SelfPtr;
-
     bool global;
 
     ValueTerm(Type::Ptr type, const std::string& name, bool global = false) :
@@ -53,8 +51,8 @@ public:
     Term::Ptr withNewName(const std::string& name) const {
         TERM_ON_CHANGED(
             this->name != name,
-            new Self(this->type, name, global)
-        );
+            new Self(type, name, global)
+        )
     }
 
 };

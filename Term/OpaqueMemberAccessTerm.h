@@ -24,21 +24,21 @@ message OpaqueMemberAccessTerm {
 
     optional Term lhv = 1;
     optional string property = 2;
-    optional bool isIndirect = 3;
+    optional bool indirect = 3;
 }
 
 **/
 class OpaqueMemberAccessTerm: public borealis::Term {
     Term::Ptr lhv;
     std::string property;
-    bool isIndirect;
+    bool indirect;
 
-    OpaqueMemberAccessTerm(Type::Ptr type, Term::Ptr lhv, const std::string& property, bool isIndirect = false):
+    OpaqueMemberAccessTerm(Type::Ptr type, Term::Ptr lhv, const std::string& property, bool indirect = false):
         Term(
             class_tag(*this),
             type,
-            lhv->getName() + (isIndirect ? "->" : ".") + property
-        ), lhv(lhv), property(property), isIndirect(isIndirect) {};
+            lhv->getName() + (indirect ? "->" : ".") + property
+        ), lhv(lhv), property(property), indirect(indirect) {};
 
 public:
 
@@ -46,14 +46,15 @@ public:
 
     Term::Ptr getLhv() const { return lhv; }
     const std::string& getProperty() const { return property; }
-    bool getIsIndirect() const { return isIndirect; }
+    bool isIndirect() const { return indirect; }
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _lhv = tr->transform(lhv);
+        auto _type = type;
         TERM_ON_CHANGED(
             lhv != _lhv,
-            new Self( type, _lhv, property, isIndirect )
+            new Self( _type, _lhv, property, indirect )
         );
     }
 
@@ -62,12 +63,12 @@ public:
             return Term::equals(other) &&
                     *that->lhv == *lhv &&
                     that->property == property &&
-                    that->isIndirect == isIndirect;
+                    that->indirect == indirect;
         } else return false;
     }
 
     virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), lhv, property, isIndirect);
+        return util::hash::defaultHasher()(Term::hashCode(), lhv, property, indirect);
     }
 };
 
@@ -78,8 +79,7 @@ struct SMTImpl<Impl, OpaqueMemberAccessTerm> {
             const OpaqueMemberAccessTerm*,
             ExprFactory<Impl>&,
             ExecutionContext<Impl>*) {
-        USING_SMT_IMPL(Impl);
-        BYE_BYE(Dynamic, "Should not be called!");
+        BYE_BYE(Dynamic<Impl>, "Should not be called!");
     }
 };
 #include "Util/unmacros.h"

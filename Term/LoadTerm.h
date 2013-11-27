@@ -57,12 +57,13 @@ public:
     virtual bool equals(const Term* other) const override {
         if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
             return Term::equals(other) &&
-                    *that->rhv == *rhv;
+                    *that->rhv == *rhv &&
+                    that->retypable == retypable;
         } else return false;
     }
 
     virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), rhv);
+        return util::hash::defaultHasher()(Term::hashCode(), rhv, retypable);
     }
 
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {

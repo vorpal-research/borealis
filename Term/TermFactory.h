@@ -275,12 +275,11 @@ public:
         };
     }
 
-    // FIXME: naming
-    Term::Ptr getNaiveGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
-        auto daPointerType = llvm::dyn_cast<type::Pointer>(base->getType());
-        ASSERT(!!daPointerType, "getNaiveGepTerm: argument not a pointer");
+    Term::Ptr getGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
+        auto ptrType = llvm::dyn_cast<type::Pointer>(base->getType());
+        ASSERT(!!ptrType, "getGepTerm: base not a pointer");
 
-        Type::Ptr tp = GepTerm::getGepChild(daPointerType->getPointed(), shifts);
+        Type::Ptr tp = GepTerm::getGepChild(ptrType->getPointed(), shifts);
 
         return Term::Ptr{
             new GepTerm{
@@ -299,6 +298,7 @@ public:
         using borealis::util::view;
 
         auto type = GetElementPtrInst::getGEPReturnType(base, idxs);
+        ASSERT(!!type, "getGepTerm: type after GEP is funked up");
 
         return Term::Ptr{
             new GepTerm(
@@ -350,6 +350,14 @@ public:
         };
     }
 
+    Term::Ptr getOpaqueConstantTerm(const char* v) {
+        return Term::Ptr{
+            new OpaqueStringConstantTerm(
+                TyF->getUnknownType(), std::string{v}
+            )
+        };
+    }
+
     Term::Ptr getOpaqueConstantTerm(const std::string& v) {
         return Term::Ptr{
             new OpaqueStringConstantTerm(
@@ -368,13 +376,13 @@ public:
         };
     }
 
-    Term::Ptr getOpaqueMemberAccessTerm(Term::Ptr lhv, const std::string& property, bool isIndirect = false) {
+    Term::Ptr getOpaqueMemberAccessTerm(Term::Ptr lhv, const std::string& property, bool indirect = false) {
         return Term::Ptr{
             new OpaqueMemberAccessTerm(
                 TyF->getUnknownType(),
                 lhv,
                 property,
-                isIndirect
+                indirect
             )
         };
     }

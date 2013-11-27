@@ -22,26 +22,26 @@ message ReturnValueTerm {
         optional ReturnValueTerm ext = $COUNTER_TERM;
     }
 
-    optional string functionName = 1;
+    optional string funcName = 1;
 }
 
 **/
 class ReturnValueTerm: public borealis::Term {
 
-    std::string functionName;
+    std::string funcName;
 
-    ReturnValueTerm(Type::Ptr type, const std::string& functionName) :
+    ReturnValueTerm(Type::Ptr type, const std::string& funcName) :
         Term(
             class_tag(*this),
             type,
-            "\\result_" + functionName
-        ), functionName(functionName) {};
+            "\\result_" + funcName
+        ), funcName(funcName) {};
 
 public:
 
     MK_COMMON_TERM_IMPL(ReturnValueTerm);
 
-    const std::string& getFunctionName() const { return functionName; }
+    const std::string& getFunctionName() const { return funcName; }
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {

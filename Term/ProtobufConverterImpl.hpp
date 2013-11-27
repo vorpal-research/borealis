@@ -384,7 +384,7 @@ struct protobuf_traits_impl<OpaqueMemberAccessTerm> {
             TermConverter::toProtobuf(*t.getLhv()).release()
         );
         res->set_property(t.getProperty());
-        res->set_isindirect(t.getIsIndirect());
+        res->set_indirect(t.isIndirect());
         return std::move(res);
     }
 
@@ -393,7 +393,7 @@ struct protobuf_traits_impl<OpaqueMemberAccessTerm> {
             Term::Ptr base,
             const proto::OpaqueMemberAccessTerm& t) {
         auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
-        return Term::Ptr{ new OpaqueMemberAccessTerm(base->getType(), lhv, t.property(), t.isindirect()) };
+        return Term::Ptr{ new OpaqueMemberAccessTerm(base->getType(), lhv, t.property(), t.indirect()) };
     }
 };
 
@@ -419,11 +419,10 @@ struct protobuf_traits_impl<OpaqueCallTerm> {
             const proto::OpaqueCallTerm& t) {
         auto lhv = TermConverter::fromProtobuf(fn, t.lhv());
         auto rhv = std::vector<Term::Ptr>{};
-
+        rhv.reserve(t.rhvs_size());
         for(auto arg: t.rhvs()) {
             rhv.push_back(TermConverter::fromProtobuf(fn, arg));
         }
-
         return Term::Ptr{ new OpaqueCallTerm(base->getType(), lhv, rhv) };
     }
 };
@@ -555,7 +554,7 @@ struct protobuf_traits_impl<ReturnValueTerm> {
 
     static std::unique_ptr<proto::ReturnValueTerm> toProtobuf(const ReturnValueTerm& t) {
         auto res = util::uniq(new proto::ReturnValueTerm());
-        res->set_functionname(t.getFunctionName());
+        res->set_funcname(t.getFunctionName());
         return std::move(res);
     }
 
@@ -563,7 +562,7 @@ struct protobuf_traits_impl<ReturnValueTerm> {
             const FactoryNest&,
             Term::Ptr base,
             const proto::ReturnValueTerm& t) {
-        auto fName = t.functionname();
+        auto fName = t.funcname();
         return Term::Ptr{ new ReturnValueTerm(base->getType(), fName) };
     }
 };

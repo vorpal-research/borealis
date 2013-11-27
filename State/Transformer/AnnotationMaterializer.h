@@ -124,7 +124,7 @@ public:
 
     Term::Ptr transformDirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
         auto load = llvm::dyn_cast<LoadTerm>(trm->getLhv());
-        if(!load && !trm->getIsIndirect()) failWith(
+        if(!load && !trm->isIndirect()) failWith(
             "Cannot access member " +
             trm->getProperty() +
             ": term is not an instance of load"
@@ -145,7 +145,7 @@ public:
         );
 
         return factory().getLoadTerm(
-            factory().getNaiveGepTerm(
+            factory().getGepTerm(
                 load->getRhv(),
                 std::vector<Term::Ptr> {
                     factory().getOpaqueConstantTerm(0LL),
@@ -180,7 +180,7 @@ public:
         );
 
         return factory().getLoadTerm(
-            factory().getNaiveGepTerm(
+            factory().getGepTerm(
                 arg,
                 std::vector<Term::Ptr> {
                     factory().getOpaqueConstantTerm(0LL),
@@ -196,7 +196,7 @@ public:
         // this argument MUST be a load from a pointer to structure in
         // well-formed expression
 
-        return trm->getIsIndirect() ?
+        return trm->isIndirect() ?
                    transformIndirectOpaqueMemberAccessTerm(trm) :
                    transformDirectOpaqueMemberAccessTerm(trm);
     }
@@ -204,7 +204,7 @@ public:
     Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
         // FIXME: decide how to handle multidimensional arrays
 
-        auto gep = factory().getNaiveGepTerm(trm->getLhv(), util::make_vector(trm->getRhv()));
+        auto gep = factory().getGepTerm(trm->getLhv(), util::make_vector(trm->getRhv()));
 
         // check types
         if(auto* terr = llvm::dyn_cast<type::TypeError>(gep->getType())) {

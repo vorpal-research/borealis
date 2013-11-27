@@ -50,7 +50,7 @@ struct SMTImpl<Impl, OpaqueUndefTerm> {
             const OpaqueUndefTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
-        return ef.getVarByTypeAndName(t->getType(), t->getName(), true);
+        return ef.getVarByTypeAndName(t->getType(), t->getName(), /*fresh = */true);
     }
 };
 

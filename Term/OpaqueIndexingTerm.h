@@ -49,7 +49,7 @@ public:
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto _lhv = tr->transform(lhv);
         auto _rhv = tr->transform(rhv);
-        auto _type = tr->FN.Type->getUnknownType();
+        auto _type = tr->FN.Type->getUnknownType(); // FIXME: Can we do better?
         TERM_ON_CHANGED(
             lhv != _lhv || rhv != _rhv,
             new Self( _type, _lhv, _rhv )
@@ -76,8 +76,7 @@ struct SMTImpl<Impl, OpaqueIndexingTerm> {
             const OpaqueIndexingTerm*,
             ExprFactory<Impl>&,
             ExecutionContext<Impl>*) {
-        USING_SMT_IMPL(Impl);
-        BYE_BYE(Dynamic, "Should not be called!");
+        BYE_BYE(Dynamic<Impl>, "Should not be called!");
     }
 };
 #include "Util/unmacros.h"
