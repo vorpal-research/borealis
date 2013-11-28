@@ -5,12 +5,11 @@
  *      Author: belyaev
  */
 
-#include "Codegen/FileManager.h"
-
-#include <sstream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 
+#include "Codegen/FileManager.h"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -47,7 +46,7 @@ std::string FileManager::read(const LocusRange& where) {
     {
         std::vector<char> data(where.rhv.loc.col+1);
         file.get(data.data(), where.rhv.loc.col);
-        out << data.data(); // funny fact: std::vector<char> is guaranteed to be null-terminated
+        out << data.data(); // std::vector<char> is guaranteed to be null-terminated
     }
 
     return out.str();

@@ -151,8 +151,7 @@ void swap(const borealis::util::copying_ptr<T, D, C>& ptr1,
 template<class T, class D, class C>
 struct hash<borealis::util::copying_ptr<T, D, C>> {
     size_t operator()(const borealis::util::copying_ptr<T, D, C>& ptr) const noexcept {
-
-        return ptr? std::hash<T>{}(*ptr) : std::hash<T*>{}(nullptr);
+        return ptr ? std::hash<T>{}(*ptr) : std::hash<T*>{}(nullptr);
     }
 };
 

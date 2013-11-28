@@ -75,8 +75,7 @@ std::vector<command> interviewer::getCompileCommands() {
     const auto& optTable = pimpl->theDriver->getOpts();
 
     if (!pimpl->theCompilation) {
-        // FIXME: error message
-        errs() << error("Fucked up, sorry :(") << endl;
+        errs() << error("Compilation object not exists") << endl;
         return std::move(ret);
     }
 
@@ -122,7 +121,6 @@ interviewer::status interviewer::run() const {
     const clang::driver::Command* FailingCommand;
     if (pimpl->theDriver->ExecuteCompilation(*pimpl->theCompilation, FailingCommand) < 0) {
         pimpl->theDriver->generateCompilationDiagnostics(*pimpl->theCompilation, FailingCommand);
-        // FIXME: error message
         errs() << error("Compilation failed") << endl;
         return status::FAILURE;
     }
