@@ -121,7 +121,7 @@ std::set<DIType>& flattenTypeTree(DIType di, std::set<DIType>& collected) {
 
     if(DICompositeType struct_ = di) {
         auto members = struct_.getTypeArray();
-        for(size_t i = 0U; i < members.getNumElements(); ++i) {
+        for(auto i = 0U; i < members.getNumElements(); ++i) {
             auto mem = members.getElement(i);
             flattenTypeTree(mem, collected);
         }
@@ -139,9 +139,8 @@ std::set<DIType> flattenTypeTree(DIType di) {
 }
 
 DIType stripAliases(DIType tp) {
-    if(DIAlias alias = tp) {
-        return stripAliases(alias.getOriginal());
-    } else return tp;
+    if(DIAlias alias = tp) return stripAliases(alias.getOriginal());
+    else return tp;
 }
 
 #include "Util/macros.h"
@@ -149,22 +148,22 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
     const std::pair<llvm::Type*, DIType>& tp,
     std::map<llvm::Type*, DIType>& collected) {
 
-    if(collected.count(tp.first)) return collected;
-    collected.insert(tp);
+    auto* type = tp.first;
+    auto di = stripAliases(tp.second);
 
-    if(DIAlias alias_ = tp.second) {
-        flattenTypeTree(std::make_pair(tp.first, alias_.getOriginal()), collected);
-    } else if(DICompositeType mstruct_ = tp.second) {
-        auto mmembers = mstruct_.getTypeArray();
-        ASSERTC(mmembers.getNumElements() == tp.first->getNumContainedTypes());
+    if(collected.count(type)) return collected;
+    collected.insert({type, di});
 
-        for(size_t i = 0U; i < mmembers.getNumElements(); ++i) {
-            auto mmem = mmembers.getElement(i);
-            auto mem = tp.first->getContainedType(i);
-            flattenTypeTree(std::make_pair(mem, mmem), collected);
+    if(DICompositeType struct_ = di) {
+        auto members = struct_.getTypeArray();
+        ASSERTC(members.getNumElements() == type->getNumContainedTypes());
+        for(auto i = 0U; i < members.getNumElements(); ++i) {
+            auto mem = type->getContainedType(i);
+            auto mmem = members.getElement(i);
+            flattenTypeTree({mem, mmem}, collected);
         }
-    } else if(DIDerivedType derived = tp.second) {
-        flattenTypeTree(std::make_pair(tp.first->getContainedType(0), derived.getTypeDerivedFrom()), collected);
+    } else if(DIDerivedType derived = di) {
+        flattenTypeTree({type->getContainedType(0), derived.getTypeDerivedFrom()}, collected);
     }
 
     return collected;
