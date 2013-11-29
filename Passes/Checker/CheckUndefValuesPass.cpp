@@ -29,6 +29,11 @@ public:
             if (intrinsic_manager.getIntrinsicType(*call) != function_type::UNKNOWN)
                 return;
 
+        // FIXME: Better undef propagation analysis
+
+        // undef in phi is normal
+        if (isa<PHINode>(&I)) return;
+
         for (Value* op : view(I.op_begin(), I.op_end())) {
             if (isa<UndefValue>(op)) {
                 pass->DM->addDefect(DefectType::NDF_01, &I);
