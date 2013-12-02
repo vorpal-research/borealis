@@ -16,6 +16,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "Util/iterators.hpp"
@@ -115,6 +116,10 @@ public:
 
     std::set<value_type> toSet() {
         return to<std::set<value_type>>();
+    }
+
+    std::unordered_set<value_type> toHashSet() {
+        return to<std::unordered_set<value_type>>();
     }
 
 };

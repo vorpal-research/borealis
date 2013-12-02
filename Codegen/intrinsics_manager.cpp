@@ -55,7 +55,11 @@ const std::string IntrinsicsManager::getFuncName(function_type ft, const std::st
     std::string buf;
     std::ostringstream oss(buf);
 
-    oss << "borealis." << getIntrinsicInfo(ft).name;
+    if(ft >= function_type::FIRST_INTRINSIC && ft <= function_type::LAST_INTRINSIC) {
+        oss << "borealis.";
+    }
+
+    oss << getIntrinsicInfo(ft).name;
     if (!ext.empty()) oss << "." << ext;
     return oss.str();
 }

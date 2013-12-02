@@ -1,10 +1,4 @@
 extern int nondet_int(void);
-void __VERIFIER_assert(int cond) {
-  if (!(cond)) {
-    ERROR: goto ERROR;
-  }
-  return;
-}
 /* emulates multi-precision addition */
 #include <assert.h>
 
@@ -101,11 +95,13 @@ unsigned int mp_add(unsigned int a, unsigned int b)
 
 int main()
 {
-    unsigned int a, b, r;
+    unsigned int a = 45, b = 26, r;
 
     r = mp_add(a, b);
 
-    __VERIFIER_assert(r == a + b);
+    if(r != a + b) {
+        ERROR: goto ERROR;
+    }
     
     return 0;
 }

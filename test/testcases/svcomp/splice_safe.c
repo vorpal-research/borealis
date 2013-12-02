@@ -9,9 +9,8 @@ extern int __VERIFIER_nondet_int();
 
 #include <stdlib.h>
 
-void exit(int s) {
- _EXIT: goto _EXIT;
-}
+void borealis_assert(int cond);
+#define __VERIFIER_assert(X) borealis_assert(X)
 
 typedef struct node {
   int h;
@@ -68,12 +67,12 @@ int main() {
   /* Check it */
   p = l1;
   while (p != 0) {
-    if (p->h != 1) goto ERROR;
+    __VERIFIER_assert(p->h == 1);
     p = p->n;
   }
   p = l2;
   while (p != 0) {
-    if (p->h != 2) goto ERROR;
+    __VERIFIER_assert(p->h == 2);
     p = p->n;
   }
 
