@@ -17,7 +17,6 @@ int main()
     /* naive parity */
     v1 = v;
     parity1 = (char)0;
-    // @unroll 33
     while (v1 != 0) {
         if (parity1 == (char)0) {
             parity1 = (char)1;
