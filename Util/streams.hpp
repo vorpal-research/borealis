@@ -166,6 +166,13 @@ inline option<T> fromString(const std::string& str) {
     return Destringifier<T>::fromString(str);
 }
 
+template<class T, class V>
+inline option<T> stringCast(V&& obj) {
+    return Destringifier<T>::fromString(
+        util::toString(std::forward<V>(obj))
+    );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // borealis::util::streams
