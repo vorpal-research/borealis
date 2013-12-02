@@ -13,11 +13,8 @@
 #include <map>
 #include <set>
 
-#include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
-
-#include "Util/macros.h"
 
 namespace borealis {
 
@@ -26,7 +23,12 @@ class AdaptorPass:
         public borealis::logging::ClassLevelLogging<AdaptorPass> {
 
 public:
+
     static char ID;
+
+#include "Util/macros.h"
+    static constexpr auto loggerDomain() QUICK_RETURN("adaptor")
+#include "Util/unmacros.h"
 
     AdaptorPass();
     virtual bool runOnModule(llvm::Module& M) override;
@@ -35,7 +37,5 @@ public:
 };
 
 } /* namespace borealis */
-
-#include "Util/unmacros.h"
 
 #endif /* ADAPTORPASS_H_ */

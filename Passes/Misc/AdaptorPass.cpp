@@ -8,9 +8,9 @@
 #include <llvm/Constants.h>
 #include <llvm/Support/InstVisitor.h>
 
-#include "Passes/Misc/AdaptorPass.h"
-#include "Config/config.h"
 #include "Codegen/intrinsics_manager.h"
+#include "Config/config.h"
+#include "Passes/Misc/AdaptorPass.h"
 
 namespace borealis {
 
@@ -19,8 +19,7 @@ namespace {
 using namespace borealis::config;
 MultiConfigEntry asserts{"adapt", "assert"};
 MultiConfigEntry assumes{"adapt", "assume"};
-MultiConfigEntry labels{"adapt", "error-label"};
-
+MultiConfigEntry  labels{"adapt", "error-label"};
 
 llvm::Function* getBorealisBuiltin(
     function_type ft,
@@ -28,8 +27,8 @@ llvm::Function* getBorealisBuiltin(
 ) {
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
-    auto argType = llvm::Type::getInt32Ty(M.getContext());
-    auto retType = llvm::Type::getVoidTy(M.getContext());
+    auto* argType = llvm::Type::getInt32Ty(M.getContext());
+    auto* retType = llvm::Type::getVoidTy(M.getContext());
 
     llvm::Function* cur = M.getFunction(
         intrinsic_manager.getFuncName(ft, "")
@@ -55,22 +54,22 @@ llvm::Function* getBorealisBuiltin(
 }
 
 llvm::Value* mkBorealisBuiltin(
-        function_type ft,
-        llvm::Module& M,
-        llvm::CallInst* existingCall
+    function_type ft,
+    llvm::Module& M,
+    llvm::CallInst* existingCall
 ) {
     using llvm::dyn_cast;
 
-    auto argType = llvm::Type::getInt32Ty(M.getContext());
-    auto retType = llvm::Type::getVoidTy(M.getContext());
+    auto* argType = llvm::Type::getInt32Ty(M.getContext());
+    auto* retType = llvm::Type::getVoidTy(M.getContext());
 
     llvm::Function* cur = getBorealisBuiltin(ft, M);
 
     auto* arg = existingCall->getArgOperand(0);
-    llvm::Value* realArg = (arg->getType() == argType)? arg :
+    llvm::Value* realArg = arg->getType() == argType ? arg :
         llvm::CastInst::CreateIntegerCast(
             arg,
-            llvm::Type::getInt32Ty(M.getContext()),
+            argType,
             false,
             "bor.builtin_arg",
             existingCall
@@ -107,32 +106,39 @@ llvm::Value* mkBorealisAssume(
 
 class CallVisitor : public llvm::InstVisitor<CallVisitor> {
 public:
-
-    // still buggy: unreachable propagation breaks everything to pieces
+    // XXX: still buggy, unreachable propagation breaks everything to pieces
     void visitBasicBlock(llvm::BasicBlock& BB) {
         using namespace llvm;
-        auto& M = *BB.getParent()->getParent();
 
         static auto label = util::viewContainer(labels.get()).toHashSet();
-        if(BB.hasName() && label.count(BB.getName())) {
-            auto first = BB.getFirstNonPHIOrDbgOrLifetime();
-            auto f = getBorealisBuiltin(function_type::BUILTIN_BOR_ASSERT, M);
-            auto arg = ConstantInt::get(f->getFunctionType()->getFunctionParamType(0), 0, false);
 
-            llvm::CallInst::Create(getBorealisBuiltin(function_type::BUILTIN_BOR_ASSERT, M), arg, "", first);
+        if (!BB.hasName()) return;
+
+        if(label.count(BB.getName())) {
+            auto& M = *BB.getParent()->getParent();
+
+            auto* first = BB.getFirstNonPHIOrDbgOrLifetime();
+            auto* f = getBorealisBuiltin(function_type::BUILTIN_BOR_ASSERT, M);
+            auto* arg = ConstantInt::get(f->getFunctionType()->getFunctionParamType(0), 0, false);
+
+            llvm::CallInst::Create(f, arg, "", first);
         }
     }
 
     void visitCall(llvm::CallInst& I) {
         using namespace llvm;
-        auto& M = *I.getParent()->getParent()->getParent();
 
         static auto assert = util::viewContainer(asserts.get()).toHashSet();
         static auto assume = util::viewContainer(assumes.get()).toHashSet();
 
-        if(assert.count(I.getCalledFunction()->getName().str())) {
+        auto* calledFunc = I.getCalledFunction();
+
+        if (!calledFunc->hasName()) return;
+
+        auto& M = *I.getParent()->getParent()->getParent();
+        if(assert.count(calledFunc->getName())) {
             mkBorealisAssert(M, &I);
-        } else if(assume.count(I.getCalledFunction()->getName().str())) {
+        } else if(assume.count(calledFunc->getName())) {
             mkBorealisAssume(M, &I);
         }
     }
@@ -145,12 +151,11 @@ public:
 AdaptorPass::AdaptorPass() : ModulePass(ID) {}
 
 void AdaptorPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    AU.setPreservesAll();
+    AU.setPreservesCFG();
 }
 
 bool AdaptorPass::runOnModule(llvm::Module& M) {
     CallVisitor{}.visit(M);
-
     return false;
 }
 
@@ -158,6 +163,6 @@ AdaptorPass::~AdaptorPass() {}
 
 char AdaptorPass::ID;
 static RegisterPass<AdaptorPass>
-X("adaptor", "Adapt the borealis assertions api to custom functions or labels");
+X("adaptor", "Adapt the borealis assertions API to custom functions or labels");
 
 } /* namespace borealis */
