@@ -8,13 +8,15 @@
 #include "Logging/tracer.hpp"
 #include "SMT/Z3/Solver.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 namespace z3_ {
 
 Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart) :
         z3ef(z3ef), memoryStart(memoryStart) {}
 
-z3::check_result Solver::check(
+Solver::check_result Solver::check(
         const Bool& z3query_,
         const Bool& z3state_) {
 
@@ -48,18 +50,20 @@ z3::check_result Solver::check(
 
         dbg << "With:" << endl;
         if (r == z3::sat) {
-            dbg << s.get_model() << endl;
+            auto model = s.get_model();
+            dbg << model << endl;
+            return std::make_tuple(r, util::just(model), util::nothing(), util::nothing());
+
         } else if (r == z3::unsat) {
             auto core = s.unsat_core();
             for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
-
-            // dbg << "PROOF!: " << s.proof() << endl;
+            return std::make_tuple(r, util::nothing(), util::just(core), util::nothing());
 
         } else {
-            dbg << s.reason_unknown() << endl;
+            auto reason = s.reason_unknown();
+            dbg << reason << endl;
+            return std::make_tuple(r, util::nothing(), util::nothing(), util::just(reason));
         }
-
-        return r;
     }
 }
 
@@ -76,7 +80,27 @@ bool Solver::isViolated(
     ExecutionContext ctx(z3ef, memoryStart);
     auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
     auto z3query = SMT<Z3>::doit(query, z3ef, &ctx);
-    return check(!z3query, z3state) != z3::unsat;
+
+    z3::check_result res;
+    util::option<z3::model> model;
+    std::tie(res, model, std::ignore, std::ignore) = check(!z3query, z3state);
+
+    if (res == z3::sat) {
+        auto m = model.getUnsafe(); // You shall not fail! (c)
+
+        auto cex = state
+        ->filterByTypes({PredicateType::PATH})
+        ->filter([this,&m,&ctx](Predicate::Ptr p) -> bool {
+            auto z3p = SMT<Z3>::doit(p, z3ef, &ctx);
+            auto valid = m.eval(logic::z3impl::asAxiom(z3p));
+            auto bValid = util::stringCast<bool>(valid);
+            return bValid.getOrElse(false);
+        });
+
+        dbgs() << "CEX: " << cex << endl;
+    }
+
+    return res != z3::unsat;
 }
 
 bool Solver::isPathImpossible(
@@ -92,8 +116,14 @@ bool Solver::isPathImpossible(
     ExecutionContext ctx(z3ef, memoryStart);
     auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
     auto z3path = SMT<Z3>::doit(path, z3ef, &ctx);
-    return check(z3path, z3state) == z3::unsat;
+
+    z3::check_result res;
+    std::tie(res, std::ignore, std::ignore, std::ignore) = check(z3path, z3state);
+
+    return res == z3::unsat;
 }
 
 } // namespace z3_
 } // namespace borealis
+
+#include "Util/unmacros.h"

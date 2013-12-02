@@ -43,7 +43,14 @@ private:
     ExprFactory& z3ef;
     unsigned long long memoryStart;
 
-    z3::check_result check(
+    using check_result = std::tuple<
+        z3::check_result,
+        util::option<z3::model>,
+        util::option<z3::expr_vector>,
+        util::option<std::string>
+    >;
+
+    check_result check(
             const Bool& z3query,
             const Bool& z3state);
 
