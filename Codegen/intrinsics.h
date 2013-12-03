@@ -21,6 +21,7 @@ enum class function_type {
     INTRINSIC_GLOBAL,
     INTRINSIC_ANNOTATION,
     INTRINSIC_MALLOC,
+    INTRINSIC_ALLOC,
     LAST_INTRINSIC,
 
     FIRST_BUILTIN,
@@ -53,6 +54,7 @@ Streamer& operator << (Streamer& str, function_type ft) {
     case function_type::INTRINSIC_GLOBAL:                  str << "function_type::INTRINSIC_GLOBAL"; break;
     case function_type::INTRINSIC_ANNOTATION:              str << "function_type::INTRINSIC_ANNOTATION"; break;
     case function_type::INTRINSIC_MALLOC:                  str << "function_type::INTRINSIC_MALLOC"; break;
+    case function_type::INTRINSIC_ALLOC:                   str << "function_type::INTRINSIC_ALLOC"; break;
     case function_type::LAST_INTRINSIC:                    str << "function_type::LAST_INTRINSIC"; break;
 
     case function_type::FIRST_BUILTIN:                     str << "function_type::FIRST_BUILTIN"; break;

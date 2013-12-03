@@ -81,6 +81,22 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
     }
 };
 
+static RegisterIntrinsic INTRINSIC_ALLOC {
+    function_type::INTRINSIC_ALLOC,
+    "alloc",
+    [](
+          llvm::Function* F,
+          FactoryNest FN
+      ) -> PredicateState::Ptr {
+        ASSERTC(F->arg_size() > 0);
+        return FN.State->Basic() +
+               FN.Predicate->getAllocaPredicate(
+                   FN.Term->getReturnValueTerm(F),
+                   FN.Term->getArgumentTerm(F->arg_begin())
+               );
+    }
+};
+
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",
