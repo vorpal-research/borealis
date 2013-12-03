@@ -74,13 +74,18 @@ void MallocMutator::eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI)
             toString(*mallocType),
             FunctionType::get(
                     mallocType,
-                    size_type,
+                    llvm::makeArrayRef<llvm::Type*>({ size_type, arraySize->getType() }),
                     false
             ),
             &M
     );
 
-    auto* call = CallInst::Create(current, resolvedMallocSize, "", CI);
+    auto* call = CallInst::Create(
+        current,
+        llvm::makeArrayRef<llvm::Value*>({ resolvedMallocSize, arraySize }),
+        "",
+        CI
+    );
     call->setMetadata("dbg", CI->getMetadata("dbg"));
 
     // All users of this malloc call are:
@@ -130,13 +135,18 @@ void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
             toString(*mallocType),
             llvm::FunctionType::get(
                     mallocType,
-                    size_type,
+                    llvm::makeArrayRef<llvm::Type*>({ size_type, arraySize->getType() }),
                     false
             ),
             &M
     );
 
-    auto* call = CallInst::Create(current, resolvedMallocSize, "", CI);
+    auto* call = CallInst::Create(
+        current,
+        llvm::makeArrayRef<llvm::Value*>({ resolvedMallocSize, arraySize }),
+        "",
+        CI
+    );
     call->setMetadata("dbg", CI->getMetadata("dbg"));
 
     CI->replaceAllUsesWith(call);
@@ -154,10 +164,17 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
     using borealis::util::toString;
 
     std::vector<CallInst*> mallocs;
+    std::vector<AllocaInst*> allocas;
     for (auto& I : viewContainer(M).flatten().flatten()) {
         if (CallInst* CI = dyn_cast<CallInst>(&I)) {
             if (isMalloc(CI)) {
                 mallocs.push_back(CI);
+            }
+        }
+
+        if(AllocaInst* Al = dyn_cast<AllocaInst>(&I)) {
+            if(!isa<ConstantInt>(Al->getArraySize())) {
+                allocas.push_back(Al);
             }
         }
     }
@@ -168,6 +185,19 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
         } else {
             mutateMalloc(M, CI);
         }
+    }
+
+
+    for(AllocaInst* Al : allocas) {
+        // FIXME: variable-sized alloca should be an intrinsic
+        auto newAl = new AllocaInst{
+            Al->getAllocatedType(),
+            ConstantInt::get(Al->getArraySize()->getType(), DefaultMallocSize, false),
+            "bor.alloca",
+            Al
+        };
+        Al->replaceAllUsesWith(newAl);
+        Al->eraseFromParent();
     }
 
     return false;
