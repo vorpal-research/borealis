@@ -24,103 +24,84 @@ DefaultMallocSize("default-malloc-size", llvm::cl::init(2048), llvm::cl::NotHidd
 
 char MallocMutator::ID;
 static RegisterPass<MallocMutator>
-X("malloc-mutator", "Replace all malloc calls with borealis.malloc.*");
+X("malloc-mutator", "Replace all (m)alloc calls with borealis.(m)alloc.*");
 
-bool MallocMutator::canEliminateMallocBitcasts(llvm::CallInst* CI) {
-    return getMallocBitcastType(CI) != nullptr;
-}
-
-llvm::PointerType* MallocMutator::getMallocBitcastType(llvm::CallInst* CI) {
+llvm::Type* getMallocBitcastType(llvm::CallInst* CI) {
     using namespace llvm;
-    using borealis::util::view;
 
     if (CI->getNumUses() == 0) return nullptr;
 
     auto* bitcastType = CI->use_back()->getType();
-    for (const auto* user : view(CI->use_begin(), CI->use_end())) {
+    for (const auto* user : util::view(CI->use_begin(), CI->use_end())) {
         if (!isa<BitCastInst>(user)) return nullptr;
         if (bitcastType != user->getType()) return nullptr;
     }
 
-    return dyn_cast<PointerType>(bitcastType);
+    return bitcastType;
 }
 
-void MallocMutator::eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI) {
+bool canEliminateMallocBitcasts(llvm::CallInst* CI) {
+    return getMallocBitcastType(CI) != nullptr;
+}
+
+llvm::Value* getMallocArraySizeOrArg(llvm::CallInst* CI, llvm::TargetData* TD) {
+    auto* arraySize = llvm::getMallocArraySize(CI, TD, true);
+    return arraySize ? arraySize : CI->getArgOperand(0);
+}
+
+void eliminateMallocBitcasts(llvm::Instruction* old_, llvm::Instruction* new_) {
     using namespace llvm;
-    using borealis::util::toString;
-    using borealis::util::view;
 
-    auto TyF = TypeFactory::get();
-    auto& TD = GetAnalysis<TargetData>::doit(this);
-    auto& intrinsics_manager = IntrinsicsManager::getInstance();
-    auto* size_type = llvm::Type::getInt64Ty(M.getContext());
-
-    auto* arraySize = getMallocArraySize(CI, &TD, true);
-    auto* mallocType = getMallocBitcastType(CI);
-    auto elemSize = TypeUtils::getTypeSizeInElems(
-        TyF->cast(mallocType->getElementType())
-    );
-
-    unsigned long long resolvedArraySize;
-    if (auto* constantArraySize = dyn_cast_or_null<ConstantInt>(arraySize)) {
-        resolvedArraySize = constantArraySize->getLimitedValue();
-    } else {
-        resolvedArraySize = DefaultMallocSize;
-    }
-    auto* resolvedMallocSize = ConstantInt::get(size_type, resolvedArraySize * elemSize);
-
-    auto* current = intrinsics_manager.createIntrinsic(
-            function_type::INTRINSIC_MALLOC,
-            toString(*mallocType),
-            FunctionType::get(
-                    mallocType,
-                    llvm::makeArrayRef<llvm::Type*>({ size_type, arraySize->getType() }),
-                    false
-            ),
-            &M
-    );
-
-    auto* call = CallInst::Create(
-        current,
-        llvm::makeArrayRef<llvm::Value*>({ resolvedMallocSize, arraySize }),
-        "",
-        CI
-    );
-    call->setMetadata("dbg", CI->getMetadata("dbg"));
-
-    // All users of this malloc call are:
+    // All users of old_ malloc call are:
     // - bitcasts
-    // - of the same mallocType type
+    // - of the same type
 
-    std::vector<BitCastInst*> bitCasts;
-    bitCasts.reserve(CI->getNumUses());
-    for (auto* user : view(CI->use_begin(), CI->use_end())) {
-        bitCasts.push_back(cast<BitCastInst>(user));
-    }
+    auto bitCasts = util::view(old_->use_begin(), old_->use_end())
+                    .map(dyn_caster<BitCastInst>())
+                    .filter()
+                    .toVector();
 
     for (auto* bitCast : bitCasts) {
-        bitCast->replaceAllUsesWith(call);
+        bitCast->replaceAllUsesWith(new_);
         bitCast->eraseFromParent();
     }
 
-    CI->eraseFromParent();
+    old_->eraseFromParent();
 }
 
-void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
+void mutateMalloc(llvm::Instruction* old_, llvm::Instruction* new_) {
+    old_->replaceAllUsesWith(new_);
+    old_->eraseFromParent();
+}
+
+void mutateAlloc(llvm::Instruction* old_, llvm::Instruction* new_) {
+    old_->replaceAllUsesWith(new_);
+    old_->eraseFromParent();
+}
+
+void MallocMutator::mutateMemoryInst(
+    llvm::Module& M,
+    llvm::Instruction* CI,
+    function_type memoryType,
+    llvm::Type* resultType,
+    llvm::Type* elemType,
+    llvm::Value* arraySize,
+    std::function<void(llvm::Instruction*, llvm::Instruction*)> mutator
+) {
     using namespace llvm;
-    using borealis::util::toString;
-    using borealis::util::view;
 
-    auto TyF = TypeFactory::get();
-    TargetData& TD = GetAnalysis<TargetData>::doit(this);
+    static auto TyF = TypeFactory::get();
     auto& intrinsics_manager = IntrinsicsManager::getInstance();
-    auto* size_type = llvm::Type::getInt64Ty(M.getContext());
 
-    auto* arraySize = getMallocArraySize(CI, &TD, true);
-    auto* mallocType = CI->getType();
+    auto* sizeType = llvm::Type::getInt64Ty(M.getContext());
+
     auto elemSize = TypeUtils::getTypeSizeInElems(
-        TyF->cast(getMallocAllocatedType(CI))
+        TyF->cast(elemType)
     );
+
+    auto* resolvedElemSize = ConstantInt::get(sizeType, elemSize);
+
+    auto* originalArraySize = arraySize;
 
     unsigned long long resolvedArraySize;
     if (auto* constantArraySize = dyn_cast_or_null<ConstantInt>(arraySize)) {
@@ -128,29 +109,32 @@ void MallocMutator::mutateMalloc(llvm::Module& M, llvm::CallInst* CI) {
     } else {
         resolvedArraySize = DefaultMallocSize;
     }
-    auto* resolvedMallocSize = ConstantInt::get(size_type, resolvedArraySize * elemSize);
+    auto* resolvedMallocSize = ConstantInt::get(sizeType, resolvedArraySize * elemSize);
 
     auto* current = intrinsics_manager.createIntrinsic(
-            function_type::INTRINSIC_MALLOC,
-            toString(*mallocType),
+            memoryType,
+            util::toString(*resultType),
             llvm::FunctionType::get(
-                    mallocType,
-                    llvm::makeArrayRef<llvm::Type*>({ size_type, arraySize->getType() }),
-                    false
+                resultType,
+                llvm::makeArrayRef<llvm::Type*>({
+                    resolvedMallocSize->getType(),
+                    resolvedElemSize->getType(),
+                    originalArraySize->getType()
+                }),
+                false
             ),
             &M
     );
 
     auto* call = CallInst::Create(
         current,
-        llvm::makeArrayRef<llvm::Value*>({ resolvedMallocSize, arraySize }),
+        llvm::makeArrayRef<llvm::Value*>({ resolvedMallocSize, resolvedElemSize, originalArraySize }),
         "",
         CI
     );
     call->setMetadata("dbg", CI->getMetadata("dbg"));
 
-    CI->replaceAllUsesWith(call);
-    CI->eraseFromParent();
+    mutator(CI, call);
 }
 
 void MallocMutator::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -163,6 +147,8 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
     using borealis::util::viewContainer;
     using borealis::util::toString;
 
+    TargetData& TD = GetAnalysis<TargetData>::doit(this);
+
     std::vector<CallInst*> mallocs;
     std::vector<AllocaInst*> allocas;
     for (auto& I : viewContainer(M).flatten().flatten()) {
@@ -172,32 +158,47 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
             }
         }
 
-        if(AllocaInst* Al = dyn_cast<AllocaInst>(&I)) {
-            if(!isa<ConstantInt>(Al->getArraySize())) {
-                allocas.push_back(Al);
-            }
+        if (AllocaInst* AL = dyn_cast<AllocaInst>(&I)) {
+            allocas.push_back(AL);
         }
     }
 
     for (CallInst* CI : mallocs) {
         if (canEliminateMallocBitcasts(CI)) {
-            eliminateMallocBitcasts(M, CI);
+            auto* resType = getMallocBitcastType(CI);
+            mutateMemoryInst(
+                M,
+                CI,
+                function_type::INTRINSIC_MALLOC,
+                resType,
+                resType->getPointerElementType(),
+                getMallocArraySizeOrArg(CI, &TD),
+                eliminateMallocBitcasts
+            );
         } else {
-            mutateMalloc(M, CI);
+            auto* resType = CI->getType();
+            mutateMemoryInst(
+                M,
+                CI,
+                function_type::INTRINSIC_MALLOC,
+                resType,
+                resType->getPointerElementType(),
+                getMallocArraySizeOrArg(CI, &TD),
+                mutateMalloc
+            );
         }
     }
 
-
-    for(AllocaInst* Al : allocas) {
-        // FIXME: variable-sized alloca should be an intrinsic
-        auto newAl = new AllocaInst{
-            Al->getAllocatedType(),
-            ConstantInt::get(Al->getArraySize()->getType(), DefaultMallocSize, false),
-            "bor.alloca",
-            Al
-        };
-        Al->replaceAllUsesWith(newAl);
-        Al->eraseFromParent();
+    for (AllocaInst* AL : allocas) {
+        mutateMemoryInst(
+            M,
+            AL,
+            function_type::INTRINSIC_ALLOC,
+            AL->getType(),
+            AL->getAllocatedType(),
+            AL->getArraySize(),
+            mutateAlloc
+        );
     }
 
     return false;

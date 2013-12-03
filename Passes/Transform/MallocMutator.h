@@ -27,11 +27,16 @@ public:
 
 private:
 
-    bool canEliminateMallocBitcasts(llvm::CallInst* CI);
-    llvm::PointerType* getMallocBitcastType(llvm::CallInst* CI);
+    void mutateMemoryInst(
+        llvm::Module& M,
+        llvm::Instruction* CI,
+        function_type memoryType,
+        llvm::Type* resultType,
+        llvm::Type* elemType,
+        llvm::Value* arraySize,
+        std::function<void(llvm::Instruction*, llvm::Instruction*)> mutator
+    );
 
-    void eliminateMallocBitcasts(llvm::Module& M, llvm::CallInst* CI);
-    void mutateMalloc(llvm::Module& M, llvm::CallInst* CI);
 };
 
 } /* namespace borealis */

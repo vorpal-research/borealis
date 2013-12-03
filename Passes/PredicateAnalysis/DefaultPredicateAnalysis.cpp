@@ -146,31 +146,6 @@ public:
         );
     }
 
-    void visitAllocaInst(llvm::AllocaInst& I) {
-        using namespace llvm;
-        using llvm::Type;
-
-        Value* lhv = &I;
-        Value* arraySize = I.getArraySize();
-        Type* allocatedType = I.getAllocatedType();
-
-        ASSERTC(isa<ConstantInt>(arraySize));
-
-        auto numElems = cast<ConstantInt>(arraySize)->getLimitedValue();
-        auto elemSize = TypeUtils::getTypeSizeInElems(
-            pass->FN.Type->cast(allocatedType)
-        );
-
-        auto size = numElems * elemSize;
-
-        ASSERTC(size > 0);
-
-        pass->PM[&I] = pass->FN.Predicate->getAllocaPredicate(
-            pass->FN.Term->getValueTerm(lhv),
-            pass->FN.Term->getIntTerm(size)
-        );
-    }
-
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         using namespace llvm;
 
