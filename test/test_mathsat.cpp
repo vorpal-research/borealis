@@ -35,10 +35,15 @@ TEST(MathSAT, constants) {
     Config conf = Config::Default();
     Env env = Env(conf);
 
+    Expr one = env.bv_val(1, 32);
+
     Expr a = env.num_val(1234);
     Expr b = env.num_val(-1234);
     Expr c = env.bv_val(1234, 32);
     Expr d = env.bv_val(-1234, 32);
+
+    Expr e = env.bv_val(std::numeric_limits<int>::min(), 32);
+    Expr f = env.bv_val(std::numeric_limits<int>::max(), 32);
 
     auto check_expr = [&](Expr e)->bool {
         Solver solver(e.env());
@@ -50,6 +55,8 @@ TEST(MathSAT, constants) {
     EXPECT_TRUE(check_expr(a == (-b)));
     EXPECT_TRUE(check_expr(c != d));
     EXPECT_TRUE(check_expr(c == (-d)));
+
+    EXPECT_TRUE(check_expr(e == f + one));
 }
 
 TEST(MathSAT, generatingFormulas) {

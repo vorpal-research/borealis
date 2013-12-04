@@ -186,14 +186,8 @@ Expr Env::num_val(int i) const {
 }
 
 Expr Env::bv_val(int i, unsigned size) const {
-    msat_term new_term;
-    std::string int_str;
-    if (i >= 0) {
-        int_str = util::toString(i);
-    } else {
-        int_str = util::toString(~i+1);
-    }
-    new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
+    auto int_str = util::toString(static_cast<unsigned int>(i));
+    auto new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
     ASSERTMSAT_TERM(new_term);
     return Expr(*this, new_term);
 }
