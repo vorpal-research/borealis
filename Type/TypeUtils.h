@@ -67,6 +67,19 @@ struct TypeUtils {
         return TypeSizer().visit(type);
     }
 
+    static unsigned long long getStructOffsetInElems(Type::Ptr type, unsigned idx) {
+        if (auto* structType = llvm::dyn_cast<type::Record>(type)) {
+            const auto& recordBody = structType->getBody()->get();
+            auto res = 0U;
+            for (auto i = 0U; i < idx; ++i) {
+                res += getTypeSizeInElems(recordBody.at(i).getType());
+            }
+            return res;
+        }
+
+        BYE_BYE(unsigned long long, "Funk you!");
+    }
+
 };
 
 } // namespace borealis

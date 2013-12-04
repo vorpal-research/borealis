@@ -125,7 +125,7 @@ Z3::Dynamic ExprFactory::getVarByTypeAndName(
     else if (isa<type::UnknownType>(type))
         BYE_BYE(Dynamic, "Unknown var type in Z3 conversion");
     else if (isa<type::TypeError>(type))
-        BYE_BYE(Dynamic, "Encountered type error in Z3 conversion");
+        BYE_BYE(Dynamic, "Encountered type error in Z3 conversion: " + util::toString(*type));
 
     BYE_BYE(Dynamic, "Unreachable!");
 }

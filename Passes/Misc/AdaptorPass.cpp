@@ -114,11 +114,17 @@ public:
 
         if (!BB.hasName()) return;
 
-        if(label.count(BB.getName())) {
+        if (label.count(BB.getName())) {
             auto& M = *BB.getParent()->getParent();
 
             auto* first = BB.getFirstNonPHIOrDbgOrLifetime();
             auto* f = getBorealisBuiltin(function_type::BUILTIN_BOR_ASSERT, M);
+
+            // Check if we've already been here and done stuff
+            if (auto* CI = dyn_cast<CallInst>(first))
+                if (f == CI->getCalledFunction())
+                    return;
+
             auto* arg = ConstantInt::get(f->getFunctionType()->getFunctionParamType(0), 0, false);
 
             llvm::CallInst::Create(f, arg, "", first);
@@ -133,6 +139,7 @@ public:
 
         auto* calledFunc = I.getCalledFunction();
 
+        if (!calledFunc) return;
         if (!calledFunc->hasName()) return;
 
         auto& M = *I.getParent()->getParent()->getParent();

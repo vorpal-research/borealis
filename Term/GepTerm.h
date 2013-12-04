@@ -43,7 +43,7 @@ class GepTerm: public borealis::Term {
             class_tag(*this),
             type,
             "gep(" + base->getName() + "," +
-                std::accumulate(shifts.begin(), shifts.end(), std::string{"0"},
+                std::accumulate(shifts.begin(), shifts.end(), std::string{""},
                     [](const std::string& a, const Shift& shift) {
                         return a + "+" + shift->getName();
                     }
@@ -98,13 +98,6 @@ public:
             ASSERTC(uIndex < body.getNumFields());
             return body.at(uIndex).getType();
         } else if (auto* arrayType = llvm::dyn_cast<type::Array>(parent)) {
-//            const auto& sz = arrayType->getSize();
-//            if(!!sz && sz.getUnsafe() <= idx) {
-//                dbgs() << "Should be detected: array index overflow"
-//                       << "  Index: " << util::toString(idx)
-//                       << "  Type: " << TypeUtils::toString(*arrayType)
-//                       << endl;
-//            }
             return arrayType->getElement();
         }
 
@@ -147,21 +140,37 @@ struct SMTImpl<Impl, GepTerm> {
             auto h = util::head(t->getShifts());
 
             auto tp = baseType->getPointed();
+            auto size = TypeUtils::getTypeSizeInElems(tp);
 
             auto by = SMT<Impl>::doit(h, ef, ctx).template to<Integer>();
-            auto size = TypeUtils::getTypeSizeInElems(tp);
             ASSERT(!by.empty(),
                    "Encountered a GEP term with incorrect shifts");
+
             shift = shift + by.getUnsafe() * size;
 
             for (const auto& s : util::tail(t->getShifts())) {
-                tp = GepTerm::getAggregateElement(tp, s);
 
-                auto by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
-                auto size = TypeUtils::getTypeSizeInElems(tp);
-                ASSERT(!by.empty(),
-                       "Encountered a GEP term with incorrect shifts");
-                shift = shift + by.getUnsafe() * size;
+                if (llvm::isa<type::Record>(tp)) {
+                    auto ss = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
+                    ASSERTC(!!ss);
+                    auto offset = TypeUtils::getStructOffsetInElems(tp, ss->getValue());
+
+                    shift = shift + offset;
+
+                    tp = GepTerm::getAggregateElement(tp, s);
+
+                } else if (llvm::isa<type::Array>(tp)) {
+                    tp = GepTerm::getAggregateElement(tp, s);
+                    auto size = TypeUtils::getTypeSizeInElems(tp);
+
+                    auto by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
+                    ASSERT(!by.empty(),
+                           "Encountered a GEP term with incorrect shifts");
+
+                    shift = shift + by.getUnsafe() * size;
+
+                } else BYE_BYE(Dynamic, "Encountered non-aggregate type in GEP: " + TypeUtils::toString(*tp));
+
             }
         }
 
