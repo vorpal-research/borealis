@@ -20,7 +20,7 @@ USING_SMT_IMPL(MathSAT);
 Solver::Solver(ExprFactory& msatef, unsigned long long memoryStart) :
         msatef(msatef), memoryStart(memoryStart) {}
 
-msat_result Solver::check(
+Solver::check_result Solver::check(
         const Bool& msatquery_,
         const Bool& msatstate_) {
 
@@ -28,9 +28,8 @@ msat_result Solver::check(
 
     TRACE_FUNC;
 
-    auto dbg = dbgs();
-
     mathsat::Solver s(msatef.unwrap());
+    auto dbg = dbgs();
 
     s.add(msatimpl::asAxiom(msatstate_));
 
@@ -50,7 +49,22 @@ msat_result Solver::check(
             << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
             << endl;
 
-        return r;
+        dbg << "With:" << endl;
+        if (r == MSAT_SAT) {
+            auto model = s.get_model();
+            dbg << util::viewContainer(model).toVector() << endl;
+            return std::make_tuple(r, util::just(model), util::nothing(), util::nothing());
+
+        } else if (r == MSAT_UNSAT) {
+            auto core = s.unsat_core();
+            for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+            return std::make_tuple(r, util::nothing(), util::just(core), util::nothing());
+
+        } else {
+            std::string reason{"UNKNOWN"}; // XXX: Extraction for reason???
+            dbg << reason << endl;
+            return std::make_tuple(r, util::nothing(), util::nothing(), util::just(reason));
+        }
     }
 }
 
@@ -67,7 +81,27 @@ bool Solver::isViolated(
     ExecutionContext ctx(msatef, memoryStart);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
-    return check(!msatquery, msatstate) != MSAT_UNSAT;
+
+    msat_result res;
+    util::option<mathsat::Model> model;
+    std::tie(res, model, std::ignore, std::ignore) = check(!msatquery, msatstate);
+
+    if (res == MSAT_SAT) {
+        auto m = model.getUnsafe(); // You shall not fail! (c)
+
+        auto cex = state
+        ->filterByTypes({PredicateType::PATH})
+        ->filter([this,&m,&ctx](Predicate::Ptr p) -> bool {
+            auto msatp = SMT<MathSAT>::doit(p, msatef, &ctx);
+            auto valid = m.eval(logic::msatimpl::asAxiom(msatp));
+            auto bValid = util::stringCast<bool>(valid);
+            return bValid.getOrElse(false);
+        });
+
+        dbgs() << "CEX: " << cex << endl;
+    }
+
+    return res != MSAT_UNSAT;
 }
 
 bool Solver::isPathImpossible(
@@ -83,7 +117,11 @@ bool Solver::isPathImpossible(
     ExecutionContext ctx(msatef, memoryStart);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
-    return check(msatpath, msatstate) == MSAT_UNSAT;
+
+    msat_result res;
+    std::tie(res, std::ignore, std::ignore, std::ignore) = check(msatpath, msatstate);
+
+    return res == MSAT_UNSAT;
 }
 
 Dynamic Solver::getInterpolant(

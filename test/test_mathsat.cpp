@@ -125,7 +125,7 @@ TEST(MathSAT, modelIterator) {
         return solver.check() == MSAT_UNSAT;
     };
 
-    for (const auto& e : view(solver.model_begin(), solver.model_end())) {
+    for (const auto& e : solver.get_model()) {
         auto termName = e.term.decl().name();
         ASSERT_TRUE("a" == termName || "b" == termName || "c" == termName);
         ASSERT_TRUE(check_expr(e.value == one));

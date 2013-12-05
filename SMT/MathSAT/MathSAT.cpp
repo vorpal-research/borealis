@@ -798,6 +798,14 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+Expr Model::eval(const Expr& term) {
+    auto res = msat_get_model_value(env_, term);
+    ASSERTMSAT_TERM(res);
+    return Expr(env_, res);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Solver::add(const Expr& e) {
     int res = msat_assert_formula(env_, e);
     ASSERTC(!res)
