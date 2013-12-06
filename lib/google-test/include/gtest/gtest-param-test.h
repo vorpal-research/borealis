@@ -1403,7 +1403,7 @@ internal::CartesianProductHolder10<Generator1, Generator2, Generator3,
       GTEST_TEST_CLASS_NAME_(test_case_name, test_name)::AddToRegistry(); \
   void GTEST_TEST_CLASS_NAME_(test_case_name, test_name)::TestBody()
 
-# define INSTANTIATE_TEST_CASE_P(prefix, test_case_name, generator) \
+# define INSTANTIATE_NAMED_TEST_CASE_P(prefix, test_case_name, generator, namer) \
   ::testing::internal::ParamGenerator<test_case_name::ParamType> \
       gtest_##prefix##test_case_name##_EvalGenerator_() { return generator; } \
   int gtest_##prefix##test_case_name##_dummy_ = \
@@ -1412,7 +1412,10 @@ internal::CartesianProductHolder10<Generator1, Generator2, Generator3,
               #test_case_name, __FILE__, __LINE__)->AddTestCaseInstantiation(\
                   #prefix, \
                   &gtest_##prefix##test_case_name##_EvalGenerator_, \
-                  __FILE__, __LINE__)
+                  __FILE__, __LINE__, namer)
+
+# define INSTANTIATE_TEST_CASE_P(prefix, test_case_name, generator) \
+  INSTANTIATE_NAMED_TEST_CASE_P(prefix, test_case_name, generator, NULL)
 
 }  // namespace testing
 

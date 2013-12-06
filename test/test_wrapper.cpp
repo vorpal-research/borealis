@@ -109,19 +109,30 @@ TEST_P(WrapperTest, basic) {
 
 }
 
+std::string GetTestName(const std::string& param) {
+    auto slash = param.find_last_of('/');
+    return slash == std::string::npos ? param : param.substr(slash + 1);
+}
 
+INSTANTIATE_NAMED_TEST_CASE_P(Aegis, WrapperTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/aegis")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(AegisLong, WrapperTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/aegis")), GetTestName);
 
-INSTANTIATE_TEST_CASE_P(Aegis, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/aegis")));
-INSTANTIATE_TEST_CASE_P(AegisLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/aegis")));
+INSTANTIATE_NAMED_TEST_CASE_P(Contracts, WrapperTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/contracts")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(ContractsLong, WrapperTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/contracts")), GetTestName);
 
-INSTANTIATE_TEST_CASE_P(Contracts, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/contracts")));
-INSTANTIATE_TEST_CASE_P(ContractsLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/contracts")));
+INSTANTIATE_NAMED_TEST_CASE_P(Misc, WrapperTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/misc")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(MiscLong, WrapperTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/misc")), GetTestName);
 
-INSTANTIATE_TEST_CASE_P(Misc, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/misc")));
-INSTANTIATE_TEST_CASE_P(MiscLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/misc")));
-
-INSTANTIATE_TEST_CASE_P(Necla, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/necla")));
-INSTANTIATE_TEST_CASE_P(NeclaLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/necla")));
+INSTANTIATE_NAMED_TEST_CASE_P(Necla, WrapperTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/necla")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(NeclaLong, WrapperTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/necla")), GetTestName);
 
 //INSTANTIATE_TEST_CASE_P(SvComp, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/svcomp")));
 //INSTANTIATE_TEST_CASE_P(SvCompLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/svcomp")));
