@@ -141,6 +141,8 @@ TEST_ARCHIVES += $(GOOGLE_TEST_LIB)
 
 CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
 
+GOOGLE_TEST_FILTER :=
+
 ################################################################################
 # yaml-cpp
 ################################################################################
@@ -300,16 +302,16 @@ tests: $(EXES) $(TEST_EXES)
 
 
 check: tests .regenerate-test-defs
-	$(RUN_TEST_EXES) --gtest_filter=-*Long/*
+	$(RUN_TEST_EXES) --gtest_filter=-*Long/* --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 check-with-valgrind: tests .regenerate-test-defs
-	$(VALGRIND) $(RUN_TEST_EXES) --gtest_filter=-*Long/*
+	$(VALGRIND) $(RUN_TEST_EXES) --gtest_filter=-*Long/* --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 check-long: tests .regenerate-test-defs
-	$(RUN_TEST_EXES) --gtest_filter=*Long/*
+	$(RUN_TEST_EXES) --gtest_filter=*Long/* --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 check-all: tests .regenerate-test-defs
-	$(RUN_TEST_EXES)
+	$(RUN_TEST_EXES) --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 
 clean:
