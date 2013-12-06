@@ -159,9 +159,11 @@ public:
 
                 if(auto* load = dyn_cast<LoadInst>(&I)) {
                     auto* op = load->getPointerOperand();
-                    new StoreInst(mkBorealisNonDet(M, op->getType(), load), op, load);
 
-                    allocas.erase(load->getPointerOperand());
+                    if(allocas.count(op)) {
+                        new StoreInst(mkBorealisNonDet(M, op->getType(), load), op, load);
+                        allocas.erase(load->getPointerOperand());
+                    }
                 }
             }
         }
