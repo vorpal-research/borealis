@@ -476,9 +476,9 @@ class ParameterizedTestCaseInfo : public ParameterizedTestCaseInfoBase {
   // about a generator.
   int AddTestCaseInstantiation(const string& instantiation_name,
                                GeneratorCreationFunc* func,
+                               TestCaseNameCreationFunc* namer,
                                const char* /* file */,
-                               int /* line */,
-                               TestCaseNameCreationFunc* namer = NULL) {
+                               int /* line */) {
     instantiations_.push_back(::std::tr1::make_tuple(instantiation_name, func, namer));
     return 0;  // Return value used only to run this method in namespace scope.
   }

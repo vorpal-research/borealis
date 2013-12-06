@@ -1412,7 +1412,8 @@ internal::CartesianProductHolder10<Generator1, Generator2, Generator3,
               #test_case_name, __FILE__, __LINE__)->AddTestCaseInstantiation(\
                   #prefix, \
                   &gtest_##prefix##test_case_name##_EvalGenerator_, \
-                  __FILE__, __LINE__, namer)
+                  namer, \
+                  __FILE__, __LINE__)
 
 # define INSTANTIATE_TEST_CASE_P(prefix, test_case_name, generator) \
   INSTANTIATE_NAMED_TEST_CASE_P(prefix, test_case_name, generator, NULL)
