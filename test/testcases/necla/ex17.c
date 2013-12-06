@@ -2,6 +2,8 @@
 
 int a[200];
 
+// @requires \is_valid_ptr(a)
+// @requires \bound(a) >= 100
 int check(int* a, int j) {
 
    int* b;
