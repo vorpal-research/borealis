@@ -49,18 +49,25 @@ public:
             PredicateState::Ptr body);
 
     Dynamic getContract(
-                const std::vector<Term::Ptr>& args,
-                PredicateState::Ptr query,
-                PredicateState::Ptr body);
+            const std::vector<Term::Ptr>& args,
+            PredicateState::Ptr query,
+            PredicateState::Ptr body);
 
 private:
 
     ExprFactory& msatef;
     unsigned long long memoryStart;
 
-    msat_result check(
-            const Bool& msatquery,
-            const Bool& msatstate);
+    using check_result = std::tuple<
+        msat_result,
+        util::option<mathsat::Model>,
+        util::option<std::vector<mathsat::Expr>>,
+        util::option<std::string> // FIXME: MathSAT proof
+    >;
+
+    check_result check(
+            const Bool& msatquery_,
+            const Bool& msatstate_);
 
 };
 

@@ -186,18 +186,9 @@ Expr Env::num_val(int i) const {
 }
 
 Expr Env::bv_val(int i, unsigned size) const {
-    msat_term new_term;
-    if (i >= 0) {
-        auto int_str = util::toString(i);
-        new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
-        ASSERTMSAT_TERM(new_term);
-    } else {
-        auto int_str = util::toString(-i);
-        new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
-        ASSERTMSAT_TERM(new_term);
-        new_term = msat_make_bv_neg(*env_, new_term);
-        ASSERTMSAT_TERM(new_term);
-    }
+    auto int_str = util::toString(static_cast<unsigned int>(i));
+    auto new_term = msat_make_bv_number(*env_, int_str.c_str(), size, 10);
+    ASSERTMSAT_TERM(new_term);
     return Expr(*this, new_term);
 }
 
@@ -803,6 +794,14 @@ Expr Expr::from_smtlib2(Env& env, const std::string& data) {
     auto new_term = msat_from_smtlib2(env, data.c_str());
     ASSERTMSAT_TERM(new_term);
     return Expr(env, new_term);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Expr Model::eval(const Expr& term) {
+    auto res = msat_get_model_value(env_, term);
+    ASSERTMSAT_TERM(res);
+    return Expr(env_, res);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

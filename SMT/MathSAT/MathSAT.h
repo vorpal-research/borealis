@@ -369,13 +369,20 @@ Expr ror(const Expr& a, unsigned b);
 Expr distinct(const std::vector<Expr>& exprs);
 
 ////////////////////////////////////////////////////////////////////////////////
-// ModelIterator == z3::model
+// Model + ModelIterator == z3::model
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ModelElem {
     Expr term;
     Expr value;
 };
+
+template<class Streamer>
+Streamer& operator<<(Streamer& s, const ModelElem& e) {
+    s << e.term << " is " << e.value;
+    // This is generally fucked up
+    return static_cast<Streamer&>(s);
+}
 
 class ModelIterator {
 private:
@@ -448,6 +455,22 @@ public:
     }
 };
 
+class Model {
+
+    Env env_;
+
+public:
+
+    explicit Model(const Env& env) : env_(env) {};
+
+    Env& env() { return env_; }
+
+    ModelIterator begin() { return ModelIterator(env_); }
+    ModelIterator end()   { return ModelIterator(env_, true); }
+
+    Expr eval(const Expr& term);
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // Solver == z3::solver
 ////////////////////////////////////////////////////////////////////////////////
@@ -480,11 +503,10 @@ public:
     msat_result check() { return msat_solve(env_); }
     msat_result check(const std::vector<Expr>& assumptions);
 
+    Model get_model() { return Model(env_); }
+
     std::vector<Expr> unsat_core();
     std::vector<Expr> unsat_assumptions();
-
-    ModelIterator model_begin() { return ModelIterator(env_); }
-    ModelIterator model_end()   { return ModelIterator(env_, true); }
 };
 
 class ISolver : public Solver {

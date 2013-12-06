@@ -34,7 +34,7 @@ class ValueTerm: public borealis::Term {
         Term(
             class_tag(*this),
             type,
-            name
+            name + (global ? ".global" : "")
         ), global(global) {};
 
 public:
