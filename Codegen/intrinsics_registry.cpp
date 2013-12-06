@@ -97,6 +97,11 @@ static RegisterIntrinsic INTRINSIC_ALLOC {
     }
 };
 
+static RegisterIntrinsic INTRINSIC_NONDET {
+    function_type::INTRINSIC_NONDET,
+    "nondet"
+};
+
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",
