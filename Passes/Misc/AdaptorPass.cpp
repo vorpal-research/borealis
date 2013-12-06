@@ -154,15 +154,16 @@ public:
                 }
 
                 if(auto* store = dyn_cast<StoreInst>(&I)) {
-                    allocas.erase(store->getPointerOperand());
+                    allocas.erase(store->getPointerOperand()->stripPointerCasts());
                 }
 
                 if(auto* load = dyn_cast<LoadInst>(&I)) {
                     auto* op = load->getPointerOperand();
+                    auto it = allocas.find(op->stripPointerCasts());
 
-                    if(allocas.count(op)) {
+                    if(it != std::end(allocas)) {
                         new StoreInst(mkBorealisNonDet(M, op->getType(), load), op, load);
-                        allocas.erase(load->getPointerOperand());
+                        allocas.erase(it);
                     }
                 }
             }
