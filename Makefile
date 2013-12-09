@@ -141,7 +141,7 @@ TEST_ARCHIVES += $(GOOGLE_TEST_LIB)
 
 CXXFLAGS += -isystem $(GOOGLE_TEST_DIR)/include
 
-GOOGLE_TEST_FILTER :=
+GOOGLE_TEST_FILTER := *
 
 ################################################################################
 # yaml-cpp
