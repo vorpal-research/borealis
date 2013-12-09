@@ -38,7 +38,7 @@ protected:
     TermBuilder builder(Term::Ptr term) { return { FN.Term, term }; }
     TermBuilder builder(long long val) { return { FN.Term, FN.Term->getOpaqueConstantTerm(val) }; }
     TermBuilder null() { return { FN.Term, FN.Term->getNullPtrTerm() }; }
-    TermBuilder invalid() { return { FN.Term, FN.Term->getNullPtrTerm() }; }
+    TermBuilder invalid() { return { FN.Term, FN.Term->getInvalidPtrTerm() }; }
 
 
 public:
