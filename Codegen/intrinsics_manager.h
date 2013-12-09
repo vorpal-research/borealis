@@ -62,6 +62,7 @@ public:
             llvm::Module* module);
 
     function_type getIntrinsicType(const llvm::CallInst& CI) const;
+    function_type getIntrinsicType(llvm::Function* F) const;
 
     void registerIntrinsic(const IntrinsicInfo& info) {
         info_cache[info.type] = info;
@@ -105,7 +106,6 @@ private:
         default_resolver
     };
 
-    function_type getIntrinsicType(llvm::Function* F) const;
     IntrinsicInfo getIntrinsicInfo(function_type ft) const;
 };
 

@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include "Codegen/intrinsics_manager.h"
 #include "Config/config.h"
 #include "Passes/Checker/CheckManager.h"
 #include "Util/passes.hpp"
@@ -26,6 +27,10 @@ void CheckManager::initializePass() {
 }
 
 bool CheckManager::shouldSkipFunction(llvm::Function* F) const {
+
+    IntrinsicsManager& im = IntrinsicsManager::getInstance();
+
+    if (function_type::UNKNOWN != im.getIntrinsicType(F)) return true;
 
     auto fName = F->getName().str();
 
