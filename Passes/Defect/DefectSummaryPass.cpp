@@ -7,11 +7,11 @@
 
 #include <clang/Basic/FileManager.h>
 #include <clang/Basic/SourceManager.h>
-#include <llvm/Support/CommandLine.h>
 
 #include <fstream>
 
 #include "Codegen/llvm.h"
+#include "Config/config.h"
 #include "Passes/Checker/Defines.def"
 #include "Passes/Defect/DefectSummaryPass.h"
 #include "Passes/Util/DataProvider.hpp"
@@ -21,16 +21,8 @@
 
 namespace borealis {
 
-static std::string DumpOutputDefault = "";
-static std::string DumpOutputFileDefault = "%s.report";
-
-static llvm::cl::opt<std::string>
-DumpOutput("dump-output", llvm::cl::init(DumpOutputDefault), llvm::cl::NotHidden,
-  llvm::cl::desc("Dump analysis results to JSON/XML"));
-
-static llvm::cl::opt<std::string>
-DumpOutputFile("dump-output-file", llvm::cl::init(DumpOutputFileDefault), llvm::cl::NotHidden,
-  llvm::cl::desc("Output file for analysis results"));
+const std::string DumpOutputDefault = "";
+const std::string DumpOutputFileDefault = "%s.report";
 
 void DefectSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
@@ -85,7 +77,14 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
                 ;
     }
 
-    if (DumpOutput != DumpOutputDefault || DumpOutputFile != DumpOutputFileDefault) {
+    static config::StringConfigEntry DumpOutputOpt("output", "dump-output");
+    static config::StringConfigEntry DumpOutputFileOpt("output", "dump-output-file");
+
+    auto DumpOutput = DumpOutputOpt.get(DumpOutputDefault);
+    auto DumpOutputFile = DumpOutputFileOpt.get(DumpOutputFileDefault);
+
+    if (DumpOutput != DumpOutputDefault ||
+        DumpOutputFile != DumpOutputFileDefault) {
 
         util::replace("%s", mainFileEntry, DumpOutputFile);
 

@@ -6,9 +6,9 @@
  */
 
 #include <llvm/Analysis/MemoryBuiltins.h>
-#include <llvm/Support/CommandLine.h>
 #include <llvm/Target/TargetData.h>
 
+#include "Config/config.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Passes/Transform/MallocMutator.h"
@@ -17,10 +17,6 @@
 #include "Util/util.h"
 
 namespace borealis {
-
-static llvm::cl::opt<unsigned>
-DefaultMallocSize("default-malloc-size", llvm::cl::init(2048), llvm::cl::NotHidden,
-  llvm::cl::desc("Set default malloc size in elements (not bytes, default = 2048)"));
 
 char MallocMutator::ID;
 static RegisterPass<MallocMutator>
@@ -88,6 +84,9 @@ void MallocMutator::mutateMemoryInst(
     llvm::Value* arraySize,
     std::function<void(llvm::Instruction*, llvm::Instruction*)> mutator
 ) {
+    static config::ConfigEntry<int> DefaultMallocSizeOpt("analysis", "default-malloc-size");
+    unsigned DefaultMallocSize = DefaultMallocSizeOpt.get(2048);
+
     using namespace llvm;
 
     static auto TyF = TypeFactory::get();

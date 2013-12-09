@@ -7,11 +7,11 @@
 
 #include <clang/Basic/FileManager.h>
 #include <clang/Basic/SourceManager.h>
-#include <llvm/Support/CommandLine.h>
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>
 
+#include "Config/config.h"
 #include "Passes/Location/LocationManager.h"
 #include "Passes/Location/LocationSummaryPass.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
@@ -23,15 +23,7 @@ namespace borealis {
 
 typedef DataProvider<clang::FileManager> DPFileManager;
 
-static std::string DumpCoverageFileDefault = "%s.coverage";
-
-static llvm::cl::opt<bool>
-DumpCoverage("dump-coverage", llvm::cl::init(false), llvm::cl::NotHidden,
-  llvm::cl::desc("Dump analysis coverage"));
-
-static llvm::cl::opt<std::string>
-DumpCoverageFile("dump-coverage-file", llvm::cl::init(DumpCoverageFileDefault), llvm::cl::NotHidden,
-  llvm::cl::desc("Output file for analysis coverage"));
+const std::string DumpCoverageFileDefault = "%s.coverage";
 
 LocationSummaryPass::LocationSummaryPass(): ModulePass(ID) {}
 
@@ -48,6 +40,12 @@ bool LocationSummaryPass::runOnModule(llvm::Module& M) {
 
     // XXX: Maybe we'll need this in the future...
     // auto& fm = GetAnalysis<DPFileManager>::doit(this).provide();
+
+    static config::BoolConfigEntry DumpCoverageOpt("output", "dump-coverage");
+    static config::StringConfigEntry DumpCoverageFileOpt("output", "dump-coverage-file");
+
+    auto DumpCoverage = DumpCoverageOpt.get(false);
+    auto DumpCoverageFile = DumpCoverageFileOpt.get(DumpCoverageFileDefault);
 
     auto* mainFileEntry = M.getModuleIdentifier().c_str();
 

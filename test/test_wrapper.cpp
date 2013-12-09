@@ -80,8 +80,8 @@ TEST_P(WrapperTest, basic) {
 
     int res = Runner("wrapper")
         .withArg("---config:wrapper.tests.conf")
-        .withArg("---opt:-dump-output=json")
-        .withArg("---opt:-dump-output-file=" + actualF)
+        .withArg("---output:dump-output:json")
+        .withArg("---output:dump-output-file:" + actualF)
         .withArgs(additionalArgs)
         .withArg(inputF)
         .run();

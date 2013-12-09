@@ -10,12 +10,12 @@
 #include <llvm/Constants.h>
 #include <llvm/Instructions.h>
 #include <llvm/Metadata.h>
-#include <llvm/Support/CommandLine.h>
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
 #include <vector>
 
+#include "Config/config.h"
 #include "Passes/Transform/LoopDeroll.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
@@ -23,10 +23,6 @@
 #include "Util/macros.h"
 
 namespace borealis {
-
-static llvm::cl::opt<unsigned>
-DerollCount("deroll-count", llvm::cl::init(3), llvm::cl::NotHidden,
-  llvm::cl::desc("Set loop derolling count (default = 3)"));
 
 LoopDeroll::LoopDeroll() : llvm::LoopPass(ID) {}
 
@@ -167,7 +163,9 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     LoopBlocksDFS::RPOIterator BlockBegin = DFS.beginRPO();
     LoopBlocksDFS::RPOIterator BlockEnd = DFS.endRPO();
 
-    unsigned CurrentDerollCount = DerollCount;
+    static config::ConfigEntry<int> DerollCountOpt("analysis", "deroll-count");
+
+    unsigned CurrentDerollCount = DerollCountOpt.get(3);
 
     // Try to guess the deroll count
     unsigned TripCount = SE->getSmallConstantTripCount(L, Latch);
