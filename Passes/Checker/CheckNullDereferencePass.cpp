@@ -9,6 +9,7 @@
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
+#include "Passes/Checker/CheckManager.h"
 #include "Passes/Checker/CheckNullDereferencePass.h"
 #include "SMT/Z3/Solver.h"
 #include "SMT/MathSAT/Solver.h"
@@ -179,6 +180,8 @@ CheckNullDereferencePass::CheckNullDereferencePass(llvm::Pass* pass) : ProxyFunc
 void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
+    AUX<CheckManager>::addRequiredTransitive(AU);
+
     AUX<llvm::AliasAnalysis>::addRequiredTransitive(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
     AUX<DetectNullPass>::addRequiredTransitive(AU);
@@ -189,6 +192,9 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
+
+    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
+        return false;
 
     AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
 

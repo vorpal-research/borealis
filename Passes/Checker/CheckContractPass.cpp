@@ -10,6 +10,7 @@
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Passes/Checker/CheckContractPass.h"
+#include "Passes/Checker/CheckManager.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
@@ -212,6 +213,8 @@ CheckContractPass::CheckContractPass(llvm::Pass* pass) : ProxyFunctionPass(ID, p
 void CheckContractPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
+    AUX<CheckManager>::addRequiredTransitive(AU);
+
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<MetaInfoTracker>::addRequiredTransitive(AU);
@@ -220,6 +223,9 @@ void CheckContractPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool CheckContractPass::runOnFunction(llvm::Function& F) {
+
+    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
+        return false;
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);

@@ -7,6 +7,7 @@
 
 #include <llvm/Support/InstVisitor.h>
 
+#include "Passes/Checker/CheckManager.h"
 #include "Passes/Checker/CheckOutOfBoundsPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "SMT/MathSAT/Solver.h"
@@ -84,6 +85,8 @@ CheckOutOfBoundsPass::CheckOutOfBoundsPass(llvm::Pass* pass) :
 void CheckOutOfBoundsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
+    AUX<CheckManager>::addRequiredTransitive(AU);
+
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
@@ -91,6 +94,9 @@ void CheckOutOfBoundsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 }
 
 bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
+
+    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
+        return false;
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);

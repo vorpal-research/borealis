@@ -7,6 +7,7 @@
 
 #include <llvm/Support/InstVisitor.h>
 
+#include "Passes/Checker/CheckManager.h"
 #include "Passes/Checker/CheckUndefValuesPass.h"
 #include "Codegen/intrinsics_manager.h"
 
@@ -56,10 +57,15 @@ CheckUndefValuesPass::CheckUndefValuesPass(llvm::Pass* pass) : ProxyFunctionPass
 void CheckUndefValuesPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
+    AUX<CheckManager>::addRequiredTransitive(AU);
+
     AUX<DefectManager>::addRequiredTransitive(AU);
 }
 
 bool CheckUndefValuesPass::runOnFunction(llvm::Function& F) {
+
+    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
+        return false;
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
 
