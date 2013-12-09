@@ -159,9 +159,6 @@ int gestalt::main(int argc, const char** argv) {
 
     auto compileCommands = nativeClang.getCompileCommands();
 
-    // FIXME: operator<< for clang::driver::DerivedArgList
-    // infos() << "Clang native arguments: " << nativeClang.getRealArgs() << endl;
-
     if (!skipClang) if (nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
 
     // prep for borealis business

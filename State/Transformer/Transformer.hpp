@@ -11,6 +11,7 @@
 #include <llvm/Support/Casting.h>
 
 #include "Factory/Nest.h"
+#include "Term/TermBuilder.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -32,6 +33,13 @@ class Transformer {
 protected:
 
     FactoryNest FN;
+
+    // FIXME: make this a mixin or smth?
+    TermBuilder builder(Term::Ptr term) { return { FN.Term, term }; }
+    TermBuilder builder(long long val) { return { FN.Term, FN.Term->getOpaqueConstantTerm(val) }; }
+    TermBuilder null() { return { FN.Term, FN.Term->getNullPtrTerm() }; }
+    TermBuilder invalid() { return { FN.Term, FN.Term->getNullPtrTerm() }; }
+
 
 public:
 

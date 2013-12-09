@@ -92,22 +92,12 @@ public:
                 if (auto ptrType = llvm::dyn_cast<type::Pointer>(type)) {
                     auto pointed = ptrType->getPointed();
 
-                    return (
-                        FN.Term * val != FN.Term->getNullPtrTerm()
-                        &&
-                        FN.Term * val != FN.Term->getInvalidPtrTerm()
-                        &&
-                        // FIXME: Make our DSL even more awesome
-                        FN.Term->getCmpTerm(
-                            llvm::ConditionType::UGE,
-                            FN.Term->getBoundTerm(val),
-                            FN.Term->getOpaqueConstantTerm(
-                                (long long)TypeUtils::getTypeSizeInElems(pointed) // FIXME: How should we store Integers?
-                            )
-                        )
-                    )();
+                    auto bval = builder(val);
 
-                } else failWith("Illegal is_valid_ptr access " + trm->getName() + ": called on non-pointer");
+                    return bval != null()
+                        && bval != invalid()
+                        && bval.bound().uge (builder(TypeUtils::getTypeSizeInElems(pointed)));
+                  } else failWith("Illegal is_valid_ptr access " + trm->getName() + ": called on non-pointer");
 
             } else failWith("Cannot call " + trm->getName() + ": not supported");
 
@@ -140,15 +130,9 @@ public:
             ": no such member defined or structure not available"
         );
 
-        return factory().getLoadTerm(
-            factory().getGepTerm(
-                load->getRhv(),
-                util::make_vector(
-                    factory().getOpaqueConstantTerm(0LL),
-                    factory().getOpaqueConstantTerm(static_cast<long long>(field.getUnsafe().getIndex()))
-                )
-            )
-        );
+
+        return *builder(load->getRhv()).gep(builder(0), builder(field.getUnsafe().getIndex()));
+
     }
 
     Term::Ptr transformIndirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
@@ -175,15 +159,7 @@ public:
             ": no such member defined or structure not available"
         );
 
-        return factory().getLoadTerm(
-            factory().getGepTerm(
-                arg,
-                util::make_vector(
-                    factory().getOpaqueConstantTerm(0LL),
-                    factory().getOpaqueConstantTerm(static_cast<long long>(field.getUnsafe().getIndex()))
-                )
-            )
-        );
+        return *builder(arg).gep(builder(0), builder(field.getUnsafe().getIndex()));
     }
 
     Term::Ptr transformOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {

@@ -32,6 +32,16 @@ public:
     friend TermBuilder operator&&(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator!=(TermBuilder TB, Term::Ptr term);
 
+    TermBuilder operator*() const;
+
+    TermBuilder uge(Term::Ptr term) const;
+    TermBuilder bound() const;
+
+    template<class ...Terms>
+    TermBuilder gep(Terms... ptrs) const {
+        return { TF, TF->getGepTerm(term, util::make_vector(static_cast<Term::Ptr>(ptrs)...)) };
+    }
+
 };
 
 TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term);

@@ -22,8 +22,20 @@ TermBuilder::operator Term::Ptr() const {
     return term;
 }
 
+TermBuilder TermBuilder::operator*() const {
+    return { TF, TF->getLoadTerm(term) };
+}
+
+TermBuilder TermBuilder::uge(Term::Ptr that) const {
+    return { TF, TF->getCmpTerm(llvm::ConditionType::UGE, term, that) };
+}
+
+TermBuilder TermBuilder::bound() const {
+    return { TF, TF->getBoundTerm(term) };
+}
+
 TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term) {
-    return TermBuilder{TF, term};
+    return {TF, term};
 }
 
 TermBuilder operator&&(TermBuilder TB, Term::Ptr term) {
