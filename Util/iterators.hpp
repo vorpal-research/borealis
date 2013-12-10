@@ -107,14 +107,6 @@ public:
     }
 };
 
-template<class _Iterator, class Func>
-inline mapped_iterator<_Iterator, Func>
-operator+(typename mapped_iterator<_Iterator, Func>::difference_type N,
-          const mapped_iterator<_Iterator, Func>& X) {
-    // FIXME: Why `-` and not `+`???
-    return mapped_iterator<_Iterator, Func>(X.getCurrent() - N, X.getFunc());
-}
-
 // map_iterator - provides a convenient way to create mapped_iterators,
 // just like std::make_pair is used for creating pairs...
 //
