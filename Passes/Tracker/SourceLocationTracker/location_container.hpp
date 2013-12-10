@@ -57,16 +57,17 @@ public:
         return t2l.count(val) > 0;
     }
 
-    bool contains(util::make_const_ptr_t<T>& val) const {
+    template<class U, class = GUARD(util::pointers_to_same<U, T>::value)>
+    bool contains(U val) const {
         return t2l.count(const_cast<T>(val)) > 0;
     }
-
 
     const Locus& operator[](const T& key) const {
         return t2l.at(key);
     }
 
-    const Locus& operator[](util::make_const_ptr_t<T>& key) const {
+    template<class U, class = GUARD(util::pointers_to_same<U, T>::value)>
+    const Locus& operator[](U key) const {
         return t2l.at(const_cast<T>(key));
     }
 

@@ -103,12 +103,16 @@ struct hash< const std::vector<T> > {
     }
 };
 
-template<class... Types>
-struct hash<std::tuple<Types...>> {
-    size_t operator()(const std::tuple<Types...>& t) const {
-        // FIXME: Tuple may be empty => begin == -1 => BOOM!
-        const auto begin = std::tuple_size<std::tuple<Types...>>::value-1;
-        return borealis::util::hash::impl_::tuple_hash_impl<begin, Types...>()(59, t);
+template<>
+struct hash<std::tuple<>> {
+    size_t operator()(std::tuple<>) const { return 42U; }
+};
+
+template<class HT, class... Types>
+struct hash<std::tuple<HT, Types...>> {
+    size_t operator()(const std::tuple<HT, Types...>& t) const {
+        constexpr auto begin = sizeof...(Types); // == tuple_size - 1
+        return borealis::util::hash::impl_::tuple_hash_impl<begin, HT, Types...>()(59, t);
     }
 };
 
