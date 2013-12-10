@@ -168,10 +168,26 @@ public:
                transformDirectOpaqueMemberAccessTerm(trm);
     }
 
-    Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
-        // FIXME: decide how to handle multidimensional arrays
+    Term::Ptr transformArrayOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
+        auto arg = trm->getLhv();
 
-        auto gep = factory().getGepTerm(trm->getLhv(), util::make_vector(trm->getRhv()));
+        auto load = llvm::dyn_cast<LoadTerm>(arg);
+        if(!load) failWith("Cannot access member: term is not an instance of load");
+
+        auto daArray = llvm::dyn_cast<type::Array>(load->getType());
+        if(!daArray) failWith("Cannot access element: term is not an array type");
+
+        return *builder(load->getRhv()).gep(builder(0), trm->getRhv());
+
+    }
+
+    Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
+        // handle multidimensional arrays
+        if(llvm::isa<type::Array>(trm->getType())) {
+            return transformArrayOpaqueIndexingTerm(trm);
+        }
+
+        auto gep = builder(trm->getLhv()).gep(trm->getRhv())();
 
         // check types
         if(auto* terr = llvm::dyn_cast<type::TypeError>(gep->getType())) {
