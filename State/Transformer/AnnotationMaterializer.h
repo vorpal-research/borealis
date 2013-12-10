@@ -64,7 +64,6 @@ public:
     // it is called before (and instead of) transforming children
     Term::Ptr transformOpaqueCall(OpaqueCallTermPtr trm) {
         if(auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
-            // FIXME: implement some calls
             if(builtin->getVName() == "property") {
                 auto rhv = trm->getRhv();
                 if(rhv.size() != 2) failWith("Illegal property access " + trm->getName() + ": exactly two operands expected");

@@ -17,6 +17,8 @@ using namespace borealis;
 
 namespace {
 
+using namespace borealis::anno;
+
 bool isCompare(bin_opcode op) {
     switch(op) {
     case bin_opcode::OPCODE_EQ:
@@ -188,7 +190,7 @@ public:
     Term::Ptr getTerm() { return term; }
 };
 
-} // namespace
+} /* namespace */
 
 Annotation::Ptr borealis::fromParseResult(
         const Locus& locus, const anno::command& cmd, TermFactory::Ptr tf) {

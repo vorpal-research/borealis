@@ -14,7 +14,9 @@
 #include <vector>
 
 #include "Util/util.h"
-// FIXME: move to borealis::anno from default namespace?
+
+namespace borealis {
+namespace anno {
 
 class productionVisitor;
 
@@ -241,5 +243,9 @@ prod_t deref     (const prod_t&);
 prod_t operator! (const prod_t&);
 prod_t operator- (const prod_t&);
 prod_t operator~ (const prod_t&);
+
+
+} // namespace anno
+} // namespace borealis
 
 #endif // PRODUCTION_H_
