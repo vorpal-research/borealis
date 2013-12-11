@@ -35,7 +35,7 @@ llvm::Function* getBorealisBuiltin(
         intrinsic_manager.getFuncName(ft, "")
     );
 
-    if(!cur) {
+    if (!cur) {
         // FIXME: name clashes still possible due to linking, research that
         auto* ty = llvm::FunctionType::get(
             retType,
@@ -72,7 +72,7 @@ llvm::Value* mkBorealisBuiltin(
             arg,
             argType,
             false,
-            "bor.builtin_arg",
+            "borealis.builtin_arg",
             existingCall
         );
     auto* newCall = llvm::CallInst::Create(
@@ -84,7 +84,7 @@ llvm::Value* mkBorealisBuiltin(
     newCall->setDebugLoc(existingCall->getDebugLoc());
     newCall->setMetadata("dbg", existingCall->getMetadata("dbg"));
 
-    if(existingCall->getType() != retType) {
+    if (existingCall->getType() != retType) {
         existingCall->replaceAllUsesWith(llvm::UndefValue::get(existingCall->getType()));
     } else {
         existingCall->replaceAllUsesWith(newCall);
@@ -114,7 +114,7 @@ llvm::Value* mkBorealisNonDet(llvm::Module* M, llvm::Type* type, llvm::Instructi
         M
     );
 
-    return llvm::CallInst::Create(func, "bor.nondet", insertBefore);
+    return llvm::CallInst::Create(func, "", insertBefore);
 }
 
 class CallVisitor : public llvm::InstVisitor<CallVisitor> {
@@ -122,14 +122,14 @@ public:
     // XXX: still buggy, unreachable propagation breaks everything to pieces
     void visitBasicBlock(llvm::BasicBlock& BB) {
         using namespace llvm;
-        auto* M = BB.getParent()->getParent();
+        auto& M = *BB.getParent()->getParent();
 
         static auto label = util::viewContainer(labels.get()).toHashSet();
 
         if (!BB.hasName()) return;
 
-        if(label.count(BB.getName())) {
-            auto& M = *BB.getParent()->getParent();
+        // transform the ERROR labeled BB
+        if (label.count(BB.getName())) {
 
             auto* first = BB.getFirstNonPHIOrDbgOrLifetime();
             auto* f = getBorealisBuiltin(function_type::BUILTIN_BOR_ASSERT, M);
@@ -144,25 +144,27 @@ public:
             llvm::CallInst::Create(f, arg, "", first);
         }
 
-        if(!undefinedDefaultsToUnknown.get(false)) return;
         // define all undefined variables
-        {
-            std::set<Value*> allocas;
-            for(auto& I : BB) {
-                if(auto* alloca = dyn_cast<AllocaInst>(&I)) {
+        if (undefinedDefaultsToUnknown.get(false)) {
+            std::unordered_set<const Value*> allocas;
+            for (auto& I : BB) {
+                if (auto* alloca = dyn_cast<AllocaInst>(&I)) {
                     allocas.insert(alloca);
                 }
 
-                if(auto* store = dyn_cast<StoreInst>(&I)) {
+                if (auto* store = dyn_cast<StoreInst>(&I)) {
                     allocas.erase(store->getPointerOperand()->stripPointerCasts());
                 }
 
-                if(auto* load = dyn_cast<LoadInst>(&I)) {
+                if (auto* load = dyn_cast<LoadInst>(&I)) {
                     auto* op = load->getPointerOperand();
                     auto it = allocas.find(op->stripPointerCasts());
-
-                    if(it != std::end(allocas)) {
-                        new StoreInst(mkBorealisNonDet(M, op->getType(), load), op, load);
+                    if (it != allocas.end()) {
+                        new StoreInst(
+                            mkBorealisNonDet(&M, op->getType(), load),
+                            op,
+                            load
+                        );
                         allocas.erase(it);
                     }
                 }
@@ -183,13 +185,12 @@ public:
         if (!calledFunc->hasName()) return;
 
         auto& M = *I.getParent()->getParent()->getParent();
-        if(assert.count(calledFunc->getName())) {
+        if (assert.count(calledFunc->getName())) {
             mkBorealisAssert(M, &I);
-        } else if(assume.count(calledFunc->getName())) {
+        } else if (assume.count(calledFunc->getName())) {
             mkBorealisAssume(M, &I);
         }
     }
-
 
 };
 
