@@ -46,12 +46,8 @@ PredicateState::Ptr operator+(PredicateState::Ptr state, Predicate::Ptr p) {
     return state->addPredicate(p);
 }
 
-PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc) {
+PredicateState::Ptr operator<<(PredicateState::Ptr state, const Locus& loc) {
     return state->addVisited(loc);
-}
-
-PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc) {
-    return state->addVisited(&loc);
 }
 
 } /* namespace borealis */

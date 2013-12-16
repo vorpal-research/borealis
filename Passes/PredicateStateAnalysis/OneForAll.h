@@ -19,6 +19,7 @@
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
+#include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
@@ -56,6 +57,7 @@ private:
 
     FunctionManager* FM;
     llvm::DominatorTree* DT;
+    SourceLocationTracker* SLT;
 
     FactoryNest FN;
 

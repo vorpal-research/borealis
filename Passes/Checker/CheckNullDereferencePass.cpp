@@ -122,7 +122,14 @@ public:
 
         PredicateState::Ptr ps = pass->PSA->getInstructionState(&where);
 
-        if (!ps || !ps->hasVisited({&where, &what, &why})) {
+        if (
+            !ps ||
+            !ps->hasVisited({
+                pass->SLT->getLocFor(&where),
+                pass->SLT->getLocFor(&what),
+                pass->SLT->getLocFor(&why)
+            })
+        ) {
             dbgs() << "Infeasible!" << endl;
             return {false, nullptr};
         }
@@ -189,6 +196,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<NameTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
@@ -204,6 +212,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     NT = &GetAnalysis<NameTracker>::doit(this, F);
+    SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);

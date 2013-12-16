@@ -19,6 +19,7 @@
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Tracker/NameTracker.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
+#include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
@@ -56,6 +57,7 @@ private:
     DefectManager* DM;
     FunctionManager* FM;
     NameTracker* NT;
+    SourceLocationTracker* SLT;
 
     FactoryNest FN;
 

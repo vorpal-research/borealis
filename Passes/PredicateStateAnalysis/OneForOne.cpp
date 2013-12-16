@@ -34,6 +34,7 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     init();
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
+    SLT = &GetAnalysis< SourceLocationTracker >::doit(this, F);
 
     auto* st = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);
@@ -52,7 +53,7 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {
-        initialState = initialState << arg;
+        initialState = initialState << SLT->getLocFor(&arg);
     }
 
     // Save initial state
@@ -154,7 +155,12 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            modifiedInState = (FN.State * modifiedInState + instantiatedCallState << I)();
+            modifiedInState = (
+                FN.State *
+                modifiedInState +
+                instantiatedCallState <<
+                SLT->getLocFor(&I)
+            )();
         }
 
         inState = modifiedInState;
@@ -222,7 +228,7 @@ PredicateState::Ptr OneForOne::PM(const llvm::Instruction* I) {
         }
     }
 
-    return res << I;
+    return res << SLT->getLocFor(I);
 }
 
 PredicateState::Ptr OneForOne::PPM(PhiBranch key) {
@@ -237,7 +243,7 @@ PredicateState::Ptr OneForOne::PPM(PhiBranch key) {
         }
     }
 
-    return res << key.second;
+    return res << SLT->getLocFor(key.second);
 }
 
 PredicateState::Ptr OneForOne::TPM(TerminatorBranch key) {
@@ -252,7 +258,7 @@ PredicateState::Ptr OneForOne::TPM(TerminatorBranch key) {
         }
     }
 
-    return res << key.first;
+    return res << SLT->getLocFor(key.first);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

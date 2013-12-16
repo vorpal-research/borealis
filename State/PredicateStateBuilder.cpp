@@ -55,13 +55,7 @@ PredicateStateBuilder operator+(PredicateStateBuilder PSB, Predicate::Ptr p) {
     return res;
 }
 
-PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value* loc) {
-    PredicateStateBuilder res{PSB};
-    res.State = res.State << loc;
-    return res;
-}
-
-PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value& loc) {
+PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc) {
     PredicateStateBuilder res{PSB};
     res.State = res.State << loc;
     return res;

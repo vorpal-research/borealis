@@ -45,8 +45,8 @@ public:
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
 
-    virtual PredicateState::Ptr addVisited(const llvm::Value* l) const override;
-    virtual bool hasVisited(std::initializer_list<const llvm::Value*> ls) const override;
+    virtual PredicateState::Ptr addVisited(const Locus& l) const override;
+    virtual bool hasVisited(std::initializer_list<Locus> ls) const override;
     virtual bool hasVisitedFrom(Locs& visited) const override;
 
     virtual Locs getVisited() const override;
@@ -83,7 +83,7 @@ private:
     BasicPredicateState();
 
     void addPredicateInPlace(Predicate::Ptr pred);
-    void addVisitedInPlace(const llvm::Value* loc);
+    void addVisitedInPlace(const Locus& loc);
     void addVisitedInPlace(const Locs& locs);
 
 };

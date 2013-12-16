@@ -43,7 +43,7 @@ public:
 
     typedef std::shared_ptr<const PredicateState> Ptr;
     typedef std::unique_ptr<proto::PredicateState> ProtoPtr;
-    typedef std::unordered_set<const llvm::Value*> Locs;
+    typedef std::unordered_set<Locus> Locs;
 
     typedef std::function<PredicateState::Ptr(PredicateState::Ptr)> FMapper;
     typedef std::function<Predicate::Ptr(Predicate::Ptr)> Mapper;
@@ -51,8 +51,8 @@ public:
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const = 0;
 
-    virtual PredicateState::Ptr addVisited(const llvm::Value* loc) const = 0;
-    virtual bool hasVisited(std::initializer_list<const llvm::Value*> locs) const = 0;
+    virtual PredicateState::Ptr addVisited(const Locus& loc) const = 0;
+    virtual bool hasVisited(std::initializer_list<Locus> locs) const = 0;
     virtual bool hasVisitedFrom(Locs& visited) const = 0;
 
     virtual Locs getVisited() const = 0;
@@ -116,8 +116,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Predic
 ////////////////////////////////////////////////////////////////////////////////
 
 PredicateState::Ptr operator+ (PredicateState::Ptr state, Predicate::Ptr p);
-PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value* loc);
-PredicateState::Ptr operator<<(PredicateState::Ptr state, const llvm::Value& loc);
+PredicateState::Ptr operator<<(PredicateState::Ptr state, const Locus& loc);
 
 } /* namespace borealis */
 
