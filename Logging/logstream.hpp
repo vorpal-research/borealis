@@ -36,8 +36,10 @@ class logstream {
     unsigned char indent;
     bool shouldIndentNext;
 
+    unsigned long long mode;
+
     logstream(impl_::stream_t inner) :
-        inner(inner), indent(0U), shouldIndentNext(false) {};
+        inner(inner), indent(0U), shouldIndentNext(false), mode(0ULL) {};
 
     logstream& incIndent() {
         ++indent;
@@ -71,6 +73,9 @@ class logstream {
 
 public:
 
+    struct mode_on { unsigned long long mode; };
+    struct mode_off { unsigned long long mode; };
+
     template<class T>
     logstream& operator<<(const T& val) {
         putIndent();
@@ -81,6 +86,20 @@ public:
     logstream& operator<<(logstream&(*mutator)(logstream&)) {
         putIndent();
         return mutator(*this);
+    }
+
+    logstream& operator<<(const mode_on& m) {
+        mode |= m.mode;
+        return *this;
+    }
+
+    logstream& operator<<(const mode_off& m) {
+        mode &= ~m.mode;
+        return *this;
+    }
+
+    bool hasMode(unsigned long long m) const {
+        return mode & m;
     }
 
     void flush() {
@@ -115,6 +134,10 @@ logstream& ir(logstream&);
 
 logstream& endl(logstream&);
 logstream& end(logstream&);
+
+logstream& print_predicate_locus_on(logstream&);
+logstream& print_predicate_locus_off(logstream&);
+bool with_predicate_locus(logstream&);
 
 void configureLoggingFacility(const std::string& filename);
 void configureZ3Log(const std::string& filename);

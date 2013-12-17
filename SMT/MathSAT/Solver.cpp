@@ -98,7 +98,12 @@ bool Solver::isViolated(
             return bValid.getOrElse(false);
         });
 
-        dbgs() << "CEX: " << cex << endl;
+        using namespace logging;
+        dbgs() << "CEX: "
+               << print_predicate_locus_on
+               << cex
+               << print_predicate_locus_off
+               << endl;
     }
 
     return res != MSAT_UNSAT;

@@ -135,9 +135,9 @@ borealis::logging::logstream& BasicPredicateState::dump(borealis::logging::logst
     s << '(';
     s << il << endl;
     if (!isEmpty()) {
-        s << head(data)->toString();
+        s << head(data);
         for (auto& e : tail(data)) {
-            s << ',' << endl << e->toString();
+            s << ',' << endl << e;
         }
     }
     s << ir << endl;
@@ -153,9 +153,9 @@ std::string BasicPredicateState::toString() const {
 
     s << '(' << endl;
     if (!isEmpty()) {
-        s << "  " << head(data)->toString();
+        s << "  " << head(data);
         for (auto& e : tail(data)) {
-            s << ',' << endl << "  " << e->toString();
+            s << ',' << endl << "  " << e;
         }
     }
     s << endl << ')';

@@ -36,4 +36,12 @@ std::ostream& operator<<(std::ostream& s, Predicate::Ptr p) {
     return s << p->toString();
 }
 
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Predicate::Ptr p) {
+    s << p->toString();
+    if (with_predicate_locus(s)) {
+        s << " at " << p->getLocation();
+    }
+    return s;
+}
+
 } // namespace borealis

@@ -148,6 +148,7 @@ protected:
 };
 
 std::ostream& operator<<(std::ostream& s, Predicate::Ptr p);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Predicate::Ptr p);
 
 } /* namespace borealis */
 
