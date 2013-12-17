@@ -52,11 +52,13 @@ template<class T> struct protobuf_traits_impl;
 namespace proto { class Predicate; }
 /** protobuf -> Predicate/Predicate.proto
 import "Predicate/PredicateType.proto";
+import "Util/locations.proto";
 
 package borealis.proto;
 
 message Predicate {
     optional PredicateType type = 1;
+    optional Locus location = 2;
 
     extensions 16 to 64;
 }
@@ -73,7 +75,10 @@ protected:
 
     Predicate(id_t classTag);
     Predicate(id_t classTag, PredicateType type);
+    Predicate(id_t classTag, PredicateType type, const Locus& loc);
     Predicate(const Predicate&) = default;
+
+    friend struct protobuf_traits<Predicate>;
 
 public:
     virtual ~Predicate() {};
@@ -84,6 +89,15 @@ public:
 
     Predicate* setType(PredicateType type) {
         this->type = type;
+        return this;
+    }
+
+    const Locus& getLocation() const {
+        return location;
+    }
+
+    Predicate* setLocations(const Locus& loc) {
+        this->location = loc;
         return this;
     }
 
@@ -118,11 +132,16 @@ public:
         return util::hash::defaultHasher()(classTag, type);
     }
 
-    virtual Predicate* clone() const = 0;
+    virtual Predicate* clone() const {
+#include "Util/macros.h"
+        BYE_BYE(Predicate*, "Should not be called!");
+#include "Util/unmacros.h"
+    }
 
 protected:
 
     PredicateType type;
+    Locus location;
     // Must be set in subclasses
     std::string asString;
 

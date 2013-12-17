@@ -39,6 +39,7 @@ class WritePropertyPredicate: public borealis::Predicate {
             Term::Ptr propName,
             Term::Ptr lhv,
             Term::Ptr rhv,
+            const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
 public:
@@ -54,10 +55,11 @@ public:
         auto _propName = t->transform(propName);
         auto _lhv = t->transform(lhv);
         auto _rhv = t->transform(rhv);
+        auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
             propName != _propName || lhv != _lhv || rhv != _rhv,
-            new Self( _propName, _lhv, _rhv, _type )
+            new Self( _propName, _lhv, _rhv, _loc, _type )
         );
     }
 

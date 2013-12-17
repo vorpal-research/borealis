@@ -12,8 +12,9 @@ namespace borealis {
 StorePredicate::StorePredicate(
         Term::Ptr lhv,
         Term::Ptr rhv,
+        const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type),
+            Predicate(class_tag(*this), type, loc),
             lhv(lhv),
             rhv(rhv) {
     asString = "*" + lhv->getName() + "=" + rhv->getName();

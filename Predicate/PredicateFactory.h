@@ -23,54 +23,62 @@ public:
 
     Predicate::Ptr getLoadPredicate(
             Term::Ptr lhv,
-            Term::Ptr loadTerm) {
-        return getEqualityPredicate(lhv, loadTerm);
+            Term::Ptr loadTerm,
+            const Locus& loc = Locus()) {
+        return getEqualityPredicate(lhv, loadTerm, loc);
     }
 
     Predicate::Ptr getStorePredicate(
             Term::Ptr lhv,
-            Term::Ptr rhv) {
+            Term::Ptr rhv,
+            const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new StorePredicate(lhv, rhv));
+                new StorePredicate(lhv, rhv, loc));
     }
 
     Predicate::Ptr getWritePropertyPredicate(
             Term::Ptr propName,
             Term::Ptr lhv,
-            Term::Ptr rhv) {
+            Term::Ptr rhv,
+            const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new WritePropertyPredicate(propName, lhv, rhv));
+                new WritePropertyPredicate(propName, lhv, rhv, loc));
     }
 
     Predicate::Ptr getAllocaPredicate(
              Term::Ptr lhv,
-             Term::Ptr numElements) {
+             Term::Ptr numElements,
+             const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new AllocaPredicate(lhv, numElements));
+                new AllocaPredicate(lhv, numElements, loc));
     }
 
     Predicate::Ptr getMallocPredicate(
                  Term::Ptr lhv,
-                 Term::Ptr numElements) {
+                 Term::Ptr numElements,
+                 const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new MallocPredicate(lhv, numElements));
+                new MallocPredicate(lhv, numElements, loc));
     }
 
 
 
     Predicate::Ptr getBooleanPredicate(
             Term::Ptr v,
-            Term::Ptr b) {
-        return getEqualityPredicate(v, b, PredicateType::PATH);
+            Term::Ptr b,
+            const Locus& loc = Locus()) {
+        return getEqualityPredicate(v, b, loc, PredicateType::PATH);
     }
 
     Predicate::Ptr getDefaultSwitchCasePredicate(
             Term::Ptr cond,
-            std::vector<Term::Ptr> cases) {
+            std::vector<Term::Ptr> cases,
+            const Locus& loc = Locus()) {
         return Predicate::Ptr(
             new DefaultSwitchCasePredicate(
                 cond,
                 cases,
+                loc,
                 PredicateType::PATH)
         );
     }
@@ -80,32 +88,36 @@ public:
     Predicate::Ptr getEqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
+            const Locus& loc = Locus(),
             PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                new EqualityPredicate(lhv, rhv, type));
+                new EqualityPredicate(lhv, rhv, loc, type));
     }
 
     Predicate::Ptr getInequalityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
+            const Locus& loc = Locus(),
             PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                new InequalityPredicate(lhv, rhv, type));
+                new InequalityPredicate(lhv, rhv, loc, type));
     }
 
 
 
     Predicate::Ptr getGlobalsPredicate(
-            const std::vector<Term::Ptr>& globals) {
+            const std::vector<Term::Ptr>& globals,
+            const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new GlobalsPredicate(globals));
+                new GlobalsPredicate(globals, loc));
     }
 
     Predicate::Ptr getSeqDataPredicate(
             Term::Ptr base,
-            const std::vector<Term::Ptr>& data) {
+            const std::vector<Term::Ptr>& data,
+            const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new SeqDataPredicate(base, data));
+                new SeqDataPredicate(base, data, loc));
     }
 
 

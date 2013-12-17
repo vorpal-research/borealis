@@ -36,6 +36,7 @@ class AllocaPredicate: public borealis::Predicate {
     AllocaPredicate(
             Term::Ptr lhv,
             Term::Ptr numElements,
+            const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
 public:
@@ -49,10 +50,11 @@ public:
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
         auto _lhv = t->transform(lhv);
         auto _numElements = t->transform(numElements);
+        auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
             lhv != _lhv || numElements != _numElements,
-            new Self( _lhv, _numElements, _type )
+            new Self( _lhv, _numElements, _loc, _type )
         );
     }
 

@@ -63,6 +63,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
                         FN.Predicate->getEqualityPredicate(
                             logic->getTerm(),
                             FN.Term->getTrueTerm(),
+                            e.first,
                             predicateType(logic)
                         )
                     )();

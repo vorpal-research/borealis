@@ -29,6 +29,9 @@ Predicate::Predicate(id_t classTag) :
 Predicate::Predicate(id_t classTag, PredicateType type) :
         ClassTag(classTag), type(type) {}
 
+Predicate::Predicate(id_t classTag, PredicateType type, const Locus& loc) :
+        ClassTag(classTag), type(type), location(loc) {}
+
 std::ostream& operator<<(std::ostream& s, Predicate::Ptr p) {
     return s << p->toString();
 }

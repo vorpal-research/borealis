@@ -14,8 +14,9 @@ namespace borealis {
 DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         Term::Ptr cond,
         const std::vector<Term::Ptr>& cases,
+        const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type),
+            Predicate(class_tag(*this), type, loc),
             cond(cond),
             cases(cases) {
 

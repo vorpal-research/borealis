@@ -13,8 +13,9 @@ WritePropertyPredicate::WritePropertyPredicate(
         Term::Ptr propName,
         Term::Ptr lhv,
         Term::Ptr rhv,
+        const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type),
+            Predicate(class_tag(*this), type, loc),
             propName(propName),
             lhv(lhv),
             rhv(rhv) {
