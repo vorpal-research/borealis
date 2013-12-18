@@ -276,9 +276,12 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     LoopBlocksDFS::RPOIterator BlockBegin = DFS.beginRPO();
     LoopBlocksDFS::RPOIterator BlockEnd = DFS.endRPO();
 
+    static config::BoolConfigEntry PerformBackStab("analysis", "deroll-backstab");
+    bool DoBackStab = PerformBackStab.get(false); // XXX: move to true when stable
     // Try to stab this loop in the back
     // Do this before everything else 'cause derolling may break scalar evolution
-    auto lastHeaderAndLatch = UnrollFromTheBack(F, L, BlockBegin, BlockEnd, SE);
+    util::option<std::pair<BasicBlock*, BasicBlock*>> lastHeaderAndLatch;
+    if (DoBackStab) lastHeaderAndLatch = UnrollFromTheBack(F, L, BlockBegin, BlockEnd, SE);
 
     static config::ConfigEntry<int> DerollCountOpt("analysis", "deroll-count");
     unsigned CurrentDerollCount = DerollCountOpt.get(3);
