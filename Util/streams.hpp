@@ -9,6 +9,7 @@
 #define STREAMS_HPP_
 
 #include <clang/AST/Decl.h>
+#include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/Module.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/Casting.h>
@@ -53,7 +54,8 @@ struct is_using_llvm_output {
             std::is_base_of<llvm::SmallVectorBase, T>::value ||
             std::is_base_of<llvm::Twine, T>::value ||
             std::is_base_of<llvm::Module, T>::value ||
-            std::is_base_of<llvm::Pass, T>::value
+            std::is_base_of<llvm::Pass, T>::value ||
+            std::is_base_of<llvm::SCEV, T>::value
     };
 };
 
