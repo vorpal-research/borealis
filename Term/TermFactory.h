@@ -82,7 +82,7 @@ public:
                 if (cInt->isOne()) return getTrueTerm();
                 else if (cInt->isZero()) return getFalseTerm();
             } else {
-                return getIntTerm(cInt->getValue().getZExtValue(), sign);
+                return getIntTerm(cInt->getValue().getSExtValue(), sign);
             }
 
         } else if (auto* cFP = dyn_cast<ConstantFP>(c)) {
