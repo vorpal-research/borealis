@@ -7,14 +7,17 @@
 
 #include <llvm/Analysis/Dominators.h>
 #include <llvm/Analysis/LoopIterator.h>
+#include <llvm/Analysis/ScalarEvolutionExpander.h>
+#include <llvm/Analysis/ScalarEvolutionExpressions.h>
 #include <llvm/Constants.h>
 #include <llvm/Instructions.h>
 #include <llvm/Metadata.h>
-#include "llvm/Transforms/Utils/BasicBlockUtils.h"
-#include "llvm/Transforms/Utils/Cloning.h"
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 
 #include <vector>
 
+#include "Codegen/scalarEvolutions.h"
 #include "Config/config.h"
 #include "Passes/Transform/LoopDeroll.h"
 #include "Util/passes.hpp"
@@ -90,6 +93,116 @@ static inline llvm::BasicBlock* CreateUnreachableBasicBlock(
     return BB;
 }
 
+static llvm::BasicBlock* EvolveBasicBlock(
+    llvm::ScalarEvolution* SE,
+    llvm::BasicBlock* BB,
+    llvm::Loop* L,
+    const llvm::SCEV* Iteration,
+    llvm::ValueToValueMapTy& VMap,
+    std::vector<llvm::Instruction*>& toRemove
+) {
+
+    using namespace llvm;
+
+    auto* bb = CloneBasicBlock(BB, VMap, ".bor.last");
+    VMap[BB] = bb; // FIXME: we should first map all the blocks and then all the values
+
+    for (auto& I : *bb) RemapInstruction(I, VMap);
+
+    llvm::SCEVExpander exp(*SE, "bor.expander");
+
+    for (auto& I : *BB) {
+        if ( ! SE->isSCEVable(I.getType())) continue;
+        if (isa<CmpInst>(I)) continue; // XXX: scalar evo does not handle cmps only, or... ???
+
+        auto* scev = SE->getSCEV(&I);
+
+        if (SE->isLoopInvariant(scev, L)) continue;
+        if (isa<SCEVCouldNotCompute>(scev)) continue;
+
+        llvm::LoopToScevMapT mp;
+        mp.insert({L, Iteration});
+
+        auto* evo = llvm::apply(scev, mp, *SE);
+
+        llvm::Instruction* insertAt;
+        if (auto* foo = dyn_cast<Instruction>(VMap[&I])) {
+            insertAt = foo;
+            toRemove.push_back(insertAt);
+        } else {
+            insertAt = bb->getFirstNonPHIOrDbgOrLifetime();
+        }
+
+        auto* val = exp.expandCodeFor(evo, I.getType(), insertAt);
+
+        if (val == VMap[&I]) {
+            toRemove.pop_back();
+            continue;
+        } else {
+            VMap[&I]->replaceAllUsesWith(val);
+        }
+    }
+
+    return bb;
+}
+
+static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromTheBack(
+    llvm::Function* F,
+    llvm::Loop* L,
+    llvm::LoopBlocksDFS::RPOIterator BlockBegin,
+    llvm::LoopBlocksDFS::RPOIterator BlockEnd,
+    llvm::ScalarEvolution* SE
+) {
+
+    using namespace llvm;
+
+    if ( ! SE->hasLoopInvariantBackedgeTakenCount(L)) return util::nothing();
+
+    BasicBlock* Header = L->getHeader();
+    BasicBlock* Latch = L->getLoopLatch();
+
+    const SCEV* backEdgeTaken = SE->getBackedgeTakenCount(L);
+
+    std::vector<BasicBlock*> NewBBs;
+    ValueToValueMapTy VMap;
+
+    BasicBlock* NewHeader;
+    BasicBlock* NewLatch;
+
+    std::vector<Instruction*> toRemove;
+
+    for (auto BB = BlockBegin; BB != BlockEnd; ++BB) {
+        BasicBlock* New = EvolveBasicBlock(SE, *BB, L, backEdgeTaken, VMap, toRemove);
+        F->getBasicBlockList().push_back(New);
+        NewBBs.push_back(New);
+
+        // Add PHI entries for newly created BB to all exit blocks
+        for (auto SI = succ_begin(*BB), SE = succ_end(*BB); SI != SE; ++SI) {
+            if (L->contains(*SI))
+                continue;
+            for (auto BBI = (*SI)->begin(); PHINode* PHI = dyn_cast<PHINode>(BBI); ++BBI) {
+                Value* Incoming = PHI->getIncomingValueForBlock(*BB);
+                ValueToValueMapTy::iterator It = VMap.find(Incoming);
+                if (It != VMap.end())
+                    Incoming = It->second;
+                PHI->addIncoming(Incoming, New);
+            }
+        }
+
+        if (Header == *BB) NewHeader = New;
+        if (Latch == *BB) NewLatch = New;
+    }
+
+    for (auto& I : util::viewContainer(NewBBs)
+                         .map(util::deref())
+                         .flatten()) RemapInstruction(I, VMap);
+    for (auto* I : toRemove) I->eraseFromParent();
+
+    ASSERTC(NewHeader && NewLatch);
+
+    return util::just(std::make_pair(NewHeader, NewLatch));
+}
+
 void LoopDeroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     using namespace llvm;
 
@@ -163,8 +276,11 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     LoopBlocksDFS::RPOIterator BlockBegin = DFS.beginRPO();
     LoopBlocksDFS::RPOIterator BlockEnd = DFS.endRPO();
 
-    static config::ConfigEntry<int> DerollCountOpt("analysis", "deroll-count");
+    // Try to stab this loop in the back
+    // Do this before everything else 'cause derolling may break scalar evolution
+    auto lastHeaderAndLatch = UnrollFromTheBack(F, L, BlockBegin, BlockEnd, SE);
 
+    static config::ConfigEntry<int> DerollCountOpt("analysis", "deroll-count");
     unsigned CurrentDerollCount = DerollCountOpt.get(3);
 
     // Try to guess the deroll count
@@ -236,6 +352,11 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     for (auto* PN : OrigPHINodes) {
         PN->replaceAllUsesWith(PN->getIncomingValueForBlock(LoopPredecessor));
         Header->getInstList().erase(PN);
+    }
+
+    for (auto& hal : lastHeaderAndLatch) {
+        Headers.push_back(hal.first);
+        Latches.push_back(hal.second);
     }
 
     // Now that all the basic blocks for the unrolled iterations are in place,
