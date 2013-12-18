@@ -36,6 +36,7 @@ class InequalityPredicate: public borealis::Predicate {
     InequalityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
+            const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
 public:
@@ -49,10 +50,11 @@ public:
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
         auto _lhv = t->transform(lhv);
         auto _rhv = t->transform(rhv);
+        auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
             lhv != _lhv || rhv != _rhv,
-            new Self( _lhv, _rhv, _type )
+            new Self( _lhv, _rhv, _loc, _type )
         );
     }
 

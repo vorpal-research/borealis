@@ -37,6 +37,7 @@ class SeqDataPredicate: public borealis::Predicate {
     SeqDataPredicate(
             Term::Ptr base,
             const std::vector<Term::Ptr>& data,
+            const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
 public:
@@ -52,10 +53,11 @@ public:
         auto _data = util::viewContainer(data).map(
             [&t](const Term::Ptr& d) { return t->transform(d); }
         ).toVector();
+        auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
             base != _base || data != _data,
-            new Self( _base, _data, _type )
+            new Self( _base, _data, _loc, _type )
         );
     }
 

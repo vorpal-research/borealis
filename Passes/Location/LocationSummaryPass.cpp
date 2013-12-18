@@ -14,7 +14,6 @@
 #include "Config/config.h"
 #include "Passes/Location/LocationManager.h"
 #include "Passes/Location/LocationSummaryPass.h"
-#include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Util/DataProvider.hpp"
 
 #include "Util/passes.hpp"
@@ -29,13 +28,12 @@ LocationSummaryPass::LocationSummaryPass(): ModulePass(ID) {}
 
 void LocationSummaryPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
     AUX<LocationManager>::addRequiredTransitive(AU);
-    AUX<DPFileManager>::addRequiredTransitive(AU);
+    // XXX: Maybe we'll need this in the future...
+    // AUX<DPFileManager>::addRequiredTransitive(AU);
 }
 
 bool LocationSummaryPass::runOnModule(llvm::Module& M) {
-    auto& slt = GetAnalysis<SourceLocationTracker>::doit(this);
     auto& lm = GetAnalysis<LocationManager>::doit(this);
 
     // XXX: Maybe we'll need this in the future...
@@ -58,8 +56,7 @@ bool LocationSummaryPass::runOnModule(llvm::Module& M) {
         std::map<std::string, std::list<Locus>> locMap;
 
         auto& normalLocs = locMap["normal"];
-        for (const auto& v : llvmLocs) {
-            auto loc = slt.getLocFor(v);
+        for (const auto& loc : llvmLocs) {
             if (loc.isUnknown()) continue;
             normalLocs.push_back(loc);
         }

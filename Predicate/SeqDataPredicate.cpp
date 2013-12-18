@@ -12,8 +12,9 @@ namespace borealis {
 SeqDataPredicate::SeqDataPredicate(
         Term::Ptr base,
         const std::vector<Term::Ptr>& data,
+        const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type),
+            Predicate(class_tag(*this), type, loc),
             base(base),
             data(data) {
 

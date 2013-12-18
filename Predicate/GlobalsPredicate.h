@@ -35,6 +35,7 @@ class GlobalsPredicate: public borealis::Predicate {
 
     GlobalsPredicate(
             const Globals& globals,
+            const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
 public:
@@ -48,10 +49,11 @@ public:
         auto _globals = util::viewContainer(globals).map(
             [&t](const Term::Ptr& e) { return t->transform(e); }
         ).toVector();
+        auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
             globals != _globals,
-            new Self( _globals, _type )
+            new Self( _globals, _loc, _type )
         );
     }
 

@@ -32,12 +32,12 @@ PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
     return fmap([&](PredicateState::Ptr s) { return s + p; });
 }
 
-PredicateState::Ptr PredicateStateChoice::addVisited(const llvm::Value* l) const {
+PredicateState::Ptr PredicateStateChoice::addVisited(const Locus& l) const {
     return fmap([&](PredicateState::Ptr s) { return s << l; });
 }
 
-bool PredicateStateChoice::hasVisited(std::initializer_list<const llvm::Value*> ls) const {
-    auto visited = std::unordered_set<const llvm::Value*>(ls.begin(), ls.end());
+bool PredicateStateChoice::hasVisited(std::initializer_list<Locus> ls) const {
+    auto visited = std::unordered_set<Locus>(ls.begin(), ls.end());
     return hasVisitedFrom(visited);
 }
 

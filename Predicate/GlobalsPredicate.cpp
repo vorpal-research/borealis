@@ -11,8 +11,9 @@ namespace borealis {
 
 GlobalsPredicate::GlobalsPredicate(
         const std::vector<Term::Ptr>& globals,
+        const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type),
+            Predicate(class_tag(*this), type, loc),
             globals(globals) {
 
     using borealis::util::head;

@@ -30,6 +30,7 @@ void OneForAll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<llvm::DominatorTree>::addRequired(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 
 #define HANDLE_ANALYSIS(CLASS) \
     AUX<CLASS>::addRequiredTransitive(AU);
@@ -41,6 +42,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
     DT = &GetAnalysis< llvm::DominatorTree >::doit(this, F);
+    SLT = &GetAnalysis< SourceLocationTracker >::doit(this, F);
 
     auto* st = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);
@@ -59,7 +61,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
     // Register arguments as visited values
     for (const auto& arg : F.getArgumentList()) {
-        initialState = initialState << arg;
+        initialState = initialState << SLT->getLocFor(&arg);
     }
 
     // Save initial state
@@ -124,7 +126,12 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
 
-            instructionState = (FN.State * instructionState + instantiatedCallState << I)();
+            instructionState = (
+                FN.State *
+                instructionState +
+                instantiatedCallState <<
+                SLT->getLocFor(&I)
+            )();
         }
 
         inState = instructionState;
@@ -207,7 +214,7 @@ PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {
         }
     }
 
-    return res << I;
+    return res << SLT->getLocFor(I);
 }
 
 PredicateState::Ptr OneForAll::PPM(PhiBranch key) {
@@ -222,7 +229,7 @@ PredicateState::Ptr OneForAll::PPM(PhiBranch key) {
         }
     }
 
-    return res << key.second;
+    return res << SLT->getLocFor(key.second);
 }
 
 PredicateState::Ptr OneForAll::TPM(TerminatorBranch key) {
@@ -237,7 +244,7 @@ PredicateState::Ptr OneForAll::TPM(TerminatorBranch key) {
         }
     }
 
-    return res << key.first;
+    return res << SLT->getLocFor(key.first);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

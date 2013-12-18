@@ -148,8 +148,8 @@ public:
                 pass->FN.State *
                 pass->FN.Predicate->getEqualityPredicate(
                     LA->getTerm(),
-                    pass->FN.Term->getTrueTerm(),
-                    predicateType(LA)
+                    pass->FN.Term->getTrueTerm()
+                    // predicateType(LA)
                 )
             )();
 

@@ -95,5 +95,18 @@ stream_t& end(stream_t& st) {
     return st.indentOn();
 }
 
+constexpr auto PRINT_PREDICATE_LOCUS_MASK = 0x0001;
+stream_t& print_predicate_locus_on(stream_t& st) {
+    st << logging::logstream::mode_on{ PRINT_PREDICATE_LOCUS_MASK };
+    return st;
+}
+stream_t& print_predicate_locus_off(stream_t& st) {
+    st << logging::logstream::mode_off{ PRINT_PREDICATE_LOCUS_MASK };
+    return st;
+}
+bool with_predicate_locus(stream_t& st) {
+    return st.hasMode(PRINT_PREDICATE_LOCUS_MASK);
+}
+
 } // namespace logging
 } // namespace borealis

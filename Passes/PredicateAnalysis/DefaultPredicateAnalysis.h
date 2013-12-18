@@ -13,6 +13,7 @@
 
 #include "Factory/Nest.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
+#include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
@@ -38,6 +39,7 @@ public:
 private:
 
     FactoryNest FN;
+    SourceLocationTracker* SLT;
     llvm::TargetData* TD;
 
 };

@@ -23,6 +23,7 @@
 #include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
 
 #include "Term/ProtobufConverterImpl.hpp"
+#include "Util/ProtobufConverterImpl.hpp"
 
 #include "Factory/Nest.h"
 #include "Util/util.h"
@@ -59,11 +60,13 @@ struct protobuf_traits_impl<AllocaPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::AllocaPredicate& p) {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto numElems = TermConverter::fromProtobuf(fn, p.numelements());
-        return Predicate::Ptr{ new AllocaPredicate(lhv, numElems, type) };
+        return Predicate::Ptr{
+            new AllocaPredicate(lhv, numElems, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -87,7 +90,7 @@ struct protobuf_traits_impl<DefaultSwitchCasePredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::DefaultSwitchCasePredicate& p) {
         auto cond = TermConverter::fromProtobuf(fn, p.cond());
 
@@ -99,7 +102,9 @@ struct protobuf_traits_impl<DefaultSwitchCasePredicate> {
             );
         }
 
-        return Predicate::Ptr{ new DefaultSwitchCasePredicate(cond, cases, type) };
+        return Predicate::Ptr{
+            new DefaultSwitchCasePredicate(cond, cases, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -121,11 +126,13 @@ struct protobuf_traits_impl<EqualityPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::EqualityPredicate& p) {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
-        return Predicate::Ptr{ new EqualityPredicate(lhv, rhv, type) };
+        return Predicate::Ptr{
+            new EqualityPredicate(lhv, rhv, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -146,7 +153,7 @@ struct protobuf_traits_impl<GlobalsPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::GlobalsPredicate& p) {
         std::vector<Term::Ptr> globals;
         globals.reserve(p.globals_size());
@@ -155,7 +162,9 @@ struct protobuf_traits_impl<GlobalsPredicate> {
                 TermConverter::fromProtobuf(fn, g)
             );
         }
-        return Predicate::Ptr{ new GlobalsPredicate(globals, type) };
+        return Predicate::Ptr{
+            new GlobalsPredicate(globals, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -177,11 +186,13 @@ struct protobuf_traits_impl<InequalityPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::InequalityPredicate& p) {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
-        return Predicate::Ptr{ new InequalityPredicate(lhv, rhv, type) };
+        return Predicate::Ptr{
+            new InequalityPredicate(lhv, rhv, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -203,11 +214,13 @@ struct protobuf_traits_impl<MallocPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::MallocPredicate& p) {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto numElems = TermConverter::fromProtobuf(fn, p.numelements());
-        return Predicate::Ptr{ new MallocPredicate(lhv, numElems, type) };
+        return Predicate::Ptr{
+            new MallocPredicate(lhv, numElems, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -231,9 +244,9 @@ struct protobuf_traits_impl<SeqDataPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::SeqDataPredicate& p) {
-        auto base = TermConverter::fromProtobuf(fn, p.base());
+        auto b = TermConverter::fromProtobuf(fn, p.base());
 
         std::vector<Term::Ptr> data;
         data.reserve(p.data_size());
@@ -243,7 +256,9 @@ struct protobuf_traits_impl<SeqDataPredicate> {
             );
         }
 
-        return Predicate::Ptr{ new SeqDataPredicate(base, data, type) };
+        return Predicate::Ptr{
+            new SeqDataPredicate(b, data, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -265,11 +280,13 @@ struct protobuf_traits_impl<StorePredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::StorePredicate& p) {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
-        return Predicate::Ptr{ new StorePredicate(lhv, rhv, type) };
+        return Predicate::Ptr{
+            new StorePredicate(lhv, rhv, base->getLocation(), base->getType())
+        };
     }
 };
 
@@ -294,12 +311,14 @@ struct protobuf_traits_impl<WritePropertyPredicate> {
 
     static Predicate::Ptr fromProtobuf(
             const FactoryNest& fn,
-            PredicateType type,
+            Predicate::Ptr base,
             const proto::WritePropertyPredicate& p) {
         auto propName = TermConverter::fromProtobuf(fn, p.propname());
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
-        return Predicate::Ptr{ new WritePropertyPredicate(propName, lhv, rhv, type) };
+        return Predicate::Ptr{
+            new WritePropertyPredicate(propName, lhv, rhv, base->getLocation(), base->getType())
+        };
     }
 };
 

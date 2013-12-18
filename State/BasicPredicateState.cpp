@@ -23,7 +23,7 @@ void BasicPredicateState::addPredicateInPlace(Predicate::Ptr pred) {
     data.push_back(pred);
 }
 
-void BasicPredicateState::addVisitedInPlace(const llvm::Value* l) {
+void BasicPredicateState::addVisitedInPlace(const Locus& l) {
     locs.insert(l);
 }
 
@@ -39,15 +39,15 @@ PredicateState::Ptr BasicPredicateState::addPredicate(Predicate::Ptr pred) const
     return Simplified(res.release());
 }
 
-PredicateState::Ptr BasicPredicateState::addVisited(const llvm::Value* loc) const {
+PredicateState::Ptr BasicPredicateState::addVisited(const Locus& loc) const {
     auto res = util::uniq(new Self{ *this });
     res->addVisitedInPlace(loc);
     return Simplified(res.release());
 }
 
-bool BasicPredicateState::hasVisited(std::initializer_list<const llvm::Value*> ls) const {
+bool BasicPredicateState::hasVisited(std::initializer_list<Locus> ls) const {
     return std::all_of(ls.begin(), ls.end(),
-        [this](const llvm::Value* loc) { return contains(locs, loc); });
+        [this](const Locus& loc) { return contains(locs, loc); });
 }
 
 bool BasicPredicateState::hasVisitedFrom(Locs& visited) const {
@@ -135,9 +135,9 @@ borealis::logging::logstream& BasicPredicateState::dump(borealis::logging::logst
     s << '(';
     s << il << endl;
     if (!isEmpty()) {
-        s << head(data)->toString();
+        s << head(data);
         for (auto& e : tail(data)) {
-            s << ',' << endl << e->toString();
+            s << ',' << endl << e;
         }
     }
     s << ir << endl;
@@ -153,9 +153,9 @@ std::string BasicPredicateState::toString() const {
 
     s << '(' << endl;
     if (!isEmpty()) {
-        s << "  " << head(data)->toString();
+        s << "  " << head(data);
         for (auto& e : tail(data)) {
-            s << ',' << endl << "  " << e->toString();
+            s << ',' << endl << "  " << e;
         }
     }
     s << endl << ')';

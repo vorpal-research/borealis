@@ -38,6 +38,7 @@ public:
                     pass->FN.Predicate->getEqualityPredicate(
                         LA->getTerm(),
                         pass->FN.Term->getTrueTerm(),
+                        pass->SLT->getLocFor(&CI),
                         predicateType(LA)
                     );
             }
@@ -63,12 +64,14 @@ void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) cons
 
     AUX<MetaInfoTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
 bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
     MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
+    SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);

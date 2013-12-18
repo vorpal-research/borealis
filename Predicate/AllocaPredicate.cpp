@@ -12,8 +12,9 @@ namespace borealis {
 AllocaPredicate::AllocaPredicate(
         Term::Ptr lhv,
         Term::Ptr numElements,
+        const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type),
+            Predicate(class_tag(*this), type, loc),
             lhv(lhv),
             numElements(numElements) {
     asString = lhv->getName() + "=alloca(" + numElements->getName() + ")";

@@ -36,6 +36,7 @@ class DefaultSwitchCasePredicate: public borealis::Predicate {
     DefaultSwitchCasePredicate(
             Term::Ptr cond,
             const std::vector<Term::Ptr>& cases,
+            const Locus& loc,
             PredicateType type = PredicateType::PATH);
 
 public:
@@ -51,10 +52,11 @@ public:
         auto _cases = util::viewContainer(cases).map(
             [&t](const Term::Ptr& e) { return t->transform(e); }
         ).toVector();
+        auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
             cond != _cond || cases != _cases,
-            new Self( _cond, _cases, _type )
+            new Self( _cond, _cases, _loc, _type )
         );
     }
 

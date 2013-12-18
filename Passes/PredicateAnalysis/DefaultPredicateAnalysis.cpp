@@ -42,7 +42,8 @@ public:
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getLoadTerm(
                 pass->FN.Term->getValueTerm(rhv)
-            )
+            ),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -54,7 +55,8 @@ public:
 
         pass->PM[&I] = pass->FN.Predicate->getStorePredicate(
             pass->FN.Term->getValueTerm(lhv),
-            pass->FN.Term->getValueTerm(rhv)
+            pass->FN.Term->getValueTerm(rhv),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -73,7 +75,8 @@ public:
                 cond,
                 pass->FN.Term->getValueTerm(op1),
                 pass->FN.Term->getValueTerm(op2)
-            )
+            ),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -89,12 +92,14 @@ public:
         pass->TPM[{&I, trueSucc}] =
             pass->FN.Predicate->getBooleanPredicate(
                 condTerm,
-                pass->FN.Term->getTrueTerm()
+                pass->FN.Term->getTrueTerm(),
+                pass->SLT->getLocFor(&I)
             );
         pass->TPM[{&I, falseSucc}] =
             pass->FN.Predicate->getBooleanPredicate(
                 condTerm,
-                pass->FN.Term->getFalseTerm()
+                pass->FN.Term->getFalseTerm(),
+                pass->SLT->getLocFor(&I)
             );
     }
 
@@ -114,6 +119,7 @@ public:
                 pass->FN.Predicate->getEqualityPredicate(
                     condTerm,
                     caseTerm,
+                    pass->SLT->getLocFor(&I),
                     PredicateType::PATH
                 );
 
@@ -124,7 +130,8 @@ public:
         pass->TPM[{&I, defaultSucc}] =
             pass->FN.Predicate->getDefaultSwitchCasePredicate(
                 condTerm,
-                cases
+                cases,
+                pass->SLT->getLocFor(&I)
             );
     }
 
@@ -142,7 +149,8 @@ public:
                 pass->FN.Term->getValueTerm(cnd),
                 pass->FN.Term->getValueTerm(tru),
                 pass->FN.Term->getValueTerm(fls)
-            )
+            ),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -160,7 +168,8 @@ public:
 
         pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getValueTerm(lhv),
-            pass->FN.Term->getGepTerm(rhv, idxs)
+            pass->FN.Term->getGepTerm(rhv, idxs),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -189,7 +198,8 @@ public:
 
         pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             lhvt,
-            rhvt
+            rhvt,
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -202,7 +212,8 @@ public:
 
             pass->PPM[{from, &I}] = pass->FN.Predicate->getEqualityPredicate(
                 pass->FN.Term->getValueTerm(&I),
-                pass->FN.Term->getValueTerm(v)
+                pass->FN.Term->getValueTerm(v),
+                pass->SLT->getLocFor(&I)
             );
         }
     }
@@ -223,7 +234,8 @@ public:
                 type,
                 pass->FN.Term->getValueTerm(op1),
                 pass->FN.Term->getValueTerm(op2)
-            )
+            ),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -235,7 +247,8 @@ public:
 
         pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getReturnValueTerm(I.getParent()->getParent()),
-            pass->FN.Term->getValueTerm(rv)
+            pass->FN.Term->getValueTerm(rv),
+            pass->SLT->getLocFor(&I)
         );
     }
 
@@ -257,6 +270,7 @@ void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
     AUX<llvm::TargetData>::addRequiredTransitive(AU);
 }
 
@@ -266,6 +280,7 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);
 
+    SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
     TD = &GetAnalysis<llvm::TargetData>::doit(this, F);
 
     DPAInstVisitor visitor(this);

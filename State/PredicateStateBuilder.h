@@ -33,8 +33,7 @@ public:
 
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
-    friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value* loc);
-    friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value& loc);
+    friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc);
 
 };
 
@@ -43,8 +42,7 @@ PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Predicate::Ptr p
 
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
-PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value* loc);
-PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const llvm::Value& loc);
+PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc);
 
 template<class Container>
 PredicateStateBuilder operator+(PredicateStateBuilder PSB, Container&& c) {
