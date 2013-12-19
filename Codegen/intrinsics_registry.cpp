@@ -110,13 +110,23 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
           FactoryNest FN
       ) -> PredicateState::Ptr {
         ASSERTC(F->arg_size() > 0);
-        return FN.State->Basic() +
-               FN.Predicate->getInequalityPredicate(
-                   FN.Term->getArgumentTerm(F->arg_begin()),
-                   FN.Term->getIntTerm(0ULL),
-                   Locus(),
-                   PredicateType::REQUIRES
-               );
+        if (F->arg_begin()->getType()->isIntegerTy(1)) {
+            return FN.State->Basic() +
+                   FN.Predicate->getEqualityPredicate(
+                       FN.Term->getArgumentTerm(F->arg_begin()),
+                       FN.Term->getTrueTerm(),
+                       Locus(),
+                       PredicateType::REQUIRES
+                   );
+        } else {
+            return FN.State->Basic() +
+                   FN.Predicate->getInequalityPredicate(
+                       FN.Term->getArgumentTerm(F->arg_begin()),
+                       FN.Term->getIntTerm(0ULL),
+                       Locus(),
+                       PredicateType::REQUIRES
+                   );
+        }
     },
     [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
         auto name = getCalledFunctionName(ci);
@@ -134,13 +144,23 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
           FactoryNest FN
       ) -> PredicateState::Ptr {
         ASSERTC(F->arg_size() > 0);
-        return FN.State->Basic() +
-               FN.Predicate->getInequalityPredicate(
-                   FN.Term->getArgumentTerm(F->arg_begin()),
-                   FN.Term->getIntTerm(0ULL),
-                   Locus(),
-                   PredicateType::ENSURES
-               );
+        if (F->arg_begin()->getType()->isIntegerTy(1)) {
+            return FN.State->Basic() +
+                   FN.Predicate->getEqualityPredicate(
+                       FN.Term->getArgumentTerm(F->arg_begin()),
+                       FN.Term->getTrueTerm(),
+                       Locus(),
+                       PredicateType::ENSURES
+                   );
+        } else {
+            return FN.State->Basic() +
+                   FN.Predicate->getInequalityPredicate(
+                       FN.Term->getArgumentTerm(F->arg_begin()),
+                       FN.Term->getIntTerm(0ULL),
+                       Locus(),
+                       PredicateType::ENSURES
+                   );
+        }
     },
     [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
         auto name = getCalledFunctionName(ci);

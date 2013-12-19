@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "Codegen/scalarEvolutions.h"
+#include "Codegen/intrinsics_manager.h"
 #include "Config/config.h"
 #include "Passes/Transform/LoopDeroll.h"
 #include "Util/passes.hpp"
@@ -162,6 +163,22 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     BasicBlock* Latch = L->getLoopLatch();
 
     const SCEV* backEdgeTaken = SE->getBackedgeTakenCount(L);
+    errs() << *backEdgeTaken << endl;
+
+    auto* nondetIntr = IntrinsicsManager::getInstance().createIntrinsic(
+        function_type::INTRINSIC_NONDET,
+        "size_t",
+        FunctionType::get(backEdgeTaken->getType(), false),
+        F->getParent());
+    auto* assumeIntr = IntrinsicsManager::getInstance().createIntrinsic(
+        function_type::BUILTIN_BOR_ASSUME,
+        "",
+        FunctionType::get(llvm::Type::getVoidTy(F->getContext()), llvm::Type::getInt1Ty(F->getContext()), false),
+        F->getParent());
+
+    llvm::IRBuilder<> builder{ F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime() };
+
+    auto* nondetCall = builder.CreateCall(nondetIntr, "bor.nondet.for.loop.last.last");
 
     std::vector<BasicBlock*> NewBBs;
     ValueToValueMapTy VMap;
@@ -173,6 +190,28 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
     for (auto BB = BlockBegin; BB != BlockEnd; ++BB) {
         BasicBlock* New = EvolveBasicBlock(SE, *BB, L, backEdgeTaken, VMap, toRemove);
+        {
+            IRBuilder<> builder{ New->getFirstNonPHIOrDbgOrLifetime() };
+            SCEVExpander exp(*SE, "bor.loop.bound");
+            auto* generatedBackEdge =
+                exp.expandCodeFor(backEdgeTaken, backEdgeTaken->getType(), New->getFirstNonPHIOrDbgOrLifetime());
+
+            errs() << *backEdgeTaken << endl;
+            errs() << *generatedBackEdge << endl;
+
+            builder.CreateCall(
+                assumeIntr,
+                builder.CreateICmpUGE(nondetCall, ConstantInt::get(generatedBackEdge->getType(), 0)),
+                ""
+            );
+
+            builder.CreateCall(
+                assumeIntr,
+                builder.CreateICmpULT(nondetCall, generatedBackEdge),
+                ""
+            );
+
+        }
         F->getBasicBlockList().push_back(New);
         NewBBs.push_back(New);
 
