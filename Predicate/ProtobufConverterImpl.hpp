@@ -209,6 +209,9 @@ struct protobuf_traits_impl<MallocPredicate> {
         res->set_allocated_numelements(
             TermConverter::toProtobuf(*p.getNumElems()).release()
         );
+        res->set_allocated_orignumelements(
+            TermConverter::toProtobuf(*p.getOrigNumElems()).release()
+        );
         return std::move(res);
     }
 
@@ -218,8 +221,9 @@ struct protobuf_traits_impl<MallocPredicate> {
             const proto::MallocPredicate& p) {
         auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
         auto numElems = TermConverter::fromProtobuf(fn, p.numelements());
+        auto origNumElems = TermConverter::fromProtobuf(fn, p.orignumelements());
         return Predicate::Ptr{
-            new MallocPredicate(lhv, numElems, base->getLocation(), base->getType())
+            new MallocPredicate(lhv, numElems, origNumElems, base->getLocation(), base->getType())
         };
     }
 };

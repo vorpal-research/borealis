@@ -56,9 +56,10 @@ public:
     Predicate::Ptr getMallocPredicate(
                  Term::Ptr lhv,
                  Term::Ptr numElements,
+                 Term::Ptr origNumElements,
                  const Locus& loc = Locus()) {
         return Predicate::Ptr(
-                new MallocPredicate(lhv, numElements, loc));
+                new MallocPredicate(lhv, numElements, origNumElements, loc));
     }
 
 
