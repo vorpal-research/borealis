@@ -25,6 +25,7 @@ message AllocaPredicate {
 
     optional Term lhv = 1;
     optional Term numElements = 2;
+    optional Term origNumElements = 3;
 }
 
 **/
@@ -32,10 +33,12 @@ class AllocaPredicate: public borealis::Predicate {
 
     Term::Ptr lhv;
     Term::Ptr numElements;
+    Term::Ptr origNumElements;
 
     AllocaPredicate(
             Term::Ptr lhv,
             Term::Ptr numElements,
+            Term::Ptr origNumElements,
             const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
@@ -45,16 +48,18 @@ public:
 
     Term::Ptr getLhv() const { return lhv; }
     Term::Ptr getNumElems() const { return numElements; }
+    Term::Ptr getOrigNumElems() const { return origNumElements; }
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
         auto _lhv = t->transform(lhv);
         auto _numElements = t->transform(numElements);
+        auto _origNumElements = t->transform(origNumElements);
         auto _loc = location;
         auto _type = type;
         PREDICATE_ON_CHANGED(
-            lhv != _lhv || numElements != _numElements,
-            new Self( _lhv, _numElements, _loc, _type )
+            lhv != _lhv || numElements != _numElements || origNumElements != _origNumElements,
+            new Self( _lhv, _numElements, _origNumElements, _loc, _type )
         );
     }
 
@@ -87,7 +92,11 @@ struct SMTImpl<Impl, AllocaPredicate> {
             BYE_BYE(Bool, "Encountered alloca with non-integer element number");
         }
 
-        return lhvp == ctx->getLocalPtr(elems);
+        auto origSize = SMT<Impl>::doit(p->getOrigNumElems(), ef, ctx).template to<Integer>();
+        ASSERT(!origSize.empty(), "Encountered alloca with non-integer original size");
+        auto origSizeInt = origSize.getUnsafe();
+
+        return lhvp == ctx->getLocalPtr(elems, origSizeInt);
     }
 };
 #include "Util/unmacros.h"

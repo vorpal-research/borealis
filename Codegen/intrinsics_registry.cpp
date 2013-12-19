@@ -72,11 +72,22 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->arg_size() > 0);
+        ASSERTC(F->arg_size() > 2);
+
+        auto it = F->arg_begin();
+        auto resolvedSize = it++;
+        auto origElemSize = it++;
+        auto origNumElems = it++;
+
         return FN.State->Basic() +
                FN.Predicate->getMallocPredicate(
                    FN.Term->getReturnValueTerm(F),
-                   FN.Term->getArgumentTerm(F->arg_begin())
+                   FN.Term->getArgumentTerm(resolvedSize),
+                   FN.Term->getBinaryTerm(
+                       llvm::ArithType::MUL,
+                       FN.Term->getArgumentTerm(origElemSize),
+                       FN.Term->getArgumentTerm(origNumElems)
+                   )
                );
     }
 };
@@ -88,11 +99,22 @@ static RegisterIntrinsic INTRINSIC_ALLOC {
           llvm::Function* F,
           FactoryNest FN
       ) -> PredicateState::Ptr {
-        ASSERTC(F->arg_size() > 0);
+        ASSERTC(F->arg_size() > 2);
+
+        auto it = F->arg_begin();
+        auto resolvedSize = it++;
+        auto origElemSize = it++;
+        auto origNumElems = it++;
+
         return FN.State->Basic() +
                FN.Predicate->getAllocaPredicate(
                    FN.Term->getReturnValueTerm(F),
-                   FN.Term->getArgumentTerm(F->arg_begin())
+                   FN.Term->getArgumentTerm(resolvedSize),
+                   FN.Term->getBinaryTerm(
+                       llvm::ArithType::MUL,
+                       FN.Term->getArgumentTerm(origElemSize),
+                       FN.Term->getArgumentTerm(origNumElems)
+                   )
                );
     }
 };
