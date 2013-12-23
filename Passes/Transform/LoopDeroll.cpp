@@ -275,15 +275,18 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 }
 
 static unsigned adjustUnrollFactor(unsigned num, llvm::Loop* l) {
+    auto limit2one = [](unsigned i){ return std::max(i, 1U); };
     unsigned loopDepth = l->getLoopDepth() + l->getSubLoops().size();
-    unsigned basicBlocks = l->getBlocks().size();
     constexpr unsigned basicBlockStd = 2U;
 
-    num /= (basicBlocks/basicBlockStd);
+    loopDepth = limit2one(loopDepth);
+
+    unsigned basicBlocks = l->getBlocks().size();
+
+    num /= limit2one(basicBlocks/basicBlockStd);
     num = static_cast<unsigned>(std::lround(std::pow(num, 1. / loopDepth)));
 
-    return std::max(num, 1U);
-
+    return limit2one(num);
 }
 
 void LoopDeroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
