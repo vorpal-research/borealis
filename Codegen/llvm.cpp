@@ -23,6 +23,52 @@
 
 namespace borealis {
 
+llvm::DebugLoc getFirstLocusForBlock(llvm::BasicBlock* bb) {
+    for(auto& I : *bb) {
+        const auto& dl = I.getDebugLoc();
+        if(dl.isUnknown()) continue;
+
+        return dl;
+    }
+
+    return llvm::DebugLoc{};
+}
+
+llvm::MDNode* getFirstMdNodeForBlock(llvm::BasicBlock* bb, const char* id) {
+    for(auto& I : *bb) {
+        auto* md = I.getMetadata(id);
+        if(!md) continue;
+
+        return md;
+    }
+
+    return nullptr;
+}
+
+template<class It>
+static std::reverse_iterator<It> reverse(It it) {
+    return std::reverse_iterator<It>(it);
+}
+
+void approximateAllDebugLocs(llvm::BasicBlock* bb) {
+    using namespace llvm;
+    DebugLoc ldl;
+    MDNode* lmd;
+    auto vec = util::viewContainer(*bb).map(util::takePtr{}).toVector();
+
+    for(auto* pI: util::view(vec.rbegin(), vec.rend())) {
+        auto& I = *pI;
+        auto dl = I.getDebugLoc();
+        if( ! dl.isUnknown()) ldl = dl;
+        else I.setDebugLoc(ldl);
+        auto md = I.getMetadata("dbg");
+        if(md) lmd = md;
+        else I.setMetadata("dbg", lmd);
+    }
+    return;
+
+}
+
 void insertBeforeWithLocus(
         llvm::Instruction* what,
         llvm::Instruction* before,

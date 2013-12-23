@@ -16,6 +16,10 @@
 
 namespace borealis {
 
+llvm::DebugLoc getFirstLocusForBlock(llvm::BasicBlock* bb);
+llvm::MDNode* getFirstMdNodeForBlock(llvm::BasicBlock* bb, const char* id = "dbg");
+void approximateAllDebugLocs(llvm::BasicBlock* bb);
+
 void insertBeforeWithLocus(
         llvm::Instruction* what,
         llvm::Instruction* before,

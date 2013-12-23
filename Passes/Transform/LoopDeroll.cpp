@@ -12,6 +12,7 @@
 #include <llvm/Constants.h>
 #include <llvm/Instructions.h>
 #include <llvm/Metadata.h>
+#include <llvm/Support/TypeBuilder.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
@@ -129,21 +130,31 @@ static llvm::BasicBlock* EvolveBasicBlock(
         llvm::Instruction* insertAt;
         if (auto* foo = dyn_cast<Instruction>(VMap[&I])) {
             insertAt = foo;
-            toRemove.push_back(insertAt);
         } else {
             insertAt = bb->getFirstNonPHIOrDbgOrLifetime();
         }
 
-        auto* val = exp.expandCodeFor(evo, I.getType(), insertAt);
+        if( ! insertAt->getMetadata("dbg")) {
+            insertAt->setMetadata("dbg", I.getMetadata("dbg"));
+        }
+        if( insertAt->getDebugLoc().isUnknown()) {
+            insertAt->setDebugLoc(I.getDebugLoc());
+        }
 
-        if (val == VMap[&I]) {
-            toRemove.pop_back();
-            continue;
-        } else {
+        auto* val = exp.expandCodeFor(evo, I.getType(), insertAt);
+        if(auto ival = dyn_cast<Instruction>(val)) {
+            ival->setMetadata("dbg", I.getMetadata("dbg"));
+            ival->setDebugLoc(I.getDebugLoc());
+        }
+
+        if (val != VMap[&I]) {
             VMap[&I]->replaceAllUsesWith(val);
         }
+
+        if ( ! insertAt->hasNUsesOrMore(1)) toRemove.push_back(insertAt);
     }
 
+    approximateAllDebugLocs(bb);
     return bb;
 }
 
@@ -155,7 +166,10 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     llvm::ScalarEvolution* SE
 ) {
 
-    using namespace llvm;
+    using namespace ::llvm;
+    using namespace ::llvm::types;
+
+    auto& ctx = F->getContext();
 
     if ( ! SE->hasLoopInvariantBackedgeTakenCount(L)) return util::nothing();
 
@@ -173,12 +187,28 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     auto* assumeIntr = IntrinsicsManager::getInstance().createIntrinsic(
         function_type::BUILTIN_BOR_ASSUME,
         "",
-        FunctionType::get(llvm::Type::getVoidTy(F->getContext()), llvm::Type::getInt1Ty(F->getContext()), false),
+        TypeBuilder<void(i<1>), true>::get(ctx),
         F->getParent());
 
     llvm::IRBuilder<> builder{ F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime() };
 
-    auto* nondetCall = builder.CreateCall(nondetIntr, "bor.nondet.for.loop.last.last");
+    auto* nondetCall = builder.CreateCall(nondetIntr, "bor.loop.iteration." + Header->getName());
+    for(auto& I: *Header){
+        const auto& dl = I.getDebugLoc();
+        if ( ! dl.isUnknown()) {
+            nondetCall->setDebugLoc(dl);
+            break;
+        }
+    }
+    for(auto& I: *Header){
+        auto* md = I.getMetadata("dbg");
+        if ( md ) {
+            nondetCall->setMetadata("dbg", md);
+            break;
+        }
+    }
+
+    auto* nondetSCEV = SE->getSCEV(nondetCall);
 
     std::vector<BasicBlock*> NewBBs;
     ValueToValueMapTy VMap;
@@ -189,25 +219,27 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     std::vector<Instruction*> toRemove;
 
     for (auto BB = BlockBegin; BB != BlockEnd; ++BB) {
-        BasicBlock* New = EvolveBasicBlock(SE, *BB, L, backEdgeTaken, VMap, toRemove);
+        BasicBlock* New = EvolveBasicBlock(SE, *BB, L, nondetSCEV, VMap, toRemove);
         {
-            IRBuilder<> builder{ New->getFirstNonPHIOrDbgOrLifetime() };
-            SCEVExpander exp(*SE, "bor.loop.bound");
+            auto* insertAt = New->getFirstNonPHIOrDbgOrLifetime();
+            IRBuilder<> builder{ insertAt };
+            SCEVExpander exp(*SE, "bor.loop.expand");
             auto* generatedBackEdge =
-                exp.expandCodeFor(backEdgeTaken, backEdgeTaken->getType(), New->getFirstNonPHIOrDbgOrLifetime());
+                exp.expandCodeFor(backEdgeTaken, backEdgeTaken->getType(), insertAt);
 
             errs() << *backEdgeTaken << endl;
             errs() << *generatedBackEdge << endl;
 
             builder.CreateCall(
                 assumeIntr,
-                builder.CreateICmpUGE(nondetCall, ConstantInt::get(generatedBackEdge->getType(), 0)),
+                builder.CreateICmpSGE(nondetCall, ConstantInt::get(generatedBackEdge->getType(), 0)),
                 ""
             );
 
+            // remember that backEdgeTaken is not the loop limit, but loop limit decreased by 1!
             builder.CreateCall(
                 assumeIntr,
-                builder.CreateICmpULT(nondetCall, generatedBackEdge),
+                builder.CreateICmpSLE(nondetCall, generatedBackEdge), // hence SLE
                 ""
             );
 
@@ -235,7 +267,9 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     for (auto& I : util::viewContainer(NewBBs)
                          .map(util::deref())
                          .flatten()) RemapInstruction(I, VMap);
-    for (auto* I : toRemove) I->eraseFromParent();
+    errs() << toRemove << endl;
+
+    for (auto* I : toRemove) if ( ! I->hasNUsesOrMore(1)) I->eraseFromParent();
 
     ASSERTC(NewHeader && NewLatch);
 
@@ -323,7 +357,9 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     if (DoBackStab) lastHeaderAndLatch = UnrollFromTheBack(F, L, BlockBegin, BlockEnd, SE);
 
     static config::ConfigEntry<int> DerollCountOpt("analysis", "deroll-count");
+    static config::ConfigEntry<int> MaxDerollCountOpt("analysis", "max-deroll-count");
     unsigned CurrentDerollCount = DerollCountOpt.get(3);
+    unsigned Max = MaxDerollCountOpt.get(std::numeric_limits<int>::max());
 
     // Try to guess the deroll count
     unsigned TripCount = SE->getSmallConstantTripCount(L, Latch);
@@ -332,6 +368,10 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     // Try to find unroll annotation for this loop
     unsigned AnnoUnrollCount = LM->getUnrollCount(L);
     if (AnnoUnrollCount != 0) CurrentDerollCount = AnnoUnrollCount;
+
+    if(CurrentDerollCount > Max) {
+        CurrentDerollCount = Max;
+    }
 
     for (unsigned UnrollIter = 0; UnrollIter != CurrentDerollCount; UnrollIter++) {
         std::vector<BasicBlock*> NewBlocks;
