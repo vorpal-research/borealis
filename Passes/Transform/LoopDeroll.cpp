@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include <llvm/Analysis/CodeMetrics.h>
 #include <llvm/Analysis/Dominators.h>
 #include <llvm/Analysis/LoopIterator.h>
 #include <llvm/Analysis/ScalarEvolutionExpander.h>
@@ -16,6 +17,7 @@
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
+#include <cmath>
 #include <vector>
 
 #include "Codegen/scalarEvolutions.h"
@@ -161,6 +163,7 @@ static llvm::BasicBlock* EvolveBasicBlock(
 static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromTheBack(
     llvm::Function* F,
     llvm::Loop* L,
+    llvm::LoopInfo* LI,
     llvm::LoopBlocksDFS::RPOIterator BlockBegin,
     llvm::LoopBlocksDFS::RPOIterator BlockEnd,
     llvm::ScalarEvolution* SE
@@ -241,6 +244,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
         }
         F->getBasicBlockList().push_back(New);
+        L->addBasicBlockToLoop(New, LI->getBase());
         NewBBs.push_back(New);
 
         // Add PHI entries for newly created BB to all exit blocks
@@ -268,6 +272,18 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     ASSERTC(NewHeader && NewLatch);
 
     return util::just(std::make_pair(NewHeader, NewLatch));
+}
+
+static unsigned adjustUnrollFactor(unsigned num, llvm::Loop* l) {
+    unsigned loopDepth = l->getLoopDepth() + l->getSubLoops().size();
+    unsigned basicBlocks = l->getBlocks().size();
+    constexpr unsigned basicBlockStd = 2U;
+
+    num /= (basicBlocks/basicBlockStd);
+    num = static_cast<unsigned>(std::lround(std::pow(num, 1. / loopDepth)));
+
+    return std::max(num, 1U);
+
 }
 
 void LoopDeroll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -348,12 +364,15 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     // Try to stab this loop in the back
     // Do this before everything else 'cause derolling may break scalar evolution
     util::option<std::pair<BasicBlock*, BasicBlock*>> lastHeaderAndLatch;
-    if (DoBackStab) lastHeaderAndLatch = UnrollFromTheBack(F, L, BlockBegin, BlockEnd, SE);
+    if (DoBackStab) lastHeaderAndLatch = UnrollFromTheBack(F, L, LI, BlockBegin, BlockEnd, SE);
 
     static config::ConfigEntry<int> DerollCountOpt("analysis", "deroll-count");
     static config::ConfigEntry<int> MaxDerollCountOpt("analysis", "max-deroll-count");
     unsigned CurrentDerollCount = DerollCountOpt.get(3);
     unsigned Max = MaxDerollCountOpt.get(std::numeric_limits<int>::max());
+
+    static config::BoolConfigEntry EnableAdaptiveDeroll("analysis", "adaptive-deroll");
+    bool AdaptiveDerollEnabled = EnableAdaptiveDeroll.get(false); // XXX: move to true when stable
 
     // Try to guess the deroll count
     unsigned TripCount = SE->getSmallConstantTripCount(L, Latch);
@@ -365,6 +384,12 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
 
     if(CurrentDerollCount > Max) {
         CurrentDerollCount = Max;
+    }
+
+    if(AdaptiveDerollEnabled && lastHeaderAndLatch) {
+        CurrentDerollCount = std::min(CurrentDerollCount, 1U);
+    } else if(AdaptiveDerollEnabled) {
+        CurrentDerollCount = adjustUnrollFactor(CurrentDerollCount, L);
     }
 
     for (unsigned UnrollIter = 0; UnrollIter != CurrentDerollCount; UnrollIter++) {
@@ -461,7 +486,6 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     if (DominatorTree* DT = LPM.getAnalysisIfAvailable<DominatorTree>()) {
         DT->runOnFunction(*F);
     }
-
     // This loop shall be no more...
     LPM.deleteLoopFromQueue(L);
 
