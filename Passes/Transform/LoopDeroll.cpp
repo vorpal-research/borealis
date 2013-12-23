@@ -177,7 +177,6 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     BasicBlock* Latch = L->getLoopLatch();
 
     const SCEV* backEdgeTaken = SE->getBackedgeTakenCount(L);
-    errs() << *backEdgeTaken << endl;
 
     auto* nondetIntr = IntrinsicsManager::getInstance().createIntrinsic(
         function_type::INTRINSIC_NONDET,
@@ -227,9 +226,6 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
             auto* generatedBackEdge =
                 exp.expandCodeFor(backEdgeTaken, backEdgeTaken->getType(), insertAt);
 
-            errs() << *backEdgeTaken << endl;
-            errs() << *generatedBackEdge << endl;
-
             builder.CreateCall(
                 assumeIntr,
                 builder.CreateICmpSGE(nondetCall, ConstantInt::get(generatedBackEdge->getType(), 0)),
@@ -267,8 +263,6 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     for (auto& I : util::viewContainer(NewBBs)
                          .map(util::deref())
                          .flatten()) RemapInstruction(I, VMap);
-    errs() << toRemove << endl;
-
     for (auto* I : toRemove) if ( ! I->hasNUsesOrMore(1)) I->eraseFromParent();
 
     ASSERTC(NewHeader && NewLatch);
