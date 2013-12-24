@@ -33,6 +33,13 @@ namespace borealis {
 
 LoopDeroll::LoopDeroll() : llvm::LoopPass(ID) {}
 
+static bool isLoopTruelyInfinite(llvm::Loop* L) {
+    using namespace llvm;
+    SmallVector<BasicBlock*, 8> ExitBlocks;
+    L->getExitBlocks(ExitBlocks);
+    return (ExitBlocks.size() == 0);
+}
+
 static inline void RemapInstruction(
         llvm::Instruction& I,
         llvm::ValueToValueMapTy& VMap) {
@@ -174,17 +181,20 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
     auto& ctx = F->getContext();
 
-    if ( ! SE->hasLoopInvariantBackedgeTakenCount(L)) return util::nothing();
+    bool isInfinite = isLoopTruelyInfinite(L);
+
+    if ( ! isInfinite && ! SE->hasLoopInvariantBackedgeTakenCount(L)) return util::nothing();
 
     BasicBlock* Header = L->getHeader();
     BasicBlock* Latch = L->getLoopLatch();
 
-    const SCEV* backEdgeTaken = SE->getBackedgeTakenCount(L);
+    const SCEV* backEdgeTaken = isInfinite ? nullptr : SE->getBackedgeTakenCount(L);
+    llvm::Type* indexType = backEdgeTaken ? backEdgeTaken->getType() : TypeBuilder<i<32>, true>::get(ctx);
 
     auto* nondetIntr = IntrinsicsManager::getInstance().createIntrinsic(
         function_type::INTRINSIC_NONDET,
         "size_t",
-        FunctionType::get(backEdgeTaken->getType(), false),
+        FunctionType::get(indexType, false),
         F->getParent());
     auto* assumeIntr = IntrinsicsManager::getInstance().createIntrinsic(
         function_type::BUILTIN_BOR_ASSUME,
@@ -226,21 +236,24 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
             auto* insertAt = New->getFirstNonPHIOrDbgOrLifetime();
             IRBuilder<> builder{ insertAt };
             SCEVExpander exp(*SE, "bor.loop.expand");
-            auto* generatedBackEdge =
-                exp.expandCodeFor(backEdgeTaken, backEdgeTaken->getType(), insertAt);
 
             builder.CreateCall(
                 assumeIntr,
-                builder.CreateICmpSGE(nondetCall, ConstantInt::get(generatedBackEdge->getType(), 0)),
+                builder.CreateICmpSGE(nondetCall, ConstantInt::get(indexType, 0)),
                 ""
             );
 
-            // remember that backEdgeTaken is not the loop limit, but loop limit decreased by 1!
-            builder.CreateCall(
-                assumeIntr,
-                builder.CreateICmpSLE(nondetCall, generatedBackEdge), // hence SLE
-                ""
-            );
+            if(!isInfinite) {
+                auto* generatedBackEdge =
+                    exp.expandCodeFor(backEdgeTaken, indexType, insertAt);
+
+                // remember that backEdgeTaken is not the loop limit, but loop limit decreased by 1!
+                builder.CreateCall(
+                    assumeIntr,
+                    builder.CreateICmpSLE(nondetCall, generatedBackEdge), // hence SLE
+                    ""
+                );
+            }
 
         }
         F->getBasicBlockList().push_back(New);
