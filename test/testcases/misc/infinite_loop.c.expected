@@ -1,0 +1,16 @@
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/misc/infinite_loop.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 8
+			}
+		},
+		"type" : "BUF-01"
+	}
+]
