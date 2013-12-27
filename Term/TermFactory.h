@@ -276,10 +276,8 @@ public:
     }
 
     Term::Ptr getGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
-        auto ptrType = llvm::dyn_cast<type::Pointer>(base->getType());
-        ASSERT(!!ptrType, "getGepTerm: base not a pointer");
 
-        Type::Ptr tp = GepTerm::getGepChild(ptrType->getPointed(), shifts);
+        Type::Ptr tp = GepTerm::getGepChild(base->getType(), shifts);
 
         return Term::Ptr{
             new GepTerm{

@@ -8,7 +8,7 @@
 			"loc" : 
 			{
 				"col" : 4,
-				"line" : 14
+				"line" : 16
 			}
 		},
 		"type" : "INI-03"
@@ -21,20 +21,7 @@
 			"loc" : 
 			{
 				"col" : 4,
-				"line" : 15
-			}
-		},
-		"type" : "INI-03"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex15.c",
-			"loc" : 
-			{
-				"col" : 4,
-				"line" : 36
+				"line" : 37
 			}
 		},
 		"type" : "REQ-01"

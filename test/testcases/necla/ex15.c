@@ -9,7 +9,8 @@ typedef struct {
 int i;
 
 // @requires \is_valid_ptr(ptr)
-// @requires \bound(ptr) >= 2
+// @requires \is_valid_ptr(ptr->a)
+// @requires \is_valid_ptr(ptr->b)
 int foo(ptrStruct* ptr) {
    *(ptr->a) = i++;
    *(ptr->b) = i++;
