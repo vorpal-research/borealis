@@ -37,6 +37,8 @@ class TypeFactory {
     mutable std::map<std::string, Type::Ptr> records;
     mutable type::RecordRegistry::StrongPtr  recordBodies;
 
+    mutable std::map<std::vector<Type::Ptr>, Type::Ptr> functions;
+
 public:
 
     typedef std::shared_ptr<TypeFactory> Ptr;
@@ -115,6 +117,16 @@ public:
     Type::Ptr getTypeError(const std::string& message) const {
         if(auto existing = util::at(errors, message)) return existing.getUnsafe();
         else return errors[message] = Type::Ptr(new type::TypeError(message));
+    }
+
+    Type::Ptr getFunction(Type::Ptr retty, const std::vector<Type::Ptr>& args) const {
+        std::vector<Type::Ptr> key;
+        key.reserve(1 + args.size());
+        key.push_back(retty);
+        key.insert(key.end(), args.begin(), args.end());
+
+        if(auto existing = util::at(functions, key)) return existing.getUnsafe();
+        else return functions[std::move(key)] = Type::Ptr(new type::Function(retty, args));
     }
 
     Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const {

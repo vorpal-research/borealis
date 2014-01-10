@@ -13,6 +13,7 @@
 #include "Protobuf/Gen/Type/Array.pb.h"
 #include "Protobuf/Gen/Type/Bool.pb.h"
 #include "Protobuf/Gen/Type/Float.pb.h"
+#include "Protobuf/Gen/Type/Function.pb.h"
 #include "Protobuf/Gen/Type/Integer.pb.h"
 #include "Protobuf/Gen/Type/Pointer.pb.h"
 #include "Protobuf/Gen/Type/Record.pb.h"
@@ -220,6 +221,36 @@ struct protobuf_traits_impl<type::TypeError> {
 
     static Type::Ptr fromProtobuf(const context_t& fn, const proto_t& p) {
         return fn.Type->getTypeError(p.message());
+    }
+};
+
+template<>
+struct protobuf_traits_impl<type::Function> {
+    typedef type::Function normal_t;
+    typedef type::proto::Function proto_t;
+    typedef FactoryNest context_t;
+
+    static std::unique_ptr<proto_t> toProtobuf(const normal_t& p) {
+        auto res = util::uniq(new proto_t());
+        res->set_allocated_retty(
+            protobuf_traits_impl<Type>::toProtobuf(*p.getRetty()).release()
+        );
+        for(const auto& arg : p.getArgs()) {
+            res->mutable_args()->AddAllocated(
+                protobuf_traits_impl<Type>::toProtobuf(*arg).release()
+            );
+        }
+        return res;
+    }
+
+    static Type::Ptr fromProtobuf(const context_t& fn, const proto_t& p) {
+        auto retty = protobuf_traits_impl<Type>::fromProtobuf(fn, p.retty());
+        auto args = util::viewContainer(p.args())
+                    .map([&fn](const proto::Type& arg) {
+                        return protobuf_traits_impl<Type>::fromProtobuf(fn, arg);
+                    })
+                    .toVector();
+        return fn.Type->getFunction(retty, args);
     }
 };
 

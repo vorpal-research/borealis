@@ -97,6 +97,14 @@ public:
         }
         self() -> postVisitRecord(rec);
     }
+    void visitFunction(const type::Function& func) {
+        if(!self() -> preVisitFunction(func)) return;
+        self() -> visit(func.getRetty());
+        for(const auto& arg : func.getArgs()) {
+            self() -> visit(arg);
+        }
+        self() -> postVisitFunction(func);
+    }
 
 };
 
@@ -127,6 +135,7 @@ public:
     SIMPLE_VISIT(Pointer, Pointer);
     SIMPLE_VISIT(UnknownType, UnknownType);
     SIMPLE_VISIT(TypeError, TypeError);
+    SIMPLE_VISIT(Function, Function);
 #undef SIMPLE_VISIT
 
     RetTy visitArray(const type::Array& arr) {
