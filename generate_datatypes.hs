@@ -4,7 +4,7 @@
 import Prelude hiding (unlines)
 import qualified Prelude (unlines)
 
-import Language.Haskell.Exts
+import Language.Haskell.Exts hiding (CPlusPlus)
 import Data.Typeable
 import Data.Data
 import Data.Map(fromList)

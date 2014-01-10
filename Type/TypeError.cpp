@@ -10,7 +10,8 @@
     Pointer { pointed :: Type } |
     Array { element :: Type, size :: Maybe Size } |
     Record { name :: String, body :: RecordBodyRef } |
-    TypeError { message :: String }
+    TypeError { message :: String } |
+    Function { retty :: Type, args :: [Type] }
       deriving (Show, Eq, Data, Typeable)
  * 
  * stored in Type/Type.datatype
