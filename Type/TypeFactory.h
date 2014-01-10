@@ -167,6 +167,14 @@ public:
 
         } else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
+        else if (auto* func = llvm::dyn_cast<llvm::FunctionType>(type)) {
+            return getFunction(
+                cast(func->getReturnType()),
+                util::view(func->param_begin(), func->param_end())
+                .map([this](const llvm::Type* argty) { return cast(argty); })
+                .toVector()
+            );
+        }
         else
             return getTypeError("Unsupported llvm type: " + util::toString(*type));
     }
