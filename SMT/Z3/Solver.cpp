@@ -28,7 +28,7 @@ Solver::check_result Solver::check(
 
     auto params = z3::params(c);
     params.set(":auto_config", true);
-    auto smt_tactic = with(z3::tactic(c, "smt"), p);
+    auto smt_tactic = with(z3::tactic(c, "smt"), params);
     auto useful = z3::tactic(c, "reduce-bv-size") & z3::tactic(c, "ctx-simplify");
 
     auto tactic = useful & smt_tactic;
