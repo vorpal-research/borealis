@@ -132,6 +132,7 @@ public:
     Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const {
 
         static std::set<std::string> visitedStructs;
+        static std::unordered_map<const llvm::Type*,std::string> unnamedStructs;
         static long literalStructs = 0;
 
         if(type->isIntegerTy())
@@ -143,12 +144,14 @@ public:
         else if (type->isArrayTy())
             return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
         else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
-            // FIXME: this is fucked up, literal (unnamed) structs are uniqued
-            //        as structural types (they are rare though)
-            auto name = str->hasName() ?
-                str->getName().str() :
-                ("bor.literalStruct." + util::toString(literalStructs++));
-
+            auto name = str->hasName() ? str->getName() : "";
+            if(name.empty()) {
+                if(auto unnamedName = util::at(unnamedStructs, type)) {
+                    name = unnamedName.getUnsafe();
+                } else {
+                    name = unnamedStructs[type] = "bor.literalStruct." + util::toString(literalStructs++);
+                }
+            }
             if(recordBodies->at(name)) return getRecord(name);
 
             if(str->isOpaque() || visitedStructs.count(name)) {
