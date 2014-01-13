@@ -24,7 +24,16 @@ Solver::check_result Solver::check(
 
     TRACE_FUNC;
 
-    z3::solver s(z3ef.unwrap());
+    auto& c = z3ef.unwrap();
+
+    auto params = z3::params(c);
+    params.set(":auto_config", true);
+    auto smt_tactic = with(z3::tactic(c, "smt"), p);
+    auto useful = z3::tactic(c, "reduce-bv-size") & z3::tactic(c, "ctx-simplify");
+
+    auto tactic = useful & smt_tactic;
+    auto s = tactic.mk_solver();
+
     auto dbg = dbgs();
 
     auto z3state = z3state_.simplify();
