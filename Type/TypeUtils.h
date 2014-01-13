@@ -50,13 +50,33 @@ struct TypeUtils {
         }
         if(auto* Rec = dyn_cast<type::Record>(&type)) {
             std::string ret = Rec->getName() + "{ ";
-            for(const auto& fld : Rec->getBody()->get()) {
-                ret += util::toString(fld.getIndex());
-                ret += ": ";
-                ret += util::toString(fld.getIds());
-                ret += " ";
+            const auto& flds = Rec->getBody()->get();
+            if(!flds.empty()) {
+                const auto& hd = util::head(flds);
+                ret += util::toString(hd.getIndex()) +
+                       ": " +
+                       util::toString(hd.getIds());
+                for(const auto& fld : util::tail(flds)) {
+                    ret += ", ";
+                    ret += util::toString(fld.getIndex()) +
+                           ": " +
+                           util::toString(fld.getIds());
+                }
             }
-            ret += "}";
+            ret += " }";
+            return std::move(ret);
+        }
+        if(auto* Fun = dyn_cast<type::Function>(&type)) {
+            std::string ret = TypeUtils::toString(*Fun->getRetty()) + "( ";
+            const auto& args = Fun->getArgs();
+            if(!args.empty()) {
+                ret += TypeUtils::toString(*util::head(args));
+                for(const auto& arg : util::tail(args)) {
+                    ret += ", ";
+                    ret += TypeUtils::toString(*arg);
+                }
+            }
+            ret += " )";
             return std::move(ret);
         }
 
