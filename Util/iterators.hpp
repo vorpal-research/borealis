@@ -9,6 +9,7 @@
 #define ITERATORS_HPP_
 
 #include <iterator>
+#include <cmath>
 #include <list>
 #include <memory>
 
@@ -20,6 +21,38 @@
 
 namespace borealis {
 namespace util {
+
+namespace impl_ {
+
+template<class It, class Dist>
+void advanceWithLimit(It& it, Dist dist, const It& limit, std::forward_iterator_tag) {
+    for(Dist i = 0; i < dist; ++i) {
+        if(it == limit) break;
+        ++it;
+    }
+}
+
+template<class It, class Dist>
+void advanceWithLimit(It& it, Dist dist, const It& limit, std::bidirectional_iterator_tag) {
+    for(Dist i = 0; i < dist; ++i) {
+        if(it == limit) break;
+        ++it;
+    }
+}
+
+template<class It, class Dist>
+void advanceWithLimit(It& it, Dist dist, const It& limit, std::random_access_iterator_tag) {
+    Dist realDist = std::distance(it, limit);
+    it += std::min(realDist, dist);
+}
+
+} /* namespace impl_ */
+
+template<class It, class Dist>
+void advanceWithLimit(It& it, Dist dist, const It& limit) {
+    impl_::advanceWithLimit(it, dist, limit, typename std::iterator_traits<It>::iterator_category{});
+}
+
 
 template<class Container>
 std::pair<typename Container::iterator, typename Container::iterator>
@@ -33,15 +66,134 @@ begin_end_pair(const Container& c) {
     return std::make_pair(c.begin(), c.end());
 }
 
+template<
+    class BaseIt,
+    class Derived,
+    class Arrow      = BaseIt,
+    class Reference  = typename std::iterator_traits<BaseIt>::reference,
+    class Value      = typename std::iterator_traits<BaseIt>::value_type,
+    class Difference = typename std::iterator_traits<BaseIt>::difference_type
+>
+struct iterator_adapter {
+    // XXX: support other categories?
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = Value;
+    using difference_type   = Difference;
+    using reference         = Reference;
+    using pointer           = Arrow;
+
+private:
+    Derived* derived() { return static_cast<Derived*>(this); }
+    const Derived* derived() const { return static_cast<const Derived*>(this); }
+
+public:
+    Derived& operator++() {
+        if(!derived()->hasNext()) return *derived();
+        derived()->increment();
+        derived()->validate();
+        return *derived();
+    }
+    Derived operator++(int) {
+        Derived copy = *derived();
+        ++(*derived());
+        return copy;
+    }
+
+    friend bool operator==(const Derived& lhv, const Derived& rhv) {
+        return lhv.equals(&rhv);
+    }
+    friend bool operator!=(const Derived& lhv, const Derived& rhv) {
+        return !lhv.equals(&rhv);
+    }
+    friend bool operator< (const Derived& lhv, const Derived& rhv) {
+        return lhv.compare(&rhv) < 0U;
+    }
+    friend bool operator<= (const Derived& lhv, const Derived& rhv) {
+        return lhv.compare(&rhv) <= 0U;
+    }
+    friend bool operator> (const Derived& lhv, const Derived& rhv) {
+        return lhv.compare(&rhv) > 0U;
+    }
+    friend bool operator>= (const Derived& lhv, const Derived& rhv) {
+        return lhv.compare(&rhv) >= 0U;
+    }
+
+    auto operator*() const -> Reference {
+        return (derived()->dereference());
+    }
+    auto operator*() -> Reference {
+        return (derived()->dereference());
+    }
+
+    auto operator->() const -> Arrow {
+        return (derived()->current());
+    }
+
+    bool hasNext() const {
+        return true;
+    }
+
+    void increment() {
+        ++derived()->current();
+    }
+
+    void validate() {}
+
+    bool equals(const Derived* that) const {
+        return derived()->current() == that->current();
+    }
+
+    int compare(const Derived* that) const {
+        return derived()->current() > that->current() ? 1:
+               derived()->current() < that->current() ? -1:
+               0;
+    }
+
+    BaseIt arrow() const {
+        return derived()->current();
+    }
+
+    reference dereference() const {
+        return (*derived()->current());
+    }
+
+};
+
+template<class Elem>
+struct storage_ppointer {
+    Elem val;
+
+    Elem* operator->() {
+        return &val;
+    }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Mapped iterator
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace impl_ {
+
+template<class RootIt>
+using iter_ref = typename std::iterator_traits<RootIt>::reference;
+
 template<class RootIt, class UnaryFunc>
-class mapped_iterator {
-    RootIt current;
+using iter_mapped_ref = decltype(std::declval<UnaryFunc>()(std::declval<iter_ref<RootIt>>()));
+
+} // namespace impl_
+
+template<class RootIt, class UnaryFunc>
+class mapped_iterator:
+    public iterator_adapter<
+        RootIt,
+        mapped_iterator<RootIt, UnaryFunc>,
+        storage_ppointer<impl_::iter_mapped_ref<RootIt, UnaryFunc>>,
+        impl_::iter_mapped_ref<RootIt, UnaryFunc>,
+        impl_::iter_mapped_ref<RootIt, UnaryFunc>
+    > {
+    RootIt root;
     std::shared_ptr<UnaryFunc> Fn;
 
     const UnaryFunc& fn() const { 
@@ -50,60 +202,24 @@ class mapped_iterator {
     }
 
 public:
-    typedef typename std::iterator_traits<RootIt>::iterator_category
-            iterator_category;
-    typedef typename std::iterator_traits<RootIt>::difference_type
-            difference_type;
-    typedef decltype(some<UnaryFunc>()(*current)) value_type;
-
-    struct pointer {
-        value_type val;
-
-        value_type* operator->() {
-            return &val;
-        }
-    };
-    typedef value_type reference; // Can't modify value returned by Fn
-
     typedef RootIt iterator_type;
-    typedef mapped_iterator<RootIt, UnaryFunc> _Self;
+    typedef mapped_iterator<RootIt, UnaryFunc> self;
 
-    inline const RootIt& getCurrent() const { return current; }
-    inline const UnaryFunc& getFunc() const { return fn(); }
+    RootIt& current() { return root; }
+    const RootIt& current() const { return root; }
+    const UnaryFunc& getFunc() const { return fn(); }
 
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(mapped_iterator);
 
-    inline mapped_iterator(const RootIt& I, UnaryFunc F) :
-            current(I), Fn(std::make_shared<UnaryFunc>(F)) {}
+    mapped_iterator(const RootIt& I, UnaryFunc F) :
+        root(I), Fn(std::make_shared<UnaryFunc>(F)) {}
 
-    inline value_type operator*() const {    // All this work to do this
-        return fn()(*current);               // little change
+    typename mapped_iterator::reference dereference() const {
+        return fn()(*root);
     }
 
-    inline pointer operator->() const {
-        return pointer{ **this };
-    }
-
-    _Self& operator++() { ++current; return *this; }
-    _Self& operator--() { --current; return *this; }
-    _Self  operator++(int) { _Self __tmp = *this; ++current; return __tmp; }
-    _Self  operator--(int) { _Self __tmp = *this; --current; return __tmp; }
-
-    _Self  operator+ (difference_type n) const {
-        return _Self(current + n, Fn);
-    }
-    _Self& operator+=(difference_type n) { current += n; return *this; }
-    _Self  operator- (difference_type n) const {
-        return _Self(current - n, Fn);
-    }
-    _Self& operator-=(difference_type n) { current -= n; return *this; }
-
-    inline bool operator!=(const _Self& X) const { return !operator==(X); }
-    inline bool operator==(const _Self& X) const { return current == X.current; }
-    inline bool operator< (const _Self& X) const { return current <  X.current; }
-
-    inline difference_type operator-(const _Self& X) const {
-        return current - X.current;
+    typename mapped_iterator::pointer arrow() const {
+        return typename mapped_iterator::pointer{ **this };
     }
 };
 
@@ -122,10 +238,13 @@ inline mapped_iterator<ItTy, FuncTy> map_iterator(const ItTy& I, FuncTy F) {
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class RootIt>
-class glued_iterator {
+class glued_iterator:
+    public iterator_adapter<RootIt,glued_iterator<RootIt>> {
+
     typedef std::list<std::pair<RootIt, RootIt>> Ranges;
     Ranges rest;
 
+public:
     const RootIt& current() const {
         return rest.front().first;
     }
@@ -144,19 +263,6 @@ class glued_iterator {
         }
     }
 
-public:
-    // only bidir iterators capable
-    typedef std::forward_iterator_tag iterator_category;
-    typedef typename std::iterator_traits<RootIt>::difference_type
-            difference_type;
-    typedef typename std::iterator_traits<RootIt>::value_type
-            value_type;
-
-    typedef typename std::iterator_traits<RootIt>::pointer
-            pointer;
-    typedef typename std::iterator_traits<RootIt>::reference
-            reference;
-
     typedef RootIt iterator_type;
     typedef glued_iterator self;
 
@@ -169,30 +275,14 @@ public:
         validate();
     }
 
-    inline reference operator*() const {
-        return *current();
+    bool hasNext() const {
+        return !rest.empty();
     }
 
-    inline pointer operator->() const {
-        return &*current();
-    }
-
-    self& operator++() {
-        if (rest.empty()) return *this;
-
-        ++current();
-        validate();
-
-        return *this;
-    }
-
-    self operator++(int) { self tmp = *this; return self(++tmp); }
-
-    inline bool operator!=(const self& X) const { return !operator==(X); }
-    inline bool operator==(const self& X) const {
-        if (rest.empty()) return X.rest.empty();
-        if (X.rest.empty()) return false;
-        return current() == X.current();
+    bool equals(const self* X) const {
+        if (rest.empty()) return X->rest.empty();
+        if (X->rest.empty()) return false;
+        return current() == X->current();
     }
 };
 
@@ -209,79 +299,59 @@ glued_iterator<util::head_of_row_q<It...>> glue_iterator(const std::pair<It, It>
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace impl_ {
+    template<class Iter>
+    using flatten_one_level = decltype(std::begin(*std::declval<Iter>()));
+} // namespace impl_
+
 template<class RootIt>
-class flattened_iterator {
-    RootIt current;
+class flattened_iterator:
+    public iterator_adapter<
+        impl_::flatten_one_level<RootIt>,
+        flattened_iterator<RootIt>
+    >{
+    RootIt root;
     RootIt end;
 
-    typedef decltype(std::begin(*current)) ChildIt;
+    typedef impl_::flatten_one_level<RootIt> ChildIt;
 
     option<ChildIt> child;
 
+public:
+    typedef RootIt iterator_type;
+    typedef flattened_iterator<RootIt> self;
+
+    const RootIt& currentRoot() const { return root; }
+    RootIt& currentRoot() { return root; }
+    ChildIt& current() { if (!child) throw 0; return child.getUnsafe(); }
+    const ChildIt& current() const { if (!child) throw 0; return child.getUnsafe(); }
+
     void validate() {
-        while (current != end && child == std::end(*current)) {
-            ++current;
-            if (current != end) {
-                child = just(std::begin(*current));
+        while (root != end && child == std::end(*root)) {
+            ++root;
+            if (root != end) {
+                child = just(std::begin(*root));
             }
         }
     }
 
-public:
-    // only bidir iterators capable
-    typedef std::forward_iterator_tag iterator_category;
-    typedef typename std::iterator_traits<ChildIt>::difference_type
-            difference_type;
-    typedef typename std::iterator_traits<ChildIt>::value_type
-            value_type;
-
-    typedef typename std::iterator_traits<ChildIt>::pointer
-            pointer;
-    typedef typename std::iterator_traits<ChildIt>::reference
-            reference;
-
-    typedef RootIt iterator_type;
-    typedef flattened_iterator<RootIt> self;
-
-    inline const RootIt& getCurrent() const { return current; }
-    inline ChildIt& getChild() { if (!child) throw 0; return child.getUnsafe(); }
-    inline const ChildIt& getChild() const { if (!child) throw 0; return child.getUnsafe(); }
-
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(flattened_iterator);
 
-    inline flattened_iterator(const RootIt& I, const RootIt& E)
-    : current(I), end(E), child(I != E ? just(std::begin(*I)) : nothing()) {
+    flattened_iterator(const RootIt& I, const RootIt& E)
+        : root(I), end(E), child(I != E ? just(std::begin(*I)) : nothing()) {
         validate();
     }
-    inline explicit flattened_iterator(const std::pair<RootIt, RootIt>& P)
-    : flattened_iterator(P.first, P.second) {}
+    explicit flattened_iterator(const std::pair<RootIt, RootIt>& P)
+        : flattened_iterator(P.first, P.second) {}
 
-    inline reference operator*() const {
-        if (!child) throw 0;
-        return *child.getUnsafe();
+    bool hasNext() const {
+        return root != end;
     }
 
-    inline ChildIt operator->() const {
-        if (!child) throw 0;
-        return child.getUnsafe();
-    }
-
-    self& operator++() {
-        if (current == end) return *this;
-
-        ++getChild();
-        validate();
-
-        return *this;
-    }
-
-    self operator++(int) { self tmp{ *this }; return self{ ++tmp }; }
-
-    inline bool operator!=(const self& X) const { return !operator==(X); }
-    inline bool operator==(const self& X) const {
-        if (current != X.current) return false;
-        return (current == end && X.current == X.end) ||
-               (current == X.current && getChild() == X.getChild());
+    inline bool equals(const self* that) const {
+        if (this->root != that->root) return false;
+        return (this->root == this->end && that->root == that->end) ||
+               (this->root == that->root && this->current() == that->current());
     }
 };
 
@@ -354,8 +424,12 @@ inline flattened_iterator<flattened_iterator<typename Con::const_iterator>> flat
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class RootIt, class Pred>
-class filtered_iterator {
-    RootIt current;
+class filtered_iterator:
+    public iterator_adapter<
+        RootIt,
+        filtered_iterator<RootIt, Pred>
+    > {
+    RootIt root;
     RootIt end;
     std::shared_ptr<Pred> pred;
 
@@ -364,60 +438,29 @@ class filtered_iterator {
         return *pred;
     }
 
-    // restore the invariant ( pred(*current) == true || current == end )
-    void validate() {
-        while ((current != end) && !(predf()(*current))) ++current;
-    }
-
 public:
-    // only bidir iterators capable
-    typedef std::forward_iterator_tag iterator_category;
-    typedef typename std::iterator_traits<RootIt>::difference_type
-            difference_type;
-    typedef typename std::iterator_traits<RootIt>::value_type
-            value_type;
-
-    typedef typename std::iterator_traits<RootIt>::pointer
-            pointer;
-    typedef typename std::iterator_traits<RootIt>::reference
-            reference;
-
     typedef RootIt iterator_type;
     typedef filtered_iterator<RootIt, Pred> self;
 
-    inline const RootIt& getCurrent() const { return current; }
+    const RootIt& current() const { return root; }
+    RootIt& current() { return root; }
 
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(filtered_iterator);
 
-    inline filtered_iterator(const RootIt& I, const RootIt& E, Pred pred)
-    : current(I), end(E), pred(std::make_shared<Pred>(pred)) {
+    filtered_iterator(const RootIt& I, const RootIt& E, Pred pred)
+        : root(I), end(E), pred(std::make_shared<Pred>(pred)) {
         validate();
     }
-    inline filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
-    : filtered_iterator(P.first, P.second, pred) {}
+    filtered_iterator(const std::pair<RootIt, RootIt>& P, Pred pred)
+        : filtered_iterator(P.first, P.second, pred) {}
 
-    inline reference operator*() const {
-        return *current;
+    // restore the invariant ( pred(*current) == true || current == end )
+    void validate() {
+        while ((root != end) && !(predf()(*root))) ++root;
     }
 
-    inline pointer operator->() const {
-        return &*current;
-    }
-
-    self& operator++() {
-        if(current == end) return *this;
-
-        ++current;
-        validate();
-
-        return *this;
-    }
-
-    self operator++(int) { self tmp{ *this }; return self{ ++tmp }; }
-
-    inline bool operator!=(const self& X) const { return !operator==(X); }
-    inline bool operator==(const self& X) const {
-        return current == X.current;
+    bool hasNext() const {
+        return root != end;
     }
 };
 
@@ -489,28 +532,36 @@ zipping_iterator<Iter1, Iter2> zip(Iter1 i1, Iter2 i2) {
 ////////////////////////////////////////////////////////////////////////////////
 
 template<typename Elem>
-class counting_iterator {
+class counting_iterator: public iterator_adapter<
+    Elem,
+    counting_iterator<Elem>,
+    const Elem*,
+    Elem, Elem, Elem // :-)
+    > {
     Elem e;
 public:
-    typedef std::forward_iterator_tag iterator_category;
-    typedef Elem value_type;
-    typedef std::ptrdiff_t difference_type;
-
-    typedef const value_type* pointer;
-    typedef const value_type& reference;
-
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(counting_iterator);
 
     counting_iterator(const Elem& e) : e(e) {};
     counting_iterator(Elem&& e) : e(std::move(e)) {};
 
-    bool operator==(const counting_iterator& that) const { return e == that.e; };
-    bool operator!=(const counting_iterator& that) const { return e != that.e; };
+    Elem dereference() const {
+        return e;
+    }
 
-    reference operator*() const { return e; }
-    pointer operator->() const { return &e; }
+    const Elem* arrow() const {
+        return &e;
+    }
 
-    counting_iterator& operator++() { ++e; return *this; }
+    bool equals(const counting_iterator* that) const {
+        return this->e == that->e;
+    }
+
+    Elem compare(const counting_iterator* that) const {
+        return this->e - that->e;
+    }
+
+    void increment() { ++e; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

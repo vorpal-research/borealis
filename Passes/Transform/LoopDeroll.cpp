@@ -23,6 +23,7 @@
 #include "Codegen/scalarEvolutions.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Config/config.h"
+#include "Logging/logger.hpp"
 #include "Passes/Transform/LoopDeroll.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
