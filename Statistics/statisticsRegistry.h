@@ -27,6 +27,8 @@ public:
     static StatisticsRegistry& instance();
 
     friend std::ostream& operator<<(std::ostream&, const StatisticsRegistry&);
+
+    void print(std::ostream&, const std::string&, const std::string&) const;
 };
 
 } /* namespace borealis */
