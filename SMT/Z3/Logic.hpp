@@ -1293,7 +1293,7 @@ public:
     ScatterArray& operator=(const ScatterArray&) = default;
     ScatterArray& operator=(ScatterArray&&) = default;
 
-    SomeExpr select(Index i, size_t elemBitSize) {
+    SomeExpr select(Index i, size_t elemBitSize) const {
         std::vector<Byte> bytes;
         for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
             bytes.push_back(inner[i+j]);
@@ -1302,7 +1302,7 @@ public:
     }
 
     template<class Elem>
-    Elem select(Index i) {
+    Elem select(Index i) const {
         enum{ elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
@@ -1314,11 +1314,11 @@ public:
 
     z3::context& ctx() const { return inner.ctx(); }
 
-    Byte operator[](Index i) {
+    Byte operator[](Index i) const {
         return inner[i];
     }
 
-    Byte operator[](long long i) {
+    Byte operator[](long long i) const {
         return inner[Index::mkConst(ctx(), i)];
     }
 
