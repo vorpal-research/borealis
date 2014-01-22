@@ -25,12 +25,20 @@
 #include "Config/config.h"
 #include "Logging/logger.hpp"
 #include "Passes/Transform/LoopDeroll.h"
+#include "Statistics/statistics.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
+
+static Statistic LoopsEncountered("loop-deroll",
+    "totalLoops", "Total loops encountered by the loop deroll pass");
+static Statistic LoopsBackstabbed("loop-deroll",
+    "backstabbed", "Loops backstabbed by the loop deroll pass");
+static Statistic LoopsFullyUnrolled("loop-deroll",
+    "fullyUnrolled", "Loops fully unrolled by the loop deroll pass");
 
 LoopDeroll::LoopDeroll() : llvm::LoopPass(ID) {}
 
@@ -341,6 +349,8 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     BranchInst* BI = cast<BranchInst>(Latch->getTerminator());
     bool ContinueOnTrue = L->contains(BI->getSuccessor(0));
 
+    ++LoopsEncountered;
+
     BasicBlock* LoopExit;
     if (BI->getNumSuccessors() == 1) {
         LoopExit = nullptr;
@@ -393,7 +403,10 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
 
     // Try to guess the deroll count
     unsigned TripCount = SE->getSmallConstantTripCount(L, Latch);
-    if (TripCount != 0) CurrentDerollCount = TripCount;
+    if (TripCount != 0) {
+        ++LoopsFullyUnrolled;
+        CurrentDerollCount = TripCount;
+    }
 
     // Try to find unroll annotation for this loop
     unsigned AnnoUnrollCount = LM->getUnrollCount(L);
@@ -404,6 +417,7 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     }
 
     if(AdaptiveDerollEnabled && lastHeaderAndLatch) {
+        ++LoopsBackstabbed;
         CurrentDerollCount = std::min(CurrentDerollCount, 1U);
     } else if(AdaptiveDerollEnabled) {
         CurrentDerollCount = adjustUnrollFactor(CurrentDerollCount, L);

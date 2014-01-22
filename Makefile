@@ -81,6 +81,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Protobuf \
 	$(PWD)/SMT \
 	$(PWD)/State \
+	$(PWD)/Statistics \
 	$(PWD)/Term \
 	$(PWD)/Type \
 	$(PWD)/Util \
