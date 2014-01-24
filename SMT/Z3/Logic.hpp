@@ -111,6 +111,7 @@ public:
     friend z3::expr z3impl::asAxiom(const ValueExpr& a);
     friend z3::sort z3impl::getSort(const ValueExpr& a);
     friend z3::context& z3impl::getContext(const ValueExpr& a);
+    friend std::string z3impl::getName(const ValueExpr& a);
 
     void swap(ValueExpr&);
 

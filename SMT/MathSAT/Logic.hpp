@@ -110,6 +110,7 @@ public:
     friend mathsat::Expr msatimpl::asAxiom(const ValueExpr& a);
     friend mathsat::Sort msatimpl::getSort(const ValueExpr& a);
     friend const mathsat::Env& msatimpl::getEnvironment(const ValueExpr& a);
+    friend std::string msatimpl::getName(const ValueExpr& a);
 
     void swap(ValueExpr&);
 
