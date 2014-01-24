@@ -65,6 +65,7 @@ namespace z3impl {
     z3::expr getAxiom(const ValueExpr& a);
     z3::sort getSort(const ValueExpr& a);
     z3::context& getContext(const ValueExpr& a);
+    std::string getName(const ValueExpr& e);
     z3::expr asAxiom(const ValueExpr& e);
     std::string asSmtLib(const ValueExpr& e);
 
@@ -79,6 +80,9 @@ namespace z3impl {
     }
     inline z3::context& getContext(const ValueExpr* a) {
         ASSERTC(a != nullptr); return getContext(*a);
+    }
+    inline std::string getName(const ValueExpr* e) {
+        ASSERTC(e != nullptr); return getName(*e);
     }
     inline z3::expr asAxiom(const ValueExpr* e) {
         ASSERTC(e != nullptr); return asAxiom(*e);
@@ -110,6 +114,7 @@ public:
 
     void swap(ValueExpr&);
 
+    std::string getName() const;
     std::string toSmtLib() const;
 
     ValueExpr simplify() const;

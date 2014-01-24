@@ -52,6 +52,10 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
     return *this;
 }
 
+std::string ValueExpr::getName() const {
+    return z3impl::getName(this);
+}
+
 std::string ValueExpr::toSmtLib() const {
     return z3impl::asSmtLib(this);
 }
@@ -84,6 +88,12 @@ namespace z3impl {
 
     z3::context& getContext(const ValueExpr& a) {
         return a.pimpl->inner.ctx();
+    }
+
+    std::string getName(const ValueExpr& a) {
+        std::ostringstream oss;
+        oss << getExpr(a).decl().name();
+        return oss.str();
     }
 
     z3::expr asAxiom(const ValueExpr& a) {
