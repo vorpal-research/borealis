@@ -57,6 +57,7 @@ namespace msatimpl {
     mathsat::Expr getAxiom(const ValueExpr& a);
     mathsat::Sort getSort(const ValueExpr& a);
     const mathsat::Env& getEnvironment(const ValueExpr& a);
+    std::string getName(const ValueExpr& e);
     mathsat::Expr asAxiom(const ValueExpr& e);
     std::string asSmtLib(const ValueExpr& e);
 
@@ -71,6 +72,9 @@ namespace msatimpl {
     }
     inline const mathsat::Env& getEnvironment(const ValueExpr* a) {
         ASSERTC(a != nullptr); return getEnvironment(*a);
+    }
+    inline std::string getName(const ValueExpr* e) {
+        ASSERTC(e != nullptr); return getName(*e);
     }
     inline mathsat::Expr asAxiom(const ValueExpr* e) {
         ASSERTC(e != nullptr); return asAxiom(*e);
@@ -109,6 +113,7 @@ public:
 
     void swap(ValueExpr&);
 
+    std::string getName() const;
     std::string toSmtLib() const;
 };
 

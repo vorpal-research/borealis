@@ -45,6 +45,10 @@ ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
     return *this;
 }
 
+std::string ValueExpr::getName() const {
+    return msatimpl::getName(this);
+}
+
 std::string ValueExpr::toSmtLib() const {
     return msatimpl::asSmtLib(this);
 }
@@ -64,6 +68,10 @@ namespace msatimpl {
 
     const mathsat::Env& getEnvironment(const ValueExpr& a) {
         return a.pimpl->inner.env();
+    }
+
+    std::string getName(const ValueExpr& a) {
+        return a.pimpl->inner.decl().name();
     }
 
     mathsat::Expr asAxiom(const ValueExpr& a) {
