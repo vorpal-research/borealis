@@ -1,6 +1,7 @@
 #include "defines.h"
 int a[10];
 
+// @requires x >= 0 && x < 10
 int foo(int x){
    a[x]=1;
    return a[x];

@@ -12,6 +12,7 @@
 #include <iosfwd>
 
 #include "Statistics/statistics.h"
+#include "Util/string_ref.hpp"
 
 namespace borealis {
 
@@ -28,7 +29,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream&, const StatisticsRegistry&);
 
-    void print(std::ostream&, const std::string&, const std::string&) const;
+    void print(std::ostream&, util::string_ref, util::string_ref) const;
 };
 
 } /* namespace borealis */

@@ -5,7 +5,7 @@ int main(int argc, char** argv) {
 	int i = 0;
 	
 	for (;;) {
-		if(i <= 30000) arr[i] = 0;
+		arr[i] = 0;
 		i+=2;
 	}
 }

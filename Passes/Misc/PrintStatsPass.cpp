@@ -11,6 +11,7 @@
 #include "Logging/logger.hpp"
 #include "Statistics/statisticsRegistry.h"
 #include "Util/passes.hpp"
+#include "Util/string_ref.hpp"
 
 namespace borealis {
 
@@ -22,8 +23,8 @@ MultiConfigEntry StatsToShow{"statistics", "show"};
 
 struct FilteredStats {
     StatisticsRegistry* reg;
-    const std::string* row;
-    const std::string* key;
+    const util::string_ref* row;
+    const util::string_ref* key;
 };
 
 std::ostream& operator<<(std::ostream& ost, const FilteredStats& fs) {
@@ -36,14 +37,11 @@ std::ostream& operator<<(std::ostream& ost, const FilteredStats& fs) {
 bool PrintStatsPass::runOnModule(llvm::Module&) {
     auto& sr = StatisticsRegistry::instance();
 
-    for(auto& s : StatsToShow) {
-        auto dot = s.find_first_of('.');
-        if(dot != std::string::npos) {
-            auto ls = s.substr(0, dot);
-            auto rs = s.substr(std::min(s.size()-1, dot+1));
+    for(util::string_ref s : StatsToShow) {
+        util::string_ref ls, rs;
+        std::tie(ls, rs) = s.split('.');
 
-            infos() << FilteredStats{&sr, &ls, &rs} << endl;
-        }
+        infos() << FilteredStats{&sr, &ls, &rs} << endl;
     }
 
     return false;

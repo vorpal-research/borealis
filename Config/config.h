@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Util/string_ref.hpp"
 #include "Util/util.h"
 
 namespace borealis {
@@ -178,15 +179,14 @@ public:
     CommandLineConfigSource(const std::vector<std::string>& opts):
         StructuredConfigSource{ [&opts]() -> StructuredConfigSource::Overrides {
             StructuredConfigSource::Overrides ret;
-            for (const auto& opt : opts) {
-                auto fst = opt.find(':');
-                auto snd = opt.find(':', fst+1);
+            for (util::string_ref opt : opts) {
+                util::string_ref fst, snd, thrd;
+                std::tie(fst, snd) = opt.split(':');
+                std::tie(snd, thrd) = snd.split(':');
 
-                if (fst == std::string::npos || snd == std::string::npos) continue;
+                if (snd.empty() || thrd.empty()) continue;
 
-                ret[opt.substr(0, fst)]
-                   [opt.substr(fst+1,snd-fst-1)]
-                   .push_back(opt.substr(snd+1));
+                ret[fst][snd].push_back(thrd);
             }
             return ret;
         }() } {}

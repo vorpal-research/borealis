@@ -146,27 +146,18 @@ public:
 
         // define all undefined variables
         if (undefinedDefaultsToUnknown.get(false)) {
-            std::unordered_set<const Value*> allocas;
-            for (auto& I : BB) {
-                if (auto* alloca = dyn_cast<AllocaInst>(&I)) {
-                    allocas.insert(alloca);
-                }
+            using namespace borealis::util;
+            auto allocas =
+                viewContainer(BB)
+               .map(takePtr{})
+               .filter(llvm::isaer<AllocaInst>{})
+               .map(llvm::caster<AllocaInst>{})
+               .toHashSet();
 
-                if (auto* store = dyn_cast<StoreInst>(&I)) {
-                    allocas.erase(store->getPointerOperand()->stripPointerCasts());
-                }
-
-                if (auto* load = dyn_cast<LoadInst>(&I)) {
-                    auto* op = load->getPointerOperand();
-                    auto it = allocas.find(op->stripPointerCasts());
-                    if (it != allocas.end()) {
-                        new StoreInst(
-                            mkBorealisNonDet(&M, op->getType(), load),
-                            op,
-                            load
-                        );
-                        allocas.erase(it);
-                    }
+            for (auto* alloca : viewContainer(allocas)) {
+                if(alloca->getAllocatedType()->isSingleValueType()) {
+                    auto nonDet = mkBorealisNonDet(&M, alloca->getAllocatedType(), alloca);
+                    (new StoreInst{ nonDet, alloca })->insertAfter(alloca);
                 }
             }
         }

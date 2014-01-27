@@ -7,7 +7,7 @@ struct foo {
 // @requires hoo != 0
 int make_null(struct foo* hoo) {
    int i;
-   // @unroll 99
+
    for (i=999; i >= 0; i--) hoo->x[i] = 0;
    return 0;
 }

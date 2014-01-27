@@ -94,7 +94,7 @@ static void printRow(std::ostream& ost, const row& sr) {
 }
 
 void StatisticsRegistry::print(std::ostream& ost,
-    const std::string& row, const std::string& key) const{
+    util::string_ref row, util::string_ref key) const{
     if(row == "*") {
         return printAll(ost, pImpl->data);
     }
