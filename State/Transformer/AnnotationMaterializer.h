@@ -126,12 +126,11 @@ public:
         if(!field) failWith(
             "Cannot access member " +
             trm->getProperty() +
-            ": no such member defined or structure not available"
+            ": no such member defined or structure not available on " +
+            util::toString(*daStruct)
         );
 
-
         return *builder(load->getRhv()).gep(builder(0), builder(field.getUnsafe().getIndex()));
-
     }
 
     Term::Ptr transformIndirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
@@ -155,7 +154,8 @@ public:
         if(!field) failWith(
             "Cannot access member " +
             trm->getProperty() +
-            ": no such member defined or structure not available"
+            ": no such member defined or structure not available on " +
+            util::toString(*daStruct)
         );
 
         return *builder(arg).gep(builder(0), builder(field.getUnsafe().getIndex()));
