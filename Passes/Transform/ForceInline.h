@@ -12,7 +12,7 @@
 
 namespace borealis {
 
-class ForceInline: public virtual llvm::Inliner {
+class ForceInline: public llvm::Inliner {
 public:
     static char ID;
 
