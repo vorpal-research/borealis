@@ -42,7 +42,7 @@ static Statistic LoopsFullyUnrolled("loop-deroll",
 
 LoopDeroll::LoopDeroll() : llvm::LoopPass(ID) {}
 
-static bool isLoopTruelyInfinite(llvm::Loop* L) {
+static inline bool isLoopTruelyInfinite(llvm::Loop* L) {
     using namespace llvm;
     SmallVector<BasicBlock*, 4> ExitBlocks;
     L->getExitBlocks(ExitBlocks);
@@ -113,6 +113,22 @@ static inline llvm::BasicBlock* CreateUnreachableBasicBlock(
     return BB;
 }
 
+static inline llvm::BasicBlock* normalizePhiNodes(llvm::BasicBlock* BB) {
+    using namespace llvm;
+
+    auto phis = util::viewContainer(*BB)
+                .filter(isaer<PHINode>())
+                .map(caster<PHINode>());
+
+    auto* movePos = BB->getFirstNonPHIOrDbgOrLifetime();
+
+    for (auto& PHI : phis) {
+        PHI.moveBefore(movePos);
+    }
+
+    return BB;
+}
+
 static llvm::BasicBlock* EvolveBasicBlock(
     llvm::ScalarEvolution* SE,
     llvm::BasicBlock* BB,
@@ -165,13 +181,17 @@ static llvm::BasicBlock* EvolveBasicBlock(
             ival->setDebugLoc(I.getDebugLoc());
         }
 
-        if (val != VMap[&I]) {
+        if (
+                (val != &I && val != VMap[&I]) ||
+                isa<PHINode>(val) // this case will be processed later by a higher entity
+        ) {
             VMap[&I]->replaceAllUsesWith(val);
         }
 
         if ( ! insertAt->hasNUsesOrMore(1)) toRemove.push_back(insertAt);
     }
 
+    normalizePhiNodes(bb);
     approximateAllDebugLocs(bb);
     return bb;
 }
@@ -256,7 +276,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
                 auto* generatedBackEdge =
                     exp.expandCodeFor(backEdgeTaken, indexType, insertAt);
 
-                // remember that backEdgeTaken is not the loop limit, but loop limit decreased by 1!
+                // remember that backEdgeTaken is not the loop limit, but loop limit minus 1!
                 builder.CreateCall(
                     assumeIntr,
                     builder.CreateICmpSLE(nondetCall, generatedBackEdge), // hence SLE
