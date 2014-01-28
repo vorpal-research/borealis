@@ -18,7 +18,7 @@ typedef struct {
   idx_t *dataWriteEvidence;
 } buf_t;
 
-// @ensures \result != 0
+// @ensures \is_valid_ptr(\result)
 buf_t *bufAlloc(size_t n) {
   int i;
   buf_t *b = (buf_t *)malloc(sizeof(buf_t));
@@ -33,7 +33,7 @@ buf_t *bufAlloc(size_t n) {
   return b;
 }
 
-// @requires buf_ != 0
+// @requires \is_valid_ptr(buf_)
 // @requires idx_ >= 0
 bool_t bufIdxWritten(const buf_t *buf_, idx_t idx_) {
   ASSUME(idx_ < buf_->maxNumData);
@@ -42,20 +42,20 @@ bool_t bufIdxWritten(const buf_t *buf_, idx_t idx_) {
     buf_->dataIdx[buf_->dataWriteEvidence[idx_]] == idx_;
 }
 
-// @requires buf_ != 0
+// @requires \is_valid_ptr(buf_)
 // @requires idx_ >= 0
 data_t bufRead(const buf_t *buf_, idx_t idx_) {
   ASSUME(idx_ < buf_->maxNumData);
   return bufIdxWritten(buf_, idx_) ? buf_->data[buf_->dataWriteEvidence[idx_]] : buf_->resetVal;
 }
 
-// @requires buf_ != 0
+// @requires \is_valid_ptr(buf_)
 void bufReset(buf_t *buf_, data_t resetVal_) {
   buf_->resetVal = resetVal_;
   buf_->numData = 0;
 }
 
-// @requires buf_ != 0
+// @requires \is_valid_ptr(buf_)
 // @requires idx_ >= 0
 void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
    ASSUME(idx_ < buf_->maxNumData);
@@ -70,7 +70,7 @@ void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
   buf_->data[writeDataTo] = val_;
 }
 
-// @requires buf_ != 0
+// @requires \is_valid_ptr(buf_)
 // @ensures \result >= 0
 idx_t randomIdx(const buf_t *buf_) {
   idx_t idx = __NONDET__();
