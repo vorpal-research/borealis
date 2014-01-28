@@ -44,7 +44,7 @@ LoopDeroll::LoopDeroll() : llvm::LoopPass(ID) {}
 
 static bool isLoopTruelyInfinite(llvm::Loop* L) {
     using namespace llvm;
-    SmallVector<BasicBlock*, 8> ExitBlocks;
+    SmallVector<BasicBlock*, 4> ExitBlocks;
     L->getExitBlocks(ExitBlocks);
     return (ExitBlocks.size() == 0);
 }
