@@ -99,6 +99,11 @@ public:
         );
     }
 
+    template<class Pred>
+    bool all_of(Pred pred) const {
+        return std::all_of(begin_, end_, pred);
+    }
+
     template<class Con>
     Con to() {
         return Con(begin_, end_);
