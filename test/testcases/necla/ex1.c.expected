@@ -1,16 +1,1 @@
-
-[
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex1.c",
-			"loc" : 
-			{
-				"col" : 10,
-				"line" : 19
-			}
-		},
-		"type" : "REQ-01"
-	}
-]
+null
