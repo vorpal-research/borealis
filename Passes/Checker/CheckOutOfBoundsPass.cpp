@@ -7,7 +7,6 @@
 
 #include <llvm/Support/InstVisitor.h>
 
-#include "Passes/Checker/CheckManager.h"
 #include "Passes/Checker/CheckOutOfBoundsPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "SMT/MathSAT/Solver.h"
@@ -25,6 +24,9 @@ public:
     GepInstVisitor(CheckOutOfBoundsPass* pass) : pass(pass) {}
 
     void visitGetElementPtrInst(llvm::GetElementPtrInst& GI) {
+
+        if (pass->CM->shouldSkipInstruction(&GI)) return;
+
         if (checkOutOfBounds(GI)) {
             reportOutOfBounds(GI);
         }
@@ -95,8 +97,9 @@ void CheckOutOfBoundsPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
 
-    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
-        return false;
+    CM = &GetAnalysis<CheckManager>::doit(this, F);
+
+    if (CM->shouldSkipFunction(&F)) return false;
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);

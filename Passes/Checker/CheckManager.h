@@ -35,6 +35,7 @@ public:
     virtual ~CheckManager();
 
     bool shouldSkipFunction(llvm::Function* F) const;
+    bool shouldSkipInstruction(llvm::Instruction* I) const;
 
 private:
 
