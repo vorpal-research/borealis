@@ -7,19 +7,6 @@
 			"filename" : "test/testcases/necla/ex30.c",
 			"loc" : 
 			{
-				"col" : 9,
-				"line" : 11
-			}
-		},
-		"type" : "BUF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex30.c",
-			"loc" : 
-			{
 				"col" : 7,
 				"line" : 12
 			}
@@ -33,8 +20,21 @@
 			"filename" : "test/testcases/necla/ex30.c",
 			"loc" : 
 			{
-				"col" : 9,
-				"line" : 21
+				"col" : 7,
+				"line" : 13
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex30.c",
+			"loc" : 
+			{
+				"col" : 7,
+				"line" : 22
 			}
 		},
 		"type" : "BUF-01"

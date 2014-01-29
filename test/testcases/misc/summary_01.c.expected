@@ -7,8 +7,8 @@
 			"filename" : "test/testcases/misc/summary_01.c",
 			"loc" : 
 			{
-				"col" : 19,
-				"line" : 18
+				"col" : 9,
+				"line" : 19
 			}
 		},
 		"type" : "BUF-01"

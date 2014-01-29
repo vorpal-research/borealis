@@ -20,8 +20,8 @@
 			"filename" : "test/testcases/necla/ex48.c",
 			"loc" : 
 			{
-				"col" : 25,
-				"line" : 26
+				"col" : 7,
+				"line" : 27
 			}
 		},
 		"type" : "BUF-01"

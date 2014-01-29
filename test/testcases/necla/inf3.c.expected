@@ -7,8 +7,8 @@
 			"filename" : "test/testcases/necla/inf3.c",
 			"loc" : 
 			{
-				"col" : 8,
-				"line" : 9
+				"col" : 5,
+				"line" : 10
 			}
 		},
 		"type" : "BUF-01"
@@ -20,8 +20,8 @@
 			"filename" : "test/testcases/necla/inf3.c",
 			"loc" : 
 			{
-				"col" : 8,
-				"line" : 22
+				"col" : 7,
+				"line" : 24
 			}
 		},
 		"type" : "BUF-01"

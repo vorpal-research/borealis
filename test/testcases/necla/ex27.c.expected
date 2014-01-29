@@ -7,8 +7,8 @@
 			"filename" : "test/testcases/necla/ex27.c",
 			"loc" : 
 			{
-				"col" : 9,
-				"line" : 25
+				"col" : 7,
+				"line" : 26
 			}
 		},
 		"type" : "BUF-01"
