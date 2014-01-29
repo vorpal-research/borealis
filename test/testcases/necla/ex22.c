@@ -1,20 +1,20 @@
 #include "defines.h"
 
-// //@ensures (\result == 1 && x != 0) || \result == 0
+// @ensures (\result == 1 && x != 0) || \result == 0
 int check(int* x) {
    if (!x) return 0;
    return 1;
 }
 
-// //@requires \is_valid_ptr(a)
-// //@requires \is_valid_ptr(b)
+// @requires \is_valid_ptr(a)
+// @requires \is_valid_ptr(b)
 int copy(int* a, int* b) {
    *a = *b;
    return 1;
 }
 
-// //@requires \bound(a) >= n + 1
-// //@requires \bound(b) >= n + 1
+// @requires \bound(a) >= n + 1
+// @requires \bound(b) >= n + 1
 int foo(int* a, int* b, int n) {
    int i;
 
@@ -22,8 +22,8 @@ int foo(int* a, int* b, int n) {
    if (!check(a)) return 1;
    if (!check(b)) return 1;
 
-   // //@assume a != \invalid
-   // //@assume b != \invalid
+   // @assume a != \invalid
+   // @assume b != \invalid
 
    for (i=0; i < n; ++i) {
       copy(a+i,b+i);
