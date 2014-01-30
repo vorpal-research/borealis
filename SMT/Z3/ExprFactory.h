@@ -58,6 +58,8 @@ public:
     Real getRealConst(double v);
     // Memory
     MemArray getNoMemoryArray(const std::string& id);
+    MemArray getEmptyMemoryArray(const std::string& id);
+    MemArray getDefaultMemoryArray(const std::string& id, int def);
 
     // Generic functions
     Dynamic getVarByTypeAndName(
@@ -88,6 +90,15 @@ public:
             const std::vector<std::pair<Bool, T>>& cases,
             T default_) {
         return logic::switch_(cases, default_);
+    }
+
+    template<class ...Args>
+    Bool forAll(std::function<Bool(Args...)> func) {
+        return logic::forAll(*ctx, func);
+    }
+
+    Bool implies(Bool from, Bool to) {
+        return logic::implies(from, to);
     }
 
     static void initialize(llvm::TargetData* TD);

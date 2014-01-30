@@ -160,6 +160,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                 }
 
                 vars.put(val, vi);
+
             } else if (intrinsic_manager.getIntrinsicType(*inst) == function_type::INTRINSIC_DECLARE) {
                 auto* val = inst->getArgOperand(0);
                 DIVariable var(inst->getMetadata("var"));
@@ -178,6 +179,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                 }
 
                 vars.put(val, vi);
+
             }
         }
     } // for (auto& I : viewContainer(M).flatten().flatten())

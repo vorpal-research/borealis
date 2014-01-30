@@ -27,7 +27,7 @@ class ExecutionContext {
     unsigned long long globalPtr;
     unsigned long long localPtr;
 
-    static constexpr auto MEMORY_ID = "$$__memory__$$";
+    static std::string MEMORY_ID;
     MemArray memory() const {
         return get(MEMORY_ID);
     }
@@ -35,7 +35,17 @@ class ExecutionContext {
         set(MEMORY_ID, value);
     }
 
-    static constexpr auto GEP_BOUNDS_ID = "$$__gep_bound__$$";
+    static std::string GEP_BOUNDS_ID;
+    void initGepBounds() {
+        memArrays.emplace(
+            GEP_BOUNDS_ID,
+            factory.getDefaultMemoryArray(GEP_BOUNDS_ID, 0)
+        );
+        gepBounds( gepBounds().store(
+            factory.getNullPtr(),
+            factory.getIntConst(-1)
+        ) );
+    }
     MemArray gepBounds() const {
         return get(GEP_BOUNDS_ID);
     }
@@ -82,7 +92,7 @@ public:
     inline Pointer getGlobalPtr(size_t offsetSize, Integer origSize) {
         auto ret = factory.getPtrConst(globalPtr);
         globalPtr += offsetSize;
-        gepBounds( gepBounds().store(ret, origSize));
+        gepBounds( gepBounds().store(ret, origSize) );
         return ret;
     }
 
@@ -92,7 +102,7 @@ public:
     inline Pointer getLocalPtr(size_t offsetSize, Integer origSize) {
         auto ret = factory.getPtrConst(localPtr);
         localPtr += offsetSize;
-        gepBounds( gepBounds().store(ret, origSize));
+        gepBounds( gepBounds().store(ret, origSize) );
         return ret;
     }
 
@@ -177,7 +187,34 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
     Integer getBound(const Pointer& p) {
-        return readProperty<Integer>(GEP_BOUNDS_ID, p);
+
+        auto base = factory.getPtrVar("$$__base__$$(" + p.getName() + ")");
+        auto zero = factory.getIntConst(0);
+
+        auto baseSize = readProperty<Integer>(GEP_BOUNDS_ID, base);
+        auto pSize =  readProperty<Integer>(GEP_BOUNDS_ID, p);
+
+        std::function<Bool(Pointer)> axBody =
+            [=](Pointer any) -> Bool {
+                return factory.implies(
+                    UComparable(any).ugt(base) && UComparable(any).ule(p),
+                    readProperty<Integer>(GEP_BOUNDS_ID, any) == zero
+                );
+            };
+        auto ax = UComparable(base).ule(p) &&
+                  factory.if_(pSize != zero)
+                         .then_(base == p)
+                         .else_(
+                             baseSize != zero &&
+                             factory.forAll(axBody)
+                         );
+        base = base.withAxiom(ax);
+
+        auto pBound = baseSize - (p - base);
+
+        return factory.if_(pBound >= zero)
+                .then_(pBound)
+                .else_(zero);
     }
 
 ////////////////////////////////////////////////////////////////////////////////

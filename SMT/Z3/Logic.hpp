@@ -65,6 +65,7 @@ namespace z3impl {
     z3::expr getAxiom(const ValueExpr& a);
     z3::sort getSort(const ValueExpr& a);
     z3::context& getContext(const ValueExpr& a);
+    std::string getName(const ValueExpr& e);
     z3::expr asAxiom(const ValueExpr& e);
     std::string asSmtLib(const ValueExpr& e);
 
@@ -79,6 +80,9 @@ namespace z3impl {
     }
     inline z3::context& getContext(const ValueExpr* a) {
         ASSERTC(a != nullptr); return getContext(*a);
+    }
+    inline std::string getName(const ValueExpr* e) {
+        ASSERTC(e != nullptr); return getName(*e);
     }
     inline z3::expr asAxiom(const ValueExpr* e) {
         ASSERTC(e != nullptr); return asAxiom(*e);
@@ -107,9 +111,11 @@ public:
     friend z3::expr z3impl::asAxiom(const ValueExpr& a);
     friend z3::sort z3impl::getSort(const ValueExpr& a);
     friend z3::context& z3impl::getContext(const ValueExpr& a);
+    friend std::string z3impl::getName(const ValueExpr& a);
 
     void swap(ValueExpr&);
 
+    std::string getName() const;
     std::string toSmtLib() const;
 
     ValueExpr simplify() const;
@@ -1293,7 +1299,7 @@ public:
     ScatterArray& operator=(const ScatterArray&) = default;
     ScatterArray& operator=(ScatterArray&&) = default;
 
-    SomeExpr select(Index i, size_t elemBitSize) {
+    SomeExpr select(Index i, size_t elemBitSize) const {
         std::vector<Byte> bytes;
         for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
             bytes.push_back(inner[i+j]);
@@ -1302,7 +1308,7 @@ public:
     }
 
     template<class Elem>
-    Elem select(Index i) {
+    Elem select(Index i) const {
         enum{ elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
@@ -1314,11 +1320,11 @@ public:
 
     z3::context& ctx() const { return inner.ctx(); }
 
-    Byte operator[](Index i) {
+    Byte operator[](Index i) const {
         return inner[i];
     }
 
-    Byte operator[](long long i) {
+    Byte operator[](long long i) const {
         return inner[Index::mkConst(ctx(), i)];
     }
 

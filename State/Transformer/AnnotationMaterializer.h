@@ -126,12 +126,11 @@ public:
         if(!field) failWith(
             "Cannot access member " +
             trm->getProperty() +
-            ": no such member defined or structure not available"
+            ": no such member defined or structure not available on " +
+            util::toString(*daStruct)
         );
 
-
         return *builder(load->getRhv()).gep(builder(0), builder(field.getUnsafe().getIndex()));
-
     }
 
     Term::Ptr transformIndirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
@@ -155,7 +154,8 @@ public:
         if(!field) failWith(
             "Cannot access member " +
             trm->getProperty() +
-            ": no such member defined or structure not available"
+            ": no such member defined or structure not available on " +
+            util::toString(*daStruct)
         );
 
         return *builder(arg).gep(builder(0), builder(field.getUnsafe().getIndex()));
@@ -232,6 +232,8 @@ public:
         if (name == "result") {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 auto desc = forValueSingle(ctx.func);
+                FN.Type->cast(ctx.func->getReturnType(), desc.type); // side-effecting to load type metadata
+
                 return factory().getReturnValueTerm(ctx.func, desc.type.getSignedness());
 
             } else failWith("\result can only be bound to functions' outer scope");
@@ -254,8 +256,10 @@ public:
                 std::advance(arg, val);
 
                 auto desc = forValueSingle(arg);
+                FN.Type->cast(arg->getType(), desc.type); // side-effecting to load type metadata
 
                 return factory().getArgumentTerm(arg, desc.type.getSignedness());
+
             } else {
                 failWith("\argXXX can only be bound to functions' outer scope");
             }

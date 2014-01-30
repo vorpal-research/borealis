@@ -7,8 +7,8 @@
 			"filename" : "test/testcases/necla/ex45.c",
 			"loc" : 
 			{
-				"col" : 9,
-				"line" : 13
+				"col" : 7,
+				"line" : 14
 			}
 		},
 		"type" : "BUF-01"
@@ -20,8 +20,8 @@
 			"filename" : "test/testcases/necla/ex45.c",
 			"loc" : 
 			{
-				"col" : 9,
-				"line" : 20
+				"col" : 7,
+				"line" : 21
 			}
 		},
 		"type" : "BUF-01"

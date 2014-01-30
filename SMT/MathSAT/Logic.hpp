@@ -57,6 +57,7 @@ namespace msatimpl {
     mathsat::Expr getAxiom(const ValueExpr& a);
     mathsat::Sort getSort(const ValueExpr& a);
     const mathsat::Env& getEnvironment(const ValueExpr& a);
+    std::string getName(const ValueExpr& e);
     mathsat::Expr asAxiom(const ValueExpr& e);
     std::string asSmtLib(const ValueExpr& e);
 
@@ -71,6 +72,9 @@ namespace msatimpl {
     }
     inline const mathsat::Env& getEnvironment(const ValueExpr* a) {
         ASSERTC(a != nullptr); return getEnvironment(*a);
+    }
+    inline std::string getName(const ValueExpr* e) {
+        ASSERTC(e != nullptr); return getName(*e);
     }
     inline mathsat::Expr asAxiom(const ValueExpr* e) {
         ASSERTC(e != nullptr); return asAxiom(*e);
@@ -106,9 +110,11 @@ public:
     friend mathsat::Expr msatimpl::asAxiom(const ValueExpr& a);
     friend mathsat::Sort msatimpl::getSort(const ValueExpr& a);
     friend const mathsat::Env& msatimpl::getEnvironment(const ValueExpr& a);
+    friend std::string msatimpl::getName(const ValueExpr& a);
 
     void swap(ValueExpr&);
 
+    std::string getName() const;
     std::string toSmtLib() const;
 };
 
@@ -987,7 +993,7 @@ public:
     ScatterArray& operator=(const ScatterArray&) = default;
     ScatterArray& operator=(ScatterArray&&) = default;
 
-    SomeExpr select(Index i, size_t elemBitSize) {
+    SomeExpr select(Index i, size_t elemBitSize) const {
         std::vector<Byte> bytes;
         for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
             bytes.push_back(inner[i+j]);
@@ -996,7 +1002,7 @@ public:
     }
 
     template<class Elem>
-    Elem select(Index i) {
+    Elem select(Index i) const {
         enum{ elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
@@ -1008,11 +1014,11 @@ public:
 
     mathsat::Env& env() const { return inner.env(); }
 
-    Byte operator[](Index i) {
+    Byte operator[](Index i) const {
         return inner[i];
     }
 
-    Byte operator[](long long i) {
+    Byte operator[](long long i) const {
         return inner[Index::mkConst(env(), i)];
     }
 

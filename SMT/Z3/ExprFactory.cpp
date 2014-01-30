@@ -88,10 +88,18 @@ Z3::MemArray ExprFactory::getNoMemoryArray(const std::string& id) {
     static config::ConfigEntry<bool> DefaultsToUnknown("analysis", "memory-defaults-to-unknown");
 
     if (DefaultsToUnknown.get(false)) {
-        return MemArray::mkFree(*ctx, id);
+        return getEmptyMemoryArray(id);
     } else {
-        return MemArray::mkDefault(*ctx, id, Byte::mkConst(*ctx, 0xff));
+        return getDefaultMemoryArray(id, 0xff);
     }
+}
+
+Z3::MemArray ExprFactory::getEmptyMemoryArray(const std::string& id) {
+    return MemArray::mkFree(*ctx, id);
+}
+
+Z3::MemArray ExprFactory::getDefaultMemoryArray(const std::string& id, int def) {
+    return MemArray::mkDefault(*ctx, id, Byte::mkConst(*ctx, def));
 }
 
 Z3::Pointer ExprFactory::getInvalidPtr() {
