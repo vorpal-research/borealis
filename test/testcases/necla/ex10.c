@@ -14,6 +14,7 @@ int f1(Addr *addr, Buffer *buf);
 int f2(unsigned char val, Buffer *buf);
 int f3(unsigned char data, Buffer *buf);
 
+// @requires \is_valid_ptr(addr)
 int main(Addr *addr, Buffer *buf)
 {
    ASSUME(addr);
@@ -24,7 +25,7 @@ int main(Addr *addr, Buffer *buf)
    return f1(addr, buf);
 }
 
-// @requires addr != \nullptr
+// @requires \is_valid_ptr(addr)
 int f1(Addr *addr, Buffer *buf) 
 {
   int i;

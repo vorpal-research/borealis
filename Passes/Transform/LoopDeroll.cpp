@@ -181,11 +181,17 @@ static llvm::BasicBlock* EvolveBasicBlock(
             ival->setDebugLoc(I.getDebugLoc());
         }
 
+
+        Value* newI = VMap.lookup(&I);
+
         if (
-                (val != &I && val != VMap[&I]) ||
-                isa<PHINode>(val) // this case will be processed later by a higher entity
+            newI
+         && (
+                (val != &I && val != newI)
+             || isa<PHINode>(val) // this case will be processed later by a higher entity
+            )
         ) {
-            VMap[&I]->replaceAllUsesWith(val);
+            newI->replaceAllUsesWith(val);
         }
 
         if ( ! insertAt->hasNUsesOrMore(1)) toRemove.push_back(insertAt);

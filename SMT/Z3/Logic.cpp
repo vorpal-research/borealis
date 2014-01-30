@@ -211,7 +211,7 @@ DynBitVectorExpr operator%(const DynBitVectorExpr& lhv, const DynBitVectorExpr& 
     DynBitVectorExpr drhv = rhv.growTo(sz);
     auto& ctx = z3impl::getContext(lhv);
 
-    auto res = z3::to_expr(ctx, Z3_mk_bvsmod(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
+    auto res = z3::to_expr(ctx, Z3_mk_bvsrem(ctx, z3impl::getExpr(dlhv), z3impl::getExpr(drhv)));
     auto axm = z3impl::spliceAxioms(lhv, rhv);
     return DynBitVectorExpr{ res, axm };
 }

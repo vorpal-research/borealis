@@ -210,10 +210,8 @@ public:
                          );
         base = base.withAxiom(ax);
 
-        auto pBound = baseSize - (p - base);
-
-        return factory.if_(pBound >= zero)
-                .then_(pBound)
+        return factory.if_(UComparable(baseSize).ugt(p - base))
+                .then_(baseSize - (p - base))
                 .else_(zero);
     }
 
