@@ -25,5 +25,18 @@
 			}
 		},
 		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex41.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 22
+			}
+		},
+		"type" : "BUF-01"
 	}
 ]
