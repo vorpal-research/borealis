@@ -38,7 +38,6 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
     auto& locs = GetAnalysis< SourceLocationTracker >::doit(this);
 
     for (auto anno : annotations) {
-
         if (!isa<LogicAnnotation>(anno)) continue;
 
         Constant* data = ConstantDataArray::getString(M.getContext(), toString(anno));
