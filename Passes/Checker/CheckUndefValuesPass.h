@@ -11,11 +11,14 @@
 #include <llvm/Pass.h>
 
 #include "Logging/logger.hpp"
+#include "Passes/Checker/CheckManager.h"
 #include "Passes/Defect/DefectManager.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
+
+template<class T> class CheckHelper;
 
 class CheckUndefValuesPass :
         public ProxyFunctionPass,
@@ -23,6 +26,7 @@ class CheckUndefValuesPass :
         public ShouldBeModularized {
 
     friend class UndefInstVisitor;
+    friend class CheckHelper<CheckUndefValuesPass>;
 
 public:
 
@@ -39,6 +43,8 @@ public:
     virtual ~CheckUndefValuesPass();
 
 private:
+
+    CheckManager* CM;
 
     DefectManager* DM;
 

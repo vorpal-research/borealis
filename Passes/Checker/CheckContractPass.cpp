@@ -10,10 +10,8 @@
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Passes/Checker/CheckContractPass.h"
-#include "Passes/Checker/CheckManager.h"
+#include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Tracker/SlotTrackerPass.h"
-#include "SMT/MathSAT/Solver.h"
-#include "SMT/Z3/Solver.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
@@ -47,156 +45,90 @@ public:
     }
 
     void checkBonds(llvm::CallInst& CI) {
-        auto bonds = pass->FM->getBonds(CI.getCalledFunction());
-        if (bonds.empty()) return;
+        for (auto& e : pass->FM->getBonds(CI.getCalledFunction())) {
 
-        auto state = pass->PSA->getInstructionState(&CI);
-        if (!state) return;
-
-        for (auto& e : bonds) {
             auto bond = e.second.first;
             auto defect = e.second.second;
+
+            CheckHelper<CheckContractPass> h(pass, &CI, DefectType::UNK_99);
+
+            if (h.skip(defect)) continue;
 
             auto t = Simplifier(pass->FN) +
                      ContractTransmogrifier(pass->FN) +
                      CallSiteInitializer(CI, pass->FN);
-            auto instantiatedBond = bond->map(
+            auto q = bond->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
+            auto ps = pass->PSA->getInstructionState(&CI);
 
-            dbgs() << "Checking: " << CI << endl;
-            dbgs() << "  Bond: " << endl << instantiatedBond << endl;
-
-            auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
-
-    #if defined USE_MATHSAT_SOLVER
-            MathSAT::ExprFactory ef;
-            MathSAT::Solver s(ef, fMemId);
-    #else
-            Z3::ExprFactory ef;
-            Z3::Solver s(ef, fMemId);
-    #endif
-
-            dbgs() << "  State: " << endl << state << endl;
-            if (s.isViolated(instantiatedBond, state)) {
-                pass->DM->addDefect(defect);
-            }
+            h.check(q, ps, defect);
         }
     }
 
     void checkContract(llvm::CallInst& CI) {
+
+        CheckHelper<CheckContractPass> h(pass, &CI, DefectType::REQ_01);
+
+        if (h.skip()) return;
+
         auto contract = pass->FM->getReq(CI, pass->FN);
-        if (contract->isEmpty()) return;
-
-        auto state = pass->PSA->getInstructionState(&CI);
-        if (!state) return;
-
-        CallSiteInitializer csi(CI, pass->FN);
-        auto instantiatedContract = contract->map(
-            [&csi](Predicate::Ptr p) { return csi.transform(p); }
+        auto t = CallSiteInitializer(CI, pass->FN);
+        auto q = contract->map(
+            [&t](Predicate::Ptr p) { return t.transform(p); }
         );
+        auto ps = pass->PSA->getInstructionState(&CI);
 
-        dbgs() << "Checking: " << CI << endl;
-        dbgs() << "  Requires: " << endl << instantiatedContract << endl;
-
-        auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
-
-#if defined USE_MATHSAT_SOLVER
-        MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, fMemId);
-#else
-        Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemId);
-#endif
-
-        dbgs() << "  State: " << endl << state << endl;
-        if (s.isViolated(instantiatedContract, state)) {
-            pass->DM->addDefect(DefectType::REQ_01, &CI);
-        }
+        h.check(q, ps);
     }
 
     void checkActionDefect(llvm::CallInst& CI) {
-        using namespace llvm;
+
+        auto* op0 = CI.getArgOperand(0);
+        auto defectType = getAsCompileTimeString(op0).getOrElse("UNK-99");
+        auto defect = pass->DM->getDefect(defectType, &CI);
+
+        CheckHelper<CheckContractPass> h(pass, &CI, DefectType::UNK_99);
+
+        if (h.skip(defect)) return;
 
         auto state = pass->PSA->getInstructionState(&CI);
-        if (!state) return;
 
-        dbgs() << "Checking: " << CI << endl;
-        dbgs() << "  State: " << endl << state << endl;
-
-        auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
-
-        if (!state->isUnreachableIn(fMemId)) {
-            auto* op0 = CI.getArgOperand(0);
-            auto* op1 = CI.getArgOperand(1);
-
-            auto defectType = getAsCompileTimeString(op0);
-            auto defectMsg = getAsCompileTimeString(op1);
-
-            pass->DM->addDefect(defectType.getOrElse("UNK-99"), &CI);
-        }
+        h.isReachable(state, defect);
     }
 
     void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
         auto anno = materialize(A, pass->FN, pass->MI);
 
-        auto state = pass->PSA->getInstructionState(&CI);
-        if (!state) return;
-
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
-            auto query = (
+
+            CheckHelper<CheckContractPass> h(pass, &CI, DefectType::ASR_01);
+
+            if (h.skip()) return;
+
+            auto q = (
                 pass->FN.State *
                 pass->FN.Predicate->getEqualityPredicate(
                     LA->getTerm(),
                     pass->FN.Term->getTrueTerm()
-                    // predicateType(LA)
                 )
             )();
+            auto ps = pass->PSA->getInstructionState(&CI);
 
-            dbgs() << "Checking: " << CI << endl;
-            dbgs() << "  Assert: " << endl << query << endl;
-
-            auto fMemId = pass->FM->getMemoryStart(CI.getParent()->getParent());
-
-#if defined USE_MATHSAT_SOLVER
-            MathSAT::ExprFactory ef;
-            MathSAT::Solver s(ef, fMemId);
-#else
-            Z3::ExprFactory ef;
-            Z3::Solver s(ef, fMemId);
-#endif
-
-            dbgs() << "  State: " << endl << state << endl;
-            if (s.isViolated(query, state)) {
-                pass->DM->addDefect(DefectType::ASR_01, &CI);
-            }
+            h.check(q, ps);
         }
     }
 
     void visitReturnInst(llvm::ReturnInst& RI) {
-        auto contract = pass->FM->getEns(RI.getParent()->getParent());
-        if (contract->isEmpty()) return;
 
-        auto state = pass->PSA->getInstructionState(&RI);
-        if (!state) return;
+        CheckHelper<CheckContractPass> h(pass, &RI, DefectType::ENS_01);
 
-        dbgs() << "Checking: " << RI << endl;
-        dbgs() << "  Ensures: " << endl << contract << endl;
+        if (h.skip()) return;
 
-        auto fMemId = pass->FM->getMemoryStart(RI.getParent()->getParent());
+        auto q = pass->FM->getEns(RI.getParent()->getParent());
+        auto ps = pass->PSA->getInstructionState(&RI);
 
-#if defined USE_MATHSAT_SOLVER
-        MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, fMemId);
-#else
-        Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemId);
-#endif
-
-        dbgs() << "  State: " << endl << state << endl;
-        if (s.isViolated(contract, state)) {
-            pass->DM->addDefect(DefectType::ENS_01, &RI);
-        }
+        h.check(q, ps);
     }
 
 private:
@@ -224,8 +156,8 @@ void CheckContractPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool CheckContractPass::runOnFunction(llvm::Function& F) {
 
-    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
-        return false;
+    CM = &GetAnalysis<CheckManager>::doit(this, F);
+    if (CM->shouldSkipFunction(&F)) return false;
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);

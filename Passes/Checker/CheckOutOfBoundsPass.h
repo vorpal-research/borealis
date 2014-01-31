@@ -21,12 +21,15 @@
 
 namespace borealis {
 
+template<class T> class CheckHelper;
+
 class CheckOutOfBoundsPass :
         public ProxyFunctionPass,
         public borealis::logging::ClassLevelLogging<CheckOutOfBoundsPass>,
         public ShouldBeModularized {
 
     friend class GepInstVisitor;
+    friend class CheckHelper<CheckOutOfBoundsPass>;
 
 public:
 

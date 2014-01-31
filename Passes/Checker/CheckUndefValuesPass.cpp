@@ -7,7 +7,7 @@
 
 #include <llvm/Support/InstVisitor.h>
 
-#include "Passes/Checker/CheckManager.h"
+#include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckUndefValuesPass.h"
 #include "Codegen/intrinsics_manager.h"
 
@@ -25,21 +25,20 @@ public:
         using namespace llvm;
         using borealis::util::view;
 
-        auto& intrinsic_manager = borealis::IntrinsicsManager::getInstance();
-        if (auto* call = dyn_cast<llvm::CallInst>(&I))
-            if (intrinsic_manager.getIntrinsicType(*call) != function_type::UNKNOWN)
+        // undefs in phis are normal
+        if (isa<PHINode>(&I)) return;
+
+        auto& intrinsic_manager = IntrinsicsManager::getInstance();
+        if (auto* call = dyn_cast<CallInst>(&I))
+            if (function_type::UNKNOWN != intrinsic_manager.getIntrinsicType(*call))
                 return;
 
         // FIXME: Better undef propagation analysis
 
-        // undef in phi is normal
-        if (isa<PHINode>(&I)) return;
+        if (pass->DM->hasDefect(DefectType::NDF_01, &I)) return;
 
-        for (Value* op : view(I.op_begin(), I.op_end())) {
-            if (isa<UndefValue>(op)) {
-                pass->DM->addDefect(DefectType::NDF_01, &I);
-                break;
-            }
+        if (view(I.op_begin(), I.op_end()).any_of(isaer<UndefValue>())) {
+            pass->DM->addDefect(DefectType::NDF_01, &I);
         }
     }
 
@@ -64,8 +63,8 @@ void CheckUndefValuesPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool CheckUndefValuesPass::runOnFunction(llvm::Function& F) {
 
-    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
-        return false;
+    CM = &GetAnalysis<CheckManager>::doit(this, F);
+    if (CM->shouldSkipFunction(&F)) return false;
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
 
