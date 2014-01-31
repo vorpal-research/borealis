@@ -3,7 +3,7 @@
  * This file is generated from the following haskell datatype representation:
  * 
  * data Type = 
-    Integer { signedness :: LLVMSignedness } |
+    Integer { bitsize :: UInt, signedness :: LLVMSignedness } |
     Bool |
     Float |
     UnknownType |
@@ -47,7 +47,8 @@ message Integer {
         optional Integer ext = 1;
     }
 
-    optional borealis.proto.Signedness signedness = 1;
+    optional uint32 bitsize = 1;
+    optional borealis.proto.Signedness signedness = 2;
 }
 
 **/
@@ -56,7 +57,7 @@ class Integer : public Type {
     typedef Integer Self;
     typedef Type Base;
 
-    Integer(llvm::Signedness signedness): Type(class_tag(*this)), signedness(signedness) {}
+    Integer(unsigned int bitsize, llvm::Signedness signedness): Type(class_tag(*this)), bitsize(bitsize), signedness(signedness) {}
 
 public:
     friend class ::borealis::TypeFactory;
@@ -65,9 +66,11 @@ public:
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 
 private:
+    unsigned int bitsize;
     llvm::Signedness signedness;
 
 public:
+    unsigned int getBitsize() const { return this->bitsize; }
     llvm::Signedness getSignedness() const { return this->signedness; }
 
 };

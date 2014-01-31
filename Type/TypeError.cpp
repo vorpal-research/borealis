@@ -3,7 +3,7 @@
  * This file is generated from the following haskell datatype representation:
  * 
  * data Type = 
-    Integer { signedness :: LLVMSignedness } |
+    Integer { bitsize :: UInt, signedness :: LLVMSignedness } |
     Bool |
     Float |
     UnknownType |
