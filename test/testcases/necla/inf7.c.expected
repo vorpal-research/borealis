@@ -33,6 +33,19 @@
 			"filename" : "test/testcases/necla/inf7.c",
 			"loc" : 
 			{
+				"col" : 5,
+				"line" : 69
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf7.c",
+			"loc" : 
+			{
 				"col" : 3,
 				"line" : 27
 			}

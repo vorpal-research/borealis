@@ -10,7 +10,7 @@ typedef struct _vector {
     int* data;
 } Vector;
 
-// @ensures \result != 0
+// @ensures \is_valid_ptr(\result)
 Vector* create_vector() {
     Vector* node;
 
@@ -25,7 +25,7 @@ Vector* create_vector() {
     return node;
 }
 
-// @requires vct != 0
+// @requires \is_valid_ptr(vct)
 void push_back(Vector* vct, int value) {
     ASSUME(vct->data);
     int* tmp;
