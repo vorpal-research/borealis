@@ -27,7 +27,7 @@ void DefectManager::addDefect(const std::string& type, llvm::Instruction* where)
     addDefect(getDefect(type, where));
 }
 
-void DefectManager::addDefect(DefectInfo info) {
+void DefectManager::addDefect(const DefectInfo& info) {
     data.insert(info);
 }
 

@@ -38,7 +38,7 @@ public:
 
     void addDefect(DefectType type, llvm::Instruction* where);
     void addDefect(const std::string& type, llvm::Instruction* where);
-    void addDefect(DefectInfo info);
+    void addDefect(const DefectInfo& info);
 
     DefectInfo getDefect(DefectType type, llvm::Instruction* where) const;
     DefectInfo getDefect(const std::string& type, llvm::Instruction* where) const;
