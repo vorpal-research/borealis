@@ -29,10 +29,10 @@ class TypeFactory {
     mutable Type::Ptr theFloat;
     mutable Type::Ptr theUnknown;
 
-    mutable std::map<llvm::Signedness,             Type::Ptr> integers;
-    mutable std::map<Type::Ptr,                    Type::Ptr> pointers;
-    mutable std::map<std::pair<Type::Ptr, size_t>, Type::Ptr> arrays;
-    mutable std::map<std::string,                  Type::Ptr> errors;
+    mutable std::map<std::pair<size_t, llvm::Signedness>, Type::Ptr> integers;
+    mutable std::map<Type::Ptr,                           Type::Ptr> pointers;
+    mutable std::map<std::pair<Type::Ptr, size_t>,        Type::Ptr> arrays;
+    mutable std::map<std::string,                         Type::Ptr> errors;
 
     mutable std::map<std::string, Type::Ptr> records;
     mutable type::RecordRegistry::StrongPtr  recordBodies;
@@ -53,9 +53,10 @@ public:
         else return theBool;
     }
 
-    Type::Ptr getInteger(llvm::Signedness sign = llvm::Signedness::Unknown) const {
-        if(auto existing = util::at(integers, sign)) return existing.getUnsafe();
-        else return integers[sign] = Type::Ptr(new type::Integer(sign));
+    Type::Ptr getInteger(size_t bitsize = 32, llvm::Signedness sign = llvm::Signedness::Unknown) const {
+        auto pair = std::make_pair(bitsize, sign);
+        if(auto existing = util::at(integers, pair)) return existing.getUnsafe();
+        else return integers[pair] = Type::Ptr(new type::Integer(bitsize, sign));
     }
 
     Type::Ptr getFloat() const {
@@ -78,7 +79,7 @@ public:
     Type::Ptr getArray(Type::Ptr elem, size_t size = 0U) const {
         if(TypeUtils::isInvalid(elem)) return elem;
 
-        auto pair = make_pair(elem, size);
+        auto pair = std::make_pair(elem, size);
         if(auto existing = util::at(arrays, pair)) return existing.getUnsafe();
         else return arrays[pair] = Type::Ptr(
             new type::Array(
@@ -136,7 +137,7 @@ public:
         static long literalStructs = 0;
 
         if(type->isIntegerTy())
-            return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger(sign);
+            return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger(32, sign); // XXX: 32 -> ???
         else if(type->isFloatingPointTy())
             return getFloat();
         else if(type->isPointerTy())
@@ -235,7 +236,10 @@ public:
         if(auto match = match_pair<type::Integer, type::Integer>(one, two)) {
             // XXX: atm signedness is used only in AnnotationMaterializer,
             //      therefore we don't need to do any merge per se
-            return getInteger(llvm::Signedness::Unknown);
+            return getInteger(
+                std::max(match->first->getBitsize(), match->second->getBitsize()),
+                llvm::Signedness::Unknown
+            );
         } else if (auto match = match_pair<type::Pointer, type::Integer>(one, two)) {
             return one;
         } else if (auto match = match_pair<type::Integer, type::Pointer>(one, two)) {

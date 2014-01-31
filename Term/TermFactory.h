@@ -162,7 +162,7 @@ public:
     Term::Ptr getIntTerm(long long i, llvm::Signedness sign = llvm::Signedness::Unknown) {
         return Term::Ptr{
             new OpaqueIntConstantTerm(
-                TyF->getInteger(sign), i
+                TyF->getInteger(32, sign), i // XXX: 32 -> ???
             )
         };
     }
@@ -416,7 +416,7 @@ public:
     Term::Ptr getBoundTerm(Term::Ptr rhv) {
         return Term::Ptr{
             new BoundTerm{
-                TyF->getInteger(llvm::Signedness::Unsigned),
+                TyF->getInteger(32, llvm::Signedness::Unsigned), // XXX: 32 -> ???
                 rhv
             }
         };

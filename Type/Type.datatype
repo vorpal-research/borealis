@@ -1,5 +1,5 @@
 data Type = 
-    Integer { signedness :: LLVMSignedness } |
+    Integer { bitsize :: UInt, signedness :: LLVMSignedness } |
     Bool |
     Float |
     UnknownType |
