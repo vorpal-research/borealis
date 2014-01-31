@@ -40,6 +40,18 @@ DefectInfo DefectManager::getDefect(const std::string& type, llvm::Instruction* 
     return {type, locs->getLocFor(where)};
 }
 
+bool DefectManager::hasDefect(DefectType type, llvm::Instruction* where) const {
+    return hasDefect(DefectTypes.at(type).type, where);
+}
+
+bool DefectManager::hasDefect(const std::string& type, llvm::Instruction* where) const {
+    return hasDefect(getDefect(type, where));
+}
+
+bool DefectManager::hasDefect(const DefectInfo& di) const {
+    return util::contains(data, di);
+}
+
 void DefectManager::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& defect : data) {
         infos() << defect.type << " at " << defect.location << endl;

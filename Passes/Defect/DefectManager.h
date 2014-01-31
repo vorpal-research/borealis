@@ -43,6 +43,10 @@ public:
     DefectInfo getDefect(DefectType type, llvm::Instruction* where) const;
     DefectInfo getDefect(const std::string& type, llvm::Instruction* where) const;
 
+    bool hasDefect(DefectType type, llvm::Instruction* where) const;
+    bool hasDefect(const std::string& type, llvm::Instruction* where) const;
+    bool hasDefect(const DefectInfo& di) const;
+
     virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
 
 private:
