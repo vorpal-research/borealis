@@ -141,6 +141,66 @@ struct DIStructType : public llvm::DICompositeType {
     }
 };
 
+struct DIClangGlobalDesc : public llvm::DIDescriptor {
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIClangGlobalDesc);
+    DIClangGlobalDesc(const llvm::MDNode* node): llvm::DIDescriptor(node) {
+        if( node->getNumOperands() != 2
+        || !llvm::isa<llvm::GlobalValue>(node->getOperand(0))
+        || !llvm::isa<llvm::ConstantInt>(node->getOperand(1))
+        ){
+            this->DbgNode = nullptr;
+        }
+    }
+    DIClangGlobalDesc(const llvm::DIDescriptor& node): DIClangGlobalDesc(static_cast<llvm::MDNode*>(node)) {};
+
+    llvm::GlobalValue* getGlobal() const {
+        if(!DbgNode) return nullptr;
+        return llvm::dyn_cast_or_null<llvm::GlobalValue>(DbgNode->getOperand(0));
+    }
+    clang::VarDecl* getClangVarDecl() const {
+        if(!DbgNode) return nullptr;
+        auto field = getUInt64Field(1);
+        // this is generally fucked up, but IS the way they do it in clang
+        return static_cast<clang::VarDecl*>(reinterpret_cast<void*>(field));
+    }
+};
+
+struct DIBorealisVarDesc : public llvm::DIDescriptor {
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIBorealisVarDesc);
+    DIBorealisVarDesc(const llvm::MDNode* node): llvm::DIDescriptor(node) {
+        if( node->getNumOperands() != 5
+        || !llvm::isa<llvm::GlobalValue>(node->getOperand(0))
+        || !llvm::isa<llvm::MDString>   (node->getOperand(1))
+        || !llvm::isa<llvm::ConstantInt>(node->getOperand(2))
+        || !llvm::isa<llvm::ConstantInt>(node->getOperand(3))
+        || !llvm::isa<llvm::MDString>   (node->getOperand(4))
+        ){
+            this->DbgNode = nullptr;
+        }
+    }
+    DIBorealisVarDesc(const llvm::DIDescriptor& node): DIBorealisVarDesc(static_cast<llvm::MDNode*>(node)) {};
+
+    llvm::GlobalValue* getGlobal() const {
+        if(!DbgNode) return nullptr;
+        return llvm::dyn_cast_or_null<llvm::GlobalValue>(DbgNode->getOperand(0));
+    }
+    llvm::StringRef getVarName() const {
+        return llvm::cast<llvm::MDString>(DbgNode->getOperand(1))->getString();
+    }
+
+    unsigned long long getLine() const {
+        return getUInt64Field(3);
+    }
+
+    unsigned long long getCol() const {
+        return getUInt64Field(2);
+    }
+
+    llvm::StringRef getFileName() const {
+        return llvm::cast<llvm::MDString>(DbgNode->getOperand(4))->getString();
+    }
+};
+
 DIType stripAliases(DIType tp);
 std::set<DIType> flattenTypeTree(DIType di);
 std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DIType>& tp);

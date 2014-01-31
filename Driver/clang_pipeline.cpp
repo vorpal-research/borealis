@@ -19,6 +19,7 @@
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Linker.h>
 #include <llvm/Support/Host.h>
+#include <llvm/Support/TypeBuilder.h>
 #include <llvm/Support/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
 
@@ -26,10 +27,12 @@
 #include <unordered_map>
 
 #include "Codegen/intrinsics_manager.h"
+#include "Codegen/llvm.h"
 #include "Driver/clang_pipeline.h"
 #include "Factory/Nest.h"
 #include "Passes/Transform/MetaInserter.h"
 #include "Protobuf/Converter.hpp"
+#include "Util/locations.h"
 #include "Util/util.hpp"
 
 #include "Util/macros.h"
@@ -40,6 +43,52 @@ namespace borealis {
 namespace driver {
 
 constexpr auto linkerOutputFile = "..<output>..";
+
+static void postProcessClangGeneratedModule(clang::SourceManager& SM, llvm::Module& M) {
+    auto globalsMD = M.getNamedMetadata("clang.global.decl.ptrs");
+    if(!globalsMD) return;
+
+    auto ourGlobals = M.getOrInsertNamedMetadata("bor.global.decls");
+    auto& ctx = M.getContext();
+
+    for(auto i = 0U; i < globalsMD->getNumOperands(); ++i) {
+        auto cacheLine = globalsMD->getOperand(i);
+        if(cacheLine->getNumOperands() != 2
+        || !llvm::isa<llvm::GlobalValue>(cacheLine->getOperand(0))
+        || !llvm::isa<llvm::ConstantInt>(cacheLine->getOperand(1))
+        ) continue;
+
+        // TODO: remake that so it uses standard llvm location format?
+
+        // this is generally fucked up, but it is the way of doing it
+        auto* clangDecl =
+            static_cast<clang::VarDecl*>(
+                reinterpret_cast<void*>(llvm::cast<llvm::ConstantInt>(
+                    cacheLine->getOperand(1))->getZExtValue()
+                )
+            );
+
+        Locus llc { clangDecl->getLocStart(), SM };
+
+        auto mline = llvm::ConstantInt::get(
+            llvm::TypeBuilder<llvm::types::i<32>, true>::get(ctx), llc.loc.line
+        );
+        auto mcol = llvm::ConstantInt::get(
+            llvm::TypeBuilder<llvm::types::i<32>, true>::get(ctx), llc.loc.col
+        );
+
+         llvm::Value* arr[] = {
+            cacheLine->getOperand(0),
+            llvm::MDString::get(ctx, clangDecl->getName()),
+            mcol,
+            mline,
+            llvm::MDString::get(ctx, llc.filename)
+        };
+        ourGlobals->addOperand(llvm::MDNode::get(ctx, arr));
+    }
+
+    MetaInserter::liftAllDebugIntrinsics(M);
+}
 
 struct clang_pipeline::impl: public DelegateLogging {
     clang::CompilerInstance ci;
@@ -88,7 +137,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         ASSERTC(ci.ExecuteAction(compile_to_llvm));
         std::shared_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
 
-        MetaInserter::liftAllDebugIntrinsics(*module);
+        postProcessClangGeneratedModule(ci.getSourceManager(), *module);
 
         ASSERTC(ci.ExecuteAction(gatherAnnotations));
         AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };

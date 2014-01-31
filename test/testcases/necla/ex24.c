@@ -9,7 +9,7 @@ int foo(int* x) {
    return __NONDET__();
 }
 
-// requires \arg0 != 0 // crashes LLVM
+// @requires \arg0 != 0 // crashes LLVM
 int bar(int* x);
 
 int main() {

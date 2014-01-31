@@ -250,12 +250,15 @@ public:
                 unsigned val = 0U;
                 ist >> val;
 
+                if(ctx.func->isDeclaration())
+                    failWith("annotations on function declarations are not supported");
+
                 ASSERTC(val < ctx.func->arg_size());
 
                 auto arg = ctx.func->arg_begin();
                 std::advance(arg, val);
 
-                auto desc = forValueSingle(arg);
+                auto desc = forValueSingle(ctx.func);
                 FN.Type->cast(arg->getType(), desc.type); // side-effecting to load type metadata
 
                 return factory().getArgumentTerm(arg, desc.type.getSignedness());

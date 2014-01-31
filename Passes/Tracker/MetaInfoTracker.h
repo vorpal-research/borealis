@@ -16,6 +16,7 @@
 #include "Passes/Util/DataProvider.hpp"
 #include "Util/key_ptr.hpp"
 #include "Util/util.h"
+#include "Util/streams.hpp"
 
 #include "Util/macros.h"
 
@@ -39,6 +40,10 @@ public:
 
         bool isInvalid() {
             return val == nullptr;
+        }
+
+        friend std::ostream& operator<<(std::ostream& ost, const ValueDescriptor& vd) {
+            return ost << util::toString(*vd.val) << vd.type.getName();
         }
     };
     using ValueDescriptors = std::vector<ValueDescriptor>;

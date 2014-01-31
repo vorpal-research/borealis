@@ -66,6 +66,18 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
     return ret;
 }
 
+static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
+        clang::Decl* ast = nullptr, bool allocated = false) {
+    VarInfo ret{
+        just(desc.getVarName().str()),
+        just(Locus(desc.getFileName().str(), desc.getLine(), desc.getCol())),
+        allocated ? VarInfo::Allocated : VarInfo::Plain,
+        DIType{},
+        ast
+    };
+    return ret;
+}
+
 bool MetaInfoTracker::runOnModule(llvm::Module& M) {
     using borealis::util::takePtr;
     using borealis::util::view;
@@ -110,6 +122,19 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
         DISubprogram sp(msp);
         vars.put(sp.getFunction(), mkVI(sm, sp));
     }
+
+// FIXME: decide whether we want this or not
+//    {
+//        auto clangGlobals = M.getNamedMetadata("bor.global.decls");
+//        auto clangGlobalsView =
+//            util::range(0U, clangGlobals->getNumOperands())
+//           .map([clangGlobals](size_t i){ return clangGlobals->getOperand(i); });
+//        for(auto md : clangGlobalsView) {
+//            if(DIBorealisVarDesc clangDesc = md) {
+//                vars.put(clangDesc.getGlobal(), mkVI(sm, clangDesc));
+//            }
+//        }
+//    }
 
     for (auto& I : viewContainer(M).flatten().flatten()) {
 
