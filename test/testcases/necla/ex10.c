@@ -1,4 +1,5 @@
 #include "defines.h"
+
 struct _addr {
   unsigned char len;
   unsigned char dat[16];
@@ -38,7 +39,7 @@ int f1(Addr *addr, Buffer *buf)
 
   i = (int)addr->len;
   
-  while (i ) {
+  while (i) {
      ret1 = f2(addr->dat[i - 1], buf);
      if (ret1 != 0) {
         return ret1;

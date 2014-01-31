@@ -12,31 +12,5 @@
 			}
 		},
 		"type" : "BUF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex48.c",
-			"loc" : 
-			{
-				"col" : 7,
-				"line" : 27
-			}
-		},
-		"type" : "BUF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex48.c",
-			"loc" : 
-			{
-				"col" : 7,
-				"line" : 33
-			}
-		},
-		"type" : "BUF-01"
 	}
 ]

@@ -3,6 +3,7 @@
 int* a;
 int n;
 
+// @requires \is_valid_ptr(a) && \bound(a) >= n
 int test() {
 
    int i;

@@ -9,11 +9,9 @@
 
 #include "lib/poolalloc/src/DSA/DataStructureAA.h"
 
-#include "Passes/Checker/CheckManager.h"
+#include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckNullDereferencePass.h"
-#include "SMT/Z3/Solver.h"
-#include "SMT/MathSAT/Solver.h"
-#include "SMT/MathSAT/Unlogic/Unlogic.h"
+// #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/TermRebinder.h"
 
@@ -21,157 +19,61 @@ namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class DerefInstVisitor : public llvm::InstVisitor<DerefInstVisitor> {
-
-public:
-
-    DerefInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
-
-    void visitLoadInst(llvm::LoadInst& I) {
-        using llvm::AliasAnalysis;
-        using llvm::Value;
-
-        Value* ptr = I.getPointerOperand();
-        if (ptr->isDereferenceablePointer()) return;
-
-        for (auto* derefNullValue : *(pass->DerefNullSet)) {
-            if (pass->AA->alias(ptr, derefNullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                pass->ValueNullSet->insert(&I);
-                break;
-            }
-        }
-    }
-
-private:
-
-    CheckNullDereferencePass* pass;
-
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class ValueInstVisitor :
-    public llvm::InstVisitor<ValueInstVisitor>,
+class CheckNullsVisitor :
+    public llvm::InstVisitor<CheckNullsVisitor>,
     // this is by design (i.e., sharing logging facilities)
     public borealis::logging::ClassLevelLogging<CheckNullDereferencePass> {
 
-public:
+private:
 
-    ValueInstVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
-
-    void visitLoadInst(llvm::LoadInst& I) {
-        using llvm::AliasAnalysis;
-        using llvm::Value;
-
-        Value* ptr = I.getPointerOperand();
+    template<class Inst>
+    void visitMemoryInst(Inst& I) {
+        auto* ptr = I.getPointerOperand();
         if (ptr->isDereferenceablePointer()) return;
 
-        for (auto* nullValue : *(pass->ValueNullSet)) {
-            if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                auto res = checkNullDereference(I, *ptr, *nullValue);
-                if (res.first) {
-                    auto di = pass->DM->getDefect(DefectType::INI_03, &I);
-                    pass->DM->addDefect(di);
-                    // pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
-                    break;
-                }
-            }
-        }
-    }
+        CheckHelper<CheckNullDereferencePass> h(pass, &I, DefectType::INI_03);
 
-    void visitStoreInst(llvm::StoreInst& I) {
-        using llvm::AliasAnalysis;
-        using llvm::Value;
+        if (h.skip()) return;
 
-        Value* ptr = I.getPointerOperand();
-        if (ptr->isDereferenceablePointer()) return;
-
-        for (auto* nullValue : *(pass->ValueNullSet)) {
-            if (pass->AA->alias(ptr, nullValue) != AliasAnalysis::AliasResult::NoAlias) {
-                auto res = checkNullDereference(I, *ptr, *nullValue);
-                if (res.first) {
-                    auto di = pass->DM->getDefect(DefectType::INI_03, &I);
-                    pass->DM->addDefect(di);
-                    // pass->FM->addBond(I.getParent()->getParent(), {res.second, di});
-                    break;
-                }
-            }
-        }
-    }
-
-    std::pair<bool, PredicateState::Ptr> checkNullDereference(
-            llvm::Instruction& where,
-            llvm::Value& what,
-            llvm::Value& why) {
-
-        using borealis::mathsat_::unlogic::undoThat;
-        using borealis::util::view;
-
-        dbgs() << "Checking: " << endl
-               << "  ptr: " << what << endl
-               << "  aliasing: " << why << endl
-               << "  at: " << where << endl;
-
-        PredicateState::Ptr q = (
+        auto q = (
             pass->FN.State *
             pass->FN.Predicate->getInequalityPredicate(
-                pass->FN.Term->getValueTerm(&what),
+                pass->FN.Term->getValueTerm(ptr),
                 pass->FN.Term->getNullPtrTerm()
             )
         )();
+        auto ps = pass->PSA->getInstructionState(&I);
 
-        PredicateState::Ptr ps = pass->PSA->getInstructionState(&where);
-
-        if (
-            !ps ||
-            !ps->hasVisited({
-                pass->SLT->getLocFor(&where),
-                pass->SLT->getLocFor(&what),
-                pass->SLT->getLocFor(&why)
-            })
-        ) {
-            dbgs() << "Infeasible!" << endl;
-            return {false, nullptr};
-        }
-
-        dbgs() << "Query: " << q << endl;
-        dbgs() << "State: " << ps << endl;
-
-        auto fMemId = pass->FM->getMemoryStart(where.getParent()->getParent());
-
-#if defined USE_MATHSAT_SOLVER
-        MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, fMemId);
-#else
-        Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemId);
-#endif
-
-        if (s.isViolated(q, ps)) {
-            dbgs() << "Violated!" << endl;
-
-//            MathSAT::ExprFactory cef;
-//            MathSAT::Solver cs(cef, fMemId);
-//
-//            auto& F = *where.getParent()->getParent();
-//
-//            auto args =
-//                view(F.arg_begin(), F.arg_end())
-//                .map([this](llvm::Argument& arg) { return pass->FN.Term->getArgumentTerm(&arg); })
-//                .toVector();
-//
-//            auto c = cs.getContract(args, q, ps);
-//            auto t = TermRebinder(F, pass->NT, pass->FN);
-//            auto contract = undoThat(c)->map(
-//                [&t](Predicate::Ptr p) { return t.transform(p); }
-//            );
-
-            return {true, pass->FN.State->Basic()};
-        } else {
-            dbgs() << "Passed!" << endl;
-            return {false, nullptr};
-        }
+        h.check(q, ps);
     }
+
+public:
+
+    CheckNullsVisitor(CheckNullDereferencePass* pass) : pass(pass) {}
+
+    void visitLoadInst(llvm::LoadInst& I) {
+        visitMemoryInst(I);
+    }
+
+    void visitStoreInst(llvm::StoreInst& I) {
+        visitMemoryInst(I);
+    }
+
+//    MathSAT::ExprFactory cef;
+//    MathSAT::Solver cs(cef, fMemId);
+//
+//    auto& F = *where.getParent()->getParent();
+//
+//    auto args =
+//        view(F.arg_begin(), F.arg_end())
+//        .map([this](llvm::Argument& arg) { return pass->FN.Term->getArgumentTerm(&arg); })
+//        .toVector();
+//
+//    auto c = cs.getContract(args, q, ps);
+//    auto t = TermRebinder(F, pass->NT, pass->FN);
+//    auto contract = undoThat(c)->map(
+//        [&t](Predicate::Ptr p) { return t.transform(p); }
+//    );
 
 private:
 
@@ -189,9 +91,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
     AUX<CheckManager>::addRequiredTransitive(AU);
 
-    AUX<llvm::AliasAnalysis>::addRequiredTransitive(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
-    AUX<DetectNullPass>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<NameTracker>::addRequiredTransitive(AU);
@@ -201,13 +101,10 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
-    if (GetAnalysis<CheckManager>::doit(this, F).shouldSkipFunction(&F))
-        return false;
-
-    AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
+    CM = &GetAnalysis<CheckManager>::doit(this, F);
+    if (CM->shouldSkipFunction(&F)) return false;
 
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
-    DNP = &GetAnalysis<DetectNullPass>::doit(this, F);
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
@@ -217,20 +114,8 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
     FN = FactoryNest(st);
 
-    auto valueSet = DNP->getNullSet(NullType::VALUE);
-    auto derefSet = DNP->getNullSet(NullType::DEREF);
-
-    ValueNullSet = &valueSet;
-    DerefNullSet = &derefSet;
-
-    dbgs() << "DerefNullSet:" << endl << *DerefNullSet << endl;
-    dbgs() << "ValueNullSet:" << endl << *ValueNullSet << endl;
-
-    DerefInstVisitor div(this);
-    div.visit(F);
-
-    ValueInstVisitor viv(this);
-    viv.visit(F);
+    CheckNullsVisitor cnv(this);
+    cnv.visit(F);
 
     return false;
 }

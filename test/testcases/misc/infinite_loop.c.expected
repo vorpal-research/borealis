@@ -7,7 +7,7 @@
 			"filename" : "test/testcases/misc/infinite_loop.c",
 			"loc" : 
 			{
-				"col" : 18,
+				"col" : 3,
 				"line" : 8
 			}
 		},

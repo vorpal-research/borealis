@@ -27,7 +27,7 @@ void DefectManager::addDefect(const std::string& type, llvm::Instruction* where)
     addDefect(getDefect(type, where));
 }
 
-void DefectManager::addDefect(DefectInfo info) {
+void DefectManager::addDefect(const DefectInfo& info) {
     data.insert(info);
 }
 
@@ -38,6 +38,18 @@ DefectInfo DefectManager::getDefect(DefectType type, llvm::Instruction* where) c
 DefectInfo DefectManager::getDefect(const std::string& type, llvm::Instruction* where) const {
     auto* locs = &GetAnalysis<SourceLocationTracker>::doit(this);
     return {type, locs->getLocFor(where)};
+}
+
+bool DefectManager::hasDefect(DefectType type, llvm::Instruction* where) const {
+    return hasDefect(DefectTypes.at(type).type, where);
+}
+
+bool DefectManager::hasDefect(const std::string& type, llvm::Instruction* where) const {
+    return hasDefect(getDefect(type, where));
+}
+
+bool DefectManager::hasDefect(const DefectInfo& di) const {
+    return util::contains(data, di);
 }
 
 void DefectManager::print(llvm::raw_ostream&, const llvm::Module*) const {

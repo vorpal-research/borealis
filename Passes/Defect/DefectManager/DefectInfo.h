@@ -20,7 +20,8 @@ enum class DefectType {
     ENS_01,
     ASR_01,
     NDF_01,
-    BUF_01
+    BUF_01,
+    UNK_99
 };
 
 struct DefectSummary {
@@ -41,6 +42,7 @@ const std::map<DefectType, const DefectSummary> DefectTypes = {
     { DefectType::ASR_01, { "ASR-01", "Assert check failed" } },
     { DefectType::NDF_01, { "NDF-01", "Use of undef value detected" } },
     { DefectType::BUF_01, { "BUF-01", "Index out of bounds" } },
+    { DefectType::UNK_99, { "UNK-99", "UNKNOWN!" } },
 };
 
 const std::map<std::string, DefectType> DefectTypesByName = {
@@ -49,7 +51,8 @@ const std::map<std::string, DefectType> DefectTypesByName = {
     { "ENS-01", DefectType::ENS_01 },
     { "ASR-01", DefectType::ASR_01 },
     { "NDF-01", DefectType::NDF_01 },
-    { "BUF-01", DefectType::BUF_01 }
+    { "BUF-01", DefectType::BUF_01 },
+    { "UNK-99", DefectType::UNK_99 },
 };
 
 struct DefectInfo {
