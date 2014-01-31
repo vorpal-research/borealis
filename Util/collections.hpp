@@ -104,6 +104,11 @@ public:
         return std::all_of(begin_, end_, pred);
     }
 
+    template<class Pred>
+    bool any_of(Pred pred) const {
+        return std::any_of(begin_, end_, pred);
+    }
+
     template<class Con>
     Con to() {
         return Con(begin_, end_);
