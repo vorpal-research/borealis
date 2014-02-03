@@ -58,7 +58,7 @@ interviewer::interviewer(
 
     auto invoke_args = std::vector<const char*>{};
     invoke_args.reserve(args.size() + 1);
-    invoke_args.push_back(pimpl->pathToExecutable.c_str());
+    invoke_args.push_back( pimpl->pathToExecutable.c_str() );
     invoke_args.insert(invoke_args.end(), args.begin(), args.end());
 
     pimpl->theDriver = borealis::util::uniq(new clang::driver::Driver{
