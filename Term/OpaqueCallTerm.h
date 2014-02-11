@@ -35,13 +35,13 @@ class OpaqueCallTerm: public borealis::Term {
         Term(
             class_tag(*this),
             type,
-            lhv->getName() + util::toString(
+            lhv->getName() + "(" + util::toString(
                 util::streams::delimited(
                     util::viewContainer(rhv).map(
                         [](Term::Ptr trm){ return trm->getName(); }
                     )
                 )
-            )
+            ) + ")"
         ), lhv(lhv), rhv(rhv) {};
 
 public:

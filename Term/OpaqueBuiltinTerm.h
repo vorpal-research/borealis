@@ -34,7 +34,7 @@ class OpaqueBuiltinTerm: public borealis::Term {
         Term(
             class_tag(*this),
             type,
-            vname
+            "\\" + vname
         ), vname(vname) {};
 
 public:
