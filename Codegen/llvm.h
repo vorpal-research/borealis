@@ -29,7 +29,7 @@ void setDebugLocusWithCopiedScope(
         llvm::Instruction* from,
         const Locus& loc);
 
-llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr);
+llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, const void* ptr);
 void* MDNode2Ptr(llvm::MDNode* ptr);
 
 std::string getRawSource(const LocusRange&);

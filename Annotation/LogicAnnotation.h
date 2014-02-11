@@ -52,6 +52,13 @@ public:
 
     virtual Annotation::Ptr clone(Term::Ptr newTerm) const = 0;
 
+    template<class SubClass>
+    Annotation::Ptr accept(Transformer<SubClass>* t) const {
+        auto term_ = t->transform(term);
+        if(term != term_) return this->clone(term_);
+        else return shared_from_this();
+    }
+
     static bool classof(const Annotation* a) {
         return a->getTypeId() == type_id<self>();
     }

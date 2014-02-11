@@ -58,7 +58,7 @@ public:
     auto end() QUICK_RETURN(data_.end());
     auto end() QUICK_CONST_RETURN(data_.begin());
 
-    Annotation& operator[](size_t ix) { return *data_[ix]; }
+    const Annotation& operator[](size_t ix)       { return *data_[ix]; }
     const Annotation& operator[](size_t ix) const { return *data_.at(ix); }
 
     void push_back(const Annotation::Ptr& ptr) {

@@ -10,14 +10,14 @@
 
 namespace borealis {
 
-#define HANDLE_ANNOTATION(CMD, CLASS) \
+#define HANDLE_ANNOTATION(CMD, NAME, CLASS) \
     class CLASS;
 #include "Annotation.def"
 
 template<class Annotation>
 struct AnnotationNames;
 
-#define HANDLE_ANNOTATION(CMD, CLASS) \
+#define HANDLE_ANNOTATION(CMD, NAME, CLASS) \
     template<> struct AnnotationNames<CLASS> { \
         static constexpr decltype(CMD) name() { return CMD; } \
     };

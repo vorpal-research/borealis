@@ -33,7 +33,7 @@ public:
             Annotation::Ptr anno =
                     materialize(Annotation::fromIntrinsic(CI), pass->FN, pass->MI);
             if (llvm::isa<AssumeAnnotation>(anno)) {
-                LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
+                const LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 pass->PM[&CI] =
                     pass->FN.Predicate->getEqualityPredicate(
                         LA->getTerm(),

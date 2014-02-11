@@ -19,8 +19,8 @@ Annotation::ProtoPtr protobuf_traits<Annotation>::toProtobuf(const normal_t& t) 
     res->set_allocated_locus(LocusConverter::toProtobuf(t.getLocus()).release());
 
     if (false) {}
-#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, CLASS) // ignore the non-standard bases
-#define HANDLE_ANNOTATION(KW, CLASS) \
+#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, NAME, CLASS) // ignore the non-standard bases
+#define HANDLE_ANNOTATION(KW, NAME, CLASS) \
     else if (auto* tt = llvm::dyn_cast<CLASS>(&t)) { \
         auto proto = protobuf_traits_impl<CLASS> \
                      ::toProtobuf(*tt); \
@@ -38,8 +38,8 @@ Annotation::ProtoPtr protobuf_traits<Annotation>::toProtobuf(const normal_t& t) 
 Annotation::Ptr protobuf_traits<Annotation>::fromProtobuf(const context_t& fn, const proto_t& t) {
     auto locus = LocusConverter::fromProtobuf(nullptr, t.locus());
 
-#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, CLASS) // ignore the non-standard bases
-#define HANDLE_ANNOTATION(KW, CLASS) \
+#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, NAME, CLASS) // ignore the non-standard bases
+#define HANDLE_ANNOTATION(KW, NAME, CLASS) \
     if (t.HasExtension(proto::CLASS::ext)) { \
         const auto& ext = t.GetExtension(proto::CLASS::ext); \
         return protobuf_traits_impl<CLASS> \

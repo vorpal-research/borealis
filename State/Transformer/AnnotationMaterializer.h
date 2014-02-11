@@ -66,7 +66,7 @@ public:
         if(auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
             if(builtin->getVName() == "property") {
                 auto rhv = trm->getRhv();
-                if(rhv.size() != 2) failWith("Illegal property access " + trm->getName() + ": exactly two operands expected");
+                if(rhv.size() != 2) failWith("Illegal \\property access " + trm->getName() + ": exactly two operands expected");
 
                 auto prop = FN.Term->getOpaqueConstantTerm(rhv[0]->getName());
                 auto val = this->transform(rhv[1]);
@@ -75,7 +75,7 @@ public:
 
             } else if(builtin->getVName() == "bound") {
                 auto rhv = trm->getRhv();
-                if(rhv.size() != 1) failWith("Illegal bound access " + trm->getName() + ": exactly one operand expected");
+                if(rhv.size() != 1) failWith("Illegal \\bound access " + trm->getName() + ": exactly one operand expected");
 
                 auto val = this->transform(rhv[0]);
 
@@ -83,7 +83,7 @@ public:
 
             } else if(builtin->getVName() == "is_valid_ptr") {
                 auto rhv = trm->getRhv();
-                if(rhv.size() != 1) failWith("Illegal is_valid_ptr access " + trm->getName() + ": exactly one operand expected");
+                if(rhv.size() != 1) failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": exactly one operand expected");
 
                 auto val = this->transform(rhv[0]);
                 auto type = val->getType();
@@ -96,10 +96,13 @@ public:
                     return bval != null()
                         && bval != invalid()
                         && bval.bound().uge (builder(TypeUtils::getTypeSizeInElems(pointed)));
-                  } else failWith("Illegal is_valid_ptr access " + trm->getName() + ": called on non-pointer");
-
+                  } else failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": called on non-pointer");
+            } else if(builtin->getVName() == "old") {
+                // all \old's should be already taken care of, let's try to guess the problem
+                if(trm->getRhv().size() != 1)
+                    failWith("Illegal \\old invocation " + trm->getName() + ": exactly one operand expected");
+                failWith("Malformed \\old invocation");
             } else failWith("Cannot call " + trm->getName() + ": not supported");
-
         } else failWith("Cannot call " + trm->getName() + ": only builtins can be called in this way");
 
         BYE_BYE(Term::Ptr, "Unreachable!");

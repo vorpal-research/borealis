@@ -3,9 +3,9 @@
 #if !defined(HANDLE_ANNOTATION) && !defined(HANDLE_ANNOTATION_WITH_BASE)
 #define INCLUDE_MODE
 #elif !defined(HANDLE_ANNOTATION) && defined(HANDLE_ANNOTATION_WITH_BASE)
-#define HANDLE_ANNOTATION(CMD, CLASS) HANDLE_ANNOTATION_WITH_BASE(CMD, Annotation, CLASS)
+#define HANDLE_ANNOTATION(CMD, NAME, CLASS) HANDLE_ANNOTATION_WITH_BASE(CMD, Annotation, NAME, CLASS)
 #elif defined(HANDLE_ANNOTATION) && !defined(HANDLE_ANNOTATION_WITH_BASE)
-#define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, CLASS) HANDLE_ANNOTATION(CMD, CLASS)
+#define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, NAME, CLASS) HANDLE_ANNOTATION(CMD, NAME, CLASS)
 #endif
 
 #ifdef INCLUDE_MODE
@@ -25,24 +25,24 @@
 #include "Annotation/StackDepthAnnotation.h"
 #include "Annotation/UnrollAnnotation.h"
 
-#define HANDLE_ANNOTATION(CMD, CLASS)
-#define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, CLASS)
+#define HANDLE_ANNOTATION(CMD, NAME, CLASS)
+#define HANDLE_ANNOTATION_WITH_BASE(CMD, BASE, NAME, CLASS)
 
 #endif // INCLUDE_MODE
 
-HANDLE_ANNOTATION_WITH_BASE("assert", LogicAnnotation, AssertAnnotation)
-HANDLE_ANNOTATION_WITH_BASE("assigns", LogicAnnotation, AssignsAnnotation)
-HANDLE_ANNOTATION_WITH_BASE("assume", LogicAnnotation, AssumeAnnotation)
-HANDLE_ANNOTATION_WITH_BASE("ensures", LogicAnnotation, EnsuresAnnotation)
-HANDLE_ANNOTATION_WITH_BASE("requires", LogicAnnotation, RequiresAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("assert", LogicAnnotation, Assert, AssertAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("assigns", LogicAnnotation, Assigns, AssignsAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("assume", LogicAnnotation, Assume, AssumeAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("ensures", LogicAnnotation, Ensures, EnsuresAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("requires", LogicAnnotation, Requires, RequiresAnnotation)
 
-HANDLE_ANNOTATION("endmask", EndMaskAnnotation)
-HANDLE_ANNOTATION("ignore", IgnoreAnnotation)
-HANDLE_ANNOTATION("inline", InlineAnnotation)
-HANDLE_ANNOTATION("skip", SkipAnnotation)
-HANDLE_ANNOTATION("stack-depth", StackDepthAnnotation)
-HANDLE_ANNOTATION("mask", MaskAnnotation)
-HANDLE_ANNOTATION("unroll", UnrollAnnotation)
+HANDLE_ANNOTATION("endmask", EndMask, EndMaskAnnotation)
+HANDLE_ANNOTATION("ignore", Ignore, IgnoreAnnotation)
+HANDLE_ANNOTATION("inline", Inline, InlineAnnotation)
+HANDLE_ANNOTATION("skip", Skip, SkipAnnotation)
+HANDLE_ANNOTATION("stack-depth", StackDepth, StackDepthAnnotation)
+HANDLE_ANNOTATION("mask", Mask, MaskAnnotation)
+HANDLE_ANNOTATION("unroll", Unroll, UnrollAnnotation)
 
 #undef HANDLE_ANNOTATION
 #undef HANDLE_ANNOTATION_WITH_BASE

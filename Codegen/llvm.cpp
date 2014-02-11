@@ -96,7 +96,7 @@ void setDebugLocusWithCopiedScope(
     to->setMetadata("dbg", dbg);
 }
 
-llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, void* ptr) {
+llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, const void* ptr) {
     llvm::Constant* ptrAsInt = llvm::ConstantInt::get(
         ctx,
         llvm::APInt(sizeof(uintptr_t) * 8, reinterpret_cast<uintptr_t>(ptr))

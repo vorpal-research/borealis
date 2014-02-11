@@ -20,6 +20,8 @@
 
 namespace borealis {
 
+template<class SubClass> class Transformer;
+
 namespace proto { class Annotation; }
 /** protobuf -> Annotation/Annotation.proto
 import "Util/locations.proto";
@@ -45,7 +47,7 @@ protected:
     Locus locus;
 
 public:
-    typedef std::shared_ptr<self> Ptr;
+    typedef std::shared_ptr<const self> Ptr;
     typedef std::unique_ptr<proto::Annotation> ProtoPtr;
 
     Annotation(borealis::id_t annotation_type_id, keyword_t keyword, Locus locus):
@@ -60,6 +62,11 @@ public:
     virtual std::string toString() const {
         return "@" + std::string(keyword) + argToString() +
                 " at " + util::toString(locus);
+    }
+
+    template<class SubClass>
+    Annotation::Ptr accept(Transformer<SubClass>*) const {
+        return shared_from_this();
     }
 
     keyword_t getKeyword() const { return keyword; }

@@ -10,6 +10,7 @@
 
 #include <llvm/Support/Casting.h>
 
+#include "Annotation/Annotation.def"
 #include "Factory/Nest.h"
 #include "Term/TermBuilder.h"
 #include "Util/util.h"
@@ -29,6 +30,12 @@ class Transformer {
 
 #define HANDLE_TERM(NAME, CLASS) friend class CLASS;
 #include "Term/Term.def"
+
+#define HANDLE_ANNOTATION(I, NAME, CLASS) friend class CLASS;
+#define HANDLE_ANNOTATION_WITH_BASE(I, BASE, NAME, CLASS) \
+friend class BASE; \
+friend class CLASS;
+#include "Annotation/Annotation.def"
 
 protected:
 
@@ -132,6 +139,80 @@ protected:
         return t; \
     }
 #include "Term/Term.def"
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Annotations
+    //
+    ////////////////////////////////////////////////////////////////////////////
+
+public:
+
+    Annotation::Ptr transform(Annotation::Ptr anno) {
+        DELEGATE(Base, anno);
+    }
+
+protected:
+
+    Annotation::Ptr transformBase(Annotation::Ptr anno) {
+        Annotation::Ptr res;
+        if(false) {}
+#define HANDLE_ANNOTATION(IGNORE, NAME, CLASS) \
+        else if (llvm::isa<CLASS>(anno)) { \
+            res = static_cast<SubClass*>(this)-> \
+                transform##NAME(std::static_pointer_cast<const CLASS>(anno)); \
+        }
+#define HANDLE_ANNOTATION_WITH_BASE(IGNORE, BASE, NAME, CLASS) /* We handle bases by hand, sorry =( */
+#include "Annotation/Annotation.def"
+        else if(llvm::isa<LogicAnnotation>(anno)) {
+            res = static_cast<SubClass*>(this)->
+                transformLogic(std::static_pointer_cast<const LogicAnnotation>(anno));
+        }
+        ASSERT(res, "Unsupported annotation type");
+        DELEGATE(Annotation, res);
+    }
+
+    typedef std::shared_ptr<const LogicAnnotation> LogicAnnotationPtr;
+    Annotation::Ptr transformLogic(LogicAnnotationPtr anno) {
+        Annotation::Ptr res;
+#define HANDLE_LogicAnnotation(NAME, CLASS) \
+        if (llvm::isa<CLASS>(anno)) { \
+            res = static_cast<SubClass*>(this)-> \
+                transform##NAME(std::static_pointer_cast<const CLASS>(anno)); \
+        }
+#define HANDLE_ANNOTATION(A, B, C)
+#define HANDLE_ANNOTATION_WITH_BASE(IGNORE, BASE, NAME, CLASS) HANDLE_ ## BASE(NAME, CLASS)
+#include "Annotation/Annotation.def"
+#undef HANDLE_LogicAnnotation
+        return res;
+    }
+
+    Annotation::Ptr transformLogicAnnotation(LogicAnnotationPtr anno) {
+        return anno;
+    }
+
+    Annotation::Ptr transformAnnotation(Annotation::Ptr a) {
+        return a;
+    }
+
+#define HANDLE_ANNOTATION(I, NAME, CLASS) \
+    typedef std::shared_ptr<const CLASS> CLASS##Ptr; \
+    Annotation::Ptr transform##NAME(CLASS##Ptr a) { \
+        CLASS##Ptr ta = std::static_pointer_cast<const CLASS>(a->accept(this)); \
+        DELEGATE(CLASS, ta); \
+    }
+#include "Annotation/Annotation.def"
+
+#define HANDLE_ANNOTATION(I, NAME, CLASS) \
+    Annotation::Ptr transform##CLASS(CLASS##Ptr t) { \
+        return t; \
+    }
+#define HANDLE_ANNOTATION_WITH_BASE(IGNORE, BASE, NAME, CLASS) \
+    Annotation::Ptr transform##CLASS(CLASS##Ptr t) { \
+        DELEGATE(BASE, t); \
+    }
+#include "Annotation/Annotation.def"
+#undef HANDLE_LogicAnnotation
 
 };
 

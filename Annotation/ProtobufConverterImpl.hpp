@@ -180,8 +180,8 @@ struct protobuf_traits_impl<LogicAnnotation> {
                 proto.release() \
             ); \
         }
-#define HANDLE_ANNOTATION(KW, CLASS)
-#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, CLASS) HANDLE_##BASE(CLASS)
+#define HANDLE_ANNOTATION(KW, NAME, CLASS)
+#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, NAME, CLASS) HANDLE_##BASE(CLASS)
 #include "Annotation/Annotation.def"
 #undef HANDLE_LogicAnnotation
         else BYE_BYE(std::unique_ptr<proto::LogicAnnotation>, "Should not happen!");
@@ -203,8 +203,8 @@ struct protobuf_traits_impl<LogicAnnotation> {
             return protobuf_traits_impl<CLASS> \
                    ::fromProtobuf(fn, locus, term, ext); \
         }
-#define HANDLE_ANNOTATION(KW, CLASS)
-#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, CLASS) HANDLE_##BASE(CLASS)
+#define HANDLE_ANNOTATION(KW, NAME, CLASS)
+#define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, NAME, CLASS) HANDLE_##BASE(CLASS)
 #include "Annotation/Annotation.def"
 #undef HANDLE_LogicAnnotation
         BYE_BYE(Annotation::Ptr, "Should not happen!");

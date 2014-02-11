@@ -204,7 +204,7 @@ Annotation::Ptr borealis::fromParseResult(
         terms.push_back(tc.getTerm());
     }
 
-#define HANDLE_ANNOTATION(CMD, CLASS) \
+#define HANDLE_ANNOTATION(CMD, IGNORE, CLASS) \
     if (cmd.name_ == CMD) { \
         return CLASS::fromTerms(locus, terms); \
     }
