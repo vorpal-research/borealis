@@ -23,6 +23,7 @@ void OneForOne::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<FunctionManager>::addRequiredTransitive(AU);
+    AUX<SourceLocationTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 
 #define HANDLE_ANALYSIS(CLASS) \
