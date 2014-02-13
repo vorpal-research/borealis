@@ -62,6 +62,9 @@ template<class U, class T> struct pointers_to_same {
                   std::is_same< remove_cvptr_t<U>, remove_cvptr_t<T> >::value };
 };
 
+template<class ...Args>
+using common_type_t = typename std::common_type<Args...>::type;
+
 } // namespace util
 } // namespace borealis
 

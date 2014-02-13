@@ -231,22 +231,22 @@ inline auto tail(Container* con) -> decltype(tail(*con)) {
 
 
 template<class Container>
-inline auto take(unsigned int count, const Container& con) -> decltype(viewContainer(con)) {
+inline auto take(size_t count, const Container& con) -> decltype(viewContainer(con)) {
     return viewContainer(con).take(count);
 }
 
 template<class Container>
-inline auto take(unsigned int count, Container& con) -> decltype(viewContainer(con)) {
+inline auto take(size_t count, Container& con) -> decltype(viewContainer(con)) {
     return viewContainer(con).take(count);
 }
 
 
-template<class Elem>
-inline auto range(const Elem& from, const Elem& to) ->
-        CollectionView<counting_iterator<Elem>> {
+template<class U, class V>
+inline auto range(const U& from, const V& to) ->
+        CollectionView<counting_iterator<util::common_type_t<U, V>>> {
     return view(
-        counting_iterator<Elem>(from),
-        counting_iterator<Elem>(to)
+        counting_iterator<util::common_type_t<U, V>>(from),
+        counting_iterator<util::common_type_t<U, V>>(to)
     );
 }
 
