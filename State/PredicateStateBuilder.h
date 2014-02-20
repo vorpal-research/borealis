@@ -40,6 +40,15 @@ public:
 PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, PredicateState::Ptr state);
 PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Predicate::Ptr p);
 
+template<class Container>
+PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Container&& c) {
+    PredicateStateBuilder res{PSF, PSF->Basic()};
+    for (const auto& p : c) {
+        res += p;
+    }
+    return res;
+}
+
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
 PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc);

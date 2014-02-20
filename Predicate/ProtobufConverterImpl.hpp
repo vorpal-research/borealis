@@ -21,6 +21,7 @@
 #include "Protobuf/Gen/Predicate/SeqDataPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
+#include "Protobuf/Gen/Predicate/WriteBoundPredicate.pb.h"
 
 #include "Term/ProtobufConverterImpl.hpp"
 #include "Util/ProtobufConverterImpl.hpp"
@@ -326,6 +327,34 @@ struct protobuf_traits_impl<WritePropertyPredicate> {
         auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
         return Predicate::Ptr{
             new WritePropertyPredicate(propName, lhv, rhv, base->getLocation(), base->getType())
+        };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<WriteBoundPredicate> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::WriteBoundPredicate> toProtobuf(const WriteBoundPredicate& p) {
+        auto res = util::uniq(new proto::WriteBoundPredicate());
+        res->set_allocated_lhv(
+            TermConverter::toProtobuf(*p.getLhv()).release()
+        );
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(*p.getRhv()).release()
+        );
+        return std::move(res);
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Predicate::Ptr base,
+            const proto::WriteBoundPredicate& p) {
+        auto lhv = TermConverter::fromProtobuf(fn, p.lhv());
+        auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
+        return Predicate::Ptr{
+            new WriteBoundPredicate(lhv, rhv, base->getLocation(), base->getType())
         };
     }
 };

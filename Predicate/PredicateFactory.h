@@ -45,6 +45,13 @@ public:
                 new WritePropertyPredicate(propName, lhv, rhv, loc));
     }
 
+    Predicate::Ptr getWriteBoundPredicate(
+            Term::Ptr lhv,
+            Term::Ptr rhv,
+            const Locus& loc = Locus()) {
+        return Predicate::Ptr(new WriteBoundPredicate(lhv, rhv, loc));
+    }
+
     Predicate::Ptr getAllocaPredicate(
              Term::Ptr lhv,
              Term::Ptr numElements,

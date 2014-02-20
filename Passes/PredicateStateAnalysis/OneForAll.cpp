@@ -14,6 +14,7 @@
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
+#include "State/Transformer/MemoryContextSplitter.h"
 #include "Util/graph.h"
 #include "Util/util.h"
 
@@ -56,8 +57,18 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
     // Register REQUIRES
     PredicateState::Ptr requires = FM->getReq(&F);
+    // Memory split requires
+    auto mcs = MemoryContextSplitter(FN);
+    PredicateState::Ptr splittedRequires = requires->map(
+        [&mcs](Predicate::Ptr p) { return mcs.transform(p); }
+    );
 
-    PredicateState::Ptr initialState = (FN.State * gState + requires)();
+    PredicateState::Ptr initialState = (
+        FN.State *
+        gState +
+        mcs.getGeneratedPredicates() +
+        splittedRequires
+    )();
 
     // Register arguments as visited values
     for (const auto& arg : F.getArgumentList()) {

@@ -215,6 +215,10 @@ public:
                 .else_(zero);
     }
 
+    void writeBound(const Pointer& p, const Integer& bound) {
+        writeProperty(GEP_BOUNDS_ID, p, bound);
+    }
+
 ////////////////////////////////////////////////////////////////////////////////
 
     Bool toSMT() const;

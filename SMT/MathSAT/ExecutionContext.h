@@ -182,6 +182,11 @@ public:
         return readProperty<Integer>(GEP_BOUNDS_ID, p);
     }
 
+
+    void writeBound(const Pointer& p, const Integer& bound) {
+        writeProperty(GEP_BOUNDS_ID, p, bound);
+    }
+
 ////////////////////////////////////////////////////////////////////////////////
 
     Bool toSMT() const;
