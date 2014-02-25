@@ -73,25 +73,28 @@ using read_arrow = LITERALGRAMMAR( S("->") );
 // forward decl for the whole expression
 struct read_expr;
 // an atom is a primitive or a parentified expr
+// atom := primitive | '(' expr ')'
 struct read_atom : SGRAMMAR(read_atom, G(push_primitive) | SEQ(read_open, read_expr, read_close));
-
+// expr_list := expr (',' expr)*
 struct read_expr_list : SGRAMMAR(read_expr_list,
     (G(read_comma) >= G(read_expr)) & G(op_collect_list)
 );
-
 struct read_expr_list2: SGRAMMAR(read_expr_list2,
     G(read_expr) >> *G(read_expr_list)
 );
-
+// property_expr := '.' variable
 struct read_property_expr: SGRAMMAR(read_property_expr,
     (G(read_dot) >> G(push_variable)) & G(op_baction<dots<expression_type>>)
 );
+// indirect_propery_expr := '->' variable
 struct read_indirect_property_expr: SGRAMMAR(read_indirect_property_expr,
     (G(read_arrow) >> G(push_variable)) & G(op_baction<arrows<expression_type>>)
 );
+// index_expr := '[' expr ']'
 struct read_index_expr: SGRAMMAR(read_index_expr,
     (G(read_sq_open) >= G(read_expr) >= G(read_sq_close)) & G(op_baction<indices<expression_type>>)
 );
+// calling_expr := '(' expr ')'
 struct read_calling_expr: SGRAMMAR(read_calling_expr,
     (G(read_open) >= G(read_expr_list2) >= G(read_close)) & G(op_baction<calls<expression_type>>)
 );
