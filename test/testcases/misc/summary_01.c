@@ -11,9 +11,18 @@ int* my_malloc(size_t size, int safe) {
     }
 }
 
+// int* my_malloc(size_t size) {
+//     int* res = malloc(sizeof(int) * size);
+//     if (res) 
+//         return res;
+//     else 
+//         exit(255);
+// }
+
 int main() {
 
     int* arr = my_malloc(16, 1);
+    // int* arr = my_malloc(16);
 
     for (int i = 0; i < 16; ++i) {
         arr[i] = i;

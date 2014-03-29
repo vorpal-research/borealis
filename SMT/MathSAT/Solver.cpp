@@ -256,10 +256,19 @@ Dynamic Solver::getSummary(
 
         mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
 
+        static config::ConfigEntry<bool> ModelSampling("analysis", "model-sampling");
+
         if (r == MSAT_UNSAT) {
             interpol = s.get_interpolant({B});
 
-        } else if (r == MSAT_SAT) {
+        } else if (r == MSAT_SAT && ModelSampling.get(true)) {
+            std::string dbgStr = "Model:\n";
+            for (auto me: s.get_model()) {
+                dbgStr += me.term.decl().name() + std::string(" = ")
+                       + me.value.decl().name() + std::string("\n");
+            }
+            dbgs() << dbgStr;
+
             auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs);
 
             dbgs() << "Probes: " << endl

@@ -120,20 +120,32 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
         args.push_back(FN.Term->getArgumentTerm(&arg));
     }
 
-    PredicateState::Ptr query = (
-        FN.State *
-        FN.Predicate->getInequalityPredicate(
-            FN.Term->getReturnValueTerm(&F),
-            FN.Term->getNullPtrTerm()
-        )
-    )();
-
     auto initial = delegate->getInitialState();
     auto riState = delegate->getInstructionState(RI);
     ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
 
     auto bdy = riState->sliceOn(initial);
     ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
+
+    //    PredicateState::Ptr query = (
+    //        FN.State *
+    //        FN.Predicate->getInequalityPredicate(
+    //            FN.Term->getReturnValueTerm(&F),
+    //            FN.Term->getNullPtrTerm()
+    //        )
+    //    )();
+
+    auto query = (
+        FN.State *
+        FN.Predicate->getEqualityPredicate(
+            FN.Term->getCmpTerm(
+                llvm::ConditionType::GT,
+                FN.Term->getBoundTerm(FN.Term->getReturnValueTerm(&F)),
+                FN.Term->getIntTerm(0)
+            ),
+            FN.Term->getTrueTerm()
+        )
+    )();
 
     dbgs() << "Generating summary: " << endl
            << "  At: " << llvm::valueSummary(RI) << endl
