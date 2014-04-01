@@ -211,6 +211,64 @@ std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DITyp
 
 #include "Util/unmacros.h"
 
+class DebugInfoFinder {
+public:
+    /// processModule - Process entire module and collect debug info
+    /// anchors.
+    void processModule(llvm::Module &M);
+
+private:
+    /// processType - Process DIType.
+    void processType(llvm::DIType DT);
+
+    /// processLexicalBlock - Process DILexicalBlock.
+    void processLexicalBlock(llvm::DILexicalBlock LB);
+
+    /// processSubprogram - Process DISubprogram.
+    void processSubprogram(llvm::DISubprogram SP);
+
+    /// processDeclare - Process DbgDeclareInst.
+    void processDeclare(llvm::DbgDeclareInst *DDI);
+
+    /// processLocation - Process DILocation.
+    void processLocation(llvm::DILocation Loc);
+
+    /// addCompileUnit - Add compile unit into CUs.
+    bool addCompileUnit(llvm::DICompileUnit CU);
+
+    /// addGlobalVariable - Add global variable into GVs.
+    bool addGlobalVariable(llvm::DIGlobalVariable DIG);
+
+    // addSubprogram - Add subprogram into SPs.
+    bool addSubprogram(llvm::DISubprogram SP);
+
+    /// addType - Add type into Tys.
+    bool addType(llvm::DIType DT);
+
+public:
+    typedef llvm::SmallVector<llvm::MDNode *, 8>::const_iterator iterator;
+    iterator compile_unit_begin()    const { return CUs.begin(); }
+    iterator compile_unit_end()      const { return CUs.end(); }
+    iterator subprogram_begin()      const { return SPs.begin(); }
+    iterator subprogram_end()        const { return SPs.end(); }
+    iterator global_variable_begin() const { return GVs.begin(); }
+    iterator global_variable_end()   const { return GVs.end(); }
+    iterator type_begin()            const { return TYs.begin(); }
+    iterator type_end()              const { return TYs.end(); }
+
+    unsigned compile_unit_count()    const { return CUs.size(); }
+    unsigned global_variable_count() const { return GVs.size(); }
+    unsigned subprogram_count()      const { return SPs.size(); }
+    unsigned type_count()            const { return TYs.size(); }
+
+private:
+    llvm::SmallVector<llvm::MDNode *, 8> CUs;  // Compile Units
+    llvm::SmallVector<llvm::MDNode *, 8> SPs;  // Subprograms
+    llvm::SmallVector<llvm::MDNode *, 8> GVs;  // Global Variables;
+    llvm::SmallVector<llvm::MDNode *, 8> TYs;  // Types
+    llvm::SmallPtrSet<llvm::MDNode *, 64> NodesSeen;
+};
+
 } // namespace borealis
 
 #endif /* CODEGEN_LLVM_H_ */
