@@ -43,7 +43,7 @@ struct CallGraphSCCPassPrinter : public CallGraphSCCPass {
             if (F)
                 getAnalysisID<Pass>(PassToPrint->getTypeInfo())
                 .print(Out, F->getParent());
-            infos() << Out.str();
+            infos() << Out.str() << endl;
         }
         return false;
     }
@@ -76,7 +76,7 @@ struct ModulePassPrinter : public ModulePass {
         // Get and print pass...
         getAnalysisID<Pass>(PassToPrint->getTypeInfo())
         .print(Out, &M);
-        infos() << Out.str();
+        infos() << Out.str() << endl;
         return false;
     }
 
@@ -109,7 +109,7 @@ struct FunctionPassPrinter : public FunctionPass {
         // Get and print pass...
         getAnalysisID<Pass>(PassToPrint->getTypeInfo())
         .print(Out, F.getParent());
-        infos() << Out.str();
+        infos() << Out.str() << endl;
         return false;
     }
 
@@ -141,7 +141,7 @@ struct LoopPassPrinter : public LoopPass {
         // Get and print pass...
         getAnalysisID<Pass>(PassToPrint->getTypeInfo())
         .print(Out, L->getHeader()->getParent()->getParent());
-        infos() << Out.str();
+        infos() << Out.str() << endl;
         return false;
     }
 
@@ -175,7 +175,7 @@ struct RegionPassPrinter : public RegionPass {
         // Get and print pass...
         getAnalysisID<Pass>(PassToPrint->getTypeInfo())
         .print(Out, R->getEntry()->getParent()->getParent());
-        infos() << Out.str();
+        infos() << Out.str() << endl;
         return false;
     }
 
@@ -208,7 +208,7 @@ struct BasicBlockPassPrinter : public BasicBlockPass {
         // Get and print pass...
         getAnalysisID<Pass>(PassToPrint->getTypeInfo())
         .print(Out, BB.getParent()->getParent());
-        infos() << Out.str();
+        infos() << Out.str() << endl;
         return false;
     }
 

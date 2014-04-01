@@ -89,18 +89,6 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
 
     dfi.processModule(M);
 
-    auto cu = M.getNamedMetadata("llvm.dbg.cu");
-    for(int i = 0; i < cu->getNumOperands(); ++i) {
-        DICompileUnit CU(cu->getOperand(i));
-        dbgs() << *CU << endl;
-        dbgs() << CU.Verify() << endl;
-    }
-
-    dbgs() << dfi.compile_unit_count() << endl;
-    for(auto&& cu : util::view(dfi.compile_unit_begin(), dfi.compile_unit_end())) {
-        dbgs() << *cu << endl;
-    }
-
     auto& sm = GetAnalysis<sm_t>::doit(this).provide();
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
@@ -130,7 +118,6 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
     }
 
     for (auto& msp : view(dfi.subprogram_begin(), dfi.subprogram_end())) {
-        dbgs() << *msp << endl;
         if (!DIDescriptor(msp).isSubprogram()) continue;
 
         DISubprogram sp(msp);

@@ -84,8 +84,14 @@ public:
 
 template<class Streamer>
 Streamer& operator<<(Streamer& str, Annotation::Ptr a) {
-    // this is generally fucked up
-    return static_cast<Streamer&>(str << a->toString());
+    str << a->toString();
+    return str;
+}
+
+template<class Streamer>
+Streamer& operator<<(Streamer& str, const Annotation& a) {
+    str << a.toString();
+    return str;
 }
 
 } /* namespace borealis */

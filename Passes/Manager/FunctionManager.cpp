@@ -49,14 +49,20 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     unsigned int i = 1;
     for (auto& F : M) ids[&F] = i++;
 
+    dbgs() << endl;
     for (auto a : annotations) {
+
         Annotation::Ptr anno = materialize(a, FN, &meta);
         if (auto* logic = dyn_cast<LogicAnnotation>(anno)) {
 
             if ( ! (isa<RequiresAnnotation>(logic) ||
                     isa<EnsuresAnnotation>(logic))) continue;
 
+            dbgs() << *logic << endl;
+
             for (auto& e : view(locs.getRangeFor(logic->getLocus()))) {
+                dbgs() << valueSummary(e.second) << endl;
+
                 if (auto* F = dyn_cast<Function>(e.second)) {
                     PredicateState::Ptr ps = (
                         FN.State *

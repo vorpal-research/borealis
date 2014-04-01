@@ -7,6 +7,7 @@
 
 #include <llvm/ADT/DepthFirstIterator.h>
 
+#include "Codegen/llvm.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
@@ -20,7 +21,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
     using borealis::util::viewContainer;
 
     // Get metadata about functions (subprograms)
-    llvm::DebugInfoFinder dif;
+    borealis::DebugInfoFinder dif;
     dif.processModule(M);
 
     for (auto* mdnode : view(dif.subprogram_begin(), dif.subprogram_end())) {

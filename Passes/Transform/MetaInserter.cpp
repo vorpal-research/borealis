@@ -6,6 +6,7 @@
  */
 
 #include "Codegen/intrinsics_manager.h"
+#include "Codegen/llvm.h"
 #include "Passes/Transform/MetaInserter.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
@@ -231,7 +232,7 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
-    llvm::DebugInfoFinder dfi;
+    borealis::DebugInfoFinder dfi;
     dfi.processModule(M);
 
     auto* GDT = intrinsic_manager.createIntrinsic(
