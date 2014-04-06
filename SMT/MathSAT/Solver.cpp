@@ -171,14 +171,54 @@ Dynamic Solver::getInterpolant(
     }
 }
 
+unsigned getCountLimit() {
+    static config::ConfigEntry<int> CountLimit("summary", "sampling-count-limit");
+    return CountLimit.get(16);
+}
+
+unsigned getAttemptLimit() {
+    static config::ConfigEntry<int> AttemptLimit("summary", "sampling-attempt-limit");
+    return AttemptLimit.get(100);
+}
+
+std::vector<Bool> getPathVars(PredicateState::Ptr state,
+                           ExprFactory& ef,
+                           ExecutionContext* ctx) {
+    USING_SMT_LOGIC(MathSAT);
+
+    PredicateState::Ptr pathState;
+    std::tie(pathState, std::ignore) = state->splitByTypes({PredicateType::PATH});
+    dbgs() << "Path state: " << pathState << endl;
+
+    std::vector<Term::Ptr> pathTerms;
+    pathState->map([&pathTerms](Predicate::Ptr p) -> Predicate::Ptr {
+        if (auto pp = llvm::dyn_cast<EqualityPredicate>(p)) {
+            pathTerms.push_back(pp->getLhv());
+            return p;
+        } else if (auto pp = llvm::dyn_cast<InequalityPredicate>(p)) {
+            pathTerms.push_back(pp->getLhv());
+            return p;
+        } else {
+            BYE_BYE(Predicate::Ptr, "Wrong path predicate type.");
+        }
+    });
+
+    std::vector<Bool> pathVars;
+    for (auto term: pathTerms) {
+        pathVars.push_back(SMT<MathSAT>::doit(term, ef, ctx));
+    }
+    return pathVars;
+}
+
 Bool getProbeModels(
         ExprFactory& msatef,
         Bool body,
         Bool query,
-        const std::vector<mathsat::Expr>& args,
-        unsigned int countLimit = 16,
-        unsigned int attemptLimit = 100) {
+        const std::vector<mathsat::Expr>& args) {
     using namespace logic;
+
+    static auto countLimit = getCountLimit();
+    static auto attemptLimit = getAttemptLimit();
 
     mathsat::DSolver d(msatef.unwrap());
     d.add(msatimpl::asAxiom( body  ));
@@ -188,17 +228,30 @@ Bool getProbeModels(
     auto count = 0U;
     auto attempt = 0U;
 
+    auto fullCount = 0U; // for logging
+
     while (count < countLimit && attempt < attemptLimit) {
         auto models = d.diversify_unsafe(args, countLimit * 2);
 
         for (const auto& m : models) {
+            ++fullCount;    // for logging
+
             mathsat::ISolver s(msatef.unwrap());
             s.create_and_set_itp_group();
             s.add(msatimpl::asAxiom(   body  ));
             s.add(msatimpl::asAxiom( ! query ));
             s.add(msatimpl::asAxiom(   m ));
 
-            if (MSAT_SAT == s.check()) continue;
+//            if (MSAT_SAT == s.check()) continue;
+
+            auto res = s.check();
+
+            dbgs() << "Probe model attempt = " << attempt
+                               << "; count = " << count << endl
+                   << ((res == MSAT_SAT) ? "SAT" : "UNSAT") << endl
+                   << m << endl;
+
+            if (res == MSAT_SAT) continue;
 
             ms = ms || m;
             ++count;
@@ -208,6 +261,9 @@ Bool getProbeModels(
 
         ++attempt;
     }
+
+    dbgs() << "Attempts: " << attempt << endl
+           << "Count: " << fullCount << endl;
 
     return ms;
 }
@@ -245,6 +301,9 @@ Dynamic Solver::getSummary(
             );
         })
         .toVector();
+    auto pathVars = getPathVars(body, msatef, &ctx);
+    std::transform(pathVars.begin(), pathVars.end(), std::back_inserter(argExprs),
+            [](Bool& b){return msatimpl::getExpr(b);});
 
     {
         TRACE_BLOCK("mathsat::summarize");
@@ -256,7 +315,7 @@ Dynamic Solver::getSummary(
 
         mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
 
-        static config::ConfigEntry<bool> ModelSampling("analysis", "model-sampling");
+        static config::ConfigEntry<bool> ModelSampling("summary", "model-sampling");
 
         if (r == MSAT_UNSAT) {
             interpol = s.get_interpolant({B});
@@ -280,7 +339,6 @@ Dynamic Solver::getSummary(
             r = s.check();
             if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
             else dbgs() << "Oops, got MSAT_SAT for (B && not Q && models)..." << endl;
-
         }
 
         dbgs() << "Got: " << endl

@@ -147,6 +147,9 @@ public:
     Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
     Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 
+    void add_branch_var(const Expr& var);
+    void clear_branch_vars();
+
     static Env share(const Env& that, const Config& cfg);
 };
 

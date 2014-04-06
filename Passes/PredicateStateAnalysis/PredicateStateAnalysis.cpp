@@ -127,13 +127,13 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     auto bdy = riState->sliceOn(initial);
     ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
 
-    //    PredicateState::Ptr query = (
-    //        FN.State *
-    //        FN.Predicate->getInequalityPredicate(
-    //            FN.Term->getReturnValueTerm(&F),
-    //            FN.Term->getNullPtrTerm()
-    //        )
-    //    )();
+//        PredicateState::Ptr query = (
+//            FN.State *
+//            FN.Predicate->getInequalityPredicate(
+//                FN.Term->getReturnValueTerm(&F),
+//                FN.Term->getNullPtrTerm()
+//            )
+//        )();
 
     auto query = (
         FN.State *
@@ -205,7 +205,7 @@ bool PredicateStateAnalysis::CheckUnreachable() {
 }
 
 const std::string PredicateStateAnalysis::Summaries() {
-    static config::ConfigEntry<std::string> mode("analysis", "sum-mode");
+    static config::ConfigEntry<std::string> mode("summary", "sum-mode");
     return mode.get("none");
 }
 

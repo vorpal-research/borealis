@@ -211,6 +211,17 @@ Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& param
     return this->function(rand_name, params, ret);
 }
 
+void Env::add_branch_var(const Expr& var) {
+    ASSERT(var.is_bool(), "Trying to add non-boolean branching var.");
+    auto res = msat_add_preferred_for_branching(*env_, var);
+    ASSERTC(!res);
+}
+
+void Env::clear_branch_vars() {
+    auto res = msat_clear_preferred_for_branching(*env_);
+    ASSERTC(!res);
+}
+
 Env Env::share(const Env& that, const Config& cfg) {
     auto shared = makeEnvPointer(new msat_env());
     *shared = msat_create_shared_env(cfg, that);
@@ -933,6 +944,7 @@ Expr ISolver::get_interpolant(const std::vector<InterpolationGroup>& A) {
 
 } // namespace mathsat
 } // namespace borealis
+
 
 #undef ASSERTMSAT_ENV
 #undef ASSERTMSAT_DECL
