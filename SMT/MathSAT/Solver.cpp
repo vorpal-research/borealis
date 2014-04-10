@@ -181,9 +181,7 @@ unsigned getAttemptLimit() {
     return AttemptLimit.get(100);
 }
 
-std::vector<Bool> getPathVars(PredicateState::Ptr state,
-                           ExprFactory& ef,
-                           ExecutionContext* ctx) {
+std::vector<Term::Ptr> getPathVars(PredicateState::Ptr state) {
     USING_SMT_LOGIC(MathSAT);
 
     PredicateState::Ptr pathState;
@@ -203,18 +201,15 @@ std::vector<Bool> getPathVars(PredicateState::Ptr state,
         }
     });
 
-    std::vector<Bool> pathVars;
-    for (auto term: pathTerms) {
-        pathVars.push_back(SMT<MathSAT>::doit(term, ef, ctx));
-    }
-    return pathVars;
+    return pathTerms;
 }
 
 Bool getProbeModels(
         ExprFactory& msatef,
         Bool body,
         Bool query,
-        const std::vector<mathsat::Expr>& args) {
+        const std::vector<mathsat::Expr>& args,
+        const std::vector<mathsat::Expr>& pathVars) {
     using namespace logic;
 
     static auto countLimit = getCountLimit();
@@ -230,8 +225,11 @@ Bool getProbeModels(
 
     auto fullCount = 0U; // for logging
 
+    std::vector<mathsat::Expr>  dvrs(args);
+    dvrs.insert(dvrs.end(), pathVars.begin(), pathVars.end());
+
     while (count < countLimit && attempt < attemptLimit) {
-        auto models = d.diversify_unsafe(args, countLimit * 2);
+        auto models = d.diversify_unsafe(dvrs, args, countLimit * 2);
 
         for (const auto& m : models) {
             ++fullCount;    // for logging
@@ -293,17 +291,18 @@ Dynamic Solver::getSummary(
     auto Q = s.create_and_set_itp_group();
     s.add(msatimpl::asAxiom( ! msatquery));
 
-    auto argExprs = util::viewContainer(args)
-        .map([this](const Term::Ptr& arg) -> mathsat::Expr {
+
+    auto toExpr =
+        [this](const Term::Ptr& term) -> mathsat::Expr {
             ExecutionContext ctx(msatef, memoryStart);
             return msatimpl::getExpr(
-                    SMT<MathSAT>::doit(arg, msatef, &ctx)
+                    SMT<MathSAT>::doit(term, msatef, &ctx)
             );
-        })
-        .toVector();
-    auto pathVars = getPathVars(body, msatef, &ctx);
-    std::transform(pathVars.begin(), pathVars.end(), std::back_inserter(argExprs),
-            [](Bool& b){return msatimpl::getExpr(b);});
+        };
+
+    auto argExprs = util::viewContainer(args).map(toExpr).toVector();
+    auto pathVars = getPathVars(body);
+    auto pathExprs = util::viewContainer(pathVars).map(toExpr).toVector();
 
     {
         TRACE_BLOCK("mathsat::summarize");
@@ -328,7 +327,7 @@ Dynamic Solver::getSummary(
             }
             dbgs() << dbgStr;
 
-            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs);
+            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
 
             dbgs() << "Probes: " << endl
                    << ms << endl;
@@ -373,14 +372,17 @@ Dynamic Solver::getContract(
     s.add(msatimpl::asAxiom(   msatbody));
     s.add(msatimpl::asAxiom( ! msatquery));
 
-    auto argExprs = util::viewContainer(args)
-        .map([this](const Term::Ptr& arg) -> mathsat::Expr {
+    auto toExpr =
+        [this](const Term::Ptr& term) -> mathsat::Expr {
             ExecutionContext ctx(msatef, memoryStart);
             return msatimpl::getExpr(
-                    SMT<MathSAT>::doit(arg, msatef, &ctx)
+                    SMT<MathSAT>::doit(term, msatef, &ctx)
             );
-        })
-        .toVector();
+        };
+
+    auto argExprs = util::viewContainer(args).map(toExpr).toVector();
+    auto pathVars = getPathVars(body);
+    auto pathExprs = util::viewContainer(pathVars).map(toExpr).toVector();
 
     {
         TRACE_BLOCK("mathsat::contract");
@@ -396,7 +398,7 @@ Dynamic Solver::getContract(
             BYE_BYE(Dynamic, "No contract exists for UNSAT formula");
 
         } else if (r == MSAT_SAT) {
-            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs);
+            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
 
             dbgs() << "Probes: " << endl
                    << ms << endl;

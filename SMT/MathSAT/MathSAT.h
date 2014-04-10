@@ -540,6 +540,11 @@ public:
 
     std::vector<Expr> diversify(const std::vector<Expr>& diversifiers);
     std::vector<Expr> diversify_unsafe(const std::vector<Expr>& diversifiers, unsigned int limit);
+    std::vector<Expr> diversify(const std::vector<Expr>& diversifiers,
+                                const std::vector<Expr>& collectibles);
+    std::vector<Expr> diversify_unsafe(const std::vector<Expr>& diversifiers,
+                                       const std::vector<Expr>& collectibles,
+                                       unsigned int limit);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

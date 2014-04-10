@@ -138,5 +138,4 @@ INSTANTIATE_NAMED_TEST_CASE_P(NeclaLong, WrapperTest,
 //INSTANTIATE_TEST_CASE_P(SvCompLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/svcomp")));
 
 
-
 } // namespace
