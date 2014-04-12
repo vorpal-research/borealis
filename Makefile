@@ -303,16 +303,22 @@ tests: $(EXES) $(TEST_EXES)
 
 
 check: tests .regenerate-test-defs
-	$(RUN_TEST_EXES) --gtest_filter=-*Long/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
+	$(RUN_TEST_EXES) --gtest_filter=-*Long/*:-*Summary* # --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 check-with-valgrind: tests .regenerate-test-defs
-	$(VALGRIND) $(RUN_TEST_EXES) --gtest_filter=-*Long/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
+	$(VALGRIND) $(RUN_TEST_EXES) --gtest_filter=-*Long/*:-*Summary* # --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 check-long: tests .regenerate-test-defs
-	$(RUN_TEST_EXES) --gtest_filter=*Long/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
+	$(RUN_TEST_EXES) --gtest_filter=*Long/*:-*Summary* # --gtest_filter=$(GOOGLE_TEST_FILTER)
+	
+check-summary: tests .regenerate-test-defs
+	$(RUN_TEST_EXES) --gtest_filter=*Summary*:-*Long/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
+	
+check-summary-long: tests .regenerate-test-defs
+	$(RUN_TEST_EXES) --gtest_filter=*SummaryLong/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 check-all: tests .regenerate-test-defs
-	$(RUN_TEST_EXES) --gtest_filter=$(GOOGLE_TEST_FILTER)
+	$(RUN_TEST_EXES) --gtest_filter=-*Summary*# --gtest_filter=$(GOOGLE_TEST_FILTER)
 
 
 clean:
