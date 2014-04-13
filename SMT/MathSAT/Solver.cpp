@@ -8,6 +8,7 @@
 #include "Logging/tracer.hpp"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
+#include "SMT/Z3/Solver.h"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -171,6 +172,10 @@ Dynamic Solver::getInterpolant(
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Summarizing
+////////////////////////////////////////////////////////////////////////////////
+
 unsigned getCountLimit() {
     static config::ConfigEntry<int> CountLimit("summary", "sampling-count-limit");
     return CountLimit.get(16);
@@ -240,16 +245,7 @@ Bool getProbeModels(
             s.add(msatimpl::asAxiom( ! query ));
             s.add(msatimpl::asAxiom(   m ));
 
-//            if (MSAT_SAT == s.check()) continue;
-
-            auto res = s.check();
-
-            dbgs() << "Probe model attempt = " << attempt
-                               << "; count = " << count << endl
-                   << ((res == MSAT_SAT) ? "SAT" : "UNSAT") << endl
-                   << m << endl;
-
-            if (res == MSAT_SAT) continue;
+            if (MSAT_SAT == s.check()) continue;
 
             ms = ms || m;
             ++count;
@@ -315,6 +311,7 @@ Dynamic Solver::getSummary(
         mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
 
         static config::ConfigEntry<bool> ModelSampling("summary", "model-sampling");
+        static config::ConfigEntry<std::string> SamplingSolver("summary", "sampling-solver");
 
         if (r == MSAT_UNSAT) {
             interpol = s.get_interpolant({B});
@@ -328,6 +325,11 @@ Dynamic Solver::getSummary(
             dbgs() << dbgStr;
 
             auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
+
+            z3_::ExprFactory z3ef;
+            z3_::Solver z3solver(z3ef, memoryStart);
+            dbgs() << "Z3 Probes:" << endl
+                   << z3solver.probeModels(body, query, args, args);
 
             dbgs() << "Probes: " << endl
                    << ms << endl;

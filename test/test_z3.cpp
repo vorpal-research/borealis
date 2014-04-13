@@ -51,7 +51,7 @@ TEST(Z3, diversify) {
     auto res = s.check();
     ASSERT_EQ(z3::sat, res);
 
-    auto models = z3::diversify(s, {getExpr(a), getExpr(b)});
+    auto models = z3::diversify(s, {getExpr(a), getExpr(b)}, {getExpr(a), getExpr(b)});
     ASSERT_EQ(32, models.size());
 }
 

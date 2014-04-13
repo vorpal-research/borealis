@@ -14,9 +14,23 @@
 
 namespace z3 {
 
-std::vector<expr> diversify(solver& solver, const std::vector<expr>& divers);
+std::vector<model> diversify(solver& solver,
+                            const std::vector<expr>& divers);
 
-std::vector<expr> diversify_unsafe(solver& solver, const std::vector<expr>& divers, unsigned limit);
+
+std::vector<model> diversify_unsafe(solver& solver,
+                                   const std::vector<expr>& divers,
+                                   unsigned limit);
+
+std::vector<expr> diversify(solver& solver,
+                            const std::vector<expr>& divers,
+                            const std::vector<expr>& collect);
+
+
+std::vector<expr> diversify_unsafe(solver& solver,
+                                   const std::vector<expr>& divers,
+                                   const std::vector<expr>& collect,
+                                   unsigned limit);
 
 } // namespace z3
 
