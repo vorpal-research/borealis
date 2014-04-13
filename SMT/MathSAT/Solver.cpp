@@ -262,6 +262,23 @@ Bool getProbeModels(
     return ms;
 }
 
+
+Bool Solver::probeZ3(PredicateState::Ptr body,
+             PredicateState::Ptr query,
+             const std::vector<Term::Ptr>& args,
+             const std::vector<Term::Ptr>& pathVars) {
+    std::vector<Term::Ptr> dvrs(args);
+    dvrs.insert(dvrs.end(), pathVars.begin(), pathVars.end());
+
+    z3_::ExprFactory z3ef;
+    z3_::Solver z3solver(z3ef, memoryStart);
+    auto modelState = z3solver.probeModels(body, query, dvrs, args);
+
+    ExecutionContext ctx(msatef, memoryStart);
+    return SMT<MathSAT>::doit(modelState, msatef, &ctx);
+}
+
+
 Dynamic Solver::getSummary(
         const std::vector<Term::Ptr>& args,
         PredicateState::Ptr query,
@@ -324,12 +341,12 @@ Dynamic Solver::getSummary(
             }
             dbgs() << dbgStr;
 
-            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
-
-            z3_::ExprFactory z3ef;
-            z3_::Solver z3solver(z3ef, memoryStart);
-            dbgs() << "Z3 Probes:" << endl
-                   << z3solver.probeModels(body, query, args, args);
+            auto ms = msatef.getTrue();
+            if (SamplingSolver.get("mathsat") == "mathsat") {
+                ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
+            } else { // Z3
+                ms = probeZ3(body, query, args, pathVars);
+            }
 
             dbgs() << "Probes: " << endl
                    << ms << endl;

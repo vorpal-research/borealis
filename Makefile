@@ -316,7 +316,10 @@ check-summary: tests .regenerate-test-defs
 	
 check-summary-long: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*SummaryLong/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
-
+	
+check-summary-all: tests .regenerate-test-defs
+	$(RUN_TEST_EXES) --gtest_filter=*Summary* # --gtest_filter=$(GOOGLE_TEST_FILTER)
+	
 check-all: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=-*Summary*# --gtest_filter=$(GOOGLE_TEST_FILTER)
 
