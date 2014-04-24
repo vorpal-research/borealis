@@ -192,6 +192,8 @@ PredicateState::Ptr Solver::probeModels(
         const std::vector<Term::Ptr>& collectibles) {
 
 
+    TRACE_FUNC
+
     static auto countLimit = getCountLimit();
     static auto attemptLimit = getAttemptLimit();
 
