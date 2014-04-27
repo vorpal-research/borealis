@@ -191,7 +191,6 @@ std::vector<Term::Ptr> getPathVars(PredicateState::Ptr state) {
 
     PredicateState::Ptr pathState;
     std::tie(pathState, std::ignore) = state->splitByTypes({PredicateType::PATH});
-    dbgs() << "Path state: " << pathState << endl;
 
     std::vector<Term::Ptr> pathTerms;
     pathState->map([&pathTerms](Predicate::Ptr p) -> Predicate::Ptr {

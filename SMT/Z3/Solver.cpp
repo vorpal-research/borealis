@@ -176,7 +176,7 @@ PredicateState::Ptr model2state(const z3::model& model,
     FactoryNest FN(nullptr);
     auto PSB = FN.State * FN.State->Basic();
     for (auto zipped: util::viewContainer(collectibles) ^ util::viewContainer(z3collects)) {
-        auto val = model.eval(zipped.second);
+        auto val = model.eval(zipped.second, true);
         PSB += FN.Predicate->getEqualityPredicate(
                     zipped.first,
                     z3_::unlogic::undoThat(val)

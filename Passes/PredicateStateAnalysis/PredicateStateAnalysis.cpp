@@ -102,23 +102,33 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     auto& FM = GetAnalysis<FunctionManager>::doit(this);
     auto& NT = GetAnalysis<NameTracker>::doit(this);
 
-    // No summary if:
-    // - function does not return
-    // - function returns void
-    // - function returns non-pointer
+    // No summary for main function
+    if (llvm::isMain(F))
+        return;
 
     auto* RI = getSingleRetOpt(&F);
     if (!RI) return;
 
+
+    std::vector<Term::Ptr> pointers;
+
     auto* retVal = RI->getReturnValue();
-    if (retVal == nullptr) return;
-    if ( ! retVal->getType()->isPointerTy() ) return;
+    if (retVal != nullptr && retVal->getType()->isPointerTy() )
+        pointers.push_back(FN.Term->getReturnValueTerm(&F));
 
     std::vector<Term::Ptr> args;
     args.reserve(F.arg_size());
     for (auto& arg : view(F.arg_begin(), F.arg_end())) {
-        args.push_back(FN.Term->getArgumentTerm(&arg));
+        auto argTerm = FN.Term->getArgumentTerm(&arg);
+        args.push_back(argTerm);
+        if (arg.getType()->isPointerTy())
+            pointers.push_back(argTerm);
     }
+
+    // No summary if:
+    // - function returns non-pointer
+    // - function has no pointer arguments
+    if (pointers.empty()) return;
 
     auto initial = delegate->getInitialState();
     auto riState = delegate->getInstructionState(RI);
@@ -127,25 +137,18 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     auto bdy = riState->sliceOn(initial);
     ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
 
-//        PredicateState::Ptr query = (
-//            FN.State *
-//            FN.Predicate->getInequalityPredicate(
-//                FN.Term->getReturnValueTerm(&F),
-//                FN.Term->getNullPtrTerm()
-//            )
-//        )();
-
-    auto query = (
-        FN.State *
-        FN.Predicate->getEqualityPredicate(
-            FN.Term->getCmpTerm(
-                llvm::ConditionType::GT,
-                FN.Term->getBoundTerm(FN.Term->getReturnValueTerm(&F)),
-                FN.Term->getIntTerm(0)
-            ),
-            FN.Term->getTrueTerm()
-        )
-    )();
+    auto PSB = FN.State * FN.State->Basic();
+    for (auto ptr: pointers) {
+        PSB += FN.Predicate->getEqualityPredicate(
+                       FN.Term->getCmpTerm(
+                           llvm::ConditionType::GT,
+                           FN.Term->getBoundTerm(ptr),
+                           FN.Term->getIntTerm(0)
+                       ),
+                       FN.Term->getTrueTerm()
+               );
+    }
+    auto query = PSB();
 
     dbgs() << "Generating summary: " << endl
            << "  At: " << llvm::valueSummary(RI) << endl
