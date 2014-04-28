@@ -218,6 +218,15 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
     bool isInfinite = isLoopTruelyInfinite(L);
 
+    if(
+        util::view(L->block_begin(), L->block_end())
+       .map(util::deref{})
+       .flatten()
+       .filter(llvm::isaer<llvm::PHINode>{})
+       .map(llvm::caster<llvm::PHINode>{})
+       .any_of([SE](llvm::PHINode& phi){ return !SE->isSCEVable(phi.getType()); })
+    ) return util::nothing();
+
     if ( ! isInfinite && ! SE->hasLoopInvariantBackedgeTakenCount(L)) return util::nothing();
 
     BasicBlock* Header = L->getHeader();
