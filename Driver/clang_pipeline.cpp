@@ -54,6 +54,8 @@ static void postProcessClangGeneratedModule(clang::SourceManager& SM, llvm::Modu
     for(auto i = 0U; i < globalsMD->getNumOperands(); ++i) {
         auto cacheLine = globalsMD->getOperand(i);
         if(cacheLine->getNumOperands() != 2
+        || cacheLine->getOperand(0) == nullptr
+        || cacheLine->getOperand(1) == nullptr
         || !llvm::isa<llvm::GlobalValue>(cacheLine->getOperand(0))
         || !llvm::isa<llvm::ConstantInt>(cacheLine->getOperand(1))
         ) continue;
