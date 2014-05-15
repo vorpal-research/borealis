@@ -1,0 +1,172 @@
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 6,
+				"line" : 31
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 40
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 10,
+				"line" : 49
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 53,
+				"line" : 62
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 65
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 66
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 3,
+				"line" : 70
+			}
+		},
+		"type" : "BUF-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 6,
+				"line" : 31
+			}
+		},
+		"type" : "INI-03"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 64
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 27,
+				"line" : 97
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 55,
+				"line" : 97
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 12,
+				"line" : 105
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" : 
+			{
+				"col" : 40,
+				"line" : 107
+			}
+		},
+		"type" : "REQ-01"
+	}
+]

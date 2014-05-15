@@ -38,6 +38,12 @@ public:
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 
+    PredicateState::Ptr probeModels(
+            PredicateState::Ptr body,
+            PredicateState::Ptr query,
+            const std::vector<Term::Ptr>& diversifiers,
+            const std::vector<Term::Ptr>& collectibles);
+
 private:
 
     ExprFactory& z3ef;
@@ -53,6 +59,8 @@ private:
     check_result check(
             const Bool& z3query,
             const Bool& z3state);
+
+    z3::tactic tactics();
 
 };
 

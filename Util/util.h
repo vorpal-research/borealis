@@ -193,6 +193,10 @@ inline std::string valueSummary(const Value& v) {
     return valueSummary(&v);
 }
 
+inline bool isMain(const Function& f) {
+    return (f.getName() == "main")  || (f.getName() == "__main");
+}
+
 } // namespace llvm
 
 namespace borealis {

@@ -134,9 +134,14 @@ INSTANTIATE_NAMED_TEST_CASE_P(Necla, WrapperTest,
 INSTANTIATE_NAMED_TEST_CASE_P(NeclaLong, WrapperTest,
     ::testing::ValuesIn(LongTestFiles("test/testcases/necla")), GetTestName);
 
+INSTANTIATE_NAMED_TEST_CASE_P(Summary, WrapperTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/summary")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(SummaryLong, WrapperTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/summary")), GetTestName);
+
+
 //INSTANTIATE_TEST_CASE_P(SvComp, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/svcomp")));
 //INSTANTIATE_TEST_CASE_P(SvCompLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/svcomp")));
-
 
 
 } // namespace

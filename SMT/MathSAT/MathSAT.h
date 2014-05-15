@@ -147,6 +147,9 @@ public:
     Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
     Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
 
+    void add_branch_var(const Expr& var);
+    void clear_branch_vars();
+
     static Env share(const Env& that, const Config& cfg);
 };
 
@@ -537,6 +540,11 @@ public:
 
     std::vector<Expr> diversify(const std::vector<Expr>& diversifiers);
     std::vector<Expr> diversify_unsafe(const std::vector<Expr>& diversifiers, unsigned int limit);
+    std::vector<Expr> diversify(const std::vector<Expr>& diversifiers,
+                                const std::vector<Expr>& collectibles);
+    std::vector<Expr> diversify_unsafe(const std::vector<Expr>& diversifiers,
+                                       const std::vector<Expr>& collectibles,
+                                       unsigned int limit);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

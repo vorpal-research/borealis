@@ -5,8 +5,13 @@
  *      Author: ice-phoenix
  */
 
+#include "Factory/Nest.h"
 #include "Logging/tracer.hpp"
+#include "State/PredicateStateBuilder.h"
+#include "SMT/Z3/Divers.h"
+#include "SMT/Z3/Logic.hpp"
 #include "SMT/Z3/Solver.h"
+#include "SMT/Z3/Unlogic/Unlogic.h"
 
 #include "Util/macros.h"
 
@@ -16,6 +21,17 @@ namespace z3_ {
 Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart) :
         z3ef(z3ef), memoryStart(memoryStart) {}
 
+z3::tactic Solver::tactics() {
+    auto& c = z3ef.unwrap();
+
+    auto params = z3::params(c);
+    params.set(":auto_config", true);
+    auto smt_tactic = with(z3::tactic(c, "smt"), params);
+    auto useful = /* z3::tactic(c, "reduce-bv-size") & */ z3::tactic(c, "ctx-simplify");
+
+    return useful & smt_tactic;
+}
+
 Solver::check_result Solver::check(
         const Bool& z3query_,
         const Bool& z3state_) {
@@ -24,15 +40,7 @@ Solver::check_result Solver::check(
 
     TRACE_FUNC;
 
-    auto& c = z3ef.unwrap();
-
-    auto params = z3::params(c);
-    params.set(":auto_config", true);
-    auto smt_tactic = with(z3::tactic(c, "smt"), params);
-    auto useful = /* z3::tactic(c, "reduce-bv-size") & */ z3::tactic(c, "ctx-simplify");
-
-    auto tactic = useful & smt_tactic;
-    auto s = tactic.mk_solver();
+    auto s = tactics().mk_solver();
 
     auto dbg = dbgs();
 
@@ -135,6 +143,119 @@ bool Solver::isPathImpossible(
     std::tie(res, std::ignore, std::ignore, std::ignore) = check(z3path, z3state);
 
     return res == z3::unsat;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Model sampling
+////////////////////////////////////////////////////////////////////////////////
+
+unsigned getCountLimit() {
+    static config::ConfigEntry<int> CountLimit("summary", "sampling-count-limit");
+    return CountLimit.get(16);
+}
+
+unsigned getAttemptLimit() {
+    static config::ConfigEntry<int> AttemptLimit("summary", "sampling-attempt-limit");
+    return AttemptLimit.get(100);
+}
+
+z3::expr model2expr(const z3::model& model,
+                    const std::vector<z3::expr>& collectibles) {
+    auto valuation = model.ctx().bool_val(true);
+    for (auto c: collectibles) {
+        auto val = model.eval(c);
+        valuation = valuation && (c == val);
+    }
+    return valuation;
+}
+
+PredicateState::Ptr model2state(const z3::model& model,
+                                const std::vector<Term::Ptr>& collectibles,
+                                const std::vector<z3::expr>& z3collects) {
+    FactoryNest FN(nullptr);
+    auto PSB = FN.State * FN.State->Basic();
+    for (auto zipped: util::viewContainer(collectibles) ^ util::viewContainer(z3collects)) {
+        auto val = model.eval(zipped.second, true);
+        PSB += FN.Predicate->getEqualityPredicate(
+                    zipped.first,
+                    z3_::unlogic::undoThat(val)
+        );
+    }
+    return PSB();
+}
+
+PredicateState::Ptr Solver::probeModels(
+        PredicateState::Ptr body,
+        PredicateState::Ptr query,
+        const std::vector<Term::Ptr>& diversifiers,
+        const std::vector<Term::Ptr>& collectibles) {
+
+
+    TRACE_FUNC
+
+    static auto countLimit = getCountLimit();
+    static auto attemptLimit = getAttemptLimit();
+
+    ExecutionContext ctx(z3ef, memoryStart);
+    auto z3body = SMT<Z3>::doit(body, z3ef, &ctx);
+    auto z3query = SMT<Z3>::doit(query, z3ef, &ctx);
+
+    auto t2e = [this, &ctx](const std::vector<Term::Ptr>& terms) -> std::vector<z3::expr> {
+        std::vector<z3::expr> exprs;
+        exprs.reserve(terms.size());
+        std::transform(terms.begin(), terms.end(), std::back_inserter(exprs),
+                [this, &ctx](const Term::Ptr& t) -> z3::expr {
+                    return logic::z3impl::getExpr(SMT<Z3>::doit(t, z3ef, &ctx));
+                }
+        );
+        return exprs;
+    };
+
+    auto z3divers = t2e(diversifiers);
+    auto z3collects = t2e(collectibles);
+
+    auto solver = tactics().mk_solver();
+    solver.add(logic::z3impl::asAxiom(z3body));
+    solver.add(logic::z3impl::asAxiom(z3query));
+
+    FactoryNest FN(nullptr);
+    std::vector<PredicateState::Ptr> states;
+    states.reserve(countLimit);
+
+    auto count = 0U;
+    auto attempt = 0U;
+    auto fullCount = 0U; // for logging
+
+    while (count < countLimit && attempt < attemptLimit) {
+        auto models = z3::diversify_unsafe(solver, z3divers, countLimit*2);
+
+        for (const auto& model : models) {
+            ++fullCount;    // for logging
+
+            auto z3model = model2expr(model, z3collects);
+            auto stateModel = model2state(model, collectibles, z3collects);
+
+            auto usolver = tactics().mk_solver();
+            usolver.add(logic::z3impl::asAxiom(z3body));
+            usolver.add(logic::z3impl::asAxiom(not z3query));
+            usolver.add( z3model );
+
+            if (z3::sat == usolver.check()) continue;
+
+            states.push_back(stateModel);
+            ++count;
+
+            if (count >= countLimit) break;
+        }
+
+        ++attempt;
+    }
+
+    dbgs() << "Attempts: " << attempt << endl
+           << "Count: " << fullCount << endl;
+
+    return FN.State->Choice(states);
 }
 
 } // namespace z3_

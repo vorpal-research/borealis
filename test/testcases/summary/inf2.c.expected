@@ -1,0 +1,29 @@
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf2.c",
+			"loc" : 
+			{
+				"col" : 7,
+				"line" : 30
+			}
+		},
+		"type" : "REQ-01"
+	},
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/inf2.c",
+			"loc" : 
+			{
+				"col" : 7,
+				"line" : 31
+			}
+		},
+		"type" : "REQ-01"
+	}
+]

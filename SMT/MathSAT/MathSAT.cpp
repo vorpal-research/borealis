@@ -211,6 +211,17 @@ Decl Env::fresh_function(const std::string& name, const std::vector<Sort>& param
     return this->function(rand_name, params, ret);
 }
 
+void Env::add_branch_var(const Expr& var) {
+    ASSERT(var.is_bool(), "Trying to add non-boolean branching var.");
+    auto res = msat_add_preferred_for_branching(*env_, var);
+    ASSERTC(!res);
+}
+
+void Env::clear_branch_vars() {
+    auto res = msat_clear_preferred_for_branching(*env_);
+    ASSERTC(!res);
+}
+
 Env Env::share(const Env& that, const Config& cfg) {
     auto shared = makeEnvPointer(new msat_env());
     *shared = msat_create_shared_env(cfg, that);
@@ -863,12 +874,12 @@ std::vector<Expr> Solver::unsat_assumptions() {
 
 struct diversify_data {
     Env env;
-    std::set<msat_term> dvrs;
+    std::set<msat_term> collects;
     std::vector<Expr> models;
     unsigned int limit;
 
-    diversify_data(const Env& env, const std::vector<msat_term>& dvrs, unsigned int limit) :
-        env(env), dvrs(dvrs.begin(), dvrs.end()), limit(limit) {}
+    diversify_data(const Env& env, const std::vector<msat_term>& collects, unsigned int limit) :
+        env(env), collects(collects.begin(), collects.end()), limit(limit) {}
 };
 
 int collect_diversified_models(msat_model_iterator it, void* data) {
@@ -885,7 +896,7 @@ int collect_diversified_models(msat_model_iterator it, void* data) {
         auto t_is_uf = msat_term_is_uf(d->env, t);
 
         if (
-                (d->dvrs.count(t) > 0) ||
+                (d->collects.count(t) > 0) ||
                 (t_is_uf)
         ) {
             valuation = valuation && Expr(d->env, t) == Expr(d->env, v);
@@ -897,19 +908,31 @@ int collect_diversified_models(msat_model_iterator it, void* data) {
 }
 
 std::vector<Expr> DSolver::diversify(const std::vector<Expr>& diversifiers) {
+    return diversify(diversifiers, diversifiers);
+}
+
+std::vector<Expr> DSolver::diversify_unsafe(const std::vector<Expr>& diversifiers, unsigned int limit) {
+    return diversify_unsafe(diversifiers, diversifiers, limit);
+}
+
+std::vector<Expr> DSolver::diversify(const std::vector<Expr>& diversifiers,
+                                     const std::vector<Expr>& collectibles) {
     unsigned int limit = std::max(32.0, pow(2, diversifiers.size()));
 
     push();
-    auto res = diversify_unsafe(diversifiers, limit);
+    auto res = diversify_unsafe(diversifiers, collectibles, limit);
     pop();
 
     return res;
 }
 
-std::vector<Expr> DSolver::diversify_unsafe(const std::vector<Expr>& diversifiers, unsigned int limit) {
+std::vector<Expr> DSolver::diversify_unsafe(const std::vector<Expr>& diversifiers,
+                                            const std::vector<Expr>& collectibles,
+                                            unsigned int limit) {
     std::vector<msat_term> dvrs(diversifiers.begin(), diversifiers.end());
+    std::vector<msat_term> collects(collectibles.begin(), collectibles.end());
 
-    diversify_data data(env_, dvrs, limit);
+    diversify_data data(env_, collects, limit);
 
     auto res = msat_solve_diversify(env_, dvrs.data(), dvrs.size(), collect_diversified_models, &data);
     ASSERTC(res != -1);
@@ -933,6 +956,7 @@ Expr ISolver::get_interpolant(const std::vector<InterpolationGroup>& A) {
 
 } // namespace mathsat
 } // namespace borealis
+
 
 #undef ASSERTMSAT_ENV
 #undef ASSERTMSAT_DECL
