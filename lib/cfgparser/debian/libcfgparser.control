@@ -1,0 +1,9 @@
+Package: @PACKAGE@
+Version: @VERSION@
+Architecture: @ARCHITECTURE@
+Depends: @SH_DEPEND@
+Maintainer: @MAINTAINER@
+Installed-Size: @SIZE@
+Provides: szn-libcfgparser0
+Replaces: szn-libcfgparser0
+Description: cfgparser: Configuration reader library

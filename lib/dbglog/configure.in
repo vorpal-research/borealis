@@ -1,0 +1,84 @@
+#
+# Copyright (C) 2006  Seznam.cz, a.s.
+#
+# $Id: configure.in 35 2011-05-31 10:27:16Z volca $
+#
+# DESCRIPTION
+# configure template for dbglog library
+#
+# AUTHORS
+# Vaclav Blazek <blazek@firma.seznam.cz>
+#
+# HISTORY
+# 2007-02-22  (vasek)
+#             Created.
+#
+
+
+# initialize autoconf
+AC_INIT(libdbglog, 1.5.4, michal.bukovsky@firma.seznam.cz)
+# initialize automake(use AC_INIT's arguments)
+AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+#AM_INIT_AUTOMAKE(-Wall foreign)
+AC_PREREQ(2.50)
+
+# tell autoconf where to find sources
+
+AC_CONFIG_SRCDIR([src/dbglog.cc])
+
+# Set the flags for solaris to enable 64bit compilation
+CPPFLAGS="-m64"
+CXXFLAGS="-m64"
+CFLAGS="-m64"
+
+# check for C++ compiler
+AC_PROG_CXX
+
+# check for std C headers
+AC_HEADER_STDC
+
+# check for libtool
+AC_PROG_LIBTOOL
+
+# Check for the pthread_t size.
+AC_CHECK_SIZEOF([pthread_t], [], [#include <pthread.h>])
+
+
+# Check for the gettid function.
+AC_MSG_CHECKING([for gettid syscall])
+AC_LANG(C)
+AC_RUN_IFELSE(
+[AC_LANG_PROGRAM(
+[#include <unistd.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+],
+[#ifdef SYS_gettid
+    pid_t tid;
+    tid = syscall(SYS_gettid);
+    return 0;
+#else
+    return 1;
+#endif
+])],
+[AC_MSG_RESULT([ok])
+AC_DEFINE([HAVE_GETTID], [1], [The check for gettid syscall])],
+[AC_MSG_RESULT([not found])], [])
+
+# This version number needs to be changed in several different ways for each
+# release. Please read the libtool documentation (info libtool 'Updating
+# version info') before touching this. (this is *.so version number).
+VERSION_INFO="-version-info 1:0:1"
+AC_SUBST(VERSION_INFO)
+
+# we need large file support
+AC_SYS_LARGEFILE
+
+# generate Makefile
+AC_CONFIG_FILES([version 
+    Makefile 
+    src/Makefile 
+    include/Makefile 
+    libdbglog.pc])
+
+AC_OUTPUT()

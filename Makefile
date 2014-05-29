@@ -38,7 +38,10 @@ LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter \
 	scalaropts selectiondag support tablegen target transformutils vectorize \
 	linker
 
-LLVMLDFLAGS := $(shell llvm-config --ldflags --libs $(LLVMCOMPONENTS))
+LLVMCONFIG := $(if $(LLVMDIR),$(LLVMDIR)/bin/llvm-config,llvm-config)
+
+LLVMLDFLAGS := $(shell $(LLVMCONFIG) --ldflags)
+LLVMLIBS := $(shell $(LLVMCONFIG) --libs $(LLVMCOMPONENTS))
 
 ################################################################################
 # Compilation tweaking
@@ -93,7 +96,8 @@ ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD)/lib \
 	$(PWD)/lib/pegtl/include \
 	$(PWD)/lib/google-test/include \
-	$(PWD)/lib/yaml-cpp/include
+	$(PWD)/lib/yaml-cpp/include \
+	$(PWD)/lib/cfgparser/include
 
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 
@@ -154,6 +158,20 @@ YAML_CPP_LIB := $(YAML_CPP_DIR)/build/libyaml-cpp.a
 ARCHIVES += $(YAML_CPP_LIB)
 
 ################################################################################
+# cfgparser
+################################################################################
+
+# cfgparser needs dbglog, but we don't
+DBGLOG_DIR := $(PWD)/lib/dbglog
+DBGLOG_DIST := $(DBGLOG_DIR)/dist
+DBGLOG_LIB := $(DBGLOG_DIST)/lib/libdbglog.a
+
+CFGPARSER_DIR := $(PWD)/lib/cfgparser
+CFGPARSER_LIB := $(CFGPARSER_DIR)/dist/lib/libcfgparser.a
+ARCHIVES += $(CFGPARSER_LIB)
+ARCHIVES += $(DBGLOG_LIB)
+
+################################################################################
 # Exes
 ################################################################################
 
@@ -185,10 +203,10 @@ CLANGLIBS := \
 
 LIBS := \
 	$(CLANGLIBS) \
+	$(LLVMLIBS) \
 	-lz3 \
 	-ldl \
 	-lrt \
-	-lcfgparser \
 	-llog4cpp \
 	-lprofiler \
 	-ljsoncpp \
@@ -257,7 +275,6 @@ PROTOEXT := $(PWD)/extract-protobuf-desc.awk
 
 all: $(EXES)
 
-
 .protobuf:
 	@mkdir -p $(PROTO_SOURCE_DIR)
 	@$(PROTOEXT) `find $(PWD) -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | sort`
@@ -278,10 +295,32 @@ clean.yaml-cpp:
 	rm -f .yaml-cpp
 	$(MAKE) CXX=$(CXX) -C $(YAML_CPP_DIR) clean
 
+.dbglog:
+	[[ -e $(DBGLOG_DIR)/Makefile ]] && $(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) distclean || true
+	cd $(DBGLOG_DIR); $(DBGLOG_DIR)/configure --prefix=$(DBGLOG_DIST)
+	$(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) install
+	touch $@
 
-$(EXES): $(OBJECTS) .protobuf .yaml-cpp
-	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
+clean.dbglog:
+	rm -f .dbglog
+	$(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) clean
+	$(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) distclean
+	rm -rf $(DBGLOG_DIST)
 
+.cfgparser: .dbglog
+	[[ -e $(CFGPARSER_DIR)/Makefile ]] && $(MAKE) CXX=$(CXX) -C $(CFGPARSER_DIR) distclean || true
+	cd $(CFGPARSER_DIR); $(CFGPARSER_DIR)/configure --prefix=$(CFGPARSER_DIR)/dist --with-dbglog=$(DBGLOG_DIST)
+	$(MAKE) CXX=$(CXX) -C $(CFGPARSER_DIR) install
+	touch $@
+
+clean.cfgparser: clean.dbglog
+	rm -f .cfgparser
+	$(MAKE) CXX=$(CXX) -C $(CFGPARSER_DIR) clean
+	$(MAKE) CXX=$(CXX) -C $(CFGPARSER_DIR) distclean
+	rm -rf $(CFGPARSER_DIR)/dist
+
+$(EXES): $(OBJECTS) .protobuf .yaml-cpp .cfgparser
+	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 .google-test:
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a
@@ -293,7 +332,7 @@ clean.google-test:
 
 
 $(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
-	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LIBS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES) $(TEST_ARCHIVES)
+	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES) $(TEST_ARCHIVES)
 
 
 tests: $(EXES) $(TEST_EXES)

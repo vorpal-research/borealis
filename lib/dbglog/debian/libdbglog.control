@@ -1,0 +1,10 @@
+Package: @PACKAGE@
+Version: @VERSION@
+Architecture: @ARCHITECTURE@
+Depends: @SH_DEPEND@
+Replaces: szn-libdbglog0
+Provides: szn-libdbglog0
+Maintainer: @MAINTAINER@
+Installed-Size: @SIZE@
+Description: dbglog: debug and logging facility.
+ Debug and logging facility

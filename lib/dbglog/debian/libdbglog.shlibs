@@ -1,0 +1,1 @@
+libdbglog @SO_VERSION@ @PACKAGE@ (>= @VERSION@)

@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libdbglog
+Description: The seznam's Debug and logging facility library
+Version: @PACKAGE_VERSION@
+Requires:
+URL: [not yet]
+Libs: -L${libdir} -ldbglog
+Libs.private:
+Cflags: -I${includedir}
+
