@@ -15,29 +15,29 @@
 #define DEBUG_TYPE "dsa-local"
 #include "DataStructure.h"
 #include "DSGraph.h"
-#include "llvm/Use.h"
-#include "llvm/InlineAsm.h"
-#include "llvm/Constants.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Instructions.h"
-#include "llvm/Support/GetElementPtrTypeIterator.h"
-#include "llvm/Support/InstVisitor.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Timer.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/Triple.h"
+#include <llvm/Use.h>
+#include <llvm/InlineAsm.h>
+#include <llvm/Constants.h>
+#include <llvm/Intrinsics.h>
+#include <llvm/DerivedTypes.h>
+#include <llvm/Instructions.h>
+#include <llvm/Support/GetElementPtrTypeIterator.h>
+#include <llvm/Support/InstVisitor.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Timer.h>
+#include <llvm/Target/TargetData.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/ADT/DenseSet.h>
+#include <llvm/ADT/Triple.h>
 
 #include <fstream>
 
 // FIXME: This should eventually be a FunctionPass that is automatically
 // aggregated into a Pass.
 //
-#include "llvm/Module.h"
+#include <llvm/Module.h>
 
 using namespace llvm;
 

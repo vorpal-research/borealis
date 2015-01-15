@@ -15,14 +15,14 @@
 #include "DSGraph.h"
 #include "TypeSafety.h"
 
-#include "llvm/Constants.h"
-#include "llvm/Function.h"
-#include "llvm/Instructions.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/InstVisitor.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
+#include <llvm/Constants.h>
+#include <llvm/Function.h>
+#include <llvm/Instructions.h>
+#include <llvm/Pass.h>
+#include <llvm/Support/InstVisitor.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
 
 #include <ostream>
 using namespace llvm;

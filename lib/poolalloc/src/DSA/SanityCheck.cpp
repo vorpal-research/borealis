@@ -16,8 +16,8 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 
-#include "llvm/Instructions.h"
-#include "llvm/Module.h"
+#include <llvm/Instructions.h>
+#include <llvm/Module.h>
 
 using namespace llvm;
 

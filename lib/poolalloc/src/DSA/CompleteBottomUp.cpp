@@ -16,10 +16,10 @@
 #define DEBUG_TYPE "dsa-cbu"
 #include "DataStructure.h"
 #include "DSGraph.h"
-#include "llvm/Module.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
+#include <llvm/Module.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
 using namespace llvm;
 
 namespace {

@@ -8,11 +8,11 @@
 #ifndef DATASTRUCTUREAA_H_
 #define DATASTRUCTUREAA_H_
 
-#include "llvm/Constants.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Module.h"
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/Passes.h"
+#include <llvm/Constants.h>
+#include <llvm/DerivedTypes.h>
+#include <llvm/Module.h>
+#include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/Analysis/Passes.h>
 #include "DataStructure.h"
 #include "DSGraph.h"
 

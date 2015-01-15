@@ -19,7 +19,7 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 
-#include "llvm/Pass.h"
+#include <llvm/Pass.h>
 
 #include <set>
 

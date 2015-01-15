@@ -15,15 +15,15 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 
-#include "llvm/Constants.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Instructions.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/Module.h"
+#include <llvm/Constants.h>
+#include <llvm/DerivedTypes.h>
+#include <llvm/Instructions.h>
+#include <llvm/Intrinsics.h>
+#include <llvm/Module.h>
 
-#include "llvm/Support/InstIterator.h"
-#include "llvm/Support/InstVisitor.h"
-#include "llvm/Support/GetElementPtrTypeIterator.h"
+#include <llvm/Support/InstIterator.h>
+#include <llvm/Support/InstVisitor.h>
+#include <llvm/Support/GetElementPtrTypeIterator.h>
 
 using namespace llvm;
 
@@ -64,7 +64,7 @@ bool BasicDataStructures::runOnModule(Module &M) {
     if (!F->isDeclaration()) {
       DSGraph* G = new DSGraph(GlobalECs, getTargetData(), *TypeSS, GlobalsGraph);
       DSNode * Node = new DSNode(G);
-          
+
       if (!F->hasInternalLinkage())
         Node->setExternalMarker();
 
@@ -86,6 +86,6 @@ bool BasicDataStructures::runOnModule(Module &M) {
       setDSGraph(*F, G);
     }
   }
- 
+
   return false;
 }

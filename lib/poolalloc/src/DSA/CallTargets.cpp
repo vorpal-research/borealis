@@ -17,15 +17,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Module.h"
-#include "llvm/Instructions.h"
+#include <llvm/Module.h>
+#include <llvm/Instructions.h>
 #include "DataStructure.h"
 #include "DSGraph.h"
 #include "CallTargets.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Constants.h"
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Constants.h>
 #include <ostream>
 using namespace llvm;
 

@@ -17,8 +17,8 @@
 
 #include "DSNode.h"
 #include "DSCallGraph.h"
-#include "llvm/ADT/EquivalenceClasses.h"
-#include "llvm/Function.h"
+#include <llvm/ADT/EquivalenceClasses.h>
+#include <llvm/Function.h>
 
 #include <list>
 #include <map>

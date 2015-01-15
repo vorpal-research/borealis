@@ -10,22 +10,22 @@
 // may query it.
 //===----------------------------------------------------------------------===//
 
-#include "llvm/ADT/Statistic.h"
+#include <llvm/ADT/Statistic.h>
 #include "DataStructure.h"
 #include "AllocatorIdentification.h"
 #include "DSGraph.h"
-#include "llvm/Constants.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Instructions.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/Support/GetElementPtrTypeIterator.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Timer.h"
+#include <llvm/Constants.h>
+#include <llvm/DerivedTypes.h>
+#include <llvm/Instructions.h>
+#include <llvm/Intrinsics.h>
+#include <llvm/Support/GetElementPtrTypeIterator.h>
+#include <llvm/Target/TargetData.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Timer.h>
 #include <iostream>
-#include "llvm/Module.h"
+#include <llvm/Module.h>
 
 using namespace llvm;
 

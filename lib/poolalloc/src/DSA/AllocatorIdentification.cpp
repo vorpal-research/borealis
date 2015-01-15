@@ -6,21 +6,21 @@
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-// A pass to identify functions that act as wrappers to malloc and other 
+// A pass to identify functions that act as wrappers to malloc and other
 // allocators.
 //===----------------------------------------------------------------------===//
 
 #define DEBUG_TYPE "allocator-identify"
 
-#include "llvm/Constants.h"
-#include "llvm/Instructions.h"
-#include "llvm/Module.h"
-#include "llvm/Pass.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Transforms/Utils/Cloning.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Debug.h"
+#include <llvm/Constants.h>
+#include <llvm/Instructions.h>
+#include <llvm/Module.h>
+#include <llvm/Pass.h>
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Debug.h>
 
 #include <set>
 #include <map>

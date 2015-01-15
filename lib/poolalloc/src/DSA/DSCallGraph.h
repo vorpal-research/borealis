@@ -18,8 +18,8 @@
 #include "keyiterator.h"
 
 #include <cstddef>
-#include "llvm/ADT/EquivalenceClasses.h"
-#include "llvm/Support/CallSite.h"
+#include <llvm/ADT/EquivalenceClasses.h>
+#include <llvm/Support/CallSite.h>
 
 #include <cassert>
 #include <map>

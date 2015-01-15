@@ -10,19 +10,19 @@
 // This pass helps find which functions are address taken in a module.
 // Functions are considered to be address taken if they are either stored,
 // or passed as arguments to functions.
-// 
+//
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Constants.h"
-#include "llvm/Pass.h"
-#include "llvm/Module.h"
-#include "llvm/Function.h"
-#include "llvm/Instructions.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/CallSite.h"
+#include <llvm/Constants.h>
+#include <llvm/Pass.h>
+#include <llvm/Module.h>
+#include <llvm/Function.h>
+#include <llvm/Instructions.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/CallSite.h>
 
 #include <fstream>
 #include <set>
@@ -56,7 +56,7 @@ static bool isAddressTaken(Value* V) {
         return true;
       }
 
-      // FIXME: Can be more robust here for weak aliases that 
+      // FIXME: Can be more robust here for weak aliases that
       // are never used
     } else {
       llvm::CallSite CS(cast<Instruction>(U));

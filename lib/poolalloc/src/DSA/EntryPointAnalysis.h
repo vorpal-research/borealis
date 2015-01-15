@@ -22,7 +22,7 @@ class Module;
 }
 
 #include <string>
-#include "llvm/Pass.h"
+#include <llvm/Pass.h>
 
 class EntryPointAnalysis : public llvm::ModulePass {
   std::set<std::string> names;
