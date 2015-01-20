@@ -206,7 +206,6 @@ struct DIBorealisVarDesc : public llvm::DIDescriptor {
     }
 };
 
-DIType stripAliases(DIType tp);
 //std::set<DIType> flattenTypeTree(DIType di);
 //std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DIType>& tp);
 
@@ -315,6 +314,17 @@ private:
     /// Specify if TypeIdentifierMap is initialized.
     bool TypeMapInitialized;
 };
+
+std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::set<DIType>& collected);
+std::set<DIType> flattenTypeTree(const DebugInfoFinder& dfi,DIType di);
+DIType stripAliases(const DebugInfoFinder& dfi,DIType tp);
+std::map<llvm::Type*, DIType>& flattenTypeTree(
+    const DebugInfoFinder& dfi,
+    const std::pair<llvm::Type*, DIType>& tp,
+    std::map<llvm::Type*, DIType>& collected);
+std::map<llvm::Type*, DIType> flattenTypeTree(
+    const DebugInfoFinder& dfi,
+    const std::pair<llvm::Type*, DIType>& tp);
 
 } // namespace borealis
 

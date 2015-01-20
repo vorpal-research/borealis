@@ -299,8 +299,8 @@ const auto NULL_REPR = "<NULL>";
 
 
 
-template<typename T, typename U, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::pair<T, U>& pp) {
+template<typename T, typename U>
+std::ostream& operator<<(std::ostream& s, const std::pair<T, U>& pp) {
     using namespace std::impl_;
 
     s << TUPLE_LEFT_BRACE

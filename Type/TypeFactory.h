@@ -17,7 +17,11 @@
 #include "Util/cast.hpp"
 #include "Util/util.h"
 
+#include "Passes/Tracker/MetaInfoTracker.h"
+
+
 #include "Util/macros.h"
+
 
 namespace borealis {
 
@@ -107,7 +111,7 @@ public:
     Type::Ptr getRecord(const std::string& name, const type::RecordBody& body) const {
         Type::Ptr ret = getRecord(name);
         // FIXME: do something to check body compatibility if exists
-        (*recordBodies)[name] = body;
+        //(*recordBodies)[name] = body;
         return ret;
     }
 
@@ -130,11 +134,22 @@ public:
         else return functions[std::move(key)] = Type::Ptr(new type::Function(retty, args));
     }
 
-    Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const {
+    void initialize(const MetaInfoTracker& mit) {
+        recordBodies->clear(); // FIXME: this is generally fucked up
 
-        static std::set<std::string> visitedStructs;
-        static std::unordered_map<const llvm::Type*,std::string> unnamedStructs;
-        static long literalStructs = 0;
+        if(!recordBodies->empty()) return;
+
+        DebugInfoFinder dfi;
+        dfi.processModule(mit.getModule());
+
+        for(auto&& var : mit.getVars()) {
+            auto llvmType = var.first->getType();
+            if(var.second.treatment == VarInfo::Allocated) llvmType = llvmType->getPointerElementType();
+            embedType(dfi, llvmType, var.second.type);
+        }
+    }
+
+    Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const {
 
         if(type->isIntegerTy())
             return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger(32, sign); // XXX: 32 -> ???
@@ -146,29 +161,7 @@ public:
             return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
         else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
             auto name = str->hasName() ? str->getName() : "";
-            if(name.empty()) {
-                if(auto unnamedName = util::at(unnamedStructs, type)) {
-                    name = unnamedName.getUnsafe();
-                } else {
-                    name = unnamedStructs[type] = "bor.literalStruct." + util::toString(literalStructs++);
-                }
-            }
             if(recordBodies->at(name)) return getRecord(name);
-
-            if(str->isOpaque() || visitedStructs.count(name)) {
-                return getRecord(name);
-            } else {
-                visitedStructs.insert(name);
-                ON_SCOPE_EXIT(visitedStructs.erase(name));
-
-                type::RecordBody body;
-                for(auto* elem : util::view(str->element_begin(), str->element_end())) {
-                    auto me = cast(elem);
-                    body.push_back(type::RecordField{me});
-                }
-                return getRecord(name, body);
-            }
-
         } else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
         else if (auto* func = llvm::dyn_cast<llvm::FunctionType>(type)) {
@@ -179,16 +172,16 @@ public:
                 .toVector()
             );
         }
-        else
-            return getTypeError("Unsupported llvm type: " + util::toString(*type));
+
+        return getTypeError("Unsupported llvm type: " + util::toString(*type));
     }
 
 private:
-    Type::Ptr castNoRecursive(llvm::Type* type, DIType meta) {
+    Type::Ptr embedNoRecursive(llvm::Type* type, DIType meta) {
         if(type->isStructTy()) {
             using std::placeholders::_1;
 
-            DIStructType str = stripAliases(meta);
+            DIStructType str = meta;
             ASSERTC(!!str);
 
             auto members = str.getMembers();
@@ -214,16 +207,15 @@ private:
 
         return cast(type, meta.getSignedness());
     }
-public:
 
-    Type::Ptr cast(llvm::Type* type, DIType meta) {
+    Type::Ptr embedType(const DebugInfoFinder& dfi, llvm::Type* type, DIType meta) {
         // FIXME
-//       for(const auto& expanded : flattenTypeTree({type, meta})) {
-//           castNoRecursive(expanded.first, expanded.second); // just for the side effects
-//       }
-        return cast(type);
+       for(const auto& expanded : flattenTypeTree(dfi, {type, meta})) {
+           embedNoRecursive(expanded.first, stripAliases(dfi, expanded.second)); // just for the side effects
+       }
+       return cast(type);
     }
-
+public:
     Type::Ptr merge(Type::Ptr one, Type::Ptr two) {
         using borealis::util::match_pair;
 

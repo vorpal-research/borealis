@@ -30,6 +30,9 @@ AnnotationMaterializer::AnnotationMaterializer(
                     NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
                 }
             ) {
+
+    FN.Type->initialize(*MI);
+
     if (llvm::isa<EnsuresAnnotation>(A) ||
         llvm::isa<RequiresAnnotation>(A) ||
         llvm::isa<AssignsAnnotation>(A)) {

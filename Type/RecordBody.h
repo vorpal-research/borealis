@@ -77,6 +77,13 @@ public:
         return fields.at(ix);
     }
 
+    friend std::ostream& operator<<(std::ostream& ost, const RecordBody& rb) {
+        for(auto&& field : rb.fields) {
+            ost << field.getIds() << "{" << field.getType().get() << "}, ";
+        }
+        return ost;
+    }
+
 };
 
 class RecordRegistry {
@@ -96,6 +103,16 @@ public:
         return util::at(data, type);
     }
 
+    void clear() {
+        data.clear();
+    }
+
+    bool empty() const{
+        return data.empty();
+    }
+
+    auto begin() const -> decltype(data.begin()) { return data.begin(); }
+    auto end() const -> decltype(data.end()) { return data.end(); }
 };
 
 /** protobuf -> Type/RecordBodyRef.proto

@@ -153,13 +153,16 @@ public:
             ": term is not a pointer to a structure type"
         );
 
+
         auto field = daStruct->getBody()->get().getFieldByName(trm->getProperty());
-        if(!field) failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": no such member defined or structure not available on " +
-            util::toString(*daStruct)
-        );
+        if(!field) {
+            failWith(
+                "Cannot access member " +
+                trm->getProperty() +
+                ": no such member defined or structure not available on " +
+                util::toString(*daStruct)
+            );
+        }
 
         return *builder(arg).gep(builder(0), builder(field.getUnsafe().getIndex()));
     }
@@ -210,7 +213,6 @@ public:
             if(!bcType->isPointerTy()) failWith("wtf");
             bcType = bcType->getPointerElementType();
         }
-        FN.Type->cast(bcType, ret.type); // side-effecting to load type metadata
 
         auto shouldBeDereferenced = ret.shouldBeDereferenced;
         // FIXME: Need to sort out memory model
@@ -235,7 +237,6 @@ public:
         if (name == "result") {
             if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
                 auto desc = forValueSingle(ctx.func);
-                FN.Type->cast(ctx.func->getReturnType(), desc.type); // side-effecting to load type metadata
 
                 return factory().getReturnValueTerm(ctx.func, desc.type.getSignedness());
 
@@ -260,7 +261,6 @@ public:
                 std::advance(arg, val);
 
                 auto desc = forValueSingle(ctx.func);
-                FN.Type->cast(arg->getType(), desc.type); // side-effecting to load type metadata
 
                 return factory().getArgumentTerm(arg, desc.type.getSignedness());
 

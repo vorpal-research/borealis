@@ -161,66 +161,68 @@ std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value) {
     return std::move(res);
 }
 
-//std::set<DIType>& flattenTypeTree(DIType di, std::set<DIType>& collected) {
-//    if(collected.count(di)) return collected;
-//    collected.insert(di);
-//
-//    if(DICompositeType struct_ = di) {
-//        auto members = struct_.getTypeArray();
-//        for(auto i = 0U; i < members.getNumElements(); ++i) {
-//            auto mem = members.getElement(i);
-//            flattenTypeTree(mem, collected);
-//        }
-//    } else if(DIDerivedType derived = di) {
-//        flattenTypeTree(derived.getTypeDerivedFrom(), collected);
-//    }
-//
-//    return collected;
-//}
-//
-//std::set<DIType> flattenTypeTree(DIType di) {
-//    std::set<DIType> collected;
-//    flattenTypeTree(di, collected);
-//    return std::move(collected);
-//}
-//
-//DIType stripAliases(DIType tp) {
-//    if(DIAlias alias = tp) return stripAliases(alias.getOriginal());
-//    else return tp;
-//}
-//
-//#include "Util/macros.h"
-//std::map<llvm::Type*, DIType>& flattenTypeTree(
-//    const std::pair<llvm::Type*, DIType>& tp,
-//    std::map<llvm::Type*, DIType>& collected) {
-//
-//    auto* type = tp.first;
-//    auto di = stripAliases(tp.second);
-//
-//    if(collected.count(type)) return collected;
-//    collected.insert({type, di});
-//
-//    if(DICompositeType struct_ = di) {
-//        auto members = struct_.getTypeArray();
-//        ASSERTC(members.getNumElements() == type->getNumContainedTypes());
-//        for(auto i = 0U; i < members.getNumElements(); ++i) {
-//            auto mem = type->getContainedType(i);
-//            auto mmem = members.getElement(i);
-//            flattenTypeTree({mem, mmem}, collected);
-//        }
-//    } else if(DIDerivedType derived = di) {
-//        flattenTypeTree({type->getContainedType(0), derived.getTypeDerivedFrom()}, collected);
-//    }
-//
-//    return collected;
-//}
-//#include "Util/unmacros.h"
-//
-//std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DIType>& tp) {
-//    std::map<llvm::Type*, DIType> collected;
-//    flattenTypeTree(tp, collected);
-//    return std::move(collected);
-//}
+std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::set<DIType>& collected) {
+    if(collected.count(di)) return collected;
+    collected.insert(di);
+
+    if(DICompositeType struct_ = di) {
+        auto members = struct_.getTypeArray();
+        for(auto i = 0U; i < members.getNumElements(); ++i) {
+            auto mem = members.getElement(i);
+            flattenTypeTree(dfi, mem, collected);
+        }
+    } else if(DIDerivedType derived = di) {
+        flattenTypeTree(dfi, dfi.resolve(derived.getTypeDerivedFrom()), collected);
+    }
+
+    return collected;
+}
+
+std::set<DIType> flattenTypeTree(const DebugInfoFinder& dfi,DIType di) {
+    std::set<DIType> collected;
+    flattenTypeTree(dfi, di, collected);
+    return std::move(collected);
+}
+
+DIType stripAliases(const DebugInfoFinder& dfi,DIType tp) {
+    if(DIAlias alias = tp) return stripAliases(dfi, dfi.resolve(alias.getOriginal()));
+    else return tp;
+}
+
+#include "Util/macros.h"
+std::map<llvm::Type*, DIType>& flattenTypeTree(
+    const DebugInfoFinder& dfi,
+    const std::pair<llvm::Type*, DIType>& tp,
+    std::map<llvm::Type*, DIType>& collected) {
+
+    auto* type = tp.first;
+    auto di = stripAliases(dfi, tp.second);
+
+    if(collected.count(type)) return collected;
+    collected.insert({type, di});
+
+    if(DICompositeType struct_ = di) {
+        auto members = struct_.getTypeArray();
+        ASSERTC(members.getNumElements() == type->getNumContainedTypes());
+        for(auto i = 0U; i < members.getNumElements(); ++i) {
+            auto mem = type->getContainedType(i);
+            auto mmem = members.getElement(i);
+            flattenTypeTree(dfi, {mem, mmem}, collected);
+        }
+    } else if(DIDerivedType derived = di) {
+        flattenTypeTree(dfi, {type->getContainedType(0), dfi.resolve(derived.getTypeDerivedFrom())}, collected);
+    }
+
+    return collected;
+}
+#include "Util/unmacros.h"
+
+std::map<llvm::Type*, DIType> flattenTypeTree(const DebugInfoFinder& dfi,
+    const std::pair<llvm::Type*, DIType>& tp) {
+    std::map<llvm::Type*, DIType> collected;
+    flattenTypeTree(dfi, tp, collected);
+    return std::move(collected);
+}
 
 //===----------------------------------------------------------------------===//
 // DebugInfoFinder implementations.

@@ -90,6 +90,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
     using borealis::util::viewContainer;
 
     ctx = &M.getContext();
+    m = &M;
 
     borealis::DebugInfoFinder dfi;
 

@@ -30,6 +30,7 @@ class MetaInfoTracker : public llvm::ModulePass {
 
     VarInfoContainer vars;
     llvm::LLVMContext* ctx;
+    const llvm::Module* m;
 
 public:
 
@@ -48,6 +49,7 @@ public:
     };
     using ValueDescriptors = std::vector<ValueDescriptor>;
     llvm::LLVMContext& getLLVMContext() const { return *ctx; }
+    const llvm::Module& getModule() const { return *m; }
 
 private:
 
@@ -193,6 +195,8 @@ public:
 
         return res;
     }
+
+    const VarInfoContainer& getVars() const { return vars; }
 
     ValueDescriptor locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const {
         ValueDescriptor res;
