@@ -15,17 +15,19 @@
 #include "DSGraph.h"
 #include "TypeSafety.h"
 
-#include "llvm/Constants.h"
-#include "llvm/Function.h"
-#include "llvm/Instructions.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/InstVisitor.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Pass.h>
+#include <llvm/IR/InstVisitor.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
 
 #include <ostream>
 using namespace llvm;
+
+#define DEBUG_TYPE __FILE__
 
 namespace {
   STATISTIC (TotalNumCallees, 
@@ -64,7 +66,7 @@ namespace {
   class DSGraphStats : public FunctionPass, public InstVisitor<DSGraphStats> {
     void countCallees(const Function &F);
     const TDDataStructures *DS;
-    const TargetData *TD;
+    const DataLayout *TD;
     const DSGraph *TDGraph;
     dsa::TypeSafety<TDDataStructures> *TS;
     DSNodeHandle getNodeHandleForValue(Value *V);
@@ -80,7 +82,7 @@ namespace {
     void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesAll();
       AU.addRequired<TDDataStructures>();
-      AU.addRequired<TargetData>();
+      AU.addRequired<DataLayoutPass>();
       AU.addRequired<dsa::TypeSafety<TDDataStructures> >();
     }
 
@@ -236,7 +238,7 @@ void DSGraphStats::visitStore(StoreInst &SI) {
 
 bool DSGraphStats::runOnFunction(Function& F) {
   DS = &getAnalysis<TDDataStructures>();
-  TD = &getAnalysis<TargetData>();
+  TD = &getAnalysis<DataLayoutPass>().getDataLayout();
   TS = &getAnalysis<dsa::TypeSafety<TDDataStructures> >();
   TDGraph = DS->getDSGraph(F);
   countCallees(F);

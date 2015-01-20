@@ -34,7 +34,7 @@ SCCPass::SCCPass(char& ID) : llvm::ModulePass(ID) {}
 SCCPass::~SCCPass() {}
 
 void SCCPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    AUX<llvm::CallGraph>::addRequiredTransitive(AU);
+    AUX<llvm::CallGraphWrapperPass>::addRequiredTransitive(AU);
 }
 
 bool SCCPass::runOnModule(llvm::Module&) {
@@ -43,8 +43,8 @@ bool SCCPass::runOnModule(llvm::Module&) {
 
     bool changed = false;
 
-    CallGraph* CG = &GetAnalysis<CallGraph>::doit(this);
-    for (CallGraphSCC& SCC : view(scc_begin(CG), scc_end(CG))) {
+    CallGraph* CG = &GetAnalysis<CallGraphWrapperPass>::doit(this).getCallGraph();
+    for (auto&& SCC : view(scc_begin(CG), scc_end(CG))) {
         changed |= runOnSCC(SCC);
     }
 
@@ -67,7 +67,7 @@ public:
         AUX<CheckNullDereferencePass>::addRequiredTransitive(AU);
     }
 
-    virtual bool runOnSCC(CallGraphSCC& SCC) {
+    virtual bool runOnSCC(const CallGraphSCC& SCC) {
         using namespace llvm;
 
         for (CallGraphSCCNode node : SCC) {

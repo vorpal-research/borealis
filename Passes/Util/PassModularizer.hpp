@@ -41,7 +41,7 @@ public:
 
     PassModularizerImpl() : SCCPass(ID), defaultPass(new SubPass(this)) {}
 
-    virtual bool runOnSCC(CallGraphSCC& SCC) {
+    virtual bool runOnSCC(const CallGraphSCC& SCC) {
         using namespace llvm;
 
         if (Lazy) return false;

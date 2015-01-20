@@ -6,7 +6,7 @@
  */
 
 #include <llvm/Support/Casting.h>
-#include <llvm/Support/CFG.h>
+#include <llvm/IR/CFG.h>
 
 #include "Passes/Transform/PtrSsa/PhiInjectionPass.h"
 #include "Passes/Transform/PtrSsa/SLInjectionPass.h"
@@ -15,7 +15,7 @@ namespace borealis {
 namespace ptrssa {
 
 void PhiInjectionPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
-    AUX<llvm::DominatorTree>::addRequiredTransitive(AU);
+    AUX<llvm::DominatorTreeWrapperPass>::addRequiredTransitive(AU);
     AUX<StoreLoadInjectionPass>::addPreserved(AU);
 
     // This pass modifies the program, but not the CFG
@@ -63,7 +63,7 @@ void PhiInjectionPass::propagateInstruction(llvm::Instruction& from, llvm::Instr
 bool PhiInjectionPass::runOnFunction(llvm::Function& F) {
     using namespace llvm;
 
-    DT_ = &GetAnalysis<llvm::DominatorTree>::doit(this, F);
+    DT_ = &GetAnalysis<llvm::DominatorTreeWrapperPass>::doit(this, F).getDomTree();
 
     auto sli = getAnalysisIfAvailable<StoreLoadInjectionPass>();
     if (origins.empty() && sli) mergeOriginInfoFrom(*sli);
@@ -71,7 +71,7 @@ bool PhiInjectionPass::runOnFunction(llvm::Function& F) {
     phi_tracker tracker;
     for (auto& BB : F) {
         for (auto& I : BB) {
-            std::vector<User*> uses(I.use_begin(), I.use_end());
+            std::vector<User*> uses(I.user_begin(), I.user_end());
             for (auto* U : uses) {
                 if (auto* IUse = dyn_cast<Instruction>(U)) {
                     if (IUse->getParent() != &BB && !isa<PHINode>(IUse)) {

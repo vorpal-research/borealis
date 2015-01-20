@@ -243,7 +243,7 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
     );
     BasicBlock::Create(M.getContext(), "bb", GDT);
 
-    for (auto& mglob : view(dfi.global_variable_begin(), dfi.global_variable_end())) {
+    for (auto& mglob : viewContainer(dfi.global_variables())) {
         llvm::DIDescriptor di(mglob);
         if (!di.isGlobalVariable()) continue;
 

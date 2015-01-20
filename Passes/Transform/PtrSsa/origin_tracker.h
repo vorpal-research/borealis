@@ -8,7 +8,7 @@
 #ifndef ORIGIN_TRACKER_H_
 #define ORIGIN_TRACKER_H_
 
-#include <llvm/Value.h>
+#include <llvm/IR/Value.h>
 
 #include <unordered_map>
 

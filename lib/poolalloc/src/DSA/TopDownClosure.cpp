@@ -16,13 +16,13 @@
 #define DEBUG_TYPE "td_dsa"
 
 #include "DataStructure.h"
-#include "llvm/Module.h"
-#include "llvm/DerivedTypes.h"
+#include <llvm/IR/Module.h>
+#include <llvm/IR/DerivedTypes.h>
 #include "DSGraph.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Timer.h"
-#include "llvm/ADT/Statistic.h"
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Timer.h>
+#include <llvm/ADT/Statistic.h>
 using namespace llvm;
 
 #define TIME_REGION(VARNAME, DESC)
@@ -404,7 +404,7 @@ void TDDataStructures::InlineCallersIntoGraph(DSGraph* DSG) {
     } else {
       // Otherwise, create a new DSGraph to represent this.
       DSGraph* IndCallGraph = new DSGraph(DSG->getGlobalECs(),
-                                          DSG->getTargetData(), *TypeSS);
+                                          DSG->getDataLayout(), *TypeSS);
 
       // Clone over the call into the new DSGraph
       ReachabilityCloner RC(IndCallGraph, DSG, 0);

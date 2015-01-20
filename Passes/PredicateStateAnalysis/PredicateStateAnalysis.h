@@ -8,7 +8,7 @@
 #ifndef PREDICATESTATEANALYSIS_H_
 #define PREDICATESTATEANALYSIS_H_
 
-#include <llvm/Analysis/Dominators.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/Pass.h>
 
 #include <unordered_map>

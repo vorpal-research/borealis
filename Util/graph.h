@@ -9,7 +9,7 @@
 #define GRAPH_H_
 
 #include <llvm/ADT/DepthFirstIterator.h>
-#include <llvm/Support/CFG.h>
+#include <llvm/IR/CFG.h>
 
 #include <unordered_map>
 

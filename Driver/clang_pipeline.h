@@ -31,7 +31,7 @@ public:
 
     clang_pipeline(
         const std::string& what,
-        const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags
+        llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags
     );
     ~clang_pipeline();
 

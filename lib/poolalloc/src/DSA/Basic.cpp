@@ -15,15 +15,15 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 
-#include "llvm/Constants.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Instructions.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/Module.h"
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Module.h>
 
-#include "llvm/Support/InstIterator.h"
-#include "llvm/Support/InstVisitor.h"
-#include "llvm/Support/GetElementPtrTypeIterator.h"
+#include <llvm/IR/InstIterator.h>
+#include <llvm/IR/InstVisitor.h>
+#include <llvm/IR/GetElementPtrTypeIterator.h>
 
 using namespace llvm;
 
@@ -33,7 +33,7 @@ X("dsa-basic", "Basic Data Structure Analysis(No Analysis)");
 char BasicDataStructures::ID = 0;
 
 bool BasicDataStructures::runOnModule(Module &M) {
-  init(&getAnalysis<TargetData>());
+  init(&getAnalysis<DataLayoutPass>().getDataLayout());
 
   //
   // Create a void pointer type.  This is simply a pointer to an 8 bit value.
@@ -62,7 +62,7 @@ bool BasicDataStructures::runOnModule(Module &M) {
 
   for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
     if (!F->isDeclaration()) {
-      DSGraph* G = new DSGraph(GlobalECs, getTargetData(), *TypeSS, GlobalsGraph);
+      DSGraph* G = new DSGraph(GlobalECs, getDataLayout(), *TypeSS, GlobalsGraph);
       DSNode * Node = new DSNode(G);
           
       if (!F->hasInternalLinkage())

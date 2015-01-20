@@ -9,7 +9,7 @@
 #define DEFAULTPREDICATEANALYSIS_H_
 
 #include <llvm/Pass.h>
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
 
 #include "Factory/Nest.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
@@ -40,7 +40,7 @@ private:
 
     FactoryNest FN;
     SourceLocationTracker* SLT;
-    llvm::TargetData* TD;
+    const llvm::DataLayout* TD;
 
 };
 

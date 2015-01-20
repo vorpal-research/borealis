@@ -15,31 +15,33 @@
 #define DEBUG_TYPE "dsa-local"
 #include "DataStructure.h"
 #include "DSGraph.h"
-#include "llvm/Use.h"
-#include "llvm/InlineAsm.h"
-#include "llvm/Constants.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Instructions.h"
-#include "llvm/Support/GetElementPtrTypeIterator.h"
-#include "llvm/Support/InstVisitor.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Timer.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/Triple.h"
+#include <llvm/IR/Use.h>
+#include <llvm/IR/InlineAsm.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/GetElementPtrTypeIterator.h>
+#include <llvm/IR/InstVisitor.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Timer.h>
+#include <llvm/IR/DataLayout.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/ADT/DenseSet.h>
+#include <llvm/ADT/Triple.h>
 
 #include <fstream>
 
 // FIXME: This should eventually be a FunctionPass that is automatically
 // aggregated into a Pass.
 //
-#include "llvm/Module.h"
+#include <llvm/IR/Module.h>
 
 using namespace llvm;
+
+#define DEBUG_TYPE __FILE__
 
 namespace {
 STATISTIC(NumDirectCall,    "Number of direct calls added");
@@ -73,7 +75,7 @@ namespace {
     DSGraph &G;
     Function* FB;
     LocalDataStructures* DS;
-    const TargetData& TD;
+    const DataLayout& TD;
 
     ////////////////////////////////////////////////////////////////////////////
     // Helper functions used to implement the visitation functions...
@@ -142,7 +144,7 @@ namespace {
 
   public:
     GraphBuilder(Function &f, DSGraph &g, LocalDataStructures& DSi)
-      : G(g), FB(&f), DS(&DSi), TD(g.getTargetData()) {
+      : G(g), FB(&f), DS(&DSi), TD(g.getDataLayout()) {
       // Create scalar nodes for all pointer arguments...
       for (Function::arg_iterator I = f.arg_begin(), E = f.arg_end();
            I != E; ++I) {
@@ -204,7 +206,7 @@ namespace {
 
     // GraphBuilder ctor for working on the globals graph
     explicit GraphBuilder(DSGraph& g)
-      :G(g), FB(0), TD(g.getTargetData())
+      :G(g), FB(0), TD(g.getDataLayout())
     {}
 
     void mergeInGlobalInitializer(GlobalVariable *GV);
@@ -1338,7 +1340,7 @@ void handleMagicSections(DSGraph* GlobalsGraph, Module& M) {
 char LocalDataStructures::ID;
 
 bool LocalDataStructures::runOnModule(Module &M) {
-  init(&getAnalysis<TargetData>());
+  init(&getAnalysis<DataLayout>());
   addrAnalysis = &getAnalysis<AddressTakenAnalysis>();
 
   // First step, build the globals graph.
@@ -1348,7 +1350,7 @@ bool LocalDataStructures::runOnModule(Module &M) {
     // Add initializers for all of the globals to the globals graph.
     for (Module::global_iterator I = M.global_begin(), E = M.global_end();
          I != E; ++I)
-      if (!(I->hasSection() && I->getSection() == "llvm.metadata")) {
+      if (!(I->hasSection() && I->getSection() == llvm::StringRef("llvm.metadata"))) {
         if (I->isDeclaration())
           GGB.mergeExternalGlobal(I);
         else
@@ -1378,7 +1380,7 @@ bool LocalDataStructures::runOnModule(Module &M) {
   // Calculate all of the graphs...
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
     if (!I->isDeclaration()) {
-      DSGraph* G = new DSGraph(GlobalECs, getTargetData(), *TypeSS, GlobalsGraph);
+      DSGraph* G = new DSGraph(GlobalECs, getDataLayout(), *TypeSS, GlobalsGraph);
       GraphBuilder GGB(*I, *G, *this);
       G->getAuxFunctionCalls() = G->getFunctionCalls();
       setDSGraph(*I, G);

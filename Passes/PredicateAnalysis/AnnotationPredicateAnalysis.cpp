@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Support/InstVisitor.h>
+#include <llvm/IR/InstVisitor.h>
 
 #include "Annotation/Annotation.def"
 #include "Codegen/intrinsics_manager.h"

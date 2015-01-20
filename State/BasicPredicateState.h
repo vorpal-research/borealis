@@ -8,7 +8,7 @@
 #ifndef BASICPREDICATESTATE_H_
 #define BASICPREDICATESTATE_H_
 
-#include <llvm/Value.h>
+#include <llvm/IR/Value.h>
 
 #include <list>
 #include <unordered_set>

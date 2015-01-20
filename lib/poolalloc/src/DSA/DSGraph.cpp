@@ -17,29 +17,30 @@
 #include "DSSupport.h"
 #include "DSNode.h"
 #include "stl_util.h"
-#include "llvm/Constants.h"
-#include "llvm/Function.h"
-#include "llvm/GlobalVariable.h"
-#include "llvm/Instructions.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/Assembly/Writer.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/ADT/DepthFirstIterator.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SCCIterator.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Timer.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Type.h"
-#include "llvm/GlobalAlias.h"
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/DataLayout.h>
+// // // #include <llvm/Assembly/Writer.h> // migration // migration // migration
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/ADT/DepthFirstIterator.h>
+#include <llvm/ADT/STLExtras.h>
+#include <llvm/ADT/SCCIterator.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/Timer.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/GlobalAlias.h>
 
 #include <iostream>
 #include <algorithm>
 using namespace llvm;
 
 #define COLLAPSE_ARRAYS_AGGRESSIVELY 0
+#define DEBUG_TYPE "dsgraph"
 namespace {
   STATISTIC (NumCallNodesMerged               , "Number of call nodes merged");
   STATISTIC (NumDNE                           , "Number of nodes removed by reachability");

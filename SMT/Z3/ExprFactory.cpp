@@ -140,7 +140,7 @@ Z3::Dynamic ExprFactory::getVarByTypeAndName(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ExprFactory::initialize(llvm::TargetData* TD) {
+void ExprFactory::initialize(const llvm::DataLayout* TD) {
     pointerSize = TD->getPointerSizeInBits();
 }
 

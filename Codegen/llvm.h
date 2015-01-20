@@ -10,14 +10,14 @@
 
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
-#include <llvm/Metadata.h>
+#include <llvm/IR/Metadata.h>
 
 #include "Util/util.h"
 
 namespace borealis {
 
-llvm::DebugLoc getFirstLocusForBlock(llvm::BasicBlock* bb);
-llvm::MDNode* getFirstMdNodeForBlock(llvm::BasicBlock* bb, const char* id = "dbg");
+llvm::DebugLoc getFirstLocusForBlock(const llvm::BasicBlock* bb);
+llvm::MDNode* getFirstMdNodeForBlock(const llvm::BasicBlock* bb, const char* id = "dbg");
 void approximateAllDebugLocs(llvm::BasicBlock* bb);
 
 void insertBeforeWithLocus(
@@ -30,13 +30,13 @@ void setDebugLocusWithCopiedScope(
         const Locus& loc);
 
 llvm::MDNode* ptr2MDNode(llvm::LLVMContext& ctx, const void* ptr);
-void* MDNode2Ptr(llvm::MDNode* ptr);
+void* MDNode2Ptr(const llvm::MDNode* ptr);
 
 std::string getRawSource(const LocusRange&);
 
-util::option<std::string> getAsCompileTimeString(llvm::Value* value);
+util::option<std::string> getAsCompileTimeString(const llvm::Value* value);
 
-std::list<llvm::Constant*> getAsSeqData(llvm::Constant* value);
+std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value);
 
 
 
@@ -57,7 +57,12 @@ std::list<llvm::Constant*> getAsSeqData(llvm::Constant* value);
 STEAL_FROM_LLVM_BEGIN(DIType)
     bool isUnsignedDIType() const {
         // this is generally fucked up
-        return static_cast<llvm::DIType*>(const_cast<DIType*>(this))->isUnsignedDIType();
+        llvm::DIBasicType bTy(*this);
+        if(!bTy.isBasicType()) return false;
+        return bTy.getEncoding() == llvm::dwarf::DW_ATE_unsigned
+            || bTy.getEncoding() == llvm::dwarf::DW_ATE_unsigned_char
+            || bTy.getEncoding() == llvm::dwarf::DW_ATE_unsigned_fixed
+            || bTy.getEncoding() == llvm::dwarf::DW_ATE_boolean;
     }
 
     llvm::Signedness getSignedness() const {
@@ -77,15 +82,18 @@ struct DITypedArray : public llvm::DIArray {
     DITypedArray(const llvm::DIDescriptor& node): DITypedArray(static_cast<llvm::MDNode*>(node)) {};
 
     T getElement(unsigned Idx) const {
-        if(Tag != ~0U && this->getTag() != Tag) return nullptr;
-        return T{ getDescriptorField(Idx) };
+        return getFieldAs<T>(Idx);
     }
 
     // TODO: iterators?
 };
 
 STEAL_FROM_LLVM(DIDerivedType)
-STEAL_FROM_LLVM(DICompositeType)
+STEAL_FROM_LLVM_BEGIN(DICompositeType)
+    DITypedArray<DIType> getTypeArray() const  {
+        return llvm::DICompositeType::getTypeArray();
+    }
+STEAL_FROM_LLVM_END()
 
 struct DIMember : public llvm::DIDerivedType {
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIMember);
@@ -95,7 +103,7 @@ struct DIMember : public llvm::DIDerivedType {
     DIMember(llvm::DIDerivedType node): DIMember(static_cast<llvm::MDNode*>(node)) {};
     DIMember(const llvm::DIDescriptor& node): DIMember(static_cast<llvm::MDNode*>(node)) {};
 
-    llvm::DIType getType() const {
+    llvm::DITypeRef getType() const {
         return getTypeDerivedFrom();
     }
 };
@@ -120,7 +128,7 @@ struct DIAlias : public llvm::DIDerivedType {
     DIAlias(llvm::DIDerivedType node): DIAlias(static_cast<llvm::MDNode*>(node)) {};
     DIAlias(const llvm::DIDescriptor& node): DIAlias(static_cast<llvm::MDNode*>(node)) {};
 
-    llvm::DIType getOriginal() const {
+    llvm::DITypeRef getOriginal() const {
         return getTypeDerivedFrom();
     }
 };
@@ -128,9 +136,6 @@ struct DIAlias : public llvm::DIDerivedType {
 struct DIStructType : public llvm::DICompositeType {
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIStructType);
     DIStructType(const llvm::MDNode* node): llvm::DICompositeType(node) {
-        while(DIAlias(this->DbgNode)) {
-            this->DbgNode = this->getTypeDerivedFrom();
-        }
         if(this->getTag() != llvm::dwarf::DW_TAG_structure_type) this->DbgNode = nullptr;
     };
     DIStructType(llvm::DICompositeType node): DIStructType(static_cast<llvm::MDNode*>(node)) {};
@@ -202,8 +207,8 @@ struct DIBorealisVarDesc : public llvm::DIDescriptor {
 };
 
 DIType stripAliases(DIType tp);
-std::set<DIType> flattenTypeTree(DIType di);
-std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DIType>& tp);
+//std::set<DIType> flattenTypeTree(DIType di);
+//std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DIType>& tp);
 
 #undef STEAL_FROM_LLVM
 #undef STEAL_FROM_LLVM_END
@@ -211,27 +216,41 @@ std::map<llvm::Type*, DIType> flattenTypeTree(const std::pair<llvm::Type*, DITyp
 
 #include "Util/unmacros.h"
 
+/// DebugInfoFinder tries to list all debug info MDNodes used in a module. To
+/// list debug info MDNodes used by an instruction, DebugInfoFinder uses
+/// processDeclare, processValue and processLocation to handle DbgDeclareInst,
+/// DbgValueInst and DbgLoc attached to instructions. processModule will go
+/// through all DICompileUnits in llvm.dbg.cu and list debug info MDNodes
+/// used by the CUs.
 class DebugInfoFinder {
 public:
+    DebugInfoFinder() : TypeMapInitialized(false) {}
+
     /// processModule - Process entire module and collect debug info
     /// anchors.
-    void processModule(llvm::Module &M);
+    void processModule(const llvm::Module &M);
+
+    /// processDeclare - Process DbgDeclareInst.
+    void processDeclare(const llvm::Module &M, const llvm::DbgDeclareInst *DDI);
+    /// Process DbgValueInst.
+    void processValue(const llvm::Module &M, const llvm::DbgValueInst *DVI);
+    /// processLocation - Process DILocation.
+    void processLocation(const llvm::Module &M, llvm::DILocation Loc);
+
+    /// Clear all lists.
+    void reset();
 
 private:
+    /// Initialize TypeIdentifierMap.
+    void InitializeTypeMap(const llvm::Module &M);
+
     /// processType - Process DIType.
     void processType(llvm::DIType DT);
-
-    /// processLexicalBlock - Process DILexicalBlock.
-    void processLexicalBlock(llvm::DILexicalBlock LB);
 
     /// processSubprogram - Process DISubprogram.
     void processSubprogram(llvm::DISubprogram SP);
 
-    /// processDeclare - Process DbgDeclareInst.
-    void processDeclare(llvm::DbgDeclareInst *DDI);
-
-    /// processLocation - Process DILocation.
-    void processLocation(llvm::DILocation Loc);
+    void processScope(llvm::DIScope Scope);
 
     /// addCompileUnit - Add compile unit into CUs.
     bool addCompileUnit(llvm::DICompileUnit CU);
@@ -245,28 +264,56 @@ private:
     /// addType - Add type into Tys.
     bool addType(llvm::DIType DT);
 
-public:
-    typedef llvm::SmallVector<llvm::MDNode *, 8>::const_iterator iterator;
-    iterator compile_unit_begin()    const { return CUs.begin(); }
-    iterator compile_unit_end()      const { return CUs.end(); }
-    iterator subprogram_begin()      const { return SPs.begin(); }
-    iterator subprogram_end()        const { return SPs.end(); }
-    iterator global_variable_begin() const { return GVs.begin(); }
-    iterator global_variable_end()   const { return GVs.end(); }
-    iterator type_begin()            const { return TYs.begin(); }
-    iterator type_end()              const { return TYs.end(); }
+    bool addScope(llvm::DIScope Scope);
 
-    unsigned compile_unit_count()    const { return CUs.size(); }
+public:
+    typedef llvm::SmallVectorImpl<llvm::DICompileUnit>::const_iterator compile_unit_iterator;
+    typedef llvm::SmallVectorImpl<llvm::DISubprogram>::const_iterator subprogram_iterator;
+    typedef llvm::SmallVectorImpl<llvm::DIGlobalVariable>::const_iterator global_variable_iterator;
+    typedef llvm::SmallVectorImpl<llvm::DIType>::const_iterator type_iterator;
+    typedef llvm::SmallVectorImpl<llvm::DIScope>::const_iterator scope_iterator;
+
+    llvm::iterator_range<compile_unit_iterator> compile_units() const {
+        return llvm::iterator_range<compile_unit_iterator>(CUs.begin(), CUs.end());
+    }
+
+    llvm::iterator_range<subprogram_iterator> subprograms() const {
+        return llvm::iterator_range<subprogram_iterator>(SPs.begin(), SPs.end());
+    }
+
+    llvm::iterator_range<global_variable_iterator> global_variables() const {
+        return llvm::iterator_range<global_variable_iterator>(GVs.begin(), GVs.end());
+    }
+
+    llvm::iterator_range<type_iterator> types() const {
+        return llvm::iterator_range<type_iterator>(TYs.begin(), TYs.end());
+    }
+
+    llvm::iterator_range<scope_iterator> scopes() const {
+        return llvm::iterator_range<scope_iterator>(Scopes.begin(), Scopes.end());
+    }
+
+    unsigned compile_unit_count() const { return CUs.size(); }
     unsigned global_variable_count() const { return GVs.size(); }
-    unsigned subprogram_count()      const { return SPs.size(); }
-    unsigned type_count()            const { return TYs.size(); }
+    unsigned subprogram_count() const { return SPs.size(); }
+    unsigned type_count() const { return TYs.size(); }
+    unsigned scope_count() const { return Scopes.size(); }
+
+    template<class DI>
+    DI resolve(llvm::DIRef<DI> ref) const {
+        return ref.resolve(TypeIdentifierMap);
+    }
 
 private:
-    llvm::SmallVector<llvm::MDNode *, 8> CUs;  // Compile Units
-    llvm::SmallVector<llvm::MDNode *, 8> SPs;  // Subprograms
-    llvm::SmallVector<llvm::MDNode *, 8> GVs;  // Global Variables;
-    llvm::SmallVector<llvm::MDNode *, 8> TYs;  // Types
+    llvm::SmallVector<llvm::DICompileUnit, 8> CUs;    // Compile Units
+    llvm::SmallVector<llvm::DISubprogram, 8> SPs;    // Subprograms
+    llvm::SmallVector<llvm::DIGlobalVariable, 8> GVs;    // Global Variables;
+    llvm::SmallVector<llvm::DIType, 8> TYs;    // Types
+    llvm::SmallVector<llvm::DIScope, 8> Scopes; // Scopes
     llvm::SmallPtrSet<llvm::MDNode *, 64> NodesSeen;
+    llvm::DITypeIdentifierMap TypeIdentifierMap;
+    /// Specify if TypeIdentifierMap is initialized.
+    bool TypeMapInitialized;
 };
 
 } // namespace borealis

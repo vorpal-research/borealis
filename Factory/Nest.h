@@ -8,7 +8,7 @@
 #ifndef FACTORY_NEST_H_
 #define FACTORY_NEST_H_
 
-#include <llvm/Module.h>
+#include <llvm/IR/Module.h>
 
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"
@@ -37,7 +37,7 @@ public:
 
     FactoryNest(SlotTracker* st);
 
-    PredicateState::Ptr getGlobalState(llvm::Module* M);
+    PredicateState::Ptr getGlobalState(const llvm::Module* M);
 
 };
 

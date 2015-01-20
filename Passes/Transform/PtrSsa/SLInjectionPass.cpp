@@ -5,8 +5,8 @@
  *      Author: belyaev
  */
 
-#include <llvm/DerivedTypes.h>
-#include <llvm/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Type.h>
 
 #include <iterator>
 
@@ -47,7 +47,7 @@ void StoreLoadInjectionPass::renameNewDefs(
     // are invalidated when we do the renaming
     std::vector<llvm::Instruction*> uses;
     uses.reserve(Op->getNumUses());
-    for (auto* use : view(Op->use_begin(), Op->use_end()))
+    for (auto* use : view(Op->user_begin(), Op->user_end()))
         uses.push_back(llvm::dyn_cast<llvm::Instruction>(use));
 
     llvm::BasicBlock* BB = newdef->getParent();
@@ -78,7 +78,7 @@ void StoreLoadInjectionPass::renameNewDefs(
 }
 
 void StoreLoadInjectionPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
-    AUX<llvm::DominatorTree>::addRequiredTransitive(AU);
+    AUX<llvm::DominatorTreeWrapperPass>::addRequiredTransitive(AU);
     AUX<PhiInjectionPass>::addPreserved(AU);
 
     // This pass modifies the program, but not the CFG
@@ -86,7 +86,7 @@ void StoreLoadInjectionPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
 }
 
 bool StoreLoadInjectionPass::runOnBasicBlock(llvm::BasicBlock& bb) {
-    DT_ = &GetAnalysis<llvm::DominatorTree>::doit(this, *bb.getParent());
+    DT_ = &GetAnalysis<llvm::DominatorTreeWrapperPass>::doit(this, *bb.getParent()).getDomTree();
 
     auto phii = getAnalysisIfAvailable<PhiInjectionPass>();
 

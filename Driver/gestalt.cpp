@@ -19,7 +19,6 @@
 #include <clang/Driver/Driver.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
-#include <clang/Frontend/DiagnosticOptions.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Frontend/TextDiagnosticBuffer.h>
@@ -30,36 +29,34 @@
 #include <clang/Parse/Parser.h>
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
-#include <llvm/ADT/OwningPtr.h>
 #include <llvm/ADT/StringSet.h>
 #include <llvm/ADT/Triple.h>
 #include <llvm/Analysis/CallGraph.h>
-#include <llvm/Analysis/DebugInfo.h>
+#include <llvm/IR/DebugInfo.h>
 #include <llvm/Analysis/LoopPass.h>
 #include <llvm/Analysis/RegionPass.h>
-#include <llvm/Analysis/Verifier.h>
-#include <llvm/Assembly/PrintModulePass.h>
-#include <llvm/BasicBlock.h>
+#include <llvm/IR/IRPrintingPasses.h>
+#include <llvm/IR/BasicBlock.h>
 #include <llvm/Bitcode/ReaderWriter.h>
-#include <llvm/CallGraphSCCPass.h>
-#include <llvm/Function.h>
-#include <llvm/Instruction.h>
+#include <llvm/Analysis/CallGraphSCCPass.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
 #include <llvm/LinkAllPasses.h>
-#include <llvm/LinkAllVMCore.h>
-#include <llvm/LLVMContext.h>
-#include <llvm/Module.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/PassManager.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/Host.h>
-#include <llvm/Support/IRReader.h>
+#include <llvm/Support/Program.h>
+#include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/ManagedStatic.h>
-#include <llvm/Support/PassNameParser.h>
 #include <llvm/Support/PrettyStackTrace.h>
 #include <llvm/Support/Signals.h>
 #include <llvm/Support/SystemUtils.h>
 #include <llvm/Support/ToolOutputFile.h>
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
 #include <llvm/Target/TargetLibraryInfo.h>
 #include <llvm/Target/TargetMachine.h>
 
@@ -101,8 +98,8 @@ int gestalt::main(int argc, const char** argv) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CommandLine args(argc, argv);
-    llvm::sys::Path selfPath = llvm::sys::Program::FindProgramByName(argv[0]);
-    llvm::SmallString<64> selfDir = selfPath.getDirname();
+    auto selfPath = llvm::sys::FindProgramByName(argv[0]);
+    llvm::SmallString<64> selfDir = llvm::sys::path::parent_path(selfPath);
     auto configPath = selfDir;
     llvm::sys::path::append(configPath, "wrapper.conf");
     auto defaultLogIni = selfDir;
@@ -141,13 +138,11 @@ int gestalt::main(int argc, const char** argv) {
 
     infos() << "Invoking clang with: " << compilerArgs << endl;
 
-    DiagnosticOptions DiagOpts;
-    DiagOpts.ShowCarets = false;
+    auto diagOpts = llvm::IntrusiveRefCntPtr<DiagnosticOptions>(new DiagnosticOptions{});
+    diagOpts->ShowCarets = false;
 
     auto diagBuffer = borealis::util::uniq(new DiagnosticLogger(*this));
-    auto diags = CompilerInstance::createDiagnostics(DiagOpts,
-            compilerArgs.argc(), compilerArgs.argv(),
-            diagBuffer.get(), /* ownClient = */false, /* cloneClient = */false);
+    auto diags = CompilerInstance::createDiagnostics(diagOpts.get(), diagBuffer.get(), /* ownClient = */false);
 
     // first things first
     // fall-through to the regular clang
@@ -167,6 +162,8 @@ int gestalt::main(int argc, const char** argv) {
     if (compileCommands.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
 
     clang_pipeline clang { "clang", diags };
+
+
     clang.assignLogger(*this);
     clang.invoke(compileCommands);
 
@@ -232,7 +229,8 @@ int gestalt::main(int argc, const char** argv) {
     // verify we didn't screw up the module structure
 
     std::string err;
-    if (verifyModule(*module_ptr, ReturnStatusAction, &err)) {
+    llvm::raw_string_ostream rso{err};
+    if (verifyModule(*module_ptr, &rso)) {
         errs() << "Module errors detected: " << err << endl;
     }
 

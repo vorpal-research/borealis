@@ -8,7 +8,7 @@
 #ifndef SOURCELOCATIONTRACKER_H_
 #define SOURCELOCATIONTRACKER_H_
 
-#include <llvm/Analysis/DebugInfo.h>
+#include <llvm/IR/DebugInfo.h>
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Pass.h>
 

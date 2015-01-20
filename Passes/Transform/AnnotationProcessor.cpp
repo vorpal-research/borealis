@@ -5,7 +5,7 @@
  *      Author: belyaev
  */
 
-#include <llvm/Constants.h>
+#include <llvm/IR/Constants.h>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"

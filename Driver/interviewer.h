@@ -23,7 +23,7 @@ namespace driver {
 
 struct command {
     enum { COMPILE, LINK, NOP } operation;
-    std::shared_ptr<clang::driver::InputArgList> cl;
+    std::shared_ptr<llvm::opt::InputArgList> cl;
 
     friend std::ostream& operator<<(std::ostream& ost, const command& cmd) {
         switch(cmd.operation) {

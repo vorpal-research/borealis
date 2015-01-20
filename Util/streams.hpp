@@ -10,12 +10,12 @@
 
 #include <clang/AST/Decl.h>
 #include <llvm/Analysis/ScalarEvolution.h>
-#include <llvm/Module.h>
+#include <llvm/IR/Module.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Type.h>
-#include <llvm/Value.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 
 #include <iostream>
 #include <set>
@@ -372,33 +372,33 @@ struct containerPrettyPrinter {
     }
 };
 
-template<typename T, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::vector<T>& vec) {
-    typedef std::vector<T> Container;
+template<typename T, typename A, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& s, const std::vector<T, A>& vec) {
+    typedef std::vector<T, A> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::VECTOR_LEFT_BRACE, impl_::VECTOR_RIGHT_BRACE>(s, vec);
 }
 
-template<typename T, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::set<T>& set) {
-    typedef std::set<T> Container;
+template<typename T, typename Compare, typename A, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& s, const std::set<T, Compare, A>& set) {
+    typedef std::set<T, Compare, A> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, set);
 }
 
-template<typename T, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::unordered_set<T>& set) {
-    typedef std::unordered_set<T> Container;
+template<typename T, typename Hash, typename Pred, typename A, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& s, const std::unordered_set<T, Hash, Pred, A>& set) {
+    typedef std::unordered_set<T, Hash, Pred, A> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, set);
 }
 
-template<typename K, typename V, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::map<K, V>& map) {
-    typedef std::map<K, V> Container;
+template<typename K, typename V, typename Compare, typename A, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& s, const std::map<K, V, Compare, A>& map) {
+    typedef std::map<K, V, Compare, A> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, map);
 }
 
-template<typename K, typename V, typename Streamer>
-Streamer& operator<<(Streamer& s, const std::unordered_map<K, V>& map) {
-    typedef std::unordered_map<K, V> Container;
+template<typename K, typename V, typename Hash, typename Pred, typename A, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>&  operator<<(std::basic_ostream<CharT, Traits>& s, const std::unordered_map<K, V, Hash, Pred, A>& map) {
+    typedef std::unordered_map<K, V, Hash, Pred, A> Container;
     return containerPrettyPrinter< Container >::template doit<impl_::SET_LEFT_BRACE, impl_::SET_RIGHT_BRACE>(s, map);
 }
 

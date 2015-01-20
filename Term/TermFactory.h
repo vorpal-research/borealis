@@ -27,7 +27,7 @@ public:
 
     typedef std::shared_ptr<TermFactory> Ptr;
 
-    Term::Ptr getArgumentTerm(llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getArgumentTerm(const llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         return Term::Ptr{
@@ -39,7 +39,7 @@ public:
         };
     }
 
-    Term::Ptr getStringArgumentTerm(llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getStringArgumentTerm(const llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         return Term::Ptr{
@@ -52,7 +52,7 @@ public:
         };
     }
 
-    Term::Ptr getConstTerm(llvm::Constant* c, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getConstTerm(const llvm::Constant* c, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         using namespace llvm;
@@ -125,13 +125,13 @@ public:
         };
     }
 
-    Term::Ptr getNullPtrTerm(llvm::ConstantPointerNull* n) {
+    Term::Ptr getNullPtrTerm(const llvm::ConstantPointerNull* n) {
         return Term::Ptr{
             new OpaqueNullPtrTerm(TyF->cast(n->getType()))
         };
     }
 
-    Term::Ptr getUndefTerm(llvm::UndefValue* u) {
+    Term::Ptr getUndefTerm(const llvm::UndefValue* u) {
         return Term::Ptr{
             new OpaqueUndefTerm(TyF->cast(u->getType()))
         };
@@ -175,7 +175,7 @@ public:
         };
     }
 
-    Term::Ptr getReturnValueTerm(llvm::Function* F, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getReturnValueTerm(const llvm::Function* F, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
 
         return Term::Ptr{
@@ -186,7 +186,7 @@ public:
         };
     }
 
-    Term::Ptr getValueTerm(llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown) {
         ASSERT(st, "Missing SlotTracker");
         using namespace llvm;
 
@@ -204,7 +204,7 @@ public:
         return Term::Ptr{ new ValueTerm(type, name) };
     }
 
-    Term::Ptr getGlobalValueTerm(llvm::GlobalValue* gv, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getGlobalValueTerm(const llvm::GlobalValue* gv, llvm::Signedness sign = llvm::Signedness::Unknown) {
         return Term::Ptr{
             new ValueTerm(
                 TyF->cast(gv->getType(), sign),
@@ -214,7 +214,7 @@ public:
         };
     }
 
-    Term::Ptr getLocalValueTerm(llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown) {
+    Term::Ptr getLocalValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown) {
         return Term::Ptr{
             new ValueTerm(
                 TyF->cast(v->getType(), sign),

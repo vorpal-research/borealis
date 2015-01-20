@@ -27,7 +27,7 @@ public:
     virtual bool runOnModule(llvm::Module&) override;
     virtual ~SCCPass();
 
-    virtual bool runOnSCC(CallGraphSCC& SCC) = 0;
+    virtual bool runOnSCC(const CallGraphSCC& SCC) = 0;
 };
 
 } /* namespace borealis */

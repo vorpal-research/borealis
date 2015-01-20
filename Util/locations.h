@@ -9,8 +9,8 @@
 #define LOCATIONS_H_
 
 #include <clang/Basic/SourceManager.h>
-#include <llvm/Analysis/DebugInfo.h>
-#include <llvm/Instruction.h>
+#include <llvm/IR/DebugInfo.h>
+#include <llvm/IR/Instruction.h>
 
 #include <iostream>
 #include <utility>
@@ -148,21 +148,23 @@ struct LocalLocus {
         }
         return std::move(that);
     }
+
+    // FIXME: some ambiguity shit going on here, fix
+    friend std::ostream& operator<<(std::ostream& ost, const LocalLocus& ll) {
+        if (ll.line == LocalLocus::UNKNOWN_LOC) ost << "<unknown-line>";
+        else ost << ll.line;
+
+        ost << ":";
+
+        if (ll.col == LocalLocus::UNKNOWN_LOC) ost << "<unknown-col>";
+        else ost << ll.col;
+
+        // this is generally fucked up
+        return ost;
+    }
 };
 
-template<class Streamer>
-Streamer& operator<<(Streamer& ost, const LocalLocus& ll) {
-    if (ll.line == LocalLocus::UNKNOWN_LOC) ost << "<unknown-line>";
-    else ost << ll.line;
 
-    ost << ":";
-
-    if (ll.col == LocalLocus::UNKNOWN_LOC) ost << "<unknown-col>";
-    else ost << ll.col;
-
-    // this is generally fucked up
-    return static_cast<Streamer&>(ost);
-}
 
 namespace util {
 template<>
@@ -260,13 +262,16 @@ struct Locus {
         if (isUnknown()) return this;
         else return nullptr;
     }
+
+    // FIXME: some ambiguity shit going on here, fix
+    friend std::ostream& operator<<(std::ostream& ost, const Locus& ll) {
+        // this is generally fucked up
+        return (ost << ll.filename << ":" << ll.loc);
+    }
+
 };
 
-template<class Streamer>
-Streamer& operator<<(Streamer& ost, const Locus& ll) {
-    // this is generally fucked up
-    return static_cast<Streamer&>(ost << ll.filename << ":" << ll.loc);
-}
+
 
 namespace util {
 
@@ -311,16 +316,14 @@ struct LocusRange {
 
 namespace std {
 template<>
-class hash<borealis::LocalLocus> {
-public:
+struct hash<borealis::LocalLocus> {
     size_t operator()(const borealis::LocalLocus &l) const {
         return borealis::util::hash::defaultHasher()(l.line, l.col);
     }
 };
 
 template<>
-class hash<borealis::Locus> {
-public:
+struct hash<borealis::Locus> {
     size_t operator()(const borealis::Locus &l) const {
         return borealis::util::hash::defaultHasher()(l.filename, l.loc);
     }

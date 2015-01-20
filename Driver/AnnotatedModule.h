@@ -8,7 +8,7 @@
 #ifndef ANNOTATEDMODULE_H_
 #define ANNOTATEDMODULE_H_
 
-#include <llvm/Module.h>
+#include <llvm/IR/Module.h>
 
 #include <memory>
 

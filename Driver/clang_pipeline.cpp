@@ -6,22 +6,21 @@
  */
 
 #include <clang/CodeGen/CodeGenAction.h>
-#include <clang/Driver/Arg.h>
-#include <clang/Driver/ArgList.h>
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Driver.h>
 #include <clang/Driver/Options.h>
 #include <clang/Driver/Tool.h>
 #include <clang/Frontend/CompilerInstance.h>
-#include <clang/Frontend/DiagnosticOptions.h>
 #include <clang/Frontend/FrontendDiagnostic.h>
 #include <clang/Frontend/Utils.h>
 #include <llvm/Bitcode/ReaderWriter.h>
-#include <llvm/Linker.h>
+#include <llvm/Linker/Linker.h>
 #include <llvm/Support/Host.h>
-#include <llvm/Support/TypeBuilder.h>
-#include <llvm/Support/IRReader.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
+#include <llvm/Option/Arg.h>
+#include <llvm/Option/ArgList.h>
 
 #include <fstream>
 #include <unordered_map>
@@ -99,7 +98,7 @@ struct clang_pipeline::impl: public DelegateLogging {
 
     impl(clang_pipeline* abs): DelegateLogging(*abs), fn(nullptr) {};
 
-    void compile(const clang::driver::InputArgList& args) {
+    void compile(const llvm::opt::InputArgList& args) {
         std::unique_ptr<CompilerInvocation> CI { new CompilerInvocation() };
         std::vector<const char*> ccArgs;
         ccArgs.reserve(args.getNumInputArgStrings());
@@ -130,7 +129,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         ASSERT(ci.hasInvocation(), "No CompilerInvocation for clang_pipeline");
 
         ci.getCodeGenOpts().EmitDeclMetadata = true;
-        ci.getCodeGenOpts().DebugInfo = true;
+        ci.getCodeGenOpts().setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
         ci.getDiagnosticOpts().ShowCarets = false;
 
         clang::EmitLLVMOnlyAction compile_to_llvm{ &llvm::getGlobalContext() };
@@ -183,7 +182,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         ASSERTC(annotatedModule != nullptr);
 
         std::string error;
-        llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error);
+        llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error, llvm::sys::fs::F_Text | llvm::sys::fs::F_RW);
         llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
         errs() << error << endl;
 
@@ -203,7 +202,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         return nullptr;
     }
 
-    void link(const clang::driver::InputArgList& args) {
+    void link(const llvm::opt::InputArgList& args) {
         std::string moduleName;
 
         {
@@ -224,7 +223,8 @@ struct clang_pipeline::impl: public DelegateLogging {
             break;
         }
 
-        llvm::Linker linker("wrapper", moduleName, llvm::getGlobalContext(), llvm::Linker::DestroySource);
+        auto module = util::uniq(new llvm::Module(moduleName, llvm::getGlobalContext()));
+        llvm::Linker linker(module.get(), false);
         AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
 
         for (const auto& arg: util::view(
@@ -238,13 +238,15 @@ struct clang_pipeline::impl: public DelegateLogging {
                     continue;
                 }
 
-                linker.LinkInModule(am->module.get());
+                std::string err;
+                if(linker.linkInModule(am->module.get(), llvm::Linker::DestroySource, &err)) {
+                    errs() << "Errors during linking: " << err << endl;
+                }
                 annotations->mergeIn(am->annotations);
                 claim(subarg);
             }
         }
 
-        auto module = util::uniq(linker.releaseModule());
         IntrinsicsManager::getInstance().updateForModule(*module);
         MetaInserter::unliftAllDebugIntrinsics(*module);
 
@@ -276,10 +278,10 @@ clang_pipeline::~clang_pipeline() {};
 
 clang_pipeline::clang_pipeline(
     const std::string&,
-    const llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags):
+    llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags):
         pimpl{ new impl{ this } } {
     pimpl->assignLogger(*this);
-    pimpl->ci.setDiagnostics(diags.getPtr());
+    pimpl->ci.setDiagnostics(diags.get());
 }
 
 void clang_pipeline::invoke(const command& cmd) {

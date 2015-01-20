@@ -47,8 +47,8 @@ bool CheckManager::shouldSkipInstruction(llvm::Instruction* I) const {
     IntrinsicsManager& im = IntrinsicsManager::getInstance();
 
     if (auto* gep = llvm::dyn_cast<GetElementPtrInst>(I)) {
-        return util::view(gep->use_begin(), gep->use_end())
-               .all_of([&im](User* user) -> bool {
+        return util::view(gep->user_begin(), gep->user_end())
+               .all_of([&im](const User* user) -> bool {
                    if (auto* call = dyn_cast<CallInst>(user)) {
                        if (function_type::UNKNOWN != im.getIntrinsicType(*call))
                            return true;

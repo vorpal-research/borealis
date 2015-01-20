@@ -5,14 +5,14 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/LLVMContext.h>
-#include <llvm/Argument.h>
-#include <llvm/Function.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
-#include <llvm/Module.h>
-#include <llvm/Type.h>
-#include <llvm/Value.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Argument.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 
 #include <gtest/gtest.h>
 

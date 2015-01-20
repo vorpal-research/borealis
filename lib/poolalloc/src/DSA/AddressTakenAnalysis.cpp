@@ -14,15 +14,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Constants.h"
-#include "llvm/Pass.h"
-#include "llvm/Module.h"
-#include "llvm/Function.h"
-#include "llvm/Instructions.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/CallSite.h"
+#include <llvm/IR/Constants.h>
+#include <llvm/Pass.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/IR/CallSite.h>
 
 #include <fstream>
 #include <set>
@@ -34,9 +34,9 @@ using namespace llvm;
 
 AddressTakenAnalysis::~AddressTakenAnalysis() {}
 
-static bool isAddressTaken(Value* V) {
-  for (Value::use_iterator I = V->use_begin(), E = V->use_end(); I != E; ++I) {
-    User *U = *I;
+static bool isAddressTaken(const Value* V) {
+  for (Value::const_user_iterator I = V->user_begin(), E = V->user_end(); I != E; ++I) {
+    const User *U = *I;
     if(isa<StoreInst>(U))
       return true;
     if (!isa<CallInst>(U) && !isa<InvokeInst>(U)) {
@@ -46,8 +46,8 @@ static bool isAddressTaken(Value* V) {
         if(isAddressTaken(U))
           return true;
       } else {
-        if (Constant *C = dyn_cast<Constant>(U)) {
-          if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C)) {
+        if (auto C = dyn_cast<Constant>(U)) {
+          if (auto CE = dyn_cast<ConstantExpr>(C)) {
             if (CE->getOpcode() == Instruction::BitCast) {
               return isAddressTaken(CE);
             }
@@ -59,7 +59,7 @@ static bool isAddressTaken(Value* V) {
       // FIXME: Can be more robust here for weak aliases that 
       // are never used
     } else {
-      llvm::CallSite CS(cast<Instruction>(U));
+      llvm::CallSite CS((Instruction*)(U));
       if (!CS.isCallee(I))
         return true;
     }

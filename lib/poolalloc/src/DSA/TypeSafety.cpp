@@ -17,12 +17,12 @@
 
 #include "TypeSafety.h"
 
-#include "llvm/Module.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/ADT/Statistic.h"
+#include <llvm/IR/Module.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/ADT/Statistic.h>
 
 static RegisterPass<dsa::TypeSafety<EQTDDataStructures> >
 X ("typesafety-eqtd", "Find type-safe pointers");
@@ -333,7 +333,7 @@ TypeSafety<dsa>::runOnModule(Module & M) {
   //
   // Get access to prerequisite passes.
   //
-  TD      = &getAnalysis<TargetData>();
+  TD      = &getAnalysis<DataLayoutPass>().getDataLayout();
   dsaPass = &getAnalysis<dsa>();
 
   //

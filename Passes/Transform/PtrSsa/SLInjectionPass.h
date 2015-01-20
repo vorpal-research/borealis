@@ -8,7 +8,7 @@
 #ifndef SLINJECTIONPASS_H_
 #define SLINJECTIONPASS_H_
 
-#include <llvm/Analysis/Dominators.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/Pass.h>
 
 #include "Passes/Transform/PtrSsa/origin_tracker.h"

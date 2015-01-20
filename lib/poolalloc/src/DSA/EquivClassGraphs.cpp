@@ -16,17 +16,17 @@
 
 #define DEBUG_TYPE "ECGraphs"
 #include "DataStructure.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Module.h"
-#include "llvm/Pass.h"
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Pass.h>
 #include "DSGraph.h"
-#include "llvm/Support/CallSite.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/ADT/SCCIterator.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/ADT/EquivalenceClasses.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/Support/FormattedStream.h"
+#include <llvm/IR/CallSite.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/ADT/SCCIterator.h>
+#include <llvm/ADT/Statistic.h>
+#include <llvm/ADT/EquivalenceClasses.h>
+#include <llvm/ADT/STLExtras.h>
+#include <llvm/Support/FormattedStream.h>
 #include <fstream>
 using namespace llvm;
 

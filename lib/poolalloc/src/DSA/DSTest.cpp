@@ -40,12 +40,12 @@
 #include "DSGraph.h"
 #include "DSNode.h"
 #include "DSCallGraph.h"
-#include "llvm/Module.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/ValueSymbolTable.h"
-#include "llvm/Assembly/Writer.h"
+#include <llvm/IR/Module.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/IR/ValueSymbolTable.h>
+// // // #include <llvm/Assembly/Writer.h> // migration // migration // migration
 using namespace llvm;
 
 namespace {

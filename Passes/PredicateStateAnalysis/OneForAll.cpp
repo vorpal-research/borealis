@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Support/CFG.h>
+#include <llvm/IR/CFG.h>
 
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateAnalysis/Defines.def"
@@ -28,7 +28,7 @@ OneForAll::OneForAll(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 void OneForAll::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
-    AUX<llvm::DominatorTree>::addRequired(AU);
+    AUX<llvm::DominatorTreeWrapperPass>::addRequired(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
@@ -42,7 +42,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     init();
 
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
-    DT = &GetAnalysis< llvm::DominatorTree >::doit(this, F);
+    DT = &GetAnalysis< llvm::DominatorTreeWrapperPass >::doit(this, F).getDomTree();
     SLT = &GetAnalysis< SourceLocationTracker >::doit(this, F);
 
     auto* st = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);

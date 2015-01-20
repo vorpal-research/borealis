@@ -1,9 +1,9 @@
 #include "llvm/Pass.h"
 #include "llvm/ADT/Statistic.h"
-#include "llvm/Analysis/Dominators.h"
+#include "llvm/IR/Dominators.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/Support/CFG.h"
-#include "llvm/Instructions.h"
+#include "llvm/IR/CFG.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Analysis/DominanceFrontier.h"
 #include <deque>
 #include <algorithm>

@@ -6,7 +6,8 @@
  */
 
 #include <llvm/Analysis/MemoryBuiltins.h>
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
+#include <llvm/Target/TargetLibraryInfo.h>
 
 #include "Config/config.h"
 #include "Codegen/intrinsics_manager.h"
@@ -27,8 +28,8 @@ llvm::Type* getMallocBitcastType(llvm::CallInst* CI) {
 
     if (CI->getNumUses() == 0) return nullptr;
 
-    auto* bitcastType = CI->use_back()->getType();
-    for (const auto* user : util::view(CI->use_begin(), CI->use_end())) {
+    auto* bitcastType = CI->user_back()->getType();
+    for (const auto* user : util::view(CI->user_begin(), CI->user_end())) {
         if (!isa<BitCastInst>(user)) return nullptr;
         if (bitcastType != user->getType()) return nullptr;
     }
@@ -40,8 +41,11 @@ bool canEliminateMallocBitcasts(llvm::CallInst* CI) {
     return getMallocBitcastType(CI) != nullptr;
 }
 
-llvm::Value* getMallocArraySizeOrArg(llvm::CallInst* CI, llvm::TargetData* TD) {
-    auto* arraySize = llvm::getMallocArraySize(CI, TD, true);
+llvm::Value* getMallocArraySizeOrArg(
+        llvm::CallInst* CI,
+        const llvm::DataLayout* TD,
+        const llvm::TargetLibraryInfo* TLI) {
+    auto* arraySize = llvm::getMallocArraySize(CI, TD, TLI, true);
     return arraySize ? arraySize : CI->getArgOperand(0);
 }
 
@@ -52,7 +56,7 @@ void eliminateMallocBitcasts(llvm::Instruction* old_, llvm::Instruction* new_) {
     // - bitcasts
     // - of the same type
 
-    auto bitCasts = util::view(old_->use_begin(), old_->use_end())
+    auto bitCasts = util::view(old_->user_begin(), old_->user_end())
                     .map(dyn_caster<BitCastInst>())
                     .filter()
                     .toVector();
@@ -138,7 +142,8 @@ void MallocMutator::mutateMemoryInst(
 
 void MallocMutator::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesCFG();
-    AUX<llvm::TargetData>::addRequiredTransitive(AU);
+    AUX<llvm::DataLayoutPass>::addRequiredTransitive(AU);
+    AUX<llvm::TargetLibraryInfo>::addRequiredTransitive(AU);
 }
 
 bool MallocMutator::runOnModule(llvm::Module& M) {
@@ -146,13 +151,15 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
     using borealis::util::viewContainer;
     using borealis::util::toString;
 
-    TargetData& TD = GetAnalysis<TargetData>::doit(this);
+    auto& TD = GetAnalysis<DataLayoutPass>::doit(this).getDataLayout();
+    auto& TLI = GetAnalysis<TargetLibraryInfo>::doit(this);
+
 
     std::vector<CallInst*> mallocs;
     std::vector<AllocaInst*> allocas;
     for (auto& I : viewContainer(M).flatten().flatten()) {
         if (CallInst* CI = dyn_cast<CallInst>(&I)) {
-            if (isMalloc(CI)) {
+            if (isMallocLikeFn(CI, &TLI, true)) {
                 mallocs.push_back(CI);
             }
         }
@@ -171,7 +178,7 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
                 function_type::INTRINSIC_MALLOC,
                 resType,
                 resType->getPointerElementType(),
-                getMallocArraySizeOrArg(CI, &TD),
+                getMallocArraySizeOrArg(CI, &TD, &TLI),
                 eliminateMallocBitcasts
             );
         } else {
@@ -182,7 +189,7 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
                 function_type::INTRINSIC_MALLOC,
                 resType,
                 resType->getPointerElementType(),
-                getMallocArraySizeOrArg(CI, &TD),
+                getMallocArraySizeOrArg(CI, &TD, &TLI),
                 mutateMalloc
             );
         }

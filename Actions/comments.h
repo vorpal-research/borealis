@@ -47,12 +47,12 @@ private:
         virtual ~CommentKeeper() { detach(); };
 
         void attach() {
-            if (!attached) pp.AddCommentHandler(this);
+            if (!attached) pp.addCommentHandler(this);
             attached = true;
         }
 
         comment_container detach() {
-            if (attached) pp.RemoveCommentHandler(this);
+            if (attached) pp.removeCommentHandler(this);
             attached = false;
             return std::move(comments);
         }

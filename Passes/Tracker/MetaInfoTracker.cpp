@@ -5,8 +5,8 @@
  *      Author: belyaev
  */
 
-#include <llvm/Constants.h>
-#include <llvm/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
@@ -30,43 +30,49 @@ using borealis::util::nothing;
 using borealis::util::just;
 
 static VarInfo mkVI(const clang::FileManager&, const llvm::DISubprogram& node,
+        const borealis::DebugInfoFinder& context,
         clang::Decl* ast = nullptr, bool allocated = false) {
+
+    DICompositeType dt = context.resolve(node.getType().getTypeDerivedFrom());
 
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        DIType(node.getType().getTypeArray().getElement(0)),
+        DIType(dt.getTypeArray().getElement(0)),
         ast
     };
     return ret;
 }
 
 static VarInfo mkVI(const clang::FileManager&, const llvm::DIGlobalVariable& node,
+        const borealis::DebugInfoFinder& context,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        node.getType(),
+        context.resolve(node.getType()),
         ast
     };
     return ret;
 }
 
 static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
+        const borealis::DebugInfoFinder& context,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        node.getType(),
+        context.resolve(node.getType()),
         ast
     };
     return ret;
 }
 
 static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
+        const borealis::DebugInfoFinder& context,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(desc.getVarName().str()),
@@ -109,19 +115,19 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
             auto* garg = call->getArgOperand(0);
             if (auto* load = dyn_cast<LoadInst>(garg)) {
                 // if garg is a load, add it dereferenced
-                vars.put(load->getPointerOperand(), mkVI(sm, glob, nullptr, true));
+                vars.put(load->getPointerOperand(), mkVI(sm, glob, dfi, nullptr, true));
             } else {
                 // else it has been optimized away, put it as-is
-                vars.put(garg, mkVI(sm, glob));
+                vars.put(garg, mkVI(sm, glob, dfi));
             }
         }
     }
 
-    for (auto& msp : view(dfi.subprogram_begin(), dfi.subprogram_end())) {
+    for (auto& msp : dfi.subprograms()) {
         if (!DIDescriptor(msp).isSubprogram()) continue;
 
         DISubprogram sp(msp);
-        vars.put(sp.getFunction(), mkVI(sm, sp));
+        vars.put(sp.getFunction(), mkVI(sm, sp, dfi));
     }
 
 // FIXME: decide whether we want this or not
@@ -152,7 +158,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                 }
             }
 
-            auto vi = mkVI(sm, var, decl, true);
+            auto vi = mkVI(sm, var, dfi, decl, true);
 
             // debug declare has additional location data attached through
             // dbg metadata
@@ -172,7 +178,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                 auto* val = inst->getArgOperand(1);
                 DIVariable var(inst->getMetadata("var"));
 
-                auto vi = mkVI(sm, var);
+                auto vi = mkVI(sm, var, dfi);
 
                 // debug value has additional location data attached through
                 // dbg metadata
@@ -191,7 +197,7 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
                 auto* val = inst->getArgOperand(0);
                 DIVariable var(inst->getMetadata("var"));
 
-                auto vi = mkVI(sm, var, nullptr, true);
+                auto vi = mkVI(sm, var, dfi, nullptr, true);
 
                 // debug value has additional location data attached through
                 // dbg metadata

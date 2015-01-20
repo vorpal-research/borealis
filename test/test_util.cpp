@@ -77,14 +77,14 @@ TEST(Util, toString) {
 
 TEST(Util, ltlt) {
 
-	{
-		std::string fill;
-		llvm::raw_string_ostream ost(fill);
-
-		std::vector<int> vec{1,2,3,4};
-		ost << vec;
-		EXPECT_EQ("[1, 2, 3, 4]", ost.str());
-	}
+//	{
+//		std::string fill;
+//		llvm::raw_string_ostream ost(fill);
+//
+//		std::vector<int> vec{1,2,3,4};
+//		ost << vec;
+//		EXPECT_EQ("[1, 2, 3, 4]", ost.str());
+//	}
 
 	{
 		std::ostringstream ost;

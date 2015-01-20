@@ -6,14 +6,14 @@
  */
 
 #include <llvm/Analysis/CodeMetrics.h>
-#include <llvm/Analysis/Dominators.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/Analysis/LoopIterator.h>
 #include <llvm/Analysis/ScalarEvolutionExpander.h>
 #include <llvm/Analysis/ScalarEvolutionExpressions.h>
-#include <llvm/Constants.h>
-#include <llvm/Instructions.h>
-#include <llvm/Metadata.h>
-#include <llvm/Support/TypeBuilder.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Metadata.h>
+#include <llvm/IR/TypeBuilder.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
@@ -549,7 +549,7 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
     }
 
     // Reconstruct dom info, because it is not preserved properly
-    if (DominatorTree* DT = LPM.getAnalysisIfAvailable<DominatorTree>()) {
+    if (DominatorTreeWrapperPass* DT = LPM.getAnalysisIfAvailable<DominatorTreeWrapperPass>()) {
         DT->runOnFunction(*F);
     }
     // This loop shall be no more...

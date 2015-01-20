@@ -8,7 +8,7 @@
 #ifndef PREDICATESTATEANALYSIS_ONEFORALL_H_
 #define PREDICATESTATEANALYSIS_ONEFORALL_H_
 
-#include <llvm/Analysis/Dominators.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/Pass.h>
 
 #include <list>

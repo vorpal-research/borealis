@@ -329,12 +329,11 @@ public:
     friend Expr ror(const Expr& a, unsigned b);
     friend Expr distinct(const std::vector<Expr>& exprs);
 
-    template<class Streamer>
-    friend Streamer& operator<<(Streamer& out, const Expr& e) {
+    friend std::ostream& operator<<(std::ostream& out, const Expr& e) {
         auto smtlib = util::uniq(msat_to_smtlib2_ext(e.env_, e.term_, nullptr, 0));
         out << smtlib.get();
         // this is generally fucked up
-        return static_cast<Streamer&>(out);
+        return out;
     }
 
     static Expr from_string(Env& env, const std::string& data);

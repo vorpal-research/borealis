@@ -8,7 +8,7 @@
 #ifndef MATHSAT_EXPRFACTORY_H_
 #define MATHSAT_EXPRFACTORY_H_
 
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
 
 #include "SMT/MathSAT/MathSAT.h"
 #include "SMT/MathSAT/MathSatTypes.h"
@@ -92,7 +92,7 @@ public:
         return logic::switch_(cases, default_);
     }
 
-    static void initialize(llvm::TargetData* TD);
+    static void initialize(llvm::DataLayout* TD);
 
 private:
 

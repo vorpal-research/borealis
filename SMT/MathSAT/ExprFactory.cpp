@@ -126,7 +126,7 @@ MathSAT::Dynamic ExprFactory::getVarByTypeAndName(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ExprFactory::initialize(llvm::TargetData* TD) {
+void ExprFactory::initialize(llvm::DataLayout* TD) {
     pointerSize = TD->getPointerSizeInBits();
 }
 

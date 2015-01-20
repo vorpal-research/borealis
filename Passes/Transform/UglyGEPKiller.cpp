@@ -7,12 +7,12 @@
 
 #include <array>
 
-#include <llvm/Support/TypeBuilder.h>
-#include <llvm/Support/IRBuilder.h>
+#include <llvm/IR/TypeBuilder.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/Support/Casting.h>
-#include <llvm/Support/InstVisitor.h>
-#include <llvm/Support/PatternMatch.h>
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/InstVisitor.h>
+#include <llvm/IR/PatternMatch.h>
+#include <llvm/IR/DataLayout.h>
 
 #include "Passes/Transform/UglyGEPKiller.h"
 
@@ -23,13 +23,13 @@ namespace borealis {
 
 void UglyGEPKiller::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesCFG();
-    AU.addRequired<llvm::TargetData>();
+    AU.addRequired<llvm::DataLayoutPass>();
 }
 
 static llvm::SmallVector<llvm::Value*, 2> tryFindAdjustedIndices(
     llvm::Value* idx,
     llvm::Type* dePointed,
-    llvm::TargetData* TD,
+    const llvm::DataLayout* TD,
     llvm::IRBuilder<>& builder
 ) {
     using namespace llvm;
@@ -98,7 +98,7 @@ bool UglyGEPKiller::runOnModule(llvm::Module& M) {
     using namespace llvm::PatternMatch;
 
     // the code gracefully stolen from SimplifyGep pass in poolalloc
-    auto TD = &getAnalysis<TargetData>();
+    auto TD = &getAnalysis<llvm::DataLayoutPass>().getDataLayout();
     for(auto& I : util::viewContainer(M).flatten().flatten()) {
         Value* idx = nullptr;
         Value* srcPtr = nullptr;

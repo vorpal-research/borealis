@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Support/InstVisitor.h>
+#include <llvm/IR/InstVisitor.h>
 
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckUndefValuesPass.h"

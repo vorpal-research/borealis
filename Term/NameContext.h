@@ -8,7 +8,7 @@
 #ifndef NAMECONTEXT_H_
 #define NAMECONTEXT_H_
 
-#include <llvm/Function.h>
+#include <llvm/IR/Function.h>
 
 #include "Util/locations.h"
 

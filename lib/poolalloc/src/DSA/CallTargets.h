@@ -15,8 +15,8 @@
 #ifndef LLVM_ANALYSIS_CALLTARGETS_H
 #define LLVM_ANALYSIS_CALLTARGETS_H
 
-#include "llvm/Pass.h"
-#include "llvm/Support/CallSite.h"
+#include <llvm/Pass.h>
+#include <llvm/IR/CallSite.h>
 #include "DataStructure.h"
 
 #include <set>

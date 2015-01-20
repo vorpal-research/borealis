@@ -26,7 +26,7 @@ FactoryNest::FactoryNest(SlotTracker* st) :
     Predicate(PredicateFactory::get()),
     State(PredicateStateFactory::get()) {};
 
-Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
+Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& gv) {
     using namespace llvm;
 
     auto base = FN.Term->getValueTerm(&gv);
@@ -41,7 +41,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
             auto data = util::range(0ULL, numElements)
                 .map([&cds](unsigned long long i) { return cds->getElementAsConstant(i); })
-                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+                .map([&FN](const Constant* c) { return FN.Term->getValueTerm(c); })
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
@@ -55,7 +55,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {
             auto data = util::viewContainer(getAsSeqData(c))
-                .map([&FN](Constant* c) { return FN.Term->getValueTerm(c); })
+                .map([&FN](const Constant* c) { return FN.Term->getValueTerm(c); })
                 .toVector();
             ASSERTC(numElements == data.size());
             return FN.Predicate->getSeqDataPredicate(base, data);
@@ -65,14 +65,14 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, llvm::GlobalVariable& gv) {
     return FN.Predicate->getGlobalsPredicate({base});
 }
 
-PredicateState::Ptr FactoryNest::getGlobalState(llvm::Module* M) {
+PredicateState::Ptr FactoryNest::getGlobalState(const llvm::Module* M) {
     auto& globals = M->getGlobalList();
 
     // FIXME: Marker predicate
     auto init = Predicate->getGlobalsPredicate({});
 
     auto gvPredicates = util::viewContainer(globals)
-        .map([this](llvm::GlobalVariable& gv) { return fromGlobalVariable(*this, gv); })
+        .map([this](const llvm::GlobalVariable& gv) { return fromGlobalVariable(*this, gv); })
         .toVector();
 
     return (State * init + gvPredicates)();

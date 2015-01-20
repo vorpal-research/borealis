@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Support/InstVisitor.h>
+#include <llvm/IR/InstVisitor.h>
 
 #include <vector>
 
@@ -271,7 +271,7 @@ void DefaultPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
-    AUX<llvm::TargetData>::addRequiredTransitive(AU);
+    AUX<llvm::DataLayoutPass>::addRequiredTransitive(AU);
 }
 
 bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
@@ -281,7 +281,7 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     FN = FactoryNest(st);
 
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
-    TD = &GetAnalysis<llvm::TargetData>::doit(this, F);
+    TD = &GetAnalysis<llvm::DataLayoutPass>::doit(this, F).getDataLayout();
 
     DPAInstVisitor visitor(this);
     visitor.visit(F);

@@ -24,7 +24,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
     borealis::DebugInfoFinder dif;
     dif.processModule(M);
 
-    for (auto* mdnode : view(dif.subprogram_begin(), dif.subprogram_end())) {
+    for (DISubprogram mdnode : viewContainer(dif.subprograms())) {
         DIDescriptor diDesc(mdnode);
         if (!diDesc.isSubprogram()) continue;
 
@@ -33,7 +33,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
             valueDebugInfo.put(Locus(subProg.getFilename().str(), subProg.getLineNumber(), 0U), subProg.getFunction());
     }
 
-    for (auto* mdnode : view(dif.global_variable_begin(), dif.global_variable_end())) {
+    for (DIGlobalVariable mdnode : viewContainer(dif.global_variables())) {
         DIDescriptor diDesc(mdnode);
         if (!diDesc.isGlobalVariable()) continue;
 

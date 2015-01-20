@@ -8,7 +8,7 @@
 #ifndef ANNOTATION_H_
 #define ANNOTATION_H_
 
-#include <llvm/Instructions.h>
+#include <llvm/IR/Instructions.h>
 
 #include <memory>
 #include <string>
@@ -80,19 +80,19 @@ public:
         return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")))
                ->shared_from_this();
     }
+
+    friend std::ostream& operator<<(std::ostream& str, Annotation::Ptr a) {
+        str << a->toString();
+        return str;
+    }
+
+    friend std::ostream& operator<<(std::ostream& str, const Annotation& a) {
+        str << a.toString();
+        return str;
+    }
 };
 
-template<class Streamer>
-Streamer& operator<<(Streamer& str, Annotation::Ptr a) {
-    str << a->toString();
-    return str;
-}
 
-template<class Streamer>
-Streamer& operator<<(Streamer& str, const Annotation& a) {
-    str << a.toString();
-    return str;
-}
 
 } /* namespace borealis */
 

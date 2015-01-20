@@ -17,20 +17,23 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Module.h"
-#include "llvm/Instructions.h"
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Instructions.h>
 #include "DataStructure.h"
 #include "DSGraph.h"
 #include "CallTargets.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Constants.h"
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/IR/Constants.h>
 #include <ostream>
 using namespace llvm;
 
 RegisterPass<dsa::CallTargetFinder<EQTDDataStructures> > X("calltarget-eqtd","Find Call Targets (uses DSA-EQTD)");
 RegisterPass<dsa::CallTargetFinder<TDDataStructures> > Y("calltarget-td","Find Call Targets (uses DSA-TD)");
+
+#define DEBUG_TYPE __FILE__
+
 namespace {
   STATISTIC (DirCall, "Number of direct calls");
   STATISTIC (IndCall, "Number of indirect calls");

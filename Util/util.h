@@ -9,11 +9,11 @@
 #define UTIL_H_
 
 #include <llvm/Analysis/LoopInfo.h>
-#include <llvm/Constants.h>
-#include <llvm/Function.h>
-#include <llvm/Instructions.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Value.h>
+#include <llvm/IR/Value.h>
 
 #include <list>
 #include <string>

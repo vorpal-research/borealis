@@ -25,9 +25,9 @@
 
 #include "DataStructure.h"
 #include "DSGraph.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Value.h"
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/IR/Value.h>
 #include <set>
 using namespace llvm;
 

@@ -7,7 +7,7 @@
 
 #include <llvm/InitializePasses.h>
 #include <llvm/PassManager.h>
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
 
 #include "Driver/llvm_pipeline.h"
 #include "Passes/Misc/PrinterPasses.h"
@@ -50,7 +50,7 @@ llvm_pipeline::~llvm_pipeline() {};
 
 llvm_pipeline::llvm_pipeline(const std::shared_ptr<llvm::Module>& m)
     : pimpl{ new impl{m} } {
-    pimpl->pm.add(new llvm::TargetData(m.get()));
+      pimpl->pm.add(new llvm::DataLayoutPass(m.get()));
 };
 
 void llvm_pipeline::addPass(llvm::Pass* pass) {

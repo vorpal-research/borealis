@@ -14,10 +14,11 @@
 #ifndef LLVM_ANALYSIS_DSNODE_H
 #define LLVM_ANALYSIS_DSNODE_H
 
-#include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/ilist_node.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/ADT/DenseSet.h>
+#include <llvm/ADT/ilist_node.h>
+#include <llvm/ADT/ilist.h>
+#include <llvm/Support/Debug.h>
+#include <llvm/Support/raw_ostream.h>
 #include "svset.h"
 #include "super_set.h"
 #include "keyiterator.h"

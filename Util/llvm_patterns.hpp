@@ -8,7 +8,7 @@
 #ifndef LLVM_PATTERNS_HPP_
 #define LLVM_PATTERNS_HPP_
 
-#include <llvm/Support/PatternMatch.h>
+#include <llvm/IR/PatternMatch.h>
 
 #include "Util/util.h"
 

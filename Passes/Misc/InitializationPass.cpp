@@ -5,7 +5,7 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
 
 #include "Passes/Misc/InitializationPass.h"
 #include "SMT/Z3/ExprFactory.h"
@@ -15,11 +15,11 @@ namespace borealis {
 
 void InitializationPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
-    AUX<llvm::TargetData>::addRequiredTransitive(AU);
+    AUX<llvm::DataLayoutPass>::addRequiredTransitive(AU);
 }
 
 void InitializationPass::initializePass() {
-    Z3::ExprFactory::initialize(&GetAnalysis<llvm::TargetData>::doit(this));
+    Z3::ExprFactory::initialize(&GetAnalysis<llvm::DataLayoutPass>::doit(this).getDataLayout());
 }
 
 char InitializationPass::ID;

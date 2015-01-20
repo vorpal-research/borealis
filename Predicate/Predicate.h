@@ -8,7 +8,7 @@
 #ifndef PREDICATE_H_
 #define PREDICATE_H_
 
-#include <llvm/Instruction.h>
+#include <llvm/IR/Instruction.h>
 
 #include <memory>
 

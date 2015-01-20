@@ -154,7 +154,7 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
 
         // Add ensures and summary *after* the CallInst has been processed
         if (isa<CallInst>(I)) {
-            CallInst& CI = cast<CallInst>(I);
+            auto&& CI = cast<CallInst>(I);
 
             auto callState = (
                 FN.State *

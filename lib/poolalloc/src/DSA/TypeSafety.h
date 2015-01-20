@@ -19,7 +19,7 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 
-#include "llvm/Pass.h"
+#include <llvm/Pass.h>
 
 #include <set>
 
@@ -49,7 +49,7 @@ struct TypeSafety : public ModulePass {
     bool typeFieldsOverlap (const DSNode * N);
 
     // Pointers to prerequisite passes
-    TargetData * TD;
+    const DataLayout * TD;
     dsa * dsaPass;
 
     // Data structures
@@ -65,7 +65,7 @@ struct TypeSafety : public ModulePass {
     }
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-      AU.addRequired<TargetData>();
+      AU.addRequired<DataLayoutPass>();
       AU.addRequired<dsa>();
       AU.setPreservesAll();
     }

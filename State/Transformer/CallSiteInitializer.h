@@ -8,10 +8,10 @@
 #ifndef CALLSITEINITIALIZER_H_
 #define CALLSITEINITIALIZER_H_
 
-#include <llvm/Argument.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
-#include <llvm/Value.h>
+#include <llvm/IR/Argument.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
 
 #include <unordered_map>
 
@@ -28,7 +28,7 @@ class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
 public:
 
     CallSiteInitializer(
-            llvm::CallInst& CI,
+            const llvm::CallInst& CI,
             FactoryNest FN) : Base(FN) {
 
         using borealis::util::toString;
@@ -99,9 +99,9 @@ public:
 
 private:
 
-    typedef std::unordered_map<unsigned int, llvm::Value*> CallSiteArguments;
+    typedef std::unordered_map<unsigned int, const llvm::Value*> CallSiteArguments;
 
-    llvm::Value* returnValue;
+    const llvm::Value* returnValue;
     CallSiteArguments callSiteArguments;
     std::string prefix;
 

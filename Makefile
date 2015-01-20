@@ -31,23 +31,26 @@ CXXFLAGS := \
 	$(DEFS) \
 	$(USER_DEFS)
 
-LLVMCOMPONENTS := analysis archive asmparser asmprinter bitreader bitwriter \
-	codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine \
-	executionengine instcombine instrumentation interpreter ipa ipo jit linker \
-	mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld \
-	scalaropts selectiondag support tablegen target transformutils vectorize \
-	linker
+#LLVMCOMPONENTS := analysis asmparser asmprinter bitreader bitwriter \
+#	codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine \
+#	executionengine instcombine instrumentation interpreter ipa ipo jit linker \
+#	mc mcdisassembler mcjit mcparser native nativecodegen object runtimedyld \
+#	scalaropts selectiondag support tablegen target transformutils vectorize \
+#	linker
+#
 
+LLVMCOMPONENTS := all
 LLVMCONFIG := $(if $(LLVMDIR),$(LLVMDIR)/bin/llvm-config,llvm-config)
 
 LLVMLDFLAGS := $(shell $(LLVMCONFIG) --ldflags)
 LLVMLIBS := $(shell $(LLVMCONFIG) --libs $(LLVMCOMPONENTS))
+LLVMSYSTEMLIBS := $(shell $(LLVMCONFIG) --system-libs)
 
 ################################################################################
 # Compilation tweaking
 ################################################################################
 
-# warnings to show 
+# warnings to show
 WARNINGS_ON := all extra cast-qual float-equal switch \
 	undef init-self pointer-arith cast-align effc++ \
 	strict-prototypes strict-overflow=5 write-strings \
@@ -88,7 +91,8 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Term \
 	$(PWD)/Type \
 	$(PWD)/Util \
-	$(PWD)/lib/poolalloc/src
+
+#$(PWD)/lib/poolalloc/src
 
 ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD) \
@@ -205,8 +209,6 @@ LIBS := \
 	$(CLANGLIBS) \
 	$(LLVMLIBS) \
 	-lz3 \
-	-ldl \
-	-lrt \
 	-llog4cpp \
 	-lprofiler \
 	-ljsoncpp \
@@ -214,7 +216,8 @@ LIBS := \
 	-ltinyxml2 \
 	-lmathsat \
 	-lgmpxx \
-	-lgmp
+	-lgmp \
+	$(LLVMSYSTEMLIBS)
 
 ################################################################################
 # Test defs management
@@ -349,16 +352,16 @@ check-with-valgrind: tests .regenerate-test-defs
 
 check-long: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*Long/*:-*Summary* # --gtest_filter=$(GOOGLE_TEST_FILTER)
-	
+
 check-summary: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*Summary*:-*Long/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
-	
+
 check-summary-long: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*SummaryLong/* # --gtest_filter=$(GOOGLE_TEST_FILTER)
-	
+
 check-summary-all: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=*Summary* # --gtest_filter=$(GOOGLE_TEST_FILTER)
-	
+
 check-all: tests .regenerate-test-defs
 	$(RUN_TEST_EXES) --gtest_filter=-*Summary*# --gtest_filter=$(GOOGLE_TEST_FILTER)
 

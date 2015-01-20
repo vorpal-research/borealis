@@ -16,14 +16,16 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 #include "DSGraphTraits.h"
-#include "llvm/Module.h"
-#include "llvm/Constants.h"
-#include "llvm/Assembly/Writer.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/GraphWriter.h"
-#include "llvm/ADT/Statistic.h"
-#include "llvm/Config/config.h"
-#include "llvm/Support/FormattedStream.h"
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Constants.h>
+// // // #include <llvm/Assembly/Writer.h> // migration // migration // migration
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/GraphWriter.h>
+
+#include <llvm/ADT/Statistic.h>
+#include <llvm/Config/llvm-config.h>
+#include <llvm/Support/FormattedStream.h>
 #include <sstream>
 using namespace llvm;
 
@@ -116,7 +118,7 @@ static std::string getCaption(const DSNode *N, const DSGraph *G) {
 
   for (DSNode::globals_iterator i = N->globals_begin(), e = N->globals_end(); 
        i != e; ++i) {
-    WriteAsOperand(OS, *i, false, M);
+    OS << *i;
 
     // Figure out how many globals are equivalent to this one.
     if (GlobalECs) {
@@ -214,7 +216,7 @@ struct DOTGraphTraits<const DSGraph*> : public DefaultDOTGraphTraits {
         if (!isa<GlobalValue>(I->first)) {
           std::string OS_str;
           llvm::raw_string_ostream OS(OS_str);
-          WriteAsOperand(OS, I->first, false, CurMod);
+          OS << *I->first;
           GW.emitSimpleNode(I->first, "", OS.str());
           
           // Add edge from return node to real destination
@@ -305,7 +307,7 @@ void DSGraph::writeGraphToFile(llvm::raw_ostream &O,
   O << "Writing '" << Filename << "'...";
   if (!DontPrintGraphs) {
     std::string Error;
-    llvm::raw_fd_ostream F(Filename.c_str(), Error);
+    llvm::raw_fd_ostream F(Filename.c_str(), Error, sys::fs::OpenFlags::F_Text | sys::fs::OpenFlags::F_RW);
 
     if (Error.size()) {
       O << "  error opening file for writing! " << Error << "\n";

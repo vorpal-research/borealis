@@ -12,7 +12,7 @@
 
 #include "RangeAnalysis.h"
 #include "llvm/Support/InstIterator.h"
-#include "llvm/Instructions.h"
+#include "llvm/IR/Instructions.h"
 
 using namespace llvm;
 

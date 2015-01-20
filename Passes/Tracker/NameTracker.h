@@ -9,7 +9,7 @@
 #define NAMETRACKER_H_
 
 #include <llvm/Pass.h>
-#include <llvm/Value.h>
+#include <llvm/IR/Value.h>
 
 #include <unordered_map>
 

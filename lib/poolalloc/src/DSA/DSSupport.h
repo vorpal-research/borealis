@@ -19,8 +19,8 @@
 #include <map>
 #include <set>
 
-#include "llvm/ADT/DenseSet.h"
-#include "llvm/Support/CallSite.h"
+#include <llvm/ADT/DenseSet.h>
+#include <llvm/IR/CallSite.h>
 
 namespace llvm {
 

@@ -217,9 +217,10 @@ private:
 public:
 
     Type::Ptr cast(llvm::Type* type, DIType meta) {
-        for(const auto& expanded : flattenTypeTree({type, meta})) {
-            castNoRecursive(expanded.first, expanded.second); // just for the side effects
-        }
+        // FIXME
+//       for(const auto& expanded : flattenTypeTree({type, meta})) {
+//           castNoRecursive(expanded.first, expanded.second); // just for the side effects
+//       }
         return cast(type);
     }
 

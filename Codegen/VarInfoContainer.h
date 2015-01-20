@@ -8,7 +8,7 @@
 #ifndef VARINFOCONTAINER_H_
 #define VARINFOCONTAINER_H_
 
-#include <llvm/Value.h>
+#include <llvm/IR/Value.h>
 
 #include <map>
 #include <string>

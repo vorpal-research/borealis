@@ -15,10 +15,10 @@
 #include "DataStructure.h"
 #include "DSGraph.h"
 
-#include "llvm/Function.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/CommandLine.h"
+#include <llvm/IR/Function.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/Support/FormattedStream.h>
+#include <llvm/Support/CommandLine.h>
 
 #include <algorithm>
 

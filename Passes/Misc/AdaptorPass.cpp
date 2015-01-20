@@ -5,8 +5,8 @@
  *      Author: ice-phoenix
  */
 
-#include <llvm/Constants.h>
-#include <llvm/Support/InstVisitor.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/InstVisitor.h>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Config/config.h"

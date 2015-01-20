@@ -8,9 +8,9 @@
 #ifndef INTRINSICS_MANAGER_H_
 #define INTRINSICS_MANAGER_H_
 
-#include <llvm/Function.h>
-#include <llvm/Instruction.h>
-#include <llvm/Instructions.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
 
 #include <functional>
 #include <list>

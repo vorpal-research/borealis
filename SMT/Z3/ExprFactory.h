@@ -8,7 +8,7 @@
 #ifndef Z3_EXPRFACTORY_H_
 #define Z3_EXPRFACTORY_H_
 
-#include <llvm/Target/TargetData.h>
+#include <llvm/IR/DataLayout.h>
 #include <z3/z3++.h>
 
 #include "SMT/Z3/Z3.h"
@@ -101,7 +101,7 @@ public:
         return logic::implies(from, to);
     }
 
-    static void initialize(llvm::TargetData* TD);
+    static void initialize(const llvm::DataLayout* TD);
 
 private:
 
