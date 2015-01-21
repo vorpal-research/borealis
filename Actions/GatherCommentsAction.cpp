@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "Actions/comments.h"
+#include "Actions/GatherCommentsAction.h"
 
 #include "Util/macros.h"
 

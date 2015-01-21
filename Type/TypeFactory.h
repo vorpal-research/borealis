@@ -17,7 +17,7 @@
 #include "Util/cast.hpp"
 #include "Util/util.h"
 
-#include "Passes/Tracker/MetaInfoTracker.h"
+#include "Passes/Tracker/VariableInfoTracker.h"
 
 
 #include "Util/macros.h"
@@ -40,6 +40,7 @@ class TypeFactory {
 
     mutable std::map<std::string, Type::Ptr> records;
     mutable type::RecordRegistry::StrongPtr  recordBodies;
+    mutable bool recordMetaProvided = false;
 
     mutable std::map<std::vector<Type::Ptr>, Type::Ptr> functions;
 
@@ -93,26 +94,34 @@ public:
         );
     }
 
-    Type::Ptr getRecord(const std::string& name) const {
+    Type::Ptr getRecord(const std::string& name, const llvm::StructType* st = nullptr) const {
+        static std::unordered_set<const llvm::StructType*> visitedRecordTypes;
+
         if(auto existing = util::at(records, name)) return existing.getUnsafe();
-        else return records[name] = Type::Ptr(
-            new type::Record(
-                name,
-                type::RecordBodyRef::Ptr(
-                    new type::RecordBodyRef(
-                        recordBodies,
-                        name
+        else {
+            if(!recordBodies->count(name) && !visitedRecordTypes.count(st)) {
+                visitedRecordTypes.insert(st);
+
+                type::RecordBody rb;
+                size_t i = 0;
+                for(auto&& tp : util::view(st->element_begin(), st->element_end())) {
+                    rb.push_back(type::RecordField{cast(tp), i});
+                    ++i;
+                }
+                embedRecordBodyNoRecursion(name, rb);
+            }
+            return records[name] = Type::Ptr(
+                new type::Record(
+                    name,
+                    type::RecordBodyRef::Ptr(
+                        new type::RecordBodyRef(
+                            recordBodies,
+                            name
+                        )
                     )
                 )
-            )
-        );
-    }
-
-    Type::Ptr getRecord(const std::string& name, const type::RecordBody& body) const {
-        Type::Ptr ret = getRecord(name);
-        // FIXME: do something to check body compatibility if exists
-        //(*recordBodies)[name] = body;
-        return ret;
+            );
+        }
     }
 
     type::RecordRegistry::Ptr getRecordRegistry() const {
@@ -134,11 +143,7 @@ public:
         else return functions[std::move(key)] = Type::Ptr(new type::Function(retty, args));
     }
 
-    void initialize(const MetaInfoTracker& mit) {
-        recordBodies->clear(); // FIXME: this is generally fucked up
-
-        if(!recordBodies->empty()) return;
-
+    void initialize(const VariableInfoTracker& mit) {
         DebugInfoFinder dfi;
         dfi.processModule(mit.getModule());
 
@@ -161,7 +166,7 @@ public:
             return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
         else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
             auto name = str->hasName() ? str->getName() : "";
-            if(recordBodies->at(name)) return getRecord(name);
+            return getRecord(name, str);
         } else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
         else if (auto* func = llvm::dyn_cast<llvm::FunctionType>(type)) {
@@ -171,13 +176,33 @@ public:
                 .map([this](const llvm::Type* argty) { return cast(argty); })
                 .toVector()
             );
-        }
+        } else return getTypeError("Unsupported llvm type: " + util::toString(*type));
+    }
 
-        return getTypeError("Unsupported llvm type: " + util::toString(*type));
+    Type::Ptr embedRecordBodyNoRecursion(const std::string& name, const type::RecordBody& body) const {
+        // FIXME: do something to check body compatibility if exists
+        mergeRecordBodyInto((*recordBodies)[name], body);
+        return getRecord(name);
     }
 
 private:
-    Type::Ptr embedNoRecursive(llvm::Type* type, DIType meta) {
+
+    void mergeRecordBodyInto(type::RecordBody& lhv, const type::RecordBody& rhv) const {
+        if(lhv.empty()) {
+            lhv = rhv;
+            return;
+        }
+
+        for(auto&& pr : util::viewContainer(lhv) ^ util::viewContainer(rhv)) {
+            auto&& lfield = pr.first;
+            auto&& rfield = pr.second;
+            for(auto&& id : rfield.getIds()) {
+                lfield.pushId(id);
+            }
+        }
+    }
+
+    Type::Ptr embedRecordBodyNoRecursion(llvm::Type* type, DIType meta) const {
         if(type->isStructTy()) {
             using std::placeholders::_1;
 
@@ -198,20 +223,20 @@ private:
             ) {
                 body.push_back(type::RecordField{
                     cast(mem.first),
-                    std::vector<std::string>{ mem.second.getName() }
+                    std::unordered_set<std::string>{ mem.second.getName() }
                 });
             }
 
-            return getRecord(type->getStructName(), body);
+            return embedRecordBodyNoRecursion(type->getStructName(), body);
         }
 
         return cast(type, meta.getSignedness());
     }
 
-    Type::Ptr embedType(const DebugInfoFinder& dfi, llvm::Type* type, DIType meta) {
+    Type::Ptr embedType(const DebugInfoFinder& dfi, llvm::Type* type, DIType meta) const {
         // FIXME
        for(const auto& expanded : flattenTypeTree(dfi, {type, meta})) {
-           embedNoRecursive(expanded.first, stripAliases(dfi, expanded.second)); // just for the side effects
+           embedRecordBodyNoRecursion(expanded.first, stripAliases(dfi, expanded.second)); // just for the side effects
        }
        return cast(type);
     }

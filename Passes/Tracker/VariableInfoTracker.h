@@ -1,5 +1,5 @@
 /*
- * MetaInfoTrackerPass.h
+ * VariableInfoTracker.h
  *
  *  Created on: Jan 11, 2013
  *      Author: belyaev
@@ -25,7 +25,7 @@ namespace borealis {
 // a pass that lets you track mappings between clang decls and llvm values
 // (and does a bunch of other shit as well...)
 // not really a pass, just some functionality bundled into llvm pass system
-class MetaInfoTracker : public llvm::ModulePass {
+class VariableInfoTracker : public llvm::ModulePass {
     typedef DataProvider<clang::FileManager> sm_t;
 
     VarInfoContainer vars;
@@ -148,8 +148,8 @@ public:
 
     static char ID;
 
-    MetaInfoTracker();
-    virtual ~MetaInfoTracker();
+    VariableInfoTracker();
+    virtual ~VariableInfoTracker();
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnModule(llvm::Module&) override;

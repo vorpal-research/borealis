@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 
-#include "Actions/comments.h"
+#include "Actions/GatherCommentsAction.h"
 #include "Annotation/AnnotationCast.h"
 #include "Protobuf/Gen/Annotation/AnnotationContainer.pb.h"
 

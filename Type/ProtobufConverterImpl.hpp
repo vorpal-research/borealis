@@ -196,11 +196,11 @@ struct protobuf_traits_impl<type::Record> {
             for (const auto& pfield : pbody.fields()) {
                 type::RecordField field {
                     protobuf_traits_impl<Type>::fromProtobuf(fn, pfield.type()),
-                    std::vector<std::string>{ pfield.ids().begin(), pfield.ids().end() }
+                    std::unordered_set<std::string>{ pfield.ids().begin(), pfield.ids().end() }
                 };
                 body.push_back(field);
             }
-            fn.Type->getRecord(pbody.id(), body); // just for the side effects
+            fn.Type->embedRecordBodyNoRecursion(pbody.id(), body); // just for the side effects
         }
 
         return fn.Type->getRecord(p.name());

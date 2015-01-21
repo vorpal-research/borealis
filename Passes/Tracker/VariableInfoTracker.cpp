@@ -1,5 +1,5 @@
 /*
- * MetaInfoTrackerPass.cpp
+ * VariableInfoTracker.cpp
  *
  *  Created on: Jan 11, 2013
  *      Author: belyaev
@@ -10,16 +10,16 @@
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
-#include "Passes/Tracker/MetaInfoTracker.h"
+#include "Passes/Tracker/VariableInfoTracker.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
 
-MetaInfoTracker::MetaInfoTracker() : ModulePass(ID) {}
+VariableInfoTracker::VariableInfoTracker() : ModulePass(ID) {}
 
-MetaInfoTracker::~MetaInfoTracker() {}
+VariableInfoTracker::~VariableInfoTracker() {}
 
-void MetaInfoTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+void VariableInfoTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
     AUX<sm_t>::addRequiredTransitive(AU);
 }
@@ -84,7 +84,7 @@ static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
     return ret;
 }
 
-bool MetaInfoTracker::runOnModule(llvm::Module& M) {
+bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     using borealis::util::takePtr;
     using borealis::util::view;
     using borealis::util::viewContainer;
@@ -220,14 +220,14 @@ bool MetaInfoTracker::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void MetaInfoTracker::print(llvm::raw_ostream&, const llvm::Module*) const {
+void VariableInfoTracker::print(llvm::raw_ostream&, const llvm::Module*) const {
     for (const auto& var : vars) {
         infos() << " " << llvm::valueSummary(var.first) << " ==> " << var.second << endl;
     }
 }
 
-char MetaInfoTracker::ID;
-static RegisterPass<MetaInfoTracker>
+char VariableInfoTracker::ID;
+static RegisterPass<VariableInfoTracker>
 X("meta-tracker", "Meta info for values");
 
 } /* namespace borealis */

@@ -62,7 +62,7 @@ AnnotationPredicateAnalysis::AnnotationPredicateAnalysis(llvm::Pass* pass) :
 void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
-    AUX<MetaInfoTracker>::addRequiredTransitive(AU);
+    AUX<VariableInfoTracker>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<SourceLocationTracker>::addRequiredTransitive(AU);
 }
@@ -70,7 +70,7 @@ void AnnotationPredicateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) cons
 bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
-    MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
+    MI = &GetAnalysis<VariableInfoTracker>::doit(this, F);
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);

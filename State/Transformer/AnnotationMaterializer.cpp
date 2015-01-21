@@ -13,14 +13,14 @@ class AnnotationMaterializer::AnnotationMaterializerImpl {
 public:
     const LogicAnnotation* A;
     TermFactory::Ptr TF;
-    MetaInfoTracker* MI;
+    VariableInfoTracker* MI;
     NameContext nc;
 };
 
 AnnotationMaterializer::AnnotationMaterializer(
         const LogicAnnotation& A,
         FactoryNest FN,
-        MetaInfoTracker* MI) :
+        VariableInfoTracker* MI) :
             Base(FN),
             pimpl(
                 new AnnotationMaterializerImpl {
@@ -64,7 +64,7 @@ llvm::LLVMContext& AnnotationMaterializer::getLLVMContext() const {
     return pimpl->MI->getLLVMContext();
 }
 
-MetaInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
+VariableInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
     switch(pimpl->nc.placement) {
     case NameContext::Placement::GlobalScope:
     case NameContext::Placement::InnerScope:
@@ -82,7 +82,7 @@ TermFactory& AnnotationMaterializer::factory() const {
     return *pimpl->TF;
 }
 
-MetaInfoTracker::ValueDescriptors AnnotationMaterializer::forValue(llvm::Value* value) const {
+VariableInfoTracker::ValueDescriptors AnnotationMaterializer::forValue(llvm::Value* value) const {
     return pimpl->MI->locate(value);
 }
 
@@ -104,7 +104,7 @@ void AnnotationMaterializer::failWith(const std::string& message) {
 Annotation::Ptr materialize(
         Annotation::Ptr annotation,
         FactoryNest FN,
-        MetaInfoTracker* MI
+        VariableInfoTracker* MI
 ) {
     if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation)){
         AnnotationMaterializer am(*logic, FN, MI);

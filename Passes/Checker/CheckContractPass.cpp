@@ -149,7 +149,7 @@ void CheckContractPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
-    AUX<MetaInfoTracker>::addRequiredTransitive(AU);
+    AUX<VariableInfoTracker>::addRequiredTransitive(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
@@ -161,7 +161,7 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
 
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
-    MI = &GetAnalysis<MetaInfoTracker>::doit(this, F);
+    MI = &GetAnalysis<VariableInfoTracker>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);

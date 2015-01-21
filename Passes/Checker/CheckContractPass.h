@@ -16,7 +16,7 @@
 #include "Passes/Defect/DefectManager.h"
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
-#include "Passes/Tracker/MetaInfoTracker.h"
+#include "Passes/Tracker/VariableInfoTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "Util/passes.hpp"
 
@@ -52,7 +52,7 @@ private:
 
     DefectManager* DM;
     FunctionManager* FM;
-    MetaInfoTracker* MI;
+    VariableInfoTracker* MI;
     PredicateStateAnalysis* PSA;
 
     FactoryNest FN;

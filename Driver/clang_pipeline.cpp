@@ -25,6 +25,7 @@
 #include <fstream>
 #include <unordered_map>
 
+#include "Actions/VariableInfoFinder.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Driver/clang_pipeline.h"
@@ -142,6 +143,9 @@ struct clang_pipeline::impl: public DelegateLogging {
 
         ASSERTC(ci.ExecuteAction(gatherAnnotations));
         AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
+
+        borealis::VariableInfoFinder vif;
+        ASSERTC(ci.ExecuteAction(vif));
 
         fileCache[ci.getFrontendOpts().OutputFile] = AnnotatedModule::Ptr{
             new AnnotatedModule{ module, annotations }

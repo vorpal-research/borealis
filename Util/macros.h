@@ -30,6 +30,8 @@
  * Note that the one-liners can be big and the impact will be significant.
  *
  * */
+#define LAM(X, ...) [&](X) -> decltype(__VA_ARGS__) { return __VA_ARGS__; }
+
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
 #define QUICK_CONST_RETURN(...) const ->decltype(__VA_ARGS__) { return __VA_ARGS__; }

@@ -18,14 +18,14 @@ namespace type {
 
 class RecordField {
     Type::Ptr type;
-    std::vector<std::string> ids;
+    std::unordered_set<std::string> ids;
     size_t index = 0U;
 public:
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordField);
 
     RecordField(Type::Ptr type, size_t index = 0U) :
         type{type}, ids{}, index{index} {};
-    RecordField(Type::Ptr type, const std::vector<std::string>& ids, size_t index = 0U) :
+    RecordField(Type::Ptr type, const std::unordered_set<std::string>& ids, size_t index = 0U) :
         type{type}, ids{ids}, index{index} {};
 
     const Type::Ptr& getType() const noexcept { return type; }
@@ -34,14 +34,13 @@ public:
     size_t getIndex() const noexcept { return index; };
     void setIndex(size_t ix) noexcept { index = ix; }
 
-    const std::vector<std::string>& getIds() const noexcept { return ids; }
-    void setIds(const std::vector<std::string>& ids) noexcept { this->ids = ids; }
-    void pushId(const std::string& id) { ids.push_back(id); }
+    const std::unordered_set<std::string>& getIds() const noexcept { return ids; }
+    void setIds(const std::unordered_set<std::string>& ids) noexcept { this->ids = ids; }
+    void pushId(const std::string& id) { ids.insert(id); }
 };
 
 class RecordBody {
     std::vector<RecordField> fields;
-    std::unordered_map<std::string, size_t> naming;
 public:
     RecordBody(const std::vector<RecordField>& flds) : fields{} {
         for(const auto& fld : flds) { push_back(fld); }
@@ -51,6 +50,8 @@ public:
 
     auto begin() QUICK_CONST_RETURN(fields.begin());
     auto end() QUICK_CONST_RETURN(fields.end());
+    auto begin() QUICK_RETURN(fields.begin());
+    auto end() QUICK_RETURN(fields.end());
     auto empty() QUICK_CONST_RETURN(fields.empty());
 
     void push_back(const RecordField& fld) {
@@ -58,15 +59,16 @@ public:
         auto& inserted = fields.back();
         auto index = fields.size() - 1;
         inserted.setIndex(index);
-        for(const auto& name : inserted.getIds()) {
-            naming[name] = index;
-        }
     }
 
     size_t getNumFields() const noexcept { return fields.size(); }
 
     util::option_ref<const RecordField> getFieldByName(const std::string& name) const {
-        for(auto index : util::at(naming, name)) return util::justRef(fields.at(index));
+        for(auto&& field: fields) {
+            if (util::viewContainer(field.getIds()).any_of(LAM(decltype(name) id, id == name)))
+                return util::justRef(field);
+        }
+
         return util::nothing();
     }
 
@@ -109,6 +111,10 @@ public:
 
     bool empty() const{
         return data.empty();
+    }
+
+    size_t count(const std::string& key) const {
+        return data.count(key);
     }
 
     auto begin() const -> decltype(data.begin()) { return data.begin(); }

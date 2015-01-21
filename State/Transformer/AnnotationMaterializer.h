@@ -12,7 +12,7 @@
 #include <sstream>
 
 #include "Annotation/Annotation.def"
-#include "Passes/Tracker/MetaInfoTracker.h"
+#include "Passes/Tracker/VariableInfoTracker.h"
 #include "State/Transformer/Transformer.hpp"
 #include "Term/NameContext.h"
 #include "Term/TermBuilder.h"
@@ -34,16 +34,16 @@ public:
     AnnotationMaterializer(
             const LogicAnnotation& A,
             FactoryNest FN,
-            MetaInfoTracker* MI);
+            VariableInfoTracker* MI);
     ~AnnotationMaterializer();
 
     llvm::LLVMContext& getLLVMContext() const;
-    MetaInfoTracker::ValueDescriptor forName(const std::string& name) const;
+    VariableInfoTracker::ValueDescriptor forName(const std::string& name) const;
     const NameContext& nameContext() const;
     TermFactory& factory() const;
 
-    MetaInfoTracker::ValueDescriptors forValue(llvm::Value* value) const;
-    MetaInfoTracker::ValueDescriptor forValueSingle(llvm::Value* value) const {
+    VariableInfoTracker::ValueDescriptors forValue(llvm::Value* value) const;
+    VariableInfoTracker::ValueDescriptor forValueSingle(llvm::Value* value) const {
         auto descs = forValue(value);
         ASSERTC(descs.size() == 1);
         return descs.front();
@@ -305,7 +305,7 @@ public:
     }
 };
 
-Annotation::Ptr materialize(Annotation::Ptr, FactoryNest FN, MetaInfoTracker*);
+Annotation::Ptr materialize(Annotation::Ptr, FactoryNest FN, VariableInfoTracker*);
 
 } /* namespace borealis */
 

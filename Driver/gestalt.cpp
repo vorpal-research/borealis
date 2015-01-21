@@ -62,7 +62,7 @@
 
 #include <google/protobuf/stubs/common.h>
 
-#include "Actions/comments.h"
+#include "Actions/GatherCommentsAction.h"
 #include "Config/config.h"
 #include "Codegen/DiagnosticLogger.h"
 #include "Driver/cl.h"

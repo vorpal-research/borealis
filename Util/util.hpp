@@ -122,6 +122,11 @@ std::unique_ptr<T, D> uniq(T* val, D deleter) {
     return std::unique_ptr<T, D>(val, deleter);
 }
 
+template<class T, class ...Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>{ new T{ std::forward<Args>(args)... } };
+}
+
 namespace impl {
 template<char Sep>
 std::ostringstream& concat_(std::ostringstream& s) {

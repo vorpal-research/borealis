@@ -10,6 +10,7 @@
 // #define UNMACROS_H_
 
 #ifdef BOREALIS_MACROS_DEFINED
+#undef LAM
 #undef QUICK_RETURN
 #undef QUICK_CONST_RETURN
 #undef BYE_BYE
