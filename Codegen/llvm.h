@@ -317,6 +317,7 @@ private:
 
 std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::set<DIType>& collected);
 std::set<DIType> flattenTypeTree(const DebugInfoFinder& dfi,DIType di);
+std::unordered_set<const llvm::Type*> flattenTypeTree(const llvm::Type* tp);
 DIType stripAliases(const DebugInfoFinder& dfi,DIType tp);
 std::map<llvm::Type*, DIType>& flattenTypeTree(
     const DebugInfoFinder& dfi,

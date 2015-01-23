@@ -11,6 +11,7 @@
 
 #ifdef BOREALIS_MACROS_DEFINED
 #undef LAM
+#undef FWD
 #undef QUICK_RETURN
 #undef QUICK_CONST_RETURN
 #undef BYE_BYE

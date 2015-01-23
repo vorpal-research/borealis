@@ -64,8 +64,10 @@ public:
     size_t getNumFields() const noexcept { return fields.size(); }
 
     util::option_ref<const RecordField> getFieldByName(const std::string& name) const {
+        auto eqName = LAM(id, id == name);
+
         for(auto&& field: fields) {
-            if (util::viewContainer(field.getIds()).any_of(LAM(decltype(name) id, id == name)))
+            if (util::viewContainer(field.getIds()).any_of(eqName))
                 return util::justRef(field);
         }
 

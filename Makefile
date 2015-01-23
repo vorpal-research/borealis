@@ -24,7 +24,7 @@ CXXFLAGS := \
 	-D__STDC_LIMIT_MACROS \
 	-O0 \
 	-fPIC \
-	-std=c++11 \
+	-std=c++14 \
 	-g \
 	$(RTTIFLAG) \
 	$(INCLUDES) \

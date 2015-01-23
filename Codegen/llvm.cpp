@@ -224,6 +224,27 @@ std::map<llvm::Type*, DIType> flattenTypeTree(const DebugInfoFinder& dfi,
     return std::move(collected);
 }
 
+std::unordered_set<const llvm::Type*>& flattenTypeTree(
+        const llvm::Type* tp,
+        std::unordered_set<const llvm::Type*>& collected
+    ) {
+    if(collected.count(tp)) return collected;
+
+    collected.insert(tp);
+    if(auto&& str = llvm::dyn_cast<llvm::StructType>(tp)) {
+        for(auto&& el : borealis::util::view(str->element_begin(), str->element_end())) {
+            flattenTypeTree(el, collected);
+        }
+    }
+    return collected;
+}
+
+std::unordered_set<const llvm::Type*> flattenTypeTree(const llvm::Type* tp) {
+    std::unordered_set<const llvm::Type*> ret;
+    flattenTypeTree(tp, ret);
+    return std::move(ret);
+}
+
 //===----------------------------------------------------------------------===//
 // DebugInfoFinder implementations.
 //===----------------------------------------------------------------------===//

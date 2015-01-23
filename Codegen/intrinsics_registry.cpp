@@ -124,6 +124,11 @@ static RegisterIntrinsic INTRINSIC_NONDET {
     "nondet"
 };
 
+static RegisterIntrinsic INTRINSIC_CONSUME {
+    function_type::INTRINSIC_CONSUME,
+    "consume"
+};
+
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",

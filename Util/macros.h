@@ -30,7 +30,8 @@
  * Note that the one-liners can be big and the impact will be significant.
  *
  * */
-#define LAM(X, ...) [&](X) -> decltype(__VA_ARGS__) { return __VA_ARGS__; }
+#define LAM(X, ...) [&](auto&& X) -> decltype(auto) { return __VA_ARGS__; }
+#define FWD(...) (std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__))
 
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
