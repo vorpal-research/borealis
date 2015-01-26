@@ -1,4 +1,4 @@
-/*
+    /*
  * json.hpp
  *
  *  Created on: Apr 12, 2013
@@ -8,8 +8,9 @@
 #ifndef JSON_HPP_
 #define JSON_HPP_
 
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 
+#include <iostream>
 #include <memory>
 #include <string>
 
