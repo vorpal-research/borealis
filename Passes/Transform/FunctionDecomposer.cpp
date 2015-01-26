@@ -7,6 +7,7 @@
 
 #include "Passes/Transform/FunctionDecomposer.h"
 #include "Codegen/intrinsics_manager.h"
+#include "Statistics/statistics.h"
 #include "Util/passes.hpp"
 
 #include <string>
@@ -28,8 +29,10 @@ char FunctionDecomposer::ID;
 static RegisterPass<FunctionDecomposer>
 X("decompose-functions", "Replace all unknown functions with corresponding borealis intrinsics");
 
-struct FunctionDecomposer::Impl {
-};
+static Statistic FunctionsDecomposed("decompose-functions",
+    "totalFunctions", "Total number of function calls decomposed");
+
+struct FunctionDecomposer::Impl {};
 
 FunctionDecomposer::FunctionDecomposer() : llvm::ModulePass{ID}, pimpl_{ new Impl{} } {}
 
@@ -196,6 +199,8 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
         auto&& replacementCall = mkNondet(IM, M, *call);
         call->replaceAllUsesWith(replacementCall);
         call->eraseFromParent();
+
+        FunctionsDecomposed++;
     }
 
     return false;

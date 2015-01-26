@@ -7,8 +7,6 @@
 
 #include <llvm/IR/InstVisitor.h>
 
-#include "lib/poolalloc/src/DSA/DataStructureAA.h"
-
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckNullDereferencePass.h"
 // #include "SMT/MathSAT/Unlogic/Unlogic.h"
