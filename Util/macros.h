@@ -64,6 +64,8 @@
         __PRETTY_FUNCTION__, \
         #cond); }
 
+#define UNREACHABLE(MSG) ASSERT(false, MSG)
+
 #define GUARD(...) typename std::enable_if<(__VA_ARGS__)>::type
 #define GUARDED(TYPE, ...) typename std::enable_if<(__VA_ARGS__), TYPE>::type
 

@@ -18,6 +18,7 @@
 #undef BYE_BYE_VOID
 #undef ASSERT
 #undef ASSERTC
+#undef UNREACHABLE
 #undef GUARD
 #undef GUARDED
 #undef STATIC_STRING
