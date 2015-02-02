@@ -51,7 +51,7 @@ struct TypeUtils {
         if(auto* Rec = dyn_cast<type::Record>(&type)) {
             std::string ret = Rec->getName() + "{ ";
 
-            ret += borealis::util::viewContainer(Rec->getBody()->get())
+            ret += util::viewContainer(Rec->getBody()->get())
                    .map([](auto&& e) {
                         return util::toString(e.getIndex()) +
                                ": " +
@@ -67,14 +67,15 @@ struct TypeUtils {
         }
         if(auto* Fun = dyn_cast<type::Function>(&type)) {
             std::string ret = TypeUtils::toString(*Fun->getRetty()) + "( ";
-            const auto& args = Fun->getArgs();
-            if(!args.empty()) {
-                ret += TypeUtils::toString(*util::head(args));
-                for(const auto& arg : util::tail(args)) {
-                    ret += ", ";
-                    ret += TypeUtils::toString(*arg);
-                }
-            }
+
+            ret += util::viewContainer(Fun->getArgs())
+                   .map(util::deref())
+                   .map(TypeUtils::toString)
+                   .reduce([](auto&& a, auto&& b) {
+                        return a + ", " + b;
+                    })
+                   .getOrElse("");
+
             ret += " )";
             return std::move(ret);
         }
