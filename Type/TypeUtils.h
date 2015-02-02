@@ -23,7 +23,7 @@ struct TypeUtils {
     }
 
     static bool isInvalid(Type::Ptr type) {
-        return ! isValid(type);
+        return not isValid(type);
     }
 
     static bool isUnknown(Type::Ptr type) {
@@ -50,19 +50,18 @@ struct TypeUtils {
         }
         if(auto* Rec = dyn_cast<type::Record>(&type)) {
             std::string ret = Rec->getName() + "{ ";
-            const auto& flds = Rec->getBody()->get();
-            if(!flds.empty()) {
-                const auto& hd = util::head(flds);
-                ret += util::toString(hd.getIndex()) +
-                       ": " +
-                       util::toString(hd.getIds());
-                for(const auto& fld : util::tail(flds)) {
-                    ret += ", ";
-                    ret += util::toString(fld.getIndex()) +
-                           ": " +
-                           util::toString(fld.getIds());
-                }
-            }
+
+            ret += borealis::util::viewContainer(Rec->getBody()->get())
+                   .map([](auto&& e) {
+                        return util::toString(e.getIndex()) +
+                               ": " +
+                               util::toString(e.getIds());
+                    })
+            	   .reduce([](auto&& e1, auto&& e2) {
+                        return e1 + ", " + e2;
+                    })
+                   .getOrElse("");
+
             ret += " }";
             return std::move(ret);
         }

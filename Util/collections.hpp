@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "Util/iterators.hpp"
+#include "Util/option.hpp"
 #include "Util/type_traits.hpp"
 
 #include "Util/macros.h"
@@ -97,6 +98,20 @@ public:
             zip(begin_, that.begin()),
             zip(end_, that.end())
         );
+    }
+
+    template<class Op>
+    auto reduce(Op operation) -> option<std::decay_t<decltype(*begin_)>> {
+        auto&& ret = util::nothing<std::decay_t<decltype(*begin_)>>();
+        if (not empty()) {
+            auto&& head = *begin_;
+            auto&& tail = drop(1);
+            ret = util::just(head);
+            for (auto&& e : tail) {
+                ret = util::just(operation(ret.getUnsafe(), e));
+            }
+        }
+        return std::move(ret);
     }
 
     template<class Pred>
