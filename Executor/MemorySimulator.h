@@ -8,13 +8,13 @@
 #ifndef EXECUTOR_MEMORYSIMULATOR_H_
 #define EXECUTOR_MEMORYSIMULATOR_H_
 
-#include <memory>
 #include <cstdint>
+#include <memory>
 
-#include <llvm/IR/Function.h>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/GlobalValue.h>
 #include <llvm/ADT/APInt.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalValue.h>
 
 namespace borealis {
 
@@ -29,9 +29,11 @@ public:
     void LoadIntFromMemory(llvm::APInt& val, uint8_t* Ptr, size_t size);
     void StoreIntToMemory(const llvm::APInt& val, uint8_t* Ptr, size_t size);
     void* AllocateMemory(size_t amount);
+    enum MallocFill{ UNINIT, ZERO };
+    void* MallocMemory(size_t amount, MallocFill fillWith);
 
     void* getPointerToFunction(const llvm::Function* f);
-    void* getPointerBasicBlock(const llvm::BasicBlock* f);
+    void* getPointerBasicBlock(const llvm::BasicBlock* bb);
     void* getPointerToGlobal(const llvm::GlobalValue* gv);
 };
 

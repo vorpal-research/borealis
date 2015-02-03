@@ -54,7 +54,7 @@ void Executor::StoreValueToMemory(const llvm::GenericValue &Val, llvm::GenericVa
         *((double*)Ptr) = Val.DoubleVal;
         break;
     case Type::X86_FP80TyID:
-        memcpy(Ptr, Val.IntVal.getRawData(), 10);
+        Mem.StoreIntToMemory(Val.IntVal, (uint8_t*)Ptr, 10);
         break;
     case Type::PointerTyID:
         // Ensure 64 bit target pointers are fully initialized on 32 bit hosts.
@@ -78,9 +78,11 @@ void Executor::StoreValueToMemory(const llvm::GenericValue &Val, llvm::GenericVa
         break;
     }
 
-    if (sys::IsLittleEndianHost != getDataLayout()->isLittleEndian())
-        // Host and target are different endian - reverse the stored bytes.
-        std::reverse((uint8_t*)Ptr, StoreBytes + (uint8_t*)Ptr);
+// FIXME: do this with incoming data
+//    if (sys::IsLittleEndianHost != getDataLayout()->isLittleEndian())
+//        // Host and target are different endian - reverse the stored bytes.
+//        std::reverse((uint8_t*)Ptr, StoreBytes + (uint8_t*)Ptr);
+
 }
 
 void Executor::LoadValueFromMemory(llvm::GenericValue &Result, llvm::GenericValue *Ptr, llvm::Type *Ty) {
