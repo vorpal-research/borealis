@@ -31,6 +31,7 @@
  *
  * */
 #define LAM(X, ...) [&](auto&& X) -> decltype(auto) { return __VA_ARGS__; }
+#define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype(auto) { return __VA_ARGS__; }
 #define FWD(...) (std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__))
 
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }

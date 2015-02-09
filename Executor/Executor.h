@@ -57,7 +57,7 @@ struct ExecutionContext {
 
 class Executor : public llvm::InstVisitor<Executor> {
     llvm::GenericValue ExitValue;          // The return llvm::Value of the Executor llvm::Function
-    llvm::DataLayout* TD;
+    const llvm::DataLayout* TD;
 
     // The runtime stack of executing code.  The top of the stack is the current
     // llvm::Function record.
@@ -69,11 +69,12 @@ class Executor : public llvm::InstVisitor<Executor> {
 
     MemorySimulator Mem;
 
+
 public:
-    explicit Executor(llvm::Module *M, llvm::DataLayout* TD);
+    explicit Executor(llvm::Module *M,  const llvm::DataLayout* TD);
     ~Executor();
 
-    llvm::DataLayout* getDataLayout() const { return TD; }
+    const llvm::DataLayout* getDataLayout() const { return TD; }
 
     /// runAtExitHandlers - Run any functions registered by the program's calls to
     /// atexit(3), which we intercept and store in AtExitHandlers.
@@ -201,8 +202,9 @@ private:  // Helper functions
         llvm::Type *Ty, ExecutionContext &SF);
     void popStackAndReturnValueToCaller(llvm::Type *RetTy, llvm::GenericValue Result);
 
-    void LoadValueFromMemory(llvm::GenericValue &Result, llvm::GenericValue *Ptr, llvm::Type *Ty);
-    void StoreValueToMemory(const llvm::GenericValue &Val, llvm::GenericValue *Ptr, llvm::Type *Ty);
+    using byte = uint8_t;
+    void LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, llvm::Type *Ty);
+    void StoreValueToMemory(const llvm::GenericValue &Val, byte* Ptr, llvm::Type *Ty);
 };
 
 } /* namespace borealis */
