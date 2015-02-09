@@ -148,31 +148,23 @@ public:
         operator=(option(val));
     }
 
-    bool operator==(const self& that) const {
-        if( empty() ) return that.empty();
-        else if( that.empty() ) return false;
-        else return *holder == *(that.holder);
-    }
-
     bool operator==(const T& that) const {
         if( empty() ) return false;
         else return *holder == that;
     }
 
-    bool operator==(const nothing_t&) const {
-        return empty();
-    }
-
-    bool operator!=(const self& that) const {
-        return !operator==(that);
+    friend bool operator==(const self& a, const self& b) {
+        if( a.empty() ) return b.empty();
+        else if( b.empty() ) return false;
+        else return *a.holder == *b.holder;
     }
 
     bool operator!=(const T& that) const {
         return !operator==(that);
     }
 
-    bool operator!=(const nothing_t&) const {
-        return !empty();
+    friend bool operator!=(const self& a, const self& b) {
+        return !(a == b);
     }
 
     bool operator!() const {

@@ -382,4 +382,17 @@ TEST(Util, tuple) {
     }
 }
 
+TEST(Util, reduce) {
+    {
+        auto&& plus = [](auto&& a, auto&& b) { return a + b; };
+
+        std::vector<int> vec{};
+        EXPECT_EQ(nothing(), viewContainer(vec).reduce(plus));
+        vec.push_back(1);
+        EXPECT_EQ(just(1), viewContainer(vec).reduce(plus));
+        vec.push_back(1000);
+        EXPECT_EQ(just(1001), viewContainer(vec).reduce(plus));
+    }
+}
+
 } // namespace

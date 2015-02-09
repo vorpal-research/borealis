@@ -21,3 +21,5 @@ Protobuf/Gen/*
 *.png
 
 lib/yaml-cpp/build
+lib/cfgparser/dist
+lib/dbglog/dist

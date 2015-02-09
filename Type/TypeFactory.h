@@ -19,9 +19,7 @@
 
 #include "Passes/Tracker/VariableInfoTracker.h"
 
-
 #include "Util/macros.h"
-
 
 namespace borealis {
 

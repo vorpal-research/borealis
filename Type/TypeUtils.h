@@ -23,7 +23,7 @@ struct TypeUtils {
     }
 
     static bool isInvalid(Type::Ptr type) {
-        return ! isValid(type);
+        return not isValid(type);
     }
 
     static bool isUnknown(Type::Ptr type) {
@@ -50,32 +50,32 @@ struct TypeUtils {
         }
         if(auto* Rec = dyn_cast<type::Record>(&type)) {
             std::string ret = Rec->getName() + "{ ";
-            const auto& flds = Rec->getBody()->get();
-            if(!flds.empty()) {
-                const auto& hd = util::head(flds);
-                ret += util::toString(hd.getIndex()) +
-                       ": " +
-                       util::toString(hd.getIds());
-                for(const auto& fld : util::tail(flds)) {
-                    ret += ", ";
-                    ret += util::toString(fld.getIndex()) +
-                           ": " +
-                           util::toString(fld.getIds());
-                }
-            }
+
+            ret += util::viewContainer(Rec->getBody()->get())
+                   .map([](auto&& e) {
+                        return util::toString(e.getIndex()) +
+                               ": " +
+                               util::toString(e.getIds());
+                    })
+            	   .reduce([](auto&& e1, auto&& e2) {
+                        return e1 + ", " + e2;
+                    })
+                   .getOrElse("");
+
             ret += " }";
             return std::move(ret);
         }
         if(auto* Fun = dyn_cast<type::Function>(&type)) {
             std::string ret = TypeUtils::toString(*Fun->getRetty()) + "( ";
-            const auto& args = Fun->getArgs();
-            if(!args.empty()) {
-                ret += TypeUtils::toString(*util::head(args));
-                for(const auto& arg : util::tail(args)) {
-                    ret += ", ";
-                    ret += TypeUtils::toString(*arg);
-                }
-            }
+
+            ret += util::viewContainer(Fun->getArgs())
+                   .map(util::deref())
+                   .map(TypeUtils::toString)
+                   .reduce([](auto&& a, auto&& b) {
+                        return a + ", " + b;
+                    })
+                   .getOrElse("");
+
             ret += " )";
             return std::move(ret);
         }
