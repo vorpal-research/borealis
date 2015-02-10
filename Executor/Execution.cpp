@@ -31,8 +31,8 @@
 #include <llvm/Support/MathExtras.h>
 #include <algorithm>
 #include <cmath>
-using namespace llvm;
 using namespace borealis;
+using namespace llvm;
 
 #include "Util/util.h"
 
@@ -63,21 +63,21 @@ void Executor::StoreValueToMemory(const llvm::GenericValue &Val, byte* Ptr, llvm
     switch (Ty->getTypeID()) {
     default:
         // XXX: support vectors?
-        throw std::logic_error( "Cannot store value of type " + util::toString(*Ty) + "!");
+        throw std::logic_error( "Cannot store value of llvm::Type " + util::toString(*Ty) + "!");
         break;
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         Mem.StoreIntToMemory(Val.IntVal, buffer);
         break;
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         Mem.StoreBytesToMemory(bufferOfPod(Val.FloatVal, StoreBytes), buffer);
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         Mem.StoreBytesToMemory(bufferOfPod(Val.DoubleVal, StoreBytes), buffer);
         break;
-    case Type::X86_FP80TyID:
+    case llvm::Type::X86_FP80TyID:
         Mem.StoreIntToMemory(Val.IntVal, buffer);
         break;
-    case Type::PointerTyID:
+    case llvm::Type::PointerTyID:
         Mem.StoreBytesToMemory(bufferOfPod(Val.PointerVal, StoreBytes), buffer);
         break;
     }
@@ -95,21 +95,21 @@ void Executor::LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, 
     auto buffer = buffer_t{Ptr, LoadBytes};
 
     switch (Ty->getTypeID()) {
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         // An APInt with all words initially zero.
         Result.IntVal = APInt(cast<IntegerType>(Ty)->getBitWidth(), 0);
         Mem.LoadIntFromMemory(Result.IntVal, buffer);
         break;
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         Mem.LoadBytesFromMemory(bufferOfPod(Result.FloatVal, LoadBytes), buffer);
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         Mem.LoadBytesFromMemory(bufferOfPod(Result.DoubleVal, LoadBytes), buffer);
         break;
-    case Type::PointerTyID:
+    case llvm::Type::PointerTyID:
         Mem.LoadBytesFromMemory(bufferOfPod(Result.PointerVal, LoadBytes), buffer);
         break;
-    case Type::X86_FP80TyID: {
+    case llvm::Type::X86_FP80TyID: {
         // This is endian dependent, but it will only work on x86 anyway.
         // FIXME: Will not trap if loading a signaling NaN.
         Result.IntVal = APInt(cast<IntegerType>(Ty)->getBitWidth(), 0);
@@ -117,7 +117,7 @@ void Executor::LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, 
         break;
     }
     default:
-        throw std::logic_error( "Cannot load value of type " + util::toString(*Ty) + "!");
+        throw std::logic_error( "Cannot load value of llvm::Type " + util::toString(*Ty) + "!");
         break;
     }
 }
@@ -126,7 +126,7 @@ void Executor::LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, 
 //                     Various Helper Functions
 //===----------------------------------------------------------------------===//
 
-static void SetValue(Value *V, GenericValue Val, ExecutionContext &SF) {
+static void SetValue(Value *V, GenericValue Val, ExecutorContext &SF) {
     SF.Values[V] = Val;
 }
 
@@ -135,81 +135,81 @@ static void SetValue(Value *V, GenericValue Val, ExecutionContext &SF) {
 //===----------------------------------------------------------------------===//
 
 #define IMPLEMENT_BINARY_OPERATOR(OP, TY) \
-    case Type::TY##TyID: \
+    case llvm::Type::TY##TyID: \
     Dest.TY##Val = Src1.TY##Val OP Src2.TY##Val; \
     break
 
 static void executeFAddInst(GenericValue &Dest, GenericValue Src1,
-    GenericValue Src2, Type *Ty) {
+    GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
     IMPLEMENT_BINARY_OPERATOR(+, Float);
     IMPLEMENT_BINARY_OPERATOR(+, Double);
     default:
-        borealis::dbgs() << "Unhandled type for FAdd instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FAdd instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
 }
 
 static void executeFSubInst(GenericValue &Dest, GenericValue Src1,
-    GenericValue Src2, Type *Ty) {
+    GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
     IMPLEMENT_BINARY_OPERATOR(-, Float);
     IMPLEMENT_BINARY_OPERATOR(-, Double);
     default:
-        borealis::dbgs() << "Unhandled type for FSub instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FSub instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
 }
 
 static void executeFMulInst(GenericValue &Dest, GenericValue Src1,
-    GenericValue Src2, Type *Ty) {
+    GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
     IMPLEMENT_BINARY_OPERATOR(*, Float);
     IMPLEMENT_BINARY_OPERATOR(*, Double);
     default:
-        borealis::dbgs() << "Unhandled type for FMul instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FMul instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
 }
 
 static void executeFDivInst(GenericValue &Dest, GenericValue Src1,
-    GenericValue Src2, Type *Ty) {
+    GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
     IMPLEMENT_BINARY_OPERATOR(/, Float);
     IMPLEMENT_BINARY_OPERATOR(/, Double);
     default:
-        borealis::dbgs() << "Unhandled type for FDiv instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FDiv instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
 }
 
 static void executeFRemInst(GenericValue &Dest, GenericValue Src1,
-    GenericValue Src2, Type *Ty) {
+    GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         Dest.FloatVal = fmod(Src1.FloatVal, Src2.FloatVal);
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         Dest.DoubleVal = fmod(Src1.DoubleVal, Src2.DoubleVal);
         break;
     default:
-        borealis::dbgs() << "Unhandled type for Rem instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for Rem instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
 }
 
 #define IMPLEMENT_INTEGER_ICMP(OP, TY) \
-    case Type::IntegerTyID:  \
+    case llvm::Type::IntegerTyID:  \
     Dest.IntVal = APInt(1,Src1.IntVal.OP(Src2.IntVal)); \
     break;
 
 #define IMPLEMENT_VECTOR_INTEGER_ICMP(OP, TY)                        \
-    case Type::VectorTyID: {                                           \
+    case llvm::Type::VectorTyID: {                                           \
         ASSERTC(Src1.AggregateVal.size() == Src2.AggregateVal.size());    \
         Dest.AggregateVal.resize( Src1.AggregateVal.size() );            \
         for( uint32_t _i=0;_i<Src1.AggregateVal.size();_i++)             \
@@ -222,13 +222,13 @@ static void executeFRemInst(GenericValue &Dest, GenericValue Src1,
 // running on a 32-bit target, otherwise the upper 32 bits might mess up
 // comparisons if they contain garbage.
 #define IMPLEMENT_POINTER_ICMP(OP) \
-    case Type::PointerTyID: \
+    case llvm::Type::PointerTyID: \
     Dest.IntVal = APInt(1,(void*)(intptr_t)Src1.PointerVal OP \
         (void*)(intptr_t)Src2.PointerVal); \
         break;
 
 static GenericValue executeICMP_EQ(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -236,14 +236,14 @@ static GenericValue executeICMP_EQ(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(eq,Ty);
     IMPLEMENT_POINTER_ICMP(==);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_EQ predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_EQ predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_NE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -251,14 +251,14 @@ static GenericValue executeICMP_NE(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(ne,Ty);
     IMPLEMENT_POINTER_ICMP(!=);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_NE predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_NE predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_ULT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -266,14 +266,14 @@ static GenericValue executeICMP_ULT(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(ult,Ty);
     IMPLEMENT_POINTER_ICMP(<);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_ULT predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_ULT predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_SLT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -281,14 +281,14 @@ static GenericValue executeICMP_SLT(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(slt,Ty);
     IMPLEMENT_POINTER_ICMP(<);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_SLT predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_SLT predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_UGT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -296,14 +296,14 @@ static GenericValue executeICMP_UGT(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(ugt,Ty);
     IMPLEMENT_POINTER_ICMP(>);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_UGT predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_UGT predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_SGT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -311,14 +311,14 @@ static GenericValue executeICMP_SGT(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(sgt,Ty);
     IMPLEMENT_POINTER_ICMP(>);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_SGT predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_SGT predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_ULE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -326,14 +326,14 @@ static GenericValue executeICMP_ULE(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(ule,Ty);
     IMPLEMENT_POINTER_ICMP(<=);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_ULE predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_ULE predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_SLE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -341,14 +341,14 @@ static GenericValue executeICMP_SLE(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(sle,Ty);
     IMPLEMENT_POINTER_ICMP(<=);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_SLE predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_SLE predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_UGE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -356,14 +356,14 @@ static GenericValue executeICMP_UGE(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(uge,Ty);
     IMPLEMENT_POINTER_ICMP(>=);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_UGE predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_UGE predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeICMP_SGE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -371,7 +371,7 @@ static GenericValue executeICMP_SGE(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_VECTOR_INTEGER_ICMP(sge,Ty);
     IMPLEMENT_POINTER_ICMP(>=);
     default:
-        borealis::dbgs() << "Unhandled type for ICMP_SGE predicate: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for ICMP_SGE predicate: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
@@ -379,8 +379,8 @@ static GenericValue executeICMP_SGE(GenericValue Src1, GenericValue Src2,
 
 void Executor::visitICmpInst(ICmpInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
-    Type *Ty    = I.getOperand(0)->getType();
+    ExecutorContext &SF = ECStack.back();
+    llvm::Type *Ty    = I.getOperand(0)->getType();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue R;   // Result
@@ -405,7 +405,7 @@ void Executor::visitICmpInst(ICmpInst &I) {
 }
 
 #define IMPLEMENT_FCMP(OP, TY) \
-    case Type::TY##TyID: \
+    case llvm::Type::TY##TyID: \
     Dest.IntVal = APInt(1,Src1.TY##Val OP Src2.TY##Val); \
     break
 
@@ -418,7 +418,7 @@ void Executor::visitICmpInst(ICmpInst &I) {
         break;
 
 #define IMPLEMENT_VECTOR_FCMP(OP)                                   \
-    case Type::VectorTyID:                                            \
+    case llvm::Type::VectorTyID:                                            \
     if(dyn_cast<VectorType>(Ty)->getElementType()->isFloatTy()) {   \
         IMPLEMENT_VECTOR_FCMP_T(OP, Float);                           \
     } else {                                                        \
@@ -426,14 +426,14 @@ void Executor::visitICmpInst(ICmpInst &I) {
     }
 
 static GenericValue executeFCMP_OEQ(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
     IMPLEMENT_FCMP(==, Float);
     IMPLEMENT_FCMP(==, Double);
     IMPLEMENT_VECTOR_FCMP(==);
     default:
-        borealis::dbgs() << "Unhandled type for FCmp EQ instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FCmp EQ instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
@@ -476,7 +476,7 @@ static GenericValue executeFCMP_OEQ(GenericValue Src1, GenericValue Src2,
 
 
 static GenericValue executeFCMP_ONE(GenericValue Src1, GenericValue Src2,
-    Type *Ty)
+    llvm::Type *Ty)
 {
     GenericValue Dest;
     // if input is scalar value and Src1 or Src2 is NaN return false
@@ -489,7 +489,7 @@ static GenericValue executeFCMP_ONE(GenericValue Src1, GenericValue Src2,
     IMPLEMENT_FCMP(!=, Double);
     IMPLEMENT_VECTOR_FCMP(!=);
     default:
-        borealis::dbgs() << "Unhandled type for FCmp NE instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FCmp NE instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     // in vector case mask out NaN elements
@@ -502,56 +502,56 @@ static GenericValue executeFCMP_ONE(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_OLE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
     IMPLEMENT_FCMP(<=, Float);
     IMPLEMENT_FCMP(<=, Double);
     IMPLEMENT_VECTOR_FCMP(<=);
     default:
-        borealis::dbgs() << "Unhandled type for FCmp LE instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FCmp LE instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeFCMP_OGE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
     IMPLEMENT_FCMP(>=, Float);
     IMPLEMENT_FCMP(>=, Double);
     IMPLEMENT_VECTOR_FCMP(>=);
     default:
-        borealis::dbgs() << "Unhandled type for FCmp GE instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FCmp GE instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeFCMP_OLT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
     IMPLEMENT_FCMP(<, Float);
     IMPLEMENT_FCMP(<, Double);
     IMPLEMENT_VECTOR_FCMP(<);
     default:
-        borealis::dbgs() << "Unhandled type for FCmp LT instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FCmp LT instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
 }
 
 static GenericValue executeFCMP_OGT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
     IMPLEMENT_FCMP(>, Float);
     IMPLEMENT_FCMP(>, Double);
     IMPLEMENT_VECTOR_FCMP(>);
     default:
-        borealis::dbgs() << "Unhandled type for FCmp GT instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled llvm::Type for FCmp GT instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
     return Dest;
@@ -579,7 +579,7 @@ static GenericValue executeFCMP_OGT(GenericValue Src1, GenericValue Src2,
     }
 
 static GenericValue executeFCMP_UEQ(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     IMPLEMENT_UNORDERED(Ty, Src1, Src2)
@@ -590,7 +590,7 @@ static GenericValue executeFCMP_UEQ(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_UNE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     IMPLEMENT_UNORDERED(Ty, Src1, Src2)
@@ -600,7 +600,7 @@ static GenericValue executeFCMP_UNE(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_ULE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     IMPLEMENT_UNORDERED(Ty, Src1, Src2)
@@ -610,7 +610,7 @@ static GenericValue executeFCMP_ULE(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_UGE(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     IMPLEMENT_UNORDERED(Ty, Src1, Src2)
@@ -620,7 +620,7 @@ static GenericValue executeFCMP_UGE(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_ULT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     IMPLEMENT_UNORDERED(Ty, Src1, Src2)
@@ -630,7 +630,7 @@ static GenericValue executeFCMP_ULT(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_UGT(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     IMPLEMENT_UNORDERED(Ty, Src1, Src2)
@@ -640,7 +640,7 @@ static GenericValue executeFCMP_UGT(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     if(Ty->isVectorTy()) {
@@ -672,7 +672,7 @@ static GenericValue executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_UNO(GenericValue Src1, GenericValue Src2,
-    Type *Ty) {
+    llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     if(Ty->isVectorTy()) {
@@ -704,7 +704,7 @@ static GenericValue executeFCMP_UNO(GenericValue Src1, GenericValue Src2,
 }
 
 static GenericValue executeFCMP_BOOL(GenericValue Src1, GenericValue Src2,
-    const Type *Ty, const bool val) {
+    const llvm::Type *Ty, const bool val) {
     TRACE_FUNC;
     GenericValue Dest;
     if(Ty->isVectorTy()) {
@@ -721,8 +721,8 @@ static GenericValue executeFCMP_BOOL(GenericValue Src1, GenericValue Src2,
 
 void Executor::visitFCmpInst(FCmpInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
-    Type *Ty    = I.getOperand(0)->getType();
+    ExecutorContext &SF = ECStack.back();
+    llvm::Type *Ty    = I.getOperand(0)->getType();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue R;   // Result
@@ -756,7 +756,7 @@ void Executor::visitFCmpInst(FCmpInst &I) {
 }
 
 static GenericValue executeCmpInst(unsigned predicate, GenericValue Src1,
-    GenericValue Src2, Type *Ty) {
+    GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Result;
     switch (predicate) {
@@ -794,8 +794,8 @@ static GenericValue executeCmpInst(unsigned predicate, GenericValue Src1,
 
 void Executor::visitBinaryOperator(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
-    Type *Ty    = I.getOperand(0)->getType();
+    ExecutorContext &SF = ECStack.back();
+    llvm::Type *Ty    = I.getOperand(0)->getType();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue R;   // Result
@@ -818,7 +818,7 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
     R.AggregateVal[i].IntVal =                                   \
     Src1.AggregateVal[i].IntVal.OP(Src2.AggregateVal[i].IntVal);
 
-        // Macros to execute binary operation 'OP' over floating point type TY
+        // Macros to execute binary operation 'OP' over floating point llvm::Type TY
         // (float or double) vectors
 #define FLOAT_VECTOR_FUNCTION(OP, TY)                               \
     for (unsigned i = 0; i < R.AggregateVal.size(); ++i)          \
@@ -834,7 +834,7 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
         if (dyn_cast<VectorType>(Ty)->getElementType()->isDoubleTy())     \
         FLOAT_VECTOR_FUNCTION(OP, DoubleVal)                            \
         else {                                                            \
-            borealis::dbgs() << "Unhandled type for OP instruction: " << *Ty << "\n"; \
+            borealis::dbgs() << "Unhandled llvm::Type for OP instruction: " << *Ty << "\n"; \
             UNREACHABLE(nullptr);                                            \
         }                                                                 \
     }                                                                   \
@@ -870,7 +870,7 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
                         R.AggregateVal[i].DoubleVal =
                             fmod(Src1.AggregateVal[i].DoubleVal, Src2.AggregateVal[i].DoubleVal);
                 else {
-                    borealis::dbgs() << "Unhandled type for Rem instruction: " << *Ty << "\n";
+                    borealis::dbgs() << "Unhandled llvm::Type for Rem instruction: " << *Ty << "\n";
                     UNREACHABLE(nullptr);
                 }
             }
@@ -903,7 +903,7 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
 }
 
 static GenericValue executeSelectInst(GenericValue Src1, GenericValue Src2,
-    GenericValue Src3, const Type *Ty) {
+    GenericValue Src3, const llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
     if(Ty->isVectorTy()) {
@@ -921,8 +921,8 @@ static GenericValue executeSelectInst(GenericValue Src1, GenericValue Src2,
 
 void Executor::visitSelectInst(SelectInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
-    const Type * Ty = I.getOperand(0)->getType();
+    ExecutorContext &SF = ECStack.back();
+    const llvm::Type * Ty = I.getOperand(0)->getType();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Src3 = getOperandValue(I.getOperand(2), SF);
@@ -952,14 +952,14 @@ void Executor::exitCalled(GenericValue GV) {
 /// care of switching to the normal destination BB, if we are returning
 /// from an invoke.
 ///
-void Executor::popStackAndReturnValueToCaller(Type *RetTy,
+void Executor::popStackAndReturnValueToCaller(llvm::Type *RetTy,
     GenericValue Result) {
     TRACE_FUNC;
     // Pop the current stack frame.
     ECStack.pop_back();
 
     if (ECStack.empty()) {  // Finished main.  Put result into exit code...
-        if (RetTy && !RetTy->isVoidTy()) {          // Nonvoid return type?
+        if (RetTy && !RetTy->isVoidTy()) {          // Nonvoid return llvm::Type?
             ExitValue = Result;   // Capture the exit value of the program
         } else {
             memset(&ExitValue.Untyped, 0, sizeof(ExitValue.Untyped));
@@ -967,7 +967,7 @@ void Executor::popStackAndReturnValueToCaller(Type *RetTy,
     } else {
         // If we have a previous stack frame, and we have a previous call,
         // fill in the return value...
-        ExecutionContext &CallingSF = ECStack.back();
+        ExecutorContext &CallingSF = ECStack.back();
         if (Instruction *I = CallingSF.Caller.getInstruction()) {
             // Save result...
             if (!CallingSF.Caller.getType()->isVoidTy())
@@ -981,8 +981,8 @@ void Executor::popStackAndReturnValueToCaller(Type *RetTy,
 
 void Executor::visitReturnInst(ReturnInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
-    Type *RetTy = Type::getVoidTy(I.getContext());
+    ExecutorContext &SF = ECStack.back();
+    llvm::Type *RetTy = llvm::Type::getVoidTy(I.getContext());
     GenericValue Result;
 
     // Save away the return value... (if we are not 'ret void')
@@ -1001,7 +1001,7 @@ void Executor::visitUnreachableInst(UnreachableInst &I) {
 
 void Executor::visitBranchInst(BranchInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     BasicBlock *Dest;
 
     Dest = I.getSuccessor(0);          // Uncond branches have a fixed dest...
@@ -1015,9 +1015,9 @@ void Executor::visitBranchInst(BranchInst &I) {
 
 void Executor::visitSwitchInst(SwitchInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     Value* Cond = I.getCondition();
-    Type *ElTy = Cond->getType();
+    llvm::Type *ElTy = Cond->getType();
     GenericValue CondVal = getOperandValue(Cond, SF);
 
     // Check to see if any of the cases match...
@@ -1035,7 +1035,7 @@ void Executor::visitSwitchInst(SwitchInst &I) {
 
 void Executor::visitIndirectBrInst(IndirectBrInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     void *Dest = GVTOP(getOperandValue(I.getAddress(), SF));
     SwitchToNewBasicBlock((BasicBlock*)Dest, SF);
 }
@@ -1051,7 +1051,7 @@ void Executor::visitIndirectBrInst(IndirectBrInst &I) {
 // their inputs.  If the input PHI node is updated before it is read, incorrect
 // results can happen.  Thus we use a two phase approach.
 //
-void Executor::SwitchToNewBasicBlock(BasicBlock *Dest, ExecutionContext &SF){
+void Executor::SwitchToNewBasicBlock(BasicBlock *Dest, ExecutorContext &SF){
     TRACE_FUNC;
     BasicBlock *PrevBB = SF.CurBB;      // Remember where we came from...
     SF.CurBB   = Dest;                  // Update CurBB to branch destination
@@ -1088,9 +1088,9 @@ void Executor::visitAllocaInst(AllocaInst &I) {
     TRACE_FUNC;
     // TODO
 
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
 
-    Type *Ty = I.getType()->getElementType();  // Type to be allocated
+    llvm::Type *Ty = I.getType()->getElementType();  // llvm::Type to be allocated
 
     // Get the number of elements being allocated by the array...
     unsigned NumElements =
@@ -1101,7 +1101,7 @@ void Executor::visitAllocaInst(AllocaInst &I) {
     // Avoid malloc-ing zero bytes, use max()...
     unsigned MemToAlloc = std::max(1U, NumElements * TypeSize);
 
-    // Allocate enough memory to hold the type...
+    // Allocate enough memory to hold the llvm::Type...
     void *Memory = Mem.AllocateMemory(MemToAlloc);
 
     GenericValue Result = PTOGV(Memory);
@@ -1114,10 +1114,10 @@ void Executor::visitAllocaInst(AllocaInst &I) {
 //
 GenericValue Executor::executeGEPOperation(Value *Ptr, gep_type_iterator I,
     gep_type_iterator E,
-    ExecutionContext &SF) {
+    ExecutorContext &SF) {
     TRACE_FUNC;
     ASSERT(Ptr->getType()->isPointerTy(),
-        "Cannot getElementOffset of a nonpointer type!");
+        "Cannot getElementOffset of a nonpointer llvm::Type!");
 
     uint64_t Total = 0;
 
@@ -1131,7 +1131,7 @@ GenericValue Executor::executeGEPOperation(Value *Ptr, gep_type_iterator I,
             Total += SLO->getElementOffset(Index);
         } else {
             SequentialType *ST = cast<SequentialType>(*I);
-            // Get the index number for the array... which must be long type...
+            // Get the index number for the array... which must be long llvm::Type...
             GenericValue IdxGV = getOperandValue(I.getOperand(), SF);
 
             int64_t Idx;
@@ -1140,7 +1140,7 @@ GenericValue Executor::executeGEPOperation(Value *Ptr, gep_type_iterator I,
             if (BitWidth == 32)
                 Idx = (int64_t)(int32_t)IdxGV.IntVal.getZExtValue();
             else {
-                ASSERT(BitWidth == 64, "Invalid index type for getelementptr");
+                ASSERT(BitWidth == 64, "Invalid index llvm::Type for getelementptr");
                 Idx = (int64_t)IdxGV.IntVal.getZExtValue();
             }
             Total += TD->getTypeAllocSize(ST->getElementType())*Idx;
@@ -1154,7 +1154,7 @@ GenericValue Executor::executeGEPOperation(Value *Ptr, gep_type_iterator I,
 
 void Executor::visitGetElementPtrInst(GetElementPtrInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeGEPOperation(I.getPointerOperand(),
         gep_type_begin(I), gep_type_end(I), SF), SF);
 }
@@ -1162,7 +1162,7 @@ void Executor::visitGetElementPtrInst(GetElementPtrInst &I) {
 void Executor::visitLoadInst(LoadInst &I) {
     TRACE_FUNC;
     // TODO
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     GenericValue SRC = getOperandValue(I.getPointerOperand(), SF);
     GenericValue Result;
     LoadValueFromMemory(Result, static_cast<const byte*>(GVTOP(SRC)), I.getType());
@@ -1173,7 +1173,7 @@ void Executor::visitStoreInst(StoreInst &I) {
     TRACE_FUNC;
     // TODO
 
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     GenericValue Val = getOperandValue(I.getOperand(0), SF);
     GenericValue SRC = getOperandValue(I.getPointerOperand(), SF);
     StoreValueToMemory(Val, static_cast<byte*>(GVTOP(SRC)), I.getOperand(0)->getType());
@@ -1185,12 +1185,25 @@ void Executor::visitStoreInst(StoreInst &I) {
 
 void Executor::visitCallSite(CallSite CS) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
 
     // Check to see if this is an intrinsic function call...
     Function *F = CS.getCalledFunction();
+
+    SF.Caller = CS;
+    std::vector<GenericValue> ArgVals;
+    const unsigned NumArgs = SF.Caller.arg_size();
+    ArgVals.reserve(NumArgs);
+    uint16_t pNum = 1;
+    for (CallSite::arg_iterator i = SF.Caller.arg_begin(),
+        e = SF.Caller.arg_end(); i != e; ++i, ++pNum) {
+        Value *V = *i;
+        ArgVals.push_back(getOperandValue(V, SF));
+    }
+
     if (F && F->isDeclaration())
         switch (F->getIntrinsicID()) {
+        default: return;
         case Intrinsic::not_intrinsic:
             break;
         case Intrinsic::vastart: { // va_start
@@ -1205,24 +1218,17 @@ void Executor::visitCallSite(CallSite CS) {
         case Intrinsic::vacopy:   // va_copy: dest = src
             SetValue(CS.getInstruction(), getOperandValue(*CS.arg_begin(), SF), SF);
             return;
-        default:
+        case Intrinsic::memset:
+        case Intrinsic::memcpy:
+        case Intrinsic::memmove:
+            break;
+            // FIXME: implement these guys
+
             // If it is an unknown intrinsic function, use the intrinsic lowering
             // class to transform it into hopefully tasty LLVM code.
             //
-            return;
+            // fallthrough for a reason!
         }
-
-
-    SF.Caller = CS;
-    std::vector<GenericValue> ArgVals;
-    const unsigned NumArgs = SF.Caller.arg_size();
-    ArgVals.reserve(NumArgs);
-    uint16_t pNum = 1;
-    for (CallSite::arg_iterator i = SF.Caller.arg_begin(),
-        e = SF.Caller.arg_end(); i != e; ++i, ++pNum) {
-        Value *V = *i;
-        ArgVals.push_back(getOperandValue(V, SF));
-    }
 
     if(!F) {
         GenericValue SRC = getOperandValue(SF.Caller.getCalledValue(), SF);
@@ -1247,11 +1253,11 @@ static unsigned getShiftAmount(uint64_t orgShiftAmount,
 
 void Executor::visitShl(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
-    const Type *Ty = I.getType();
+    const llvm::Type *Ty = I.getType();
 
     if (Ty->isVectorTy()) {
         uint32_t src1Size = uint32_t(Src1.AggregateVal.size());
@@ -1275,11 +1281,11 @@ void Executor::visitShl(BinaryOperator &I) {
 
 void Executor::visitLShr(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
-    const Type *Ty = I.getType();
+    const llvm::Type *Ty = I.getType();
 
     if (Ty->isVectorTy()) {
         uint32_t src1Size = uint32_t(Src1.AggregateVal.size());
@@ -1303,11 +1309,11 @@ void Executor::visitLShr(BinaryOperator &I) {
 
 void Executor::visitAShr(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
-    const Type *Ty = I.getType();
+    const llvm::Type *Ty = I.getType();
 
     if (Ty->isVectorTy()) {
         size_t src1Size = Src1.AggregateVal.size();
@@ -1329,13 +1335,13 @@ void Executor::visitAShr(BinaryOperator &I) {
     SetValue(&I, Dest, SF);
 }
 
-GenericValue Executor::executeTruncInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeTruncInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
-    Type *SrcTy = SrcVal->getType();
+    llvm::Type *SrcTy = SrcVal->getType();
     if (SrcTy->isVectorTy()) {
-        Type *DstVecTy = DstTy->getScalarType();
+        llvm::Type *DstVecTy = DstTy->getScalarType();
         unsigned DBitWidth = cast<IntegerType>(DstVecTy)->getBitWidth();
         unsigned NumElts = Src.AggregateVal.size();
         // the sizes of src and dst vectors must be equal
@@ -1350,13 +1356,13 @@ GenericValue Executor::executeTruncInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeSExtInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeSExtInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
-    const Type *SrcTy = SrcVal->getType();
+    const llvm::Type *SrcTy = SrcVal->getType();
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
     if (SrcTy->isVectorTy()) {
-        const Type *DstVecTy = DstTy->getScalarType();
+        const llvm::Type *DstVecTy = DstTy->getScalarType();
         unsigned DBitWidth = cast<IntegerType>(DstVecTy)->getBitWidth();
         unsigned size = Src.AggregateVal.size();
         // the sizes of src and dst vectors must be equal.
@@ -1371,13 +1377,13 @@ GenericValue Executor::executeSExtInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeZExtInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeZExtInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
-    const Type *SrcTy = SrcVal->getType();
+    const llvm::Type *SrcTy = SrcVal->getType();
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
     if (SrcTy->isVectorTy()) {
-        const Type *DstVecTy = DstTy->getScalarType();
+        const llvm::Type *DstVecTy = DstTy->getScalarType();
         unsigned DBitWidth = cast<IntegerType>(DstVecTy)->getBitWidth();
 
         unsigned size = Src.AggregateVal.size();
@@ -1393,12 +1399,12 @@ GenericValue Executor::executeZExtInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPTruncInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeFPTruncInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if (SrcVal->getType()->getTypeID() == Type::VectorTyID) {
+    if (SrcVal->getType()->getTypeID() == llvm::Type::VectorTyID) {
         ASSERTC(SrcVal->getType()->getScalarType()->isDoubleTy() &&
             DstTy->getScalarType()->isFloatTy() &&
             "Invalid FPTrunc instruction");
@@ -1417,12 +1423,12 @@ GenericValue Executor::executeFPTruncInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPExtInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeFPExtInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if (SrcVal->getType()->getTypeID() == Type::VectorTyID) {
+    if (SrcVal->getType()->getTypeID() == llvm::Type::VectorTyID) {
         ASSERT(SrcVal->getType()->getScalarType()->isFloatTy() &&
             DstTy->getScalarType()->isDoubleTy(), "Invalid FPExt instruction");
 
@@ -1440,21 +1446,21 @@ GenericValue Executor::executeFPExtInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPToUIInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeFPToUIInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
-    Type *SrcTy = SrcVal->getType();
+    llvm::Type *SrcTy = SrcVal->getType();
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if (SrcTy->getTypeID() == Type::VectorTyID) {
-        const Type *DstVecTy = DstTy->getScalarType();
-        const Type *SrcVecTy = SrcTy->getScalarType();
+    if (SrcTy->getTypeID() == llvm::Type::VectorTyID) {
+        const llvm::Type *DstVecTy = DstTy->getScalarType();
+        const llvm::Type *SrcVecTy = SrcTy->getScalarType();
         uint32_t DBitWidth = cast<IntegerType>(DstVecTy)->getBitWidth();
         unsigned size = Src.AggregateVal.size();
         // the sizes of src and dst vectors must be equal.
         Dest.AggregateVal.resize(size);
 
-        if (SrcVecTy->getTypeID() == Type::FloatTyID) {
+        if (SrcVecTy->getTypeID() == llvm::Type::FloatTyID) {
             ASSERTC(SrcVecTy->isFloatingPointTy() && "Invalid FPToUI instruction");
             for (unsigned i = 0; i < size; i++)
                 Dest.AggregateVal[i].IntVal = APIntOps::RoundFloatToAPInt(
@@ -1469,7 +1475,7 @@ GenericValue Executor::executeFPToUIInst(Value *SrcVal, Type *DstTy,
         uint32_t DBitWidth = cast<IntegerType>(DstTy)->getBitWidth();
         ASSERTC(SrcTy->isFloatingPointTy() && "Invalid FPToUI instruction");
 
-        if (SrcTy->getTypeID() == Type::FloatTyID)
+        if (SrcTy->getTypeID() == llvm::Type::FloatTyID)
             Dest.IntVal = APIntOps::RoundFloatToAPInt(Src.FloatVal, DBitWidth);
         else {
             Dest.IntVal = APIntOps::RoundDoubleToAPInt(Src.DoubleVal, DBitWidth);
@@ -1479,21 +1485,21 @@ GenericValue Executor::executeFPToUIInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPToSIInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeFPToSIInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
-    Type *SrcTy = SrcVal->getType();
+    llvm::Type *SrcTy = SrcVal->getType();
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if (SrcTy->getTypeID() == Type::VectorTyID) {
-        const Type *DstVecTy = DstTy->getScalarType();
-        const Type *SrcVecTy = SrcTy->getScalarType();
+    if (SrcTy->getTypeID() == llvm::Type::VectorTyID) {
+        const llvm::Type *DstVecTy = DstTy->getScalarType();
+        const llvm::Type *SrcVecTy = SrcTy->getScalarType();
         uint32_t DBitWidth = cast<IntegerType>(DstVecTy)->getBitWidth();
         unsigned size = Src.AggregateVal.size();
         // the sizes of src and dst vectors must be equal
         Dest.AggregateVal.resize(size);
 
-        if (SrcVecTy->getTypeID() == Type::FloatTyID) {
+        if (SrcVecTy->getTypeID() == llvm::Type::FloatTyID) {
             ASSERTC(SrcVecTy->isFloatingPointTy() && "Invalid FPToSI instruction");
             for (unsigned i = 0; i < size; i++)
                 Dest.AggregateVal[i].IntVal = APIntOps::RoundFloatToAPInt(
@@ -1508,7 +1514,7 @@ GenericValue Executor::executeFPToSIInst(Value *SrcVal, Type *DstTy,
         unsigned DBitWidth = cast<IntegerType>(DstTy)->getBitWidth();
         ASSERTC(SrcTy->isFloatingPointTy() && "Invalid FPToSI instruction");
 
-        if (SrcTy->getTypeID() == Type::FloatTyID)
+        if (SrcTy->getTypeID() == llvm::Type::FloatTyID)
             Dest.IntVal = APIntOps::RoundFloatToAPInt(Src.FloatVal, DBitWidth);
         else {
             Dest.IntVal = APIntOps::RoundDoubleToAPInt(Src.DoubleVal, DBitWidth);
@@ -1517,18 +1523,18 @@ GenericValue Executor::executeFPToSIInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeUIToFPInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeUIToFPInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if (SrcVal->getType()->getTypeID() == Type::VectorTyID) {
-        const Type *DstVecTy = DstTy->getScalarType();
+    if (SrcVal->getType()->getTypeID() == llvm::Type::VectorTyID) {
+        const llvm::Type *DstVecTy = DstTy->getScalarType();
         unsigned size = Src.AggregateVal.size();
         // the sizes of src and dst vectors must be equal
         Dest.AggregateVal.resize(size);
 
-        if (DstVecTy->getTypeID() == Type::FloatTyID) {
+        if (DstVecTy->getTypeID() == llvm::Type::FloatTyID) {
             ASSERTC(DstVecTy->isFloatingPointTy() && "Invalid UIToFP instruction");
             for (unsigned i = 0; i < size; i++)
                 Dest.AggregateVal[i].FloatVal =
@@ -1541,7 +1547,7 @@ GenericValue Executor::executeUIToFPInst(Value *SrcVal, Type *DstTy,
     } else {
         // scalar
         ASSERTC(DstTy->isFloatingPointTy() && "Invalid UIToFP instruction");
-        if (DstTy->getTypeID() == Type::FloatTyID)
+        if (DstTy->getTypeID() == llvm::Type::FloatTyID)
             Dest.FloatVal = APIntOps::RoundAPIntToFloat(Src.IntVal);
         else {
             Dest.DoubleVal = APIntOps::RoundAPIntToDouble(Src.IntVal);
@@ -1550,18 +1556,18 @@ GenericValue Executor::executeUIToFPInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeSIToFPInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeSIToFPInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if (SrcVal->getType()->getTypeID() == Type::VectorTyID) {
-        const Type *DstVecTy = DstTy->getScalarType();
+    if (SrcVal->getType()->getTypeID() == llvm::Type::VectorTyID) {
+        const llvm::Type *DstVecTy = DstTy->getScalarType();
         unsigned size = Src.AggregateVal.size();
         // the sizes of src and dst vectors must be equal
         Dest.AggregateVal.resize(size);
 
-        if (DstVecTy->getTypeID() == Type::FloatTyID) {
+        if (DstVecTy->getTypeID() == llvm::Type::FloatTyID) {
             ASSERTC(DstVecTy->isFloatingPointTy() && "Invalid SIToFP instruction");
             for (unsigned i = 0; i < size; i++)
                 Dest.AggregateVal[i].FloatVal =
@@ -1575,7 +1581,7 @@ GenericValue Executor::executeSIToFPInst(Value *SrcVal, Type *DstTy,
         // scalar
         ASSERTC(DstTy->isFloatingPointTy() && "Invalid SIToFP instruction");
 
-        if (DstTy->getTypeID() == Type::FloatTyID)
+        if (DstTy->getTypeID() == llvm::Type::FloatTyID)
             Dest.FloatVal = APIntOps::RoundSignedAPIntToFloat(Src.IntVal);
         else {
             Dest.DoubleVal = APIntOps::RoundSignedAPIntToDouble(Src.IntVal);
@@ -1585,8 +1591,8 @@ GenericValue Executor::executeSIToFPInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executePtrToIntInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executePtrToIntInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     uint32_t DBitWidth = cast<IntegerType>(DstTy)->getBitWidth();
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1596,8 +1602,8 @@ GenericValue Executor::executePtrToIntInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeIntToPtrInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeIntToPtrInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
     ASSERTC(DstTy->isPointerTy() && "Invalid PtrToInt instruction");
@@ -1610,42 +1616,42 @@ GenericValue Executor::executeIntToPtrInst(Value *SrcVal, Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeBitCastInst(Value *SrcVal, Type *DstTy,
-    ExecutionContext &SF) {
+GenericValue Executor::executeBitCastInst(Value *SrcVal, llvm::Type *DstTy,
+    ExecutorContext &SF) {
 
    TRACE_FUNC;
     // This instruction supports bitwise conversion of vectors to integers and
-    // to vectors of other types (as long as they have the same size)
-    Type *SrcTy = SrcVal->getType();
+    // to vectors of other Types (as long as they have the same size)
+    llvm::Type *SrcTy = SrcVal->getType();
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
 
-    if ((SrcTy->getTypeID() == Type::VectorTyID) ||
-        (DstTy->getTypeID() == Type::VectorTyID)) {
+    if ((SrcTy->getTypeID() == llvm::Type::VectorTyID) ||
+        (DstTy->getTypeID() == llvm::Type::VectorTyID)) {
         // vector src bitcast to vector dst or vector src bitcast to scalar dst or
         // scalar src bitcast to vector dst
         bool isLittleEndian = TD->isLittleEndian();
         GenericValue TempDst, TempSrc, SrcVec;
-        const Type *SrcElemTy;
-        const Type *DstElemTy;
+        const llvm::Type *SrcElemTy;
+        const llvm::Type *DstElemTy;
         unsigned SrcBitSize;
         unsigned DstBitSize;
         unsigned SrcNum;
         unsigned DstNum;
 
-        if (SrcTy->getTypeID() == Type::VectorTyID) {
+        if (SrcTy->getTypeID() == llvm::Type::VectorTyID) {
             SrcElemTy = SrcTy->getScalarType();
             SrcBitSize = SrcTy->getScalarSizeInBits();
             SrcNum = Src.AggregateVal.size();
             SrcVec = Src;
         } else {
-            // if src is scalar value, make it vector <1 x type>
+            // if src is scalar value, make it vector <1 x llvm::Type>
             SrcElemTy = SrcTy;
             SrcBitSize = SrcTy->getPrimitiveSizeInBits();
             SrcNum = 1;
             SrcVec.AggregateVal.push_back(Src);
         }
 
-        if (DstTy->getTypeID() == Type::VectorTyID) {
+        if (DstTy->getTypeID() == llvm::Type::VectorTyID) {
             DstElemTy = DstTy->getScalarType();
             DstBitSize = DstTy->getScalarSizeInBits();
             DstNum = (SrcNum * SrcBitSize) / DstBitSize;
@@ -1673,11 +1679,11 @@ GenericValue Executor::executeBitCastInst(Value *SrcVal, Type *DstTy,
             for (unsigned i = 0; i < SrcNum; i++)
                 TempSrc.AggregateVal[i].IntVal = SrcVec.AggregateVal[i].IntVal;
         } else {
-            // Pointers are not allowed as the element type of vector.
+            // Pointers are not allowed as the element llvm::Type of vector.
             UNREACHABLE("Invalid Bitcast");
         }
 
-        // now TempSrc is integer type vector
+        // now TempSrc is integer llvm::Type vector
         if (DstNum < SrcNum) {
             // Example: bitcast <4 x i32> <i32 0, i32 1, i32 2, i32 3> to <2 x i64>
             unsigned Ratio = SrcNum / DstNum;
@@ -1717,8 +1723,8 @@ GenericValue Executor::executeBitCastInst(Value *SrcVal, Type *DstTy,
             }
         }
 
-        // convert result from integer to specified type
-        if (DstTy->getTypeID() == Type::VectorTyID) {
+        // convert result from integer to specified llvm::Type
+        if (DstTy->getTypeID() == llvm::Type::VectorTyID) {
             if (DstElemTy->isDoubleTy()) {
                 Dest.AggregateVal.resize(DstNum);
                 for (unsigned i = 0; i < DstNum; i++)
@@ -1741,8 +1747,8 @@ GenericValue Executor::executeBitCastInst(Value *SrcVal, Type *DstTy,
                 Dest.IntVal = TempDst.AggregateVal[0].IntVal;
             }
         }
-    } else { //  if ((SrcTy->getTypeID() == Type::VectorTyID) ||
-        //     (DstTy->getTypeID() == Type::VectorTyID))
+    } else { //  if ((SrcTy->getTypeID() == llvm::Type::VectorTyID) ||
+        //     (DstTy->getTypeID() == llvm::Type::VectorTyID))
 
         // scalar src bitcast to scalar dst
         if (DstTy->isPointerTy()) {
@@ -1780,82 +1786,82 @@ GenericValue Executor::executeBitCastInst(Value *SrcVal, Type *DstTy,
 
 void Executor::visitTruncInst(TruncInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeTruncInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitSExtInst(SExtInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeSExtInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitZExtInst(ZExtInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeZExtInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitFPTruncInst(FPTruncInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeFPTruncInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitFPExtInst(FPExtInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeFPExtInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitUIToFPInst(UIToFPInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeUIToFPInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitSIToFPInst(SIToFPInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeSIToFPInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitFPToUIInst(FPToUIInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeFPToUIInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitFPToSIInst(FPToSIInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeFPToSIInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitPtrToIntInst(PtrToIntInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executePtrToIntInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitIntToPtrInst(IntToPtrInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeIntToPtrInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 void Executor::visitBitCastInst(BitCastInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     SetValue(&I, executeBitCastInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 #define IMPLEMENT_VAARG(TY) \
-    case Type::TY##TyID: Dest.TY##Val = Src.TY##Val; break
+    case llvm::Type::TY##TyID: Dest.TY##Val = Src.TY##Val; break
 
 void Executor::visitVAArgInst(VAArgInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
 
     // Get the incoming valist parameter.  LLI treats the valist as a
     // (ec-stack-depth var-arg-index) pair.
@@ -1863,16 +1869,16 @@ void Executor::visitVAArgInst(VAArgInst &I) {
     GenericValue Dest;
     GenericValue Src = ECStack[VAList.UIntPairVal.first]
                                .VarArgs[VAList.UIntPairVal.second];
-    Type *Ty = I.getType();
+    llvm::Type *Ty = I.getType();
     switch (Ty->getTypeID()) {
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         Dest.IntVal = Src.IntVal;
         break;
         IMPLEMENT_VAARG(Pointer);
         IMPLEMENT_VAARG(Float);
         IMPLEMENT_VAARG(Double);
     default:
-        borealis::dbgs() << "Unhandled dest type for vaarg instruction: " << *Ty << "\n";
+        borealis::dbgs() << "Unhandled dest llvm::Type for vaarg instruction: " << *Ty << "\n";
         UNREACHABLE(nullptr);
     }
 
@@ -1885,28 +1891,28 @@ void Executor::visitVAArgInst(VAArgInst &I) {
 
 void Executor::visitExtractElementInst(ExtractElementInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
 
-    Type *Ty = I.getType();
+    llvm::Type *Ty = I.getType();
     const unsigned indx = unsigned(Src2.IntVal.getZExtValue());
 
     if(Src1.AggregateVal.size() > indx) {
         switch (Ty->getTypeID()) {
         default:
-            borealis::dbgs() << "Unhandled destination type for extractelement instruction: "
+            borealis::dbgs() << "Unhandled destination llvm::Type for extractelement instruction: "
             << *Ty << "\n";
             UNREACHABLE(nullptr);
             break;
-        case Type::IntegerTyID:
+        case llvm::Type::IntegerTyID:
             Dest.IntVal = Src1.AggregateVal[indx].IntVal;
             break;
-        case Type::FloatTyID:
+        case llvm::Type::FloatTyID:
             Dest.FloatVal = Src1.AggregateVal[indx].FloatVal;
             break;
-        case Type::DoubleTyID:
+        case llvm::Type::DoubleTyID:
             Dest.DoubleVal = Src1.AggregateVal[indx].DoubleVal;
             break;
         }
@@ -1919,18 +1925,18 @@ void Executor::visitExtractElementInst(ExtractElementInst &I) {
 
 void Executor::visitInsertElementInst(InsertElementInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
-    Type *Ty = I.getType();
+    ExecutorContext &SF = ECStack.back();
+    llvm::Type *Ty = I.getType();
 
     if(!(Ty->isVectorTy()) )
-        UNREACHABLE("Unhandled dest type for insertelement instruction");
+        UNREACHABLE("Unhandled dest llvm::Type for insertelement instruction");
 
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Src3 = getOperandValue(I.getOperand(2), SF);
     GenericValue Dest;
 
-    Type *TyContained = Ty->getContainedType(0);
+    llvm::Type *TyContained = Ty->getContainedType(0);
 
     const unsigned indx = unsigned(Src3.IntVal.getZExtValue());
     Dest.AggregateVal = Src1.AggregateVal;
@@ -1939,14 +1945,14 @@ void Executor::visitInsertElementInst(InsertElementInst &I) {
         UNREACHABLE("Invalid index in insertelement instruction");
     switch (TyContained->getTypeID()) {
     default:
-        UNREACHABLE("Unhandled dest type for insertelement instruction");
-    case Type::IntegerTyID:
+        UNREACHABLE("Unhandled dest llvm::Type for insertelement instruction");
+    case llvm::Type::IntegerTyID:
         Dest.AggregateVal[indx].IntVal = Src2.IntVal;
         break;
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         Dest.AggregateVal[indx].FloatVal = Src2.FloatVal;
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         Dest.AggregateVal[indx].DoubleVal = Src2.DoubleVal;
         break;
     }
@@ -1955,22 +1961,22 @@ void Executor::visitInsertElementInst(InsertElementInst &I) {
 
 void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
 
-    Type *Ty = I.getType();
+    llvm::Type *Ty = I.getType();
     if(!(Ty->isVectorTy()))
-        UNREACHABLE("Unhandled dest type for shufflevector instruction");
+        UNREACHABLE("Unhandled dest llvm::Type for shufflevector instruction");
 
     GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
     GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
     GenericValue Src3 = getOperandValue(I.getOperand(2), SF);
     GenericValue Dest;
 
-    // There is no need to check types of src1 and src2, because the compiled
-    // bytecode can't contain different types for src1 and src2 for a
+    // There is no need to check Types of src1 and src2, because the compiled
+    // bytecode can't contain different Types for src1 and src2 for a
     // shufflevector instruction.
 
-    Type *TyContained = Ty->getContainedType(0);
+    llvm::Type *TyContained = Ty->getContainedType(0);
     unsigned src1Size = (unsigned)Src1.AggregateVal.size();
     unsigned src2Size = (unsigned)Src2.AggregateVal.size();
     unsigned src3Size = (unsigned)Src3.AggregateVal.size();
@@ -1979,9 +1985,9 @@ void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
 
     switch (TyContained->getTypeID()) {
     default:
-        UNREACHABLE("Unhandled dest type for insertelement instruction");
+        UNREACHABLE("Unhandled dest llvm::Type for insertelement instruction");
         break;
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         for( unsigned i=0; i<src3Size; i++) {
             unsigned j = Src3.AggregateVal[i].IntVal.getZExtValue();
             if(j < src1Size)
@@ -1997,7 +2003,7 @@ void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
                 UNREACHABLE("Invalid mask in shufflevector instruction");
         }
         break;
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         for( unsigned i=0; i<src3Size; i++) {
             unsigned j = Src3.AggregateVal[i].IntVal.getZExtValue();
             if(j < src1Size)
@@ -2008,7 +2014,7 @@ void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
                 UNREACHABLE("Invalid mask in shufflevector instruction");
         }
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         for( unsigned i=0; i<src3Size; i++) {
             unsigned j = Src3.AggregateVal[i].IntVal.getZExtValue();
             if(j < src1Size)
@@ -2026,7 +2032,7 @@ void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
 
 void Executor::visitExtractValueInst(ExtractValueInst &I) {
     TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     Value *Agg = I.getAggregateOperand();
     GenericValue Dest;
     GenericValue Src = getOperandValue(Agg, SF);
@@ -2040,26 +2046,26 @@ void Executor::visitExtractValueInst(ExtractValueInst &I) {
         ++IdxBegin;
     }
 
-    Type *IndexedType = ExtractValueInst::getIndexedType(Agg->getType(), I.getIndices());
+    llvm::Type *IndexedType = ExtractValueInst::getIndexedType(Agg->getType(), I.getIndices());
     switch (IndexedType->getTypeID()) {
     default:
-        UNREACHABLE("Unhandled dest type for extractelement instruction");
+        UNREACHABLE("Unhandled dest llvm::Type for extractelement instruction");
         break;
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         Dest.IntVal = pSrc->IntVal;
         break;
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         Dest.FloatVal = pSrc->FloatVal;
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         Dest.DoubleVal = pSrc->DoubleVal;
         break;
-    case Type::ArrayTyID:
-    case Type::StructTyID:
-    case Type::VectorTyID:
+    case llvm::Type::ArrayTyID:
+    case llvm::Type::StructTyID:
+    case llvm::Type::VectorTyID:
         Dest.AggregateVal = pSrc->AggregateVal;
         break;
-    case Type::PointerTyID:
+    case llvm::Type::PointerTyID:
         Dest.PointerVal = pSrc->PointerVal;
         break;
     }
@@ -2070,7 +2076,7 @@ void Executor::visitExtractValueInst(ExtractValueInst &I) {
 void Executor::visitInsertValueInst(InsertValueInst &I) {
 
    TRACE_FUNC;
-    ExecutionContext &SF = ECStack.back();
+    ExecutorContext &SF = ECStack.back();
     Value *Agg = I.getAggregateOperand();
 
     GenericValue Src1 = getOperandValue(Agg, SF);
@@ -2087,27 +2093,27 @@ void Executor::visitInsertValueInst(InsertValueInst &I) {
     }
     // pDest points to the target value in the Dest now
 
-    Type *IndexedType = ExtractValueInst::getIndexedType(Agg->getType(), I.getIndices());
+    llvm::Type *IndexedType = ExtractValueInst::getIndexedType(Agg->getType(), I.getIndices());
 
     switch (IndexedType->getTypeID()) {
     default:
-        UNREACHABLE("Unhandled dest type for insertelement instruction");
+        UNREACHABLE("Unhandled dest llvm::Type for insertelement instruction");
         break;
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         pDest->IntVal = Src2.IntVal;
         break;
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         pDest->FloatVal = Src2.FloatVal;
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         pDest->DoubleVal = Src2.DoubleVal;
         break;
-    case Type::ArrayTyID:
-    case Type::StructTyID:
-    case Type::VectorTyID:
+    case llvm::Type::ArrayTyID:
+    case llvm::Type::StructTyID:
+    case llvm::Type::VectorTyID:
         pDest->AggregateVal = Src2.AggregateVal;
         break;
-    case Type::PointerTyID:
+    case llvm::Type::PointerTyID:
         pDest->PointerVal = Src2.PointerVal;
         break;
     }
@@ -2116,7 +2122,7 @@ void Executor::visitInsertValueInst(InsertValueInst &I) {
 }
 
 GenericValue Executor::getConstantExprValue (ConstantExpr *CE,
-    ExecutionContext &SF) {
+    ExecutorContext &SF) {
     switch (CE->getOpcode()) {
     case Instruction::Trunc:
         return executeTruncInst(CE->getOperand(0), CE->getType(), SF);
@@ -2165,7 +2171,7 @@ GenericValue Executor::getConstantExprValue (ConstantExpr *CE,
     GenericValue Op0 = getOperandValue(CE->getOperand(0), SF);
     GenericValue Op1 = getOperandValue(CE->getOperand(1), SF);
     GenericValue Dest;
-    Type * Ty = CE->getOperand(0)->getType();
+    llvm::Type * Ty = CE->getOperand(0)->getType();
     switch (CE->getOpcode()) {
     case Instruction::Add:  Dest.IntVal = Op0.IntVal + Op1.IntVal; break;
     case Instruction::Sub:  Dest.IntVal = Op0.IntVal - Op1.IntVal; break;
@@ -2205,21 +2211,21 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
         switch (C->getType()->getTypeID()) {
         default:
             break;
-        case Type::IntegerTyID:
-        case Type::X86_FP80TyID:
-        case Type::FP128TyID:
-        case Type::PPC_FP128TyID:
+        case llvm::Type::IntegerTyID:
+        case llvm::Type::X86_FP80TyID:
+        case llvm::Type::FP128TyID:
+        case llvm::Type::PPC_FP128TyID:
             // Although the value is undefined, we still have to construct an APInt
             // with the correct bit width.
             Result.IntVal = APInt(C->getType()->getPrimitiveSizeInBits(), 0);
             break;
-        case Type::StructTyID: {
+        case llvm::Type::StructTyID: {
             // if the whole struct is 'undef' just reserve memory for the value.
             if(StructType *STy = dyn_cast<StructType>(C->getType())) {
                 unsigned int elemNum = STy->getNumElements();
                 Result.AggregateVal.resize(elemNum);
                 for (unsigned int i = 0; i < elemNum; ++i) {
-                    Type *ElemTy = STy->getElementType(i);
+                    llvm::Type *ElemTy = STy->getElementType(i);
                     if (ElemTy->isIntegerTy())
                         Result.AggregateVal[i].IntVal =
                             APInt(ElemTy->getPrimitiveSizeInBits(), 0);
@@ -2231,10 +2237,10 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
             }
         }
         break;
-        case Type::VectorTyID:
+        case llvm::Type::VectorTyID:
             // if the whole vector is 'undef' just reserve memory for the value.
             const VectorType* VTy = dyn_cast<VectorType>(C->getType());
-            const Type *ElemTy = VTy->getElementType();
+            const llvm::Type *ElemTy = VTy->getElementType();
             unsigned int elemNum = VTy->getNumElements();
             Result.AggregateVal.resize(elemNum);
             if (ElemTy->isIntegerTy())
@@ -2358,25 +2364,25 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
         }
         case Instruction::BitCast: {
             GenericValue GV = getConstantValue(DL, Mem, Op0);
-            Type* DestTy = CE->getType();
+            llvm::Type* DestTy = CE->getType();
             switch (Op0->getType()->getTypeID()) {
             default: UNREACHABLE("Invalid bitcast operand");
-            case Type::IntegerTyID:
+            case llvm::Type::IntegerTyID:
                 ASSERT(DestTy->isFloatingPointTy(), "invalid bitcast");
                 if (DestTy->isFloatTy())
                     GV.FloatVal = GV.IntVal.bitsToFloat();
                 else if (DestTy->isDoubleTy())
                     GV.DoubleVal = GV.IntVal.bitsToDouble();
                 break;
-            case Type::FloatTyID:
+            case llvm::Type::FloatTyID:
                 ASSERT(DestTy->isIntegerTy(32), "Invalid bitcast");
                 GV.IntVal = APInt::floatToBits(GV.FloatVal);
                 break;
-            case Type::DoubleTyID:
+            case llvm::Type::DoubleTyID:
                 ASSERT(DestTy->isIntegerTy(64), "Invalid bitcast");
                 GV.IntVal = APInt::doubleToBits(GV.DoubleVal);
                 break;
-            case Type::PointerTyID:
+            case llvm::Type::PointerTyID:
                 ASSERT(DestTy->isPointerTy(), "Invalid bitcast");
                 break; // getConstantValue(Op0)  above already converted it
             }
@@ -2399,8 +2405,8 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
             GenericValue RHS = getConstantValue(DL, Mem, CE->getOperand(1));
             GenericValue GV;
             switch (CE->getOperand(0)->getType()->getTypeID()) {
-            default: UNREACHABLE("Bad add type!");
-            case Type::IntegerTyID:
+            default: UNREACHABLE("Bad add llvm::Type!");
+            case llvm::Type::IntegerTyID:
                 switch (CE->getOpcode()) {
                 default: UNREACHABLE("Invalid integer opcode");
                 case Instruction::Add: GV.IntVal = LHS.IntVal + RHS.IntVal; break;
@@ -2415,7 +2421,7 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
                 case Instruction::Xor: GV.IntVal = LHS.IntVal ^ RHS.IntVal; break;
                 }
                 break;
-                case Type::FloatTyID:
+                case llvm::Type::FloatTyID:
                     switch (CE->getOpcode()) {
                     default: UNREACHABLE("Invalid float opcode");
                     case Instruction::FAdd:
@@ -2430,7 +2436,7 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
                         GV.FloatVal = std::fmod(LHS.FloatVal,RHS.FloatVal); break;
                     }
                     break;
-                    case Type::DoubleTyID:
+                    case llvm::Type::DoubleTyID:
                         switch (CE->getOpcode()) {
                         default: UNREACHABLE("Invalid double opcode");
                         case Instruction::FAdd:
@@ -2445,9 +2451,9 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
                             GV.DoubleVal = std::fmod(LHS.DoubleVal,RHS.DoubleVal); break;
                         }
                         break;
-                        case Type::X86_FP80TyID:
-                        case Type::PPC_FP128TyID:
-                        case Type::FP128TyID: {
+                        case llvm::Type::X86_FP80TyID:
+                        case llvm::Type::PPC_FP128TyID:
+                        case llvm::Type::FP128TyID: {
                             const fltSemantics &Sem = CE->getOperand(0)->getType()->getFltSemantics();
                             APFloat apfLHS = APFloat(Sem, LHS.IntVal);
                             switch (CE->getOpcode()) {
@@ -2495,21 +2501,21 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
     // Otherwise, we have a simple constant.
     GenericValue Result;
     switch (C->getType()->getTypeID()) {
-    case Type::FloatTyID:
+    case llvm::Type::FloatTyID:
         Result.FloatVal = cast<ConstantFP>(C)->getValueAPF().convertToFloat();
         break;
-    case Type::DoubleTyID:
+    case llvm::Type::DoubleTyID:
         Result.DoubleVal = cast<ConstantFP>(C)->getValueAPF().convertToDouble();
         break;
-    case Type::X86_FP80TyID:
-    case Type::FP128TyID:
-    case Type::PPC_FP128TyID:
+    case llvm::Type::X86_FP80TyID:
+    case llvm::Type::FP128TyID:
+    case llvm::Type::PPC_FP128TyID:
         Result.IntVal = cast <ConstantFP>(C)->getValueAPF().bitcastToAPInt();
         break;
-    case Type::IntegerTyID:
+    case llvm::Type::IntegerTyID:
         Result.IntVal = cast<ConstantInt>(C)->getValue();
         break;
-    case Type::PointerTyID:
+    case llvm::Type::PointerTyID:
         if (isa<ConstantPointerNull>(C))
             Result.PointerVal = nullptr;
         else if (const Function *F = dyn_cast<Function>(C))
@@ -2528,11 +2534,11 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
             Result.PointerVal =
                 Mem->getPointerBasicBlock(BA->getBasicBlock(), DL->getPointerSizeInBits()/8);
         else
-            UNREACHABLE("Unknown constant pointer type!");
+            UNREACHABLE("Unknown constant pointer llvm::Type!");
         break;
-    case Type::VectorTyID: {
+    case llvm::Type::VectorTyID: {
         unsigned elemNum;
-        Type* ElemTy;
+        llvm::Type* ElemTy;
         const ConstantDataVector *CDV = dyn_cast<ConstantDataVector>(C);
         const ConstantVector *CV = dyn_cast<ConstantVector>(C);
         const ConstantAggregateZero *CAZ = dyn_cast<ConstantAggregateZero>(C);
@@ -2545,7 +2551,7 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
             elemNum = VTy->getNumElements();
             ElemTy = VTy->getElementType();
         } else {
-            UNREACHABLE("Unknown constant vector type!");
+            UNREACHABLE("Unknown constant vector llvm::Type!");
         }
 
         Result.AggregateVal.resize(elemNum);
@@ -2621,21 +2627,21 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
 
             break;
         }
-        UNREACHABLE("Unknown constant pointer type!");
+        UNREACHABLE("Unknown constant pointer llvm::Type!");
     }
     break;
 
     default:
         SmallString<256> Msg;
         raw_svector_ostream OS(Msg);
-        OS << "ERROR: Constant unimplemented for type: " << *C->getType();
+        OS << "ERROR: Constant unimplemented for llvm::Type: " << *C->getType();
         report_fatal_error(OS.str());
     }
 
     return Result;
 }
 
-GenericValue Executor::getOperandValue(Value *V, ExecutionContext &SF) {
+GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
     TRACE_FUNC;
     if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
         return getConstantExprValue(CE, SF);
@@ -2665,14 +2671,14 @@ void Executor::callFunction(Function *F,
         ECStack.back().Caller.arg_size() == ArgVals.size()),
         "Incorrect number of arguments passed into function call!");
     // Make a new stack frame... and fill it in.
-    ECStack.push_back(ExecutionContext());
-    ExecutionContext &StackFrame = ECStack.back();
+    ECStack.push_back(ExecutorContext());
+    ExecutorContext &StackFrame = ECStack.back();
     StackFrame.CurFunction = F;
 
     // Special handling for external functions.
     if (F->isDeclaration()) {
         GenericValue Result = callExternalFunction (F, ArgVals);
-        // Simulate a 'ret' instruction of the appropriate type.
+        // Simulate a 'ret' instruction of the appropriate llvm::Type.
         popStackAndReturnValueToCaller (F->getReturnType (), Result);
         return;
     }
@@ -2701,7 +2707,7 @@ void Executor::run() {
     TRACE_FUNC;
     while (!ECStack.empty()) {
         // Interpret a single instruction & increment the "PC".
-        ExecutionContext &SF = ECStack.back();  // Current stack frame
+        ExecutorContext &SF = ECStack.back();  // Current stack frame
         Instruction &I = *SF.CurInst++;         // Increment before execute
 
         // Track the number of dynamic instructions executed.
@@ -2711,17 +2717,17 @@ void Executor::run() {
         // This is not safe, as visiting the instruction could lower it and free I.
         DEBUG(
             if (!isa<CallInst>(I) && !isa<InvokeInst>(I) &&
-                I.getType() != Type::VoidTy) {
+                I.getType() != llvm::Type::VoidTy) {
                 borealis::dbgs() << "  --> ";
                 const GenericValue &Val = SF.Values[&I];
                 switch (I.getType()->getTypeID()) {
-                default: UNREACHABLE("Invalid GenericValue Type");
-                case Type::VoidTyID:    borealis::dbgs() << "void"; break;
-                case Type::FloatTyID:   borealis::dbgs() << "float " << Val.FloatVal; break;
-                case Type::DoubleTyID:  borealis::dbgs() << "double " << Val.DoubleVal; break;
-                case Type::PointerTyID: borealis::dbgs() << "void* " << intptr_t(Val.PointerVal);
+                default: UNREACHABLE("Invalid GenericValue llvm::Type");
+                case llvm::Type::VoidTyID:    borealis::dbgs() << "void"; break;
+                case llvm::Type::FloatTyID:   borealis::dbgs() << "float " << Val.FloatVal; break;
+                case llvm::Type::DoubleTyID:  borealis::dbgs() << "double " << Val.DoubleVal; break;
+                case llvm::Type::PointerTyID: borealis::dbgs() << "void* " << intptr_t(Val.PointerVal);
                 break;
-                case Type::IntegerTyID:
+                case llvm::Type::IntegerTyID:
                     borealis::dbgs() << "i" << Val.IntVal.getBitWidth() << " "
                     << Val.IntVal.toStringUnsigned(10)
                     << " (0x" << Val.IntVal.toStringUnsigned(16) << ")\n";

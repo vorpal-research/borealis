@@ -203,8 +203,10 @@ struct SegmentTree {
             }
             didAlloc = true;
             TRACES() << "Found allocated segment!" << endl;
+            TRACES() << "{" << tfm::format("0x%x", minbound) << ","
+                     << tfm::format("0x%x", minbound + t->reallyAllocated) << "}" << endl;
 
-            if(where > start + t->reallyAllocated) {
+            if(where >= minbound + t->reallyAllocated) {
                 signalIllegalStore(where);
             }
         }
@@ -535,9 +537,11 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     ASSERTC(size <= chunk_size);
 
     // TODO: belyaev Think!
-    if(realPtr / chunk_size != (realPtr + size) / chunk_size) {
+    if(realPtr / chunk_size != (realPtr + size -1) / chunk_size) {
         // if the piece crosses the chunk border
-        throw new std::runtime_error("unsupported, sorry");
+        TRACES() << "While loading from " << tfm::format("0x%x", realPtr) << endl;
+        TRACES() << "Chunk size = " << chunk_size << endl;
+        throw std::runtime_error("unsupported, sorry");
     }
 
     auto&& load = pimpl_->tree.get(realPtr);

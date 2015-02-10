@@ -21,11 +21,13 @@
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Codegen/intrinsics_manager.h"
+
 namespace borealis {
 
 struct AllocaHolder{};
 
-struct ExecutionContext {
+struct ExecutorContext {
     llvm::Function             *CurFunction;// The currently executing llvm::Function
     llvm::BasicBlock           *CurBB;      // The currently executing BB
     llvm::BasicBlock::iterator  CurInst;    // The next instruction to execute
@@ -35,14 +37,14 @@ struct ExecutionContext {
     std::vector<llvm::GenericValue> VarArgs; // Values passed through an ellipsis
     AllocaHolder Allocas;            // Track memory allocated by alloca
 
-    ExecutionContext() : CurFunction(nullptr), CurBB(nullptr), CurInst(nullptr) {}
+    ExecutorContext() : CurFunction(nullptr), CurBB(nullptr), CurInst(nullptr) {}
 
-    ExecutionContext(ExecutionContext &&O)
+    ExecutorContext(ExecutorContext &&O)
     : CurFunction(O.CurFunction), CurBB(O.CurBB), CurInst(O.CurInst),
       Caller(O.Caller), Values(std::move(O.Values)),
       VarArgs(std::move(O.VarArgs)), Allocas(std::move(O.Allocas)) {}
 
-    ExecutionContext &operator=(ExecutionContext &&O) {
+    ExecutorContext &operator=(ExecutorContext &&O) {
         CurFunction = O.CurFunction;
         CurBB = O.CurBB;
         CurInst = O.CurInst;
@@ -58,10 +60,12 @@ struct ExecutionContext {
 class Executor : public llvm::InstVisitor<Executor> {
     llvm::GenericValue ExitValue;          // The return llvm::Value of the Executor llvm::Function
     const llvm::DataLayout* TD;
+    const llvm::TargetLibraryInfo* TLI;
+    IntrinsicsManager* IM;
 
     // The runtime stack of executing code.  The top of the stack is the current
     // llvm::Function record.
-    std::vector<ExecutionContext> ECStack;
+    std::vector<ExecutorContext> ECStack;
 
     // AtExitHandlers - List of functions to call when the program exits,
     // registered with the atexit() library llvm::Function.
@@ -71,7 +75,7 @@ class Executor : public llvm::InstVisitor<Executor> {
 
 
 public:
-    explicit Executor(llvm::Module *M,  const llvm::DataLayout* TD);
+    explicit Executor(llvm::Module *M,  const llvm::DataLayout* TD, const llvm::TargetLibraryInfo* TLI);
     ~Executor();
 
     const llvm::DataLayout* getDataLayout() const { return TD; }
@@ -163,44 +167,52 @@ public:
 
 private:  // Helper functions
     llvm::GenericValue executeGEPOperation(llvm::Value *Ptr, llvm::gep_type_iterator I,
-        llvm::gep_type_iterator E, ExecutionContext &SF);
+        llvm::gep_type_iterator E, ExecutorContext &SF);
 
     // SwitchToNewBasicBlock - Start execution in a new basic block and run any
     // PHI nodes in the top of the block.  This is used for intraprocedural
     // control flow.
     //
-    void SwitchToNewBasicBlock(llvm::BasicBlock *Dest, ExecutionContext &SF);
+    void SwitchToNewBasicBlock(llvm::BasicBlock *Dest, ExecutorContext &SF);
 
     void initializeExternalFunctions();
-    llvm::GenericValue getConstantExprValue(llvm::ConstantExpr *CE, ExecutionContext &SF);
-    llvm::GenericValue getOperandValue(llvm::Value *V, ExecutionContext &SF);
+    llvm::GenericValue getConstantExprValue(llvm::ConstantExpr *CE, ExecutorContext &SF);
+    llvm::GenericValue getOperandValue(llvm::Value *V, ExecutorContext &SF);
     llvm::GenericValue executeTruncInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeSExtInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeZExtInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeFPTruncInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeFPExtInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeFPToUIInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeFPToSIInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeUIToFPInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeSIToFPInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executePtrToIntInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeIntToPtrInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeBitCastInst(llvm::Value *SrcVal, llvm::Type *DstTy,
-        ExecutionContext &SF);
+        ExecutorContext &SF);
     llvm::GenericValue executeCastOperation(llvm::Instruction::CastOps opcode, llvm::Value *SrcVal,
-        llvm::Type *Ty, ExecutionContext &SF);
+        llvm::Type *Ty, ExecutorContext &SF);
     void popStackAndReturnValueToCaller(llvm::Type *RetTy, llvm::GenericValue Result);
+
+    llvm::GenericValue executeMalloc(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
+    llvm::GenericValue executeCalloc(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
+    llvm::GenericValue executeRealloc(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
+    llvm::GenericValue executeFree(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
+    llvm::GenericValue executeMemcpy(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
+    llvm::GenericValue executeMemset(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
+    llvm::GenericValue executeMemmove(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals);
 
     using byte = uint8_t;
     void LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, llvm::Type *Ty);
