@@ -41,37 +41,31 @@ class PredicateState :
 
 public:
 
-    typedef std::shared_ptr<const PredicateState> Ptr;
-    typedef std::unique_ptr<proto::PredicateState> ProtoPtr;
-    typedef std::unordered_set<Locus> Locs;
+    using Ptr = std::shared_ptr<const PredicateState>;
+    using ProtoPtr = std::unique_ptr<proto::PredicateState>;
+    using Loci = std::unordered_set<Locus>;
 
-    typedef std::function<PredicateState::Ptr(PredicateState::Ptr)> FMapper;
-    typedef std::function<Predicate::Ptr(Predicate::Ptr)> Mapper;
-    typedef std::function<bool(Predicate::Ptr)> Filterer;
+    using FMapper = std::function<PredicateState::Ptr(PredicateState::Ptr)>;
+    using Mapper = std::function<Predicate::Ptr(Predicate::Ptr)>;
+    using Filterer = std::function<bool(Predicate::Ptr)>;
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const = 0;
 
-    virtual PredicateState::Ptr addVisited(const Locus& loc) const = 0;
-    virtual bool hasVisited(std::initializer_list<Locus> locs) const = 0;
-    virtual bool hasVisitedFrom(Locs& visited) const = 0;
+    virtual PredicateState::Ptr addVisited(const Locus& locus) const = 0;
+    virtual bool hasVisited(std::initializer_list<Locus> loci) const = 0;
+    virtual bool hasVisitedFrom(Loci& visited) const = 0;
 
-    virtual Locs getVisited() const = 0;
+    virtual Loci getVisited() const = 0;
 
-    virtual PredicateState::Ptr fmap(FMapper) const {
-        BYE_BYE(PredicateState::Ptr, "Should not be called!");
-    }
+    virtual PredicateState::Ptr fmap(FMapper) const;
 
-    virtual PredicateState::Ptr map(Mapper m) const {
-        return fmap([&](PredicateState::Ptr s) { return s->map(m); });
-    }
-    virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const {
-        return fmap([&](PredicateState::Ptr s) { return s->filterByTypes(types); });
-    }
-    virtual PredicateState::Ptr filter(Filterer f) const {
-        return fmap([&](PredicateState::Ptr s) { return s->filter(f); });
-    }
+    virtual PredicateState::Ptr map(Mapper m) const;
+    virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const;
+    virtual PredicateState::Ptr filter(Filterer f) const;
+    virtual PredicateState::Ptr reverse() const;
 
-    virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const = 0;
+    virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(
+            std::initializer_list<PredicateType> types) const = 0;
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr on) const = 0;
     virtual PredicateState::Ptr simplify() const = 0;
 
@@ -83,58 +77,57 @@ public:
 
     virtual bool isEmpty() const = 0;
 
-    virtual bool equals(const PredicateState* other) const {
-        if (other == nullptr) return false;
-        return classTag == other->classTag;
-    }
-
-    bool operator==(const PredicateState& other) const {
-        if (this == &other) return true;
-        return this->equals(&other);
-    }
+    virtual bool equals(const PredicateState* other) const;
 
     virtual std::string toString() const = 0;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const = 0;
 
     PredicateState(id_t classTag);
-    virtual ~PredicateState() {};
+    virtual ~PredicateState() = default;
 
 protected:
 
     static PredicateState::Ptr Simplified(const PredicateState* s) {
         return PredicateState::Ptr(s)->simplify();
     }
+
+    template<typename T, typename ...Args>
+    static PredicateState::Ptr Simplified(Args&&... args) {
+        return PredicateState::Ptr(new T{ std::forward<Args>(args)... })->simplify();
+    }
+
 };
+
+bool operator==(const PredicateState& a, const PredicateState& b);
 
 std::ostream& operator<<(std::ostream& s, PredicateState::Ptr state);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, PredicateState::Ptr state);
 
-////////////////////////////////////////////////////////////////////////////////
-//
-// PredicateState operators
-//
-////////////////////////////////////////////////////////////////////////////////
-
-PredicateState::Ptr operator+ (PredicateState::Ptr state, Predicate::Ptr p);
-PredicateState::Ptr operator<<(PredicateState::Ptr state, const Locus& loc);
+PredicateState::Ptr operator+ (PredicateState::Ptr state, Predicate::Ptr pred);
+PredicateState::Ptr operator<<(PredicateState::Ptr state, const Locus& locus);
 
 } /* namespace borealis */
 
 #define MK_COMMON_STATE_IMPL(CLASS) \
 private: \
-    typedef CLASS Self; \
-    typedef std::unique_ptr<Self> SelfPtr; \
-    CLASS(const Self& state) = default; \
-    CLASS(Self&& state) = default; \
+    using Self = CLASS; \
+    using SelfPtr = std::unique_ptr<Self>; \
+    CLASS(const Self&) = default; \
+    CLASS(Self&&) = default; \
 public: \
+    friend class PredicateState; \
     friend class PredicateStateFactory; \
     friend struct protobuf_traits_impl<CLASS>; \
-    virtual ~CLASS() {}; \
+    virtual ~CLASS() = default; \
     static bool classof(const Self*) { \
         return true; \
     } \
-    static bool classof(const PredicateState* ps) { \
-        return ps->getClassTag() == class_tag<Self>(); \
+    static bool classof(const PredicateState* s) { \
+        return s->getClassTag() == class_tag<Self>(); \
+    } \
+    template<typename ...Args> \
+    static SelfPtr Uniquified(Args&&... args) { \
+        return SelfPtr(new Self{ std::forward<Args>(args)... }); \
     }
 
 #include "Util/unmacros.h"

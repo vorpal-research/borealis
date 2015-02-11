@@ -17,60 +17,69 @@ PredicateStateChain::PredicateStateChain(PredicateState::Ptr base, PredicateStat
         curr(curr) {
     ASSERTC(base != nullptr);
     ASSERTC(curr != nullptr);
-};
+}
+
+PredicateState::Ptr PredicateStateChain::getBase() const {
+    return base;
+}
+
+PredicateState::Ptr PredicateStateChain::getCurr() const {
+    return curr;
+}
 
 PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
 
-    return Simplified(new Self{
+    return Simplified<Self>(
         this->base,
         this->curr + pred
-    });
+    );
 }
 
-PredicateState::Ptr PredicateStateChain::addVisited(const Locus& l) const {
-    return Simplified(new Self{
+PredicateState::Ptr PredicateStateChain::addVisited(const Locus& locus) const {
+    return Simplified<Self>(
         this->base,
-        this->curr << l
-    });
+        this->curr << locus
+    );
 }
 
-bool PredicateStateChain::hasVisited(std::initializer_list<Locus> ls) const {
-    auto visited = std::unordered_set<Locus>(ls.begin(), ls.end());
+bool PredicateStateChain::hasVisited(std::initializer_list<Locus> loci) const {
+    auto&& visited = std::unordered_set<Locus>(loci.begin(), loci.end());
     return hasVisitedFrom(visited);
 }
 
-bool PredicateStateChain::hasVisitedFrom(Locs& visited) const {
+bool PredicateStateChain::hasVisitedFrom(Loci& visited) const {
     return curr->hasVisitedFrom(visited) || base->hasVisitedFrom(visited);
 }
 
-PredicateState::Locs PredicateStateChain::getVisited() const {
-    Locs res;
-    auto baseLocs = base->getVisited();
-    res.insert(baseLocs.begin(), baseLocs.end());
-    auto currLocs = curr->getVisited();
-    res.insert(currLocs.begin(), currLocs.end());
+PredicateState::Loci PredicateStateChain::getVisited() const {
+    Loci res;
+    auto&& baseLoci = base->getVisited();
+    res.insert(baseLoci.begin(), baseLoci.end());
+    auto&& currLoci = curr->getVisited();
+    res.insert(currLoci.begin(), currLoci.end());
     return res;
 }
 
 PredicateStateChain::SelfPtr PredicateStateChain::fmap_(FMapper f) const {
-    return util::uniq(new Self{
+    return Uniquified(
         f(base),
         f(curr)
-    });
+    );
 }
 
 PredicateState::Ptr PredicateStateChain::fmap(FMapper f) const {
     return Simplified(fmap_(f).release());
 }
 
-std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitByTypes(std::initializer_list<PredicateType> types) const {
-    auto baseSplit = base->splitByTypes(types);
-    auto currSplit = curr->splitByTypes(types);
+std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitByTypes(
+        std::initializer_list<PredicateType> types) const {
+    auto&& baseSplit = base->splitByTypes(types);
+    auto&& currSplit = curr->splitByTypes(types);
 
     return std::make_pair(
-        Simplified(new Self{ baseSplit.first, currSplit.first }),
-        Simplified(new Self{ baseSplit.second, currSplit.second })
+        Simplified<Self>(baseSplit.first, currSplit.first),
+        Simplified<Self>(baseSplit.second, currSplit.second)
     );
 }
 
@@ -79,16 +88,16 @@ PredicateState::Ptr PredicateStateChain::sliceOn(PredicateState::Ptr on) const {
         return curr;
     }
 
-    auto slice = base->sliceOn(on);
+    auto&& slice = base->sliceOn(on);
     if (slice != nullptr) {
-        return Simplified(new Self{ slice, curr });
+        return Simplified<Self>(slice, curr);
     }
 
     return nullptr;
 }
 
 PredicateState::Ptr PredicateStateChain::simplify() const {
-    auto res = fmap_([&](const PredicateState::Ptr& s) { return s->simplify(); });
+    auto&& res = fmap_([](auto&& s) { return s->simplify(); });
 
     if (res->curr->isEmpty()) {
         return res->base;
@@ -102,6 +111,14 @@ PredicateState::Ptr PredicateStateChain::simplify() const {
 
 bool PredicateStateChain::isEmpty() const {
     return curr->isEmpty() && base->isEmpty();
+}
+
+bool PredicateStateChain::equals(const PredicateState* other) const {
+    if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
+        return PredicateState::equals(other) &&
+                *this->base == *o->base &&
+                *this->curr == *o->curr;
+    } else return false;
 }
 
 borealis::logging::logstream& PredicateStateChain::dump(borealis::logging::logstream& s) const {

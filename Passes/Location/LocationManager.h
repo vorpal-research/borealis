@@ -8,29 +8,27 @@
 #ifndef LOCATIONMANAGER_H_
 #define LOCATIONMANAGER_H_
 
-#include <llvm/Pass.h>
 #include <llvm/IR/Value.h>
+#include <llvm/Pass.h>
 
 #include "State/PredicateState.h"
 
 namespace borealis {
 
-class LocationManager: public llvm::ModulePass {
+class LocationManager: public llvm::ImmutablePass {
 public:
-    typedef PredicateState::Locs Locations;
+    using Locations = PredicateState::Loci;
 
     static char ID;
 
     LocationManager();
-    virtual void getAnalysisUsage(llvm::AnalysisUsage&) const override;
-    virtual bool runOnModule(llvm::Module&) override;
     virtual ~LocationManager() = default;
 
-    void addLocations(const Locations&);
-    const Locations& getLocations() const { return locs_; }
+    void addLocations(const Locations& loci_);
+    const Locations& getLocations() const;
 
 private:
-    static Locations locs_;
+    static Locations loci;
 };
 
 } /* namespace borealis */
