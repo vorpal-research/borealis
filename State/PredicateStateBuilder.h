@@ -30,20 +30,21 @@ public:
 
     PredicateStateBuilder& operator+=(PredicateState::Ptr s);
     PredicateStateBuilder& operator+=(Predicate::Ptr p);
+    PredicateStateBuilder& operator<<=(const Locus& locus);
 
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
     friend PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
-    friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc);
+    friend PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& locus);
 
 };
 
-PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, PredicateState::Ptr state);
+PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, PredicateState::Ptr s);
 PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Predicate::Ptr p);
 
 template<class Container>
 PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Container&& c) {
     PredicateStateBuilder res{PSF, PSF->Basic()};
-    for (const auto& p : c) {
+    for (auto&& p : c) {
         res += p;
     }
     return res;
@@ -51,13 +52,23 @@ PredicateStateBuilder operator*(PredicateStateFactory::Ptr PSF, Container&& c) {
 
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, PredicateState::Ptr s);
 PredicateStateBuilder operator+ (PredicateStateBuilder PSB, Predicate::Ptr p);
-PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc);
 
 template<class Container>
 PredicateStateBuilder operator+(PredicateStateBuilder PSB, Container&& c) {
     PredicateStateBuilder res{PSB};
-    for (const auto& p : c) {
+    for (auto&& p : c) {
         res += p;
+    }
+    return res;
+}
+
+PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& locus);
+
+template<class Container>
+PredicateStateBuilder operator<<(PredicateStateBuilder PSB, Container&& loci) {
+    PredicateStateBuilder res{PSB};
+    for (auto&& locus : loci) {
+        res <<= locus;
     }
     return res;
 }
