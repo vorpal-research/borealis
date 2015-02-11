@@ -8,8 +8,14 @@
 
 using namespace borealis;
 
-#include <Logging/tracer.hpp>
-#include <Codegen/intrinsics.h>
+#include "Logging/tracer.hpp"
+#include "Codegen/intrinsics.h"
+
+#include "Config/config.h"
+
+using namespace borealis::config;
+
+static ConfigEntry<int> MemcpyThreshold{"executor", "memcpy-exec-factor"};
 
 #include <llvm/Target/TargetLibraryInfo.h>
 
@@ -103,7 +109,21 @@ llvm::GenericValue Executor::executeFree(const llvm::Function* f, const std::vec
 }
 llvm::GenericValue Executor::executeMemcpy(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
-    // TODO
+
+    auto size = ArgVals.at(2).IntVal.getLimitedValue();
+    if(size <= MemcpyThreshold.get(1024U) * Mem.getQuant()) {
+        auto Dst = static_cast<uint8_t*>(ArgVals[0].PointerVal);
+        auto Src = static_cast<uint8_t*>(ArgVals[1].PointerVal);
+
+        std::vector<uint8_t> buf(size);
+        llvm::MutableArrayRef<uint8_t> to{ Dst, size };
+        llvm::ArrayRef<uint8_t> from{ Src, size };
+
+        Mem.LoadBytesFromMemory(buf, from);
+        Mem.StoreBytesToMemory(buf, to);
+        return ArgVals.at(0);
+    }
+    throw std::logic_error("full memcpy not implemented yet");
     return {};
 }
 llvm::GenericValue Executor::executeMemset(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {

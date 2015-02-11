@@ -47,6 +47,8 @@ public:
     llvm::Function* accessFunction(void*);
     llvm::BasicBlock* accessBasicBlock(void*);
     llvm::GlobalValue* accessGlobal(void*);
+
+    uintptr_t getQuant() const;
 };
 
 } /* namespace borealis */
