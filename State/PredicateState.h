@@ -87,6 +87,8 @@ public:
 
 protected:
 
+    friend class PredicateStateFactory;
+
     static PredicateState::Ptr Simplified(const PredicateState* s) {
         return PredicateState::Ptr(s)->simplify();
     }

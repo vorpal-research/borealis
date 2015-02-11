@@ -10,17 +10,15 @@
 #include "Util/macros.h"
 
 namespace borealis {
-////////////////////////////////////////////////////////////////////////////////
-// PredicateState::Ptr
-////////////////////////////////////////////////////////////////////////////////
+
 PredicateState::ProtoPtr protobuf_traits<PredicateState>::toProtobuf(const normal_t& ps) {
-    auto res = util::uniq(new proto_t());
+    auto&& res = std::make_unique<proto_t>();
 
     if (false) {}
 #define HANDLE_STATE(NAME, CLASS) \
     else if (auto* pps = llvm::dyn_cast<CLASS>(&ps)) { \
-        auto proto = protobuf_traits_impl<CLASS> \
-                     ::toProtobuf(*pps); \
+        auto&& proto = protobuf_traits_impl<CLASS> \
+                       ::toProtobuf(*pps); \
         res->SetAllocatedExtension( \
             proto::CLASS::ext, \
             proto.release() \
@@ -35,7 +33,7 @@ PredicateState::ProtoPtr protobuf_traits<PredicateState>::toProtobuf(const norma
 PredicateState::Ptr protobuf_traits<PredicateState>::fromProtobuf(const context_t& fn, const proto_t& ps) {
 #define HANDLE_STATE(NAME, CLASS) \
     if (ps.HasExtension(proto::CLASS::ext)) { \
-        const auto& ext = ps.GetExtension(proto::CLASS::ext); \
+        auto&& ext = ps.GetExtension(proto::CLASS::ext); \
         return protobuf_traits_impl<CLASS> \
                ::fromProtobuf(fn, ext); \
     }
