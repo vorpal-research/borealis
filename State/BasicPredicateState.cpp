@@ -123,7 +123,10 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitBy
     // FIXME: akhin Implement splitting also for locations
     yes->addVisitedInPlace(loci);
     no->addVisitedInPlace(loci);
-    return std::make_pair(Simplified(yes.release()), Simplified(no.release()));
+    return std::make_pair(
+        Simplified(yes.release()),
+        Simplified(no.release())
+    );
 }
 
 PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr on) const {
