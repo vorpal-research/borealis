@@ -8,10 +8,7 @@
 #ifndef BASICPREDICATESTATE_H_
 #define BASICPREDICATESTATE_H_
 
-#include <llvm/IR/Value.h>
-
-#include <list>
-#include <unordered_set>
+#include <vector>
 
 #include "State/PredicateState.h"
 
@@ -35,42 +32,35 @@ message BasicPredicateState {
 class BasicPredicateState :
         public PredicateState {
 
-    typedef std::list<Predicate::Ptr> Data;
+    using Data = std::vector<Predicate::Ptr>;
 
 public:
 
     MK_COMMON_STATE_IMPL(BasicPredicateState);
 
-    const Data& getData() const { return data; }
+    const Data& getData() const;
 
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
 
-    virtual PredicateState::Ptr addVisited(const Locus& l) const override;
-    virtual bool hasVisited(std::initializer_list<Locus> ls) const override;
-    virtual bool hasVisitedFrom(Locs& visited) const override;
+    virtual PredicateState::Ptr addVisited(const Locus& locus) const override;
+    virtual bool hasVisited(std::initializer_list<Locus> loci) const override;
+    virtual bool hasVisitedFrom(Loci& visited) const override;
 
-    virtual Locs getVisited() const override;
+    virtual Loci getVisited() const override;
 
     virtual PredicateState::Ptr map(Mapper m) const override;
     virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const override;
     virtual PredicateState::Ptr filter(Filterer f) const override;
+    virtual PredicateState::Ptr reverse() const override;
 
-    virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(std::initializer_list<PredicateType> types) const override;
+    virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(
+            std::initializer_list<PredicateType> types) const override;
     virtual PredicateState::Ptr sliceOn(PredicateState::Ptr on) const override;
     virtual PredicateState::Ptr simplify() const override;
 
     virtual bool isEmpty() const override;
 
-    virtual bool equals(const PredicateState* other) const override {
-        if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
-            return PredicateState::equals(other) &&
-                    util::equal(data, o->data,
-                        [](const Predicate::Ptr& a, const Predicate::Ptr& b) {
-                            return *a == *b;
-                        }
-                    );
-        } else return false;
-    }
+    virtual bool equals(const PredicateState* other) const override;
 
     virtual std::string toString() const override;
     virtual borealis::logging::logstream& dump(borealis::logging::logstream& s) const override;
@@ -78,13 +68,13 @@ public:
 private:
 
     Data data;
-    Locs locs;
+    Loci loci;
 
     BasicPredicateState();
 
     void addPredicateInPlace(Predicate::Ptr pred);
-    void addVisitedInPlace(const Locus& loc);
-    void addVisitedInPlace(const Locs& locs);
+    void addVisitedInPlace(const Locus& locus);
+    void addVisitedInPlace(const Loci& loci_);
 
 };
 
@@ -96,8 +86,8 @@ struct SMTImpl<Impl, BasicPredicateState> {
             ExecutionContext<Impl>* ctx) {
         TRACE_FUNC;
 
-        auto res = ef.getTrue();
-        for (auto& v : s->getData()) {
+        auto&& res = ef.getTrue();
+        for (auto&& v : s->getData()) {
             res = res && SMT<Impl>::doit(v, ef, ctx);
         }
         res = res && ctx->toSMT();

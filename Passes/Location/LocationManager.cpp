@@ -6,27 +6,22 @@
  */
 
 #include "Passes/Location/LocationManager.h"
-#include "Passes/Tracker/SourceLocationTracker.h"
 
 #include "Util/passes.hpp"
 
 namespace borealis {
 
-LocationManager::LocationManager(): llvm::ModulePass(ID) {}
+LocationManager::LocationManager() : llvm::ImmutablePass(ID) {}
 
-void LocationManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
-    AU.setPreservesAll();
+void LocationManager::addLocations(const LocationManager::Locations& loci_) {
+    loci.insert(loci_.begin(), loci_.end());
 }
 
-bool LocationManager::runOnModule(llvm::Module&) {
-    return false;
+const LocationManager::Locations& LocationManager::getLocations() const {
+    return loci;
 }
 
-void LocationManager::addLocations(const PredicateState::Locs& locs) {
-    locs_.insert(locs.begin(), locs.end());
-}
-
-LocationManager::Locations LocationManager::locs_;
+LocationManager::Locations LocationManager::loci;
 
 char LocationManager::ID;
 static RegisterPass<LocationManager>

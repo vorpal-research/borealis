@@ -24,7 +24,7 @@ PredicateState::Ptr PredicateStateBuilder::operator()() const {
 }
 
 PredicateStateBuilder& PredicateStateBuilder::operator+=(PredicateState::Ptr s) {
-    if (!s->isEmpty()) {
+    if (not s->isEmpty()) {
         State = PSF->Chain(State, s);
     }
     return *this;
@@ -32,6 +32,11 @@ PredicateStateBuilder& PredicateStateBuilder::operator+=(PredicateState::Ptr s) 
 
 PredicateStateBuilder& PredicateStateBuilder::operator+=(Predicate::Ptr p) {
     State = PSF->Chain(State, p);
+    return *this;
+}
+
+PredicateStateBuilder& PredicateStateBuilder::operator<<=(const Locus& locus) {
+    State = State << locus;
     return *this;
 }
 
@@ -55,9 +60,9 @@ PredicateStateBuilder operator+(PredicateStateBuilder PSB, Predicate::Ptr p) {
     return res;
 }
 
-PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& loc) {
+PredicateStateBuilder operator<<(PredicateStateBuilder PSB, const Locus& locus) {
     PredicateStateBuilder res{PSB};
-    res.State = res.State << loc;
+    res <<= locus;
     return res;
 }
 

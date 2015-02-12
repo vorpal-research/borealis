@@ -13,111 +13,107 @@ namespace borealis {
 
 using borealis::util::head;
 using borealis::util::tail;
+using borealis::util::viewContainer;
 
-PredicateStateChoice::PredicateStateChoice(const std::vector<PredicateState::Ptr>& choices) :
+PredicateStateChoice::PredicateStateChoice(const Choices& choices) :
         PredicateState(class_tag<Self>()),
         choices(choices) {
     ASSERTC(std::all_of(choices.begin(), choices.end(),
-            [](const PredicateState::Ptr& s) { return s != nullptr; }));
-};
+            [](auto&& s) { return s != nullptr; }));
+}
 
-PredicateStateChoice::PredicateStateChoice(std::vector<PredicateState::Ptr>&& choices) :
+PredicateStateChoice::PredicateStateChoice(Choices&& choices) :
         PredicateState(class_tag<Self>()),
         choices(std::move(choices)) {
     ASSERTC(std::all_of(choices.begin(), choices.end(),
-            [](const PredicateState::Ptr& s) { return s != nullptr; }));
+            [](auto&& s) { return s != nullptr; }));
 };
 
-PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr p) const {
-    return fmap([&](PredicateState::Ptr s) { return s + p; });
+const PredicateStateChoice::Choices& PredicateStateChoice::getChoices() const {
+    return choices;
 }
 
-PredicateState::Ptr PredicateStateChoice::addVisited(const Locus& l) const {
-    return fmap([&](PredicateState::Ptr s) { return s << l; });
+PredicateState::Ptr PredicateStateChoice::addPredicate(Predicate::Ptr pred) const {
+    return fmap([&](PredicateState::Ptr s) { return s + pred; });
 }
 
-bool PredicateStateChoice::hasVisited(std::initializer_list<Locus> ls) const {
-    auto visited = std::unordered_set<Locus>(ls.begin(), ls.end());
+PredicateState::Ptr PredicateStateChoice::addVisited(const Locus& locus) const {
+    return fmap([&](PredicateState::Ptr s) { return s << locus; });
+}
+
+bool PredicateStateChoice::hasVisited(std::initializer_list<Locus> loci) const {
+    auto&& visited = std::unordered_set<Locus>(loci.begin(), loci.end());
     return hasVisitedFrom(visited);
 }
 
-bool PredicateStateChoice::hasVisitedFrom(Locs& visited) const {
-    for (const auto& choice : choices) {
+bool PredicateStateChoice::hasVisitedFrom(Loci& visited) const {
+    for (auto&& choice : choices) {
         if (choice->hasVisitedFrom(visited))
             return true;
     }
     return false;
 }
 
-PredicateState::Locs PredicateStateChoice::getVisited() const {
-    Locs res;
-    for (const auto& choice : choices) {
-        auto choiceLocs = choice->getVisited();
-        res.insert(choiceLocs.begin(), choiceLocs.end());
+PredicateState::Loci PredicateStateChoice::getVisited() const {
+    Loci res;
+    for (auto&& choice : choices) {
+        auto&& choiceLoci = choice->getVisited();
+        res.insert(choiceLoci.begin(), choiceLoci.end());
     }
     return res;
 }
 
 PredicateStateChoice::SelfPtr PredicateStateChoice::fmap_(FMapper f) const {
-    std::vector<PredicateState::Ptr> mapped;
-    mapped.reserve(choices.size());
-    std::transform(choices.begin(), choices.end(), std::back_inserter(mapped),
-        [&](const PredicateState::Ptr& choice) { return f(choice); });
-    return util::uniq(new Self{ mapped });
+    return Uniquified(
+        viewContainer(choices)
+        .map([&](auto&& choice) { return f(choice); })
+        .toVector()
+    );
 }
 
 PredicateState::Ptr PredicateStateChoice::fmap(FMapper f) const {
     return Simplified(fmap_(f).release());
 }
 
-std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChoice::splitByTypes(std::initializer_list<PredicateType> types) const {
+std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChoice::splitByTypes(
+        std::initializer_list<PredicateType> types) const {
     std::vector<PredicateState::Ptr> yes;
     std::vector<PredicateState::Ptr> no;
     yes.reserve(choices.size());
     no.reserve(choices.size());
 
-    for (const auto& choice: choices) {
-        auto split = choice->splitByTypes(types);
+    for (auto&& choice : choices) {
+        auto&& split = choice->splitByTypes(types);
         yes.push_back(split.first);
         no.push_back(split.second);
     }
 
     return std::make_pair(
-        Simplified(new Self{ yes }),
-        Simplified(new Self{ no })
+        Simplified<Self>(yes),
+        Simplified<Self>(no)
     );
 }
 
 PredicateState::Ptr PredicateStateChoice::sliceOn(PredicateState::Ptr base) const {
-    std::vector<PredicateState::Ptr> slices;
-    slices.reserve(choices.size());
-
-    std::transform(choices.begin(), choices.end(), std::back_inserter(slices),
-        [&](const PredicateState::Ptr& choice) { return choice->sliceOn(base); });
+    auto&& slices = viewContainer(choices)
+                    .map([&](auto&& choice) { return choice->sliceOn(base); })
+                    .toVector();
 
     if (std::all_of(slices.begin(), slices.end(),
-        [](const PredicateState::Ptr& slice) { return slice != nullptr; }
-    )) return Simplified(new Self{ slices });
+        [](auto&& slice) { return slice != nullptr; }
+    )) return Simplified<Self>(slices);
 
     return nullptr;
 }
 
 PredicateState::Ptr PredicateStateChoice::simplify() const {
-    std::vector<PredicateState::Ptr> simplified;
-    simplified.reserve(choices.size());
+    auto&& simplified = viewContainer(choices)
+                        .map([](auto&& choice) { return choice->simplify(); })
+                        .filter([](auto&& choice) { return not choice->isEmpty(); })
+                        .toVector();
 
-    std::transform(choices.begin(), choices.end(), std::back_inserter(simplified),
-        [](const PredicateState::Ptr& choice) { return choice->simplify(); });
-
-    auto begin = simplified.begin();
-    auto end = simplified.end();
-    simplified.erase(
-        std::remove_if(begin, end,
-            [](const PredicateState::Ptr& choice) { return choice->isEmpty(); }),
-        end
-    );
-
-    // TODO akhin Do smth if simplified.size() == 0
+    // FIXME: akhin Do smth if simplified.size() == 0
+    //              Maybe return empty state???
 
     if (simplified.size() == 1) {
         return head(simplified);
@@ -128,7 +124,8 @@ PredicateState::Ptr PredicateStateChoice::simplify() const {
 
 bool PredicateStateChoice::isEmpty() const {
     return std::all_of(choices.begin(), choices.end(),
-        [](const PredicateState::Ptr& choice) { return choice->isEmpty(); });
+        [](auto&& choice) { return choice->isEmpty(); }
+    );
 }
 
 borealis::logging::logstream& PredicateStateChoice::dump(borealis::logging::logstream& s) const {
@@ -138,9 +135,9 @@ borealis::logging::logstream& PredicateStateChoice::dump(borealis::logging::logs
 
     s << "(BEGIN";
     s << il << endl;
-    if (!choices.empty()) {
+    if (not choices.empty()) {
         s << "<OR>" << head(choices);
-        for (const auto& choice : tail(choices)) {
+        for (auto&& choice : tail(choices)) {
             s << "," << endl << "<OR>" << choice;
         }
     }
@@ -156,9 +153,9 @@ std::string PredicateStateChoice::toString() const {
     std::ostringstream s;
 
     s << "(BEGIN" << endl;
-    if (!choices.empty()) {
+    if (not choices.empty()) {
         s << "<OR>" << head(choices);
-        for (const auto& choice : tail(choices)) {
+        for (auto&& choice : tail(choices)) {
             s << "," << endl << "<OR>" << choice;
         }
     }
