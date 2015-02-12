@@ -31,6 +31,7 @@
  *
  * */
 #define LAM(X, ...) [&](auto&& X) -> decltype(auto) { return __VA_ARGS__; }
+#define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype(auto) { return __VA_ARGS__; }
 #define FWD(...) (std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__))
 
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
@@ -63,6 +64,8 @@
         __LINE__, \
         __PRETTY_FUNCTION__, \
         #cond); }
+
+#define UNREACHABLE(MSG) ASSERT(false, MSG)
 
 #define GUARD(...) typename std::enable_if<(__VA_ARGS__)>::type
 #define GUARDED(TYPE, ...) typename std::enable_if<(__VA_ARGS__), TYPE>::type

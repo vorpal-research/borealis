@@ -57,6 +57,8 @@ private:
         __PRETTY_FUNCTION__, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
 
+#define TRACES() borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain)
+
 #define TRACE_BLOCK(ID) \
     borealis::logging::func_tracer ftracer( \
         ID, \
@@ -76,6 +78,7 @@ private:
 
 #else
 #define TRACE_FUNC
+#define TRACES()
 #define TRACE_BLOCK(ID)
 #define TRACE_MEASUREMENT(M...)
 #define TRACE_UP(M...)

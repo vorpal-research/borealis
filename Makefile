@@ -80,6 +80,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Codegen \
 	$(PWD)/Config \
 	$(PWD)/Driver \
+	$(PWD)/Executor \
 	$(PWD)/Factory \
 	$(PWD)/Logging \
 	$(PWD)/Passes \

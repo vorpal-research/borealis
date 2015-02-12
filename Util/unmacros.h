@@ -11,6 +11,7 @@
 
 #ifdef BOREALIS_MACROS_DEFINED
 #undef LAM
+#undef LAM2
 #undef FWD
 #undef QUICK_RETURN
 #undef QUICK_CONST_RETURN
@@ -18,6 +19,7 @@
 #undef BYE_BYE_VOID
 #undef ASSERT
 #undef ASSERTC
+#undef UNREACHABLE
 #undef GUARD
 #undef GUARDED
 #undef STATIC_STRING
