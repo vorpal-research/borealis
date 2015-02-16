@@ -206,7 +206,7 @@ struct SegmentTree {
             ): state(state), status(status), size(size) {};
 
             bool handlePath(
-                    SegmentTree*,
+                    SegmentTree* tree,
                     SimulatedPtrSize minbound,
                     SimulatedPtrSize maxbound,
                     SegmentNode::Ptr& t,
@@ -218,11 +218,14 @@ struct SegmentTree {
                 TRACES() << "Left " << ((void*)t->left.get()) << endl;
                 TRACES() << "Right " << ((void*)t->right.get()) << endl;
                 TRACES() << '{' << tfm::format("0x%x", minbound) << ','
-                                << tfm::format("0x%x", maxbound) << endl;
+                                << tfm::format("0x%x", maxbound) << '}' << endl;
                 TRACES() << "Where: " << tfm::format("0x%x", where) << endl;
                 TRACES() << "Size: " << size << endl;
 
-                if(minbound == where && available/2ULL < size && available >= size) {
+                if(minbound == where
+                    &&
+                        ((available/2ULL < size && available >= size)
+                       ||(available == tree->chunk_size && size <= tree->chunk_size))) {
                     t->reallyAllocated = size;
                     t->state = state;
                     t->status = status;
@@ -360,12 +363,16 @@ struct SegmentTree {
         return { loadTraverser.ptr, loadTraverser.state };
     }
 
-    inline void free(SimulatedPtr where) {
+    inline void free(SimulatedPtr where, SegmentNode::MemoryStatus desiredStatus) {
         TRACE_FUNC;
 
         if(where < start || where >= end) signalIllegalFree(where);
 
         struct liberator : emptyTraverser {
+            SegmentNode::MemoryStatus desiredStatus;
+
+            liberator(SegmentNode::MemoryStatus desiredStatus): desiredStatus{desiredStatus} {}
+
             void handleEmptyNode(SimulatedPtr where) {
                 TRACE_FUNC;
                 signalIllegalFree(where);
@@ -377,13 +384,13 @@ struct SegmentTree {
                 SegmentNode::Ptr& t,
                 SimulatedPtrSize where){
                 TRACE_FUNC;
-                if(minbound == where && t->status == SegmentNode::MemoryStatus::Malloc) {
+                if(minbound == where && t->status == desiredStatus) {
                     t.reset();
                     return true;
                 }
                 return false;
             }
-        } liberator;
+        } liberator{desiredStatus};
 
         return traverse(where, liberator);
     }
@@ -513,6 +520,13 @@ void* MemorySimulator::AllocateMemory(SimulatedPtrSize amount) {
     return ptr_cast(ptr);
 }
 
+void MemorySimulator::DeallocateMemory(void* ptr) {
+    TRACE_FUNC;
+
+    auto realPtr = ptr_cast(ptr);
+    pimpl_->tree.free(realPtr, SegmentNode::MemoryStatus::Alloca);
+}
+
 void* MemorySimulator::MallocMemory(SimulatedPtrSize amount, MallocFill fillWith) {
     TRACE_FUNC;
     const auto real_amount = calc_real_memory_amount(amount, pimpl_->tree.chunk_size);
@@ -529,6 +543,14 @@ void* MemorySimulator::MallocMemory(SimulatedPtrSize amount, MallocFill fillWith
     pimpl_->currentMallocOffset = ptr + real_amount - pimpl_->mallocStart;
 
     return ptr_cast(ptr);
+}
+
+void MemorySimulator::FreeMemory(void* ptr) {
+    TRACE_FUNC;
+
+    auto realPtr = ptr_cast(ptr);
+
+    pimpl_->tree.free(realPtr, SegmentNode::MemoryStatus::Malloc);
 }
 
 static void assign(MemorySimulator::mutable_buffer_t dst, MemorySimulator::buffer_t src) {

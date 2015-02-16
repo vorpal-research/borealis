@@ -164,12 +164,12 @@ public:
 
     borealis::util::option<const char*> single() const {
         if (args.empty()) return util::nothing();
-        return util::just(args.front());
+        return util::just(args.back());
     }
 
     const char* single(const char* else_) const {
         if (args.empty()) return else_;
-        return args.front();
+        return args.back();
     }
 
     std::vector<std::string> stlRep() const {

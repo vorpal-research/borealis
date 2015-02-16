@@ -105,6 +105,9 @@ llvm::GenericValue Executor::executeRealloc(const llvm::Function* f, const std::
 llvm::GenericValue Executor::executeFree(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
     // TODO
+
+    Mem.FreeMemory(ArgVals[0].PointerVal);
+
     return {};
 }
 llvm::GenericValue Executor::executeMemcpy(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {

@@ -5,6 +5,9 @@
  *      Author: belyaev
  */
 
+#include <iostream>
+#include <fstream>
+
 #include <llvm/Pass.h>
 #include <llvm/PassAnalysisSupport.h>
 #include <llvm/IR/Module.h>
@@ -12,16 +15,16 @@
 
 #include "Config/config.h"
 #include "Executor/Executor.h"
-
 #include "Util/passes.hpp"
 #include "Util/collections.hpp"
+#include "Logging/tracer.hpp"
 
 #include "Util/macros.h"
 
-#include "Logging/tracer.hpp"
-
 namespace borealis {
 namespace {
+
+const std::string DumpOutputFileDefault = "tassadar.report";
 
 using namespace borealis::config;
 MultiConfigEntry functionsToRun {"executor", "function"};
@@ -51,7 +54,29 @@ public:
                     .map(LAM(F, &F))
                     .toHashSet();
 
-        for(auto&& F : funcs) tassadar.runFunction(F, {});
+        static config::StringConfigEntry DumpOutputFileOpt("output", "tassadar-output-file");
+
+        std::string pattern = DumpOutputFileOpt.get(DumpOutputFileDefault);
+        std::ofstream ofs{pattern};
+        ofs << "[" << std::endl;
+
+        try {
+            tassadar.runFunction(util::head(funcs), {});
+            ofs << "null";
+        } catch(const std::exception& ex) {
+            ofs << '"' << ex.what() << '"';
+        }
+
+        for(auto&& F : util::tail(funcs)) {
+            try {
+                tassadar.runFunction(F, {});
+                ofs << ", null";
+            } catch(const std::exception& ex) {
+                ofs << ", " << '"' << ex.what() << '"';
+            }
+        }
+
+        ofs << std::endl << "]" << std::endl;
 
         return false;
     }

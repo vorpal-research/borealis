@@ -37,8 +37,10 @@ public:
     void StoreBytesToMemory(buffer_t buffer, mutable_buffer_t where);
 
     void* AllocateMemory(size_t amount);
+    void DeallocateMemory(void* ptr);
     enum MallocFill{ UNINIT, ZERO };
     void* MallocMemory(size_t amount, MallocFill fillWith);
+    void FreeMemory(void* ptr);
 
     void* getPointerToFunction(llvm::Function* f, size_t size);
     void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);
