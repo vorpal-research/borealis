@@ -464,6 +464,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
 
     }
 
+    return {};
 }
 
 #include "Util/unmacros.h"
