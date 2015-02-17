@@ -10,6 +10,9 @@
 
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/ArrayRef.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalValue.h>
 
 #include <memory>
 
@@ -33,9 +36,17 @@ public:
     void StoreBytesToMemory(buffer_t buffer, mutable_buffer_t where);
 
     void* AllocateMemory(size_t amount);
-
     void* MallocMemory(size_t amount);
 
+    void* getPointerToFunction(llvm::Function* f, size_t size);
+    void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);
+    void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size);
+
+    llvm::Function* accessFunction(void*);
+    llvm::BasicBlock* accessBasicBlock(void*);
+    llvm::GlobalValue* accessGlobal(void*);
+
+    uint64_t getQuant() const;
 };
 
 } // namespace borealis
