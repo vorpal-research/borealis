@@ -166,6 +166,9 @@ public:
     }
 
 private:  // Helper functions
+    llvm::GenericValue callStdLibFunction(const llvm::Function* F,
+        const std::vector<llvm::GenericValue>& ArgVals);
+
     llvm::GenericValue executeGEPOperation(llvm::Value *Ptr, llvm::gep_type_iterator I,
         llvm::gep_type_iterator E, ExecutorContext &SF);
 
