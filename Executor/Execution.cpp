@@ -1185,10 +1185,21 @@ void Executor::visitStoreInst(StoreInst &I) {
 
 void Executor::visitCallSite(CallSite CS) {
     TRACE_FUNC;
+
     ExecutorContext &SF = ECStack.back();
 
     // Check to see if this is an intrinsic function call...
     Function *F = CS.getCalledFunction();
+
+    if(F && F->isDeclaration()) {
+        switch(IM->getIntrinsicType(F)) {
+        case function_type::INTRINSIC_MALLOC:
+        case function_type::INTRINSIC_ALLOC:
+            break;
+        default: // FIXME: process annotation-related intrinsics when we start checking annotations
+            return;
+        }
+    }
 
     SF.Caller = CS;
     std::vector<GenericValue> ArgVals;
@@ -1214,6 +1225,8 @@ void Executor::visitCallSite(CallSite CS) {
             return;
         }
         case Intrinsic::vaend:    // va_end is a noop for the interpreter
+        case Intrinsic::dbg_declare:
+        case Intrinsic::dbg_value:
             return;
         case Intrinsic::vacopy:   // va_copy: dest = src
             SetValue(CS.getInstruction(), getOperandValue(*CS.arg_begin(), SF), SF);
@@ -1222,12 +1235,6 @@ void Executor::visitCallSite(CallSite CS) {
         case Intrinsic::memcpy:
         case Intrinsic::memmove:
             break;
-            // FIXME: implement these guys
-
-            // If it is an unknown intrinsic function, use the intrinsic lowering
-            // class to transform it into hopefully tasty LLVM code.
-            //
-            // fallthrough for a reason!
         }
 
     if(!F) {

@@ -10,6 +10,7 @@
 
 #include "Executor/MemorySimulator.h"
 
+#include <unordered_map>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/IR/CallSite.h>

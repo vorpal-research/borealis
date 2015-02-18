@@ -60,6 +60,8 @@ public:
         std::ofstream ofs{pattern};
         ofs << "[" << std::endl;
 
+        if(funcs.empty()) return false;
+
         try {
             tassadar.runFunction(util::head(funcs), {});
             ofs << "null";
