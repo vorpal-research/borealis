@@ -22,6 +22,7 @@
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Executor/Arbiter.h"
 #include "Codegen/intrinsics_manager.h"
 
 namespace borealis {

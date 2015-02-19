@@ -36,12 +36,23 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
     return f;
 }
 
-function_type IntrinsicsManager::getIntrinsicType(const llvm::CallInst& CI) const {
-    for (auto& resolver : resolvers) {
-        function_type r = resolver(*this, CI);
-        if (r != function_type::UNKNOWN) return r;
+function_type IntrinsicsManager::getIntrinsicType(llvm::Function* F) const {
+    using borealis::util::containsKey;
+    if (containsKey(type_cache, F)) {
+        return type_cache.at(F);
+    } else {
+        for (auto& resolver : resolvers) {
+            function_type r = resolver(*this, *F);
+            if (r != function_type::UNKNOWN) return type_cache[F] = r;
+        }
     }
+
     return function_type::UNKNOWN;
+}
+
+function_type IntrinsicsManager::getIntrinsicType(const llvm::CallInst& CI) const {
+    if(auto F = CI.getCalledFunction()) return getIntrinsicType(F);
+    else return function_type::UNKNOWN;
 }
 
 PredicateState::Ptr IntrinsicsManager::getPredicateState(
@@ -64,14 +75,7 @@ const std::string IntrinsicsManager::getFuncName(function_type ft, const std::st
     return oss.str();
 }
 
-function_type IntrinsicsManager::getIntrinsicType(llvm::Function* F) const {
-    using borealis::util::containsKey;
-    if (containsKey(type_cache, F)) {
-        return type_cache.at(F);
-    }
 
-    return function_type::UNKNOWN;
-}
 
 IntrinsicsManager::IntrinsicInfo IntrinsicsManager::getIntrinsicInfo(function_type ft) const {
     using borealis::util::containsKey;

@@ -29,6 +29,22 @@ const std::string DumpOutputFileDefault = "tassadar.report";
 using namespace borealis::config;
 MultiConfigEntry functionsToRun {"executor", "function"};
 
+class ZeroArbiter: public Arbiter {
+public:
+    virtual llvm::GenericValue map(llvm::Value* val) override {
+        llvm::GenericValue RetVal;
+        if(val->getType()->isIntegerTy()) {
+            RetVal.IntVal = llvm::APInt{ val->getType()->getIntegerBitWidth(), 0 };
+        } else if(val->getType()->isFloatTy()) {
+            RetVal.FloatVal = 0.0f;
+        } else if(val->getType()->isDoubleTy()) {
+            RetVal.DoubleVal = 0.0;
+        }
+        UNREACHABLE("unsupported type");
+    }
+    virtual ~ZeroArbiter(){}
+};
+
 class TassadarPass : public llvm::ModulePass {
 public:
     static char ID;
@@ -47,7 +63,9 @@ public:
         auto funcNames = util::viewContainer(functionsToRun).toHashSet();
         Executor tassadar{&M,
             &getAnalysis<llvm::DataLayoutPass>().getDataLayout(),
-            &getAnalysis<llvm::TargetLibraryInfo>()};
+            &getAnalysis<llvm::TargetLibraryInfo>(),
+            std::make_shared<ZeroArbiter>()
+        };
 
         auto funcs = util::viewContainer(M)
                     .filter(LAM(F, funcNames.count(F.getName())))
