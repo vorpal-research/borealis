@@ -42,6 +42,9 @@ public:
     void* MallocMemory(size_t amount, MallocFill fillWith);
     void FreeMemory(void* ptr);
 
+    bool IsLegalPointer(void* ptr);
+    void* getOpaquePtr();
+
     void* getPointerToFunction(llvm::Function* f, size_t size);
     void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);
     void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size);

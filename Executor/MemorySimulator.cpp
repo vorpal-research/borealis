@@ -401,6 +401,8 @@ struct MemorySimulator::Impl {
     std::unordered_map<llvm::Value*, SimulatedPtr> constants;
     std::unordered_map<SimulatedPtr, llvm::Value*> constantsBwd;
 
+    SimulatedPtr unmeaningfulPtr;
+
     SimulatedPtr allocStart;
     SimulatedPtr allocEnd;
 
@@ -429,6 +431,8 @@ struct MemorySimulator::Impl {
         constantStart = 1 << 10;
         constantEnd = 1 << 20;
 
+        unmeaningfulPtr = 1 << 8;
+
         currentAllocOffset = 0U;
         currentMallocOffset = 0U;
         currentConstantOffset = 0U;
@@ -451,6 +455,16 @@ struct MemorySimulator::Impl {
 
 uintptr_t MemorySimulator::getQuant() const {
     return pimpl_->tree.chunk_size;
+}
+
+void* MemorySimulator::getOpaquePtr() {
+    TRACE_FUNC;
+    return ptr_cast(pimpl_->unmeaningfulPtr);
+}
+
+bool MemorySimulator::IsLegalPointer(void* ptr) {
+    TRACE_FUNC;
+    return pimpl_->unmeaningfulPtr == ptr_cast(ptr);
 }
 
 void* MemorySimulator::getPointerToFunction(llvm::Function* f, size_t size) {

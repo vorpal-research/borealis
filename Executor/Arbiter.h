@@ -20,7 +20,7 @@ public:
     virtual llvm::GenericValue map(llvm::Value* val) = 0;
     virtual ~Arbiter();
 
-    using Ptr = std::unique_ptr<Arbiter>;
+    using Ptr = std::shared_ptr<Arbiter>;
 };
 
 } /* namespace borealis */

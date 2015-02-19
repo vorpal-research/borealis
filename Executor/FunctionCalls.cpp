@@ -238,12 +238,15 @@ static llvm::GenericValue runIntegralWithOverflow(
 }
 
 
-llvm::GenericValue Executor::callExternalFunction(
+util::option<llvm::GenericValue> Executor::callExternalFunction(
     llvm::Function *F,
     const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
+    using util::just;
+    using util::nothing;
+
     // TODO
-#define CHECK_AND_EXEC(NAME) if(is ## NAME(F, TLI)) return execute ## NAME (F, ArgVals);
+#define CHECK_AND_EXEC(NAME) if(is ## NAME(F, TLI)) return just(execute ## NAME (F, ArgVals));
     CHECK_AND_EXEC(Malloc)
     CHECK_AND_EXEC(Calloc)
     CHECK_AND_EXEC(Realloc)
@@ -256,26 +259,26 @@ llvm::GenericValue Executor::callExternalFunction(
     if(IM->getIntrinsicType(F) == function_type::INTRINSIC_MALLOC) {
         std::vector<llvm::GenericValue> adjustedArgs;
         adjustedArgs.push_back(ArgVals[2]);
-        return executeMalloc(F, adjustedArgs);
+        return just(executeMalloc(F, adjustedArgs));
     }
 
     llvm::GenericValue RetVal;
 
     if(IM->getIntrinsicType(F) == function_type::INTRINSIC_ALLOC) {
         RetVal.PointerVal = Mem.AllocateMemory(ArgVals[2].IntVal.getLimitedValue());
-        return RetVal;
+        return just(RetVal);
     }
     // LLVM intrinsics
 
 #define GENERATE_STD(FNAME) \
     case llvm::Intrinsic:: FNAME : \
-        return runFloatMath(LAM(v, std :: FNAME (v)), F, ArgVals);
+        return just(runFloatMath(LAM(v, std :: FNAME (v)), F, ArgVals));
 
 #define GENERATE_INTEGRAL_WITH_OV(INTR) \
     case llvm::Intrinsic:: INTR ## _with_overflow : \
-        return runIntegralWithOverflow([](auto&& lhv, auto&& rhv, bool& ov){ \
+        return just(runIntegralWithOverflow([](auto&& lhv, auto&& rhv, bool& ov){ \
             return lhv . INTR ## _ov (rhv, ov); \
-        }, F, ArgVals);
+        }, F, ArgVals));
 
     switch(F->getIntrinsicID()) {
     default:
@@ -286,14 +289,14 @@ llvm::GenericValue Executor::callExternalFunction(
 
     case llvm::Intrinsic::bswap:
         RetVal.IntVal = ArgVals.back().IntVal.byteSwap();
-        return RetVal;
+        return just(RetVal);
     case llvm::Intrinsic::fma:
     case llvm::Intrinsic::fmuladd:
-        return runFMA(F, ArgVals);
+        return just(runFMA(F, ArgVals));
     case llvm::Intrinsic::pow:
-        return runpow(F, ArgVals);
+        return just(runpow(F, ArgVals));
     case llvm::Intrinsic::powi:
-        return runpowi(F, ArgVals);
+        return just(runpowi(F, ArgVals));
 
     GENERATE_STD(ceil)
     GENERATE_STD(cos)
@@ -323,7 +326,7 @@ llvm::GenericValue Executor::callExternalFunction(
     {
         if(isStdLib(F, TLI)) return callStdLibFunction(F , ArgVals);
     }
-    return llvm::GenericValue{};
+    return nothing();
 }
 
 #include "Util/unmacros.h"

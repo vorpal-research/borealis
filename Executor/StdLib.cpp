@@ -78,8 +78,11 @@ static llvm::GenericValue callFloat2(
     return RetVal;
 }
 
-llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
+util::option<llvm::GenericValue> Executor::callStdLibFunction(
+    const llvm::Function* F,
     const std::vector<llvm::GenericValue>& ArgVals) {
+    using util::just;
+    using util::nothing;
 
     lfn::Func fcode;
     TLI->getLibFunc(F->getName(), fcode);
@@ -92,7 +95,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::llabs:
     /// long int labs(long int j);
     case lfn::labs:
-        return wrap(ArgVals.back().IntVal.abs());
+        return just(wrap(ArgVals.back().IntVal.abs()));
 
     /// int ffs(int i);
     case lfn::ffs:
@@ -100,7 +103,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::ffsl:
     /// int ffsll(long long int i);
     case lfn::ffsll:
-        return wrap(ArgVals.back().IntVal.countLeadingZeros(), F->getReturnType());
+        return just(wrap(ArgVals.back().IntVal.countLeadingZeros(), F->getReturnType()));
 
     /// uint32_t htonl(uint32_t hostlong);
     case lfn::htonl:
@@ -110,17 +113,17 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::ntohl:
     /// uint16_t ntohs(uint16_t netshort);
     case lfn::ntohs:
-        return wrap(ArgVals.back().IntVal.byteSwap());
+        return just(wrap(ArgVals.back().IntVal.byteSwap()));
 
     /// int isascii(int c);
     case lfn::isascii: {
         auto v = ArgVals.back().IntVal.getLimitedValue(256);
-        return wrap(!!std::isalpha(static_cast<int>(v)));
+        return just(wrap(!!std::isalpha(static_cast<int>(v))));
     }
     /// int isdigit(int c);
     case lfn::isdigit:{
         auto v = ArgVals.back().IntVal.getLimitedValue(256);
-        return wrap(!!std::isdigit(static_cast<int>(v)));
+        return just(wrap(!!std::isdigit(static_cast<int>(v))));
     }
 
     /// double acos(double x);
@@ -129,7 +132,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::acosf:
     /// long double acosl(long double x);
     case lfn::acosl:
-        return callFloat(LAM(x, std::acos(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::acos(x)), F->getReturnType(), ArgVals));
 
     /// double acosh(double x);
     case lfn::acosh:
@@ -137,7 +140,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::acoshf:
     /// long double acoshl(long double x);
     case lfn::acoshl:
-        return callFloat(LAM(x, std::acosh(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::acosh(x)), F->getReturnType(), ArgVals));
 
     /// double asin(double x);
     case lfn::asin:
@@ -145,7 +148,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::asinf:
     /// long double asinl(long double x);
     case lfn::asinl:
-        return callFloat(LAM(x, std::asin(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::asin(x)), F->getReturnType(), ArgVals));
 
     /// double asinh(double x);
     case lfn::asinh:
@@ -153,7 +156,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::asinhf:
     /// long double asinhl(long double x);
     case lfn::asinhl:
-        return callFloat(LAM(x, std::asinh(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::asinh(x)), F->getReturnType(), ArgVals));
 
     /// double atan(double x);
     case lfn::atan:
@@ -161,7 +164,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::atanf:
     /// long double atanl(long double x);
     case lfn::atanl:
-        return callFloat(LAM(x, std::atan(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::atan(x)), F->getReturnType(), ArgVals));
 
     /// double atanh(double x);
     case lfn::atanh:
@@ -169,7 +172,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::atanhf:
     /// long double atanhl(long double x);
     case lfn::atanhl:
-        return callFloat(LAM(x, std::atanh(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::atanh(x)), F->getReturnType(), ArgVals));
 
     /// double cbrt(double x);
     case lfn::cbrt:
@@ -177,7 +180,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::cbrtf:
     /// long double cbrtl(long double x);
     case lfn::cbrtl:
-        return callFloat(LAM(x, std::cbrt(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::cbrt(x)), F->getReturnType(), ArgVals));
 
     /// double ceil(double x);
     case lfn::ceil:
@@ -185,7 +188,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::ceilf:
     /// long double ceill(long double x);
     case lfn::ceill:
-        return callFloat(LAM(x, std::ceil(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::ceil(x)), F->getReturnType(), ArgVals));
 
     /// double cos(double x);
     case lfn::cos:
@@ -193,7 +196,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::cosf:
     /// long double cosl(long double x);
     case lfn::cosl:
-        return callFloat(LAM(x, std::cos(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::cos(x)), F->getReturnType(), ArgVals));
 
     /// double cosh(double x);
     case lfn::cosh:
@@ -201,7 +204,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::coshf:
     /// long double coshl(long double x);
     case lfn::coshl:
-        return callFloat(LAM(x, std::cosh(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::cosh(x)), F->getReturnType(), ArgVals));
 
     /// double exp(double x);
     case lfn::exp:
@@ -209,7 +212,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::expf:
     /// long double expl(long double x);
     case lfn::expl:
-        return callFloat(LAM(x, std::exp(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::exp(x)), F->getReturnType(), ArgVals));
 
     /// double exp10(double x);
     case lfn::exp10:
@@ -217,7 +220,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::exp10f:
     /// long double exp10l(long double x);
     case lfn::exp10l:
-        return callFloat(LAM(x, std::pow(10, x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::pow(10, x)), F->getReturnType(), ArgVals));
 
     /// double exp2(double x);
     case lfn::exp2:
@@ -225,7 +228,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::exp2f:
     /// long double exp2l(long double x);
     case lfn::exp2l:
-        return callFloat(LAM(x, std::exp2(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::exp2(x)), F->getReturnType(), ArgVals));
 
     /// double expm1(double x);
     case lfn::expm1:
@@ -233,7 +236,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::expm1f:
     /// long double expm1l(long double x);
     case lfn::expm1l:
-        return callFloat(LAM(x, std::expm1(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::expm1(x)), F->getReturnType(), ArgVals));
 
     /// double fabs(double x);
     case lfn::fabs:
@@ -241,7 +244,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::fabsf:
     /// long double fabsl(long double x);
     case lfn::fabsl:
-        return callFloat(LAM(x, std::fabs(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::fabs(x)), F->getReturnType(), ArgVals));
 
     /// double floor(double x);
     case lfn::floor:
@@ -249,7 +252,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::floorf:
     /// long double floorl(long double x);
     case lfn::floorl:
-        return callFloat(LAM(x, std::floor(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::floor(x)), F->getReturnType(), ArgVals));
 
     /// double fmax(double x, double y);
     case lfn::fmax:
@@ -257,7 +260,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::fmaxf:
     /// long double fmaxl(long double x, long double y);
     case lfn::fmaxl:
-        return callFloat2(LAM2(x, y, std::fmax(x, y)), F->getReturnType(), ArgVals);
+        return just(callFloat2(LAM2(x, y, std::fmax(x, y)), F->getReturnType(), ArgVals));
 
     /// double fmin(double x, double y);
     case lfn::fmin:
@@ -265,7 +268,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::fminf:
     /// long double fminl(long double x, long double y);
     case lfn::fminl:
-        return callFloat2(LAM2(x, y, std::fmin(x, y)), F->getReturnType(), ArgVals);
+        return just(callFloat2(LAM2(x, y, std::fmin(x, y)), F->getReturnType(), ArgVals));
 
     /// double fmod(double x, double y);
     case lfn::fmod:
@@ -273,7 +276,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::fmodf:
     /// long double fmodl(long double x, long double y);
     case lfn::fmodl:
-        return callFloat2(LAM2(x, y, std::fmod(x, y)), F->getReturnType(), ArgVals);
+        return just(callFloat2(LAM2(x, y, std::fmod(x, y)), F->getReturnType(), ArgVals));
 
     /// double log(double x);
     case lfn::log:
@@ -281,7 +284,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::logf:
     /// long double logl(long double x);
     case lfn::logl:
-        return callFloat(LAM(x, std::log(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::log(x)), F->getReturnType(), ArgVals));
 
     /// double log10(double x);
     case lfn::log10:
@@ -289,7 +292,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::log10f:
     /// long double log10l(long double x);
     case lfn::log10l:
-        return callFloat(LAM(x, std::log10(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::log10(x)), F->getReturnType(), ArgVals));
 
     /// double log1p(double x);
     case lfn::log1p:
@@ -297,7 +300,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::log1pf:
     /// long double log1pl(long double x);
     case lfn::log1pl:
-        return callFloat(LAM(x, std::log1p(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::log1p(x)), F->getReturnType(), ArgVals));
 
     /// double log2(double x);
     case lfn::log2:
@@ -305,7 +308,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::log2f:
     /// double long double log2l(long double x);
     case lfn::log2l:
-        return callFloat(LAM(x, std::log2(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::log2(x)), F->getReturnType(), ArgVals));
 
     /// double logb(double x);
     case lfn::logb:
@@ -313,7 +316,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::logbf:
     /// long double logbl(long double x);
     case lfn::logbl:
-        return callFloat(LAM(x, std::logb(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::logb(x)), F->getReturnType(), ArgVals));
 
     /// double nearbyint(double x);
     case lfn::nearbyint:
@@ -321,7 +324,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::nearbyintf:
     /// long double nearbyintl(long double x);
     case lfn::nearbyintl:
-        return callFloat(LAM(x, std::nearbyint(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::nearbyint(x)), F->getReturnType(), ArgVals));
 
     /// double rint(double x);
     case lfn::rint:
@@ -329,7 +332,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::rintf:
     /// long double rintl(long double x);
     case lfn::rintl:
-        return callFloat(LAM(x, std::rint(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::rint(x)), F->getReturnType(), ArgVals));
 
     /// double round(double x);
     case lfn::round:
@@ -337,7 +340,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::roundf:
     /// long double roundl(long double x);
     case lfn::roundl:
-        return callFloat(LAM(x, std::round(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::round(x)), F->getReturnType(), ArgVals));
 
     /// double sin(double x);
     case lfn::sin:
@@ -345,7 +348,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::sinf:
     /// long double sinl(long double x);
     case lfn::sinl:
-        return callFloat(LAM(x, std::sin(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::sin(x)), F->getReturnType(), ArgVals));
 
         /// double sinh(double x);
     case lfn::sinh:
@@ -353,7 +356,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::sinhf:
     /// long double sinhl(long double x);
     case lfn::sinhl:
-        return callFloat(LAM(x, std::sinh(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::sinh(x)), F->getReturnType(), ArgVals));
 
     /// double sqrt(double x);
     case lfn::sqrt:
@@ -361,7 +364,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::sqrtf:
     /// long double sqrtl(long double x);
     case lfn::sqrtl:
-        return callFloat(LAM(x, std::sqrt(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::sqrt(x)), F->getReturnType(), ArgVals));
 
     /// double tan(double x);
     case lfn::tan:
@@ -369,7 +372,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::tanf:
     /// long double tanl(long double x);
     case lfn::tanl:
-        return callFloat(LAM(x, std::tan(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::tan(x)), F->getReturnType(), ArgVals));
 
     /// double tanh(double x);
     case lfn::tanh:
@@ -377,7 +380,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::tanhf:
     /// long double tanhl(long double x);
     case lfn::tanhl:
-        return callFloat(LAM(x, std::tanh(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::tanh(x)), F->getReturnType(), ArgVals));
 
     /// double trunc(double x);
     case lfn::trunc:
@@ -385,7 +388,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::truncf:
     /// long double truncl(long double x);
     case lfn::truncl:
-        return callFloat(LAM(x, std::trunc(x)), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::trunc(x)), F->getReturnType(), ArgVals));
 
     /// double atan2(double y, double x);
     case lfn::atan2:
@@ -393,7 +396,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::atan2f:
     /// long double atan2l(long double y, long double x);
     case lfn::atan2l:
-        return callFloat2(LAM2(x, y, std::atan2(x, y)), F->getReturnType(), ArgVals);
+        return just(callFloat2(LAM2(x, y, std::atan2(x, y)), F->getReturnType(), ArgVals));
 
     /// double copysign(double x, double y);
     case lfn::copysign:
@@ -401,7 +404,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::copysignf:
     /// long double copysignl(long double x, long double y);
     case lfn::copysignl:
-        return callFloat2(LAM2(x, y, std::copysign(x, y)), F->getReturnType(), ArgVals);
+        return just(callFloat2(LAM2(x, y, std::copysign(x, y)), F->getReturnType(), ArgVals));
 
     /// double pow(double x, double y);
     case lfn::pow:
@@ -409,7 +412,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     case lfn::powf:
     /// long double powl(long double x, long double y);
     case lfn::powl:
-        return callFloat2(LAM2(x, y, std::pow(x, y)), F->getReturnType(), ArgVals);
+        return just(callFloat2(LAM2(x, y, std::pow(x, y)), F->getReturnType(), ArgVals));
 
     /// double frexp(double num, int *exp);
     case lfn::frexp:
@@ -425,7 +428,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
             (dynExp.getBitWidth() + 7)/8
         };
         Mem.StoreIntToMemory(dynExp, where);
-        return res;
+        return just(res);
     }
     /// double ldexp(double x, int n);
     case lfn::ldexp:
@@ -434,7 +437,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
     /// long double ldexpl(long double x, int n);
     case lfn::ldexpl: {
         auto exp = ArgVals[1].IntVal.getSExtValue();
-        return callFloat(LAM(x, std::ldexp(x, static_cast<int>(exp))), F->getReturnType(), ArgVals);
+        return just(callFloat(LAM(x, std::ldexp(x, static_cast<int>(exp))), F->getReturnType(), ArgVals));
     }
     /// double modf(double x, double *iptr);
     case lfn::modf:
@@ -448,13 +451,13 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
             auto res = std::modf(ArgVals[0].FloatVal, &ip.FloatVal);
             StoreValueToMemory(ip, (uint8_t*)ArgVals[1].PointerVal, F->getFunctionType()->getFunctionParamType(1));
             RetVal.FloatVal = res;
-            return RetVal;
+            return just(RetVal);
         } else if(tp -> isDoubleTy()) {
             llvm::GenericValue ip, RetVal;
             auto res = std::modf(ArgVals[0].DoubleVal, &ip.DoubleVal);
             StoreValueToMemory(ip, (uint8_t*)ArgVals[1].PointerVal, F->getFunctionType()->getFunctionParamType(1));
             RetVal.DoubleVal = res;
-            return RetVal;
+            return just(RetVal);
         } else if(tp -> isFloatingPointTy()){
             UNREACHABLE("Unsupported floating point type");
         } else {
@@ -464,7 +467,7 @@ llvm::GenericValue Executor::callStdLibFunction(const llvm::Function* F,
 
     }
 
-    return {};
+    return nothing();
 }
 
 #include "Util/unmacros.h"

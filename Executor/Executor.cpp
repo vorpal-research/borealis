@@ -21,8 +21,12 @@
 namespace borealis {
 
 
-Executor::Executor(llvm::Module *M, const llvm::DataLayout* TD, const llvm::TargetLibraryInfo* TLI):
-     TD(TD), TLI(TLI), Mem{ TD->getPointerABIAlignment(0) }
+Executor::Executor(
+    llvm::Module *M,
+    const llvm::DataLayout* TD,
+    const llvm::TargetLibraryInfo* TLI,
+    Arbiter::Ptr Aldaris):
+     TD{TD}, TLI{TLI}, IM{}, Judicator{ Aldaris }, Mem{ TD->getPointerABIAlignment(0) }
 {
     IM = &IntrinsicsManager::getInstance();
 }

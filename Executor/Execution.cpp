@@ -942,6 +942,8 @@ void Executor::exitCalled(GenericValue GV) {
     ECStack.clear();
     runAtExitHandlers();
     // TODO: implement exit()
+
+    TRACES() << "exit() called with code" << util::toString(GV.IntVal) << endl;
 }
 
 /// Pop the last stack frame off of ECStack and then copy the result
@@ -970,7 +972,7 @@ void Executor::popStackAndReturnValueToCaller(llvm::Type *RetTy,
         ExecutorContext &CallingSF = ECStack.back();
         if (Instruction *I = CallingSF.Caller.getInstruction()) {
             // Save result...
-            if (!CallingSF.Caller.getType()->isVoidTy())
+            if (RetTy && !CallingSF.Caller.getType()->isVoidTy())
                 SetValue(I, Result, CallingSF);
             if (InvokeInst *II = dyn_cast<InvokeInst> (I))
                 SwitchToNewBasicBlock (II->getNormalDest (), CallingSF);
@@ -2658,8 +2660,13 @@ GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
         return GenericValue{
             Mem.getPointerToGlobal(GV, TD->getTypeSizeInBits(GV->getType()->getPointerElementType()))
         };
+    } else if(auto gv = util::at(SF.Values, V)) {
+        for(auto&& val : gv) return val;
+    } else if(!V->getType()->isPointerTy()) {
+        // FIXME: call arbiter for the resque
+        UNREACHABLE("we need to implement executor arbitration for this to work");
     } else {
-        return SF.Values[V];
+        return llvm::GenericValue{ Mem.getOpaquePtr() };
     }
 }
 
@@ -2684,9 +2691,10 @@ void Executor::callFunction(Function *F,
 
     // Special handling for external functions.
     if (F->isDeclaration()) {
-        GenericValue Result = callExternalFunction (F, ArgVals);
+        auto Result = callExternalFunction (F, ArgVals);
         // Simulate a 'ret' instruction of the appropriate llvm::Type.
-        popStackAndReturnValueToCaller (F->getReturnType (), Result);
+        if(Result) popStackAndReturnValueToCaller (F->getReturnType (), Result.getUnsafe());
+        else popStackAndReturnValueToCaller(nullptr, {});
         return;
     }
 
@@ -2726,7 +2734,7 @@ void Executor::run() {
             if (!isa<CallInst>(I) && !isa<InvokeInst>(I) &&
                 I.getType() != llvm::Type::VoidTy) {
                 borealis::dbgs() << "  --> ";
-                const GenericValue &Val = SF.Values[&I];
+                const GenericValue &Val = SF.Values.at(&I);
                 switch (I.getType()->getTypeID()) {
                 default: UNREACHABLE("Invalid GenericValue llvm::Type");
                 case llvm::Type::VoidTyID:    borealis::dbgs() << "void"; break;
