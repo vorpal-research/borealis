@@ -39,8 +39,9 @@ public:
             RetVal.FloatVal = 0.0f;
         } else if(val->getType()->isDoubleTy()) {
             RetVal.DoubleVal = 0.0;
-        }
-        UNREACHABLE("unsupported type");
+        } else UNREACHABLE("unsupported type: " + util::toString(*val->getType()));
+
+        return RetVal;
     }
     virtual ~ZeroArbiter(){}
 };

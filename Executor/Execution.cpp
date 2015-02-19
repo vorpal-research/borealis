@@ -2663,8 +2663,7 @@ GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
     } else if(auto gv = util::at(SF.Values, V)) {
         for(auto&& val : gv) return val;
     } else if(!V->getType()->isPointerTy()) {
-        // FIXME: call arbiter for the resque
-        UNREACHABLE("we need to implement executor arbitration for this to work");
+        return Judicator->map(V);
     } else {
         return llvm::GenericValue{ Mem.getOpaquePtr() };
     }
