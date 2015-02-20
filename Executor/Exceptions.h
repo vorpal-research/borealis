@@ -8,6 +8,8 @@
 #ifndef EXECUTOR_EXCEPTIONS_H_
 #define EXECUTOR_EXCEPTIONS_H_
 
+#include <llvm/IR/Value.h>
+
 #include <exception>
 #include <stdexcept>
 
@@ -49,6 +51,21 @@ public:
     out_of_memory_exception(): memory_exception("Executor run out of available memory", nullptr) {};
 };
 
+class assertion_failed : public std::runtime_error {
+    const llvm::Value* value_;
+public:
+    const llvm::Value* getValue() const { return value_; };
+
+    assertion_failed(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{value}{};
+};
+
+class illegal_assumption : public std::runtime_error {
+    const llvm::Value* value_;
+public:
+    const llvm::Value* getValue() const { return value_; };
+
+    illegal_assumption(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{value}{};
+};
 
 } // namespace borealis
 
