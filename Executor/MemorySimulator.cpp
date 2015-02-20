@@ -14,6 +14,7 @@
 #include <tinyformat/tinyformat.h>
 
 #include "Executor/MemorySimulator.h"
+#include "Executor/Exceptions.h"
 #include "Util/util.h"
 #include "Config/config.h"
 
@@ -90,17 +91,17 @@ static void signalUnsupported(SimulatedPtr where) {
 
 static void signalIllegalFree(SimulatedPtr where) {
     TRACE_FUNC;
-    throw std::runtime_error("Illegal free() call at " + tfm::format("0x%x", where));
+    throw illegal_mem_free_exception(ptr_cast(where));
 }
 
 static void signalIllegalLoad(SimulatedPtr where) {
     TRACE_FUNC;
-    throw std::runtime_error("Memory read violation at " + tfm::format("0x%x", where));
+    throw illegal_mem_read_exception(ptr_cast(where));
 }
 
 static void signalIllegalStore(SimulatedPtr where) {
     TRACE_FUNC;
-    throw std::runtime_error("Memory write violation at " + tfm::format("0x%x", where));
+    throw illegal_mem_write_exception(ptr_cast(where));
 }
 
 static void signalInconsistency(const std::string& error) {
@@ -110,7 +111,7 @@ static void signalInconsistency(const std::string& error) {
 
 static void signalOutOfMemory(SimulatedPtrSize amount) {
     TRACE_FUNC;
-    throw std::runtime_error("Out of memory");
+    throw out_of_memory_exception{};
 }
 
 static SegmentNode::Ptr& force(SegmentNode::Ptr& t) {
