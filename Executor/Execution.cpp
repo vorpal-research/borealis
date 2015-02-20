@@ -1165,9 +1165,13 @@ void Executor::visitLoadInst(LoadInst &I) {
     TRACE_FUNC;
     // TODO
     ExecutorContext &SF = ECStack.back();
-    GenericValue SRC = getOperandValue(I.getPointerOperand(), SF);
+    GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
+    void* src = GVTOP(gsrc);
+
+    if(!Mem.IsLegalPointer(src)) return;
+
     GenericValue Result;
-    LoadValueFromMemory(Result, static_cast<const byte*>(GVTOP(SRC)), I.getType());
+    LoadValueFromMemory(Result, static_cast<const byte*>(src), I.getType());
     SetValue(&I, Result, SF);
 }
 
@@ -1177,8 +1181,12 @@ void Executor::visitStoreInst(StoreInst &I) {
 
     ExecutorContext &SF = ECStack.back();
     GenericValue Val = getOperandValue(I.getOperand(0), SF);
-    GenericValue SRC = getOperandValue(I.getPointerOperand(), SF);
-    StoreValueToMemory(Val, static_cast<byte*>(GVTOP(SRC)), I.getOperand(0)->getType());
+    GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
+    void* src = GVTOP(gsrc);
+
+    if(!Mem.IsLegalPointer(src)) throw std::logic_error("Cannot store to a symbolic location"); // FIXME
+
+    StoreValueToMemory(Val, static_cast<byte*>(src), I.getOperand(0)->getType());
 }
 
 //===----------------------------------------------------------------------===//
