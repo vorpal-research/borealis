@@ -463,7 +463,7 @@ void* MemorySimulator::getOpaquePtr() {
     return ptr_cast(pimpl_->unmeaningfulPtr);
 }
 
-bool MemorySimulator::IsLegalPointer(void* ptr) {
+bool MemorySimulator::isOpaquePointer(void* ptr) {
     TRACE_FUNC;
     return pimpl_->unmeaningfulPtr == ptr_cast(ptr);
 }

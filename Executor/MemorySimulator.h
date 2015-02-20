@@ -42,7 +42,7 @@ public:
     void* MallocMemory(size_t amount, MallocFill fillWith);
     void FreeMemory(void* ptr);
 
-    bool IsLegalPointer(void* ptr);
+    bool isOpaquePointer(void* ptr);
     void* getOpaquePtr();
 
     void* getPointerToFunction(llvm::Function* f, size_t size);

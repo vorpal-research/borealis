@@ -1168,7 +1168,7 @@ void Executor::visitLoadInst(LoadInst &I) {
     GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
     void* src = GVTOP(gsrc);
 
-    if(!Mem.IsLegalPointer(src)) return;
+    if(Mem.isOpaquePointer(src)) return;
 
     GenericValue Result;
     LoadValueFromMemory(Result, static_cast<const byte*>(src), I.getType());
@@ -1184,7 +1184,7 @@ void Executor::visitStoreInst(StoreInst &I) {
     GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
     void* src = GVTOP(gsrc);
 
-    if(!Mem.IsLegalPointer(src)) throw std::logic_error("Cannot store to a symbolic location"); // FIXME
+    if(Mem.isOpaquePointer(src)) throw std::logic_error("Cannot store to a symbolic location"); // FIXME
 
     StoreValueToMemory(Val, static_cast<byte*>(src), I.getOperand(0)->getType());
 }
