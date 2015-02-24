@@ -15,7 +15,7 @@
 
 #include <tinyformat/tinyformat.h>
 
-
+#include "Util/util.h"
 
 namespace borealis {
 
@@ -56,7 +56,7 @@ class assertion_failed : public std::runtime_error {
 public:
     const llvm::Value* getValue() const { return value_; };
 
-    assertion_failed(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{value}{};
+    assertion_failed(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{v}{};
 };
 
 class illegal_assumption : public std::runtime_error {
@@ -64,7 +64,7 @@ class illegal_assumption : public std::runtime_error {
 public:
     const llvm::Value* getValue() const { return value_; };
 
-    illegal_assumption(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{value}{};
+    illegal_assumption(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{v}{};
 };
 
 } // namespace borealis
