@@ -230,7 +230,7 @@ util::option<llvm::GenericValue> Executor::callStdLibFunction(
     }
 
     default:
-        for(auto&& f : util::at(stdLibArith(), fcode)) return just(f(ArgVals, F));
+        for(auto&& realFunction : util::at(stdLibArith(), fcode)) return just(realFunction(ArgVals, F));
         return nothing();
     }
 
