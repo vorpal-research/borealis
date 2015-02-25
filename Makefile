@@ -302,7 +302,7 @@ clean.yaml-cpp:
 .dbglog:
 	[[ -e $(DBGLOG_DIR)/Makefile ]] && $(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) distclean || true
 	cd $(DBGLOG_DIR); $(DBGLOG_DIR)/configure --prefix=$(DBGLOG_DIST)
-	$(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) install
+	unalias make && $(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) install
 	touch $@
 
 clean.dbglog:

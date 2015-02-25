@@ -76,17 +76,17 @@ maxElems = 80
 
 cog.outl('''\
 #define STATIC_STRING(S) \\
-    borealis::util::make_ss< \\\
+borealis::util::make_ss< \\\
 ''')
 cog.outl(\
 ',\\\n'.join(["borealis::util::at(S,%2d)"%i for i in range(maxElems)]) + " \\" \
 )
-cog.outl('''\
+cog.out('''\
 >
 ''')
 ]]]*/
 #define STATIC_STRING(S) \
-    borealis::util::make_ss< \
+borealis::util::make_ss< \
 borealis::util::at(S, 0),\
 borealis::util::at(S, 1),\
 borealis::util::at(S, 2),\
@@ -168,8 +168,8 @@ borealis::util::at(S,77),\
 borealis::util::at(S,78),\
 borealis::util::at(S,79) \
 >
-
 //[[[end]]]
+
 // XXX: change this to [[noreturn]] when mother..cking g++ supports it
 #define NORETURN __attribute__((noreturn))
 
@@ -186,6 +186,29 @@ borealis::util::at(S,79) \
 #define ON_SCOPE_EXIT(LAMBDA) \
     auto TOKENPASTE(local_scope_guard_packed_lambda, __LINE__) = [&](){ LAMBDA; }; \
     ::borealis::util::scope_guard<decltype(TOKENPASTE(local_scope_guard_packed_lambda, __LINE__))> TOKENPASTE(local_scope_guard, __LINE__) { TOKENPASTE(local_scope_guard_packed_lambda, __LINE__) };
+
+/*[[[cog
+import cog
+maxElems = 8
+
+for i in range(1, maxElems):
+    args = []
+    for j in range(1, 1 + i):
+        args.append("A{}".format(j))
+    cog.outl("#define {}({}) {}".format(
+        "NULLPTRIFY{}".format(i),
+        ", ".join(args),
+        ", ".join(["{}(nullptr)".format(arg) for arg in args])
+    ))
+]]]*/
+#define NULLPTRIFY1(A1) A1(nullptr)
+#define NULLPTRIFY2(A1, A2) A1(nullptr), A2(nullptr)
+#define NULLPTRIFY3(A1, A2, A3) A1(nullptr), A2(nullptr), A3(nullptr)
+#define NULLPTRIFY4(A1, A2, A3, A4) A1(nullptr), A2(nullptr), A3(nullptr), A4(nullptr)
+#define NULLPTRIFY5(A1, A2, A3, A4, A5) A1(nullptr), A2(nullptr), A3(nullptr), A4(nullptr), A5(nullptr)
+#define NULLPTRIFY6(A1, A2, A3, A4, A5, A6) A1(nullptr), A2(nullptr), A3(nullptr), A4(nullptr), A5(nullptr), A6(nullptr)
+#define NULLPTRIFY7(A1, A2, A3, A4, A5, A6, A7) A1(nullptr), A2(nullptr), A3(nullptr), A4(nullptr), A5(nullptr), A6(nullptr), A7(nullptr)
+//[[[end]]]
 
 #ifdef __clang__
 #define COMPILER clang

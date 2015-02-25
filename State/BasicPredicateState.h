@@ -48,6 +48,8 @@ public:
 
     virtual Loci getVisited() const override;
 
+    virtual PredicateState::Ptr fmap(FMapper f) const override;
+
     virtual PredicateState::Ptr map(Mapper m) const override;
     virtual PredicateState::Ptr filterByTypes(std::initializer_list<PredicateType> types) const override;
     virtual PredicateState::Ptr filter(Filterer f) const override;

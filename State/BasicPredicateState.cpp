@@ -72,6 +72,10 @@ PredicateState::Loci BasicPredicateState::getVisited() const {
     return loci;
 }
 
+PredicateState::Ptr BasicPredicateState::fmap(FMapper f) const {
+    return this->shared_from_this();
+}
+
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
     auto&& res = Uniquified();
     for (auto&& p : data) {
