@@ -140,7 +140,13 @@ llvm::GenericValue Executor::executeMemcpy(const llvm::Function* f, const std::v
 llvm::GenericValue Executor::executeMemset(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
 
-    return {};
+    Mem.Memset(
+        ArgVals.at(0).PointerVal,
+        static_cast<uint8_t>(ArgVals.at(1).IntVal.getLimitedValue()),
+        static_cast<size_t>(ArgVals.at(2).IntVal.getLimitedValue())
+    );
+
+    return ArgVals.at(0);
 }
 llvm::GenericValue Executor::executeMemmove(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC
