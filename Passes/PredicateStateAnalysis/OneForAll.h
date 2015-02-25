@@ -31,10 +31,11 @@ class OneForAll:
         public borealis::logging::ClassLevelLogging<OneForAll>,
         public ShouldBeLazyModularized {
 
-    typedef AbstractPredicateAnalysis::PhiBranch PhiBranch;
-    typedef AbstractPredicateAnalysis::TerminatorBranch TerminatorBranch;
+    using PhiBranch = AbstractPredicateAnalysis::PhiBranch;
+    using TerminatorBranch = AbstractPredicateAnalysis::TerminatorBranch;
 
-    typedef std::unordered_map<const llvm::BasicBlock*, PredicateState::Ptr> BasicBlockStates;
+    using BasicBlockStates = std::unordered_map<const llvm::BasicBlock*, PredicateState::Ptr>;
+    using PredicateAnalyses = std::list<AbstractPredicateAnalysis*>;
 
 public:
 
@@ -53,10 +54,10 @@ public:
 private:
 
     BasicBlockStates basicBlockStates;
-    std::list<AbstractPredicateAnalysis*> PA;
+    PredicateAnalyses PA;
 
-    FunctionManager* FM;
     llvm::DominatorTree* DT;
+    FunctionManager* FM;
     SourceLocationTracker* SLT;
 
     FactoryNest FN;
@@ -67,8 +68,8 @@ private:
 
     PredicateState::Ptr BBM(llvm::BasicBlock* BB);
     PredicateState::Ptr PM(const llvm::Instruction* I);
-    PredicateState::Ptr PPM(PhiBranch key);
-    PredicateState::Ptr TPM(TerminatorBranch key);
+    PredicateState::Ptr PPM(const PhiBranch& key);
+    PredicateState::Ptr TPM(const TerminatorBranch& key);
 
 };
 
