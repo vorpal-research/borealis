@@ -50,10 +50,11 @@ inline void* ptr_cast(SimulatedPtr vd) {
 struct SegmentNode {
     using Ptr = std::unique_ptr<SegmentNode>;
     enum class MemoryStatus{ Unallocated, Malloc, Alloca };
-    enum class MemoryState{ Zero, Uninit, Unknown };
+    enum class MemoryState{ Memset, Uninit, Unknown };
 
     MemoryStatus status = MemoryStatus::Unallocated;
     MemoryState state = MemoryState::Unknown;
+    uint8_t memSetTo = 255;
 
     ChunkType chunk = nullptr;
 
@@ -73,7 +74,7 @@ static const char* printStatus( SegmentNode::MemoryStatus st ) {
 
 static const char* printState( SegmentNode::MemoryState st ) {
     switch(st) {
-    case SegmentNode::MemoryState::Zero: return "Zero";
+    case SegmentNode::MemoryState::Memset: return "Memset";
     case SegmentNode::MemoryState::Uninit: return "Uninit";
     case SegmentNode::MemoryState::Unknown: return "Unknown";
     }
@@ -128,8 +129,14 @@ struct emptyTraverser {
 
 struct stateInvalidatingTraverser: emptyTraverser {
     void forceChildrenAndDeriveState(SegmentNode& t){
-        if(!t.left) force(t.left)->state = t.state;
-        if(!t.right) force(t.right)->state = t.state;
+        if(!t.left) {
+            force(t.left)->state = t.state;
+            t.left->memSetTo = t.memSetTo;
+        }
+        if(!t.right) {
+            force(t.right)->state = t.state;
+            t.right->memSetTo = t.memSetTo;
+        }
         t.state = SegmentNode::MemoryState::Unknown;
     }
 
@@ -151,7 +158,6 @@ struct SegmentTree {
     SimulatedPtr end;
     SimulatedPtrSize chunk_size;
     SegmentNode::Ptr root = nullptr;
-
 
 
     template<class Traverser>
@@ -229,6 +235,7 @@ struct SegmentTree {
                        ||(available == tree->chunk_size && size <= tree->chunk_size))) {
                     t->reallyAllocated = size;
                     t->state = state;
+                    if(state == SegmentNode::MemoryState::Memset) t->memSetTo = 0;
                     t->status = status;
                     TRACES() << "Allocated segment {" << tfm::format("0x%x", minbound)
                             << "," << tfm::format("0x%x", minbound + size) << "}" << endl;
@@ -319,11 +326,18 @@ struct SegmentTree {
         return traverse(where, traverser);
     }
 
-    inline std::pair<unsigned char*, SegmentNode::MemoryState> get(SimulatedPtr where) {
+    struct intervalState {
+        uint8_t* data;
+        SegmentNode::MemoryState memState;
+        uint8_t filledWith;
+    };
+
+    inline intervalState get(SimulatedPtr where) {
         TRACE_FUNC;
         struct loader: public emptyTraverser {
             uint8_t* ptr = nullptr;
             SegmentNode::MemoryState state = SegmentNode::MemoryState::Unknown;
+            uint8_t filledWith = 0xFF;
 
             void handleEmptyNode(SimulatedPtrSize where) {
                 TRACE_FUNC;
@@ -347,6 +361,7 @@ struct SegmentTree {
 
                 if(t->state != SegmentNode::MemoryState::Unknown) {
                     state = t->state;
+                    filledWith = t->memSetTo;
                     return true;
                 }
 
@@ -361,7 +376,8 @@ struct SegmentTree {
         } loadTraverser;
 
         traverse(where, loadTraverser);
-        return { loadTraverser.ptr, loadTraverser.state };
+
+        return { loadTraverser.ptr, loadTraverser.state, loadTraverser.filledWith };
     }
 
     inline void free(SimulatedPtr where, SegmentNode::MemoryStatus desiredStatus) {
@@ -394,6 +410,73 @@ struct SegmentTree {
         } liberator{desiredStatus};
 
         return traverse(where, liberator);
+    }
+
+    inline void memset(SimulatedPtr where, uint8_t fill, size_t size) {
+        TRACE_FUNC;
+
+        if(where < start || where >= end) signalIllegalStore(where);
+
+        struct memsetter: stateInvalidatingTraverser {
+            SimulatedPtr dest;
+            uint8_t fill;
+            size_t size;
+            memsetter(SimulatedPtr dest, uint8_t fill, size_t size):
+                dest(dest), fill(fill), size(size) {};
+
+            bool handlePath(SegmentTree* tree,
+                SimulatedPtrSize minbound,
+                SimulatedPtrSize maxbound,
+                SegmentNode::Ptr& t,
+                SimulatedPtrSize where) {
+                TRACE_FUNC;
+
+                TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+
+                auto available = maxbound - minbound;
+                auto mid = middle(minbound, maxbound);
+
+                TRACES() << "available: " << available << endl;
+                TRACES() << '{' << tfm::format("0x%x", minbound) << ',' << tfm::format("0x%x", maxbound)
+                         << ',' << printStatus(t->status) << ',' << printState(t->state) << '}' << endl;
+
+                if(t->state != SegmentNode::MemoryState::Unknown
+                   && (minbound <= dest)
+                   && (maxbound >= dest + size)) {
+                    t->state = SegmentNode::MemoryState::Memset;
+                    t->memSetTo = fill;
+                    return true;
+                } else if(available == tree->chunk_size && size == tree->chunk_size) {
+                    t->state = SegmentNode::MemoryState::Memset;
+                    t->memSetTo = fill;
+                    return true;
+                } else if(available == tree->chunk_size && size <= tree->chunk_size) {
+                    ASSERTC(where >= minbound);
+
+                    auto offset = where - minbound;
+                    ASSERTC(offset + size < maxbound);
+
+                    auto realDst = t->chunk.get() + offset;
+                    std::memset(realDst, fill, size);
+
+                    return true;
+                } else if(where < mid && where + size > mid) {
+                    auto leftChunkSize = mid - where;
+                    auto rightChunkSize = size - leftChunkSize;
+
+                    forceChildrenAndDeriveState(*t);
+
+                    memsetter left{ dest, fill, leftChunkSize };
+                    tree->traverse(where, left, t->left, minbound, mid);
+                    memsetter right{ dest + leftChunkSize, fill, rightChunkSize };
+                    tree->traverse(where, right, t->right, mid, maxbound);
+                } else return false;
+                return true;
+            }
+        } memsetter{ where, fill, size };
+
+        return traverse(where, memsetter);
+
     }
 };
 
@@ -545,7 +628,7 @@ void MemorySimulator::DeallocateMemory(void* ptr) {
 void* MemorySimulator::MallocMemory(SimulatedPtrSize amount, MallocFill fillWith) {
     TRACE_FUNC;
     const auto real_amount = calc_real_memory_amount(amount, pimpl_->tree.chunk_size);
-    const auto memState = (fillWith == MallocFill::ZERO) ? SegmentNode::MemoryState::Zero : SegmentNode::MemoryState::Uninit;
+    const auto memState = (fillWith == MallocFill::ZERO) ? SegmentNode::MemoryState::Memset : SegmentNode::MemoryState::Uninit;
 
     SimulatedPtr ptr;
     if(pimpl_->currentMallocOffset % real_amount == 0) {
@@ -595,12 +678,12 @@ auto MemorySimulator::LoadBytesFromMemory(mutable_buffer_t buffer, buffer_t wher
         }
 
         auto slice = buffer.slice(loaded, current_size);
-        if(current.second == SegmentNode::MemoryState::Zero) {
-            std::memset(slice.data(), 0, slice.size());
-        } else if(current.second == SegmentNode::MemoryState::Uninit) {
+        if(current.memState == SegmentNode::MemoryState::Memset) {
+            std::memset(slice.data(), current.filledWith, slice.size());
+        } else if(current.memState == SegmentNode::MemoryState::Uninit) {
             return ValueState::UNKNOWN;
         } else {
-            assign(slice, buffer_t{current.first, current_size});
+            assign(slice, buffer_t{current.data, current_size});
         }
 
         loaded += current_size;
@@ -670,14 +753,15 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     }
 
     auto&& load = pimpl_->tree.get(realPtr);
-    if(load.second == SegmentNode::MemoryState::Zero) {
-        return ValueState::CONCRETE; // val is already zero
-    } else if(load.second == SegmentNode::MemoryState::Uninit) {
+    uint8_t* Dst = reinterpret_cast<uint8_t*>(const_cast<uint64_t*>(val.getRawData()));
+    uint8_t* Src = load.data;
+
+    if(load.memState == SegmentNode::MemoryState::Memset) {
+        std::memset(Dst, load.filledWith , size);
+        return ValueState::CONCRETE;
+    } else if(load.memState == SegmentNode::MemoryState::Uninit) {
         return ValueState::UNKNOWN; // FIXME: implement uninit handling policy
     }
-
-    uint8_t* Dst = reinterpret_cast<uint8_t*>(const_cast<uint64_t*>(val.getRawData()));
-    uint8_t* Src = load.first;
 
     if(llvm::sys::IsLittleEndianHost)
         // Little-endian host - the source is ordered from LSB to MSB
@@ -702,6 +786,11 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     TRACES() << "Loaded value " << val.getLimitedValue() << endl;
     return ValueState::CONCRETE;
 }
+
+void MemorySimulator::Memset(void* dst, uint8_t fill, size_t size) {
+    pimpl_->tree.memset(ptr_cast(dst), fill, size);
+}
+
 
 MemorySimulator::MemorySimulator(SimulatedPtrSize grain) : pimpl_{new Impl{grain}} {}
 

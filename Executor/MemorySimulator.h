@@ -42,6 +42,8 @@ public:
     void* MallocMemory(size_t amount, MallocFill fillWith);
     void FreeMemory(void* ptr);
 
+    void Memset(void* dst, uint8_t fill, size_t size);
+
     bool isOpaquePointer(void* ptr);
     void* getOpaquePtr();
 
