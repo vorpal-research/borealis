@@ -50,7 +50,7 @@ static std::vector<std::string> LongTestFiles(const std::string& dir) {
 
 
 
-class WrapperTest : public ::testing::TestWithParam<std::string> {
+class TassadarTest : public ::testing::TestWithParam<std::string> {
 public:
     virtual void SetUp() {
         inputF = GetParam();
@@ -67,7 +67,7 @@ protected:
 
 
 
-TEST_P(WrapperTest, basic) {
+TEST_P(TassadarTest, basic) {
 
     std::vector<std::string> additionalArgs;
 
@@ -79,9 +79,8 @@ TEST_P(WrapperTest, basic) {
     }
 
     int res = Runner("wrapper")
-        .withArg("---config:wrapper.tests.conf")
-        .withArg("---output:dump-output:json")
-        .withArg("---output:dump-output-file:" + actualF)
+        .withArg("---config:wrapper.tassadar.conf")
+        .withArg("---output:tassadar-output-file:" + actualF)
         .withArgs(additionalArgs)
         .withArg(inputF)
         .run();
@@ -114,30 +113,14 @@ std::string GetTestName(const std::string& param) {
     return slash == std::string::npos ? param : param.substr(slash + 1);
 }
 
-INSTANTIATE_NAMED_TEST_CASE_P(Aegis, WrapperTest,
-    ::testing::ValuesIn(ShortTestFiles("test/testcases/aegis")), GetTestName);
-INSTANTIATE_NAMED_TEST_CASE_P(AegisLong, WrapperTest,
-    ::testing::ValuesIn(LongTestFiles("test/testcases/aegis")), GetTestName);
 
-INSTANTIATE_NAMED_TEST_CASE_P(Contracts, WrapperTest,
-    ::testing::ValuesIn(ShortTestFiles("test/testcases/contracts")), GetTestName);
-INSTANTIATE_NAMED_TEST_CASE_P(ContractsLong, WrapperTest,
-    ::testing::ValuesIn(LongTestFiles("test/testcases/contracts")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(Tassadar, TassadarTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/tassadar")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(TassadarLong, TassadarTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/tassadar")), GetTestName);
 
-INSTANTIATE_NAMED_TEST_CASE_P(Misc, WrapperTest,
-    ::testing::ValuesIn(ShortTestFiles("test/testcases/misc")), GetTestName);
-INSTANTIATE_NAMED_TEST_CASE_P(MiscLong, WrapperTest,
-    ::testing::ValuesIn(LongTestFiles("test/testcases/misc")), GetTestName);
 
-INSTANTIATE_NAMED_TEST_CASE_P(Necla, WrapperTest,
-    ::testing::ValuesIn(ShortTestFiles("test/testcases/necla")), GetTestName);
-INSTANTIATE_NAMED_TEST_CASE_P(NeclaLong, WrapperTest,
-    ::testing::ValuesIn(LongTestFiles("test/testcases/necla")), GetTestName);
 
-INSTANTIATE_NAMED_TEST_CASE_P(Summary, WrapperTest,
-    ::testing::ValuesIn(ShortTestFiles("test/testcases/summary")), GetTestName);
-INSTANTIATE_NAMED_TEST_CASE_P(SummaryLong, WrapperTest,
-    ::testing::ValuesIn(LongTestFiles("test/testcases/summary")), GetTestName);
 
 //INSTANTIATE_TEST_CASE_P(SvComp, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/svcomp")));
 //INSTANTIATE_TEST_CASE_P(SvCompLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/svcomp")));

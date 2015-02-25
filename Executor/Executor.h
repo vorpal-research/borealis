@@ -10,6 +10,7 @@
 
 #include "Executor/MemorySimulator.h"
 
+#include <unordered_map>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/IR/CallSite.h>
@@ -21,6 +22,7 @@
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "Executor/Arbiter.h"
 #include "Codegen/intrinsics_manager.h"
 
 namespace borealis {
@@ -33,7 +35,7 @@ struct ExecutorContext {
     llvm::BasicBlock::iterator  CurInst;    // The next instruction to execute
     llvm::CallSite              Caller;     // Holds the call that called subframes.
     // NULL if main func or debugger invoked fn
-    std::map<llvm::Value*, llvm::GenericValue> Values; // LLVM values used in this invocation
+    std::unordered_map<llvm::Value*, llvm::GenericValue> Values; // LLVM values used in this invocation
     std::vector<llvm::GenericValue> VarArgs; // Values passed through an ellipsis
     AllocaHolder Allocas;            // Track memory allocated by alloca
 
@@ -62,6 +64,7 @@ class Executor : public llvm::InstVisitor<Executor> {
     const llvm::DataLayout* TD;
     const llvm::TargetLibraryInfo* TLI;
     IntrinsicsManager* IM;
+    Arbiter::Ptr Judicator;
 
     // The runtime stack of executing code.  The top of the stack is the current
     // llvm::Function record.
@@ -75,7 +78,11 @@ class Executor : public llvm::InstVisitor<Executor> {
 
 
 public:
-    explicit Executor(llvm::Module *M,  const llvm::DataLayout* TD, const llvm::TargetLibraryInfo* TLI);
+    explicit Executor(
+        llvm::Module *M,
+        const llvm::DataLayout* TD,
+        const llvm::TargetLibraryInfo* TLI,
+        Arbiter::Ptr Aldaris);
     ~Executor();
 
     const llvm::DataLayout* getDataLayout() const { return TD; }
@@ -153,8 +160,10 @@ public:
         throw std::logic_error("Instruction not interpretable yet!");
     }
 
-    llvm::GenericValue callExternalFunction(llvm::Function *F,
-        const std::vector<llvm::GenericValue> &ArgVals);
+    util::option<llvm::GenericValue> callExternalFunction(
+        llvm::Function *F,
+        const std::vector<llvm::GenericValue> &ArgVals
+    );
     void exitCalled(llvm::GenericValue GV);
 
     void addAtExitHandler(llvm::Function *F) {
@@ -166,6 +175,11 @@ public:
     }
 
 private:  // Helper functions
+    util::option<llvm::GenericValue> callStdLibFunction(
+        const llvm::Function* F,
+        const std::vector<llvm::GenericValue>& ArgVals
+    );
+
     llvm::GenericValue executeGEPOperation(llvm::Value *Ptr, llvm::gep_type_iterator I,
         llvm::gep_type_iterator E, ExecutorContext &SF);
 

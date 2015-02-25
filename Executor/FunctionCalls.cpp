@@ -5,21 +5,29 @@
  *      Author: belyaev
  */
 #include "Executor/Executor.h"
-
-using namespace borealis;
-
 #include "Logging/tracer.hpp"
 #include "Codegen/intrinsics.h"
-
 #include "Config/config.h"
 
+#include <cmath>
+
+#include <llvm/Target/TargetLibraryInfo.h>
+
+using namespace borealis;
 using namespace borealis::config;
 
 static ConfigEntry<int> MemcpyThreshold{"executor", "memcpy-exec-factor"};
 
-#include <llvm/Target/TargetLibraryInfo.h>
-
 namespace lfn = llvm::LibFunc;
+
+#include "Util/macros.h"
+
+static bool isStdLib(const llvm::Function* F, const llvm::TargetLibraryInfo* TLI) {
+    TRACE_FUNC
+
+    lfn::Func f;
+    return TLI->getLibFunc(F->getName(), f);
+}
 
 static bool isMalloc(const llvm::Function* F, const llvm::TargetLibraryInfo* TLI) {
     TRACE_FUNC
@@ -105,6 +113,9 @@ llvm::GenericValue Executor::executeRealloc(const llvm::Function* f, const std::
 llvm::GenericValue Executor::executeFree(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
     // TODO
+
+    Mem.FreeMemory(ArgVals[0].PointerVal);
+
     return {};
 }
 llvm::GenericValue Executor::executeMemcpy(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
@@ -136,14 +147,106 @@ llvm::GenericValue Executor::executeMemmove(const llvm::Function* f, const std::
     return executeMemcpy(f, ArgVals);
 }
 
+static llvm::GenericValue runSqrt(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+    llvm::GenericValue RetVal;
+    if(f->getReturnType()->isFloatTy()) {
+        RetVal.FloatVal = std::sqrt(ArgVals.back().FloatVal);
+    } else if(f->getReturnType()->isDoubleTy()) {
+        RetVal.DoubleVal = std::sqrt(ArgVals.back().DoubleVal);
+    } else if(f->getReturnType()->isFloatingPointTy()){
+        UNREACHABLE("Unsupported floating point type");
+    } else {
+        ASSERTC(f->getReturnType()->isIntegerTy())
+        RetVal.IntVal = ArgVals.back().IntVal.sqrt();
+    }
+    return RetVal;
+}
+
+template<class F>
+static llvm::GenericValue runFloatMath(F code, const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+    llvm::GenericValue RetVal;
+    if(f->getReturnType()->isFloatTy()) {
+        RetVal.FloatVal = code(ArgVals.back().FloatVal);
+    } else if(f->getReturnType()->isDoubleTy()) {
+        RetVal.DoubleVal = code(ArgVals.back().DoubleVal);
+    } else if(f->getReturnType()->isFloatingPointTy()){
+        UNREACHABLE("Unsupported floating point type");
+    } else {
+        UNREACHABLE("Unsupported type");
+    }
+    return RetVal;
+}
+
+static llvm::GenericValue runFMA(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+    auto fma = [](auto&& a, auto&& b, auto&& c) { return a * b + c; };
+    llvm::GenericValue RetVal;
+    if(f->getReturnType()->isFloatTy()) {
+        RetVal.FloatVal = fma(ArgVals[0].FloatVal, ArgVals[1].FloatVal, ArgVals[2].FloatVal);
+    } else if(f->getReturnType()->isDoubleTy()) {
+        RetVal.DoubleVal = fma(ArgVals[0].DoubleVal, ArgVals[1].DoubleVal, ArgVals[2].DoubleVal);
+    } else if(f->getReturnType()->isFloatingPointTy()){
+        UNREACHABLE("Unsupported floating point type");
+    } else {
+        UNREACHABLE("Unsupported type");
+    }
+    return RetVal;
+}
+
+static llvm::GenericValue runpow(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+    auto fma = [](auto&& a, auto&& b) { return std::pow(a, b); };
+    llvm::GenericValue RetVal;
+    if(f->getReturnType()->isFloatTy()) {
+        RetVal.FloatVal = fma(ArgVals[0].FloatVal, ArgVals[1].FloatVal);
+    } else if(f->getReturnType()->isDoubleTy()) {
+        RetVal.DoubleVal = fma(ArgVals[0].DoubleVal, ArgVals[1].DoubleVal);
+    } else if(f->getReturnType()->isFloatingPointTy()){
+        UNREACHABLE("Unsupported floating point type");
+    } else {
+        UNREACHABLE("Unsupported type");
+    }
+    return RetVal;
+}
+
+static llvm::GenericValue runpowi(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+    auto fma = [](auto&& a, auto&& b) { return std::pow(a, b); };
+    llvm::GenericValue RetVal;
+    if(f->getReturnType()->isFloatTy()) {
+        RetVal.FloatVal = fma(ArgVals[0].FloatVal, ArgVals[1].IntVal.getLimitedValue());
+    } else if(f->getReturnType()->isDoubleTy()) {
+        RetVal.DoubleVal = fma(ArgVals[0].DoubleVal, ArgVals[1].IntVal.getLimitedValue());
+    } else if(f->getReturnType()->isFloatingPointTy()){
+        UNREACHABLE("Unsupported floating point type");
+    } else {
+        UNREACHABLE("Unsupported type");
+    }
+    return RetVal;
+}
+
+template<class F>
+static llvm::GenericValue runIntegralWithOverflow(
+        F code,
+        const llvm::Function* f,
+        const std::vector<llvm::GenericValue> &ArgVals) {
+    llvm::GenericValue RetVal;
+    bool overflow = false;
+    auto res = code(ArgVals[0].IntVal, ArgVals[1].IntVal, overflow);
+    RetVal.AggregateVal.emplace_back();
+    RetVal.AggregateVal.emplace_back();
+    RetVal.AggregateVal[0].IntVal = res;
+    RetVal.AggregateVal[1].IntVal = llvm::APInt{ 1, overflow };
+    return RetVal;
+}
 
 
-llvm::GenericValue Executor::callExternalFunction(
+util::option<llvm::GenericValue> Executor::callExternalFunction(
     llvm::Function *F,
     const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
+    using util::just;
+    using util::nothing;
+
     // TODO
-#define CHECK_AND_EXEC(NAME) if(is ## NAME(F, TLI)) return execute ## NAME (F, ArgVals);
+#define CHECK_AND_EXEC(NAME) if(is ## NAME(F, TLI)) return just(execute ## NAME (F, ArgVals));
     CHECK_AND_EXEC(Malloc)
     CHECK_AND_EXEC(Calloc)
     CHECK_AND_EXEC(Realloc)
@@ -156,22 +259,74 @@ llvm::GenericValue Executor::callExternalFunction(
     if(IM->getIntrinsicType(F) == function_type::INTRINSIC_MALLOC) {
         std::vector<llvm::GenericValue> adjustedArgs;
         adjustedArgs.push_back(ArgVals[2]);
-        return executeMalloc(F, adjustedArgs);
+        return just(executeMalloc(F, adjustedArgs));
     }
 
     llvm::GenericValue RetVal;
 
     if(IM->getIntrinsicType(F) == function_type::INTRINSIC_ALLOC) {
         RetVal.PointerVal = Mem.AllocateMemory(ArgVals[2].IntVal.getLimitedValue());
-        return RetVal;
+        return just(RetVal);
     }
+    // LLVM intrinsics
+
+#define GENERATE_STD(FNAME) \
+    case llvm::Intrinsic:: FNAME : \
+        return just(runFloatMath(LAM(v, std :: FNAME (v)), F, ArgVals));
+
+#define GENERATE_INTEGRAL_WITH_OV(INTR) \
+    case llvm::Intrinsic:: INTR ## _with_overflow : \
+        return just(runIntegralWithOverflow([](auto&& lhv, auto&& rhv, bool& ov){ \
+            return lhv . INTR ## _ov (rhv, ov); \
+        }, F, ArgVals));
+
     switch(F->getIntrinsicID()) {
-    case llvm::Intrinsic::sqrt:
-        RetVal.IntVal = ArgVals[0].IntVal.sqrt();
-        return RetVal;
+    default:
+        UNREACHABLE("Tassadar: unsupported llvm intrinsic");
+        break;
+    case llvm::Intrinsic::not_intrinsic:
+        break;
+
+    case llvm::Intrinsic::bswap:
+        RetVal.IntVal = ArgVals.back().IntVal.byteSwap();
+        return just(RetVal);
+    case llvm::Intrinsic::fma:
+    case llvm::Intrinsic::fmuladd:
+        return just(runFMA(F, ArgVals));
+    case llvm::Intrinsic::pow:
+        return just(runpow(F, ArgVals));
+    case llvm::Intrinsic::powi:
+        return just(runpowi(F, ArgVals));
+
+    GENERATE_STD(ceil)
+    GENERATE_STD(cos)
+    GENERATE_STD(exp)
+    GENERATE_STD(exp2)
+    GENERATE_STD(fabs)
+    GENERATE_STD(floor)
+    GENERATE_STD(log)
+    GENERATE_STD(log10)
+    GENERATE_STD(log2)
+    GENERATE_STD(sin)
+    GENERATE_STD(sqrt)
+    GENERATE_STD(trunc)
+    GENERATE_STD(nearbyint)
+
+    GENERATE_INTEGRAL_WITH_OV(sadd)
+    GENERATE_INTEGRAL_WITH_OV(smul)
+    GENERATE_INTEGRAL_WITH_OV(ssub)
+    GENERATE_INTEGRAL_WITH_OV(uadd)
+    GENERATE_INTEGRAL_WITH_OV(umul)
+    GENERATE_INTEGRAL_WITH_OV(usub)
     }
 
-    return llvm::GenericValue{};
+#undef GENERATE_STD
+#undef GENERATE_INTEGRAL_WITH_OV
+
+    {
+        if(isStdLib(F, TLI)) return callStdLibFunction(F , ArgVals);
+    }
+    return nothing();
 }
 
-
+#include "Util/unmacros.h"

@@ -942,6 +942,8 @@ void Executor::exitCalled(GenericValue GV) {
     ECStack.clear();
     runAtExitHandlers();
     // TODO: implement exit()
+
+    TRACES() << "exit() called with code" << util::toString(GV.IntVal) << endl;
 }
 
 /// Pop the last stack frame off of ECStack and then copy the result
@@ -970,7 +972,7 @@ void Executor::popStackAndReturnValueToCaller(llvm::Type *RetTy,
         ExecutorContext &CallingSF = ECStack.back();
         if (Instruction *I = CallingSF.Caller.getInstruction()) {
             // Save result...
-            if (!CallingSF.Caller.getType()->isVoidTy())
+            if (RetTy && !CallingSF.Caller.getType()->isVoidTy())
                 SetValue(I, Result, CallingSF);
             if (InvokeInst *II = dyn_cast<InvokeInst> (I))
                 SwitchToNewBasicBlock (II->getNormalDest (), CallingSF);
@@ -1163,9 +1165,13 @@ void Executor::visitLoadInst(LoadInst &I) {
     TRACE_FUNC;
     // TODO
     ExecutorContext &SF = ECStack.back();
-    GenericValue SRC = getOperandValue(I.getPointerOperand(), SF);
+    GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
+    void* src = GVTOP(gsrc);
+
+    if(Mem.isOpaquePointer(src)) return;
+
     GenericValue Result;
-    LoadValueFromMemory(Result, static_cast<const byte*>(GVTOP(SRC)), I.getType());
+    LoadValueFromMemory(Result, static_cast<const byte*>(src), I.getType());
     SetValue(&I, Result, SF);
 }
 
@@ -1175,8 +1181,12 @@ void Executor::visitStoreInst(StoreInst &I) {
 
     ExecutorContext &SF = ECStack.back();
     GenericValue Val = getOperandValue(I.getOperand(0), SF);
-    GenericValue SRC = getOperandValue(I.getPointerOperand(), SF);
-    StoreValueToMemory(Val, static_cast<byte*>(GVTOP(SRC)), I.getOperand(0)->getType());
+    GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
+    void* src = GVTOP(gsrc);
+
+    if(Mem.isOpaquePointer(src)) throw std::logic_error("Cannot store to a symbolic location"); // FIXME
+
+    StoreValueToMemory(Val, static_cast<byte*>(src), I.getOperand(0)->getType());
 }
 
 //===----------------------------------------------------------------------===//
@@ -1185,10 +1195,21 @@ void Executor::visitStoreInst(StoreInst &I) {
 
 void Executor::visitCallSite(CallSite CS) {
     TRACE_FUNC;
+
     ExecutorContext &SF = ECStack.back();
 
     // Check to see if this is an intrinsic function call...
     Function *F = CS.getCalledFunction();
+
+    if(F && F->isDeclaration()) {
+        switch(IM->getIntrinsicType(F)) {
+        case function_type::INTRINSIC_MALLOC:
+        case function_type::INTRINSIC_ALLOC:
+            break;
+        default: // FIXME: process annotation-related intrinsics when we start checking annotations
+            return;
+        }
+    }
 
     SF.Caller = CS;
     std::vector<GenericValue> ArgVals;
@@ -1214,6 +1235,8 @@ void Executor::visitCallSite(CallSite CS) {
             return;
         }
         case Intrinsic::vaend:    // va_end is a noop for the interpreter
+        case Intrinsic::dbg_declare:
+        case Intrinsic::dbg_value:
             return;
         case Intrinsic::vacopy:   // va_copy: dest = src
             SetValue(CS.getInstruction(), getOperandValue(*CS.arg_begin(), SF), SF);
@@ -1222,12 +1245,6 @@ void Executor::visitCallSite(CallSite CS) {
         case Intrinsic::memcpy:
         case Intrinsic::memmove:
             break;
-            // FIXME: implement these guys
-
-            // If it is an unknown intrinsic function, use the intrinsic lowering
-            // class to transform it into hopefully tasty LLVM code.
-            //
-            // fallthrough for a reason!
         }
 
     if(!F) {
@@ -2651,8 +2668,12 @@ GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
         return GenericValue{
             Mem.getPointerToGlobal(GV, TD->getTypeSizeInBits(GV->getType()->getPointerElementType()))
         };
+    } else if(auto gv = util::at(SF.Values, V)) {
+        for(auto&& val : gv) return val;
+    } else if(!V->getType()->isPointerTy()) {
+        return Judicator->map(V);
     } else {
-        return SF.Values[V];
+        return llvm::GenericValue{ Mem.getOpaquePtr() };
     }
 }
 
@@ -2677,9 +2698,10 @@ void Executor::callFunction(Function *F,
 
     // Special handling for external functions.
     if (F->isDeclaration()) {
-        GenericValue Result = callExternalFunction (F, ArgVals);
+        auto Result = callExternalFunction (F, ArgVals);
         // Simulate a 'ret' instruction of the appropriate llvm::Type.
-        popStackAndReturnValueToCaller (F->getReturnType (), Result);
+        if(Result) popStackAndReturnValueToCaller (F->getReturnType (), Result.getUnsafe());
+        else popStackAndReturnValueToCaller(nullptr, {});
         return;
     }
 
@@ -2719,7 +2741,7 @@ void Executor::run() {
             if (!isa<CallInst>(I) && !isa<InvokeInst>(I) &&
                 I.getType() != llvm::Type::VoidTy) {
                 borealis::dbgs() << "  --> ";
-                const GenericValue &Val = SF.Values[&I];
+                const GenericValue &Val = SF.Values.at(&I);
                 switch (I.getType()->getTypeID()) {
                 default: UNREACHABLE("Invalid GenericValue llvm::Type");
                 case llvm::Type::VoidTyID:    borealis::dbgs() << "void"; break;

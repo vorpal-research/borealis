@@ -55,6 +55,7 @@ struct is_using_llvm_output {
             std::is_base_of<llvm::Twine, T>::value ||
             std::is_base_of<llvm::Module, T>::value ||
             std::is_base_of<llvm::Pass, T>::value ||
+            std::is_base_of<llvm::APInt, T>::value ||
             std::is_base_of<llvm::SCEV, T>::value
     };
 };

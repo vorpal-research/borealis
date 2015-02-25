@@ -24,6 +24,10 @@ std::string getCalledFunctionName(const llvm::CallInst& ci) {
     return F->hasName() ? F->getName() : "";
 }
 
+static llvm::StringRef getFunctionName(const llvm::Function& F) {
+    return F.hasName() ? F.getName() : "";
+}
+
 static RegisterIntrinsic INTRINSIC_PTR_VERSION {
     function_type::INTRINSIC_PTR_VERSION,
     "ptrver",
@@ -155,8 +159,8 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
                    );
         }
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
-        auto name = getCalledFunctionName(ci);
+    [](const IntrinsicsManager&, const llvm::Function& f) -> function_type {
+        auto name = getFunctionName(f);
         return name == "borealis_assert"
                ? function_type::BUILTIN_BOR_ASSERT
                : function_type::UNKNOWN;
@@ -189,8 +193,8 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
                    );
         }
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
-        auto name = getCalledFunctionName(ci);
+    [](const IntrinsicsManager&, const llvm::Function& f) -> function_type {
+        auto name = getFunctionName(f);
         return name == "borealis_assume"
                ? function_type::BUILTIN_BOR_ASSUME
                : function_type::UNKNOWN;
@@ -201,8 +205,8 @@ static RegisterIntrinsic ACTION_DEFECT {
     function_type::ACTION_DEFECT,
     "borealis_action_defect",
     RegisterIntrinsic::DefaultGenerator,
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
-        auto name = getCalledFunctionName(ci);
+    [](const IntrinsicsManager&, const llvm::Function& f) -> function_type {
+        auto name = getFunctionName(f);
         return name == "borealis_action_defect"
                ? function_type::ACTION_DEFECT
                : function_type::UNKNOWN;
@@ -232,8 +236,8 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
                    )
                );
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
-        auto name = getCalledFunctionName(ci);
+    [](const IntrinsicsManager&, const llvm::Function& f) -> function_type {
+        auto name = getFunctionName(f);
         return name == "borealis_get_property"
                ? function_type::BUILTIN_BOR_GETPROP
                : function_type::UNKNOWN;
@@ -261,8 +265,8 @@ static RegisterIntrinsic BUILTIN_BOR_SETPROP {
                    FN.Term->getArgumentTerm(value)
                );
     },
-    [](const IntrinsicsManager&, const llvm::CallInst& ci) -> function_type {
-        auto name = getCalledFunctionName(ci);
+    [](const IntrinsicsManager&, const llvm::Function& f) -> function_type {
+        auto name = getFunctionName(f);
         return name == "borealis_set_property"
                ? function_type::BUILTIN_BOR_SETPROP
                : function_type::UNKNOWN;

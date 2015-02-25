@@ -27,7 +27,7 @@ class IntrinsicsManager {
 public:
 
     typedef std::function<PredicateState::Ptr(llvm::Function*, FactoryNest)> state_generator;
-    typedef std::function<function_type(const IntrinsicsManager&, const llvm::CallInst&)> type_resolver;
+    typedef std::function<function_type(const IntrinsicsManager&, const llvm::Function&)> type_resolver;
 
     struct IntrinsicInfo {
         function_type type;
@@ -89,17 +89,18 @@ private:
 
     typedef std::unordered_map< std::tuple<function_type, llvm::FunctionType*, llvm::Module*>, llvm::Function*> typed_intrinsics_cache;
     typedef std::unordered_map< std::string, function_type > function_name_cache;
-    typedef std::unordered_map<llvm::Function*, function_type> function_type_cache;
+    typedef std::unordered_map<const llvm::Function*, function_type> function_type_cache;
     typedef std::unordered_map<function_type, IntrinsicInfo> intrinsic_info_cache;
     typedef std::list<type_resolver> type_resolvers;
 
     typed_intrinsics_cache intrinsics_cache;
     function_name_cache name_cache;
-    function_type_cache type_cache;
+    mutable function_type_cache type_cache;
     intrinsic_info_cache info_cache;
 
-    static function_type default_resolver(const IntrinsicsManager& m, const llvm::CallInst& CI) {
-        return m.getIntrinsicType(CI.getCalledFunction());
+    static function_type default_resolver(const IntrinsicsManager& m, const llvm::Function& f) {
+        function_type unknown = function_type::UNKNOWN;
+        return util::at(m.type_cache, &f).getOrElse(unknown);
     };
 
     type_resolvers resolvers {
