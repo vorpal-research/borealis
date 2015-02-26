@@ -167,6 +167,13 @@ struct SegmentTree {
     }
 
     template<class Traverser>
+    void traverse(SimulatedPtr where, Traverser&& theTraverser) {
+        TRACE_FUNC;
+        auto tmpTraverser = std::move(theTraverser);
+        return traverse<Traverser>(where, tmpTraverser, root, start, end);
+    }
+
+    template<class Traverser>
     void traverse(
             SimulatedPtr where,
             Traverser& theTraverser,
@@ -412,7 +419,7 @@ struct SegmentTree {
         return traverse(where, liberator);
     }
 
-    inline void memset(SimulatedPtr where, uint8_t fill, size_t size) {
+    inline void memset(SimulatedPtr where, uint8_t fill, SimulatedPtrSize size) {
         TRACE_FUNC;
 
         if(where < start || where >= end) signalIllegalStore(where);
@@ -420,8 +427,8 @@ struct SegmentTree {
         struct memsetter: stateInvalidatingTraverser {
             SimulatedPtr dest;
             uint8_t fill;
-            size_t size;
-            memsetter(SimulatedPtr dest, uint8_t fill, size_t size):
+            SimulatedPtrSize size;
+            memsetter(SimulatedPtr dest, uint8_t fill, SimulatedPtrSize size):
                 dest(dest), fill(fill), size(size) {};
 
             bool handlePath(SegmentTree* tree,
@@ -478,6 +485,95 @@ struct SegmentTree {
         return traverse(where, memsetter);
 
     }
+
+    inline void memmove(SimulatedPtr src, SimulatedPtr dst, SimulatedPtrSize sz) {
+
+        struct intervalInfo {
+            uint8_t* data;
+            SegmentNode::MemoryState memState;
+            uint8_t filledWith;
+
+            SimulatedPtr start;
+            SimulatedPtr end;
+
+            intervalInfo(uint8_t *data, SegmentNode::MemoryState memState, uint8_t filledWith, SimulatedPtr start, SimulatedPtr end)
+                    : data(data), memState(memState), filledWith(filledWith), start(start), end(end) {
+            }
+        };
+
+        struct intervalCollector: emptyTraverser {
+            SimulatedPtr src;
+            SimulatedPtrSize sz;
+            std::vector<intervalInfo>* path;
+
+            intervalCollector(SimulatedPtr src, SimulatedPtrSize sz, std::vector<intervalInfo> *path)
+                    : src(src), sz(sz), path(path) {
+            }
+
+            void handleEmptyNode(SimulatedPtrSize where) {
+                TRACE_FUNC;
+                signalIllegalLoad(where);
+            }
+
+            bool handlePath(
+                SegmentTree* tree,
+                SimulatedPtrSize minbound,
+                SimulatedPtrSize maxbound,
+                SegmentNode::Ptr& t,
+                SimulatedPtrSize where
+            ) {
+                TRACE_FUNC;
+                TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+
+                auto available = maxbound - minbound;
+                auto mid = middle(minbound, maxbound);
+
+                TRACES() << "available: " << available << endl;
+                TRACES() << '{' << tfm::format("0x%x", minbound) << ',' << tfm::format("0x%x", maxbound)
+                         << ',' << printStatus(t->status) << ',' << printState(t->state) << '}' << endl;
+
+                if(t->state != SegmentNode::MemoryState::Unknown) {
+                    path->emplace_back(
+                        nullptr,
+                        t->state,
+                        t->memSetTo,
+                        std::max(minbound, where),
+                        std::min(maxbound, where + sz)
+                    );
+                } else if(available == tree->chunk_size) {
+                    auto startOffset = where - minbound;
+
+                    path->emplace_back(
+                        t->chunk.get() + startOffset,
+                        SegmentNode::MemoryState::Unknown,
+                        0,
+                        std::max(minbound, where),
+                        std::min(maxbound, where + sz)
+                    );
+                } else if(where < mid && (where + sz) > mid) {
+                    auto leftChunkSize = mid - where;
+                    auto rightChunkSize = sz - leftChunkSize;
+
+                    intervalCollector left{ src, leftChunkSize, path };
+                    tree->traverse(where, left, t->left, minbound, mid);
+                    intervalCollector right{ src + leftChunkSize, rightChunkSize, path };
+                    tree->traverse(where, right, t->right, mid, maxbound);
+                } else return false;
+
+                return true;
+            }
+        };
+
+        std::vector<intervalInfo> sourceInterval;
+        std::vector<intervalInfo> destinationInterval;
+
+        traverse(src, intervalCollector{ src, sz, &sourceInterval });
+        traverse(src, intervalCollector{ dst, sz, &destinationInterval });
+
+
+
+    }
+
 };
 
 struct MemorySimulator::Impl {
