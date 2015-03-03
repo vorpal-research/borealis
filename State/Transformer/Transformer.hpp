@@ -26,8 +26,11 @@ namespace borealis {
 template<class SubClass>
 class Transformer {
 
+#define CALL(CLASS, WHAT) \
+    static_cast<SubClass*>(this)->transform##CLASS(WHAT)
+
 #define DELEGATE(CLASS, WHAT) \
-    return static_cast<SubClass*>(this)->transform##CLASS(WHAT)
+    return CALL(CLASS, WHAT)
 
 #define HANDLE_STATE(NAME, CLASS) friend class CLASS;
 #include "State/PredicateState.def"
@@ -67,7 +70,7 @@ public:
 public:
 
     PredicateState::Ptr transform(PredicateState::Ptr ps) {
-        DELEGATE(Base, ps);
+        return CALL(Base, ps)->map([&](auto&& e) { return this->transform(e); });
     }
 
 protected:
@@ -91,8 +94,7 @@ protected:
 #define HANDLE_STATE(NAME, CLASS) \
     using CLASS##Ptr = std::shared_ptr<const CLASS>; \
     PredicateState::Ptr transform##NAME(CLASS##Ptr ps) { \
-        return ps->map([&](auto&& e) { return this->transform(e); }) \
-                ->fmap([&](auto&& e) { return this->transform(e); }); \
+        return ps->fmap([&](auto&& e) { return this->transformBase(e); }); \
     }
 #include "State/PredicateState.def"
 
