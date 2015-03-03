@@ -301,7 +301,7 @@ struct SegmentTree {
                     TRACES() << "{" << tfm::format("0x%x", minbound) << ","
                              << tfm::format("0x%x", minbound + t->reallyAllocated) << "}" << endl;
 
-                    if(where >= minbound + t->reallyAllocated) {
+                    if(where + size >= minbound + t->reallyAllocated) {
                         signalIllegalStore(where);
                     }
                 }
@@ -323,7 +323,7 @@ struct SegmentTree {
                     storeTraverser left{ data, leftChunkSize, didAlloc };
                     tree->traverse(where, left, t->left, minbound, mid);
                     storeTraverser right{ data + leftChunkSize, rightChunkSize, didAlloc };
-                    tree->traverse(where, right, t->right, mid, maxbound);
+                    tree->traverse(mid, right, t->right, mid, maxbound);
                 } else return false;
                 return true;
             }
@@ -476,7 +476,7 @@ struct SegmentTree {
                     memsetter left{ dest, fill, leftChunkSize };
                     tree->traverse(where, left, t->left, minbound, mid);
                     memsetter right{ dest + leftChunkSize, fill, rightChunkSize };
-                    tree->traverse(where, right, t->right, mid, maxbound);
+                    tree->traverse(mid, right, t->right, mid, maxbound);
                 } else return false;
                 return true;
             }
@@ -486,27 +486,57 @@ struct SegmentTree {
 
     }
 
-    inline void memmove(SimulatedPtr src, SimulatedPtr dst, SimulatedPtrSize sz) {
+    struct memIntervalInfo {
+        uint8_t* data;
+        SegmentNode::MemoryState memState;
+        uint8_t filledWith;
 
-        struct intervalInfo {
-            uint8_t* data;
-            SegmentNode::MemoryState memState;
-            uint8_t filledWith;
+        SimulatedPtr start;
+        SimulatedPtr end;
 
-            SimulatedPtr start;
-            SimulatedPtr end;
+        SimulatedPtrSize size() const {
+            return end - start;
+        }
 
-            intervalInfo(uint8_t *data, SegmentNode::MemoryState memState, uint8_t filledWith, SimulatedPtr start, SimulatedPtr end)
-                    : data(data), memState(memState), filledWith(filledWith), start(start), end(end) {
+        memIntervalInfo(uint8_t *data, SegmentNode::MemoryState memState,
+            uint8_t filledWith, SimulatedPtr start, SimulatedPtr end)
+                : data(data), memState(memState), filledWith(filledWith), start(start), end(end) {
+        }
+
+        bool mergeIn(const memIntervalInfo& other) {
+            if(this->memState != other.memState) return false;
+            if(this->memState == SegmentNode::MemoryState::Unknown) return false;
+
+            if(this->memState == SegmentNode::MemoryState::Memset
+                && this->filledWith != other.filledWith) return false;
+
+            end = other.end;
+            return true;
+        }
+
+        static void mergeAdjacent(std::list<memIntervalInfo>& lst) {
+            auto&& it = std::begin(lst);
+            auto&& end = std::end(lst);
+            while(it != end) {
+                auto next = std::next(it);
+                if(next == end) break;
+
+                auto merged = it->mergeIn(*next);
+                if(merged) lst.erase(next);
+                else it = next;
             }
-        };
+        }
+    };
+
+
+    inline void memmove(SimulatedPtr src, SimulatedPtr dst, SimulatedPtrSize sz) {
 
         struct intervalCollector: emptyTraverser {
             SimulatedPtr src;
             SimulatedPtrSize sz;
-            std::vector<intervalInfo>* path;
+            std::list<memIntervalInfo>* path;
 
-            intervalCollector(SimulatedPtr src, SimulatedPtrSize sz, std::vector<intervalInfo> *path)
+            intervalCollector(SimulatedPtr src, SimulatedPtrSize sz, std::list<memIntervalInfo> *path)
                     : src(src), sz(sz), path(path) {
             }
 
@@ -557,20 +587,94 @@ struct SegmentTree {
                     intervalCollector left{ src, leftChunkSize, path };
                     tree->traverse(where, left, t->left, minbound, mid);
                     intervalCollector right{ src + leftChunkSize, rightChunkSize, path };
-                    tree->traverse(where, right, t->right, mid, maxbound);
+                    tree->traverse(mid, right, t->right, mid, maxbound);
                 } else return false;
 
                 return true;
             }
         };
 
-        std::vector<intervalInfo> sourceInterval;
-        std::vector<intervalInfo> destinationInterval;
+        std::list<memIntervalInfo> sourceInterval;
 
         traverse(src, intervalCollector{ src, sz, &sourceInterval });
-        traverse(src, intervalCollector{ dst, sz, &destinationInterval });
+        memIntervalInfo::mergeAdjacent(sourceInterval);
 
+        struct mergeInTraverser: stateInvalidatingTraverser {
+            SimulatedPtr dst;
+            memIntervalInfo path;
+            SimulatedPtrSize sz;
 
+            mergeInTraverser(SimulatedPtr dst, const memIntervalInfo& path)
+                    : dst(dst), path(path), sz(path.size()) {
+            }
+
+            bool handlePath(
+                SegmentTree* tree,
+                SimulatedPtrSize minbound,
+                SimulatedPtrSize maxbound,
+                SegmentNode::Ptr& t,
+                SimulatedPtrSize where
+            ) {
+                TRACE_FUNC;
+                TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+
+                auto available = maxbound - minbound;
+                auto mid = middle(minbound, maxbound);
+
+                TRACES() << "available: " << available << endl;
+                TRACES() << '{' << tfm::format("0x%x", minbound) << ',' << tfm::format("0x%x", maxbound)
+                         << ',' << printStatus(t->status) << ',' << printState(t->state) << '}' << endl;
+
+                // FIXME!
+                if(available == tree->chunk_size && path.memState != SegmentNode::MemoryState::Unknown) {
+                    ASSERTC(where >= minbound);
+
+                    auto offset = where - minbound;
+                    ASSERTC(offset + sz < maxbound);
+
+                    auto realDst = t->chunk.get() + offset;
+
+                    std::memset(realDst, path.filledWith, sz);
+                } else if(available == tree->chunk_size && path.memState == SegmentNode::MemoryState::Unknown) {
+                    ASSERTC(where >= minbound);
+
+                    auto offset = where - minbound;
+                    ASSERTC(offset + sz < maxbound);
+
+                    auto realDst = t->chunk.get() + offset;
+                    auto realSrc = path.data;
+
+                    std::memcpy(realDst, realSrc, sz);
+                } else if(available == sz && path.memState != SegmentNode::MemoryState::Unknown) {
+                    t->state = path.memState;
+                    t->memSetTo = path.filledWith;
+                } else if(where < mid && (where + sz) > mid) {
+                     auto leftChunkSize = mid - where;
+                     auto rightChunkSize = sz - leftChunkSize;
+
+                     forceChildrenAndDeriveState(*t);
+
+                     memIntervalInfo leftInterval = path;
+                     leftInterval.end -= rightChunkSize;
+                     mergeInTraverser left{ dst, leftInterval };
+                     tree->traverse(where, left, t->left, minbound, mid);
+
+                     memIntervalInfo rightInterval = path;
+                     rightInterval.start += leftChunkSize;
+                     mergeInTraverser right{ dst + leftChunkSize, rightInterval };
+                     tree->traverse(mid, right, t->right, mid, maxbound);
+                } else return false;
+
+                return true;
+            }
+        };
+
+        auto mutableDst = dst;
+        // FIXME: this seems pretty inefficient
+        for(auto&& memPiece: sourceInterval) {
+            traverse(mutableDst, mergeInTraverser{ mutableDst, memPiece });
+            mutableDst += memPiece.size();
+        }
 
     }
 
