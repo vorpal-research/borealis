@@ -100,7 +100,7 @@ struct clang_pipeline::impl: public DelegateLogging {
     impl(clang_pipeline* abs): DelegateLogging(*abs), fn(nullptr) {};
 
     void compile(const llvm::opt::InputArgList& args) {
-        std::unique_ptr<CompilerInvocation> CI { new CompilerInvocation() };
+        llvm::IntrusiveRefCntPtr<CompilerInvocation> CI{ new CompilerInvocation() };
         std::vector<const char*> ccArgs;
         ccArgs.reserve(args.getNumInputArgStrings());
 
@@ -126,7 +126,7 @@ struct clang_pipeline::impl: public DelegateLogging {
             "No CompilerInvocation for clang_pipeline"
         );
 
-        ci.setInvocation(CI.release());
+        ci.setInvocation(CI.get());
         ASSERT(ci.hasInvocation(), "No CompilerInvocation for clang_pipeline");
 
         ci.getCodeGenOpts().EmitDeclMetadata = true;
