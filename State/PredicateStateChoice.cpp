@@ -128,6 +128,15 @@ bool PredicateStateChoice::isEmpty() const {
     );
 }
 
+bool PredicateStateChoice::equals(const PredicateState* other) const {
+    if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
+        return PredicateState::equals(other) &&
+                util::equal(choices, o->choices,
+                    [](auto&& a, auto&& b) { return *a == *b; }
+                );
+    } else return false;
+}
+
 borealis::logging::logstream& PredicateStateChoice::dump(borealis::logging::logstream& s) const {
     using borealis::logging::endl;
     using borealis::logging::il;
