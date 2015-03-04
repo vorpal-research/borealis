@@ -60,7 +60,7 @@ WARNINGS_OFF := unused-function
 # warnings to treat as errors
 WARNINGS_TAE := overloaded-virtual return-stack-address \
 	implicit-function-declaration address-of-temporary \
-	delete-non-virtual-dtor
+	delete-non-virtual-dtor return-type
 
 ifeq ($(CXX), clang++)
 CXXFLAGS += \

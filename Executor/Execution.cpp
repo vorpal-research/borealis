@@ -1203,6 +1203,7 @@ void Executor::visitCallSite(CallSite CS) {
 
     if(F && F->isDeclaration()) {
         switch(IM->getIntrinsicType(F)) {
+        case function_type::UNKNOWN:
         case function_type::INTRINSIC_MALLOC:
         case function_type::INTRINSIC_ALLOC:
             break;
@@ -2675,6 +2676,7 @@ GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
     } else {
         return llvm::GenericValue{ Mem.getOpaquePtr() };
     }
+    return {};
 }
 
 //===----------------------------------------------------------------------===//
