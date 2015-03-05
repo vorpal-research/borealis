@@ -1,5 +1,7 @@
+cstring.c
 huge_malloc.c
 simple2.c
 simple2_fail.c
 simple.c
 small_access.c
+too_small.c

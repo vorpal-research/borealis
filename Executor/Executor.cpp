@@ -26,7 +26,7 @@ Executor::Executor(
     const llvm::DataLayout* TD,
     const llvm::TargetLibraryInfo* TLI,
     Arbiter::Ptr Aldaris):
-     TD{TD}, TLI{TLI}, IM{}, Judicator{ Aldaris }, Mem{ TD->getPointerABIAlignment(0) }
+     TD{TD}, TLI{TLI}, IM{}, Judicator{ Aldaris }, Mem{ *TD }
 {
     IM = &IntrinsicsManager::getInstance();
 }

@@ -27,7 +27,7 @@ public:
     using buffer_t = llvm::ArrayRef<uint8_t>;
     using mutable_buffer_t = llvm::MutableArrayRef<uint8_t>;
 
-    MemorySimulator(uintptr_t grain);
+    MemorySimulator(const llvm::DataLayout& dl);
     ~MemorySimulator();
 
     enum ValueState{ UNKNOWN, CONCRETE };
@@ -49,11 +49,11 @@ public:
 
     void* getPointerToFunction(llvm::Function* f, size_t size);
     void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);
-    void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size);
+    void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size, uintptr_t offset);
 
     llvm::Function* accessFunction(void*);
     llvm::BasicBlock* accessBasicBlock(void*);
-    llvm::GlobalValue* accessGlobal(void*);
+    std::pair<llvm::GlobalValue*, uintptr_t> accessGlobal(void*);
 
     uintptr_t getQuant() const;
 };

@@ -10,15 +10,18 @@
 #include <cstdint>
 #include <cstring>
 #include <unordered_map>
+#include <map>
 
 #include <tinyformat/tinyformat.h>
 
 #include "Executor/MemorySimulator.h"
 #include "Executor/Exceptions.h"
 #include "Util/util.h"
+#include "Util/collections.hpp"
 #include "Config/config.h"
 
 #include "Executor/MemorySimulator/SegmentTreeImpl.h"
+#include "Executor/MemorySimulator/GlobalMemory.h"
 
 #include "Logging/tracer.hpp"
 
@@ -29,7 +32,7 @@ namespace borealis {
 struct MemorySimulator::Impl {
     SegmentTree tree;
     std::unordered_map<llvm::Value*, SimulatedPtr> constants;
-    std::unordered_map<SimulatedPtr, llvm::Value*> constantsBwd;
+    std::map<SimulatedPtr, llvm::Value*> constantsBwd;
 
     SimulatedPtr unmeaningfulPtr;
 
@@ -46,8 +49,13 @@ struct MemorySimulator::Impl {
     SimulatedPtrSize currentMallocOffset;
     SimulatedPtrSize currentConstantOffset;
 
-    Impl(SimulatedPtrSize grain) {
+    globalMemoryTable globals;
+    const llvm::DataLayout* DL;
+
+    Impl(const llvm::DataLayout& dl): DL(&dl) {
         TRACE_FUNC;
+
+        auto grain = dl.getPointerABIAlignment();
         tree.chunk_size = K.get(1) * grain;
         tree.start = 1 << 20;
         tree.end = tree.start + (1ULL << M.get(33ULL)) * tree.chunk_size;
@@ -69,7 +77,7 @@ struct MemorySimulator::Impl {
     }
 
     void* getPointerToConstant(llvm::Value* v, size_t size) {
-    TRACE_FUNC;
+        TRACE_FUNC;
         if(constants.count(v)) return ptr_cast(constants.at(v));
         else {
             auto realPtr = currentConstantOffset + constantStart;
@@ -78,6 +86,26 @@ struct MemorySimulator::Impl {
             constantsBwd[realPtr] = v;
             return ptr_cast(realPtr);
         }
+    }
+
+    void* getPointerToGlobalMemory(llvm::GlobalValue* gv, SimulatedPtrSize size, SimulatedPtrSize offset) {
+        // FIXME: check offset for validity and throw an exception
+
+        if (auto F = const_cast<llvm::Function*>(llvm::dyn_cast<llvm::Function>(gv))) {
+            return getPointerToConstant(F, size);
+        }
+
+        if (auto&& pp = util::at(globals, llvm::dyn_cast<llvm::GlobalVariable>(gv)))
+          return pp.getUnsafe().get() + offset;
+
+        // Global variable might have been added since interpreter started.
+        if (llvm::GlobalVariable *GVar =
+                const_cast<llvm::GlobalVariable *>(llvm::dyn_cast<llvm::GlobalVariable>(gv))) {
+            globals[GVar] = allocateMemoryForGV(GVar, *DL);
+        } else UNREACHABLE("Global hasn't had an address allocated yet!");
+
+        return util::at(globals, llvm::dyn_cast<llvm::GlobalVariable>(gv)).get() + offset;
+
     }
 
     ~Impl(){}
@@ -105,9 +133,10 @@ void* MemorySimulator::getPointerBasicBlock(llvm::BasicBlock* bb, size_t size) {
     TRACE_FUNC;
     return pimpl_->getPointerToConstant(bb, size);
 }
-void* MemorySimulator::getPointerToGlobal(llvm::GlobalValue* gv, size_t size) {
+void* MemorySimulator::getPointerToGlobal(llvm::GlobalValue* gv, size_t size, SimulatedPtrSize offset) {
     TRACE_FUNC;
-    return pimpl_->getPointerToConstant(gv, size);
+
+    return static_cast<uint8_t*>(pimpl_->getPointerToConstant(gv, size)) + offset;
 }
 
 llvm::Function* MemorySimulator::accessFunction(void* p) {
@@ -128,14 +157,15 @@ llvm::BasicBlock* MemorySimulator::accessBasicBlock(void* p) {
 
     return llvm::dyn_cast<llvm::BasicBlock>(result.getUnsafe());
 }
-llvm::GlobalValue* MemorySimulator::accessGlobal(void* p) {
+std::pair<llvm::GlobalValue*, SimulatedPtrSize> MemorySimulator::accessGlobal(void* p) {
     TRACE_FUNC;
     auto realPtr = ptr_cast(p);
     if(realPtr > pimpl_->constantEnd || realPtr < pimpl_->constantStart) signalIllegalLoad(realPtr);
-    auto result = util::at(pimpl_->constantsBwd, realPtr);
-    if(!result) signalIllegalLoad(realPtr);
+    auto lb = pimpl_->constantsBwd.lower_bound(realPtr);
 
-    return llvm::dyn_cast<llvm::GlobalValue>(result.getUnsafe());
+    if(lb == pimpl_->constantsBwd.end()) signalIllegalLoad(realPtr);
+
+    return { llvm::dyn_cast<llvm::GlobalValue>(lb->second), realPtr - lb->first };
 }
 
 static SimulatedPtrSize calc_real_memory_amount(SimulatedPtrSize amount, SimulatedPtrSize chunk_size) {
@@ -204,12 +234,21 @@ static void assign(MemorySimulator::mutable_buffer_t dst, MemorySimulator::buffe
 }
 
 auto MemorySimulator::LoadBytesFromMemory(mutable_buffer_t buffer, buffer_t where) -> ValueState {
+    TRACE_FUNC;
     ASSERTC(buffer.size() == where.size());
+
     const auto size = where.size();
     const auto chunk_size = pimpl_->tree.chunk_size;
     auto ptr = ptr_cast(where.data());
     auto offset = ptr - pimpl_->tree.start;
     auto loaded = (SimulatedPtrSize)0;
+
+    if(ptr >= pimpl_->constantStart && ptr <= pimpl_->constantEnd) {
+        auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(where.data())));
+        auto ptr = pimpl_->getPointerToGlobalMemory(gv.first, size, gv.second);
+        std::memcpy(buffer.data(), ptr, size);
+        return ValueState::CONCRETE;
+    }
 
     while(loaded < size) {
         const auto current = pimpl_->tree.get(ptr);
@@ -337,7 +376,7 @@ void MemorySimulator::Memset(void* dst, uint8_t fill, size_t size) {
     pimpl_->tree.memset(ptr_cast(dst), fill, size);
 }
 
-MemorySimulator::MemorySimulator(SimulatedPtrSize grain) : pimpl_{new Impl{grain}} {}
+MemorySimulator::MemorySimulator(const llvm::DataLayout& dl) : pimpl_{new Impl{dl}} {}
 
 MemorySimulator::~MemorySimulator() {}
 

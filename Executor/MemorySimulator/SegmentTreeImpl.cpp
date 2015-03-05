@@ -94,7 +94,7 @@ struct storeTraverser: stateInvalidatingTraverser {
     storeTraverser(const uint8_t* data, SimulatedPtrSize size, bool didAlloc = false)
         :data(data), size(size), didAlloc(didAlloc) {
         TRACE_FUNC;
-        TRACE_PARAM(data);
+        TRACE_PARAM((void*)data);
         TRACE_PARAM(size);
         TRACE_PARAM(didAlloc);
     }
@@ -108,6 +108,10 @@ struct storeTraverser: stateInvalidatingTraverser {
             didAlloc = true;
             TRACES() << "Found allocated segment:" << endl;
             TRACE_FMT("Allocated segment { %s, %s }", minbound, minbound + t->reallyAllocated);
+            TRACE_PARAM(where);
+            TRACE_PARAM(size);
+            TRACE_PARAM(minbound);
+            TRACE_PARAM(t->reallyAllocated);
 
             if(where + size >= minbound + t->reallyAllocated) {
                 signalIllegalStore(where);
@@ -248,7 +252,7 @@ void SegmentTree::store(
         SimulatedPtrSize size) {
     TRACE_FUNC;
     TRACE_PARAM(where);
-    TRACE_PARAM(data);
+    TRACE_PARAM((void*)data);
     TRACE_PARAM(size);
 
     return traverse(where, storeTraverser{ data, size, false });

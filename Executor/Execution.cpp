@@ -2546,7 +2546,8 @@ static GenericValue getConstantValue(const DataLayout* DL, MemorySimulator* Mem,
             Result.PointerVal =
                 Mem->getPointerToGlobal(
                     const_cast<GlobalVariable*>(GV),
-                    DL->getTypeSizeInBits(GV->getType()->getPointerElementType())/8
+                    DL->getTypeAllocSize(GV->getType()->getPointerElementType()),
+                    0
                 );
         else if (const BlockAddress *BA = dyn_cast<BlockAddress>(C))
             Result.PointerVal =
@@ -2667,7 +2668,7 @@ GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
         return getConstantValue(TD, &Mem, CPV);
     } else if (GlobalValue *GV = dyn_cast<GlobalValue>(V)) {
         return GenericValue{
-            Mem.getPointerToGlobal(GV, TD->getTypeSizeInBits(GV->getType()->getPointerElementType()))
+            Mem.getPointerToGlobal(GV, TD->getTypeSizeInBits(GV->getType()->getPointerElementType()), 0)
         };
     } else if(auto gv = util::at(SF.Values, V)) {
         for(auto&& val : gv) return val;
