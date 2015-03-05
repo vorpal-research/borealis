@@ -75,6 +75,10 @@ public:
 
 protected:
 
+#define HANDLE_STATE(NAME, CLASS) \
+    using CLASS##Ptr = std::shared_ptr<const CLASS>;
+#include "State/PredicateState.def"
+
     PredicateState::Ptr transformBase(PredicateState::Ptr ps) {
         PredicateState::Ptr res;
 #define HANDLE_STATE(NAME, CLASS) \
@@ -84,19 +88,36 @@ protected:
         }
 #include "State/PredicateState.def"
         ASSERT(res, "Unsupported predicate state type");
-        DELEGATE(PredicateState, res);
-    }
-
-    PredicateState::Ptr transformPredicateState(PredicateState::Ptr ps) {
-        return ps;
+        DELEGATE(Esab, res);
     }
 
 #define HANDLE_STATE(NAME, CLASS) \
-    using CLASS##Ptr = std::shared_ptr<const CLASS>; \
     PredicateState::Ptr transform##NAME(CLASS##Ptr ps) { \
         return ps->fmap([&](auto&& e) { return this->transformBase(e); }); \
     }
 #include "State/PredicateState.def"
+
+    PredicateState::Ptr transformEsab(PredicateState::Ptr ps) {
+        PredicateState::Ptr res;
+#define HANDLE_STATE(NAME, CLASS) \
+        if (llvm::isa<CLASS>(ps)) { \
+            res = static_cast<SubClass*>(this)-> \
+                transform##CLASS(std::static_pointer_cast<const CLASS>(ps)); \
+        }
+#include "State/PredicateState.def"
+        ASSERT(res, "Unsupported predicate state type");
+        DELEGATE(PredicateState, res);
+    }
+
+#define HANDLE_STATE(NAME, CLASS) \
+    PredicateState::Ptr transform##CLASS(CLASS##Ptr ps) { \
+        return ps; \
+    }
+#include "State/PredicateState.def"
+
+    PredicateState::Ptr transformPredicateState(PredicateState::Ptr ps) {
+        return ps;
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     //
