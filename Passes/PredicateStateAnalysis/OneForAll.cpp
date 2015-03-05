@@ -15,6 +15,7 @@
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/MemoryContextSplitter.h"
+#include "State/Transformer/StateOptimizer.h"
 #include "Util/graph.h"
 #include "Util/util.h"
 
@@ -111,6 +112,10 @@ void OneForAll::init() {
 
 void OneForAll::finalize() {
     AbstractPredicateStateAnalysis::finalize();
+    initialState = StateOptimizer(FN).transform(initialState);
+    for (auto&& v : util::viewContainerValues(instructionStates)) {
+        v = StateOptimizer(FN).transform(v);
+    }
 }
 
 void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {

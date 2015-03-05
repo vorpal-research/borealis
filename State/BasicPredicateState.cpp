@@ -144,6 +144,16 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitBy
 PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr on) const {
     if (*this == *on) {
         return Simplified(Uniquified().release());
+    } else if (auto* other = llvm::dyn_cast<Self>(on)) {
+        if (util::viewContainer(data).starts_with(other->data)) {
+            return Simplified(
+                Uniquified(
+                    util::viewContainer(data)
+                          .drop(other->data.size())
+                          .toVector()
+                ).release()
+            );
+        }
     }
     return nullptr;
 }
