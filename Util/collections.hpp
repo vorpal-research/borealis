@@ -371,6 +371,21 @@ void tuple_for_each(Tup&& tup, Op op) {
 } // namespace util
 } // namespace borealis
 
+////////////////////////////////////////////////////////////////////////////////
+
+namespace std {
+
+template<typename T>
+std::vector<T> operator+ (const std::vector<T>& a, const std::vector<T>& b) {
+    std::vector<T> res;
+    res.reserve(a.size() + b.size());
+    res.insert(res.end(), a.begin(), a.end());
+    res.insert(res.end(), b.begin(), b.end());
+    return res;
+}
+
+} // namespace std
+
 #include "Util/unmacros.h"
 
 #endif /* COLLECTIONS_HPP_ */
