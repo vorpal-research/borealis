@@ -63,6 +63,7 @@ private:
     FactoryNest FN;
 
     virtual void init() override;
+    virtual void finalize() override;
 
     void processBasicBlock(llvm::BasicBlock* BB);
 

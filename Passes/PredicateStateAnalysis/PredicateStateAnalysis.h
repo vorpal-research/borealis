@@ -31,45 +31,25 @@ class AbstractPredicateStateAnalysis {
 
 public:
 
-    typedef std::unordered_map<const llvm::Instruction*, PredicateState::Ptr> InstructionStates;
+    using InstructionStates = std::unordered_map<const llvm::Instruction*, PredicateState::Ptr>;
 
     AbstractPredicateStateAnalysis();
-    virtual ~AbstractPredicateStateAnalysis();
+    virtual ~AbstractPredicateStateAnalysis() = default;
 
     virtual bool runOnFunction(llvm::Function& F) = 0;
 
-    void printInstructionStates(llvm::raw_ostream&, const llvm::Module*) const {
-        infos() << "Predicate state analysis results" << endl;
-        infos() << "Initial state" << endl
-                << initialState << endl;
-        for (const auto& e : instructionStates) {
-            infos() << *e.first << endl
-                    << e.second << endl;
-        }
-        infos() << "End of predicate state analysis results" << endl;
-    }
+    void printInstructionStates(llvm::raw_ostream&, const llvm::Module*) const;
 
-    PredicateState::Ptr getInitialState() const {
-        return initialState;
-    }
-
-    PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const {
-        if (borealis::util::containsKey(instructionStates, I)) {
-            return instructionStates.at(I);
-        } else {
-            return nullptr;
-        }
-    }
+    PredicateState::Ptr getInitialState() const;
+    PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const;
 
 protected:
 
     PredicateState::Ptr initialState;
     InstructionStates instructionStates;
 
-    virtual void init() {
-        initialState.reset();
-        instructionStates.clear();
-    }
+    virtual void init();
+    virtual void finalize();
 
 };
 
@@ -80,7 +60,7 @@ class PredicateStateAnalysis:
         public borealis::logging::ClassLevelLogging<PredicateStateAnalysis>,
         public ShouldBeLazyModularized {
 
-    typedef AbstractPredicateStateAnalysis::InstructionStates InstructionStates;
+    using InstructionStates = AbstractPredicateStateAnalysis::InstructionStates;
 
 public:
 

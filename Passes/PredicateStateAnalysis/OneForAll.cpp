@@ -96,6 +96,8 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
         processBasicBlock(BB);
     }
 
+    finalize();
+
     return false;
 }
 
@@ -105,6 +107,10 @@ void OneForAll::init() {
     AbstractPredicateStateAnalysis::init();
     basicBlockStates.clear();
     PA.clear();
+}
+
+void OneForAll::finalize() {
+    AbstractPredicateStateAnalysis::finalize();
 }
 
 void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
