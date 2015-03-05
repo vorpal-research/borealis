@@ -15,6 +15,10 @@ namespace borealis {
 
 PredicateState::PredicateState(id_t classTag) : ClassTag(classTag) {};
 
+PredicateState::Ptr PredicateState::self() const {
+    return this->shared_from_this();
+}
+
 PredicateState::Ptr PredicateState::fmap(FMapper) const {
     BYE_BYE(PredicateState::Ptr, "Should not be called!");
 }

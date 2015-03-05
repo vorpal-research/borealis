@@ -28,6 +28,11 @@ public:
 
     PredicateState::Ptr operator()() const;
 
+    template<class TT>
+    PredicateState::Ptr with(TT&& t) const {
+        return std::forward<TT>(t).transform(State);
+    }
+
     PredicateStateBuilder& operator+=(PredicateState::Ptr s);
     PredicateStateBuilder& operator+=(Predicate::Ptr p);
     PredicateStateBuilder& operator<<=(const Locus& locus);

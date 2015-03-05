@@ -37,6 +37,9 @@ public:
     PredicateState::Ptr getBase() const;
     PredicateState::Ptr getCurr() const;
 
+    PredicateState::Ptr swapBase(PredicateState::Ptr newBase) const;
+    PredicateState::Ptr swapCurr(PredicateState::Ptr newCurr) const;
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
 
     virtual PredicateState::Ptr addVisited(const Locus& locus) const override;

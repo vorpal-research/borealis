@@ -19,6 +19,14 @@ using borealis::util::view;
 BasicPredicateState::BasicPredicateState() :
         PredicateState(class_tag<Self>()) {}
 
+BasicPredicateState::BasicPredicateState(const Data& data) :
+        PredicateState(class_tag<Self>()),
+        data(data) {}
+
+BasicPredicateState::BasicPredicateState(Data&& data) :
+        PredicateState(class_tag<Self>()),
+        data(std::move(data)) {}
+
 const BasicPredicateState::Data& BasicPredicateState::getData() const {
     return data;
 }
@@ -134,9 +142,8 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitBy
 }
 
 PredicateState::Ptr BasicPredicateState::sliceOn(PredicateState::Ptr on) const {
-    // FIXME: akhin Separate empty state???
     if (*this == *on) {
-        return Simplified(new Self{});
+        return Simplified(Uniquified().release());
     }
     return nullptr;
 }

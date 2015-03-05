@@ -27,6 +27,26 @@ PredicateState::Ptr PredicateStateChain::getCurr() const {
     return curr;
 }
 
+PredicateState::Ptr PredicateStateChain::swapBase(PredicateState::Ptr newBase) const {
+    return Simplified<Self>(
+        Simplified<Self>(
+            newBase,
+            this->base
+        ),
+        this->curr
+    );
+}
+
+PredicateState::Ptr PredicateStateChain::swapCurr(PredicateState::Ptr newCurr) const {
+    return Simplified<Self>(
+        this->base,
+        Simplified<Self>(
+            this->curr,
+            newCurr
+        )
+    );
+}
+
 PredicateState::Ptr PredicateStateChain::addPredicate(Predicate::Ptr pred) const {
     ASSERTC(pred != nullptr);
 
@@ -86,13 +106,9 @@ std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitBy
 PredicateState::Ptr PredicateStateChain::sliceOn(PredicateState::Ptr on) const {
     if (*base == *on) {
         return curr;
+    } else if (auto&& baseSlice = base->sliceOn(on)) {
+        return Simplified<Self>(baseSlice, curr);
     }
-
-    auto&& slice = base->sliceOn(on);
-    if (slice != nullptr) {
-        return Simplified<Self>(slice, curr);
-    }
-
     return nullptr;
 }
 

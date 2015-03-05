@@ -73,6 +73,8 @@ private:
     Loci loci;
 
     BasicPredicateState();
+    BasicPredicateState(const Data& data);
+    BasicPredicateState(Data&& data);
 
     void addPredicateInPlace(Predicate::Ptr pred);
     void addVisitedInPlace(const Locus& locus);

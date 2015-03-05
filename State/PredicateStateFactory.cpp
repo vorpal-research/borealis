@@ -36,6 +36,12 @@ PredicateState::Ptr PredicateStateFactory::Basic() {
     return basic;
 }
 
+PredicateState::Ptr PredicateStateFactory::Basic(const std::vector<Predicate::Ptr>& data) {
+    return PredicateState::Simplified<BasicPredicateState>(
+        data
+    );
+}
+
 PredicateStateFactory::Ptr PredicateStateFactory::get() {
     static PredicateStateFactory::Ptr instance(new PredicateStateFactory());
     return instance;

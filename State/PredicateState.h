@@ -49,6 +49,8 @@ public:
     using Mapper = std::function<Predicate::Ptr(Predicate::Ptr)>;
     using Filterer = std::function<bool(Predicate::Ptr)>;
 
+    PredicateState::Ptr self() const;
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const = 0;
 
     virtual PredicateState::Ptr addVisited(const Locus& locus) const = 0;

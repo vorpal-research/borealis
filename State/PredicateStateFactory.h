@@ -34,6 +34,8 @@ public:
 
     PredicateState::Ptr Basic();
 
+    PredicateState::Ptr Basic(const std::vector<Predicate::Ptr>& data);
+
     static PredicateStateFactory::Ptr get();
 
 private:
