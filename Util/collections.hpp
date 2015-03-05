@@ -124,6 +124,15 @@ public:
         return std::any_of(begin_, end_, pred);
     }
 
+    template<class Container>
+    bool starts_with(const Container& c) const {
+        auto b = begin_, e = end_, bb = std::begin(c), ee = std::end(c);
+        while (b != e and bb != ee) {
+            if (*b++ != *bb++) return false;
+        }
+        return bb == ee;
+    }
+
     template<class Con>
     Con to() {
         return Con(begin_, end_);
@@ -210,6 +219,48 @@ inline auto viewContainer(Container& con) -> CollectionView<decltype(std::begin(
 template<class Container>
 inline auto viewContainer(Container* con) -> decltype(viewContainer(*con)) {
     return viewContainer(*con);
+}
+
+
+template<class Container>
+auto viewContainerKeys(const Container& c) -> decltype(view(iterate_keys(begin_end_pair(c)))) {
+    return view(iterate_keys(begin_end_pair(c)));
+}
+
+template<class Container>
+auto viewContainerKeys(const Container* c) -> decltype(viewContainerKeys(*c)) {
+    return viewContainerKeys(*c);
+}
+
+template<class Container>
+auto viewContainerKeys(Container& c) -> decltype(view(iterate_keys(begin_end_pair(c)))) {
+    return view(iterate_keys(begin_end_pair(c)));
+}
+
+template<class Container>
+auto viewContainerKeys(Container* c) -> decltype(viewContainerKeys(*c)) {
+    return viewContainerKeys(*c);
+}
+
+
+template<class Container>
+auto viewContainerValues(const Container& c) -> decltype(view(iterate_values(begin_end_pair(c)))) {
+    return view(iterate_values(begin_end_pair(c)));
+}
+
+template<class Container>
+auto viewContainerValues(const Container* c) -> decltype(viewContainerValues(*c)) {
+    return viewContainerValues(*c);
+}
+
+template<class Container>
+auto viewContainerValues(Container& c) -> decltype(view(iterate_values(begin_end_pair(c)))) {
+    return view(iterate_values(begin_end_pair(c)));
+}
+
+template<class Container>
+auto viewContainerValues(Container* c) -> decltype(viewContainerValues(*c)) {
+    return viewContainerValues(*c);
 }
 
 

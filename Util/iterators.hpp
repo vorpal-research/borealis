@@ -57,13 +57,13 @@ void advanceWithLimit(It& it, Dist dist, const It& limit) {
 template<class Container>
 std::pair<typename Container::iterator, typename Container::iterator>
 begin_end_pair(Container& c) {
-    return std::make_pair(c.begin(), c.end());
+    return std::make_pair(std::begin(c), std::end(c));
 }
 
 template<class Container>
 std::pair<typename Container::const_iterator, typename Container::const_iterator>
 begin_end_pair(const Container& c) {
-    return std::make_pair(c.begin(), c.end());
+    return std::make_pair(std::begin(c), std::end(c));
 }
 
 template<
