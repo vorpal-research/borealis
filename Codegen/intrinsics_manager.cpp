@@ -43,7 +43,9 @@ function_type IntrinsicsManager::getIntrinsicType(llvm::Function* F) const {
     } else {
         for (auto& resolver : resolvers) {
             function_type r = resolver(*this, *F);
-            if (r != function_type::UNKNOWN) return type_cache[F] = r;
+            if (r != function_type::UNKNOWN) {
+                return type_cache[F] = r;
+            }
         }
     }
 

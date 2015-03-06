@@ -52,11 +52,8 @@ public:
 };
 
 class assertion_failed : public std::runtime_error {
-    const llvm::Value* value_;
 public:
-    const llvm::Value* getValue() const { return value_; };
-
-    assertion_failed(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{v}{};
+    assertion_failed(): std::runtime_error{ "assertion failed" }{};
 };
 
 class illegal_assumption : public std::runtime_error {

@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 #include "Executor/Executor.h"
+#include "Executor/Exceptions.h"
 #include "Logging/tracer.hpp"
 #include "Codegen/intrinsics.h"
 #include "Config/config.h"
@@ -261,6 +262,13 @@ util::option<llvm::GenericValue> Executor::callExternalFunction(
     CHECK_AND_EXEC(Memset)
     CHECK_AND_EXEC(Memmove)
 #undef CHECK_AND_EXEC
+
+    if(IM->getIntrinsicType(F) == function_type::BUILTIN_BOR_ASSERT) {
+        if(!ArgVals[0].IntVal.getLimitedValue()) {
+            throw assertion_failed{};
+        }
+        return util::nothing();
+    }
 
     if(IM->getIntrinsicType(F) == function_type::INTRINSIC_MALLOC) {
         std::vector<llvm::GenericValue> adjustedArgs;

@@ -1,7 +1,9 @@
 cstring.c
+cstring_offset.c
 huge_malloc.c
 simple2.c
 simple2_fail.c
+simple_assert.c
 simple.c
 small_access.c
 too_small.c

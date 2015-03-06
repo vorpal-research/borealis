@@ -16,6 +16,7 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalValue.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
 
 namespace borealis {
 
@@ -51,6 +52,8 @@ public:
     void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);
     void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size, uintptr_t offset);
 
+    void initializeMemory(const llvm::Constant *Init, void *Addr);
+    llvm::GenericValue getConstantValue(const llvm::Constant *C);
     llvm::Function* accessFunction(void*);
     llvm::BasicBlock* accessBasicBlock(void*);
     std::pair<llvm::GlobalValue*, uintptr_t> accessGlobal(void*);
