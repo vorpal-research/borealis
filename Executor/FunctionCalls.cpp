@@ -264,6 +264,7 @@ util::option<llvm::GenericValue> Executor::callExternalFunction(
 #undef CHECK_AND_EXEC
 
     if(IM->getIntrinsicType(F) == function_type::BUILTIN_BOR_ASSERT) {
+        TRACES() << "Assertion discovered, checking" << endl;
         if(!ArgVals[0].IntVal.getLimitedValue()) {
             throw assertion_failed{};
         }

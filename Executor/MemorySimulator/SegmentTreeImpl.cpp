@@ -17,12 +17,12 @@ namespace borealis {
 
 namespace {
 
-struct allocator: stateInvalidatingTraverser {
+struct allocTraverser: stateInvalidatingTraverser {
     const SegmentNode::MemoryState state;
     const SegmentNode::MemoryStatus status;
     const SimulatedPtrSize size;
 
-    allocator(
+    allocTraverser(
         SegmentNode::MemoryState state,
         SegmentNode::MemoryStatus status,
         SimulatedPtrSize size
@@ -177,7 +177,7 @@ struct storeTraverser: stateInvalidatingTraverser {
     }
 };
 
-struct loader: public emptyTraverser {
+struct loadTraverser: public emptyTraverser {
     uint8_t* ptr = nullptr;
     SegmentNode::MemoryState state = SegmentNode::MemoryState::Unknown;
     uint8_t filledWith = 0xFF;
@@ -228,6 +228,110 @@ struct loader: public emptyTraverser {
     }
 };
 
+struct freeTraverser : emptyTraverser {
+    SegmentNode::MemoryStatus desiredStatus;
+
+    freeTraverser(SegmentNode::MemoryStatus desiredStatus): desiredStatus{desiredStatus} {}
+
+    void handleEmptyNode(SimulatedPtr where) {
+        TRACE_FUNC;
+        signalIllegalFree(where);
+    }
+
+    bool handlePath(SegmentTree* /* tree */,
+            SimulatedPtrSize minbound,
+            SimulatedPtrSize /* maxbound*/,
+            SegmentNode::Ptr& t,
+            SimulatedPtrSize where){
+        TRACE_FUNC;
+        if(minbound == where && t->status == desiredStatus) {
+            t.reset();
+            return true;
+        }
+        return false;
+    }
+
+    bool handleChunk(SegmentTree* tree,
+            SimulatedPtrSize minbound,
+            SimulatedPtrSize maxbound,
+            SegmentNode::Ptr& t,
+            SimulatedPtrSize where) {
+        TRACE_FUNC;
+        return handlePath(tree, minbound, maxbound, t, where);
+    }
+};
+
+struct memsetTraverser: stateInvalidatingTraverser {
+    SimulatedPtr dest;
+    uint8_t fill;
+    SimulatedPtrSize size;
+    memsetTraverser(SimulatedPtr dest, uint8_t fill, SimulatedPtrSize size):
+        dest(dest), fill(fill), size(size) {};
+
+    bool handleChunk(SegmentTree* tree,
+            SimulatedPtrSize minbound,
+            SimulatedPtrSize maxbound,
+            SegmentNode::Ptr& t,
+            SimulatedPtrSize where) {
+        TRACE_FUNC;
+
+        if(size == tree->chunk_size) {
+            t->state = SegmentNode::MemoryState::Memset;
+            t->memSetTo = fill;
+            t->chunk.reset();
+        } else if(size <= tree->chunk_size) {
+            ASSERTC(where >= minbound);
+
+            auto offset = where - minbound;
+            ASSERTC(offset + size < maxbound);
+            t->state = SegmentNode::MemoryState::Unknown;
+            if(!t->chunk) t->chunk.reset(new uint8_t[tree->chunk_size]);
+
+            auto realDst = t->chunk.get() + offset;
+            std::memset(realDst, fill, size);
+        }
+        return true;
+    }
+
+    bool handlePath(SegmentTree* tree,
+            SimulatedPtrSize minbound,
+            SimulatedPtrSize maxbound,
+            SegmentNode::Ptr& t,
+            SimulatedPtrSize where) {
+        TRACE_FUNC;
+
+        TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+
+        auto available = maxbound - minbound;
+        auto mid = middle(minbound, maxbound);
+
+        TRACE_PARAM(available);
+        TRACE_PARAM(minbound);
+        TRACE_PARAM(maxbound);
+        TRACE_PARAM(t->status);
+        TRACE_PARAM(t->state);
+
+        if(t->state != SegmentNode::MemoryState::Unknown
+           && (minbound <= dest)
+           && (maxbound >= dest + size)) {
+            t->state = SegmentNode::MemoryState::Memset;
+            t->memSetTo = fill;
+            return true;
+        } else if(where < mid && where + size > mid) {
+            auto leftChunkSize = mid - where;
+            auto rightChunkSize = size - leftChunkSize;
+
+            forceChildrenAndDeriveState(*t);
+
+            memsetTraverser left{ dest, fill, leftChunkSize };
+            tree->traverse(where, left, t->left, minbound, mid);
+            memsetTraverser right{ dest + leftChunkSize, fill, rightChunkSize };
+            tree->traverse(mid, right, t->right, mid, maxbound);
+        } else return false;
+        return true;
+    }
+};
+
 } /* empty namespace */
 
 void SegmentTree::allocate(
@@ -243,7 +347,7 @@ void SegmentTree::allocate(
 
     if(size > (end - start)) signalOutOfMemory(size);
 
-    traverse(where, allocator{state, status, size});
+    traverse(where, allocTraverser{state, status, size});
 }
 
 void SegmentTree::store(
@@ -261,10 +365,26 @@ void SegmentTree::store(
 SegmentTree::intervalState SegmentTree::get(SimulatedPtr where) {
     TRACE_FUNC;
 
-    loader loadTraverser;
+    loadTraverser loadTraverser;
     traverse(where, loadTraverser);
 
     return { loadTraverser.ptr, loadTraverser.state, loadTraverser.filledWith };
+}
+
+void SegmentTree::free(SimulatedPtr where, SegmentNode::MemoryStatus desiredStatus) {
+    TRACE_FUNC;
+
+    if(where < start || where >= end) signalIllegalFree(where);
+    return traverse(where, freeTraverser{desiredStatus});
+}
+
+void SegmentTree::memset(SimulatedPtr where, uint8_t fill, SimulatedPtrSize size) {
+    TRACE_FUNC;
+
+    if(where < start || where >= end) signalIllegalStore(where);
+
+    return traverse(where, memsetTraverser{ where, fill, size });
+
 }
 
 } /* namespace borealis */

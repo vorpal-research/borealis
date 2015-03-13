@@ -14,6 +14,7 @@ int main() {
 	memcpy(buffer  + 7, message, 12);
 
 	borealis_assert(buffer[10] == 'l');
+	borealis_assert(buffer[14] == 'w');
 
 	return buffer[borealis_nondet()];
 }
