@@ -53,6 +53,8 @@ public:
     ContainerIter end() const { return end_; }
     bool empty() const { return begin_ == end_; }
 
+    size_t size() const { return std::distance(begin_, end_); }
+
     CollectionView<flattened_iterator<ContainerIter>> flatten() const {
         return view(
             borealis::util::flat_iterator(begin_, end_),
@@ -181,6 +183,13 @@ struct takePtr {
     template<class T>
     auto operator()(const T& val) const -> decltype(&val) {
         return &val;
+    }
+};
+
+struct equality {
+    template<class T>
+    bool operator()(const T& a, const T& b) {
+        return a == b;
     }
 };
 
