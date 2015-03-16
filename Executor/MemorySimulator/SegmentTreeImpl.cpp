@@ -400,7 +400,7 @@ SimulatedPtr SegmentTree::memchr(SimulatedPtr where, uint8_t ch, size_t limit) {
         if(loadTraverser.state == SegmentNode::MemoryState::Memset) {
             if(ch == loadTraverser.filledWith) return where;
         } else if(loadTraverser.state == SegmentNode::MemoryState::Uninit) {
-            signalUnsupported(where);
+            signalIllegalLoad(where);
         } else {
             if(auto memloc = std::memchr(loadTraverser.ptr, ch, sz)) {
                 return where + (static_cast<uint8_t*>(memloc) - loadTraverser.ptr);
