@@ -178,7 +178,10 @@ struct storeTraverser: stateInvalidatingTraverser {
 };
 
 struct loadTraverser: public emptyTraverser {
+    std::stack<const SegmentNode*> backTrace;
+
     uint8_t* ptr = nullptr;
+    size_t dataSize = 0;
     SegmentNode::MemoryState state = SegmentNode::MemoryState::Unknown;
     uint8_t filledWith = 0xFF;
 
@@ -198,7 +201,7 @@ struct loadTraverser: public emptyTraverser {
 
     void handleChunk(SegmentTree* /* tree */,
         SimulatedPtrSize minbound,
-        SimulatedPtrSize /* maxbound */,
+        SimulatedPtrSize maxbound,
         SegmentNode::Ptr& t,
         SimulatedPtrSize where) {
         TRACE_FUNC;
@@ -206,6 +209,7 @@ struct loadTraverser: public emptyTraverser {
             auto offset = where - minbound;
             ptr = t->chunk.get() + offset;
         }
+        dataSize = maxbound - where;
     }
 
     bool handlePath(SegmentTree* /* tree */,
@@ -214,6 +218,7 @@ struct loadTraverser: public emptyTraverser {
         SegmentNode::Ptr& t,
         SimulatedPtrSize where) {
         TRACE_FUNC;
+        backTrace.push(t.get());
 
         TRACE_PARAM(where);
         auto available = maxbound - minbound;
@@ -224,7 +229,11 @@ struct loadTraverser: public emptyTraverser {
         TRACE_PARAM(t->status);
         TRACE_PARAM(t->state);
 
-        return handleMemState(t);
+        if(handleMemState(t)) {
+            dataSize = maxbound - where;
+            return true;
+        }
+        return false;
     }
 };
 
@@ -369,6 +378,40 @@ SegmentTree::intervalState SegmentTree::get(SimulatedPtr where) {
     traverse(where, loadTraverser);
 
     return { loadTraverser.ptr, loadTraverser.state, loadTraverser.filledWith };
+}
+
+SimulatedPtr SegmentTree::memchr(SimulatedPtr where, uint8_t ch, size_t limit) {
+    TRACE_FUNC;
+
+    TRACE_PARAM(where);
+    TRACE_PARAM(+ch);
+    TRACE_PARAM(limit);
+
+    bool noLimit = (limit == ~size_t(0));
+    long long mutableLimit = limit;
+
+    while(noLimit || mutableLimit > 0){
+        loadTraverser loadTraverser;
+        traverse(where, loadTraverser);
+
+        auto sz = noLimit? loadTraverser.dataSize :
+            std::min(mutableLimit, static_cast<long long>(loadTraverser.dataSize));
+
+        if(loadTraverser.state == SegmentNode::MemoryState::Memset) {
+            if(ch == loadTraverser.filledWith) return where;
+        } else if(loadTraverser.state == SegmentNode::MemoryState::Uninit) {
+            signalUnsupported(where);
+        } else {
+            if(auto memloc = std::memchr(loadTraverser.ptr, ch, sz)) {
+                return where + (static_cast<uint8_t*>(memloc) - loadTraverser.ptr);
+            }
+        }
+        // no symbol found, go next
+        where += sz;
+        mutableLimit -= sz;
+    }
+
+    return 0;
 }
 
 void SegmentTree::free(SimulatedPtr where, SegmentNode::MemoryStatus desiredStatus) {

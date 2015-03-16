@@ -43,6 +43,7 @@ public:
     void* MallocMemory(size_t amount, MallocFill fillWith);
     void FreeMemory(void* ptr);
 
+    void* MemChr(void* ptr, uint8_t ch, size_t limit);
     void Memset(void* dst, uint8_t fill, size_t size);
 
     bool isOpaquePointer(void* ptr);

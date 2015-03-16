@@ -167,11 +167,30 @@ static const std::unordered_map<int, PGenericFunc> stdLibArith() {
     return allStdLibArithFuncs;
 }
 
+static llvm::GenericValue executeStrLen(
+        const llvm::Function* F,
+        const std::vector<llvm::GenericValue>& ArgVals,
+        MemorySimulator& Mem) {
+    TRACE_FUNC;
+
+    using util::just;
+    using util::nothing;
+
+    auto ptr = ArgVals[0].PointerVal;
+    llvm::GenericValue RetVal;
+    auto fnd = (Mem.MemChr(ptr, 0, ~size_t(0)));
+    RetVal.IntVal = llvm::APInt(F->getReturnType()->getIntegerBitWidth(), static_cast<uint8_t*>(fnd) - static_cast<uint8_t*>(ptr));
+    TRACE_PARAM(RetVal.IntVal);
+    return RetVal;
+}
+
 util::option<llvm::GenericValue> Executor::callStdLibFunction(
     const llvm::Function* F,
     const std::vector<llvm::GenericValue>& ArgVals) {
     using util::just;
     using util::nothing;
+
+    TRACE_FUNC;
 
     lfn::Func fcode;
     TLI->getLibFunc(F->getName(), fcode);
@@ -228,6 +247,38 @@ util::option<llvm::GenericValue> Executor::callStdLibFunction(
         }
         break;
     }
+
+    case lfn::memchr: {
+        TRACE_BLOCK("Running memchr");
+        auto ptr = ArgVals[0].PointerVal;
+        auto ch = static_cast<uint8_t>(ArgVals[1].IntVal.getLimitedValue(255));
+        auto limit = ArgVals[2].IntVal.getLimitedValue();
+        llvm::GenericValue RetVal;
+        RetVal.PointerVal = Mem.MemChr(ptr, ch, limit);
+        return just(RetVal);
+    }
+
+    case lfn::strlen: {
+        return just(executeStrLen(F, ArgVals, Mem));
+    }
+
+    case lfn::strchr: {
+        auto strlen = executeStrLen(F, ArgVals, Mem);
+        auto ptr = ArgVals[0].PointerVal;
+        auto ch = static_cast<uint8_t>(ArgVals[1].IntVal.getLimitedValue(255));
+        auto limit = static_cast<size_t>(strlen.IntVal.getLimitedValue());
+
+        llvm::GenericValue RetVal;
+        RetVal.PointerVal = Mem.MemChr(ptr, ch, limit);
+        return just(RetVal);
+    }
+
+    case lfn::strcpy: {
+        auto argValsCopy = ArgVals;
+        auto strlen = executeStrLen(F, ArgVals, Mem);
+        argValsCopy.push_back(strlen);
+        executeMemcpy(F, argValsCopy);
+    };
 
     default:
         for(auto&& realFunction : util::at(stdLibArith(), fcode)) return just(realFunction(ArgVals, F));

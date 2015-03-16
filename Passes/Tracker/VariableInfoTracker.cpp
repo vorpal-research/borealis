@@ -7,6 +7,7 @@
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
+#include <Util/functional.hpp>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
@@ -85,7 +86,7 @@ static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
 }
 
 bool VariableInfoTracker::runOnModule(llvm::Module& M) {
-    using borealis::util::takePtr;
+    using borealis::ops::take_pointer;
     using borealis::util::view;
     using borealis::util::viewContainer;
 
@@ -108,7 +109,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
 
     for (CallInst* call : viewContainer(GlobalsDesc)
                          .flatten()
-                         .map(takePtr())
+                         .map(take_pointer)
                          .map(llvm::dyn_caster<CallInst>())
                          .filter()) {
         if (intrinsic_manager.getIntrinsicType(*call) == function_type::INTRINSIC_GLOBAL) {

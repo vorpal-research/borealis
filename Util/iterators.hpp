@@ -638,8 +638,8 @@ public:
     bool operator==(const value_iterator& that) const { return base == that.base; };
     bool operator!=(const value_iterator& that) const { return base != that.base; };
 
-    reference operator*() { return base->second; }
-    pointer operator->() { return &base->second; }
+    reference operator*() const { return base->second; }
+    pointer operator->() const { return &base->second; }
 
     value_iterator& operator++() { ++base; return *this; }
     value_iterator& operator--() { --base; return *this; }

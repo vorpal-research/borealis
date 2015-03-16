@@ -234,6 +234,7 @@ struct SegmentTree {
         SegmentNode::MemoryState state, SegmentNode::MemoryStatus status);
     void store(SimulatedPtr where, const uint8_t* data, SimulatedPtrSize size);
     intervalState get(SimulatedPtr where);
+    SimulatedPtr memchr(SimulatedPtr where, uint8_t ch, size_t limit);
     void free(SimulatedPtr where, SegmentNode::MemoryStatus desiredStatus);
     void memset(SimulatedPtr where, uint8_t fill, SimulatedPtrSize size);
 

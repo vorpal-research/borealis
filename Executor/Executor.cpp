@@ -22,7 +22,7 @@ namespace borealis {
 
 
 Executor::Executor(
-    llvm::Module *M,
+    llvm::Module* /* M */,
     const llvm::DataLayout* TD,
     const llvm::TargetLibraryInfo* TLI,
     Arbiter::Ptr Aldaris):
@@ -61,8 +61,10 @@ Executor::runFunction(llvm::Function *F,
     // though.
     std::vector<llvm::GenericValue> ActualArgs;
     const unsigned ArgCount = F->getFunctionType()->getNumParams();
+    const auto realArgCount = ArgValues.size();
+
     for (unsigned i = 0; i < ArgCount; ++i)
-        ActualArgs.push_back(ArgValues[i]);
+        ActualArgs.push_back(i < realArgCount ? ArgValues[i] : llvm::GenericValue{});
 
     // Set up the function call.
     callFunction(F, ActualArgs);

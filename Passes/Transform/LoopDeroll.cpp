@@ -27,6 +27,7 @@
 #include "Passes/Transform/LoopDeroll.h"
 #include "Statistics/statistics.h"
 #include "Util/passes.hpp"
+#include "Util/functional.hpp"
 #include "Util/util.h"
 
 #include "Util/macros.h"
@@ -220,7 +221,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
     if(
         util::view(L->block_begin(), L->block_end())
-       .map(util::deref{})
+       .map(ops::dereference)
        .flatten()
        .filter(llvm::isaer<llvm::PHINode>{})
        .map(llvm::caster<llvm::PHINode>{})
@@ -322,7 +323,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     }
 
     for (auto& I : util::viewContainer(NewBBs)
-                         .map(util::deref())
+                         .map(ops::dereference)
                          .flatten()) RemapInstruction(I, VMap);
     for (auto* I : toRemove) if ( ! I->hasNUsesOrMore(1)) I->eraseFromParent();
 

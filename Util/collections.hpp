@@ -101,7 +101,7 @@ public:
     }
 
     template<class Op>
-    auto reduce(Op operation) -> option<std::decay_t<decltype(*begin_)>> {
+    auto reduce(Op operation) const -> option<std::decay_t<decltype(*begin_)>> {
         auto&& ret = util::nothing<std::decay_t<decltype(*begin_)>>();
         if (not empty()) {
             auto&& head = *begin_;
@@ -112,6 +112,11 @@ public:
             }
         }
         return std::move(ret);
+    }
+
+    template<class R>
+    auto firstOr(R&& def) const -> decltype(auto) {
+        return (begin_ == end_) ? std::forward<R>(def) : *begin_;
     }
 
     template<class Pred>
@@ -125,25 +130,25 @@ public:
     }
 
     template<class Con>
-    Con to() {
+    Con to() const {
         return Con(begin_, end_);
     }
 
     typedef typename std::iterator_traits<ContainerIter>::value_type value_type;
 
-    std::list<value_type> toList() {
+    std::list<value_type> toList() const {
         return to<std::list<value_type>>();
     }
 
-    std::vector<value_type> toVector() {
+    std::vector<value_type> toVector() const {
         return to<std::vector<value_type>>();
     }
 
-    std::set<value_type> toSet() {
+    std::set<value_type> toSet() const {
         return to<std::set<value_type>>();
     }
 
-    std::unordered_set<value_type> toHashSet() {
+    std::unordered_set<value_type> toHashSet() const {
         return to<std::unordered_set<value_type>>();
     }
 
@@ -151,31 +156,6 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct deref {
-    template<class T>
-    auto operator()(T& val) const -> decltype(*val) {
-        return *val;
-    }
-
-    template<class T>
-    auto operator()(const T& val) const -> decltype(*val) {
-        return *val;
-    }
-};
-
-struct takePtr {
-    template<class T>
-    auto operator()(T& val) const -> decltype(&val)  {
-        return &val;
-    }
-
-    template<class T>
-    auto operator()(const T& val) const -> decltype(&val) {
-        return &val;
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////
 
 template<class C> inline auto head(const C& con) QUICK_RETURN(*std::begin(con));
 
@@ -315,6 +295,15 @@ void removeFromMultimap(std::unordered_multimap<K, V>& map, add_const_reference_
             break;
         }
     }
+}
+
+template<class K, class V, class KK>
+auto less_or_equal(const std::map<K, V>& map, KK&& k) {
+    if(map.empty()) return std::end(map);
+
+    auto ub = map.upper_bound(std::forward<KK>(k));
+    if(ub == std::begin(map)) return std::end(map);
+    else return std::prev(ub);
 }
 
 template<class Container, class T>

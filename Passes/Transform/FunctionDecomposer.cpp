@@ -10,6 +10,8 @@
 #include "Statistics/statistics.h"
 #include "Util/passes.hpp"
 
+#include "Config/config.h"
+
 #include <string>
 #include <unordered_set>
 
@@ -22,6 +24,7 @@
 #include <llvm/IR/Module.h>
 
 #include <llvm/Target/TargetLibraryInfo.h>
+#include <Util/functional.hpp>
 
 namespace borealis {
 
@@ -31,6 +34,8 @@ X("decompose-functions", "Replace all unknown functions with corresponding borea
 
 static Statistic FunctionsDecomposed("decompose-functions",
     "totalFunctions", "Total number of function calls decomposed");
+
+static config::MultiConfigEntry excludeFunctions{ "decompose-functions", "exclude" };
 
 struct FunctionDecomposer::Impl {};
 
@@ -148,6 +153,8 @@ void FunctionDecomposer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     using namespace borealis::util;
 
+    auto excludedFunctionNames = viewContainer(excludeFunctions).toHashSet();
+
     auto&& TLI = GetAnalysis<llvm::TargetLibraryInfo>::doit(this);
 
     auto&& IM = IntrinsicsManager::getInstance();
@@ -163,13 +170,14 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
             && !func->doesNotReturn()
             // FIXME
             && !(func->getName().startswith("borealis_"))
-            && IM.getIntrinsicType(func) == function_type::UNKNOWN;
+            && IM.getIntrinsicType(func) == function_type::UNKNOWN
+            && !excludedFunctionNames.count(func->getName().str());
     };
 
     auto funcs =  viewContainer(M)
                  .flatten()
                  .flatten()
-                 .map(util::takePtr{})
+                 .map(ops::take_pointer)
                  .map(llvm::dyn_caster<llvm::CallInst>{})
                  .filter(isDecomposable)
                  .toHashSet();
@@ -206,8 +214,8 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void FunctionDecomposer::print(llvm::raw_ostream& O, const llvm::Module* M) const {
+void FunctionDecomposer::print(llvm::raw_ostream&, const llvm::Module*) const {
 
 }
 
-} /* namespace borealis */
+}; /* namespace borealis */

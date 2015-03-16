@@ -37,6 +37,10 @@ static llvm::ArrayRef<uint8_t> bufferOfPod(const T& value, size_t bytes) {
     return llvm::ArrayRef<uint8_t>{ static_cast<const uint8_t*>(static_cast<const void*>(&value)), bytes };
 }
 
+static SimulatedPtrSize ptrSub(const void* p1, const void* p2) {
+    return static_cast<SimulatedPtrSize>( static_cast<const uint8_t*>(p1) - static_cast<const uint8_t*>(p2) );
+}
+
 namespace {
 struct hex {
     const llvm::ArrayRef<uint8_t>* buf;
@@ -140,6 +144,22 @@ struct MemorySimulator::Impl {
 
     bool isFromGlobalSpace(SimulatedPtr ptr) const {
         return constantStart <= ptr && constantEnd > ptr;
+    }
+
+    bool isFromDynMem(SimulatedPtr ptr) const {
+        return mallocStart <= ptr && mallocEnd > ptr;
+    }
+
+    bool isFromStack(SimulatedPtr ptr) const {
+        return allocStart <= ptr && allocEnd > ptr;
+    }
+
+
+    bool isAPointer(SimulatedPtr ptr) const {
+        return isFromGlobalSpace(ptr)
+            || isFromDynMem(ptr)
+            || isFromStack(ptr)
+            || ptr == unmeaningfulPtr;
     }
 
     ~Impl(){}
@@ -712,8 +732,10 @@ llvm::BasicBlock* MemorySimulator::accessBasicBlock(void* p) {
 std::pair<llvm::GlobalValue*, SimulatedPtrSize> MemorySimulator::accessGlobal(void* p) {
     TRACE_FUNC;
     auto realPtr = ptr_cast(p);
+    TRACE_PARAM(realPtr);
+
     if(realPtr > pimpl_->constantEnd || realPtr < pimpl_->constantStart) signalIllegalLoad(realPtr);
-    auto lb = pimpl_->constantsBwd.lower_bound(realPtr);
+    auto lb = util::less_or_equal(pimpl_->constantsBwd, realPtr);
 
     if(lb == pimpl_->constantsBwd.end()) signalIllegalLoad(realPtr);
 
@@ -775,6 +797,7 @@ void MemorySimulator::FreeMemory(void* ptr) {
     TRACE_FUNC;
 
     auto realPtr = ptr_cast(ptr);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalFree(realPtr);
 
     pimpl_->tree.free(realPtr, SegmentNode::MemoryStatus::Malloc);
 }
@@ -793,6 +816,7 @@ auto MemorySimulator::LoadBytesFromMemory(mutable_buffer_t buffer, buffer_t wher
     const auto chunk_size = pimpl_->tree.chunk_size;
     auto ptr = ptr_cast(where.data());
     TRACE_PARAM(ptr);
+    if(!pimpl_->isAPointer(ptr)) signalIllegalLoad(ptr);
 
     if(pimpl_->isFromGlobalSpace(ptr)) {
         auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(where.data())));
@@ -837,10 +861,13 @@ auto MemorySimulator::LoadBytesFromMemory(mutable_buffer_t buffer, buffer_t wher
 }
 void MemorySimulator::StoreBytesToMemory(buffer_t buffer, mutable_buffer_t where) {
     TRACE_FUNC;
+
     ASSERTC(buffer.size() == where.size());
     const auto Ptr = where.data();
     const auto realPtr = ptr_cast(Ptr);
+
     TRACE_PARAM(realPtr);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalStore(realPtr);
     const auto size = where.size();
     const auto Src = buffer.data();
 
@@ -849,7 +876,7 @@ void MemorySimulator::StoreBytesToMemory(buffer_t buffer, mutable_buffer_t where
     if(pimpl_->isFromGlobalSpace(realPtr)) {
         auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(where.data())));
         auto ptr = pimpl_->getPointerToGlobalMemory(this, gv.first, size, gv.second);
-        std::memcpy(where.data(), Src, size);
+        std::memcpy(ptr, Src, size);
         return;
     }
 
@@ -863,6 +890,7 @@ void MemorySimulator::StoreIntToMemory(const llvm::APInt& IntVal, mutable_buffer
     auto size = where.size();
     const uint8_t* Src = (const uint8_t*) IntVal.getRawData();
     const auto realPtr = ptr_cast(Ptr);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalStore(realPtr);
 
     if(llvm::sys::IsLittleEndianHost) {
         // Little-endian host - the source is ordered from LSB to MSB
@@ -877,6 +905,8 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     const auto Ptr = where.data();
     auto size = where.size();
     const auto realPtr = ptr_cast(Ptr);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalLoad(realPtr);
+
     const auto chunk_size = pimpl_->tree.chunk_size;
 
     ASSERTC(size <= chunk_size);
@@ -930,6 +960,22 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
 
     TRACES() << "Loaded value " << val.getLimitedValue() << endl;
     return ValueState::CONCRETE;
+}
+
+void* MemorySimulator::MemChr(void* ptr, uint8_t ch, size_t limit) {
+    TRACE_FUNC;
+    auto realPtr = ptr_cast(ptr);
+
+    if(pimpl_->isFromGlobalSpace(realPtr)) {
+        auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(ptr)));
+        auto ptr = pimpl_->getPointerToGlobalMemory(this, gv.first, 1, gv.second);
+        auto ret = std::memchr(ptr, ch, limit);
+        if(!ret) return nullptr;
+        return ptr_cast(realPtr + ptrSub(ret, ptr));
+    }
+
+    auto ret = pimpl_->tree.memchr(ptr_cast(ptr), ch, limit);
+    return ptr_cast(ret);
 }
 
 void MemorySimulator::Memset(void* dst, uint8_t fill, size_t size) {

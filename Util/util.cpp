@@ -13,6 +13,7 @@
 #include <unordered_set>
 
 #include "Util/util.h"
+#include "Util/functional.hpp"
 
 #include "Util/macros.h"
 
@@ -245,14 +246,14 @@ Loop* getLoopFor(Instruction* inst, LoopInfo* LI) {
 }
 
 std::list<ReturnInst*> getAllRets(Function* F) {
-    using borealis::util::takePtr;
     using borealis::util::viewContainer;
+    using namespace borealis::ops;
 
     std::unordered_set<ReturnInst*> rets;
 
     for (ReturnInst* RI : viewContainer(F)
                           .flatten()
-                          .map(takePtr())
+                          .map(take_pointer)
                           .map(dyn_caster<ReturnInst>())
                           .filter()) {
         rets.insert(RI);

@@ -11,6 +11,7 @@
 #include "Codegen/intrinsics_manager.h"
 #include "Config/config.h"
 #include "Passes/Misc/AdaptorPass.h"
+#include "Util/functional.hpp"
 
 namespace borealis {
 
@@ -149,7 +150,7 @@ public:
             using namespace borealis::util;
             auto allocas =
                 viewContainer(BB)
-               .map(takePtr{})
+               .map(ops::take_pointer)
                .filter(llvm::isaer<AllocaInst>{})
                .map(llvm::caster<AllocaInst>{})
                .toHashSet();

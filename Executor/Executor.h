@@ -100,7 +100,7 @@ public:
 
     /// freeMachineCodeForFunction - The interpreter does not generate any code.
     ///
-    void freeMachineCodeForFunction(llvm::Function *F) { }
+    void freeMachineCodeForFunction(llvm::Function*) { }
 
     // Methods used to execute code:
     // Place a call on the stack
@@ -120,7 +120,7 @@ public:
     void visitLoadInst(llvm::LoadInst &I);
     void visitStoreInst(llvm::StoreInst &I);
     void visitGetElementPtrInst(llvm::GetElementPtrInst &I);
-    void visitPHINode(llvm::PHINode &PN) {
+    void visitPHINode(llvm::PHINode&) {
         throw std::logic_error("PHI nodes already handled!");
     }
     void visitTruncInst(llvm::TruncInst &I);

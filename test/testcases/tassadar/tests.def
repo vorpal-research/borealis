@@ -6,4 +6,6 @@ simple2_fail.c
 simple_assert.c
 simple.c
 small_access.c
+strlen2.c
+strlen.c
 too_small.c
