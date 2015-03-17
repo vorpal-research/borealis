@@ -29,47 +29,33 @@ message OpaqueMemberAccessTerm {
 
 **/
 class OpaqueMemberAccessTerm: public borealis::Term {
-    Term::Ptr lhv;
+
     std::string property;
     bool indirect;
 
-    OpaqueMemberAccessTerm(Type::Ptr type, Term::Ptr lhv, const std::string& property, bool indirect = false):
-        Term(
-            class_tag(*this),
-            type,
-            lhv->getName() + (indirect ? "->" : ".") + property
-        ), lhv(lhv), property(property), indirect(indirect) {};
+    OpaqueMemberAccessTerm(Type::Ptr type, Term::Ptr lhv, const std::string& property, bool indirect = false);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueMemberAccessTerm);
 
-    Term::Ptr getLhv() const { return lhv; }
-    const std::string& getProperty() const { return property; }
-    bool isIndirect() const { return indirect; }
+    Term::Ptr getLhv() const;
+    const std::string& getProperty() const;
+    bool isIndirect() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
-        auto _lhv = tr->transform(lhv);
-        auto _type = type;
+        auto&& _lhv = tr->transform(getLhv());
+        auto&& _type = type;
         TERM_ON_CHANGED(
-            lhv != _lhv,
+            getLhv() != _lhv,
             new Self( _type, _lhv, property, indirect )
         );
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    *that->lhv == *lhv &&
-                    that->property == property &&
-                    that->indirect == indirect;
-        } else return false;
-    }
+    virtual bool equals(const Term* other) const override;
+    virtual size_t hashCode() const override;
 
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), lhv, property, indirect);
-    }
 };
 
 #include "Util/macros.h"

@@ -30,18 +30,13 @@ class OpaqueVarTerm: public borealis::Term {
 
     std::string vname;
 
-    OpaqueVarTerm(Type::Ptr type, const std::string& vname):
-        Term(
-            class_tag(*this),
-            type,
-            vname
-        ), vname(vname) {};
+    OpaqueVarTerm(Type::Ptr type, const std::string& vname);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueVarTerm);
 
-    const std::string& getVName() const { return vname; }
+    const std::string& getVName() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {

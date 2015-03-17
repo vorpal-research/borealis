@@ -26,12 +26,7 @@ message OpaqueUndefTerm {
 **/
 class OpaqueUndefTerm: public borealis::Term {
 
-    OpaqueUndefTerm(Type::Ptr type):
-        Term(
-            class_tag(*this),
-            type,
-            "<undef>"
-        ) {};
+    OpaqueUndefTerm(Type::Ptr type);
 
 public:
 
@@ -50,6 +45,7 @@ struct SMTImpl<Impl, OpaqueUndefTerm> {
             const OpaqueUndefTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getVarByTypeAndName(t->getType(), t->getName(), /*fresh = */true);
     }
 };

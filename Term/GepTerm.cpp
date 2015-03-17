@@ -6,3 +6,30 @@
  */
 
 #include "Term/GepTerm.h"
+
+namespace borealis {
+
+GepTerm::GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts):
+    Term(
+        class_tag(*this),
+        type,
+        "gep(" + base->getName() + "," +
+            util::viewContainer(shifts)
+            .map([](auto&& s) { return s->getName(); })
+            .reduce([](auto&& acc, auto&& e) { return acc + "+" + e; })
+            .getOrElse("0") +
+        ")"
+    ) {
+    subterms.insert(subterms.end(), base);
+    subterms.insert(subterms.end(), shifts.begin(), shifts.end());
+};
+
+Term::Ptr GepTerm::getBase() const {
+    return subterms[0];
+}
+
+auto GepTerm::getShifts() const -> decltype(util::viewContainer(subterms)) {
+    return util::viewContainer(subterms).drop(1);
+}
+
+} // namespace borealis

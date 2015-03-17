@@ -236,7 +236,7 @@ struct protobuf_traits_impl<GepTerm> {
 
         auto ptr = TermConverter::fromProtobuf(fn, t.base());
 
-        GepTerm::Shifts shifts;
+        std::vector<Term::Ptr> shifts;
         shifts.reserve(t.by_size());
         for (int i = 0; i < t.by_size(); ++i) {
             auto by = TermConverter::fromProtobuf(fn, t.by(i));

@@ -32,34 +32,22 @@ class OpaqueFloatingConstantTerm: public borealis::Term {
 
     double value;
 
-    OpaqueFloatingConstantTerm(Type::Ptr type, double value):
-        Term(
-            class_tag(*this),
-            type,
-            util::toString(value)
-        ), value(value) {};
+    OpaqueFloatingConstantTerm(Type::Ptr type, double value);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueFloatingConstantTerm);
 
-    double getValue() const { return value; }
+    double getValue() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
         return this->shared_from_this();
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    std::abs(that->value - value) < EPS;
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), value);
-    }
+    // XXX: akhin Do we need this or string-based equality is good enough?
+    virtual bool equals(const Term* other) const override;
+    virtual size_t hashCode() const override;
 
 };
 
@@ -69,6 +57,7 @@ struct SMTImpl<Impl, OpaqueFloatingConstantTerm> {
             const OpaqueFloatingConstantTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getRealConst(t->getValue());
     }
 };

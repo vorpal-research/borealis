@@ -30,18 +30,13 @@ class ValueTerm: public borealis::Term {
 
     bool global;
 
-    ValueTerm(Type::Ptr type, const std::string& name, bool global = false) :
-        Term(
-            class_tag(*this),
-            type,
-            name + (global ? ".global" : "")
-        ), global(global) {};
+    ValueTerm(Type::Ptr type, const std::string& name, bool global = false);
 
 public:
 
     MK_COMMON_TERM_IMPL(ValueTerm);
 
-    bool isGlobal() const { return global; }
+    bool isGlobal() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
@@ -63,6 +58,7 @@ struct SMTImpl<Impl, ValueTerm> {
             const ValueTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };

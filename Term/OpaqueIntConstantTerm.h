@@ -30,18 +30,13 @@ class OpaqueIntConstantTerm: public borealis::Term {
 
     long long value;
 
-    OpaqueIntConstantTerm(Type::Ptr type, long long value):
-        Term(
-            class_tag(*this),
-            type,
-            util::toString(value)
-        ), value(value) {};
+    OpaqueIntConstantTerm(Type::Ptr type, long long value);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueIntConstantTerm);
 
-    long long getValue() const { return value; }
+    long long getValue() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
@@ -56,6 +51,7 @@ struct SMTImpl<Impl, OpaqueIntConstantTerm> {
             const OpaqueIntConstantTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getIntConst(t->getValue());
     }
 };

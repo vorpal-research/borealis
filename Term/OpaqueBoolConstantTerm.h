@@ -30,18 +30,13 @@ class OpaqueBoolConstantTerm: public borealis::Term {
 
     bool value;
 
-    OpaqueBoolConstantTerm(Type::Ptr type, bool value):
-        Term(
-            class_tag(*this),
-            type,
-            value ? "true" : "false"
-        ), value(value) {};
+    OpaqueBoolConstantTerm(Type::Ptr type, bool value);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueBoolConstantTerm);
 
-    bool getValue() const { return value; }
+    bool getValue() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
@@ -56,6 +51,7 @@ struct SMTImpl<Impl, OpaqueBoolConstantTerm> {
             const OpaqueBoolConstantTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getBoolConst(t->getValue());
     }
 };

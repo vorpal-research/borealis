@@ -28,46 +28,26 @@ message LoadTerm {
 **/
 class LoadTerm: public borealis::Term {
 
-    Term::Ptr rhv;
-
-    LoadTerm(Type::Ptr type, Term::Ptr rhv, bool retypable = true):
-        Term(
-            class_tag(*this),
-            type,
-            "*(" + rhv->getName() + ")",
-            retypable
-        ), rhv(rhv) {};
+    LoadTerm(Type::Ptr type, Term::Ptr rhv, bool retypable = true);
 
 public:
 
     MK_COMMON_TERM_IMPL(LoadTerm);
 
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getRhv() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
-        auto _rhv = tr->transform(rhv);
-        auto _type = retypable ? getTermType(tr->FN.Type, _rhv) : type;
+        auto&& _rhv = tr->transform(getRhv());
+        auto&& _type = retypable ? getTermType(tr->FN.Type, _rhv) : type;
         TERM_ON_CHANGED(
-            rhv != _rhv,
+            getRhv() != _rhv,
             new Self( _type, _rhv, retypable )
         );
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    *that->rhv == *rhv &&
-                    that->retypable == retypable;
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), rhv, retypable);
-    }
-
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
-        auto type = rhv->getType();
+        auto&& type = rhv->getType();
 
         if (TypeUtils::isInvalid(type)) return type;
 
@@ -90,13 +70,14 @@ struct SMTImpl<Impl, LoadTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
 
+        TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
         ASSERTC(ctx != nullptr);
 
-        auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!r.empty(), "Load with non-pointer right side");
-        auto rp = r.getUnsafe();
+        auto&& r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
+        ASSERT(not r.empty(), "Load with non-pointer right side");
+        auto&& rp = r.getUnsafe();
 
         return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getType()));
     }

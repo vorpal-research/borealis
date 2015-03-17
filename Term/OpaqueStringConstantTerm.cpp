@@ -6,3 +6,18 @@
  */
 
 #include "Term/OpaqueStringConstantTerm.h"
+
+namespace borealis {
+
+OpaqueStringConstantTerm::OpaqueStringConstantTerm(Type::Ptr type, const std::string& value):
+    Term(
+        class_tag(*this),
+        type,
+        value
+    ), value(value) {};
+
+const std::string& OpaqueStringConstantTerm::getValue() const {
+    return value;
+}
+
+} // namespace borealis
