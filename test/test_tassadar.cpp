@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
-#include <set>
+#include <unordered_set>
 #include <string>
 #include <vector>
 
@@ -98,8 +98,8 @@ TEST_P(TassadarTest, basic) {
         FAIL() << "Couldn't open file with actual results: " << actualF;
     }
 
-    std::set<DefectInfo> expected;
-    std::set<DefectInfo> actual;
+    std::unordered_set<util::option<std::string>> expected;
+    std::unordered_set<util::option<std::string>> actual;
 
     expectedS >> jsonify(expected);
     actualS >> jsonify(actual);

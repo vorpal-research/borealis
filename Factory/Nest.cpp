@@ -8,6 +8,7 @@
 #include "Factory/Nest.h"
 #include "State/PredicateStateBuilder.h"
 
+#include "Util/functional.hpp"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -45,12 +46,11 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& g
                 .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
-        } else if (auto* _ = dyn_cast<ConstantAggregateZero>(ini)) {
-            util::use(_);
+        } else if (dyn_cast<ConstantAggregateZero>(ini)) {
             auto zero = FN.Term->getIntTerm(0);
             auto data = util::range(0ULL, numElements)
-                .map([&zero](unsigned long long _) { return util::use(_), zero; })
-                .toVector();
+                       .map(konst(zero))
+                       .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {

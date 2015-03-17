@@ -54,20 +54,25 @@ DEFINE_BOP(comma, COMMA);
 static auto call = [](auto&& f, auto&&... args) QUICK_RETURN(FWD(f)(FWD(args)...));
 static auto index = [](auto&& f, auto&& ix) QUICK_RETURN(FWD(f)[FWD(ix)]);
 
-static auto call_begin = [](auto&& c) -> decltype(auto) {
+static auto call_begin = [](auto&& c) -> DECLTYPE_AUTO {
     using std::begin;
     return begin(FWD(c));
 };
-static auto call_end = [](auto&& c) -> decltype(auto) {
+static auto call_end = [](auto&& c) -> DECLTYPE_AUTO {
     using std::end;
     return end(FWD(c));
 };
-static auto call_swap = [](auto&& a, auto&& b) -> decltype(auto) {
+static auto call_swap = [](auto&& a, auto&& b) -> DECLTYPE_AUTO {
     using std::swap;
     swap(FWD(a), FWD(b));
 };
 
 } /* namespace ops */
+
+static auto konst = [](auto&& a) {
+    return [&a](auto&&...) QUICK_RETURN(a);
+};
+
 } /* namespace borealis */
 
 #include "Util/unmacros.h"

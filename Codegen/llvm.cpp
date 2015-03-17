@@ -22,6 +22,7 @@
 #include "Codegen/llvm.h"
 #include "Util/functional.hpp"
 
+#include "Util/macros.h"
 namespace borealis {
 
 llvm::DebugLoc getFirstLocusForBlock(const llvm::BasicBlock* bb) {
@@ -137,28 +138,26 @@ util::option<std::string> getAsCompileTimeString(const llvm::Value* value) {
 std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value) {
     std::list<const llvm::Constant*> res;
 
-    auto* type = value->getType();
+    llvm::Type* type = value->getType();
 
     if (type->isSingleValueType()) {
         res.push_back(value);
 
-    } else if (auto* arrType = llvm::dyn_cast<llvm::ArrayType>(type)) {
+    } else if (llvm::ArrayType* arrType = llvm::dyn_cast<llvm::ArrayType>(type)) {
         auto nested = util::range(0UL, arrType->getArrayNumElements())
-            .map([&value](unsigned long i) { return value->getAggregateElement(i); })
-            .map([](const llvm::Constant* c) { return getAsSeqData(c); })
+            .map(APPLY(value->getAggregateElement))
+            .map(APPLY(getAsSeqData))
             .toList();
         res = util::viewContainer(nested).flatten().toList();
 
-    } else if (auto* structType = llvm::dyn_cast<llvm::StructType>(type)) {
+    } else if (llvm::StructType* structType = llvm::dyn_cast<llvm::StructType>(type)) {
         auto nested = util::range(0U, structType->getStructNumElements())
-            .map([&value](unsigned i) { return value->getAggregateElement(i); })
-            .map([](const llvm::Constant* c) { return getAsSeqData(c); })
+            .map(APPLY(value->getAggregateElement))
+            .map(APPLY(getAsSeqData))
             .toList();
         res = util::viewContainer(nested).flatten().toList();
 
-#include "Util/macros.h"
     } else BYE_BYE(decltype(res), "Unsupported constant-as-seq-data type: " + util::toString(type));
-#include "Util/unmacros.h"
 
     return std::move(res);
 }
@@ -191,7 +190,6 @@ DIType stripAliases(const DebugInfoFinder& dfi,DIType tp) {
     else return tp;
 }
 
-#include "Util/macros.h"
 std::map<llvm::Type*, DIType>& flattenTypeTree(
     const DebugInfoFinder& dfi,
     const std::pair<llvm::Type*, DIType>& tp,
@@ -217,7 +215,6 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
 
     return collected;
 }
-#include "Util/unmacros.h"
 
 std::map<llvm::Type*, DIType> flattenTypeTree(const DebugInfoFinder& dfi,
     const std::pair<llvm::Type*, DIType>& tp) {
@@ -485,3 +482,5 @@ bool DebugInfoFinder::addScope(llvm::DIScope Scope) {
 
 
 } // namespace borealis
+#include "Util/unmacros.h"
+
