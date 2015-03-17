@@ -1,14 +1,13 @@
 #ifndef FUNCTIONAL_HPP_
 #define FUNCTIONAL_HPP_
 
-#include <utility>
 #include <iterator>
+#include <utility>
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace ops {
-
 
 #define DEFINE_UOP(OPNAME, OP) static auto OPNAME = [](auto&& it) QUICK_RETURN(OP(FWD(it)));
 
@@ -50,6 +49,8 @@ DEFINE_BOP(rshift, >>);
 DEFINE_BOP(comma, COMMA);
 #undef COMMA
 #undef DEFINE_BOP
+
+static auto deref_equals_to = [](auto&& a, auto&& b) QUICK_RETURN(*FWD(a) == *FWD(b));
 
 static auto call = [](auto&& f, auto&&... args) QUICK_RETURN(FWD(f)(FWD(args)...));
 static auto index = [](auto&& f, auto&& ix) QUICK_RETURN(FWD(f)[FWD(ix)]);
