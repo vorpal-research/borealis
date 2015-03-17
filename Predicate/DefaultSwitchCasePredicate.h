@@ -52,7 +52,7 @@ public:
         auto&& _loc = getLocation();
         auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            getCond() != _cond || not util::equal(getCases(), _cases, util::equality()),
+            getCond() != _cond || not util::equal(getCases(), _cases, ops::equals_to),
             new Self( _cond, _cases.toVector(), _loc, _type )
         );
     }

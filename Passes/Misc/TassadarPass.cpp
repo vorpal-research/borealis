@@ -17,6 +17,7 @@
 #include "Executor/Executor.h"
 #include "Util/passes.hpp"
 #include "Util/collections.hpp"
+#include "Util/functional.hpp"
 #include "Logging/tracer.hpp"
 
 #include "Util/macros.h"
@@ -70,7 +71,7 @@ public:
 
         auto funcs = util::viewContainer(M)
                     .filter(LAM(F, funcNames.count(F.getName())))
-                    .map(LAM(F, &F))
+                    .map(ops::take_pointer)
                     .toHashSet();
 
         static config::StringConfigEntry DumpOutputFileOpt("output", "tassadar-output-file");

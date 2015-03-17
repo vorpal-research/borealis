@@ -48,7 +48,7 @@ public:
         auto&& _loc = getLocation();
         auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            not util::equal(getGlobals(), _globals, util::equality()),
+            not util::equal(getGlobals(), _globals, ops::equals_to),
             new Self( _globals.toVector(), _loc, _type )
         );
     }

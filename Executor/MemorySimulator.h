@@ -16,6 +16,7 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalValue.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
 
 namespace borealis {
 
@@ -27,7 +28,7 @@ public:
     using buffer_t = llvm::ArrayRef<uint8_t>;
     using mutable_buffer_t = llvm::MutableArrayRef<uint8_t>;
 
-    MemorySimulator(uintptr_t grain);
+    MemorySimulator(const llvm::DataLayout& dl);
     ~MemorySimulator();
 
     enum ValueState{ UNKNOWN, CONCRETE };
@@ -42,6 +43,7 @@ public:
     void* MallocMemory(size_t amount, MallocFill fillWith);
     void FreeMemory(void* ptr);
 
+    void* MemChr(void* ptr, uint8_t ch, size_t limit);
     void Memset(void* dst, uint8_t fill, size_t size);
 
     bool isOpaquePointer(void* ptr);
@@ -49,11 +51,13 @@ public:
 
     void* getPointerToFunction(llvm::Function* f, size_t size);
     void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);
-    void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size);
+    void* getPointerToGlobal(llvm::GlobalValue* gv, size_t size, uintptr_t offset);
 
+    void initializeMemory(const llvm::Constant *Init, void *Addr);
+    llvm::GenericValue getConstantValue(const llvm::Constant *C);
     llvm::Function* accessFunction(void*);
     llvm::BasicBlock* accessBasicBlock(void*);
-    llvm::GlobalValue* accessGlobal(void*);
+    std::pair<llvm::GlobalValue*, uintptr_t> accessGlobal(void*);
 
     uintptr_t getQuant() const;
 };

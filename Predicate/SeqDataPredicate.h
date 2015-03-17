@@ -53,7 +53,7 @@ public:
         auto&& _loc = getLocation();
         auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            getBase() != _base || not util::equal(getData(), _data, util::equality()),
+            getBase() != _base || not util::equal(getData(), _data, ops::equals_to),
             new Self( _base, _data.toVector(), _loc, _type )
         );
     }

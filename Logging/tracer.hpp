@@ -10,6 +10,8 @@
 
 #include <chrono>
 
+#include <tinyformat/tinyformat.h>
+
 #include "Logging/logstream.hpp"
 
 namespace borealis {
@@ -57,6 +59,12 @@ private:
         __PRETTY_FUNCTION__, \
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
 
+#define TRACE_PARAM(P) borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+    << #P << " = " << P << borealis::logging::endl;
+
+#define TRACE_FMT(P...) borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
+    << tfm::format(P) << borealis::logging::endl;
+
 #define TRACES() borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain)
 
 #define TRACE_BLOCK(ID) \
@@ -78,6 +86,7 @@ private:
 
 #else
 #define TRACE_FUNC
+#define TRACE_PARAMS(...)
 #define TRACES()
 #define TRACE_BLOCK(ID)
 #define TRACE_MEASUREMENT(M...)

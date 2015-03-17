@@ -20,6 +20,7 @@
 
 #include "Codegen/FileManager.h"
 #include "Codegen/llvm.h"
+#include "Util/functional.hpp"
 
 namespace borealis {
 
@@ -52,9 +53,10 @@ static std::reverse_iterator<It> reverse(It it) {
 
 void approximateAllDebugLocs(llvm::BasicBlock* bb) {
     using namespace llvm;
+
     DebugLoc ldl;
     MDNode* lmd;
-    auto vec = util::viewContainer(*bb).map(util::takePtr{}).toVector();
+    auto vec = util::viewContainer(*bb).map(ops::take_pointer).toVector();
 
     for(auto* pI: util::view(vec.rbegin(), vec.rend())) {
         auto& I = *pI;

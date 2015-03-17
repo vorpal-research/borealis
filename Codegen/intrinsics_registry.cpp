@@ -161,6 +161,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     },
     [](const IntrinsicsManager&, const llvm::Function& f) -> function_type {
         auto name = getFunctionName(f);
+
         return name == "borealis_assert"
                ? function_type::BUILTIN_BOR_ASSERT
                : function_type::UNKNOWN;

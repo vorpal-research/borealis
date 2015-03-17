@@ -8,9 +8,11 @@
 #ifndef TYPEUTILS_H_
 #define TYPEUTILS_H_
 
+#include <Util/functional.hpp>
 #include "Type/Type.def"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
+#include "Util/functional.hpp"
 
 #include "Util/macros.h"
 
@@ -69,7 +71,7 @@ struct TypeUtils {
             std::string ret = TypeUtils::toString(*Fun->getRetty()) + "( ";
 
             ret += util::viewContainer(Fun->getArgs())
-                   .map(util::deref())
+                   .map(ops::dereference)
                    .map(TypeUtils::toString)
                    .reduce([](auto&& a, auto&& b) {
                         return a + ", " + b;
