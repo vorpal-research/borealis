@@ -26,12 +26,7 @@ message OpaqueInvalidPtrTerm {
 **/
 class OpaqueInvalidPtrTerm: public borealis::Term {
 
-    OpaqueInvalidPtrTerm(Type::Ptr type):
-        Term(
-            class_tag(*this),
-            type,
-            "<invalid>"
-        ) {};
+    OpaqueInvalidPtrTerm(Type::Ptr type);
 
 public:
 
@@ -50,6 +45,7 @@ struct SMTImpl<Impl, OpaqueInvalidPtrTerm> {
             const OpaqueInvalidPtrTerm*,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getInvalidPtr();
     }
 };

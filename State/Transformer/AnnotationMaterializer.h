@@ -65,7 +65,7 @@ public:
     Term::Ptr transformOpaqueCall(OpaqueCallTermPtr trm) {
         if(auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
             if(builtin->getVName() == "property") {
-                auto rhv = trm->getRhv();
+                auto rhv = trm->getRhv().toVector();
                 if(rhv.size() != 2) failWith("Illegal \\property access " + trm->getName() + ": exactly two operands expected");
 
                 auto prop = FN.Term->getOpaqueConstantTerm(rhv[0]->getName());
@@ -74,7 +74,7 @@ public:
                 return FN.Term->getReadPropertyTerm(FN.Type->getUnknownType(), prop, val);
 
             } else if(builtin->getVName() == "bound") {
-                auto rhv = trm->getRhv();
+                auto rhv = trm->getRhv().toVector();
                 if(rhv.size() != 1) failWith("Illegal \\bound access " + trm->getName() + ": exactly one operand expected");
 
                 auto val = this->transform(rhv[0]);
@@ -82,7 +82,7 @@ public:
                 return FN.Term->getBoundTerm(val);
 
             } else if(builtin->getVName() == "is_valid_ptr") {
-                auto rhv = trm->getRhv();
+                auto rhv = trm->getRhv().toVector();
                 if(rhv.size() != 1) failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": exactly one operand expected");
 
                 auto val = this->transform(rhv[0]);

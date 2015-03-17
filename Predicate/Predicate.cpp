@@ -76,9 +76,7 @@ bool Predicate::equals(const Predicate* other) const {
    if (other == nullptr) return false;
    return classTag == other->classTag &&
            type == other->type &&
-           util::equal(ops, other->ops,
-               [](auto&& a, auto&& b) { return *a == *b; }
-           );
+           util::equal(ops, other->ops, ops::deref_equals_to);
 }
 
 size_t Predicate::hashCode() const {

@@ -28,32 +28,24 @@ message ValueTerm {
 **/
 class ValueTerm: public borealis::Term {
 
+    std::string vname;
     bool global;
 
-    ValueTerm(Type::Ptr type, const std::string& name, bool global = false) :
-        Term(
-            class_tag(*this),
-            type,
-            name + (global ? ".global" : "")
-        ), global(global) {};
+    ValueTerm(Type::Ptr type, const std::string& vname, bool global = false);
 
 public:
 
     MK_COMMON_TERM_IMPL(ValueTerm);
 
-    bool isGlobal() const { return global; }
+    const std::string& getVName() const;
+    bool isGlobal() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
         return this->shared_from_this();
     }
 
-    Term::Ptr withNewName(const std::string& name) const {
-        TERM_ON_CHANGED(
-            this->name != name,
-            new Self(type, name, global)
-        )
-    }
+    Term::Ptr withNewName(const std::string& vname) const;
 
 };
 
@@ -63,6 +55,7 @@ struct SMTImpl<Impl, ValueTerm> {
             const ValueTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };

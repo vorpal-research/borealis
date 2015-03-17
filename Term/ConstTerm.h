@@ -26,12 +26,7 @@ message ConstTerm {
 **/
 class ConstTerm: public borealis::Term {
 
-    ConstTerm(Type::Ptr type, const std::string& name) :
-        Term(
-                class_tag(*this),
-                type,
-                name
-        ) {};
+    ConstTerm(Type::Ptr type, const std::string& name);
 
 public:
 
@@ -51,10 +46,13 @@ struct SMTImpl<Impl, ConstTerm> {
             const ConstTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+
+        TRACE_FUNC;
+
         using borealis::logging::endl;
         using borealis::logging::wtf;
         // XXX: ConstTerm means we have an unsupported LLVM constant somewhere...
-        auto res = ef.getVarByTypeAndName(t->getType(), t->getName());
+        auto&& res = ef.getVarByTypeAndName(t->getType(), t->getName());
         wtf() << "Got " << res << " for " << t->getName() << endl;
         return res;
     }

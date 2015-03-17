@@ -30,18 +30,13 @@ class ReturnValueTerm: public borealis::Term {
 
     std::string funcName;
 
-    ReturnValueTerm(Type::Ptr type, const std::string& funcName) :
-        Term(
-            class_tag(*this),
-            type,
-            "\\result_" + funcName
-        ), funcName(funcName) {};
+    ReturnValueTerm(Type::Ptr type, const std::string& funcName);
 
 public:
 
     MK_COMMON_TERM_IMPL(ReturnValueTerm);
 
-    const std::string& getFunctionName() const { return funcName; }
+    const std::string& getFunctionName() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
@@ -56,6 +51,7 @@ struct SMTImpl<Impl, ReturnValueTerm> {
             const ReturnValueTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };

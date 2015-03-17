@@ -51,6 +51,8 @@ DEFINE_BOP(comma, COMMA);
 #undef COMMA
 #undef DEFINE_BOP
 
+static auto deref_equals_to = [](auto&& a, auto&& b) QUICK_RETURN(*FWD(a) == *FWD(b));
+
 static auto call = [](auto&& f, auto&&... args) QUICK_RETURN(FWD(f)(FWD(args)...));
 static auto index = [](auto&& f, auto&& ix) QUICK_RETURN(FWD(f)[FWD(ix)]);
 

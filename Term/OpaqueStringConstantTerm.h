@@ -30,18 +30,13 @@ class OpaqueStringConstantTerm: public borealis::Term {
 
     std::string value;
 
-    OpaqueStringConstantTerm(Type::Ptr type, const std::string& value):
-        Term(
-            class_tag(*this),
-            type,
-            value
-        ), value(value) {};
+    OpaqueStringConstantTerm(Type::Ptr type, const std::string& value);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueStringConstantTerm);
 
-    std::string getValue() const { return value; }
+    const std::string& getValue() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {

@@ -28,55 +28,29 @@ message OpaqueCallTerm {
 
 **/
 class OpaqueCallTerm: public borealis::Term {
-    Term::Ptr lhv;
-    std::vector<Term::Ptr> rhv;
 
-    OpaqueCallTerm(Type::Ptr type, Term::Ptr lhv, const std::vector<Term::Ptr>& rhv):
-        Term(
-            class_tag(*this),
-            type,
-            lhv->getName() + "(" + util::toString(
-                util::streams::delimited(
-                    util::viewContainer(rhv).map(
-                        [](Term::Ptr trm){ return trm->getName(); }
-                    )
-                )
-            ) + ")"
-        ), lhv(lhv), rhv(rhv) {};
+    OpaqueCallTerm(Type::Ptr type, Term::Ptr lhv, const std::vector<Term::Ptr>& rhv);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueCallTerm);
 
-    Term::Ptr getLhv() const { return lhv; }
-    const std::vector<Term::Ptr>& getRhv() const { return rhv; }
+    Term::Ptr getLhv() const;
+    auto getRhv() const -> decltype(util::viewContainer(subterms));
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
-        auto _lhv = tr->transform(lhv);
-        auto _rhv = util::viewContainer(rhv).map([tr](Term::Ptr arg){
-            return tr->transform(arg);
-        }).toVector();
-        auto _type = tr->FN.Type->getUnknownType();
+        auto&& _lhv = tr->transform(getLhv());
+        auto&& _rhv = getRhv().map(
+            [&](auto&& arg) { return tr->transform(arg); }
+        );
+        auto&& _type = tr->FN.Type->getUnknownType();
         TERM_ON_CHANGED(
-            lhv != _lhv || rhv != _rhv,
-            new Self( _type, _lhv, _rhv )
+            getLhv() != _lhv || not util::equal(getRhv(), _rhv, ops::equals_to),
+            new Self( _type, _lhv, _rhv.toVector() )
         );
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    *that->lhv == *lhv &&
-                    util::equal(that->rhv, rhv,
-                        [](Term::Ptr b, Term::Ptr a){ return *b == *a; }
-                    );
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), lhv, rhv);
-    }
 };
 
 #include "Util/macros.h"

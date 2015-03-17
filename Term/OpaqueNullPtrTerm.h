@@ -26,12 +26,7 @@ message OpaqueNullPtrTerm {
 **/
 class OpaqueNullPtrTerm: public borealis::Term {
 
-    OpaqueNullPtrTerm(Type::Ptr type):
-        Term(
-            class_tag(*this),
-            type,
-            "<nullptr>"
-        ) {};
+    OpaqueNullPtrTerm(Type::Ptr type);
 
 public:
 
@@ -50,6 +45,7 @@ struct SMTImpl<Impl, OpaqueNullPtrTerm> {
             const OpaqueNullPtrTerm*,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getNullPtr();
     }
 };

@@ -46,36 +46,22 @@ class ArgumentTerm: public borealis::Term {
     unsigned int idx;
     ArgumentKind kind;
 
-    ArgumentTerm(Type::Ptr type, unsigned int idx, const std::string& name, ArgumentKind kind = ArgumentKind::ANY) :
-        Term(
-            class_tag(*this),
-            type,
-            name
-        ), idx(idx), kind(kind) {}
+    ArgumentTerm(Type::Ptr type, unsigned int idx, const std::string& name, ArgumentKind kind = ArgumentKind::ANY);
 
 public:
 
     MK_COMMON_TERM_IMPL(ArgumentTerm);
 
-    unsigned getIdx() const { return idx; }
-    ArgumentKind getKind() const { return kind; }
+    unsigned getIdx() const;
+    ArgumentKind getKind() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
         return this->shared_from_this();
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    that->idx == idx &&
-                    that->kind == kind;
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), idx, kind);
-    }
+    virtual bool equals(const Term* other) const override;
+    virtual size_t hashCode() const override;
 
 };
 
@@ -85,6 +71,7 @@ struct SMTImpl<Impl, ArgumentTerm> {
             const ArgumentTerm* t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
+        TRACE_FUNC;
         return ef.getVarByTypeAndName(t->getType(), t->getName());
     }
 };

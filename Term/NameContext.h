@@ -22,7 +22,7 @@ struct NameContext {
 
 template<class Streamer>
 Streamer& operator<<(Streamer& str, const NameContext& nc) {
-    switch(nc.placement) {
+    switch (nc.placement) {
     case NameContext::Placement::InnerScope:
         str << "in function " << nc.func->getName() << ": " << nc.loc;
         break;

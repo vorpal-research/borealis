@@ -28,20 +28,15 @@ message OpaqueBuiltinTerm {
 **/
 class OpaqueBuiltinTerm: public borealis::Term {
 
-    const std::string vname;
+    std::string vname;
 
-    OpaqueBuiltinTerm(Type::Ptr type, const std::string& vname):
-        Term(
-            class_tag(*this),
-            type,
-            "\\" + vname
-        ), vname(vname) {};
+    OpaqueBuiltinTerm(Type::Ptr type, const std::string& vname);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueBuiltinTerm);
 
-    const std::string& getVName() const { return vname; }
+    const std::string& getVName() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {

@@ -28,44 +28,26 @@ message SignTerm {
 **/
 class SignTerm: public borealis::Term {
 
-    Term::Ptr rhv;
-
-    SignTerm(Type::Ptr type, Term::Ptr rhv):
-        Term(
-            class_tag(*this),
-            type,
-            "sign(" + rhv->getName() + ")"
-        ), rhv(rhv) {};
+    SignTerm(Type::Ptr type, Term::Ptr rhv);
 
 public:
 
     MK_COMMON_TERM_IMPL(SignTerm);
 
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getRhv() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
-        auto _rhv = tr->transform(rhv);
-        auto _type = getTermType(tr->FN.Type, _rhv);
+        auto&& _rhv = tr->transform(getRhv());
+        auto&& _type = getTermType(tr->FN.Type, _rhv);
         TERM_ON_CHANGED(
-            rhv != _rhv,
+            getRhv() != _rhv,
             new Self( _type, _rhv )
         );
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    *that->rhv == *rhv;
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), rhv);
-    }
-
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr rhv) {
-        auto type = rhv->getType();
+        auto&& type = rhv->getType();
 
         if (TypeUtils::isInvalid(type)) return type;
 
@@ -86,15 +68,16 @@ struct SMTImpl<Impl, SignTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
 
+        TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
-        auto rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+        auto&& rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        auto rhvbv = rhvsmt.template to<DynBV>();
-        ASSERT(!rhvbv.empty(), "Sign for non bit-vector");
+        auto&& rhvbv = rhvsmt.template to<DynBV>();
+        ASSERT(not rhvbv.empty(), "Sign for non bit-vector");
 
-        auto rhv = rhvbv.getUnsafe();
-        auto size = rhv.getBitSize();
+        auto&& rhv = rhvbv.getUnsafe();
+        auto&& size = rhv.getBitSize();
 
         return rhv.extract(size-1, size-1).zgrowTo(Integer::bitsize);
     }

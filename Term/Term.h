@@ -8,9 +8,12 @@
 #ifndef TERM_H_
 #define TERM_H_
 
+#include <llvm/Support/Casting.h>
+
 #include <memory>
 #include <string>
 
+#include "Logging/tracer.hpp"
 #include "SMT/SMTUtil.h"
 #include "Type/TypeFactory.h"
 #include "Util/typeindex.hpp"
@@ -37,52 +40,34 @@ message Term {
 }
 
 **/
-class Term : public ClassTag, public std::enable_shared_from_this<Term> {
+class Term : public ClassTag, public std::enable_shared_from_this<const Term> {
 
 public:
 
-    typedef std::shared_ptr<const Term> Ptr;
-    typedef std::unique_ptr<proto::Term> ProtoPtr;
+    using Ptr = std::shared_ptr<const Term>;
+    using ProtoPtr = std::unique_ptr<proto::Term>;
+    using Subterms = std::vector<Term::Ptr>;
 
 protected:
 
-    Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable = true) :
-        ClassTag(classTag), type(type), name(name), retypable(retypable) {};
+    Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable = true);
     Term(const Term&) = default;
 
     friend struct protobuf_traits<Term>;
 
 public:
-    virtual ~Term() {};
 
-    Type::Ptr getType() const {
-        return type;
-    }
+    virtual ~Term() = default;
 
-    const std::string& getName() const {
-        return name;
-    }
+    Type::Ptr getType() const;
+    const std::string& getName() const;
+    bool isRetypable() const;
 
-    bool isRetypable() const {
-        return retypable;
-    }
+    size_t getNumSubterms() const;
+    const Subterms& getSubterms() const;
 
-    virtual bool equals(const Term* other) const {
-        if (other == nullptr) return false;
-        return classTag == other->classTag &&
-                type == other->type &&
-                name == other->name &&
-                retypable == other->retypable;
-    }
-
-    bool operator==(const Term& other) const {
-        if (this == &other) return true;
-        return this->equals(&other);
-    }
-
-    virtual size_t hashCode() const {
-        return util::hash::defaultHasher()(classTag, type, name, retypable);
-    }
+    virtual bool equals(const Term* other) const;
+    virtual size_t hashCode() const;
 
     static bool classof(const Term*) {
         return true;
@@ -94,7 +79,11 @@ protected:
     std::string name;
     bool retypable;
 
+    Subterms subterms;
+
 };
+
+bool operator==(const Term& a, const Term& b);
 
 } /* namespace borealis */
 
@@ -115,12 +104,12 @@ struct hash<const borealis::Term::Ptr> {
 
 #define MK_COMMON_TERM_IMPL(CLASS) \
 private: \
-    typedef CLASS Self; \
-    CLASS(const CLASS&) = default; \
+    using Self = CLASS; \
+    CLASS(const Self&) = default; \
 public: \
     friend class TermFactory; \
     friend struct protobuf_traits_impl<CLASS>; \
-    virtual ~CLASS() {}; \
+    virtual ~CLASS() = default; \
     static bool classof(const Self*) { \
         return true; \
     } \

@@ -28,45 +28,27 @@ message OpaqueIndexingTerm {
 
 **/
 class OpaqueIndexingTerm: public borealis::Term {
-    Term::Ptr lhv;
-    Term::Ptr rhv;
 
-    OpaqueIndexingTerm(Type::Ptr type, Term::Ptr lhv, Term::Ptr rhv):
-        Term(
-            class_tag(*this),
-            type,
-            lhv->getName() + "[" + rhv->getName() + "]"
-        ), lhv(lhv), rhv(rhv) {};
+    OpaqueIndexingTerm(Type::Ptr type, Term::Ptr lhv, Term::Ptr rhv);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueIndexingTerm);
 
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getLhv() const;
+    Term::Ptr getRhv() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
-        auto _lhv = tr->transform(lhv);
-        auto _rhv = tr->transform(rhv);
-        auto _type = tr->FN.Type->getUnknownType(); // FIXME: Can we do better?
+        auto&& _lhv = tr->transform(getLhv());
+        auto&& _rhv = tr->transform(getRhv());
+        auto&& _type = tr->FN.Type->getUnknownType(); // FIXME: Can we do better?
         TERM_ON_CHANGED(
-            lhv != _lhv || rhv != _rhv,
+            getLhv() != _lhv || getRhv() != _rhv,
             new Self( _type, _lhv, _rhv )
         );
     }
 
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    *that->lhv == *lhv &&
-                    *that->rhv == *rhv;
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), lhv, rhv);
-    }
 };
 
 #include "Util/macros.h"

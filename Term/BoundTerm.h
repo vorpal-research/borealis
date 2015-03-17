@@ -28,40 +28,22 @@ message BoundTerm {
 **/
 class BoundTerm: public borealis::Term {
 
-    Term::Ptr rhv;
-
-    BoundTerm(Type::Ptr type, Term::Ptr rhv):
-        Term(
-            class_tag(*this),
-            type,
-            "bound(" + rhv->getName() + ")"
-        ), rhv(rhv) {};
+    BoundTerm(Type::Ptr type, Term::Ptr rhv);
 
 public:
 
     MK_COMMON_TERM_IMPL(BoundTerm);
 
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getRhv() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
-        auto _rhv = tr->transform(rhv);
-        auto _type = type;
+        auto&& _rhv = tr->transform(getRhv());
+        auto&& _type = type;
         TERM_ON_CHANGED(
-            rhv != _rhv,
+            getRhv() != _rhv,
             new Self( _type, _rhv )
         );
-    }
-
-    virtual bool equals(const Term* other) const override {
-        if (const Self* that = llvm::dyn_cast_or_null<Self>(other)) {
-            return Term::equals(other) &&
-                    *that->rhv == *rhv;
-        } else return false;
-    }
-
-    virtual size_t hashCode() const override {
-        return util::hash::defaultHasher()(Term::hashCode(), rhv);
     }
 
 };
@@ -74,13 +56,14 @@ struct SMTImpl<Impl, BoundTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
 
+        TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
         ASSERTC(ctx != nullptr);
 
-        auto r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!r.empty(), "Bound read with non-pointer right side");
-        auto rp = r.getUnsafe();
+        auto&& r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
+        ASSERT(not r.empty(), "Bound read with non-pointer right side");
+        auto&& rp = r.getUnsafe();
 
         return ctx->getBound(rp);
     }
