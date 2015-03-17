@@ -30,9 +30,6 @@ message DefaultSwitchCasePredicate {
 **/
 class DefaultSwitchCasePredicate: public borealis::Predicate {
 
-    Term::Ptr cond;
-    const std::vector<Term::Ptr> cases;
-
     DefaultSwitchCasePredicate(
             Term::Ptr cond,
             const std::vector<Term::Ptr>& cases,
@@ -43,25 +40,22 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(DefaultSwitchCasePredicate);
 
-    Term::Ptr getCond() const { return cond; }
-    const std::vector<Term::Ptr> getCases() const { return cases; }
+    Term::Ptr getCond() const;
+    auto getCases() const -> decltype(util::viewContainer(ops));
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _cond = t->transform(cond);
-        auto _cases = util::viewContainer(cases).map(
-            [&t](const Term::Ptr& e) { return t->transform(e); }
-        ).toVector();
-        auto _loc = location;
-        auto _type = type;
+        auto&& _cond = t->transform(getCond());
+        auto&& _cases = getCases().map(
+            [&](auto&& e) { return t->transform(e); }
+        );
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            cond != _cond || cases != _cases,
-            new Self( _cond, _cases, _loc, _type )
+            getCond() != _cond || not util::equal(getCases(), _cases, util::equality()),
+            new Self( _cond, _cases.toVector(), _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 
@@ -76,13 +70,13 @@ struct SMTImpl<Impl, DefaultSwitchCasePredicate> {
 
         USING_SMT_IMPL(Impl)
 
-        auto le = SMT<Impl>::doit(p->getCond(), ef, ctx).template to<Integer>();
-        ASSERT(!le.empty(), "Encountered switch with non-Integer condition");
+        auto&& le = SMT<Impl>::doit(p->getCond(), ef, ctx).template to<Integer>();
+        ASSERT(not le.empty(), "Encountered switch with non-Integer condition");
 
-        auto res = ef.getTrue();
-        for (const auto& c : p->getCases()) {
-            auto re = SMT<Impl>::doit(c, ef, ctx).template to<Integer>();
-            ASSERT(!re.empty(), "Encountered switch with non-Integer case");
+        auto&& res = ef.getTrue();
+        for (auto&& c : p->getCases()) {
+            auto&& re = SMT<Impl>::doit(c, ef, ctx).template to<Integer>();
+            ASSERT(not re.empty(), "Encountered switch with non-Integer case");
             res = res && le.getUnsafe() != re.getUnsafe();
         }
         return res;

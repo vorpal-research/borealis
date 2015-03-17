@@ -15,27 +15,24 @@ AllocaPredicate::AllocaPredicate(
         Term::Ptr origNumElements,
         const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type, loc),
-            lhv(lhv),
-            numElements(numElements),
-            origNumElements(origNumElements) {
+            Predicate(class_tag(*this), type, loc) {
     asString = lhv->getName() + "=alloca(" +
         numElements->getName() + "," +
         origNumElements->getName() +
     ")";
+    ops = { lhv, numElements, origNumElements };
 }
 
-bool AllocaPredicate::equals(const Predicate* other) const {
-    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return Predicate::equals(other) &&
-                *lhv == *o->lhv &&
-                *numElements == *o->numElements &&
-                *origNumElements == *o->origNumElements;
-    } else return false;
+Term::Ptr AllocaPredicate::getLhv() const {
+    return ops[0];
 }
 
-size_t AllocaPredicate::hashCode() const {
-    return util::hash::defaultHasher()(Predicate::hashCode(), lhv, numElements, origNumElements);
+Term::Ptr AllocaPredicate::getNumElems() const {
+    return ops[1];
+}
+
+Term::Ptr AllocaPredicate::getOrigNumElems() const {
+    return ops[2];
 }
 
 } /* namespace borealis */

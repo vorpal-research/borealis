@@ -11,6 +11,8 @@
 #include "Annotation/RequiresAnnotation.h"
 #include "Predicate/Predicate.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 
 PredicateType predicateType(const Annotation* a) {
@@ -32,6 +34,66 @@ Predicate::Predicate(id_t classTag, PredicateType type) :
 Predicate::Predicate(id_t classTag, PredicateType type, const Locus& loc) :
         ClassTag(classTag), type(type), location(loc) {}
 
+PredicateType Predicate::getType() const {
+   return type;
+}
+
+Predicate* Predicate::setType(PredicateType type) {
+   this->type = type;
+   return this;
+}
+
+const Locus& Predicate::getLocation() const {
+   return location;
+}
+
+Predicate* Predicate::setLocations(const Locus& loc) {
+   this->location = loc;
+   return this;
+}
+
+unsigned Predicate::getNumOperands() const {
+    return ops.size();
+}
+
+const Predicate::Operands& Predicate::getOperands() const {
+    return ops;
+}
+
+std::string Predicate::toString() const {
+   switch (type) {
+   case PredicateType::REQUIRES: return "@R " + asString;
+   case PredicateType::ENSURES:  return "@E " + asString;
+   case PredicateType::ASSERT:   return "@A " + asString;
+   case PredicateType::ASSUME:   return "@U " + asString;
+   case PredicateType::PATH:     return "@P " + asString;
+   case PredicateType::STATE:    return asString;
+   default:                      return "@?" + asString;
+   }
+}
+
+bool Predicate::equals(const Predicate* other) const {
+   if (other == nullptr) return false;
+   return classTag == other->classTag &&
+           type == other->type &&
+           util::equal(ops, other->ops,
+               [](auto&& a, auto&& b) { return *a == *b; }
+           );
+}
+
+size_t Predicate::hashCode() const {
+   return util::hash::defaultHasher()(classTag, type, ops);
+}
+
+Predicate* Predicate::clone() const {
+    BYE_BYE(Predicate*, "Should not be called!");
+}
+
+bool operator==(const Predicate& a, const Predicate& b) {
+   if (&a == &b) return true;
+   return a.equals(&b);
+}
+
 std::ostream& operator<<(std::ostream& s, Predicate::Ptr p) {
     return s << p->toString();
 }
@@ -43,5 +105,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Predic
     }
     return s;
 }
+
+#include "Util/unmacros.h"
 
 } // namespace borealis

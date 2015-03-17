@@ -14,34 +14,25 @@ SeqDataPredicate::SeqDataPredicate(
         const std::vector<Term::Ptr>& data,
         const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type, loc),
-            base(base),
-            data(data) {
+            Predicate(class_tag(*this), type, loc) {
 
-    std::string a{""};
-
-    if (!data.empty()) {
-        a = util::head(data)->getName();
-        for (const auto& g : util::tail(data)) {
-            a = a + "," + g->getName();
-        }
-    }
+    auto&& a = util::viewContainer(data)
+                .map([](auto&& d) { return d->getName(); })
+                .reduce([](auto&& acc, auto&& e) { return acc + "," + e; })
+                .getOrElse("");
 
     asString = base->getName() + "=(" + a + ")";
+
+    ops.insert(ops.end(), base);
+    ops.insert(ops.end(), data.begin(), data.end());
 }
 
-bool SeqDataPredicate::equals(const Predicate* other) const {
-    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return Predicate::equals(other) &&
-                *base == *o->base &&
-                util::equal(data, o->data,
-                    [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
-                );
-    } else return false;
+Term::Ptr SeqDataPredicate::getBase() const {
+    return ops[0];
 }
 
-size_t SeqDataPredicate::hashCode() const {
-    return util::hash::defaultHasher()(Predicate::hashCode(), base, data);
+auto SeqDataPredicate::getData() const -> decltype(util::viewContainer(ops)) {
+    return util::viewContainer(ops).drop(1);
 }
 
 } /* namespace borealis */

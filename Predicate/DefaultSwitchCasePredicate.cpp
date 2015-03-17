@@ -16,37 +16,25 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
         const std::vector<Term::Ptr>& cases,
         const Locus& loc,
         PredicateType type) :
-            Predicate(class_tag(*this), type, loc),
-            cond(cond),
-            cases(cases) {
+            Predicate(class_tag(*this), type, loc) {
 
-    using borealis::util::head;
-    using borealis::util::tail;
-
-    std::string a{""};
-
-    if (!cases.empty()) {
-        a = head(cases)->getName();
-        for (const auto& c : tail(cases)) {
-            a = a + "|" + c->getName();
-        }
-    }
+    auto&& a = util::viewContainer(cases)
+                .map([](auto&& c) { return c->getName(); })
+                .reduce([](auto&& acc, auto&& e) { return acc + "|" + e; })
+                .getOrElse("");
 
     asString = cond->getName() + "=not(" + a + ")";
+
+    ops.insert(ops.end(), cond);
+    ops.insert(ops.end(), cases.begin(), cases.end());
 }
 
-bool DefaultSwitchCasePredicate::equals(const Predicate* other) const {
-    if (const Self* o = llvm::dyn_cast_or_null<Self>(other)) {
-        return Predicate::equals(other) &&
-                *cond == *o->cond &&
-                util::equal(cases, o->cases,
-                    [](const Term::Ptr& a, const Term::Ptr& b) { return *a == *b; }
-                );
-    } else return false;
+Term::Ptr DefaultSwitchCasePredicate::getCond() const {
+    return ops[0];
 }
 
-size_t DefaultSwitchCasePredicate::hashCode() const {
-    return util::hash::defaultHasher()(Predicate::hashCode(), cond, cases);
+auto DefaultSwitchCasePredicate::getCases() const -> decltype(util::viewContainer(ops)) {
+    return util::viewContainer(ops).drop(1);
 }
 
 } /* namespace borealis */

@@ -30,9 +30,6 @@ message EqualityPredicate {
 **/
 class EqualityPredicate: public borealis::Predicate {
 
-    Term::Ptr lhv;
-    Term::Ptr rhv;
-
     EqualityPredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
@@ -43,23 +40,20 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(EqualityPredicate);
 
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getLhv() const;
+    Term::Ptr getRhv() const;
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _lhv = t->transform(lhv);
-        auto _rhv = t->transform(rhv);
-        auto _loc = location;
-        auto _type = type;
+        auto&& _lhv = t->transform(getLhv());
+        auto&& _rhv = t->transform(getRhv());
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            lhv != _lhv || rhv != _rhv,
+            getLhv() != _lhv || getRhv() != _rhv,
             new Self( _lhv, _rhv, _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 

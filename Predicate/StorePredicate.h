@@ -30,9 +30,6 @@ message StorePredicate {
 **/
 class StorePredicate: public borealis::Predicate {
 
-    Term::Ptr lhv;
-    Term::Ptr rhv;
-
     StorePredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
@@ -43,23 +40,20 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(StorePredicate);
 
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getLhv() const;
+    Term::Ptr getRhv() const;
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _lhv = t->transform(lhv);
-        auto _rhv = t->transform(rhv);
-        auto _loc = location;
-        auto _type = type;
+        auto&& _lhv = t->transform(getLhv());
+        auto&& _rhv = t->transform(getRhv());
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            lhv != _lhv || rhv != _rhv,
+            getLhv() != _lhv || getRhv() != _rhv,
             new Self( _lhv, _rhv, _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 
@@ -76,11 +70,11 @@ struct SMTImpl<Impl, StorePredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        auto l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!l.empty(), "Store dealing with a non-pointer value");
-        auto lp = l.getUnsafe();
+        auto&& l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
+        ASSERT(not l.empty(), "Store dealing with a non-pointer value");
+        auto&& lp = l.getUnsafe();
 
-        auto r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
 
         ctx->writeExprToMemory(lp, r);
 

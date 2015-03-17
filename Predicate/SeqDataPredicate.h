@@ -31,9 +31,6 @@ message SeqDataPredicate {
 **/
 class SeqDataPredicate: public borealis::Predicate {
 
-    Term::Ptr base;
-    std::vector<Term::Ptr> data;
-
     SeqDataPredicate(
             Term::Ptr base,
             const std::vector<Term::Ptr>& data,
@@ -44,25 +41,22 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(SeqDataPredicate);
 
-    Term::Ptr getBase() const { return base; }
-    const std::vector<Term::Ptr>& getData() const { return data; }
+    Term::Ptr getBase() const;
+    auto getData() const -> decltype(util::viewContainer(ops));
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _base = t->transform(base);
-        auto _data = util::viewContainer(data).map(
-            [&t](const Term::Ptr& d) { return t->transform(d); }
-        ).toVector();
-        auto _loc = location;
-        auto _type = type;
+        auto&& _base = t->transform(getBase());
+        auto&& _data = getData().map(
+            [&](auto&& d) { return t->transform(d); }
+        );
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            base != _base || data != _data,
-            new Self( _base, _data, _loc, _type )
+            getBase() != _base || not util::equal(getData(), _data, util::equality()),
+            new Self( _base, _data.toVector(), _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 
@@ -79,17 +73,17 @@ struct SMTImpl<Impl, SeqDataPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        auto l = SMT<Impl>::doit(p->getBase(), ef, ctx).template to<Pointer>();
-        ASSERT(!l.empty(), "SeqData with non-pointer base");
-        auto lp = l.getUnsafe();
+        auto&& l = SMT<Impl>::doit(p->getBase(), ef, ctx).template to<Pointer>();
+        ASSERT(not l.empty(), "SeqData with non-pointer base");
+        auto&& lp = l.getUnsafe();
 
-        auto base = ctx->getGlobalPtr(p->getData().size());
-        auto res = lp == base;
+        auto&& base = ctx->getGlobalPtr(p->getData().size());
+        auto&& res = lp == base;
 
         static config::ConfigEntry<bool> SkipStaticInit("analysis", "skip-static-init");
-        if ( ! SkipStaticInit.get(true)) {
-            for (const auto& datum : p->getData()) {
-                auto d = SMT<Impl>::doit(datum, ef, ctx);
+        if (not SkipStaticInit.get(true)) {
+            for (auto&& datum : p->getData()) {
+                auto&& d = SMT<Impl>::doit(datum, ef, ctx);
                 ctx->writeExprToMemory(base, d);
                 base = base + 1;
             }

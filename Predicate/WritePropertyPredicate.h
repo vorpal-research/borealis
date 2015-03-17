@@ -31,10 +31,6 @@ message WritePropertyPredicate {
 **/
 class WritePropertyPredicate: public borealis::Predicate {
 
-    Term::Ptr propName;
-    Term::Ptr lhv;
-    Term::Ptr rhv;
-
     WritePropertyPredicate(
             Term::Ptr propName,
             Term::Ptr lhv,
@@ -46,25 +42,22 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(WritePropertyPredicate);
 
-    Term::Ptr getPropertyName() const { return propName; }
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getRhv() const { return rhv; }
+    Term::Ptr getLhv() const;
+    Term::Ptr getRhv() const;
+    Term::Ptr getPropertyName() const;
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _propName = t->transform(propName);
-        auto _lhv = t->transform(lhv);
-        auto _rhv = t->transform(rhv);
-        auto _loc = location;
-        auto _type = type;
+        auto&& _lhv = t->transform(getLhv());
+        auto&& _rhv = t->transform(getRhv());
+        auto&& _propName = t->transform(getPropertyName());
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            propName != _propName || lhv != _lhv || rhv != _rhv,
+            getLhv() != _lhv || getRhv() != _rhv || getPropertyName() != _propName,
             new Self( _propName, _lhv, _rhv, _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 
@@ -84,13 +77,13 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
         ASSERT(llvm::isa<OpaqueStringConstantTerm>(p->getPropertyName()),
                "Property write with non-string property name");
         auto* propName = llvm::cast<OpaqueStringConstantTerm>(p->getPropertyName());
-        auto strPropName = propName->getValue();
+        auto&& strPropName = propName->getValue();
 
-        auto l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!l.empty(), "Property write with a non-pointer value");
-        auto lp = l.getUnsafe();
+        auto&& l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
+        ASSERT(not l.empty(), "Property write with a non-pointer value");
+        auto&& lp = l.getUnsafe();
 
-        auto r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
 
         ctx->writeProperty(strPropName, lp, r);
 

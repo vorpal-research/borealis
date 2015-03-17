@@ -31,10 +31,6 @@ message AllocaPredicate {
 **/
 class AllocaPredicate: public borealis::Predicate {
 
-    Term::Ptr lhv;
-    Term::Ptr numElements;
-    Term::Ptr origNumElements;
-
     AllocaPredicate(
             Term::Ptr lhv,
             Term::Ptr numElements,
@@ -46,25 +42,22 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(AllocaPredicate);
 
-    Term::Ptr getLhv() const { return lhv; }
-    Term::Ptr getNumElems() const { return numElements; }
-    Term::Ptr getOrigNumElems() const { return origNumElements; }
+    Term::Ptr getLhv() const;
+    Term::Ptr getNumElems() const;
+    Term::Ptr getOrigNumElems() const;
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _lhv = t->transform(lhv);
-        auto _numElements = t->transform(numElements);
-        auto _origNumElements = t->transform(origNumElements);
-        auto _loc = location;
-        auto _type = type;
+        auto&& _lhv = t->transform(getLhv());
+        auto&& _numElements = t->transform(getNumElems());
+        auto&& _origNumElements = t->transform(getOrigNumElems());
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            lhv != _lhv || numElements != _numElements || origNumElements != _origNumElements,
+            getLhv() != _lhv || getNumElems() != _numElements || getOrigNumElems() != _origNumElements,
             new Self( _lhv, _numElements, _origNumElements, _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 
@@ -81,20 +74,20 @@ struct SMTImpl<Impl, AllocaPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        auto lhve = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
-        ASSERT(!lhve.empty(), "Encountered alloca with non-Pointer left side");
-        auto lhvp = lhve.getUnsafe();
+        auto&& lhve = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
+        ASSERT(not lhve.empty(), "Encountered alloca with non-Pointer left side");
+        auto&& lhvp = lhve.getUnsafe();
 
-        unsigned long long elems = 1;
+        auto&& elems = 1ULL;
         if (auto* cnst = llvm::dyn_cast<OpaqueIntConstantTerm>(p->getNumElems())) {
             elems = cnst->getValue();
         } else {
             BYE_BYE(Bool, "Encountered alloca with non-integer element number");
         }
 
-        auto origSize = SMT<Impl>::doit(p->getOrigNumElems(), ef, ctx).template to<Integer>();
-        ASSERT(!origSize.empty(), "Encountered alloca with non-integer original size");
-        auto origSizeInt = origSize.getUnsafe();
+        auto&& origSize = SMT<Impl>::doit(p->getOrigNumElems(), ef, ctx).template to<Integer>();
+        ASSERT(not origSize.empty(), "Encountered alloca with non-integer original size");
+        auto&& origSizeInt = origSize.getUnsafe();
 
         return lhvp == ctx->getLocalPtr(elems, origSizeInt);
     }

@@ -29,12 +29,8 @@ message GlobalsPredicate {
 **/
 class GlobalsPredicate: public borealis::Predicate {
 
-    typedef std::vector<Term::Ptr> Globals;
-
-    const Globals globals;
-
     GlobalsPredicate(
-            const Globals& globals,
+            const std::vector<Term::Ptr>& globals,
             const Locus& loc,
             PredicateType type = PredicateType::STATE);
 
@@ -42,23 +38,20 @@ public:
 
     MK_COMMON_PREDICATE_IMPL(GlobalsPredicate);
 
-    const Globals& getGlobals() const { return globals; }
+    auto getGlobals() const -> decltype(util::viewContainer(ops));
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
-        auto _globals = util::viewContainer(globals).map(
-            [&t](const Term::Ptr& e) { return t->transform(e); }
-        ).toVector();
-        auto _loc = location;
-        auto _type = type;
+        auto&& _globals = getGlobals().map(
+            [&](auto&& e) { return t->transform(e); }
+        );
+        auto&& _loc = getLocation();
+        auto&& _type = getType();
         PREDICATE_ON_CHANGED(
-            globals != _globals,
-            new Self( _globals, _loc, _type )
+            not util::equal(getGlobals(), _globals, util::equality()),
+            new Self( _globals.toVector(), _loc, _type )
         );
     }
-
-    virtual bool equals(const Predicate* other) const override;
-    virtual size_t hashCode() const override;
 
 };
 
@@ -75,11 +68,11 @@ struct SMTImpl<Impl, GlobalsPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        auto res = ef.getTrue();
-        for (const auto& g : p->getGlobals()) {
-            auto ge = SMT<Impl>::doit(g, ef, ctx).template to<Pointer>();
-            ASSERT(!ge.empty(), "Encountered non-Pointer global value: " + g->getName());
-            auto gp = ge.getUnsafe();
+        auto&& res = ef.getTrue();
+        for (auto&& g : p->getGlobals()) {
+            auto&& ge = SMT<Impl>::doit(g, ef, ctx).template to<Pointer>();
+            ASSERT(not ge.empty(), "Encountered non-Pointer global value: " + g->getName());
+            auto&& gp = ge.getUnsafe();
             res = res && gp == ctx->getGlobalPtr();
         }
         return res;
