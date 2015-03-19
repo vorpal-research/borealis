@@ -124,9 +124,7 @@ public:
     }
 
     template<class R>
-    auto firstOr(R&& def) const -> decltype(auto) {
-        return (begin_ == end_) ? std::forward<R>(def) : *begin_;
-    }
+    auto firstOr(R&& def) const QUICK_RETURN((begin_ == end_) ? FWD(def) : *begin_);
 
     template<class Pred>
     bool all_of(Pred pred) const {
@@ -152,7 +150,8 @@ public:
         return Con(begin_, end_);
     }
 
-    typedef typename std::iterator_traits<ContainerIter>::value_type value_type;
+    using reference = decltype(*begin_);
+    using value_type = std::remove_cv_t<std::remove_reference_t<reference>>;
 
     std::list<value_type> toList() const {
         return to<std::list<value_type>>();

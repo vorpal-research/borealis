@@ -15,6 +15,7 @@
 
 #include "Util/copying_ptr.hpp"
 #include "Util/type_traits.hpp"
+#include "Util/json.hpp"
 
 namespace borealis {
 namespace util {
@@ -176,6 +177,11 @@ public:
         static unspec_ unspec;
         if( empty() ) return nullptr;
         else return &unspec;
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const self& x) {
+        for(auto&& el: x) return ost << "just(" << el << ")";
+        return ost << "nothing";
     }
 
     const T* get() const {
@@ -382,6 +388,24 @@ template<class T>
 inline option_ref<T> nothingRef() {
     return nothing();
 }
+
+template<class T>
+struct json_traits<option<T>> {
+    typedef std::unique_ptr<option<T>> optional_ptr_t;
+    using delegate = json_traits<T>;
+
+    static Json::Value toJson(const option<T>& val) {
+        for(auto&& el: val) return delegate::toJson(el);
+        return Json::Value{};
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& json) {
+        if(json.isNull()) return optional_ptr_t{ new option<T>{nothing()} };
+        auto del = delegate::fromJson(json);
+        if(!del) return nullptr;
+        else return optional_ptr_t{ new option<T>{just(*del)} };
+    }
+};
 
 } // namespace util
 } // namespace borealis

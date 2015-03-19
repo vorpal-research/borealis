@@ -10,6 +10,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 #include "Util/json.hpp"
@@ -58,6 +59,28 @@ struct json_traits<std::set<T>> {
             }
         }
         return optional_ptr_t { new std::set<T>{std::move(ret)} };
+    }
+};
+
+template<class T>
+struct json_traits<std::unordered_set<T>> {
+    typedef std::unique_ptr<std::unordered_set<T>> optional_ptr_t;
+
+    static Json::Value toJson(const std::unordered_set<T>& val) {
+        Json::Value ret;
+        for(const auto& m : val) ret.append(util::toJson(m));
+        return ret;
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& val) {
+        std::unordered_set<T> ret;
+        if(!val.isArray()) return nullptr;
+        for(const auto& m : val) {
+            if(auto v = util::fromJson<T>(m)) {
+                ret.insert(*v);
+            }
+        }
+        return optional_ptr_t { new std::unordered_set<T>{std::move(ret)} };
     }
 };
 

@@ -33,17 +33,17 @@ public:
 
 class illegal_mem_read_exception : public memory_exception {
 public:
-    illegal_mem_read_exception(void* ptr): memory_exception("Memory read violation at 0x%x", ptr) {};
+    illegal_mem_read_exception(void* ptr): memory_exception("Memory read violation at %x", ptr) {};
 };
 
 class illegal_mem_write_exception : public memory_exception {
 public:
-    illegal_mem_write_exception(void* ptr): memory_exception("Memory write violation at 0x%x", ptr) {};
+    illegal_mem_write_exception(void* ptr): memory_exception("Memory write violation at %x", ptr) {};
 };
 
 class illegal_mem_free_exception : public memory_exception {
 public:
-    illegal_mem_free_exception(void* ptr): memory_exception("Illegal free() at 0x%x", ptr) {};
+    illegal_mem_free_exception(void* ptr): memory_exception("Illegal free() at %x", ptr) {};
 };
 
 class out_of_memory_exception : public memory_exception {
@@ -62,6 +62,11 @@ public:
     const llvm::Value* getValue() const { return value_; };
 
     illegal_assumption(const llvm::Value* v): std::runtime_error{util::toString(*v)}, value_{v}{};
+};
+
+class unreachable_reached : public std::runtime_error {
+public:
+    unreachable_reached(): std::runtime_error{ "unreachable reached" }{};
 };
 
 } // namespace borealis

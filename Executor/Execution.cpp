@@ -15,6 +15,7 @@
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 
 #include "Executor/Executor.h"
+#include "Executor/Exceptions.h"
 
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/Statistic.h>
@@ -996,9 +997,9 @@ void Executor::visitReturnInst(ReturnInst &I) {
     popStackAndReturnValueToCaller(RetTy, Result);
 }
 
-void Executor::visitUnreachableInst(UnreachableInst &I) {
+void Executor::visitUnreachableInst(UnreachableInst&) {
     TRACE_FUNC;
-    throw std::logic_error("Program executed an 'unreachable' instruction!");
+    throw unreachable_reached{};
 }
 
 void Executor::visitBranchInst(BranchInst &I) {

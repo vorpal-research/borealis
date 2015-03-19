@@ -33,6 +33,7 @@
 #define LAM(X, ...) [&](auto&& X) -> decltype(__VA_ARGS__) { return __VA_ARGS__; }
 #define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype(__VA_ARGS__) { return __VA_ARGS__; }
 #define FWD(...) (std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__))
+#define APPLY(...) LAM(...Args, __VA_ARGS__(FWD(Args)...))
 
 #define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
@@ -216,6 +217,12 @@ for i in range(1, maxElems):
 #define COMPILER gcc
 #else
 #error "You are trying to use an unsupported compiler. Either add it to macros.h or quit trying."
+#endif
+
+#if defined(INDEXER_NO_DECLTYPE_AUTO)
+#define DECLTYPE_AUTO auto
+#else
+#define DECLTYPE_AUTO decltype(auto)
 #endif
 
 // #endif /* MACROS_H_ */

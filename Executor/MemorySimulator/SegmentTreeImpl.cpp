@@ -113,7 +113,7 @@ struct storeTraverser: stateInvalidatingTraverser {
             TRACE_PARAM(minbound);
             TRACE_PARAM(t->reallyAllocated);
 
-            if(where + size >= minbound + t->reallyAllocated) {
+            if(where + size > minbound + t->reallyAllocated) {
                 signalIllegalStore(where);
             }
         }
