@@ -4,7 +4,7 @@
  *  Created on: Feb 17, 2015
  *      Author: belyaev
  */
-#include "Executor/Executor.h"
+#include <Executor/ExecutionEngine.h>
 #include "Logging/tracer.hpp"
 #include "Codegen/intrinsics.h"
 #include "Config/config.h"
@@ -184,7 +184,7 @@ static llvm::GenericValue executeStrLen(
     return RetVal;
 }
 
-util::option<llvm::GenericValue> Executor::callStdLibFunction(
+util::option<llvm::GenericValue> ExecutionEngine::callStdLibFunction(
     const llvm::Function* F,
     const std::vector<llvm::GenericValue>& ArgVals) {
     using util::just;
