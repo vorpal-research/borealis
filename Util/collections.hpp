@@ -59,6 +59,13 @@ public:
 
     size_t size() const { return std::distance(begin_, end_); }
 
+    template<class Callback>
+    void foreach(Callback c) const {
+        for (auto&& e : *this) {
+            c(e);
+        }
+    }
+
     CollectionView<flattened_iterator<ContainerIter>> flatten() const {
         return view(
             borealis::util::flat_iterator(begin_, end_),
