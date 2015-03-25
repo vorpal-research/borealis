@@ -10,15 +10,20 @@
 
 #include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/ValueHandle.h>
 #include <llvm/Pass.h>
 
+#include <unordered_map>
+#include <unordered_set>
+
 namespace borealis {
+
 class GlobalVariableLifting : public llvm::FunctionPass {
 
 private:
 
-    using string_value_map = llvm::StringMap<llvm::Value*>;
-    using basic_block_locals_map = std::unordered_map<llvm::BasicBlock*, string_value_map>;
+    using string_value_map = std::unordered_map<std::string, llvm::TrackingVH<llvm::Value>>;
+    using basic_block_locals_map = std::unordered_map<const llvm::BasicBlock*, string_value_map>;
     using trash_set = std::unordered_set<llvm::Value*>;
 
     const std::string LIFTED_POSTFIX = ".lifted";
@@ -44,6 +49,8 @@ private:
     void setupBasicBlock(llvm::BasicBlock* BB);
     void linkBasicBlock(llvm::BasicBlock* BB);
     void cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc);
+
+    bool replaceLocal(const llvm::BasicBlock* BB, const std::string& name, llvm::Value* value);
 
 };
 

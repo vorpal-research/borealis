@@ -11,9 +11,6 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
-#include <unordered_map>
-#include <unordered_set>
-
 #include "Passes/Transform/GlobalVariableLifting.h"
 #include "Util/util.h"
 
@@ -46,7 +43,7 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
 
     // insert loads at the start of BB
     for (auto&& g : globals) {
-        auto&& gName = g.first();
+        auto&& gName = g.first;
         auto&& gValue = g.second;
         auto* load = new llvm::LoadInst(gValue, gName + LIFTED_POSTFIX, inst);
         bb_locals_begin[gName] = bb_locals_end[gName] = load;
@@ -69,7 +66,7 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
         // FIXME: akhin Support for invokes
         else if (auto* ret = llvm::dyn_cast<llvm::ReturnInst>(inst)) {
             for (auto&& g : globals) {
-                auto&& gName = g.first();
+                auto&& gName = g.first;
                 auto&& gValue = g.second;
                 new llvm::StoreInst(bb_locals_end[gName], gValue, ret);
             }
@@ -79,7 +76,7 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
 
             auto&& next_inst = std::next(inst);
             for (auto&& g : globals) {
-                auto&& gName = g.first();
+                auto&& gName = g.first;
                 auto&& gValue = g.second;
                 new llvm::StoreInst(bb_locals_end[gName], gValue, inst);
                 bb_locals_end[gName] = new llvm::LoadInst(gValue, gName + LIFTED_POSTFIX, next_inst);
@@ -90,15 +87,12 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
 }
 
 void GlobalVariableLifting::linkBasicBlock(llvm::BasicBlock* BB) {
-    auto&& bb_locals_begin = locals_begin[BB];
-    auto&& bb_locals_end = locals_end[BB];
-
-    if (nullptr == BB->getUniquePredecessor()) {
+    if (not BB->getUniquePredecessor()) {
         auto&& pred_num = std::distance(llvm::pred_begin(BB), llvm::pred_end(BB));
         for (auto&& g : globals) {
-            auto&& gName = g.first();
+            auto&& gName = g.first;
             auto* phi = llvm::PHINode::Create(
-                    bb_locals_end[gName]->getType(),
+                    locals_end[BB][gName]->getType(),
                     pred_num,
                     gName + LIFTED_POSTFIX,
                     &BB->front()
@@ -106,18 +100,35 @@ void GlobalVariableLifting::linkBasicBlock(llvm::BasicBlock* BB) {
             for (auto&& pred = llvm::pred_begin(BB); pred != llvm::pred_end(BB); ++pred) {
                 phi->addIncoming(locals_end[*pred][gName], *pred);
             }
-            if (bb_locals_begin[gName] == bb_locals_end[gName]) {
-                bb_locals_end[gName] = phi;
-            }
-            bb_locals_begin[gName]->replaceAllUsesWith(phi);
-            deleted_instructions.insert(bb_locals_begin[gName]);
-            bb_locals_begin[gName] = phi;
+            replaceLocal(BB, gName, phi);
         }
     }
 }
 
-void GlobalVariableLifting::cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc) {
+bool GlobalVariableLifting::replaceLocal(const llvm::BasicBlock* BB, const std::string& name, llvm::Value* value) {
+    auto&& bb_locals_begin = locals_begin[BB];
 
+    if (value == bb_locals_begin[name]) return false;
+
+    deleted_instructions.insert(bb_locals_begin[name]);
+    bb_locals_begin[name]->replaceAllUsesWith(value);
+
+    return true;
+}
+
+void GlobalVariableLifting::cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc) {
+    auto&& changed = false;
+
+    for (auto&& BB : scc) {
+        if (auto* pred = BB->getUniquePredecessor()) {
+            for (auto&& g : globals) {
+                auto&& gName = g.first;
+                changed |= replaceLocal(BB, gName, locals_end[pred][gName]);
+            }
+        }
+    }
+
+    if (changed) cleanUpSCC(scc);
 }
 
 bool GlobalVariableLifting::runOnFunction(llvm::Function& F) {
