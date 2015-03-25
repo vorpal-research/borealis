@@ -5,6 +5,7 @@
  *      Author: abdullin
  */
 
+#include <llvm/ADT/SCCIterator.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Instructions.h>
@@ -64,14 +65,13 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
                 deleted_instructions.insert(store);
             }
         }
-        // store everything before terminators
-        else if (auto* terminator = llvm::dyn_cast<llvm::TerminatorInst>(inst)) {
-            if (llvm::Instruction::Br != terminator->getOpcode()) {
-                for (auto&& g : globals) {
-                    auto&& gName = g.first();
-                    auto&& gValue = g.second;
-                    new llvm::StoreInst(bb_locals_end[gName], gValue, terminator);
-                }
+        // store everything before return
+        // FIXME: akhin Support for invokes
+        else if (auto* ret = llvm::dyn_cast<llvm::ReturnInst>(inst)) {
+            for (auto&& g : globals) {
+                auto&& gName = g.first();
+                auto&& gValue = g.second;
+                new llvm::StoreInst(bb_locals_end[gName], gValue, ret);
             }
         // do store/load around calls to other functions
         } else if (auto* call = llvm::dyn_cast<llvm::CallInst>(inst)) {
@@ -93,20 +93,7 @@ void GlobalVariableLifting::linkBasicBlock(llvm::BasicBlock* BB) {
     auto&& bb_locals_begin = locals_begin[BB];
     auto&& bb_locals_end = locals_end[BB];
 
-    // remove unused locals in BB with one predecessor
-    if (auto* pred = BB->getUniquePredecessor()) {
-        for (auto&& g : globals) {
-            auto&& gName = g.first();
-            auto&& pred_value = locals_end[pred][gName];
-            if (bb_locals_begin[gName] == bb_locals_end[gName]) {
-                bb_locals_end[gName] = pred_value;
-            }
-            bb_locals_begin[gName]->replaceAllUsesWith(pred_value);
-            deleted_instructions.insert(bb_locals_begin[gName]);
-            bb_locals_begin[gName] = pred_value;
-        }
-    // add phi nodes in BB with several predecessors
-    } else {
+    if (nullptr == BB->getUniquePredecessor()) {
         auto&& pred_num = std::distance(llvm::pred_begin(BB), llvm::pred_end(BB));
         for (auto&& g : globals) {
             auto&& gName = g.first();
@@ -129,6 +116,10 @@ void GlobalVariableLifting::linkBasicBlock(llvm::BasicBlock* BB) {
     }
 }
 
+void GlobalVariableLifting::cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc) {
+
+}
+
 bool GlobalVariableLifting::runOnFunction(llvm::Function& F) {
     using namespace llvm;
 
@@ -142,6 +133,10 @@ bool GlobalVariableLifting::runOnFunction(llvm::Function& F) {
 
     for (auto&& bb = ++F.begin(); bb != F.end(); ++bb) {
         linkBasicBlock(bb);
+    }
+
+    for (auto&& scc = llvm::scc_begin(&F); scc != llvm::scc_end(&F); ++scc) {
+        cleanUpSCC(*scc);
     }
 
     // deleting unused instructions

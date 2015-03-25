@@ -43,6 +43,7 @@ private:
     void collectGlobals(llvm::Function& F);
     void setupBasicBlock(llvm::BasicBlock* BB);
     void linkBasicBlock(llvm::BasicBlock* BB);
+    void cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc);
 
 };
 
