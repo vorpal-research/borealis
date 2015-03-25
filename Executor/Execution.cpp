@@ -1233,10 +1233,25 @@ void borealis::ExecutionEngine::executeCall(llvm::CallSite CS) {
         case function_type::BUILTIN_BOR_ASSERT:
         case function_type::BUILTIN_BOR_ASSUME:
             break;
+        case function_type::INTRINSIC_ANNOTATION: {
+            auto Anno =
+                static_cast<Annotation*>(MDNode2Ptr(CS.getInstruction()->getMetadata("anno.ptr")));
+            TRACE_FMT("%d", Anno);
+            ASSERTC(Anno);
+            auto sharedAnno = materialize(Anno->shared_from_this(), FN, VIT);
+
+            AE.transform(sharedAnno);
+            return;
+        }
+        case function_type::ACTION_DEFECT: {
+            throw assertion_failed{};
+        }
         default: // FIXME: process annotation-related intrinsics when we start checking annotations
             return;
         }
     }
+
+
 
     SF.Caller = CS;
     std::vector<GenericValue> ArgVals;

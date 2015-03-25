@@ -21,11 +21,13 @@ namespace borealis {
 
 
 ExecutionEngine::ExecutionEngine(
-    llvm::Module* /* M */,
+    llvm::Module* M,
     const llvm::DataLayout* TD,
     const llvm::TargetLibraryInfo* TLI,
+    VariableInfoTracker* VIT,
     Arbiter::Ptr Aldaris):
-     TD{TD}, TLI{TLI}, IM{}, Judicator{ Aldaris }, Mem{ *TD }, IE{this}
+     TD{TD}, TLI{TLI}, VIT{VIT}, IM{}, Judicator{ Aldaris }, Mem{ *TD },
+     ST{ M }, FN{&ST}, IE{this}, AE{FN, M, &ST, this}
 {
     IM = &IntrinsicsManager::getInstance();
 }

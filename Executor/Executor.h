@@ -34,6 +34,7 @@ public:
         llvm::Module *M,
         const llvm::DataLayout* TD,
         const llvm::TargetLibraryInfo* TLI,
+        VariableInfoTracker* VIT,
         Arbiter::Ptr Aldaris);
 
     ~Executor();
