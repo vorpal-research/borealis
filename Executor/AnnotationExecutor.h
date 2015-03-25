@@ -40,6 +40,8 @@ public:
     Term::Ptr transformCmpTerm(CmpTermPtr t);
     Term::Ptr transformAxiomTerm(AxiomTermPtr t);
 
+    Term::Ptr transformOpaqueUndefTerm(OpaqueUndefTermPtr t);
+
     Term::Ptr transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr t);
     Term::Ptr transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr t);
     Term::Ptr transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr t);

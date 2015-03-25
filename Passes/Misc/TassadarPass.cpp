@@ -55,6 +55,7 @@ public:
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override {
         AUX<llvm::DataLayoutPass>::addRequired(AU);
         AUX<llvm::TargetLibraryInfo>::addRequired(AU);
+        AUX<VariableInfoTracker>::addRequired(AU);
 
         AU.setPreservesAll();
     }
@@ -66,6 +67,7 @@ public:
         ExecutionEngine tassadar{&M,
             &getAnalysis<llvm::DataLayoutPass>().getDataLayout(),
             &getAnalysis<llvm::TargetLibraryInfo>(),
+            &getAnalysis<VariableInfoTracker>(),
             std::make_shared<ZeroArbiter>()
         };
 

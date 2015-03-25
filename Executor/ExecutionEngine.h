@@ -23,7 +23,9 @@
 #include "Executor/Arbiter.h"
 #include "Executor/MemorySimulator.h"
 #include "Executor/InstructionExecutor.h"
+#include "Executor/AnnotationExecutor.h"
 #include "Codegen/intrinsics_manager.h"
+#include "State/Transformer/AnnotationMaterializer.h"
 
 namespace borealis {
 
@@ -63,6 +65,7 @@ class ExecutionEngine {
     llvm::GenericValue ExitValue;          // The return llvm::Value of the Executor llvm::Function
     const llvm::DataLayout* TD;
     const llvm::TargetLibraryInfo* TLI;
+    VariableInfoTracker* VIT;
     IntrinsicsManager* IM;
     Arbiter::Ptr Judicator;
 
@@ -76,13 +79,18 @@ class ExecutionEngine {
 
     MemorySimulator Mem;
 
+    SlotTracker ST;
+    FactoryNest FN;
+
     InstructionExecutor IE;
+    AnnotationExecutor AE;
 
 public:
     explicit ExecutionEngine(
         llvm::Module *M,
         const llvm::DataLayout* TD,
         const llvm::TargetLibraryInfo* TLI,
+        VariableInfoTracker* VIT,
         Arbiter::Ptr Aldaris);
     ~ExecutionEngine();
 

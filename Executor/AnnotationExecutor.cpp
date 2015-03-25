@@ -10,6 +10,8 @@
 namespace borealis {
 
 static llvm::Type* mergeTypes(llvm::Type* lhv, llvm::Type* rhv, const llvm::DataLayout* dl) {
+    TRACE_FUNC;
+
     if(lhv == rhv) return lhv;
     if(lhv->isVoidTy()) return rhv;
     if(rhv->isVoidTy()) return lhv;
@@ -27,11 +29,13 @@ static llvm::Type* mergeTypes(llvm::Type* lhv, llvm::Type* rhv, const llvm::Data
 }
 
 static void adjustToType(llvm::GenericValue& v, llvm::Type* pastType, llvm::Type* type) {
+    TRACE_FUNC;
+
     if(pastType == type) return;
     if(type->isIntegerTy()) {
         auto sz = type->getIntegerBitWidth();
         if(v.IntVal.getBitWidth() != sz)
-            v.IntVal = v.IntVal.sext(sz);
+            v.IntVal = v.IntVal.sextOrTrunc(sz);
     } else if(type->isDoubleTy() && pastType->isFloatTy()) {
         v.DoubleVal = v.FloatVal;
     }   else if(type->isFloatTy() && pastType->isDoubleTy()) {
@@ -43,6 +47,8 @@ struct AntiSlotTracker {
     std::unordered_map<std::string, llvm::Value*> vals;
 
     AntiSlotTracker(SlotTracker* st, llvm::Module* M) {
+        TRACE_FUNC;
+
         auto funcsView = util::viewContainer(*M).filter(LAM(F, !F.isDeclaration()));
 
         for(auto&& i : funcsView.flatten().flatten()) {
@@ -58,7 +64,8 @@ struct AnnotationExecutor::Impl {
     AntiSlotTracker ast;
     std::stack<std::pair<llvm::GenericValue, llvm::Type*>> value_stack;
 
-    Impl(llvm::Module* M, SlotTracker* st, ExecutionEngine* ee): M{M}, st{st}, ast{st, M}, ee{ee} {};
+    Impl(llvm::Module* M, SlotTracker* st, ExecutionEngine* ee):
+        M{M}, ee{ee}, st{st}, ast{st, M}, value_stack{} {};
 
     llvm::GenericValue pop() {
         ASSERTC(!value_stack.empty());
@@ -84,27 +91,32 @@ AnnotationExecutor::AnnotationExecutor(FactoryNest FN, llvm::Module* M, SlotTrac
 AnnotationExecutor::~AnnotationExecutor() {}
 
 Annotation::Ptr AnnotationExecutor::transformAssertAnnotation(AssertAnnotationPtr a) {
+    TRACE_FUNC;
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformAssumeAnnotation(AssumeAnnotationPtr a) {
+    TRACE_FUNC;
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformRequiresAnnotation(RequiresAnnotationPtr a) {
+    TRACE_FUNC;
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformEnsuresAnnotation(EnsuresAnnotationPtr a) {
+    TRACE_FUNC;
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 
 Term::Ptr AnnotationExecutor::transformValueTerm(ValueTermPtr t) {
+    TRACE_FUNC;
     auto val = pimpl_->ast.vals.at(t->getName());
     auto ret = pimpl_->ee->getOperandValue(val, pimpl_->ee->getCurrentContext());
 
@@ -114,6 +126,7 @@ Term::Ptr AnnotationExecutor::transformValueTerm(ValueTermPtr t) {
 }
 
 Term::Ptr AnnotationExecutor::transformReturnValueTerm(ReturnValueTermPtr t) {
+    TRACE_FUNC;
     auto term = pimpl_->ee->getCurrentContext().CurBB->getTerminator();
     llvm::Value* rval = nullptr;
     if(llvm::ReturnInst* rinst = llvm::dyn_cast<llvm::ReturnInst>(term)) {
@@ -126,6 +139,7 @@ Term::Ptr AnnotationExecutor::transformReturnValueTerm(ReturnValueTermPtr t) {
     return t;
 }
 Term::Ptr AnnotationExecutor::transformArgumentTerm(ArgumentTermPtr t) {
+    TRACE_FUNC;
     auto op = pimpl_->ee->getCurrentContext().CurFunction->getOperand(t->getIdx());
     auto ret = pimpl_->ee->getOperandValue(op, pimpl_->ee->getCurrentContext());
 
@@ -134,6 +148,7 @@ Term::Ptr AnnotationExecutor::transformArgumentTerm(ArgumentTermPtr t) {
 }
 
 Term::Ptr AnnotationExecutor::transformUnaryTerm(UnaryTermPtr t) {
+    TRACE_FUNC;
 
     auto op = t->getOpcode();
     auto type = pimpl_->peekType();
@@ -159,6 +174,8 @@ Term::Ptr AnnotationExecutor::transformUnaryTerm(UnaryTermPtr t) {
     return t;
 }
 Term::Ptr AnnotationExecutor::transformBinaryTerm(BinaryTermPtr t) {
+    TRACE_FUNC;
+
     auto rtype = pimpl_->peekType();
     auto right = pimpl_->pop();
     auto ltype = pimpl_->peekType();
@@ -193,6 +210,7 @@ Term::Ptr AnnotationExecutor::transformBinaryTerm(BinaryTermPtr t) {
     return t;
 }
 Term::Ptr AnnotationExecutor::transformCmpTerm(CmpTermPtr t) {
+    TRACE_FUNC;
 
     auto rtype = pimpl_->peekType();
     auto right = pimpl_->pop();
@@ -256,6 +274,8 @@ Term::Ptr AnnotationExecutor::transformCmpTerm(CmpTermPtr t) {
     return t;
 }
 Term::Ptr AnnotationExecutor::transformTernaryTerm(TernaryTermPtr t) {
+    TRACE_FUNC;
+
     auto ftype = pimpl_->peekType();
     auto fls   = pimpl_->pop();
     auto ttype = pimpl_->peekType();
@@ -271,6 +291,8 @@ Term::Ptr AnnotationExecutor::transformTernaryTerm(TernaryTermPtr t) {
     return t;
 }
 Term::Ptr AnnotationExecutor::transformSignTerm(SignTermPtr t) {
+    TRACE_FUNC;
+
     auto v = pimpl_->pop();
     llvm::GenericValue res;
     res.IntVal = llvm::APInt(1, v.IntVal.isNonNegative());
@@ -279,6 +301,8 @@ Term::Ptr AnnotationExecutor::transformSignTerm(SignTermPtr t) {
 }
 
 Term::Ptr AnnotationExecutor::transformGepTerm(GepTermPtr t) {
+    TRACE_FUNC;
+
     std::vector<llvm::GenericValue> shifts;
     for(auto&& shift: t->getShifts()) {
         shifts.push_back(pimpl_->pop());
@@ -322,6 +346,8 @@ Term::Ptr AnnotationExecutor::transformGepTerm(GepTermPtr t) {
     return t;
 }
 Term::Ptr AnnotationExecutor::transformLoadTerm(LoadTermPtr t) {
+    TRACE_FUNC;
+
     auto pttype = pimpl_->peekType();
     auto ptr = pimpl_->pop();
 
@@ -338,6 +364,8 @@ Term::Ptr AnnotationExecutor::transformLoadTerm(LoadTermPtr t) {
 }
 
 Term::Ptr AnnotationExecutor::transformAxiomTerm(AxiomTermPtr t) {
+    TRACE_FUNC;
+
     auto axiom = pimpl_->pop();
 
     if(!axiom.IntVal) throw assertion_failed{};
@@ -347,31 +375,55 @@ Term::Ptr AnnotationExecutor::transformAxiomTerm(AxiomTermPtr t) {
     return t;
 }
 
+Term::Ptr AnnotationExecutor::transformOpaqueUndefTerm(OpaqueUndefTermPtr t) {
+    TRACE_FUNC;
+    auto ret_type = TypeUtils::tryCastBack(pimpl_->M->getContext(), t->getType());
+    llvm::GenericValue res =
+        pimpl_->ee->getOperandValue(
+            llvm::UndefValue::get(ret_type),
+            pimpl_->ee->getCurrentContext()
+        );
+
+    pimpl_->value_stack.push({res, ret_type});
+    return t;
+
+}
+
 Term::Ptr AnnotationExecutor::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr t) {
+    TRACE_FUNC;
+
     llvm::GenericValue res;
     res.PointerVal = 0;
     pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr t) {
+    TRACE_FUNC;
+
     llvm::GenericValue res;
     res.PointerVal = 0; // FIXME: think!
     pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr t) {
+    TRACE_FUNC;
+
     llvm::GenericValue res;
     res.IntVal = llvm::APInt(64, t->getValue());
     pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr t) {
+    TRACE_FUNC;
+
     llvm::GenericValue res;
     res.DoubleVal = t->getValue();
     pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr t) {
+    TRACE_FUNC;
+
     llvm::GenericValue res;
     res.IntVal = llvm::APInt(1, t->getValue());
     pimpl_->value_stack.push({res, llvm::Type::getInt1Ty(pimpl_->M->getContext())});
