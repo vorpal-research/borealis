@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include <Executor/ExecutionEngine.h>
 #include <iostream>
 #include <fstream>
 
@@ -14,7 +15,6 @@
 #include <llvm/Target/TargetLibraryInfo.h>
 
 #include "Config/config.h"
-#include "Executor/Executor.h"
 #include "Util/passes.hpp"
 #include "Util/collections.hpp"
 #include "Util/functional.hpp"
@@ -55,6 +55,7 @@ public:
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override {
         AUX<llvm::DataLayoutPass>::addRequired(AU);
         AUX<llvm::TargetLibraryInfo>::addRequired(AU);
+        AUX<VariableInfoTracker>::addRequired(AU);
 
         AU.setPreservesAll();
     }
@@ -63,9 +64,10 @@ public:
         TRACE_FUNC;
 
         auto funcNames = util::viewContainer(functionsToRun).toHashSet();
-        Executor tassadar{&M,
+        ExecutionEngine tassadar{&M,
             &getAnalysis<llvm::DataLayoutPass>().getDataLayout(),
             &getAnalysis<llvm::TargetLibraryInfo>(),
+            &getAnalysis<VariableInfoTracker>(),
             std::make_shared<ZeroArbiter>()
         };
 

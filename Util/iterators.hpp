@@ -488,8 +488,7 @@ class zipping_iterator {
 
 public:
     typedef std::forward_iterator_tag iterator_category;
-    typedef std::pair<typename std::iterator_traits<Iter1>::reference,
-                      typename std::iterator_traits<Iter2>::reference> value_type;
+    typedef std::pair<decltype(*iter1), decltype(*iter2)> value_type;
     typedef std::ptrdiff_t difference_type;
 
     typedef value_type reference;

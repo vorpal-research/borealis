@@ -4,7 +4,7 @@
  *  Created on: Feb 5, 2015
  *      Author: belyaev
  */
-#include "Executor/Executor.h"
+#include <Executor/ExecutionEngine.h>
 #include "Executor/Exceptions.h"
 #include "Logging/tracer.hpp"
 #include "Codegen/intrinsics.h"
@@ -89,7 +89,7 @@ static bool isMemmove(const llvm::Function* F, const llvm::TargetLibraryInfo* TL
         (TLI->getLibFunc(F->getName(), f) && (f ==  lfn::memmove));
 }
 
-llvm::GenericValue Executor::executeMalloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeMalloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC
 
     // FIXME: different versions of malloc have different parameters, check
@@ -99,7 +99,7 @@ llvm::GenericValue Executor::executeMalloc(const llvm::Function* f, const std::v
     RetVal.PointerVal = Mem.MallocMemory(sz * ArgVals[0].IntVal.getLimitedValue(), MemorySimulator::MallocFill::UNINIT);
     return RetVal;
 }
-llvm::GenericValue Executor::executeCalloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeCalloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC
 
     llvm::GenericValue RetVal{};
@@ -107,11 +107,11 @@ llvm::GenericValue Executor::executeCalloc(const llvm::Function* f, const std::v
     RetVal.PointerVal = Mem.MallocMemory(sz * ArgVals[0].IntVal.getLimitedValue(), MemorySimulator::MallocFill::ZERO);
     return RetVal;
 }
-llvm::GenericValue Executor::executeRealloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeRealloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
     return executeMalloc(f, ArgVals);
 }
-llvm::GenericValue Executor::executeFree(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeFree(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
     // TODO
 
@@ -119,7 +119,7 @@ llvm::GenericValue Executor::executeFree(const llvm::Function* f, const std::vec
 
     return {};
 }
-llvm::GenericValue Executor::executeMemcpy(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeMemcpy(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
 
     auto size = ArgVals.at(2).IntVal.getLimitedValue();
@@ -138,7 +138,7 @@ llvm::GenericValue Executor::executeMemcpy(const llvm::Function* f, const std::v
     throw std::logic_error("full memcpy not implemented yet");
     return {};
 }
-llvm::GenericValue Executor::executeMemset(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeMemset(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
 
     Mem.Memset(
@@ -149,7 +149,7 @@ llvm::GenericValue Executor::executeMemset(const llvm::Function* f, const std::v
 
     return ArgVals.at(0);
 }
-llvm::GenericValue Executor::executeMemmove(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeMemmove(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC
     return executeMemcpy(f, ArgVals);
 }
@@ -245,7 +245,7 @@ static llvm::GenericValue runIntegralWithOverflow(
 }
 
 
-util::option<llvm::GenericValue> Executor::callExternalFunction(
+util::option<llvm::GenericValue> ExecutionEngine::callExternalFunction(
     llvm::Function *F,
     const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;

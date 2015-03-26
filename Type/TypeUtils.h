@@ -102,6 +102,33 @@ struct TypeUtils {
         BYE_BYE(unsigned long long, "Funk you!");
     }
 
+    static llvm::Type* tryCastBack(llvm::LLVMContext& C, Type::Ptr type) {
+        if(const type::Integer* intt = llvm::dyn_cast<type::Integer>(type)) {
+            return llvm::Type::getIntNTy(C, intt->getBitsize());
+        } else if(const type::Float* intt = llvm::dyn_cast<type::Float>(type)) {
+            return llvm::Type::getDoubleTy(C);
+        } else if(llvm::dyn_cast<type::Bool>(type)) {
+            return llvm::Type::getInt1Ty(C);
+        } else if(const type::Array* tp = llvm::dyn_cast<type::Array>(type)) {
+            auto sz = tp->getSize().getOrElse(0);
+            return llvm::ArrayType::get(tryCastBack(C, tp->getElement()), sz);
+        } else if(const type::Pointer* tp = llvm::dyn_cast<type::Pointer>(type)) {
+            return llvm::PointerType::get(tryCastBack(C, tp->getPointed()), 0);
+        } else if(const type::Function* tp = llvm::dyn_cast<type::Function>(type)) {
+            return llvm::FunctionType::get(
+                tryCastBack(C, tp->getRetty()),
+                util::viewContainer(tp->getArgs()).map(LAM(arg, tryCastBack(C, arg))).toVector(),
+                false
+            );
+        } else if(const type::Record* tp = llvm::dyn_cast<type::Record>(type)) {
+            return llvm::StructType::get(
+                C,
+                util::viewContainer(tp->getBody()->get()).map(LAM(field, tryCastBack(C, field.getType()))).toVector()
+            );
+        }
+        BYE_BYE(llvm::Type*, "Unsupported type");
+    }
+
 };
 
 } // namespace borealis

@@ -28,6 +28,10 @@
 namespace borealis {
 namespace util {
 
+template<class T> inline T* take_pointer_of(T& value) { return &value; }
+template<class T> inline const T* take_pointer_of(const T& value) { return &value; }
+template<class T> inline void take_pointer_of(T&& value) = delete;
+
 // stupid straightforward collection view
 //  - cannot be used after any operation with begin or end
 //  - should be used in-place only, like this:
@@ -121,6 +125,15 @@ public:
             }
         }
         return std::move(ret);
+    }
+
+    template<class Acc, class Op>
+    auto fold(Acc&& acc, Op operation) -> DECLTYPE_AUTO {
+        Acc buf = std::forward<Acc>(acc);
+        for(auto&& el : *this) {
+            buf = operation(std::forward<Acc>(buf), FWD(el));
+        }
+        return buf;
     }
 
     template<class R>

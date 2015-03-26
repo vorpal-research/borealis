@@ -14,9 +14,6 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 
-#include "Executor/Executor.h"
-#include "Executor/Exceptions.h"
-
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/Statistic.h>
 #include <llvm/ADT/SmallString.h>
@@ -25,19 +22,28 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Type.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Debug.h>
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/MathExtras.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+
 #include <algorithm>
 #include <cmath>
-using namespace borealis;
-using namespace llvm;
+
+
+#include "Executor/ExecutionEngine.h"
+#include "Executor/Exceptions.h"
 
 #include "Util/util.h"
 
 #include "Logging/tracer.hpp"
+
+using namespace borealis;
+using namespace llvm;
+
 #include "Util/macros.h"
 
 using byte = uint8_t;
@@ -56,7 +62,7 @@ static buffer_t bufferOfPod(const T& value, size_t bytes) {
     return buffer_t{ static_cast<const byte*>(static_cast<const void*>(&value)), bytes };
 }
 
-void Executor::StoreValueToMemory(const llvm::GenericValue &Val, byte* Ptr, llvm::Type *Ty) {
+void borealis::ExecutionEngine::StoreValueToMemory(const llvm::GenericValue &Val, byte* Ptr, llvm::Type *Ty) {
     TRACE_FUNC;
     const unsigned StoreBytes = getDataLayout()->getTypeStoreSize(Ty);
     auto buffer = mutable_buffer_t{Ptr, StoreBytes};
@@ -90,7 +96,7 @@ void Executor::StoreValueToMemory(const llvm::GenericValue &Val, byte* Ptr, llvm
 
 }
 
-void Executor::LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, llvm::Type* Ty) {
+void borealis::ExecutionEngine::LoadValueFromMemory(llvm::GenericValue &Result, const byte* Ptr, llvm::Type* Ty) {
     TRACE_FUNC;
     const unsigned LoadBytes = getDataLayout()->getTypeStoreSize(Ty);
     auto buffer = buffer_t{Ptr, LoadBytes};
@@ -140,8 +146,8 @@ static void SetValue(Value *V, GenericValue Val, ExecutorContext &SF) {
     Dest.TY##Val = Src1.TY##Val OP Src2.TY##Val; \
     break
 
-static void executeFAddInst(GenericValue &Dest, GenericValue Src1,
-    GenericValue Src2, llvm::Type *Ty) {
+void borealis::ExecutionEngine::executeFAddInst(GenericValue &Dest, GenericValue Src1,
+        GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
     IMPLEMENT_BINARY_OPERATOR(+, Float);
@@ -152,7 +158,7 @@ static void executeFAddInst(GenericValue &Dest, GenericValue Src1,
     }
 }
 
-static void executeFSubInst(GenericValue &Dest, GenericValue Src1,
+void borealis::ExecutionEngine::executeFSubInst(GenericValue &Dest, GenericValue Src1,
     GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
@@ -164,7 +170,7 @@ static void executeFSubInst(GenericValue &Dest, GenericValue Src1,
     }
 }
 
-static void executeFMulInst(GenericValue &Dest, GenericValue Src1,
+void borealis::ExecutionEngine::executeFMulInst(GenericValue &Dest, GenericValue Src1,
     GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
@@ -176,7 +182,7 @@ static void executeFMulInst(GenericValue &Dest, GenericValue Src1,
     }
 }
 
-static void executeFDivInst(GenericValue &Dest, GenericValue Src1,
+void borealis::ExecutionEngine::executeFDivInst(GenericValue &Dest, GenericValue Src1,
     GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
@@ -188,7 +194,7 @@ static void executeFDivInst(GenericValue &Dest, GenericValue Src1,
     }
 }
 
-static void executeFRemInst(GenericValue &Dest, GenericValue Src1,
+void borealis::ExecutionEngine::executeFRemInst(GenericValue &Dest, GenericValue Src1,
     GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     switch (Ty->getTypeID()) {
@@ -228,7 +234,7 @@ static void executeFRemInst(GenericValue &Dest, GenericValue Src1,
         (void*)(intptr_t)Src2.PointerVal); \
         break;
 
-static GenericValue executeICMP_EQ(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_EQ(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -243,7 +249,7 @@ static GenericValue executeICMP_EQ(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_NE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_NE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -258,7 +264,7 @@ static GenericValue executeICMP_NE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_ULT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_ULT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -273,7 +279,7 @@ static GenericValue executeICMP_ULT(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_SLT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_SLT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -288,7 +294,7 @@ static GenericValue executeICMP_SLT(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_UGT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_UGT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -303,7 +309,7 @@ static GenericValue executeICMP_UGT(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_SGT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_SGT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -318,7 +324,7 @@ static GenericValue executeICMP_SGT(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_ULE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_ULE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -333,7 +339,7 @@ static GenericValue executeICMP_ULE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_SLE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_SLE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -348,7 +354,7 @@ static GenericValue executeICMP_SLE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_UGE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_UGE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -363,7 +369,7 @@ static GenericValue executeICMP_UGE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeICMP_SGE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeICMP_SGE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -378,25 +384,25 @@ static GenericValue executeICMP_SGE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-void Executor::visitICmpInst(ICmpInst &I) {
+void InstructionExecutor::visitICmpInst(ICmpInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext& SF = ee->getCurrentContext();
     llvm::Type *Ty    = I.getOperand(0)->getType();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue R;   // Result
 
     switch (I.getPredicate()) {
-    case ICmpInst::ICMP_EQ:  R = executeICMP_EQ(Src1,  Src2, Ty); break;
-    case ICmpInst::ICMP_NE:  R = executeICMP_NE(Src1,  Src2, Ty); break;
-    case ICmpInst::ICMP_ULT: R = executeICMP_ULT(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_SLT: R = executeICMP_SLT(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_UGT: R = executeICMP_UGT(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_SGT: R = executeICMP_SGT(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_ULE: R = executeICMP_ULE(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_SLE: R = executeICMP_SLE(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_UGE: R = executeICMP_UGE(Src1, Src2, Ty); break;
-    case ICmpInst::ICMP_SGE: R = executeICMP_SGE(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_EQ:  R = ee->executeICMP_EQ(Src1,  Src2, Ty); break;
+    case ICmpInst::ICMP_NE:  R = ee->executeICMP_NE(Src1,  Src2, Ty); break;
+    case ICmpInst::ICMP_ULT: R = ee->executeICMP_ULT(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_SLT: R = ee->executeICMP_SLT(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_UGT: R = ee->executeICMP_UGT(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_SGT: R = ee->executeICMP_SGT(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_ULE: R = ee->executeICMP_ULE(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_SLE: R = ee->executeICMP_SLE(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_UGE: R = ee->executeICMP_UGE(Src1, Src2, Ty); break;
+    case ICmpInst::ICMP_SGE: R = ee->executeICMP_SGE(Src1, Src2, Ty); break;
     default:
         borealis::dbgs() << "Don't know how to handle this ICmp predicate!\n-->" << I;
         UNREACHABLE(nullptr);
@@ -426,7 +432,7 @@ void Executor::visitICmpInst(ICmpInst &I) {
         IMPLEMENT_VECTOR_FCMP_T(OP, Double);                        \
     }
 
-static GenericValue executeFCMP_OEQ(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_OEQ(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -476,7 +482,7 @@ static GenericValue executeFCMP_OEQ(GenericValue Src1, GenericValue Src2,
 
 
 
-static GenericValue executeFCMP_ONE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_ONE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty)
 {
     GenericValue Dest;
@@ -502,7 +508,7 @@ static GenericValue executeFCMP_ONE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeFCMP_OLE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_OLE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -516,7 +522,7 @@ static GenericValue executeFCMP_OLE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeFCMP_OGE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_OGE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -530,7 +536,7 @@ static GenericValue executeFCMP_OGE(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeFCMP_OLT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_OLT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -544,7 +550,7 @@ static GenericValue executeFCMP_OLT(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeFCMP_OGT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_OGT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     GenericValue Dest;
     switch (Ty->getTypeID()) {
@@ -579,7 +585,7 @@ static GenericValue executeFCMP_OGT(GenericValue Src1, GenericValue Src2,
         return Dest;                                                       \
     }
 
-static GenericValue executeFCMP_UEQ(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_UEQ(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -590,7 +596,7 @@ static GenericValue executeFCMP_UEQ(GenericValue Src1, GenericValue Src2,
 
 }
 
-static GenericValue executeFCMP_UNE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_UNE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -600,7 +606,7 @@ static GenericValue executeFCMP_UNE(GenericValue Src1, GenericValue Src2,
     return executeFCMP_ONE(Src1, Src2, Ty);
 }
 
-static GenericValue executeFCMP_ULE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_ULE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -610,7 +616,7 @@ static GenericValue executeFCMP_ULE(GenericValue Src1, GenericValue Src2,
     return executeFCMP_OLE(Src1, Src2, Ty);
 }
 
-static GenericValue executeFCMP_UGE(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_UGE(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -620,7 +626,7 @@ static GenericValue executeFCMP_UGE(GenericValue Src1, GenericValue Src2,
     return executeFCMP_OGE(Src1, Src2, Ty);
 }
 
-static GenericValue executeFCMP_ULT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_ULT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -630,7 +636,7 @@ static GenericValue executeFCMP_ULT(GenericValue Src1, GenericValue Src2,
     return executeFCMP_OLT(Src1, Src2, Ty);
 }
 
-static GenericValue executeFCMP_UGT(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_UGT(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -640,7 +646,7 @@ static GenericValue executeFCMP_UGT(GenericValue Src1, GenericValue Src2,
     return executeFCMP_OGT(Src1, Src2, Ty);
 }
 
-static GenericValue executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -672,7 +678,7 @@ static GenericValue executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeFCMP_UNO(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_UNO(GenericValue Src1, GenericValue Src2,
     llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -704,7 +710,7 @@ static GenericValue executeFCMP_UNO(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-static GenericValue executeFCMP_BOOL(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeFCMP_BOOL(GenericValue Src1, GenericValue Src2,
     const llvm::Type *Ty, const bool val) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -720,12 +726,12 @@ static GenericValue executeFCMP_BOOL(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-void Executor::visitFCmpInst(FCmpInst &I) {
+void InstructionExecutor::visitFCmpInst(FCmpInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
     llvm::Type *Ty    = I.getOperand(0)->getType();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue R;   // Result
 
     switch (I.getPredicate()) {
@@ -733,31 +739,31 @@ void Executor::visitFCmpInst(FCmpInst &I) {
         borealis::dbgs() << "Don't know how to handle this FCmp predicate!\n-->" << I;
         UNREACHABLE(nullptr);
         break;
-    case FCmpInst::FCMP_FALSE: R = executeFCMP_BOOL(Src1, Src2, Ty, false);
+    case FCmpInst::FCMP_FALSE: R = ee->executeFCMP_BOOL(Src1, Src2, Ty, false);
     break;
-    case FCmpInst::FCMP_TRUE:  R = executeFCMP_BOOL(Src1, Src2, Ty, true);
+    case FCmpInst::FCMP_TRUE:  R = ee->executeFCMP_BOOL(Src1, Src2, Ty, true);
     break;
-    case FCmpInst::FCMP_ORD:   R = executeFCMP_ORD(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_UNO:   R = executeFCMP_UNO(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_UEQ:   R = executeFCMP_UEQ(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_OEQ:   R = executeFCMP_OEQ(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_UNE:   R = executeFCMP_UNE(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_ONE:   R = executeFCMP_ONE(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_ULT:   R = executeFCMP_ULT(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_OLT:   R = executeFCMP_OLT(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_UGT:   R = executeFCMP_UGT(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_OGT:   R = executeFCMP_OGT(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_ULE:   R = executeFCMP_ULE(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_OLE:   R = executeFCMP_OLE(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_UGE:   R = executeFCMP_UGE(Src1, Src2, Ty); break;
-    case FCmpInst::FCMP_OGE:   R = executeFCMP_OGE(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_ORD:   R = ee->executeFCMP_ORD(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_UNO:   R = ee->executeFCMP_UNO(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_UEQ:   R = ee->executeFCMP_UEQ(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_OEQ:   R = ee->executeFCMP_OEQ(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_UNE:   R = ee->executeFCMP_UNE(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_ONE:   R = ee->executeFCMP_ONE(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_ULT:   R = ee->executeFCMP_ULT(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_OLT:   R = ee->executeFCMP_OLT(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_UGT:   R = ee->executeFCMP_UGT(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_OGT:   R = ee->executeFCMP_OGT(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_ULE:   R = ee->executeFCMP_ULE(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_OLE:   R = ee->executeFCMP_OLE(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_UGE:   R = ee->executeFCMP_UGE(Src1, Src2, Ty); break;
+    case FCmpInst::FCMP_OGE:   R = ee->executeFCMP_OGE(Src1, Src2, Ty); break;
     }
 
     SetValue(&I, R, SF);
 }
 
-static GenericValue executeCmpInst(unsigned predicate, GenericValue Src1,
-    GenericValue Src2, llvm::Type *Ty) {
+GenericValue borealis::ExecutionEngine::executeCmpInst(unsigned predicate, GenericValue Src1,
+        GenericValue Src2, llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Result;
     switch (predicate) {
@@ -793,13 +799,12 @@ static GenericValue executeCmpInst(unsigned predicate, GenericValue Src1,
     }
 }
 
-void Executor::visitBinaryOperator(BinaryOperator &I) {
-    TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    llvm::Type *Ty    = I.getOperand(0)->getType();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
-    GenericValue R;   // Result
+llvm::GenericValue borealis::ExecutionEngine::executeBinary(
+        llvm::Instruction::BinaryOps opcode,
+        llvm::GenericValue Src1,
+        llvm::GenericValue Src2,
+        llvm::Type* Ty) {
+    GenericValue R;
 
     // First process vector operation
     if (Ty->isVectorTy()) {
@@ -841,9 +846,9 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
     }                                                                   \
 }
 
-        switch(I.getOpcode()){
+        switch(opcode){
         default:
-            borealis::dbgs() << "Don't know how to handle this binary operator!\n-->" << I;
+            borealis::dbgs() << "Don't know how to handle this binary operator!";
             UNREACHABLE(nullptr);
             break;
         case Instruction::Add:   INTEGER_VECTOR_OPERATION(+) break;
@@ -878,9 +883,9 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
             break;
         }
     } else {
-        switch (I.getOpcode()) {
+        switch (opcode) {
         default:
-            borealis::dbgs() << "Don't know how to handle this binary operator!\n-->" << I;
+            borealis::dbgs() << "Don't know how to handle this binary operator!";
             UNREACHABLE(nullptr);
             break;
         case Instruction::Add:   R.IntVal = Src1.IntVal + Src2.IntVal; break;
@@ -900,10 +905,22 @@ void Executor::visitBinaryOperator(BinaryOperator &I) {
         case Instruction::Xor:   R.IntVal = Src1.IntVal ^ Src2.IntVal; break;
         }
     }
+
+    return R;
+}
+
+void InstructionExecutor::visitBinaryOperator(BinaryOperator &I) {
+    TRACE_FUNC;
+    ExecutorContext &SF = ee->getCurrentContext();
+    llvm::Type *Ty    = I.getOperand(0)->getType();
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
+    GenericValue R = ee->executeBinary(I.getOpcode(), Src1, Src2, Ty);
+
     SetValue(&I, R, SF);
 }
 
-static GenericValue executeSelectInst(GenericValue Src1, GenericValue Src2,
+GenericValue borealis::ExecutionEngine::executeSelectInst(GenericValue Src1, GenericValue Src2,
     GenericValue Src3, const llvm::Type *Ty) {
     TRACE_FUNC;
     GenericValue Dest;
@@ -920,14 +937,14 @@ static GenericValue executeSelectInst(GenericValue Src1, GenericValue Src2,
     return Dest;
 }
 
-void Executor::visitSelectInst(SelectInst &I) {
+void InstructionExecutor::visitSelectInst(SelectInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
     const llvm::Type * Ty = I.getOperand(0)->getType();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
-    GenericValue Src3 = getOperandValue(I.getOperand(2), SF);
-    GenericValue R = executeSelectInst(Src1, Src2, Src3, Ty);
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
+    GenericValue Src3 = ee->getOperandValue(I.getOperand(2), SF);
+    GenericValue R = ee->executeSelectInst(Src1, Src2, Src3, Ty);
     SetValue(&I, R, SF);
 }
 
@@ -935,7 +952,7 @@ void Executor::visitSelectInst(SelectInst &I) {
 //                     Terminator Instruction Implementations
 //===----------------------------------------------------------------------===//
 
-void Executor::exitCalled(GenericValue GV) {
+void borealis::ExecutionEngine::exitCalled(GenericValue GV) {
     TRACE_FUNC;
     // runAtExitHandlers() assumes there are no stack frames, but
     // if exit() was called, then it had a stack frame. Blow away
@@ -955,7 +972,7 @@ void Executor::exitCalled(GenericValue GV) {
 /// care of switching to the normal destination BB, if we are returning
 /// from an invoke.
 ///
-void Executor::popStackAndReturnValueToCaller(llvm::Type *RetTy,
+void borealis::ExecutionEngine::popStackAndReturnValueToCaller(llvm::Type *RetTy,
     GenericValue Result) {
     TRACE_FUNC;
     // Pop the current stack frame.
@@ -982,65 +999,65 @@ void Executor::popStackAndReturnValueToCaller(llvm::Type *RetTy,
     }
 }
 
-void Executor::visitReturnInst(ReturnInst &I) {
+void InstructionExecutor::visitReturnInst(ReturnInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
     llvm::Type *RetTy = llvm::Type::getVoidTy(I.getContext());
     GenericValue Result;
 
     // Save away the return value... (if we are not 'ret void')
     if (I.getNumOperands()) {
         RetTy  = I.getReturnValue()->getType();
-        Result = getOperandValue(I.getReturnValue(), SF);
+        Result = ee->getOperandValue(I.getReturnValue(), SF);
     }
 
-    popStackAndReturnValueToCaller(RetTy, Result);
+    ee->popStackAndReturnValueToCaller(RetTy, Result);
 }
 
-void Executor::visitUnreachableInst(UnreachableInst&) {
+void InstructionExecutor::visitUnreachableInst(UnreachableInst&) {
     TRACE_FUNC;
     throw unreachable_reached{};
 }
 
-void Executor::visitBranchInst(BranchInst &I) {
+void InstructionExecutor::visitBranchInst(BranchInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
     BasicBlock *Dest;
 
     Dest = I.getSuccessor(0);          // Uncond branches have a fixed dest...
     if (!I.isUnconditional()) {
         Value *Cond = I.getCondition();
-        if (getOperandValue(Cond, SF).IntVal == 0) // If false cond...
+        if (ee->getOperandValue(Cond, SF).IntVal == 0) // If false cond...
             Dest = I.getSuccessor(1);
     }
-    SwitchToNewBasicBlock(Dest, SF);
+    ee->SwitchToNewBasicBlock(Dest, SF);
 }
 
-void Executor::visitSwitchInst(SwitchInst &I) {
+void InstructionExecutor::visitSwitchInst(SwitchInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
     Value* Cond = I.getCondition();
     llvm::Type *ElTy = Cond->getType();
-    GenericValue CondVal = getOperandValue(Cond, SF);
+    GenericValue CondVal = ee->getOperandValue(Cond, SF);
 
     // Check to see if any of the cases match...
     BasicBlock *Dest = nullptr;
     for (SwitchInst::CaseIt i = I.case_begin(), e = I.case_end(); i != e; ++i) {
-        GenericValue CaseVal = getOperandValue(i.getCaseValue(), SF);
-        if (executeICMP_EQ(CondVal, CaseVal, ElTy).IntVal != 0) {
+        GenericValue CaseVal = ee->getOperandValue(i.getCaseValue(), SF);
+        if (ee->executeICMP_EQ(CondVal, CaseVal, ElTy).IntVal != 0) {
             Dest = cast<BasicBlock>(i.getCaseSuccessor());
             break;
         }
     }
     if (!Dest) Dest = I.getDefaultDest();   // No cases matched: use default
-    SwitchToNewBasicBlock(Dest, SF);
+    ee->SwitchToNewBasicBlock(Dest, SF);
 }
 
-void Executor::visitIndirectBrInst(IndirectBrInst &I) {
+void InstructionExecutor::visitIndirectBrInst(IndirectBrInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    void *Dest = GVTOP(getOperandValue(I.getAddress(), SF));
-    SwitchToNewBasicBlock((BasicBlock*)Dest, SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    void *Dest = GVTOP(ee->getOperandValue(I.getAddress(), SF));
+    ee->SwitchToNewBasicBlock((BasicBlock*)Dest, SF);
 }
 
 
@@ -1054,7 +1071,7 @@ void Executor::visitIndirectBrInst(IndirectBrInst &I) {
 // their inputs.  If the input PHI node is updated before it is read, incorrect
 // results can happen.  Thus we use a two phase approach.
 //
-void Executor::SwitchToNewBasicBlock(BasicBlock *Dest, ExecutorContext &SF){
+void borealis::ExecutionEngine::SwitchToNewBasicBlock(BasicBlock *Dest, ExecutorContext &SF){
     TRACE_FUNC;
     BasicBlock *PrevBB = SF.CurBB;      // Remember where we came from...
     SF.CurBB   = Dest;                  // Update CurBB to branch destination
@@ -1087,27 +1104,33 @@ void Executor::SwitchToNewBasicBlock(BasicBlock *Dest, ExecutorContext &SF){
 //                     Memory Instruction Implementations
 //===----------------------------------------------------------------------===//
 
-void Executor::visitAllocaInst(AllocaInst &I) {
+GenericValue borealis::ExecutionEngine::executeAlloca(size_t size) {
     TRACE_FUNC;
     // TODO
 
-    ExecutorContext &SF = ECStack.back();
+    // Allocate enough memory to hold the llvm::Type...
+    void *Memory = Mem.AllocateMemory(size);
+    return PTOGV(Memory);
+}
+
+void InstructionExecutor::visitAllocaInst(AllocaInst &I) {
+    TRACE_FUNC;
+    // TODO
+
+    ExecutorContext &SF = ee->getCurrentContext();
 
     llvm::Type *Ty = I.getType()->getElementType();  // llvm::Type to be allocated
 
     // Get the number of elements being allocated by the array...
     unsigned NumElements =
-        getOperandValue(I.getOperand(0), SF).IntVal.getZExtValue();
+        ee->getOperandValue(I.getOperand(0), SF).IntVal.getZExtValue();
 
-    unsigned TypeSize = (size_t)TD->getTypeAllocSize(Ty);
+    unsigned TypeSize = (size_t)ee->getDataLayout()->getTypeAllocSize(Ty);
 
     // Avoid malloc-ing zero bytes, use max()...
     unsigned MemToAlloc = std::max(1U, NumElements * TypeSize);
 
-    // Allocate enough memory to hold the llvm::Type...
-    void *Memory = Mem.AllocateMemory(MemToAlloc);
-
-    GenericValue Result = PTOGV(Memory);
+    GenericValue Result = ee->executeAlloca(MemToAlloc);
     ASSERTC(Result.PointerVal && "Null pointer returned by malloc!");
     SetValue(&I, Result, SF);
 
@@ -1115,7 +1138,7 @@ void Executor::visitAllocaInst(AllocaInst &I) {
 
 // getElementOffset - The workhorse for getelementptr.
 //
-GenericValue Executor::executeGEPOperation(Value *Ptr, gep_type_iterator I,
+GenericValue borealis::ExecutionEngine::executeGEPOperation(Value *Ptr, gep_type_iterator I,
     gep_type_iterator E,
     ExecutorContext &SF) {
     TRACE_FUNC;
@@ -1155,49 +1178,49 @@ GenericValue Executor::executeGEPOperation(Value *Ptr, gep_type_iterator I,
     return Result;
 }
 
-void Executor::visitGetElementPtrInst(GetElementPtrInst &I) {
+void InstructionExecutor::visitGetElementPtrInst(GetElementPtrInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeGEPOperation(I.getPointerOperand(),
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeGEPOperation(I.getPointerOperand(),
         gep_type_begin(I), gep_type_end(I), SF), SF);
 }
 
-void Executor::visitLoadInst(LoadInst &I) {
+void InstructionExecutor::visitLoadInst(LoadInst &I) {
     TRACE_FUNC;
     // TODO
-    ExecutorContext &SF = ECStack.back();
-    GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    GenericValue gsrc = ee->getOperandValue(I.getPointerOperand(), SF);
     void* src = GVTOP(gsrc);
 
-    if(Mem.isOpaquePointer(src)) return;
+    if(ee->isSymbolicPointer(src)) return;
 
     GenericValue Result;
-    LoadValueFromMemory(Result, static_cast<const byte*>(src), I.getType());
+    ee->LoadValueFromMemory(Result, static_cast<const byte*>(src), I.getType());
     SetValue(&I, Result, SF);
 }
 
-void Executor::visitStoreInst(StoreInst &I) {
+void InstructionExecutor::visitStoreInst(StoreInst &I) {
     TRACE_FUNC;
     // TODO
 
-    ExecutorContext &SF = ECStack.back();
-    GenericValue Val = getOperandValue(I.getOperand(0), SF);
-    GenericValue gsrc = getOperandValue(I.getPointerOperand(), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    GenericValue Val = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue gsrc = ee->getOperandValue(I.getPointerOperand(), SF);
     void* src = GVTOP(gsrc);
 
-    if(Mem.isOpaquePointer(src)) throw std::logic_error("Cannot store to a symbolic location"); // FIXME
+    if(ee->isSymbolicPointer(src)) throw std::logic_error("Cannot store to a symbolic location"); // FIXME
 
-    StoreValueToMemory(Val, static_cast<byte*>(src), I.getOperand(0)->getType());
+    ee->StoreValueToMemory(Val, static_cast<byte*>(src), I.getOperand(0)->getType());
 }
 
 //===----------------------------------------------------------------------===//
 //                 Miscellaneous Instruction Implementations
 //===----------------------------------------------------------------------===//
 
-void Executor::visitCallSite(CallSite CS) {
+void borealis::ExecutionEngine::executeCall(llvm::CallSite CS) {
     TRACE_FUNC;
 
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = getCurrentContext();
 
     // Check to see if this is an intrinsic function call...
     Function *F = CS.getCalledFunction();
@@ -1210,10 +1233,25 @@ void Executor::visitCallSite(CallSite CS) {
         case function_type::BUILTIN_BOR_ASSERT:
         case function_type::BUILTIN_BOR_ASSUME:
             break;
+        case function_type::INTRINSIC_ANNOTATION: {
+            auto Anno =
+                static_cast<Annotation*>(MDNode2Ptr(CS.getInstruction()->getMetadata("anno.ptr")));
+            TRACE_FMT("%d", Anno);
+            ASSERTC(Anno);
+            auto sharedAnno = materialize(Anno->shared_from_this(), FN, VIT);
+
+            AE.transform(sharedAnno);
+            return;
+        }
+        case function_type::ACTION_DEFECT: {
+            throw assertion_failed{};
+        }
         default: // FIXME: process annotation-related intrinsics when we start checking annotations
             return;
         }
     }
+
+
 
     SF.Caller = CS;
     std::vector<GenericValue> ArgVals;
@@ -1259,6 +1297,12 @@ void Executor::visitCallSite(CallSite CS) {
     }
 }
 
+void InstructionExecutor::visitCallSite(CallSite CS) {
+    TRACE_FUNC;
+
+    ee->executeCall(CS);
+}
+
 // auxiliary function for shift operations
 static unsigned getShiftAmount(uint64_t orgShiftAmount,
     llvm::APInt valueToShift) {
@@ -1272,11 +1316,11 @@ static unsigned getShiftAmount(uint64_t orgShiftAmount,
 }
 
 
-void Executor::visitShl(BinaryOperator &I) {
+void InstructionExecutor::visitShl(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
     const llvm::Type *Ty = I.getType();
 
@@ -1300,11 +1344,11 @@ void Executor::visitShl(BinaryOperator &I) {
     SetValue(&I, Dest, SF);
 }
 
-void Executor::visitLShr(BinaryOperator &I) {
+void InstructionExecutor::visitLShr(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
     const llvm::Type *Ty = I.getType();
 
@@ -1328,11 +1372,11 @@ void Executor::visitLShr(BinaryOperator &I) {
     SetValue(&I, Dest, SF);
 }
 
-void Executor::visitAShr(BinaryOperator &I) {
+void InstructionExecutor::visitAShr(BinaryOperator &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
     const llvm::Type *Ty = I.getType();
 
@@ -1356,7 +1400,7 @@ void Executor::visitAShr(BinaryOperator &I) {
     SetValue(&I, Dest, SF);
 }
 
-GenericValue Executor::executeTruncInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeTruncInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1377,7 +1421,7 @@ GenericValue Executor::executeTruncInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeSExtInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeSExtInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     const llvm::Type *SrcTy = SrcVal->getType();
@@ -1398,7 +1442,7 @@ GenericValue Executor::executeSExtInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeZExtInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeZExtInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     const llvm::Type *SrcTy = SrcVal->getType();
@@ -1420,7 +1464,7 @@ GenericValue Executor::executeZExtInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPTruncInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeFPTruncInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1444,7 +1488,7 @@ GenericValue Executor::executeFPTruncInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPExtInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeFPExtInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1467,7 +1511,7 @@ GenericValue Executor::executeFPExtInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPToUIInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeFPToUIInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     llvm::Type *SrcTy = SrcVal->getType();
@@ -1506,7 +1550,7 @@ GenericValue Executor::executeFPToUIInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeFPToSIInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeFPToSIInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     llvm::Type *SrcTy = SrcVal->getType();
@@ -1544,7 +1588,7 @@ GenericValue Executor::executeFPToSIInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeUIToFPInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeUIToFPInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1577,7 +1621,7 @@ GenericValue Executor::executeUIToFPInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeSIToFPInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeSIToFPInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1612,7 +1656,7 @@ GenericValue Executor::executeSIToFPInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executePtrToIntInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executePtrToIntInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     uint32_t DBitWidth = cast<IntegerType>(DstTy)->getBitWidth();
@@ -1623,7 +1667,7 @@ GenericValue Executor::executePtrToIntInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeIntToPtrInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeIntToPtrInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
     TRACE_FUNC;
     GenericValue Dest, Src = getOperandValue(SrcVal, SF);
@@ -1637,7 +1681,7 @@ GenericValue Executor::executeIntToPtrInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-GenericValue Executor::executeBitCastInst(Value *SrcVal, llvm::Type *DstTy,
+GenericValue borealis::ExecutionEngine::executeBitCastInst(Value *SrcVal, llvm::Type *DstTy,
     ExecutorContext &SF) {
 
    TRACE_FUNC;
@@ -1805,91 +1849,90 @@ GenericValue Executor::executeBitCastInst(Value *SrcVal, llvm::Type *DstTy,
     return Dest;
 }
 
-void Executor::visitTruncInst(TruncInst &I) {
+void InstructionExecutor::visitTruncInst(TruncInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeTruncInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeTruncInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitSExtInst(SExtInst &I) {
+void InstructionExecutor::visitSExtInst(SExtInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeSExtInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeSExtInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitZExtInst(ZExtInst &I) {
+void InstructionExecutor::visitZExtInst(ZExtInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeZExtInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeZExtInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitFPTruncInst(FPTruncInst &I) {
+void InstructionExecutor::visitFPTruncInst(FPTruncInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeFPTruncInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeFPTruncInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitFPExtInst(FPExtInst &I) {
+void InstructionExecutor::visitFPExtInst(FPExtInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeFPExtInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeFPExtInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitUIToFPInst(UIToFPInst &I) {
+void InstructionExecutor::visitUIToFPInst(UIToFPInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeUIToFPInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeUIToFPInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitSIToFPInst(SIToFPInst &I) {
+void InstructionExecutor::visitSIToFPInst(SIToFPInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeSIToFPInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeSIToFPInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitFPToUIInst(FPToUIInst &I) {
+void InstructionExecutor::visitFPToUIInst(FPToUIInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeFPToUIInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeFPToUIInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitFPToSIInst(FPToSIInst &I) {
+void InstructionExecutor::visitFPToSIInst(FPToSIInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeFPToSIInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeFPToSIInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitPtrToIntInst(PtrToIntInst &I) {
+void InstructionExecutor::visitPtrToIntInst(PtrToIntInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executePtrToIntInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executePtrToIntInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitIntToPtrInst(IntToPtrInst &I) {
+void InstructionExecutor::visitIntToPtrInst(IntToPtrInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeIntToPtrInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeIntToPtrInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
-void Executor::visitBitCastInst(BitCastInst &I) {
+void InstructionExecutor::visitBitCastInst(BitCastInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    SetValue(&I, executeBitCastInst(I.getOperand(0), I.getType(), SF), SF);
+    ExecutorContext &SF = ee->getCurrentContext();
+    SetValue(&I, ee->executeBitCastInst(I.getOperand(0), I.getType(), SF), SF);
 }
 
 #define IMPLEMENT_VAARG(TY) \
     case llvm::Type::TY##TyID: Dest.TY##Val = Src.TY##Val; break
 
-void Executor::visitVAArgInst(VAArgInst &I) {
+void InstructionExecutor::visitVAArgInst(VAArgInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
 
     // Get the incoming valist parameter.  LLI treats the valist as a
     // (ec-stack-depth var-arg-index) pair.
-    GenericValue VAList = getOperandValue(I.getOperand(0), SF);
+    GenericValue VAList = ee->getOperandValue(I.getOperand(0), SF);
     GenericValue Dest;
-    GenericValue Src = ECStack[VAList.UIntPairVal.first]
-                               .VarArgs[VAList.UIntPairVal.second];
+    GenericValue Src = ee->getContext(VAList.UIntPairVal.first).VarArgs[VAList.UIntPairVal.second];
     llvm::Type *Ty = I.getType();
     switch (Ty->getTypeID()) {
     case llvm::Type::IntegerTyID:
@@ -1910,11 +1953,11 @@ void Executor::visitVAArgInst(VAArgInst &I) {
     ++VAList.UIntPairVal.second;
 }
 
-void Executor::visitExtractElementInst(ExtractElementInst &I) {
+void InstructionExecutor::visitExtractElementInst(ExtractElementInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    ExecutorContext& SF = ee->getCurrentContext();
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue Dest;
 
     llvm::Type *Ty = I.getType();
@@ -1944,17 +1987,17 @@ void Executor::visitExtractElementInst(ExtractElementInst &I) {
     SetValue(&I, Dest, SF);
 }
 
-void Executor::visitInsertElementInst(InsertElementInst &I) {
+void InstructionExecutor::visitInsertElementInst(InsertElementInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext& SF = ee->getCurrentContext();
     llvm::Type *Ty = I.getType();
 
     if(!(Ty->isVectorTy()) )
         UNREACHABLE("Unhandled dest llvm::Type for insertelement instruction");
 
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
-    GenericValue Src3 = getOperandValue(I.getOperand(2), SF);
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
+    GenericValue Src3 = ee->getOperandValue(I.getOperand(2), SF);
     GenericValue Dest;
 
     llvm::Type *TyContained = Ty->getContainedType(0);
@@ -1980,17 +2023,17 @@ void Executor::visitInsertElementInst(InsertElementInst &I) {
     SetValue(&I, Dest, SF);
 }
 
-void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
+void InstructionExecutor::visitShuffleVectorInst(ShuffleVectorInst &I){
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
 
     llvm::Type *Ty = I.getType();
     if(!(Ty->isVectorTy()))
         UNREACHABLE("Unhandled dest llvm::Type for shufflevector instruction");
 
-    GenericValue Src1 = getOperandValue(I.getOperand(0), SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
-    GenericValue Src3 = getOperandValue(I.getOperand(2), SF);
+    GenericValue Src1 = ee->getOperandValue(I.getOperand(0), SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
+    GenericValue Src3 = ee->getOperandValue(I.getOperand(2), SF);
     GenericValue Dest;
 
     // There is no need to check Types of src1 and src2, because the compiled
@@ -2051,12 +2094,12 @@ void Executor::visitShuffleVectorInst(ShuffleVectorInst &I){
     SetValue(&I, Dest, SF);
 }
 
-void Executor::visitExtractValueInst(ExtractValueInst &I) {
+void InstructionExecutor::visitExtractValueInst(ExtractValueInst &I) {
     TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    ExecutorContext &SF = ee->getCurrentContext();
     Value *Agg = I.getAggregateOperand();
     GenericValue Dest;
-    GenericValue Src = getOperandValue(Agg, SF);
+    GenericValue Src = ee->getOperandValue(Agg, SF);
 
     ExtractValueInst::idx_iterator IdxBegin = I.idx_begin();
     unsigned Num = I.getNumIndices();
@@ -2094,14 +2137,14 @@ void Executor::visitExtractValueInst(ExtractValueInst &I) {
     SetValue(&I, Dest, SF);
 }
 
-void Executor::visitInsertValueInst(InsertValueInst &I) {
+void InstructionExecutor::visitInsertValueInst(InsertValueInst &I) {
 
-   TRACE_FUNC;
-    ExecutorContext &SF = ECStack.back();
+    TRACE_FUNC;
+    ExecutorContext &SF = ee->getCurrentContext();
     Value *Agg = I.getAggregateOperand();
 
-    GenericValue Src1 = getOperandValue(Agg, SF);
-    GenericValue Src2 = getOperandValue(I.getOperand(1), SF);
+    GenericValue Src1 = ee->getOperandValue(Agg, SF);
+    GenericValue Src2 = ee->getOperandValue(I.getOperand(1), SF);
     GenericValue Dest = Src1; // Dest is a slightly changed Src1
 
     ExtractValueInst::idx_iterator IdxBegin = I.idx_begin();
@@ -2142,7 +2185,7 @@ void Executor::visitInsertValueInst(InsertValueInst &I) {
     SetValue(&I, Dest, SF);
 }
 
-GenericValue Executor::getConstantExprValue (ConstantExpr *CE,
+GenericValue borealis::ExecutionEngine::getConstantExprValue (ConstantExpr *CE,
     ExecutorContext &SF) {
     switch (CE->getOpcode()) {
     case Instruction::Trunc:
@@ -2225,9 +2268,7 @@ GenericValue Executor::getConstantExprValue (ConstantExpr *CE,
     return Dest;
 }
 
-
-
-GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
+GenericValue borealis::ExecutionEngine::getOperandValue(Value *V, ExecutorContext &SF) {
     TRACE_FUNC;
     if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
         return getConstantExprValue(CE, SF);
@@ -2254,7 +2295,7 @@ GenericValue Executor::getOperandValue(Value *V, ExecutorContext &SF) {
 //===----------------------------------------------------------------------===//
 // callFunction - Execute the specified function...
 //
-void Executor::callFunction(Function *F,
+void borealis::ExecutionEngine::callFunction(Function *F,
     const std::vector<GenericValue> &ArgVals) {
     TRACE_FUNC;
 
@@ -2295,7 +2336,7 @@ void Executor::callFunction(Function *F,
 }
 
 
-void Executor::run() {
+void borealis::ExecutionEngine::run() {
     TRACE_FUNC;
     while (!ECStack.empty()) {
         // Interpret a single instruction & increment the "PC".
@@ -2304,29 +2345,7 @@ void Executor::run() {
 
         // Track the number of dynamic instructions executed.
 
-        visit(I);   // Dispatch to one of the visit* methods...
-#if 0
-        // This is not safe, as visiting the instruction could lower it and free I.
-        DEBUG(
-            if (!isa<CallInst>(I) && !isa<InvokeInst>(I) &&
-                I.getType() != llvm::Type::VoidTy) {
-                borealis::dbgs() << "  --> ";
-                const GenericValue &Val = SF.Values.at(&I);
-                switch (I.getType()->getTypeID()) {
-                default: UNREACHABLE("Invalid GenericValue llvm::Type");
-                case llvm::Type::VoidTyID:    borealis::dbgs() << "void"; break;
-                case llvm::Type::FloatTyID:   borealis::dbgs() << "float " << Val.FloatVal; break;
-                case llvm::Type::DoubleTyID:  borealis::dbgs() << "double " << Val.DoubleVal; break;
-                case llvm::Type::PointerTyID: borealis::dbgs() << "void* " << intptr_t(Val.PointerVal);
-                break;
-                case llvm::Type::IntegerTyID:
-                    borealis::dbgs() << "i" << Val.IntVal.getBitWidth() << " "
-                    << Val.IntVal.toStringUnsigned(10)
-                    << " (0x" << Val.IntVal.toStringUnsigned(16) << ")\n";
-                    break;
-                }
-            });
-#endif
+        IE.visit(I);   // Dispatch to one of the visit* methods...
     }
 }
 
