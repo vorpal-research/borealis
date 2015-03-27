@@ -1,3 +1,6 @@
+[submodule "lib/tinyformat"]
+	path = lib/tinyformat
+	url = git://github.com/c42f/tinyformat
 [submodule "lib/iterations"]
 	path = lib/iterations
 	url = ../iterations
