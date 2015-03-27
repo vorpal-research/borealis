@@ -251,7 +251,7 @@ std::list<ReturnInst*> getAllRets(Function* F) {
 
     std::unordered_set<ReturnInst*> rets;
 
-    for (ReturnInst* RI : viewContainer(F)
+    for (ReturnInst* RI : viewContainer(*F)
                           .flatten()
                           .map(take_pointer)
                           .map(dyn_caster<ReturnInst>())

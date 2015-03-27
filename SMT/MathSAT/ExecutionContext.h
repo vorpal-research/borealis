@@ -62,8 +62,7 @@ class ExecutionContext {
 
     typedef std::unordered_set<std::string> MemArrayIds;
     MemArrayIds getMemArrayIds() const {
-        auto it = util::iterate_keys(util::begin_end_pair(memArrays));
-        return MemArrayIds(it.first, it.second);
+        return util::viewContainerKeys(memArrays).toHashSet();
     }
 
 public:

@@ -198,7 +198,7 @@ TEST(Util, iterators) {
         };
         std::list<int> keys;
 
-        for (auto& a : view(iterate_keys(ints.begin()), iterate_keys(ints.end()))) {
+        for (const int& a : viewContainerKeys(ints)) {
             keys.push_back(a);
         }
 
@@ -215,41 +215,7 @@ TEST(Util, iterators) {
         };
         std::list<int> keys;
 
-        for (auto& a : view(iterate_keys(ints.begin()), iterate_keys(ints.end()))) {
-            keys.push_back(a);
-        }
-
-        std::list<int> pattern { 0, 2, 4, 6 };
-        EXPECT_EQ(pattern, keys);
-    }
-
-    {
-        std::map<int, int> ints{
-            { 0, 1 },
-            { 2, 3 },
-            { 4, 5 },
-            { 6, 7 }
-        };
-        std::list<int> keys;
-
-        for (auto& a : view(iterate_keys(begin_end_pair(ints)))) {
-            keys.push_back(a);
-        }
-
-        std::list<int> pattern { 0, 2, 4, 6 };
-        EXPECT_EQ(pattern, keys);
-    }
-
-    {
-        const std::map<int, int> ints{
-            { 0, 1 },
-            { 2, 3 },
-            { 4, 5 },
-            { 6, 7 }
-        };
-        std::list<int> keys;
-
-        for (auto& a : view(iterate_keys(begin_end_pair(ints)))) {
+        for (const int& a : viewContainerKeys(ints)) {
             keys.push_back(a);
         }
 
@@ -266,7 +232,7 @@ TEST(Util, iterators) {
         };
         std::list<int> values;
 
-        for (auto& a : view(iterate_values(ints.begin()), iterate_values(ints.end()))) {
+        for (int& a : viewContainerValues(ints)) {
             values.push_back(a);
         }
 
@@ -274,48 +240,17 @@ TEST(Util, iterators) {
         EXPECT_EQ(pattern, values);
     }
 
-    {
-        const std::map<int, int> ints{
-            { 0, 1 },
-            { 2, 3 },
-            { 4, 5 },
-            { 6, 7 }
-        };
-        std::list<int> values;
-
-        for (auto& a : view(citerate_values(ints.begin()), citerate_values(ints.end()))) {
-            values.push_back(a);
-        }
-
-        std::list<int> pattern { 1, 3, 5, 7 };
-        EXPECT_EQ(pattern, values);
-    }
 
     {
         std::vector<std::list<int>> con {
             { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 }
         };
 
-        std::vector<int> con2 { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-        std::copy(
-            flat_iterator(con.begin(), con.end()),
-            flat_iterator(con.end()),
-            con2.begin()
-        );
+        std::vector<int> con2 = viewContainer(con).flatten().toVector();
 
         EXPECT_EQ(pat, con2);
-    }
-
-    {
-        std::vector<std::list<int>> con {
-            { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 }
-        };
-
-        std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-
-        EXPECT_EQ(pat, viewContainer(con).flatten().to<std::vector<int>>());
     }
 
     {
@@ -323,14 +258,9 @@ TEST(Util, iterators) {
             { { 1, 2, 3 }, { 4, 5, 6 } }, { { 7 } }, { { 8, 9 } }
         };
 
-        std::vector<int> con2 { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-        std::copy(
-            flat2_iterator(con.begin(), con.end()),
-            flat2_iterator(con.end()),
-            con2.begin()
-        );
+        std::vector<int> con2 = viewContainer(con).flatten().flatten().toVector();
 
         EXPECT_EQ(pat, con2);
     }
@@ -340,16 +270,11 @@ TEST(Util, iterators) {
             1, 2, 3, 4, 5, 6, 7, 8, 9
         };
 
-        std::vector<int> con2 { 0, 0, 0, 0 };
         std::vector<int> pat  { 2, 4, 6, 8 };
 
         auto is_even = [](int v){ return v % 2 == 0; };
 
-        std::copy(
-            filter_iterator(con.begin(), con.end(), is_even),
-            filter_iterator(con.end(), is_even),
-            con2.begin()
-        );
+        auto con2 = viewContainer(con).filter(is_even).toVector();
 
         EXPECT_EQ(pat, con2);
     }
@@ -360,10 +285,7 @@ TEST(Util, iterators) {
         };
 
         std::vector<int> con1 { 10, 11, 12, 13 };
-        std::vector<int> con(glue_iterator(
-                std::make_pair(con0.begin(), con0.end()),
-                std::make_pair(con1.begin(), con1.end())
-        ), glued_iterator<typename std::vector<int>::iterator>());
+        std::vector<int> con = (viewContainer(con0) >> viewContainer(con1)).toVector();
         std::vector<int> pat  { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
 
         EXPECT_EQ(pat, con);
@@ -387,11 +309,10 @@ TEST(Util, reduce) {
         auto&& plus = [](auto&& a, auto&& b) { return a + b; };
 
         std::vector<int> vec{};
-        EXPECT_EQ(nothing(), viewContainer(vec).reduce(plus));
         vec.push_back(1);
-        EXPECT_EQ(just(1), viewContainer(vec).reduce(plus));
+        EXPECT_EQ(1, viewContainer(vec).reduce(plus));
         vec.push_back(1000);
-        EXPECT_EQ(just(1001), viewContainer(vec).reduce(plus));
+        EXPECT_EQ(1001, viewContainer(vec).reduce(plus));
     }
 }
 

@@ -18,8 +18,7 @@ SeqDataPredicate::SeqDataPredicate(
 
     auto&& a = util::viewContainer(data)
                 .map([](auto&& d) { return d->getName(); })
-                .reduce([](auto&& acc, auto&& e) { return acc + "," + e; })
-                .getOrElse("");
+                .fold(std::string{}, [](auto&& acc, auto&& e) { return acc + "," + e; });
 
     asString = base->getName() + "=(" + a + ")";
 

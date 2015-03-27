@@ -30,14 +30,14 @@
  * Note that the one-liners can be big and the impact will be significant.
  *
  * */
-#define LAM(X, ...) [&](auto&& X) -> decltype(__VA_ARGS__) { return __VA_ARGS__; }
-#define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype(__VA_ARGS__) { return __VA_ARGS__; }
+#define LAM(X, ...) [&](auto&& X) -> decltype((__VA_ARGS__)) { return __VA_ARGS__; }
+#define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype((__VA_ARGS__)) { return __VA_ARGS__; }
 #define FWD(...) (std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__))
 #define APPLY(...) LAM(...Args, __VA_ARGS__(FWD(Args)...))
 
-#define QUICK_RETURN(...) ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
+#define QUICK_RETURN(...) ->decltype((__VA_ARGS__)) { return __VA_ARGS__; }
 
-#define QUICK_CONST_RETURN(...) const ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
+#define QUICK_CONST_RETURN(...) const ->decltype((__VA_ARGS__)) { return __VA_ARGS__; }
 
 #define BYE_BYE(type, msg) return borealis::util::sayonara<type>( \
         __FILE__, \

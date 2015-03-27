@@ -16,8 +16,7 @@ GepTerm::GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& s
         "gep(" + base->getName() + "," +
             util::viewContainer(shifts)
             .map([](auto&& s) { return s->getName(); })
-            .reduce([](auto&& acc, auto&& e) { return acc + "+" + e; })
-            .getOrElse("0") +
+            .fold(std::string("0"), [](auto&& acc, auto&& e) { return acc + "+" + e; }) +
         ")"
     ) {
     subterms.insert(subterms.end(), base);

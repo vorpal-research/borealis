@@ -59,10 +59,9 @@ struct TypeUtils {
                                ": " +
                                util::toString(e.getIds());
                     })
-            	   .reduce([](auto&& e1, auto&& e2) {
+            	   .fold(std::string{}, [](auto&& e1, auto&& e2) {
                         return e1 + ", " + e2;
-                    })
-                   .getOrElse("");
+                    });
 
             ret += " }";
             return std::move(ret);
@@ -73,10 +72,9 @@ struct TypeUtils {
             ret += util::viewContainer(Fun->getArgs())
                    .map(ops::dereference)
                    .map(TypeUtils::toString)
-                   .reduce([](auto&& a, auto&& b) {
+                   .fold(std::string{}, [](auto&& a, auto&& b) {
                         return a + ", " + b;
-                    })
-                   .getOrElse("");
+                    });
 
             ret += " )";
             return std::move(ret);
@@ -105,7 +103,7 @@ struct TypeUtils {
     static llvm::Type* tryCastBack(llvm::LLVMContext& C, Type::Ptr type) {
         if(const type::Integer* intt = llvm::dyn_cast<type::Integer>(type)) {
             return llvm::Type::getIntNTy(C, intt->getBitsize());
-        } else if(const type::Float* intt = llvm::dyn_cast<type::Float>(type)) {
+        } else if(llvm::dyn_cast<type::Float>(type)) {
             return llvm::Type::getDoubleTy(C);
         } else if(llvm::dyn_cast<type::Bool>(type)) {
             return llvm::Type::getInt1Ty(C);
