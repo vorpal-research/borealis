@@ -1,2 +1,2 @@
-lib/iterations = https://bitbucket.org/belyaev.mikhail/simple-iterator-adapter
-lib/typesig = https://bitbucket.org/belyaev.mikhail/typesig
+lib/iterations = ../borealis-libs/iterations
+lib/typesig = ../borealis-libs/typesig
