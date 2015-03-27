@@ -25,7 +25,7 @@ z3::tactic Solver::tactics() {
     auto& c = z3ef.unwrap();
 
     auto params = z3::params(c);
-    params.set(":auto_config", true);
+    params.set("auto_config", true);
     auto smt_tactic = with(z3::tactic(c, "smt"), params);
     auto useful = /* z3::tactic(c, "reduce-bv-size") & */ z3::tactic(c, "ctx-simplify");
 

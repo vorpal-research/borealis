@@ -15,9 +15,9 @@ namespace z3_ {
 
 ExprFactory::ExprFactory() {
     z3::config cfg;
-    // cfg.set(":lift-ite", 2);
-    // cfg.set(":ng-lift-ite", 2);
-    // cfg.set(":proof-mode", 2);
+    cfg.set("model", true);
+    cfg.set("proof", false);
+    cfg.set("unsat_core", true);
 
     ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
 
