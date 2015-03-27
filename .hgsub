@@ -1,5 +1,5 @@
-lib/iterations = lib/iterations
+lib/iterations = https://bitbucket.org/belyaev.mikhail/simple-iterator-adapter
 lib/typesig = lib/typesig
 
 [subpaths]
-
+lib/iterations = 
