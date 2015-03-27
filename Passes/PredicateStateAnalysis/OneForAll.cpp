@@ -129,7 +129,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
     if (nullptr == inState) return;
     if (PredicateStateAnalysis::CheckUnreachable() and inState->isUnreachableIn(fMemId)) return;
 
-    for (auto&& I : viewContainer(BB)) {
+    for (auto&& I : viewContainer(*BB)) {
 
         auto&& instructionState = (FN.State * inState + PM(&I))();
         instructionStates[&I] = instructionState;

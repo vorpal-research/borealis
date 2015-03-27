@@ -107,7 +107,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
          )
     );
 
-    for (CallInst* call : viewContainer(GlobalsDesc)
+    for (CallInst* call : viewContainer(*GlobalsDesc)
                          .flatten()
                          .map(take_pointer)
                          .map(llvm::dyn_caster<CallInst>())

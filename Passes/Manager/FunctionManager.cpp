@@ -204,7 +204,7 @@ void FunctionManager::addBond(
 
 util::CollectionView<FunctionManager::FunctionBonds::const_iterator>
 FunctionManager::getBonds(const llvm::Function* F) const {
-    return bonds.equal_range(F);
+    return util::view(bonds.equal_range(F));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -32,6 +32,15 @@ const Term::Subterms& Term::getSubterms() const {
     return subterms;
 }
 
+Term::Set Term::getFullTermSet(Term::Ptr term) {
+    auto&& res = Term::Set{term};
+    for (auto&& subterm : term->subterms) {
+        auto&& nested = Term::getFullTermSet(subterm);
+        res.insert(nested.begin(), nested.end());
+    }
+    return res;
+}
+
 bool Term::equals(const Term* other) const {
     if (other == nullptr) return false;
     return classTag == other->classTag &&

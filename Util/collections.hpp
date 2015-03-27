@@ -28,161 +28,8 @@
 namespace borealis {
 namespace util {
 
-template<class T> inline T* take_pointer_of(T& value) { return &value; }
-template<class T> inline const T* take_pointer_of(const T& value) { return &value; }
-template<class T> inline void take_pointer_of(T&& value) = delete;
-
-// stupid straightforward collection view
-//  - cannot be used after any operation with begin or end
-//  - should be used in-place only, like this:
-//      int arr[] = { 0,1,2,3,4,5,6,7,8,9,10 };
-//      for_each(CollectionView<int*>(arr, arr+10), [](const Elem& el){ ... });
-template<class ContainerIter>
-class CollectionView {
-    ContainerIter begin_;
-    ContainerIter end_;
-
-public:
-    struct defaultPredicate {
-        template<class T>
-        bool operator()(const T& v) const { return static_cast<bool>(v); }
-    };
-
-    CollectionView(const CollectionView&) = default;
-    CollectionView(CollectionView&&) = default;
-    CollectionView(ContainerIter begin, ContainerIter end) : begin_(begin), end_(end) {}
-    CollectionView(const std::pair<ContainerIter, ContainerIter>& iters) : begin_(iters.first), end_(iters.second) {}
-
-    ContainerIter begin() const { return begin_; }
-    ContainerIter end() const { return end_; }
-    bool empty() const { return begin_ == end_; }
-
-    size_t size() const { return std::distance(begin_, end_); }
-
-    template<class Callback>
-    void foreach(Callback c) const {
-        for (auto&& e : *this) {
-            c(e);
-        }
-    }
-
-    CollectionView<flattened_iterator<ContainerIter>> flatten() const {
-        return view(
-            borealis::util::flat_iterator(begin_, end_),
-            borealis::util::flat_iterator(end_)
-        );
-    }
-
-    template<class Mapping>
-    CollectionView<mapped_iterator<ContainerIter, Mapping>> map(Mapping mapping) const {
-        return view(
-            borealis::util::map_iterator(begin_, mapping),
-            borealis::util::map_iterator(end_, mapping)
-        );
-    }
-
-    template<class Pred>
-    CollectionView<filtered_iterator<ContainerIter, Pred>> filter(Pred pred) const {
-        return view(
-            borealis::util::filter_iterator(begin_, end_, pred),
-            borealis::util::filter_iterator(end_, pred)
-        );
-    }
-
-    CollectionView<filtered_iterator<ContainerIter, defaultPredicate>> filter() const {
-        return filter(defaultPredicate());
-    }
-
-    CollectionView<ContainerIter> drop(size_t n) const {
-        auto nbegin = begin_;
-        advanceWithLimit(nbegin, n, end_);
-        return CollectionView{ nbegin, end_ };
-    }
-
-    CollectionView<ContainerIter> take(size_t n) const {
-        auto nend = begin_;
-        advanceWithLimit(nend, n, end_);
-        return CollectionView{ begin_, nend };
-    }
-
-    template<class OtherIter>
-    CollectionView<zipping_iterator<ContainerIter, OtherIter>> operator^ (const CollectionView<OtherIter>& that) const {
-        return view(
-            zip(begin_, that.begin()),
-            zip(end_, that.end())
-        );
-    }
-
-    template<class Op>
-    auto reduce(Op operation) const -> option<std::decay_t<decltype(*begin_)>> {
-        auto&& ret = util::nothing<std::decay_t<decltype(*begin_)>>();
-        if (not empty()) {
-            auto&& head = *begin_;
-            auto&& tail = drop(1);
-            ret = util::just(head);
-            for (auto&& e : tail) {
-                ret = util::just(operation(ret.getUnsafe(), e));
-            }
-        }
-        return std::move(ret);
-    }
-
-    template<class Acc, class Op>
-    auto fold(Acc&& acc, Op operation) -> DECLTYPE_AUTO {
-        Acc buf = std::forward<Acc>(acc);
-        for(auto&& el : *this) {
-            buf = operation(std::forward<Acc>(buf), FWD(el));
-        }
-        return buf;
-    }
-
-    template<class R>
-    auto firstOr(R&& def) const QUICK_RETURN((begin_ == end_) ? FWD(def) : *begin_);
-
-    template<class Pred>
-    bool all_of(Pred pred) const {
-        return std::all_of(begin_, end_, pred);
-    }
-
-    template<class Pred>
-    bool any_of(Pred pred) const {
-        return std::any_of(begin_, end_, pred);
-    }
-
-    template<class Container>
-    bool starts_with(const Container& c) const {
-        auto b = begin_, e = end_, bb = std::begin(c), ee = std::end(c);
-        while (b != e and bb != ee) {
-            if (*b++ != *bb++) return false;
-        }
-        return bb == ee;
-    }
-
-    template<class Con>
-    Con to() const {
-        return Con(begin_, end_);
-    }
-
-    using reference = decltype(*begin_);
-    using value_type = std::remove_cv_t<std::remove_reference_t<reference>>;
-
-    std::list<value_type> toList() const {
-        return to<std::list<value_type>>();
-    }
-
-    std::vector<value_type> toVector() const {
-        return to<std::vector<value_type>>();
-    }
-
-    std::set<value_type> toSet() const {
-        return to<std::set<value_type>>();
-    }
-
-    std::unordered_set<value_type> toHashSet() const {
-        return to<std::unordered_set<value_type>>();
-    }
-
-};
+template<class It>
+using CollectionView = iterator_view<It>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -190,82 +37,9 @@ template<class C> inline auto head(const C& con) QUICK_RETURN(*std::begin(con));
 
 template<class C> inline auto head(C& con) QUICK_RETURN(*std::begin(con));
 
-template<class Iter>
-inline auto view(Iter b, Iter e) -> CollectionView<Iter> {
-    return CollectionView<Iter>(b, e);
-}
-
-template<class Iter>
-inline auto view(const std::pair<Iter, Iter>& is) -> CollectionView<Iter> {
-    return CollectionView<Iter>(is);
-}
-
 
 template<class Container>
-inline auto viewContainer(const Container& con) -> CollectionView<decltype(std::begin(con))> {
-    return view( std::begin(con), std::end(con) );
-}
-
-template<class Container>
-inline auto viewContainer(const Container* con) -> decltype(viewContainer(*con)) {
-    return viewContainer(*con);
-}
-
-template<class Container>
-inline auto viewContainer(Container& con) -> CollectionView<decltype(std::begin(con))> {
-    return view( std::begin(con), std::end(con) );
-}
-
-template<class Container>
-inline auto viewContainer(Container* con) -> decltype(viewContainer(*con)) {
-    return viewContainer(*con);
-}
-
-
-template<class Container>
-auto viewContainerKeys(const Container& c) -> decltype(view(iterate_keys(begin_end_pair(c)))) {
-    return view(iterate_keys(begin_end_pair(c)));
-}
-
-template<class Container>
-auto viewContainerKeys(const Container* c) -> decltype(viewContainerKeys(*c)) {
-    return viewContainerKeys(*c);
-}
-
-template<class Container>
-auto viewContainerKeys(Container& c) -> decltype(view(iterate_keys(begin_end_pair(c)))) {
-    return view(iterate_keys(begin_end_pair(c)));
-}
-
-template<class Container>
-auto viewContainerKeys(Container* c) -> decltype(viewContainerKeys(*c)) {
-    return viewContainerKeys(*c);
-}
-
-
-template<class Container>
-auto viewContainerValues(const Container& c) -> decltype(view(iterate_values(begin_end_pair(c)))) {
-    return view(iterate_values(begin_end_pair(c)));
-}
-
-template<class Container>
-auto viewContainerValues(const Container* c) -> decltype(viewContainerValues(*c)) {
-    return viewContainerValues(*c);
-}
-
-template<class Container>
-auto viewContainerValues(Container& c) -> decltype(view(iterate_values(begin_end_pair(c)))) {
-    return view(iterate_values(begin_end_pair(c)));
-}
-
-template<class Container>
-auto viewContainerValues(Container* c) -> decltype(viewContainerValues(*c)) {
-    return viewContainerValues(*c);
-}
-
-
-template<class Container>
-inline auto reverse(Container& con) -> CollectionView<decltype(con.rbegin())> {
+inline auto reverse(Container& con) -> iterator_view<decltype(con.rbegin())> {
     return view( con.rbegin(), con.rend() );
 }
 
@@ -306,20 +80,43 @@ inline auto take(size_t count, Container& con) -> decltype(viewContainer(con)) {
     return viewContainer(con).take(count);
 }
 
+static struct {
+    template<class K, class V>
+    const K& operator()(const std::pair<K, V>& pr) const {
+        return pr.first;
+    }
+} get_key;
 
-template<class U, class V>
-inline auto range(const U& from, const V& to) ->
-        CollectionView<counting_iterator<util::common_type_t<U, V>>> {
-    return view(
-        counting_iterator<util::common_type_t<U, V>>(from),
-        counting_iterator<util::common_type_t<U, V>>(to)
-    );
+static struct {
+    template<class K, class V>
+    const V& operator()(const std::pair<K, V>& pr) const {
+        return pr.second;
+    }
+    template<class K, class V>
+    V& operator()(std::pair<K, V>& pr) const {
+        return pr.second;
+    }
+} get_value;
+
+template<class Container>
+inline auto viewContainerValues(const Container& con) {
+    return viewContainer(con).map(get_value);
+}
+
+template<class Container>
+inline auto viewContainerValues(Container& con) {
+    return viewContainer(con).map(get_value);
+}
+
+template<class Container>
+inline auto viewContainerKeys(const Container& con) {
+    return viewContainer(con).map(get_key);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-T copy(T other) { return other; }
+T copy(const T& other) { return other; }
 
 template<class T, class Pred>
 std::list<T> filter_not(std::list<T>&& lst, const Pred pred) {

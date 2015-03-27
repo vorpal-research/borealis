@@ -20,8 +20,7 @@ DefaultSwitchCasePredicate::DefaultSwitchCasePredicate(
 
     auto&& a = util::viewContainer(cases)
                 .map([](auto&& c) { return c->getName(); })
-                .reduce([](auto&& acc, auto&& e) { return acc + "|" + e; })
-                .getOrElse("");
+                .fold(std::string{}, [](auto&& acc, auto&& e) { return acc + "|" + e; });
 
     asString = cond->getName() + "=not(" + a + ")";
 

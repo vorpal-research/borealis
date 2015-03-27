@@ -22,6 +22,7 @@ class FactoryNest {
 
 public:
 
+    SlotTracker* Slot;
     TypeFactory::Ptr Type;
     TermFactory::Ptr Term;
     PredicateFactory::Ptr Predicate;

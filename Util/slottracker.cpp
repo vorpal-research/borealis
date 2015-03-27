@@ -210,6 +210,7 @@ void SlotTracker::CreateModuleSlot(const GlobalValue *V) {
 
     unsigned DestSlot = mNext++;
     mMap[V] = DestSlot;
+    mSap[DestSlot] = V;
 
     ST_DEBUG("  Inserting value [" << V->getType() << "] = " << V << " slot=" << DestSlot << " [");
     // G = Global, F = Function, A = Alias, o = other
@@ -224,6 +225,7 @@ void SlotTracker::CreateFunctionSlot(const Value *V) {
 
     unsigned DestSlot = fNext++;
     fMap[V] = DestSlot;
+    fSap[DestSlot] = V;
 
     // G = Global, F = Function, o = other
     ST_DEBUG("  Inserting value [" << V->getType() << "] = " << V << " slot=" << DestSlot << " [o]\n");
@@ -272,6 +274,22 @@ std::string SlotTracker::getLocalName(const Value *V) {
             return "NO_LOCAL_SLOT_FOR_" + toString(V);
         }
     }
+}
+
+const Value* SlotTracker::getLocalValue(const std::string& name) {
+    if ('%' == name[0]) {
+        auto&& slot = std::stoul(name.substr(1));
+        return fSap.lookup(slot);
+    } else {
+        return TheFunction->getValueSymbolTable().lookup(name);
+
+    }
+}
+
+const Value* SlotTracker::getGlobalValue(const std::string& name) {
+    // XXX: akhin Can global values be slots (i.e., do not have a name?)
+    auto* res = TheModule->getValueSymbolTable().lookup(name);
+    return res;
 }
 
 } /* namespace borealis */
