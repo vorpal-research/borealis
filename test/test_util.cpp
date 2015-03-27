@@ -310,9 +310,9 @@ TEST(Util, reduce) {
 
         std::vector<int> vec{};
         vec.push_back(1);
-        EXPECT_EQ(1, viewContainer(vec).reduce(plus));
+        EXPECT_EQ(1, viewContainer(vec).reduce(0, plus));
         vec.push_back(1000);
-        EXPECT_EQ(1001, viewContainer(vec).reduce(plus));
+        EXPECT_EQ(1001, viewContainer(vec).reduce(0, plus));
     }
 }
 

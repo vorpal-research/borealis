@@ -16,7 +16,7 @@ OpaqueCallTerm::OpaqueCallTerm(Type::Ptr type, Term::Ptr lhv, const std::vector<
         lhv->getName() + "(" +
             util::viewContainer(rhv)
             .map([](auto&& trm) { return trm->getName(); })
-            .reduce([](auto&& acc, auto&& e) { return acc + ", " + e; }) +
+            .reduce("", [](auto&& acc, auto&& e) { return acc + ", " + e; }) +
         ")"
     ) {
     subterms.insert(subterms.end(), lhv);
