@@ -1,2 +1,5 @@
-iterations = lib/iterations
-typesig = lib/typesig
+lib/iterations = lib/iterations
+lib/typesig = lib/typesig
+
+[subpaths]
+

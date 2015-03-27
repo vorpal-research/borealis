@@ -1,0 +1,7 @@
+[submodule "lib/iterations"]
+	path = lib/iterations
+	url = ../iterations
+[submodule "lib/typesig"]
+	path = lib/typesig
+	url = ../typesig
+
