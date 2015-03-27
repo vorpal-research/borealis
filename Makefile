@@ -299,6 +299,7 @@ clean.yaml-cpp:
 	rm -f .yaml-cpp
 	$(MAKE) CXX=$(CXX) -C $(YAML_CPP_DIR) clean
 
+# FIXME libdbglog cannot be built with 'make -jN', any workaround would be much appreciated...
 .dbglog:
 	[[ -e $(DBGLOG_DIR)/Makefile ]] && $(MAKE) CXX=$(CXX) -C $(DBGLOG_DIR) distclean || true
 	cd $(DBGLOG_DIR); $(DBGLOG_DIR)/configure --prefix=$(DBGLOG_DIST)

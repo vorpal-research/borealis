@@ -19,7 +19,7 @@ const std::unordered_set<Term::Ptr>& TermCollector::getTerms() const {
 
 Term::Ptr TermCollector::transformTerm(Term::Ptr term) {
     terms.insert(term);
-    return term;
+    return Base::transformTerm(term);
 }
 
 } /* namespace borealis */

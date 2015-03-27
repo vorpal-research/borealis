@@ -49,6 +49,7 @@ class SlotTracker {
 public:
   /// ValueMap - A mapping of Values to slot numbers.
   typedef llvm::DenseMap<const llvm::Value*, unsigned> ValueMap;
+  typedef llvm::DenseMap<unsigned, const llvm::Value*> SlotMap;
 
 private:
   /// TheModule - The module for which we are holding slot numbers.
@@ -60,10 +61,12 @@ private:
 
   /// mMap - The slot map for the module level data.
   ValueMap mMap;
+  SlotMap mSap;
   unsigned mNext;
 
   /// fMap - The slot map for the function level data.
   ValueMap fMap;
+  SlotMap fSap;
   unsigned fNext;
 
   /// mdnMap - Map for MDNodes.
@@ -82,6 +85,8 @@ public:
   int getMetadataSlot(const llvm::MDNode *N);
 
   std::string getLocalName(const llvm::Value *V);
+  const llvm::Value* getLocalValue(const std::string& name);
+  const llvm::Value* getGlobalValue(const std::string& name);
 
   /// If you'd like to deal with a function instead of just a module, use
   /// this method to get its data into the SlotTracker.

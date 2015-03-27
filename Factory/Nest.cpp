@@ -13,50 +13,51 @@
 
 namespace borealis {
 
-FactoryNest::FactoryNest() {};
+FactoryNest::FactoryNest() = default;
 FactoryNest::FactoryNest(const FactoryNest&) = default;
 FactoryNest::FactoryNest(FactoryNest&&) = default;
-FactoryNest::~FactoryNest() {};
+FactoryNest::~FactoryNest() = default;
 
 FactoryNest& FactoryNest::operator=(const FactoryNest&) = default;
 FactoryNest& FactoryNest::operator=(FactoryNest&&) = default;
 
 FactoryNest::FactoryNest(SlotTracker* st) :
+    Slot(st),
     Type(TypeFactory::get()),
-    Term(TermFactory::get(st, Type)),
+    Term(TermFactory::get(Slot, Type)),
     Predicate(PredicateFactory::get()),
     State(PredicateStateFactory::get()) {};
 
 Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& gv) {
     using namespace llvm;
 
-    auto base = FN.Term->getValueTerm(&gv);
+    auto&& base = FN.Term->getValueTerm(&gv);
 
     if (gv.hasInitializer()) {
         auto* ini = gv.getInitializer();
 
-        auto numElements = TypeUtils::getTypeSizeInElems(
+        auto&& numElements = TypeUtils::getTypeSizeInElems(
             FN.Type->cast(ini->getType())
         );
 
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {
-            auto data = util::range(0ULL, numElements)
-                .map([&cds](unsigned long long i) { return cds->getElementAsConstant(i); })
-                .map([&FN](const Constant* c) { return FN.Term->getValueTerm(c); })
-                .toVector();
+            auto&& data = util::range(0ULL, numElements)
+                    .map(APPLY(cds->getElementAsConstant))
+                    .map(APPLY(FN.Term->getValueTerm))
+                    .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (dyn_cast<ConstantAggregateZero>(ini)) {
-            auto zero = FN.Term->getIntTerm(0);
-            auto data = util::range(0ULL, numElements)
-                       .map(konst(zero))
-                       .toVector();
+            auto&& zero = FN.Term->getIntTerm(0);
+            auto&& data = util::range(0ULL, numElements)
+                    .map(konst(zero))
+                    .toVector();
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {
-            auto data = util::viewContainer(getAsSeqData(c))
-                .map([&FN](const Constant* c) { return FN.Term->getValueTerm(c); })
-                .toVector();
+            auto&& data = util::viewContainer(getAsSeqData(c))
+                    .map(APPLY(FN.Term->getValueTerm))
+                    .toVector();
             ASSERTC(numElements == data.size());
             return FN.Predicate->getSeqDataPredicate(base, data);
         }
@@ -66,14 +67,14 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& g
 }
 
 PredicateState::Ptr FactoryNest::getGlobalState(const llvm::Module* M) {
-    auto& globals = M->getGlobalList();
+    auto&& globals = M->getGlobalList();
 
     // FIXME: Marker predicate
-    auto init = Predicate->getGlobalsPredicate({});
+    auto&& init = Predicate->getGlobalsPredicate({});
 
-    auto gvPredicates = util::viewContainer(globals)
-        .map([this](const llvm::GlobalVariable& gv) { return fromGlobalVariable(*this, gv); })
-        .toVector();
+    auto&& gvPredicates = util::viewContainer(globals)
+            .map([&](auto&& gv) { return fromGlobalVariable(*this, gv); })
+            .toVector();
 
     return (State * init + gvPredicates)();
 }

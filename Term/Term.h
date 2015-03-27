@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 #include "Logging/tracer.hpp"
 #include "SMT/SMTUtil.h"
@@ -47,6 +48,7 @@ public:
     using Ptr = std::shared_ptr<const Term>;
     using ProtoPtr = std::unique_ptr<proto::Term>;
     using Subterms = std::vector<Term::Ptr>;
+    using Set = std::unordered_set<Term::Ptr>;
 
 protected:
 
@@ -72,6 +74,8 @@ public:
     static bool classof(const Term*) {
         return true;
     }
+
+    static Set getFullTermSet(Term::Ptr term);
 
 protected:
 
