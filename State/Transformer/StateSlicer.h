@@ -9,6 +9,7 @@
 #define STATE_TRANSFORMER_STATESLICER_H_
 
 #include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/Analysis/AliasSetTracker.h>
 
 #include <unordered_set>
 
@@ -31,13 +32,21 @@ private:
 
     PredicateState::Ptr query;
 
-    llvm::AliasAnalysis* AA;
+    llvm::AliasAnalysis AA;
+    llvm::AliasSetTracker AST;
 
-    std::unordered_set<Term::Ptr> sliceVars;
-    std::unordered_set<Term::Ptr> slicePtrs;
+    Term::Set sliceVars;
+    Term::Set slicePtrs;
 
     void init();
     void addSliceTerm(Term::Ptr term);
+
+    bool checkVars(const Term::Set& lhv, const Term::Set& rhv);
+    bool checkPtrs(const Term::Set& lhv, const Term::Set& rhv);
+
+    bool aliases(Term::Ptr a, Term::Ptr b);
+
+    llvm::Value* term2value(Term::Ptr t);
 
 };
 
