@@ -28,6 +28,7 @@ llvm::PassRegistry& initPassRegistry() {
         initializeScalarOpts(reg);
         initializeIPO(reg);
         initializeAnalysis(reg);
+        initializeAliasAnalysisAnalysisGroup(reg);
         initializeIPA(reg);
         initializeTransformUtils(reg);
         initializeInstCombine(reg);
