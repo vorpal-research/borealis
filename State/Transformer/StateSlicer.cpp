@@ -31,7 +31,7 @@ void StateSlicer::init() {
 
     util::viewContainer(tc.getTerms())
     .filter(isInterestingTerm())
-    .foreach(APPLY(addSliceTerm));
+    .foreach(APPLY(this->addSliceTerm));
 }
 
 void StateSlicer::addSliceTerm(Term::Ptr term) {
@@ -63,7 +63,7 @@ Predicate::Ptr StateSlicer::transformPredicate(Predicate::Ptr pred) {
         .any_of([&](auto&& t) { return util::contains(sliceVars, t); })
     ) {
         util::viewContainer(rhvTerms)
-        .foreach(APPLY(addSliceTerm));
+        .foreach(APPLY(this->addSliceTerm));
     }
 
     return pred;
