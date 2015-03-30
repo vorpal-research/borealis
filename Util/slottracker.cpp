@@ -9,8 +9,7 @@
 
 #include "Logging/logger.hpp"
 #include "Util/slottracker.h"
-#include "Util/streams.hpp"
-#include "Util/util.hpp"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -276,20 +275,20 @@ std::string SlotTracker::getLocalName(const Value *V) {
     }
 }
 
-const Value* SlotTracker::getLocalValue(const std::string& name) {
+const llvm::Value* SlotTracker::getLocalValue(const std::string& name) const {
     if ('%' == name[0]) {
         auto&& slot = std::stoul(name.substr(1));
         return fSap.lookup(slot);
     } else {
-        return TheFunction->getValueSymbolTable().lookup(name);
-
+        return TheFunction ? TheFunction->getValueSymbolTable().lookup(name) : nullptr;
     }
 }
 
-const Value* SlotTracker::getGlobalValue(const std::string& name) {
+const llvm::Value* SlotTracker::getGlobalValue(const std::string& name) const {
     // XXX: akhin Can global values be slots (i.e., do not have a name?)
-    auto* res = TheModule->getValueSymbolTable().lookup(name);
-    return res;
+    return TheFunction && TheFunction->getParent()
+           ? TheFunction->getParent()->getValueSymbolTable().lookup(name)
+           : nullptr;
 }
 
 } /* namespace borealis */
