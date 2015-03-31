@@ -555,7 +555,7 @@ z3::expr forAll(
     size_t numBounds = sorts.size();
 
     auto bounds = mkBounds<Args...>(ctx);
-    auto body = util::apply_packed(func, bounds);
+    auto body = as_packed(func)(bounds);
 
     std::vector<Z3_sort> sort_array(sorts.rbegin(), sorts.rend());
 
