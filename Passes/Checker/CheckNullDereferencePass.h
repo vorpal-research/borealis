@@ -54,6 +54,7 @@ private:
 
     PredicateStateAnalysis* PSA;
 
+    llvm::AliasAnalysis* AA;
     DefectManager* DM;
     FunctionManager* FM;
     NameTracker* NT;
