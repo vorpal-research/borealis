@@ -9,9 +9,7 @@
 
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckNullDereferencePass.h"
-// #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "State/PredicateStateBuilder.h"
-#include "State/Transformer/TermRebinder.h"
 
 namespace borealis {
 
@@ -57,22 +55,6 @@ public:
         visitMemoryInst(I);
     }
 
-//    MathSAT::ExprFactory cef;
-//    MathSAT::Solver cs(cef, fMemId);
-//
-//    auto& F = *where.getParent()->getParent();
-//
-//    auto args =
-//        view(F.arg_begin(), F.arg_end())
-//        .map([this](llvm::Argument& arg) { return pass->FN.Term->getArgumentTerm(&arg); })
-//        .toVector();
-//
-//    auto c = cs.getContract(args, q, ps);
-//    auto t = TermRebinder(F, pass->NT, pass->FN);
-//    auto contract = undoThat(c)->map(
-//        [&t](Predicate::Ptr p) { return t.transform(p); }
-//    );
-
 private:
 
     CheckNullDereferencePass* pass;
@@ -90,6 +72,7 @@ void CheckNullDereferencePass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<CheckManager>::addRequiredTransitive(AU);
 
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
+    AUX<llvm::AliasAnalysis>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<NameTracker>::addRequiredTransitive(AU);
@@ -104,13 +87,13 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
+    AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     NT = &GetAnalysis<NameTracker>::doit(this, F);
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
-    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    FN = FactoryNest(st);
+    FN = FactoryNest(GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     CheckNullsVisitor cnv(this);
     cnv.visit(F);

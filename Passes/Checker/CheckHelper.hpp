@@ -12,6 +12,7 @@
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
+#include <State/Transformer/StateSlicer.h>
 
 namespace borealis {
 
@@ -43,6 +44,13 @@ public:
 
         if (not query or not state) return false;
 
+        auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
+        if (*state == *sliced) {
+            dbgs() << "Slicing failed" << endl;
+        } else {
+            dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
+        }
+
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  Query: " << query << endl;
         dbgs() << "  State: " << state << endl;
@@ -57,7 +65,7 @@ public:
         Z3::Solver s(ef, fMemId);
 #endif
 
-        if (s.isViolated(query, state)) {
+        if (s.isViolated(query, sliced)) {
             pass->DM->addDefect(di);
             return true;
         } else {

@@ -49,6 +49,7 @@ private:
 
     CheckManager* CM;
 
+    llvm::AliasAnalysis* AA;
     DefectManager* DM;
     FunctionManager* FM;
     PredicateStateAnalysis* PSA;

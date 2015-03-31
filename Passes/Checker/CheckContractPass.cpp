@@ -8,7 +8,6 @@
 #include <llvm/IR/InstVisitor.h>
 
 #include "Codegen/intrinsics_manager.h"
-#include "Codegen/llvm.h"
 #include "Passes/Checker/CheckContractPass.h"
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Tracker/SlotTrackerPass.h"
@@ -147,6 +146,7 @@ void CheckContractPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
     AUX<CheckManager>::addRequiredTransitive(AU);
 
+    AUX<llvm::AliasAnalysis>::addRequiredTransitive(AU);
     AUX<DefectManager>::addRequiredTransitive(AU);
     AUX<FunctionManager>::addRequiredTransitive(AU);
     AUX<VariableInfoTracker>::addRequiredTransitive(AU);
@@ -159,13 +159,13 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     CM = &GetAnalysis<CheckManager>::doit(this, F);
     if (CM->shouldSkipFunction(&F)) return false;
 
+    AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     MI = &GetAnalysis<VariableInfoTracker>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    FN = FactoryNest(st);
+    FN = FactoryNest(GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     CallInstVisitor civ(this);
     civ.visit(F);
