@@ -177,6 +177,12 @@ ARCHIVES += $(CFGPARSER_LIB)
 ARCHIVES += $(DBGLOG_LIB)
 
 ################################################################################
+# andersen
+################################################################################
+
+ANDERSEN_CPP_DIR := $(PWD)/lib/andersen
+
+################################################################################
 # Exes
 ################################################################################
 
@@ -323,6 +329,11 @@ clean.cfgparser: clean.dbglog
 	$(MAKE) CXX=$(CXX) -C $(CFGPARSER_DIR) clean
 	$(MAKE) CXX=$(CXX) -C $(CFGPARSER_DIR) distclean
 	rm -rf $(CFGPARSER_DIR)/dist
+
+.andersen:
+	cd $(ANDERSEN_CPP_DIR) && cmake .
+	$(MAKE) CXX=$(CXX) -C $(ANDERSEN_CPP_DIR)
+	touch $@
 
 $(EXES): $(OBJECTS) .protobuf .yaml-cpp .cfgparser
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
