@@ -270,8 +270,8 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
     std::vector<BasicBlock*> NewBBs;
     ValueToValueMapTy VMap;
 
-    BasicBlock* NewHeader;
-    BasicBlock* NewLatch;
+    BasicBlock* NewHeader = nullptr;
+    BasicBlock* NewLatch = nullptr;
 
     std::vector<Instruction*> toRemove;
 

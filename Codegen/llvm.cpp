@@ -56,7 +56,7 @@ void approximateAllDebugLocs(llvm::BasicBlock* bb) {
     using namespace llvm;
 
     DebugLoc ldl;
-    MDNode* lmd;
+    MDNode* lmd = nullptr;
     auto vec = util::viewContainer(*bb).map(ops::take_pointer).toVector();
 
     for(auto* pI: util::view(vec.rbegin(), vec.rend())) {
