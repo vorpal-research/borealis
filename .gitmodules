@@ -1,3 +1,6 @@
+[submodule "lib/andersen"]
+	path = lib/andersen
+	url = ../andersen
 [submodule "lib/tinyformat"]
 	path = lib/tinyformat
 	url = https://github.com/c42f/tinyformat.git
