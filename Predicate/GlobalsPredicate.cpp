@@ -17,7 +17,7 @@ GlobalsPredicate::GlobalsPredicate(
 
     auto&& a = util::viewContainer(globals)
                 .map([](auto&& g) { return g->getName(); })
-                .fold<std::string>("", [](auto&& acc, auto&& e) { return acc + "," + e; });
+                .reduce("", [](auto&& acc, auto&& e) { return acc + "," + e; });
 
     asString = "globals(" + a + ")";
 

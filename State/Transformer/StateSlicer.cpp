@@ -42,7 +42,7 @@ void StateSlicer::init() {
 
     util::viewContainer(tc.getTerms())
         .filter(isInterestingTerm)
-        .foreach(APPLY(addSliceTerm));
+        .foreach(APPLY(this->addSliceTerm));
 }
 
 void StateSlicer::addSliceTerm(Term::Ptr term) {
@@ -84,7 +84,7 @@ bool StateSlicer::checkVars(const Term::Set& lhv, const Term::Set& rhv) {
             .any_of([&](auto&& t) { return util::contains(sliceVars, t); })
         ) {
         util::viewContainer(rhv)
-            .foreach(APPLY(addSliceTerm));
+            .foreach(APPLY(this->addSliceTerm));
         return true;
     }
     return false;
@@ -102,7 +102,7 @@ bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
             })
         ) {
         util::viewContainer(rhv)
-            .foreach(APPLY(addSliceTerm));
+            .foreach(APPLY(this->addSliceTerm));
         return true;
     }
     return false;

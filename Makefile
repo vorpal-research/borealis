@@ -56,7 +56,7 @@ WARNINGS_ON := all extra cast-qual float-equal switch \
 	strict-prototypes strict-overflow=5 write-strings \
 	aggregate-return super-class-method-mismatch
 # warnings to hide
-WARNINGS_OFF := unused-function
+WARNINGS_OFF := unused-function redundant-decls
 # warnings to treat as errors
 WARNINGS_TAE := overloaded-virtual return-stack-address \
 	implicit-function-declaration address-of-temporary \

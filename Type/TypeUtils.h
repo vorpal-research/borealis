@@ -59,7 +59,7 @@ struct TypeUtils {
                                ": " +
                                util::toString(e.getIds());
                     })
-            	   .fold(std::string{}, [](auto&& e1, auto&& e2) {
+            	   .reduce("", [](auto&& e1, auto&& e2) {
                         return e1 + ", " + e2;
                     });
 
@@ -72,7 +72,7 @@ struct TypeUtils {
             ret += util::viewContainer(Fun->getArgs())
                    .map(ops::dereference)
                    .map(TypeUtils::toString)
-                   .fold(std::string{}, [](auto&& a, auto&& b) {
+                   .reduce("", [](auto&& a, auto&& b) {
                         return a + ", " + b;
                     });
 
