@@ -26,13 +26,14 @@ public:
 
     StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA);
 
+    PredicateState::Ptr transform(PredicateState::Ptr ps);
     Predicate::Ptr transformPredicate(Predicate::Ptr pred);
 
 private:
 
     PredicateState::Ptr query;
 
-    llvm::AliasAnalysis AA;
+    llvm::AliasAnalysis* AA;
     llvm::AliasSetTracker AST;
 
     Term::Set sliceVars;
