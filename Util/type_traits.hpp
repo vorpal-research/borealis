@@ -65,6 +65,10 @@ template<class U, class T> struct pointers_to_same {
 template<class ...Args>
 using common_type_t = typename std::common_type<Args...>::type;
 
+template<typename T> struct is_shared_ptr;
+template<typename T> struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
+template<typename T> struct is_shared_ptr : std::false_type {};
+
 } // namespace util
 } // namespace borealis
 
