@@ -87,6 +87,9 @@ protected:
 
 };
 
+std::ostream& operator<<(std::ostream& s, Term::Ptr t);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Term::Ptr t);
+
 bool operator==(const Term& a, const Term& b);
 
 } /* namespace borealis */
