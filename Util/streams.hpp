@@ -58,7 +58,8 @@ struct is_using_llvm_output {
             std::is_base_of<llvm::Pass, T>::value ||
             std::is_base_of<llvm::APInt, T>::value ||
             std::is_base_of<llvm::SCEV, T>::value ||
-            std::is_base_of<llvm::AliasSetTracker, T>::value
+            std::is_base_of<llvm::AliasSetTracker, T>::value ||
+            std::is_base_of<llvm::AliasSet, T>::value
     };
 };
 
