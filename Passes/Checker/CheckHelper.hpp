@@ -53,7 +53,7 @@ public:
 
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  Query: " << query << endl;
-        dbgs() << "  State: " << state << endl;
+        dbgs() << "  State: " << sliced << endl;
 
         auto fMemId = pass->FM->getMemoryStart(I->getParent()->getParent());
 
