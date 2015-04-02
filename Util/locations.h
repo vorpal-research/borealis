@@ -21,6 +21,8 @@
 #include "Util/json_traits.hpp"
 #include "Util/xml_traits.hpp"
 
+#include "Util/generate_macros.h"
+
 namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -314,6 +316,9 @@ struct LocusRange {
 
 } // namespace borealis
 
+GENERATE_OUTLINE_HASH(borealis::LocusRange, lhv, rhv);
+GENERATE_OUTLINE_JSON_TRAITS(borealis::LocusRange, lhv, rhv);
+
 namespace std {
 template<>
 struct hash<borealis::LocalLocus> {
@@ -329,5 +334,7 @@ struct hash<borealis::Locus> {
     }
 };
 } // namespace std
+
+#include "Util/generate_unmacros.h"
 
 #endif /* LOCATIONS_H_ */
