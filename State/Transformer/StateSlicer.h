@@ -42,6 +42,7 @@ private:
     void init();
     void addSliceTerm(Term::Ptr term);
 
+    bool checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv);
     bool checkVars(const Term::Set& lhv, const Term::Set& rhv);
     bool checkPtrs(const Term::Set& lhv, const Term::Set& rhv);
 

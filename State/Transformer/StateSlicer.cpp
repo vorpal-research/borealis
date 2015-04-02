@@ -73,13 +73,26 @@ Predicate::Ptr StateSlicer::transformPredicate(Predicate::Ptr pred) {
             .foreach(APPLY(rhvTerms.insert));
     }
 
-    if (checkVars(lhvTerms, rhvTerms)) {
-        return pred;
+    Predicate::Ptr res = nullptr;
+
+    if (checkPath(pred, lhvTerms, rhvTerms)) {
+        res = pred;
+    } else if (checkVars(lhvTerms, rhvTerms)) {
+        res = pred;
     } else if (checkPtrs(lhvTerms, rhvTerms)) {
-        return pred;
+        res = pred;
     }
 
-    return nullptr;
+    return res;
+}
+
+bool StateSlicer::checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
+    if (PredicateType::PATH == pred->getType()) {
+        (util::viewContainer(lhv) >> util::viewContainer(rhv))
+            .foreach(APPLY(this->addSliceTerm));
+        return true;
+    }
+    return false;
 }
 
 bool StateSlicer::checkVars(const Term::Set& lhv, const Term::Set& rhv) {
