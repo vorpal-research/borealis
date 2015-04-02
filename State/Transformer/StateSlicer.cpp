@@ -32,6 +32,7 @@ static struct {
 
     bool operator()(Term::Ptr t) const {
         return llvm::isa<ArgumentTerm>(t) ||
+               llvm::isa<ReturnValueTerm>(t) ||
                llvm::isa<ValueTerm>(t);
     }
 } isInterestingTerm;
@@ -88,7 +89,8 @@ Predicate::Ptr StateSlicer::transformPredicate(Predicate::Ptr pred) {
 
 bool StateSlicer::checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
     if (PredicateType::PATH == pred->getType() ||
-        PredicateType::ASSUME == pred->getType()) {
+        PredicateType::ASSUME == pred->getType() ||
+        PredicateType::REQUIRES == pred->getType()) {
         (util::viewContainer(lhv) >> util::viewContainer(rhv))
             .foreach(APPLY(this->addSliceTerm));
         return true;
