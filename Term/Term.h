@@ -43,12 +43,19 @@ message Term {
 **/
 class Term : public ClassTag, public std::enable_shared_from_this<const Term> {
 
+    friend bool operator==(const Term& a, const Term& b);
+
 public:
 
     using Ptr = std::shared_ptr<const Term>;
     using ProtoPtr = std::unique_ptr<proto::Term>;
     using Subterms = std::vector<Term::Ptr>;
-    using Set = std::unordered_set<Term::Ptr>;
+
+    // FIXME: akhin Maybe specialize std::equal_to ???
+    struct DerefEqualsTo {
+        bool operator()(Term::Ptr a, Term::Ptr b) const { return ops::deref_equals_to(a, b); }
+    };
+    using Set = std::unordered_set<Term::Ptr, std::hash<Term::Ptr>, Term::DerefEqualsTo>;
 
 protected:
 
@@ -89,8 +96,6 @@ protected:
 
 std::ostream& operator<<(std::ostream& s, Term::Ptr t);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Term::Ptr t);
-
-bool operator==(const Term& a, const Term& b);
 
 } /* namespace borealis */
 
