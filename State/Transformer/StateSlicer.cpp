@@ -87,7 +87,8 @@ Predicate::Ptr StateSlicer::transformPredicate(Predicate::Ptr pred) {
 }
 
 bool StateSlicer::checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
-    if (PredicateType::PATH == pred->getType()) {
+    if (PredicateType::PATH == pred->getType() ||
+        PredicateType::ASSUME == pred->getType()) {
         (util::viewContainer(lhv) >> util::viewContainer(rhv))
             .foreach(APPLY(this->addSliceTerm));
         return true;
