@@ -323,9 +323,12 @@ TEST(Util, reduce) {
 
 #include "Util/generate_macros.h"
 
-struct example_struct {
+class example_struct {
     int x;
     std::string y;
+public:
+    friend struct std::hash<example_struct>;
+    friend struct borealis::util::json_traits<example_struct>;
 
     GENERATE_CONSTRUCTOR(example_struct, x, y);
     GENERATE_COPY_CONSTRUCTOR(example_struct, x, y);
