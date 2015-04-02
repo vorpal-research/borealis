@@ -10,8 +10,11 @@
 
 #include <gtest/gtest.h>
 
+#include <unordered_set>
+
 #include "Util/iterators.hpp"
 #include "Util/util.h"
+#include "Util/hash.hpp"
 
 namespace {
 
@@ -317,3 +320,44 @@ TEST(Util, reduce) {
 }
 
 } // namespace
+
+#include "Util/generate_macros.h"
+
+struct example_struct {
+    int x;
+    std::string y;
+
+    GENERATE_CONSTRUCTOR(example_struct, x, y);
+    GENERATE_COPY_CONSTRUCTOR(example_struct, x, y);
+    GENERATE_MOVE_CONSTRUCTOR(example_struct, x, y);
+    GENERATE_ASSIGN(example_struct, x, y);
+    GENERATE_MOVE_ASSIGN(example_struct, x, y);
+    GENERATE_EQ(example_struct, x, y);
+    GENERATE_LESS(example_struct, x, y);
+};
+
+GENERATE_OUTLINE_HASH(example_struct, x, y);
+GENERATE_OUTLINE_JSON_TRAITS(example_struct, x, y);
+
+#define JSON(...) #__VA_ARGS__
+
+TEST(Util, generation_macros) {
+    {
+        example_struct es(42, "hello");
+        example_struct es2 = es;
+        example_struct es3 = std::move(es2);
+        es2 = es3;
+        EXPECT_EQ(es, es2);
+        EXPECT_FALSE(es < es2);
+        EXPECT_EQ(borealis::util::hash::simple_hash_value(es), borealis::util::hash::simple_hash_value(es2));
+        std::istringstream ist(JSON({"x": 13, "y": "foo"}));
+
+        auto obj = read_as_json<example_struct>(ist);
+        EXPECT_TRUE(!!obj);
+        EXPECT_EQ(*obj, example_struct(13, "foo"));
+    }
+}
+
+#include "Util/generate_unmacros.h"
+
+

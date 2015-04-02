@@ -1199,6 +1199,23 @@ MACRO(A31, MARG)
     TYPE( TYPE&& rhv) : \
         PP_FOREACH_COMMA(CONSTRUCTOR_MOVE_FIELD,, __VA_ARGS__) {}
 
+#define ASSIGN_FIELD_RHV(X, ...) X = rhv.X;
+#define ASSIGN_FIELD_RHV_MOVE(X, ...) X = std::move(rhv.X);
+
+#define GENERATE_ASSIGN(TYPE, ...) \
+\
+    TYPE& operator=(const TYPE& rhv) { \
+        PP_FOREACH(ASSIGN_FIELD_RHV,,,__VA_ARGS__) \
+        return *this; \
+    }
+
+#define GENERATE_MOVE_ASSIGN(TYPE, ...) \
+\
+    TYPE& operator=(TYPE&& rhv) { \
+        PP_FOREACH(ASSIGN_FIELD_RHV_MOVE,,,__VA_ARGS__) \
+        return *this; \
+    }
+
 #define PRINT_FIELD(X,...) #X << " = " << rhv.X
 
 #define GENERATE_PRINT(TYPE, ...) \
