@@ -1,0 +1,67 @@
+#ifndef GENERATE_MACROS_DEFINED
+#error "generate_unmacros.h included without corresponding generate_macros.h include"
+#endif
+
+#undef CONCATENATE
+#undef CONCATENATE1
+#undef CONCATENATE2
+
+#undef PP_NARG
+#undef PP_NARG_
+#undef PP_ARG_N
+#undef PP_RSEQ_N
+
+#undef PP_FOREACH_1
+#undef PP_FOREACH_2
+#undef PP_FOREACH_3
+#undef PP_FOREACH_4
+#undef PP_FOREACH_5
+#undef PP_FOREACH_6
+#undef PP_FOREACH_7
+#undef PP_FOREACH_8
+#undef PP_FOREACH_9
+
+#undef PP_FOREACH
+
+#undef PP_FOREACH_COMMA_1
+#undef PP_FOREACH_COMMA_2
+#undef PP_FOREACH_COMMA_3
+#undef PP_FOREACH_COMMA_4
+#undef PP_FOREACH_COMMA_5
+#undef PP_FOREACH_COMMA_6
+#undef PP_FOREACH_COMMA_7
+#undef PP_FOREACH_COMMA_8
+#undef PP_FOREACH_COMMA_9
+
+#undef PP_FOREACH_COMMA
+
+#undef ID
+
+#undef FIELD_LHV
+#undef FIELD_RHV
+
+#undef GENERATE_EQ
+
+#undef GENERATE_LESS
+
+#undef CONSTRUCTOR_PARAM
+#undef CONSTRUCTOR_INIT_FIELD
+#undef CONSTRUCTOR_COPY_FIELD
+#undef CONSTRUCTOR_MOVE_FIELD
+
+#undef GENERATE_CONSTRUCTOR
+
+#undef GENERATE_COPY_CONSTRUCTOR
+
+#undef GENERATE_MOVE_CONSTRUCTOR
+
+#undef PRINT_FIELD
+
+#undef GENERATE_PRINT
+
+#undef GENERATE_INLINE_HASH
+
+#undef ENUM_PRINT_CASE
+#undef GENERATE_ENUM_PRINT
+
+#undef GENERATE_MACROS_DEFINED

@@ -30,6 +30,11 @@ struct enum_hash {
     }
 };
 
+template<class T>
+auto enumValues() -> decltype(enumValuesImpl(T())) {
+    return enumValuesImpl(T());
+}
+
 } // namespace enums
 } // namespace util
 } // namespace borealis

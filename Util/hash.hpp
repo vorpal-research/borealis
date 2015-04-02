@@ -50,7 +50,9 @@ typedef hasher<3, 17> defaultHasher;
 namespace impl_ {
 
 inline static size_t hash_combiner(size_t left, size_t right) // replaceable
-{ return left ^ right; }
+{
+    return left ^= right + 0x9e3779b9 + (left << 6) + (left >> 2);
+}
 
 template<int Index, class ...Types>
 struct tuple_hash_impl {
@@ -72,6 +74,19 @@ struct tuple_hash_impl<0, Types...> {
 };
 
 } // namespace impl_
+
+template<class T>
+inline size_t simple_hash_value(T&& v) {
+    return std::hash<std::decay_t<T>>{}(std::forward<T>(v));
+}
+
+template<class H, class H2, class ...T>
+inline size_t simple_hash_value(H&& h, H2&& h2, T&&... t) {
+    return impl_::hash_combiner(
+        simple_hash_value(std::forward<H>(h)),
+        simple_hash_value(std::forward<H2>(h2), std::forward<T>(t)...)
+    );
+}
 
 } // namespace hash
 } // namespace util

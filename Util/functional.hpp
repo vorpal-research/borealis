@@ -75,6 +75,26 @@ static auto konst = [](auto&& a) {
     return [&a](auto&&...) QUICK_RETURN(a);
 };
 
+
+
+namespace impl {
+template<class Tuple, class Callable, size_t ...N>
+auto apply_packed_step_1(Tuple&& tp, Callable c, std::index_sequence<N...>)
+QUICK_RETURN(c(std::get<N>(std::forward<Tuple>(tp))...))
+
+// apply a function taking N parameters to an N-tuple
+template<class Callable, class Tuple>
+auto apply_packed(Callable c, Tuple&& tp)
+QUICK_RETURN(apply_packed_step_1(std::forward<Tuple>(tp), c, std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value>{}))
+} // namespace impl
+
+template<class F>
+static auto as_packed(F f) {
+    return [&f](auto&& tuple) -> DECLTYPE_AUTO {
+        return impl::apply_packed(f, std::forward<decltype(tuple)>(tuple));
+    };
+}
+
 } /* namespace borealis */
 
 #include "Util/unmacros.h"
