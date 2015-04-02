@@ -174,10 +174,36 @@ auto less_or_equal(const std::map<K, V>& map, KK&& k) {
     else return std::prev(ub);
 }
 
-template<class Container, class T>
+namespace impl_ {
+
+template<class Container, typename T>
+static sfinaer_t<std::true_type, decltype(std::declval<Container>().find(std::declval<T>()))>
+has_find(int) { return std::true_type{}; };
+
+template<class Container, typename T>
+static std::false_type
+has_find(long) { return std::false_type{}; };
+
+template<class Container, typename T, typename SFINAE = void>
+struct contains_with_find {
+    bool doit(const Container& con, const T& t, std::true_type) const {
+        auto&& end = std::end(con);
+        return con.find(t) != end;
+    }
+    bool doit(const Container& con, const T& t, std::false_type) const {
+        auto&& end = std::end(con);
+        return std::find(std::begin(con), end, t) != end;
+    }
+    bool operator()(const Container& con, const T& t) const {
+        return doit(con, t, has_find<Container, T>(0));
+    }
+};
+
+} // namespace impl_
+
+template<class Container, typename T>
 bool contains(const Container& con, const T& t) {
-    auto end = std::end(con);
-    return std::find(std::begin(con), end, t) != end;
+    return impl_::contains_with_find<Container, T>()(con, t);
 }
 
 template<class M, class K>
