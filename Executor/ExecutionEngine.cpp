@@ -22,14 +22,14 @@ namespace borealis {
 
 
 ExecutionEngine::ExecutionEngine(
-    llvm::Module* M,
+    llvm::Module* /* M */,
     const llvm::DataLayout* TD,
     const llvm::TargetLibraryInfo* TLI,
     const SlotTrackerPass* ST,
     VariableInfoTracker* VIT,
     Arbiter::Ptr Aldaris):
-     TD{TD}, TLI{TLI}, VIT{VIT}, IM{}, Judicator{ Aldaris }, Mem{ *TD },
-     ST{ ST }, FNCache{}, IE{this}
+        ExitValue{}, TD{TD}, TLI{TLI}, ST{ST}, VIT{VIT}, IM{}, Judicator{ Aldaris },
+        ECStack{}, AtExitHandlers{}, Mem{ *TD }, FNCache{}, IE{this}
 {
     IM = &IntrinsicsManager::getInstance();
     FNCache = [ST](auto f){ return FactoryNest(ST->getSlotTracker(f)); };
@@ -79,5 +79,5 @@ ExecutionEngine::runFunction(llvm::Function *F,
     return ExitValue;
 }
 
-} /* namespace borealis */
+}; /* namespace borealis */
 #include "Util/unmacros.h"

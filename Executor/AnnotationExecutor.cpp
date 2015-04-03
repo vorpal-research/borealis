@@ -243,7 +243,7 @@ Term::Ptr AnnotationExecutor::transformCmpTerm(CmpTermPtr t) {
         case llvm::ConditionType::UGE       : executiveOpcode = llvm::FCmpInst::FCMP_UGE; break;
         case llvm::ConditionType::ULT       : executiveOpcode = llvm::FCmpInst::FCMP_ULT; break;
         case llvm::ConditionType::ULE       : executiveOpcode = llvm::FCmpInst::FCMP_ULE; break;
-        case llvm::ConditionType::UNKNOWN   : UNREACHABLE("unknown opcode");
+        default                             : UNREACHABLE("illegal opcode");
         }
     } else {
         switch(opcode) {
@@ -257,7 +257,7 @@ Term::Ptr AnnotationExecutor::transformCmpTerm(CmpTermPtr t) {
         case llvm::ConditionType::UGE       : executiveOpcode = llvm::ICmpInst::ICMP_UGE; break;
         case llvm::ConditionType::ULT       : executiveOpcode = llvm::ICmpInst::ICMP_ULT; break;
         case llvm::ConditionType::ULE       : executiveOpcode = llvm::ICmpInst::ICMP_ULE; break;
-        case llvm::ConditionType::UNKNOWN   : UNREACHABLE("unknown opcode");
+        default                             : UNREACHABLE("illegal opcode");
         }
     }
 
@@ -302,6 +302,7 @@ Term::Ptr AnnotationExecutor::transformGepTerm(GepTermPtr t) {
 
     std::vector<llvm::GenericValue> shifts;
     for(auto&& shift: t->getShifts()) {
+        util::use(shift);
         shifts.push_back(pimpl_->pop());
     }
     std::reverse(std::begin(shifts), std::end(shifts));

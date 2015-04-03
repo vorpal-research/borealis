@@ -84,7 +84,7 @@ inline llvm::GenericValue callFloat2(
 using GenericFunc = llvm::GenericValue(const std::vector<llvm::GenericValue>&, const llvm::Function*);
 using PGenericFunc = GenericFunc*;
 
-#define STDLIB(...) [](const std::vector<llvm::GenericValue>& ArgVals, const llvm::Function* F){ return wrap(__VA_ARGS__); }
+#define STDLIB(...) [](const std::vector<llvm::GenericValue>& ArgVals, const llvm::Function* F){ return util::use(F), wrap(__VA_ARGS__); }
 
 static const std::unordered_map<int, PGenericFunc> stdLibArith() {
     using util::just;

@@ -38,7 +38,6 @@ class TypeFactory {
 
     mutable std::map<std::string, Type::Ptr> records;
     mutable type::RecordRegistry::StrongPtr  recordBodies;
-    mutable bool recordMetaProvided = false;
 
     mutable std::map<std::vector<Type::Ptr>, Type::Ptr> functions;
 
