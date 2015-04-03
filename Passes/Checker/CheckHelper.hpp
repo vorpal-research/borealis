@@ -43,6 +43,8 @@ public:
     bool check(PredicateState::Ptr query, PredicateState::Ptr state, const DefectInfo& di) {
 
         if (not query or not state) return false;
+        if (query->isEmpty()) return false;
+        if (state->isEmpty()) return true;
 
         auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
         if (*state == *sliced) {
@@ -51,6 +53,7 @@ public:
             dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
         }
 
+        dbgs() << "Defect: " << di << endl;
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  Query: " << query << endl;
         dbgs() << "  State: " << sliced << endl;
