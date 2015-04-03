@@ -92,6 +92,13 @@ PredicateState::Ptr PredicateStateChain::fmap(FMapper f) const {
     return Simplified(fmap_(f).release());
 }
 
+PredicateState::Ptr PredicateStateChain::reverse() const {
+    return Simplified<Self>(
+        curr->reverse(),
+        base->reverse()
+    );
+}
+
 std::pair<PredicateState::Ptr, PredicateState::Ptr> PredicateStateChain::splitByTypes(
         std::initializer_list<PredicateType> types) const {
     auto&& baseSplit = base->splitByTypes(types);

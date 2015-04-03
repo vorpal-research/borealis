@@ -26,13 +26,14 @@ public:
 
     StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA);
 
+    PredicateState::Ptr transform(PredicateState::Ptr ps);
     Predicate::Ptr transformPredicate(Predicate::Ptr pred);
 
 private:
 
     PredicateState::Ptr query;
 
-    llvm::AliasAnalysis AA;
+    llvm::AliasAnalysis* AA;
     llvm::AliasSetTracker AST;
 
     Term::Set sliceVars;
@@ -41,6 +42,7 @@ private:
     void init();
     void addSliceTerm(Term::Ptr term);
 
+    bool checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv);
     bool checkVars(const Term::Set& lhv, const Term::Set& rhv);
     bool checkPtrs(const Term::Set& lhv, const Term::Set& rhv);
 

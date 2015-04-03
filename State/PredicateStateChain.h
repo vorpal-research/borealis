@@ -49,6 +49,7 @@ public:
     virtual Loci getVisited() const override;
 
     virtual PredicateState::Ptr fmap(FMapper f) const override;
+    virtual PredicateState::Ptr reverse() const override;
 
     virtual std::pair<PredicateState::Ptr, PredicateState::Ptr> splitByTypes(
             std::initializer_list<PredicateType> types) const override;

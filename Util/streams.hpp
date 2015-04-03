@@ -27,6 +27,7 @@
 #include "Util/collections.hpp"
 #include "Util/option.hpp"
 #include "Util/sayonara.hpp"
+#include "Util/type_traits.hpp"
 
 #include "Util/macros.h"
 
@@ -58,7 +59,8 @@ struct is_using_llvm_output {
             std::is_base_of<llvm::Pass, T>::value ||
             std::is_base_of<llvm::APInt, T>::value ||
             std::is_base_of<llvm::SCEV, T>::value ||
-            std::is_base_of<llvm::AliasSetTracker, T>::value
+            std::is_base_of<llvm::AliasSetTracker, T>::value ||
+            std::is_base_of<llvm::AliasSet, T>::value
     };
 };
 
@@ -318,9 +320,15 @@ std::ostream& operator<<(std::ostream& s, const std::pair<T, U>& pp) {
 
 
 template<typename Elem, typename SFINAE = void>
-struct elemPrettyPrinter;
+struct elemPrettyPrinter {
+    template<class Streamer>
+    static Streamer& doit(Streamer& s, const Elem& e) {
+        // this is generally fucked up...
+        return static_cast<Streamer&>(s << e);
+    }
+};
 
-template< typename Elem >
+template<typename Elem>
 struct elemPrettyPrinter<Elem, GUARD(std::is_pointer<Elem>::value)> {
     template<class Streamer>
     static Streamer& doit(Streamer& s, const Elem& e) {
@@ -329,12 +337,12 @@ struct elemPrettyPrinter<Elem, GUARD(std::is_pointer<Elem>::value)> {
     }
 };
 
-template< typename Elem >
-struct elemPrettyPrinter<Elem, GUARD(!std::is_pointer<Elem>::value)> {
+template<typename Elem>
+struct elemPrettyPrinter<Elem, GUARD(borealis::util::is_shared_ptr<Elem>::value)> {
     template<class Streamer>
     static Streamer& doit(Streamer& s, const Elem& e) {
         // this is generally fucked up...
-        return static_cast<Streamer&>(s << e);
+        return static_cast<Streamer&>(e == nullptr ? s << impl_::NULL_REPR : s << e);
     }
 };
 

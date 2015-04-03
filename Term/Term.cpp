@@ -59,4 +59,12 @@ bool operator==(const Term& a, const Term& b) {
     else return a.equals(&b);
 }
 
+std::ostream& operator<<(std::ostream& s, Term::Ptr t) {
+    return s << t->getName();
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Term::Ptr t) {
+    return s << t->getName();
+}
+
 } // namespace borealis

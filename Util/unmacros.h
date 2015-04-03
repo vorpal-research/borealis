@@ -31,6 +31,7 @@
 #undef ON_SCOPE_EXIT
 #undef PRETOKENPASTE
 #undef TOKENPASTE
+// TODO: akhin Add NULLPTRIFYs
 #undef BOREALIS_MACROS_DEFINED
 #else
 #error "unmacros.h is included without corresponding macros.h include!"

@@ -339,6 +339,20 @@ using ss_append_chars_q = typename ss_append_chars<SS, wha...>::type;
 template<char ...wha>
 using make_ss = typename ss_append_chars<static_string<>, wha...>::type;
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// sfinaer
+//
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename T, typename GUARD>
+struct sfinaer {
+    using type = T;
+};
+
+template<typename T, typename GUARD>
+using sfinaer_t = typename sfinaer<T, GUARD>::type;
+
 } // namespace util
 } // namespace borealis
 

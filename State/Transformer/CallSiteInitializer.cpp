@@ -43,7 +43,7 @@ Predicate::Ptr CallSiteInitializer::transformPredicate(Predicate::Ptr p) {
     switch(p->getType()) {
     case PredicateType::ENSURES:
         return Predicate::Ptr(
-            p->clone()->setType(PredicateType::STATE)
+            p->clone()->setType(PredicateType::ASSUME)
         );
     default:
         return p;
