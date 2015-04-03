@@ -1238,15 +1238,18 @@ void borealis::ExecutionEngine::executeCall(llvm::CallSite CS) {
                 static_cast<Annotation*>(MDNode2Ptr(CS.getInstruction()->getMetadata("anno.ptr")));
             TRACE_FMT("%d", Anno);
             ASSERTC(Anno);
-            auto sharedAnno = materialize(Anno->shared_from_this(), FN, VIT);
 
-            AE.transform(sharedAnno);
+            auto FN = FNCache[SF.CurFunction];
+
+            auto sharedAnno = materialize(Anno->shared_from_this(), FN, VIT);
+            executeAnnotation(sharedAnno, FN, this);
+
             return;
         }
         case function_type::ACTION_DEFECT: {
             throw assertion_failed{};
         }
-        default: // FIXME: process annotation-related intrinsics when we start checking annotations
+        default:
             return;
         }
     }

@@ -14,6 +14,7 @@
 
 #include "Util/util.h"
 
+
 #include "Logging/tracer.hpp"
 
 #include "Util/macros.h"
@@ -24,12 +25,14 @@ ExecutionEngine::ExecutionEngine(
     llvm::Module* M,
     const llvm::DataLayout* TD,
     const llvm::TargetLibraryInfo* TLI,
+    const SlotTrackerPass* ST,
     VariableInfoTracker* VIT,
     Arbiter::Ptr Aldaris):
      TD{TD}, TLI{TLI}, VIT{VIT}, IM{}, Judicator{ Aldaris }, Mem{ *TD },
-     ST{ M }, FN{&ST}, IE{this}, AE{FN, M, &ST, this}
+     ST{ ST }, FNCache{}, IE{this}
 {
     IM = &IntrinsicsManager::getInstance();
+    FNCache = [ST](auto f){ return FactoryNest(ST->getSlotTracker(f)); };
 }
 
 ExecutionEngine::~ExecutionEngine()

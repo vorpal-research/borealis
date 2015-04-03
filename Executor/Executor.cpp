@@ -14,8 +14,9 @@ Executor::Executor(
     const llvm::DataLayout* TD,
     const llvm::TargetLibraryInfo* TLI,
     VariableInfoTracker* VIT,
+    const SlotTrackerPass* ST,
     Arbiter::Ptr Aldaris):
-        ee{ M, TD, TLI, VIT, std::move(Aldaris) }{}
+        ee{ M, TD, TLI, ST, VIT, std::move(Aldaris) }{}
 
 Executor::~Executor(){}
 

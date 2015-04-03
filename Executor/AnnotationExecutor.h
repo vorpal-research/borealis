@@ -5,6 +5,8 @@
 
 #include <llvm/IR/Instructions.h>
 
+
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/Transformer/Transformer.hpp"
 
 
@@ -17,10 +19,7 @@ class AnnotationExecutor: public Transformer<AnnotationExecutor> {
     std::unique_ptr<Impl> pimpl_;
 
 public:
-    AnnotationExecutor(FactoryNest FN,
-        llvm::Module* M,
-        SlotTracker* st,
-        ExecutionEngine* ee);
+    AnnotationExecutor(FactoryNest FN, SlotTracker* ST, ExecutionEngine* ee);
     ~AnnotationExecutor();
 
     Annotation::Ptr transformAssertAnnotation(AssertAnnotationPtr a);
@@ -48,6 +47,10 @@ public:
     Term::Ptr transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr t);
     Term::Ptr transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr t);
 };
+
+inline void executeAnnotation(Annotation::Ptr annotation, FactoryNest FN, ExecutionEngine* ee) {
+    AnnotationExecutor(FN, FN.Slot, ee).transform(annotation);
+}
 
 } /* namespace borealis */
 
