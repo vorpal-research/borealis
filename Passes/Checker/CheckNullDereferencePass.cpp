@@ -87,7 +87,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
 
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
+    AA = getAnalysisIfAvailable<llvm::AliasAnalysis>();
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     NT = &GetAnalysis<NameTracker>::doit(this, F);
