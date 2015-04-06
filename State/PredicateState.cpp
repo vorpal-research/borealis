@@ -50,7 +50,7 @@ bool PredicateState::isUnreachableIn(unsigned long long memoryStart) const {
 #endif
 
     auto&& split = splitByTypes({PredicateType::PATH});
-    return s.isPathImpossible(split.first, split.second);
+    return s.isPathImpossible(split.first, split.second).isUnsat();
 }
 
 bool PredicateState::equals(const PredicateState* other) const {

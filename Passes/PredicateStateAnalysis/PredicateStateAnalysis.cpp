@@ -194,7 +194,9 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
 
     auto&& summ = TermRebinder(F, &NT, FN).transform(undoThat(itp));
 
-    FM.update(&F, summ);
+    auto&& summ_ = FN.State * FN.Predicate->getEqualityPredicate(summ, FN.Term->getTrueTerm());
+
+    FM.update(&F, summ_());
 }
 
 void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {

@@ -5,16 +5,21 @@
  *      Author: sam
  */
 
+#include "State/Transformer/VariableCollector.h"
 #include "Logging/tracer.hpp"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/MathSAT/Unlogic/Unlogic.h"
 #include "SMT/Z3/Solver.h"
 #include "Util/util.h"
 
+#include "Factory/Nest.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
 namespace mathsat_ {
+
+using namespace borealis::smt;
 
 USING_SMT_IMPL(MathSAT);
 
@@ -69,7 +74,27 @@ Solver::check_result Solver::check(
     }
 }
 
-bool Solver::isViolated(
+template<class TermCollection>
+SatResult::model_t recollectModel(ExprFactory& z3ef, ExecutionContext& ctx, mathsat::Model& implModel, const TermCollection& vars) {
+    return
+        util::viewContainer(vars)
+        .map([&](Term::Ptr var) -> std::pair<std::string, Term::Ptr> {
+            auto e = SMT<MathSAT>::doit(var, z3ef, &ctx);
+            auto solver_e = logic::msatimpl::getExpr(e);
+
+            dbgs() << "Evaluating " << solver_e << endl;
+
+            auto retz3e = implModel.eval(solver_e);
+
+            return { var->getName(), unlogic::undoThat(retz3e) };
+        })
+        .template to<SatResult::model_t>();
+}
+
+static config::BoolConfigEntry gatherSMTModels("analysis", "collect-models");
+static config::BoolConfigEntry gatherMSatModels("analysis", "collect-mathsat-models");
+
+smt::Result Solver::isViolated(
         PredicateState::Ptr query,
         PredicateState::Ptr state) {
     TRACE_FUNC;
@@ -105,12 +130,22 @@ bool Solver::isViolated(
                << cex
                << print_predicate_locus_off
                << endl;
+
+        if(gatherMSatModels.get(false) or gatherSMTModels.get(false)) {
+            auto vars = collectVariables(FactoryNest{}, query, state);
+
+            auto collectedModel = recollectModel(msatef, ctx, m, vars);
+
+            return Result{ SatResult{ collectedModel } };
+        }
+
+        return Result{ SatResult{} };
     }
 
-    return res != MSAT_UNSAT;
+    return Result{ UnsatResult{} };
 }
 
-bool Solver::isPathImpossible(
+smt::Result Solver::isPathImpossible(
         PredicateState::Ptr path,
         PredicateState::Ptr state) {
     TRACE_FUNC;
@@ -125,9 +160,24 @@ bool Solver::isPathImpossible(
     auto msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
 
     msat_result res;
-    std::tie(res, std::ignore, std::ignore, std::ignore) = check(msatpath, msatstate);
+    util::option<mathsat::Model> model;
+    std::tie(res, model, std::ignore, std::ignore) = check(msatpath, msatstate);
 
-    return res == MSAT_UNSAT;
+    if (res == MSAT_SAT) {
+        auto m = model.getUnsafe(); // You shall not fail! (c)
+
+        if(gatherMSatModels.get(false) or gatherSMTModels.get(false)) {
+            auto vars = collectVariables(FactoryNest{}, path, state);
+
+            auto collectedModel = recollectModel(msatef, ctx, m, vars);
+
+            return Result{ SatResult{ collectedModel } };
+        }
+
+        return Result{ SatResult{} };
+    }
+
+    return Result{ UnsatResult{} };
 }
 
 Dynamic Solver::getInterpolant(

@@ -1234,14 +1234,13 @@ void borealis::ExecutionEngine::executeCall(llvm::CallSite CS) {
         case function_type::BUILTIN_BOR_ASSUME:
             break;
         case function_type::INTRINSIC_ANNOTATION: {
-            auto Anno =
-                static_cast<Annotation*>(MDNode2Ptr(CS.getInstruction()->getMetadata("anno.ptr")));
+            auto Anno = Annotation::fromIntrinsic(CS);
             TRACE_FMT("%d", Anno);
             ASSERTC(Anno);
 
             auto FN = FNCache[SF.CurFunction];
 
-            auto sharedAnno = materialize(Anno->shared_from_this(), FN, VIT);
+            auto sharedAnno = materialize(Anno, FN, VIT);
             executeAnnotation(sharedAnno, FN, this);
 
             return;

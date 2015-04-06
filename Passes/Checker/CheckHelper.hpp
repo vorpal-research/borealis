@@ -65,7 +65,8 @@ public:
         Z3::Solver s(ef, fMemId);
 #endif
 
-        if (s.isViolated(query, sliced)) {
+        auto solverResult = s.isViolated(query, sliced);
+        if (auto satRes = solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
             return true;
         } else {

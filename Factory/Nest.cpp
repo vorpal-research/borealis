@@ -13,7 +13,9 @@
 
 namespace borealis {
 
-FactoryNest::FactoryNest() = default;
+FactoryNest::FactoryNest():
+    FactoryNest((SlotTracker*)nullptr){}
+
 FactoryNest::FactoryNest(const FactoryNest&) = default;
 FactoryNest::FactoryNest(FactoryNest&&) = default;
 FactoryNest::~FactoryNest() = default;

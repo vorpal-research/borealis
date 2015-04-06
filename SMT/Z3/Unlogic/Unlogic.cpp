@@ -30,6 +30,9 @@ Term::Ptr undoBool(const z3::expr& expr, const FactoryNest& FN) {
     } else if (res == Z3_L_FALSE) {
         return FN.Term->getFalseTerm();
     } else {
+        //return FN.Term->getFalseTerm();
+        // FIXME: think about dealing with bool unknowns
+        dbgs() << res << endl;
         BYE_BYE(Term::Ptr, "Trying to unbool");
     }
 }
@@ -51,6 +54,7 @@ Term::Ptr undoThat(Z3::Dynamic dyn) {
     FactoryNest FN(nullptr);
 
     auto expr = logic::z3impl::getExpr(dyn);
+    dbgs() << expr << endl;
     ASSERT(expr.is_numeral() || expr.is_bool(), "Trying to unlogic non-numeral or bool.");
 
     if (expr.is_bv()) {
