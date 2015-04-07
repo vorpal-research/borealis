@@ -68,8 +68,8 @@ public:
         Z3::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #endif
 
-        auto solverResult = s.isViolated(query, sliced);
-        if (auto satRes = solverResult.getSatPtr()) {
+        auto&& solverResult = s.isViolated(query, sliced);
+        if (solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
             return true;
         } else {

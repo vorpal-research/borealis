@@ -80,7 +80,7 @@ PredicateState::Loci BasicPredicateState::getVisited() const {
     return loci;
 }
 
-PredicateState::Ptr BasicPredicateState::fmap(FMapper f) const {
+PredicateState::Ptr BasicPredicateState::fmap(FMapper) const {
     return this->shared_from_this();
 }
 
