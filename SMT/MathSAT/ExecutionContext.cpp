@@ -92,6 +92,10 @@ ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t offsetSize, Integ
     return ret;
 }
 
+ExecutionContext::LocalMemoryBounds ExecutionContext::getLocalMemoryBounds() const {
+    return { localMemoryStart, localMemoryEnd };
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 ExecutionContext& ExecutionContext::switchOn(

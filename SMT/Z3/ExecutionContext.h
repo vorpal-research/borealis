@@ -59,6 +59,9 @@ public:
     Pointer getLocalPtr(size_t offsetSize = 1U);
     Pointer getLocalPtr(size_t offsetSize, Integer origSize);
 
+    using LocalMemoryBounds = std::pair<unsigned long long, unsigned long long>;
+    LocalMemoryBounds getLocalMemoryBounds() const;
+
 ////////////////////////////////////////////////////////////////////////////////
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
