@@ -105,6 +105,10 @@ public:
         return Mem.isOpaquePointer(ptr);
     }
 
+    void* getSymbolicPointer() {
+        return Mem.getOpaquePtr();
+    }
+
     /// runAtExitHandlers - Run any functions registered by the program's calls to
     /// atexit(3), which we intercept and store in AtExitHandlers.
     ///

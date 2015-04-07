@@ -68,6 +68,8 @@ public:
         auto solverResult = s.isViolated(query, sliced);
         if (auto satRes = solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
+            pass->DM->getAdditionalInfo(di).satModel = util::just(*satRes);
+            pass->DM->getAdditionalInfo(di).where = I->getParent()->getParent();
             return true;
         } else {
             return false;

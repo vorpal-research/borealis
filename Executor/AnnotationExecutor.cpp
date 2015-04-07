@@ -5,6 +5,8 @@
 #include "Executor/ExecutionEngine.h"
 #include "Executor/Exceptions.h"
 
+#include "Logging/tracer.hpp"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -89,24 +91,28 @@ AnnotationExecutor::~AnnotationExecutor() {}
 
 Annotation::Ptr AnnotationExecutor::transformAssertAnnotation(AssertAnnotationPtr a) {
     TRACE_FUNC;
+    TRACE_PARAM(*a);
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformAssumeAnnotation(AssumeAnnotationPtr a) {
     TRACE_FUNC;
+    TRACE_PARAM(*a);
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformRequiresAnnotation(RequiresAnnotationPtr a) {
     TRACE_FUNC;
+    TRACE_PARAM(*a);
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformEnsuresAnnotation(EnsuresAnnotationPtr a) {
     TRACE_FUNC;
+    TRACE_PARAM(*a);
     transform(a->getTerm());
     if(!pimpl_->peek().IntVal) throw assertion_failed{};
     return a;
@@ -137,7 +143,8 @@ Term::Ptr AnnotationExecutor::transformReturnValueTerm(ReturnValueTermPtr t) {
 }
 Term::Ptr AnnotationExecutor::transformArgumentTerm(ArgumentTermPtr t) {
     TRACE_FUNC;
-    auto op = pimpl_->ee->getCurrentContext().CurFunction->getOperand(t->getIdx());
+    auto arglist = util::viewContainer(pimpl_->ee->getCurrentContext().CurFunction->getArgumentList()).map(LAM(x,&x)).toVector();
+    auto op = arglist.at(t->getIdx());
     auto ret = pimpl_->ee->getOperandValue(op, pimpl_->ee->getCurrentContext());
 
     pimpl_->value_stack.push({ret, op->getType()});
@@ -310,9 +317,12 @@ Term::Ptr AnnotationExecutor::transformGepTerm(GepTermPtr t) {
     auto base_t = pimpl_->peekType();
     auto base = pimpl_->pop();
 
-    std::vector<llvm::Value*> pseudoStuff(shifts.size(), nullptr);
-    auto gep_begin = llvm::gep_type_begin(base_t, llvm::ArrayRef<llvm::Value*>(pseudoStuff));
-    auto gep_end = llvm::gep_type_end(base_t, llvm::ArrayRef<llvm::Value*>(pseudoStuff));
+    auto vShifts =
+        util::viewContainer(shifts)
+        .map(LAM(x, (llvm::Value*)llvm::ConstantInt::get(base_t->getContext(), x.IntVal)))
+        .toVector();
+    auto gep_begin = llvm::gep_type_begin(base_t, llvm::ArrayRef<llvm::Value*>(vShifts));
+    auto gep_end = llvm::gep_type_end(base_t, llvm::ArrayRef<llvm::Value*>(vShifts));
 
     auto DL = pimpl_->ee->getDataLayout();
 
@@ -323,22 +333,24 @@ Term::Ptr AnnotationExecutor::transformGepTerm(GepTermPtr t) {
         if (llvm::StructType *STy = llvm::dyn_cast<llvm::StructType>(TyIxPair.first)) {
             const llvm::StructLayout *SLO = DL->getStructLayout(STy);
 
-            Total += SLO->getElementOffset(TyIxPair.second.IntVal.getZExtValue());
+            auto Ix = TyIxPair.second.IntVal.getZExtValue();
+            Total += SLO->getElementOffset(Ix);
+            lastType = STy->getElementType(Ix);
         } else {
             llvm::SequentialType *ST = llvm::cast<llvm::SequentialType>(TyIxPair.first);
             // Get the index number for the array... which must be long llvm::Type...
             llvm::GenericValue IdxGV = TyIxPair.second;
 
             Total += IdxGV.IntVal.getZExtValue() * DL->getTypeAllocSize(ST->getElementType());
+            lastType = ST->getElementType();
         }
-        lastType = TyIxPair.first;
     }
 
     uint8_t* byteBase = static_cast<uint8_t*>(base.PointerVal);
     byteBase += Total;
     base.PointerVal = byteBase;
 
-    pimpl_->value_stack.push({ base, lastType });
+    pimpl_->value_stack.push({ base, llvm::PointerType::get(lastType, 0) });
 
     /// FIXME: THINK!
     return t;

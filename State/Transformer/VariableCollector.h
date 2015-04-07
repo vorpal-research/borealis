@@ -33,6 +33,11 @@ public:
         return term;
     }
 
+    Term::Ptr transformArgumentTerm(ArgumentTermPtr term) {
+        collection.insert(term);
+        return term;
+    }
+
     const std::unordered_set<Term::Ptr, TermNameHash, TermNameEquals>& getCollectedTerms() const {
         return collection;
     }
