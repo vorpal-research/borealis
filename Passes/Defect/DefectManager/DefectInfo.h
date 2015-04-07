@@ -12,6 +12,8 @@
 #include "Util/util.h"
 #include "Util/xml_traits.hpp"
 
+#include "SMT/Result.h"
+
 namespace borealis {
 
 enum class DefectType {
@@ -55,11 +57,6 @@ const std::map<std::string, DefectType> DefectTypesByName = {
     { "UNK-99", DefectType::UNK_99 },
 };
 
-struct DefectInfo {
-    std::string type;
-    Locus location;
-};
-
 namespace util {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -80,28 +77,29 @@ struct json_traits<DefectType> {
     }
 };
 
-template<>
-struct json_traits<DefectInfo> {
-    typedef std::unique_ptr<DefectInfo> optional_ptr_t;
+} /* namespace util */
 
-    static Json::Value toJson(const DefectInfo& val) {
-        Json::Value dict;
-        dict["type"] = util::toJson(val.type);
-        dict["location"] = util::toJson(val.location);
-        return dict;
-    }
+#include "Util/generate_macros.h"
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
-        using borealis::util::json_object_builder;
+struct DefectInfo {
+    std::string type;
+    Locus location;
 
-        json_object_builder<DefectInfo, std::string, Locus> builder {
-            "type", "location"
-        };
-        return optional_ptr_t {
-            builder.build(json)
-        };
-    }
+    GENERATE_EQ(DefectInfo, type, location);
+    GENERATE_LESS(DefectInfo, type, location);
+    GENERATE_PRINT_CUSTOM("", "", ":", DefectInfo, type, location);
 };
+
+} /* namespace borealis */
+
+// FIXME: revise this. Do we need the model in json?
+GENERATE_OUTLINE_JSON_TRAITS(borealis::DefectInfo, type, location);
+GENERATE_OUTLINE_HASH(borealis::DefectInfo, type, location);
+
+#include "Util/generate_unmacros.h"
+
+namespace borealis {
+namespace util {
 
 ////////////////////////////////////////////////////////////////////////////////
 // XML
@@ -132,11 +130,6 @@ struct xml_traits<DefectInfo> {
 };
 
 } // namespace util
-
-bool operator==(const DefectInfo& a, const DefectInfo& b);
-bool operator<(const DefectInfo& a, const DefectInfo& b);
-std::ostream& operator<<(std::ostream& s, const DefectInfo& di);
-
 } // namespace borealis
 
 #endif /* DEFECTINFO_H_ */

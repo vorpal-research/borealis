@@ -32,6 +32,10 @@ public:
 private:
     std::shared_ptr<model_t> modelPtr;
 
+    friend struct borealis::util::json_traits<SatResult>;
+
+    const model_t& getModel() const { return *modelPtr; } // this is here only for json traits
+
 public:
 
     SatResult() = default;
@@ -49,7 +53,6 @@ public:
         } else UNREACHABLE("Non-integer value in model");
     }
 };
-
 
 // poor man's variant
 class Result {
@@ -88,5 +91,6 @@ public:
 } /* namespace borealis */
 
 #include "Util/unmacros.h"
+
 
 #endif //RESULT_H

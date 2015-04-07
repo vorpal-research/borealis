@@ -40,7 +40,7 @@ std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value);
 
 
 
-#include "Util/macros.h"
+#include "Util/generate_macros.h"
 #define STEAL_FROM_LLVM_BEGIN(NAME) \
     struct NAME : public llvm::NAME { \
         DEFAULT_CONSTRUCTOR_AND_ASSIGN(NAME); \
@@ -213,7 +213,7 @@ struct DIBorealisVarDesc : public llvm::DIDescriptor {
 #undef STEAL_FROM_LLVM_END
 #undef STEAL_FROM_LLVM_BEGIN
 
-#include "Util/unmacros.h"
+#include "Util/generate_unmacros.h"
 
 /// DebugInfoFinder tries to list all debug info MDNodes used in a module. To
 /// list debug info MDNodes used by an instruction, DebugInfoFinder uses

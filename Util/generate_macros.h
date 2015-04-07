@@ -23,7 +23,8 @@ cog.outl(\
 )
 
 for k in range(1, maxElems):
-    cog.outl('''\
+    cog.outl(\
+'''\
 #define PP_FOREACH_%d(MACRO, DELIM, MARG, %s) \\\n%s
 ''' % (k, ",".join("A%d"%i for i in range(1, k+1)), " DELIM \\\n".join("MACRO(A%d, MARG)"%i for i in range(1, k+1)))\
 )
@@ -34,7 +35,8 @@ cog.outl(\
 cog.outl('')
 
 for k in range(1, maxElems):
-    cog.outl('''\
+    cog.outl(\
+'''\
 #define PP_FOREACH_COMMA_%d(MACRO, MARG, %s) \\\n%s
 ''' % (k, ",".join("A%d"%i for i in range(1, k+1)), ", \\\n".join("MACRO(A%d, MARG)"%i for i in range(1, k+1)))\
 )
@@ -1217,10 +1219,15 @@ MACRO(A31, MARG)
     }
 
 #define PRINT_FIELD(X,...) #X << " = " << rhv.X
-
 #define GENERATE_PRINT(TYPE, ...) \
     friend std::ostream& operator<<(std::ostream& ost, const TYPE& rhv) { \
         return ost << #TYPE << "{" << PP_FOREACH(PRINT_FIELD, << ", " <<,, __VA_ARGS__) << "}"; \
+    }
+
+#define PRINT_FIELD_CUSTOM(X,...) rhv.X
+#define GENERATE_PRINT_CUSTOM(BEFORE, AFTER, SEP, TYPE, ...) \
+    friend std::ostream& operator<<(std::ostream& ost, const TYPE& rhv) { \
+        return ost << BEFORE << PP_FOREACH(PRINT_FIELD_CUSTOM, << SEP <<,, __VA_ARGS__) << AFTER; \
     }
 
 #define GENERATE_INLINE_HASH(TYPE, ...) \
@@ -1291,4 +1298,13 @@ MACRO(A31, MARG)
     enum class ename{ __VA_ARGS__ }; \
     GENERATE_ENUM_PRINT(ename, __VA_ARGS__) \
     GENERATE_ENUM_VALUES_FUNC(ename, __VA_ARGS__)
+
+
+#define DEFAULT_CONSTRUCTOR_AND_ASSIGN(CLASSNAME) \
+    \
+    CLASSNAME() = default; \
+    CLASSNAME(const CLASSNAME&) = default; \
+    CLASSNAME(CLASSNAME&&) = default; \
+    CLASSNAME& operator=(const CLASSNAME&) = default; \
+    CLASSNAME& operator=(CLASSNAME&&) = default;
 

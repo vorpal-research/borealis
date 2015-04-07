@@ -174,14 +174,6 @@ borealis::util::at(S,79) \
 // XXX: change this to [[noreturn]] when mother..cking g++ supports it
 #define NORETURN __attribute__((noreturn))
 
-#define DEFAULT_CONSTRUCTOR_AND_ASSIGN(CLASSNAME) \
-    \
-    CLASSNAME() = default; \
-    CLASSNAME(const CLASSNAME&) = default; \
-    CLASSNAME(CLASSNAME&&) = default; \
-    CLASSNAME& operator=(const CLASSNAME&) = default; \
-    CLASSNAME& operator=(CLASSNAME&&) = default;
-
 #define PRETOKENPASTE(x, y) x ## y
 #define TOKENPASTE(x, y) PRETOKENPASTE(x, y)
 #define ON_SCOPE_EXIT(LAMBDA) \
