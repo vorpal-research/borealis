@@ -46,7 +46,7 @@ bool PredicateState::isUnreachableIn(unsigned long long memoryStart) const {
         MathSAT::Solver s(ef, memoryStart);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef, memoryStart);
+        Z3::Solver s(ef, memoryStart, memoryStart + (1 << 16));
 #endif
 
     auto&& split = splitByTypes({PredicateType::PATH});

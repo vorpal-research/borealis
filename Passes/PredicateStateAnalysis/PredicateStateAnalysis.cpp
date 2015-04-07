@@ -188,7 +188,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     auto&& fMemId = FM.getMemoryStart(&F);
 
     ExprFactory ef;
-    Solver s(ef, fMemId);
+    Solver s(ef, fMemId, fMemId + (1 << 16));
 
     auto&& itp = s.getSummary(args, query, bdy);
 

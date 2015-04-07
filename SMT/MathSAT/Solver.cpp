@@ -18,8 +18,8 @@ namespace mathsat_ {
 
 USING_SMT_IMPL(MathSAT);
 
-Solver::Solver(ExprFactory& msatef, unsigned long long memoryStart) :
-        msatef(msatef), memoryStart(memoryStart) {}
+Solver::Solver(ExprFactory& msatef, unsigned long long memoryStart, unsigned long long memoryEnd) :
+        msatef(msatef), memoryStart(memoryStart), memoryEnd(memoryEnd) {}
 
 Solver::check_result Solver::check(
         const Bool& msatquery_,
@@ -79,7 +79,7 @@ bool Solver::isViolated(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef, memoryStart);
+    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -120,7 +120,7 @@ bool Solver::isPathImpossible(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef, memoryStart);
+    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
     auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
     auto msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
 
@@ -138,7 +138,7 @@ Dynamic Solver::getInterpolant(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef, memoryStart);
+    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -272,10 +272,10 @@ Bool Solver::probeZ3(PredicateState::Ptr body,
     dvrs.insert(dvrs.end(), pathVars.begin(), pathVars.end());
 
     z3_::ExprFactory z3ef;
-    z3_::Solver z3solver(z3ef, memoryStart);
+    z3_::Solver z3solver(z3ef, memoryStart, memoryEnd);
     auto modelState = z3solver.probeModels(body, query, dvrs, args);
 
-    ExecutionContext ctx(msatef, memoryStart);
+    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
     return SMT<MathSAT>::doit(modelState, msatef, &ctx);
 }
 
@@ -289,7 +289,7 @@ Dynamic Solver::getSummary(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef, memoryStart);
+    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -308,7 +308,7 @@ Dynamic Solver::getSummary(
 
     auto toExpr =
         [this](const Term::Ptr& term) -> mathsat::Expr {
-            ExecutionContext ctx(msatef, memoryStart);
+            ExecutionContext ctx(msatef, memoryStart, memoryEnd);
             return msatimpl::getExpr(
                     SMT<MathSAT>::doit(term, msatef, &ctx)
             );
@@ -375,7 +375,7 @@ Dynamic Solver::getContract(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef, memoryStart);
+    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
     auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
     auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
@@ -394,7 +394,7 @@ Dynamic Solver::getContract(
 
     auto toExpr =
         [this](const Term::Ptr& term) -> mathsat::Expr {
-            ExecutionContext ctx(msatef, memoryStart);
+            ExecutionContext ctx(msatef, memoryStart, memoryEnd);
             return msatimpl::getExpr(
                     SMT<MathSAT>::doit(term, msatef, &ctx)
             );

@@ -65,7 +65,7 @@ public:
         MathSAT::Solver s(ef, fMemId);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemId);
+        Z3::Solver s(ef, fMemId, fMemId + (1 << 16));
 #endif
 
         if (s.isViolated(query, sliced)) {

@@ -28,7 +28,7 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("z3-solver")
 #include "Util/unmacros.h"
 
-    Solver(ExprFactory& z3ef, unsigned long long memoryStart);
+    Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long long memoryEnd);
 
     bool isViolated(
             PredicateState::Ptr query,
@@ -48,6 +48,7 @@ private:
 
     ExprFactory& z3ef;
     unsigned long long memoryStart;
+    unsigned long long memoryEnd;
 
     using check_result = std::tuple<
         z3::check_result,
