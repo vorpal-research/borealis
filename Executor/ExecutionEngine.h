@@ -20,12 +20,16 @@
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/raw_ostream.h>
 
+
 #include "Executor/Arbiter.h"
 #include "Executor/MemorySimulator.h"
 #include "Executor/InstructionExecutor.h"
 #include "Executor/AnnotationExecutor.h"
 #include "Codegen/intrinsics_manager.h"
 #include "State/Transformer/AnnotationMaterializer.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
+
+#include "Util/cache.hpp"
 
 namespace borealis {
 
@@ -65,6 +69,7 @@ class ExecutionEngine {
     llvm::GenericValue ExitValue;          // The return llvm::Value of the Executor llvm::Function
     const llvm::DataLayout* TD;
     const llvm::TargetLibraryInfo* TLI;
+    const SlotTrackerPass* ST;
     VariableInfoTracker* VIT;
     IntrinsicsManager* IM;
     Arbiter::Ptr Judicator;
@@ -79,17 +84,16 @@ class ExecutionEngine {
 
     MemorySimulator Mem;
 
-    SlotTracker ST;
-    FactoryNest FN;
+    util::cache<llvm::Function*, FactoryNest> FNCache;
 
     InstructionExecutor IE;
-    AnnotationExecutor AE;
 
 public:
     explicit ExecutionEngine(
         llvm::Module *M,
         const llvm::DataLayout* TD,
         const llvm::TargetLibraryInfo* TLI,
+        const SlotTrackerPass* ST,
         VariableInfoTracker* VIT,
         Arbiter::Ptr Aldaris);
     ~ExecutionEngine();

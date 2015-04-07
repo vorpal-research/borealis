@@ -46,21 +46,22 @@ public:
     virtual bool runOnModule(llvm::Module& M) override;
     virtual void print(llvm::raw_ostream& O , const llvm::Module* M) const override;
 
-    const nameResolver_t& getGlobalResolver() {
+    const nameResolver_t& getGlobalResolver() const {
         return globalResolver;
     }
 
-    const nameResolver_t& getLocalResolver(llvm::Function* F) {
-        return localResolvers[F];
+    const nameResolver_t& getLocalResolver(llvm::Function* F) const {
+        return localResolvers.at(F);
     }
 
-    llvm::Value* resolve(const std::string& name) {
-        if (globalResolver.count(name)) return globalResolver[name];
+    llvm::Value* resolve(const std::string& name) const {
+        if (globalResolver.count(name)) return globalResolver.at(name);
         else return nullptr;
     }
 
-    llvm::Value* resolve(const std::string& name, llvm::Function* context) {
-        if (localResolvers.count(context) && localResolvers[context].count(name)) return localResolvers[context][name];
+    llvm::Value* resolve(const std::string& name, llvm::Function* context) const {
+        if (localResolvers.count(context) && localResolvers.at(context).count(name))
+            return localResolvers.at(context).at(name);
         else return nullptr;
     }
 };

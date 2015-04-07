@@ -43,29 +43,18 @@ static void adjustToType(llvm::GenericValue& v, llvm::Type* pastType, llvm::Type
     }
 }
 
-struct AntiSlotTracker {
-    std::unordered_map<std::string, llvm::Value*> vals;
-
-    AntiSlotTracker(SlotTracker* st, llvm::Module* M) {
-        TRACE_FUNC;
-
-        auto funcsView = util::viewContainer(*M).filter(LAM(F, !F.isDeclaration()));
-
-        for(auto&& i : funcsView.flatten().flatten()) {
-            vals[st->getLocalName(&i)] = &i;
-        }
-    }
-};
-
 struct AnnotationExecutor::Impl {
-    llvm::Module* M;
+    SlotTracker* ST;
     ExecutionEngine* ee;
-    SlotTracker* st;
-    AntiSlotTracker ast;
+
     std::stack<std::pair<llvm::GenericValue, llvm::Type*>> value_stack;
 
-    Impl(llvm::Module* M, SlotTracker* st, ExecutionEngine* ee):
-        M{M}, ee{ee}, st{st}, ast{st, M}, value_stack{} {};
+    Impl(SlotTracker* ST, ExecutionEngine* ee):
+        ST{ST}, ee{ee}, value_stack{} {};
+
+    llvm::LLVMContext& getLLVMContext() const {
+        return ee->getCurrentContext().CurFunction->getContext();
+    }
 
     llvm::GenericValue pop() {
         ASSERTC(!value_stack.empty());
@@ -83,11 +72,19 @@ struct AnnotationExecutor::Impl {
         ASSERTC(!value_stack.empty());
         return value_stack.top().second;
     }
+
+    llvm::Value* resolve(const std::string& name) {
+        if(auto v = ST->getLocalValue(name))
+            return const_cast<llvm::Value*>(v);
+        return const_cast<llvm::Value*>(ST->getGlobalValue(name));
+    }
 };
 
-AnnotationExecutor::AnnotationExecutor(FactoryNest FN, llvm::Module* M, SlotTracker* st, ExecutionEngine* ee):
+AnnotationExecutor::AnnotationExecutor(FactoryNest FN, SlotTracker* ST, ExecutionEngine* ee):
     Transformer<AnnotationExecutor>{FN},
-    pimpl_{ std::make_unique<Impl>(M, st, ee) }{};
+    pimpl_{ std::make_unique<Impl>(ST, ee) }{};
+
+
 AnnotationExecutor::~AnnotationExecutor() {}
 
 Annotation::Ptr AnnotationExecutor::transformAssertAnnotation(AssertAnnotationPtr a) {
@@ -117,7 +114,7 @@ Annotation::Ptr AnnotationExecutor::transformEnsuresAnnotation(EnsuresAnnotation
 
 Term::Ptr AnnotationExecutor::transformValueTerm(ValueTermPtr t) {
     TRACE_FUNC;
-    auto val = pimpl_->ast.vals.at(t->getName());
+    auto val = pimpl_->resolve(t->getVName());
     auto ret = pimpl_->ee->getOperandValue(val, pimpl_->ee->getCurrentContext());
 
     pimpl_->value_stack.push({ ret, val->getType() });
@@ -162,7 +159,7 @@ Term::Ptr AnnotationExecutor::transformUnaryTerm(UnaryTermPtr t) {
         break;
     case llvm::UnaryArithType::NOT:
         ret.IntVal = !val.IntVal;
-        type = llvm::Type::getInt1Ty(pimpl_->M->getContext());
+        type = llvm::Type::getInt1Ty(pimpl_->getLLVMContext());
         break;
     case llvm::UnaryArithType::NEG:
         ret.IntVal = -val.IntVal;
@@ -218,7 +215,7 @@ Term::Ptr AnnotationExecutor::transformCmpTerm(CmpTermPtr t) {
     auto left = pimpl_->pop();
 
     auto merged = mergeTypes(ltype, rtype, pimpl_->ee->getDataLayout());
-    auto boolType = llvm::Type::getInt1Ty(pimpl_->M->getContext());
+    auto boolType = llvm::Type::getInt1Ty(pimpl_->getLLVMContext());
 
     auto opcode = t->getOpcode();
     llvm::GenericValue RetVal;
@@ -232,7 +229,7 @@ Term::Ptr AnnotationExecutor::transformCmpTerm(CmpTermPtr t) {
         pimpl_->value_stack.push({ RetVal, boolType });
         return t;
     }
-    unsigned executiveOpcode;
+    unsigned executiveOpcode = llvm::ICmpInst::BAD_ICMP_PREDICATE;
 
     if(merged->isFloatingPointTy()) {
         switch(opcode) {
@@ -296,7 +293,7 @@ Term::Ptr AnnotationExecutor::transformSignTerm(SignTermPtr t) {
     auto v = pimpl_->pop();
     llvm::GenericValue res;
     res.IntVal = llvm::APInt(1, v.IntVal.isNonNegative());
-    pimpl_->value_stack.push({res, llvm::Type::getInt1Ty(pimpl_->M->getContext())});
+    pimpl_->value_stack.push({res, llvm::Type::getInt1Ty(pimpl_->getLLVMContext())});
     return t;
 }
 
@@ -377,7 +374,7 @@ Term::Ptr AnnotationExecutor::transformAxiomTerm(AxiomTermPtr t) {
 
 Term::Ptr AnnotationExecutor::transformOpaqueUndefTerm(OpaqueUndefTermPtr t) {
     TRACE_FUNC;
-    auto ret_type = TypeUtils::tryCastBack(pimpl_->M->getContext(), t->getType());
+    auto ret_type = TypeUtils::tryCastBack(pimpl_->getLLVMContext(), t->getType());
     llvm::GenericValue res =
         pimpl_->ee->getOperandValue(
             llvm::UndefValue::get(ret_type),
@@ -394,7 +391,7 @@ Term::Ptr AnnotationExecutor::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr t)
 
     llvm::GenericValue res;
     res.PointerVal = 0;
-    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
+    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->getLLVMContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr t) {
@@ -402,7 +399,7 @@ Term::Ptr AnnotationExecutor::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTerm
 
     llvm::GenericValue res;
     res.PointerVal = 0; // FIXME: think!
-    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
+    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->getLLVMContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr t) {
@@ -410,7 +407,7 @@ Term::Ptr AnnotationExecutor::transformOpaqueIntConstantTerm(OpaqueIntConstantTe
 
     llvm::GenericValue res;
     res.IntVal = llvm::APInt(64, t->getValue());
-    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
+    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->getLLVMContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr t) {
@@ -418,7 +415,7 @@ Term::Ptr AnnotationExecutor::transformOpaqueFloatingConstantTerm(OpaqueFloating
 
     llvm::GenericValue res;
     res.DoubleVal = t->getValue();
-    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->M->getContext())});
+    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->getLLVMContext())});
     return t;
 }
 Term::Ptr AnnotationExecutor::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr t) {
@@ -426,7 +423,7 @@ Term::Ptr AnnotationExecutor::transformOpaqueBoolConstantTerm(OpaqueBoolConstant
 
     llvm::GenericValue res;
     res.IntVal = llvm::APInt(1, t->getValue());
-    pimpl_->value_stack.push({res, llvm::Type::getInt1Ty(pimpl_->M->getContext())});
+    pimpl_->value_stack.push({res, llvm::Type::getInt1Ty(pimpl_->getLLVMContext())});
     return t;
 }
 

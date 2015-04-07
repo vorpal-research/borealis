@@ -23,6 +23,7 @@
 #include "Executor/ExecutionEngine.h"
 #include "Executor/Arbiter.h"
 #include "Codegen/intrinsics_manager.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 
 namespace borealis {
 
@@ -35,6 +36,7 @@ public:
         const llvm::DataLayout* TD,
         const llvm::TargetLibraryInfo* TLI,
         VariableInfoTracker* VIT,
+        const SlotTrackerPass* ST,
         Arbiter::Ptr Aldaris);
 
     ~Executor();

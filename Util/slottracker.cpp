@@ -275,8 +275,9 @@ std::string SlotTracker::getLocalName(const Value *V) {
     }
 }
 
-const llvm::Value* SlotTracker::getLocalValue(const std::string& name) const {
+const llvm::Value* SlotTracker::getLocalValue(const std::string& name) {
     if ('%' == name[0]) {
+        initialize();
         auto&& slot = std::stoul(name.substr(1));
         return fSap.lookup(slot);
     } else {
@@ -284,7 +285,7 @@ const llvm::Value* SlotTracker::getLocalValue(const std::string& name) const {
     }
 }
 
-const llvm::Value* SlotTracker::getGlobalValue(const std::string& name) const {
+const llvm::Value* SlotTracker::getGlobalValue(const std::string& name) {
     // XXX: akhin Can global values be slots (i.e., do not have a name?)
     return TheFunction && TheFunction->getParent()
            ? TheFunction->getParent()->getValueSymbolTable().lookup(name)

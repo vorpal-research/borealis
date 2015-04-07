@@ -85,8 +85,8 @@ public:
   int getMetadataSlot(const llvm::MDNode *N);
 
   std::string getLocalName(const llvm::Value *V);
-  const llvm::Value* getLocalValue(const std::string& name) const;
-  const llvm::Value* getGlobalValue(const std::string& name) const;
+  const llvm::Value* getLocalValue(const std::string& name);
+  const llvm::Value* getGlobalValue(const std::string& name);
 
   /// If you'd like to deal with a function instead of just a module, use
   /// this method to get its data into the SlotTracker.
