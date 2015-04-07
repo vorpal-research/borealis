@@ -13,6 +13,8 @@
 #include "SMT/MathSAT/ExprFactory.h"
 #include "State/PredicateState.h"
 
+#include "SMT/Result.h"
+
 namespace borealis {
 namespace mathsat_ {
 
@@ -31,11 +33,11 @@ public:
 
     Solver(ExprFactory& msatef, unsigned long long memoryStart, unsigned long long memoryEnd);
 
-    bool isViolated(
+    smt::Result isViolated(
             PredicateState::Ptr query,
             PredicateState::Ptr state);
 
-    bool isPathImpossible(
+    smt::Result isPathImpossible(
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 

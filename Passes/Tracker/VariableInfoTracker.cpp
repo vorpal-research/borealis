@@ -73,7 +73,7 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
 }
 
 static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
-        const borealis::DebugInfoFinder& context,
+        const borealis::DebugInfoFinder&,
         clang::Decl* ast = nullptr, bool allocated = false) {
     VarInfo ret{
         just(desc.getVarName().str()),

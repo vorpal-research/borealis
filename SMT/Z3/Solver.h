@@ -13,6 +13,8 @@
 #include "SMT/Z3/ExprFactory.h"
 #include "State/PredicateState.h"
 
+#include "SMT/Result.h"
+
 namespace borealis {
 namespace z3_ {
 
@@ -30,11 +32,11 @@ public:
 
     Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long long memoryEnd);
 
-    bool isViolated(
+    smt::Result isViolated(
             PredicateState::Ptr query,
             PredicateState::Ptr state);
 
-    bool isPathImpossible(
+    smt::Result isPathImpossible(
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 

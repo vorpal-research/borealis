@@ -15,7 +15,7 @@ namespace borealis {
 namespace mathsat_ {
 namespace unlogic {
 
-PredicateState::Ptr undoThat(borealis::MathSAT::Dynamic dyn);
+Term::Ptr undoThat(borealis::MathSAT::Dynamic dyn);
 
 } // namespace unlogic
 } // namespace mathsat_

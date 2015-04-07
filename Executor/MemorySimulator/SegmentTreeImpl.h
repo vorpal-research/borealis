@@ -113,7 +113,7 @@ static void signalInconsistency(const std::string& error) {
     throw std::logic_error(error);
 }
 
-static void signalOutOfMemory(SimulatedPtrSize amount) {
+static void signalOutOfMemory(SimulatedPtrSize) {
     TRACE_FUNC;
     throw out_of_memory_exception{};
 }
@@ -298,7 +298,7 @@ struct SegmentTree {
             }
 
             bool handleEthereal(
-                SegmentTree* tree,
+                SegmentTree* /* tree */,
                 SimulatedPtrSize minbound,
                 SimulatedPtrSize maxbound,
                 SegmentNode::Ptr& t,
@@ -391,7 +391,7 @@ struct SegmentTree {
             }
 
             void handleChunk(
-                            SegmentTree* tree,
+                            SegmentTree* /* tree */,
                             SimulatedPtrSize minbound,
                             SimulatedPtrSize maxbound,
                             SegmentNode::Ptr& t,

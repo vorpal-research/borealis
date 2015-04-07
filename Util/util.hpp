@@ -23,8 +23,8 @@
 namespace borealis {
 namespace util {
 
-template<class T>
-inline void use(T&&) noexcept {}
+template<class ...T>
+inline void use(T&&...) noexcept {}
 
 template<class ...Args>
 std::vector<typename std::common_type<Args...>::type> make_vector(Args&& ...args) {

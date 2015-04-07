@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 #include "Util/json.hpp"
@@ -84,25 +85,31 @@ struct json_traits<std::unordered_set<T>> {
     }
 };
 
-template<class V>
-struct json_traits<std::map<std::string, V>> {
-    typedef std::unique_ptr<std::map<std::string, V>> optional_ptr_t;
+template<class K, class V, class Hash, class Equal, class Alloc>
+struct json_traits<std::unordered_map<K, V, Hash, Equal, Alloc>> {
+    using theMap_t = std::unordered_map<K, V, Hash, Equal, Alloc>;
+    using optional_ptr_t = std::unique_ptr<theMap_t>;
 
-    static Json::Value toJson(const std::map<std::string, V>& val) {
-        Json::Value ret;
-        for(const auto& m : val) ret[m.first] = util::toJson(m.second);
+    static Json::Value toJson(const theMap_t& val) {
+        Json::Value ret = Json::arrayValue;
+        for(const auto& kv : val) {
+            Json::Value field = Json::objectValue;
+            field["key"] = util::toJson(kv.first);
+            field["value"] = util::toJson(kv.second);
+            ret.append(field);
+        }
         return ret;
     }
 
     static optional_ptr_t fromJson(const Json::Value& val) {
-        std::map<std::string, V> ret;
+        theMap_t ret;
         if(!val.isArray()) return nullptr;
-        for(const auto& k : val.getMemberNames()) {
-            if(auto v = util::fromJson<V>(val[k])) {
-                ret[k] = *v;
-            }
+        for(const auto& kv : val) {
+            if(!kv.isObject()) return nullptr;
+            ret.insert(std::make_pair( util::fromJson<K>(kv["key"]), util::fromJson<V>(kv["value"]) ));
         }
-        return optional_ptr_t { new std::map<std::string, V>{std::move(ret)} };
+
+        return optional_ptr_t { new theMap_t{ std::move(ret) } };
     }
 };
 

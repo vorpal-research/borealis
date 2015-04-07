@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include "State/Transformer/VariableCollector.h"
 #include "Factory/Nest.h"
 #include "Logging/tracer.hpp"
 #include "State/PredicateStateBuilder.h"
@@ -17,6 +18,7 @@
 
 namespace borealis {
 namespace z3_ {
+using namespace borealis::smt;
 
 Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long long memoryEnd) :
         z3ef(z3ef), memoryStart(memoryStart), memoryEnd(memoryEnd) {}
@@ -84,7 +86,27 @@ Solver::check_result Solver::check(
     }
 }
 
-bool Solver::isViolated(
+template<class TermCollection>
+SatResult::model_t recollectModel(ExprFactory& z3ef, ExecutionContext& ctx, z3::model implModel, const TermCollection& vars) {
+    return
+        util::viewContainer(vars)
+        .map([&](Term::Ptr var) -> std::pair<std::string, Term::Ptr> {
+            auto e = SMT<Z3>::doit(var, z3ef, &ctx);
+            auto z3e = logic::z3impl::getExpr(e);
+
+            dbgs() << "Evaluating " << z3e << endl;
+
+            auto retz3e = implModel.eval(z3e, true);
+
+            return { var->getName(), unlogic::undoThat(retz3e) };
+        })
+        .template to<SatResult::model_t>();
+}
+
+static config::BoolConfigEntry gatherSMTModels("analysis", "collect-models");
+static config::BoolConfigEntry gatherZ3Models("analysis", "collect-z3-models");
+
+Result Solver::isViolated(
         PredicateState::Ptr query,
         PredicateState::Ptr state) {
     TRACE_FUNC;
@@ -120,12 +142,22 @@ bool Solver::isViolated(
                << cex
                << print_predicate_locus_off
                << endl;
+
+        if(gatherZ3Models.get(false) or gatherSMTModels.get(false)) {
+            auto vars = collectVariables(FactoryNest{}, query, state);
+
+            auto collectedModel = recollectModel(z3ef, ctx, m, vars);
+
+            return Result{ SatResult{ collectedModel } };
+        }
+
+        return Result{ SatResult{} };
     }
 
-    return res != z3::unsat;
+    return Result{ UnsatResult{} };
 }
 
-bool Solver::isPathImpossible(
+Result Solver::isPathImpossible(
         PredicateState::Ptr path,
         PredicateState::Ptr state) {
     TRACE_FUNC;
@@ -140,9 +172,24 @@ bool Solver::isPathImpossible(
     auto z3path = SMT<Z3>::doit(path, z3ef, &ctx);
 
     z3::check_result res;
-    std::tie(res, std::ignore, std::ignore, std::ignore) = check(z3path, z3state);
+    util::option<z3::model> model;
+    std::tie(res, model, std::ignore, std::ignore) = check(z3path, z3state);
 
-    return res == z3::unsat;
+    if (res == z3::sat) {
+        auto m = model.getUnsafe(); // You shall not fail! (c)
+
+        if(gatherZ3Models.get(false) or gatherSMTModels.get(false)) {
+            auto vars = collectVariables(FactoryNest{}, path, state);
+
+            auto collectedModel = recollectModel(z3ef, ctx, m, vars);
+
+            return Result{ SatResult{ collectedModel } };
+        }
+
+        return Result{ SatResult{} };
+    }
+
+    return Result{ UnsatResult{} };
 }
 
 

@@ -12,6 +12,7 @@
 #include "Util/util.h"
 
 #include "Util/macros.h"
+#include "Util/generate_macros.h"
 
 namespace borealis {
 namespace type {
@@ -171,5 +172,6 @@ public:
 } /* namespace borealis */
 
 #include "Util/unmacros.h"
+#include "Util/generate_unmacros.h"
 
 #endif /* RECORDBODY_H_ */

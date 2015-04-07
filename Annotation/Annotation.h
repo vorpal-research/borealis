@@ -9,6 +9,7 @@
 #define ANNOTATION_H_
 
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/CallSite.h>
 
 #include <memory>
 #include <string>
@@ -78,6 +79,11 @@ public:
 
     static const Annotation::Ptr fromIntrinsic(const llvm::CallInst& CI) {
         return static_cast<Annotation*>(MDNode2Ptr(CI.getMetadata("anno.ptr")))
+               ->shared_from_this();
+    }
+
+    static const Annotation::Ptr fromIntrinsic(llvm::CallSite CI) {
+        return static_cast<Annotation*>(MDNode2Ptr(CI.getInstruction()->getMetadata("anno.ptr")))
                ->shared_from_this();
     }
 

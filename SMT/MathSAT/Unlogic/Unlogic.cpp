@@ -47,7 +47,7 @@ AbstractSymbol::Ptr makeSymbol(std::stack<AbstractSymbol::Ptr>& symbolStack) {
     return terminalStack.top();
 }
 
-PredicateState::Ptr undoThat(Dynamic dyn) {
+Term::Ptr undoThat(Dynamic dyn) {
     auto expr = borealis::mathsat_::logic::msatimpl::getExpr(dyn);
     std::stack<AbstractSymbol::Ptr> symbolStack;
     expr.visit(callback, &symbolStack);
@@ -55,16 +55,7 @@ PredicateState::Ptr undoThat(Dynamic dyn) {
     FactoryNest FN(nullptr);
 
     auto jointSymbol = makeSymbol(symbolStack);
-    auto jointTerm = jointSymbol->undoThat(FN);
-
-    auto state = (
-        FN.State *
-        FN.Predicate->getEqualityPredicate(
-            jointTerm,
-            FN.Term->getTrueTerm()
-        )
-    )();
-    return state;
+    return jointSymbol->undoThat(FN);
 }
 
 } // namespace unlogic

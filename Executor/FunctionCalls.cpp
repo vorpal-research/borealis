@@ -111,7 +111,7 @@ llvm::GenericValue ExecutionEngine::executeRealloc(const llvm::Function* f, cons
     TRACE_FUNC;
     return executeMalloc(f, ArgVals);
 }
-llvm::GenericValue ExecutionEngine::executeFree(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeFree(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
     // TODO
 
@@ -119,7 +119,7 @@ llvm::GenericValue ExecutionEngine::executeFree(const llvm::Function* f, const s
 
     return {};
 }
-llvm::GenericValue ExecutionEngine::executeMemcpy(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeMemcpy(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
 
     auto size = ArgVals.at(2).IntVal.getLimitedValue();
@@ -138,7 +138,7 @@ llvm::GenericValue ExecutionEngine::executeMemcpy(const llvm::Function* f, const
     throw std::logic_error("full memcpy not implemented yet");
     return {};
 }
-llvm::GenericValue ExecutionEngine::executeMemset(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
+llvm::GenericValue ExecutionEngine::executeMemset(const llvm::Function*, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
 
     Mem.Memset(
@@ -232,7 +232,7 @@ static llvm::GenericValue runpowi(const llvm::Function* f, const std::vector<llv
 template<class F>
 static llvm::GenericValue runIntegralWithOverflow(
         F code,
-        const llvm::Function* f,
+        const llvm::Function*,
         const std::vector<llvm::GenericValue> &ArgVals) {
     llvm::GenericValue RetVal;
     bool overflow = false;
