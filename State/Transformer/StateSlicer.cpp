@@ -15,7 +15,7 @@
 namespace borealis {
 
 StateSlicer::StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA) :
-    Base(FN), query(query), AA(AA), AST(*AA) { init(); }
+    Base(FN), query(query), AA(AA), AST(nullptr == AA ? nullptr : new llvm::AliasSetTracker(*AA)) { init(); }
 
 static struct {
     using argument_type = Term::Ptr;
@@ -55,10 +55,12 @@ void StateSlicer::addSliceTerm(Term::Ptr term) {
 }
 
 PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
-    return Base::transform(ps->reverse())->filter([](auto&& p) { return !!p; })->reverse();
+    return nullptr == AA ? ps : Base::transform(ps->reverse())->filter([](auto&& p) { return !!p; })->reverse();
 }
 
 Predicate::Ptr StateSlicer::transformPredicate(Predicate::Ptr pred) {
+    if (nullptr == AA) return pred;
+
     auto&& lhvTerms = Term::Set{};
     for (auto&& lhv : util::viewContainer(pred->getOperands()).take(1)) {
         auto&& nested = Term::getFullTermSet(lhv);
@@ -118,7 +120,7 @@ bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
             .any_of([&](auto&& a) {
                 return util::viewContainer(slicePtrs)
                     .any_of([&](auto&& b) {
-                        return aliases(a, b);
+                        return this->aliases(a, b);
                     });
             })
         ) {
@@ -136,9 +138,9 @@ bool StateSlicer::aliases(Term::Ptr a, Term::Ptr b) {
 #define AS_POINTER(V) V, AA->getTypeStoreSize(V->getType()->getPointerElementType()), nullptr
 
     if (p and q) {
-        AST.add(AS_POINTER(p));
-        AST.add(AS_POINTER(q));
-        return AST.getAliasSetForPointer(AS_POINTER(p)).aliasesPointer(AS_POINTER(q), *AA);
+        AST->add(AS_POINTER(p));
+        AST->add(AS_POINTER(q));
+        return AST->getAliasSetForPointer(AS_POINTER(p)).aliasesPointer(AS_POINTER(q), *AA);
     } else {
         return true;
     }

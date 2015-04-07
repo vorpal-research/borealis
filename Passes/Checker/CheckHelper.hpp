@@ -43,6 +43,8 @@ public:
     bool check(PredicateState::Ptr query, PredicateState::Ptr state, const DefectInfo& di) {
 
         if (not query or not state) return false;
+        if (query->isEmpty()) return false;
+        if (state->isEmpty()) return true;
 
         auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
         if (*state == *sliced) {
@@ -51,18 +53,19 @@ public:
             dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
         }
 
+        dbgs() << "Defect: " << di << endl;
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  Query: " << query << endl;
         dbgs() << "  State: " << sliced << endl;
 
-        auto fMemId = pass->FM->getMemoryStart(I->getParent()->getParent());
+        auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, fMemId);
+        MathSAT::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemId);
+        Z3::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #endif
 
         auto solverResult = s.isViolated(query, sliced);
@@ -86,9 +89,9 @@ public:
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  State: " << state << endl;
 
-        auto fMemId = pass->FM->getMemoryStart(I->getParent()->getParent());
+        auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
-        if (not state->isUnreachableIn(fMemId)) {
+        if (not state->isUnreachableIn(fMemInfo.first, fMemInfo.second)) {
             pass->DM->addDefect(di);
             return true;
         } else {

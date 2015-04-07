@@ -27,17 +27,18 @@ class FunctionManager :
         PredicateState::Ptr Bdy;
         PredicateState::Ptr Ens;
 
-        FunctionDesc() {}
+        FunctionDesc() = default;
 
         FunctionDesc(PredicateState::Ptr Req, PredicateState::Ptr Bdy, PredicateState::Ptr Ens) :
             Req(Req), Bdy(Bdy), Ens(Ens) {}
 
         FunctionDesc(PredicateState::Ptr state) {
-            auto reqRest = state->splitByTypes({PredicateType::REQUIRES});
+            auto&& reqRest = state->splitByTypes({PredicateType::REQUIRES});
             Req = reqRest.first;
 
-            auto ensRest = reqRest.second->splitByTypes({PredicateType::ENSURES});
+            auto&& ensRest = reqRest.second->splitByTypes({PredicateType::ENSURES});
             Ens = ensRest.first;
+
             Bdy = ensRest.second;
         }
     };
@@ -50,15 +51,25 @@ public:
     static constexpr auto loggerDomain() QUICK_RETURN("fm")
 #include "Util/unmacros.h"
 
-    typedef std::unordered_map<const llvm::Function*, FunctionDesc> FunctionData;
-    typedef std::unordered_map<const llvm::Function*, unsigned int> Ids;
-    typedef std::pair<PredicateState::Ptr, DefectInfo> Bond;
-    typedef std::unordered_multimap<const llvm::Function*, Bond> FunctionBonds;
+    using FunctionData = std::unordered_map<const llvm::Function*, FunctionDesc>;
+    using Ids = std::unordered_map<const llvm::Function*, unsigned int>;
+    using Bond = std::pair<PredicateState::Ptr, DefectInfo>;
+    using FunctionBonds = std::unordered_multimap<const llvm::Function*, Bond>;
+
+private:
+
+    mutable FunctionData data;
+    mutable Ids ids;
+    mutable FunctionBonds bonds;
+
+    FactoryNest FN;
+
+public:
 
     FunctionManager();
     virtual bool runOnModule(llvm::Module&) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
-    virtual ~FunctionManager() {};
+    virtual ~FunctionManager() = default;
 
     void put(const llvm::Function* F, PredicateState::Ptr state);
     void update(const llvm::Function* F, PredicateState::Ptr state);
@@ -73,17 +84,13 @@ public:
 
     unsigned int getId(const llvm::Function* F) const;
     unsigned int getMemoryStart(const llvm::Function* F) const;
+    unsigned int getMemoryEnd(const llvm::Function* F) const;
+    std::pair<unsigned int, unsigned int> getMemoryBounds(const llvm::Function* F) const;
 
-    void addBond(const llvm::Function* F, const std::pair<PredicateState::Ptr, DefectInfo>& bond);
-    util::CollectionView<FunctionBonds::const_iterator> getBonds(const llvm::Function* F) const;
+    void addBond(const llvm::Function* F, const Bond& bond);
+    auto getBonds(const llvm::Function* F) const -> decltype(util::view(bonds.equal_range(0)));
 
 private:
-
-    mutable FunctionData data;
-    Ids ids;
-    FunctionBonds bonds;
-
-    FactoryNest FN;
 
     FunctionDesc get(const llvm::Function* F) const;
     FunctionDesc get(const llvm::CallInst& CI, FactoryNest FN) const;

@@ -34,7 +34,7 @@ private:
     PredicateState::Ptr query;
 
     llvm::AliasAnalysis* AA;
-    llvm::AliasSetTracker AST;
+    std::unique_ptr<llvm::AliasSetTracker> AST;
 
     Term::Set sliceVars;
     Term::Set slicePtrs;

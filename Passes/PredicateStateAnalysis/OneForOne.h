@@ -63,7 +63,6 @@ private:
     std::list<AbstractPredicateAnalysis*> PA;
 
     FunctionManager* FM;
-    llvm::LoopInfo* LI;
     SourceLocationTracker* SLT;
 
     FactoryNest FN;

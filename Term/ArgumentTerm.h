@@ -70,9 +70,20 @@ struct SMTImpl<Impl, ArgumentTerm> {
     static Dynamic<Impl> doit(
             const ArgumentTerm* t,
             ExprFactory<Impl>& ef,
-            ExecutionContext<Impl>*) {
+            ExecutionContext<Impl>* ctx) {
         TRACE_FUNC;
-        return ef.getVarByTypeAndName(t->getType(), t->getName());
+        USING_SMT_IMPL(Impl);
+
+        auto&& res = ef.getVarByTypeAndName(t->getType(), t->getName());
+
+        if (not ctx) return res;
+        if (not llvm::isa<type::Pointer>(t->getType())) return res;
+
+        auto&& localMemoryBounds = ctx->getLocalMemoryBounds();
+        return res.withAxiom(
+            UComparable(res).ult(ef.getIntConst(localMemoryBounds.first)) ||
+            UComparable(res).ugt(ef.getIntConst(localMemoryBounds.second))
+        );
     }
 };
 

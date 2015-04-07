@@ -39,14 +39,14 @@ PredicateState::Ptr PredicateState::reverse() const {
     return fmap([&](PredicateState::Ptr s) { return s->reverse(); });
 }
 
-bool PredicateState::isUnreachableIn(unsigned long long memoryStart) const {
+bool PredicateState::isUnreachableIn(unsigned long long memoryStart, unsigned long long memoryEnd) const {
 
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, memoryStart);
+        MathSAT::Solver s(ef, memoryStart, memoryEnd);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef, memoryStart);
+        Z3::Solver s(ef, memoryStart, memoryEnd);
 #endif
 
     auto&& split = splitByTypes({PredicateType::PATH});

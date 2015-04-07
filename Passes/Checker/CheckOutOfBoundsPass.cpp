@@ -69,7 +69,7 @@ bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
     CM = &GetAnalysis<CheckManager>::doit(this, F);
     if (CM->shouldSkipFunction(&F)) return false;
 
-    AA = &GetAnalysis<llvm::AliasAnalysis>::doit(this, F);
+    AA = getAnalysisIfAvailable<llvm::AliasAnalysis>();
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
