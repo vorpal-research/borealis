@@ -58,14 +58,14 @@ public:
         dbgs() << "  Query: " << query << endl;
         dbgs() << "  State: " << sliced << endl;
 
-        auto fMemId = pass->FM->getMemoryStart(I->getParent()->getParent());
+        auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
 #if defined USE_MATHSAT_SOLVER
         MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, fMemId);
+        MathSAT::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #else
         Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemId, fMemId + (1 << 16));
+        Z3::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #endif
 
         auto solverResult = s.isViolated(query, sliced);
@@ -87,9 +87,9 @@ public:
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  State: " << state << endl;
 
-        auto fMemId = pass->FM->getMemoryStart(I->getParent()->getParent());
+        auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
-        if (not state->isUnreachableIn(fMemId)) {
+        if (not state->isUnreachableIn(fMemInfo.first, fMemInfo.second)) {
             pass->DM->addDefect(di);
             return true;
         } else {
