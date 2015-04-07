@@ -120,7 +120,7 @@ bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
             .any_of([&](auto&& a) {
                 return util::viewContainer(slicePtrs)
                     .any_of([&](auto&& b) {
-                        return aliases(a, b);
+                        return this->aliases(a, b);
                     });
             })
         ) {

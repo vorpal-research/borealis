@@ -42,9 +42,7 @@ class Transformer {
 #include "Term/Term.def"
 
 #define HANDLE_ANNOTATION(I, NAME, CLASS) friend class CLASS;
-#define HANDLE_ANNOTATION_WITH_BASE(I, BASE, NAME, CLASS) \
-    friend class BASE; \
-    friend class CLASS;
+#define HANDLE_ANNOTATION_WITH_BASE(I, BASE, NAME, CLASS) friend class CLASS; // friend class BASE;
 #include "Annotation/Annotation.def"
 
 protected:
