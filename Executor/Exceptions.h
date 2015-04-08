@@ -53,7 +53,7 @@ public:
 
 class assertion_failed : public std::runtime_error {
 public:
-    assertion_failed(): std::runtime_error{ "assertion failed" }{};
+    assertion_failed(const std::string& message): std::runtime_error{ "assertion failed: " + message }{};
 };
 
 class illegal_assumption : public std::runtime_error {

@@ -168,7 +168,7 @@ static const std::unordered_map<int, PGenericFunc> stdLibArith() {
 }
 
 static llvm::GenericValue executeStrLen(
-        const llvm::Function* F,
+        const llvm::Type* retTy,
         const std::vector<llvm::GenericValue>& ArgVals,
         MemorySimulator& Mem) {
     TRACE_FUNC;
@@ -179,9 +179,19 @@ static llvm::GenericValue executeStrLen(
     auto ptr = ArgVals[0].PointerVal;
     llvm::GenericValue RetVal;
     auto fnd = (Mem.MemChr(ptr, 0, ~size_t(0)));
-    RetVal.IntVal = llvm::APInt(F->getReturnType()->getIntegerBitWidth(), static_cast<uint8_t*>(fnd) - static_cast<uint8_t*>(ptr));
+    RetVal.IntVal = llvm::APInt(retTy->getIntegerBitWidth(), static_cast<uint8_t*>(fnd) - static_cast<uint8_t*>(ptr));
     TRACE_PARAM(RetVal.IntVal);
     return RetVal;
+}
+
+
+static llvm::GenericValue executeStrLen(
+        const llvm::Function* F,
+        const std::vector<llvm::GenericValue>& ArgVals,
+        MemorySimulator& Mem) {
+    TRACE_FUNC;
+
+    return executeStrLen(F->getReturnType(), ArgVals, Mem);
 }
 
 util::option<llvm::GenericValue> ExecutionEngine::callStdLibFunction(
@@ -275,9 +285,22 @@ util::option<llvm::GenericValue> ExecutionEngine::callStdLibFunction(
 
     case lfn::strcpy: {
         auto argValsCopy = ArgVals;
-        auto strlen = executeStrLen(F, ArgVals, Mem);
+        auto strlen = executeStrLen(llvm::IntegerType::get(F->getContext(), 64), util::make_vector(ArgVals[1]), Mem);
+        ++strlen.IntVal;
         argValsCopy.push_back(strlen);
         executeMemcpy(F, argValsCopy);
+    };
+
+    case lfn::strcat: {
+        auto size_t_t = llvm::IntegerType::get(F->getContext(), 64);
+        auto lstrlen = executeStrLen(size_t_t, util::make_vector(ArgVals[0]), Mem);
+        auto rstrlen = executeStrLen(size_t_t, util::make_vector(ArgVals[1]), Mem);
+
+        auto lhv = ArgVals[0];
+        lhv.PointerVal = static_cast<byte*>(lhv.PointerVal) + lstrlen.IntVal.getLimitedValue();
+        auto rhv = ArgVals[1];
+
+        executeMemcpy(F, util::make_vector(lhv, rhv, rstrlen));
     };
 
     default:

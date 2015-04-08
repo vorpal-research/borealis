@@ -53,6 +53,8 @@ public:
         return !!modelPtr->count(str);
     }
 
+    bool empty() const { return modelPtr -> empty(); }
+
     long long valueAt(const std::string& str) const {
         if (auto ii = llvm::dyn_cast<borealis::OpaqueIntConstantTerm>(at(str))) {
             return ii->getValue();

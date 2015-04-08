@@ -40,6 +40,8 @@ public:
             RetVal.FloatVal = 0.0f;
         } else if(val->getType()->isDoubleTy()) {
             RetVal.DoubleVal = 0.0;
+        } else if(val->getType()->isPointerTy()) {
+            RetVal.PointerVal = nullptr;
         } else UNREACHABLE("unsupported type: " + util::toString(*val->getType()));
 
         return RetVal;

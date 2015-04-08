@@ -27,7 +27,7 @@ static llvm::Type* mergeTypes(llvm::Type* lhv, llvm::Type* rhv, const llvm::Data
         return left? lhv : rhv;
     }
 
-    throw std::logic_error("unmergeable types");
+    throw std::logic_error(tfm::format("unmergeable types: %s and %s", util::toString(*lhv), util::toString(*rhv)));
 }
 
 static void adjustToType(llvm::GenericValue& v, llvm::Type* pastType, llvm::Type* type) {
@@ -93,28 +93,35 @@ Annotation::Ptr AnnotationExecutor::transformAssertAnnotation(AssertAnnotationPt
     TRACE_FUNC;
     TRACE_PARAM(*a);
     transform(a->getTerm());
-    if(!pimpl_->peek().IntVal) throw assertion_failed{};
+    if(!pimpl_->peek().IntVal) throw assertion_failed{ util::toString(*a) };
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformAssumeAnnotation(AssumeAnnotationPtr a) {
     TRACE_FUNC;
     TRACE_PARAM(*a);
-    transform(a->getTerm());
-    if(!pimpl_->peek().IntVal) throw assertion_failed{};
+    try {
+        transform(a->getTerm());
+        if(!pimpl_->peek().IntVal) throw assertion_failed{ util::toString(*a) };
+    } catch(assertion_failed&) {
+        throw;
+    } catch(std::exception& ex) {
+        errs() << "Error acquired while checking assumption: " << *a << endl;
+    }
+
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformRequiresAnnotation(RequiresAnnotationPtr a) {
     TRACE_FUNC;
     TRACE_PARAM(*a);
     transform(a->getTerm());
-    if(!pimpl_->peek().IntVal) throw assertion_failed{};
+    if(!pimpl_->peek().IntVal) throw assertion_failed{ util::toString(*a) };
     return a;
 }
 Annotation::Ptr AnnotationExecutor::transformEnsuresAnnotation(EnsuresAnnotationPtr a) {
     TRACE_FUNC;
     TRACE_PARAM(*a);
     transform(a->getTerm());
-    if(!pimpl_->peek().IntVal) throw assertion_failed{};
+    if(!pimpl_->peek().IntVal) throw assertion_failed{ util::toString(*a) };
     return a;
 }
 
@@ -363,6 +370,10 @@ Term::Ptr AnnotationExecutor::transformLoadTerm(LoadTermPtr t) {
 
     llvm::GenericValue res;
 
+    if(ptr.PointerVal == pimpl_->ee->getSymbolicPointer()) {
+        throw std::logic_error("Cannot load a symbolic pointer in annotation context");
+    }
+
     pimpl_->ee->LoadValueFromMemory(
         res,
         static_cast<const uint8_t*>(ptr.PointerVal),
@@ -378,7 +389,7 @@ Term::Ptr AnnotationExecutor::transformAxiomTerm(AxiomTermPtr t) {
 
     auto axiom = pimpl_->pop();
 
-    if(!axiom.IntVal) throw assertion_failed{};
+    if(!axiom.IntVal) throw assertion_failed{ t->getName() };
 
     // do nothing - value is already on the stack's top
 
