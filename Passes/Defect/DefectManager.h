@@ -17,6 +17,11 @@
 
 namespace borealis {
 
+struct AdditionalDefectInfo {
+    llvm::Function* where;
+    util::option<smt::SatResult> satModel;
+};
+
 class DefectManager :
         public llvm::ModulePass,
         public borealis::logging::ClassLevelLogging<DefectManager> {
@@ -28,6 +33,7 @@ public:
 #include "Util/unmacros.h"
 
     typedef std::set<DefectInfo> DefectData;
+    typedef std::unordered_map<DefectInfo, AdditionalDefectInfo> AdditionalDefectData;
 
     static char ID;
 
@@ -39,6 +45,9 @@ public:
     void addDefect(DefectType type, llvm::Instruction* where);
     void addDefect(const std::string& type, llvm::Instruction* where);
     void addDefect(const DefectInfo& info);
+
+    const AdditionalDefectInfo& getAdditionalInfo(const DefectInfo&) const;
+    AdditionalDefectInfo& getAdditionalInfo(const DefectInfo&);
 
     DefectInfo getDefect(DefectType type, llvm::Instruction* where) const;
     DefectInfo getDefect(const std::string& type, llvm::Instruction* where) const;
@@ -52,6 +61,7 @@ public:
 private:
 
     static DefectData data;
+    static AdditionalDefectData supplemental;
 
 public:
 

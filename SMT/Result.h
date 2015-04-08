@@ -38,19 +38,33 @@ private:
 
 public:
 
-    SatResult() = default;
+    SatResult() : modelPtr(std::make_shared<model_t>()) { }
+
     SatResult(const SatResult&) = default;
-    SatResult(const model_t& model):
+
+    SatResult(const model_t& model) :
         modelPtr(std::make_shared<model_t>(model)) { }
 
     Term::Ptr at(const std::string& str) const {
         return modelPtr->at(str);
     }
 
+    bool hasValue(const std::string& str) const {
+        return !!modelPtr->count(str);
+    }
+
     long long valueAt(const std::string& str) const {
         if (auto ii = llvm::dyn_cast<borealis::OpaqueIntConstantTerm>(at(str))) {
             return ii->getValue();
-        } else UNREACHABLE("Non-integer value in model");
+        } else
+            UNREACHABLE("Non-integer value in model");
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const SatResult& res) {
+        for(auto&& kv : *res.modelPtr) {
+            ost << kv.first << " -> " << kv.second << std::endl;
+        }
+        return ost;
     }
 };
 

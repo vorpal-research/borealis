@@ -29,6 +29,15 @@ void DefectManager::addDefect(const std::string& type, llvm::Instruction* where)
 
 void DefectManager::addDefect(const DefectInfo& info) {
     data.insert(info);
+    supplemental.insert({info, {}});
+}
+
+const AdditionalDefectInfo& DefectManager::getAdditionalInfo(const DefectInfo& di) const {
+    return supplemental.at(di);
+}
+
+AdditionalDefectInfo& DefectManager::getAdditionalInfo(const DefectInfo& di) {
+    return supplemental.at(di);
 }
 
 DefectInfo DefectManager::getDefect(DefectType type, llvm::Instruction* where) const {
@@ -63,5 +72,6 @@ static RegisterPass<DefectManager>
 X("defect-manager", "Pass that collects and filters detected defects");
 
 DefectManager::DefectData DefectManager::data;
+DefectManager::AdditionalDefectData DefectManager::supplemental;
 
 } /* namespace borealis */

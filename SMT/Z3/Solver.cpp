@@ -88,6 +88,7 @@ Solver::check_result Solver::check(
 
 template<class TermCollection>
 SatResult::model_t recollectModel(ExprFactory& z3ef, ExecutionContext& ctx, z3::model implModel, const TermCollection& vars) {
+    TRACE_FUNC
     return
         util::viewContainer(vars)
         .map([&](Term::Ptr var) -> std::pair<std::string, Term::Ptr> {
