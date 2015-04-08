@@ -31,7 +31,7 @@ llvm::GenericValue borealis::SmtDrivenArbiter::map(llvm::Value* val) {
 
         return adjustIntegerToType(numeric, val->getType());
     } else {
-        return adjustIntegerToType(0, val->getType());
+        return adjustIntegerToType(-0xdeadbeef, val->getType());
     }
 }
 

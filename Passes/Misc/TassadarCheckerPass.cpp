@@ -37,10 +37,12 @@ static llvm::GenericValue symbolicPtr(ExecutionEngine& ee) {
     return retVal;
 }
 
-class TassadarCheckerPass : public llvm::ModulePass {
+class TassadarCheckerPass : public llvm::ModulePass, logging::ClassLevelLogging<TassadarCheckerPass> {
 public:
     static char ID;
     TassadarCheckerPass(): llvm::ModulePass(ID) {};
+
+    static constexpr auto loggerDomain() { return "tassadar"; }
 
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override {
         AUX<llvm::DataLayoutPass>::addRequired(AU);
@@ -85,8 +87,8 @@ public:
             try {
                 tassadar.runFunction(func, args);
 
-                errs() << "Defect not proven:" << endl;
-                errs() << "    " << defect << endl;
+                errs() << "Defect not proven:" << endl
+                       << "    " << defect << endl;
             } catch(std::exception& ex) {
                 infos() << "Exception acquired: " << endl
                         << ex.what() << endl
