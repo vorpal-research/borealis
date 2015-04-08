@@ -1,0 +1,38 @@
+[
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/summary/summary_02.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 28
+			}
+		},
+		"type" : "BUF-01"
+	},
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/summary/summary_02.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 30
+			}
+		},
+		"type" : "BUF-01"
+	},
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/summary/summary_02.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 28
+			}
+		},
+		"type" : "INI-03"
+	}
+]
