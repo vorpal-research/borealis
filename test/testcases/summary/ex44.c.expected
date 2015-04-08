@@ -1,10 +1,8 @@
-
 [
-	
 	{
 		"location" : 
 		{
-			"filename" : "test/testcases/necla/ex44.c",
+			"filename" : "test/testcases/summary/ex44.c",
 			"loc" : 
 			{
 				"col" : 5,
@@ -13,11 +11,10 @@
 		},
 		"type" : "BUF-01"
 	},
-	
 	{
 		"location" : 
 		{
-			"filename" : "test/testcases/necla/ex44.c",
+			"filename" : "test/testcases/summary/ex44.c",
 			"loc" : 
 			{
 				"col" : 5,
@@ -26,11 +23,10 @@
 		},
 		"type" : "REQ-01"
 	},
-	
 	{
 		"location" : 
 		{
-			"filename" : "test/testcases/necla/ex44.c",
+			"filename" : "test/testcases/summary/ex44.c",
 			"loc" : 
 			{
 				"col" : 4,
