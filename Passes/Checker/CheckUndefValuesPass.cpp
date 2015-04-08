@@ -7,9 +7,9 @@
 
 #include <llvm/IR/InstVisitor.h>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckUndefValuesPass.h"
-#include "Codegen/intrinsics_manager.h"
 
 namespace borealis {
 
@@ -22,22 +22,24 @@ public:
     UndefInstVisitor(CheckUndefValuesPass* pass) : pass(pass) {}
 
     void visitInstruction(llvm::Instruction& I) {
-        using namespace llvm;
-        using borealis::util::view;
 
         // undefs in phis are normal
-        if (isa<PHINode>(&I)) return;
+        if (llvm::isa<llvm::PHINode>(&I)) return;
 
-        auto& intrinsic_manager = IntrinsicsManager::getInstance();
-        if (auto* call = dyn_cast<CallInst>(&I))
-            if (function_type::UNKNOWN != intrinsic_manager.getIntrinsicType(*call))
-                return;
+        auto&& intrinsic_manager = IntrinsicsManager::getInstance();
+        if (auto* call = llvm::dyn_cast<llvm::CallInst>(&I)) {
+            switch (intrinsic_manager.getIntrinsicType(*call)) {
+                case function_type::INTRINSIC_CONSUME:
+                case function_type::UNKNOWN: break;
+                default: return;
+            }
+        }
 
         // FIXME: Better undef propagation analysis
 
         if (pass->DM->hasDefect(DefectType::NDF_01, &I)) return;
 
-        if (view(I.op_begin(), I.op_end()).any_of(isaer<UndefValue>())) {
+        if (util::viewContainer(I.operands()).any_of(llvm::isaer<llvm::UndefValue>())) {
             pass->DM->addDefect(DefectType::NDF_01, &I);
         }
     }
