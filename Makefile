@@ -335,7 +335,7 @@ clean.cfgparser: clean.dbglog
 	$(MAKE) CXX=$(CXX) -C $(ANDERSEN_CPP_DIR)
 	touch $@
 
-$(EXES): $(OBJECTS) .protobuf .yaml-cpp .cfgparser
+$(EXES): $(OBJECTS) .protobuf .yaml-cpp .cfgparser .andersen
 	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 .google-test:
@@ -347,7 +347,7 @@ clean.google-test:
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make clean
 
 
-$(TEST_EXES): $(TEST_OBJECTS) .protobuf .google-test
+$(TEST_EXES): $(TEST_OBJECTS) .google-test
 	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES) $(TEST_ARCHIVES)
 
 
