@@ -40,6 +40,30 @@ public:
         h.check(q, ps);
     }
 
+    void visitInstruction(llvm::Instruction& I) {
+
+        for (auto&& op : util::viewContainer(I.operands())
+                         .map(llvm::dyn_caster<llvm::ConstantExpr>())
+                         .filter()
+                         .filter([](auto&& op_) { return llvm::Instruction::GetElementPtr == op_->getOpcode(); })) {
+
+            CheckHelper<CheckOutOfBoundsPass> h(pass, &I, DefectType::BUF_01);
+
+            if (h.skip()) return;
+
+            auto q = (
+                pass->FN.State *
+                pass->FN.Predicate->getInequalityPredicate(
+                    pass->FN.Term->getConstTerm(op),
+                    pass->FN.Term->getInvalidPtrTerm()
+                )
+            )();
+            auto ps = pass->PSA->getInstructionState(&I);
+
+            h.check(q, ps);
+        }
+    }
+
 private:
 
     CheckOutOfBoundsPass* pass;
