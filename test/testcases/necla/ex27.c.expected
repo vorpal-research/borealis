@@ -1,6 +1,28 @@
-
 [
-	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex27.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 38
+			}
+		},
+		"type" : "REQ-01"
+	},
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/necla/ex27.c",
+			"loc" : 
+			{
+				"col" : 4,
+				"line" : 39
+			}
+		},
+		"type" : "REQ-01"
+	},
 	{
 		"location" : 
 		{
