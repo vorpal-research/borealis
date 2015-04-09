@@ -24,6 +24,7 @@ class ExecutionContext {
 
     ExprFactory& factory;
     mutable std::unordered_map<std::string, MemArray> memArrays;
+    mutable std::unordered_map<std::string, MemArray> initialMemArrays;
     unsigned long long globalPtr;
     unsigned long long localPtr;
 
@@ -52,6 +53,8 @@ public:
 
     MemArray getCurrentMemoryContents();
     MemArray getCurrentGepBounds();
+
+    MemArray getInitialMemoryContents();
 
     Pointer getGlobalPtr(size_t offsetSize = 1U);
     Pointer getGlobalPtr(size_t offsetSize, Integer origSize);

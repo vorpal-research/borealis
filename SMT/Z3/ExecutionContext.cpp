@@ -53,7 +53,9 @@ void ExecutionContext::gepBounds(const MemArray& value) {
 
 ExecutionContext::MemArray ExecutionContext::get(const std::string& id) const {
     if (not util::containsKey(memArrays, id)) {
-        memArrays.emplace(id, factory.getNoMemoryArray(id));
+        auto mem = factory.getNoMemoryArray(id);
+        memArrays.emplace(id, mem);
+        initialMemArrays.emplace(id, mem);
     }
     return memArrays.at(id);
 }
@@ -73,6 +75,10 @@ ExecutionContext::MemArrayIds ExecutionContext::getMemArrayIds() const {
 
 ExecutionContext::MemArray ExecutionContext::getCurrentMemoryContents() {
     return memory();
+}
+
+ExecutionContext::MemArray ExecutionContext::getInitialMemoryContents() {
+    return initialMemArrays.at(MEMORY_ID);
 }
 
 ExecutionContext::MemArray ExecutionContext::getCurrentGepBounds() {

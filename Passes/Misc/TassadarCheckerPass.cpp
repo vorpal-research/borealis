@@ -90,15 +90,16 @@ public:
                 errs() << "Defect not proven:" << endl
                        << "    " << defect << endl;
             } catch(std::exception& ex) {
-                infos() << "Exception acquired: " << endl
+                auto infos_ = infos();
+                infos_  << "Exception acquired: " << endl
                         << ex.what() << endl
                         << " checking " << defect << endl
                         << " model: " << endl
                         << model.getUnsafe();
-                infos() << "Function: " << llvm::valueSummary(tassadar.getCurrentContext().CurFunction) << endl;
+                infos_  << "Function: " << llvm::valueSummary(tassadar.getCurrentContext().CurFunction) << endl;
                 if((llvm::Instruction*)tassadar.getCurrentContext().CurInst) {
                     auto&& CurInst = tassadar.getCurrentContext().CurInst;
-                    infos() << "Instruction: " << llvm::valueSummary(*std::prev(CurInst)) << endl;
+                    infos_ << "Instruction: " << llvm::valueSummary(*std::prev(CurInst)) << endl;
                 }
 
             }

@@ -6,6 +6,7 @@
  */
 
 #include "State/Transformer/VariableCollector.h"
+#include "State/Transformer/PointerCollector.h"
 #include "Factory/Nest.h"
 #include "Logging/tracer.hpp"
 #include "State/PredicateStateBuilder.h"
@@ -104,6 +105,44 @@ SatResult::model_t recollectModel(ExprFactory& z3ef, ExecutionContext& ctx, z3::
         .template to<SatResult::model_t>();
 }
 
+template<class TermCollection>
+std::pair<SatResult::memory_shape_t, SatResult::memory_shape_t> recollectMemory(
+    ExprFactory& z3ef,
+    ExecutionContext& ctx,
+    z3::model implModel,
+    const TermCollection& ptrs) {
+    TRACE_FUNC
+
+    using namespace logic::z3impl;
+
+    SatResult::memory_shape_t retStart;
+    SatResult::memory_shape_t retFinal;
+
+    if(ptrs.empty()) return { retStart, retFinal };
+
+    auto startMem = ctx.getInitialMemoryContents();
+    auto finalMem = ctx.getCurrentMemoryContents();
+    for (auto&& ptr: ptrs) {
+        auto eptr = SMT<Z3>::doit(ptr, z3ef, &ctx).template to<Z3::Pointer>().getUnsafe();
+
+        auto startV = startMem.select(eptr, z3ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
+        auto finalV = finalMem.select(eptr, z3ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
+
+        auto modelStartV = implModel.eval(getExpr(startV), true);
+        auto modelFinalV = implModel.eval(getExpr(finalV), true);
+        auto modelPtr = implModel.eval(getExpr(eptr), true);
+
+        auto undonePtr = unlogic::undoThat(modelPtr);
+        ASSERTC(llvm::isa<OpaqueIntConstantTerm>(undonePtr));
+        auto actualPtrValue = llvm::cast<OpaqueIntConstantTerm>(undonePtr)->getValue();
+
+        retStart[actualPtrValue] = unlogic::undoThat(modelStartV);
+        retFinal[actualPtrValue] = unlogic::undoThat(modelFinalV);
+    }
+
+    return { std::move(retStart), std::move(retFinal) };
+}
+
 static config::BoolConfigEntry gatherSMTModels("analysis", "collect-models");
 static config::BoolConfigEntry gatherZ3Models("analysis", "collect-z3-models");
 
@@ -146,16 +185,22 @@ Result Solver::isViolated(
 
         if(gatherZ3Models.get(false) or gatherSMTModels.get(false)) {
             auto vars = collectVariables(FactoryNest{}, query, state);
+            auto pointers = collectPointers(FactoryNest{}, query, state);
 
             auto collectedModel = recollectModel(z3ef, ctx, m, vars);
+            auto collectedMems = recollectMemory(z3ef, ctx, m, pointers);
 
-            return Result{ SatResult{ collectedModel } };
+            return SatResult{
+                util::copy_or_share(collectedModel),
+                util::copy_or_share(collectedMems.first),
+                util::copy_or_share(collectedMems.second)
+            };
         }
 
-        return Result{ SatResult{} };
+        return SatResult{};
     }
 
-    return Result{ UnsatResult{} };
+    return UnsatResult{};
 }
 
 Result Solver::isPathImpossible(
@@ -181,16 +226,22 @@ Result Solver::isPathImpossible(
 
         if(gatherZ3Models.get(false) or gatherSMTModels.get(false)) {
             auto vars = collectVariables(FactoryNest{}, path, state);
+            auto pointers = collectPointers(FactoryNest{}, path, state);
 
             auto collectedModel = recollectModel(z3ef, ctx, m, vars);
+            auto collectedMems = recollectMemory(z3ef, ctx, m, pointers);
 
-            return Result{ SatResult{ collectedModel } };
+            return SatResult{
+                util::copy_or_share(collectedModel),
+                util::copy_or_share(collectedMems.first),
+                util::copy_or_share(collectedMems.second)
+            };
         }
 
-        return Result{ SatResult{} };
+        return SatResult{};
     }
 
-    return Result{ UnsatResult{} };
+    return UnsatResult{};
 }
 
 
