@@ -14,37 +14,13 @@ namespace borealis {
 
 class ContractTransmogrifier : public borealis::Transformer<ContractTransmogrifier> {
 
-    typedef borealis::Transformer<ContractTransmogrifier> Base;
+    using Base = borealis::Transformer<ContractTransmogrifier>;
 
 public:
 
-    ContractTransmogrifier(FactoryNest FN) : Base(FN) {}
+    ContractTransmogrifier(FactoryNest FN);
 
-    Term::Ptr transformCmpTerm(CmpTermPtr t) {
-        using llvm::isa;
-
-        auto op = t->getOpcode();
-
-        if (op == llvm::ConditionType::EQ) {
-            if (isa<BoundTerm>(t->getLhv())) {
-                return FN.Term->getCmpTerm(
-                    llvm::ConditionType::UGE,
-                    t->getLhv(),
-                    t->getRhv()
-                );
-            } else if (isa<BoundTerm>(t->getRhv())) {
-                return FN.Term->getCmpTerm(
-                    llvm::ConditionType::UGE,
-                    t->getRhv(),
-                    t->getLhv()
-                );
-            }
-        }
-
-        return t;
-    }
-
-};
+    Term::Ptr transformCmpTerm(CmpTermPtr t);};
 
 } /* namespace borealis */
 
