@@ -183,8 +183,14 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .toHashSet();
 
     for(llvm::CallInst* call : funcs) {
+        llvm::Value* predefinedReturn = nullptr;
+
         for(auto i = 0U; i < call->getNumArgOperands(); ++i) {
             auto&& arg = call->getArgOperand(i);
+            if(call->getCalledFunction()->getAttributes().hasAttribute(i, llvm::Attribute::Returned)) {
+                predefinedReturn = arg;
+            }
+
             if(!arg->getType()->isPointerTy()
              || llvm::isa<llvm::Constant>(arg)
              || call->getCalledFunction()->doesNotAccessMemory(i)) {
@@ -204,8 +210,12 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                 if(auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
             }
         }
-        auto&& replacementCall = mkNondet(IM, M, *call);
-        call->replaceAllUsesWith(replacementCall);
+        if(predefinedReturn) {
+            call->replaceAllUsesWith(predefinedReturn);
+        } else {
+            auto&& replacementCall = mkNondet(IM, M, *call);
+            call->replaceAllUsesWith(replacementCall);
+        }
         call->eraseFromParent();
 
         FunctionsDecomposed++;
