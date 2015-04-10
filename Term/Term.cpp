@@ -44,14 +44,14 @@ Term::Set Term::getFullTermSet(Term::Ptr term) {
 bool Term::equals(const Term* other) const {
     if (other == nullptr) return false;
     return classTag == other->classTag &&
-            type == other->type &&
+            // type == other->type &&
             name == other->name &&
-            retypable == other->retypable &&
+            // retypable == other->retypable &&
             util::equal(subterms, other->subterms, ops::deref_equals_to);
 }
 
 size_t Term::hashCode() const {
-    return util::hash::defaultHasher()(classTag, type, name, retypable, subterms);
+    return util::hash::defaultHasher()(classTag, /*type,*/ name, /*retypable,*/ subterms);
 }
 
 bool operator==(const Term& a, const Term& b) {
