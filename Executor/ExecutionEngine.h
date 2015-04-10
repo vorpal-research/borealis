@@ -101,6 +101,7 @@ public:
     const llvm::DataLayout* getDataLayout() const { return TD; }
     ExecutorContext& getCurrentContext() { return ECStack.back(); }
     ExecutorContext& getContext(size_t which) { return ECStack.at(which); }
+    ExecutorContext& getCallerContext() { return ECStack.at(ECStack.size() - 2); }
     bool isSymbolicPointer(void* ptr) {
         return Mem.isOpaquePointer(ptr);
     }

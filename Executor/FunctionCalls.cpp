@@ -89,10 +89,18 @@ static bool isMemmove(const llvm::Function* F, const llvm::TargetLibraryInfo* TL
         (TLI->getLibFunc(F->getName(), f) && (f ==  lfn::memmove));
 }
 
+static BoolConfigEntry NullableMallocs("analysis", "nullable-mallocs");
+
 llvm::GenericValue ExecutionEngine::executeMalloc(const llvm::Function* f, const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC
 
     // FIXME: different versions of malloc have different parameters, check
+    if(NullableMallocs.get(true)) {
+        auto predictedResult = Judicator->map(getCallerContext().Caller.getInstruction());
+        if (predictedResult.PointerVal == nullptr) {
+            return predictedResult;
+        }
+    }
 
     llvm::GenericValue RetVal{};
     auto sz = TD->getTypeStoreSize(f->getReturnType()->getPointerElementType());
@@ -249,6 +257,7 @@ util::option<llvm::GenericValue> ExecutionEngine::callExternalFunction(
     llvm::Function *F,
     const std::vector<llvm::GenericValue> &ArgVals) {
     TRACE_FUNC;
+    TRACE_PARAM(F->getName());
     using util::just;
     using util::nothing;
 
@@ -266,7 +275,7 @@ util::option<llvm::GenericValue> ExecutionEngine::callExternalFunction(
     if(IM->getIntrinsicType(F) == function_type::BUILTIN_BOR_ASSERT) {
         TRACES() << "Assertion discovered, checking" << endl;
         if(!ArgVals[0].IntVal.getLimitedValue()) {
-            throw assertion_failed{};
+            throw assertion_failed{ llvm::valueSummary(getCallerContext().Caller.getInstruction()) };
         }
         return util::nothing();
     }
@@ -280,7 +289,10 @@ util::option<llvm::GenericValue> ExecutionEngine::callExternalFunction(
     llvm::GenericValue RetVal;
 
     if(IM->getIntrinsicType(F) == function_type::INTRINSIC_ALLOC) {
-        RetVal.PointerVal = Mem.AllocateMemory(ArgVals[2].IntVal.getLimitedValue());
+        TRACE_BLOCK("function_type::INTRINSIC_ALLOC")
+        RetVal.PointerVal = Mem.AllocateMemory(
+            ArgVals[2].IntVal.getLimitedValue() * TD->getTypeStoreSize(F->getReturnType()->getPointerElementType())
+        );
         return just(RetVal);
     }
     // LLVM intrinsics

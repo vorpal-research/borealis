@@ -1246,7 +1246,7 @@ void borealis::ExecutionEngine::executeCall(llvm::CallSite CS) {
             return;
         }
         case function_type::ACTION_DEFECT: {
-            throw assertion_failed{};
+            throw assertion_failed{ llvm::valueSummary(CS.getInstruction()) };
         }
         default:
             return;

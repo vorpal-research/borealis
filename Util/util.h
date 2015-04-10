@@ -189,7 +189,8 @@ inline std::string valueSummary(const Value* v) {
     } else if (auto* bb = llvm::dyn_cast<BasicBlock>(v)) {
         return ("basic block " + bb->getName()).str();
     } else if (auto* i = llvm::dyn_cast<Instruction>(v)) {
-        return borealis::util::toString(*i).c_str()+2;
+        auto ss = borealis::util::toString(*i);
+        return llvm::StringRef(ss).trim().str();
     } else return borealis::util::toString(*v);
 }
 

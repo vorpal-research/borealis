@@ -37,10 +37,12 @@ static llvm::GenericValue symbolicPtr(ExecutionEngine& ee) {
     return retVal;
 }
 
-class TassadarCheckerPass : public llvm::ModulePass {
+class TassadarCheckerPass : public llvm::ModulePass, logging::ClassLevelLogging<TassadarCheckerPass> {
 public:
     static char ID;
     TassadarCheckerPass(): llvm::ModulePass(ID) {};
+
+    static constexpr auto loggerDomain() { return "tassadar"; }
 
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override {
         AUX<llvm::DataLayoutPass>::addRequired(AU);
@@ -60,15 +62,14 @@ public:
     bool runOnModule(llvm::Module& M) override {
         TRACE_FUNC;
 
-
         auto&& DM = getAnalysis<DefectManager>();
         for(auto&& defect: DM.getData()) if(auto&& model = DM.getAdditionalInfo(defect).satModel) {
+            ASSERT(!model.getUnsafe().empty(), "Cannot run tassadar checker without collected data. Did you forget to enable model collection?");
+
             llvm::Function* func = DM.getAdditionalInfo(defect).where;
             auto st = getAnalysis<SlotTrackerPass>().getSlotTracker(func);
 
             auto judicator = std::make_shared<SmtDrivenArbiter>(st, model.getUnsafe());
-
-
 
             ExecutionEngine tassadar{&M,
                 &getAnalysis<llvm::DataLayoutPass>().getDataLayout(),
@@ -78,7 +79,6 @@ public:
                 judicator
             };
 
-
             auto args =
                 util::viewContainer(func->getArgumentList())
                     .map(LAM(arg, arg.getType()->isPointerTy() ? symbolicPtr(tassadar) : judicator->map(&arg) ))
@@ -87,10 +87,21 @@ public:
             try {
                 tassadar.runFunction(func, args);
 
-                std::cerr << "Defect not proven:" << std::endl;
-                std::cerr << "    " << defect << std::endl;
+                errs() << "Defect not proven:" << endl
+                       << "    " << defect << endl;
             } catch(std::exception& ex) {
-                errs() << ex.what() << endl;
+                auto infos_ = infos();
+                infos_  << "Exception acquired: " << endl
+                        << ex.what() << endl
+                        << " checking " << defect << endl
+                        << " model: " << endl
+                        << model.getUnsafe();
+                infos_  << "Function: " << llvm::valueSummary(tassadar.getCurrentContext().CurFunction) << endl;
+                if((llvm::Instruction*)tassadar.getCurrentContext().CurInst) {
+                    auto&& CurInst = tassadar.getCurrentContext().CurInst;
+                    infos_ << "Instruction: " << llvm::valueSummary(*std::prev(CurInst)) << endl;
+                }
+
             }
         }
 

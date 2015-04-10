@@ -9,21 +9,9 @@
 
 namespace borealis {
 
-struct TermNameHash {
-    size_t operator()(Term::Ptr trm) const noexcept {
-        return util::hash::simple_hash_value(trm->getName());
-    }
-};
-
-struct TermNameEquals {
-    bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
-        return lhv->getName() == rhv->getName();
-    }
-};
-
 class VariableCollector: public Transformer<VariableCollector> {
 
-    std::unordered_set<Term::Ptr, TermNameHash, TermNameEquals> collection;
+    std::unordered_set<Term::Ptr, TermHash, TermEquals> collection;
 
 public:
     VariableCollector(const FactoryNest& FN) : Transformer(FN) { }
@@ -38,17 +26,17 @@ public:
         return term;
     }
 
-    const std::unordered_set<Term::Ptr, TermNameHash, TermNameEquals>& getCollectedTerms() const {
+    const std::unordered_set<Term::Ptr, TermHash, TermEquals>& getCollectedTerms() const {
         return collection;
     }
 
-    std::unordered_set<Term::Ptr, TermNameHash, TermNameEquals>& getCollectedTerms() {
+    std::unordered_set<Term::Ptr, TermHash, TermEquals>& getCollectedTerms() {
         return collection;
     }
 };
 
 template<class ...Transformables>
-std::unordered_set<Term::Ptr, TermNameHash, TermNameEquals> collectVariables(FactoryNest FN, Transformables&... someLogic) {
+std::unordered_set<Term::Ptr, TermHash, TermEquals> collectVariables(FactoryNest FN, Transformables&... someLogic) {
     VariableCollector vc(FN);
     util::use(vc.transform(someLogic)...);
     return std::move(vc.getCollectedTerms());

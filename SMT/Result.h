@@ -28,22 +28,35 @@ public:
 class SatResult {
 public:
     using model_t = std::unordered_map<std::string, Term::Ptr>;
+    using memory_shape_t = std::unordered_map<uintptr_t, Term::Ptr>;
 
 private:
     std::shared_ptr<model_t> modelPtr;
+    std::shared_ptr<memory_shape_t> initialMemoryShapePtr;
+    std::shared_ptr<memory_shape_t> finalMemoryShapePtr;
 
     friend struct borealis::util::json_traits<SatResult>;
 
     const model_t& getModel() const { return *modelPtr; } // this is here only for json traits
+    const memory_shape_t& getInitialMemoryShape() const { return *initialMemoryShapePtr; } // this is here only for json traits
+    const memory_shape_t& getFinalMemoryShape() const { return *finalMemoryShapePtr; } // this is here only for json traits
 
 public:
 
-    SatResult() : modelPtr(std::make_shared<model_t>()) { }
+    SatResult() :
+        modelPtr(std::make_shared<model_t>()),
+        initialMemoryShapePtr(std::make_shared<memory_shape_t>()),
+        finalMemoryShapePtr(std::make_shared<memory_shape_t>())
+        { }
 
     SatResult(const SatResult&) = default;
 
-    SatResult(const model_t& model) :
-        modelPtr(std::make_shared<model_t>(model)) { }
+    SatResult(
+            std::shared_ptr<model_t> modelPtr,
+            std::shared_ptr<memory_shape_t> initialShapePtr,
+            std::shared_ptr<memory_shape_t> finalShapePtr
+    ) :
+        modelPtr(modelPtr), initialMemoryShapePtr(initialShapePtr), finalMemoryShapePtr(finalShapePtr) { }
 
     Term::Ptr at(const std::string& str) const {
         return modelPtr->at(str);
@@ -52,6 +65,8 @@ public:
     bool hasValue(const std::string& str) const {
         return !!modelPtr->count(str);
     }
+
+    bool empty() const { return modelPtr -> empty(); }
 
     long long valueAt(const std::string& str) const {
         if (auto ii = llvm::dyn_cast<borealis::OpaqueIntConstantTerm>(at(str))) {

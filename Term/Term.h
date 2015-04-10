@@ -97,6 +97,18 @@ protected:
 std::ostream& operator<<(std::ostream& s, Term::Ptr t);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Term::Ptr t);
 
+struct TermHash {
+    size_t operator()(Term::Ptr trm) const noexcept {
+        return trm->hashCode();
+    }
+};
+
+struct TermEquals {
+    bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
+        return lhv->equals(rhv.get());
+    }
+};
+
 } /* namespace borealis */
 
 namespace std {

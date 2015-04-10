@@ -87,6 +87,14 @@ struct TypeUtils {
         return TypeSizer().visit(type);
     }
 
+    static Type::Ptr getPointerElementType(Type::Ptr type) {
+        if(auto ptr = llvm::dyn_cast<type::Pointer>(type)) {
+            return ptr->getPointed();
+        } else {
+            return nullptr;
+        }
+    }
+
     static unsigned long long getStructOffsetInElems(Type::Ptr type, unsigned idx) {
         if (auto* structType = llvm::dyn_cast<type::Record>(type)) {
             const auto& recordBody = structType->getBody()->get();

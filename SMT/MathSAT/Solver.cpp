@@ -136,13 +136,14 @@ smt::Result Solver::isViolated(
 
             auto collectedModel = recollectModel(msatef, ctx, m, vars);
 
-            return Result{ SatResult{ collectedModel } };
+            // FIXME: implement memory collection for MathSAT
+            return SatResult{ util::copy_or_share(collectedModel), nullptr, nullptr };
         }
 
-        return Result{ SatResult{} };
+        return SatResult{};
     }
 
-    return Result{ UnsatResult{} };
+    return UnsatResult{};
 }
 
 smt::Result Solver::isPathImpossible(
@@ -171,13 +172,14 @@ smt::Result Solver::isPathImpossible(
 
             auto collectedModel = recollectModel(msatef, ctx, m, vars);
 
-            return Result{ SatResult{ collectedModel } };
+            // FIXME: implement memory collection for MathSAT
+            return SatResult{ util::copy_or_share(collectedModel), nullptr, nullptr };
         }
 
-        return Result{ SatResult{} };
+        return SatResult{};
     }
 
-    return Result{ UnsatResult{} };
+    return UnsatResult{};
 }
 
 Dynamic Solver::getInterpolant(

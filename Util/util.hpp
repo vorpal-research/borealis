@@ -31,6 +31,21 @@ std::vector<typename std::common_type<Args...>::type> make_vector(Args&& ...args
     return std::vector<typename std::common_type<Args...>::type>{ std::forward<Args>(args)... };
 }
 
+template<class T>
+std::shared_ptr<T> copy_or_share(const T& value) {
+    return std::make_shared<T>(value);
+}
+
+template<class T>
+std::shared_ptr<T> copy_or_share(std::enable_shared_from_this<T>& value) {
+    return value.shared_from_this();
+}
+
+template<class T>
+std::shared_ptr<const T> copy_or_share(const std::enable_shared_from_this<T>& value) {
+    return value.shared_from_this();
+}
+
 // java-style reference
 template<class T>
 class ref {
