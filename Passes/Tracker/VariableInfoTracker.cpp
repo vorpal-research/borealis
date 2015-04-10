@@ -31,16 +31,13 @@ using borealis::util::nothing;
 using borealis::util::just;
 
 static VarInfo mkVI(const clang::FileManager&, const llvm::DISubprogram& node,
-        const borealis::DebugInfoFinder& context,
+        const borealis::DebugInfoFinder&,
         clang::Decl* ast = nullptr, bool allocated = false) {
-
-    DICompositeType dt = context.resolve(node.getType().getTypeDerivedFrom());
-
     VarInfo ret{
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        DIType(dt.getTypeArray().getElement(0)),
+        node.getType(),
         ast
     };
     return ret;
@@ -53,7 +50,7 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIGlobalVariable& nod
         just(node.getName().str()),
         just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        context.resolve(node.getType()),
+        stripAliases(context, context.resolve(node.getType())),
         ast
     };
     return ret;
@@ -66,7 +63,7 @@ static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
         just(node.getName().str()),
         just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
         allocated ? VarInfo::Allocated : VarInfo::Plain,
-        context.resolve(node.getType()),
+        stripAliases(context, context.resolve(node.getType())),
         ast
     };
     return ret;
@@ -93,8 +90,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     ctx = &M.getContext();
     m = &M;
 
-    borealis::DebugInfoFinder dfi;
-
+    dfi = DebugInfoFinder{};
     dfi.processModule(M);
 
     auto& sm = GetAnalysis<sm_t>::doit(this).provide();
@@ -129,7 +125,8 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
         if (!DIDescriptor(msp).isSubprogram()) continue;
 
         DISubprogram sp(msp);
-        vars.put(sp.getFunction(), mkVI(sm, sp, dfi));
+        // FIXME: this is generally fucked up...
+        vars.put(sp.getFunction(), mkVI(sm, sp, dfi, nullptr, true));
     }
 
 // FIXME: decide whether we want this or not

@@ -31,6 +31,7 @@ class VariableInfoTracker : public llvm::ModulePass {
     VarInfoContainer vars;
     llvm::LLVMContext* ctx;
     const llvm::Module* m;
+    DebugInfoFinder dfi;
 
 public:
 
@@ -50,6 +51,7 @@ public:
     using ValueDescriptors = std::vector<ValueDescriptor>;
     llvm::LLVMContext& getLLVMContext() const { return *ctx; }
     const llvm::Module& getModule() const { return *m; }
+    const DebugInfoFinder& getDebugInfo() const { return dfi; }
 
 private:
 
