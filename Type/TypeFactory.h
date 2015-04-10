@@ -153,7 +153,9 @@ public:
 
     Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const {
 
-        if(type->isIntegerTy())
+        if(type->isVoidTy())
+            return getUnknownType(); // FIXME
+        else if(type->isIntegerTy())
             return (type->getIntegerBitWidth() == 1) ? getBool() : getInteger(32, sign); // XXX: 32 -> ???
         else if(type->isFloatingPointTy())
             return getFloat();
