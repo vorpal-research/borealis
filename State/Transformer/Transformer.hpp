@@ -54,6 +54,8 @@ protected:
     TermBuilder builder(long long val) { return { FN.Term, FN.Term->getOpaqueConstantTerm(val) }; }
     TermBuilder null() { return { FN.Term, FN.Term->getNullPtrTerm() }; }
     TermBuilder invalid() { return { FN.Term, FN.Term->getInvalidPtrTerm() }; }
+    TermBuilder ret(const llvm::Function* F) { return { FN.Term, FN.Term->getReturnValueTerm(F) }; }
+    TermBuilder arg(const llvm::Argument* A) { return { FN.Term, FN.Term->getArgumentTerm(A) }; }
 
 public:
 
