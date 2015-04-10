@@ -157,6 +157,10 @@ enum class Signedness {
     Signed   = 2
 };
 
+#include "Util/generate_macros.h"
+GENERATE_ENUM_PRINT(Signedness, Unknown, Unsigned, Signed);
+#include "Util/generate_unmacros.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 
 llvm::Constant* getBoolConstant(bool b);
