@@ -131,7 +131,7 @@ struct MemorySimulator::Impl {
             globals[GVar] = allocateMemoryForGV(GVar, *DL);
             TRACE_PARAM(hex(buffer_t{globals[GVar].get(), size}));
 
-            parent->initializeMemory(GVar->getInitializer(), globals[GVar].get());
+            if(GVar->hasInitializer()) parent->initializeMemory(GVar->getInitializer(), globals[GVar].get());
 
             TRACE_PARAM(hex(buffer_t{globals[GVar].get(), size}));
 

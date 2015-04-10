@@ -13,6 +13,7 @@
 #include <llvm/IR/Metadata.h>
 
 #include "Util/util.h"
+#include "Util/collections.hpp"
 
 namespace borealis {
 
@@ -39,7 +40,7 @@ util::option<std::string> getAsCompileTimeString(const llvm::Value* value);
 std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value);
 
 
-
+#include "Util/macros.h"
 #include "Util/generate_macros.h"
 #define STEAL_FROM_LLVM_BEGIN(NAME) \
     struct NAME : public llvm::NAME { \
@@ -85,15 +86,60 @@ struct DITypedArray : public llvm::DIArray {
         return getFieldAs<T>(Idx);
     }
 
+    struct ElementAccessor {
+        const DITypedArray* self;
+        T operator()(unsigned ix) const { return self->getElement(ix); }
+    };
+
+    auto asView() const QUICK_RETURN(util::range(0U, this->getNumElements()).map(ElementAccessor{this}));
+    auto begin() const QUICK_RETURN(this->asView().begin())
+    auto end() const QUICK_RETURN(this->asView().end())
+
     // TODO: iterators?
 };
 
 STEAL_FROM_LLVM(DIDerivedType)
 STEAL_FROM_LLVM_BEGIN(DICompositeType)
+    bool Verify() const {
+        return llvm::DICompositeType::Verify() && getTag() != llvm::dwarf::DW_TAG_array_type;
+    }
+
     DITypedArray<DIType> getTypeArray() const  {
         return llvm::DICompositeType::getTypeArray();
     }
 STEAL_FROM_LLVM_END()
+
+struct DIArrayType : public llvm::DIDerivedType {
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIArrayType);
+    DIArrayType(const llvm::MDNode* node): DIDerivedType(node) {
+        if(this->getTag() != llvm::dwarf::DW_TAG_array_type) this->DbgNode = nullptr;
+    };
+    DIArrayType(llvm::DIDerivedType node): DIArrayType(static_cast<llvm::MDNode*>(node)) {};
+    DIArrayType(const llvm::DIDescriptor& node): DIArrayType(static_cast<llvm::MDNode*>(node)) {};
+
+    llvm::DITypeRef getBaseType() const {
+        return getTypeDerivedFrom();
+    }
+
+    unsigned getArraySize() const {
+        return getUnsignedField(5);
+    }
+};
+
+struct DISubroutineType : public DICompositeType {
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(DISubroutineType);
+    DISubroutineType(const llvm::MDNode* node): DICompositeType(node) {
+        if(this->getTag() != llvm::dwarf::DW_TAG_subroutine_type) this->DbgNode = nullptr;
+    };
+    DISubroutineType(DICompositeType node): DISubroutineType(static_cast<llvm::MDNode*>(node)) {};
+    DISubroutineType(const llvm::DIDescriptor& node): DISubroutineType(static_cast<llvm::MDNode*>(node)) {};
+
+    llvm::DITypeRef getReturnType() const {
+        return getTypeArray().getElement(0);
+    }
+
+    auto getArgumentTypeView() const QUICK_RETURN(getTypeArray().asView().drop(1))
+};
 
 struct DIMember : public llvm::DIDerivedType {
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIMember);
@@ -214,6 +260,7 @@ struct DIBorealisVarDesc : public llvm::DIDescriptor {
 #undef STEAL_FROM_LLVM_BEGIN
 
 #include "Util/generate_unmacros.h"
+#include "Util/unmacros.h"
 
 /// DebugInfoFinder tries to list all debug info MDNodes used in a module. To
 /// list debug info MDNodes used by an instruction, DebugInfoFinder uses
@@ -318,7 +365,7 @@ private:
 std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::set<DIType>& collected);
 std::set<DIType> flattenTypeTree(const DebugInfoFinder& dfi,DIType di);
 std::unordered_set<const llvm::Type*> flattenTypeTree(const llvm::Type* tp);
-DIType stripAliases(const DebugInfoFinder& dfi,DIType tp);
+DIType stripAliases(const DebugInfoFinder& dfi, llvm::DITypeRef tp);
 std::map<llvm::Type*, DIType>& flattenTypeTree(
     const DebugInfoFinder& dfi,
     const std::pair<llvm::Type*, DIType>& tp,

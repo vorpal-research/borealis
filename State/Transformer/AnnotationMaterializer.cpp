@@ -294,14 +294,19 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
 
     if (name == "result") {
         if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
+            if(ctx.func->getReturnType()->isVoidTy()){
+                failWith("\\result cannot be used with functions returning void");
+            }
+
             auto&& desc = forValueSingle(ctx.func);
-            auto&& funcType = DICompositeType(desc.type);
-            auto&& retType = funcType.getTypeArray().getElement(0);
-            auto&& retType_ = stripAliases(pimpl->MI->getDebugInfo(), retType);
+            auto&& funcType = DISubroutineType(desc.type);
+            ASSERTC(funcType);
+            auto&& diContext = pimpl->MI->getDebugInfo();
+            auto&& retType_ = stripAliases(diContext, funcType.getReturnType());
             return factory().getReturnValueTerm(ctx.func, retType_.getSignedness());
 
         } else {
-            failWith("\result can only be bound to functions' outer scope");
+            failWith("\\result can only be bound to functions' outer scope");
         }
 
     } else if (name == "null" || name == "nullptr") {
@@ -320,10 +325,9 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
 
             ASSERTC(val < ctx.func->arg_size());
 
-            auto&& arg = ctx.func->arg_begin();
-            std::advance(arg, val);
+            auto&& arg = std::next(ctx.func->arg_begin(), val);
 
-            auto&& desc = forValueSingle(ctx.func);
+            auto&& desc = forValueSingle(&*arg);
             return factory().getArgumentTerm(arg, desc.type.getSignedness());
 
         } else {

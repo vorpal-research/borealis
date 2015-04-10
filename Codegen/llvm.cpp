@@ -185,8 +185,10 @@ std::set<DIType> flattenTypeTree(const DebugInfoFinder& dfi,DIType di) {
     return std::move(collected);
 }
 
-DIType stripAliases(const DebugInfoFinder& dfi,DIType tp) {
-    if(DIAlias alias = tp) return stripAliases(dfi, dfi.resolve(alias.getOriginal()));
+DIType stripAliases(const DebugInfoFinder& dfi, llvm::DITypeRef tref) {
+    auto tp = dfi.resolve(tref);
+    if(DIAlias alias = tp)
+        return stripAliases(dfi, alias.getOriginal());
     else return tp;
 }
 
@@ -196,18 +198,32 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
     std::map<llvm::Type*, DIType>& collected) {
 
     auto* type = tp.first;
+
+    if(!tp.second) return collected;
+
     auto di = stripAliases(dfi, tp.second);
 
     if(collected.count(type)) return collected;
     collected.insert({type, di});
 
-    if(DICompositeType struct_ = di) {
+    if(DIArrayType arr_ = di) {
+        auto member = stripAliases(dfi, arr_.getBaseType());
+        ASSERTC(tp.first->isArrayTy());
+        auto llmember = tp.first->getArrayElementType();
+        flattenTypeTree(dfi, {llmember, member}, collected);
+
+    } else if(DICompositeType struct_ = di) {
         auto members = struct_.getTypeArray();
         ASSERTC(members.getNumElements() == type->getNumContainedTypes());
         for(auto i = 0U; i < members.getNumElements(); ++i) {
             auto mem = type->getContainedType(i);
             auto mmem = members.getElement(i);
-            flattenTypeTree(dfi, {mem, mmem}, collected);
+
+            if (!mmem){
+                ASSERTC(mem->isVoidTy()); // typical for functions returning void
+            } else {
+                flattenTypeTree(dfi, {mem, mmem}, collected);
+            }
         }
     } else if(DIDerivedType derived = di) {
         flattenTypeTree(dfi, {type->getContainedType(0), dfi.resolve(derived.getTypeDerivedFrom())}, collected);

@@ -84,10 +84,10 @@ public:
 
         std::string pattern = DumpOutputFileOpt.get(DumpOutputFileDefault);
         std::ofstream ofs{pattern};
-        ofs << "[" << std::endl;
 
         if(funcs.empty()) return false;
 
+        ofs << "[" << std::endl;
         try {
             tassadar.runFunction(util::head(funcs), {});
             ofs << "null";

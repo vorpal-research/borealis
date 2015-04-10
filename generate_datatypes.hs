@@ -115,6 +115,7 @@ adjustTypeCpp (TTyApp (TTyApp (Single "Map") k) v)  = case (adjustTypeCpp k, adj
                                                                kvMap
                                                                (cref kvMap) 
                                                                (["#include <map>"] ++ kincluder ++ vincluder)
+adjustTypeCpp (TTyApp (Single "Exact") x)           = CppTypeDescription x x []
 adjustTypeCpp wha                                   = error (show wha ++ ": unsupported generic type used")
 
 data CppFieldDescriptor = CppFieldDescriptor{ 
