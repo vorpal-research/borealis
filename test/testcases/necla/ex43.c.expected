@@ -46,7 +46,7 @@
 			"filename" : "test/testcases/necla/ex43.c",
 			"loc" : 
 			{
-				"col" : 53,
+				"col" : 4,
 				"line" : 62
 			}
 		},
@@ -124,7 +124,7 @@
 			"filename" : "test/testcases/necla/ex43.c",
 			"loc" : 
 			{
-				"col" : 27,
+				"col" : 9,
 				"line" : 97
 			}
 		},
@@ -137,7 +137,7 @@
 			"filename" : "test/testcases/necla/ex43.c",
 			"loc" : 
 			{
-				"col" : 55,
+				"col" : 27,
 				"line" : 97
 			}
 		},
@@ -156,7 +156,20 @@
 		},
 		"type" : "REQ-01"
 	},
-	
+
+	{
+		"location" :
+		{
+			"filename" : "test/testcases/necla/ex43.c",
+			"loc" :
+			{
+				"col" : 23,
+				"line" : 107
+			}
+		},
+		"type" : "REQ-01"
+	},
+
 	{
 		"location" : 
 		{
