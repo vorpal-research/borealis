@@ -32,6 +32,7 @@ Term::Ptr ContractTransmogrifier::transformCmpTerm(CmpTermPtr t) {
             }
             break;
         };
+        default: break;
     }
 
     return t;
