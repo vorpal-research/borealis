@@ -45,10 +45,9 @@ public:
         auto&& _cnd = tr->transform(getCnd());
         auto&& _tru = tr->transform(getTru());
         auto&& _fls = tr->transform(getFls());
-        auto&& _type = getTermType(tr->FN.Type, _cnd, _tru, _fls);
         TERM_ON_CHANGED(
             getCnd() != _cnd || getTru() != _tru || getFls() != _fls,
-            new Self( _type, _cnd, _tru, _fls )
+            new Self( getTermType(tr->FN.Type, _cnd, _tru, _fls), _cnd, _tru, _fls )
         );
     }
 
