@@ -89,6 +89,8 @@ public:
 
                 errs() << "Defect not proven:" << endl
                        << "    " << defect << endl;
+                DM.getAdditionalInfo(defect).runResult = AdditionalDefectInfo::RunResult::Disproven;
+
             } catch(std::exception& ex) {
                 auto infos_ = infos();
                 infos_  << "Exception acquired: " << endl
@@ -102,6 +104,7 @@ public:
                     infos_ << "Instruction: " << llvm::valueSummary(*std::prev(CurInst)) << endl;
                 }
 
+                DM.getAdditionalInfo(defect).runResult = AdditionalDefectInfo::RunResult::Proven;
             }
         }
 

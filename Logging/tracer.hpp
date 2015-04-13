@@ -60,10 +60,10 @@ private:
         borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain));
 
 #define TRACE_PARAM(P) borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
-    << #P << " = " << P << borealis::logging::endl;
+    << #P << " = " << P << borealis::logging::endl
 
 #define TRACE_FMT(P...) borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain) \
-    << tfm::format(P) << borealis::logging::endl;
+    << tfm::format(P) << borealis::logging::endl
 
 #define TRACES() borealis::logging::dbgsFor(borealis::logging::func_tracer::logDomain)
 

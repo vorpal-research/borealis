@@ -19,71 +19,61 @@
 namespace borealis {
 namespace util {
 
-template<class T>
-struct json_traits<std::vector<T>> {
-    typedef std::unique_ptr<std::vector<T>> optional_ptr_t;
+template<class Con, class T>
+inline Con& addToContainer(Con& con, const T& value) {
+    static_assert(sizeof(value) > 0, "Please overload this function to work properly");
+    return con;
+}
 
-    static Json::Value toJson(const std::vector<T>& val) {
+template<class Container>
+struct container_json_traits {
+    using value_type = Container;
+    using optional_ptr_t = std::unique_ptr<value_type>;
+
+    static Json::Value toJson(const value_type& val) {
         Json::Value ret;
         for(const auto& m : val) ret.append(util::toJson(m));
         return ret;
     }
 
     static optional_ptr_t fromJson(const Json::Value& val) {
-        std::vector<T> ret;
+        using T = std::decay_t<decltype(*std::begin(std::declval<Container>()))>;
+
+        value_type ret;
         if(!val.isArray()) return nullptr;
+
         for(const auto& m : val) {
             if(auto v = util::fromJson<T>(m)) {
-                ret.push_back(*v);
-            }
+                addToContainer(ret, *v);
+            } else return nullptr;
         }
-        return optional_ptr_t { new std::vector<T>{std::move(ret)} };
+        return optional_ptr_t { new value_type{std::move(ret)} };
     }
 };
 
-template<class T>
-struct json_traits<std::set<T>> {
-    typedef std::unique_ptr<std::set<T>> optional_ptr_t;
+template<class T, class Allocator>
+inline std::vector<T, Allocator>& addToContainer(std::vector<T, Allocator>& vec, const T& value) {
+    vec.push_back(value);
+    return vec;
+}
+template<class T, class Allocator>
+struct json_traits<std::vector<T, Allocator>> : container_json_traits<std::vector<T, Allocator>> {};
 
-    static Json::Value toJson(const std::set<T>& val) {
-        Json::Value ret;
-        for(const auto& m : val) ret.append(util::toJson(m));
-        return ret;
-    }
+template<class T, class Compare, class Allocator>
+inline std::set<T, Compare, Allocator>& addToContainer(std::set<T, Compare, Allocator>& s, const T& value) {
+    s.insert(value);
+    return s;
+}
+template<class T, class Compare, class Allocator>
+struct json_traits<std::set<T, Compare, Allocator>> : container_json_traits<std::set<T, Compare, Allocator>> {};
 
-    static optional_ptr_t fromJson(const Json::Value& val) {
-        std::set<T> ret;
-        if(!val.isArray()) return nullptr;
-        for(const auto& m : val) {
-            if(auto v = util::fromJson<T>(m)) {
-                ret.insert(*v);
-            }
-        }
-        return optional_ptr_t { new std::set<T>{std::move(ret)} };
-    }
-};
-
-template<class T>
-struct json_traits<std::unordered_set<T>> {
-    typedef std::unique_ptr<std::unordered_set<T>> optional_ptr_t;
-
-    static Json::Value toJson(const std::unordered_set<T>& val) {
-        Json::Value ret;
-        for(const auto& m : val) ret.append(util::toJson(m));
-        return ret;
-    }
-
-    static optional_ptr_t fromJson(const Json::Value& val) {
-        std::unordered_set<T> ret;
-        if(!val.isArray()) return nullptr;
-        for(const auto& m : val) {
-            if(auto v = util::fromJson<T>(m)) {
-                ret.insert(*v);
-            }
-        }
-        return optional_ptr_t { new std::unordered_set<T>{std::move(ret)} };
-    }
-};
+template<class T, class Hash, class Compare, class Allocator>
+inline std::unordered_set<T, Hash, Compare, Allocator>& addToContainer(std::unordered_set<T, Hash, Compare, Allocator>& s, const T& value) {
+    s.insert(value);
+    return s;
+}
+template<class T, class Hash, class Compare, class Allocator>
+struct json_traits<std::unordered_set<T, Hash, Compare, Allocator>> : container_json_traits<std::unordered_set<T, Hash, Compare, Allocator>> {};
 
 template<class K, class V, class Hash, class Equal, class Alloc>
 struct json_traits<std::unordered_map<K, V, Hash, Equal, Alloc>> {
