@@ -28,6 +28,9 @@
 
 namespace borealis {
 
+namespace lfn = llvm::LibFunc;
+
+
 char FunctionDecomposer::ID;
 static RegisterPass<FunctionDecomposer>
 X("decompose-functions", "Replace all unknown functions with corresponding borealis intrinsics");
