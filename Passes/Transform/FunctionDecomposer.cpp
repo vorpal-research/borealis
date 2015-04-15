@@ -5,26 +5,26 @@
  *      Author: belyaev
  */
 
-#include "Passes/Transform/FunctionDecomposer.h"
-#include "Codegen/intrinsics_manager.h"
-#include "Statistics/statistics.h"
-#include "Util/passes.hpp"
 
-#include "Config/config.h"
 
 #include <string>
 #include <unordered_set>
 
 #include <llvm/Analysis/MemoryBuiltins.h>
-
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Argument.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
-
 #include <llvm/Target/TargetLibraryInfo.h>
-#include <Util/functional.hpp>
+
+#include "Passes/Transform/FunctionDecomposer.h"
+#include "Codegen/intrinsics_manager.h"
+#include "Statistics/statistics.h"
+#include "Util/passes.hpp"
+#include "Config/config.h"
+#include "Util/functional.hpp"
+#include "Passes/Misc/FuncInfoProvider.h"
 
 namespace borealis {
 
@@ -151,6 +151,7 @@ inline llvm::CallInst* mkNondet(
 void FunctionDecomposer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesCFG();
     AUX<llvm::TargetLibraryInfo>::addRequiredTransitive(AU);
+    AUX<borealis::FuncInfoProvider>::addRequiredTransitive(AU);
 }
 
 bool FunctionDecomposer::runOnModule(llvm::Module& M) {
@@ -161,12 +162,14 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     auto&& TLI = GetAnalysis<llvm::TargetLibraryInfo>::doit(this);
 
     auto&& IM = IntrinsicsManager::getInstance();
+    auto&& FIP = GetAnalysis<FuncInfoProvider>::doit(this);
 
     auto isDecomposable = [&](const llvm::CallInst* ci) {
         if(!ci) return false;
 
         auto&& func = ci->getCalledFunction();
-        return func->isDeclaration()
+        return func
+            && func->isDeclaration()
             && !func->isIntrinsic()
             && !llvm::isAllocationFn(ci, &TLI)
             && !llvm::isFreeCall(ci, &TLI)
@@ -186,6 +189,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .toHashSet();
 
     for(llvm::CallInst* call : funcs) {
+        llvm::Function* f = call->getCalledFunction();
         llvm::Value* predefinedReturn = nullptr;
 
         for(auto i = 0U; i < call->getNumArgOperands(); ++i) {
@@ -195,6 +199,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
             }
 
             if(!arg->getType()->isPointerTy()
+             || arg->getType()->getPointerElementType()->isFunctionTy()
              || llvm::isa<llvm::Constant>(arg)
              || call->getCalledFunction()->doesNotAccessMemory(i)) {
                 auto&& consume = mkConsumeCall(IM, M, *call, i);
