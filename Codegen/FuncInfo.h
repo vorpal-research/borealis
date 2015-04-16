@@ -29,12 +29,16 @@ struct ResultInfo {
     SpecialTag special = SpecialTag::None;
     util::option<size_t> sizeArgument = util::nothing();
     ArrayTag isArray = ArrayTag::IsNotArray;
+
+    GENERATE_PRINT(ResultInfo, special, sizeArgument, isArray);
 };
 
 struct ArgInfo {
     AccessPatternTag access = AccessPatternTag::None;
     util::option<size_t> sizeArgument = util::nothing();
     ArrayTag isArray = ArrayTag::IsNotArray;
+
+    GENERATE_PRINT(ArgInfo, access, sizeArgument, isArray);
 };
 
 struct FuncInfo {
@@ -42,6 +46,8 @@ struct FuncInfo {
     std::string signature;
     ResultInfo resultInfo;
     std::vector<ArgInfo> argInfo;
+
+    GENERATE_PRINT(FuncInfo, id, signature, resultInfo, argInfo);
 };
 
 } /* namespace func_info */

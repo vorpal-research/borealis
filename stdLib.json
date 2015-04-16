@@ -53,7 +53,7 @@
       "name": "ZdlPvRKSt9nothrow_t",
       "args": [
             {
-                  "access" : "Delete",
+                  "access" : "Delete"
             },
             {}
       ]
@@ -561,7 +561,7 @@
       "signature": "FILE *fdopen(int fildes, const char *mode)",
       "name": "fdopen",
       "args" : [
-            {}
+            {},
             { "access" : "Read", "array": "true" }
       ]
 },
@@ -637,7 +637,7 @@
       "name": "fiprintf",
       "args": [
             { "access" : "ReadWrite" },
-            { "access" : "Read", "array": true }
+            { "access" : "Read", "array": true },
             {}
       ]
 },
@@ -717,7 +717,7 @@
       "name": "fprintf",
       "args": [
             { "access" : "ReadWrite" },
-            { "access" : "Read", "array": true }
+            { "access" : "Read", "array": true },
             {}
       ]
 },
@@ -1813,7 +1813,7 @@
             { "access" : "Read", "array" : true },
             { "access" : "Write" }
       ]
-}
+},
 {
       "signature": "long int strtol(const char *nptr, char **endptr, int base)",
       "name": "strtol",
@@ -1828,7 +1828,7 @@
       "name": "strtold",
       "args": [
             { "access" : "Read", "array" : true },
-            { "access" : "Write" },
+            { "access" : "Write" }
       ]
 },
 {

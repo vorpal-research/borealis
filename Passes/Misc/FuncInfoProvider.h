@@ -22,10 +22,12 @@ public:
 
     FuncInfoProvider();
 
+    void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+
     const func_info::FuncInfo& getInfo(llvm::LibFunc::Func f);
     const func_info::FuncInfo& getInfo(llvm::Function* f);
-    bool FuncInfoProvider::hasInfo(llvm::LibFunc::Func f);
-    bool FuncInfoProvider::hasInfo(llvm::Function* f);
+    bool hasInfo(llvm::LibFunc::Func f);
+    bool hasInfo(llvm::Function* f);
 
     virtual void initializePass() override;
 

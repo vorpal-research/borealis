@@ -50,12 +50,27 @@ void FuncInfoProvider::initializePass() {
 
     std::ifstream input("stdLib.json");
     std::vector<func_info::FuncInfo> ffs;
-    input >> util::jsonify(ffs);
+    Json::Value allShit;
+    input >> allShit;
+    for(auto&& val : allShit){
+        func_info::FuncInfo fi;
+        auto opt = util::fromJson< func_info::FuncInfo >(val);
+        if(!opt) {
+            errs() << "cannot parse json: " << val;
+        } else {
+            ffs.push_back(*opt);
+        }
+    }
 
     pimpl_->functions = util::viewContainer(ffs).map([&](auto&& x){
         return std::make_pair(util::fromString<llvm::LibFunc::Func>(x.id).getOrElse(llvm::LibFunc::NumLibFuncs),
                               std::move(x));
     }).to<std::unordered_map<llvm::LibFunc::Func, func_info::FuncInfo>>();
+}
+
+void FuncInfoProvider::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+    AU.setPreservesCFG();
+    AUX<llvm::TargetLibraryInfo>::addRequiredTransitive(AU);
 }
 
 } /* namespace borealis */

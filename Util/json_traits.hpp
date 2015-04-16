@@ -19,13 +19,7 @@
 namespace borealis {
 namespace util {
 
-template<class Con, class T>
-inline Con& addToContainer(Con& con, const T& value) {
-    static_assert(sizeof(value) > 0, "Please overload this function to work properly");
-    return con;
-}
-
-template<class Container>
+template<class Container, class Appender>
 struct container_json_traits {
     using value_type = Container;
     using optional_ptr_t = std::unique_ptr<value_type>;
@@ -44,36 +38,38 @@ struct container_json_traits {
 
         for(const auto& m : val) {
             if(auto v = util::fromJson<T>(m)) {
-                addToContainer(ret, *v);
+                Appender{}(ret, *v);
             } else return nullptr;
         }
+
         return optional_ptr_t { new value_type{std::move(ret)} };
     }
 };
 
-template<class T, class Allocator>
-inline std::vector<T, Allocator>& addToContainer(std::vector<T, Allocator>& vec, const T& value) {
-    vec.push_back(value);
-    return vec;
-}
-template<class T, class Allocator>
-struct json_traits<std::vector<T, Allocator>> : container_json_traits<std::vector<T, Allocator>> {};
+namespace impl_ {
 
-template<class T, class Compare, class Allocator>
-inline std::set<T, Compare, Allocator>& addToContainer(std::set<T, Compare, Allocator>& s, const T& value) {
-    s.insert(value);
-    return s;
-}
-template<class T, class Compare, class Allocator>
-struct json_traits<std::set<T, Compare, Allocator>> : container_json_traits<std::set<T, Compare, Allocator>> {};
+struct push_backer {
+    template<class Con, class Val>
+    void operator()(Con& con, Val&& v) const {
+        con.push_back(std::forward<Val>(v));
+    }
+};
 
+struct inserter {
+    template<class Con, class Val>
+    void operator()(Con& con, Val&& v) const {
+        con.insert(std::forward<Val>(v));
+    }
+};
+
+} /* namespace impl_ */
+
+template<class T, class Allocator>
+struct json_traits<std::vector<T, Allocator>> : container_json_traits<std::vector<T, Allocator>, impl_::push_backer> {};
+template<class T, class Compare, class Allocator>
+struct json_traits<std::set<T, Compare, Allocator>> : container_json_traits<std::set<T, Compare, Allocator>, impl_::inserter> {};
 template<class T, class Hash, class Compare, class Allocator>
-inline std::unordered_set<T, Hash, Compare, Allocator>& addToContainer(std::unordered_set<T, Hash, Compare, Allocator>& s, const T& value) {
-    s.insert(value);
-    return s;
-}
-template<class T, class Hash, class Compare, class Allocator>
-struct json_traits<std::unordered_set<T, Hash, Compare, Allocator>> : container_json_traits<std::unordered_set<T, Hash, Compare, Allocator>> {};
+struct json_traits<std::unordered_set<T, Hash, Compare, Allocator>> : container_json_traits<std::unordered_set<T, Hash, Compare, Allocator>, impl_::inserter> {};
 
 template<class K, class V, class Hash, class Equal, class Alloc>
 struct json_traits<std::unordered_map<K, V, Hash, Equal, Alloc>> {
