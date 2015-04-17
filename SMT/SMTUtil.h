@@ -33,21 +33,21 @@ BRING_FROM_IMPL(MemArray)
 
 
 #define USING_SMT_LOGIC(IMPL) \
-    typedef typename IMPL::Bool Bool; \
-    typedef typename IMPL::Byte Byte; \
-    typedef typename IMPL::Pointer Pointer; \
-    typedef typename IMPL::Integer Integer; \
-    typedef typename IMPL::Real Real; \
-    typedef typename IMPL::DynBV DynBV; \
-    typedef typename IMPL::UComparable UComparable; \
-    typedef typename IMPL::Dynamic Dynamic; \
-    typedef typename IMPL::MemArray MemArray;
+    using Bool = typename IMPL::Bool; \
+    using Byte = typename IMPL::Byte; \
+    using Pointer = typename IMPL::Pointer; \
+    using Integer = typename IMPL::Integer; \
+    using Real = typename IMPL::Real; \
+    using DynBV = typename IMPL::DynBV; \
+    using UComparable = typename IMPL::UComparable; \
+    using Dynamic = typename IMPL::Dynamic; \
+    using MemArray = typename IMPL::MemArray;
 
 #define USING_SMT_IMPL(IMPL) \
     USING_SMT_LOGIC(IMPL) \
-    typedef typename IMPL::ExprFactory ExprFactory; \
-    typedef typename IMPL::ExecutionContext ExecutionContext; \
-    typedef typename IMPL::Solver Solver;
+    using ExprFactory = typename IMPL::ExprFactory; \
+    using ExecutionContext = typename IMPL::ExecutionContext; \
+    using Solver = typename IMPL::Solver;
 
 
 

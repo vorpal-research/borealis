@@ -891,6 +891,10 @@ public:
     z3::expr axiom() const { return axiomatic; }
     z3::context& ctx() const { return inner.ctx(); }
 
+    Self withAxiom(const ValueExpr& ax) const {
+        return Self{ inner, z3impl::spliceAxioms(axiom(), z3impl::asAxiom(ax)) };
+    }
+
     Res operator()(Args... args) const {
         return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(axiom(), massAxiomAnd(args...)));
     }
