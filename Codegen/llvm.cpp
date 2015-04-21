@@ -207,9 +207,9 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
     collected.insert({type, di});
 
     if(DIArrayType arr_ = di) {
+        ASSERTC(type->isArrayTy());
         auto member = stripAliases(dfi, arr_.getBaseType());
-        ASSERTC(tp.first->isArrayTy());
-        auto llmember = tp.first->getArrayElementType();
+        auto llmember = type->getArrayElementType();
         flattenTypeTree(dfi, {llmember, member}, collected);
 
     } else if(DICompositeType struct_ = di) {
