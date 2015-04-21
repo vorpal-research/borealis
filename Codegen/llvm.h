@@ -39,6 +39,7 @@ util::option<std::string> getAsCompileTimeString(const llvm::Value* value);
 
 std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value);
 
+const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i);
 
 #include "Util/macros.h"
 #include "Util/generate_macros.h"
@@ -374,6 +375,70 @@ std::map<llvm::Type*, DIType> flattenTypeTree(
     const DebugInfoFinder& dfi,
     const std::pair<llvm::Type*, DIType>& tp);
 
+namespace impl_ {
+
+template<class AdditionalData>
+class MagicVH : public llvm::CallbackVH {
+public:
+    MagicVH(llvm::Value* P, const AdditionalData& keep)
+        : CallbackVH(P), keep(util::copy_or_share(keep)) { }
+
+    MagicVH() = default;
+
+private:
+    std::shared_ptr<AdditionalData> keep;
+
+public:
+    virtual void deleted() override {
+        llvm::CallbackVH::deleted();
+        keep = nullptr;
+    }
+
+    virtual void allUsesReplacedWith(llvm::Value *) override {
+        keep = nullptr;
+    }
+
+    std::shared_ptr<AdditionalData>& getData() {
+        return keep;
+    }
+
+    const std::shared_ptr<AdditionalData>& getData() const{
+        return keep;
+    }
+
+    bool empty() const {
+        return getValPtr() == nullptr;
+    }
+};
+
+} /* namespace impl_ */
+
+template<class AdditionalData>
+void addTracking(llvm::Value* v, const AdditionalData& ad) {
+    using vh = impl_::MagicVH<AdditionalData>;
+    static std::list<vh> cache;
+    static size_t desiredCacheSize = 10;
+    cache.push_back(vh(v, ad));
+    if(cache.size() > desiredCacheSize) {
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+            if(it->empty()) it = cache.erase(it);
+        }
+        while(cache.size() > desiredCacheSize) {
+            desiredCacheSize *= 2;
+        }
+    }
+}
+
 } // namespace borealis
+namespace std {
+
+template<class Data>
+struct hash<borealis::impl_::MagicVH<Data>> {
+    size_t operator()(const borealis::impl_::MagicVH<Data>& v) const noexcept {
+        return borealis::util::hash::simple_hash_value((llvm::Value*)v, v.getData());
+    }
+};
+
+} /* namespace std */
 
 #endif /* CODEGEN_LLVM_H_ */

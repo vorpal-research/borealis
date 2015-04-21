@@ -87,6 +87,11 @@ public:
                ->shared_from_this();
     }
 
+    static void installOnIntrinsic(llvm::CallInst& CI, Annotation::Ptr anno) {
+        CI.setMetadata("anno.ptr", ptr2MDNode(CI.getContext(), anno.get()));
+        addTracking(&CI, anno);
+    }
+
     friend std::ostream& operator<<(std::ostream& str, Annotation::Ptr a) {
         str << a->toString();
         return str;

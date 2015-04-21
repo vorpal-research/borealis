@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include <State/Transformer/AnnotationSubstitutor.h>
 #include "Annotation/LogicAnnotation.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/Manager/AnnotationManager.h"
@@ -45,7 +46,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     for (auto&& F : M) ids[&F] = i++;
 
     for (auto&& a : annotations) {
-
+        // FIXME: check this!!!
         auto&& anno = materialize(a, FN, &meta);
         if (auto* logic = llvm::dyn_cast<LogicAnnotation>(anno)) {
 

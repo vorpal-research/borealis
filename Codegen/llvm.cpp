@@ -497,6 +497,18 @@ bool DebugInfoFinder::addScope(llvm::DIScope Scope) {
 }
 
 
+const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i) {
+    auto bb = i->getParent();
+    auto bbTerm = bb->getTerminator();
+    while(bbTerm) {
+        if (bbTerm->getNumSuccessors() == 0) return bbTerm;
+        if (bbTerm->getNumSuccessors() == 1) bbTerm = bbTerm->getSuccessor(0)->getTerminator();
+        else return nullptr;
+    }
+    return nullptr;
+}
+
+
 } // namespace borealis
 #include "Util/unmacros.h"
 

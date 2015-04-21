@@ -25,11 +25,11 @@ public:
 
     Term::Ptr transformTerm(Term::Ptr term);
 
-    const std::unordered_set<Term::Ptr>& getTerms() const;
+    const std::unordered_set<Term::Ptr, TermHash, TermEquals>& getTerms() const;
 
 private:
 
-    std::unordered_set<Term::Ptr> terms;
+    std::unordered_set<Term::Ptr, TermHash, TermEquals> terms;
 
 };
 

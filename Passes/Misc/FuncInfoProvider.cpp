@@ -6,6 +6,7 @@
 
 #include "Util/passes.hpp"
 #include "Passes/Misc/FuncInfoProvider.h"
+#include "Config/config.h"
 
 #include "Util/generate_macros.h"
 
@@ -19,6 +20,8 @@ struct FuncInfoProvider::Impl {
 
 char FuncInfoProvider::ID = 42;
 static RegisterPass<FuncInfoProvider> X("func-info", "Provide external function descriptions from external file");
+
+static config::MultiConfigEntry FunctionDefinitionFiles("analysis", "ext-functions");
 
 FuncInfoProvider::FuncInfoProvider() : ImmutablePass(ID), pimpl_(std::make_unique<Impl>()) {}
 FuncInfoProvider::~FuncInfoProvider() {}
@@ -34,7 +37,7 @@ const func_info::FuncInfo& FuncInfoProvider::getInfo(llvm::Function* f) {
 }
 
 bool FuncInfoProvider::hasInfo(llvm::LibFunc::Func f) {
-    return pimpl_->functions.count(f);
+    return !!pimpl_->functions.count(f);
 }
 
 bool FuncInfoProvider::hasInfo(llvm::Function* f) {
@@ -48,17 +51,18 @@ void FuncInfoProvider::initializePass() {
 
     pimpl_->TLI = &getAnalysis<llvm::TargetLibraryInfo>();
 
-    std::ifstream input("stdLib.json");
     std::vector<func_info::FuncInfo> ffs;
-    Json::Value allShit;
-    input >> allShit;
-    for(auto&& val : allShit){
-        func_info::FuncInfo fi;
-        auto opt = util::fromJson< func_info::FuncInfo >(val);
-        if(!opt) {
-            errs() << "cannot parse json: " << val;
-        } else {
-            ffs.push_back(*opt);
+    for(auto&& filename : FunctionDefinitionFiles) {
+        std::ifstream input(filename);
+        Json::Value allShit;
+        input >> allShit;
+        for(auto&& val : allShit){
+            auto opt = util::fromJson< func_info::FuncInfo >(val);
+            if(!opt) {
+                errs() << "cannot parse json: " << val;
+            } else {
+                ffs.push_back(*opt);
+            }
         }
     }
 

@@ -6,6 +6,7 @@
  */
 
 #include <llvm/IR/InstVisitor.h>
+#include <State/Transformer/AnnotationSubstitutor.h>
 
 #include "Annotation/Annotation.def"
 #include "Codegen/intrinsics_manager.h"
@@ -31,7 +32,7 @@ public:
         auto& im = IntrinsicsManager::getInstance();
         if (im.getIntrinsicType(CI) == function_type::INTRINSIC_ANNOTATION) {
             Annotation::Ptr anno =
-                    materialize(Annotation::fromIntrinsic(CI), pass->FN, pass->MI);
+                    substituteAnnotationCall(pass->FN, llvm::CallSite(&CI));
             if (llvm::isa<AssumeAnnotation>(anno)) {
                 const LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 pass->PM[&CI] =

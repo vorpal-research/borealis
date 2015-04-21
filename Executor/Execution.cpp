@@ -33,9 +33,9 @@
 #include <algorithm>
 #include <cmath>
 
-
 #include "Executor/ExecutionEngine.h"
 #include "Executor/Exceptions.h"
+#include "State/Transformer/AnnotationSubstitutor.h"
 
 #include "Util/util.h"
 
@@ -1234,14 +1234,14 @@ void borealis::ExecutionEngine::executeCall(llvm::CallSite CS) {
         case function_type::BUILTIN_BOR_ASSUME:
             break;
         case function_type::INTRINSIC_ANNOTATION: {
-            auto Anno = Annotation::fromIntrinsic(CS);
+            auto FN = FNCache[SF.CurFunction];
+            auto Anno = substituteAnnotationCall(FN, CS);
+            TRACE_PARAM(*CS.getInstruction());
+            TRACE_PARAM(*Anno);
             TRACE_FMT("%d", Anno);
             ASSERTC(Anno);
 
-            auto FN = FNCache[SF.CurFunction];
-
-            auto sharedAnno = materialize(Anno, FN, VIT);
-            executeAnnotation(sharedAnno, FN, this);
+            executeAnnotation(Anno, FN, this);
 
             return;
         }

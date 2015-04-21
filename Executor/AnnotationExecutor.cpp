@@ -76,6 +76,8 @@ struct AnnotationExecutor::Impl {
     }
 
     llvm::Value* resolve(const std::string& name) {
+        TRACE_FUNC;
+        TRACE_PARAM(name);
         if(auto v = ST->getLocalValue(name))
             return const_cast<llvm::Value*>(v);
         return const_cast<llvm::Value*>(ST->getGlobalValue(name));
