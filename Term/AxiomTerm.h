@@ -42,10 +42,9 @@ public:
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto&& _lhv = tr->transform(getLhv());
         auto&& _rhv = tr->transform(getRhv());
-        auto&& _type = getTermType(tr->FN.Type, _lhv, _rhv);
         TERM_ON_CHANGED(
             getLhv() != _lhv || getRhv() != _rhv,
-            new Self( _type, _lhv, _rhv )
+            new Self( getTermType(tr->FN.Type, _lhv, _rhv), _lhv, _rhv )
         );
     }
 

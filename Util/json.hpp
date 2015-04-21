@@ -123,6 +123,21 @@ typename json_traits<T>::optional_ptr_t fromJson(const Json::Value& json) {
     return json_traits<T>::fromJson(json);
 }
 
+template<class K>
+std::decay_t<K> fromJsonWithDefault(const Json::Value& json, K&& orDefault) {
+    if(auto ptr = util::fromJson<std::decay_t<K>>(json)) {
+        return *ptr;
+    } else return std::forward<K>(orDefault);
+}
+
+template<class K>
+bool assignJson(K& where, const Json::Value& json) {
+    if(auto ptr = util::fromJson<std::decay_t<K>>(json)) {
+        where = *ptr;
+        return true;
+    } else return false;
+}
+
 template<class T>
 typename json_traits<T>::optional_ptr_t read_as_json(std::istream& ist) {
     Json::Reader reader;

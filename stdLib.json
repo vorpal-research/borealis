@@ -1,0 +1,2051 @@
+[
+{
+      "signature": "int _IO_getc(_IO_FILE * __fp)",
+      "name": "under_IO_getc",
+      "args": [
+            {
+                  "access" : "Read"
+            }
+      ]
+},
+{
+      "signature": "int _IO_putc(int __c, _IO_FILE * __fp)",
+      "name": "under_IO_putc",
+      "args": [
+            {},
+            {
+                  "access" : "ReadWrite"
+            }
+      ]
+},
+{
+      "signature": "void operator delete[](void*)",
+      "name": "ZdaPv",
+      "args": [
+            {
+                  "access" : "Delete",
+                  "array": true
+            }
+      ]
+},
+{
+      "signature": "void operator delete[](void*, nothrow)",
+      "name": "ZdaPvRKSt9nothrow_t",
+      "args": [
+            {
+                  "access" : "Delete",
+                  "array": true
+            },
+            {}
+      ]
+},
+{
+      "signature": "void operator delete(void*)",
+      "name": "ZdlPv",
+      "args": [
+            {
+                  "access" : "Delete"
+            }
+      ]
+},
+{
+      "signature": "void operator delete(void*, nothrow)",
+      "name": "ZdlPvRKSt9nothrow_t",
+      "args": [
+            {
+                  "access" : "Delete"
+            },
+            {}
+      ]
+},
+{
+      "signature": "void *new[](unsigned int)",
+      "name": "Znaj",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new[](unsigned int, nothrow)",
+      "name": "ZnajRKSt9nothrow_t",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new[](unsigned long)",
+      "name": "Znam",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new[](unsigned long, nothrow)",
+      "name": "ZnamRKSt9nothrow_t",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new(unsigned int)",
+      "name": "Znwj",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new(unsigned int, nothrow)",
+      "name": "ZnwjRKSt9nothrow_t",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new(unsigned long)",
+      "name": "Znwm",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "void *new(unsigned long, nothrow)",
+      "name": "ZnwmRKSt9nothrow_t",
+      "result": {
+            "special": "Malloc",
+            "size": 0
+      }
+},
+{
+      "signature": "double __cospi(double x)",
+      "name": "cospi"
+},
+{
+      "signature": "float __cospif(float x)",
+      "name": "cospif"
+},
+{
+      "signature": "int __cxa_atexit(void (*f)(void *), void *p, void *d)",
+      "name": "cxa_atexit",
+      "args": [
+            {},
+            { "access" : "Read" },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "void __cxa_guard_abort(guard_t *guard)",
+      "comment": "guard_t is int64_t in Itanium ABI or int32_t on ARM eabi.",
+      "name": "cxa_guard_abort",
+      "args": [
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int __cxa_guard_acquire(guard_t *guard)",
+      "name": "cxa_guard_acquire",
+      "args": [
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "void __cxa_guard_release(guard_t *guard)",
+      "name": "cxa_guard_release",
+      "args": [
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int __isoc99_scanf (const char *format, ...)",
+      "name": "dunder_isoc99_scanf",
+      "args": [
+            { "access" : "Read", "array": true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int __isoc99_sscanf(const char *s, const char *format, ...)",
+      "name": "dunder_isoc99_sscanf",
+      "args": [
+            { "access" : "Read", "array": true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "void *__memcpy_chk(void *s1, const void *s2, size_t n, size_t s1size)",
+      "name": "memcpy_chk",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array": true, "size": 3 },
+            { "access" : "Read", "array": true, "size": 2 }
+      ]
+},
+{
+      "signature": "double __sincospi_stret(double x)",
+      "name": "sincospi_stret"
+},
+{
+      "signature": "float __sincospif_stret(float x)",
+      "name": "sincospif_stret"
+},
+{
+      "signature": "double __sinpi(double x)",
+      "name": "sinpi"
+},
+{
+      "signature": "float __sinpif(float x)",
+      "name": "sinpif"
+},
+{
+      "signature": "double __sqrt_finite(double x)",
+      "name": "sqrt_finite"
+},
+{
+      "signature": "float __sqrt_finite(float x)",
+      "name": "sqrtf_finite"
+},
+{
+      "signature": "long double __sqrt_finite(long double x)",
+      "name": "sqrtl_finite"
+},
+{
+      "signature": "char * __strdup(const char *s)",
+      "name": "dunder_strdup",
+      "result" : { "special": "Malloc" },
+      "args": [
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "char *__strndup(const char *s, size_t n)",
+      "name": "dunder_strndup",
+      "result" : { "special": "Malloc" },
+      "args": [
+            { "access" : "Read", "array": true, "size": 1 },
+            {}
+      ]
+},
+{
+      "signature": "char * __strtok_r(char *s, const char *delim, char **save_ptr)",
+      "name": "dunder_strtok_r",
+      "args": [
+            { "access" : "Read", "array": true },
+            { "access" : "Read", "array": true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int abs(int j)",
+      "name": "abs"
+},
+{
+      "signature": "int access(const char *path, int amode)",
+      "name": "access",
+      "args": [
+            { "access" : "Read", "array": true },
+            {}
+      ]
+},
+{
+      "signature": "double acos(double x)",
+      "name": "acos"
+},
+{
+      "signature": "float acosf(float x)",
+      "name": "acosf"
+},
+{
+      "signature": "double acosh(double x)",
+      "name": "acosh"
+},
+{
+      "signature": "float acoshf(float x)",
+      "name": "acoshf"
+},
+{
+      "signature": "long double acoshl(long double x)",
+      "name": "acoshl"
+},
+{
+      "signature": "long double acosl(long double x)",
+      "name": "acosl"
+},
+{
+      "signature": "double asin(double x)",
+      "name": "asin"
+},
+{
+      "signature": "float asinf(float x)",
+      "name": "asinf"
+},
+{
+      "signature": "double asinh(double x)",
+      "name": "asinh"
+},
+{
+      "signature": "float asinhf(float x)",
+      "name": "asinhf"
+},
+{
+      "signature": "long double asinhl(long double x)",
+      "name": "asinhl"
+},
+{
+      "signature": "long double asinl(long double x)",
+      "name": "asinl"
+},
+{
+      "signature": "double atan(double x)",
+      "name": "atan"
+},
+{
+      "signature": "double atan2(double y, double x)",
+      "name": "atan2"
+},
+{
+      "signature": "float atan2f(float y, float x)",
+      "name": "atan2f"
+},
+{
+      "signature": "long double atan2l(long double y, long double x)",
+      "name": "atan2l"
+},
+{
+      "signature": "float atanf(float x)",
+      "name": "atanf"
+},
+{
+      "signature": "double atanh(double x)",
+      "name": "atanh"
+},
+{
+      "signature": "float atanhf(float x)",
+      "name": "atanhf"
+},
+{
+      "signature": "long double atanhl(long double x)",
+      "name": "atanhl"
+},
+{
+      "signature": "long double atanl(long double x)",
+      "name": "atanl"
+},
+{
+      "signature": "double atof(const char *str)",
+      "name": "atof",
+      "args" :[
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "int atoi(const char *str)",
+      "name": "atoi",
+      "args" :[
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "long atol(const char *str)",
+      "name": "atol",
+      "args" :[
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "long long atoll(const char *nptr)",
+      "name": "atoll",
+      "args" :[
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "int bcmp(const void *s1, const void *s2, size_t n)",
+      "name": "bcmp",
+      "args" :[
+            { "access" : "Read", "array": true, "size": 2 },
+            { "access" : "Read", "array": true, "size": 2 }
+      ]
+},
+{
+      "signature": "void bcopy(const void *s1, void *s2, size_t n)",
+      "name": "bcopy",
+      "args" :[
+            { "access" : "Read", "array": true, "size": 2 },
+            { "access" : "Write", "array": true, "size": 2 }
+      ]
+},
+{
+      "signature": "void bzero(void *s, size_t n)",
+      "name": "bzero",
+      "args" :[
+            { "access" : "Write", "array": true, "size": 1 },
+            {}
+      ]
+},
+{
+      "signature": "void *calloc(size_t count, size_t size)",
+      "name": "calloc",
+      "result" : {
+            "special": "Malloc"
+      }
+},
+{
+      "signature": "double cbrt(double x)",
+      "name": "cbrt"
+},
+{
+      "signature": "float cbrtf(float x)",
+      "name": "cbrtf"
+},
+{
+      "signature": "long double cbrtl(long double x)",
+      "name": "cbrtl"
+},
+{
+      "signature": "double ceil(double x)",
+      "name": "ceil"
+},
+{
+      "signature": "float ceilf(float x)",
+      "name": "ceilf"
+},
+{
+      "signature": "long double ceill(long double x)",
+      "name": "ceill"
+},
+{
+      "signature": "int chmod(const char *path, mode_t mode)",
+      "name": "chmod",
+      "args" : [
+            { "access" : "Read", "array": true },
+            {}
+      ]
+},
+{
+      "signature": "int chown(const char *path, uid_t owner, gid_t group)",
+      "name": "chown",
+      "args" : [
+            { "access" : "Read", "array": true },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "void clearerr(FILE *stream)",
+      "name": "clearerr",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int closedir(DIR *dirp)",
+      "name": "closedir",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "double copysign(double x, double y)",
+      "name": "copysign"
+},
+{
+      "signature": "float copysignf(float x, float y)",
+      "name": "copysignf"
+},
+{
+      "signature": "long double copysignl(long double x, long double y)",
+      "name": "copysignl"
+},
+{
+      "signature": "double cos(double x)",
+      "name": "cos"
+},
+{
+      "signature": "float cosf(float x)",
+      "name": "cosf"
+},
+{
+      "signature": "double cosh(double x)",
+      "name": "cosh"
+},
+{
+      "signature": "float coshf(float x)",
+      "name": "coshf"
+},
+{
+      "signature": "long double coshl(long double x)",
+      "name": "coshl"
+},
+{
+      "signature": "long double cosl(long double x)",
+      "name": "cosl"
+},
+{
+      "signature": "char *ctermid(char *s)",
+      "name": "ctermid"
+},
+{
+      "signature": "double exp(double x)",
+      "name": "exp"
+},
+{
+      "signature": "double exp10(double x)",
+      "name": "exp10"
+},
+{
+      "signature": "float exp10f(float x)",
+      "name": "exp10f"
+},
+{
+      "signature": "long double exp10l(long double x)",
+      "name": "exp10l"
+},
+{
+      "signature": "double exp2(double x)",
+      "name": "exp2"
+},
+{
+      "signature": "float exp2f(float x)",
+      "name": "exp2f"
+},
+{
+      "signature": "long double exp2l(long double x)",
+      "name": "exp2l"
+},
+{
+      "signature": "float expf(float x)",
+      "name": "expf"
+},
+{
+      "signature": "long double expl(long double x)",
+      "name": "expl"
+},
+{
+      "signature": "double expm1(double x)",
+      "name": "expm1"
+},
+{
+      "signature": "float expm1f(float x)",
+      "name": "expm1f"
+},
+{
+      "signature": "long double expm1l(long double x)",
+      "name": "expm1l"
+},
+{
+      "signature": "double fabs(double x)",
+      "name": "fabs"
+},
+{
+      "signature": "float fabsf(float x)",
+      "name": "fabsf"
+},
+{
+      "signature": "long double fabsl(long double x)",
+      "name": "fabsl"
+},
+{
+      "signature": "int fclose(FILE *stream)",
+      "name": "fclose",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "FILE *fdopen(int fildes, const char *mode)",
+      "name": "fdopen",
+      "args" : [
+            {},
+            { "access" : "Read", "array": "true" }
+      ]
+},
+{
+      "signature": "int feof(FILE *stream)",
+      "name": "feof",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int ferror(FILE *stream)",
+      "name": "ferror",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int fflush(FILE *stream)",
+      "name": "fflush",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int ffs(int i)",
+      "name": "ffs"
+},
+{
+      "signature": "int ffsl(long int i)",
+      "name": "ffsl"
+},
+{
+      "signature": "int ffsll(long long int i)",
+      "name": "ffsll"
+},
+{
+      "signature": "int fgetc(FILE *stream)",
+      "name": "fgetc",
+      "args" : [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int fgetpos(FILE *stream, fpos_t *pos)",
+      "name": "fgetpos",
+      "args" : [
+            { "access" : "ReadWrite" },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "char *fgets(char *s, int n, FILE *stream)",
+      "name": "fgets",
+      "result": {
+            "arg" : 0
+      },
+      "args" : [
+            { "access" : "Write", "array": true },
+            {},
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int fileno(FILE *stream)",
+      "name": "fileno",
+      "args": [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int fiprintf(FILE *stream, const char *format, ...)",
+      "name": "fiprintf",
+      "args": [
+            { "access" : "ReadWrite" },
+            { "access" : "Read", "array": true },
+            {}
+      ]
+},
+{
+      "signature": "void flockfile(FILE *file)",
+      "name": "flockfile",
+      "args": [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "double floor(double x)",
+      "name": "floor"
+},
+{
+      "signature": "float floorf(float x)",
+      "name": "floorf"
+},
+{
+      "signature": "long double floorl(long double x)",
+      "name": "floorl"
+},
+{
+      "signature": "double fmax(double x, double y)",
+      "name": "fmax"
+},
+{
+      "signature": "float fmaxf(float x, float y)",
+      "name": "fmaxf"
+},
+{
+      "signature": "long double fmaxl(long double x, long double y)",
+      "name": "fmaxl"
+},
+{
+      "signature": "double fmin(double x, double y)",
+      "name": "fmin"
+},
+{
+      "signature": "float fminf(float x, float y)",
+      "name": "fminf"
+},
+{
+      "signature": "long double fminl(long double x, long double y)",
+      "name": "fminl"
+},
+{
+      "signature": "double fmod(double x, double y)",
+      "name": "fmod"
+},
+{
+      "signature": "float fmodf(float x, float y)",
+      "name": "fmodf"
+},
+{
+      "signature": "long double fmodl(long double x, long double y)",
+      "name": "fmodl"
+},
+{
+      "signature": "FILE *fopen(const char *filename, const char *mode)",
+      "name": "fopen",
+      "args": [
+            { "access" : "Read", "array": true },
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "FILE *fopen64(const char *filename, const char *opentype)",
+      "name": "fopen64",
+      "args": [
+            { "access" : "Read", "array": true },
+            { "access" : "Read", "array": true }
+      ]
+},
+{
+      "signature": "int fprintf(FILE *stream, const char *format, ...)",
+      "name": "fprintf",
+      "args": [
+            { "access" : "ReadWrite" },
+            { "access" : "Read", "array": true },
+            {}
+      ]
+},
+{
+      "signature": "int fputc(int c, FILE *stream)",
+      "name": "fputc",
+      "args": [
+            {},
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int fputs(const char *s, FILE *stream)",
+      "name": "fputs",
+      "args": [
+            { "access" : "Read", "array": true },
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "size_t fread(void *ptr, size_t size, size_t nitems, FILE *stream)",
+      "name": "fread",
+      "args": [
+            { "access" : "Write", "array" : true },
+            {},
+            {},
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "void free(void *ptr)",
+      "name": "free",
+      "args": [ { "access" : "Delete" } ]
+},
+{
+      "signature": "double frexp(double num, int *exp)",
+      "name": "frexp",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "float frexpf(float num, int *exp)",
+      "name": "frexpf",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "long double frexpl(long double num, int *exp)",
+      "name": "frexpl",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "int fscanf(FILE *stream, const char *format, ... )",
+      "name": "fscanf",
+      "args" : [
+            { "access": "ReadWrite" },
+            { "access": "Read", "array": true },
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "int fseek(FILE *stream, long offset, int whence)",
+      "name": "fseek",
+      "args" : [
+            { "access": "ReadWrite" },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int fseeko(FILE *stream, off_t offset, int whence)",
+      "name": "fseeko",
+      "args" : [
+            { "access": "ReadWrite" },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int fseeko64(FILE *stream, off64_t offset, int whence)",
+      "name": "fseeko64",
+      "args" : [
+            { "access": "ReadWrite" },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int fsetpos(FILE *stream, const fpos_t *pos)",
+      "name": "fsetpos",
+      "args" : [
+            { "access": "ReadWrite" },
+            { "access": "Read" }
+      ]
+},
+{
+      "signature": "int fstat(int fildes, struct stat *buf)",
+      "name": "fstat",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "int fstat64(int filedes, struct stat64 *buf)",
+      "name": "fstat64",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "int fstatvfs(int fildes, struct statvfs *buf)",
+      "name": "fstatvfs",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "int fstatvfs64(int fildes, struct statvfs64 *buf)",
+      "name": "fstatvfs64",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "long ftell(FILE *stream)",
+      "name": "ftell",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "off_t ftello(FILE *stream)",
+      "name": "ftello",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "off64_t ftello64(FILE *stream)",
+      "name": "ftello64",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "int ftrylockfile(FILE *file)",
+      "name": "ftrylockfile",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "void funlockfile(FILE *file)",
+      "name": "funlockfile",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "size_t fwrite(const void *ptr, size_t size, size_t nitems, FILE *stream)",
+      "name": "fwrite",
+      "args" : [
+            { "access": "Read", "array" : true },
+            {},
+            {},
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "int getc(FILE *stream)",
+      "name": "getc",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "int getc_unlocked(FILE *stream)",
+      "name": "getc_unlocked",
+      "args" : [
+            { "access": "ReadWrite" }
+      ]
+},
+{
+      "signature": "int getchar(void)",
+      "name": "getchar"
+},
+{
+      "signature": "char *getenv(const char *name)",
+      "name": "getenv",
+      "result" : { "special": "Malloc" },
+      "args" : [
+            { "access": "Read", "array": "true" }
+      ]
+},
+{
+      "signature": "int getitimer(int which, struct itimerval *value)",
+      "name": "getitimer",
+      "args" : [
+            {},
+            { "access": "Write" }
+      ]
+},
+{
+      "signature": "int getlogin_r(char *name, size_t namesize)",
+      "name": "getlogin_r",
+      "args" : [
+            { "access" : "Read", "array" : true, "size": 1 },
+            {}
+      ]
+},
+{
+      "signature": "struct passwd *getpwnam(const char *name)",
+      "name": "getpwnam",
+      "result" : { "special": "Malloc" },
+      "args" : [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *gets(char *s)",
+      "name": "gets",
+      "result" : { "arg" : 0 },
+      "args" : [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int gettimeofday(struct timeval *tp, void *tzp)",
+      "name": "gettimeofday",
+      "args" : [
+            { "access" : "Write" },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "uint32_t htonl(uint32_t hostlong)",
+      "name": "htonl"
+},
+{
+      "signature": "uint16_t htons(uint16_t hostshort)",
+      "name": "htons"
+},
+{
+      "signature": "int iprintf(const char *format, ...)",
+      "name": "iprintf",
+      "args" : [
+            { "access" : "Read", "array" : true },
+            {}
+      ]
+},
+{
+      "signature": "int isascii(int c)",
+      "name": "isascii"
+},
+{
+      "signature": "int isdigit(int c)",
+      "name": "isdigit"
+},
+{
+      "signature": "long int labs(long int j)",
+      "name": "labs"
+},
+{
+      "signature": "int lchown(const char *path, uid_t owner, gid_t group)",
+      "name": "lchown",
+      "args" : [
+            { "access" : "Read", "array" : true },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "double ldexp(double x, int n)",
+      "name": "ldexp"
+},
+{
+      "signature": "float ldexpf(float x, int n)",
+      "name": "ldexpf"
+},
+{
+      "signature": "long double ldexpl(long double x, int n)",
+      "name": "ldexpl"
+},
+{
+      "signature": "long long int llabs(long long int j)",
+      "name": "llabs"
+},
+{
+      "signature": "double log(double x)",
+      "name": "log"
+},
+{
+      "signature": "double log10(double x)",
+      "name": "log10"
+},
+{
+      "signature": "float log10f(float x)",
+      "name": "log10f"
+},
+{
+      "signature": "long double log10l(long double x)",
+      "name": "log10l"
+},
+{
+      "signature": "double log1p(double x)",
+      "name": "log1p"
+},
+{
+      "signature": "float log1pf(float x)",
+      "name": "log1pf"
+},
+{
+      "signature": "long double log1pl(long double x)",
+      "name": "log1pl"
+},
+{
+      "signature": "double log2(double x)",
+      "name": "log2"
+},
+{
+      "signature": "float log2f(float x)",
+      "name": "log2f"
+},
+{
+      "signature": "double long double log2l(long double x)",
+      "name": "log2l"
+},
+{
+      "signature": "double logb(double x)",
+      "name": "logb"
+},
+{
+      "signature": "float logbf(float x)",
+      "name": "logbf"
+},
+{
+      "signature": "long double logbl(long double x)",
+      "name": "logbl"
+},
+{
+      "signature": "float logf(float x)",
+      "name": "logf"
+},
+{
+      "signature": "long double logl(long double x)",
+      "name": "logl"
+},
+{
+      "signature": "int lstat(const char *path, struct stat *buf)",
+      "name": "lstat",
+      "args" : [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int lstat64(const char *path, struct stat64 *buf)",
+      "name": "lstat64",
+      "args" : [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "void *malloc(size_t size)",
+      "name": "malloc",
+      "result" : { "special": "Malloc", "size" : 0 }
+},
+{
+      "signature": "void *memalign(size_t boundary, size_t size)",
+      "name": "memalign",
+      "result" : { "special": "Malloc", "size" : 1 }
+},
+{
+      "signature": "void *memccpy(void *s1, const void *s2, int c, size_t n)",
+      "name": "memccpy",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : "true", "size" : 3 },
+            { "access" : "Read", "array" : "true", "size" : 3 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "void *memchr(const void *s, int c, size_t n)",
+      "name": "memchr",
+      "args": [
+            { "access" : "Read", "array" : "true", "size" : 2 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int memcmp(const void *s1, const void *s2, size_t n)",
+      "name": "memcmp",
+      "args": [
+            { "access" : "Read", "array" : "true", "size" : 2 },
+            { "access" : "Read", "array" : "true", "size" : 2 },
+            {}
+      ]
+},
+{
+      "signature": "void *memcpy(void *s1, const void *s2, size_t n)",
+      "name": "memcpy",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : "true", "size" : 2 },
+            { "access" : "Read", "array" : "true", "size" : 2 },
+            {}
+      ]
+},
+{
+      "signature": "void *memmove(void *s1, const void *s2, size_t n)",
+      "name": "memmove",
+      "args": [
+            { "access" : "Write", "array" : "true", "size" : 2 },
+            { "access" : "Read", "array" : "true", "size" : 2 },
+            {}
+      ]
+},
+{
+      "signature": "void *memrchr(const void *s, int c, size_t n)",
+      "name": "memrchr",
+      "args": [
+            { "access" : "Read", "array" : "true", "size" : 2 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "void *memset(void *b, int c, size_t len)",
+      "name": "memset",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : "true", "size" : 2 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "void memset_pattern16(void *b, const void *pattern16, size_t len)",
+      "name": "memset_pattern16",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : "true", "size" : 2 },
+            { "access" : "Read", "array" : "true" },
+            {}
+      ]
+},
+{
+      "signature": "int mkdir(const char *path, mode_t mode)",
+      "name": "mkdir",
+      "args": [
+            { "access" : "Read", "array" : "true" },
+            {}
+      ]
+},
+{
+      "signature": "time_t mktime(struct tm *timeptr)",
+      "name": "mktime",
+      "args": [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "double modf(double x, double *iptr)",
+      "name": "modf",
+      "args": [
+            {},
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "float modff(float, float *iptr)",
+      "name": "modff",
+      "args": [
+            {},
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "long double modfl(long double value, long double *iptr)",
+      "name": "modfl",
+      "args": [
+            {},
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "double nearbyint(double x)",
+      "name": "nearbyint"
+},
+{
+      "signature": "float nearbyintf(float x)",
+      "name": "nearbyintf"
+},
+{
+      "signature": "long double nearbyintl(long double x)",
+      "name": "nearbyintl"
+},
+{
+      "signature": "uint32_t ntohl(uint32_t netlong)",
+      "name": "ntohl"
+},
+{
+      "signature": "uint16_t ntohs(uint16_t netshort)",
+      "name": "ntohs"
+},
+{
+      "signature": "int open(const char *path, int oflag, ... )",
+      "name": "open",
+      "args": [
+            { "access" : "Read", "array" : true },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int open64(const char *filename, int flags[, mode_t mode])",
+      "name": "open64",
+      "args": [
+            { "access" : "Read", "array" : true },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "DIR *opendir(const char *dirname)",
+      "name": "opendir",
+      "result" : { "special": "Malloc" },
+      "args": [
+            { "access" : "Read", "array" : true },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int pclose(FILE *stream)",
+      "name": "pclose",
+      "args": [
+            { "access" : "Delete" }
+      ]
+},
+{
+      "signature": "void perror(const char *s)",
+      "name": "perror",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "FILE *popen(const char *command, const char *mode)",
+      "name": "popen",
+      "result" : { "special": "Malloc" },
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int posix_memalign(void **memptr, size_t alignment, size_t size)",
+      "name": "posix_memalign",
+      "args": [
+            { "access" : "Write" },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "double pow(double x, double y)",
+      "name": "pow"
+},
+{
+      "signature": "float powf(float x, float y)",
+      "name": "powf"
+},
+{
+      "signature": "long double powl(long double x, long double y)",
+      "name": "powl"
+},
+{
+      "signature": "ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset)",
+      "name": "pread",
+      "args": [
+            {},
+            { "access" : "Write", "array" : true, "size": 2 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "int printf(const char *format, ...)",
+      "name": "printf",
+      "args": [
+            { "access" : "Read", "array" : true },
+            {}
+      ]
+},
+{
+      "signature": "int putc(int c, FILE *stream)",
+      "name": "putc",
+      "args": [
+            {},
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int putchar(int c)",
+      "name": "putchar"
+},
+{
+      "signature": "int puts(const char *s)",
+      "name": "puts",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset",
+      "name": "pwrite",
+      "args": [
+            {},
+            { "access" : "Read", "array" : true, "size" : 2 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "void qsort(void *base, size_t nel, size_t width, int (*compar)(const void *, const void *)",
+      "name": "qsort",
+      "args": [
+            { "access" : "Read", "array" : true },
+            {},
+            {},
+            {}
+      ]
+},
+{
+      "signature": "ssize_t read(int fildes, void *buf, size_t nbyte)",
+      "name": "Read",
+      "args": [
+            {},
+            { "access" : "Write", "array" : true, "size": 2 },
+            {}
+      ]
+},
+{
+      "signature": "ssize_t readlink(const char *path, char *buf, size_t bufsize)",
+      "name": "readlink",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write", "array" : true, "size": 2 },
+            {}
+      ]
+},
+{
+      "signature": "void *realloc(void *ptr, size_t size)",
+      "name": "realloc",
+      "result": {
+            "special": "Malloc"
+      },
+      "args": [
+            { "access" : "ReadWrite", "array" : true, "size": 1 },
+            {}
+      ]
+},
+{
+      "signature": "void *reallocf(void *ptr, size_t size)",
+      "name": "reallocf",
+      "result": {
+            "special": "Malloc"
+      },
+      "args": [
+            { "access" : "ReadWrite", "array" : true, "size": 1 },
+            {}
+      ]
+},
+{
+      "signature": "char *realpath(const char *file_name, char *resolved_name)",
+      "name": "realpath",
+      "result" : {
+            "arg" : 1
+      },
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write", "array" : true }
+      ]
+},
+{
+      "signature": "int remove(const char *path)",
+      "name": "remove",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int rename(const char *old, const char *new)",
+      "name": "rename",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "void rewind(FILE *stream)",
+      "name": "rewind",
+      "args": [
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "double rint(double x)",
+      "name": "rint"
+},
+{
+      "signature": "float rintf(float x)",
+      "name": "rintf"
+},
+{
+      "signature": "long double rintl(long double x)",
+      "name": "rintl"
+},
+{
+      "signature": "int rmdir(const char *path)",
+      "name": "rmdir"
+},
+{
+      "signature": "double round(double x)",
+      "name": "round"
+},
+{
+      "signature": "float roundf(float x)",
+      "name": "roundf"
+},
+{
+      "signature": "long double roundl(long double x)",
+      "name": "roundl"
+},
+{
+      "signature": "int scanf(const char *restrict format, ... )",
+      "name": "scanf",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "void setbuf(FILE *stream, char *buf)",
+      "name": "setbuf",
+      "args": [
+            { "access" : "ReadWrite" },
+            { "access" : "Write", "array" : true }
+      ]
+},
+{
+      "signature": "int setitimer(int which, const struct itimerval *value, struct itimerval *ovalue",
+      "name": "setitimer",
+      "args": [
+            {},
+            { "access" : "Read" },
+            { "access" : "Write" }
+      ]
+
+},
+{
+      "signature": "int setvbuf(FILE *stream, char *buf, int type, size_t size)",
+      "name": "setvbuf",
+      "args": [
+            { "access" : "ReadWrite" },
+            { "access" : "Write", "array" : true, "size": 3 },
+            {},
+            {}
+      ]
+},
+{
+      "signature": "double sin(double x)",
+      "name": "sin"
+},
+{
+      "signature": "float sinf(float x)",
+      "name": "sinf"
+},
+{
+      "signature": "double sinh(double x)",
+      "name": "sinh"
+},
+{
+      "signature": "float sinhf(float x)",
+      "name": "sinhf"
+},
+{
+      "signature": "long double sinhl(long double x)",
+      "name": "sinhl"
+},
+{
+      "signature": "long double sinl(long double x)",
+      "name": "sinl"
+},
+{
+      "signature": "int siprintf(char *str, const char *format, ...)",
+      "name": "siprintf",
+      "args": [
+            { "access" : "Write", "array" : true },
+            { "access" : "Read", "array" : true },
+            {}
+      ]
+},
+{
+      "signature": "int snprintf(char *s, size_t n, const char *format, ...)",
+      "name": "snprintf",
+      "args": [
+            { "access" : "Write", "array" : true, "size" : 1 },
+            {},
+            { "access" : "Read", "array" : true },
+            {}
+      ]
+},
+{
+      "signature": "int sprintf(char *str, const char *format, ...)",
+      "name": "sprintf",
+      "args": [
+            { "access" : "Write", "array" : true, "size" : 1 },
+            { "access" : "Read", "array" : true },
+            {}
+      ]
+},
+{
+      "signature": "double sqrt(double x)",
+      "name": "sqrt"
+},
+{
+      "signature": "float sqrtf(float x)",
+      "name": "sqrtf"
+},
+{
+      "signature": "long double sqrtl(long double x)",
+      "name": "sqrtl"
+},
+{
+      "signature": "int sscanf(const char *s, const char *format, ... )",
+      "name": "sscanf",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int stat(const char *path, struct stat *buf)",
+      "name": "stat",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int stat64(const char *path, struct stat64 *buf)",
+      "name": "stat64",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int statvfs(const char *path, struct statvfs *buf)",
+      "name": "statvfs",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int statvfs64(const char *path, struct statvfs64 *buf)",
+      "name": "statvfs64",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "char *stpcpy(char *s1, const char *s2)",
+      "name": "stpcpy",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *stpncpy(char *s1, const char *s2, size_t n)",
+      "name": "stpncpy",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : true, "size" : 2 },
+            { "access" : "Read", "array" : true, "size" : 2 }
+      ]
+},
+{
+      "signature": "int strcasecmp(const char *s1, const char *s2)",
+      "name": "strcasecmp",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strcat(char *s1, const char *s2)",
+      "name": "strcat",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strchr(const char *s, int c)",
+      "name": "strchr",      
+      "args": [
+            { "access" : "Read", "array" : true },
+            {}
+      ]
+},
+{
+      "signature": "int strcmp(const char *s1, const char *s2)",
+      "name": "strcmp",      
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int strcoll(const char *s1, const char *s2)",
+      "name": "strcoll",      
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strcpy(char *s1, const char *s2)",
+      "name": "strcpy",      
+      "args": [
+            { "access" : "Write", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "size_t strcspn(const char *s1, const char *s2)",
+      "name": "strcspn",      
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strdup(const char *s1)",
+      "name": "strdup",      
+      "result" : { "special": "Malloc" },
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "size_t strlen(const char *s)",
+      "name": "strlen",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int strncasecmp(const char *s1, const char *s2, size_t n)",
+      "name": "strncasecmp",
+      "args": [
+            { "access" : "Read", "array" : true, "size": 2 },
+            { "access" : "Read", "array" : true, "size": 2 }
+      ]
+},
+{
+      "signature": "char *strncat(char *s1, const char *s2, size_t n)",
+      "name": "strncat",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : true },
+            { "access" : "Read", "array" : true, "size": 2 }
+      ]
+},
+{
+      "signature": "int strncmp(const char *s1, const char *s2, size_t n)",
+      "name": "strncmp",
+      "args": [
+            { "access" : "Read", "array" : true, "size": 2 },
+            { "access" : "Read", "array" : true, "size": 2 }
+      ]
+},
+{
+      "signature": "char *strncpy(char *s1, const char *s2, size_t n)",
+      "name": "strncpy",
+      "result" : { "arg" : 0 },
+      "args": [
+            { "access" : "Write", "array" : true, "size": 2 },
+            { "access" : "Read", "array" : true, "size": 2 }
+      ]
+},
+{
+      "signature": "char *strndup(const char *s1, size_t n)",
+      "name": "strndup",
+      "result" : { "special": "Malloc", "size" : 2 },
+      "args": [
+            { "access" : "Read", "array" : true, "size": 2 }
+      ]
+},
+{
+      "signature": "size_t strnlen(const char *s, size_t maxlen)",
+      "name": "strnlen",
+      "args": [
+            { "access" : "Read", "array" : true, "size": 1 },
+            {}
+      ]
+},
+{
+      "signature": "char *strpbrk(const char *s1, const char *s2)",
+      "name": "strpbrk",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strrchr(const char *s, int c)",
+      "name": "strrchr",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { }
+      ]
+},
+{
+      "signature": "size_t strspn(const char *s1, const char *s2)",
+      "name": "strspn",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strstr(const char *s1, const char *s2)",
+      "name": "strstr",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "double strtod(const char *nptr, char **endptr)",
+      "name": "strtod",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "float strtof(const char *nptr, char **endptr)",
+      "name": "strtof",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "char *strtok(char *s1, const char *s2)",
+      "name": "strtok",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "char *strtok_r(char *s, const char *sep, char **lasts)",
+      "name": "strtok_r",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "long int strtol(const char *nptr, char **endptr, int base)",
+      "name": "strtol",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" },
+            {}
+      ]
+},
+{
+      "signature": "long double strtold(const char *nptr, char **endptr)",
+      "name": "strtold",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "long long int strtoll(const char *nptr, char **endptr, int base)",
+      "name": "strtoll",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" },
+            {}
+      ]
+},
+{
+      "signature": "unsigned long int strtoul(const char *nptr, char **endptr, int base)",
+      "name": "strtoul",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" },
+            {}
+      ]
+},
+{
+      "signature": "unsigned long long int strtoull(const char *nptr, char **endptr, int base)",
+      "name": "strtoull",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" },
+            {}
+      ]
+},
+{
+      "signature": "size_t strxfrm(char *s1, const char *s2, size_t n)",
+      "name": "strxfrm",
+      "args": [
+            { "access" : "Write", "array" : true, "size" : 2 },
+            { "access" : "Read", "array" : true, "size" : 2 },
+            {}
+      ]
+},
+{
+      "signature": "int system(const char *command)",
+      "name": "system",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "double tan(double x)",
+      "name": "tan"
+},
+{
+      "signature": "float tanf(float x)",
+      "name": "tanf"
+},
+{
+      "signature": "double tanh(double x)",
+      "name": "tanh"
+},
+{
+      "signature": "float tanhf(float x)",
+      "name": "tanhf"
+},
+{
+      "signature": "long double tanhl(long double x)",
+      "name": "tanhl"
+},
+{
+      "signature": "long double tanl(long double x)",
+      "name": "tanl"
+},
+{
+      "signature": "clock_t times(struct tms *buffer)",
+      "name": "times"
+},
+{
+      "signature": "FILE *tmpfile(void)",
+      "name": "tmpfile",
+      "result": { "special": "Malloc" }
+},
+{
+      "signature": "FILE *tmpfile64(void)",
+      "name": "tmpfile64",
+      "result": { "special": "Malloc" }
+},
+{
+      "signature": "int toascii(int c)",
+      "name": "toascii"
+},
+{
+      "signature": "double trunc(double x)",
+      "name": "trunc"
+},
+{
+      "signature": "float truncf(float x)",
+      "name": "truncf"
+},
+{
+      "signature": "long double truncl(long double x)",
+      "name": "truncl"
+},
+{
+      "signature": "int uname(struct utsname *name)",
+      "name": "uname",
+      "args": [
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int ungetc(int c, FILE *stream)",
+      "name": "ungetc",
+      "args": [
+            {},
+            { "access" : "ReadWrite" }
+      ]
+},
+{
+      "signature": "int unlink(const char *path)",
+      "name": "unlink",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int unsetenv(const char *name)",
+      "name": "unsetenv",
+      "args": [
+            { "access" : "Read", "array" : true }
+      ]
+},
+{
+      "signature": "int utime(const char *path, const struct utimbuf *times)",
+      "name": "utime",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int utimes(const char *path, const struct timeval times[2])",
+      "name": "utimes",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "void *valloc(size_t size)",
+      "name": "valloc",
+      "result" : { "special": "Malloc", "size" : 0 }
+},
+{
+      "signature": "int vfprintf(FILE *stream, const char *format, va_list ap)",
+      "name": "vfprintf",
+      "args": [
+            { "access" : "ReadWrite" },
+            { "access" : "Read", "array" : true },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int vfscanf(FILE *stream, const char *format, va_list arg)",
+      "name": "vfscanf",
+      "args": [
+            { "access" : "ReadWrite" },
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int vprintf(const char *restrict format, va_list ap)",
+      "name": "vprintf",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int vscanf(const char *format, va_list arg)",
+      "name": "vscanf",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "int vsnprintf(char *s, size_t n, const char *format, va_list ap)",
+      "name": "vsnprintf",
+      "args": [
+            { "access" : "Write", "array" : true, "size" : 1 },
+            {},
+            { "access" : "Read", "array" : true },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int vsprintf(char *s, const char *format, va_list ap)",
+      "name": "vsprintf",
+      "args": [
+            { "access" : "Write", "array" : true },
+            { "access" : "Read", "array" : true },
+            { "access" : "Read" }
+      ]
+},
+{
+      "signature": "int vsscanf(const char *s, const char *format, va_list arg)",
+      "name": "vsscanf",
+      "args": [
+            { "access" : "Read", "array" : true },
+            { "access" : "Read", "array" : true },
+            { "access" : "Write" }
+      ]
+},
+{
+      "signature": "ssize_t write(int fildes, const void *buf, size_t nbyte)",
+      "name": "Write",
+      "args": [
+            {},
+            { "access" : "Write", "array" : true, "size" : 2 }
+      ]
+}
+]

@@ -5,12 +5,15 @@
  *      Author: ice-phoenix
  */
 
+#include "Statistics/statistics.h"
 #include "Term/Term.h"
 
 namespace borealis {
 
+static Statistic totalTermsCreated("misc","totalTerms","Total number of terms created");
+
 Term::Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable):
-    ClassTag(classTag), type(type), name(name), retypable(retypable) {};
+    ClassTag(classTag), type(type), name(name), retypable(retypable) { ++totalTermsCreated; };
 
 Type::Ptr Term::getType() const {
     return type;

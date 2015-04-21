@@ -1276,6 +1276,31 @@ MACRO(A31, MARG)
     } \
     }
 
+#define ENUM_CHECK(NAME, ENAME) case ENAME::NAME: return #NAME;
+#define ENUM_REVERSE_CHECK(NAME, ENAME) else if (json == #NAME) return optional_ptr_t(new ENAME(ENAME::NAME));
+
+#define GENERATE_OUTLINE_ENUM_JSON_TRAITS(TYPE, ...) \
+\
+    namespace borealis { namespace util { \
+    template<> \
+    struct json_traits<TYPE> {\
+        typedef std::unique_ptr<TYPE> optional_ptr_t; \
+\
+        static Json::Value toJson(TYPE val) { \
+            switch(val) { \
+                PP_FOREACH(ENUM_CHECK, , TYPE, __VA_ARGS__); \
+            }\
+        } \
+\
+        static optional_ptr_t fromJson(const Json::Value& json) { \
+            if(0) return nullptr; \
+            PP_FOREACH(ENUM_REVERSE_CHECK, , TYPE, __VA_ARGS__); \
+            return nullptr; \
+        } \
+    }; \
+    } \
+    }
+
 #define ENUM_PRINT_CASE(X,ENAME) case ENAME::X : ost << #ENAME << "::" << #X; break;
 #define GENERATE_ENUM_PRINT(ename, ...) \
     static std::ostream& operator<<(std::ostream& ost, ename rhv) { \
@@ -1283,6 +1308,23 @@ MACRO(A31, MARG)
             PP_FOREACH(ENUM_PRINT_CASE,,ename,__VA_ARGS__) \
         } \
         return ost; \
+    }
+
+#define ENUM_READ(X,ENAME) { #X, ENAME::X }
+#define GENERATE_ENUM_READ(ename, ...) \
+    static std::istream& operator>>(std::istream& ist, ename& rhv) { \
+        static std::unordered_map<std::string, ename> names { \
+            PP_FOREACH_COMMA(ENUM_READ,ename,__VA_ARGS__) \
+        }; \
+        std::string ret; \
+        ist >> ret; \
+        auto it = names.find(ret); \
+        if(it == std::end(names)) { \
+            ist.setstate(std::ios::failbit); \
+        } else { \
+            rhv = it->second; \
+        } \
+        return ist; \
     }
 
 #define QUAL_ENUM(X,ENAME) ENAME::X

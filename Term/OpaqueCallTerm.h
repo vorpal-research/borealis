@@ -44,10 +44,9 @@ public:
         auto&& _rhv = getRhv().map(
             [&](auto&& arg) { return tr->transform(arg); }
         );
-        auto&& _type = tr->FN.Type->getUnknownType();
         TERM_ON_CHANGED(
             getLhv() != _lhv || not util::equal(getRhv(), _rhv, ops::equals_to),
-            new Self( _type, _lhv, _rhv.toVector() )
+            new Self( tr->FN.Type->getUnknownType(), _lhv, _rhv.toVector() )
         );
     }
 

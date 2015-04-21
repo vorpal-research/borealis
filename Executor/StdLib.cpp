@@ -4,14 +4,16 @@
  *  Created on: Feb 17, 2015
  *      Author: belyaev
  */
-#include <Executor/ExecutionEngine.h>
+#include "Executor/ExecutionEngine.h"
 #include "Logging/tracer.hpp"
 #include "Codegen/intrinsics.h"
 #include "Config/config.h"
 
 #include <cmath>
 
+#include <lib/typesig/typesig.hpp>
 #include <llvm/Target/TargetLibraryInfo.h>
+
 
 using namespace borealis;
 using namespace borealis::config;
@@ -201,6 +203,12 @@ util::option<llvm::GenericValue> ExecutionEngine::callStdLibFunction(
     using util::nothing;
 
     TRACE_FUNC;
+
+    if(util::viewContainer(F->getArgumentList())
+        .zipWith(ArgVals)
+        .any_of(as_packed(LAM2(arg, gv, arg.getType()->isPointerTy() && Mem.isOpaquePointer(gv.PointerVal))))) {
+        return nothing();
+    }
 
     lfn::Func fcode;
     TLI->getLibFunc(F->getName(), fcode);

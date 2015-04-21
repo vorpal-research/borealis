@@ -194,6 +194,25 @@ inline bool operator>=(const string_ref &LHS, const string_ref &RHS) {
 } /* namespace util */
 } /* namespace borealis */
 
+namespace std {
+
+template<>
+struct hash<borealis::util::string_ref> {
+    size_t operator()(const borealis::util::string_ref& v) const noexcept {
+        auto&& h = std::hash<char>{};
+
+        if(v.empty()) return 0;
+
+        size_t res = 3;
+        for (auto&& c : v) {
+            res = 17 * res + h(c);
+        }
+        return res;
+    }
+};
+
+} /* namespace std */
+
 #include "Util/unmacros.h"
 
 #endif /* STRING_REF_HPP_ */

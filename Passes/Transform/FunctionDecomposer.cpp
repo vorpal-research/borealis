@@ -5,28 +5,33 @@
  *      Author: belyaev
  */
 
-#include "Passes/Transform/FunctionDecomposer.h"
-#include "Codegen/intrinsics_manager.h"
-#include "Statistics/statistics.h"
-#include "Util/passes.hpp"
 
-#include "Config/config.h"
 
 #include <string>
 #include <unordered_set>
 
 #include <llvm/Analysis/MemoryBuiltins.h>
-
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Argument.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
-
 #include <llvm/Target/TargetLibraryInfo.h>
-#include <Util/functional.hpp>
+
+#include "Passes/Transform/FunctionDecomposer.h"
+#include "Codegen/intrinsics_manager.h"
+#include "Statistics/statistics.h"
+#include "Util/passes.hpp"
+#include "Config/config.h"
+#include "Util/functional.hpp"
+#include "Passes/Misc/FuncInfoProvider.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
+
+namespace lfn = llvm::LibFunc;
+
 
 char FunctionDecomposer::ID;
 static RegisterPass<FunctionDecomposer>
@@ -76,8 +81,6 @@ inline llvm::CallInst* mkConsumeCall(
 
     return createCall(f, arg, "", &originalCall);
 }
-
-#include "Util/macros.h"
 
 inline llvm::Instruction* mkLoad(
         llvm::CallInst& originalCall,
@@ -143,11 +146,11 @@ inline llvm::CallInst* mkNondet(
 
     return createCall(f, name, &originalCall);
 }
-#include "Util/unmacros.h"
 
 void FunctionDecomposer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesCFG();
     AUX<llvm::TargetLibraryInfo>::addRequiredTransitive(AU);
+    AUX<borealis::FuncInfoProvider>::addRequiredTransitive(AU);
 }
 
 bool FunctionDecomposer::runOnModule(llvm::Module& M) {
@@ -158,12 +161,14 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     auto&& TLI = GetAnalysis<llvm::TargetLibraryInfo>::doit(this);
 
     auto&& IM = IntrinsicsManager::getInstance();
+    auto&& FIP = GetAnalysis<FuncInfoProvider>::doit(this);
 
     auto isDecomposable = [&](const llvm::CallInst* ci) {
         if(!ci) return false;
 
         auto&& func = ci->getCalledFunction();
-        return func->isDeclaration()
+        return func
+            && func->isDeclaration()
             && !func->isIntrinsic()
             && !llvm::isAllocationFn(ci, &TLI)
             && !llvm::isFreeCall(ci, &TLI)
@@ -183,34 +188,75 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .toHashSet();
 
     for(llvm::CallInst* call : funcs) {
+        llvm::Function* f = call->getCalledFunction();
         llvm::Value* predefinedReturn = nullptr;
+        if(FIP.hasInfo(f)) {
+            infos() << "FIPping " << f->getName() << endl;
+            for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
+                auto realIx = f->isVarArg() && i > f->getArgumentList().size() ? f->getArgumentList().size() : i;
 
-        for(auto i = 0U; i < call->getNumArgOperands(); ++i) {
-            auto&& arg = call->getArgOperand(i);
-            if(call->getCalledFunction()->getAttributes().hasAttribute(i, llvm::Attribute::Returned)) {
-                predefinedReturn = arg;
+                auto&& arg = call->getArgOperand(i);
+
+                auto writeOnly = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::Write;
+                auto readOnly = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::Read;
+                auto noAccess = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::None;
+                if(FIP.getInfo(f).resultInfo.sizeArgument == size_t(i)) {
+                    predefinedReturn = arg;
+                }
+
+                if (!arg->getType()->isPointerTy()
+                    || arg->getType()->getPointerElementType()->isFunctionTy()
+                    || llvm::isa<llvm::Constant>(arg)
+                    || noAccess) {
+                    auto&& consume = mkConsumeCall(IM, M, *call, i);
+                    if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
+                } else if (readOnly) {
+                    auto&& load = mkLoad(*call, i);
+                    if (auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
+                    auto&& consume = mkConsumeCall(IM, M, *call, i, load);
+                    if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
+                } else if(writeOnly) {
+                    auto&& store = mkStoreNondet(IM, M, *call, i);
+                    if (auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
+                } else {
+                    auto&& load = mkLoad(*call, i);
+                    if (auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
+                    auto&& consume = mkConsumeCall(IM, M, *call, i, load);
+                    if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
+                    auto&& store = mkStoreNondet(IM, M, *call, i);
+                    if (auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
+                }
             }
+        } else {
+            for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
+                auto&& arg = call->getArgOperand(i);
+                if (call->getCalledFunction()->getAttributes().hasAttribute(i, llvm::Attribute::Returned)) {
+                    predefinedReturn = arg;
+                }
 
-            if(!arg->getType()->isPointerTy()
-             || llvm::isa<llvm::Constant>(arg)
-             || call->getCalledFunction()->doesNotAccessMemory(i)) {
-                auto&& consume = mkConsumeCall(IM, M, *call, i);
-                if(auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
-            } else if(call->getCalledFunction()->onlyReadsMemory(i)) {
-                auto&& load = mkLoad(*call, i);
-                if(auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
-                auto&& consume = mkConsumeCall(IM, M, *call, i, load);
-                if(auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
-            } else {
-                auto&& load = mkLoad(*call, i);
-                if(auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
-                auto&& consume = mkConsumeCall(IM, M, *call, i, load);
-                if(auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
-                auto&& store = mkStoreNondet(IM, M, *call, i);
-                if(auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
+                if (!arg->getType()->isPointerTy()
+                    || arg->getType()->getPointerElementType()->isFunctionTy()
+                    || llvm::isa<llvm::Constant>(arg)
+                    || call->getCalledFunction()->doesNotAccessMemory(i)) {
+                    auto&& consume = mkConsumeCall(IM, M, *call, i);
+                    if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
+                } else if (call->getCalledFunction()->onlyReadsMemory(i)) {
+                    auto&& load = mkLoad(*call, i);
+                    if (auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
+                    auto&& consume = mkConsumeCall(IM, M, *call, i, load);
+                    if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
+                } else {
+                    auto&& load = mkLoad(*call, i);
+                    if (auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
+                    auto&& consume = mkConsumeCall(IM, M, *call, i, load);
+                    if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
+                    auto&& store = mkStoreNondet(IM, M, *call, i);
+                    if (auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
+                }
             }
         }
-        if(predefinedReturn) {
+
+        if (predefinedReturn) {
             call->replaceAllUsesWith(predefinedReturn);
         } else {
             auto&& replacementCall = mkNondet(IM, M, *call);
@@ -229,3 +275,5 @@ void FunctionDecomposer::print(llvm::raw_ostream&, const llvm::Module*) const {
 }
 
 }; /* namespace borealis */
+
+#include "Util/unmacros.h"

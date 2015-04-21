@@ -77,10 +77,10 @@ static auto konst = [](auto&& a) {
 
 
 
-namespace impl {
+namespace impl_ {
 template<class Tuple, class Callable, size_t ...N>
 auto apply_packed_step_1(Tuple&& tp, Callable c, std::index_sequence<N...>)
-QUICK_RETURN(c(std::get<N>(std::forward<Tuple>(tp))...))
+QUICK_RETURN(c(std::get<N>(tp)...))
 
 // apply a function taking N parameters to an N-tuple
 template<class Callable, class Tuple>
@@ -90,8 +90,8 @@ QUICK_RETURN(apply_packed_step_1(std::forward<Tuple>(tp), c, std::make_index_seq
 
 template<class F>
 static auto as_packed(F f) {
-    return [&f](auto&& tuple) -> DECLTYPE_AUTO {
-        return impl::apply_packed(f, std::forward<decltype(tuple)>(tuple));
+    return [f](auto&& tuple) -> DECLTYPE_AUTO {
+        return impl_::apply_packed(f, std::forward<decltype(tuple)>(tuple));
     };
 }
 

@@ -20,6 +20,9 @@ namespace borealis {
 struct AdditionalDefectInfo {
     llvm::Function* where;
     util::option<smt::SatResult> satModel;
+
+    enum class RunResult { Proven, Disproven, Controversal, NotRun };
+    RunResult runResult = RunResult::NotRun;
 };
 
 class DefectManager :
