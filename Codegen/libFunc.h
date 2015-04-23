@@ -344,7 +344,8 @@ static const std::unordered_map<Func, borealis::util::string_ref>& encoding() {
         {vsnprintf,            "vsnprintf"},
         {vsprintf,             "vsprintf"},
         {vsscanf,              "vsscanf"},
-        {write,                "write"}
+        {write,                "write"},
+        {NumLibFuncs,          "???"}
     };
 
     return retVal;

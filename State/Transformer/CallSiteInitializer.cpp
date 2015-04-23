@@ -50,6 +50,7 @@ Predicate::Ptr CallSiteInitializer::transformPredicate(Predicate::Ptr p) {
     }
 }
 
+
 Term::Ptr CallSiteInitializer::transformArgumentTerm(ArgumentTermPtr t) {
     auto argIdx = t->getIdx();
 

@@ -43,6 +43,21 @@ public:
                         predicateType(LA)
                     );
             }
+
+            if (llvm::isa<AssignsAnnotation>(anno)) {
+                const LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
+                auto trm = LA->getTerm();
+                static int seed = 0;
+                if (llvm::isa<ReadPropertyTerm>(trm)) {
+                    auto rpt = llvm::cast<ReadPropertyTerm>(trm);
+                    pass->PM[&CI] =
+                        pass->FN.Predicate->getWritePropertyPredicate(
+                            rpt->getPropertyName(),
+                            rpt->getRhv(),
+                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(32), "borealis.fresh.var." + util::toString(seed))
+                        );
+                }
+            }
         }
     }
 

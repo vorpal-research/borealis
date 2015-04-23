@@ -78,6 +78,8 @@ llvm::ArithType convertAT(bin_opcode op) {
         return llvm::ArithType::SHL;
     case bin_opcode::OPCODE_RSH:
         return llvm::ArithType::ASHR;
+    case bin_opcode::OPCODE_IMPLIES:
+        return llvm::ArithType::IMPLIES;
     default:
         BYE_BYE(llvm::ArithType, "Called with non-arithmetic operation");
     }
@@ -213,4 +215,13 @@ Annotation::Ptr borealis::fromParseResult(
     BYE_BYE(Annotation::Ptr, "Unknown annotation type: \"@" + cmd.name_ + "\"");
 }
 
+Annotation::Ptr borealis::fromString(const Locus& locus, const std::string& text, TermFactory::Ptr TF) {
+    auto commands = anno::parse("// " + text);
+    if(commands.empty()) return nullptr;
+    ASSERTC(commands.size() == 1);
+    return fromParseResult(locus, commands.front(), TF);
+}
+
 #include "Util/unmacros.h"
+
+

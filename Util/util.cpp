@@ -202,6 +202,7 @@ std::string arithString(ArithType opCode) {
     case ArithType::SHL:  return "<<";
     case ArithType::ASHR: return ">>";
     case ArithType::LSHR: return ">>>";
+    case ArithType::IMPLIES: return "==>";
     default: BYE_BYE(std::string, "Unreachable!");
     }
 }

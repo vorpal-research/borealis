@@ -46,8 +46,9 @@ struct FuncInfo {
     std::string signature;
     ResultInfo resultInfo;
     std::vector<ArgInfo> argInfo;
+    std::vector<std::string> contracts;
 
-    GENERATE_PRINT(FuncInfo, id, signature, resultInfo, argInfo);
+    GENERATE_PRINT(FuncInfo, id, signature, resultInfo, argInfo, contracts);
 };
 
 } /* namespace func_info */
@@ -123,6 +124,7 @@ struct json_traits<borealis::func_info::FuncInfo> {
         ret["signature"] = util::toJson(val.signature);
         ret["result"] = util::toJson(val.resultInfo);
         ret["args"] = util::toJson(val.argInfo);
+        ret["contracts"] = util::toJson(val.contracts);
         return ret;
     }
 
@@ -138,6 +140,7 @@ struct json_traits<borealis::func_info::FuncInfo> {
         util::assignJson(retVal->signature, json["signature"]);
         util::assignJson(retVal->resultInfo, json["result"]);
         util::assignJson(retVal->argInfo, json["args"]);
+        util::assignJson(retVal->contracts, json["contracts"]);
 
         return std::move(retVal);
     }

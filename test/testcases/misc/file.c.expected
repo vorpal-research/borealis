@@ -1,0 +1,16 @@
+
+[
+	
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/misc/file.c",
+			"loc" : 
+			{
+				"col" : 9,
+				"line" : 9
+			}
+		},
+		"type" : "ASR-01"
+	}
+]

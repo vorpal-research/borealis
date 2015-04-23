@@ -25,6 +25,10 @@ void insertBeforeWithLocus(
         llvm::Instruction* what,
         llvm::Instruction* before,
         const Locus& loc);
+void insertAfterWithLocus(
+        llvm::Instruction* what,
+        llvm::Instruction* after,
+        const Locus& loc);
 void setDebugLocusWithCopiedScope(
         llvm::Instruction* to,
         llvm::Instruction* from,

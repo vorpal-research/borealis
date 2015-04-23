@@ -80,6 +80,14 @@ void insertBeforeWithLocus(
     setDebugLocusWithCopiedScope(what, before, loc);
 }
 
+void insertAfterWithLocus(
+        llvm::Instruction* what,
+        llvm::Instruction* after,
+        const Locus& loc) {
+    what->insertAfter(after);
+    setDebugLocusWithCopiedScope(what, after, loc);
+}
+
 void setDebugLocusWithCopiedScope(
         llvm::Instruction* to,
         llvm::Instruction* from,

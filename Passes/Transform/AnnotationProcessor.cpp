@@ -35,7 +35,11 @@ void AnnotationProcessor::getAnalysisUsage(llvm::AnalysisUsage& AU) const{
     AUX<VariableInfoTracker>::addRequiredTransitive(AU);
 }
 
-static llvm::CallInst* getAnnotationCall(llvm::Module& M, FactoryNest FN, Annotation::Ptr anno, const std::set<Term::Ptr, TermCompare>& supplemental, const llvm::Instruction* hint) {
+static llvm::CallInst* getAnnotationCall(llvm::Module& M,
+                                         FactoryNest FN,
+                                         Annotation::Ptr anno,
+                                         const std::set<Term::Ptr, TermCompare>& supplemental,
+                                         const llvm::Instruction* hint) {
     using namespace llvm;
     using namespace borealis::util;
     using llvm::Type; // clash with borealis::Type
@@ -68,8 +72,12 @@ static llvm::CallInst* getAnnotationCall(llvm::Module& M, FactoryNest FN, Annota
     return tmpl;
 }
 
-static bool landOnInstructionOrFirst(Annotation::Ptr anno, llvm::Module& M, FactoryNest FN, llvm::Value& val, const std::set<Term::Ptr, TermCompare>& supplemental) {
+bool AnnotationProcessor::landOnInstructionOrFirst(Annotation::Ptr anno,
+                                     llvm::Module& M,
+                                     FactoryNest FN,
+                                     llvm::Value& val) {
 
+    auto supplemental = substitutionOrdering(anno);
 
     if(auto F = llvm::dyn_cast<llvm::Function>(&val)) {
         auto hint = F->getEntryBlock().getFirstNonPHIOrDbgOrLifetime();
@@ -85,8 +93,10 @@ static bool landOnInstructionOrFirst(Annotation::Ptr anno, llvm::Module& M, Fact
     return false;
 }
 
-static bool landOnInstructionOrLast(Annotation::Ptr anno, llvm::Module& M, FactoryNest FN, llvm::Value& val, const std::set<Term::Ptr, TermCompare>& supplemental) {
+bool AnnotationProcessor::landOnInstructionOrLast(Annotation::Ptr anno, llvm::Module& M, FactoryNest FN, llvm::Value& val) {
     using namespace llvm;
+
+    auto supplemental = substitutionOrdering(anno);
 
     if(auto F = llvm::dyn_cast<llvm::Function>(&val)) {
         // FIXME akhin Fix annotation location business in SourceLocationTracker / MetaInfoTracker
@@ -106,7 +116,7 @@ static bool landOnInstructionOrLast(Annotation::Ptr anno, llvm::Module& M, Facto
         return true;
     } else if (auto I = llvm::dyn_cast<llvm::Instruction>(&val)) {
         auto template_ = getAnnotationCall(M, FN, anno, supplemental, I);
-        insertBeforeWithLocus(template_, I, anno->getLocus());
+        insertAfterWithLocus(template_, I, anno->getLocus());
         return true;
     }
     return false;
@@ -162,7 +172,6 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 
         anno = ove.transform(anno);
         anno = materialize(anno, FN, VIT);
-        auto sortedTerms = substitutionOrdering(anno);
 
         // ensures are placed at the end of the func
         auto handler =
@@ -170,14 +179,13 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
                 &landOnInstructionOrLast :
                 &landOnInstructionOrFirst;
 
-        handler(anno, M, FN, *boundValue, sortedTerms);
+        handler(anno, M, FN, *boundValue);
 
         // context-bound synthetic assumes are pushed to the beginning of enclosing function
         if(context) {
             for(auto anno : ove.getResults()) {
                 anno = materialize(anno, FN, VIT);
-                auto sortedTerms = substitutionOrdering(anno);
-                landOnInstructionOrFirst(anno, M, FN, *context, sortedTerms);
+                landOnInstructionOrFirst(anno, M, FN, *context);
             }
         }
     }

@@ -205,12 +205,16 @@ struct read_land2: SGRAMMAR(read_land2, G(read_bitor2) >> *G(read_land) );
 struct read_lor: READ_BINARY(||, read_land2, logical_or);
 // lor2 := land2 lor*
 struct read_lor2: SGRAMMAR(read_lor2, G(read_land2) >> *G(read_lor) );
+// implies := '==>' lor2
+struct read_implies: READ_BINARY(==>, read_lor2, implies);
+// implies2 := lor2 implies*
+struct read_implies2: SGRAMMAR(read_implies2, G(read_lor2) >> *G(read_implies) );
 // lor2 is the root of all expressions (as we don't consider even less bound ones)
 // XXX: do we need to implement ternary operator (?:)
 //      if we do, it will be right below lor2
 // expr := lor2
 struct read_expr :
-        read_lor2 {};
+        read_implies2 {};
 
 #undef READ_UNARY
 #undef READ_BINARY

@@ -371,6 +371,10 @@ prod_t property_indirect_access(const prod_t& op0, const prod_t& op1) {
     return productionFactory::createBinary(bin_opcode::OPCODE_INDIR_PROPERTY, op0, op1);
 }
 
+prod_t imply(const prod_t& op0, const prod_t& op1) {
+    return productionFactory::createBinary(bin_opcode::OPCODE_IMPLIES, op0, op1);
+}
+
 prod_t deref(const prod_t& op0) {
     return productionFactory::createUnary(un_opcode::OPCODE_LOAD, op0);
 }

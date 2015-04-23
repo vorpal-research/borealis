@@ -6,6 +6,9 @@
             {
                   "access" : "Read"
             }
+      ],
+      "contracts" : [
+            "@requires \\property(file, \\arg) == 1"
       ]
 },
 {
@@ -14,8 +17,12 @@
       "args": [
             {},
             {
-                  "access" : "ReadWrite"
+                  "access" : "None"
             }
+      ],
+      "contracts" : [
+            "@requires \\property(file, \\arg1) == 1",
+            "@ensures (\\result == \\arg0) || (\\result == -1)"
       ]
 },
 {
@@ -26,6 +33,11 @@
                   "access" : "Delete",
                   "array": true
             }
+      ],
+      "contracts" : [
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 5",
+            "@assigns \\property(malloc, \\arg)",
+            "@ensures \\property(malloc, \\arg) == 6"
       ]
 },
 {
@@ -37,6 +49,11 @@
                   "array": true
             },
             {}
+      ],
+      "contracts" : [
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 5",
+            "@assigns \\property(malloc, \\arg)",
+            "@ensures \\property(malloc, \\arg) == 6"
       ]
 },
 {
@@ -46,6 +63,11 @@
             {
                   "access" : "Delete"
             }
+      ],
+      "contracts" : [
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 3",
+            "@assigns \\property(malloc, \\arg)",
+            "@ensures \\property(malloc, \\arg) == 4"
       ]
 },
 {
@@ -56,6 +78,11 @@
                   "access" : "Delete"
             },
             {}
+      ],
+      "contracts" : [
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 3",
+            "@assigns \\property(malloc, \\arg)",
+            "@ensures \\property(malloc, \\arg) == 4"
       ]
 },
 {
@@ -64,7 +91,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 5"
+      ]
 },
 {
       "signature": "void *new[](unsigned int, nothrow)",
@@ -72,7 +102,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 5"
+      ]
 },
 {
       "signature": "void *new[](unsigned long)",
@@ -80,7 +113,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 5"
+      ]
 },
 {
       "signature": "void *new[](unsigned long, nothrow)",
@@ -88,7 +124,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 5"
+      ]
 },
 {
       "signature": "void *new(unsigned int)",
@@ -96,7 +135,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 3"
+      ]
 },
 {
       "signature": "void *new(unsigned int, nothrow)",
@@ -104,7 +146,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 3"
+      ]
 },
 {
       "signature": "void *new(unsigned long)",
@@ -112,7 +157,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 3"
+      ]
 },
 {
       "signature": "void *new(unsigned long, nothrow)",
@@ -120,7 +168,10 @@
       "result": {
             "special": "Malloc",
             "size": 0
-      }
+      },
+      "contracts" : [
+            "@ensures \\property(malloc, \\result) == 3"
+      ]
 },
 {
       "signature": "double __cospi(double x)",
@@ -220,6 +271,10 @@
       "result" : { "special": "Malloc" },
       "args": [
             { "access" : "Read", "array": true }
+      ],
+      "contracts" : [
+            "@ensures \\result != \\arg",
+            "@ensures \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
 {
@@ -229,20 +284,32 @@
       "args": [
             { "access" : "Read", "array": true, "size": 1 },
             {}
+      ],
+      "contracts" : [
+            "@ensures \\result != \\arg",
+            "@ensures \\property(strlen, \\result) == \\arg1 ||  \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
 {
       "signature": "char * __strtok_r(char *s, const char *delim, char **save_ptr)",
       "name": "dunder_strtok_r",
+      "result" : { "special": "Malloc" },
       "args": [
             { "access" : "Read", "array": true },
             { "access" : "Read", "array": true },
             { "access" : "Write" }
+      ],
+      "contracts" : [
+            "@ensures \\result == \\nullptr || \\property(strlen, \\result) <= \\property(strlen, \\arg)"
       ]
 },
 {
       "signature": "int abs(int j)",
-      "name": "abs"
+      "name": "abs",
+      "contracts" : [
+            "@ensures (\\arg > 0) ==> \\result == \\arg",
+            "@ensures (\\arg < 0) ==> \\result == -\\arg"
+      ]
 },
 {
       "signature": "int access(const char *path, int amode)",
@@ -250,6 +317,9 @@
       "args": [
             { "access" : "Read", "array": true },
             {}
+      ],
+      "contracts" : [
+            "@ensures \\result == 0 || \\result == -1"
       ]
 },
 {
@@ -554,7 +624,12 @@
       "signature": "int fclose(FILE *stream)",
       "name": "fclose",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ],
+      "contracts" : [
+            "@assigns \\property(file, \\arg)",
+            "@requires \\property(file, \\arg) == 1",
+            "@ensures \\property(file, \\arg) == 0"
       ]
 },
 {
@@ -569,21 +644,27 @@
       "signature": "int feof(FILE *stream)",
       "name": "feof",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ],
+      "contracts" : [
+            "@requires \\property(file, \\arg) == 1"
       ]
 },
 {
       "signature": "int ferror(FILE *stream)",
       "name": "ferror",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
       ]
 },
 {
       "signature": "int fflush(FILE *stream)",
       "name": "fflush",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ],
+      "contracts" : [
+            "@requires \\property(file, \\result) == 1"
       ]
 },
 {
@@ -602,15 +683,21 @@
       "signature": "int fgetc(FILE *stream)",
       "name": "fgetc",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg) == 1"
       ]
 },
 {
       "signature": "int fgetpos(FILE *stream, fpos_t *pos)",
       "name": "fgetpos",
       "args" : [
-            { "access" : "ReadWrite" },
+            { "access" : "None" },
             { "access" : "Write" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -622,30 +709,43 @@
       "args" : [
             { "access" : "Write", "array": true },
             {},
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@ensures \\result == \\arg0 || \\result == \\nullptr",
+            "@requires \\property(file, \\arg2) == 1"
       ]
 },
 {
       "signature": "int fileno(FILE *stream)",
       "name": "fileno",
       "args": [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg0) == 1"
       ]
 },
 {
       "signature": "int fiprintf(FILE *stream, const char *format, ...)",
       "name": "fiprintf",
       "args": [
-            { "access" : "ReadWrite" },
+            { "access" : "None" },
             { "access" : "Read", "array": true },
             {}
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg0) == 1"
       ]
 },
 {
       "signature": "void flockfile(FILE *file)",
       "name": "flockfile",
       "args": [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -702,6 +802,9 @@
       "args": [
             { "access" : "Read", "array": true },
             { "access" : "Read", "array": true }
+      ],
+      "contracts" : [
+            "@ensures \\property(file, \\result) == 1"
       ]
 },
 {
@@ -710,15 +813,21 @@
       "args": [
             { "access" : "Read", "array": true },
             { "access" : "Read", "array": true }
+      ],
+      "contracts" : [
+            "@ensures \\property(file, \\result) == 1"
       ]
 },
 {
       "signature": "int fprintf(FILE *stream, const char *format, ...)",
       "name": "fprintf",
       "args": [
-            { "access" : "ReadWrite" },
+            { "access" : "None" },
             { "access" : "Read", "array": true },
             {}
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -726,7 +835,10 @@
       "name": "fputc",
       "args": [
             {},
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg1) == 1"
       ]
 },
 {
@@ -734,7 +846,10 @@
       "name": "fputs",
       "args": [
             { "access" : "Read", "array": true },
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg1) == 1"
       ]
 },
 {
@@ -744,7 +859,10 @@
             { "access" : "Write", "array" : true },
             {},
             {},
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ], 
+      "contracts" : [
+            "@requires \\property(file, \\arg3) == 1"
       ]
 },
 {
@@ -1369,7 +1487,7 @@
 },
 {
       "signature": "ssize_t read(int fildes, void *buf, size_t nbyte)",
-      "name": "Read",
+      "name": "read",
       "args": [
             {},
             { "access" : "Write", "array" : true, "size": 2 },
@@ -2042,7 +2160,7 @@
 },
 {
       "signature": "ssize_t write(int fildes, const void *buf, size_t nbyte)",
-      "name": "Write",
+      "name": "write",
       "args": [
             {},
             { "access" : "Write", "array" : true, "size" : 2 }

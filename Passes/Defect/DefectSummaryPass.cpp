@@ -66,7 +66,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
             pt[i] = '~';
         }
 
-        pt[origin.loc.col-1] = '^';
+        if(origin.loc.col) pt[origin.loc.col-1] = '^';
 
         infos() << defect.type
                 << " at " << origin << endl

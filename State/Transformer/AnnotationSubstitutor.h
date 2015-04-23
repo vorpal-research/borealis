@@ -39,18 +39,6 @@ public:
         return Base::transformLogic(anno);
     }
 
-    Annotation::Ptr transformAssume(AssumeAnnotationPtr anno) {
-        return Base::transformAssume(anno);
-    }
-
-    Annotation::Ptr transformAssumeAnnotation(AssumeAnnotationPtr anno) {
-        return Base::transformAssumeAnnotation(anno);
-    }
-
-    Annotation::Ptr transformLogicAnnotation(LogicAnnotationPtr anno) {
-        return Base::transformLogicAnnotation(anno);
-    }
-
     Term::Ptr transformTerm(Term::Ptr term) {
         if(mapping.count(term)) {
             auto value = mapping.at(term);

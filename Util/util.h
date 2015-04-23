@@ -119,7 +119,8 @@ enum class ArithType {
     XOR  = 9,
     SHL  = 10,
     ASHR = 11,
-    LSHR = 12
+    LSHR = 12,
+    IMPLIES = 13
 };
 ArithType arithType(llvm::BinaryOperator::BinaryOps llops);
 std::string arithString(ArithType opCode);

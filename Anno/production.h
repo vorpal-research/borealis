@@ -58,7 +58,8 @@ enum class bin_opcode {
     OPCODE_CALL, // operator()
     OPCODE_INDEX, // operator[]
     OPCODE_PROPERTY, // a.b
-    OPCODE_INDIR_PROPERTY // a->b
+    OPCODE_INDIR_PROPERTY, // a->b
+    OPCODE_IMPLIES
 };
 
 enum class un_opcode {
@@ -221,6 +222,7 @@ prod_t index(const prod_t&, const prod_t&);
 prod_t call(const prod_t&, const prod_t&);
 prod_t property_access(const prod_t&, const prod_t&);
 prod_t property_indirect_access(const prod_t&, const prod_t&);
+prod_t imply(const prod_t&, const prod_t&);
 prod_t operator+ (const prod_t&, const prod_t&);
 prod_t operator- (const prod_t&, const prod_t&);
 prod_t operator* (const prod_t&, const prod_t&);

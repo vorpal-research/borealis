@@ -56,6 +56,31 @@ AnnotationMaterializer::AnnotationMaterializer(
     }
 };
 
+AnnotationMaterializer::AnnotationMaterializer(
+        const LogicAnnotation& A,
+        FactoryNest FN,
+        VariableInfoTracker* MI,
+        llvm::Function* F) :
+            Base(FN),
+            pimpl(
+                new AnnotationMaterializerImpl {
+                    &A,
+                    FN.Term,
+                    MI,
+                    NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
+                }
+            ) {
+
+    FN.Type->initialize(*MI);
+
+    if (llvm::isa<EnsuresAnnotation>(A) ||
+        llvm::isa<RequiresAnnotation>(A) ||
+        llvm::isa<AssignsAnnotation>(A)) {
+        pimpl->nc.placement = NameContext::Placement::OuterScope;
+        pimpl->nc.func = F;
+    } else failWith("Cannot bind annotation to an external function");
+};
+
 AnnotationMaterializer::~AnnotationMaterializer() {}
 
 Annotation::Ptr AnnotationMaterializer::doit() {
@@ -119,7 +144,7 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
             auto&& prop = FN.Term->getOpaqueConstantTerm(rhv[0]->getName());
             auto&& val = this->transform(rhv[1]);
 
-            return FN.Term->getReadPropertyTerm(FN.Type->getUnknownType(), prop, val);
+            return FN.Term->getReadPropertyTerm(FN.Type->getInteger(32), prop, val);
 
         } else if (builtin->getVName() == "bound") {
             auto&& rhv = trm->getRhv().toVector();
