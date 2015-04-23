@@ -44,9 +44,9 @@ private:
 public:
 
     SatResult() :
-        modelPtr(std::make_shared<model_t>()),
-        initialMemoryShapePtr(std::make_shared<memory_shape_t>()),
-        finalMemoryShapePtr(std::make_shared<memory_shape_t>())
+        modelPtr(nullptr),
+        initialMemoryShapePtr(nullptr),
+        finalMemoryShapePtr(nullptr)
         { }
 
     SatResult(const SatResult&) = default;
@@ -67,6 +67,8 @@ public:
     }
 
     bool empty() const { return modelPtr -> empty(); }
+
+    bool valid() const { return !!modelPtr; }
 
     long long valueAt(const std::string& str) const {
         if (auto ii = llvm::dyn_cast<borealis::OpaqueIntConstantTerm>(at(str))) {

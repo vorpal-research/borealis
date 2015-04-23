@@ -145,6 +145,10 @@ public:
         dfi.processModule(mit.getModule());
 
         for(auto&& var : mit.getVars()) {
+            // FIXME: this is generally fucked up...
+            //        LLVM funks up MDNodes for undefs
+            if(llvm::isa<llvm::UndefValue>(var.first)) continue;
+
             auto llvmType = var.first->getType();
             if(var.second.treatment == VarInfo::Allocated) llvmType = llvmType->getPointerElementType();
             embedType(dfi, llvmType, var.second.type);

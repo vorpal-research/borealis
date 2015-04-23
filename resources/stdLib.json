@@ -804,7 +804,7 @@
             { "access" : "Read", "array": true }
       ],
       "contracts" : [
-            "@ensures \\property(file, \\result) == 1"
+            "@ensures (\\result == \\nullptr && \\property(file, \\result) == 0) || (\\result != \\nullptr && \\property(file, \\result) == 1)"
       ]
 },
 {

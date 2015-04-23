@@ -22,7 +22,7 @@ static std::set<Term::Ptr, TermCompare> substitutionOrdering(Annotation::Ptr ann
 
 class AnnotationSubstitutor: public Transformer<AnnotationSubstitutor> {
     std::vector<llvm::Value*> vars;
-    std::unordered_map<Term::Ptr, llvm::Value*> mapping;
+    std::unordered_map<Term::Ptr, llvm::Value*, TermHash, TermEquals> mapping;
 
     using Base = Transformer<AnnotationSubstitutor>;
 

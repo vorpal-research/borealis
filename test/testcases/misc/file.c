@@ -3,9 +3,9 @@
 
 int main() {
 
-	FILE* in = fopen("file.txt", "r");
-
-	fclose(in);
-	return fgetc(in);
-	
+    FILE* in = fopen("file.txt", "r");
+    if(in) {
+        fclose(in);
+        return fgetc(in);
+    } else return 0;
 }
