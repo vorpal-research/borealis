@@ -55,6 +55,11 @@ struct Z3 {
     
 };
 
+namespace z3_ {
+std::ostream& operator<<(std::ostream& os, const z3::func_interp& z3fi);
+std::ostream& operator<<(std::ostream& os, const z3::func_entry& z3fe);
+} // namespace z3_
+
 } // namespace borealis
 
 #endif /* BOREALIS_Z3_H_ */
