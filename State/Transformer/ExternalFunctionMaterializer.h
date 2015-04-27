@@ -36,6 +36,8 @@ public:
                     failWith("Illegal argument term: " + term->getName());
                 }
             }
+            if(ix >= theCallSite.arg_size()) failWith("Illegal argument term: " + term->getName());
+
             auto arg = theCallSite.getArgument(ix);
             for(auto&& argInfo : util::view(VIT->getVars().get(arg))) {
                 borealis::DIType dt = argInfo.second.type;
@@ -57,7 +59,6 @@ public:
 
         } else return term;
     }
-
 
     Annotation::Ptr transformRequiresAnnotation(RequiresAnnotationPtr anno) {
         return std::make_shared<AssertAnnotation>(locus, anno->getTerm());

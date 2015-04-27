@@ -98,7 +98,7 @@ VariableInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::
     case NameContext::Placement::InnerScope:
         return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::PreviousVal);
     case NameContext::Placement::OuterScope:
-        return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::NextArgument);
+        return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::NextVal);
     }
 }
 

@@ -11,6 +11,7 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/Transform/GlobalVariableLifting.h"
 #include "Util/util.h"
 
@@ -133,6 +134,9 @@ void GlobalVariableLifting::cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc
 
 bool GlobalVariableLifting::runOnFunction(llvm::Function& F) {
     using namespace llvm;
+
+    auto&& IM = IntrinsicsManager::getInstance();
+    if(IM.getIntrinsicType(&F) != borealis::function_type::UNKNOWN) return false;
 
     init();
 

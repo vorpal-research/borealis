@@ -40,12 +40,13 @@ public:
         borealis::DIType type;
         bool shouldBeDereferenced;
 
-        bool isInvalid() {
+        bool isInvalid() const {
             return val == nullptr;
         }
 
         friend std::ostream& operator<<(std::ostream& ost, const ValueDescriptor& vd) {
-            return ost << util::toString(*vd.val) << vd.type.getName();
+            if(vd.isInvalid()) return ost << "<invalid vd>";
+            return ost << llvm::valueSummary(vd.val) << vd.type.getName();
         }
     };
     using ValueDescriptors = std::vector<ValueDescriptor>;

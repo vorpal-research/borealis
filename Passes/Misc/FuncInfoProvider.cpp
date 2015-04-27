@@ -48,7 +48,7 @@ bool FuncInfoProvider::hasInfo(llvm::LibFunc::Func f) {
 
 bool FuncInfoProvider::hasInfo(llvm::Function* f) {
     llvm::LibFunc::Func enumf;
-    pimpl_->TLI->getLibFunc(f->getName(), enumf);
+    if(!pimpl_->TLI->getLibFunc(f->getName(), enumf)) return false;
     return hasInfo(enumf);
 }
 
@@ -73,7 +73,7 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
                 errs() << "cannot parse json: " << val;
             } else {
                 auto lfn = util::fromString<llvm::LibFunc::Func>(opt->id).getOrElse(llvm::LibFunc::NumLibFuncs);
-                if(lfn == llvm::LibFunc::NumLibFuncs) std::cerr << "function " << opt->id << " not resolved" << std::endl;
+                if(lfn == llvm::LibFunc::NumLibFuncs) errs() << "function " << opt->id << " not resolved" << endl;
                 pimpl_->functions[lfn] = *opt;
                 pimpl_->contracts[lfn] = util::viewContainer(opt->contracts)
                                         .map(LAM(A, borealis::fromString(Locus{}, A, FN.Term)))

@@ -225,6 +225,7 @@
       "name": "dunder_isoc99_sscanf",
       "args": [
             { "access" : "Read", "array": true },
+            { "access" : "Read", "array": true },
             { "access" : "Write" }
       ]
 },
@@ -638,6 +639,9 @@
       "args" : [
             {},
             { "access" : "Read", "array": "true" }
+      ],
+      "contracts" : [
+            "@ensures \\property(file, \\result) == 1"
       ]
 },
 {
