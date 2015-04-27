@@ -5,11 +5,12 @@
  *      Author: ice-phoenix
  */
 
-#include "State/Transformer/VariableCollector.h"
-#include "State/Transformer/PointerCollector.h"
+#include "Config/config.h"
 #include "Factory/Nest.h"
 #include "Logging/tracer.hpp"
 #include "State/PredicateStateBuilder.h"
+#include "State/Transformer/PointerCollector.h"
+#include "State/Transformer/VariableCollector.h"
 #include "SMT/Z3/Divers.h"
 #include "SMT/Z3/Logic.hpp"
 #include "SMT/Z3/Solver.h"
@@ -59,6 +60,15 @@ Solver::check_result Solver::check(
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(z3impl::asAxiom(implies(pred, z3query)));
 
+    static config::ConfigEntry<bool> print_smt2_state("output", "print-smt2-states");
+    if (print_smt2_state.get(false)) {
+        auto&& pp = s.ctx().bool_val(true);
+        auto&& assertions = s.assertions();
+        for (auto&& i = 0U; i < assertions.size(); ++i) pp = pp && assertions[i];
+        auto&& smtlib2_state = Z3_benchmark_to_smtlib_string(s.ctx(), "DBG", 0, 0, 0, 0, 0, pp);
+        dbg << smtlib2_state << endl;
+    }
+
     {
         TRACE_BLOCK("z3::check");
 
@@ -71,7 +81,21 @@ Solver::check_result Solver::check(
         dbg << "With:" << endl;
         if (r == z3::sat) {
             auto model = s.get_model();
-            dbg << model << endl;
+
+            auto sorted_consts = util::range(0U, model.num_consts())
+                .map([&](auto&& i) { return model.get_const_decl(i); })
+                .toVector();
+            std::sort(sorted_consts.begin(), sorted_consts.end(),
+                      [](auto&& a, auto&& b) { return util::toString(a.name()) < util::toString(b.name()); });
+            for (auto&& e : sorted_consts) dbg << e << endl << "  " << model.get_const_interp(e) << endl;
+
+            auto sorted_funcs = util::range(0U, model.num_funcs())
+                .map([&](auto&& i) { return model.get_func_decl(i); })
+                .toVector();
+            std::sort(sorted_funcs.begin(), sorted_funcs.end(),
+                      [](auto&& a, auto&& b) { return util::toString(a.name()) < util::toString(b.name()); });
+            for (auto&& e : sorted_funcs) dbg << e << endl << "  " << model.get_func_interp(e) << endl;
+
             return std::make_tuple(r, util::just(model), util::nothing(), util::nothing());
 
         } else if (r == z3::unsat) {
