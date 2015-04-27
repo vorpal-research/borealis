@@ -8,6 +8,8 @@
 #ifndef ALGORITHM_HPP_
 #define ALGORITHM_HPP_
 
+#include <algorithm>
+
 namespace borealis {
 namespace util {
 
@@ -45,7 +47,7 @@ decltype(std::begin(std::declval<C>())) find_if(const C& c, Pred p) {
 
 template<class C, class F>
 void for_each(const C& c, F f) {
-    return std::for_each(BE(c), f);
+    std::for_each(BE(c), f);
 }
 
 #undef BE
