@@ -55,11 +55,14 @@ struct Z3 {
     
 };
 
-namespace z3_ {
-std::ostream& operator<<(std::ostream& os, const z3::func_interp& z3fi);
-std::ostream& operator<<(std::ostream& os, const z3::func_entry& z3fe);
-} // namespace z3_
-
 } // namespace borealis
+
+namespace z3 {
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& os, const z3::expr_vector& z3ev);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& os, const z3::func_entry& z3fe);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& os, const z3::func_interp& z3fi);
+
+} // namespace z3
 
 #endif /* BOREALIS_Z3_H_ */
