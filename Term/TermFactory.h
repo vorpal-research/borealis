@@ -71,7 +71,7 @@ public:
                 for (auto& i : tail(view(cE->op_begin(), cE->op_end()))) {
                     idxs.push_back(i);
                 }
-                return getGepTerm(base, idxs);
+                return getGepTerm(base, idxs, isTriviallyInboundsGEP(cE));
             }
 
         } else if (auto* null = dyn_cast<ConstantPointerNull>(c)) {
@@ -275,7 +275,7 @@ public:
         };
     }
 
-    Term::Ptr getGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts) {
+    Term::Ptr getGepTerm(Term::Ptr base, const std::vector<Term::Ptr>& shifts, bool isTriviallyInbounds = false) {
 
         Type::Ptr tp = GepTerm::getGepChild(base->getType(), shifts);
 
@@ -283,12 +283,13 @@ public:
             new GepTerm{
                 TyF->getPointer(tp),
                 base,
-                shifts
+                shifts,
+                isTriviallyInbounds
             }
         };
     }
 
-    Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs) {
+    Term::Ptr getGepTerm(llvm::Value* base, const ValueVector& idxs, bool isTriviallyInbounds = false) {
         ASSERT(st, "Missing SlotTracker");
 
         using namespace llvm;
@@ -304,7 +305,8 @@ public:
                 getValueTerm(base),
                 util::viewContainer(idxs)
                    .map([this](llvm::Value* idx){ return getValueTerm(idx); })
-                   .toVector()
+                   .toVector(),
+                isTriviallyInbounds
             )
         };
     }

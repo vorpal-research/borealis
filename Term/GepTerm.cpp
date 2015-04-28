@@ -10,15 +10,21 @@
 namespace borealis {
 
 GepTerm::GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts):
+    GepTerm(type, base, shifts, false) {};
+
+GepTerm::GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts, bool inBounds):
     Term(
         class_tag(*this),
         type,
-        "gep(" + base->getName() + "," +
-            util::viewContainer(shifts)
-            .map([](auto&& s) { return s->getName(); })
-            .fold(std::string("0"), [](auto&& acc, auto&& e) { return acc + "+" + e; }) +
-        ")"
+        std::string("gep") +
+           (inBounds? "[inbounds]" : "") +
+           "(" + base->getName() + "," +
+           util::viewContainer(shifts)
+                .map([](auto&& s) { return s->getName(); })
+                .fold(std::string("0"), [](auto&& acc, auto&& e) { return acc + "+" + e; }) +
+           ")"
     ) {
+    isTriviallyInbounds_ = inBounds;
     subterms.insert(subterms.end(), base);
     subterms.insert(subterms.end(), shifts.begin(), shifts.end());
 };
@@ -29,6 +35,10 @@ Term::Ptr GepTerm::getBase() const {
 
 auto GepTerm::getShifts() const -> decltype(util::viewContainer(subterms)) {
     return util::viewContainer(subterms).drop(1);
+}
+
+bool GepTerm::isTriviallyInbounds() const {
+    return isTriviallyInbounds_;
 }
 
 } // namespace borealis

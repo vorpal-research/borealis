@@ -168,7 +168,7 @@ public:
 
         pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getValueTerm(lhv),
-            pass->FN.Term->getGepTerm(rhv, idxs),
+            pass->FN.Term->getGepTerm(rhv, idxs, isTriviallyInboundsGEP(&I)),
             pass->SLT->getLocFor(&I)
         );
     }
