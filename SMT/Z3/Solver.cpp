@@ -15,6 +15,7 @@
 #include "SMT/Z3/Logic.hpp"
 #include "SMT/Z3/Solver.h"
 #include "SMT/Z3/Unlogic/Unlogic.h"
+#include "SMT/Z3/Z3.h"
 
 #include "Util/macros.h"
 
@@ -25,11 +26,12 @@ using namespace borealis::smt;
 Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long long memoryEnd) :
         z3ef(z3ef), memoryStart(memoryStart), memoryEnd(memoryEnd) {}
 
-z3::tactic Solver::tactics() {
+z3::tactic Solver::tactics(unsigned int timeout) {
     auto& c = z3ef.unwrap();
 
     auto params = z3::params(c);
     params.set("auto_config", true);
+    params.set("timeout", timeout);
     auto smt_tactic = with(z3::tactic(c, "smt"), params);
     auto useful = /* z3::tactic(c, "reduce-bv-size") & */ z3::tactic(c, "ctx-simplify");
 
@@ -47,6 +49,7 @@ Solver::check_result Solver::check(
     auto s = tactics().mk_solver();
 
     auto dbg = dbgs();
+    auto wtf = logging::wtf();
 
     auto z3state = z3state_.simplify();
     auto z3query = z3query_.simplify();
@@ -56,6 +59,28 @@ Solver::check_result Solver::check(
     dbg << "  Query: " << endl << z3query << endl;
     dbg << "  State: " << endl << z3state << endl;
     dbg << end;
+
+    static config::ConfigEntry<bool> sanity_check("analysis", "sanity-check");
+    static config::ConfigEntry<int> sanity_check_timeout("analysis", "sanity-check-timeout");
+    if (sanity_check.get(false)) {
+        auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
+        ss.add(z3impl::asAxiom(z3state));
+
+        dbg << "Checking state for sanity... ";
+        auto&& r = ss.check();
+        if (z3::unsat == r) {
+            dbg << "FAILED" << endl;
+            wtf << "Sanity check failed for: " << z3state << endl;
+            wtf << ss.unsat_core() << endl;
+        } else if (z3::unknown == r) {
+            dbg << "TIMEOUT" << endl;
+            wtf << "Sanity check failed for: " << z3state << endl;
+            wtf << ss.reason_unknown() << endl;
+        } else {
+            dbg << "OK" << endl;
+        }
+        dbg << end;
+    }
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(z3impl::asAxiom(implies(pred, z3query)));
@@ -100,7 +125,7 @@ Solver::check_result Solver::check(
 
         } else if (r == z3::unsat) {
             auto core = s.unsat_core();
-            for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+            dbg << core << endl;
             return std::make_tuple(r, util::nothing(), util::just(core), util::nothing());
 
         } else {

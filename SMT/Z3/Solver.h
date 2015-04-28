@@ -63,7 +63,7 @@ private:
             const Bool& z3query,
             const Bool& z3state);
 
-    z3::tactic tactics();
+    z3::tactic tactics(unsigned int timeout = 0);
 
 };
 
