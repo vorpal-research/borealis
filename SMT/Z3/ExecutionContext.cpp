@@ -32,6 +32,8 @@ void ExecutionContext::memory(const MemArray& value) {
     set(MEMORY_ID, value);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void ExecutionContext::initGepBounds() {
     memArrays.emplace(
         GEP_BOUNDS_ID,
@@ -50,6 +52,8 @@ ExecutionContext::MemArray ExecutionContext::gepBounds() const {
 void ExecutionContext::gepBounds(const MemArray& value) {
     set(GEP_BOUNDS_ID, value);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 ExecutionContext::MemArray ExecutionContext::get(const std::string& id) const {
     if (not util::containsKey(memArrays, id)) {
@@ -166,24 +170,28 @@ ExecutionContext ExecutionContext::mergeMemory(
 
 ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
 
-    auto&& base = factory.getPtrVar("$$__base__$$(" + p.getName() + ")");
     auto&& zero = factory.getIntConst(0);
 
-    auto&& baseSize = readProperty<Integer>(GEP_BOUNDS_ID, base);
-    auto&& pSize =  readProperty<Integer>(GEP_BOUNDS_ID, p);
+    auto&& pSize = readProperty<Integer>(GEP_BOUNDS_ID, p);
 
-    std::function<Bool(Pointer)> axBody =
+    auto&& baseFree = factory.getPtrVar("$$__base_free__$$(" + p.getName() + ")");
+    auto&& baseFreeSize = readProperty<Integer>(GEP_BOUNDS_ID, baseFree);
+    std::function<Bool(Pointer)> baseFreeAxiom =
         [=](Pointer any) -> Bool {
             return factory.implies(
-                UComparable(any).ugt(base) && UComparable(any).ule(p),
+                UComparable(any).ugt(baseFree) && UComparable(any).ule(p),
                 readProperty<Integer>(GEP_BOUNDS_ID, any) == zero
             );
         };
-    auto&& ax = UComparable(base).ule(p) &&
-                factory.if_(pSize != zero)
-                       .then_(base == p)
-                       .else_(baseSize != zero && factory.forAll(axBody));
-    base = base.withAxiom(ax);
+    auto&& bfa = UComparable(baseFree).ule(p)
+                 && baseFreeSize != zero
+                 && factory.forAll(baseFreeAxiom);
+    baseFree = baseFree.withAxiom(bfa);
+
+    auto&& base = factory.if_(pSize != zero)
+                         .then_(p)
+                         .else_(baseFree);
+    auto&& baseSize = readProperty<Integer>(GEP_BOUNDS_ID, base);
 
     return factory.if_(UComparable(baseSize).ugt(p - base))
                   .then_(baseSize - (p - base))
