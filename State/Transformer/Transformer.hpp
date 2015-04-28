@@ -254,12 +254,8 @@ protected:
     using LogicAnnotationPtr = std::shared_ptr<const LogicAnnotation>;
     Annotation::Ptr transformLogic(LogicAnnotationPtr anno) {
 #define HANDLE_LogicAnnotation(NAME, CLASS) \
-        using CLASS##Ptr = std::shared_ptr<const CLASS>; \
         if (llvm::isa<CLASS>(anno)) { \
-            Annotation::Ptr a = static_cast<SubClass*>(this)-> \
-                transform##NAME(std::static_pointer_cast<const CLASS>(anno)); \
-            CLASS##Ptr ta = std::static_pointer_cast<const CLASS>(a); \
-            DELEGATE(CLASS, ta); \
+            DELEGATE(NAME, std::static_pointer_cast<const CLASS>(anno)); \
         }
 #define HANDLE_ANNOTATION(A, B, C)
 #define HANDLE_ANNOTATION_WITH_BASE(IGNORE, BASE, NAME, CLASS) HANDLE_ ## BASE(NAME, CLASS)

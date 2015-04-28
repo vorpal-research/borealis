@@ -6,6 +6,7 @@
  */
 
 #include <llvm/IR/InstVisitor.h>
+#include <State/Transformer/AnnotationSubstitutor.h>
 
 #include "Annotation/Annotation.def"
 #include "Codegen/intrinsics_manager.h"
@@ -31,7 +32,7 @@ public:
         auto& im = IntrinsicsManager::getInstance();
         if (im.getIntrinsicType(CI) == function_type::INTRINSIC_ANNOTATION) {
             Annotation::Ptr anno =
-                    materialize(Annotation::fromIntrinsic(CI), pass->FN, pass->MI);
+                    substituteAnnotationCall(pass->FN, llvm::CallSite(&CI));
             if (llvm::isa<AssumeAnnotation>(anno)) {
                 const LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 pass->PM[&CI] =
@@ -41,6 +42,21 @@ public:
                         pass->SLT->getLocFor(&CI),
                         predicateType(LA)
                     );
+            }
+
+            if (llvm::isa<AssignsAnnotation>(anno)) {
+                const LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
+                auto trm = LA->getTerm();
+                static int seed = 0;
+                if (llvm::isa<ReadPropertyTerm>(trm)) {
+                    auto rpt = llvm::cast<ReadPropertyTerm>(trm);
+                    pass->PM[&CI] =
+                        pass->FN.Predicate->getWritePropertyPredicate(
+                            rpt->getPropertyName(),
+                            rpt->getRhv(),
+                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(32), "borealis.fresh.var." + util::toString(seed))
+                        );
+                }
             }
         }
     }

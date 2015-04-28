@@ -96,6 +96,13 @@ struct arrows :
     { return property_indirect_access(move(x), move(y)); }
 };
 
+template<class T>
+struct implies :
+        std::binary_function< T, T, T > {
+    T operator()(T&& x, T&& y) const
+    { return imply(move(x), move(y)); }
+};
+
 // binary ops
 #define DEFBINARY(NAME, OP) \
     template <class T> \

@@ -13,7 +13,7 @@ namespace borealis {
 
 TermCollector::TermCollector(FactoryNest FN) : Base(FN) {}
 
-const std::unordered_set<Term::Ptr>& TermCollector::getTerms() const {
+const std::unordered_set<Term::Ptr, TermHash, TermEquals>& TermCollector::getTerms() const {
     return terms;
 }
 

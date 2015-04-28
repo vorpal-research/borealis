@@ -77,6 +77,10 @@ public:
     auto if_(Bool cond) QUICK_RETURN(logic::if_(cond))
 #include "Util/unmacros.h"
 
+    Bool implies(Bool lhv, Bool rhv) {
+        return logic::implies(lhv, rhv);
+    }
+
     template<class T, class U>
     T switch_(
             U val,

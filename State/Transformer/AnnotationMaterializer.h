@@ -31,6 +31,13 @@ public:
             const LogicAnnotation& A,
             FactoryNest FN,
             VariableInfoTracker* MI);
+
+
+    AnnotationMaterializer(
+            const LogicAnnotation& A,
+            FactoryNest FN,
+            VariableInfoTracker* MI,
+            llvm::Function* externalFunction);
     ~AnnotationMaterializer();
 
     llvm::LLVMContext& getLLVMContext() const;

@@ -89,6 +89,7 @@ struct SMTImpl<Impl, BinaryTerm> {
             case llvm::ArithType::BOR:
             case llvm::ArithType::LOR:  return lhv || rhv;
             case llvm::ArithType::XOR:  return lhv ^  rhv;
+            case llvm::ArithType::IMPLIES: return ef.implies(lhv, rhv);
             default: BYE_BYE(Dynamic,
                              "Unsupported logic opcode: " +
                              llvm::arithString(t->getOpcode()));

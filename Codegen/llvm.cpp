@@ -80,6 +80,14 @@ void insertBeforeWithLocus(
     setDebugLocusWithCopiedScope(what, before, loc);
 }
 
+void insertAfterWithLocus(
+        llvm::Instruction* what,
+        llvm::Instruction* after,
+        const Locus& loc) {
+    what->insertAfter(after);
+    setDebugLocusWithCopiedScope(what, after, loc);
+}
+
 void setDebugLocusWithCopiedScope(
         llvm::Instruction* to,
         llvm::Instruction* from,
@@ -494,6 +502,18 @@ bool DebugInfoFinder::addScope(llvm::DIScope Scope) {
         return false;
     Scopes.push_back(Scope);
     return true;
+}
+
+
+const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i) {
+    auto bb = i->getParent();
+    auto bbTerm = bb->getTerminator();
+    while(bbTerm) {
+        if (bbTerm->getNumSuccessors() == 0) return bbTerm;
+        if (bbTerm->getNumSuccessors() == 1) bbTerm = bbTerm->getSuccessor(0)->getTerminator();
+        else return nullptr;
+    }
+    return nullptr;
 }
 
 

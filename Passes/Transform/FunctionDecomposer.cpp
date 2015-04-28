@@ -17,10 +17,17 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Target/TargetLibraryInfo.h>
+#include <Passes/Tracker/SourceLocationTracker.h>
+
+#include "Passes/Tracker/SlotTrackerPass.h"
+#include "State/Transformer/ExternalFunctionMaterializer.h"
+#include "State/Transformer/AnnotationMaterializer.h"
+#include "State/Transformer/OldValueExtractor.h"
 
 #include "Passes/Transform/FunctionDecomposer.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Statistics/statistics.h"
+#include "Passes/Transform/AnnotationProcessor.h"
 #include "Util/passes.hpp"
 #include "Config/config.h"
 #include "Util/functional.hpp"
@@ -28,10 +35,10 @@
 
 #include "Util/macros.h"
 
+
 namespace borealis {
 
 namespace lfn = llvm::LibFunc;
-
 
 char FunctionDecomposer::ID;
 static RegisterPass<FunctionDecomposer>
@@ -151,6 +158,9 @@ void FunctionDecomposer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesCFG();
     AUX<llvm::TargetLibraryInfo>::addRequiredTransitive(AU);
     AUX<borealis::FuncInfoProvider>::addRequiredTransitive(AU);
+    AUX<borealis::SlotTrackerPass>::addRequiredTransitive(AU);
+    AUX<borealis::VariableInfoTracker>::addRequiredTransitive(AU);
+    AUX<borealis::SourceLocationTracker>::addRequiredTransitive(AU);
 }
 
 bool FunctionDecomposer::runOnModule(llvm::Module& M) {
@@ -159,6 +169,9 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     auto excludedFunctionNames = viewContainer(excludeFunctions).toHashSet();
 
     auto&& TLI = GetAnalysis<llvm::TargetLibraryInfo>::doit(this);
+    auto&& STP = GetAnalysis<borealis::SlotTrackerPass>::doit(this);
+    auto&& VIT = GetAnalysis<borealis::VariableInfoTracker>::doit(this);
+    auto&& SLT = GetAnalysis<borealis::SourceLocationTracker>::doit(this);
 
     auto&& IM = IntrinsicsManager::getInstance();
     auto&& FIP = GetAnalysis<FuncInfoProvider>::doit(this);
@@ -187,11 +200,39 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .filter(isDecomposable)
                  .toHashSet();
 
+    std::unordered_map<llvm::CallInst*, llvm::Value*> replacements;
+
     for(llvm::CallInst* call : funcs) {
         llvm::Function* f = call->getCalledFunction();
         llvm::Value* predefinedReturn = nullptr;
-        if(FIP.hasInfo(f)) {
+        if (FIP.hasInfo(f)) {
             infos() << "FIPping " << f->getName() << endl;
+            FactoryNest FN(STP.getSlotTracker(call));
+
+            auto&& contracts = FIP.getContracts(f);
+            std::vector<Annotation::Ptr> befores;
+            std::vector<Annotation::Ptr> afters;
+            std::vector<Annotation::Ptr> middles;
+
+            for (auto contract : contracts) {
+                ExternalFunctionMaterializer efm(FN, llvm::CallSite(call), &VIT, SLT.getLocFor(call));
+                contract = efm.transform(contract);
+                OldValueExtractor ove(FN);
+                contract = ove.transform(contract);
+                befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
+                contract = materialize(contract, FN, &VIT);
+                if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
+                    afters.push_back(contract);
+                } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation>(contract)) {
+                    befores.push_back(contract);
+                } else {
+                    middles.push_back(contract);
+                }
+            }
+
+            for (auto&& before: befores) AnnotationProcessor::landOnInstructionOrFirst(before, M, FN, *call);
+            for (auto&& middle: middles) AnnotationProcessor::landOnInstructionOrFirst(middle, M, FN, *call);
+
             for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
                 auto realIx = f->isVarArg() && i > f->getArgumentList().size() ? f->getArgumentList().size() : i;
 
@@ -200,7 +241,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                 auto writeOnly = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::Write;
                 auto readOnly = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::Read;
                 auto noAccess = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::None;
-                if(FIP.getInfo(f).resultInfo.sizeArgument == size_t(i)) {
+                if (FIP.getInfo(f).resultInfo.sizeArgument == size_t(i)) {
                     predefinedReturn = arg;
                 }
 
@@ -215,7 +256,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                     if (auto&& md = call->getMetadata("dbg")) load->setMetadata("dbg", md);
                     auto&& consume = mkConsumeCall(IM, M, *call, i, load);
                     if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
-                } else if(writeOnly) {
+                } else if (writeOnly) {
                     auto&& store = mkStoreNondet(IM, M, *call, i);
                     if (auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
                 } else {
@@ -227,6 +268,8 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                     if (auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
                 }
             }
+
+            for (auto&& require: afters) AnnotationProcessor::landOnInstructionOrLast(require, M, FN, *call);
         } else {
             for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
                 auto&& arg = call->getArgOperand(i);
@@ -256,6 +299,10 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
             }
         }
 
+        replacements[call] = predefinedReturn;
+    }
+    for(auto&& call : funcs){
+        auto predefinedReturn = replacements[call];
         if (predefinedReturn) {
             call->replaceAllUsesWith(predefinedReturn);
         } else {

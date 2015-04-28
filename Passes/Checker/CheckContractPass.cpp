@@ -13,7 +13,7 @@
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AggregateTransformer.h"
-#include "State/Transformer/AnnotationMaterializer.h"
+#include "State/Transformer/AnnotationSubstitutor.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/ContractTransmogrifier.h"
 #include "State/Transformer/Simplifier.h"
@@ -33,7 +33,7 @@ public:
 
         switch (im.getIntrinsicType(CI)) {
         case function_type::INTRINSIC_ANNOTATION:
-            checkAnnotation(CI, Annotation::fromIntrinsic(CI)); break;
+            checkAnnotation(CI); break;
         case function_type::ACTION_DEFECT:
             checkActionDefect(CI); break;
         default:
@@ -96,8 +96,8 @@ public:
         h.isReachable(state, defect);
     }
 
-    void checkAnnotation(llvm::CallInst& CI, Annotation::Ptr A) {
-        auto anno = materialize(A, pass->FN, pass->MI);
+    void checkAnnotation(llvm::CallInst& CI) {
+        auto anno = substituteAnnotationCall(pass->FN, llvm::CallSite(&CI));
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
 

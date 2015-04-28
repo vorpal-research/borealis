@@ -76,6 +76,8 @@ struct AnnotationExecutor::Impl {
     }
 
     llvm::Value* resolve(const std::string& name) {
+        TRACE_FUNC;
+        TRACE_PARAM(name);
         if(auto v = ST->getLocalValue(name))
             return const_cast<llvm::Value*>(v);
         return const_cast<llvm::Value*>(ST->getGlobalValue(name));
@@ -208,6 +210,7 @@ Term::Ptr AnnotationExecutor::transformBinaryTerm(BinaryTermPtr t) {
     MAP_OPCODES(SHL, Shl);
     MAP_OPCODES(ASHR, AShr);
     MAP_OPCODES(LSHR, LShr);
+    default: break;
     }
 #undef MAP_OPCODES
 
@@ -215,8 +218,18 @@ Term::Ptr AnnotationExecutor::transformBinaryTerm(BinaryTermPtr t) {
     adjustToType(right, rtype, ret_type);
     adjustToType(left, ltype, ret_type);
 
-    auto res = pimpl_->ee->executeBinary(opc, left, right, ret_type);
-    pimpl_->value_stack.push({res, ret_type});
+    if(t->getOpcode() == llvm::ArithType::IMPLIES) {
+        if(left.IntVal.getBoolValue()) {
+            pimpl_->value_stack.push({right, ret_type});
+        } else {
+            llvm::GenericValue RetVal;
+            RetVal.IntVal = llvm::APInt{1,1};
+            pimpl_->value_stack.push({RetVal, ret_type});
+        };
+    } else {
+        auto res = pimpl_->ee->executeBinary(opc, left, right, ret_type);
+        pimpl_->value_stack.push({res, ret_type});
+    }
 
     return t;
 }

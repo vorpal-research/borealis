@@ -230,6 +230,37 @@ struct match_tuple {
 } // namespace util
 } // namespace borealis
 
+namespace llvm {
+
+namespace impl_ {
+template <class ...Vars>
+struct is_one_of_t;
+
+template<>
+struct is_one_of_t<> {
+    template<class Input>
+    static bool apply(const Input& /*input*/) {
+        return false;
+    }
+};
+
+template<class X, class ...Rest>
+struct is_one_of_t<X, Rest...> {
+    template<class Input>
+    static bool apply(const Input& input) {
+        return isa<X>(input) || is_one_of_t<Rest...>::apply(input);
+    }
+};
+
+} /* namespace impl_ */
+
+template<class ...Rest, class Input>
+bool is_one_of(const Input& input) {
+    return impl_::is_one_of_t<Rest...>::apply(input);
+}
+
+} /* namespace llvm */
+
 #include "Util/unmacros.h"
 
 #endif /* CAST_HPP_ */

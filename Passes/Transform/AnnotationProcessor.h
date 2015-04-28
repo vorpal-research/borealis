@@ -28,6 +28,15 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnModule(llvm::Module&) override;
     virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
+
+    static bool landOnInstructionOrFirst(Annotation::Ptr anno,
+                                        llvm::Module& M,
+                                        FactoryNest FN,
+                                        llvm::Value& val);
+    static bool landOnInstructionOrLast(Annotation::Ptr anno,
+                                        llvm::Module& M,
+                                        FactoryNest FN,
+                                        llvm::Value& val);
 };
 
 } /* namespace borealis */

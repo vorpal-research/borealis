@@ -109,6 +109,12 @@ struct TermEquals {
     }
 };
 
+struct TermCompare {
+    bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
+        return lhv->getName() < rhv->getName();
+    }
+};
+
 } /* namespace borealis */
 
 namespace std {

@@ -91,6 +91,7 @@ private:
         case llvm::ArithType::LSHR: return lhv >> rhv; // FIXME: Should be allowed only for unsigned types
         case llvm::ArithType::SUB:  return lhv -  rhv;
         case llvm::ArithType::XOR:  return lhv ^  rhv;
+        case llvm::ArithType::IMPLIES: return lhv? rhv : 1;
         }
     }
 

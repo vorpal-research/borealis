@@ -12,7 +12,7 @@
 
 namespace borealis {
 
-class FuncInfoProvider: public llvm::ImmutablePass {
+class FuncInfoProvider: public llvm::ModulePass {
 
     struct Impl;
     std::unique_ptr<Impl> pimpl_;
@@ -26,10 +26,12 @@ public:
 
     const func_info::FuncInfo& getInfo(llvm::LibFunc::Func f);
     const func_info::FuncInfo& getInfo(llvm::Function* f);
+    const std::vector<Annotation::Ptr> getContracts(llvm::LibFunc::Func f);
+    const std::vector<Annotation::Ptr> getContracts(llvm::Function* f);
     bool hasInfo(llvm::LibFunc::Func f);
     bool hasInfo(llvm::Function* f);
 
-    virtual void initializePass() override;
+    virtual bool runOnModule(llvm::Module &M) override;
 
     ~FuncInfoProvider();
 };
