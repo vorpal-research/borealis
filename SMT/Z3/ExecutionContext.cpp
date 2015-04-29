@@ -193,9 +193,14 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
                          .else_(baseFree);
     auto&& baseSize = readProperty<Integer>(GEP_BOUNDS_ID, base);
 
-    return factory.if_(UComparable(baseSize).ugt(p - base))
-                  .then_(baseSize - (p - base))
-                  .else_(zero);
+    return
+        factory.if_(base == p)
+               .then_(baseSize)
+               .else_(
+                    factory.if_(UComparable(baseSize).ugt(p - base))
+                          .then_(baseSize - (p - base))
+                          .else_(zero)
+        );
 }
 
 void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
