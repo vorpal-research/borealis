@@ -18,7 +18,7 @@ PredicateState::Ptr DeltaDebugger::reduce(PredicateState::Ptr ps) {
     static config::ConfigEntry<int> dd_number("analysis", "dd-number");
     static config::ConfigEntry<int> dd_timeout("analysis", "dd-timeout");
 
-    for (auto&& i = 0U; i < dd_number.get(1000); ++i) {
+    for (auto&& i = 0; i < dd_number.get(1000); ++i) {
         auto&& opt = RandomSlicer().transform(curr);
         dbgs() << "Trying from " << curr->size() << " to " << opt->size() << endl;
 
