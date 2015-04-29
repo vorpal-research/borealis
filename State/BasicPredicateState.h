@@ -61,6 +61,7 @@ public:
     virtual PredicateState::Ptr simplify() const override;
 
     virtual bool isEmpty() const override;
+    virtual unsigned int size() const override;
 
     virtual bool equals(const PredicateState* other) const override;
 

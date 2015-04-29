@@ -136,6 +136,10 @@ bool PredicateStateChain::isEmpty() const {
     return curr->isEmpty() && base->isEmpty();
 }
 
+unsigned int PredicateStateChain::size() const {
+    return curr->size() + base->size();
+}
+
 bool PredicateStateChain::equals(const PredicateState* other) const {
     if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
         return PredicateState::equals(other) &&

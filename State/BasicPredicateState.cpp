@@ -166,6 +166,10 @@ bool BasicPredicateState::isEmpty() const {
     return data.empty();
 }
 
+unsigned int BasicPredicateState::size() const {
+    return data.size();
+}
+
 bool BasicPredicateState::equals(const PredicateState* other) const {
     if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
         return PredicateState::equals(other) &&

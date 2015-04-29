@@ -128,6 +128,12 @@ bool PredicateStateChoice::isEmpty() const {
     );
 }
 
+unsigned int PredicateStateChoice::size() const {
+    return util::viewContainer(choices)
+          .map(LAM(c, c->size()))
+          .reduce(0U, ops::plus);
+}
+
 bool PredicateStateChoice::equals(const PredicateState* other) const {
     if (auto* o = llvm::dyn_cast_or_null<Self>(other)) {
         return PredicateState::equals(other) &&
