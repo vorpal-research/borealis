@@ -74,6 +74,7 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
         // do store/load around calls to other functions
         } else if (auto* call = llvm::dyn_cast<llvm::CallInst>(inst)) {
             if (call->getCalledFunction()->doesNotAccessMemory()) continue;
+            if (IM->getIntrinsicType(*call) != function_type::UNKNOWN) continue;
 
             auto&& next_inst = std::next(inst);
             for (auto&& g : globals) {
@@ -135,8 +136,8 @@ void GlobalVariableLifting::cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc
 bool GlobalVariableLifting::runOnFunction(llvm::Function& F) {
     using namespace llvm;
 
-    auto&& IM = IntrinsicsManager::getInstance();
-    if(IM.getIntrinsicType(&F) != borealis::function_type::UNKNOWN) return false;
+    IM = &IntrinsicsManager::getInstance();
+    if(IM->getIntrinsicType(&F) != borealis::function_type::UNKNOWN) return false;
 
     init();
 

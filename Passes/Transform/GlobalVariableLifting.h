@@ -43,6 +43,7 @@ private:
     basic_block_locals_map locals_begin;
     basic_block_locals_map locals_end;
     trash_set deleted_instructions;
+    IntrinsicsManager* IM;
 
     void init();
     void collectGlobals(llvm::Function& F);
@@ -51,6 +52,7 @@ private:
     void cleanUpSCC(const std::vector<llvm::BasicBlock*>& scc);
 
     bool replaceLocal(const llvm::BasicBlock* BB, const std::string& name, llvm::Value* value);
+
 
 };
 
