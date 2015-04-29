@@ -10,6 +10,8 @@
 #include "Util/cast.hpp"
 #include "Util/util.h"
 
+#include "Logging/tracer.hpp"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -36,6 +38,10 @@ PredicateState::Ptr StateOptimizer::transformPredicateStateChain(PredicateStateC
         }
     }
     return nullptr == res ? ps : transform(res);
+}
+
+Predicate::Ptr StateOptimizer::transformBase(Predicate::Ptr pred) {
+    return pred;
 }
 
 PredicateState::Ptr StateOptimizer::merge(PredicateState::Ptr a, PredicateState::Ptr b) {

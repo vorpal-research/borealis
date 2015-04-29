@@ -25,6 +25,9 @@ public:
 
     PredicateState::Ptr transformPredicateStateChain(PredicateStateChainPtr ps);
 
+    using Base::transformBase;
+    Predicate::Ptr transformBase(Predicate::Ptr pred);
+
 private:
 
     PredicateState::Ptr merge(PredicateState::Ptr a, PredicateState::Ptr b);
