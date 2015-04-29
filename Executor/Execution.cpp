@@ -961,7 +961,7 @@ void borealis::ExecutionEngine::exitCalled(GenericValue GV) {
     runAtExitHandlers();
     // TODO: implement exit()
 
-    TRACES() << "exit() called with code" << util::toString(GV.IntVal) << endl;
+    TRACE_FMT("exit() called with code %s", util::toString(GV.IntVal));
 }
 
 /// Pop the last stack frame off of ECStack and then copy the result

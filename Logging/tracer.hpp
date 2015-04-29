@@ -49,6 +49,11 @@ private:
     }
 };
 
+static struct null_trace_stream_t {} null_trace_stream;
+
+template<class Arg>
+inline null_trace_stream_t operator<<(null_trace_stream_t st, Arg&&) { return st; }
+
 } // namespace logging
 } // namespace borealis
 
@@ -86,8 +91,9 @@ private:
 
 #else
 #define TRACE_FUNC
-#define TRACE_PARAMS(...)
-#define TRACES()
+#define TRACE_PARAM(...)
+#define TRACE_FMT(...)
+#define TRACES() borealis::logging::null_trace_stream
 #define TRACE_BLOCK(ID)
 #define TRACE_MEASUREMENT(M...)
 #define TRACE_UP(M...)

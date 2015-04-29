@@ -914,8 +914,8 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     // TODO: belyaev Think!
     if(realPtr / chunk_size != (realPtr + size -1) / chunk_size) {
         // if the piece crosses the chunk border
-        TRACES() << "While loading from " << tfm::format("0x%x", realPtr) << endl;
-        TRACES() << "Chunk size = " << chunk_size << endl;
+        TRACE_FMT("While loading from 0x%x", realPtr);
+        TRACE_FMT("Chunk size = %d", chunk_size);
         throw std::runtime_error("unsupported, sorry");
     }
     uint8_t* Dst = reinterpret_cast<uint8_t*>(const_cast<uint64_t*>(val.getRawData()));
@@ -958,7 +958,7 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
         std::memcpy(Dst + sizeof(uint64_t) - size, Src, size);
     }
 
-    TRACES() << "Loaded value " << val.getLimitedValue() << endl;
+    TRACE_FMT("Loaded value %s", val.getLimitedValue());
     return ValueState::CONCRETE;
 }
 

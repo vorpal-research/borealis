@@ -9,6 +9,7 @@
 #define LOGGER_HPP_
 
 #include <type_traits>
+#include <tinyformat/tinyformat.h>
 
 #include "Logging/log_entry.hpp"
 #include "Logging/logstream.hpp"
@@ -110,18 +111,23 @@ public:
 
     template<class T>
     void assignLogger(const T& domain) {
-        keeper = [&]{ return domain.getLoggerDomain(); };
+        const T* ptr = &domain;
+        keeper = [ptr] () -> const std::string& { return ptr->getLoggerDomain(); };
     }
 
     const std::string& getLoggerDomain() const {
+        if(!keeper) throw std::logic_error(tfm::format("%s %s %s", __PRETTY_FUNCTION__, __FILE__, __LINE__));
         return keeper();
     }
 
 protected:
 
     template<class T>
-    DelegateLogging(const T& domain): keeper([&]{ return domain.getLoggerDomain(); }) {}
-    DelegateLogging(const std::string& domain): keeper([domain]{ return domain; }) {}
+    DelegateLogging(const T& domain): keeper() {
+        const T* ptr = &domain;
+        keeper = [ptr]() -> const std::string& { return ptr->getLoggerDomain(); };
+    }
+    DelegateLogging(const std::string& domain): keeper([domain]() -> const std::string& { return domain; }) {}
     DelegateLogging(): keeper(def) {}
 
     // this copy-string business looks like a bug in gcc

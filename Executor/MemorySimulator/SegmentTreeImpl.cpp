@@ -106,7 +106,7 @@ struct storeTraverser: stateInvalidatingTraverser {
                 signalInconsistency("Allocated segment inside other allocated segment detected");
             }
             didAlloc = true;
-            TRACES() << "Found allocated segment:" << endl;
+            TRACE_FMT("Found allocated segment:");
             TRACE_FMT("Allocated segment { %s, %s }", minbound, minbound + t->reallyAllocated);
             TRACE_PARAM(where);
             TRACE_PARAM(size);
@@ -130,7 +130,7 @@ struct storeTraverser: stateInvalidatingTraverser {
 
         ASSERTC(size <= tree->chunk_size);
 
-        TRACES() << "Storing!" << endl;
+        TRACE_FMT("Storing!");
 
         t->state = SegmentNode::MemoryState::Unknown;
 
@@ -309,7 +309,7 @@ struct memsetTraverser: stateInvalidatingTraverser {
             SimulatedPtrSize where) {
         TRACE_FUNC;
 
-        TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+        TRACE_FMT("where: 0x%x", where);
 
         auto available = maxbound - minbound;
         auto mid = middle(minbound, maxbound);

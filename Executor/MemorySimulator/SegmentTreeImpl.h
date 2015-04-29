@@ -349,7 +349,7 @@ struct SegmentTree {
                 SimulatedPtrSize where
             ) {
                 TRACE_FUNC;
-                TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+                TRACE_FMT("where: 0x%x", where);
 
                 auto available = maxbound - minbound;
                 auto mid = middle(minbound, maxbound);
@@ -428,7 +428,7 @@ struct SegmentTree {
                 SimulatedPtrSize where
             ) {
                 TRACE_FUNC;
-                TRACES() << "where: " << tfm::format("0x%x", where) << endl;
+                TRACE_FMT("where: 0x%x", where);
 
                 auto available = maxbound - minbound;
                 auto mid = middle(minbound, maxbound);
