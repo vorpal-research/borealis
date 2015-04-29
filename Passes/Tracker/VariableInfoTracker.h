@@ -46,7 +46,7 @@ public:
 
         friend std::ostream& operator<<(std::ostream& ost, const ValueDescriptor& vd) {
             if(vd.isInvalid()) return ost << "<invalid vd>";
-            return ost << llvm::valueSummary(vd.val) << vd.type.getName();
+            return ost << llvm::valueSummary(vd.val) << "::" << vd.type.getName();
         }
     };
     using ValueDescriptors = std::vector<ValueDescriptor>;

@@ -18,12 +18,46 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Type.h>
 
+
 #include "Codegen/FileManager.h"
 #include "Codegen/llvm.h"
 #include "Util/functional.hpp"
+#include "Util/cast.hpp"
 
 #include "Util/macros.h"
 namespace borealis {
+
+bool isTriviallyInboundsGEP(const llvm::Value* I) {
+    const llvm::Value* pointerOp;
+    std::vector<const llvm::Value*> indices;
+
+    const llvm::GEPOperator* gepi = llvm::dyn_cast<llvm::GEPOperator>(I);
+    if(!gepi) return false;
+
+    if (!gepi->hasAllConstantIndices()) return false;
+    if (gepi->hasAllZeroIndices()) return true;
+
+    pointerOp = gepi->getPointerOperand();
+
+    if(!llvm::is_one_of<llvm::AllocaInst, llvm::GlobalValue, llvm::Constant>(pointerOp)) return false;
+
+    for (auto gt = llvm::gep_type_begin(gepi); gt != llvm::gep_type_end(gepi); ++gt) {
+        auto type = *gt;
+        auto value = gt.getOperand();
+
+        auto index = llvm::dyn_cast<llvm::ConstantInt>(value)->getValue().getLimitedValue();
+
+        if(auto stt = llvm::dyn_cast<llvm::StructType>(type)) {
+            if(index >= stt->getStructNumElements()) return false;
+        } else if(auto stt = llvm::dyn_cast<llvm::ArrayType>(type)) {
+            if(index >= stt->getArrayNumElements()) return false;
+        } else {
+            if(index != 0) return false;
+        }
+    }
+
+    return true;
+}
 
 llvm::DebugLoc getFirstLocusForBlock(const llvm::BasicBlock* bb) {
     for(auto& I : *bb) {
@@ -515,6 +549,7 @@ const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i) {
     }
     return nullptr;
 }
+
 
 
 } // namespace borealis

@@ -51,6 +51,8 @@ public:
 
             if (h.skip()) return;
 
+            if(isTriviallyInboundsGEP(op)) return;
+
             auto q = (
                 pass->FN.State *
                 pass->FN.Predicate->getInequalityPredicate(

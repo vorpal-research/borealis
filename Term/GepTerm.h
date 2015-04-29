@@ -27,12 +27,16 @@ message GepTerm {
 
     optional Term base = 1;
     repeated Term by = 2;
+    optional bool triviallyInbounds = 3;
 }
 
 **/
 class GepTerm: public borealis::Term {
 
     GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts);
+    GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts, bool inBounds);
+
+    bool isTriviallyInbounds_ = false;
 
 public:
 
@@ -40,6 +44,7 @@ public:
 
     Term::Ptr getBase() const;
     auto getShifts() const -> decltype(util::viewContainer(subterms));
+    bool isTriviallyInbounds() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
@@ -50,7 +55,7 @@ public:
         auto&& _type = type;
         TERM_ON_CHANGED(
             getBase() != _base || not util::equal(getShifts(), _shifts, ops::equals_to),
-            new Self( _type, _base, _shifts.toVector() )
+            new Self( _type, _base, _shifts.toVector(), isTriviallyInbounds_ ) // XXX: check is transformers do not invalidate this
         );
     }
 
@@ -99,47 +104,56 @@ struct SMTImpl<Impl, GepTerm> {
                "Encountered a GEP term with non-pointer operand");
 
         auto&& p = base.getUnsafe();
+
+        if(t->getShifts().empty() || util::viewContainer(t->getShifts())
+                                          .map(llvm::dyn_caster<OpaqueIntConstantTerm>{})
+                                          .all_of(LAM(I, I && I->getValue() == 0))) {
+            return p;
+        }
+
         auto&& shift = ef.getIntConst(0);
 
         auto* baseType = llvm::dyn_cast<type::Pointer>(t->getBase()->getType());
         ASSERTC(!!baseType);
 
-        if (not t->getShifts().empty()) {
-            auto&& h = util::head(t->getShifts());
+        auto&& h = util::head(t->getShifts());
 
-            auto&& tp = baseType->getPointed();
-            auto&& size = TypeUtils::getTypeSizeInElems(tp);
+        auto&& tp = baseType->getPointed();
+        auto&& size = TypeUtils::getTypeSizeInElems(tp);
 
-            auto&& by = SMT<Impl>::doit(h, ef, ctx).template to<Integer>();
-            ASSERT(not by.empty(),
-                   "Encountered a GEP term with incorrect shifts");
+        auto&& by = SMT<Impl>::doit(h, ef, ctx).template to<Integer>();
+        ASSERT(not by.empty(),
+               "Encountered a GEP term with incorrect shifts");
 
-            shift = shift + by.getUnsafe() * size;
+        shift = shift + by.getUnsafe() * size;
 
-            for (auto&& s : util::tail(t->getShifts())) {
+        for (auto&& s : util::tail(t->getShifts())) {
 
-                if (llvm::isa<type::Record>(tp)) {
-                    auto&& ss = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
-                    ASSERTC(!!ss);
-                    auto&& offset = TypeUtils::getStructOffsetInElems(tp, ss->getValue());
+            if (llvm::isa<type::Record>(tp)) {
+                auto&& ss = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
+                ASSERTC(!!ss);
+                auto&& offset = TypeUtils::getStructOffsetInElems(tp, ss->getValue());
 
-                    shift = shift + offset;
+                shift = shift + offset;
 
-                    tp = GepTerm::getAggregateElement(tp, s);
+                tp = GepTerm::getAggregateElement(tp, s);
 
-                } else if (llvm::isa<type::Array>(tp)) {
-                    tp = GepTerm::getAggregateElement(tp, s);
-                    size = TypeUtils::getTypeSizeInElems(tp);
+            } else if (llvm::isa<type::Array>(tp)) {
+                tp = GepTerm::getAggregateElement(tp, s);
+                size = TypeUtils::getTypeSizeInElems(tp);
 
-                    auto&& by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
-                    ASSERT(not by.empty(),
-                           "Encountered a GEP term with incorrect shifts");
+                auto&& by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
+                ASSERT(not by.empty(),
+                       "Encountered a GEP term with incorrect shifts");
 
-                    shift = shift + by.getUnsafe() * size;
+                shift = shift + by.getUnsafe() * size;
 
-                } else BYE_BYE(Dynamic, "Encountered non-aggregate type in GEP: " + TypeUtils::toString(*tp));
+            } else BYE_BYE(Dynamic, "Encountered non-aggregate type in GEP: " + TypeUtils::toString(*tp));
 
-            }
+        }
+
+        if(t->isTriviallyInbounds()) {
+            return p + shift;
         }
 
         auto&& bound = ctx->getBound(p);

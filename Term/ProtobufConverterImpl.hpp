@@ -220,6 +220,8 @@ struct protobuf_traits_impl<GepTerm> {
             TermConverter::toProtobuf(*t.getBase()).release()
         );
 
+        res->set_triviallyinbounds(t.isTriviallyInbounds());
+
         for (const auto& shift : t.getShifts()) {
             res->mutable_by()->AddAllocated(
                 TermConverter::toProtobuf(*shift).release()
@@ -243,7 +245,9 @@ struct protobuf_traits_impl<GepTerm> {
             shifts.push_back(by);
         }
 
-        return Term::Ptr{ new GepTerm(base->getType(), ptr, shifts) };
+        bool inbounds = t.triviallyinbounds();
+
+        return Term::Ptr{ new GepTerm(base->getType(), ptr, shifts, inbounds) };
     }
 };
 
