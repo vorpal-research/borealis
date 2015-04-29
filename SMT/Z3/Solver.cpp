@@ -9,6 +9,7 @@
 #include "Factory/Nest.h"
 #include "Logging/tracer.hpp"
 #include "State/PredicateStateBuilder.h"
+#include "State/DeltaDebugger.h"
 #include "State/Transformer/PointerCollector.h"
 #include "State/Transformer/VariableCollector.h"
 #include "SMT/Z3/Divers.h"
@@ -59,28 +60,6 @@ Solver::check_result Solver::check(
     dbg << "  Query: " << endl << z3query << endl;
     dbg << "  State: " << endl << z3state << endl;
     dbg << end;
-
-    static config::ConfigEntry<bool> sanity_check("analysis", "sanity-check");
-    static config::ConfigEntry<int> sanity_check_timeout("analysis", "sanity-check-timeout");
-    if (sanity_check.get(false)) {
-        auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
-        ss.add(z3impl::asAxiom(z3state));
-
-        dbg << "Checking state for sanity... ";
-        auto&& r = ss.check();
-        if (z3::unsat == r) {
-            dbg << "FAILED" << endl;
-            wtf << "Sanity check failed for: " << z3state << endl;
-            wtf << ss.unsat_core() << endl;
-        } else if (z3::unknown == r) {
-            dbg << "TIMEOUT" << endl;
-            wtf << "Sanity check failed for: " << z3state << endl;
-            wtf << ss.reason_unknown() << endl;
-        } else {
-            dbg << "OK" << endl;
-        }
-        dbg << end;
-    }
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(z3impl::asAxiom(implies(pred, z3query)));
@@ -198,6 +177,9 @@ static config::BoolConfigEntry gatherZ3Models("analysis", "collect-z3-models");
 Result Solver::isViolated(
         PredicateState::Ptr query,
         PredicateState::Ptr state) {
+
+    using namespace logic;
+
     TRACE_FUNC;
 
     dbgs() << "Checking query: " << endl
@@ -208,6 +190,29 @@ Result Solver::isViolated(
     ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
     auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
     auto z3query = SMT<Z3>::doit(query, z3ef, &ctx);
+
+    static config::ConfigEntry<bool> sanity_check("analysis", "sanity-check");
+    static config::ConfigEntry<int> sanity_check_timeout("analysis", "sanity-check-timeout");
+    if (sanity_check.get(false)) {
+        auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
+        ss.add(z3impl::asAxiom(z3state));
+
+        auto&& dbg = dbgs();
+
+        dbg << "Checking state for sanity... ";
+        auto&& r = ss.check();
+        if (z3::sat != r) {
+            dbg << (z3::unsat == r ? "FAILED" : "TIMEOUT") << endl;
+
+            logging::wtf() << "Sanity check failed for: " << state << endl;
+            auto&& dd = DeltaDebugger(z3ef).reduce(state);
+            logging::wtf() << "Delta debugged to: " << dd << endl;
+
+        } else {
+            dbg << "OK" << endl;
+        }
+        dbg << end;
+    }
 
     z3::check_result res;
     util::option<z3::model> model;
