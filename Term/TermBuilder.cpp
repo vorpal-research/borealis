@@ -38,6 +38,26 @@ TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term) {
     return {TF, term};
 }
 
+TermBuilder operator+(TermBuilder TB, Term::Ptr term) {
+    TermBuilder res{TB};
+    res.term = res.TF->getBinaryTerm(
+        llvm::ArithType::ADD,
+        res.term,
+        term
+    );
+    return res;
+}
+
+TermBuilder operator-(TermBuilder TB, Term::Ptr term) {
+    TermBuilder res{TB};
+    res.term = res.TF->getBinaryTerm(
+        llvm::ArithType::SUB,
+        res.term,
+        term
+    );
+    return res;
+}
+
 TermBuilder operator&&(TermBuilder TB, Term::Ptr term) {
     TermBuilder res{TB};
     res.term = res.TF->getBinaryTerm(

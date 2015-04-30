@@ -29,6 +29,8 @@ public:
 
     operator Term::Ptr() const;
 
+    friend TermBuilder operator+(TermBuilder TB, Term::Ptr term);
+    friend TermBuilder operator-(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator&&(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator!=(TermBuilder TB, Term::Ptr term);
 
@@ -45,9 +47,6 @@ public:
 };
 
 TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term);
-
-TermBuilder operator&&(TermBuilder TB, Term::Ptr term);
-TermBuilder operator!=(TermBuilder TB, Term::Ptr term);
 
 } /* namespace borealis */
 

@@ -11,6 +11,7 @@
 #include "Passes/Checker/CheckOutOfBoundsPass.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/PredicateStateBuilder.h"
+#include "Term/TermBuilder.h"
 
 namespace borealis {
 
@@ -28,11 +29,22 @@ public:
 
         if (h.skip()) return;
 
+        if (isTriviallyInboundsGEP(&GI)) return;
+
         auto q = (
             pass->FN.State *
-            pass->FN.Predicate->getInequalityPredicate(
-                pass->FN.Term->getValueTerm(&GI),
-                pass->FN.Term->getInvalidPtrTerm()
+            pass->FN.Predicate->getEqualityPredicate(
+                pass->FN.Term->getCmpTerm(
+                    llvm::ConditionType::UGT,
+                    pass->FN.Term->getBoundTerm(pass->FN.Term->getValueTerm(GI.getPointerOperand())),
+                    (
+                        pass->FN.Term *
+                        pass->FN.Term->getValueTerm(&GI)
+                        -
+                        pass->FN.Term->getValueTerm(GI.getPointerOperand())
+                    )
+                ),
+                pass->FN.Term->getTrueTerm()
             )
         )();
         auto ps = pass->PSA->getInstructionState(&GI);
@@ -51,13 +63,22 @@ public:
 
             if (h.skip()) return;
 
-            if(isTriviallyInboundsGEP(op)) return;
+            if (isTriviallyInboundsGEP(op)) return;
 
             auto q = (
                 pass->FN.State *
-                pass->FN.Predicate->getInequalityPredicate(
-                    pass->FN.Term->getConstTerm(op),
-                    pass->FN.Term->getInvalidPtrTerm()
+                pass->FN.Predicate->getEqualityPredicate(
+                    pass->FN.Term->getCmpTerm(
+                        llvm::ConditionType::UGT,
+                        pass->FN.Term->getBoundTerm(pass->FN.Term->getValueTerm(op->getOperand(0))),
+                        (
+                            pass->FN.Term *
+                            pass->FN.Term->getValueTerm(op)
+                            -
+                            pass->FN.Term->getValueTerm(op->getOperand(0))
+                        )
+                    ),
+                    pass->FN.Term->getTrueTerm()
                 )
             )();
             auto ps = pass->PSA->getInstructionState(&I);

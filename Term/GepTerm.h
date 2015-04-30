@@ -36,7 +36,7 @@ class GepTerm: public borealis::Term {
     GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts);
     GepTerm(Type::Ptr type, Term::Ptr base, const std::vector<Term::Ptr>& shifts, bool inBounds);
 
-    bool isTriviallyInbounds_ = false;
+    bool isTriviallyInbounds_;
 
 public:
 
@@ -55,36 +55,12 @@ public:
         auto&& _type = type;
         TERM_ON_CHANGED(
             getBase() != _base || not util::equal(getShifts(), _shifts, ops::equals_to),
-            new Self( _type, _base, _shifts.toVector(), isTriviallyInbounds_ ) // XXX: check is transformers do not invalidate this
+            new Self( _type, _base, _shifts.toVector(), isTriviallyInbounds_ ) // XXX: check that transformers do not invalidate isTriviallyInbounds
         );
     }
 
-    static Type::Ptr getAggregateElement(Type::Ptr parent, Term::Ptr idx) {
-        if (auto* structType = llvm::dyn_cast<type::Record>(parent)) {
-            auto&& body = structType->getBody()->get();
-            auto&& cIdx = llvm::dyn_cast<OpaqueIntConstantTerm>(idx);
-            ASSERTC(!!cIdx);
-            auto&& index = cIdx->getValue();
-            ASSERTC(index >= 0);
-            auto&& uIndex = (unsigned long long) index;
-            ASSERTC(uIndex < body.getNumFields());
-            return body.at(uIndex).getType();
-        } else if (auto* arrayType = llvm::dyn_cast<type::Array>(parent)) {
-            return arrayType->getElement();
-        }
-
-        BYE_BYE(Type::Ptr, "getAggregateElement on non-aggregate type: " + TypeUtils::toString(*parent));
-    }
-
-    static Type::Ptr getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& index) {
-        auto&& ptrType = llvm::dyn_cast<type::Pointer>(parent);
-        ASSERT(!!ptrType, "getGepChild argument is not a pointer");
-        auto&& ret = ptrType->getPointed();
-        for (auto&& ix : util::tail(index)) {
-            ret = getAggregateElement(ret, ix);
-        }
-        return ret;
-    }
+    static Type::Ptr getAggregateElement(Type::Ptr parent, Term::Ptr idx);
+    static Type::Ptr getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& index);
 
 };
 
@@ -105,9 +81,9 @@ struct SMTImpl<Impl, GepTerm> {
 
         auto&& p = base.getUnsafe();
 
-        if(t->getShifts().empty() || util::viewContainer(t->getShifts())
-                                          .map(llvm::dyn_caster<OpaqueIntConstantTerm>{})
-                                          .all_of(LAM(I, I && I->getValue() == 0))) {
+        if (t->getShifts().empty() || util::viewContainer(t->getShifts())
+                                           .map(llvm::dyn_caster<OpaqueIntConstantTerm>{})
+                                           .all_of(LAM(I, I && I->getValue() == 0))) {
             return p;
         }
 
@@ -152,19 +128,13 @@ struct SMTImpl<Impl, GepTerm> {
 
         }
 
-        if(t->isTriviallyInbounds()) {
+        if (t->isTriviallyInbounds()) {
             return p + shift;
         }
 
-        auto&& bound = ctx->getBound(p);
-
-        return ef.if_(ef.isInvalidPtrExpr(p) || UComparable(shift).uge(bound))
-                 .then_(ef.getInvalidPtr())
-                 .else_(
-                     (p + shift).withAxiom(
-                         not ef.isInvalidPtrExpr(p + shift)
-                     )
-                 );
+        return (p + shift).withAxiom(
+            not ef.isInvalidPtrExpr(p + shift)
+        );
     }
 };
 
