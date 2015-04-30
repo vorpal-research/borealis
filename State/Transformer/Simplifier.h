@@ -23,54 +23,13 @@ public:
 
     Simplifier(FactoryNest FN) : Base(FN), level(0U) {}
 
-    using Base::transform;
+    using Base::transformBase;
 
-    // XXX: Should not be shadowed in your everyday transformers
-    //      Don't try this at home!
-    Term::Ptr transform(Term::Ptr term) {
-        using borealis::util::head;
-        using borealis::util::tail;
+    Term::Ptr transformBase(Term::Ptr term);
 
-        ++level;
-        auto res = transformBase(term);
-        --level;
+    Term::Ptr transformAxiomTerm(AxiomTermPtr t);
 
-        if (level != 0) return res;
-
-        if (axs.empty()) return res;
-
-        auto acc = head(axs);
-        auto rest = tail(axs);
-        auto axsTerm = std::accumulate(rest.begin(), rest.end(), acc,
-            [this](Term::Ptr acc, Term::Ptr next) {
-                return FN.Term->getBinaryTerm(llvm::ArithType::LAND, acc, next);
-            }
-        );
-
-        return FN.Term->getAxiomTerm(res, axsTerm);
-    }
-
-    Term::Ptr transformAxiomTerm(AxiomTermPtr t) {
-        axs.push_back(t->getRhv());
-        return t->getLhv();
-    }
-
-    Term::Ptr transformUnaryTerm(UnaryTermPtr t) {
-        auto op = t->getOpcode();
-        auto rhv = t->getRhv();
-
-        if (op == llvm::UnaryArithType::NOT) {
-            if (auto* cmp = llvm::dyn_cast<CmpTerm>(rhv)) {
-                return FN.Term->getCmpTerm(
-                    makeNot(cmp->getOpcode()),
-                    cmp->getLhv(),
-                    cmp->getRhv()
-                );
-            }
-        }
-
-        return t;
-    }
+    Term::Ptr transformUnaryTerm(UnaryTermPtr t);
 
 };
 
