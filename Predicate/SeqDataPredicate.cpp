@@ -15,7 +15,6 @@ SeqDataPredicate::SeqDataPredicate(
         const Locus& loc,
         PredicateType type) :
             Predicate(class_tag(*this), type, loc) {
-
     auto&& a = util::viewContainer(data)
                 .map([](auto&& d) { return d->getName(); })
                 .reduce("", [](auto&& acc, auto&& e) { return acc + "," + e; });

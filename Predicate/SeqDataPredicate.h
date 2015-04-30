@@ -10,6 +10,7 @@
 
 #include "Config/config.h"
 #include "Predicate/Predicate.h"
+#include "Logging/tracer.hpp"
 
 namespace borealis {
 
@@ -46,6 +47,7 @@ public:
 
     template<class SubClass>
     Predicate::Ptr accept(Transformer<SubClass>* t) const {
+        TRACE_FUNC;
         auto&& _base = t->transform(getBase());
         auto&& _data = getData().map(
             [&](auto&& d) { return t->transform(d); }
