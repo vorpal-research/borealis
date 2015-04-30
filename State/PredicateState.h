@@ -78,6 +78,7 @@ public:
     }
 
     virtual bool isEmpty() const = 0;
+    virtual unsigned int size() const = 0;
 
     virtual bool equals(const PredicateState* other) const;
 
