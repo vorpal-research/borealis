@@ -3,7 +3,7 @@
 extern int __NONDET__();
 
 extern char x[100], y[100];
-extern int i,j,k;
+extern int i, j, k;
 
 int mainFunc() {  
   k = __NONDET__();
@@ -15,8 +15,8 @@ int mainFunc() {
   }
   y[i] = 0;
   
-  if(k >= 0 && k < i)
-    if(y[k] == 0)
+  if (k >= 0 && k < i)
+    if (y[k] == 0)
       return 1;
 
   return 0;

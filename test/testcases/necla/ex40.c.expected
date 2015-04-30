@@ -1,32 +1,4 @@
-
 [
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex40.c",
-			"loc" : 
-			{
-				"col" : 3,
-				"line" : 12
-			}
-		},
-		"type" : "BUF-01"
-	},
-	
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/necla/ex40.c",
-			"loc" : 
-			{
-				"col" : 5,
-				"line" : 13
-			}
-		},
-		"type" : "BUF-01"
-	},
-	
 	{
 		"location" : 
 		{
@@ -39,7 +11,6 @@
 		},
 		"type" : "BUF-01"
 	},
-	
 	{
 		"location" : 
 		{
