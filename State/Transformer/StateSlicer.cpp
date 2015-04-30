@@ -58,7 +58,7 @@ PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
     return nullptr == AA ? ps : Base::transform(ps->reverse())->filter([](auto&& p) { return !!p; })->reverse();
 }
 
-Predicate::Ptr StateSlicer::transformPredicate(Predicate::Ptr pred) {
+Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
     if (nullptr == AA) return pred;
 
     auto&& lhvTerms = Term::Set{};
@@ -131,11 +131,23 @@ bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
     return false;
 }
 
+uint64_t StateSlicer::getLLVMAliasSize(llvm::Type* t) {
+    if (auto* st = llvm::dyn_cast<llvm::StructType>(t)) {
+        if (st->isOpaque()) {
+            return llvm::AliasAnalysis::UnknownSize;
+        }
+    }
+    return AA->getTypeStoreSize(t);
+}
+
 bool StateSlicer::aliases(Term::Ptr a, Term::Ptr b) {
     auto&& p = term2value(a);
     auto&& q = term2value(b);
 
-#define AS_POINTER(V) V, AA->getTypeStoreSize(V->getType()->getPointerElementType()), nullptr
+#define AS_POINTER(V) \
+    V, \
+    getLLVMAliasSize(V->getType()->getPointerElementType()), \
+    nullptr
 
     if (p and q) {
         AST->add(AS_POINTER(p));

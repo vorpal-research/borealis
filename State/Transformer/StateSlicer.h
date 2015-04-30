@@ -27,7 +27,8 @@ public:
     StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA);
 
     PredicateState::Ptr transform(PredicateState::Ptr ps);
-    Predicate::Ptr transformPredicate(Predicate::Ptr pred);
+    using Base::transformBase;
+    Predicate::Ptr transformBase(Predicate::Ptr pred);
 
 private:
 
@@ -50,6 +51,7 @@ private:
 
     llvm::Value* term2value(Term::Ptr t);
 
+    uint64_t getLLVMAliasSize(llvm::Type* t);
 };
 
 } /* namespace borealis */
