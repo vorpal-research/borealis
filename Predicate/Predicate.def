@@ -12,6 +12,7 @@
 #include "Predicate/InequalityPredicate.h"
 #include "Predicate/MallocPredicate.h"
 #include "Predicate/SeqDataPredicate.h"
+#include "Predicate/SeqDataZeroPredicate.h"
 #include "Predicate/StorePredicate.h"
 #include "Predicate/WritePropertyPredicate.h"
 #include "Predicate/WriteBoundPredicate.h"
@@ -27,6 +28,7 @@ HANDLE_PREDICATE(Globals, GlobalsPredicate)
 HANDLE_PREDICATE(Inequality, InequalityPredicate)
 HANDLE_PREDICATE(Malloc, MallocPredicate)
 HANDLE_PREDICATE(SeqData, SeqDataPredicate)
+HANDLE_PREDICATE(SeqDataZero, SeqDataZeroPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(WriteProperty, WritePropertyPredicate)
 HANDLE_PREDICATE(WriteBound, WriteBoundPredicate)

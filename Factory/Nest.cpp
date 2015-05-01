@@ -50,11 +50,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& g
             return FN.Predicate->getSeqDataPredicate(base, data);
 
         } else if (dyn_cast<ConstantAggregateZero>(ini)) {
-            auto&& zero = FN.Term->getIntTerm(0);
-            auto&& data = util::range(0ULL, numElements)
-                    .map(konst(zero))
-                    .toVector();
-            return FN.Predicate->getSeqDataPredicate(base, data);
+            return FN.Predicate->getSeqDataZeroPredicate(base, numElements);
 
         } else if (auto* c = dyn_cast<Constant>(ini)) {
             auto&& data = util::viewContainer(getAsSeqData(c))
