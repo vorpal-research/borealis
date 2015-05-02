@@ -542,11 +542,18 @@ std::tuple<Args...> mkBounds(z3::context& ctx) {
 
 namespace z3impl {
 
+template<class Expr>
+Z3_pattern make_pattern(z3::context& ctx, Expr e) {
+    Z3_ast pats[1];
+    pats[0] = getExpr(e);
+    return Z3_mk_pattern(ctx, 1, pats);
+}
+
 template<class Res, class ...Args>
 z3::expr forAll(
         z3::context& ctx,
         std::function<Res(Args...)> func
-    ) {
+) {
 
     using borealis::util::toString;
     using borealis::util::view;
@@ -571,7 +578,48 @@ z3::expr forAll(
                     ctx,
                     0,
                     0,
-                    nullptr,
+                    0,
+                    numBounds,
+                    &sort_array[0],
+                    &name_array[0],
+                    z3impl::getExpr(body)));
+    return axiom.simplify();
+}
+
+template<class Res, class PatternContainer, class ...Args>
+z3::expr forAll(
+        z3::context& ctx,
+        std::function<Res(Args...)> func,
+        std::function<PatternContainer(Args...)> patternGenerator
+    ) {
+
+    using borealis::util::toString;
+    using borealis::util::view;
+    std::vector<z3::sort> sorts { impl::generator<Args>::sort(ctx)... };
+
+    size_t numBounds = sorts.size();
+
+    auto bounds = mkBounds<Args...>(ctx);
+    auto body = as_packed(func)(bounds);
+
+    std::vector<Z3_sort> sort_array(sorts.rbegin(), sorts.rend());
+
+    std::vector<Z3_symbol> name_array;
+    for (size_t i = 0U; i < numBounds; ++i) {
+        std::string name = "forall_bound_" + toString(numBounds - i - 1);
+        name_array.push_back(ctx.str_symbol(name.c_str()));
+    }
+
+    auto patterns = as_packed(patternGenerator)(bounds);
+    std::vector<Z3_pattern> pattern_array = util::viewContainer(patterns).map(LAM(Expr, make_pattern(Expr))).toVector();
+
+    auto axiom = z3::to_expr(
+            ctx,
+            Z3_mk_forall(
+                    ctx,
+                    0,
+                    pattern_array.size(),
+                    pattern_array.data(),
                     numBounds,
                     &sort_array[0],
                     &name_array[0],
