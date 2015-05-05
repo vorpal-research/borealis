@@ -166,8 +166,8 @@ llvm::Value* MetaInserter::unliftDebugIntrinsic(llvm::Module& M, llvm::Value* ci
             return ret;
         }
         case function_type::INTRINSIC_VALUE: {
-            auto* val = inst->getArgOperand(0);
-            auto* offset = inst->getArgOperand(1);
+            auto* val = inst->getArgOperand(1);
+            auto* offset = inst->getArgOperand(0);
             auto* varMD = inst->getMetadata("var");
 
             auto llvmIntr = llvm::Intrinsic::getDeclaration(&M, llvm::Intrinsic::dbg_value);

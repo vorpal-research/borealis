@@ -73,7 +73,7 @@ void GlobalVariableLifting::setupBasicBlock(llvm::BasicBlock* BB) {
             }
         // do store/load around calls to other functions
         } else if (auto* call = llvm::dyn_cast<llvm::CallInst>(inst)) {
-            if (call->getCalledFunction()->doesNotAccessMemory()) continue;
+            if (call->getCalledFunction() && call->getCalledFunction()->doesNotAccessMemory()) continue;
             if (IM->getIntrinsicType(*call) != function_type::UNKNOWN) continue;
 
             auto&& next_inst = std::next(inst);
