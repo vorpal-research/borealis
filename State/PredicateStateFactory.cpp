@@ -31,6 +31,12 @@ PredicateState::Ptr PredicateStateFactory::Choice(const std::vector<PredicateSta
     );
 }
 
+PredicateState::Ptr PredicateStateFactory::Choice(std::vector<PredicateState::Ptr>&& choices) {
+    return PredicateState::Simplified<PredicateStateChoice>(
+        std::move(choices)
+    );
+}
+
 PredicateState::Ptr PredicateStateFactory::Basic() {
     static PredicateState::Ptr basic(new BasicPredicateState());
     return basic;
@@ -39,6 +45,12 @@ PredicateState::Ptr PredicateStateFactory::Basic() {
 PredicateState::Ptr PredicateStateFactory::Basic(const std::vector<Predicate::Ptr>& data) {
     return PredicateState::Simplified<BasicPredicateState>(
         data
+    );
+}
+
+PredicateState::Ptr PredicateStateFactory::Basic(std::vector<Predicate::Ptr>&& data) {
+    return PredicateState::Simplified<BasicPredicateState>(
+        std::move(data)
     );
 }
 

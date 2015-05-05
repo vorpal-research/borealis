@@ -93,12 +93,12 @@ protected:
     friend class PredicateStateFactory;
 
     static PredicateState::Ptr Simplified(const PredicateState* s) {
-        return PredicateState::Ptr(s)->simplify();
+        return PredicateState::Ptr(s);
     }
 
     template<typename T, typename ...Args>
     static PredicateState::Ptr Simplified(Args&&... args) {
-        return PredicateState::Ptr(new T{ std::forward<Args>(args)... })->simplify();
+        return PredicateState::Ptr(new T{ std::forward<Args>(args)... });
     }
 
 };
