@@ -78,6 +78,17 @@ public:
     void writeExprToMemory(Pointer ix, ExprClass val) {
         memory( memory().store(ix, val) );
     }
+    template<class ExprClass>
+    void writeExprToMemory(Pointer from, Pointer to, ExprClass val) {
+        auto currentMemory = memory();
+        auto newMem = factory.getEmptyMemoryArray(MEMORY_ID);
+        auto axiom = factory.forAll([=](Pointer inner){
+            factory.if_(inner >= from && inner < to)
+                   .then_(newMem[inner] == val)
+                   .else_(newMem[inner] == currentMemory[inner]);
+        });
+        
+    }
 
     Dynamic readProperty(const std::string& id, Pointer ix, size_t bitSize) {
         return get(id).select(ix, bitSize);

@@ -19,6 +19,7 @@
 #include "Protobuf/Gen/Predicate/InequalityPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/MallocPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/SeqDataPredicate.pb.h"
+#include "Protobuf/Gen/Predicate/SeqDataZeroPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WriteBoundPredicate.pb.h"
@@ -267,6 +268,32 @@ struct protobuf_traits_impl<SeqDataPredicate> {
 
         return Predicate::Ptr{
             new SeqDataPredicate(b, data, base->getLocation(), base->getType())
+        };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<SeqDataZeroPredicate> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::SeqDataZeroPredicate> toProtobuf(const SeqDataZeroPredicate& p) {
+        auto res = util::uniq(new proto::SeqDataZeroPredicate());
+        res->set_allocated_base(
+            TermConverter::toProtobuf(*p.getBase()).release()
+        );
+        res->set_size(p.getSize());
+        return std::move(res);
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Predicate::Ptr base,
+            const proto::SeqDataZeroPredicate& p) {
+        auto b = TermConverter::fromProtobuf(fn, p.base());
+
+        return Predicate::Ptr{
+            new SeqDataZeroPredicate(b, p.size(), base->getLocation(), base->getType())
         };
     }
 };

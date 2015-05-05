@@ -129,6 +129,14 @@ public:
                 new SeqDataPredicate(base, data, loc));
     }
 
+    Predicate::Ptr getSeqDataZeroPredicate(
+            Term::Ptr base,
+            size_t size,
+            const Locus& loc = Locus()) {
+        return Predicate::Ptr(
+                new SeqDataZeroPredicate(base, size, loc));
+    }
+
 
 
     static PredicateFactory::Ptr get() {

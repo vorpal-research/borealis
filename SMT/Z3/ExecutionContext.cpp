@@ -172,15 +172,17 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
 
     auto&& zero = factory.getIntConst(0);
 
-    auto&& pSize = readProperty<Integer>(GEP_BOUNDS_ID, p);
+    auto storedBound = [this](auto ptr){ return readProperty<Integer>(GEP_BOUNDS_ID, ptr); };
+
+    auto&& pSize = storedBound(p);
 
     auto&& baseFree = factory.getPtrVar("$$__base_free__$$(" + p.getName() + ")");
-    auto&& baseFreeSize = readProperty<Integer>(GEP_BOUNDS_ID, baseFree);
+    auto&& baseFreeSize = storedBound(baseFree);
     std::function<Bool(Pointer)> baseFreeAxiom =
         [=](Pointer any) -> Bool {
             return factory.implies(
                 UComparable(any).ugt(baseFree) && UComparable(any).ule(p),
-                readProperty<Integer>(GEP_BOUNDS_ID, any) == zero
+                storedBound(any) == zero
             );
         };
     auto&& bfa = UComparable(baseFree).ule(p)
@@ -191,7 +193,7 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
     auto&& base = factory.if_(pSize != zero)
                          .then_(p)
                          .else_(baseFree);
-    auto&& baseSize = readProperty<Integer>(GEP_BOUNDS_ID, base);
+    auto&& baseSize = storedBound(base);
 
     return
         factory.if_(base == p)

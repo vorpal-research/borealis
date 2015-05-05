@@ -1,5 +1,9 @@
 # /bin/env bash
 
+if [[ $# == 0 ]]
+then echo "copyclass.sh \$dir \$OldClassName \$NewClassName" && exit
+fi
+
 dir=$1
 from=$2
 to=$3
