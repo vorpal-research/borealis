@@ -23,10 +23,18 @@ public:
 
     StateOptimizer(FactoryNest FN);
 
+    // TODO akhin: Optimize transformer framework
+
     PredicateState::Ptr transformPredicateStateChain(PredicateStateChainPtr ps);
+
+    PredicateState::Ptr transformBasic(BasicPredicateStatePtr ps);
+    PredicateState::Ptr transformBasicPredicateState(BasicPredicateStatePtr ps);
 
     using Base::transformBase;
     Predicate::Ptr transformBase(Predicate::Ptr pred);
+
+    using Base::transform;
+    PredicateState::Ptr transform(PredicateState::Ptr ps);
 
 private:
 
