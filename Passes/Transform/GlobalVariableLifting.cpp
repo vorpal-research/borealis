@@ -30,7 +30,7 @@ void GlobalVariableLifting::collectGlobals(llvm::Function& F) {
     for (auto&& inst = llvm::inst_begin(F); inst != llvm::inst_end(F); ++inst) {
         for (auto&& op : inst->operand_values()) {
             if (llvm::isa<llvm::GlobalVariable>(op) &&
-                not op->getType()->getPointerElementType()->isArrayTy())
+                not op->getType()->getPointerElementType()->isAggregateType())
                     globals[op->getName()] = op;
         }
     }

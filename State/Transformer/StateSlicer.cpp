@@ -136,6 +136,8 @@ uint64_t StateSlicer::getLLVMAliasSize(llvm::Type* t) {
         if (st->isOpaque()) {
             return llvm::AliasAnalysis::UnknownSize;
         }
+    } else if (llvm::dyn_cast<llvm::FunctionType>(t)) {
+        return llvm::AliasAnalysis::UnknownSize;
     }
     return AA->getTypeStoreSize(t);
 }
