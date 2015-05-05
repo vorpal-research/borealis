@@ -74,6 +74,12 @@ public:
     void writeExprToMemory(Pointer ix, ExprClass val) {
         memory( memory().store(ix, val) );
     }
+    template<class ExprClass>
+    void writeExprRangeToMemory(Pointer from, size_t size, ExprClass val) {
+        for(auto i = 0U; i < size; ++i) {
+            writeExprToMemory(from + i, val);
+        }
+    }
 
     Dynamic readProperty(const std::string& id, Pointer ix, size_t bitSize) {
         return get(id).select(ix, bitSize);

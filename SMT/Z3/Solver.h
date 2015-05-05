@@ -61,7 +61,8 @@ private:
 
     check_result check(
             const Bool& z3query,
-            const Bool& z3state);
+            const Bool& z3state,
+            const ExecutionContext& ctx);
 
     z3::tactic tactics(unsigned int timeout = 0);
 

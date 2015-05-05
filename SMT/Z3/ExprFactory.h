@@ -97,6 +97,11 @@ public:
         return logic::forAll(*ctx, func);
     }
 
+    template<class ...Args>
+    Bool forAll(std::function<Bool(Args...)> func, std::function<std::vector<Dynamic>(Args...)> patternGen) {
+        return logic::forAll(*ctx, func, patternGen);
+    }
+
     Bool implies(Bool from, Bool to) {
         return logic::implies(from, to);
     }

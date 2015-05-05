@@ -41,7 +41,8 @@ z3::tactic Solver::tactics(unsigned int timeout) {
 
 Solver::check_result Solver::check(
         const Bool& z3query_,
-        const Bool& z3state_) {
+        const Bool& z3state_,
+        const ExecutionContext& ctx) {
 
     using namespace logic;
 
@@ -56,6 +57,8 @@ Solver::check_result Solver::check(
     auto z3query = z3query_.simplify();
 
     s.add(z3impl::asAxiom(z3state));
+    for(auto&& axiom : ctx.getAxioms())
+        s.add(z3impl::asAxiom(axiom));
 
     dbg << "  Query: " << endl << z3query << endl;
     dbg << "  State: " << endl << z3state << endl;
@@ -195,6 +198,7 @@ Result Solver::isViolated(
     static config::ConfigEntry<int> sanity_check_timeout("analysis", "sanity-check-timeout");
     if (sanity_check.get(false)) {
         auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
+        for(auto&& axiom : ctx.getAxioms()) ss.add(z3impl::asAxiom(axiom));
         ss.add(z3impl::asAxiom(z3state));
 
         auto&& dbg = dbgs();
@@ -216,7 +220,7 @@ Result Solver::isViolated(
 
     z3::check_result res;
     util::option<z3::model> model;
-    std::tie(res, model, std::ignore, std::ignore) = check(!z3query, z3state);
+    std::tie(res, model, std::ignore, std::ignore) = check(!z3query, z3state, ctx);
 
     if (res == z3::sat) {
         auto m = model.getUnsafe(); // You shall not fail! (c)
@@ -273,7 +277,7 @@ Result Solver::isPathImpossible(
 
     z3::check_result res;
     util::option<z3::model> model;
-    std::tie(res, model, std::ignore, std::ignore) = check(z3path, z3state);
+    std::tie(res, model, std::ignore, std::ignore) = check(z3path, z3state, ctx);
 
     if (res == z3::sat) {
         auto m = model.getUnsafe(); // You shall not fail! (c)
@@ -371,6 +375,7 @@ PredicateState::Ptr Solver::probeModels(
     auto solver = tactics().mk_solver();
     solver.add(logic::z3impl::asAxiom(z3body));
     solver.add(logic::z3impl::asAxiom(z3query));
+    for(auto&& axiom : ctx.getAxioms()) solver.add(logic::z3impl::asAxiom(axiom));
 
     FactoryNest FN(nullptr);
     std::vector<PredicateState::Ptr> states;

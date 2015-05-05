@@ -31,6 +31,8 @@ class ExecutionContext {
     unsigned long long localMemoryStart;
     unsigned long long localMemoryEnd;
 
+    std::vector<Bool> contextAxioms;
+
     static const std::string MEMORY_ID;
     MemArray memory() const;
     void memory(const MemArray& value);
@@ -65,6 +67,8 @@ public:
     using LocalMemoryBounds = std::pair<unsigned long long, unsigned long long>;
     LocalMemoryBounds getLocalMemoryBounds() const;
 
+    const std::vector<Bool> getAxioms() const { return contextAxioms; }
+
 ////////////////////////////////////////////////////////////////////////////////
 
     Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
@@ -79,15 +83,23 @@ public:
         memory( memory().store(ix, val) );
     }
     template<class ExprClass>
-    void writeExprToMemory(Pointer from, Pointer to, ExprClass val) {
+    void writeExprRangeToMemory(Pointer from, size_t size, ExprClass val) {
         auto currentMemory = memory();
         auto newMem = factory.getEmptyMemoryArray(MEMORY_ID);
-        auto axiom = factory.forAll([=](Pointer inner){
-            factory.if_(inner >= from && inner < to)
-                   .then_(newMem[inner] == val)
-                   .else_(newMem[inner] == currentMemory[inner]);
-        });
-        
+        std::function<Bool(Pointer)> fun = [=](Pointer inner){
+            return
+                factory.if_(inner >= from && inner < from + size)
+                       .then_(newMem.select<ExprClass>(inner) == val)
+                       .else_(newMem.select<ExprClass>(inner) == currentMemory.select<ExprClass>(inner));
+        };
+        std::function<std::vector<Dynamic>(Pointer)> patterns = [=](Pointer inner){
+            return util::make_vector(Dynamic(newMem.select<ExprClass>(inner)));
+        };
+
+        auto axiom = factory.forAll(fun, patterns);
+
+        contextAxioms.push_back(axiom);
+        return memory(newMem);
     }
 
     Dynamic readProperty(const std::string& id, Pointer ix, size_t bitSize) {

@@ -83,10 +83,14 @@ struct SMTImpl<Impl, SeqDataZeroPredicate> {
         auto&& zero = ef.getIntConst(0);
 
         static config::ConfigEntry<bool> SkipStaticInit("analysis", "skip-static-init");
+        static config::ConfigEntry<bool> UseRangedStore("analysis", "use-range-stores");
         if (not SkipStaticInit.get(true)) {
-            for (size_t i = 0; i < p->getSize(); ++i) {
-                ctx->writeExprToMemory(base, zero);
-                base = base + 1;
+            if(UseRangedStore.get(false)) {
+                ctx->writeExprRangeToMemory(base, p->getSize(), zero);
+            } else {
+                for (auto i = 0U; i < p->getSize(); ++i) {
+                    ctx->writeExprToMemory(base + i, zero);
+                }
             }
         }
 

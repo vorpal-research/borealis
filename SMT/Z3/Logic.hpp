@@ -586,11 +586,11 @@ z3::expr forAll(
     return axiom.simplify();
 }
 
-template<class Res, class PatternContainer, class ...Args>
+template<class Res, class Patterns, class ...Args>
 z3::expr forAll(
         z3::context& ctx,
         std::function<Res(Args...)> func,
-        std::function<PatternContainer(Args...)> patternGenerator
+        std::function<Patterns(Args...)> patternGenerator
     ) {
 
     using borealis::util::toString;
@@ -611,7 +611,7 @@ z3::expr forAll(
     }
 
     auto patterns = as_packed(patternGenerator)(bounds);
-    std::vector<Z3_pattern> pattern_array = util::viewContainer(patterns).map(LAM(Expr, make_pattern(Expr))).toVector();
+    std::vector<Z3_pattern> pattern_array = util::viewContainer(patterns).map(LAM(Expr, make_pattern(ctx, Expr))).toVector();
 
     auto axiom = z3::to_expr(
             ctx,
@@ -878,6 +878,15 @@ Bool forAll(
         std::function<Bool(Args...)> func
     ) {
     return Bool{ z3impl::forAll(ctx, func) };
+}
+
+template<class ...Args>
+Bool forAll(
+        z3::context& ctx,
+        std::function<Bool(Args...)> func,
+        std::function<std::vector<SomeExpr>(Args...)> patternGen
+    ) {
+    return Bool{ z3impl::forAll(ctx, func, patternGen) };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
