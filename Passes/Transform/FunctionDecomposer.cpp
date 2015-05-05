@@ -278,6 +278,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                 }
 
                 if (!arg->getType()->isPointerTy()
+                    || arg->getType()->getPointerElementType()->isAggregateType() // FIXME; think better
                     || arg->getType()->getPointerElementType()->isFunctionTy()
                     || llvm::isa<llvm::Constant>(arg)
                     || call->getCalledFunction()->doesNotAccessMemory(i)) {

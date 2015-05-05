@@ -19,6 +19,8 @@ namespace borealis {
 
 bool isTriviallyInboundsGEP(const llvm::Value* I);
 
+bool isPointerToOpaqueStruct(const llvm::Type* T);
+
 llvm::DebugLoc getFirstLocusForBlock(const llvm::BasicBlock* bb);
 llvm::MDNode* getFirstMdNodeForBlock(const llvm::BasicBlock* bb, const char* id = "dbg");
 void approximateAllDebugLocs(llvm::BasicBlock* bb);

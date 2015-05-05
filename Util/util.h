@@ -208,6 +208,9 @@ inline bool isMain(const Function& f) {
 namespace borealis {
 namespace util {
 
+void initFilePaths(const char ** argv);
+std::string getFilePathIfExists(const std::string& path);
+
 std::string nospaces(const std::string& v);
 std::string nospaces(std::string&& v);
 bool endsWith(const std::string& fullString, const std::string& ending);

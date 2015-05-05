@@ -83,6 +83,8 @@ int gestalt::main(int argc, const char** argv) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     atexit(google::protobuf::ShutdownProtobufLibrary);
 
+    borealis::util::initFilePaths(argv);
+
     // XXX: sometimes this is causing "pure virtual method called" on sayonara
     // atexit(llvm::llvm_shutdown);
 
@@ -95,20 +97,13 @@ int gestalt::main(int argc, const char** argv) {
 
     const std::vector<std::string> empty;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CommandLine args(argc, argv);
-    auto selfPath = llvm::sys::FindProgramByName(argv[0]);
-    llvm::SmallString<64> selfDir = llvm::sys::path::parent_path(selfPath);
-    auto configPath = selfDir;
-    llvm::sys::path::append(configPath, "wrapper.conf");
-    auto defaultLogIni = selfDir;
-    llvm::sys::path::append(defaultLogIni, "log.ini");
-#pragma GCC diagnostic pop
+    std::string configPath = "wrapper.conf";
+    std::string defaultLogIni = "log.ini";
 
     AppConfiguration::initialize(
         new CommandLineConfigSource{ args.suffixes("---").stlRep() },
-        new FileConfigSource{ args.suffixes("---config:").single(configPath.c_str()) }
+        new FileConfigSource{ args.suffixes("---config:").single(util::getFilePathIfExists(configPath).c_str()) }
     );
 
     CommandLine opt = CommandLine("wrapper") +
@@ -121,11 +116,11 @@ int gestalt::main(int argc, const char** argv) {
 
 
     borealis::logging::configureLoggingFacility(
-        logFile.get().getOrElse(defaultLogIni.str())
+        util::getFilePathIfExists(logFile.get().getOrElse(defaultLogIni))
     );
 
     for (const auto& op : z3log) {
-        borealis::logging::configureZ3Log(op);
+        borealis::logging::configureZ3Log(util::getFilePathIfExists(op));
     }
 
     auto prePasses = MultiConfigEntry("passes", "pre").get();
@@ -208,7 +203,7 @@ int gestalt::main(int argc, const char** argv) {
     plugin_loader pl;
     pl.assignLogger(*this);
     for (const auto& lib : libs2load) {
-        pl.add(lib.str());
+        pl.add(util::getFilePathIfExists(lib.str()));
     }
     pl.run();
 

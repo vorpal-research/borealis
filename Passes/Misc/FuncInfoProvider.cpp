@@ -64,7 +64,7 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
     auto FN = FactoryNest(ST.getSlotTracker(M));
 
     for(auto&& filename : FunctionDefinitionFiles) {
-        std::ifstream input(filename);
+        std::ifstream input(util::getFilePathIfExists(filename));
         Json::Value allShit;
         input >> allShit;
         for(auto&& val : allShit){

@@ -551,7 +551,13 @@ const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i) {
 }
 
 
-
+bool isPointerToOpaqueStruct(const llvm::Type* T) {
+    const llvm::PointerType* pt = llvm::dyn_cast<llvm::PointerType>(T);
+    if(!pt) return false;
+    const llvm::StructType* st = llvm::dyn_cast<llvm::StructType>(pt->getPointerElementType());
+    if(!st) return false;
+    return st->isOpaque();
+}
 } // namespace borealis
 #include "Util/unmacros.h"
 

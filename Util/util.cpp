@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include <llvm/Support/Program.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/LLVMContext.h>
@@ -277,6 +278,43 @@ ReturnInst* getSingleRetOpt(Function* F) {
 
 namespace borealis {
 namespace util {
+
+static std::string executableDirectory;
+
+void initFilePaths(const char ** argv) {
+    auto execPath = llvm::sys::FindProgramByName(argv[0]);
+    executableDirectory = llvm::sys::path::parent_path(execPath).str();
+}
+
+static bool fileExists(llvm::Twine path) {
+    llvm::sys::fs::file_status fst;
+    llvm::sys::fs::status(path, fst);
+    return llvm::sys::fs::exists(fst);
+}
+
+std::string getFilePathIfExists(const std::string& path) {
+    if(llvm::sys::path::is_absolute(path)) {
+        if(fileExists(path)) return path;
+        return "";
+    }
+
+    llvm::SmallString<256> tryPath = llvm::StringRef(executableDirectory);
+    llvm::sys::path::append(tryPath, path);
+
+    if(fileExists(llvm::Twine(tryPath))) {
+        return tryPath.str().str();
+    }
+
+    tryPath = "";
+    llvm::sys::fs::current_path(tryPath);
+    llvm::sys::path::append(tryPath, path);
+
+    if(fileExists(llvm::Twine(tryPath))) {
+        return tryPath.str().str();
+    }
+
+    return "";
+}
 
 std::string nospaces(const std::string& v) {
     return nospaces(std::string(v));

@@ -250,6 +250,9 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
         llvm::DIGlobalVariable glob(mglob);
         if (!glob.getGlobal()) continue;
 
+        llvm::StructType* tp = llvm::dyn_cast<llvm::StructType>(glob.getGlobal()->getType()->getPointerElementType());
+        if(tp && tp->isOpaque()) continue;
+
         auto* current = intrinsic_manager.createIntrinsic(
                 function_type::INTRINSIC_GLOBAL,
                 toString(*glob.getGlobal()->getType()->getPointerElementType()),
