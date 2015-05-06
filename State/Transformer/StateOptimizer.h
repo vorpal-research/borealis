@@ -38,6 +38,8 @@ public:
 
 private:
 
+    std::unordered_map<PredicateState::Ptr, PredicateState::Ptr> cache;
+
     PredicateState::Ptr merge(PredicateState::Ptr a, PredicateState::Ptr b);
 
 };
