@@ -298,15 +298,15 @@ std::string getFilePathIfExists(const std::string& path) {
         return "";
     }
 
-    llvm::SmallString<256> tryPath = llvm::StringRef(executableDirectory);
+    llvm::SmallString<256> tryPath;
+    llvm::sys::fs::current_path(tryPath);
     llvm::sys::path::append(tryPath, path);
 
     if(fileExists(llvm::Twine(tryPath))) {
         return tryPath.str().str();
     }
 
-    tryPath = "";
-    llvm::sys::fs::current_path(tryPath);
+    tryPath = llvm::StringRef(executableDirectory);
     llvm::sys::path::append(tryPath, path);
 
     if(fileExists(llvm::Twine(tryPath))) {

@@ -32,7 +32,7 @@ public:
         if(llvm::StringRef(term->getVName()).startswith("arg")) {
             unsigned ix = 0;
             if(term->getVName().size() > 3) {
-                if(!llvm::StringRef(term->getVName()).drop_front(3).getAsInteger(10, ix)) {
+                if(llvm::StringRef(term->getVName()).drop_front(3).getAsInteger(10, ix)) {
                     failWith("Illegal argument term: " + term->getName());
                 }
             }

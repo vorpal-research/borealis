@@ -63,6 +63,7 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
     auto&& ST = getAnalysis<SlotTrackerPass>();
     auto FN = FactoryNest(ST.getSlotTracker(M));
 
+
     for(auto&& filename : FunctionDefinitionFiles) {
         std::ifstream input(util::getFilePathIfExists(filename));
         Json::Value allShit;
@@ -74,11 +75,19 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
             } else {
                 auto lfn = util::fromString<llvm::LibFunc::Func>(opt->id).getOrElse(llvm::LibFunc::NumLibFuncs);
                 if(lfn == llvm::LibFunc::NumLibFuncs) errs() << "function " << opt->id << " not resolved" << endl;
-                pimpl_->functions[lfn] = *opt;
-                pimpl_->contracts[lfn] = util::viewContainer(opt->contracts)
-                                        .map(LAM(A, borealis::fromString(Locus{}, A, FN.Term)))
-                                        .filter()
-                                        .toVector();
+
+                auto func = M.getFunction(pimpl_->TLI->getName(lfn));
+
+                if(func) {
+                    if(func->isVarArg()) opt->argInfo.resize(func->arg_size() + 1);
+                    else opt->argInfo.resize(func->arg_size());
+
+                    pimpl_->functions[lfn] = *opt;
+                    pimpl_->contracts[lfn] = util::viewContainer(opt->contracts)
+                        .map(LAM(A, borealis::fromString(Locus{}, A, FN.Term)))
+                        .filter()
+                        .toVector();
+                }
             }
         }
     }

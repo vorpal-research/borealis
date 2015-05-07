@@ -110,9 +110,8 @@ std::vector<command> interviewer::getCompileCommands() {
 
 interviewer::status interviewer::run() const {
     using borealis::util::streams::error;
-
     if (!pimpl->theCompilation) {
-        errs() << error("Creating compilation object failed") << endl;
+        errs() << ("Creating compilation object failed") << endl;
         return status::FAILURE;
     }
 
@@ -121,7 +120,7 @@ interviewer::status interviewer::run() const {
         for(auto&& FailingCommand : FailingCommands) {
             pimpl->theDriver->generateCompilationDiagnostics(*pimpl->theCompilation, FailingCommand.second);
         }
-        errs() << error("Compilation failed") << endl;
+        errs() << "Compilation failed" << endl;
         return status::FAILURE;
     }
 
