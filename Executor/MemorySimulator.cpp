@@ -118,6 +118,10 @@ struct MemorySimulator::Impl {
         TRACE_FUNC;
         // FIXME: check offset for validity and throw an exception
 
+        if(DL->getTypeStoreSize(gv->getType()->getPointerElementType()) < (offset+size)) {
+            return nullptr;
+        }
+
         if (auto F = const_cast<llvm::Function*>(llvm::dyn_cast<llvm::Function>(gv))) {
             return getPointerToConstant(F, size);
         }
@@ -820,7 +824,11 @@ auto MemorySimulator::LoadBytesFromMemory(mutable_buffer_t buffer, buffer_t wher
 
     if(pimpl_->isFromGlobalSpace(ptr)) {
         auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(where.data())));
+
+
         auto actualMemory = pimpl_->getPointerToGlobalMemory(this, gv.first, size, gv.second);
+        if(!actualMemory) signalIllegalLoad(ptr);
+
         std::memcpy(buffer.data(), actualMemory, size);
         TRACE_PARAM(hex(buffer));
         return ValueState::CONCRETE;
@@ -876,6 +884,7 @@ void MemorySimulator::StoreBytesToMemory(buffer_t buffer, mutable_buffer_t where
     if(pimpl_->isFromGlobalSpace(realPtr)) {
         auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(where.data())));
         auto ptr = pimpl_->getPointerToGlobalMemory(this, gv.first, size, gv.second);
+        if(!ptr) signalIllegalStore(realPtr);
         std::memcpy(ptr, Src, size);
         return;
     }
@@ -923,6 +932,7 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     if(pimpl_->isFromGlobalSpace(realPtr)) {
         auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(where.data())));
         auto ptr = pimpl_->getPointerToGlobalMemory(this, gv.first, size, gv.second);
+        if(!ptr) signalIllegalLoad(realPtr);
         std::memcpy(Dst, ptr, size);
         return ValueState::CONCRETE;
     }
