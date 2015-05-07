@@ -25,7 +25,8 @@ struct AdditionalDefectInfo {
     RunResult runResult = RunResult::NotRun;
 };
 
-class DefectManager :
+class
+DefectManager :
         public llvm::ModulePass,
         public borealis::logging::ClassLevelLogging<DefectManager> {
 

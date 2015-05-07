@@ -46,7 +46,8 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
         if (!origin) {
             infos() << defect.type
                     << " (cannot trace location)"
-                    << endl;
+                    << endl
+                    << (dm.getAdditionalInfo(defect).runResult == AdditionalDefectInfo::RunResult::Disproven ? "Disproven by tassadar\n" : "");
             continue;
         }
 
@@ -74,6 +75,7 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
                 << ln
                 << pt << endl
                 << getRawSource(after) << endl
+                << (dm.getAdditionalInfo(defect).runResult == AdditionalDefectInfo::RunResult::Disproven ? "Disproven by tassadar\n" : "")
                 ;
     }
 
