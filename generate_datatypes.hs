@@ -31,9 +31,6 @@ data TTypeRef = Single String | TTyApp TTypeRef TTypeRef deriving (Show, Eq, Dat
 data TDataTypeConstr = TDataTypeConstr{ tdconstrName :: String, flds :: [(String, TTypeRef)]  } deriving (Show, Eq, Data, Typeable)
 data TDataType = TDataType{ dtname :: String, constrs :: [TDataTypeConstr] } deriving (Show, Eq, Data, Typeable)
 
-ttype (UnBangedTy x) = ttype' x
-ttype _ = error "only unqualified unbanged fields supported, sorry =("
-
 ttype' (TyCon (UnQual (Ident name))) = Single name
 ttype' (TyParen x) = ttype' x
 ttype' (TyApp x y) = TTyApp (ttype' x) (ttype' y)
@@ -45,16 +42,16 @@ tname dt  = case dt of
                  ParseOk (DataDecl _ DataType _ (Ident name) _ constrs _) -> 
                    TDataType name $ flip map constrs $ \constr ->
                      case constr of
-                          QualConDecl _ _ _ (ConDecl (Ident name) fields) -> TDataTypeConstr name $ flip map fields $ \field -> ("", ttype field)
+                          QualConDecl _ _ _ (ConDecl (Ident name) fields) -> TDataTypeConstr name $ flip map fields $ \field -> ("", ttype' field)
                           QualConDecl _ _ _ (RecDecl (Ident name) fields) -> TDataTypeConstr name $ concat $ flip map fields $ \field ->
                             case field of 
                                  (fieldnames, rttype) -> flip map fieldnames $
                                     \fieldname ->
                                       case fieldname of
-                                           (Ident i) -> (i, ttype rttype)
+                                           (Ident i) -> (i, ttype' rttype)
                                            _ -> error "only identifiers in record fields supported, sorry =("
                           _ -> error "only parameterless datatypes supported, sorry =("
-                 _ -> error "only datatypes supported, sorry =("
+                 smth -> error ("only datatypes supported, sorry =( : " ++ show smth)
 
 zipWithIndex :: [a] -> [(a, Int)]
 zipWithIndex lst = zip lst [0..]
@@ -115,7 +112,8 @@ adjustTypeCpp (TTyApp (TTyApp (Single "Map") k) v)  = case (adjustTypeCpp k, adj
                                                                kvMap
                                                                (cref kvMap) 
                                                                (["#include <map>"] ++ kincluder ++ vincluder)
-adjustTypeCpp (TTyApp (Single "Exact") x)           = CppTypeDescription x x []
+adjustTypeCpp (TTyApp (Single "Exact") (Single x))  = CppTypeDescription x x []
+adjustTypeCpp (TTyApp (Single "Param") (Single x))  = CppTypeDescription x (cref x) []
 adjustTypeCpp wha                                   = error (show wha ++ ": unsupported generic type used")
 
 data CppFieldDescriptor = CppFieldDescriptor{ 
@@ -218,6 +216,9 @@ adjustTypeProto (TTyApp (TTyApp (Single "Map") k) v) = let ak = adjustTypeProto 
                                                              ([mapEntryDescProto ak av] ++ kpre ++ vpre)
                                                              (kincluder ++ vincluder)
                                                              True
+adjustTypeProto (TTyApp (Single "Exact") (Single x)) = ProtobufTypeDescription "optional" x     [] [] True
+adjustTypeProto (TTyApp (Single "Param") (Single x)) = ProtobufTypeDescription "optional" x     [] [] True
+adjustTypeProto wha                                  = error (show wha ++ ": unsupported generic type used")
 
 
 data ProtobufFieldDescriptor = ProtobufFieldDescriptor{ 
