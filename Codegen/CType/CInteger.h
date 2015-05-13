@@ -31,6 +31,8 @@
 
 namespace borealis {
 
+class CTypeFactory;
+
 class CInteger : public CType {
 
     typedef CInteger Self;
@@ -39,6 +41,8 @@ class CInteger : public CType {
     CInteger(const std::string& name, size_t bitsize, llvm::Signedness signedness): CType(class_tag(*this), name), bitsize(bitsize), signedness(signedness) {}
 
 public:
+
+    friend class ::borealis::CTypeFactory;
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

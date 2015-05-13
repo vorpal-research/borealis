@@ -21,6 +21,8 @@ $cpp.prelude$
 
 namespace borealis {
 
+class CTypeFactory;
+
 class $derivedname$ : public $basename$ {
 
     typedef $derivedname$ Self;
@@ -29,6 +31,8 @@ class $derivedname$ : public $basename$ {
     $derivedname$(const std::string& name, $cpp.descriptor.fields: {f|$f.type.parameter$ $f.name$}; separator=", "$): $basename$(class_tag(*this), name)$cpp.descriptor.fields: {f|, $f.name$($f.name$)}$ {}
 
 public:
+
+    friend class ::borealis::CTypeFactory;
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

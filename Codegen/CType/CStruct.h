@@ -30,6 +30,8 @@
 
 namespace borealis {
 
+class CTypeFactory;
+
 class CStruct : public CType {
 
     typedef CStruct Self;
@@ -38,6 +40,8 @@ class CStruct : public CType {
     CStruct(const std::string& name, const std::vector<CStructMember>& elements): CType(class_tag(*this), name), elements(elements) {}
 
 public:
+
+    friend class ::borealis::CTypeFactory;
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

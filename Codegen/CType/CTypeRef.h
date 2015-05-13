@@ -14,10 +14,20 @@ namespace borealis {
 
 class CTypeRef {
 
+public:
+    CTypeRef(const std::string& name, CTypeContext::Ptr context) : name(name), context(context) { }
+
+private:
     std::string name;
     CTypeContext::WeakPtr context;
 
 public:
+
+
+    const std::string getName() const {
+        return name;
+    }
+
     CType::Ptr get() const {
         return context.lock()->get(name);
     }

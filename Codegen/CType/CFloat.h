@@ -30,6 +30,8 @@
 
 namespace borealis {
 
+class CTypeFactory;
+
 class CFloat : public CType {
 
     typedef CFloat Self;
@@ -38,6 +40,8 @@ class CFloat : public CType {
     CFloat(const std::string& name, size_t bitsize): CType(class_tag(*this), name), bitsize(bitsize) {}
 
 public:
+
+    friend class ::borealis::CTypeFactory;
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

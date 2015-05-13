@@ -30,6 +30,8 @@
 
 namespace borealis {
 
+class CTypeFactory;
+
 class CAlias : public CType {
 
     typedef CAlias Self;
@@ -38,6 +40,8 @@ class CAlias : public CType {
     CAlias(const std::string& name, const CTypeRef& original, CQualifier qualifier): CType(class_tag(*this), name), original(original), qualifier(qualifier) {}
 
 public:
+
+    friend class ::borealis::CTypeFactory;
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
