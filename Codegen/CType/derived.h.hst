@@ -14,6 +14,8 @@
 #define $cpp.guard$
 
 #include "$dir$/$basename$.h"
+#include "$dir$/CTypeRef.h"
+#include "$dir$/CStructMember.h"
 
 $cpp.prelude$
 
@@ -27,8 +29,7 @@ class $derivedname$ : public $basename$ {
     $derivedname$(const std::string& name, $cpp.descriptor.fields: {f|$f.type.parameter$ $f.name$}; separator=", "$): $basename$(class_tag(*this), name)$cpp.descriptor.fields: {f|, $f.name$($f.name$)}$ {}
 
 public:
-    friend class ::borealis::TypeFactory;
-    
+
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 $if(first(cpp.descriptor.fields))$

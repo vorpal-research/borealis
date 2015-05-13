@@ -23,6 +23,8 @@
 #define CINTEGER_H
 
 #include "Codegen/CType/CType.h"
+#include "Codegen/CType/CTypeRef.h"
+#include "Codegen/CType/CStructMember.h"
 
 #include <cstddef>
 #include "Util/util.h"
@@ -37,8 +39,7 @@ class CInteger : public CType {
     CInteger(const std::string& name, size_t bitsize, llvm::Signedness signedness): CType(class_tag(*this), name), bitsize(bitsize), signedness(signedness) {}
 
 public:
-    friend class ::borealis::TypeFactory;
-    
+
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 

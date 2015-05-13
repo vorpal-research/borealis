@@ -29,6 +29,8 @@
 
 namespace borealis {
 
+enum class CQualifier{ CONST, VOLATILE, RESTRICT, TYPEDEF };
+
 class CType : public ClassTag {
     std::string name;
 
@@ -39,7 +41,6 @@ public:
     CType(id_t id, const std::string& name) : ClassTag(id), name(name) {};
 
     typedef std::shared_ptr<const CType> Ptr;
-    typedef std::unique_ptr<proto::CType> ProtoPtr;
 
     const std::string& getName() const { return name; }
 };

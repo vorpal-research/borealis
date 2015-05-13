@@ -23,6 +23,8 @@
 #define CALIAS_H
 
 #include "Codegen/CType/CType.h"
+#include "Codegen/CType/CTypeRef.h"
+#include "Codegen/CType/CStructMember.h"
 
 
 
@@ -36,8 +38,7 @@ class CAlias : public CType {
     CAlias(const std::string& name, const CTypeRef& original, CQualifier qualifier): CType(class_tag(*this), name), original(original), qualifier(qualifier) {}
 
 public:
-    friend class ::borealis::TypeFactory;
-    
+
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 

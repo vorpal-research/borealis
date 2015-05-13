@@ -23,6 +23,8 @@
 #define CARRAY_H
 
 #include "Codegen/CType/CType.h"
+#include "Codegen/CType/CTypeRef.h"
+#include "Codegen/CType/CStructMember.h"
 
 #include "Util/option.hpp"
 #include <cstddef>
@@ -37,8 +39,7 @@ class CArray : public CType {
     CArray(const std::string& name, const CTypeRef& element, const borealis::util::option<size_t>& size): CType(class_tag(*this), name), element(element), size(size) {}
 
 public:
-    friend class ::borealis::TypeFactory;
-    
+
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 

@@ -23,6 +23,8 @@
 #define CFUNCTION_H
 
 #include "Codegen/CType/CType.h"
+#include "Codegen/CType/CTypeRef.h"
+#include "Codegen/CType/CStructMember.h"
 
 #include <vector>
 
@@ -36,8 +38,7 @@ class CFunction : public CType {
     CFunction(const std::string& name, const CTypeRef& resultType, const std::vector<CTypeRef>& argumentTypes): CType(class_tag(*this), name), resultType(resultType), argumentTypes(argumentTypes) {}
 
 public:
-    friend class ::borealis::TypeFactory;
-    
+
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 

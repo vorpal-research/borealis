@@ -17,7 +17,7 @@
 #ifdef INCLUDE_MODE
 #undef INCLUDE_MODE
 
-$cpp.constructors:{constr|#include "$basename$/$constr.name$.h"
+$cpp.constructors:{constr|#include "$dir$/$constr.name$.h"
 }$
 #define HANDLE_TYPE(NAME, CLASS)
 

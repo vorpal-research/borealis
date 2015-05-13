@@ -23,6 +23,8 @@
 #define CSTRUCT_H
 
 #include "Codegen/CType/CType.h"
+#include "Codegen/CType/CTypeRef.h"
+#include "Codegen/CType/CStructMember.h"
 
 #include <vector>
 
@@ -36,8 +38,7 @@ class CStruct : public CType {
     CStruct(const std::string& name, const std::vector<CStructMember>& elements): CType(class_tag(*this), name), elements(elements) {}
 
 public:
-    friend class ::borealis::TypeFactory;
-    
+
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 

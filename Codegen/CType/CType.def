@@ -26,13 +26,13 @@
 #ifdef INCLUDE_MODE
 #undef INCLUDE_MODE
 
-#include "CType/CInteger.h"
-#include "CType/CFloat.h"
-#include "CType/CPointer.h"
-#include "CType/CAlias.h"
-#include "CType/CArray.h"
-#include "CType/CStruct.h"
-#include "CType/CFunction.h"
+#include "Codegen/CType/CInteger.h"
+#include "Codegen/CType/CFloat.h"
+#include "Codegen/CType/CPointer.h"
+#include "Codegen/CType/CAlias.h"
+#include "Codegen/CType/CArray.h"
+#include "Codegen/CType/CStruct.h"
+#include "Codegen/CType/CFunction.h"
 
 #define HANDLE_TYPE(NAME, CLASS)
 
