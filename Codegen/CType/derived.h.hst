@@ -28,7 +28,7 @@ class $derivedname$ : public $basename$ {
     typedef $derivedname$ Self;
     typedef $basename$ Base;
 
-    $derivedname$(const std::string& name, $cpp.descriptor.fields: {f|$f.type.parameter$ $f.name$}; separator=", "$): $basename$(class_tag(*this), name)$cpp.descriptor.fields: {f|, $f.name$($f.name$)}$ {}
+    $derivedname$(const std::string& name$cpp.descriptor.fields: {f|, $f.type.parameter$ $f.name$}; separator=""$): $basename$(class_tag(*this), name)$cpp.descriptor.fields: {f|, $f.name$($f.name$)}$ {}
 
 public:
 

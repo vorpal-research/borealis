@@ -211,7 +211,7 @@ std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::se
     if(DICompositeType struct_ = di) {
         auto members = struct_.getTypeArray();
         for(auto i = 0U; i < members.getNumElements(); ++i) {
-            auto mem = members.getElement(i);
+            auto mem = dfi.resolve(members.getElement(i));
             flattenTypeTree(dfi, mem, collected);
         }
     } else if(DIDerivedType derived = di) {
@@ -259,7 +259,7 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
         ASSERTC(members.getNumElements() == type->getNumContainedTypes());
         for(auto i = 0U; i < members.getNumElements(); ++i) {
             auto mem = type->getContainedType(i);
-            auto mmem = members.getElement(i);
+            auto mmem = dfi.resolve(members.getElement(i));
 
             if (!mmem){
                 ASSERTC(mem->isVoidTy()); // typical for functions returning void

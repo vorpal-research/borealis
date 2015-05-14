@@ -95,12 +95,20 @@ struct DITypedArray : public llvm::DIArray {
         return getFieldAs<T>(Idx);
     }
 
+    static T getFieldAsStatic(llvm::DIDescriptor d, size_t Ix) {
+        DITypedArray<T, Tag> dta = d;
+        return dta.getElement(Ix);
+    }
+
     struct ElementAccessor {
-        const DITypedArray* self;
-        T operator()(unsigned ix) const { return self->getElement(ix); }
+        ElementAccessor(llvm::DIDescriptor self) : self(self) { }
+
+        llvm::DIDescriptor self;
+
+        T operator()(unsigned ix) const { return getFieldAsStatic(self, ix); }
     };
 
-    auto asView() const QUICK_RETURN(util::range(0U, this->getNumElements()).map(ElementAccessor{this}));
+    auto asView() const QUICK_RETURN(util::range(0U, this->getNumElements()).map(ElementAccessor(llvm::DIDescriptor(this->DbgNode))));
     auto begin() const QUICK_RETURN(this->asView().begin())
     auto end() const QUICK_RETURN(this->asView().end())
 
@@ -113,7 +121,7 @@ STEAL_FROM_LLVM_BEGIN(DICompositeType)
         return llvm::DICompositeType::Verify() && getTag() != llvm::dwarf::DW_TAG_array_type;
     }
 
-    DITypedArray<DIType> getTypeArray() const  {
+    DITypedArray<llvm::DITypeRef> getTypeArray() const  {
         return llvm::DICompositeType::getTypeArray();
     }
 STEAL_FROM_LLVM_END()
@@ -191,7 +199,8 @@ struct DIAlias : public llvm::DIDerivedType {
 struct DIStructType : public llvm::DICompositeType {
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIStructType);
     DIStructType(const llvm::MDNode* node): llvm::DICompositeType(node) {
-        if(this->getTag() != llvm::dwarf::DW_TAG_structure_type) this->DbgNode = nullptr;
+        if(this->getTag() != llvm::dwarf::DW_TAG_structure_type
+        && this->getTag() != llvm::dwarf::DW_TAG_union_type) this->DbgNode = nullptr;
     };
     DIStructType(llvm::DICompositeType node): DIStructType(static_cast<llvm::MDNode*>(node)) {};
     DIStructType(const llvm::DIDescriptor& node): DIStructType(static_cast<llvm::MDNode*>(node)) {};

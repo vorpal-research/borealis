@@ -2,7 +2,8 @@
  * Codegen/CType/CInteger.cpp
  * This file is generated from the following haskell datatype representation:
  * 
- * data CType = 
+ * data CType =
+    CVoid |
     CInteger { bitsize :: Size, signedness :: LLVMSignedness } |
     CFloat { bitsize:: Size } |
     CPointer { element :: Param CTypeRef } |

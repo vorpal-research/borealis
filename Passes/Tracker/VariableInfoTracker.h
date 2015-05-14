@@ -11,8 +11,10 @@
 #include <unordered_map>
 
 #include <llvm/Pass.h>
+#include "Codegen/CType/CTypeFactory.h"
 
 #include "Codegen/VarInfoContainer.h"
+
 #include "Passes/Util/DataProvider.hpp"
 #include "Util/key_ptr.hpp"
 #include "Util/util.h"
@@ -29,6 +31,10 @@ class VariableInfoTracker : public llvm::ModulePass {
     typedef DataProvider<clang::FileManager> sm_t;
 
     VarInfoContainer vars;
+
+    CTypeFactory CTF;
+    std::unordered_map<llvm::Type*, CType::Ptr> typeMapping;
+
     llvm::LLVMContext* ctx;
     const llvm::Module* m;
     DebugInfoFinder dfi;

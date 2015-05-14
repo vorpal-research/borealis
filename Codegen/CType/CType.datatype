@@ -1,4 +1,5 @@
-data CType = 
+data CType =
+    CVoid |
     CInteger { bitsize :: Size, signedness :: LLVMSignedness } |
     CFloat { bitsize:: Size } |
     CPointer { element :: Param CTypeRef } |

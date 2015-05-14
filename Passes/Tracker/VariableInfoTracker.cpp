@@ -93,6 +93,8 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     dfi = DebugInfoFinder{};
     dfi.processModule(M);
 
+    CTF.processTypes(dfi);
+
     auto& sm = GetAnalysis<sm_t>::doit(this).provide();
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
