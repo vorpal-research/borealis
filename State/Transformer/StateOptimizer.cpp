@@ -19,10 +19,9 @@ namespace borealis {
 StateOptimizer::StateOptimizer(FactoryNest FN) : Base(FN) {}
 
 PredicateState::Ptr StateOptimizer::transformPredicateStateChain(PredicateStateChainPtr ps) {
-    if (auto&& v = util::at(cache, ps)) return v.getUnsafe();
 
-    auto&& base = util::at(cache, ps->getBase()).getOrElse(ps->getBase());
-    auto&& curr = util::at(cache, ps->getCurr()).getOrElse(ps->getCurr());
+    auto&& base = ps->getBase();
+    auto&& curr = ps->getCurr();
 
     PredicateState::Ptr res;
     if (auto&& merged = merge(base, curr)) {
@@ -33,6 +32,7 @@ PredicateState::Ptr StateOptimizer::transformPredicateStateChain(PredicateStateC
                 m->get<0>()->getBase(),
                 merged
             );
+            res = transformPredicateStateChain(std::static_pointer_cast<const PredicateStateChain>(res));
         }
     } else if (auto&& m = util::match_tuple<BasicPredicateState, PredicateStateChain>::doit(base, curr)) {
         if (auto&& merged = merge(m->get<0>()->self(), m->get<1>()->getBase())) {
@@ -40,6 +40,7 @@ PredicateState::Ptr StateOptimizer::transformPredicateStateChain(PredicateStateC
                 merged,
                 m->get<1>()->getCurr()
             );
+            res = transformPredicateStateChain(std::static_pointer_cast<const PredicateStateChain>(res));
         }
     }
 
@@ -54,20 +55,29 @@ PredicateState::Ptr StateOptimizer::transformBasicPredicateState(BasicPredicateS
     return ps;
 }
 
+PredicateState::Ptr StateOptimizer::transformBase(PredicateState::Ptr ps) {
+    if (auto&& v = util::at(cache, ps)) return v.getUnsafe();
+    return cache[ps] = Base::transformBase(ps);
+}
+
 Predicate::Ptr StateOptimizer::transformBase(Predicate::Ptr pred) {
     return pred;
 }
 
 PredicateState::Ptr StateOptimizer::transform(PredicateState::Ptr ps) {
-    if (auto&& v = util::at(cache, ps)) return v.getUnsafe();
-    return cache[ps] = transformBase(ps)->simplify();
+    return transformBase(ps)->simplify();
 }
 
 PredicateState::Ptr StateOptimizer::merge(PredicateState::Ptr a, PredicateState::Ptr b) {
-    if (auto&& m = util::match_tuple<BasicPredicateState, BasicPredicateState>::doit(a, b)) {
-        return FN.State->Basic(m->get<0>()->getData() + m->get<1>()->getData());
+    auto&& mergeKey = std::make_pair(a, b);
+
+    if (auto&& m = util::at(mergeCache, mergeKey)) {
+        return m.getUnsafe();
+    } else if (auto&& m = util::match_tuple<BasicPredicateState, BasicPredicateState>::doit(a, b)) {
+        return mergeCache[mergeKey] = FN.State->Basic(m->get<0>()->getData() + m->get<1>()->getData());
+    } else {
+        return mergeCache[mergeKey] = nullptr;
     }
-    return nullptr;
 }
 
 } /* namespace borealis */

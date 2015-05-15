@@ -55,7 +55,12 @@ void StateSlicer::addSliceTerm(Term::Ptr term) {
 }
 
 PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
-    return nullptr == AA ? ps : Base::transform(ps->reverse())->filter([](auto&& p) { return !!p; })->reverse();
+    return nullptr == AA
+           ? ps
+           : Base::transform(ps->reverse())
+               ->filter([](auto&& p) { return !!p; })
+               ->reverse()
+               ->simplify();
 }
 
 Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {

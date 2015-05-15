@@ -31,6 +31,7 @@ public:
     PredicateState::Ptr transformBasicPredicateState(BasicPredicateStatePtr ps);
 
     using Base::transformBase;
+    PredicateState::Ptr transformBase(PredicateState::Ptr ps);
     Predicate::Ptr transformBase(Predicate::Ptr pred);
 
     using Base::transform;
@@ -39,6 +40,7 @@ public:
 private:
 
     std::unordered_map<PredicateState::Ptr, PredicateState::Ptr> cache;
+    std::unordered_map<std::pair<PredicateState::Ptr, PredicateState::Ptr>, PredicateState::Ptr> mergeCache;
 
     PredicateState::Ptr merge(PredicateState::Ptr a, PredicateState::Ptr b);
 
