@@ -26,15 +26,16 @@ PredicateState::Ptr PredicateStateFactory::Chain(
 }
 
 PredicateState::Ptr PredicateStateFactory::Choice(const std::vector<PredicateState::Ptr>& choices) {
-    return PredicateState::Simplified<PredicateStateChoice>(
-        choices
-    );
+    return 1 == choices.size()
+           ? choices.front()
+           : PredicateState::Simplified<PredicateStateChoice>(choices);
 }
 
 PredicateState::Ptr PredicateStateFactory::Choice(std::vector<PredicateState::Ptr>&& choices) {
-    return PredicateState::Simplified<PredicateStateChoice>(
-        std::move(choices)
-    );
+    auto&& moved = std::move(choices);
+    return 1 == moved.size()
+           ? moved.front()
+           : PredicateState::Simplified<PredicateStateChoice>(moved);
 }
 
 PredicateState::Ptr PredicateStateFactory::Basic() {
