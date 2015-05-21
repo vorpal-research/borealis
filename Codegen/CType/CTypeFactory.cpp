@@ -31,6 +31,10 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI) {
         return getRef(getPointer(deptr));
     }
 
+    if(auto composite = DICompositeType(meta)) if(composite.getTag() == llvm::dwarf::DW_TAG_enumeration_type) {
+        return getRef(getInteger(composite.getName().str(), composite.getSizeInBits(), llvm::Signedness::Unsigned));
+    }
+
     if(auto struct_ = DIStructType(meta)) {
         auto name = struct_->getName();
         auto elements = struct_.getMembers().asView().map(
