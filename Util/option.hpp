@@ -172,11 +172,8 @@ public:
         return empty();
     }
 
-    typedef struct unspec_{}* unspecified_pointer_type;
-    operator unspecified_pointer_type() {
-        static unspec_ unspec;
-        if( empty() ) return nullptr;
-        else return &unspec;
+    explicit operator bool() const {
+        return not empty();
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const self& x) {
