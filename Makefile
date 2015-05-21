@@ -86,6 +86,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Passes \
 	$(PWD)/Predicate \
 	$(PWD)/Protobuf \
+	$(PWD)/Reanimator \
 	$(PWD)/SMT \
 	$(PWD)/State \
 	$(PWD)/Statistics \
