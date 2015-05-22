@@ -5,16 +5,17 @@
 #ifndef RESULT_H
 #define RESULT_H
 
-#include <string>
 #include <memory>
+#include <string>
 #include <unordered_map>
-#include <Term/OpaqueIntConstantTerm.h>
 
+#include "Term/OpaqueIntConstantTerm.h"
 #include "Term/Term.h"
 
 #include "Util/unions.hpp"
 
 #include "Util/macros.h"
+
 namespace borealis {
 namespace smt {
 
@@ -37,52 +38,31 @@ private:
 
     friend struct borealis::util::json_traits<SatResult>;
 
-    const model_t& getModel() const { return *modelPtr; } // this is here only for json traits
-    const memory_shape_t& getInitialMemoryShape() const { return *initialMemoryShapePtr; } // this is here only for json traits
-    const memory_shape_t& getFinalMemoryShape() const { return *finalMemoryShapePtr; } // this is here only for json traits
+    // this is here only for json traits
+    const model_t& getModel() const { return *modelPtr; }
+    const memory_shape_t& getInitialMemoryShape() const { return *initialMemoryShapePtr; }
+    const memory_shape_t& getFinalMemoryShape() const { return *finalMemoryShapePtr; }
 
 public:
-
-    SatResult() :
-        modelPtr(nullptr),
-        initialMemoryShapePtr(nullptr),
-        finalMemoryShapePtr(nullptr)
-        { }
-
+    SatResult();
     SatResult(const SatResult&) = default;
 
     SatResult(
-            std::shared_ptr<model_t> modelPtr,
-            std::shared_ptr<memory_shape_t> initialShapePtr,
-            std::shared_ptr<memory_shape_t> finalShapePtr
-    ) :
-        modelPtr(modelPtr), initialMemoryShapePtr(initialShapePtr), finalMemoryShapePtr(finalShapePtr) { }
+        std::shared_ptr<model_t> modelPtr,
+        std::shared_ptr<memory_shape_t> initialShapePtr,
+        std::shared_ptr<memory_shape_t> finalShapePtr
+    );
 
-    Term::Ptr at(const std::string& str) const {
-        return modelPtr->at(str);
-    }
+    util::option_ref<Term::Ptr> at(const std::string& str) const;
+    util::option_ref<Term::Ptr> deref(uintptr_t ptr) const;
 
-    bool hasValue(const std::string& str) const {
-        return !!modelPtr->count(str);
-    }
-
-    bool empty() const { return modelPtr -> empty(); }
-
+    bool empty() const { return modelPtr->empty(); }
     bool valid() const { return !!modelPtr; }
 
-    long long valueAt(const std::string& str) const {
-        if (auto ii = llvm::dyn_cast<borealis::OpaqueIntConstantTerm>(at(str))) {
-            return ii->getValue();
-        } else
-            UNREACHABLE("Non-integer value in model");
-    }
+    util::option<long long> valueOf(const std::string& str) const;
+    util::option<long long> derefValueOf(uintptr_t ptr) const;
 
-    friend std::ostream& operator<<(std::ostream& ost, const SatResult& res) {
-        for(auto&& kv : *res.modelPtr) {
-            ost << kv.first << " -> " << kv.second << std::endl;
-        }
-        return ost;
-    }
+    friend std::ostream& operator<<(std::ostream& ost, const SatResult& res);
 };
 
 // poor man's variant
@@ -92,21 +72,21 @@ class Result {
         UnsatResult unsat;
     };
     bool isUnsat_;
+
 public:
-    Result(const SatResult& sat): sat(sat), isUnsat_(false) {}
-    Result(const UnsatResult& unsat): unsat(unsat), isUnsat_(true) {}
-    Result(const Result& that): isUnsat_(that.isUnsat_) {
-        using namespace unions;
-        if(isUnsat_) construct(&unsat, that.unsat);
-        else construct(&sat, that.sat);
+    Result(const SatResult& sat) : sat(sat), isUnsat_(false) {}
+    Result(const UnsatResult& unsat) : unsat(unsat), isUnsat_(true) {}
+    Result(const Result& that) : isUnsat_(that.isUnsat_) {
+        if (isUnsat_) unions::construct(&unsat, that.unsat);
+        else unions::construct(&sat, that.sat);
     }
     ~Result() {
-        if(isUnsat_) unions::destruct(&unsat);
+        if (isUnsat_) unions::destruct(&unsat);
         else unions::destruct(&sat);
     }
 
     const SatResult* getSatPtr() const {
-        return isUnsat_? nullptr : &sat;
+        return isUnsat_ ? nullptr : &sat;
     }
 
     bool isUnsat() const {
@@ -114,7 +94,7 @@ public:
     }
 
     bool isSat() const {
-        return !isUnsat_;
+        return not isUnsat();
     }
 };
 
@@ -122,6 +102,5 @@ public:
 } /* namespace borealis */
 
 #include "Util/unmacros.h"
-
 
 #endif //RESULT_H

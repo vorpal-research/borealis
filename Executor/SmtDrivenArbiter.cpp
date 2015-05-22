@@ -26,8 +26,8 @@ llvm::GenericValue borealis::SmtDrivenArbiter::map(llvm::Value* val) {
 
     auto name = ST->getLocalName(val);
 
-    if(model.hasValue(name)) {
-        auto numeric = model.valueAt(name);
+    if(auto&& v = model.valueOf(name)) {
+        auto numeric = v.getUnsafe();
 
         return adjustIntegerToType(numeric, val->getType());
     } else {
