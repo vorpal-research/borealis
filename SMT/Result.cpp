@@ -55,8 +55,16 @@ util::option<long long> SatResult::derefValueOf(uintptr_t ptr) const {
 }
 
 std::ostream& operator<<(std::ostream& ost, const SatResult& res) {
+    if (not res.valid()) return ost << "Invalid SatResult" << std::endl;
+
     for (auto&& kv : *res.modelPtr) {
         ost << kv.first << " -> " << kv.second << std::endl;
+    }
+    for (auto&& kv : *res.initialMemoryShapePtr) {
+        ost << "i: " << kv.first << " -> " << kv.second << std::endl;
+    }
+    for (auto&& kv : *res.finalMemoryShapePtr) {
+        ost << "f: " << kv.first << " -> " << kv.second << std::endl;
     }
     return ost;
 }
