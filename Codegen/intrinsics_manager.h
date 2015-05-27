@@ -99,8 +99,7 @@ private:
     intrinsic_info_cache info_cache;
 
     static function_type default_resolver(const IntrinsicsManager& m, const llvm::Function& f) {
-        function_type unknown = function_type::UNKNOWN;
-        return util::at(m.type_cache, &f).getOrElse(unknown);
+        return util::at(m.type_cache, &f).getOrElse(function_type::UNKNOWN);
     };
 
     type_resolvers resolvers {

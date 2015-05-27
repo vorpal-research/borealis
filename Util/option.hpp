@@ -189,19 +189,16 @@ public:
         return holder.get();
     }
 
-    const T& getOrElse(const T& def) const {
-        auto* ptr = holder.get();
-        return ptr ? *ptr : def;
+    template<class U>
+    auto getOrElse(U&& def) -> common_type_t<U, T&> {
+        auto* ptr = this->get();
+        return ptr ? *ptr : std::forward<U>(def);
     }
 
-    T getOrElse(T&& def) const {
-        auto* ptr = holder.get();
-        return ptr ? *ptr : def;
-    }
-
-    T& getOrElse(T& def) {
-        auto* ptr = holder.get();
-        return ptr ? *ptr : def;
+    template<class U>
+    auto getOrElse(U&& def) const -> common_type_t<U, const T&> {
+        auto* ptr = this->get();
+        return ptr ? *ptr : std::forward<U>(def);
     }
 
     const T& getUnsafe() const {
@@ -330,19 +327,16 @@ public:
         return holder;
     }
 
-    const T& getOrElse(const T& def) const {
+    template<class U>
+    auto getOrElse(U&& def) -> common_type_t<U, T&> {
         auto* ptr = this->get();
-        return ptr ? *ptr : def;
+        return ptr ? *ptr : std::forward<U>(def);
     }
 
-    T getOrElse(T&& def) const {
+    template<class U>
+    auto getOrElse(U&& def) const -> common_type_t<U, const T&> {
         auto* ptr = this->get();
-        return ptr ? *ptr : def;
-    }
-
-    T& getOrElse(T& def) {
-        auto* ptr = this->get();
-        return ptr ? *ptr : def;
+        return ptr ? *ptr : std::forward<U>(def);
     }
 
     const T& getUnsafe() const {
