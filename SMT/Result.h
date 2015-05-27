@@ -9,7 +9,6 @@
 #include <string>
 #include <unordered_map>
 
-#include "Term/OpaqueIntConstantTerm.h"
 #include "Term/Term.h"
 
 #include "Util/unions.hpp"

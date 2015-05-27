@@ -72,7 +72,8 @@ public:
         if (auto satRes = solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
             pass->DM->getAdditionalInfo(di).satModel = util::just(*satRes);
-            pass->DM->getAdditionalInfo(di).where = I->getParent()->getParent();
+            pass->DM->getAdditionalInfo(di).atFunc = I->getParent()->getParent();
+            pass->DM->getAdditionalInfo(di).atInst = I;
             return true;
         } else {
             return false;

@@ -18,7 +18,8 @@
 namespace borealis {
 
 struct AdditionalDefectInfo {
-    llvm::Function* where;
+    llvm::Function* atFunc;
+    llvm::Instruction* atInst;
     util::option<smt::SatResult> satModel;
 
     enum class RunResult { Proven, Disproven, Controversal, NotRun };

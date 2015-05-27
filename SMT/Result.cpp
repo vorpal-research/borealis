@@ -3,6 +3,8 @@
 //
 
 #include "SMT/Result.h"
+#include "Term/OpaqueBoolConstantTerm.h"
+#include "Term/OpaqueIntConstantTerm.h"
 
 #include "Util/macros.h"
 
@@ -34,6 +36,8 @@ util::option<long long> SatResult::valueOf(const std::string& str) const {
     if (auto&& v = at(str)) {
         if (auto&& ii = llvm::dyn_cast<OpaqueIntConstantTerm>(v.getUnsafe())) {
             return util::just(ii->getValue());
+        } else if (auto&& bb = llvm::dyn_cast<OpaqueBoolConstantTerm>(v.getUnsafe())) {
+            return util::just(bb->getValue() ? 1LL : 0LL);
         } else {
             UNREACHABLE("Non-integer value in model");
         }
@@ -46,6 +50,8 @@ util::option<long long> SatResult::derefValueOf(uintptr_t ptr) const {
     if (auto&& v = deref(ptr)) {
         if (auto&& ii = llvm::dyn_cast<OpaqueIntConstantTerm>(v.getUnsafe())) {
             return util::just(ii->getValue());
+        } else if (auto&& bb = llvm::dyn_cast<OpaqueBoolConstantTerm>(v.getUnsafe())) {
+            return util::just(bb->getValue() ? 1LL : 0LL);
         } else {
             UNREACHABLE("Non-integer value in memory");
         }

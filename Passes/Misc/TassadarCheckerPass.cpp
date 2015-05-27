@@ -66,7 +66,7 @@ public:
         for(auto&& defect: DM.getData()) if(auto&& model = DM.getAdditionalInfo(defect).satModel) {
             ASSERT(model.getUnsafe().valid(), "Cannot run tassadar checker without collected data. Did you forget to enable model collection?");
 
-            llvm::Function* func = DM.getAdditionalInfo(defect).where;
+            llvm::Function* func = DM.getAdditionalInfo(defect).atFunc;
             auto st = getAnalysis<SlotTrackerPass>().getSlotTracker(func);
 
             auto judicator = std::make_shared<SmtDrivenArbiter>(st, model.getUnsafe());
