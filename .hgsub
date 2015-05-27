@@ -1,5 +1,6 @@
 lib/iterations = ../borealis-libs/iterations
 lib/typesig = ../borealis-libs/typesig
+lib/functional-hell = ../borealis-libs/functional-hell
 
 lib/tinyformat = [git]https://github.com/c42f/tinyformat.git
 lib/andersen = [git]../andersen

@@ -20,6 +20,8 @@
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
+#include "functional-hell/matchers_aux.hpp"
+
 namespace borealis {
 
 template<class SubClass> class Transformer;

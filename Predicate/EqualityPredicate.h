@@ -68,6 +68,20 @@ struct SMTImpl<Impl, EqualityPredicate> {
     }
 };
 
+struct EqualityPredicateExtractor {
+
+    functional_hell::matchers::storage_t<Term::Ptr, Term::Ptr> unapply(Predicate::Ptr pred) const {
+        if (auto&& p = llvm::dyn_cast<EqualityPredicate>(pred)) {
+            return functional_hell::matchers::make_storage(p->getLhv(), p->getRhv());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $EqualityPredicate = functional_hell::matchers::make_pattern(EqualityPredicateExtractor());
+
 } /* namespace borealis */
 
 #endif /* EQUALITYPREDICATE_H_ */

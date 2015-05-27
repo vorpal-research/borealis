@@ -138,6 +138,20 @@ struct SMTImpl<Impl, GepTerm> {
     }
 };
 
+struct GepTermExtractor {
+
+    auto unapply(Term::Ptr t) const -> functional_hell::matchers::storage_t<Term::Ptr, decltype(std::declval<GepTerm>().getShifts())> {
+        if (auto&& tt = llvm::dyn_cast<GepTerm>(t)) {
+            return functional_hell::matchers::make_storage(tt->getBase(), tt->getShifts());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $GepTerm = functional_hell::matchers::make_pattern(GepTermExtractor());
+
 } /* namespace borealis */
 
 #include "Util/unmacros.h"

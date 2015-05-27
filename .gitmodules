@@ -10,4 +10,7 @@
 [submodule "lib/typesig"]
 	path = lib/typesig
 	url = ../typesig
+[submodule "lib/functional-hell"]
+	path = lib/functional-hell
+	url = ../functional-hell
 

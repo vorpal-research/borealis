@@ -18,6 +18,8 @@
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
+#include "functional-hell/matchers_aux.hpp"
+
 namespace borealis {
 
 /** protobuf -> Predicate/PredicateType.proto
