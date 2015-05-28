@@ -263,7 +263,7 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
         auto members = struct_.getMembers();
         for (auto i = 0U; i < members.getNumElements(); ++i) {
             auto mmem =  members.getElement(i);
-            auto offset = mmem.getOffsetInBits() * 8;
+            auto offset = mmem.getOffsetInBits() / 8;
 
             auto elem = structType->getStructElementType(SL->getElementContainingOffset(offset));
             flattenTypeTree(dfi, DL, {elem, stripAliases(dfi, mmem.getType())}, collected);
