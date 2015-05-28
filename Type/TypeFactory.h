@@ -151,7 +151,7 @@ public:
 
             auto llvmType = var.first->getType();
             if(var.second.treatment == VarInfo::Allocated) llvmType = llvmType->getPointerElementType();
-            embedType(dfi, llvmType, var.second.type);
+            embedType(dfi, mit.getModule().getDataLayout(), llvmType, var.second.type);
         }
     }
 
@@ -168,7 +168,7 @@ public:
         else if (type->isArrayTy())
             return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
         else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
-            auto name = str->hasName() ? str->getName() : "";
+            auto name = str->hasName() ? str->getStructName().str() : util::toString(*str);
             return getRecord(name, str);
         } else if (type->isMetadataTy()) // we use metadata for unknown stuff
             return getUnknownType();
@@ -236,9 +236,9 @@ private:
         return cast(type, meta.getSignedness());
     }
 
-    Type::Ptr embedType(const DebugInfoFinder& dfi, llvm::Type* type, DIType meta) const {
+    Type::Ptr embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, DIType meta) const {
         // FIXME
-       for(const auto& expanded : flattenTypeTree(dfi, {type, meta})) {
+       for(const auto& expanded : flattenTypeTree(dfi, DL, {type, meta})) {
            embedRecordBodyNoRecursion(expanded.first, stripAliases(dfi, expanded.second)); // just for the side effects
        }
        return cast(type);

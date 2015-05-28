@@ -127,6 +127,8 @@ public:
     explicit option(T&& val) : holder{ new T(val) } {}
     option(const self&) = default;
     option(self&&) = default;
+    template<class It>
+    option(It&& begin_, It&& end_) : holder{ (begin_ == end_) ? nullptr : new T(*begin_) } {}
 
     bool empty() const { return holder == nullptr; }
 
@@ -261,6 +263,9 @@ public:
     option_ref(nothing_t) : holder(nullptr) {}
     explicit option_ref(T& val) : holder(&val) {}
     option_ref(const self& that): holder(that.holder) {}
+    template<class It>
+    option_ref(It&& begin_, It&& end_) : holder{ (begin_ == end_) ? nullptr : &*begin_ } {}
+
 
     bool empty() const { return holder == nullptr; }
 

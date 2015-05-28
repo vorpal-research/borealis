@@ -236,6 +236,7 @@ DIType stripAliases(const DebugInfoFinder& dfi, llvm::DITypeRef tref) {
 
 std::map<llvm::Type*, DIType>& flattenTypeTree(
     const DebugInfoFinder& dfi,
+    const llvm::DataLayout* DL,
     const std::pair<llvm::Type*, DIType>& tp,
     std::map<llvm::Type*, DIType>& collected) {
 
@@ -252,8 +253,21 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
         ASSERTC(type->isArrayTy());
         auto member = stripAliases(dfi, arr_.getBaseType());
         auto llmember = type->getArrayElementType();
-        flattenTypeTree(dfi, {llmember, member}, collected);
+        flattenTypeTree(dfi, DL, {llmember, member}, collected);
 
+    } else if(DIStructType struct_ = di) {
+        ASSERTC(type->isStructTy());
+        auto* structType = llvm::dyn_cast<llvm::StructType>(type);
+        auto SL = DL->getStructLayout(structType);
+
+        auto members = struct_.getMembers();
+        for (auto i = 0U; i < members.getNumElements(); ++i) {
+            auto mmem =  members.getElement(i);
+            auto offset = mmem.getOffsetInBits() * 8;
+
+            auto elem = structType->getStructElementType(SL->getElementContainingOffset(offset));
+            flattenTypeTree(dfi, DL, {elem, stripAliases(dfi, mmem.getType())}, collected);
+        }
     } else if(DICompositeType struct_ = di) {
         auto members = struct_.getTypeArray();
         ASSERTC(members.getNumElements() == type->getNumContainedTypes());
@@ -264,20 +278,21 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
             if (!mmem){
                 ASSERTC(mem->isVoidTy()); // typical for functions returning void
             } else {
-                flattenTypeTree(dfi, {mem, mmem}, collected);
+                flattenTypeTree(dfi, DL, {mem, mmem}, collected);
             }
         }
     } else if(DIDerivedType derived = di) {
-        flattenTypeTree(dfi, {type->getContainedType(0), dfi.resolve(derived.getTypeDerivedFrom())}, collected);
+        flattenTypeTree(dfi, DL, {type->getContainedType(0), dfi.resolve(derived.getTypeDerivedFrom())}, collected);
     }
 
     return collected;
 }
 
 std::map<llvm::Type*, DIType> flattenTypeTree(const DebugInfoFinder& dfi,
-    const std::pair<llvm::Type*, DIType>& tp) {
+                                              const llvm::DataLayout* DL,
+                                              const std::pair<llvm::Type*, DIType>& tp) {
     std::map<llvm::Type*, DIType> collected;
-    flattenTypeTree(dfi, tp, collected);
+    flattenTypeTree(dfi, DL, tp, collected);
     return std::move(collected);
 }
 

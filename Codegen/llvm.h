@@ -386,10 +386,12 @@ std::unordered_set<const llvm::Type*> flattenTypeTree(const llvm::Type* tp);
 DIType stripAliases(const DebugInfoFinder& dfi, llvm::DITypeRef tp);
 std::map<llvm::Type*, DIType>& flattenTypeTree(
     const DebugInfoFinder& dfi,
+    const llvm::DataLayout* DL,
     const std::pair<llvm::Type*, DIType>& tp,
     std::map<llvm::Type*, DIType>& collected);
 std::map<llvm::Type*, DIType> flattenTypeTree(
     const DebugInfoFinder& dfi,
+    const llvm::DataLayout* DL,
     const std::pair<llvm::Type*, DIType>& tp);
 
 namespace impl_ {
