@@ -11,30 +11,21 @@
 #include <unordered_set>
 
 #include <llvm/Analysis/MemoryBuiltins.h>
-#include <llvm/IR/Instruction.h>
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/Argument.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Module.h>
 #include <llvm/Target/TargetLibraryInfo.h>
-#include <Passes/Tracker/SourceLocationTracker.h>
 
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
+#include "Passes/Tracker/SourceLocationTracker.h"
+#include "Passes/Transform/AnnotationProcessor.h"
+#include "Passes/Transform/FunctionDecomposer.h"
 #include "State/Transformer/ExternalFunctionMaterializer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/OldValueExtractor.h"
-
-#include "Passes/Transform/FunctionDecomposer.h"
-#include "Codegen/intrinsics_manager.h"
 #include "Statistics/statistics.h"
-#include "Passes/Transform/AnnotationProcessor.h"
 #include "Util/passes.hpp"
-#include "Config/config.h"
-#include "Util/functional.hpp"
 #include "Passes/Misc/FuncInfoProvider.h"
 
 #include "Util/macros.h"
-
 
 namespace borealis {
 

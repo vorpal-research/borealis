@@ -4,8 +4,6 @@
  *  Created on: Feb 6, 2015
  *      Author: belyaev
  */
-
-#include <Executor/ExecutionEngine.h>
 #include <iostream>
 #include <fstream>
 
@@ -17,6 +15,7 @@
 
 #include "Passes/Checker/Defines.def"
 #include "Config/config.h"
+#include "Executor/ExecutionEngine.h"
 #include "Executor/SmtDrivenArbiter.h"
 #include "Util/passes.hpp"
 #include "Util/collections.hpp"

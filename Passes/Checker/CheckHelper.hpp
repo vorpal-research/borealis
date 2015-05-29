@@ -12,7 +12,7 @@
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
-#include <State/Transformer/StateSlicer.h>
+#include "State/Transformer/StateSlicer.h"
 
 namespace borealis {
 

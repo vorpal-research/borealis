@@ -8,7 +8,6 @@
 #ifndef TYPEUTILS_H_
 #define TYPEUTILS_H_
 
-#include <Util/functional.hpp>
 #include "Type/Type.def"
 #include "Util/typeindex.hpp"
 #include "Util/util.h"

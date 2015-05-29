@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include <Executor/MemorySimulator/SegmentTreeImpl.h>
+#include "Executor/MemorySimulator/SegmentTreeImpl.h"
 
 #include "Logging/tracer.hpp"
 

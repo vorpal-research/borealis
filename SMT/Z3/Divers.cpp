@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-#include <SMT/Z3/Divers.h>
+#include "SMT/Z3/Divers.h"
 
 namespace z3 {
 

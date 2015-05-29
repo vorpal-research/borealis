@@ -7,11 +7,11 @@
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
-#include <Util/functional.hpp>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
 #include "Passes/Tracker/VariableInfoTracker.h"
+#include "Util/functional.hpp"
 #include "Util/passes.hpp"
 
 namespace borealis {

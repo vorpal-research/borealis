@@ -6,13 +6,14 @@
 #define C_TYPE_FACTORY_H
 
 #include <queue>
-#include <Util/functional.hpp>
 
 #include "Codegen/llvm.h"
 #include "Codegen/CType/CType.h"
 #include "Codegen/CType/CTypeContext.h"
 
 #include "Codegen/CType/CType.def"
+
+#include "Util/functional.hpp"
 
 #include "Util/macros.h"
 

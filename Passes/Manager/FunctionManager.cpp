@@ -5,7 +5,6 @@
  *      Author: ice-phoenix
  */
 
-#include <State/Transformer/AnnotationSubstitutor.h>
 #include "Annotation/LogicAnnotation.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/Manager/AnnotationManager.h"
@@ -15,6 +14,7 @@
 #include "Passes/Tracker/SourceLocationTracker.h"
 #include "State/PredicateStateBuilder.h"
 #include "State/Transformer/AnnotationMaterializer.h"
+#include "State/Transformer/AnnotationSubstitutor.h"
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
