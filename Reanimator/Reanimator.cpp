@@ -149,7 +149,7 @@ private:
     std::stack<util::option<long long>> values;
     std::unordered_set<util::option<long long>> visited;
 
-    void printAddr(util::option<unsigned long long> addr) {
+    void printAddr(util::option<long long> addr) {
         if (addr) {
             log << " [" << addr.getUnsafe() << "] ";
         } else {
