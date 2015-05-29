@@ -5,6 +5,7 @@
 #ifndef EXTERNAL_FUNCTION_MATERIALIZER_H
 #define EXTERNAL_FUNCTION_MATERIALIZER_H
 
+#include <Annotation/AssertAnnotation.h>
 #include "State/Transformer/Transformer.hpp"
 
 namespace borealis {
@@ -61,11 +62,11 @@ public:
     }
 
     Annotation::Ptr transformRequiresAnnotation(RequiresAnnotationPtr anno) {
-        return std::make_shared<AssertAnnotation>(locus, anno->getTerm());
+        return std::make_shared<AssertAnnotation>(locus, anno->getMeta(), anno->getTerm());
     }
 
     Annotation::Ptr transformEnsuresAnnotation(EnsuresAnnotationPtr anno) {
-        return std::make_shared<AssumeAnnotation>(locus, anno->getTerm());
+        return std::make_shared<AssumeAnnotation>(locus, anno->getMeta(), anno->getTerm());
     }
 };
 

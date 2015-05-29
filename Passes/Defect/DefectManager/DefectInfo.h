@@ -17,13 +17,8 @@
 namespace borealis {
 
 enum class DefectType {
-    INI_03,
-    REQ_01,
-    ENS_01,
-    ASR_01,
-    NDF_01,
-    BUF_01,
-    UNK_99
+#define HANDLE_DEFECT(NAME, STR, DESC) NAME,
+#include "Passes/Defect/DefectManager/Defects.def"
 };
 
 struct DefectSummary {
@@ -38,23 +33,13 @@ Streamer& operator<<(Streamer& str, const DefectSummary& ds) {
 }
 
 const std::map<DefectType, const DefectSummary> DefectTypes = {
-    { DefectType::INI_03, { "INI-03", "Dereferencing a nullptr" } },
-    { DefectType::REQ_01, { "REQ-01", "Requires contract check failed" } },
-    { DefectType::ENS_01, { "ENS-01", "Ensures contract check failed" } },
-    { DefectType::ASR_01, { "ASR-01", "Assert check failed" } },
-    { DefectType::NDF_01, { "NDF-01", "Use of undef value detected" } },
-    { DefectType::BUF_01, { "BUF-01", "Index out of bounds" } },
-    { DefectType::UNK_99, { "UNK-99", "UNKNOWN!" } },
+#define HANDLE_DEFECT(NAME, STR, DESC) { DefectType::NAME, { STR, DESC } },
+#include "Passes/Defect/DefectManager/Defects.def"
 };
 
-const std::map<std::string, DefectType> DefectTypesByName = {
-    { "INI-03", DefectType::INI_03 },
-    { "REQ-01", DefectType::REQ_01 },
-    { "ENS-01", DefectType::ENS_01 },
-    { "ASR-01", DefectType::ASR_01 },
-    { "NDF-01", DefectType::NDF_01 },
-    { "BUF-01", DefectType::BUF_01 },
-    { "UNK-99", DefectType::UNK_99 },
+const std::unordered_map<std::string, DefectType> DefectTypesByName = {
+#define HANDLE_DEFECT(NAME, STR, DESC) { STR, DefectType::NAME },
+#include "Passes/Defect/DefectManager/Defects.def"
 };
 
 namespace util {

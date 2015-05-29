@@ -20,7 +20,7 @@ package borealis.proto;
 
 message UnrollAnnotation {
     extend borealis.proto.Annotation {
-        optional UnrollAnnotation ext = 9;
+        optional UnrollAnnotation ext = $COUNTER_ANNOTATION;
     }
 
     optional uint32 level = 1;
@@ -53,7 +53,7 @@ public:
         return true;
     }
 
-    static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
+    static Annotation::Ptr fromTerms(const Locus& locus, const std::string&, const std::vector<Term::Ptr>& terms) {
         if (auto* depth_p = llvm::dyn_cast<OpaqueIntConstantTerm>(terms.front().get())) {
             return Annotation::Ptr{ new self(locus, depth_p->getValue()) };
         } else return Annotation::Ptr{};

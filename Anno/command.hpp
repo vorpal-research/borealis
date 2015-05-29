@@ -21,12 +21,14 @@ namespace anno {
 
 struct command {
     std::string name_;
+    std::string meta_;
     std::list<prod_t> args_;
 };
 
 template<class Streamer>
 Streamer& operator<<(Streamer& ost, const command& com) {
     ost << com.name_;
+    if(!com.meta_.empty()) ost << "[[" << com.meta_ << "]]";
 
     if (!com.args_.empty()) {
         ost << "(" << *borealis::util::head(com.args_);

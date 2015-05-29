@@ -48,7 +48,7 @@ public:
         auto predicate = FN.Term->getCmpTerm(llvm::ConditionType::EQ, genTerm, arg);
         std::vector<Term::Ptr> args { predicate };
 
-        assumes.push_back(AssumeAnnotation::fromTerms(locus, args));
+        assumes.push_back(AssumeAnnotation::fromTerms(locus, "", args));
         return genTerm;
     }
 

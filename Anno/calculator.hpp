@@ -233,6 +233,13 @@ struct ask_keyword :
     }
 };
 
+struct ask_meta :
+        action_base< ask_meta > {
+    static void apply(const std::string& value, const expr_stack&, command_type& comm, commands_t&) {
+        comm.meta_ = borealis::util::nospaces(stdstring(value));
+    }
+};
+
 struct ask_arguments :
         action_base< ask_arguments > {
     static void apply(const std::string&, expr_stack& s, command_type& comm, commands_t&) {

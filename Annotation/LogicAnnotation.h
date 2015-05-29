@@ -20,11 +20,13 @@ package borealis.proto;
 
 message LogicAnnotation {
     extend borealis.proto.Annotation {
-        optional LogicAnnotation ext = 5;
+        optional LogicAnnotation ext = $COUNTER_ANNOTATION;
     }
 
     optional borealis.proto.Term term = 1;
-    extensions 2 to 16;
+    optional string meta = 2;
+
+    extensions 16 to 64;
 }
 
 **/
@@ -33,21 +35,25 @@ class LogicAnnotation: public Annotation {
 
 protected:
     borealis::id_t logic_annotation_type_id;
+    std::string meta;
     Term::Ptr term;
 
 public:
     LogicAnnotation(
             id_t logic_annotation_type_id,
             const Locus& locus,
+            const std::string& meta,
             keyword_t keyword,
             Term::Ptr term);
     virtual ~LogicAnnotation() = 0;
 
     Term::Ptr getTerm() const { return term; }
+    const std::string& getMeta() const { return meta; }
     id_t getTypeId() const { return logic_annotation_type_id; }
 
     virtual std::string argToString() const {
-        return " " + term->getName();
+        std::string metaStr = (meta.empty())? "" : "[[" + meta + "]]";
+        return std::move(metaStr) + " " + term->getName();
     }
 
     virtual Annotation::Ptr clone(Term::Ptr newTerm) const = 0;

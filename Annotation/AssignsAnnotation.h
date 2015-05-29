@@ -20,7 +20,7 @@ package borealis.proto;
 
 message AssignsAnnotation {
     extend borealis.proto.LogicAnnotation {
-        optional AssignsAnnotation ext = 3;
+        optional AssignsAnnotation ext = $COUNTER_LOGIC_ANNOTATION;
     }
 }
 
@@ -29,8 +29,8 @@ class AssignsAnnotation: public LogicAnnotation {
     typedef AssignsAnnotation self;
 
 public:
-    AssignsAnnotation(const Locus& locus, Term::Ptr term):
-        LogicAnnotation(type_id(*this), locus, AnnotationNames<self>::name(), term) {}
+    AssignsAnnotation(const Locus& locus, const std::string& meta, Term::Ptr term):
+        LogicAnnotation(type_id(*this), locus, meta, AnnotationNames<self>::name(), term) {}
     virtual ~AssignsAnnotation() {}
 
     static bool classof(const Annotation* a) {
@@ -43,12 +43,12 @@ public:
         return true;
     }
 
-    static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>& terms) {
-        return Annotation::Ptr{ new self(locus, terms.front()) };
+    static Annotation::Ptr fromTerms(const Locus& locus, const std::string& meta, const std::vector<Term::Ptr>& terms) {
+        return Annotation::Ptr{ new self(locus, meta, terms.front()) };
     }
 
     Annotation::Ptr clone(Term::Ptr newTerm) const {
-        return Annotation::Ptr{ new self(locus, newTerm) };
+        return Annotation::Ptr{ new self(locus, meta, newTerm) };
     }
 };
 

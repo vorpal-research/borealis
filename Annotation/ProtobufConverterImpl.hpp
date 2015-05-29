@@ -140,9 +140,10 @@ struct protobuf_traits_impl<UnrollAnnotation> {
         static Annotation::Ptr fromProtobuf( \
                 const FactoryNest&, \
                 const Locus& locus, \
+                const std::string& meta, \
                 const Term::Ptr& term, \
                 const proto::ANNO&) { \
-            return Annotation::Ptr{ new ANNO(locus, term) }; \
+            return Annotation::Ptr{ new ANNO(locus, meta, term) }; \
         } \
     };
 
@@ -166,6 +167,7 @@ struct protobuf_traits_impl<LogicAnnotation> {
         auto res = util::uniq(new proto_t());
 
         res->set_allocated_term(TermConverter::toProtobuf(*a.getTerm()).release());
+        res->set_meta(a.getMeta());
 
         if (false) {}
 // here we rely on the fact that only logic guys have bases
@@ -194,6 +196,7 @@ struct protobuf_traits_impl<LogicAnnotation> {
             const Locus& locus,
             const proto_t& t) {
         auto term = TermConverter::fromProtobuf(fn, t.term());
+        auto meta = t.meta();
 // here we rely on the fact that only logic guys have bases
 // if we put up other annotations, we'll need to explicitly ignore them here:
 // #define HANDLE_SomeOtherMiddleBaseAnnotation(CLASS)
@@ -201,7 +204,7 @@ struct protobuf_traits_impl<LogicAnnotation> {
         if (t.HasExtension(proto::CLASS::ext)) { \
             const auto& ext = t.GetExtension(proto::CLASS::ext); \
             return protobuf_traits_impl<CLASS> \
-                   ::fromProtobuf(fn, locus, term, ext); \
+                   ::fromProtobuf(fn, locus, meta, term, ext); \
         }
 #define HANDLE_ANNOTATION(KW, NAME, CLASS)
 #define HANDLE_ANNOTATION_WITH_BASE(KW, BASE, NAME, CLASS) HANDLE_##BASE(CLASS)

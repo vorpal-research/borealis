@@ -100,8 +100,9 @@ public:
         auto anno = substituteAnnotationCall(pass->FN, llvm::CallSite(&CI));
 
         if (auto* LA = llvm::dyn_cast<AssertAnnotation>(anno)) {
+            auto&& metaType = LA->getMeta();
 
-            CheckHelper<CheckContractPass> h(pass, &CI, DefectType::ASR_01);
+            CheckHelper<CheckContractPass> h(pass, &CI, util::at(DefectTypesByName, metaType).getOrElse(DefectType::ASR_01));
 
             if (h.skip()) return;
 

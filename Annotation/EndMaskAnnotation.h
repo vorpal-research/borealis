@@ -20,7 +20,7 @@ package borealis.proto;
 
 message EndMaskAnnotation {
     extend borealis.proto.Annotation {
-        optional EndMaskAnnotation ext = 2;
+        optional EndMaskAnnotation ext = $COUNTER_ANNOTATION;
     }
 }
 
@@ -41,7 +41,7 @@ public:
         return true;
     }
 
-    static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>&) {
+    static Annotation::Ptr fromTerms(const Locus& locus, const std::string&, const std::vector<Term::Ptr>&) {
         return Annotation::Ptr{ new self(locus) };
     }
 };

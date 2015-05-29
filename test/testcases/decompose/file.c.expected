@@ -4,13 +4,13 @@
 	{
 		"location" : 
 		{
-			"filename" : "test/testcases/misc/file.c",
+			"filename" : "test/testcases/decompose/file.c",
 			"loc" : 
 			{
 				"col" : 16,
 				"line" : 9
 			}
 		},
-		"type" : "ASR-01"
+		"type" : "RES-02"
 	}
 ]

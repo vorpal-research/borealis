@@ -1,0 +1,18 @@
+#ifndef HANDLE_DEFECT
+#error "You must define HANDLE_DEFECT prior to including Defects.def!"
+#endif
+
+HANDLE_DEFECT(INI_03, "INI-03", "Dereferencing a nullptr")
+HANDLE_DEFECT(RES_02, "RES-02", "Using a resource that may have been closed")
+HANDLE_DEFECT(REQ_01, "REQ-01", "Requires contract check failed")
+HANDLE_DEFECT(ENS_01, "ENS-01", "Ensures contract check failed")
+HANDLE_DEFECT(ASR_01, "ASR-01", "Assert check failed")
+HANDLE_DEFECT(NDF_01, "NDF-01", "Use of undef value detected")
+HANDLE_DEFECT(BUF_01, "BUF-01", "Index out of bounds")
+HANDLE_DEFECT(UNK_99, "UNK-99", "UNKNOWN!")
+
+#undef HANDLE_DEFECT
+
+
+
+

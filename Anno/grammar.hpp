@@ -220,7 +220,7 @@ struct read_expr :
 #undef READ_BINARY
 
 // mask := (ALPHA)+ (DIGIT)*
-using mask = GRAMMAR( +(G(alpha)) >> *(G(digit)) );
+using mask = GRAMMAR( +(G(alpha)) >> CH('-') >> *(G(digit)) );
 // mask is just an identifier, can push it right away
 using push_mask = LITERALGRAMMAR( G(mask) & G(mask_push) );
 // masks := mask (',' mask)*
@@ -230,22 +230,24 @@ template<class PS>
 struct keyword :
         ifapply< strpad< PS >, ask_keyword > {};
 
+using meta = LITERALGRAMMAR( S("[[") >> (G(mask) & G(ask_meta)) >> S("]]") );
+
 #define KEYWORD(STR) keyword<_PS(STR)>
 // requires := "requires" expr
 struct requires_c :
-        ifapply< ifmust< KEYWORD("requires"), read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("requires"), opt<meta>, read_expr >, ask_arguments > {};
 // ensures := "ensures" expr
 struct ensures_c :
-        ifapply< ifmust< KEYWORD("ensures"), read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("ensures"), opt<meta>, read_expr >, ask_arguments > {};
 // assigns := "assigns" expr
 struct assigns_c :
-        ifapply< ifmust< KEYWORD("assigns"), read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("assigns"), opt<meta>, read_expr >, ask_arguments > {};
 // assert := "assert" expr
 struct assert_c :
-        ifapply< ifmust< KEYWORD("assert"), read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("assert"), opt<meta>, read_expr >, ask_arguments > {};
 // assume := "assume" expr
 struct assume_c :
-        ifapply< ifmust< KEYWORD("assume"), read_expr >, ask_arguments > {};
+        ifapply< ifmust< KEYWORD("assume"), opt<meta>, read_expr >, ask_arguments > {};
 // skip := "skip"
 struct skip_c :
         ifapply< KEYWORD("skip"), ask_arguments > {};

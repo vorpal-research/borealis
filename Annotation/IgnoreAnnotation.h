@@ -20,7 +20,7 @@ package borealis.proto;
 
 message IgnoreAnnotation {
     extend borealis.proto.Annotation {
-        optional IgnoreAnnotation ext = 3;
+        optional IgnoreAnnotation ext = $COUNTER_ANNOTATION;
     }
 }
 
@@ -41,7 +41,7 @@ public:
         return true;
     }
 
-    static Annotation::Ptr fromTerms(const Locus& locus, const std::vector<Term::Ptr>&) {
+    static Annotation::Ptr fromTerms(const Locus& locus, const std::string&, const std::vector<Term::Ptr>&) {
         return Annotation::Ptr{ new self(locus) };
     }
 };

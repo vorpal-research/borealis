@@ -32,7 +32,7 @@ package borealis.proto;
 message Annotation {
     optional Locus locus = 1;
 
-    extensions 2 to 16;
+    extensions 16 to 64;
 }
 
 **/

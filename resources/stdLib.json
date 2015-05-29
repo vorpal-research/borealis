@@ -8,7 +8,7 @@
             }
       ],
       "contracts" : [
-            "@requires \\property(file, \\arg) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg) == 1"
       ]
 },
 {
@@ -21,7 +21,7 @@
             }
       ],
       "contracts" : [
-            "@requires \\property(file, \\arg1) == 1",
+            "@requires[[RES-02]] \\property(file, \\arg1) == 1",
             "@ensures (\\result == \\arg0) || (\\result == -1)"
       ]
 },
@@ -629,7 +629,7 @@
       ],
       "contracts" : [
             "@assigns \\property(file, \\arg)",
-            "@requires \\property(file, \\arg) == 1",
+            "@requires[[RES-02]] \\property(file, \\arg) == 1",
             "@ensures \\property(file, \\arg) == 0"
       ]
 },
@@ -651,7 +651,7 @@
             { "access" : "None" }
       ],
       "contracts" : [
-            "@requires \\property(file, \\arg) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg) == 1"
       ]
 },
 {
@@ -668,7 +668,7 @@
             { "access" : "None" }
       ],
       "contracts" : [
-            "@requires \\property(file, \\result) == 1"
+            "@requires[[RES-02]] \\property(file, \\result) == 1"
       ]
 },
 {
@@ -690,7 +690,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg) == 1"
       ]
 },
 {
@@ -701,7 +701,7 @@
             { "access" : "Write" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -717,7 +717,7 @@
       ], 
       "contracts" : [
             "@ensures \\result == \\arg0 || \\result == \\nullptr",
-            "@requires \\property(file, \\arg2) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg2) == 1"
       ]
 },
 {
@@ -727,7 +727,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -739,7 +739,7 @@
             {}
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -749,7 +749,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -831,7 +831,7 @@
             {}
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
       ]
 },
 {
@@ -842,7 +842,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg1) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg1) == 1"
       ]
 },
 {
@@ -853,7 +853,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg1) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg1) == 1"
       ]
 },
 {
@@ -866,7 +866,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires \\property(file, \\arg3) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg3) == 1"
       ]
 },
 {

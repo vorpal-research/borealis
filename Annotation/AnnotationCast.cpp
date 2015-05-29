@@ -200,6 +200,8 @@ Annotation::Ptr borealis::fromParseResult(
     std::vector<Term::Ptr> terms;
     terms.reserve(cmd.args_.size());
 
+    auto&& meta = cmd.meta_;
+
     for (const auto& arg : cmd.args_) {
         TermConstructor tc(tf);
         arg->accept(tc);
@@ -208,7 +210,7 @@ Annotation::Ptr borealis::fromParseResult(
 
 #define HANDLE_ANNOTATION(CMD, IGNORE, CLASS) \
     if (cmd.name_ == CMD) { \
-        return CLASS::fromTerms(locus, terms); \
+        return CLASS::fromTerms(locus, meta, terms); \
     }
 #include "Annotation/Annotation.def"
 

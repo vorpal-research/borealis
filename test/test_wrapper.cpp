@@ -119,6 +119,11 @@ INSTANTIATE_NAMED_TEST_CASE_P(Aegis, WrapperTest,
 INSTANTIATE_NAMED_TEST_CASE_P(AegisLong, WrapperTest,
     ::testing::ValuesIn(LongTestFiles("test/testcases/aegis")), GetTestName);
 
+INSTANTIATE_NAMED_TEST_CASE_P(Decompose, WrapperTest,
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/decompose")), GetTestName);
+INSTANTIATE_NAMED_TEST_CASE_P(DecomposeLong, WrapperTest,
+    ::testing::ValuesIn(LongTestFiles("test/testcases/decompose")), GetTestName);
+
 INSTANTIATE_NAMED_TEST_CASE_P(Contracts, WrapperTest,
     ::testing::ValuesIn(ShortTestFiles("test/testcases/contracts")), GetTestName);
 INSTANTIATE_NAMED_TEST_CASE_P(ContractsLong, WrapperTest,
