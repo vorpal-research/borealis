@@ -31,18 +31,20 @@ public:
 
         if (isTriviallyInboundsGEP(&GI)) return;
 
+        auto shift = (
+                        pass->FN.Term *
+                        pass->FN.Term->getValueTerm(&GI)
+                        -
+                        pass->FN.Term->getValueTerm(GI.getPointerOperand())
+                    );
+
         auto q = (
             pass->FN.State *
             pass->FN.Predicate->getEqualityPredicate(
                 pass->FN.Term->getCmpTerm(
                     llvm::ConditionType::UGT,
                     pass->FN.Term->getBoundTerm(pass->FN.Term->getValueTerm(GI.getPointerOperand())),
-                    (
-                        pass->FN.Term *
-                        pass->FN.Term->getValueTerm(&GI)
-                        -
-                        pass->FN.Term->getValueTerm(GI.getPointerOperand())
-                    )
+                    shift
                 ),
                 pass->FN.Term->getTrueTerm()
             )
@@ -65,18 +67,20 @@ public:
 
             if (isTriviallyInboundsGEP(op)) return;
 
+            auto shift = (
+                pass->FN.Term *
+                pass->FN.Term->getValueTerm(op)
+                -
+                pass->FN.Term->getValueTerm(op->getOperand(0))
+            );
+
             auto q = (
                 pass->FN.State *
                 pass->FN.Predicate->getEqualityPredicate(
                     pass->FN.Term->getCmpTerm(
                         llvm::ConditionType::UGT,
                         pass->FN.Term->getBoundTerm(pass->FN.Term->getValueTerm(op->getOperand(0))),
-                        (
-                            pass->FN.Term *
-                            pass->FN.Term->getValueTerm(op)
-                            -
-                            pass->FN.Term->getValueTerm(op->getOperand(0))
-                        )
+                        shift
                     ),
                     pass->FN.Term->getTrueTerm()
                 )
