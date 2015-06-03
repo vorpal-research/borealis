@@ -337,7 +337,7 @@ clean.cfgparser: clean.dbglog
 	touch $@
 
 $(EXES): $(OBJECTS) .protobuf .yaml-cpp .cfgparser .andersen
-	$(CXX) -g -o $@ -rdynamic $(OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
+	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 .google-test:
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a
@@ -349,7 +349,7 @@ clean.google-test:
 
 
 $(TEST_EXES): $(TEST_OBJECTS) .google-test
-	$(CXX) -g -o $@ $(TEST_OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES) $(TEST_ARCHIVES)
+	$(CXX) -fuse-ld=gold -g -o $@ $(TEST_OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES) $(TEST_ARCHIVES)
 
 
 tests: $(EXES) $(TEST_EXES)

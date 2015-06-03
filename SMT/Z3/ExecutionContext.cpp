@@ -8,6 +8,9 @@
 #include "SMT/Z3/ExecutionContext.h"
 
 namespace borealis {
+
+static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
+
 namespace z3_ {
 
 ExecutionContext::ExecutionContext(
@@ -35,10 +38,18 @@ void ExecutionContext::memory(const MemArray& value) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void ExecutionContext::initGepBounds() {
-    memArrays.emplace(
-        GEP_BOUNDS_ID,
-        factory.getDefaultMemoryArray(GEP_BOUNDS_ID, 0)
-    );
+    if(CraigColtonMode.get(false)) {
+        memArrays.emplace(
+            GEP_BOUNDS_ID,
+            factory.getDefaultMemoryArray(GEP_BOUNDS_ID, 0)
+        );
+    } else {
+        memArrays.emplace(
+            GEP_BOUNDS_ID,
+            factory.getEmptyMemoryArray(GEP_BOUNDS_ID)
+        );
+    }
+
     gepBounds( gepBounds().store(
         factory.getNullPtr(),
         factory.getIntConst(-1)
@@ -98,7 +109,7 @@ ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t offsetSize) {
 ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t offsetSize, Integer origSize) {
     auto&& ret = factory.getPtrConst(globalPtr);
     globalPtr += offsetSize;
-    gepBounds( gepBounds().store(ret, origSize) );
+    writeBound(ret, origSize);
     return ret;
 }
 
@@ -109,7 +120,7 @@ ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t offsetSize) {
 ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t offsetSize, Integer origSize) {
     auto&& ret = factory.getPtrConst(localPtr);
     localPtr += offsetSize;
-    gepBounds( gepBounds().store(ret, origSize) );
+    writeBound(ret, origSize);
     return ret;
 }
 
@@ -127,6 +138,12 @@ ExecutionContext& ExecutionContext::switchOn(
     this->memArrays = merged.memArrays;
     this->globalPtr = merged.globalPtr;
     this->localPtr = merged.localPtr;
+
+    for(auto&& ctx : contexts) {
+        auto&& cax = ctx.second.contextAxioms;
+        this->contextAxioms.insert(this->contextAxioms.begin(), cax.begin(), cax.end());
+    }
+
 
     return *this;
 }
@@ -170,6 +187,8 @@ ExecutionContext ExecutionContext::mergeMemory(
 
 ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
 
+    if(!CraigColtonMode.get(false)) return gepBounds().select<Integer>(p);
+
     auto&& zero = factory.getIntConst(0);
 
     auto storedBound = [this](auto ptr){ return readProperty<Integer>(GEP_BOUNDS_ID, ptr); };
@@ -206,7 +225,12 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
 }
 
 void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
-    writeProperty(GEP_BOUNDS_ID, p, bound);
+
+    if(CraigColtonMode.get(false)) {
+        gepBounds(gepBounds().store(p, bound));
+    } else {
+        contextAxioms.push_back(getBound(p) == bound);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

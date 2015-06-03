@@ -14,11 +14,15 @@
 
 #include "Util/util.h"
 
+#include "Config/config.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
 namespace z3_ {
 namespace logic {
+
+static borealis::config::BoolConfigEntry useProactiveSimplify("z3", "aggressive-simplify");
 
 class Expr {};
 
@@ -38,19 +42,28 @@ namespace z3impl {
         return defaultAxiom(e.ctx());
     }
     inline z3::expr spliceAxioms(z3::expr e0, z3::expr e1) {
-        return (e0 && e1).simplify();
+        if(useProactiveSimplify.get(true)) {
+            return (e0 && e1).simplify();
+        }
+        return (e0 && e1);
     }
     inline z3::expr spliceAxioms(std::initializer_list<z3::expr> il) {
         util::copyref<z3::expr> accum{ util::head(il) };
         for (const auto& e : util::tail(il)) {
-            accum = (accum && e).simplify();
+            if(useProactiveSimplify.get(true)) {
+                accum = (accum && e).simplify();
+            }
+            accum = (accum && e);
         }
         return accum;
     }
     inline z3::expr spliceAxioms(const std::vector<z3::expr>& v) {
         util::copyref<z3::expr> accum{ util::head(v) };
         for (const auto& e : util::tail(v)) {
-            accum = (accum && e).simplify();
+            if(useProactiveSimplify.get(true)) {
+                accum = (accum && e).simplify();
+            }
+            accum = (accum && e);
         }
         return accum;
     }
@@ -583,7 +596,7 @@ z3::expr forAll(
                     &sort_array[0],
                     &name_array[0],
                     z3impl::getExpr(body)));
-    return axiom.simplify();
+    return useProactiveSimplify.get(true) ? axiom.simplify() : axiom;
 }
 
 template<class Res, class Patterns, class ...Args>
@@ -624,7 +637,7 @@ z3::expr forAll(
                     &sort_array[0],
                     &name_array[0],
                     z3impl::getExpr(body)));
-    return axiom.simplify();
+    return useProactiveSimplify.get(true) ? axiom.simplify() : axiom;
 }
 
 } // namespace z3impl

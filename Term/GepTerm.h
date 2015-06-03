@@ -8,6 +8,7 @@
 #ifndef GEPTERM_H_
 #define GEPTERM_H_
 
+#include "Config/config.h"
 #include "Term/Term.h"
 #include "Term/OpaqueIntConstantTerm.h"
 
@@ -128,13 +129,28 @@ struct SMTImpl<Impl, GepTerm> {
 
         }
 
+        auto diff = ctx->getBound(p) - shift;
+        auto zero = ef.getIntConst(0);
+        auto shifted = p + shift;
+
+        static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
+
+        if(CraigColtonMode.get(false)) {
+            if (t->isTriviallyInbounds()) {
+                 return shifted;
+            }
+
+            return shifted.withAxiom(
+                not ef.isInvalidPtrExpr(shifted)
+            );
+        }
+        
+        ctx->writeBound(shifted, diff);
         if (t->isTriviallyInbounds()) {
-            return p + shift;
+            return shifted;
         }
 
-        return (p + shift).withAxiom(
-            not ef.isInvalidPtrExpr(p + shift)
-        );
+        return shifted.withAxiom(shifted > zero);
     }
 };
 

@@ -67,7 +67,7 @@ public:
     using LocalMemoryBounds = std::pair<unsigned long long, unsigned long long>;
     LocalMemoryBounds getLocalMemoryBounds() const;
 
-    const std::vector<Bool> getAxioms() const { return contextAxioms; }
+    const std::vector<Bool>& getAxioms() const { return contextAxioms; }
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -1,5 +1,7 @@
 #include "defines.h"
 
+// @ensures (x == \nullptr) ==> (\result == 0)
+// @ensures (x != \nullptr) ==> (\result == 10)
 int check(int* x) {
    if (!x) return 0;
    return 10;
