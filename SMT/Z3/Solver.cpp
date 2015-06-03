@@ -24,19 +24,53 @@ namespace borealis {
 namespace z3_ {
 using namespace borealis::smt;
 
+static borealis::config::IntConfigEntry forceTimeout("z3", "force-timeout");
+static borealis::config::BoolConfigEntry simplifyPrint("z3", "print-simplified");
+
 Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long long memoryEnd) :
         z3ef(z3ef), memoryStart(memoryStart), memoryEnd(memoryEnd) {}
 
 z3::tactic Solver::tactics(unsigned int timeout) {
     auto& c = z3ef.unwrap();
+    auto tactic = [&c](const char* s){ return z3::tactic(c, s); };
 
-    auto params = z3::params(c);
-    params.set("auto_config", true);
-    params.set("timeout", timeout);
-    auto smt_tactic = with(z3::tactic(c, "smt"), params);
-    auto useful = /* z3::tactic(c, "reduce-bv-size") & */ z3::tactic(c, "ctx-simplify");
+    z3::params main_p(c);
+    main_p.set("elim_and", true);
+    main_p.set("sort_store", true);
 
-    return useful & smt_tactic;
+    z3::params simp1_p(c);
+    // simp1_p.set("expand-select-store", true);
+
+    z3::params simp2_p(c);
+    simp2_p.set("som", true);
+    simp2_p.set("pull_cheap_ite", true);
+    simp2_p.set("push_ite_bv", false);
+    simp2_p.set("local_ctx", true);
+    simp2_p.set("local_ctx_limit", 100000U);
+
+    z3::params ctx_simp_p(c);
+    ctx_simp_p.set("max_depth", 32U);
+    ctx_simp_p.set("max_steps", 5000000U);
+
+    z3::params solver_p(c);
+    // solver_p.set("array.simplify", false); // disable array simplifications at old_simplify module
+
+    z3::tactic preamble_st = z3::with(tactic("simplify"), simp1_p)
+                           & tactic("propagate-values")
+                           // & z3::try_for(tactic("qe-light"), 500)
+                           & tactic("solve-eqs")
+                           & tactic("elim-uncnstr")
+                           // & tactic("reduce-bv-size")
+                           & z3::with(tactic("simplify"), simp2_p)
+                           & tactic("max-bv-sharing");
+
+    z3::tactic st = z3::with(
+        preamble_st & z3::with(tactic("smt"), solver_p),
+        main_p
+    );
+
+    return z3::try_for(st, timeout);
+
 }
 
 Solver::check_result Solver::check(
@@ -48,24 +82,29 @@ Solver::check_result Solver::check(
 
     TRACE_FUNC;
 
-    auto s = tactics().mk_solver();
+    auto s = tactics(forceTimeout.get(0)).mk_solver();
 
     auto dbg = dbgs();
     auto wtf = logging::wtf();
 
-    auto z3state = z3state_.simplify();
-    auto z3query = z3query_.simplify();
+    auto z3state = useProactiveSimplify.get(true) ? z3state_.simplify() : z3state_;
+    auto z3query = useProactiveSimplify.get(true) ? z3query_.simplify() : z3query_;
 
     s.add(z3impl::asAxiom(z3state));
     for(auto&& axiom : ctx.getAxioms())
         s.add(z3impl::asAxiom(axiom));
+    s.add(z3impl::getAxiom(z3query));
 
-    dbg << "  Query: " << endl << z3query << endl;
-    dbg << "  State: " << endl << z3state << endl;
+    dbg << "  Query: " << endl << (simplifyPrint.get(false) ? z3query.simplify() : z3query) << endl;
+    dbg << "  State: " << endl << (simplifyPrint.get(false) ? z3state.simplify() : z3state) << endl;
+    dbg << "  Axioms: " << endl;
+    for(auto&& axiom : ctx.getAxioms()) {
+        dbg << (simplifyPrint.get(false) ? axiom.simplify() : axiom) << endl;
+    }
     dbg << end;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
-    s.add(z3impl::asAxiom(implies(pred, z3query)));
+    s.add(z3impl::getExpr(implies(pred, z3query)));
 
     static config::ConfigEntry<bool> print_smt2_state("output", "print-smt2-states");
     if (print_smt2_state.get(false)) {
