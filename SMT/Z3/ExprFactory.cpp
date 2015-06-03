@@ -7,6 +7,7 @@
 
 #include "Config/config.h"
 #include "SMT/Z3/ExprFactory.h"
+#include "SMT/Z3/Params.h"
 
 #include "Util/macros.h"
 
@@ -15,9 +16,8 @@ namespace z3_ {
 
 ExprFactory::ExprFactory() {
     z3::config cfg;
-    cfg.set("model", true);
-    cfg.set("proof", false);
-    cfg.set("unsat_core", true);
+
+    Params::load().apply(cfg);
 
     ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
 

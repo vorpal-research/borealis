@@ -1,0 +1,3 @@
+model = true (bool)
+proof = false (bool)
+unsat_core = true (bool)
