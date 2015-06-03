@@ -417,10 +417,14 @@ public:
     auto end() QUICK_CONST_RETURN(get().end())
     auto size() QUICK_CONST_RETURN(get().size())
 
+    auto rbegin() QUICK_CONST_RETURN(get().rbegin())
+    auto rend() QUICK_CONST_RETURN(get().rend())
+
     auto operator[](size_t index) QUICK_CONST_RETURN(get()[index])
 };
 
 typedef ConfigEntry<bool>                     BoolConfigEntry;
+typedef ConfigEntry<int>                      IntConfigEntry;
 typedef ConfigEntry<std::string>              StringConfigEntry;
 typedef ConfigEntry<std::vector<std::string>> MultiConfigEntry;
 
