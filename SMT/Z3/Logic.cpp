@@ -64,7 +64,7 @@ ValueExpr ValueExpr::simplify() const {
     z3::params params(this->pimpl->inner.ctx());
 
     params.set(":pull-cheap-ite", true);
-    params.set(":push-bv-ite", true);
+    params.set(":push-bv-ite", false);
     params.set(":expand-select-store", true);
 
     return ValueExpr{
