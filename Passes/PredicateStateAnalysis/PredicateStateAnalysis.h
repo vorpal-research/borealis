@@ -82,6 +82,7 @@ public:
     static const std::string Mode();
     static bool CheckUnreachable();
     static const std::string Summaries();
+    static bool OptimizeStates();
 
 private:
 

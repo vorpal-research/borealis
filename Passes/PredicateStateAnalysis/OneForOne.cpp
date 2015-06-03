@@ -13,6 +13,7 @@
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/MemoryContextSplitter.h"
+#include "State/Transformer/StateOptimizer.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -112,8 +113,19 @@ void OneForOne::processQueue() {
 }
 
 void OneForOne::finalize() {
+    AbstractPredicateStateAnalysis::finalize();
+
     for (const auto& e : predicateStates) {
         instructionStates[e.first] = FN.State->Choice(e.second);
+    }
+
+    if (PredicateStateAnalysis::OptimizeStates()) {
+        StateOptimizer so{FN};
+
+        initialState = so.transform(initialState);
+        for (auto&& v : util::viewContainerValues(instructionStates)) {
+            v = so.transform(v);
+        }
     }
 }
 
