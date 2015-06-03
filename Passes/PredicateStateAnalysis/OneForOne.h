@@ -75,7 +75,7 @@ private:
             PredicateState::Ptr state);
     void processQueue();
 
-    void finalize();
+    virtual void finalize() override;
 
     void processBasicBlock(const WorkQueueEntry& wqe);
     void processTerminator(

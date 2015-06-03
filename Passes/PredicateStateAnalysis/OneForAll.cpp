@@ -113,11 +113,13 @@ void OneForAll::init() {
 void OneForAll::finalize() {
     AbstractPredicateStateAnalysis::finalize();
 
-    StateOptimizer so{ FN };
+    if (PredicateStateAnalysis::OptimizeStates()) {
+        StateOptimizer so{FN};
 
-    initialState = so.transform(initialState);
-    for (auto&& v : util::viewContainerValues(instructionStates)) {
-        v = so.transform(v);
+        initialState = so.transform(initialState);
+        for (auto&& v : util::viewContainerValues(instructionStates)) {
+            v = so.transform(v);
+        }
     }
 }
 

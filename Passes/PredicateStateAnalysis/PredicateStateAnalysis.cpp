@@ -240,6 +240,11 @@ const std::string PredicateStateAnalysis::Summaries() {
     return mode.get("none");
 }
 
+bool PredicateStateAnalysis::OptimizeStates() {
+    static config::ConfigEntry<bool> optimizeStates("analysis", "optimize-states");
+    return optimizeStates.get(false);
+}
+
 } /* namespace borealis */
 
 #include "Util/unmacros.h"
