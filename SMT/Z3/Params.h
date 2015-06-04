@@ -27,7 +27,7 @@ class Params {
 public:
     static Params load();
 
-    void apply(z3::config& cfg) const;
+    void apply() const;
     Params& add(const std::string& key, const std::string& value, ParamType type);
 
 private:

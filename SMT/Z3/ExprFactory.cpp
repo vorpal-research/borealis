@@ -17,7 +17,7 @@ namespace z3_ {
 ExprFactory::ExprFactory() {
     z3::config cfg;
 
-    Params::load().apply(cfg);
+    Params::load().apply();
 
     ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
 

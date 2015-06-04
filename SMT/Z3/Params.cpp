@@ -50,9 +50,9 @@ Params Params::load() {
     return res;
 }
 
-void Params::apply(z3::config& cfg) const {
+void Params::apply() const {
     for (auto&& p : params) {
-        cfg.set(std::get<0>(p).c_str(), std::get<1>(p).c_str());
+        z3::set_param(std::get<0>(p).c_str(), std::get<1>(p).c_str());
     }
 }
 
