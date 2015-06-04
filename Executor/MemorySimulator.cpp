@@ -776,6 +776,8 @@ void MemorySimulator::DeallocateMemory(void* ptr) {
     TRACE_FUNC;
 
     auto realPtr = ptr_cast(ptr);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalFree(realPtr);
+
     pimpl_->tree.free(realPtr, SegmentNode::MemoryStatus::Alloca);
 }
 
@@ -975,6 +977,7 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
 void* MemorySimulator::MemChr(void* ptr, uint8_t ch, size_t limit) {
     TRACE_FUNC;
     auto realPtr = ptr_cast(ptr);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalLoad(realPtr);
 
     if(pimpl_->isFromGlobalSpace(realPtr)) {
         auto&& gv = accessGlobal(const_cast<void*>(static_cast<const void*>(ptr)));
@@ -989,7 +992,10 @@ void* MemorySimulator::MemChr(void* ptr, uint8_t ch, size_t limit) {
 }
 
 void MemorySimulator::Memset(void* dst, uint8_t fill, size_t size) {
-    pimpl_->tree.memset(ptr_cast(dst), fill, size);
+    auto realPtr = ptr_cast(dst);
+    if(!pimpl_->isAPointer(realPtr)) signalIllegalStore(realPtr);
+
+    pimpl_->tree.memset(realPtr, fill, size);
 }
 
 MemorySimulator::MemorySimulator(const llvm::DataLayout& dl) : pimpl_{new Impl{dl}} {}
