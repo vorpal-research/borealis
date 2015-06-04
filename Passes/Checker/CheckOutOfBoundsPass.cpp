@@ -19,13 +19,17 @@ namespace borealis {
 
 class GepInstVisitor : public llvm::InstVisitor<GepInstVisitor> {
 
+    std::unordered_set<llvm::Value*> visited;
+
 public:
 
     GepInstVisitor(CheckOutOfBoundsPass* pass) : pass(pass) {}
 
-    void visitGetElementPtrInst(llvm::GetElementPtrInst& GI) {
+    void visitGEPOperator(llvm::Instruction& loc, llvm::GEPOperator& GI) {
+        if(visited.count(&GI)) return;
+        visited.insert(&GI);
 
-        CheckHelper<CheckOutOfBoundsPass> h(pass, &GI, DefectType::BUF_01);
+        CheckHelper<CheckOutOfBoundsPass> h(pass, &loc, DefectType::BUF_01);
 
         if (h.skip()) return;
 
@@ -49,45 +53,21 @@ public:
                 pass->FN.Term->getTrueTerm()
             )
         )();
-        auto ps = pass->PSA->getInstructionState(&GI);
+        auto ps = pass->PSA->getInstructionState(&loc);
 
         h.check(q, ps);
+    }
+
+    void visitGetElementPtrInst(llvm::GetElementPtrInst& GI) {
+        visitGEPOperator(GI, llvm::cast<llvm::GEPOperator>(GI));
     }
 
     void visitInstruction(llvm::Instruction& I) {
 
         for (auto&& op : util::viewContainer(I.operands())
-                         .map(llvm::dyn_caster<llvm::ConstantExpr>())
-                         .filter()
-                         .filter([](auto&& op_) { return llvm::Instruction::GetElementPtr == op_->getOpcode(); })) {
-
-            CheckHelper<CheckOutOfBoundsPass> h(pass, &I, DefectType::BUF_01);
-
-            if (h.skip()) return;
-
-            if (isTriviallyInboundsGEP(op)) return;
-
-            auto shift = (
-                pass->FN.Term *
-                pass->FN.Term->getValueTerm(op)
-                -
-                pass->FN.Term->getValueTerm(op->getOperand(0))
-            );
-
-            auto q = (
-                pass->FN.State *
-                pass->FN.Predicate->getEqualityPredicate(
-                    pass->FN.Term->getCmpTerm(
-                        llvm::ConditionType::UGT,
-                        pass->FN.Term->getBoundTerm(pass->FN.Term->getValueTerm(op->getOperand(0))),
-                        shift
-                    ),
-                    pass->FN.Term->getTrueTerm()
-                )
-            )();
-            auto ps = pass->PSA->getInstructionState(&I);
-
-            h.check(q, ps);
+                         .map(llvm::dyn_caster<llvm::GEPOperator>())
+                         .filter()) {
+            visitGEPOperator(I, *op);
         }
     }
 
