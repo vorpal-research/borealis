@@ -15,7 +15,8 @@
 #include "Passes/Misc/Decompiler/DecInstVisitor.h"
 #include "Passes/Misc/Decompiler/BasicBlockInformation.h"
 #include "Passes/Misc/Decompiler/PhiNodeInformation.h"
-
+#include "Passes/Tracker/SlotTrackerPass.h"
+#include "Util/passes.hpp"
 #include "Logging/logger.hpp"
 
 namespace borealis {
@@ -23,16 +24,15 @@ namespace decompiler{
 
 class DecompilerPass : public llvm::ModulePass, public logging::ObjectLevelLogging<DecompilerPass> {
 private:
-    DecInstVisitor di;
     BasicBlockInformation bbInfo;
     PhiNodeInformation phiInfo;
+    borealis::SlotTrackerPass* STP;
 
     void countBlocksInfo(llvm::Loop* L);
 
 public:
     static char ID;
-    DecompilerPass() : ModulePass(ID), ObjectLevelLogging("decompiler"), di(), bbInfo(), phiInfo() {
-        di.assignLogger(*this);
+    DecompilerPass() : ModulePass(ID), ObjectLevelLogging("decompiler"), bbInfo(), phiInfo() {
     };
 
     virtual bool runOnModule(llvm::Module &M) override;
@@ -40,6 +40,7 @@ public:
     {
          AU.setPreservesAll();
          AU.addRequired<llvm::LoopInfo>();
+         AUX<borealis::SlotTrackerPass>::addRequired(AU);
     }
 };
 

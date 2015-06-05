@@ -8,13 +8,15 @@
 #ifndef DECINSTVISITOR_H_
 #define DECINSTVISITOR_H_
 
-#include <llvm/IR/InstVisitor.h>
 #include <stack>
 #include <unordered_set>
-#include <Logging/logger.hpp>
+#include <llvm/IR/Operator.h>
+#include <llvm/IR/InstVisitor.h>
 
-#include "BasicBlockInformation.h"
-#include "PhiNodeInformation.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
+#include "Passes/Misc/Decompiler/BasicBlockInformation.h"
+#include "Passes/Misc/Decompiler/PhiNodeInformation.h"
+#include "Logging/logger.hpp"
 
 namespace borealis {
 namespace decompiler{
@@ -29,6 +31,8 @@ private:
     std::unordered_set<llvm::StructType*> usedStructs;
     BasicBlockInformation bbInfo;
     PhiNodeInformation phiInfo;
+    decltype(borealis::infos())& infos_;
+    borealis::SlotTrackerPass* STP;
 
     void printType(llvm::Type* t);
     void printCond(llvm::Instruction* ins);
@@ -42,7 +46,10 @@ private:
     bool isStruct(llvm::Type* t);
 
 public:
-    DecInstVisitor() : nesting(1), isOutGoto(false), isInIf(false), currPos(BBPosition::NONE), conditions(), usedStructs(), bbInfo(), phiInfo() {};
+    DecInstVisitor(decltype(borealis::infos())& writer, borealis::SlotTrackerPass* STP) :
+                                                nesting(1), isOutGoto(false), isInIf(false),
+                                                currPos(BBPosition::NONE), conditions(),
+                                                usedStructs(), bbInfo(), phiInfo(), infos_(writer), STP(STP) {};
 
     void setBasicBlockInfo(BasicBlockInformation& inf);
     void setPhiInfo(PhiNodeInformation& phi);
@@ -60,6 +67,7 @@ public:
     void visitICmpInst(llvm::ICmpInst &i);
     void visitFCmpInst(llvm::FCmpInst &i);
     void visitCastInst(llvm::CastInst& i);
+    void visitPtrToIntOperator(llvm::PtrToIntOperator& i);
     void visitCallInst(llvm::CallInst &i);
     void visitInvokeInst(llvm::InvokeInst& i);
     void visitLandingPadInst(llvm::LandingPadInst &i);
@@ -70,6 +78,7 @@ public:
     void visitPHINode(llvm::PHINode& phi);
     void visitSelectInst(llvm::SelectInst& i);
     void visitGetElementPtrInst(llvm::GetElementPtrInst& i);
+    void visitGEPOperator(llvm::GEPOperator& i);
     void visitExtractValueInst(llvm::ExtractValueInst& i);
     void visitInsertValueInst(llvm::InsertValueInst& i);
     void visitExtractElementInst(llvm::ExtractElementInst& i);

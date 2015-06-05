@@ -105,43 +105,43 @@ const std::map<int,std::string> fcmpOp = {
 };
 
 void DecInstVisitor::printTabulation(int num) {
-    for(int i = 0; i < num; ++i) infos()<<"\t";
+    for(int i = 0; i < num; ++i) infos_ << "    ";
 }
 
 void DecInstVisitor::printType(llvm::Type* t) {
     auto&& it = types.find(t->getTypeID());
     if(it != types.end()) {
         if(t->isIntegerTy()){
-            if(intTypes.find(t->getIntegerBitWidth()) != intTypes.end()) infos()<<intTypes[t->getIntegerBitWidth()];
-            else infos()<<"int"<<t->getIntegerBitWidth();
+            if(intTypes.find(t->getIntegerBitWidth()) != intTypes.end()) infos_ << intTypes[t->getIntegerBitWidth()];
+            else infos_ << "int"<<t->getIntegerBitWidth();
         }
-        else infos()<<it->second;
+        else infos_ << it->second;
         return;
     } else if(t->isPointerTy()) {
         printType(t->getPointerElementType());
-        infos()<<"*";
+        infos_ << "*";
         return;
     }
     else if(t->isArrayTy()) {
         printType(t->getArrayElementType());
-        infos()<<"["<<t->getArrayNumElements()<<"]";
+        infos_ << "["<<t->getArrayNumElements()<<"]";
         return;
     } else if(t->isStructTy()) {
         auto&& st = cast<llvm::StructType>(t);
         if(!st->isLiteral()) {
-            infos()<<st->getStructName();
+            infos_ << st->getStructName();
         }
         return;
     } else if(t->isVectorTy()) {
-        infos()<<"vector<";
+        infos_ << "vector<";
         printType(t->getVectorElementType());
-        infos()<<">("<<t->getVectorNumElements()<<")";
+        infos_ << ">("<<t->getVectorNumElements()<<")";
         return;
     } else {
         std::string temp = "";
         llvm::raw_string_ostream rs(temp);
         t->print(rs);
-        infos()<<rs.str();
+        infos_ << rs.str();
         return;
     }
 }
@@ -149,82 +149,78 @@ void DecInstVisitor::printType(llvm::Type* t) {
 void DecInstVisitor::printCond(llvm::Instruction* ins){
     if(auto&& ici = dyn_cast<ICmpInst>(ins)) {
         writeValueToStream(ins->getOperand(0), true);
-        infos()<<" "<<icmpOp.find(ici->getSignedPredicate())->second<<" ";
+        infos_ << " "<<icmpOp.find(ici->getSignedPredicate())->second<<" ";
         writeValueToStream(ins->getOperand(1), true);
-    } else if(auto&& fci = dyn_cast<FCmpInst>(ins)) {
+    } else if(isa<FCmpInst>(ins)) {
         writeValueToStream(ins->getOperand(0), true);
-        infos()<<" "<<fcmpOp.find(ici->getPredicate())->second<<" ";
+        infos_ << " "<<fcmpOp.find(ici->getPredicate())->second<<" ";
         writeValueToStream(ins->getOperand(1), true);
-    } else if(auto&& ci = dyn_cast<CastInst>(ins)) {
-        writeValueToStream(ci, true);
-    } else if(auto&& ci = dyn_cast<CallInst>(ins)) {
-        writeValueToStream(ci, true);
-    } else if(auto&& ii = dyn_cast<InvokeInst>(ins)) {
-        writeValueToStream(ii, true);
-    }
+    } else if(auto&& bi = dyn_cast<BranchInst>(ins)) { // inst not found
+        writeValueToStream(bi->getCondition(), true);
+    } else writeValueToStream(ins, true);
 }
 
 void DecInstVisitor::writeValueToStream(llvm::Value* v, bool deleteType) {
     if(!deleteType) {
         printType(v->getType());
-        infos()<<" ";
+        infos_ << " ";
     }
-    isStruct(v->getType());
+    isStruct(v->getType()); // wtf???
+
+    if(auto I = llvm::dyn_cast<llvm::Instruction>(v)) {
+        auto ST = STP->getSlotTracker(I);
+        infos_ << ST->getLocalName(I);
+        return;
+    }
+
+    if(auto ci = llvm::dyn_cast<ConstantInt>(v)) {
+        infos_ << ci->getValue().getLimitedValue();
+        return;
+    }
+
+    if(llvm::isa<ConstantAggregateZero>(v)) {
+        infos_ << "{0}";
+        return;
+    }
+
+    if(llvm::isa<ConstantPointerNull>(v)) {
+        infos_ << "nullptr";
+        return;
+    }
+
+
+    if(auto cs = llvm::dyn_cast<ConstantDataSequential>(v)) {
+        if(cs->isString() || cs->isCString()) infos_ << "\"" << cs->getRawDataValues().str().c_str() << "\"";
+        else {
+            infos_ << "{";
+            writeValueToStream(cs->getAggregateElement(0U));
+            for(size_t i = 1; i < cs->getNumElements(); ++i) {
+                infos_ << ",";
+                writeValueToStream(cs->getAggregateElement(i), true);
+            }
+            infos_ << "}";
+        }
+        return;
+    }
+
+    if(auto cs = llvm::dyn_cast<GEPOperator>(v)) {
+        visitGEPOperator(*cs);
+        return;
+    }
+
+    if(auto cst = llvm::dyn_cast<PtrToIntOperator>(v)) {
+        visitPtrToIntOperator(*cst);
+        return;
+    }
+
     //if value don't have name, it's very bad
     if(v->getName().empty()) {
         std::string temp = "";
         llvm::raw_string_ostream rs(temp);
         v->printAsOperand(rs);
-        int nameStart = rs.str().find("\"");
-        if(nameStart <= temp.size() && isString(v->getType())) {
-            temp.erase(0,nameStart);
-            infos()<<temp;
-            return;
-        }
-        nameStart = temp.find('%');
-        if(nameStart < temp.size() - 1 && temp[nameStart + 1] == '\"') {
-            nameStart = temp.find("%", nameStart + 1);
-        }
-        if(nameStart > temp.size()) {
-            if((nameStart = temp.find('@')) <= temp.size()) ++nameStart;
-        }
-        if( nameStart > temp.size()) {
-            for(nameStart = temp.size() - 1; nameStart >= 0; --nameStart){
-                if(temp[nameStart] == ' ') {
-                    ++nameStart;
-                    break;
-                }
-            }
-        }
-        temp.erase(0,nameStart);
-        int first = 0; int second = -1;
-        for( ; first < temp.size(); ++first) {
-            if(temp[first] == ','){
-                if(second >= 0) break;
-                else second = first;
-            }
-        }
-        if(second >= 0) {
-            temp.erase(second, first - second);
-            temp[second] = '[';
-            for(first = second; first < temp.size(); ++first) {
-                if(temp[first] == ','){
-                    temp[first] = ']';
-                    temp.insert(first,"]");
-                }
-                else if(temp[first] == ')') temp[first] = ']';
-            }
-        }
-        while((nameStart = temp.find("[ ")) <= temp.size()) {
-            int j = nameStart;
-            for(int st = j + 1; st < temp.size(); ++st) {
-                if(temp[st] == ' '){
-                    temp.erase(j + 1,st - j);
-                }
-            }
-        }
-        infos()<<temp;
-    } else infos()<<v->getName();
+
+        infos_ << temp;
+    } else infos_ << v->getName();
 }
 
 void DecInstVisitor::printPhiInstructions(llvm::BasicBlock& bb) {
@@ -232,9 +228,9 @@ void DecInstVisitor::printPhiInstructions(llvm::BasicBlock& bb) {
     for(auto&& i : phi) {
         printTabulation(nesting);
         writeValueToStream(i.value);
-        infos()<<" = ";
+        infos_ << " = ";
         writeValueToStream(i.initializer, true);
-        infos()<<";\n";
+        infos_ << ";\n";
     }
 }
 
@@ -270,45 +266,45 @@ bool DecInstVisitor::isStruct(llvm::Type* t) {
 
 void DecInstVisitor::visitInstruction(llvm::Instruction &i) {
     printTabulation(nesting);
-    infos()<<i.getOpcodeName()<<"\n";
-    infos()<<i<<";\n";
+    infos_ << i.getOpcodeName()<<"\n";
+    infos_ << i<<";\n";
 }
 
 
 void DecInstVisitor::visitStoreInst(llvm::StoreInst &i) {
     printTabulation(nesting);
-    infos()<<"*";
+    infos_ << "*";
     writeValueToStream(i.getPointerOperand(), true);
-    infos()<<" = ";
+    infos_ << " = ";
     writeValueToStream(i.getValueOperand(), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 void DecInstVisitor::visitAllocaInst(llvm::AllocaInst &i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = alloca(";
+    infos_ << " = alloca(";
     printType(i.getAllocatedType());
-    infos()<<");\n";
+    infos_ << ");\n";
 }
 
 void DecInstVisitor::visitLoadInst(LoadInst &i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = *";
+    infos_ << " = *";
     writeValueToStream(i.getPointerOperand(), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 
 void DecInstVisitor::visitBinaryOperator(llvm::BinaryOperator &i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = ";
+    infos_ << " = ";
     writeValueToStream(i.getOperand(0), true);
-    infos()<<" "<<binOp.find(i.getOpcode())->second<<" ";
+    infos_ << " "<<binOp.find(i.getOpcode())->second<<" ";
     writeValueToStream(i.getOperand(1), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 void DecInstVisitor::visitICmpInst(llvm::ICmpInst &i) {
@@ -323,11 +319,11 @@ void DecInstVisitor::visitICmpInst(llvm::ICmpInst &i) {
     if(!(c == 1 && isBr))    {
         printTabulation(nesting);
         writeValueToStream(&i);
-        infos()<<" = (";
+        infos_ << " = (";
         writeValueToStream(i.getOperand(0), true);
-        infos()<<" "<<icmpOp.find(i.getSignedPredicate())->second<<" ";
+        infos_ << " "<<icmpOp.find(i.getSignedPredicate())->second<<" ";
         writeValueToStream(i.getOperand(1), true);
-        infos()<<");\n";
+        infos_ << ");\n";
     }
 }
 
@@ -343,46 +339,58 @@ void DecInstVisitor::visitFCmpInst(llvm::FCmpInst &i) {
     if(!(c == 1 && isBr))    {
         printTabulation(nesting);
         writeValueToStream(&i);
-        infos()<<" = (";
+        infos_ << " = (";
         writeValueToStream(i.getOperand(0), true);
-        infos()<<" "<<fcmpOp.find(i.getPredicate())->second<<" ";
+        infos_ << " "<<fcmpOp.find(i.getPredicate())->second<<" ";
         writeValueToStream(i.getOperand(1), true);
-        infos()<<");\n";
+        infos_ << ");\n";
     }
 }
 
 void DecInstVisitor::visitCastInst(llvm::CastInst& i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = cast<";
+    infos_ << " = cast<";
     printType(i.getDestTy());
-    infos()<<">(";
+    infos_ << ">(";
     writeValueToStream(i.getOperand(0), true);
-    infos()<<");\n";
+    infos_ << ");\n";
 }
 
 
+void DecInstVisitor::visitPtrToIntOperator(llvm::PtrToIntOperator& i) {
+    infos_ << "cast<";
+    printType(i.getType());
+    infos_ << ">(";
+    writeValueToStream(i.getPointerOperand(), true);
+    infos_ << ")";
+}
+
 void DecInstVisitor::visitCallInst(llvm::CallInst &i) {
-    if(i.getCalledFunction() != nullptr) {
-        printTabulation(nesting);
-        if(!i.getType()->isVoidTy()) {
-            writeValueToStream(&i);
-            infos()<<" = ";
-        }
-        infos()<<i.getCalledFunction()->getName()<<"(";
-        int arg_num = 0;
-        for(auto&& op : i.arg_operands()) ++arg_num;
-        int num = 0;
-        for(auto&& op : i.arg_operands()) {
-            op.get()->clearSubclassOptionalData();
-            writeValueToStream(op, true);
-            if(num < arg_num - 1) {
-                infos()<<", ";
-                ++num;
-            }
-        }
-        infos()<<");\n";
+    printTabulation(nesting);
+    if(!i.getType()->isVoidTy()) {
+        writeValueToStream(&i);
+        infos_ << " = ";
     }
+    if(i.getCalledFunction() != nullptr) {
+        infos_ << i.getCalledFunction()->getName()<<"(";
+    } else { // this is an indirect call
+        infos_ << "(*";
+        writeValueToStream(i.getCalledValue());
+        infos_ << ")(";
+    }
+
+    int arg_num = std::distance(i.arg_operands().begin(), i.arg_operands().end());
+    int num = 0;
+    for(auto&& op : i.arg_operands()) {
+        writeValueToStream(op, true);
+        if(num < arg_num - 1) {
+            infos_ << ", ";
+            ++num;
+        }
+    }
+    infos_ << ");\n";
+
 }
 
 void DecInstVisitor::visitInvokeInst(llvm::InvokeInst &i) {
@@ -390,16 +398,16 @@ void DecInstVisitor::visitInvokeInst(llvm::InvokeInst &i) {
         printTabulation(nesting);
         if(!i.getType()->isVoidTy()) {
             writeValueToStream(&i);
-            infos()<<" = ";
+            infos_ << " = ";
         }
-        infos()<<"invoke ";
-        infos()<<i.getCalledFunction()->getName()<<"(";
+        infos_ << "invoke ";
+        infos_ << i.getCalledFunction()->getName()<<"(";
         for(auto j = 0U; j < i.getNumArgOperands(); ++j) {
             i.getArgOperand(j)->clearSubclassOptionalData();
             writeValueToStream(i.getArgOperand(j), true);
-            if(j < i.getNumArgOperands() - 1) infos()<<", ";
+            if(j < i.getNumArgOperands() - 1) infos_ << ", ";
         }
-        infos()<<") to "<<i.getNormalDest()->getName()<<", unwind "<<i.getUnwindDest()->getName()<<";\n";
+        infos_ << ") to "<<i.getNormalDest()->getName()<<", unwind "<<i.getUnwindDest()->getName()<<";\n";
         bbInfo.setPrintName(*i.getNormalDest());
         bbInfo.setPrintName(*i.getUnwindDest());
     }
@@ -409,13 +417,13 @@ void DecInstVisitor::visitLandingPadInst(llvm::LandingPadInst &i) {
     printTabulation(nesting);
     if(!i.getType()->isVoidTy()) {
         writeValueToStream(&i, true);
-        infos()<<" = ";
+        infos_ << " = ";
     }
-    infos()<<"landingpad ";
+    infos_ << "landingpad ";
     std::string temp = "";
     llvm::raw_string_ostream rs(temp);
     i.getPersonalityFn()->printAsOperand(rs);
-    int nameStart = rs.str().find('@');
+    auto nameStart = rs.str().find('@');
     if(nameStart < temp.size()) {
         temp.erase(0,nameStart);
         for(nameStart = 0; nameStart < temp.size(); ++nameStart) {
@@ -425,24 +433,24 @@ void DecInstVisitor::visitLandingPadInst(llvm::LandingPadInst &i) {
             }
         }
     }
-    infos()<<temp;
-    infos()<<" {\n";
+    infos_ << temp;
+    infos_ << " {\n";
     if(i.isCleanup()) {
         printTabulation(nesting + 1);
-        infos()<<"cleanup;\n";
+        infos_ << "cleanup;\n";
     }
     else {
         for(auto j = 0U; j < i.getNumClauses(); ++j) {
             printTabulation(nesting + 1);
             i.getClause(j)->clearSubclassOptionalData();
-            if(i.isCatch(j)) infos()<<"catch ";
-            else infos()<<"filter ";
+            if(i.isCatch(j)) infos_ << "catch ";
+            else infos_ << "filter ";
             writeValueToStream(i.getClause(j));
-            infos()<<";\n";
+            infos_ << ";\n";
         }
     }
     printTabulation(nesting);
-    infos()<<"}\n";
+    infos_ << "}\n";
 }
 
 void DecInstVisitor::visitBranchInst(BranchInst &i) {
@@ -460,33 +468,33 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
         //process while_begin block
         if(currPos == BBPosition::WHILE_BEGIN) {
             printTabulation(nesting);
-            infos()<<"while(";
+            infos_ << "while(";
             printCond(ins);
-            infos()<<") {\n";
+            infos_ << ") {\n";
             ++nesting;
         //process do-while_end block
         } else if(currPos == BBPosition::DO_WHILE_END) {
             if(nesting > 1) --nesting;
             printTabulation(nesting);
-            infos()<<"} ";
-            infos()<<"while(";
+            infos_ << "} ";
+            infos_ << "while(";
             printCond(ins);
-            infos()<<");\n";
+            infos_ << ");\n";
         //process if-else condition
         } else {
             BasicBlock* first = i.getSuccessor(0);
             BasicBlock* second = i.getSuccessor(1);
             BasicBlock* pred = nullptr;
             printTabulation(nesting);
-            infos()<<"if(";
+            infos_ << "if(";
             if(first->isUsedInBasicBlock(second)) {
-                infos()<<"!(";
+                infos_ << "!(";
                 std::swap(first,second);
                 printCond(ins);
-                infos()<<")";
+                infos_ << ")";
             }
             else printCond(ins);
-            infos()<<") {\n";
+            infos_ << ") {\n";
             ++nesting;
             bool isElse = false;
             isInIf = true;
@@ -505,7 +513,7 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
                         {
                             bbInfo.setInGoto(*te.getSource());
                             printTabulation(nesting);
-                            infos()<<"goto "<<te->getName()<<";\n";
+                            infos_ << "goto "<<te->getName()<<";\n";
                             break;
                         }
                     }
@@ -514,7 +522,7 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
             isInIf = false;
             if(nesting > 1) --nesting;
             printTabulation(nesting);
-            infos()<<"}\n";
+            infos_ << "}\n";
             if(pred){
                 if(succ_begin(pred) != succ_end(pred)) {
                     pred = *succ_begin(pred);
@@ -532,7 +540,7 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
             if(isElse) {
                 isInIf = true;
                 printTabulation(nesting);
-                infos()<<"else {\n";
+                infos_ << "else {\n";
                 ++nesting;
                 for(auto&& b = second; b != pred; b = b->getNextNode()) {
                     displayBasicBlock(*b, bbInfo.getPosition(*b));
@@ -542,7 +550,7 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
                             if(temp == bbInfo.getLoopHead(*b) && !bbInfo.isInGoto(*te.getSource())) {
                                 bbInfo.setInGoto(*te.getSource());
                                 printTabulation(nesting + 1);
-                                infos()<<"goto "<<te->getName()<<";\n";
+                                infos_ << "goto "<<te->getName()<<";\n";
                                 break;
                             }
                         }
@@ -551,7 +559,7 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
                 if(nesting > 1) --nesting;
                 printTabulation(nesting);
                 isInIf = false;
-                infos()<<"}\n";
+                infos_ << "}\n";
             }
         }
     } else {
@@ -559,7 +567,7 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
         if(isOutGoto || (bb != i.getParent()->getNextNode() && bb != bbInfo.getLoopHead(*i.getParent()))) {
             bbInfo.setPrintName(*bb);
             printTabulation(nesting);
-            infos()<<"goto "<<bb->getName()<<";\n";
+            infos_ << "goto "<<bb->getName()<<";\n";
         }
     }
 }
@@ -567,14 +575,14 @@ void DecInstVisitor::visitBranchInst(BranchInst &i) {
 void DecInstVisitor::visitSwitchInst(llvm::SwitchInst& i) {
     printPhiInstructions(*i.getParent());
     printTabulation(nesting);
-    infos()<<"switch(";
+    infos_ << "switch(";
     writeValueToStream(i.getCondition(), true);
-    infos()<<") {\n";
+    infos_ << ") {\n";
     for(auto&& cs : i.cases()) {
         printTabulation(nesting);
-        infos()<<"case ";
+        infos_ << "case ";
         writeValueToStream(cs.getCaseValue(), true);
-        infos()<< ":\n";
+        infos_ <<  ":\n";
         auto&& bb = cs.getCaseSuccessor();
         bool isOut = isOutGoto;
         isOutGoto = true;
@@ -586,7 +594,7 @@ void DecInstVisitor::visitSwitchInst(llvm::SwitchInst& i) {
         if(nesting > 1) --nesting;
     }
     printTabulation(nesting);
-    infos()<<"default:\n";
+    infos_ << "default:\n";
     bool isOut = isOutGoto;
     isOutGoto = true;
     ++nesting;
@@ -597,142 +605,144 @@ void DecInstVisitor::visitSwitchInst(llvm::SwitchInst& i) {
     bbInfo.setPrintName(*i.getDefaultDest());
     if(nesting > 1) --nesting;
     printTabulation(nesting);
-    infos()<<"}\n";
+    infos_ << "}\n";
 }
 
 void DecInstVisitor::visitResumeInst(llvm::ResumeInst& i) {
     printTabulation(nesting);
-    infos()<<"resume ";
+    infos_ << "resume ";
     writeValueToStream(i.getValue(), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
-void DecInstVisitor::visitUnreachableInst(llvm::UnreachableInst& i) {
+void DecInstVisitor::visitUnreachableInst(llvm::UnreachableInst&) {
     printTabulation(nesting);
-    infos()<<"unreachable;\n";
+    infos_ << "unreachable;\n";
 }
 
-void DecInstVisitor::visitPHINode(llvm::PHINode& phi) {/* Do nothing */}
+void DecInstVisitor::visitPHINode(llvm::PHINode&) {/* Do nothing */}
 
 void DecInstVisitor::visitSelectInst(llvm::SelectInst& i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = (";
+    infos_ << " = (";
     writeValueToStream(i.getCondition(), true);
-    infos()<<") ? ";
+    infos_ << ") ? ";
     writeValueToStream(i.getTrueValue(), true);
-    infos()<<" : ";
+    infos_ << " : ";
     writeValueToStream(i.getFalseValue(), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
+void DecInstVisitor::visitGEPOperator(llvm::GEPOperator& i) {
+    infos_ << "&";
+    writeValueToStream(i.getPointerOperand(), true);
+    for(auto&& it = i.idx_begin(); it != i.idx_end(); ++it) {
+        infos_ << "[";
+        writeValueToStream(it->get(), true);
+        infos_ << "]";
+    }
+}
 
 void DecInstVisitor::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = ";
-    writeValueToStream(i.getPointerOperand(), true);
-    for(auto&& it = i.idx_begin(); it != i.idx_end(); ++it) {
-        if(it == i.idx_begin()) continue;
-        infos()<<"[";
-        writeValueToStream(it->get(), true);
-        infos()<<"]";
-    }
-    infos()<<";\n";
+    infos_ << " = ";
+    visitGEPOperator(llvm::cast<GEPOperator>(i));
+    infos_ << ";\n";
 }
 
 
 void DecInstVisitor::visitExtractValueInst(llvm::ExtractValueInst& i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = ";
+    infos_ << " = ";
     writeValueToStream(i.getAggregateOperand(), true);
     for (auto&& it : i.getIndices().vec()) {
-        infos()<<"["<<it<<"]";
+        infos_ << "["<<it<<"]";
     }
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 void DecInstVisitor::visitInsertValueInst(llvm::InsertValueInst& i) {
     printTabulation(nesting);
     if(!i.getType()->isVoidTy()) {
         writeValueToStream(&i, true);
-        infos()<<" = ";
+        infos_ << " = ";
     }
     writeValueToStream(i.getAggregateOperand(), true);
     for(auto&& it : i.getIndices().vec()) {
-        infos()<<"["<<it<<"]";
+        infos_ << "["<<it<<"]";
     }
-    infos()<<" = ";
+    infos_ << " = ";
     writeValueToStream(i.getInsertedValueOperand(), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 void DecInstVisitor::visitExtractElementInst(llvm::ExtractElementInst& i) {
     printTabulation(nesting);
     writeValueToStream(&i);
-    infos()<<" = ";
+    infos_ << " = ";
     writeValueToStream(i.getVectorOperand(), true);
-    infos()<<"[";
+    infos_ << "[";
     writeValueToStream(i.getIndexOperand(), true);
-    infos()<<"];\n";
+    infos_ << "];\n";
 }
 
 void DecInstVisitor::visitInsertElementInst(llvm::InsertElementInst& i){
     printTabulation(nesting);
     if(!i.getType()->isVoidTy()) {
         writeValueToStream(&i);
-        infos()<<" = ";
+        infos_ << " = ";
     }
     writeValueToStream(i.getOperand(0), true);
-    infos()<<"[";
+    infos_ << "[";
     writeValueToStream(i.getOperand(2), true);
-    infos()<<"] = ";
+    infos_ << "] = ";
     writeValueToStream(i.getOperand(1), true);
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 void DecInstVisitor::visitReturnInst(llvm::ReturnInst &i) {
     printTabulation(nesting);
-    infos()<<"return";
+    infos_ << "return";
     for(auto&& op : i.operand_values()){
-        infos()<<" ";
+        infos_ << " ";
         writeValueToStream(op, true);
     }
-    infos()<<";\n";
+    infos_ << ";\n";
 }
 
 
 
 void DecInstVisitor::displayGlobals(llvm::Module &M) {
     for(auto&& it : M.globals()) {
-        if(it.isConstant()) infos()<<"const ";
-        infos()<<"global ";
+        if(it.isConstant()) infos_ << "const ";
+        infos_ << "global ";
         writeValueToStream(&it);
         if(it.hasInitializer()) {
-            infos()<<" = ";
+            infos_ << " = ";
             writeValueToStream(it.getInitializer(), true);
         }
-        infos()<<";\n";
+        infos_ << ";\n";
     }
-    infos()<<"\n\n";
+    infos_ << "\n\n";
 }
 
 void DecInstVisitor::displayFunction(llvm::Function &F) {
     printType(F.getReturnType());
-    infos()<<" "<<F.getName().str()+"(";
-    int argNum = 0;
-    for(auto&& arg : F.args()) ++argNum;
-    int num = 0;
+    infos_ << " "<<F.getName().str()+"(";
+    size_t argNum = F.arg_size();
+    size_t num = 0;
     auto&& ll=F.arg_begin();
     auto&& lz=F.arg_end();
     while(ll != lz) {
         writeValueToStream(ll);
-        if(num < argNum - 1) infos()<<", ";
+        if(num < argNum - 1) infos_ << ", ";
         ++ll;
         ++num;
     }
-    infos()<<")";
+    infos_ << ")";
     nesting = 1;
     isInIf = false;
     isOutGoto = false;
@@ -742,7 +752,7 @@ void DecInstVisitor::displayFunction(llvm::Function &F) {
 
 void DecInstVisitor::displayBasicBlock(llvm::BasicBlock& B, BBPosition position) {
     if(!bbInfo.isVisited(B)){
-        if(bbInfo.isPrintName(B)) infos()<<B.getName()<<":\n";
+        if(bbInfo.isPrintName(B)) infos_ << B.getName()<<":\n";
         bbInfo.setVisited(B);
         switch(position) {
             case BBPosition::WHILE_BEGIN:
@@ -752,7 +762,7 @@ void DecInstVisitor::displayBasicBlock(llvm::BasicBlock& B, BBPosition position)
                 break;
             case BBPosition::DO_WHILE_BEGIN:
                 printTabulation(nesting);
-                infos()<<"do {\n";
+                infos_ << "do {\n";
                 ++nesting;
                 break;
             default: break;
@@ -767,27 +777,27 @@ void DecInstVisitor::displayBasicBlock(llvm::BasicBlock& B, BBPosition position)
             if(conditions.size() != 0) {
                 printTabulation(nesting);
                 writeValueToStream(conditions.top(), true);
-                infos()<<" = *";
+                infos_ << " = *";
                 writeValueToStream(conditions.top()->getOperand(0), true);
-                infos()<<";\n";
+                infos_ << ";\n";
                 conditions.pop();
             }
             if(nesting > 1) --nesting;
             printTabulation(nesting);
-            infos()<<"}\n";
+            infos_ << "}\n";
         }
     }
 }
 
 void DecInstVisitor::displayStructs() {
     for(auto&& it : usedStructs) {
-        infos()<<it->getName()<<" {\n";
+        infos_ << it->getName()<<" {\n";
         for(auto i = 0U; i < it->getStructNumElements(); ++i) {
-            infos()<<"\t"<<i<<" - ";
+            infos_ << "\t"<<i<<" - ";
             printType(it->getStructElementType(i));
-            infos()<<";\n";
+            infos_ << ";\n";
         }
-        infos()<<"};\n\n";
+        infos_ << "};\n\n";
     }
 }
 

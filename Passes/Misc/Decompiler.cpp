@@ -14,17 +14,17 @@ namespace decompiler{
 
 void DecompilerPass::countBlocksInfo(Loop* L) {
     auto&& head = L->getHeader();
-    unsigned depth = L->getLoopDepth();
+
     if(L->getExitingBlock() == nullptr || L->getLoopLatch() == nullptr) {
-            //add in-loop blocks
-            for(int i = 0; i < L->getBlocks().size(); ++i) {
-                bbInfo.addBlock(*L->getBlocks()[i], BBConfiguration{false, false, BBPosition::NONE, head,false});
-            }
-            bbInfo.addBlock(*head, BBConfiguration{true, false, BBPosition::NONE, nullptr,false});
+        //add in-loop blocks
+        for(auto i = 0U; i < L->getBlocks().size(); ++i) {
+            bbInfo.addBlock(*L->getBlocks()[i], BBConfiguration{false, false, BBPosition::NONE, head,false});
+        }
+        bbInfo.addBlock(*head, BBConfiguration{true, false, BBPosition::NONE, nullptr,false});
         return;
     }
     //add in-loop blocks
-    for(int i = 0; i < L->getBlocks().size(); ++i) {
+    for(auto i = 0U; i < L->getBlocks().size(); ++i) {
         bbInfo.addBlock(*L->getBlocks()[i], BBConfiguration{false, false, BBPosition::IN_LOOP, head,false});
     }
     if(L->getHeader() == L->getExitingBlock()) {
@@ -42,7 +42,12 @@ void DecompilerPass::countBlocksInfo(Loop* L) {
 }
 
 bool DecompilerPass::runOnModule(Module& M) {
-    infos()<<"\n";
+    STP = &GetAnalysis<SlotTrackerPass>::doit(this);
+    auto infos_ = infos();
+    DecInstVisitor di(infos_, STP);
+    di.assignLogger(*this);
+
+    infos_ << "\n";
     di.displayGlobals(M);
 
     for (auto&& func_iter = M.begin(), func_iter_end = M.end(); func_iter != func_iter_end; ++func_iter) {
@@ -53,8 +58,6 @@ bool DecompilerPass::runOnModule(Module& M) {
         if (!F.isDeclaration()) {
             //get loops info
             LoopInfo &LI = getAnalysis<LoopInfo>(F);
-            bool isInCycle = false;
-            bool isDoWhile = false;
             for(LoopInfo::iterator i = LI.begin(), e = LI.end(); i != e; ++i) {
                 countBlocksInfo(*i);
             }
@@ -74,14 +77,14 @@ bool DecompilerPass::runOnModule(Module& M) {
             }
             di.setPhiInfo(phiInfo);
             //display function
-            infos()<<" {\n";
+            infos_ << " {\n";
             for(auto&& i = F.begin(), end = F.end(); i != end; ++i) {
                 di.displayBasicBlock(*i, bbInfo.getPosition(*i));
             }
-            infos()<<"}\n";
+            infos_ << "}\n";
         }
-        else infos()<<";\n";
-        infos()<<"\n";
+        else infos_ << ";\n";
+        infos_ << "\n";
     }
     //prints all structs at the end of module
     di.displayStructs();
