@@ -139,7 +139,7 @@ TEST_DEPS := $(TEST_SOURCES:.cpp=.d)
 
 TEST_ARCHIVES :=
 
-TEST_OUTPUT := "test_results.xml"
+TEST_OUTPUT := test_results.xml
 
 ################################################################################
 # Google Test
