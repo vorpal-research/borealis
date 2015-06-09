@@ -92,7 +92,7 @@ struct json_traits<std::unordered_map<K, V, Hash, Equal, Alloc>> {
         if(!val.isArray()) return nullptr;
         for(const auto& kv : val) {
             if(!kv.isObject()) return nullptr;
-            ret.insert(std::make_pair( util::fromJson<K>(kv["key"]), util::fromJson<V>(kv["value"]) ));
+            ret.insert(std::make_pair( *util::fromJson<K>(kv["key"]), *util::fromJson<V>(kv["value"]) ));
         }
 
         return optional_ptr_t { new theMap_t{ std::move(ret) } };
