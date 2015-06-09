@@ -15,6 +15,7 @@
 #include "SMT/Z3/Divers.h"
 #include "SMT/Z3/Logic.hpp"
 #include "SMT/Z3/Solver.h"
+#include "SMT/Z3/Tactics.h"
 #include "SMT/Z3/Unlogic/Unlogic.h"
 #include "SMT/Z3/Z3.h"
 
@@ -32,42 +33,14 @@ Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long 
 
 z3::tactic Solver::tactics(unsigned int timeout) {
     auto& c = z3ef.unwrap();
-    auto tactic = [&c](const char* s){ return z3::tactic(c, s); };
 
     z3::params main_p(c);
     main_p.set("elim_and", true);
     main_p.set("sort_store", true);
 
-    z3::params simp1_p(c);
-    // simp1_p.set("expand-select-store", true);
+    z3::tactic main = Tactics::load().build(c);
 
-    z3::params simp2_p(c);
-    simp2_p.set("som", true);
-    simp2_p.set("pull_cheap_ite", true);
-    simp2_p.set("push_ite_bv", false);
-    simp2_p.set("local_ctx", true);
-    simp2_p.set("local_ctx_limit", 100000U);
-
-    z3::params ctx_simp_p(c);
-    ctx_simp_p.set("max_depth", 32U);
-    ctx_simp_p.set("max_steps", 5000000U);
-
-    z3::params solver_p(c);
-    // solver_p.set("array.simplify", false); // disable array simplifications at old_simplify module
-
-    z3::tactic preamble_st = z3::with(tactic("simplify"), simp1_p)
-                           & tactic("propagate-values")
-                           // & z3::try_for(tactic("qe-light"), 500)
-                           & tactic("solve-eqs")
-                           & tactic("elim-uncnstr")
-                           // & tactic("reduce-bv-size")
-                           & z3::with(tactic("simplify"), simp2_p)
-                           & tactic("max-bv-sharing");
-
-    z3::tactic st = z3::with(
-        preamble_st & z3::with(tactic("smt"), solver_p),
-        main_p
-    );
+    z3::tactic st = z3::with(main, main_p);
 
     return z3::try_for(st, timeout);
 
