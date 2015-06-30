@@ -5,6 +5,8 @@
  *      Author: ice-phoenix
  */
 
+#include <fstream>
+
 #include "Config/config.h"
 #include "Factory/Nest.h"
 #include "Logging/tracer.hpp"
@@ -18,6 +20,7 @@
 #include "SMT/Z3/Tactics.h"
 #include "SMT/Z3/Unlogic/Unlogic.h"
 #include "SMT/Z3/Z3.h"
+#include "Util/uuid.h"
 
 #include "Util/macros.h"
 
@@ -79,13 +82,22 @@ Solver::check_result Solver::check(
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(z3impl::getExpr(implies(pred, z3query)));
 
-    static config::ConfigEntry<bool> print_smt2_state("output", "print-smt2-states");
-    if (print_smt2_state.get(false)) {
+    static config::ConfigEntry<std::string> dump_smt2_state{ "output", "dump-smt2-states" };
+    if (auto&& dump_dir = dump_smt2_state.get()) {
+        auto&& uuid = UUID::generate();
+
         auto&& pp = s.ctx().bool_val(true);
         auto&& assertions = s.assertions();
         for (auto&& i = 0U; i < assertions.size(); ++i) pp = pp && assertions[i];
-        auto&& smtlib2_state = Z3_benchmark_to_smtlib_string(s.ctx(), "DBG", 0, 0, 0, 0, 0, pp);
-        dbg << smtlib2_state << endl;
+        auto&& smtlib2_state = Z3_benchmark_to_smtlib_string(s.ctx(), uuid.unparsed(), 0, 0, 0, 0, 0, pp);
+
+        std::ofstream dump{ dump_dir.getUnsafe() + "/" + uuid.unparsed() + ".smt2" };
+
+        if (dump) {
+            dump << smtlib2_state << std::endl;
+        } else {
+            wtf << "Could not dump Z3 state to: " << dump_dir.getUnsafe() << endl;
+        }
     }
 
     {
