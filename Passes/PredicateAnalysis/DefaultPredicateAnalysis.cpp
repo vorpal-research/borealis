@@ -60,7 +60,7 @@ public:
         );
     }
 
-    void visitICmpInst(llvm::ICmpInst& I) {
+    void visitCmpInst(llvm::CmpInst& I) {
         using llvm::ConditionType;
         using llvm::Value;
 
