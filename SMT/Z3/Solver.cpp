@@ -86,7 +86,7 @@ Solver::check_result Solver::check(
     if (auto&& dump_dir = dump_smt2_state.get()) {
         auto&& uuid = UUID::generate();
 
-        auto&& pp = s.ctx().bool_val(true);
+        auto&& pp = z3impl::asAxiom(pred);
         auto&& assertions = s.assertions();
         for (auto&& i = 0U; i < assertions.size(); ++i) pp = pp && assertions[i];
         auto&& smtlib2_state = Z3_benchmark_to_smtlib_string(s.ctx(), uuid.unparsed(), 0, 0, 0, 0, 0, pp);
