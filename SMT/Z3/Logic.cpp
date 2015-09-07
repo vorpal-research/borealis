@@ -63,6 +63,7 @@ std::string ValueExpr::toSmtLib() const {
 ValueExpr ValueExpr::simplify() const {
     z3::params params(this->pimpl->inner.ctx());
 
+    // XXX: Push to settings???
     params.set(":pull-cheap-ite", true);
     params.set(":push-bv-ite", false);
     params.set(":expand-select-store", true);

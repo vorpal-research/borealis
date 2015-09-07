@@ -7,6 +7,8 @@
 
 #include "SMT/Z3/ExecutionContext.h"
 
+#include <unordered_set>
+
 namespace borealis {
 
 static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
@@ -38,7 +40,7 @@ void ExecutionContext::memory(const MemArray& value) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void ExecutionContext::initGepBounds() {
-    if(CraigColtonMode.get(false)) {
+    if (CraigColtonMode.get(false)) {
         memArrays.emplace(
             GEP_BOUNDS_ID,
             factory.getDefaultMemoryArray(GEP_BOUNDS_ID, 0)
@@ -139,11 +141,7 @@ ExecutionContext& ExecutionContext::switchOn(
     this->globalPtr = merged.globalPtr;
     this->localPtr = merged.localPtr;
 
-    for(auto&& ctx : contexts) {
-        auto&& cax = ctx.second.contextAxioms;
-        this->contextAxioms.insert(this->contextAxioms.begin(), cax.begin(), cax.end());
-    }
-
+    this->contextAxioms = merged.contextAxioms;
 
     return *this;
 }
@@ -180,6 +178,17 @@ ExecutionContext ExecutionContext::mergeMemory(
         res.set(id, MemArray::merge(name, defaultContext.get(id), alternatives));
     }
 
+    // Merge context axioms
+    auto bool_hash = [](Bool b) { return logic::z3impl::asAxiom(b).hash(); };
+    auto bool_eq = [](Bool a, Bool b) { return z3::eq(logic::z3impl::asAxiom(a), logic::z3impl::asAxiom(b)); };
+
+    auto&& mergedAxioms = std::unordered_set<Bool, decltype(bool_hash), decltype(bool_eq)>(16, bool_hash, bool_eq);
+    for (auto&& e : contexts) {
+        auto&& cax = e.second.contextAxioms;
+        mergedAxioms.insert(cax.begin(), cax.end());
+    }
+    res.contextAxioms = std::vector<Bool>(mergedAxioms.begin(), mergedAxioms.end());
+
     return res;
 };
 
@@ -187,7 +196,7 @@ ExecutionContext ExecutionContext::mergeMemory(
 
 ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
 
-    if(!CraigColtonMode.get(false)) return gepBounds().select<Integer>(p);
+    if (not CraigColtonMode.get(false)) return gepBounds().select<Integer>(p);
 
     auto&& zero = factory.getIntConst(0);
 
@@ -226,7 +235,7 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
 
 void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
 
-    if(CraigColtonMode.get(false)) {
+    if (CraigColtonMode.get(false)) {
         gepBounds(gepBounds().store(p, bound));
     } else {
         contextAxioms.push_back(getBound(p) == bound);

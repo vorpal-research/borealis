@@ -84,21 +84,24 @@ public:
     }
     template<class ExprClass>
     void writeExprRangeToMemory(Pointer from, size_t size, ExprClass val) {
-        auto currentMemory = memory();
-        auto newMem = factory.getEmptyMemoryArray(MEMORY_ID);
-        std::function<Bool(Pointer)> fun = [=](Pointer inner){
+        auto&& currentMemory = memory();
+
+        auto&& newMem = factory.getEmptyMemoryArray(MEMORY_ID);
+
+        std::function<Bool(Pointer)> fun = [=](Pointer inner) {
             return
                 factory.if_(inner >= from && inner < from + size)
                        .then_(newMem.select<ExprClass>(inner) == val)
                        .else_(newMem.select<ExprClass>(inner) == currentMemory.select<ExprClass>(inner));
         };
-        std::function<std::vector<Dynamic>(Pointer)> patterns = [=](Pointer inner){
+        std::function<std::vector<Dynamic>(Pointer)> patterns = [=](Pointer inner) {
             return util::make_vector(Dynamic(newMem.select<ExprClass>(inner)));
         };
 
-        auto axiom = factory.forAll(fun, patterns);
+        auto&& axiom = factory.forAll(fun, patterns);
 
         contextAxioms.push_back(axiom);
+
         return memory(newMem);
     }
 
