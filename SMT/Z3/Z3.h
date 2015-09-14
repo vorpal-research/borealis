@@ -28,13 +28,16 @@ struct Z3 {
     // logic type to represent boolean expressions
     using Bool = z3_::logic::Bool;
     // logic type to represent pointers
-    using Pointer = z3_::logic::BitVector<32>;
+    using Pointer = z3_::logic::BitVector<64>;
     // logic type to represent memory units
-    using Byte = z3_::logic::BitVector<Pointer::bitsize>;
+    using Byte = z3_::logic::BitVector<64>;
     // logic type to represent integers
-    using Integer = z3_::logic::BitVector<Pointer::bitsize>;
+    using Integer = z3_::logic::DynBitVectorExpr;
     // logic type to represent reals
-    using Real = z3_::logic::BitVector<Pointer::bitsize>;
+    using Real = z3_::logic::BitVector<64>;
+    // bit vector
+    template<size_t N>
+    using BV = z3_::logic::BitVector<N>;
     // dynamic bit vector
     using DynBV = z3_::logic::DynBitVectorExpr;
     // unsigned comparable type

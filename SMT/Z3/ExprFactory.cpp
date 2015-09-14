@@ -60,12 +60,12 @@ Z3::Bool ExprFactory::getFalse() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Z3::Integer ExprFactory::getIntVar(const std::string& name, bool fresh) {
-    return fresh ? Integer::mkFreshVar(*ctx, name) : Integer::mkVar(*ctx, name);
+Z3::Integer ExprFactory::getIntVar(const std::string& name, unsigned int size, bool fresh) {
+    return fresh ? Integer::mkFreshSizedVar(*ctx, name, size) : Integer::mkSizedVar(*ctx, name, size);
 }
 
-Z3::Integer ExprFactory::getIntConst(int v) {
-    return Integer::mkConst(*ctx, v);
+Z3::Integer ExprFactory::getIntConst(int v, unsigned int size) {
+    return Integer::mkSizedConst(*ctx, v, size);
 }
 
 Z3::Real ExprFactory::getRealVar(const std::string& name, bool fresh) {
@@ -121,9 +121,10 @@ Z3::Dynamic ExprFactory::getVarByTypeAndName(
         const std::string& name,
         bool fresh) {
     using llvm::isa;
+    using llvm::dyn_cast;
 
-    if (isa<type::Integer>(type))
-        return getIntVar(name, fresh);
+    if (auto ti = dyn_cast<type::Integer>(type))
+        return getIntVar(name, ti->getBitsize(), fresh);
     else if (isa<type::Float>(type))
         return getRealVar(name, fresh);
     else if (isa<type::Bool>(type))

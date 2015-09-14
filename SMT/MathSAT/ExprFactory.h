@@ -25,10 +25,12 @@ public:
 
     static size_t sizeForType(Type::Ptr type) {
         using llvm::isa;
-        return isa<type::Integer>(type) ? Integer::bitsize :
+        using llvm::cast;
+        return isa<type::Integer>(type) ? cast<type::Integer>(type)->getBitsize() :
                isa<type::Pointer>(type) ? Pointer::bitsize :
                isa<type::Array>(type)   ? Pointer::bitsize : // FIXME: ???
                isa<type::Float>(type)   ? Real::bitsize :
+               isa<type::Bool>(type)    ? 1 :
                util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                         "Cannot acquire bitsize for type " + util::toString(*type));
     }
@@ -52,8 +54,8 @@ public:
     Bool getTrue();
     Bool getFalse();
     // Integers
-    Integer getIntVar(const std::string& name, bool fresh = false);
-    Integer getIntConst(int v);
+    Integer getIntVar(const std::string& name, unsigned int size = Byte::bitsize, bool fresh = false);
+    Integer getIntConst(int v, unsigned int size = Byte::bitsize);
     // Reals
     Real getRealVar(const std::string& name, bool fresh = false);
     Real getRealConst(int v);

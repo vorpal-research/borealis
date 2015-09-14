@@ -20,31 +20,34 @@ class Solver;
 }
 
 struct MathSAT {
-    typedef mathsat_::ExprFactory ExprFactory;
-    typedef mathsat_::ExecutionContext ExecutionContext;
-    typedef mathsat_::Solver Solver;
+    using ExprFactory = mathsat_::ExprFactory;
+    using ExecutionContext = mathsat_::ExecutionContext;
+    using Solver = mathsat_::Solver;
 
     // logic type to represent boolean expressions
-    typedef mathsat_::logic::Bool Bool;
+    using Bool = mathsat_::logic::Bool;
     // logic type to represent pointers
-    typedef mathsat_::logic::BitVector<32> Pointer;
+    using Pointer = mathsat_::logic::BitVector<64>;
     // logic type to represent memory units
-    typedef mathsat_::logic::BitVector<Pointer::bitsize> Byte;
+    using Byte = mathsat_::logic::BitVector<64>;
     // logic type to represent integers
-    typedef mathsat_::logic::BitVector<Pointer::bitsize> Integer;
+    using Integer = mathsat_::logic::DynBitVectorExpr;
     // logic type to represent reals
-    typedef mathsat_::logic::BitVector<Pointer::bitsize> Real;
+    using Real = mathsat_::logic::BitVector<64>;
+    // bit vector
+    template<size_t N>
+    using BV = mathsat_::logic::BitVector<N>;
     // dynamic bit vector
-    typedef mathsat_::logic::DynBitVectorExpr DynBV;
+    using DynBV = mathsat_::logic::DynBitVectorExpr;
     // unsigned comparable type
-    typedef mathsat_::logic::UComparableExpr UComparable;
+    using UComparable = mathsat_::logic::UComparableExpr;
     // dynamic logic type
-    typedef mathsat_::logic::SomeExpr Dynamic;
+    using Dynamic = mathsat_::logic::SomeExpr;
 
     template<class Elem, class Index> using ArrayImpl = mathsat_::logic::InlinedFuncArray<Elem, Index>;
 
     // memory array
-    typedef mathsat_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl> MemArray;
+    using MemArray = mathsat_::logic::ScatterArray<Pointer, Byte::bitsize, ArrayImpl>;
 
 };
 

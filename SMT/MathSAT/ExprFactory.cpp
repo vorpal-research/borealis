@@ -54,12 +54,12 @@ MathSAT::Bool ExprFactory::getFalse() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-MathSAT::Integer ExprFactory::getIntVar(const std::string& name, bool fresh) {
-    return fresh ? Integer::mkFreshVar(*env, name) : Integer::mkVar(*env, name);
+MathSAT::Integer ExprFactory::getIntVar(const std::string& name, unsigned int size, bool fresh) {
+    return fresh ? Integer::mkFreshSizedVar(*env, name, size) : Integer::mkSizedVar(*env, name, size);
 }
 
-MathSAT::Integer ExprFactory::getIntConst(int v) {
-    return Integer::mkConst(*env, v);
+MathSAT::Integer ExprFactory::getIntConst(int v, unsigned int size) {
+    return Integer::mkSizedConst(*env, v, size);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,9 +107,10 @@ MathSAT::Dynamic ExprFactory::getVarByTypeAndName(
         const std::string& name,
         bool fresh) {
     using llvm::isa;
+    using llvm::dyn_cast;
 
-    if (isa<type::Integer>(type))
-        return getIntVar(name, fresh);
+    if (auto ti = dyn_cast<type::Integer>(type))
+        return getIntVar(name, ti->getBitsize(), fresh);
     else if (isa<type::Float>(type))
         return getRealVar(name, fresh);
     else if (isa<type::Bool>(type))
