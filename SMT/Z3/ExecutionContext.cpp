@@ -194,13 +194,13 @@ ExecutionContext ExecutionContext::mergeMemory(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
+ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bitSize) {
 
-    if (not CraigColtonMode.get(false)) return gepBounds().select<Integer>(p);
+    if (not CraigColtonMode.get(false)) return gepBounds().select(p, bitSize);
 
-    auto&& zero = factory.getIntConst(0);
+    auto&& zero = factory.getIntConst(0, bitSize);
 
-    auto storedBound = [this](auto ptr){ return readProperty<Integer>(GEP_BOUNDS_ID, ptr); };
+    auto storedBound = [&](auto ptr) -> Integer { return readProperty(GEP_BOUNDS_ID, ptr, bitSize); };
 
     auto&& pSize = storedBound(p);
 
@@ -228,17 +228,16 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
                .then_(baseSize)
                .else_(
                     factory.if_(UComparable(baseSize).ugt(p - base))
-                          .then_(baseSize - (p - base))
-                          .else_(zero)
+                           .then_(baseSize - (p - base))
+                           .else_(zero)
         );
 }
 
 void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
-
     if (CraigColtonMode.get(false)) {
-        gepBounds(gepBounds().store(p, bound));
+        gepBounds( gepBounds().store(p, bound.adapt<Byte>()) );
     } else {
-        contextAxioms.push_back(getBound(p) == bound);
+        contextAxioms.push_back(getBound(p, bound.getBitSize()) == bound);
     }
 }
 

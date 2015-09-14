@@ -605,6 +605,11 @@ public:
         }
     }
 
+    template<class Expr>
+    DynBitVectorExpr adapt(GUARDED(void*, Expr::bitsize >= 0) = nullptr) const {
+        return adapt(Expr::bitsize);
+    }
+
     DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
         size_t sz = std::max(getBitSize(), shift.getBitSize());
         DynBitVectorExpr w = this->growTo(sz);

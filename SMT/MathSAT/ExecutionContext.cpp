@@ -147,8 +147,8 @@ ExecutionContext ExecutionContext::mergeMemory(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p) {
-    return readProperty<Integer>(GEP_BOUNDS_ID, p);
+ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bitSize) {
+    return readProperty(GEP_BOUNDS_ID, p, bitSize);
 }
 
 void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
