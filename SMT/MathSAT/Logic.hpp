@@ -595,6 +595,16 @@ public:
         };
     }
 
+    DynBitVectorExpr adapt(size_t N) const {
+        if (N > getBitSize()) {
+            return zgrowTo(N);
+        } else if (N < getBitSize()) {
+            return extract(N - 1, 0);
+        } else {
+            return *this;
+        }
+    }
+
     DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
         size_t sz = std::max(getBitSize(), shift.getBitSize());
         DynBitVectorExpr w = this->growTo(sz);
@@ -604,6 +614,19 @@ public:
         auto axm = msatimpl::spliceAxioms(w, s);
         return DynBitVectorExpr{ res, axm };
     }
+
+    static DynBitVectorExpr mkSizedConst(mathsat::Env& env, int value, size_t bitSize) {
+        return DynBitVectorExpr{ env.bv_val(value, bitSize) };
+    }
+
+    static DynBitVectorExpr mkSizedVar(mathsat::Env& env, const std::string& name, size_t bitSize) {
+        return DynBitVectorExpr{ env.bv_const(name, bitSize) };
+    }
+
+    static DynBitVectorExpr mkFreshSizedVar(mathsat::Env& env, const std::string& name, size_t bitSize) {
+        return DynBitVectorExpr{ env.fresh_constant(name, env.bv_sort(bitSize)) };
+    }
+
 ASPECT_END
 
 #define BIN_OP(OP) \
@@ -621,6 +644,102 @@ ASPECT_END
     BIN_OP(<<)
 
 #undef BIN_OP
+
+#define BIN_OP(OP) \
+    template<size_t N> \
+    BitVector<N> operator OP(const DynBitVectorExpr& lhv, const BitVector<N>& rhv) { \
+        return BitVector<N>(lhv.adapt(N)) OP rhv; \
+    }
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+
+#undef BIN_OP
+
+#define BIN_OP(OP) \
+    template<size_t N> \
+    BitVector<N> operator OP(const BitVector<N>& lhv, const DynBitVectorExpr& rhv) { \
+        return lhv OP BitVector<N>(rhv.adapt(N)); \
+    }
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+
+#undef BIN_OP
+
+#define BIN_OP(OP) \
+    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv, int rhv);
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+
+#undef BIN_OP
+
+#define BIN_OP(OP) \
+    DynBitVectorExpr operator OP(int lhv, const DynBitVectorExpr& rhv);
+
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(*)
+    BIN_OP(/)
+
+#undef BIN_OP
+
+#define BOOL_OP(OP) \
+    Bool operator OP(const DynBitVectorExpr& lhv, const DynBitVectorExpr& rhv);
+
+    BOOL_OP(==)
+    BOOL_OP(!=)
+    BOOL_OP(>)
+    BOOL_OP(>=)
+    BOOL_OP(<)
+    BOOL_OP(<=)
+
+#undef BOOL_OP
+
+#define UN_OP(OP) \
+    DynBitVectorExpr operator OP(const DynBitVectorExpr& lhv);
+
+    UN_OP(-)
+    UN_OP(~)
+
+#undef UN_OP
+
+
+
+template<size_t N>
+struct merger<BitVector<N>, DynBitVectorExpr> {
+    typedef BitVector<N> type;
+
+    static type app(BitVector<N> bv0) {
+        return bv0;
+    }
+
+    static type app(DynBitVectorExpr bv1) {
+        return bv1.adapt(N);
+    }
+};
+
+template<size_t N>
+struct merger<DynBitVectorExpr, BitVector<N>> {
+    typedef BitVector<N> type;
+
+    static type app(DynBitVectorExpr bv0) {
+        return bv0.adapt(N);
+    }
+
+    static type app(BitVector<N> bv1) {
+        return bv1;
+    }
+};
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -956,7 +1075,7 @@ BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
 }
 
 template<size_t ElemSize = 8>
-SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
+SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes, size_t bitSize) {
     typedef BitVector<ElemSize> Byte;
 
     using borealis::util::toString;
@@ -972,7 +1091,7 @@ SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes) {
         axiom = msatimpl::spliceAxioms(msatimpl::getAxiom(bytes[i]), axiom);
     }
 
-    return SomeExpr{ head, axiom };
+    return DynBitVectorExpr{ head, axiom }.adapt(bitSize);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -995,10 +1114,10 @@ public:
 
     SomeExpr select(Index i, size_t elemBitSize) const {
         std::vector<Byte> bytes;
-        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
+        for (size_t j = 0; j <= (elemBitSize - 1)/ElemSize; ++j) {
             bytes.push_back(inner[i+j]);
         }
-        return concatBytesDynamic(bytes);
+        return concatBytesDynamic(bytes, elemBitSize);
     }
 
     template<class Elem>
@@ -1006,7 +1125,7 @@ public:
         enum{ elemBitSize = Elem::bitsize };
 
         std::vector<Byte> bytes;
-        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
+        for (size_t j = 0; j <= (elemBitSize - 1)/ElemSize; ++j) {
             bytes.push_back(inner[i+j]);
         }
         return concatBytes<elemBitSize>(bytes);
@@ -1027,13 +1146,13 @@ public:
         std::vector<Byte> bytes = splitBytes<ElemSize>(e);
 
         std::vector<std::pair<Index, Byte>> cases;
-        for (size_t j = 0; j < elemBitSize/ElemSize; ++j) {
+        for (size_t j = 0; j <= (elemBitSize - 1)/ElemSize; ++j) {
             cases.push_back({ i+j, bytes[j] });
         }
         return inner.store(cases);
     }
 
-    template<class Elem>
+    template<class Elem, GUARD(Elem::bitsize >= 0)>
     ScatterArray store(Index i, Elem e) {
         return store(i, e, Elem::bitsize);
     }
