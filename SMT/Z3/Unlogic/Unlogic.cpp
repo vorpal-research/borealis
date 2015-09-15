@@ -17,10 +17,10 @@ namespace unlogic {
 USING_SMT_LOGIC(Z3);
 
 Term::Ptr undoBv(const z3::expr& expr, const FactoryNest& FN) {
-    long long i;
-    auto res = Z3_get_numeral_int64(expr.ctx(), expr, &i);
+    unsigned long long i;
+    auto res = Z3_get_numeral_uint64(expr.ctx(), expr, &i);
     ASSERT(res != 0, "Something bad occurs while getting int value from Z3 expression");
-    return FN.Term->getIntTerm(i, llvm::Signedness::Unsigned);
+    return FN.Term->getIntTerm(i, expr.get_sort().bv_size(), llvm::Signedness::Unknown);
 }
 
 Term::Ptr undoBool(const z3::expr& expr, const FactoryNest& FN) {
@@ -30,10 +30,8 @@ Term::Ptr undoBool(const z3::expr& expr, const FactoryNest& FN) {
     } else if (res == Z3_L_FALSE) {
         return FN.Term->getFalseTerm();
     } else {
-        //return FN.Term->getFalseTerm();
         // FIXME: think about dealing with bool unknowns
-        dbgs() << res << endl;
-        BYE_BYE(Term::Ptr, "Trying to unbool");
+        BYE_BYE(Term::Ptr, "Trying to unbool z3::unknown");
     }
 }
 
@@ -43,9 +41,9 @@ Term::Ptr undoReal(const z3::expr& expr, const FactoryNest& FN) {
     if (res != 0) {
         double dn = n;
         double dd = d;
-        return FN.Term->getOpaqueConstantTerm( dn / dd);
+        return FN.Term->getOpaqueConstantTerm(dn / dd);
     } else {
-        // FixMe sam: what to do when we can't get rational from Z3?
+        // FIXME: what to do when we can't get the rational from Z3?
         return FN.Term->getOpaqueConstantTerm(std::numeric_limits<double>::max());
     }
 }
@@ -53,9 +51,8 @@ Term::Ptr undoReal(const z3::expr& expr, const FactoryNest& FN) {
 Term::Ptr undoThat(Z3::Dynamic dyn) {
     FactoryNest FN(nullptr);
 
-    auto expr = logic::z3impl::getExpr(dyn);
-    dbgs() << expr << endl;
-    ASSERT(expr.is_numeral() || expr.is_bool(), "Trying to unlogic non-numeral or bool.");
+    auto&& expr = logic::z3impl::getExpr(dyn);
+    ASSERT(expr.is_numeral() || expr.is_bool(), "Trying to unlogic non-numeral or bool");
 
     if (expr.is_bv()) {
         return undoBv(expr, FN);
@@ -65,7 +62,7 @@ Term::Ptr undoThat(Z3::Dynamic dyn) {
         return undoBool(expr, FN);
     }
 
-    BYE_BYE(Term::Ptr, "Unsupported numeral type.");
+    BYE_BYE(Term::Ptr, "Unsupported numeral type");
 }
 
 } // namespace unlogic

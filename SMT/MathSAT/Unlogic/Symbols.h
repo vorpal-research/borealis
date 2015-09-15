@@ -76,9 +76,11 @@ public:
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
         if (expr_.is_bool()) {
             return FN.Term->getValueTerm(FN.Type->getBool(), name_);
+        } else if (expr_.is_bv()) {
+            return FN.Term->getValueTerm(FN.Type->getInteger(expr_.get_sort().bv_size()), name_);
         }
-        // FIXME sam Should values always convert to integers?
-        return FN.Term->getValueTerm(FN.Type->getInteger(), name_);
+        // FIXME: Should values always convert to integers?
+        BYE_BYE(Term::Ptr, "Unsupported numeral type");
     }
 };
 
@@ -111,7 +113,7 @@ public:
 class ConstantSymbol : public AbstractSymbol {
 public:
     ConstantSymbol(const mathsat::Expr& expr)
-        : AbstractSymbol(MSAT_TAG_FALSE, 0, expr) {}
+        : AbstractSymbol(MSAT_TAG_FALSE, 0, expr) {} // XXX: MSAT_TAG_FALSE???
 
     virtual Term::Ptr undoThat(FactoryNest FN) const override {
         USING_SMT_LOGIC(MathSAT);
@@ -121,7 +123,7 @@ public:
         msat_term_to_number(expr_.env(), expr_, q);
         // if q = m / 1, q is an integer
         if (mpz_get_si(mpq_denref(q)) == 1) {
-            return FN.Term->getIntTerm(mpz_get_si(mpq_numref(q)));
+            return FN.Term->getIntTerm(mpz_get_si(mpq_numref(q)), 64); // FIXME: 64???
         } else {
             return FN.Term->getRealTerm(mpq_get_d(q));
         }
@@ -263,8 +265,6 @@ public:
 
 class LoadSymbol : public AbstractSymbol {
 
-    static int idx_;
-
 public:
     LoadSymbol(const mathsat::Expr& expr)
         : AbstractSymbol(MSAT_TAG_UNKNOWN, expr.num_args(), expr) {}
@@ -275,7 +275,7 @@ public:
         auto _ = expr_.decl().name(); // XXX: Do NOT remove this!
         llvm::StringRef orig_name(_);
 
-        if ( ! (orig_name.startswith("(initial)") && numArgs_ == 1) ) {
+        if ( not (orig_name.startswith("(initial)") && numArgs_ == 1) ) {
             BYE_BYE(Term::Ptr, "Only (initial)<...> UF is supported");
         }
 
@@ -284,6 +284,7 @@ public:
         // FIXME: Fix this crap.
         static const std::string memory_id = "$$__memory__$$";
         static const std::string gep_bound_id = "$$__gep_bound__$$";
+        static int idx_ = 0;
 
         std::function<Term::Ptr(Term::Ptr)> ctor;
 
@@ -298,12 +299,12 @@ public:
         if (args_[0]->isTerminal()) {
             return ctor(args_[0]->undoThat(FN));
         } else {
-            auto name = "(initial)" + memory_name + "(idx:" + util::toString(LoadSymbol::idx_++) + ")";
-            auto idx = FN.Term->getValueTerm(
-                FN.Type->getInteger(),
+            auto&& name = "(initial)" + memory_name + "(idx:" + util::toString(idx_++) + ")";
+            auto&& idx = FN.Term->getValueTerm(
+                FN.Type->getInteger(0),
                 name
             );
-            auto axs = FN.Term->getCmpTerm(
+            auto&& axs = FN.Term->getCmpTerm(
                 llvm::ConditionType::EQ,
                 idx,
                 args_[0]->undoThat(FN)
