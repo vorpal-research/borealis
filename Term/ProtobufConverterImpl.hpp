@@ -17,6 +17,7 @@
 #include "Protobuf/Gen/Term/AxiomTerm.pb.h"
 #include "Protobuf/Gen/Term/BinaryTerm.pb.h"
 #include "Protobuf/Gen/Term/BoundTerm.pb.h"
+#include "Protobuf/Gen/Term/CastTerm.pb.h"
 #include "Protobuf/Gen/Term/CmpTerm.pb.h"
 #include "Protobuf/Gen/Term/ConstTerm.pb.h"
 #include "Protobuf/Gen/Term/GepTerm.pb.h"
@@ -160,6 +161,30 @@ struct protobuf_traits_impl<BoundTerm> {
             const proto::BoundTerm& t) {
         auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
         return Term::Ptr{ new BoundTerm(base->getType(), rhv) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<CastTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::CastTerm> toProtobuf(const CastTerm& t) {
+        auto res = util::uniq(new proto::CastTerm());
+        res->set_allocated_rhv(
+            TermConverter::toProtobuf(*t.getRhv()).release()
+        );
+        res->set_signextend(t.isSignExtend());
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Term::Ptr base,
+            const proto::CastTerm& t) {
+        auto rhv = TermConverter::fromProtobuf(fn, t.rhv());
+        auto signExtend = t.signextend();
+        return Term::Ptr{ new CastTerm(base->getType(), signExtend, rhv) };
     }
 };
 

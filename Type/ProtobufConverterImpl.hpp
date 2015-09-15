@@ -20,6 +20,7 @@
 #include "Protobuf/Gen/Type/RecordBodyRef.pb.h"
 #include "Protobuf/Gen/Type/TypeError.pb.h"
 #include "Protobuf/Gen/Type/UnknownType.pb.h"
+#include "Protobuf/Gen/Util/Signedness.pb.h"
 
 #include "Type/TypeVisitor.hpp"
 
@@ -74,10 +75,29 @@ struct protobuf_traits<Type> {
 
 MK_EMPTY_TYPE_PB_IMPL(type, Bool);
 MK_EMPTY_TYPE_PB_IMPL(type, Float);
-MK_EMPTY_TYPE_PB_IMPL(type, Integer);
 MK_EMPTY_TYPE_PB_IMPL(type, UnknownType);
 
 #undef MK_EMPTY_TYPE_PB_IMPL
+
+template<>
+struct protobuf_traits_impl<type::Integer> {
+    typedef type::Integer normal_t;
+    typedef type::proto::Integer proto_t;
+    typedef FactoryNest context_t;
+
+    static std::unique_ptr<proto_t> toProtobuf(const normal_t& p) {
+        auto res = util::uniq(new proto_t());
+
+        res->set_bitsize(p.getBitsize());
+        res->set_signedness(static_cast<proto::Signedness>(p.getSignedness()));
+
+        return std::move(res);
+    }
+
+    static Type::Ptr fromProtobuf(const context_t& fn, const proto_t& p) {
+        return fn.Type->getInteger(p.bitsize(), static_cast<llvm::Signedness>(p.signedness()));
+    }
+};
 
 template<>
 struct protobuf_traits_impl<type::Pointer> {
