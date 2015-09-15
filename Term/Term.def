@@ -9,6 +9,7 @@
 #include "Term/AxiomTerm.h"
 #include "Term/BoundTerm.h"
 #include "Term/BinaryTerm.h"
+#include "Term/CastTerm.h"
 #include "Term/CmpTerm.h"
 #include "Term/ConstTerm.h"
 #include "Term/GepTerm.h"
@@ -40,6 +41,7 @@ HANDLE_TERM(Argument, ArgumentTerm)
 HANDLE_TERM(Axiom, AxiomTerm)
 HANDLE_TERM(Bound, BoundTerm)
 HANDLE_TERM(Binary, BinaryTerm)
+HANDLE_TERM(Cast, CastTerm)
 HANDLE_TERM(Cmp, CmpTerm)
 HANDLE_TERM(Const, ConstTerm)
 HANDLE_TERM(Gep, GepTerm)
