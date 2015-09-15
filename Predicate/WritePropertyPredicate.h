@@ -83,9 +83,11 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
         ASSERT(not l.empty(), "Property write with a non-pointer value");
         auto&& lp = l.getUnsafe();
 
-        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx).template to<DynBV>();
+        ASSERT(not r.empty(), "Property write with a non-BV value");
+        auto&& rbv = r.getUnsafe();
 
-        ctx->writeProperty(strPropName, lp, r);
+        ctx->writeProperty(strPropName, lp, rbv);
 
         return ef.getTrue();
     }

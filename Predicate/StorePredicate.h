@@ -74,9 +74,11 @@ struct SMTImpl<Impl, StorePredicate> {
         ASSERT(not l.empty(), "Store dealing with a non-pointer value");
         auto&& lp = l.getUnsafe();
 
-        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx).template to<DynBV>();
+        ASSERT(not r.empty(), "Store dealing with a non-BV value");
+        auto&& rbv = r.getUnsafe();
 
-        ctx->writeExprToMemory(lp, r);
+        ctx->writeExprToMemory(lp, rbv);
 
         return ef.getTrue();
     }
