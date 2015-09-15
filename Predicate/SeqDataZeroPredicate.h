@@ -68,8 +68,8 @@ struct SMTImpl<Impl, SeqDataZeroPredicate> {
             const SeqDataZeroPredicate* p,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
-        TRACE_FUNC;
 
+        TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
         ASSERTC(ctx != nullptr);
@@ -85,7 +85,7 @@ struct SMTImpl<Impl, SeqDataZeroPredicate> {
         static config::ConfigEntry<bool> SkipStaticInit("analysis", "skip-static-init");
         static config::ConfigEntry<bool> UseRangedStore("analysis", "use-range-stores");
         if (not SkipStaticInit.get(true)) {
-            if(UseRangedStore.get(false)) {
+            if (UseRangedStore.get(false)) {
                 ctx->writeExprRangeToMemory(base, p->getSize(), zero);
             } else {
                 for (auto i = 0U; i < p->getSize(); ++i) {
