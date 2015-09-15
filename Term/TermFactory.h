@@ -68,7 +68,7 @@ public:
 
     Term::Ptr getOpaqueVarTerm(const std::string& name);
     Term::Ptr getOpaqueBuiltinTerm(const std::string& name);
-    Term::Ptr getOpaqueConstantTerm(long long v, size_t bitSize);
+    Term::Ptr getOpaqueConstantTerm(long long v, size_t bitSize = 0x0);
     Term::Ptr getOpaqueConstantTerm(double v);
     Term::Ptr getOpaqueConstantTerm(bool v);
     Term::Ptr getOpaqueConstantTerm(const char* v);

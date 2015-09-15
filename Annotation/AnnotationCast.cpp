@@ -105,13 +105,13 @@ class TermConstructor : public anno::empty_visitor {
 
 public:
 
-    TermConstructor(TermFactory::Ptr tf): tf(tf) {}
+    TermConstructor(TermFactory::Ptr tf) : tf(tf) {}
 
     virtual void onDoubleConstant(double c) {
         term = tf->getOpaqueConstantTerm(c);
     }
     virtual void onIntConstant(int c) {
-        term = tf->getOpaqueConstantTerm((long long)c);
+        term = tf->getOpaqueConstantTerm((long long) c, /* unknown type */0x0);
     }
     virtual void onBoolConstant(bool v) {
         term = tf->getOpaqueConstantTerm(v);
@@ -137,10 +137,10 @@ public:
         rhv->accept(rhvtc);
 
         if (isCompare(op)) {
-            term = tf->getCmpTerm(convertCT(op), lhvtc.term, rhvtc.term );
-        } else if( op == bin_opcode::OPCODE_INDEX)  {
+            term = tf->getCmpTerm(convertCT(op), lhvtc.term, rhvtc.term);
+        } else if (op == bin_opcode::OPCODE_INDEX)  {
             term = tf->getOpaqueIndexingTerm(lhvtc.term, rhvtc.term);
-        } else if( op == bin_opcode::OPCODE_CALL) {
+        } else if (op == bin_opcode::OPCODE_CALL) {
             std::vector<Term::Ptr> args;
             struct list_expander: empty_visitor {
                 std::list<prod_t> ret;
@@ -150,29 +150,29 @@ public:
             };
             list_expander list_expander;
             rhv->accept(list_expander);
-            if(list_expander.ret.empty()) list_expander.ret = { rhv };
+            if (list_expander.ret.empty()) list_expander.ret = { rhv };
 
             args.reserve(list_expander.ret.size());
 
-            for(const auto& prod: list_expander.ret) {
+            for (auto&& prod : list_expander.ret) {
                 TermConstructor prodtc(tf);
                 prod->accept(prodtc);
                 args.push_back(prodtc.term);
             }
 
             term = tf->getOpaqueCallTerm(lhvtc.term, args);
-        } else if( op == bin_opcode::OPCODE_PROPERTY) {
+        } else if (op == bin_opcode::OPCODE_PROPERTY) {
             ASSERTC(llvm::isa<OpaqueVarTerm>(rhvtc.term));
 
-            auto prop = llvm::dyn_cast<OpaqueVarTerm>(rhvtc.term);
+            auto&& prop = llvm::dyn_cast<OpaqueVarTerm>(rhvtc.term);
             term = tf->getOpaqueMemberAccessTerm(lhvtc.term, prop->getVName());
-        } else if( op == bin_opcode::OPCODE_INDIR_PROPERTY) {
+        } else if (op == bin_opcode::OPCODE_INDIR_PROPERTY) {
             ASSERTC(llvm::isa<OpaqueVarTerm>(rhvtc.term));
 
-            auto prop = llvm::dyn_cast<OpaqueVarTerm>(rhvtc.term);
+            auto&& prop = llvm::dyn_cast<OpaqueVarTerm>(rhvtc.term);
             term = tf->getOpaqueMemberAccessTerm(lhvtc.term, prop->getVName(), true);
         } else {
-            term = tf->getBinaryTerm(convertAT(op), lhvtc.term, rhvtc.term );
+            term = tf->getBinaryTerm(convertAT(op), lhvtc.term, rhvtc.term);
         }
     }
 
@@ -182,7 +182,7 @@ public:
         TermConstructor rhvtc(tf);
 
         rhv->accept(rhvtc);
-        if(op == un_opcode::OPCODE_LOAD) {
+        if (op == un_opcode::OPCODE_LOAD) {
             term = tf->getLoadTerm(rhvtc.term);
         } else {
             term = tf->getUnaryTerm(convert(op), rhvtc.term);
@@ -194,8 +194,7 @@ public:
 
 } /* namespace */
 
-Annotation::Ptr borealis::fromParseResult(
-        const Locus& locus, const anno::command& cmd, TermFactory::Ptr tf) {
+Annotation::Ptr borealis::fromParseResult(const Locus& locus, const anno::command& cmd, TermFactory::Ptr tf) {
 
     std::vector<Term::Ptr> terms;
     terms.reserve(cmd.args_.size());
@@ -218,12 +217,10 @@ Annotation::Ptr borealis::fromParseResult(
 }
 
 Annotation::Ptr borealis::fromString(const Locus& locus, const std::string& text, TermFactory::Ptr TF) {
-    auto commands = anno::parse("// " + text);
-    if(commands.empty()) return nullptr;
+    auto&& commands = anno::parse("// " + text);
+    if (commands.empty()) return nullptr;
     ASSERTC(commands.size() == 1);
     return fromParseResult(locus, commands.front(), TF);
 }
 
 #include "Util/unmacros.h"
-
-

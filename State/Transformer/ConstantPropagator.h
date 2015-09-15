@@ -168,13 +168,13 @@ private:
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ArithType opcode, Lhv lhv, Rhv rhv,
-            GUARDED(void*, !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value) = nullptr) {
+            GUARDED(void*, not std::is_floating_point<Lhv>::value && not std::is_floating_point<Rhv>::value) = nullptr) {
         return FN.Term->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
     }
 
     template<class Lhv, class Rhv>
     Term::Ptr propagateTerm(llvm::ConditionType opcode, Lhv lhv, Rhv rhv,
-            GUARDED(void*, !std::is_floating_point<Lhv>::value && !std::is_floating_point<Rhv>::value) = nullptr) {
+            GUARDED(void*, not std::is_floating_point<Lhv>::value && not std::is_floating_point<Rhv>::value) = nullptr) {
         return FN.Term->getOpaqueConstantTerm(propagate(opcode, lhv, rhv));
     }
 

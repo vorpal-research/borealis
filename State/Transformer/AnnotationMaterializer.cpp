@@ -290,16 +290,9 @@ Term::Ptr AnnotationMaterializer::transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
     auto&& ret = forName(trm->getVName());
     if (ret.isInvalid()) failWith(trm->getVName() + " : variable not found in scope");
 
-//    FIXME: akhin WTF???
-//    auto&& bcType = ret.val->getType();
-//    if (ret.shouldBeDereferenced) {
-//        if (not bcType->isPointerTy()) failWith("wtf");
-//        bcType = bcType->getPointerElementType();
-//    }
-
     auto&& shouldBeDereferenced = ret.shouldBeDereferenced;
     // FIXME: Need to sort out memory model
-    //        Global arrays and structures break things...
+    //        Global arrays and structures break things
     if (auto* ptrType = llvm::dyn_cast<llvm::PointerType>(ret.val->getType())) {
         shouldBeDereferenced &= ptrType->getPointerElementType()->isSingleValueType();
     }
@@ -393,12 +386,13 @@ Annotation::Ptr materialize(
         FactoryNest FN,
         VariableInfoTracker* MI
 ) {
-    if (auto* logic = llvm::dyn_cast<LogicAnnotation>(annotation)){
-        AnnotationMaterializer am(*logic, FN, MI);
-        return am.doit();
+    Annotation::Ptr res;
+    if (auto logic = llvm::dyn_cast<LogicAnnotation>(annotation)) {
+        res = AnnotationMaterializer(*logic, FN, MI).doit();
     } else {
-        return annotation;
+        res = annotation;
     }
+    return res;
 }
 
 } // namespace borealis

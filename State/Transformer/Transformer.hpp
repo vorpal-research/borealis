@@ -51,7 +51,7 @@ protected:
 
     // FIXME: make this a mixin or smth?
     TermBuilder builder(Term::Ptr term) { return { FN.Term, term }; }
-    TermBuilder builder(long long val) { return { FN.Term, FN.Term->getOpaqueConstantTerm(val) }; }
+    TermBuilder builder(long long val, size_t bitSize = 0x0) { return { FN.Term, FN.Term->getOpaqueConstantTerm(val, bitSize) }; }
     TermBuilder null() { return { FN.Term, FN.Term->getNullPtrTerm() }; }
     TermBuilder invalid() { return { FN.Term, FN.Term->getInvalidPtrTerm() }; }
     TermBuilder ret(const llvm::Function* F) { return { FN.Term, FN.Term->getReturnValueTerm(F) }; }
