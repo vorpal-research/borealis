@@ -13,8 +13,6 @@ namespace borealis {
 namespace mathsat_ {
 namespace unlogic {
 
-int LoadSymbol::idx_ = 0;
-
 AbstractSymbol::Ptr SymbolFactory(const mathsat::Expr& expr) {
     if (expr.num_args() == 0) {
         if (msat_term_is_true(expr.env(), expr)) {
