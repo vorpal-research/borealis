@@ -64,6 +64,8 @@ protected:
     Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable = true);
     Term(const Term&) = default;
 
+    void update();
+
     friend struct protobuf_traits<Term>;
 
 public:
@@ -79,6 +81,13 @@ public:
 
     virtual bool equals(const Term* other) const;
     virtual size_t hashCode() const;
+
+    virtual Term::Ptr setType(Type::Ptr newtype) const {
+        auto&& res = std::unique_ptr<Term>{ new Term(*this) };
+        res->type = newtype;
+        res->update();
+        return Term::Ptr{ std::move(res) };
+    }
 
     static bool classof(const Term*) {
         return true;
@@ -122,16 +131,12 @@ struct TermCompare {
 namespace std {
 template<>
 struct hash<borealis::Term::Ptr> {
-    size_t operator()(const borealis::Term::Ptr& t) const {
+    size_t operator()(const borealis::Term::Ptr& t) const noexcept {
         return t->hashCode();
     }
 };
 template<>
-struct hash<const borealis::Term::Ptr> {
-    size_t operator()(const borealis::Term::Ptr& t) const {
-        return t->hashCode();
-    }
-};
+struct hash<const borealis::Term::Ptr> : hash<borealis::Term::Ptr> {};
 } // namespace std
 
 #define MK_COMMON_TERM_IMPL(CLASS) \
@@ -140,13 +145,19 @@ private: \
     CLASS(const Self&) = default; \
 public: \
     friend class TermFactory; \
-    friend struct protobuf_traits_impl<CLASS>; \
+    friend struct protobuf_traits_impl<Self>; \
     virtual ~CLASS() = default; \
     static bool classof(const Self*) { \
         return true; \
     } \
     static bool classof(const Term* t) { \
         return t->getClassTag() == class_tag<Self>(); \
+    } \
+    virtual Term::Ptr setType(Type::Ptr newtype) const override { \
+        auto&& res = std::unique_ptr<Self>{ new Self(*this) }; \
+        res->type = newtype; \
+        res->update(); \
+        return Term::Ptr{ std::move(res) }; \
     }
 
 #define TERM_ON_CHANGED(COND, CTOR) \

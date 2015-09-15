@@ -51,7 +51,7 @@ public:
         if (TypeUtils::isInvalid(type)) return type;
 
         if (llvm::isa<type::Integer>(type) || llvm::isa<type::Float>(type)) {
-            return TyF->getInteger();
+            return TyF->getInteger(1);
         } else {
             return TyF->getTypeError("Sign for non-numerical: " + util::toString(*type));
         }
@@ -78,7 +78,7 @@ struct SMTImpl<Impl, SignTerm> {
         auto&& rhv = rhvbv.getUnsafe();
         auto&& size = rhv.getBitSize();
 
-        return rhv.extract(size-1, size-1).zgrowTo(Integer::bitsize);
+        return rhv.extract(size-1, size-1);
     }
 };
 #include "Util/unmacros.h"

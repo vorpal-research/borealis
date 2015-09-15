@@ -52,7 +52,7 @@ struct SMTImpl<Impl, OpaqueIntConstantTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         TRACE_FUNC;
-        return ef.getIntConst(t->getValue());
+        return ef.getIntConst(t->getValue(), ExprFactory<Impl>::sizeForType(t->getType()));
     }
 };
 

@@ -65,7 +65,7 @@ struct SMTImpl<Impl, BoundTerm> {
         ASSERT(not r.empty(), "Bound read with non-pointer right side");
         auto&& rp = r.getUnsafe();
 
-        return ctx->getBound(rp);
+        return ctx->getBound(rp, ExprFactory::sizeForType(t->getType()));
     }
 };
 #include "Util/unmacros.h"

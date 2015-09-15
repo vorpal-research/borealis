@@ -75,6 +75,8 @@ struct SMTImpl<Impl, GepTerm> {
         TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
+        size_t gepBitSize = 64;
+
         auto&& base = SMT<Impl>::doit(t->getBase(), ef, ctx).template to<Pointer>();
 
         ASSERT(not base.empty(),
@@ -88,7 +90,7 @@ struct SMTImpl<Impl, GepTerm> {
             return p;
         }
 
-        auto&& shift = ef.getIntConst(0);
+        auto&& shift = ef.getIntConst(0, gepBitSize);
 
         auto* baseType = llvm::dyn_cast<type::Pointer>(t->getBase()->getType());
         ASSERTC(!!baseType);
@@ -129,13 +131,13 @@ struct SMTImpl<Impl, GepTerm> {
 
         }
 
-        auto diff = ctx->getBound(p) - shift;
-        auto zero = ef.getIntConst(0);
+        auto diff = ctx->getBound(p, gepBitSize) - shift;
+        auto zero = ef.getIntConst(0, gepBitSize);
         auto shifted = p + shift;
 
         static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
 
-        if(CraigColtonMode.get(false)) {
+        if (CraigColtonMode.get(false)) {
             if (t->isTriviallyInbounds()) {
                  return shifted;
             }
@@ -144,8 +146,9 @@ struct SMTImpl<Impl, GepTerm> {
                 not ef.isInvalidPtrExpr(shifted)
             );
         }
-        
+
         ctx->writeBound(shifted, diff);
+
         if (t->isTriviallyInbounds()) {
             return shifted;
         }

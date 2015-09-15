@@ -13,15 +13,21 @@ CastTerm::CastTerm(Type::Ptr type, bool signExtend, Term::Ptr rhv):
     Term(
         class_tag(*this),
         type,
-        "cast(" +
-            signExtend ? "+" : "" +
-            util::toString(*type) +
-            ", " +
-            rhv->getName() +
-        ")"
+        ""
     ), signExtend(signExtend) {
     subterms = { rhv };
+    update();
 };
+
+void CastTerm::update() {
+    name =
+        "cast(" +
+            std::string(signExtend ? "+" : "") +
+            util::toString(*type) +
+            ", " +
+            getRhv()->getName() +
+        ")";
+}
 
 Term::Ptr CastTerm::getRhv() const {
     return subterms[0];
