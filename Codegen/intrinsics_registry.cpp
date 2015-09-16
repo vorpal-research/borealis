@@ -153,7 +153,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
             return FN.State->Basic() +
                    FN.Predicate->getInequalityPredicate(
                        FN.Term->getArgumentTerm(F->arg_begin()),
-                       FN.Term->getIntTerm(0ULL),
+                       FN.Term->getIntTerm(0, FN.Type->cast(F->arg_begin()->getType())),
                        Locus(),
                        PredicateType::REQUIRES
                    );
@@ -188,7 +188,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
             return FN.State->Basic() +
                    FN.Predicate->getInequalityPredicate(
                        FN.Term->getArgumentTerm(F->arg_begin()),
-                       FN.Term->getIntTerm(0ULL),
+                       FN.Term->getIntTerm(0, FN.Type->cast(F->arg_begin()->getType())),
                        Locus(),
                        PredicateType::ENSURES
                    );
