@@ -173,7 +173,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
                        FN.Term->getCmpTerm(
                            llvm::ConditionType::GT,
                            FN.Term->getBoundTerm(ptr),
-                           FN.Term->getIntTerm(0)
+                           FN.Term->getIntTerm(0, 64, llvm::Signedness::Unsigned) // XXX: 64???
                        ),
                        FN.Term->getTrueTerm()
                );

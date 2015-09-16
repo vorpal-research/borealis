@@ -178,21 +178,28 @@ public:
 
         Value* lhv = &I;
         Value* rhv = I.getOperand(0);
+        bool signExtend = CastInst::CastOps::SExt == I.getOpcode();
 
         Term::Ptr lhvt = pass->FN.Term->getValueTerm(lhv);
         Term::Ptr rhvt = pass->FN.Term->getValueTerm(rhv);
 
-        if (isa<type::Bool>(lhvt->getType()) && ! isa<type::Bool>(rhvt->getType())) {
+        if (isa<type::Bool>(lhvt->getType()) and not isa<type::Bool>(rhvt->getType())) {
             rhvt = pass->FN.Term->getCmpTerm(
                 ConditionType::NEQ,
                 rhvt,
-                pass->FN.Term->getIntTerm(0ULL)
+                pass->FN.Term->getIntTerm(0, rhvt->getType())
             );
-        } else if (! isa<type::Bool>(lhvt->getType()) && isa<type::Bool>(rhvt->getType())) {
+        } else if (not isa<type::Bool>(lhvt->getType()) and isa<type::Bool>(rhvt->getType())) {
             lhvt = pass->FN.Term->getCmpTerm(
                 ConditionType::NEQ,
                 lhvt,
-                pass->FN.Term->getIntTerm(0ULL)
+                pass->FN.Term->getIntTerm(0, lhvt->getType())
+            );
+        } else {
+            rhvt = pass->FN.Term->getCastTerm(
+                lhvt->getType(),
+                signExtend,
+                rhvt
             );
         }
 
