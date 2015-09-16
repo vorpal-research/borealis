@@ -13,6 +13,7 @@
 #include "State/Transformer/AggregateTransformer.h"
 #include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/MemoryContextSplitter.h"
+#include "State/Transformer/Retyper.h"
 #include "State/Transformer/StateOptimizer.h"
 #include "Util/util.h"
 
@@ -126,6 +127,13 @@ void OneForOne::finalize() {
         for (auto&& v : util::viewContainerValues(instructionStates)) {
             v = so.transform(v);
         }
+    }
+
+    Retyper retyper{FN};
+
+    initialState = retyper.transform(initialState);
+    for (auto&& v : util::viewContainerValues(instructionStates)) {
+        v = retyper.transform(v);
     }
 }
 
