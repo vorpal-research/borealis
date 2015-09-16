@@ -606,7 +606,7 @@ public:
     }
 
     template<class Expr>
-    DynBitVectorExpr adapt(GUARDED(void*, Expr::bitsize >= 0) = nullptr) const {
+    Expr adapt(GUARDED(void*, Expr::bitsize >= 0) = nullptr) const {
         return adapt(Expr::bitsize);
     }
 
