@@ -51,7 +51,7 @@ TEST(Protobuf, protobuffy) {
                 TF->getBooleanTerm(false),
                 TF->getBinaryTerm(
                     llvm::ArithType::XOR,
-                    TF->getIntTerm(0xDEADBEEF),
+                    TF->getIntTerm(0xDEADBEEF, 0x0),
                     TF->getRealTerm(M_PI)
                 )
             )

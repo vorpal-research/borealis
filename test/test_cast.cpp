@@ -50,7 +50,7 @@ TEST(Cast, pair_matcher) {
     {
         auto TF = FactoryNest(nullptr).Term;
         auto lhv = TF->getOpaqueConstantTerm(true);
-        auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEFLL);
+        auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEF, 0x0);
 
         if (auto matched = match_pair<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>(lhv, rhv)) {
             EXPECT_EQ(true, matched->first->getValue());
@@ -70,7 +70,7 @@ TEST(Cast, tuple_matcher) {
     {
         auto TF = FactoryNest(nullptr).Term;
         auto lhv = TF->getOpaqueConstantTerm(true);
-        auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEFLL);
+        auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEF, 0x0);
 
         if (auto matched = match_tuple<OpaqueBoolConstantTerm, OpaqueIntConstantTerm>::doit(lhv, rhv)) {
             EXPECT_EQ(true, matched->get<0>()->getValue());

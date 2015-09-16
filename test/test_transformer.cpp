@@ -150,7 +150,7 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         // 5 - (20 / -5.4)
         auto testTerm = FN.Term->getBinaryTerm(
             ArithType::SUB,
-            FN.Term->getOpaqueConstantTerm(5LL),
+            FN.Term->getOpaqueConstantTerm(5, 0x0),
             FN.Term->getBinaryTerm(
                 ArithType::DIV,
                 FN.Term->getConstTerm(

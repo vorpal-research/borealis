@@ -114,7 +114,7 @@ TEST(ExecutionContext, mergeMemory) {
                     { cond_b, memory_with_b }
                 }
         );
-        Integer c = merged.readExprFromMemory<Integer>(ptr);
+        Integer c = merged.readExprFromMemory<Byte>(ptr);
 
         auto check_expr_in = [&](Bool e, Bool in)->bool {
 

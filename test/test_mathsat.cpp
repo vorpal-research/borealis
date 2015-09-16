@@ -339,17 +339,22 @@ TEST(MathSAT, mergeMemory) {
         memory_with_a.writeExprToMemory(ptr, a);
         memory_with_b.writeExprToMemory(ptr, b);
 
-        ExecutionContext merged = ExecutionContext::mergeMemory("merged",
-                default_memory, std::vector<std::pair<Bool, ExecutionContext>> {
-                        { cond_a, memory_with_a }, { cond_b, memory_with_b } });
-        Integer c = merged.readExprFromMemory<Integer>(ptr);
+        ExecutionContext merged = ExecutionContext::mergeMemory(
+                "merged",
+                default_memory,
+                std::vector<std::pair<Bool, ExecutionContext>> {
+                    { cond_a, memory_with_a },
+                    { cond_b, memory_with_b }
+                }
+        );
+        Integer c = merged.readExprFromMemory<Byte>(ptr);
 
         auto check_expr_in = [&](Bool e, Bool in)->bool {
 
             infos() << "Checking:" << endl
-            << e << endl
-            << "  in:" << endl
-            << in << endl;
+                    << e << endl
+                    << "  in:" << endl
+                    << in << endl;
 
             borealis::mathsat::Solver s(factory.unwrap());
 
@@ -359,7 +364,7 @@ TEST(MathSAT, mergeMemory) {
             s.add(msatimpl::asAxiom(implies(pred, !e)));
 
             infos() << "$CHECK$:" << endl
-            << implies(pred, !e) << endl;
+                    << implies(pred, !e) << endl;
 
             borealis::mathsat::Expr pred_e = msatimpl::getExpr(pred);
             msat_result r = s.check( {pred_e});
