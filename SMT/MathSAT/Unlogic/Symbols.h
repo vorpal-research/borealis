@@ -123,7 +123,7 @@ public:
         msat_term_to_number(expr_.env(), expr_, q);
         // if q = m / 1, q is an integer
         if (mpz_get_si(mpq_denref(q)) == 1) {
-            return FN.Term->getIntTerm(mpz_get_si(mpq_numref(q)), 64); // FIXME: 64???
+            return FN.Term->getIntTerm(mpz_get_si(mpq_numref(q)), expr_.get_sort().bv_size());
         } else {
             return FN.Term->getRealTerm(mpq_get_d(q));
         }
