@@ -660,39 +660,6 @@ ASPECT(ComparableExpr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class UComparableExpr;
-
-namespace impl {
-template<>
-struct generator<UComparableExpr> : generator<BitVector<1>> {
-    static bool check(z3::expr e) { return e.is_bv(); }
-};
-} // namespace impl
-
-ASPECT_BEGIN(UComparableExpr)
-public:
-
-#define DEF_OP(NAME) \
-Bool NAME(const UComparableExpr& other) { \
-    auto& ctx = z3impl::getContext(this); \
-    auto l = z3impl::getExpr(this); \
-    auto r = z3impl::getExpr(other); \
-    auto res = z3::to_expr(ctx, Z3_mk_bv##NAME(ctx, l, r)); \
-    auto axm = z3impl::spliceAxioms(*this, other); \
-    return Bool{ res, axm }; \
-}
-
-DEF_OP(ugt)
-DEF_OP(uge)
-DEF_OP(ult)
-DEF_OP(ule)
-
-#undef DEF_OP
-
-ASPECT_END
-
-////////////////////////////////////////////////////////////////////////////////
-
 class DynBitVectorExpr;
 
 namespace impl {
@@ -892,7 +859,41 @@ struct merger<DynBitVectorExpr, BitVector<N>> {
     }
 };
 
+////////////////////////////////////////////////////////////////////////////////
 
+class UComparableExpr;
+
+namespace impl {
+template<>
+struct generator<UComparableExpr> : generator<BitVector<1>> {
+    static bool check(z3::expr e) { return e.is_bv(); }
+};
+} // namespace impl
+
+ASPECT_BEGIN(UComparableExpr)
+public:
+
+#define DEF_OP(NAME) \
+    Bool NAME(const UComparableExpr& other) { \
+        auto&& ctx = z3impl::getContext(this); \
+        auto&& ll = DynBitVectorExpr(*this); \
+        auto&& rr = DynBitVectorExpr(other); \
+        auto&& sz = std::max(ll.getBitSize(), rr.getBitSize()); \
+        auto&& l = z3impl::getExpr(ll.growTo(sz)); \
+        auto&& r = z3impl::getExpr(rr.growTo(sz)); \
+        auto&& res = z3::to_expr(ctx, Z3_mk_bv##NAME(ctx, l, r)); \
+        auto&& axm = z3impl::spliceAxioms(*this, other); \
+        return Bool{ res, axm }; \
+    }
+
+    DEF_OP(ugt)
+    DEF_OP(uge)
+    DEF_OP(ult)
+    DEF_OP(ule)
+
+#undef DEF_OP
+
+ASPECT_END
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -518,38 +518,6 @@ ASPECT(ComparableExpr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class UComparableExpr;
-
-namespace impl {
-template<>
-struct generator<UComparableExpr> : generator<BitVector<1>> {
-    static bool check(mathsat::Expr e) { return e.is_bv(); }
-};
-} // namespace impl
-
-ASPECT_BEGIN(UComparableExpr)
-public:
-
-#define DEF_OP(NAME) \
-Bool NAME(const UComparableExpr& other) { \
-    auto l = msatimpl::getExpr(this); \
-    auto r = msatimpl::getExpr(other); \
-    auto res = mathsat::NAME(l, r); \
-    auto axm = msatimpl::spliceAxioms(*this, other); \
-    return Bool{ res, axm }; \
-}
-
-DEF_OP(ugt)
-DEF_OP(uge)
-DEF_OP(ult)
-DEF_OP(ule)
-
-#undef DEF_OP
-
-ASPECT_END
-
-////////////////////////////////////////////////////////////////////////////////
-
 class DynBitVectorExpr;
 
 namespace impl {
@@ -744,7 +712,40 @@ struct merger<DynBitVectorExpr, BitVector<N>> {
     }
 };
 
+////////////////////////////////////////////////////////////////////////////////
 
+class UComparableExpr;
+
+namespace impl {
+template<>
+struct generator<UComparableExpr> : generator<BitVector<1>> {
+    static bool check(mathsat::Expr e) { return e.is_bv(); }
+};
+} // namespace impl
+
+ASPECT_BEGIN(UComparableExpr)
+public:
+
+#define DEF_OP(NAME) \
+    Bool NAME(const UComparableExpr& other) { \
+        auto&& ll = DynBitVectorExpr(*this); \
+        auto&& rr = DynBitVectorExpr(other); \
+        auto&& sz = std::max(ll.getBitSize(), rr.getBitSize()); \
+        auto&& l = msatimpl::getExpr(ll.growTo(sz)); \
+        auto&& r = msatimpl::getExpr(rr.growTo(sz)); \
+        auto&& res = mathsat::NAME(l, r); \
+        auto&& axm = msatimpl::spliceAxioms(*this, other); \
+        return Bool{ res, axm }; \
+    }
+
+    DEF_OP(ugt)
+    DEF_OP(uge)
+    DEF_OP(ult)
+    DEF_OP(ule)
+
+#undef DEF_OP
+
+ASPECT_END
 
 ////////////////////////////////////////////////////////////////////////////////
 
