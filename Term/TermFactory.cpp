@@ -426,7 +426,7 @@ Term::Ptr TermFactory::getAxiomTerm(Term::Ptr lhv, Term::Ptr rhv) {
 Term::Ptr TermFactory::getBoundTerm(Term::Ptr rhv) {
     return Term::Ptr{
         new BoundTerm{
-            TyF->getUnknownType(),
+            TyF->getInteger(64, llvm::Signedness::Unsigned),
             rhv
         }
     };
