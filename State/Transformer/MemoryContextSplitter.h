@@ -13,29 +13,21 @@
 
 namespace borealis {
 
-class MemoryContextSplitter: public Transformer<MemoryContextSplitter> {
+class MemoryContextSplitter : public Transformer<MemoryContextSplitter> {
 
-    typedef Transformer<MemoryContextSplitter> Base;
+    using Base = Transformer<MemoryContextSplitter>;
 
     std::list<Predicate::Ptr> generated;
+    Term::Set processedTerms;
 
 public:
 
-    MemoryContextSplitter(FactoryNest FN) : Base(FN), generated{} { };
+    MemoryContextSplitter(FactoryNest FN);
 
-    Term::Ptr transformBoundTerm(BoundTermPtr ptr) {
-        auto freeTerm = FN.Term->getValueTerm(ptr->getType(), "$$" + ptr->getName() + "$$");
+    Term::Ptr transformBoundTerm(BoundTermPtr ptr);
 
-        auto generatedPredicate = FN.Predicate->getWriteBoundPredicate(ptr->getRhv(), freeTerm);
+    PredicateState::Ptr getGeneratedPredicates() const;
 
-        generated.push_back(generatedPredicate);
-
-        return freeTerm;
-    }
-
-    PredicateState::Ptr getGeneratedPredicates() const noexcept {
-        return (FN.State * generated)();
-    }
 };
 
 } /* namespace borealis */
