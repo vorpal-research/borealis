@@ -229,6 +229,14 @@ Type::Ptr TypeFactory::merge(Type::Ptr one, Type::Ptr two) {
         return one;
     } else if (auto match = match_pair<type::Integer, type::Pointer>(one, two)) {
         return two;
+    } else if (auto match = match_pair<type::Pointer, type::Pointer>(one, two)) {
+        if (match->first->getPointed() == match->second->getPointed()) {
+            return one;
+        } else {
+            return getPointer(
+                getUnknownType() // FIXME: this is sooo fucked up...
+            );
+        }
     }
 
     return getTypeError(

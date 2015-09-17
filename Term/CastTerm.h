@@ -82,6 +82,12 @@ struct SMTImpl<Impl, CastTerm> {
             } else {
                 return rhv;
             }
+        } else if (auto match = util::match_tuple<type::Pointer, type::Integer>::doit(lt, rt)) {
+            return rhv.template adapt<Pointer>();
+        } else if (auto match = util::match_tuple<type::Integer, type::Pointer>::doit(lt, rt)) {
+            return rhv.adapt(match->get<0>()->getBitsize());
+        } else if (auto match = util::match_tuple<type::Pointer, type::Pointer>::doit(lt, rt)) {
+            return rhv;
         }
 
         BYE_BYE(Dynamic, "Uncastable types: " + util::toString(*lt) + " and " + util::toString(*rt));
