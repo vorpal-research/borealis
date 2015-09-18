@@ -145,9 +145,9 @@ INSTANTIATE_NAMED_TEST_CASE_P(SummaryLong, WrapperTest,
     ::testing::ValuesIn(LongTestFiles("test/testcases/summary")), GetTestName);
 
 INSTANTIATE_NAMED_TEST_CASE_P(Ping, WrapperTest,
-    ::testing::ValuesIn(ShortTestFiles("test/testcases/ping")), GetTestName);
+    ::testing::ValuesIn(ShortTestFiles("test/testcases/iputils")), GetTestName);
 INSTANTIATE_NAMED_TEST_CASE_P(PingLong, WrapperTest,
-    ::testing::ValuesIn(LongTestFiles("test/testcases/ping")), GetTestName);
+    ::testing::ValuesIn(LongTestFiles("test/testcases/iputils")), GetTestName);
 
 //INSTANTIATE_TEST_CASE_P(SvComp, WrapperTest,    ::testing::ValuesIn(ShortTestFiles("test/testcases/svcomp")));
 //INSTANTIATE_TEST_CASE_P(SvCompLong, WrapperTest, ::testing::ValuesIn(LongTestFiles("test/testcases/svcomp")));
