@@ -15,6 +15,7 @@ int main(int n) {
    ASSUME(a);
 
    b = (int*) a; /*-- down casting. Length(b) = 2 * Length(a) --*/
+                 /*-- seg faults on clang if `2*n` becomes negative --*/
 
    b[2*n-1] = '\0';
 
