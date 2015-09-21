@@ -73,7 +73,10 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
                 errs() << "cannot parse json: " << val;
             } else {
                 auto lfn = util::fromString<llvm::LibFunc::Func>(opt->id).getOrElse(llvm::LibFunc::NumLibFuncs);
-                if(lfn == llvm::LibFunc::NumLibFuncs) errs() << "function " << opt->id << " not resolved" << endl;
+                if(lfn == llvm::LibFunc::NumLibFuncs) {
+                    errs() << "function " << opt->id << " not resolved" << endl;
+                    continue;
+                }
 
                 auto func = M.getFunction(pimpl_->TLI->getName(lfn));
 
