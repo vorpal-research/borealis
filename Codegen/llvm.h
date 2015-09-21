@@ -49,6 +49,8 @@ std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value);
 
 const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i);
 
+bool isAllocaLikeValue(const llvm::Value* value);
+
 #include "Util/macros.h"
 #include "Util/generate_macros.h"
 #define STEAL_FROM_LLVM_BEGIN(NAME) \

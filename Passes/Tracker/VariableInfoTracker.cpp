@@ -179,7 +179,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto* val = inst->getArgOperand(1);
                 DIVariable var(inst->getMetadata("var"));
 
-                auto vi = mkVI(sm, var, dfi);
+                auto vi = mkVI(sm, var, dfi, nullptr, isAllocaLikeValue(val));
 
                 // debug value has additional location data attached through
                 // dbg metadata

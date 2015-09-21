@@ -20,11 +20,13 @@
 
 
 #include "Codegen/FileManager.h"
+#include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Util/functional.hpp"
 #include "Util/cast.hpp"
 
 #include "Util/macros.h"
+
 namespace borealis {
 
 bool isTriviallyInboundsGEP(const llvm::Value* I) {
@@ -133,8 +135,8 @@ void setDebugLocusWithCopiedScope(
     auto* dbg = MDNode::get(
             ctx,
             std::vector<Value*>{
-                    ConstantInt::get(Type::getInt32Ty(ctx), loc.loc.line),
-                    ConstantInt::get(Type::getInt32Ty(ctx), loc.loc.col),
+                    ConstantInt::get(llvm::Type::getInt32Ty(ctx), loc.loc.line),
+                    ConstantInt::get(llvm::Type::getInt32Ty(ctx), loc.loc.col),
                     from->getDebugLoc().getScope(ctx),
                     nullptr
             });
@@ -204,6 +206,21 @@ std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value) {
     return std::move(res);
 }
 
+bool isAllocaLikeValue(const llvm::Value* value) {
+    if (llvm::isa<llvm::AllocaInst>(value)) {
+        return true;
+    }
+
+    if (auto ci = llvm::dyn_cast<llvm::CallInst>(value)) {
+        auto&& im = IntrinsicsManager::getInstance();
+        if (im.getIntrinsicType(*ci) == function_type::INTRINSIC_ALLOC) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::set<DIType>& collected) {
     if(collected.count(di)) return collected;
     collected.insert(di);
@@ -240,11 +257,11 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
     const std::pair<llvm::Type*, DIType>& tp,
     std::map<llvm::Type*, DIType>& collected) {
 
-    auto* type = tp.first;
+    auto&& type = tp.first;
 
-    if(!tp.second) return collected;
+    if(not tp.second) return collected;
 
-    auto di = stripAliases(dfi, tp.second);
+    auto&& di = stripAliases(dfi, tp.second);
 
     if(collected.count(type)) return collected;
     collected.insert({type, di});
