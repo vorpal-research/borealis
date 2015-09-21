@@ -226,7 +226,7 @@ int gestalt::main(int argc, const char** argv) {
     std::string err;
     llvm::raw_string_ostream rso{err};
     if (verifyModule(*module_ptr, &rso)) {
-        errs() << "Module errors detected: " << err << endl;
+        errs() << "Module errors detected: " << rso.str() << endl;
     }
 
     return OK;
