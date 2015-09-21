@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <sys/select.h>
 
-// @requires fd > 0
+// @requires fd >= 0 && fd < 1024
 void data_wait(int fd)
 {
     fd_set fds;
@@ -20,7 +20,7 @@ void data_wait(int fd)
 }
 
 int main(int argc, char** argv) {
-    ASSUME(argc > 0);
+    ASSUME(argc >= 0 && argc < 1024);
     data_wait(argc);
     return 0;
 }
