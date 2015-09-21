@@ -2,9 +2,12 @@
 // Created by ice-phoenix on 9/18/15.
 //
 
+#include "defines.h"
+
 #include <stdlib.h>
 #include <sys/select.h>
 
+// @requires fd > 0
 void data_wait(int fd)
 {
     fd_set fds;
@@ -17,6 +20,7 @@ void data_wait(int fd)
 }
 
 int main(int argc, char** argv) {
+    ASSUME(argc > 0);
     data_wait(argc);
     return 0;
 }
