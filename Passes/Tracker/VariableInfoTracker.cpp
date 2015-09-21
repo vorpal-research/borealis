@@ -128,7 +128,9 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
 
         DISubprogram sp(msp);
         // FIXME: this is generally fucked up...
-        vars.put(sp.getFunction(), mkVI(sm, sp, dfi, nullptr, true));
+        if (auto f = sp.getFunction()) {
+            vars.put(f, mkVI(sm, sp, dfi, nullptr, true));
+        }
     }
 
 // FIXME: decide whether we want this or not
