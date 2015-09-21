@@ -111,7 +111,14 @@ inline llvm::Instruction* mkStoreNondet(
         llvm::FunctionType::get(arg->getType()->getPointerElementType(), false),
         &M
     );
-    f->setAttributes(originalCall.getCalledFunction()->getAttributes());
+
+    auto&& attrSet = originalCall.getCalledFunction()->getAttributes();
+    attrSet = attrSet.addAttributes(M.getContext(), llvm::AttributeSet::FunctionIndex,
+                                    originalCall.getCalledFunction()->getAttributes().getFnAttributes());
+    attrSet = attrSet.removeAttribute(M.getContext(), llvm::AttributeSet::FunctionIndex, llvm::Attribute::AttrKind::ReadNone);
+    attrSet = attrSet.removeAttribute(M.getContext(), llvm::AttributeSet::FunctionIndex, llvm::Attribute::AttrKind::ReadOnly);
+
+    f->setAttributes(attrSet);
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
@@ -134,7 +141,14 @@ inline llvm::CallInst* mkNondet(
         llvm::FunctionType::get(originalCall.getType(), false),
         &M
     );
-    f->setAttributes(originalCall.getCalledFunction()->getAttributes());
+
+    auto&& attrSet = llvm::AttributeSet();
+    attrSet = attrSet.addAttributes(M.getContext(), llvm::AttributeSet::FunctionIndex,
+                                    originalCall.getCalledFunction()->getAttributes().getFnAttributes());
+    attrSet = attrSet.removeAttribute(M.getContext(), llvm::AttributeSet::FunctionIndex, llvm::Attribute::AttrKind::ReadNone);
+    attrSet = attrSet.removeAttribute(M.getContext(), llvm::AttributeSet::FunctionIndex, llvm::Attribute::AttrKind::ReadOnly);
+
+    f->setAttributes(attrSet);
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
