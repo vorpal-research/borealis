@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv) {
     int base_port = argc;
-    char* p;
+    char* p = NULL;
 
     ASSUME(argv);
     ASSUME(argv[0]);
