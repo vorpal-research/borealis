@@ -1772,6 +1772,9 @@
       "args": [
             { "access" : "Read", "array" : true },
             {}
+      ],
+      "contracts" : [
+            "@ensures (\\arg1 == 0 && ((\\result != \\nullptr && \\bound(\\result) == 1) || \\result == \\nullptr)) || (\\arg1 != 0 && ((\\result != \\nullptr && \\bound(\\result) >= 2) || \\result == \\nullptr))"
       ]
 },
 {
