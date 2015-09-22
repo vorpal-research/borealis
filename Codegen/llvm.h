@@ -49,8 +49,6 @@ std::list<const llvm::Constant*> getAsSeqData(const llvm::Constant* value);
 
 const llvm::TerminatorInst* getSingleReturnFor(const llvm::Instruction* i);
 
-bool isAllocaLikeValue(const llvm::Value* value);
-
 #include "Util/macros.h"
 #include "Util/generate_macros.h"
 #define STEAL_FROM_LLVM_BEGIN(NAME) \
@@ -209,6 +207,10 @@ struct DIStructType : public llvm::DICompositeType {
 
     DITypedArray<DIMember> getMembers() const {
         return DITypedArray<DIMember>{ getTypeArray() };
+    }
+
+    bool isUnion() const {
+        return this->getTag() == llvm::dwarf::DW_TAG_union_type;
     }
 };
 
@@ -395,6 +397,9 @@ std::map<llvm::Type*, DIType> flattenTypeTree(
     const DebugInfoFinder& dfi,
     const llvm::DataLayout* DL,
     const std::pair<llvm::Type*, DIType>& tp);
+
+bool isAllocaLikeValue(const llvm::Value* value);
+bool isAllocaLikeTypes(const llvm::Type* llvmType, const llvm::DIType& metaType, const DebugInfoFinder& dfi);
 
 namespace impl_ {
 

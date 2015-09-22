@@ -221,6 +221,18 @@ bool isAllocaLikeValue(const llvm::Value* value) {
     return false;
 }
 
+bool isAllocaLikeTypes(const llvm::Type* llvmType, const llvm::DIType& metaType, const DebugInfoFinder& dfi) {
+    if (llvmType->isPointerTy() && metaType.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
+        auto&& nextLLVM = llvmType->getPointerElementType();
+        auto&& nextMETA = DIDerivedType(metaType).getTypeDerivedFrom();
+        return isAllocaLikeTypes(nextLLVM, dfi.resolve(nextMETA), dfi);
+    } else if (llvmType->isPointerTy() && metaType.getTag() != llvm::dwarf::DW_TAG_pointer_type) {
+        return true;
+    }
+
+    return false;
+}
+
 std::set<DIType>& flattenTypeTree(const DebugInfoFinder& dfi, DIType di, std::set<DIType>& collected) {
     if(collected.count(di)) return collected;
     collected.insert(di);
