@@ -209,6 +209,10 @@ struct DIStructType : public llvm::DICompositeType {
         return DITypedArray<DIMember>{ getTypeArray() };
     }
 
+    bool isOpaque() const {
+        return 0 == this->getMembers().getNumElements();
+    }
+
     bool isUnion() const {
         return this->getTag() == llvm::dwarf::DW_TAG_union_type;
     }
