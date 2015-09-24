@@ -26,6 +26,7 @@ public:
 
     StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA);
 
+    using Base::transform;
     PredicateState::Ptr transform(PredicateState::Ptr ps);
     using Base::transformBase;
     Predicate::Ptr transformBase(Predicate::Ptr pred);

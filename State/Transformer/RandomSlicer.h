@@ -19,6 +19,7 @@ public:
 
     RandomSlicer();
 
+    using Base::transform;
     PredicateState::Ptr transform(PredicateState::Ptr ps);
     using Base::transformBase;
     Predicate::Ptr transformBase(Predicate::Ptr p);
