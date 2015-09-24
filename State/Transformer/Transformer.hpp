@@ -70,7 +70,7 @@ public:
 public:
 
     PredicateState::Ptr transform(PredicateState::Ptr ps) {
-        return CALL(Base, ps)->map([&](auto&& e) { return this->transform(e); });
+        return CALL(Base, ps)->map([&](auto&& e) { return CALL(Base, e); });
     }
 
 protected:
@@ -93,7 +93,7 @@ protected:
 
 #define HANDLE_STATE(NAME, CLASS) \
     PredicateState::Ptr transform##NAME(CLASS##Ptr ps) { \
-        return ps->fmap([&](auto&& e) { return this->transformBase(e); }); \
+        return ps->fmap([&](auto&& e) { return CALL(Base, e); }); \
     }
 #include "State/PredicateState.def"
 
