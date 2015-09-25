@@ -124,6 +124,10 @@ STEAL_FROM_LLVM_BEGIN(DICompositeType)
     DITypedArray<llvm::DITypeRef> getTypeArray() const  {
         return llvm::DICompositeType::getTypeArray();
     }
+
+    bool isEnumeration() const {
+        return getTag() == llvm::dwarf::DW_TAG_enumeration_type;
+    }
 STEAL_FROM_LLVM_END()
 
 struct DIArrayType : public llvm::DIDerivedType {
