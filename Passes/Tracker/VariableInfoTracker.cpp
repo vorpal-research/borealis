@@ -161,7 +161,10 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 }
             }
 
-            auto vi = mkVI(sm, var, dfi, decl, true);
+            auto&& llvmType = val->getType();
+            auto&& metaType = dfi.resolve(var.getType());
+
+            auto vi = mkVI(sm, var, dfi, decl, isAllocaLikeTypes(llvmType, metaType, dfi));
 
             // debug declare has additional location data attached through
             // dbg metadata
@@ -181,7 +184,10 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto* val = inst->getArgOperand(1);
                 DIVariable var(inst->getMetadata("var"));
 
-                auto vi = mkVI(sm, var, dfi, nullptr, isAllocaLikeValue(val));
+                auto&& llvmType = val->getType();
+                auto&& metaType = dfi.resolve(var.getType());
+
+                auto vi = mkVI(sm, var, dfi, nullptr, isAllocaLikeTypes(llvmType, metaType, dfi));
 
                 // debug value has additional location data attached through
                 // dbg metadata
@@ -200,7 +206,10 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto* val = inst->getArgOperand(0);
                 DIVariable var(inst->getMetadata("var"));
 
-                auto vi = mkVI(sm, var, dfi, nullptr, true);
+                auto&& llvmType = val->getType();
+                auto&& metaType = dfi.resolve(var.getType());
+
+                auto vi = mkVI(sm, var, dfi, nullptr, isAllocaLikeTypes(llvmType, metaType, dfi));
 
                 // debug value has additional location data attached through
                 // dbg metadata

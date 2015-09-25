@@ -171,27 +171,41 @@ void TypeFactory::mergeRecordBodyInto(type::RecordBody& lhv, const type::RecordB
 
 Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, DIType meta) const {
     if (type->isStructTy()) {
-        using std::placeholders::_1;
-
         DIStructType str = meta;
         ASSERTC(!!str);
 
         auto members = str.getMembers();
-        ASSERTC(members.getNumElements() == type->getStructNumElements());
-
         using Members = decltype(members);
+
         type::RecordBody body;
 
-        for (auto&& mem :
-            util::view(type->subtype_begin(), type->subtype_end())
-            ^
-            util::range(0U, members.getNumElements())
-                .map(std::bind(&Members::getElement, members, _1))
-        ) {
+        if (str.isUnion()) {
+            ASSERTC(1 == type->getStructNumElements());
+
             body.push_back(type::RecordField{
-                cast(mem.first),
-                std::unordered_set<std::string>{ mem.second.getName() }
+                cast(type->getStructElementType(0)),
+                util::range(0U, members.getNumElements())
+                    .map(std::bind(&Members::getElement, members, std::placeholders::_1))
+                    .fold(std::unordered_set<std::string>{}, [](auto&& a, auto&& e) {
+                        a.insert(e.getName());
+                        return a;
+                    })
             });
+
+        } else {
+            ASSERTC(members.getNumElements() == type->getStructNumElements());
+
+            for (auto&& mem :
+                util::view(type->subtype_begin(), type->subtype_end())
+                ^
+                util::range(0U, members.getNumElements())
+                    .map(std::bind(&Members::getElement, members, std::placeholders::_1))
+            ) {
+                body.push_back(type::RecordField{
+                    cast(mem.first),
+                    std::unordered_set<std::string>{ mem.second.getName() }
+                });
+            }
         }
 
         return embedRecordBodyNoRecursion(type->getStructName(), body);

@@ -222,11 +222,15 @@ bool isAllocaLikeValue(const llvm::Value* value) {
 }
 
 bool isAllocaLikeTypes(const llvm::Type* llvmType, const llvm::DIType& metaType, const DebugInfoFinder& dfi) {
-    if (llvmType->isPointerTy() && metaType.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
+    if (not metaType.isValid()) return false;
+
+    auto&& resolvedMetaType = stripAliases(dfi, metaType);
+
+    if (llvmType->isPointerTy() && resolvedMetaType.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
         auto&& nextLLVM = llvmType->getPointerElementType();
-        auto&& nextMETA = DIDerivedType(metaType).getTypeDerivedFrom();
-        return isAllocaLikeTypes(nextLLVM, dfi.resolve(nextMETA), dfi);
-    } else if (llvmType->isPointerTy() && metaType.getTag() != llvm::dwarf::DW_TAG_pointer_type) {
+        auto&& nextMETA = dfi.resolve(DIDerivedType(resolvedMetaType).getTypeDerivedFrom());
+        return isAllocaLikeTypes(nextLLVM, nextMETA, dfi);
+    } else if (llvmType->isPointerTy() && resolvedMetaType.getTag() != llvm::dwarf::DW_TAG_pointer_type) {
         return true;
     }
 
@@ -287,15 +291,20 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
     } else if(DIStructType struct_ = di) {
         ASSERTC(type->isStructTy());
         auto* structType = llvm::dyn_cast<llvm::StructType>(type);
-        auto SL = DL->getStructLayout(structType);
 
-        auto members = struct_.getMembers();
-        for (auto i = 0U; i < members.getNumElements(); ++i) {
-            auto mmem =  members.getElement(i);
-            auto offset = mmem.getOffsetInBits() / 8;
+        if (structType->isOpaque() and struct_.isOpaque()) {
+            // Skip opaque structs
+        } else {
+            auto&& SL = DL->getStructLayout(structType);
 
-            auto elem = structType->getStructElementType(SL->getElementContainingOffset(offset));
-            flattenTypeTree(dfi, DL, {elem, stripAliases(dfi, mmem.getType())}, collected);
+            auto&& members = struct_.getMembers();
+            for (auto&& i = 0U; i < members.getNumElements(); ++i) {
+                auto&& mmem = members.getElement(i);
+                auto&& offset = mmem.getOffsetInBits() / 8;
+
+                auto&& elem = structType->getStructElementType(SL->getElementContainingOffset(offset));
+                flattenTypeTree(dfi, DL, {elem, stripAliases(dfi, mmem.getType())}, collected);
+            }
         }
     } else if(DICompositeType struct_ = di) {
         auto members = struct_.getTypeArray();
