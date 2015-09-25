@@ -58,7 +58,7 @@ private:
 
     void mergeRecordBodyInto(type::RecordBody& lhv, const type::RecordBody& rhv) const;
 
-    Type::Ptr embedRecordBodyNoRecursion(llvm::Type* type, DIType meta) const;
+    Type::Ptr embedRecordBodyNoRecursion(llvm::Type* type, DIType meta, const llvm::DataLayout* DL) const;
 
     Type::Ptr embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, DIType meta) const;
 

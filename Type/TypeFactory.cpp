@@ -169,10 +169,16 @@ void TypeFactory::mergeRecordBodyInto(type::RecordBody& lhv, const type::RecordB
     }
 }
 
-Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, DIType meta) const {
-    if (type->isStructTy()) {
+Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, DIType meta, const llvm::DataLayout* DL) const {
+    if (auto structType = llvm::dyn_cast<llvm::StructType>(type)) {
+
         DIStructType str = meta;
         ASSERTC(!!str);
+
+        if (structType->isOpaque()) {
+            ASSERTC(str.isOpaque());
+            return getUnknownType(); // XXX: o_O
+        }
 
         auto members = str.getMembers();
         using Members = decltype(members);
@@ -193,17 +199,18 @@ Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, DIType meta)
             });
 
         } else {
-            ASSERTC(members.getNumElements() == type->getStructNumElements());
 
-            for (auto&& mem :
-                util::view(type->subtype_begin(), type->subtype_end())
-                ^
+            auto&& layout = DL->getStructLayout(structType);
+
+            for (auto&& metaMember :
                 util::range(0U, members.getNumElements())
                     .map(std::bind(&Members::getElement, members, std::placeholders::_1))
             ) {
+                auto&& idx = layout->getElementContainingOffset(metaMember.getOffsetInBits() / 8);
+                auto&& field = structType->getElementType(idx);
                 body.push_back(type::RecordField{
-                    cast(mem.first),
-                    std::unordered_set<std::string>{ mem.second.getName() }
+                    cast(field),
+                    std::unordered_set<std::string>{ metaMember.getName() }
                 });
             }
         }
@@ -217,7 +224,7 @@ Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, DIType meta)
 Type::Ptr TypeFactory::embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, DIType meta) const {
     // FIXME: huh?
     for (auto&& expanded : flattenTypeTree(dfi, DL, {type, meta})) {
-        embedRecordBodyNoRecursion(expanded.first, stripAliases(dfi, expanded.second)); // just for the side effects
+        embedRecordBodyNoRecursion(expanded.first, stripAliases(dfi, expanded.second), DL); // just for the side effects
     }
     return cast(type);
 }
