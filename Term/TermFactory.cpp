@@ -50,7 +50,11 @@ Term::Ptr TermFactory::getConstTerm(const llvm::Constant* c, llvm::Signedness si
         auto&& opcode = cE->getOpcode();
 
         if (opcode >= Instruction::CastOpsBegin && opcode <= Instruction::CastOpsEnd) {
-            return getValueTerm(cE->getOperand(0));
+            return getCastTerm(
+                TyF->cast(cE->getType()),
+                opcode == Instruction::SExt,
+                getValueTerm(cE->getOperand(0))
+            );
         } else if (opcode == Instruction::GetElementPtr) {
             auto&& base = cE->getOperand(0);
             ValueVector idxs;
