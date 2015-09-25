@@ -306,17 +306,23 @@ std::map<llvm::Type*, DIType>& flattenTypeTree(
                 flattenTypeTree(dfi, DL, {elem, stripAliases(dfi, mmem.getType())}, collected);
             }
         }
-    } else if(DICompositeType struct_ = di) {
-        auto members = struct_.getTypeArray();
-        ASSERTC(members.getNumElements() == type->getNumContainedTypes());
-        for(auto i = 0U; i < members.getNumElements(); ++i) {
-            auto mem = type->getContainedType(i);
-            auto mmem = dfi.resolve(members.getElement(i));
+    } else if(DICompositeType comp_ = di) {
+        if (comp_.isEnumeration()) {
+            ASSERTC(type->isIntegerTy());
+            // No need to go deeper the flatten tree
+        } else {
+            auto&& members = comp_.getTypeArray();
+            ASSERTC(members.getNumElements() == type->getNumContainedTypes());
 
-            if (!mmem){
-                ASSERTC(mem->isVoidTy()); // typical for functions returning void
-            } else {
-                flattenTypeTree(dfi, DL, {mem, mmem}, collected);
+            for (auto i = 0U; i < members.getNumElements(); ++i) {
+                auto&& mem = type->getContainedType(i);
+                auto&& mmem = dfi.resolve(members.getElement(i));
+
+                if (not mmem) {
+                    ASSERTC(mem->isVoidTy()); // typical for functions returning void
+                } else {
+                    flattenTypeTree(dfi, DL, {mem, mmem}, collected);
+                }
             }
         }
     } else if(DIDerivedType derived = di) {
