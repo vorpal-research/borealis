@@ -19,8 +19,8 @@ namespace borealis {
 struct FuncInfoProvider::Impl {
     llvm::TargetLibraryInfo* TLI;
 
-    std::unordered_map<llvm::LibFunc::Func, func_info::FuncInfo> functions;
-    std::unordered_map<llvm::LibFunc::Func, std::vector<Annotation::Ptr>> contracts;
+    std::unordered_map<std::string, func_info::FuncInfo> functions;
+    std::unordered_map<std::string, std::vector<Annotation::Ptr>> contracts;
 };
 
 char FuncInfoProvider::ID = 42;
@@ -31,24 +31,12 @@ static config::MultiConfigEntry FunctionDefinitionFiles("analysis", "ext-functio
 FuncInfoProvider::FuncInfoProvider() : llvm::ModulePass(ID), pimpl_(std::make_unique<Impl>()) {}
 FuncInfoProvider::~FuncInfoProvider() {}
 
-const func_info::FuncInfo& FuncInfoProvider::getInfo(llvm::LibFunc::Func f) {
-    return pimpl_->functions.at(f);
-}
-
 const func_info::FuncInfo& FuncInfoProvider::getInfo(llvm::Function* f) {
-    llvm::LibFunc::Func enumf;
-    pimpl_->TLI->getLibFunc(f->getName(), enumf);
-    return pimpl_->functions.at(enumf);
-}
-
-bool FuncInfoProvider::hasInfo(llvm::LibFunc::Func f) {
-    return !!pimpl_->functions.count(f);
+    return pimpl_->functions.at(f->getName().str());
 }
 
 bool FuncInfoProvider::hasInfo(llvm::Function* f) {
-    llvm::LibFunc::Func enumf;
-    if(!pimpl_->TLI->getLibFunc(f->getName(), enumf)) return false;
-    return hasInfo(enumf);
+    return !!pimpl_->functions.count(f->getName().str());
 }
 
 void FuncInfoProvider::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -72,20 +60,20 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
             if(!opt) {
                 errs() << "cannot parse json: " << val;
             } else {
+                std::string fname = opt->id;
                 auto lfn = util::fromString<llvm::LibFunc::Func>(opt->id).getOrElse(llvm::LibFunc::NumLibFuncs);
-                if(lfn == llvm::LibFunc::NumLibFuncs) {
-                    errs() << "function " << opt->id << " not resolved" << endl;
-                    continue;
+                if(lfn != llvm::LibFunc::NumLibFuncs) {
+                    fname = pimpl_->TLI->getName(lfn).str();
                 }
 
-                auto func = M.getFunction(pimpl_->TLI->getName(lfn));
+                auto func = M.getFunction(fname);
 
                 if(func) {
                     if(func->isVarArg()) opt->argInfo.resize(func->arg_size() + 1);
                     else opt->argInfo.resize(func->arg_size());
 
-                    pimpl_->functions[lfn] = *opt;
-                    pimpl_->contracts[lfn] = util::viewContainer(opt->contracts)
+                    pimpl_->functions[fname] = *opt;
+                    pimpl_->contracts[fname] = util::viewContainer(opt->contracts)
                         .map(LAM(A, borealis::fromString(Locus{}, A, FN.Term)))
                         .filter()
                         .toVector();
@@ -96,14 +84,9 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
     return false;
 }
 
-const std::vector<Annotation::Ptr> FuncInfoProvider::getContracts(llvm::LibFunc::Func f) {
-    return pimpl_->contracts.at(f);
-}
-
 const std::vector<Annotation::Ptr> FuncInfoProvider::getContracts(llvm::Function* f) {
-    llvm::LibFunc::Func enumf;
-    pimpl_->TLI->getLibFunc(f->getName(), enumf);
-    return getContracts(enumf);
+    auto key = f->getName().str();
+    return pimpl_->contracts.at(key);
 }
 } /* namespace borealis */
 

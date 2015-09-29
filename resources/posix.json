@@ -1,0 +1,33 @@
+[
+{
+      "signature": "int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)",
+      "name": "select",
+      "args": [
+            {},
+            { "access" : "ReadWrite" },
+            { "access" : "ReadWrite" },
+            { "access" : "ReadWrite" },
+            { "access" : "Read" }
+      ],
+      "contracts" : [
+            "@ensures \\result == -1 || \\result >= 0",
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+      ]
+},
+{
+      "signature": "int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const sigset_t *sigmask)",
+      "name": "pselect",
+      "args": [
+            {},
+            { "access" : "ReadWrite" },
+            { "access" : "ReadWrite" },
+            { "access" : "ReadWrite" },
+            { "access" : "Read" },
+            { "access" : "Read" }
+      ],
+      "contracts" : [
+            "@ensures \\result == -1 || \\result >= 0",
+            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+      ]
+}
+]
