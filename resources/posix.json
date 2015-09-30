@@ -11,7 +11,7 @@
       ],
       "contracts" : [
             "@ensures \\result == -1 || \\result >= 0",
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
 {
@@ -27,7 +27,7 @@
       ],
       "contracts" : [
             "@ensures \\result == -1 || \\result >= 0",
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 }
 ]
