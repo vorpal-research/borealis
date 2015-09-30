@@ -20,6 +20,22 @@ struct AnnotationMaterializer::AnnotationMaterializerImpl {
     NameContext nc;
 };
 
+static size_t getNextUniqueNumber() {
+    static size_t current = 0;
+    return current++;
+}
+
+static size_t nameToValueMapping(const std::string& key) {
+    static std::unordered_map<std::string, size_t> data;
+    auto end = std::end(data);
+    auto it = data.find(key);
+    if(it == end) {
+        return data[key] = getNextUniqueNumber();
+    } else {
+        return it->second;
+    }
+}
+
 AnnotationMaterializer::AnnotationMaterializer(
         const LogicAnnotation& A,
         FactoryNest FN,
@@ -304,6 +320,11 @@ Term::Ptr AnnotationMaterializer::transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
     } else {
         return var;
     }
+}
+
+Term::Ptr AnnotationMaterializer::transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermPtr trm) {
+    auto value = nameToValueMapping(trm->getVName());
+    return FN.Term->getOpaqueConstantTerm(value, 32);
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPtr trm) {

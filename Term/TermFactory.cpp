@@ -331,6 +331,12 @@ Term::Ptr TermFactory::getOpaqueBuiltinTerm(const std::string& name) {
     };
 }
 
+Term::Ptr TermFactory::getOpaqueNamedConstantTerm(const std::string& name) {
+    return Term::Ptr{
+        new OpaqueNamedConstantTerm(TyF->getUnknownType(), name)
+    };
+}
+
 Term::Ptr TermFactory::getOpaqueConstantTerm(long long v, size_t bitSize) {
     return Term::Ptr{
         new OpaqueIntConstantTerm(

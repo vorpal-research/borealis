@@ -16,6 +16,7 @@
 #include "Term/LoadTerm.h"
 #include "Term/OpaqueBoolConstantTerm.h"
 #include "Term/OpaqueBuiltinTerm.h"
+#include "Term/OpaqueNamedConstantTerm.h"
 #include "Term/OpaqueCallTerm.h"
 #include "Term/OpaqueFloatingConstantTerm.h"
 #include "Term/OpaqueIndexingTerm.h"
@@ -48,6 +49,7 @@ HANDLE_TERM(Gep, GepTerm)
 HANDLE_TERM(Load, LoadTerm)
 HANDLE_TERM(OpaqueBoolConstant, OpaqueBoolConstantTerm)
 HANDLE_TERM(OpaqueBuiltin, OpaqueBuiltinTerm)
+HANDLE_TERM(OpaqueNamedConstant, OpaqueNamedConstantTerm)
 HANDLE_TERM(OpaqueCall, OpaqueCallTerm)
 HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
 HANDLE_TERM(OpaqueIndexing, OpaqueIndexingTerm)

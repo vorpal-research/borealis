@@ -66,6 +66,7 @@ public:
     Term::Ptr transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm);
     Term::Ptr transformOpaqueVarTerm(OpaqueVarTermPtr trm);
     Term::Ptr transformOpaqueBuiltinTerm(OpaqueBuiltinTermPtr trm);
+    Term::Ptr transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermPtr trm);
 
     Term::Ptr transformCmpTerm(CmpTermPtr trm);
 

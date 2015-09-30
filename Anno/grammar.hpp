@@ -48,9 +48,11 @@ using push_floating = LITERALGRAMMAR( G(floating) & PUSH(double) );
 using push_variable = LITERALGRAMMAR( G(identifier) & PUSH(stdstring) );
 // builtin := '\' IDENTIFIER
 using push_builtin = LITERALGRAMMAR( (CH('\\') >> G(identifier)) & PUSH(stdstring) );
+// symbol := '@' IDENTIFIER
+using push_symbol = LITERALGRAMMAR( (CH('@') >> G(identifier)) & PUSH(stdstring) );
 // note the boolean is before variable, as e.g. 'true' is a valid variable name
 // primitive := floating | integer | boolean | variable | builtin
-using push_primitive = OR_G (push_floating, push_integer, push_boolean, push_variable, push_builtin);
+using push_primitive = OR_G (push_floating, push_integer, push_boolean, push_variable, push_builtin, push_symbol);
 
 // helpers -----------------------------------------------------------------------------------------
 // a char surrounded by spaces
