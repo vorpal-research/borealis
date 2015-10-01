@@ -21,7 +21,6 @@ Term::ProtoPtr protobuf_traits<Term>::toProtobuf(const normal_t& t) {
         protobuf_traits<Type>::toProtobuf(*t.getType()).release()
     );
     res->set_name(t.getName());
-    res->set_retypable(t.isRetypable());
 
     if (false) {}
 #define HANDLE_TERM(NAME, CLASS) \
@@ -43,9 +42,8 @@ Term::Ptr protobuf_traits<Term>::fromProtobuf(const context_t& fn, const proto_t
 
     auto type = protobuf_traits<Type>::fromProtobuf(fn, t.type());
     const auto& name = t.name();
-    auto retypable = t.retypable();
 
-    Term::Ptr base = Term::Ptr{ new Term(-1UL, type, name, retypable) };
+    Term::Ptr base = Term::Ptr{ new Term(-1UL, type, name) };
 
 #define HANDLE_TERM(NAME, CLASS) \
     if (t.HasExtension(proto::CLASS::ext)) { \

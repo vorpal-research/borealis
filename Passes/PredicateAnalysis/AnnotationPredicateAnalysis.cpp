@@ -54,7 +54,7 @@ public:
                         pass->FN.Predicate->getWritePropertyPredicate(
                             rpt->getPropertyName(),
                             rpt->getRhv(),
-                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(32), "borealis.fresh.var." + util::toString(seed))
+                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(seed))
                         );
                 }
             }

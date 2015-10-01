@@ -275,6 +275,7 @@
       ],
       "contracts" : [
             "@ensures \\result != \\arg",
+            "@ensures \\property(malloc, \\result) == @malloc",
             "@ensures \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
@@ -288,6 +289,7 @@
       ],
       "contracts" : [
             "@ensures \\result != \\arg",
+            "@ensures \\property(malloc, \\result) == @malloc",
             "@ensures \\property(strlen, \\result) == \\arg1 ||  \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
