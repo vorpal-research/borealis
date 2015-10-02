@@ -24,6 +24,10 @@ PredicateState::Ptr PredicateStateBuilder::operator()() const {
     return Retyper(FactoryNest(nullptr)).transform(State);
 }
 
+PredicateState::Ptr PredicateStateBuilder::apply() const {
+    return State;
+}
+
 PredicateStateBuilder& PredicateStateBuilder::operator+=(PredicateState::Ptr s) {
     if (not s->isEmpty()) {
         State = PSF->Chain(State, s);
