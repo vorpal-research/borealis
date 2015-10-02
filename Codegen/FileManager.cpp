@@ -29,7 +29,7 @@ FileManager::~FileManager() {}
 std::string FileManager::read(const LocusRange& where) {
     ASSERTC(where.lhv.filename == where.rhv.filename);
 
-    std::ifstream file(where.lhv.filename);
+    std::ifstream file(where.lhv.filename.c_str());
     if(!file) return "";
     for(auto i = 0U; i < where.lhv.loc.line-1; ++i) {
         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

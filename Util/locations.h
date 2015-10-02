@@ -17,6 +17,7 @@
 
 #include "Protobuf/Gen/Util/locations.pb.h"
 
+#include "Util/indexed_string.hpp"
 #include "Util/hash.hpp"
 #include "Util/json_traits.hpp"
 #include "Util/xml_traits.hpp"
@@ -196,7 +197,7 @@ struct json_traits<LocalLocus> {
 struct Locus {
     static constexpr auto UNKNOWN_NAME = "";
 
-    std::string filename;
+    util::indexed_string filename;
     LocalLocus loc;
 
     Locus(): filename(UNKNOWN_NAME) {};
@@ -214,6 +215,8 @@ struct Locus {
     Locus(const std::string& filename, unsigned line, unsigned col): filename(filename), loc(line, col) {};
     Locus(std::string&& filename, LocalLocus&& loc): filename(std::move(filename)), loc(std::move(loc)) {};
     Locus(std::string&& filename, unsigned line, unsigned col): filename(std::move(filename)), loc(line, col) {};
+    Locus(util::indexed_string filename, const LocalLocus& loc): filename(filename), loc(loc) {};
+    Locus(util::indexed_string filename, unsigned line, unsigned col): filename(filename), loc(line, col) {};
 
     const Locus& operator=(const Locus& that) {
         this->filename = that.filename;

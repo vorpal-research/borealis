@@ -95,7 +95,7 @@ bool SourceLocationTracker::runOnModule(llvm::Module& M) {
     return false;
 }
 
-const std::string& SourceLocationTracker::getFilenameFor(const llvm::Value* val) const {
+util::indexed_string SourceLocationTracker::getFilenameFor(const llvm::Value* val) const {
     static std::string empty_string = "";
 
     if (val && valueDebugInfo.contains(val)) {
