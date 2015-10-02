@@ -144,7 +144,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
     for (auto&& I : viewContainer(*BB)) {
 
-        auto&& instructionState = (FN.State * inState + PM(&I))();
+        auto&& instructionState = (FN.State * inState + PM(&I)).apply();
         instructionStates[&I] = instructionState;
 
         // Add ensures and summary *after* the CallInst has been processed
@@ -155,7 +155,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
                 FN.State *
                 FM->getBdy(CI, FN) +
                 FM->getEns(CI, FN)
-            )();
+            ).apply();
 
             auto&& instantiatedCallState =
                     CallSiteInitializer(CI, FN).transform(callState);
@@ -163,9 +163,8 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
             instructionState = (
                 FN.State *
                 instructionState +
-                instantiatedCallState <<
-                SLT->getLocFor(&I)
-            )();
+                instantiatedCallState
+            ).apply();
         }
 
         inState = instructionState;
@@ -211,7 +210,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
             }
         }
 
-        auto&& inState = stateBuilder();
+        auto&& inState = stateBuilder.apply();
 
         auto&& slice = inState->sliceOn(base);
         ASSERT(nullptr != slice, "Could not slice state on its predecessor");
@@ -229,7 +228,7 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
             FN.State *
             base +
             FN.State->Choice(choices)
-        )();
+        ).apply();
     }
 }
 
