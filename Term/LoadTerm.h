@@ -28,7 +28,7 @@ message LoadTerm {
 **/
 class LoadTerm: public borealis::Term {
 
-    LoadTerm(Type::Ptr type, Term::Ptr rhv, bool retypable = true);
+    LoadTerm(Type::Ptr type, Term::Ptr rhv);
 
 public:
 
@@ -41,7 +41,7 @@ public:
         auto&& _rhv = tr->transform(getRhv());
         TERM_ON_CHANGED(
             getRhv() != _rhv,
-            new Self( retypable ? getTermType(tr->FN.Type, _rhv) : type, _rhv, retypable )
+            new Self( getTermType(tr->FN.Type, _rhv), _rhv )
         );
     }
 

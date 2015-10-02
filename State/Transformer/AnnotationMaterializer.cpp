@@ -20,6 +20,22 @@ struct AnnotationMaterializer::AnnotationMaterializerImpl {
     NameContext nc;
 };
 
+static size_t getNextUniqueNumber() {
+    static size_t current = 0;
+    return current++;
+}
+
+static size_t nameToValueMapping(const std::string& key) {
+    static std::unordered_map<std::string, size_t> data;
+    auto end = std::end(data);
+    auto it = data.find(key);
+    if(it == end) {
+        return data[key] = getNextUniqueNumber();
+    } else {
+        return it->second;
+    }
+}
+
 AnnotationMaterializer::AnnotationMaterializer(
         const LogicAnnotation& A,
         FactoryNest FN,
@@ -144,7 +160,7 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
             auto&& prop = FN.Term->getOpaqueConstantTerm(rhv[0]->getName());
             auto&& val = this->transform(rhv[1]);
 
-            return FN.Term->getReadPropertyTerm(FN.Type->getInteger(32), prop, val);
+            return FN.Term->getReadPropertyTerm(FN.Type->getInteger(), prop, val);
 
         } else if (builtin->getVName() == "bound") {
             auto&& rhv = trm->getRhv().toVector();
@@ -304,6 +320,11 @@ Term::Ptr AnnotationMaterializer::transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
     } else {
         return var;
     }
+}
+
+Term::Ptr AnnotationMaterializer::transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermPtr trm) {
+    auto value = nameToValueMapping(trm->getVName());
+    return FN.Term->getOpaqueConstantTerm(value, FN.Type->defaultTypeSize);
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPtr trm) {

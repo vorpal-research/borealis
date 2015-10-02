@@ -8,7 +8,7 @@
             }
       ],
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -21,7 +21,7 @@
             }
       ],
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg1) == 1",
+            "@requires[[RES-02]] \\property(file, \\arg1) == @opened",
             "@ensures (\\result == \\arg0) || (\\result == -1)"
       ]
 },
@@ -35,9 +35,9 @@
             }
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 5",
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @array_new",
             "@assigns \\property(malloc, \\arg)",
-            "@ensures \\property(malloc, \\arg) == 6"
+            "@ensures \\property(malloc, \\arg) == @deleted"
       ]
 },
 {
@@ -51,9 +51,9 @@
             {}
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 5",
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @array_new",
             "@assigns \\property(malloc, \\arg)",
-            "@ensures \\property(malloc, \\arg) == 6"
+            "@ensures \\property(malloc, \\arg) == @deleted"
       ]
 },
 {
@@ -65,9 +65,9 @@
             }
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 3",
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @new",
             "@assigns \\property(malloc, \\arg)",
-            "@ensures \\property(malloc, \\arg) == 4"
+            "@ensures \\property(malloc, \\arg) == @deleted"
       ]
 },
 {
@@ -80,9 +80,9 @@
             {}
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == 3",
+            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @new",
             "@assigns \\property(malloc, \\arg)",
-            "@ensures \\property(malloc, \\arg) == 4"
+            "@ensures \\property(malloc, \\arg) == @deleted"
       ]
 },
 {
@@ -93,7 +93,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 5"
+            "@ensures \\property(malloc, \\result) == @array_new"
       ]
 },
 {
@@ -104,7 +104,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 5"
+            "@ensures \\property(malloc, \\result) == @array_new"
       ]
 },
 {
@@ -115,7 +115,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 5"
+            "@ensures \\property(malloc, \\result) == @array_new"
       ]
 },
 {
@@ -126,7 +126,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 5"
+            "@ensures \\property(malloc, \\result) == @array_new"
       ]
 },
 {
@@ -137,7 +137,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 3"
+            "@ensures \\property(malloc, \\result) == @new"
       ]
 },
 {
@@ -148,7 +148,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 3"
+            "@ensures \\property(malloc, \\result) == @new"
       ]
 },
 {
@@ -159,7 +159,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 3"
+            "@ensures \\property(malloc, \\result) == @new"
       ]
 },
 {
@@ -170,7 +170,7 @@
             "size": 0
       },
       "contracts" : [
-            "@ensures \\property(malloc, \\result) == 3"
+            "@ensures \\property(malloc, \\result) == @new"
       ]
 },
 {
@@ -275,6 +275,7 @@
       ],
       "contracts" : [
             "@ensures \\result != \\arg",
+            "@ensures \\property(malloc, \\result) == @malloc",
             "@ensures \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
@@ -288,6 +289,7 @@
       ],
       "contracts" : [
             "@ensures \\result != \\arg",
+            "@ensures \\property(malloc, \\result) == @malloc",
             "@ensures \\property(strlen, \\result) == \\arg1 ||  \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
@@ -629,8 +631,8 @@
       ],
       "contracts" : [
             "@assigns \\property(file, \\arg)",
-            "@requires[[RES-02]] \\property(file, \\arg) == 1",
-            "@ensures \\property(file, \\arg) == 0"
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened",
+            "@ensures \\property(file, \\arg) == @closed"
       ]
 },
 {
@@ -641,7 +643,7 @@
             { "access" : "Read", "array": "true" }
       ],
       "contracts" : [
-            "@ensures \\property(file, \\result) == 1"
+            "@ensures \\property(file, \\result) == @opened"
       ]
 },
 {
@@ -651,7 +653,7 @@
             { "access" : "None" }
       ],
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -668,7 +670,7 @@
             { "access" : "None" }
       ],
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\result) == 1"
+            "@requires[[RES-02]] \\property(file, \\result) == @opened"
       ]
 },
 {
@@ -690,7 +692,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -701,7 +703,7 @@
             { "access" : "Write" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
 {
@@ -717,7 +719,7 @@
       ], 
       "contracts" : [
             "@ensures \\result == \\arg0 || \\result == \\nullptr",
-            "@requires[[RES-02]] \\property(file, \\arg2) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg2) == @opened"
       ]
 },
 {
@@ -727,7 +729,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
 {
@@ -739,7 +741,7 @@
             {}
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
 {
@@ -749,7 +751,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
 {
@@ -808,7 +810,7 @@
             { "access" : "Read", "array": true }
       ],
       "contracts" : [
-            "@ensures (\\result == \\nullptr && \\property(file, \\result) == 0) || (\\result != \\nullptr && \\property(file, \\result) == 1)"
+            "@ensures (\\result == \\nullptr && \\property(file, \\result) == @closed) || (\\result != \\nullptr && \\property(file, \\result) == @opened)"
       ]
 },
 {
@@ -819,7 +821,7 @@
             { "access" : "Read", "array": true }
       ],
       "contracts" : [
-            "@ensures \\property(file, \\result) == 1"
+            "@ensures \\property(file, \\result) == @opened"
       ]
 },
 {
@@ -831,7 +833,7 @@
             {}
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
 {
@@ -842,7 +844,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg1) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg1) == @opened"
       ]
 },
 {
@@ -853,7 +855,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg1) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg1) == @opened"
       ]
 },
 {
@@ -866,7 +868,7 @@
             { "access" : "None" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg3) == 1"
+            "@requires[[RES-02]] \\property(file, \\arg3) == @opened"
       ]
 },
 {

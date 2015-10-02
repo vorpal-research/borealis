@@ -250,13 +250,7 @@ Term::Ptr TermFactory::getUnaryTerm(llvm::UnaryArithType opc, Term::Ptr rhv) {
 }
 
 Term::Ptr TermFactory::getUnlogicLoadTerm(Term::Ptr rhv) {
-    return Term::Ptr{
-        new LoadTerm(
-            TyF->getUnknownType(),
-            rhv,
-            /* retypable = */false
-        )
-    };
+    return getLoadTerm(getCastTerm(TyF->getPointer(TyF->getUnknownType()), false, rhv));
 }
 
 Term::Ptr TermFactory::getLoadTerm(Term::Ptr rhv) {
@@ -328,6 +322,12 @@ Term::Ptr TermFactory::getOpaqueVarTerm(const std::string& name) {
 Term::Ptr TermFactory::getOpaqueBuiltinTerm(const std::string& name) {
     return Term::Ptr{
         new OpaqueBuiltinTerm(TyF->getUnknownType(), name)
+    };
+}
+
+Term::Ptr TermFactory::getOpaqueNamedConstantTerm(const std::string& name) {
+    return Term::Ptr{
+        new OpaqueNamedConstantTerm(TyF->getUnknownType(), name)
     };
 }
 

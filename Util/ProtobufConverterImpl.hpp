@@ -61,7 +61,7 @@ struct protobuf_traits<Locus> {
     static proto_ptr toProtobuf(const normal_t& t) {
         auto res = util::uniq(new proto_t());
         if (!t.isUnknown()) {
-            res->set_filename(t.filename);
+            res->set_filename(t.filename.c_str());
             res->set_allocated_loc(locals.toProtobuf(t.loc).release());
         }
         return std::move(res);

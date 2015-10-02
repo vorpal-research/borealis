@@ -24,7 +24,7 @@ ExprFactory::ExprFactory() {
     Z3_set_ast_print_mode(*ctx, Z3_PRINT_SMTLIB2_COMPLIANT);
 }
 
-unsigned int ExprFactory::pointerSize = 32;
+unsigned int ExprFactory::pointerSize = 64;
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -40,7 +40,7 @@ public:
 
     virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
 
-    const std::string& getFilenameFor(const llvm::Value* val) const;
+    util::indexed_string getFilenameFor(const llvm::Value* val) const;
     unsigned getLineFor(const llvm::Value* val) const;
     unsigned getColumnFor(const llvm::Value* val) const;
     const Locus& getLocFor(const llvm::Value* val) const;

@@ -122,6 +122,9 @@ public:
     virtual void onBuiltin(const std::string& name) {
         term = tf->getOpaqueBuiltinTerm(name);
     }
+    virtual void onNamedConstant(const std::string& name) {
+        term = tf->getOpaqueNamedConstantTerm(name);
+    }
     virtual void onMask(const std::string& mask) {
         term = tf->getOpaqueBuiltinTerm(mask);
     }

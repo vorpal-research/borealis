@@ -99,6 +99,7 @@ public:
 
     virtual void onVariable(const std::string&);
     virtual void onBuiltin(const std::string&);
+    virtual void onNamedConstant(const std::string&);
     virtual void onMask(const std::string&);
 
     virtual void onList(const std::list<prod_t>& data);
@@ -144,6 +145,14 @@ class builtin: public virtual production {
 public:
     explicit builtin(const std::string& vname);
     explicit builtin(std::string&& vname);
+    virtual void accept(productionVisitor& pv) const override;
+};
+
+class namedConstant: public virtual production {
+    std::string vname_;
+public:
+    explicit namedConstant(const std::string& vname);
+    explicit namedConstant(std::string&& vname);
     virtual void accept(productionVisitor& pv) const override;
 };
 
@@ -194,6 +203,7 @@ public:
     static prod_t createBool(bool v);
     static prod_t createVar(const std::string& v);
     static prod_t createBuiltin(const std::string& v);
+    static prod_t createNamedConstant(const std::string& v);
     static prod_t createMask(const std::string& v);
     static prod_t createList(const prod_t& op0, const prod_t& op1);
     static prod_t createBinary(bin_opcode code, const prod_t& op0, const prod_t& op1);
@@ -208,6 +218,7 @@ class printingVisitor: public virtual productionVisitor {
     virtual void onBoolConstant(bool v) override;
     virtual void onVariable(const std::string& name) override;
     virtual void onBuiltin(const std::string& name) override;
+    virtual void onNamedConstant(const std::string& name) override;
     virtual void onList(const std::list<prod_t>& data) override;
     virtual void onMask(const std::string& mask) override;
     virtual void onBinary(bin_opcode opc, const prod_t& op0, const prod_t& op1) override;

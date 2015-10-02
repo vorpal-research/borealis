@@ -11,8 +11,9 @@
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <algorithm>
 
-#include "Util/util.h"
+#include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
 namespace borealis {

@@ -79,12 +79,12 @@ static void postProcessClangGeneratedModule(clang::SourceManager& SM, llvm::Modu
             llvm::TypeBuilder<llvm::types::i<32>, true>::get(ctx), llc.loc.col
         );
 
-         llvm::Value* arr[] = {
+        llvm::Value* arr[] = {
             cacheLine->getOperand(0),
             llvm::MDString::get(ctx, clangDecl->getName()),
             mcol,
             mline,
-            llvm::MDString::get(ctx, llc.filename)
+            llvm::MDString::get(ctx, llc.filename.c_str())
         };
         ourGlobals->addOperand(llvm::MDNode::get(ctx, arr));
     }

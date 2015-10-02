@@ -9,12 +9,11 @@
 
 namespace borealis {
 
-LoadTerm::LoadTerm(Type::Ptr type, Term::Ptr rhv, bool retypable):
+LoadTerm::LoadTerm(Type::Ptr type, Term::Ptr rhv):
     Term(
         class_tag(*this),
         type,
-        "*(" + rhv->getName() + ")",
-        retypable
+        "*(" + rhv->getName() + ")"
     ) {
     subterms = { rhv };
 };

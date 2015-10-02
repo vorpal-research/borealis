@@ -24,6 +24,7 @@ void productionVisitor::onBoolConstant(bool) { defaultBehaviour(); }
 
 void productionVisitor::onVariable(const std::string&) { defaultBehaviour(); }
 void productionVisitor::onBuiltin(const std::string&) { defaultBehaviour(); }
+void productionVisitor::onNamedConstant(const std::string&) { defaultBehaviour(); }
 void productionVisitor::onMask(const std::string&) { defaultBehaviour(); }
 void productionVisitor::onList(const std::list<prod_t>&) { defaultBehaviour(); }
 
@@ -52,6 +53,12 @@ builtin::builtin(const std::string& vname) : vname_(vname) {}
 builtin::builtin(std::string&& vname) : vname_(std::move(vname)) {};
 void builtin::accept(productionVisitor& pv) const {
     pv.onBuiltin(vname_);
+};
+
+namedConstant::namedConstant(const std::string& vname) : vname_(vname) {}
+namedConstant::namedConstant(std::string&& vname) : vname_(std::move(vname)) {};
+void namedConstant::accept(productionVisitor& pv) const {
+    pv.onNamedConstant(vname_);
 };
 
 productionList::productionList(const std::list<prod_t>& data): data_(data) {}
@@ -100,6 +107,7 @@ prod_t productionFactory::bind(const char* v) {
 }
 prod_t productionFactory::bind(const std::string& v) {
     if (v.size() > 0 && v[0] == '\\') return createBuiltin(v.substr(1, std::string::npos));
+    if (v.size() > 0 && v[0] == '@') return createNamedConstant(v.substr(1, std::string::npos));
     else return createVar(v);
 }
 
@@ -122,6 +130,9 @@ prod_t productionFactory::createMask(const std::string& v) {
 }
 prod_t productionFactory::createBuiltin(const std::string& v) {
     return make_shared<builtin>(v);
+}
+prod_t productionFactory::createNamedConstant(const std::string& v) {
+    return make_shared<namedConstant>(v);
 }
 
 namespace {
@@ -174,6 +185,9 @@ void printingVisitor::onVariable(const std::string& name) {
 }
 void printingVisitor::onBuiltin(const std::string& name) {
     ost_ << '\\' << name;
+}
+void printingVisitor::onNamedConstant(const std::string& name) {
+    ost_ << '@' << name;
 }
 void printingVisitor::onList(const std::list<prod_t>& data) {
     ost_ << *borealis::util::head(data);

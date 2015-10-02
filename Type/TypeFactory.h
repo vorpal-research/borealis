@@ -38,8 +38,10 @@ public:
 
     static TypeFactory::Ptr get();
 
+    static constexpr size_t defaultTypeSize = 64;
+
     Type::Ptr getBool() const;
-    Type::Ptr getInteger(size_t bitsize, llvm::Signedness sign = llvm::Signedness::Unknown) const;
+    Type::Ptr getInteger(size_t bitsize = defaultTypeSize, llvm::Signedness sign = llvm::Signedness::Unknown) const;
     Type::Ptr getFloat() const;
     Type::Ptr getUnknownType() const;
     Type::Ptr getPointer(Type::Ptr to) const;

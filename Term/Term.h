@@ -37,7 +37,6 @@ package borealis.proto;
 message Term {
     optional Type type = 1;
     optional string name = 2;
-    optional bool retypable = 3;
 
     extensions 16 to 64;
 }
@@ -74,7 +73,6 @@ public:
 
     Type::Ptr getType() const;
     const std::string& getName() const;
-    bool isRetypable() const;
 
     size_t getNumSubterms() const;
     const Subterms& getSubterms() const;
@@ -99,7 +97,6 @@ protected:
 
     Type::Ptr type;
     std::string name;
-    bool retypable;
 
     Subterms subterms;
 
