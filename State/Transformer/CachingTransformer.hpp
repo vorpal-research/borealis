@@ -9,12 +9,15 @@
 
 namespace borealis {
 
+#define CALL(CLASS, WHAT) \
+    static_cast<T*>(this)->transform##CLASS(WHAT)
+
 template<class T>
 class CachingTransformer : public Transformer<T> {
 
     using Base = Transformer<T>;
 
-    std::unordered_map<PredicateState::Ptr, PredicateState::Ptr> predicateStateCache;
+    std::unordered_map<PredicateState::Ptr, PredicateState::Ptr> transformCache;
 
 public:
 
@@ -23,10 +26,11 @@ public:
     using Base::transformBase;
 
     PredicateState::Ptr transformBase(PredicateState::Ptr ps) {
-        if (auto cached = util::at(predicateStateCache, ps)) {
+        TRACE_FUNC;
+        if (auto cached = util::at(transformCache, ps)) {
             return cached.getUnsafe();
         } else {
-            return predicateStateCache[ps] = Base::transformBase(ps);
+            return transformCache[ps] = Base::transformBase(ps);
         }
     }
 
