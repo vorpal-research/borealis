@@ -14,13 +14,13 @@
 #include <unordered_set>
 
 #include "State/PredicateState.def"
-#include "State/Transformer/Transformer.hpp"
+#include "State/Transformer/CachingTransformer.hpp"
 
 namespace borealis {
 
-class StateSlicer : public borealis::Transformer<StateSlicer> {
+class StateSlicer : public borealis::CachingTransformer<StateSlicer> {
 
-    using Base = borealis::Transformer<StateSlicer>;
+    using Base = borealis::CachingTransformer<StateSlicer>;
 
 public:
 
