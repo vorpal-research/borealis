@@ -60,7 +60,7 @@ public:
 
 protected:
 
-    Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable = true);
+    Term(id_t classTag, Type::Ptr type, const std::string& name);
     Term(const Term&) = default;
 
     void update();

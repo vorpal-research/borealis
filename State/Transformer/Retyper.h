@@ -5,13 +5,13 @@
 #ifndef SANDBOX_RETYPER_H
 #define SANDBOX_RETYPER_H
 
-#include "State/Transformer/Transformer.hpp"
+#include "State/Transformer/CachingTransformer.hpp"
 
 namespace borealis {
 
-class Retyper : public borealis::Transformer<Retyper> {
+class Retyper : public borealis::CachingTransformer<Retyper> {
 
-    using Base = Transformer<Retyper>;
+    using Base = CachingTransformer<Retyper>;
 
     std::stack<Type::Ptr> types;
 

@@ -70,7 +70,8 @@ public:
 public:
 
     PredicateState::Ptr transform(PredicateState::Ptr ps) {
-        return CALL(Base, ps)->map([&](auto&& e) { return CALL(Base, e); });
+        TRACE_FUNC;
+        return CALL(Base, ps);
     }
 
 protected:
@@ -80,6 +81,7 @@ protected:
 #include "State/PredicateState.def"
 
     PredicateState::Ptr transformBase(PredicateState::Ptr ps) {
+        TRACE_FUNC;
         PredicateState::Ptr res;
 #define HANDLE_STATE(NAME, CLASS) \
         if (llvm::isa<CLASS>(ps)) { \
@@ -91,13 +93,23 @@ protected:
         DELEGATE(Esab, res);
     }
 
-#define HANDLE_STATE(NAME, CLASS) \
-    PredicateState::Ptr transform##NAME(CLASS##Ptr ps) { \
-        return ps->fmap([&](auto&& e) { return CALL(Base, e); }); \
+    PredicateState::Ptr transformBasic(BasicPredicateStatePtr ps) {
+        TRACE_FUNC;
+        return ps->map([&](auto&& p) { return CALL(Base, p); });
     }
-#include "State/PredicateState.def"
+
+    PredicateState::Ptr transformChain(PredicateStateChainPtr ps) {
+        TRACE_FUNC;
+        return ps->fmap([&](auto&& e) { return CALL(Base, e); });
+    }
+
+    PredicateState::Ptr transformChoice(PredicateStateChoicePtr ps) {
+        TRACE_FUNC;
+        return ps->fmap([&](auto&& e) { return CALL(Base, e); });
+    }
 
     PredicateState::Ptr transformEsab(PredicateState::Ptr ps) {
+        TRACE_FUNC;
         PredicateState::Ptr res;
 #define HANDLE_STATE(NAME, CLASS) \
         if (llvm::isa<CLASS>(ps)) { \
@@ -111,11 +123,13 @@ protected:
 
 #define HANDLE_STATE(NAME, CLASS) \
     PredicateState::Ptr transform##CLASS(CLASS##Ptr ps) { \
+        TRACE_FUNC; \
         return ps; \
     }
 #include "State/PredicateState.def"
 
     PredicateState::Ptr transformPredicateState(PredicateState::Ptr ps) {
+        TRACE_FUNC;
         return ps;
     }
 
@@ -279,6 +293,7 @@ protected:
     }
 
 #undef DELEGATE
+#undef CALL
 
 };
 

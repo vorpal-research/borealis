@@ -28,6 +28,8 @@ public:
 
     PredicateState::Ptr operator()() const;
 
+    PredicateState::Ptr apply() const;
+
     template<class TT>
     PredicateState::Ptr with(TT&& t) const {
         return std::forward<TT>(t).transform(State);

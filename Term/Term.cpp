@@ -12,7 +12,7 @@ namespace borealis {
 
 static Statistic totalTermsCreated("misc", "totalTerms", "Total number of terms created");
 
-Term::Term(id_t classTag, Type::Ptr type, const std::string& name, bool retypable):
+Term::Term(id_t classTag, Type::Ptr type, const std::string& name):
     ClassTag(classTag), type(type), name(name) { ++totalTermsCreated; };
 
 void Term::update() {}
