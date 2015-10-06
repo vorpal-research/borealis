@@ -19,6 +19,11 @@ using borealis::util::view;
 BasicPredicateState::BasicPredicateState() :
         PredicateState(class_tag<Self>()) {}
 
+BasicPredicateState::BasicPredicateState(size_t size) :
+    PredicateState(class_tag<Self>()) {
+    data.reserve(size);
+}
+
 BasicPredicateState::BasicPredicateState(const Data& data) :
         PredicateState(class_tag<Self>()),
         data(data) {}
@@ -85,7 +90,7 @@ PredicateState::Ptr BasicPredicateState::fmap(FMapper f) const {
 }
 
 PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
-    auto&& res = Uniquified();
+    auto&& res = Uniquified(data.size());
     for (auto&& p : data) {
         res->addPredicateInPlace(m(p));
     }
@@ -94,7 +99,7 @@ PredicateState::Ptr BasicPredicateState::map(Mapper m) const {
 }
 
 PredicateState::Ptr BasicPredicateState::filterByTypes(std::initializer_list<PredicateType> types) const {
-    auto&& res = Uniquified();
+    auto&& res = Uniquified(data.size());
     for (auto&& p : data) {
         if (std::any_of(types.begin(), types.end(),
             [&](auto&& type) { return p->getType() == type; }
@@ -105,7 +110,7 @@ PredicateState::Ptr BasicPredicateState::filterByTypes(std::initializer_list<Pre
 }
 
 PredicateState::Ptr BasicPredicateState::filter(Filterer f) const {
-    auto&& res = Uniquified();
+    auto&& res = Uniquified(data.size());
     for (auto&& p : data) {
         if (f(p)) res->addPredicateInPlace(p);
     }
@@ -114,7 +119,7 @@ PredicateState::Ptr BasicPredicateState::filter(Filterer f) const {
 }
 
 PredicateState::Ptr BasicPredicateState::reverse() const {
-    auto&& res = Uniquified();
+    auto&& res = Uniquified(data.size());
     for (auto&& p : view(data.rbegin(), data.rend())) {
         res->addPredicateInPlace(p);
     }
@@ -124,8 +129,8 @@ PredicateState::Ptr BasicPredicateState::reverse() const {
 
 std::pair<PredicateState::Ptr, PredicateState::Ptr> BasicPredicateState::splitByTypes(
         std::initializer_list<PredicateType> types) const {
-    auto&& yes = Uniquified();
-    auto&& no = Uniquified();
+    auto&& yes = Uniquified(data.size());
+    auto&& no = Uniquified(data.size());
     for (auto&& p : data) {
         if (std::any_of(types.begin(), types.end(),
             [&](auto&& type) { return p->getType() == type; }
