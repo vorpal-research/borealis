@@ -50,6 +50,10 @@ Term::Ptr Retyper::transformCmp(CmpTermPtr t) {
     return Base::transformCmp(t);
 }
 
+Predicate::Ptr Retyper::transformSeqData(SeqDataPredicatePtr p) {
+    return p->shared_from_this();
+}
+
 } // namespace borealis
 
 #include "Util/unmacros.h"
