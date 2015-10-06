@@ -9,15 +9,15 @@
 #define STATEOPTIMIZER_H_
 
 #include "State/PredicateState.def"
-#include "State/Transformer/Transformer.hpp"
+#include "State/Transformer/CachingTransformer.hpp"
 
 #include "Util/macros.h"
 
 namespace borealis {
 
-class StateOptimizer : public borealis::Transformer<StateOptimizer> {
+class StateOptimizer : public borealis::CachingTransformer<StateOptimizer> {
 
-    using Base = borealis::Transformer<StateOptimizer>;
+    using Base = borealis::CachingTransformer<StateOptimizer>;
 
 public:
 
@@ -28,18 +28,12 @@ public:
     PredicateState::Ptr transformPredicateStateChain(PredicateStateChainPtr ps);
 
     PredicateState::Ptr transformBasic(BasicPredicateStatePtr ps);
-    PredicateState::Ptr transformBasicPredicateState(BasicPredicateStatePtr ps);
 
     using Base::transformBase;
-    PredicateState::Ptr transformBase(PredicateState::Ptr ps);
     Predicate::Ptr transformBase(Predicate::Ptr pred);
-
-    using Base::transform;
-    PredicateState::Ptr transform(PredicateState::Ptr ps);
 
 private:
 
-    std::unordered_map<PredicateState::Ptr, PredicateState::Ptr> cache;
     std::unordered_map<std::pair<PredicateState::Ptr, PredicateState::Ptr>, PredicateState::Ptr> mergeCache;
 
     PredicateState::Ptr merge(PredicateState::Ptr a, PredicateState::Ptr b);
