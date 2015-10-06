@@ -28,9 +28,10 @@ GENERATE_FANCY_ENUM(ArrayTag, IsArray, IsNotArray);
 struct ResultInfo {
     SpecialTag special = SpecialTag::None;
     util::option<size_t> sizeArgument = util::nothing();
+    util::option<size_t> boundArgument = util::nothing();
     ArrayTag isArray = ArrayTag::IsNotArray;
 
-    GENERATE_PRINT(ResultInfo, special, sizeArgument, isArray);
+    GENERATE_PRINT(ResultInfo, special, sizeArgument, boundArgument, isArray);
 };
 
 struct ArgInfo {
@@ -68,6 +69,7 @@ struct json_traits<borealis::func_info::ResultInfo> {
         Json::Value ret = Json::objectValue;
         ret["special"] = util::toJson(val.special);
         ret["size"] = util::toJson(val.sizeArgument);
+        ret["return"] = util::toJson(val.boundArgument);
         ret["array"] = util::toJson(val.isArray == ArrayTag::IsArray);
         return ret;
     }
@@ -79,6 +81,7 @@ struct json_traits<borealis::func_info::ResultInfo> {
         auto retVal = util::make_unique<value_type>();
         util::assignJson(retVal->special, json["special"]);
         util::assignJson(retVal->sizeArgument, json["size"]);
+        util::assignJson(retVal->boundArgument, json["return"]);
         retVal->isArray = util::fromJsonWithDefault(json["array"], false)? ArrayTag::IsArray : ArrayTag::IsNotArray;
         return std::move(retVal);
     }

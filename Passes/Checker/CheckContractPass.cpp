@@ -18,6 +18,8 @@
 #include "State/Transformer/ContractTransmogrifier.h"
 #include "State/Transformer/Simplifier.h"
 
+#include "Logging/tracer.hpp"
+
 namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,10 +74,12 @@ public:
         if (h.skip()) return;
 
         auto contract = pass->FM->getReq(CI, pass->FN);
+
         auto t = CallSiteInitializer(CI, pass->FN);
         auto q = contract->map(
             [&t](Predicate::Ptr p) { return t.transform(p); }
         );
+
         auto ps = pass->PSA->getInstructionState(&CI);
 
         h.check(q, ps);

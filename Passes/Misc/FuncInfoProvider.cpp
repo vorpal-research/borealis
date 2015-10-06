@@ -12,6 +12,8 @@
 #include "Config/config.h"
 #include "Factory/Nest.h"
 
+#include <tinyformat/tinyformat.h>
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -44,6 +46,7 @@ void FuncInfoProvider::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<llvm::TargetLibraryInfo>::addRequiredTransitive(AU);
     AUX<borealis::SlotTrackerPass>::addRequiredTransitive(AU);
 }
+
 
 bool FuncInfoProvider::runOnModule(llvm::Module& M) {
     pimpl_->TLI = &getAnalysis<llvm::TargetLibraryInfo>();
@@ -84,7 +87,7 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
     return false;
 }
 
-const std::vector<Annotation::Ptr> FuncInfoProvider::getContracts(llvm::Function* f) {
+const std::vector<Annotation::Ptr>& FuncInfoProvider::getContracts(llvm::Function* f) {
     auto key = f->getName().str();
     return pimpl_->contracts.at(key);
 }

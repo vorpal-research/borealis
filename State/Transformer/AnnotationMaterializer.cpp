@@ -188,6 +188,26 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
             } else {
                 failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": called on non-pointer");
             }
+        } else if (builtin->getVName() == "is_valid_array") {
+            auto&& rhv = trm->getRhv().toVector();
+            if (rhv.size() != 2) failWith("Illegal \\is_valid_array access " + trm->getName() + ": exactly two operands expected");
+
+            auto&& val = this->transform(rhv[0]);
+            auto&& type = val->getType();
+
+            auto&& size = this->transform(rhv[1]);
+
+            if (auto* ptrType = llvm::dyn_cast<type::Pointer>(type)) {
+                auto&& pointed = ptrType->getPointed();
+
+                auto&& bval = builder(val);
+
+                return bval != null()
+                       && bval != invalid()
+                       && bval.bound().uge( builder(TypeUtils::getTypeSizeInElems(pointed)) * size );
+            } else {
+                failWith("Illegal \\is_valid_array access " + trm->getName() + ": called on non-pointer");
+            }
         } else if (builtin->getVName() == "old") {
             // all \old's should be already taken care of, let's try to guess the problem
             if (trm->getRhv().size() != 1) failWith("Illegal \\old invocation " + trm->getName() + ": exactly one operand expected");

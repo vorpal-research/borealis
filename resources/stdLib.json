@@ -1817,6 +1817,9 @@
       "result" : { "special": "Malloc" },
       "args": [
             { "access" : "Read", "array" : true }
+      ],
+      "contracts": [
+            "@ensures \\bound(\\result) == \\bound(\\arg)"
       ]
 },
 {

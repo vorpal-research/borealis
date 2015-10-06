@@ -13,6 +13,7 @@
 #include <llvm/Analysis/MemoryBuiltins.h>
 #include <llvm/Target/TargetLibraryInfo.h>
 
+#include "Annotation/AnnotationCast.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
@@ -24,8 +25,10 @@
 #include "Statistics/statistics.h"
 #include "Util/passes.hpp"
 #include "Passes/Misc/FuncInfoProvider.h"
+#include "Passes/Transform/MallocMutator.h"
 
 #include "Util/macros.h"
+
 
 namespace borealis {
 
@@ -134,6 +137,27 @@ inline llvm::Instruction* mkStoreNondet(
 inline llvm::CallInst* mkNondet(
         IntrinsicsManager& IM,
         llvm::Module& M,
+        llvm::Type* type,
+        const std::string& modifier,
+        llvm::Instruction* insertBefore) {
+    auto&& f = IM.createIntrinsic(
+        function_type::INTRINSIC_NONDET,
+        util::toString(*type),
+        llvm::FunctionType::get(type, false),
+        &M
+    );
+
+    f->setDoesNotAccessMemory();
+    f->setDoesNotThrow();
+
+    auto&& name = "bor.decomposed.nondet." + modifier;
+
+    return createCall(f, name, insertBefore);
+}
+
+inline llvm::CallInst* mkNondet(
+        IntrinsicsManager& IM,
+        llvm::Module& M,
         llvm::CallInst& originalCall) {
     auto&& f = IM.createIntrinsic(
         function_type::INTRINSIC_NONDET,
@@ -157,6 +181,35 @@ inline llvm::CallInst* mkNondet(
                 + ".res";
 
     return createCall(f, name, &originalCall);
+}
+
+static std::vector<std::string> implicitContracts(const llvm::Function* func, const func_info::FuncInfo& fi) {
+    std::vector<std::string> ret;
+
+    auto&& ri = fi.resultInfo;
+
+    if(func->getReturnType()->isPointerTy()) {
+        if(ri.isArray == func_info::ArrayTag::IsArray && ri.sizeArgument) {
+            auto&& sz = ri.sizeArgument.getUnsafe();
+            ret.push_back(tfm::format("@ensures \\is_valid_array(\\result, \\arg%d) ", sz));
+        }
+    }
+
+    for(size_t i = 0; i < fi.argInfo.size(); ++i) {
+        auto ptype = func->getFunctionType()->getParamType(i);
+        if(ptype->isPointerTy()) {
+            auto&& ai = fi.argInfo[i];
+            if(ai.access != func_info::AccessPatternTag::None) {
+                if(ai.isArray == func_info::ArrayTag::IsArray && ai.sizeArgument) {
+                    ret.push_back(tfm::format("@requires[[BUF-01]] \\is_valid_array(\\arg%d, \\arg%d) ", i, ai.sizeArgument.getUnsafe()));
+                } else {
+                    ret.push_back(tfm::format("@requires[[BUF-01]] \\is_valid_ptr(\\arg%d) ", i));
+                }
+            }
+        }
+    }
+
+    return std::move(ret);
 }
 
 void FunctionDecomposer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
@@ -188,7 +241,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
         return func
             && func->isDeclaration()
             && !func->isIntrinsic()
-            && !llvm::isAllocationFn(ci, &TLI)
+            // && !llvm::isAllocationFn(ci, &TLI)
             && !llvm::isFreeCall(ci, &TLI)
             && !func->doesNotReturn()
             // FIXME
@@ -211,10 +264,20 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
         llvm::Function* f = call->getCalledFunction();
         llvm::Value* predefinedReturn = nullptr;
         if (FIP.hasInfo(f)) {
+
+            auto&& funcInfo = FIP.getInfo(f);
+
             infos() << "FIPping " << f->getName() << endl;
             FactoryNest FN(STP.getSlotTracker(call));
 
-            auto&& contracts = FIP.getContracts(f);
+            auto contracts = FIP.getContracts(f);
+            auto impContracts = util::viewContainer(implicitContracts(f, funcInfo))
+                                .map(LAM(A, fromString(Locus{}, A, FN.Term)))
+                                .filter()
+                                .toVector();
+
+            contracts.insert(std::end(contracts), std::begin(impContracts), std::end(impContracts));
+
             std::vector<Annotation::Ptr> befores;
             std::vector<Annotation::Ptr> afters;
             std::vector<Annotation::Ptr> middles;
@@ -240,20 +303,24 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
 
             for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
                 auto realIx = f->isVarArg() && i > f->getArgumentList().size() ? f->getArgumentList().size() : i;
+                auto&& argInfo = funcInfo.argInfo.at(realIx);
 
                 auto&& arg = call->getArgOperand(i);
 
-                auto writeOnly = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::Write;
-                auto readOnly = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::Read;
-                auto noAccess = FIP.getInfo(f).argInfo.at(realIx).access == func_info::AccessPatternTag::None;
-                if (FIP.getInfo(f).resultInfo.sizeArgument == size_t(i)) {
+                if (FIP.getInfo(f).resultInfo.boundArgument == size_t(i)) {
                     predefinedReturn = arg;
                 }
 
+                auto writeOnly = argInfo.access == func_info::AccessPatternTag::Write;
+                auto readOnly = argInfo.access == func_info::AccessPatternTag::Read;
+                auto noAccess = argInfo.access == func_info::AccessPatternTag::None;
+
                 if (!arg->getType()->isPointerTy()
                     || arg->getType()->getPointerElementType()->isFunctionTy()
+                    || arg->getType()->getPointerElementType()->isAggregateType()
                     || llvm::isa<llvm::Constant>(arg)
-                    || noAccess) {
+                    || noAccess
+                    || argInfo.isArray == func_info::ArrayTag::IsArray) {
                     auto&& consume = mkConsumeCall(IM, M, *call, i);
                     if (auto&& md = call->getMetadata("dbg")) consume->setMetadata("dbg", md);
                 } else if (readOnly) {
@@ -272,6 +339,34 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                     auto&& store = mkStoreNondet(IM, M, *call, i);
                     if (auto&& md = call->getMetadata("dbg")) store->setMetadata("dbg", md);
                 }
+            }
+
+            if(funcInfo.resultInfo.special == func_info::SpecialTag::Malloc) {
+                llvm::Value* sizeArgument = nullptr;
+                if(funcInfo.resultInfo.sizeArgument) {
+                    sizeArgument = call->getArgOperand(funcInfo.resultInfo.sizeArgument.getUnsafe());
+                } else {
+                    sizeArgument = mkNondet(
+                                        IM,
+                                        M,
+                                        llvm::Type::getInt64Ty(M.getContext()),
+                                        "allocIndex",
+                                        call
+                                   );
+                }
+
+                MallocMutator::mutateMemoryInst(
+                    M,
+                    call,
+                    function_type::INTRINSIC_MALLOC,
+                    call->getType(),
+                    call->getType()->getPointerElementType(),
+                    sizeArgument,
+                    [call, &predefinedReturn](llvm::Instruction*, llvm::Instruction* new_) {
+                        new_->setName("bor.decomposed.malloc." + call->getCalledFunction()->getName());
+                        predefinedReturn = new_;
+                    }
+                );
             }
 
             for (auto&& require: afters) AnnotationProcessor::landOnInstructionOrLast(require, M, FN, *call);
