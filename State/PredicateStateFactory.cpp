@@ -12,9 +12,15 @@ namespace borealis {
 PredicateState::Ptr PredicateStateFactory::Chain(
         PredicateState::Ptr base,
         PredicateState::Ptr curr) {
-    return PredicateState::Simplified<PredicateStateChain>(
-        base, curr
-    );
+    if (base->isEmpty()) {
+        return curr;
+    } else if (curr->isEmpty()) {
+        return base;
+    } else {
+        return PredicateState::Simplified<PredicateStateChain>(
+            base, curr
+        );
+    }
 }
 
 PredicateState::Ptr PredicateStateFactory::Chain(
