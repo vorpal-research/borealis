@@ -69,7 +69,7 @@ struct json_traits<borealis::func_info::ResultInfo> {
         Json::Value ret = Json::objectValue;
         ret["special"] = util::toJson(val.special);
         ret["size"] = util::toJson(val.sizeArgument);
-        ret["return"] = util::toJson(val.boundArgument);
+        ret["arg"] = util::toJson(val.boundArgument);
         ret["array"] = util::toJson(val.isArray == ArrayTag::IsArray);
         return ret;
     }
@@ -81,7 +81,7 @@ struct json_traits<borealis::func_info::ResultInfo> {
         auto retVal = util::make_unique<value_type>();
         util::assignJson(retVal->special, json["special"]);
         util::assignJson(retVal->sizeArgument, json["size"]);
-        util::assignJson(retVal->boundArgument, json["return"]);
+        util::assignJson(retVal->boundArgument, json["arg"]);
         retVal->isArray = util::fromJsonWithDefault(json["array"], false)? ArrayTag::IsArray : ArrayTag::IsNotArray;
         return std::move(retVal);
     }
