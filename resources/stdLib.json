@@ -727,7 +727,8 @@
             { "access" : "Read" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened",
+            "@ensures \\result == (\\num_args - 2) || \\result < 0"
       ]
 },
 {

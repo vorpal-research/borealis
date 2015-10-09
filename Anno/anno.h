@@ -128,6 +128,7 @@ public:
 };
 
 std::vector<command> parse(const std::string& v);
+prod_t parseTerm(const std::string& v);
 
 } // namespace anno
 } // namespace borealis

@@ -21,6 +21,9 @@ Annotation::Ptr fromParseResult(
 
 Annotation::Ptr fromString(const Locus& locus, const std::string& text, TermFactory::Ptr TF);
 
+Term::Ptr fromParseResult(const Locus& locus, anno::prod_t term, TermFactory::Ptr tf);
+Term::Ptr termFromString(const Locus& locus, const std::string& text, TermFactory::Ptr TF);
+
 } /* namespace borealis */
 
 #endif /* ANNOTATIONCAST_H_ */
