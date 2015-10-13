@@ -14,11 +14,14 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Metadata.h>
 #include <llvm/IR/TypeBuilder.h>
+#include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
 #include <cmath>
 #include <vector>
+#include <llvm/Support/GraphWriter.h>
+#include <llvm/IR/Verifier.h>
 
 #include "Codegen/scalarEvolutions.h"
 #include "Codegen/intrinsics_manager.h"
@@ -108,6 +111,14 @@ static inline llvm::BasicBlock* CreateUnreachableBasicBlock(
             Name + Twine(".unreachable"),
             F
     );
+
+    static auto&& f = IntrinsicsManager::getInstance().createIntrinsic(
+        function_type::INTRINSIC_CONSUME,
+        "void",
+        llvm::FunctionType::get(llvm::Type::getVoidTy(F->getContext()), false),
+        F->getParent()
+    );
+    CallInst::Create(f, "", BB);
 
     new UnreachableInst(F->getContext(), BB);
 
@@ -459,6 +470,8 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
         CurrentDerollCount = adjustUnrollFactor(CurrentDerollCount, L);
     }
 
+    // llvm::WriteGraph<const llvm::Function*>(F, "cfg.before." + valueSummary(F) + valueSummary(Header), true);
+
     for (unsigned UnrollIter = 0; UnrollIter != CurrentDerollCount; UnrollIter++) {
         std::vector<BasicBlock*> NewBlocks;
 
@@ -540,14 +553,19 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
         if (DD != 0) {
             Term->setSuccessor(!ContinueOnTrue, Dest);
         } else if (LoopExit) {
-            Term->setSuccessor(!ContinueOnTrue, LoopExit);
+            Term->setSuccessor(ContinueOnTrue, LoopExit);
             BasicBlock* UBB = CreateUnreachableBasicBlock(F, Twine(Latches[LL]->getName()));
-            Term->setSuccessor(ContinueOnTrue, UBB);
+            Term->setSuccessor(!ContinueOnTrue, UBB);
+
+            L->addBasicBlockToLoop(UBB, LI->getBase());
+
         } else {
             new UnreachableInst(Term->getContext(), Term);
             Term->eraseFromParent();
         }
     }
+
+    // llvm::WriteGraph<const llvm::Function*>(F, "cfg.after." + valueSummary(F) + valueSummary(Header), true);
 
     // Reconstruct dom info, because it is not preserved properly
     if (DominatorTreeWrapperPass* DT = LPM.getAnalysisIfAvailable<DominatorTreeWrapperPass>()) {
