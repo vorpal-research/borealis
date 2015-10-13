@@ -2271,5 +2271,16 @@
             {},
             { "access" : "Write", "array" : true, "size" : 2 }
       ]
+},
+{
+      "signature": "struct hostent *gethostbyname2(const char *name, int af)",
+      "name": "gethostbyname2",
+      "args": [
+            { "access" : "Read", "array" : true },
+            {}
+      ],
+      "contracts": [
+            "@ensures (\\result == \\nullptr) || (\\is_valid_ptr(\\result) && \\is_valid_ptr(\\result->h_addr_list) && \\is_valid_ptr(\\result->h_addr_list[0]))"
+      ]
 }
 ]
