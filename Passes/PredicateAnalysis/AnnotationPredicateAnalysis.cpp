@@ -13,6 +13,9 @@
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/AnnotationSubstitutor.h"
+#include "Util/cache.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -47,14 +50,35 @@ public:
             if (llvm::isa<AssignsAnnotation>(anno)) {
                 const LogicAnnotation* LA = llvm::cast<LogicAnnotation>(anno);
                 auto trm = LA->getTerm();
-                static int seed = 0;
+                static auto freshVarCache = util::make_size_t_cache<const llvm::Instruction*>();
+                auto currentSeed = freshVarCache.at(&CI);
+
                 if (llvm::isa<ReadPropertyTerm>(trm)) {
                     auto rpt = llvm::cast<ReadPropertyTerm>(trm);
                     pass->PM[&CI] =
                         pass->FN.Predicate->getWritePropertyPredicate(
                             rpt->getPropertyName(),
                             rpt->getRhv(),
-                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(seed))
+                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(currentSeed)),
+                            pass->SLT->getLocFor(&CI)
+                        );
+                } else if (llvm::isa<BoundTerm>(trm)) {
+                    auto rpt = llvm::cast<BoundTerm>(trm);
+                    pass->PM[&CI] =
+                        pass->FN.Predicate->getWriteBoundPredicate(
+                            rpt->getRhv(),
+                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(currentSeed)),
+                            pass->SLT->getLocFor(&CI)
+                        );
+                } else if (llvm::isa<LoadTerm>(trm)) {
+                    auto rpt = llvm::cast<LoadTerm>(trm);
+                    ASSERTC(llvm::isa<type::Pointer>(rpt->getType()));
+                    auto ptr = llvm::cast<type::Pointer>(rpt->getType());
+                    pass->PM[&CI] =
+                        pass->FN.Predicate->getStorePredicate(
+                            rpt->getRhv(),
+                            pass->FN.Term->getValueTerm(ptr->getPointed(), "borealis.fresh.var." + util::toString(currentSeed)),
+                            pass->SLT->getLocFor(&CI)
                         );
                 }
             }
@@ -107,3 +131,5 @@ static RegisterPass<AnnotationPredicateAnalysis>
 X("annotation-predicate-analysis", "Annotation predicate extraction");
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
