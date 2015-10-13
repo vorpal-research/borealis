@@ -113,7 +113,7 @@ static inline llvm::BasicBlock* CreateUnreachableBasicBlock(
     );
 
     static auto&& f = IntrinsicsManager::getInstance().createIntrinsic(
-        function_type::INTRINSIC_CONSUME,
+        function_type::INTRINSIC_UNREACHABLE,
         "void",
         llvm::FunctionType::get(llvm::Type::getVoidTy(F->getContext()), false),
         F->getParent()
@@ -553,11 +553,16 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
         if (DD != 0) {
             Term->setSuccessor(!ContinueOnTrue, Dest);
         } else if (LoopExit) {
+
+            auto&& UBB = CreateUnreachableBasicBlock(F, Twine(Latches[LL]->getName()));
+            L->addBasicBlockToLoop(UBB, LI->getBase());
+
             Term->setSuccessor(ContinueOnTrue, LoopExit);
-            BasicBlock* UBB = CreateUnreachableBasicBlock(F, Twine(Latches[LL]->getName()));
             Term->setSuccessor(!ContinueOnTrue, UBB);
 
-            L->addBasicBlockToLoop(UBB, LI->getBase());
+            auto&& backEdge = UBB->getTerminator();
+            BranchInst::Create(Dest, backEdge);
+            backEdge->eraseFromParent();
 
         } else {
             new UnreachableInst(Term->getContext(), Term);
