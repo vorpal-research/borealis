@@ -27,6 +27,8 @@ public:
     Term::Ptr transformBinary(BinaryTermPtr t);
     Term::Ptr transformCmp(CmpTermPtr t);
 
+    Predicate::Ptr transformSeqData(SeqDataPredicatePtr p);
+
 };
 
 } // namespace borealis

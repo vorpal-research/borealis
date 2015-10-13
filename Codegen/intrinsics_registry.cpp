@@ -133,6 +133,11 @@ static RegisterIntrinsic INTRINSIC_CONSUME {
     "consume"
 };
 
+static RegisterIntrinsic INTRINSIC_UNREACHABLE {
+    function_type::INTRINSIC_UNREACHABLE,
+    "unreachable"
+};
+
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",

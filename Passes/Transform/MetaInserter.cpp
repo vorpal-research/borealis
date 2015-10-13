@@ -98,7 +98,7 @@ static llvm::Value* mkBorealisDeclare(
     return newCall;
 }
 
-llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) {
+std::pair<llvm::Value*, llvm::Value*> MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) {
     using llvm::dyn_cast;
 
     if (auto* call = dyn_cast<llvm::DbgValueInst>(ci)) {
@@ -109,15 +109,15 @@ llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) 
         ASSERTA(var != nullptr, util::toString(*call));
         ASSERTA(offset != nullptr, util::toString(*call));
 
-        if (!val) { // the value has been optimized out
-            return mkBorealisValue(M, call, var, offset,
+        if (not val) { // the value has been optimized out
+            return {nullptr, mkBorealisValue(M, call, var, offset,
                 llvm::UndefValue::get(
                     llvm::Type::getInt64Ty(M.getContext())
                 ) // FIXME: What's the undef type used for?
-            );
+            )};
         }
 
-        return mkBorealisValue(M, call, var, offset, val);
+        return {val, mkBorealisValue(M, call, var, offset, val)};
     }
 
     if (auto* call = dyn_cast<llvm::DbgDeclareInst>(ci)) {
@@ -126,19 +126,19 @@ llvm::Value* MetaInserter::liftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) 
 
         ASSERTA(var != nullptr, util::toString(*call))
 
-        if (!addr) { // the value has been optimized out
-            return mkBorealisValue(M, call, var,
+        if (not addr) { // the value has been optimized out
+            return {nullptr, mkBorealisValue(M, call, var,
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(M.getContext()), 0, false),
                 llvm::UndefValue::get(
                     llvm::Type::getInt64Ty(M.getContext())
                 ) // FIXME: What's the undef type used for?
-            );
+            )};
         }
 
-        return mkBorealisDeclare(M, call, var, addr);
+        return {nullptr, mkBorealisDeclare(M, call, var, addr)};
     }
 
-    return ci;
+    return {nullptr, ci};
 }
 
 llvm::Value* MetaInserter::unliftDebugIntrinsic(llvm::Module& M, llvm::Value* ci) {
@@ -203,8 +203,21 @@ void MetaInserter::liftAllDebugIntrinsics(llvm::Module& M) {
             filter().
             to<std::list<llvm::Value*>>();
 
-    for (auto* I : view) {
-        liftDebugIntrinsic(M, I);
+    std::vector<std::pair<llvm::Value*, llvm::Value*>> toMove;
+
+    for (auto&& I : view) {
+        auto&& p = liftDebugIntrinsic(M, I);
+        if (p.first) toMove.push_back(std::move(p));
+    }
+
+    for (auto&& p : toMove) {
+        if (auto m = util::match_tuple<llvm::Instruction, llvm::Instruction>::doit(p.first, p.second)) {
+            auto&& firstNonPhi = m->get<0>()->getNextNode();
+            while (llvm::dyn_cast<llvm::PHINode>(firstNonPhi)) {
+                firstNonPhi = firstNonPhi->getNextNode();
+            }
+            m->get<1>()->moveBefore(firstNonPhi);
+        }
     }
 }
 
@@ -271,16 +284,7 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
 
     ReturnInst::Create(M.getContext(), &GDT->front());
 
-    std::list<llvm::DbgInfoIntrinsic*> toReplace;
-
-    for (auto& I : viewContainer(M).flatten().flatten()) {
-        if (auto* call = dyn_cast<llvm::DbgInfoIntrinsic>(&I)) {
-            toReplace.push_back(call);
-        }
-    }
-
-    // lift all llvm.dbg.
-    for (auto* call : toReplace) liftDebugIntrinsic(M, call);
+    liftAllDebugIntrinsics(M);
 
     return false;
 }

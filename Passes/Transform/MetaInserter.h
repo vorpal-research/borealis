@@ -10,6 +10,8 @@
 
 #include <llvm/Pass.h>
 
+#include <Util/passes.hpp>
+
 namespace borealis {
 
 class MetaInserter : public llvm::ModulePass {
@@ -26,7 +28,7 @@ public:
 
     virtual bool runOnModule(llvm::Module&) override;
 
-    static llvm::Value* liftDebugIntrinsic(llvm::Module& M, llvm::Value*);
+    static std::pair<llvm::Value*, llvm::Value*> liftDebugIntrinsic(llvm::Module& M, llvm::Value*);
     static llvm::Value* unliftDebugIntrinsic(llvm::Module& M, llvm::Value*);
     static void liftAllDebugIntrinsics(llvm::Module& M);
     static void unliftAllDebugIntrinsics(llvm::Module& M);

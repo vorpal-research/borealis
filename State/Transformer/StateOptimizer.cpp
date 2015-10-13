@@ -51,21 +51,8 @@ PredicateState::Ptr StateOptimizer::transformBasic(BasicPredicateStatePtr ps) {
     return ps;
 }
 
-PredicateState::Ptr StateOptimizer::transformBasicPredicateState(BasicPredicateStatePtr ps) {
-    return ps;
-}
-
-PredicateState::Ptr StateOptimizer::transformBase(PredicateState::Ptr ps) {
-    if (auto&& v = util::at(cache, ps)) return v.getUnsafe();
-    return cache[ps] = Base::transformBase(ps);
-}
-
 Predicate::Ptr StateOptimizer::transformBase(Predicate::Ptr pred) {
     return pred;
-}
-
-PredicateState::Ptr StateOptimizer::transform(PredicateState::Ptr ps) {
-    return transformBase(ps)->simplify();
 }
 
 PredicateState::Ptr StateOptimizer::merge(PredicateState::Ptr a, PredicateState::Ptr b) {

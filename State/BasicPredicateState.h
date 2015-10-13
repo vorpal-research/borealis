@@ -74,6 +74,7 @@ private:
     Loci loci;
 
     BasicPredicateState();
+    BasicPredicateState(size_t size);
     BasicPredicateState(const Data& data);
     BasicPredicateState(Data&& data);
 
