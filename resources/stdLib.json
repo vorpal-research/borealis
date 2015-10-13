@@ -3,9 +3,7 @@
       "signature": "int _IO_getc(_IO_FILE * __fp)",
       "name": "under_IO_getc",
       "args": [
-            {
-                  "access" : "None"
-            }
+            { "access" : "None" }
       ],
       "contracts" : [
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
@@ -16,9 +14,7 @@
       "name": "under_IO_putc",
       "args": [
             {},
-            {
-                  "access" : "None"
-            }
+            { "access" : "None" }
       ],
       "contracts" : [
             "@requires[[RES-02]] \\property(file, \\arg1) == @opened",
@@ -29,13 +25,10 @@
       "signature": "void operator delete[](void*)",
       "name": "ZdaPv",
       "args": [
-            {
-                  "access" : "Delete",
-                  "array": true
-            }
+            { "access" : "None" }
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @array_new",
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @array_new",
             "@assigns \\property(malloc, \\arg)",
             "@ensures \\property(malloc, \\arg) == @deleted"
       ]
@@ -44,14 +37,11 @@
       "signature": "void operator delete[](void*, nothrow)",
       "name": "ZdaPvRKSt9nothrow_t",
       "args": [
-            {
-                  "access" : "Delete",
-                  "array": true
-            },
+            { "access" : "None" },
             {}
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @array_new",
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @array_new",
             "@assigns \\property(malloc, \\arg)",
             "@ensures \\property(malloc, \\arg) == @deleted"
       ]
@@ -60,12 +50,10 @@
       "signature": "void operator delete(void*)",
       "name": "ZdlPv",
       "args": [
-            {
-                  "access" : "Delete"
-            }
+            { "access" : "None" }
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @new",
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @new",
             "@assigns \\property(malloc, \\arg)",
             "@ensures \\property(malloc, \\arg) == @deleted"
       ]
@@ -74,13 +62,11 @@
       "signature": "void operator delete(void*, nothrow)",
       "name": "ZdlPvRKSt9nothrow_t",
       "args": [
-            {
-                  "access" : "Delete"
-            },
+            { "access" : "None" },
             {}
       ],
       "contracts" : [
-            "@requires \\arg == \\nullptr || \\property(malloc, \\arg) == @new",
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @new",
             "@assigns \\property(malloc, \\arg)",
             "@ensures \\property(malloc, \\arg) == @deleted"
       ]
@@ -186,8 +172,8 @@
       "name": "cxa_atexit",
       "args": [
             {},
-            { "access" : "Read" },
-            { "access" : "Read" }
+            {},
+            {}
       ]
 },
 {
@@ -300,7 +286,7 @@
       "args": [
             { "access" : "Read", "array": true },
             { "access" : "Read", "array": true },
-            { "access" : "Write" }
+            { "access" : "None" }
       ],
       "contracts" : [
             "@ensures \\result == \\nullptr || \\property(strlen, \\result) <= \\property(strlen, \\arg)"
@@ -513,14 +499,14 @@
       "signature": "void clearerr(FILE *stream)",
       "name": "clearerr",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
       ]
 },
 {
       "signature": "int closedir(DIR *dirp)",
       "name": "closedir",
       "args" : [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
       ]
 },
 {
@@ -713,7 +699,7 @@
             "arg" : 0
       },
       "args" : [
-            { "access" : "Write", "array": true },
+            { "access" : "Write", "array": true, "size": 1 },
             {},
             { "access" : "None" }
       ], 
@@ -738,10 +724,11 @@
       "args": [
             { "access" : "None" },
             { "access" : "Read", "array": true },
-            {}
+            { "access" : "Read" }
       ], 
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
+            "@requires[[RES-02]] \\property(file, \\arg0) == @opened",
+            "@ensures \\result == (\\num_args - 2) || \\result < 0"
       ]
 },
 {
@@ -821,7 +808,7 @@
             { "access" : "Read", "array": true }
       ],
       "contracts" : [
-            "@ensures \\property(file, \\result) == @opened"
+            "@ensures (\\result == \\nullptr && \\property(file, \\result) == @closed) || (\\result != \\nullptr && \\property(file, \\result) == @opened)"
       ]
 },
 {
@@ -830,7 +817,7 @@
       "args": [
             { "access" : "None" },
             { "access" : "Read", "array": true },
-            {}
+            { "access" : "Read" }
       ], 
       "contracts" : [
             "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
@@ -874,7 +861,10 @@
 {
       "signature": "void free(void *ptr)",
       "name": "free",
-      "args": [ { "access" : "Delete" } ]
+      "args": [ { "access" : "None" } ],
+      "contracts" : [
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @malloc"
+      ]
 },
 {
       "signature": "double frexp(double num, int *exp)",
@@ -904,44 +894,59 @@
       "signature": "int fscanf(FILE *stream, const char *format, ... )",
       "name": "fscanf",
       "args" : [
-            { "access": "ReadWrite" },
+            { "access": "None" },
             { "access": "Read", "array": true },
             { "access": "Write" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "int fseek(FILE *stream, long offset, int whence)",
       "name": "fseek",
       "args" : [
-            { "access": "ReadWrite" },
+            { "access": "None" },
             {},
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "int fseeko(FILE *stream, off_t offset, int whence)",
       "name": "fseeko",
       "args" : [
-            { "access": "ReadWrite" },
+            { "access": "None" },
             {},
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "int fseeko64(FILE *stream, off64_t offset, int whence)",
       "name": "fseeko64",
       "args" : [
-            { "access": "ReadWrite" },
+            { "access": "None" },
             {},
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "int fsetpos(FILE *stream, const fpos_t *pos)",
       "name": "fsetpos",
       "args" : [
-            { "access": "ReadWrite" },
+            { "access": "None" },
             { "access": "Read" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -950,6 +955,9 @@
       "args" : [
             {},
             { "access": "Write" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -958,6 +966,9 @@
       "args" : [
             {},
             { "access": "Write" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -966,6 +977,9 @@
       "args" : [
             {},
             { "access": "Write" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -974,41 +988,59 @@
       "args" : [
             {},
             { "access": "Write" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "long ftell(FILE *stream)",
       "name": "ftell",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "off_t ftello(FILE *stream)",
       "name": "ftello",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "off64_t ftello64(FILE *stream)",
       "name": "ftello64",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "int ftrylockfile(FILE *file)",
       "name": "ftrylockfile",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "void funlockfile(FILE *file)",
       "name": "funlockfile",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1018,21 +1050,30 @@
             { "access": "Read", "array" : true },
             {},
             {},
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg3) == @opened"
       ]
 },
 {
       "signature": "int getc(FILE *stream)",
       "name": "getc",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
       "signature": "int getc_unlocked(FILE *stream)",
       "name": "getc_unlocked",
       "args" : [
-            { "access": "ReadWrite" }
+            { "access": "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1369,6 +1410,9 @@
             { "access" : "Read", "array" : true },
             {},
             {}
+      ],
+      "contracts" : [
+            "@ensures \\property(file, \\result) == @opened"
       ]
 },
 {
@@ -1378,6 +1422,9 @@
             { "access" : "Read", "array" : true },
             {},
             {}
+      ],
+      "contracts" : [
+            "@ensures \\property(file, \\result) == @opened"
       ]
 },
 {
@@ -1395,6 +1442,9 @@
       "name": "pclose",
       "args": [
             { "access" : "Delete" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1411,6 +1461,9 @@
       "args": [
             { "access" : "Read", "array" : true },
             { "access" : "Read", "array" : true }
+      ],
+      "contracts" : [
+            "@ensures \\property(file, \\result) == @opened"
       ]
 },
 {
@@ -1442,6 +1495,9 @@
             { "access" : "Write", "array" : true, "size": 2 },
             {},
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1458,6 +1514,9 @@
       "args": [
             {},
             { "access" : "ReadWrite" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg1) == @opened"
       ]
 },
 {
@@ -1479,6 +1538,9 @@
             { "access" : "Read", "array" : true, "size" : 2 },
             {},
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1498,6 +1560,9 @@
             {},
             { "access" : "Write", "array" : true, "size": 2 },
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1518,6 +1583,9 @@
       "args": [
             { "access" : "ReadWrite", "array" : true, "size": 1 },
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @malloc"
       ]
 },
 {
@@ -1529,6 +1597,9 @@
       "args": [
             { "access" : "ReadWrite", "array" : true, "size": 1 },
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-03]] \\arg == \\nullptr || \\property(malloc, \\arg) == @malloc"
       ]
 },
 {
@@ -1561,7 +1632,10 @@
       "signature": "void rewind(FILE *stream)",
       "name": "rewind",
       "args": [
-            { "access" : "ReadWrite" }
+            { "access" : "None" }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1604,8 +1678,11 @@
       "signature": "void setbuf(FILE *stream, char *buf)",
       "name": "setbuf",
       "args": [
-            { "access" : "ReadWrite" },
+            { "access" : "None" },
             { "access" : "Write", "array" : true }
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1626,6 +1703,9 @@
             { "access" : "Write", "array" : true, "size": 3 },
             {},
             {}
+      ],
+      "contracts" : [
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
@@ -1817,6 +1897,10 @@
       "result" : { "special": "Malloc" },
       "args": [
             { "access" : "Read", "array" : true }
+      ],
+      "contracts": [
+            "@ensures \\bound(\\result) == \\bound(\\arg)",
+            "@ensures \\property(strlen, \\result) == \\property(strlen, \\arg)"
       ]
 },
 {
@@ -1824,6 +1908,9 @@
       "name": "strlen",
       "args": [
             { "access" : "Read", "array" : true }
+      ],
+      "contracts": [
+            "@ensures \\result == \\property(strlen, \\arg)"
       ]
 },
 {
@@ -1841,6 +1928,11 @@
       "args": [
             { "access" : "Write", "array" : true },
             { "access" : "Read", "array" : true, "size": 2 }
+      ],
+      "contracts": [
+            "@requires \\bound(\\arg0) >= \\property(strlen, \\arg0) + \\property(strlen, \\arg1)",
+            "@assigns \\property(strlen, \\arg0)",
+            "@ensures \\property(strlen, \\arg0) == \\old(\\property(strlen, \\arg0)) + \\property(strlen, \\arg1)"
       ]
 },
 {
@@ -1858,6 +1950,11 @@
       "args": [
             { "access" : "Write", "array" : true, "size": 2 },
             { "access" : "Read", "array" : true, "size": 2 }
+      ],
+      "contracts": [
+            "@requires \\bound(\\arg0) >= \\property(strlen, \\arg1) || \\bound(\\arg0) >= \\arg2",
+            "@assigns \\property(strlen, \\arg0)",
+            "@ensures \\property(strlen, \\arg0) == \\property(strlen, \\arg1)"
       ]
 },
 {

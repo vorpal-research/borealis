@@ -30,6 +30,21 @@ std::vector< command_type > parse_command(const std::string& command) {
     }
 }
 
+template<class Location = pegtl::ascii_location>
+expression_type parse_term(const std::string& term) {
+
+    std::unique_ptr< command_type > ret{ new command_type() };
+    expr_stack stack;
+    std::vector< command_type > commands;
+    auto cp = anno::calc_parse_string< read_expr, Location >(term, stack, *ret, commands);
+
+    if (cp.success) {
+        return stack.top();
+    } else {
+        return expression_type{};
+    }
+}
+
 }   // namespace calculator
 }   // namespace anno
 }   // namespace borealis

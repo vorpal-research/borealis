@@ -42,8 +42,11 @@ public:
     Term::Ptr transformTerm(Term::Ptr term) {
         if(mapping.count(term)) {
             auto value = mapping.at(term);
-            auto name = FN.Slot->getLocalName(value);
-            return FN.Term->getValueTerm(term->getType(), name);
+            llvm::Signedness signedness = llvm::Signedness::Unknown;
+            if(auto inttype = llvm::dyn_cast<type::Integer>(term->getType())) {
+                signedness = inttype->getSignedness();
+            }
+            return FN.Term->getValueTerm(value, signedness);
         } // the type is expected to be fixed by materializer later
         else return Base::transformTerm(term);
     }

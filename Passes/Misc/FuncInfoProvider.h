@@ -25,7 +25,7 @@ public:
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
 
     const func_info::FuncInfo& getInfo(llvm::Function* f);
-    const std::vector<Annotation::Ptr> getContracts(llvm::Function* f);
+    const std::vector<Annotation::Ptr>& getContracts(llvm::Function* f);
     bool hasInfo(llvm::Function* f);
 
     virtual bool runOnModule(llvm::Module &M) override;

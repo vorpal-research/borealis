@@ -50,14 +50,16 @@ public:
 
         } else if(term->getVName() == "result") {
             auto res = theCallSite.getInstruction();
-            for(auto&& resInfo : util::view(VIT->getVars().get(res))) {
+            for (auto&& resInfo : util::view(VIT->getVars().get(res))) {
                 borealis::DIType dt = resInfo.second.type;
                 auto resSignedness = dt.getSignedness();
                 return FN.Term->getValueTerm(res, resSignedness);
             }
 
             return FN.Term->getValueTerm(res);
-
+        } else if(term->getVName() == "num_args") {
+            auto res = theCallSite.arg_size();
+            return FN.Term->getIntTerm(res, FN.Type->getInteger());
         } else return term;
     }
 

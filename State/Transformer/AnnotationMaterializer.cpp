@@ -188,6 +188,43 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
             } else {
                 failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": called on non-pointer");
             }
+        } else if (builtin->getVName() == "is_valid_array") {
+            auto&& rhv = trm->getRhv().toVector();
+            if (rhv.size() != 2)
+                failWith(
+                    "Illegal \\is_valid_array access " + trm->getName() + ": exactly two operands expected"
+                );
+
+            auto&& val = this->transform(rhv[0]);
+            auto&& type = val->getType();
+
+            auto&& size = this->transform(rhv[1]);
+
+            if (auto* ptrType = llvm::dyn_cast<type::Pointer>(type)) {
+                auto&& pointed = ptrType->getPointed();
+
+                auto&& bval = builder(val);
+
+                return bval != null()
+                       && bval != invalid()
+                       && bval.bound().uge(builder(TypeUtils::getTypeSizeInElems(pointed)) * size);
+            } else {
+                failWith("Illegal \\is_valid_array access " + trm->getName() + ": called on non-pointer");
+            }
+        } else if (builtin->getVName() == "umax") {
+            auto&& rhv = trm->getRhv().map(APPLY(this->transform)).toVector();
+            if (rhv.size() != 2)
+                failWith(
+                    "Illegal \\umax invocation " + trm->getName() + ": exactly two operands expected"
+                );
+            return FN.Term->getTernaryTerm(builder(rhv[0]).uge(rhv[1]), rhv[0], rhv[1]);
+        } else if (builtin->getVName() == "umin") {
+            auto&& rhv = trm->getRhv().map(APPLY(this->transform)).toVector();
+            if (rhv.size() != 2)
+                failWith(
+                    "Illegal \\umin invocation " + trm->getName() + ": exactly two operands expected"
+                );
+            return FN.Term->getTernaryTerm(builder(rhv[1]).uge(rhv[0]), rhv[0], rhv[1]);
         } else if (builtin->getVName() == "old") {
             // all \old's should be already taken care of, let's try to guess the problem
             if (trm->getRhv().size() != 1) failWith("Illegal \\old invocation " + trm->getName() + ": exactly one operand expected");
@@ -353,7 +390,6 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
 
     } else if (name == "invalid" || name == "invalidptr") {
         return invalid();
-
     } else if (name.startswith("arg")) {
         if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
             std::istringstream ist(name.drop_front(3).str());

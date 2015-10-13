@@ -15,5 +15,9 @@ std::vector<command> parse(const std::string& v) {
     return calculator::parse_command<location>(v);
 }
 
+prod_t parseTerm(const std::string& v) {
+    return calculator::parse_term<location>(v);
+}
+
 } // namespace anno
 } // namespace borealis

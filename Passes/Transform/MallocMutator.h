@@ -25,9 +25,7 @@ public:
     virtual bool runOnModule(llvm::Module&) override;
     virtual void print(llvm::raw_ostream& O, const llvm::Module* M) const override;
 
-private:
-
-    void mutateMemoryInst(
+    static void mutateMemoryInst(
         llvm::Module& M,
         llvm::Instruction* CI,
         function_type memoryType,

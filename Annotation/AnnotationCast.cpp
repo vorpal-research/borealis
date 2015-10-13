@@ -197,6 +197,12 @@ public:
 
 } /* namespace */
 
+Term::Ptr borealis::fromParseResult(const Locus&, anno::prod_t term, TermFactory::Ptr tf) {
+    TermConstructor tc(tf);
+    term->accept(tc);
+    return tc.getTerm();
+}
+
 Annotation::Ptr borealis::fromParseResult(const Locus& locus, const anno::command& cmd, TermFactory::Ptr tf) {
 
     std::vector<Term::Ptr> terms;
@@ -205,9 +211,7 @@ Annotation::Ptr borealis::fromParseResult(const Locus& locus, const anno::comman
     auto&& meta = cmd.meta_;
 
     for (const auto& arg : cmd.args_) {
-        TermConstructor tc(tf);
-        arg->accept(tc);
-        terms.push_back(tc.getTerm());
+        terms.push_back(fromParseResult(locus, arg, tf));
     }
 
 #define HANDLE_ANNOTATION(CMD, IGNORE, CLASS) \
@@ -217,6 +221,11 @@ Annotation::Ptr borealis::fromParseResult(const Locus& locus, const anno::comman
 #include "Annotation/Annotation.def"
 
     BYE_BYE(Annotation::Ptr, "Unknown annotation type: \"@" + cmd.name_ + "\"");
+}
+
+Term::Ptr borealis::termFromString(const Locus& locus, const std::string& text, TermFactory::Ptr TF) {
+    auto&& term = anno::parseTerm(text);
+    return fromParseResult(locus, term, TF);
 }
 
 Annotation::Ptr borealis::fromString(const Locus& locus, const std::string& text, TermFactory::Ptr TF) {
