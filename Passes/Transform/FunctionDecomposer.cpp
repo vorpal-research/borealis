@@ -196,8 +196,8 @@ static std::vector<std::string> implicitContracts(const llvm::Function* func, co
     }
 
     for(size_t i = 0; i < fi.argInfo.size(); ++i) {
-        auto ptype = func->getFunctionType()->getParamType(i);
-        if(ptype->isPointerTy()) {
+        auto ptype = func->isVarArg()? func->getFunctionType()->getParamType(i) : nullptr;
+        if(!ptype || ptype->isPointerTy()) {
             auto&& ai = fi.argInfo[i];
             if(ai.access != func_info::AccessPatternTag::None) {
                 if(ai.isArray == func_info::ArrayTag::IsArray && ai.sizeArgument) {
