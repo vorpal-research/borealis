@@ -42,7 +42,7 @@ message Type {
 
 **/
 
-class Type : public ClassTag {
+class Type : public ClassTag, public std::enable_shared_from_this<const Type> {
 protected:
     Type(const Type&) = default;
     
