@@ -46,7 +46,7 @@
             "@requires \\property(pthread, \\arg0) != @joined",
             "@requires \\property(pthread, \\arg0) != @detached",
             "@assigns \\property(pthread, \\arg0)",
-            "@ensures \\result != 0 || \\property(pthread, \\arg0) == @detached"
+            "@ensures \\result != 0 || \\result == 0 && \\property(pthread, \\arg0) == @detached"
         ]
     },
     {

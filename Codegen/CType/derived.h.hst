@@ -13,6 +13,8 @@
 #ifndef $cpp.guard$
 #define $cpp.guard$
 
+#include "Util/util.hpp"
+
 #include "$dir$/$basename$.h"
 #include "$dir$/CTypeRef.h"
 #include "$dir$/CStructMember.h"
@@ -33,6 +35,7 @@ class $derivedname$ : public $basename$ {
 public:
 
     friend class ::borealis::CTypeFactory;
+    friend class util::enable_special_make_shared<$derivedname$, CTypeFactory>; // enable factory-construction only
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

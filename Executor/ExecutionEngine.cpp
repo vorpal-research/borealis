@@ -33,7 +33,7 @@ ExecutionEngine::ExecutionEngine(
         ECStack{}, AtExitHandlers{}, Mem{ *TD }, FNCache{}, IE{this}
 {
     IM = &IntrinsicsManager::getInstance();
-    FNCache = [ST](auto f){ return FactoryNest(ST->getSlotTracker(f)); };
+    FNCache = [ST](auto f){ return FactoryNest(f->getDataLayout(), ST->getSlotTracker(f)); };
 }
 
 ExecutionEngine::~ExecutionEngine()

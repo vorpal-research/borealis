@@ -88,8 +88,8 @@ public:
         if (values.top()) {
             auto&& base = values.top().getUnsafe();
             for (auto&& f : rec.getBody()->get()) {
-                log << endl << f.getIndex() << " : ";
-                in(r.getResult().derefValueOf(base + f.getIndex()));
+                log << endl << f.getOffset() << " : ";
+                in(r.getResult().derefValueOf(base + f.getOffset()));
                 visit(f.getType());
                 out();
             }

@@ -17,6 +17,10 @@ public:
     using Ptr = std::shared_ptr<CTypeContext>;
     using WeakPtr = std::weak_ptr<CTypeContext>;
 
+    bool has(const std::string& name) const {
+        return !!types.count(name);
+    }
+
     CType::Ptr get(const std::string& name) const {
         return types.at(name);
     }

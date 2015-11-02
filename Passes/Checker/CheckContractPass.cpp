@@ -57,7 +57,7 @@ public:
 
             auto t = Simplifier(pass->FN) +
                      ContractTransmogrifier(pass->FN) +
-                     CallSiteInitializer(CI, pass->FN);
+                     CallSiteInitializer(&CI, pass->FN);
             auto q = bond->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
@@ -75,7 +75,7 @@ public:
 
         auto contract = pass->FM->getReq(CI, pass->FN);
 
-        auto t = CallSiteInitializer(CI, pass->FN);
+        auto t = CallSiteInitializer(&CI, pass->FN);
         auto q = contract->map(
             [&t](Predicate::Ptr p) { return t.transform(p); }
         );
@@ -170,7 +170,7 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     MI = &GetAnalysis<VariableInfoTracker>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    FN = FactoryNest(GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     CallInstVisitor civ(this);
     civ.visit(F);

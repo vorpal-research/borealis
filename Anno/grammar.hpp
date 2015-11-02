@@ -250,6 +250,9 @@ struct assert_c :
 // assume := "assume" expr
 struct assume_c :
         ifapply< ifmust< KEYWORD("assume"), opt<meta>, read_expr >, ask_arguments > {};
+// global := "global" expr
+struct global_c :
+        ifapply< ifmust< KEYWORD("global"), opt<meta>, read_expr >, ask_arguments > {};
 // skip := "skip"
 struct skip_c :
         ifapply< KEYWORD("skip"), ask_arguments > {};
@@ -282,6 +285,7 @@ struct commands :
             assigns_c,
             assume_c,
             assert_c,
+            global_c,
             skip_c,
             ignore_c,
             inline_c,

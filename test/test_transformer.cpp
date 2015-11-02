@@ -39,7 +39,7 @@ protected:
         ctx = &llvm::getGlobalContext();
         M = ModulePtr(new llvm::Module("mock-module", *ctx));
         ST = SlotTrackerPtr(new SlotTracker(M.get()));
-        FN = FactoryNest(ST.get());
+        FN = FactoryNest(M->getDataLayout(), ST.get());
     }
 
     llvm::LLVMContext* ctx;
@@ -85,7 +85,7 @@ TEST_F(TransformerTest, CallSiteInitializer) {
         val_1->setName("mock-val-1");
 
         CallInst* CI = CallInst::Create(F, val_0, "", BB);
-        CallSiteInitializer csi(*CI, FN);
+        CallSiteInitializer csi(CI, FN);
 
         auto pred = FN.Predicate->getEqualityPredicate(
             FN.Term->getArgumentTerm(arg),

@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include <unordered_map>
+#include <llvm/IR/DIBuilder.h>
 
 #include "Actions/VariableInfoFinder.h"
 #include "Codegen/intrinsics_manager.h"
@@ -86,6 +87,7 @@ static void postProcessClangGeneratedModule(clang::SourceManager& SM, llvm::Modu
             mline,
             llvm::MDString::get(ctx, llc.filename.c_str())
         };
+
         ourGlobals->addOperand(llvm::MDNode::get(ctx, arr));
     }
 
@@ -97,7 +99,7 @@ struct clang_pipeline::impl: public DelegateLogging {
     std::unordered_map<std::string, AnnotatedModule::Ptr> fileCache;
     FactoryNest fn;
 
-    impl(clang_pipeline* abs): DelegateLogging(*abs), fn(nullptr) {};
+    impl(clang_pipeline* abs): DelegateLogging(*abs), fn() {};
 
     void compile(const llvm::opt::InputArgList& args) {
         llvm::IntrusiveRefCntPtr<CompilerInvocation> CI{ new CompilerInvocation() };

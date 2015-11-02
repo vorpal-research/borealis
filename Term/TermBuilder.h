@@ -29,6 +29,8 @@ public:
 
     operator Term::Ptr() const;
 
+    Term::Ptr operator->() const;
+
     friend TermBuilder operator+(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator*(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator-(TermBuilder TB, Term::Ptr term);

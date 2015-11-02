@@ -11,17 +11,42 @@
 
 namespace borealis {
 
-TermFactory::TermFactory(SlotTracker* st, TypeFactory::Ptr TyF) :
-    st(st), TyF(TyF) {}
+TermFactory::TermFactory(SlotTracker* st, const llvm::DataLayout* DL, TypeFactory::Ptr TyF) :
+    st(st), DL(DL), TyF(TyF) {}
 
 Term::Ptr TermFactory::getArgumentTerm(const llvm::Argument* arg, llvm::Signedness sign) {
     ASSERT(st, "Missing SlotTracker");
 
     return Term::Ptr{
         new ArgumentTerm(
-            TyF->cast(arg->getType(), sign),
+            TyF->cast(arg->getType(), DL, sign),
             arg->getArgNo(),
             st->getLocalName(arg)
+        )
+    };
+}
+
+Term::Ptr TermFactory::getArgumentTermExternal(size_t numero, const std::string& name, Type::Ptr type) {
+    return Term::Ptr{
+        new ArgumentTerm(
+            type,
+            numero,
+            name
+        )
+    };
+}
+
+Term::Ptr TermFactory::getArgumentCountTerm() {
+    return Term::Ptr{
+        new ArgumentCountTerm(TyF->getInteger())
+    };
+}
+
+Term::Ptr TermFactory::getVarArgumentTerm(size_t numero) {
+    return Term::Ptr{
+        new VarArgumentTerm(
+            TyF->getUnknownType(),
+            numero
         )
     };
 }
@@ -31,7 +56,7 @@ Term::Ptr TermFactory::getStringArgumentTerm(const llvm::Argument* arg, llvm::Si
 
     return Term::Ptr{
         new ArgumentTerm(
-            TyF->cast(arg->getType(), sign),
+            TyF->cast(arg->getType(), DL, sign),
             arg->getArgNo(),
             st->getLocalName(arg),
             ArgumentKind::STRING
@@ -50,8 +75,9 @@ Term::Ptr TermFactory::getConstTerm(const llvm::Constant* c, llvm::Signedness si
         auto&& opcode = cE->getOpcode();
 
         if (opcode >= Instruction::CastOpsBegin && opcode <= Instruction::CastOpsEnd) {
+
             return getCastTerm(
-                TyF->cast(cE->getType()),
+                TyF->cast(cE->getType(), DL),
                 opcode == Instruction::SExt,
                 getValueTerm(cE->getOperand(0))
             );
@@ -95,7 +121,7 @@ Term::Ptr TermFactory::getConstTerm(const llvm::Constant* c, llvm::Signedness si
         // XXX: Keep in sync with FactoryNest
         return Term::Ptr{
             new ValueTerm(
-                TyF->cast(gv->getType()),
+                TyF->cast(gv->getType(), DL),
                 st->getLocalName(gv)
             )
         };
@@ -104,7 +130,7 @@ Term::Ptr TermFactory::getConstTerm(const llvm::Constant* c, llvm::Signedness si
 
     return Term::Ptr{
         new ConstTerm(
-            TyF->cast(c->getType()),
+            TyF->cast(c->getType(), DL),
             st->getLocalName(c)
         )
     };
@@ -118,13 +144,13 @@ Term::Ptr TermFactory::getNullPtrTerm() {
 
 Term::Ptr TermFactory::getNullPtrTerm(const llvm::ConstantPointerNull* n) {
     return Term::Ptr{
-        new OpaqueNullPtrTerm(TyF->cast(n->getType()))
+        new OpaqueNullPtrTerm(TyF->cast(n->getType(), DL))
     };
 }
 
 Term::Ptr TermFactory::getUndefTerm(const llvm::UndefValue* u) {
     return Term::Ptr{
-        new OpaqueUndefTerm(TyF->cast(u->getType()))
+        new OpaqueUndefTerm(TyF->cast(u->getType(), DL))
     };
 }
 
@@ -179,7 +205,7 @@ Term::Ptr TermFactory::getReturnValueTerm(const llvm::Function* F, llvm::Signedn
 
     return Term::Ptr{
         new ReturnValueTerm(
-            TyF->cast(F->getFunctionType()->getReturnType(), sign),
+            TyF->cast(F->getFunctionType()->getReturnType(), DL, sign),
             F->getName().str()
         )
     };
@@ -206,7 +232,7 @@ Term::Ptr TermFactory::getValueTerm(Type::Ptr type, const std::string& name) {
 Term::Ptr TermFactory::getGlobalValueTerm(const llvm::GlobalValue* gv, llvm::Signedness sign) {
     return Term::Ptr{
         new ValueTerm(
-            TyF->cast(gv->getType(), sign),
+            TyF->cast(gv->getType(), DL, sign),
             st->getLocalName(gv),
             /* global = */true
         )
@@ -216,7 +242,7 @@ Term::Ptr TermFactory::getGlobalValueTerm(const llvm::GlobalValue* gv, llvm::Sig
 Term::Ptr TermFactory::getLocalValueTerm(const llvm::Value* v, llvm::Signedness sign) {
     return Term::Ptr{
         new ValueTerm(
-            TyF->cast(v->getType(), sign),
+            TyF->cast(v->getType(), DL, sign),
             st->getLocalName(v)
         )
     };
@@ -294,7 +320,7 @@ Term::Ptr TermFactory::getGepTerm(llvm::Value* base, const ValueVector& idxs, bo
 
     return Term::Ptr{
         new GepTerm{
-            TyF->cast(type),
+            TyF->cast(type, DL),
             getValueTerm(base),
             util::viewContainer(idxs)
                 .map([this](llvm::Value* idx) { return getValueTerm(idx); })
@@ -436,15 +462,15 @@ Term::Ptr TermFactory::getBoundTerm(Term::Ptr rhv) {
     };
 }
 
-TermFactory::Ptr TermFactory::get(SlotTracker* st, TypeFactory::Ptr TyF) {
+TermFactory::Ptr TermFactory::get(SlotTracker* st, const llvm::DataLayout* DL, TypeFactory::Ptr TyF) {
     return TermFactory::Ptr{
-        new TermFactory(st, TyF)
+        new TermFactory(st, DL, TyF)
     };
 }
 
-TermFactory::Ptr TermFactory::get(TypeFactory::Ptr TyF) {
+TermFactory::Ptr TermFactory::get(const llvm::DataLayout* DL, TypeFactory::Ptr TyF) {
     return TermFactory::Ptr{
-        new TermFactory(nullptr, TyF)
+        new TermFactory(nullptr, DL, TyF)
     };
 }
 

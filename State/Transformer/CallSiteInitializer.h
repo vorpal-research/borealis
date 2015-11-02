@@ -27,11 +27,15 @@ class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
 
 public:
 
-    CallSiteInitializer(const llvm::CallInst& CI, FactoryNest FN);
+    CallSiteInitializer(llvm::ImmutableCallSite CI, FactoryNest FN);
 
     Predicate::Ptr transformPredicate(Predicate::Ptr p);
+    Annotation::Ptr transformRequiresAnnotation(RequiresAnnotationPtr p);
+    Annotation::Ptr transformEnsuresAnnotation(EnsuresAnnotationPtr p);
 
     Term::Ptr transformArgumentTerm(ArgumentTermPtr t);
+    Term::Ptr transformArgumentCountTerm(ArgumentCountTermPtr t);
+    Term::Ptr transformVarArgumentTerm(VarArgumentTermPtr t);
     Term::Ptr transformReturnValueTerm(ReturnValueTermPtr);
     Term::Ptr transformValueTerm(ValueTermPtr t);
 
@@ -39,8 +43,7 @@ private:
 
     using CallSiteArguments = std::unordered_map<unsigned int, const llvm::Value*>;
 
-    const llvm::Value* returnValue;
-    CallSiteArguments callSiteArguments;
+    llvm::ImmutableCallSite ci;
     std::string prefix;
 
 };

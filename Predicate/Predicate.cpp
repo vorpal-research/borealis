@@ -8,6 +8,7 @@
 #include "Annotation/AssertAnnotation.h"
 #include "Annotation/AssumeAnnotation.h"
 #include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/GlobalAnnotation.h"
 #include "Annotation/RequiresAnnotation.h"
 #include "Predicate/Predicate.h"
 
@@ -20,6 +21,7 @@ PredicateType predicateType(const Annotation* a) {
 
    if (isa<RequiresAnnotation>(a)) return PredicateType::REQUIRES;
    if (isa<EnsuresAnnotation>(a)) return PredicateType::ENSURES;
+   if (isa<GlobalAnnotation>(a)) return PredicateType::ASSUME;
    if (isa<AssertAnnotation>(a)) return PredicateType::ASSERT;
    if (isa<AssumeAnnotation>(a)) return PredicateType::ASSUME;
    return PredicateType::STATE;

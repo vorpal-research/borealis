@@ -114,7 +114,7 @@ bool AnnotationPredicateAnalysis::runOnFunction(llvm::Function& F) {
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    FN = FactoryNest(st);
+    FN = FactoryNest(F.getDataLayout(), st);
 
     APAInstVisitor visitor(this);
     visitor.visit(F);

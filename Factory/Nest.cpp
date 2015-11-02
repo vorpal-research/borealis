@@ -13,8 +13,13 @@
 
 namespace borealis {
 
+static const llvm::DataLayout* defaultLayout() {
+    static llvm::DataLayout dl("");
+    return &dl;
+}
+
 FactoryNest::FactoryNest():
-    FactoryNest((SlotTracker*)nullptr){}
+    FactoryNest(defaultLayout(), (SlotTracker*)nullptr){}
 
 FactoryNest::FactoryNest(const FactoryNest&) = default;
 FactoryNest::FactoryNest(FactoryNest&&) = default;
@@ -23,10 +28,10 @@ FactoryNest::~FactoryNest() = default;
 FactoryNest& FactoryNest::operator=(const FactoryNest&) = default;
 FactoryNest& FactoryNest::operator=(FactoryNest&&) = default;
 
-FactoryNest::FactoryNest(SlotTracker* st) :
+FactoryNest::FactoryNest(const llvm::DataLayout* DL, SlotTracker* st) :
     Slot(st),
     Type(TypeFactory::get()),
-    Term(TermFactory::get(Slot, Type)),
+    Term(TermFactory::get(Slot, DL, Type)),
     Predicate(PredicateFactory::get()),
     State(PredicateStateFactory::get()) {};
 
@@ -39,7 +44,7 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& g
         auto* ini = gv.getInitializer();
 
         auto&& numElements = TypeUtils::getTypeSizeInElems(
-            FN.Type->cast(ini->getType())
+            FN.Type->cast(ini->getType(), gv.getParent()->getDataLayout())
         );
 
         if (auto* cds = dyn_cast<ConstantDataSequential>(ini)) {

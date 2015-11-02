@@ -19,57 +19,39 @@ namespace type {
 
 class RecordField {
     Type::Ptr type;
-    std::unordered_set<std::string> ids;
-    size_t index = 0U;
+    size_t offset = 0U;
 public:
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordField);
 
-    RecordField(Type::Ptr type, size_t index = 0U) :
-        type{type}, ids{}, index{index} {};
-    RecordField(Type::Ptr type, const std::unordered_set<std::string>& ids, size_t index = 0U) :
-        type{type}, ids{ids}, index{index} {};
+    RecordField(Type::Ptr type, size_t offset) :
+        type{type}, offset{offset} {};
 
     const Type::Ptr& getType() const noexcept { return type; }
-    void setType(const Type::Ptr& type) noexcept { this->type = type; }
-
-    size_t getIndex() const noexcept { return index; };
-    void setIndex(size_t ix) noexcept { index = ix; }
-
-    const std::unordered_set<std::string>& getIds() const noexcept { return ids; }
-    void setIds(const std::unordered_set<std::string>& ids) noexcept { this->ids = ids; }
-    void pushId(const std::string& id) { ids.insert(id); }
+    size_t getOffset() const noexcept { return offset; };
 };
 
 class RecordBody {
     std::vector<RecordField> fields;
 public:
-    RecordBody(const std::vector<RecordField>& flds) : fields{} {
-        for(const auto& fld : flds) { push_back(fld); }
-    }
+    RecordBody(const std::vector<RecordField>& fields) : fields{fields} {}
 
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(RecordBody);
 
     auto begin() QUICK_CONST_RETURN(fields.begin());
     auto end() QUICK_CONST_RETURN(fields.end());
-    auto begin() QUICK_RETURN(fields.begin());
-    auto end() QUICK_RETURN(fields.end());
     auto empty() QUICK_CONST_RETURN(fields.empty());
-
-    void push_back(const RecordField& fld) {
-        fields.push_back(fld);
-        auto& inserted = fields.back();
-        auto index = fields.size() - 1;
-        inserted.setIndex(index);
-    }
 
     size_t getNumFields() const noexcept { return fields.size(); }
 
-    util::option_ref<const RecordField> getFieldByName(const std::string& name) const {
-        auto eqName = LAM(id, id == name);
+    size_t offsetToIndex(size_t offset) const {
+        for(size_t i = 0; i < fields.size(); ++i) if(fields[i].getOffset() == offset) return i;
 
-        for(auto&& field: fields) {
-            if (util::viewContainer(field.getIds()).any_of(eqName))
-                return util::justRef(field);
+        return ~size_t(0);
+    }
+
+    util::option_ref<const RecordField> getFieldByOffset(size_t offset) const {
+        for(auto&& field: fields) if(field.getOffset() == offset) {
+            return util::justRef(field);
         }
 
         return util::nothing();
@@ -83,9 +65,11 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const RecordBody& rb) {
+        ost << "{";
         for(auto&& field : rb.fields) {
-            ost << field.getIds() << "{" << field.getType().get() << "}, ";
+            ost << field.getOffset() << ": " << field.getType().get() << "; ";
         }
+        ost << "}";
         return ost;
     }
 
@@ -132,7 +116,7 @@ package borealis.proto;
 message RecordBodyRef {
     message RecordField {
         optional Type type = 1;
-        repeated string ids = 2;
+        optional uint64 offset = 2;
     };
 
     message RecordBody {

@@ -158,7 +158,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSERT {
             return FN.State->Basic() +
                    FN.Predicate->getInequalityPredicate(
                        FN.Term->getArgumentTerm(F->arg_begin()),
-                       FN.Term->getIntTerm(0, FN.Type->cast(F->arg_begin()->getType())),
+                       FN.Term->getIntTerm(0, FN.Type->cast(F->arg_begin()->getType(), F->getParent()->getDataLayout())),
                        Locus(),
                        PredicateType::REQUIRES
                    );
@@ -193,7 +193,7 @@ static RegisterIntrinsic BUILTIN_BOR_ASSUME {
             return FN.State->Basic() +
                    FN.Predicate->getInequalityPredicate(
                        FN.Term->getArgumentTerm(F->arg_begin()),
-                       FN.Term->getIntTerm(0, FN.Type->cast(F->arg_begin()->getType())),
+                       FN.Term->getIntTerm(0, FN.Type->cast(F->arg_begin()->getType(), F->getParent()->getDataLayout())),
                        Locus(),
                        PredicateType::ENSURES
                    );
@@ -236,7 +236,7 @@ static RegisterIntrinsic BUILTIN_BOR_GETPROP {
                FN.Predicate->getEqualityPredicate(
                    FN.Term->getReturnValueTerm(F),
                    FN.Term->getReadPropertyTerm(
-                       FN.Type->cast(F->getReturnType()),
+                       FN.Type->cast(F->getReturnType(), F->getParent()->getDataLayout()),
                        FN.Term->getStringArgumentTerm(propName),
                        FN.Term->getArgumentTerm(ptr)
                    )

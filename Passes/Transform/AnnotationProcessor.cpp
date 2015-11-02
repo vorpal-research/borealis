@@ -149,9 +149,24 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
 
 
     auto VIT = &GetAnalysis< VariableInfoTracker > ::doit(this);
+    auto& IM = IntrinsicsManager::getInstance();
 
     for (auto anno : annotations) {
         if (!isa<LogicAnnotation>(anno)) continue;
+
+        if(isa<GlobalAnnotation>(anno)) {
+            for(auto&& F: M) if(!F.isDeclaration() && IM.getIntrinsicType(&F) == function_type::UNKNOWN){
+                auto st = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(F);
+                auto FN = FactoryNest{ F.getDataLayout(), st };
+                try{
+                    anno = materialize(anno, FN, VIT);
+                    landOnInstructionOrFirst(anno, M, FN, F);
+                } catch(std::exception& ex) {
+                    infos() << "Unable to materialize annotation: " << *anno << ":" << ex.what() << endl;
+                }
+            }
+            continue;
+        }
 
         auto possibleLocsView = view(locs.getRangeFor(anno->getLocus()));
         llvm::Function* context = nullptr;
@@ -166,7 +181,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
         }
 
         auto st = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(context);
-        auto FN = FactoryNest{ st };
+        auto FN = FactoryNest{ M.getDataLayout(), st };
 
         OldValueExtractor ove{FN};
 

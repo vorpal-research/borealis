@@ -105,7 +105,7 @@ bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
-    FN = FactoryNest(GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     GepInstVisitor giv(this);
     giv.visit(F);

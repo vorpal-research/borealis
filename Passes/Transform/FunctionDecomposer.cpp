@@ -21,6 +21,7 @@
 #include "Passes/Transform/FunctionDecomposer.h"
 #include "State/Transformer/ExternalFunctionMaterializer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
+#include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/OldValueExtractor.h"
 #include "Statistics/statistics.h"
 #include "Util/passes.hpp"
@@ -268,7 +269,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
             auto&& funcInfo = FIP.getInfo(f);
 
             infos() << "FIPping " << f->getName() << endl;
-            FactoryNest FN(STP.getSlotTracker(call));
+            FactoryNest FN(M.getDataLayout(), STP.getSlotTracker(call));
 
             auto contracts = FIP.getContracts(f);
             auto impContracts = util::viewContainer(implicitContracts(f, funcInfo))
@@ -283,18 +284,28 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
             std::vector<Annotation::Ptr> middles;
 
             for (auto contract : contracts) {
-                ExternalFunctionMaterializer efm(FN, llvm::CallSite(call), &VIT, SLT.getLocFor(call));
-                contract = efm.transform(contract);
-                OldValueExtractor ove(FN);
-                contract = ove.transform(contract);
-                befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
-                contract = materialize(contract, FN, &VIT);
-                if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
-                    afters.push_back(contract);
-                } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation>(contract)) {
-                    befores.push_back(contract);
-                } else {
-                    middles.push_back(contract);
+                try{
+                    OldValueExtractor ove(FN);
+                    contract = ove.transform(contract);
+                    befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
+                    if(auto&& la = dyn_cast<LogicAnnotation>(contract)) {
+                        AnnotationMaterializer AM(*la, FN, &VIT, call->getCalledFunction());
+                        contract = AM.transform(contract);
+                    }
+
+                    CallSiteInitializer CSI(call, FN);
+                    contract = CSI.transform(contract);
+                    if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
+                        afters.push_back(contract);
+                    } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation, GlobalAnnotation>(contract)) {
+                        befores.push_back(contract);
+                    } else {
+                        middles.push_back(contract);
+                    }
+                } catch(std::exception& ex) {
+                    // FIXME: this is generally fucked up
+                    auto log = llvm::isa<GlobalAnnotation>(contract)? infos() : errs();
+                    log << "Unable to materialize annotation " << *contract << ": " << ex.what() << endl;
                 }
             }
 

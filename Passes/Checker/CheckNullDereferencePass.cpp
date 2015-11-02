@@ -93,7 +93,7 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     NT = &GetAnalysis<NameTracker>::doit(this, F);
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
-    FN = FactoryNest(GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     CheckNullsVisitor cnv(this);
     cnv.visit(F);

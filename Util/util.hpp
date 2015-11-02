@@ -132,6 +132,55 @@ std::unique_ptr<T> make_unique(Args&&... args) {
     return std::unique_ptr<T>{ new T{ std::forward<Args>(args)... } };
 }
 
+namespace impl_ {
+template<class T> struct friend_delegate;
+} /* namespace impl_ */
+
+template<class T, class Delegate = void>
+class enable_special_make_shared {
+    T value;
+    friend struct impl_::friend_delegate<Delegate>;
+public:
+    template<class ...Args>
+    enable_special_make_shared(Args&&... args) : value(std::forward<Args>(args)...){}
+};
+
+namespace impl_ {
+
+template<class T>
+struct friend_delegate {
+    friend_delegate() = delete;
+    friend_delegate(const T&){}
+    friend_delegate(T&&){}
+
+    template<class Wrapped>
+    inline std::shared_ptr<Wrapped> unwrap(std::shared_ptr<enable_special_make_shared<Wrapped, T>>& wrapper) {
+        return std::shared_ptr<Wrapped>(wrapper, &wrapper->value);
+    }
+};
+
+template<>
+struct friend_delegate<void> {
+    template<class Wrapped>
+    inline std::shared_ptr<Wrapped> unwrap(std::shared_ptr<enable_special_make_shared<Wrapped>>& wrapper) {
+        return std::shared_ptr<Wrapped>(wrapper, &wrapper->value);
+    }
+};
+
+} /* namespace impl_ */
+
+template<class T, class ...Args>
+inline std::shared_ptr<T> make_shared(Args&&... args) {
+    auto magic = std::make_shared<enable_special_make_shared<T>>(std::forward<Args>(args)...);
+    return impl_::friend_delegate<void>().unwrap(magic);
+}
+
+template<class T, class Factory, class ...Args>
+inline std::shared_ptr<T> make_shared_restricted(const Factory& f, Args&&... args) {
+    auto magic = std::make_shared<enable_special_make_shared<T, Factory>>(std::forward<Args>(args)...);
+    return impl_::friend_delegate<Factory>(f).unwrap(magic);
+}
+
 namespace impl {
 template<char Sep>
 std::ostringstream& concat_(std::ostringstream& s) {

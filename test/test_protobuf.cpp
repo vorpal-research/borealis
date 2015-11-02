@@ -19,7 +19,7 @@ TEST(Protobuf, protobuffy) {
     using namespace borealis;
 
     {
-        auto FN = FactoryNest(nullptr);
+        auto FN = FactoryNest();
         auto TyF = FN.Type;
 
         auto type = TyF->getPointer(
@@ -32,7 +32,7 @@ TEST(Protobuf, protobuffy) {
     }
 
     {
-        auto FN = FactoryNest(nullptr);
+        auto FN = FactoryNest();
         auto PF = FN.Predicate;
         auto TF = FN.Term;
 

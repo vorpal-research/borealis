@@ -51,7 +51,7 @@ void FuncInfoProvider::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 bool FuncInfoProvider::runOnModule(llvm::Module& M) {
     pimpl_->TLI = &getAnalysis<llvm::TargetLibraryInfo>();
     auto&& ST = getAnalysis<SlotTrackerPass>();
-    auto FN = FactoryNest(ST.getSlotTracker(M));
+    auto FN = FactoryNest(M.getDataLayout(), ST.getSlotTracker(M));
 
 
     for(auto&& filename : FunctionDefinitionFiles) {

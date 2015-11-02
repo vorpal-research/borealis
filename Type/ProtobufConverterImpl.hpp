@@ -185,10 +185,7 @@ struct protobuf_traits_impl<type::Record> {
 
                 auto fieldType = protobuf_traits_impl<Type>::toProtobuf(*field.getType());
                 pfield->set_allocated_type(fieldType.release());
-
-                for(const auto& id : field.getIds()) {
-                    pfield->mutable_ids()->AddAllocated(new std::string{id});
-                }
+                pfield->set_offset(field.getOffset());
 
                 pbody->mutable_fields()->AddAllocated(pfield.release());
             }
@@ -211,15 +208,13 @@ struct protobuf_traits_impl<type::Record> {
         ON_SCOPE_EXIT(discardAllBodies = false)
         // Crazy shit ends here
 
+        using typeCaster = protobuf_traits_impl<Type>;
+        auto castField = LAM(pfield, type::RecordField(typeCaster::fromProtobuf(fn, pfield.type()), pfield.offset()));
+
         for(const auto& pbody : p.body().bodytable()) {
-            type::RecordBody body;
-            for (const auto& pfield : pbody.fields()) {
-                type::RecordField field {
-                    protobuf_traits_impl<Type>::fromProtobuf(fn, pfield.type()),
-                    std::unordered_set<std::string>{ pfield.ids().begin(), pfield.ids().end() }
-                };
-                body.push_back(field);
-            }
+            auto body = type::RecordBody(
+                util::viewContainer(pbody.fields()).map(castField).toVector()
+            );
             fn.Type->embedRecordBodyNoRecursion(pbody.id(), body); // just for the side effects
         }
 

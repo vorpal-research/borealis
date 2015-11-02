@@ -26,7 +26,7 @@ bool AnnotationManager::runOnModule(llvm::Module& M) {
     auto& cmnts = GetAnalysis< comments >::doit(this);
 
     auto* st = GetAnalysis< slots >::doit(this).getSlotTracker(M);
-    auto fn = FactoryNest(st);
+    auto fn = FactoryNest(M.getDataLayout(), st);
 
     annotations = cmnts.provide().data();
 

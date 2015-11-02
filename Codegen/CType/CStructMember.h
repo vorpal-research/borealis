@@ -5,6 +5,7 @@
 #ifndef C_STRUCT_MEMBER_H
 #define C_STRUCT_MEMBER_H
 
+#include <memory>
 #include <string>
 #include "Codegen/CType/CTypeRef.h"
 
@@ -22,6 +23,8 @@ private:
     CTypeRef type;
 
 public:
+
+    using Ptr = std::shared_ptr<const CStructMember>;
 
     size_t getOffset() const {
         return offset;

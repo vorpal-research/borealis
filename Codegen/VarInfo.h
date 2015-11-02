@@ -14,17 +14,22 @@
 #include <string>
 
 #include "Codegen/llvm.h"
+#include "Codegen/CType/CType.h"
 #include "Logging/logger.hpp"
 #include "Util/util.h"
+#include "Util/enums.hpp"
+#include "Util/hash.hpp"
+
+#include "Util/generate_macros.h"
 
 namespace borealis {
 
-enum class DiscoveryDirection {
+GENERATE_FANCY_ENUM(DiscoveryDirection,
     Next,
     Previous
-};
+);
 
-enum class DiscoveryPolicy {
+GENERATE_FANCY_ENUM(DiscoveryPolicy,
     NextVal,
     PreviousVal,
     NextFunction,
@@ -32,73 +37,45 @@ enum class DiscoveryPolicy {
     NextArgument,
     PreviousArgument,
     Loop,
-    Global // TODO: Use this!
-};
+    Global
+);
 
-struct VarInfo {
-    borealis::util::option<std::string> originalName;
-    borealis::util::option<borealis::Locus> originalLocus;
-    enum { Plain, Allocated } treatment;
-    DIType type;
-    clang::Decl* ast;
+GENERATE_FANCY_ENUM(StorageSpec,
+    Register,
+    Memory,
+    Unknown
+);
 
-
-    const VarInfo& overwriteBy(const VarInfo& vi) {
-
-        if (!vi.originalName.empty()) {
-            originalName = vi.originalName;
-        }
-        if (!vi.originalLocus.empty()) {
-            originalLocus = vi.originalLocus;
-        }
-        if (vi.ast) {
-            ast = vi.ast;
-        }
-
-        treatment = vi.treatment;
-        if(vi.type) type = vi.type;
-
-        return *this;
-    }
-
-    friend std::ostream& operator<<(std::ostream& ost, const VarInfo& vi) {
-        ost << vi.originalName.getOrElse("<unknown-variable>")
-            << " defined at ";
-
-        if (vi.originalLocus.empty()) ost << "<unknown-location>";
-        else ost << vi.originalLocus.getUnsafe();
-
-        if (vi.treatment == VarInfo::Allocated) ost << " (alloca)";
-
-        switch (vi.type.getSignedness()) {
-        case llvm::Signedness::Signed:   ost << " (signed)";   break;
-        case llvm::Signedness::Unsigned: ost << " (unsigned)"; break;
-        case llvm::Signedness::Unknown:  ost << " (unknown)";  break;
-        }
-
-        if (vi.ast) ost << " : " << *vi.ast;
-        return ost;
-    }
-};
-
-inline VarInfo meta2vi(const llvm::DIVariable& dd, const llvm::DITypeIdentifierMap& context, clang::Decl* ast = nullptr) {
-    using borealis::util::just;
-    using borealis::Locus;
-
-    return VarInfo{
-        just(dd.getName().str()),
-        just(
-            Locus{
-                dd.getContext().getFilename(),
-                LocalLocus{ dd.getLineNumber(), 0U }
-            }
-        ),
-        VarInfo::Plain,
-        DIType{ dd.getType().resolve(context) },
-        ast
-    };
-}
+GENERATE_FANCY_ENUM(VariableKind,
+    Local,
+    Global,
+    Static,
+    Extern
+);
 
 } /* namespace borealis */
+
+GENERATE_OUTLINE_ENUM_HASH(borealis::DiscoveryDirection)
+GENERATE_OUTLINE_ENUM_HASH(borealis::DiscoveryPolicy)
+GENERATE_OUTLINE_ENUM_HASH(borealis::StorageSpec)
+GENERATE_OUTLINE_ENUM_HASH(borealis::VariableKind)
+
+namespace borealis{
+
+struct VarInfo {
+    std::string name;
+    Locus locus;
+    StorageSpec storage;
+    CType::Ptr type;
+    VariableKind kind;
+
+    GENERATE_DATA_TYPE_BP(VarInfo, name, locus, storage, type, kind);
+};
+
+} /* namespace borealis */
+
+INLINE_TO_OUTLINE_HASH(borealis::VarInfo)
+
+#include "Util/generate_unmacros.h"
 
 #endif /* VARINFO_H_ */

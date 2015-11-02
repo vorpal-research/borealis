@@ -52,9 +52,9 @@ std::string TypeUtils::toString(const Type& type) {
 
         ret += util::viewContainer(Rec->getBody()->get())
             .map([](auto&& e) {
-                return util::toString(e.getIndex()) +
+                return util::toString(e.getOffset()) +
                        ": " +
-                       util::toString(e.getIds());
+                       toString(*e.getType());
             })
             .reduce("", [](auto&& e1, auto&& e2) {
                 return e1 + ", " + e2;

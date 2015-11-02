@@ -70,6 +70,11 @@ cache<Key, Value, DefaultHashCacheImpl> make_size_t_cache() {
     return { impl_::sequence_generator<Value>{} };
 }
 
+template<class Value, class ...Args>
+cache<std::tuple<Args...>, Value, DefaultHashCacheImpl> cached_make_shared() {
+    return { as_packed([](Args&&... args){ return std::make_shared<Value>(std::forward<Args>(args)...); }) };
+};
+
 } /*namespace util*/
 } /*namespace borealis*/
 

@@ -10,6 +10,8 @@
 #include "Codegen/CType/CType.h"
 #include "Codegen/CType/CTypeContext.h"
 
+#include "Util/generate_macros.h"
+
 namespace borealis {
 
 class CTypeRef {
@@ -22,7 +24,7 @@ private:
     CTypeContext::WeakPtr context;
 
 public:
-
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(CTypeRef);
 
     const std::string getName() const {
         return name;
@@ -36,9 +38,14 @@ public:
         return get();
     }
 
+    /* explicit CType::Ptr */ operator CType::Ptr () const{
+        return get();
+    }
 };
 
 } /* namespace borealis */
+
+#include "Util/generate_unmacros.h"
 
 #endif /* C_TYPE_REF_H */
 

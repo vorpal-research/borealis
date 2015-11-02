@@ -41,7 +41,7 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     SLT = &GetAnalysis< SourceLocationTracker >::doit(this, F);
 
     auto* st = GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F);
-    FN = FactoryNest(st);
+    FN = FactoryNest(F.getDataLayout(), st);
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
@@ -181,7 +181,7 @@ void OneForOne::processBasicBlock(const WorkQueueEntry& wqe) {
                 FM->getBdy(CI, FN) +
                 FM->getEns(CI, FN)
             ).apply();
-            auto t = CallSiteInitializer(CI, FN);
+            auto t = CallSiteInitializer(&CI, FN);
 
             PredicateState::Ptr instantiatedCallState = callState->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }

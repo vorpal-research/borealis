@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include <Codegen/CType/CTypeUtils.h>
 #include "Codegen/llvm.h"
 #include "Type/RecordBody.h"
 #include "Type/Type.h"
@@ -63,19 +64,22 @@ Type::Ptr TypeFactory::getArray(Type::Ptr elem, size_t size) const {
         );
 }
 
-Type::Ptr TypeFactory::getRecord(const std::string& name, const llvm::StructType* st) const {
+Type::Ptr TypeFactory::getRecord(const std::string& name, const llvm::StructType* st, const llvm::DataLayout* dl) const {
     static std::unordered_set<const llvm::StructType*> visitedRecordTypes;
+
 
     if (auto existing = util::at(records, name)) return existing.getUnsafe();
     else {
         if (not recordBodies->count(name) && not visitedRecordTypes.count(st)) {
             visitedRecordTypes.insert(st);
+            auto sl = dl->getStructLayout(const_cast<llvm::StructType*>(st)); // why, llvm, why???
 
-            type::RecordBody rb;
-            size_t i = 0;
-            for (auto&& tp : util::view(st->element_begin(), st->element_end())) {
-                rb.push_back(type::RecordField{cast(tp), i++});
-            }
+            type::RecordBody rb{
+                util::range(0U, st->getNumElements())
+                .map(LAM(ix, type::RecordField{cast(st->getElementType(ix), dl), sl->getElementOffsetInBits(ix)} ))
+                .toVector()
+            };
+
             embedRecordBodyNoRecursion(name, rb);
         }
         return records[name] = Type::Ptr(
@@ -117,12 +121,12 @@ void TypeFactory::initialize(const VariableInfoTracker& mit) {
         if (llvm::isa<llvm::UndefValue>(var.first)) continue;
 
         auto&& llvmType = var.first->getType();
-        if (var.second.treatment == VarInfo::Allocated) llvmType = llvmType->getPointerElementType();
+        if (var.second.storage == StorageSpec::Memory) llvmType = llvmType->getPointerElementType();
         embedType(dfi, mit.getModule().getDataLayout(), llvmType, var.second.type);
     }
 }
 
-Type::Ptr TypeFactory::cast(const llvm::Type* type, llvm::Signedness sign) const {
+Type::Ptr TypeFactory::cast(const llvm::Type* type, const llvm::DataLayout* dl, llvm::Signedness sign) const {
     if (type->isVoidTy())
         return getUnknownType(); // FIXME
     else if (type->isIntegerTy())
@@ -130,19 +134,19 @@ Type::Ptr TypeFactory::cast(const llvm::Type* type, llvm::Signedness sign) const
     else if (type->isFloatingPointTy())
         return getFloat();
     else if (type->isPointerTy())
-        return getPointer(cast(type->getPointerElementType()));
+        return getPointer(cast(type->getPointerElementType(), dl));
     else if (type->isArrayTy())
-        return getArray(cast(type->getArrayElementType()), type->getArrayNumElements());
+        return getArray(cast(type->getArrayElementType(), dl), type->getArrayNumElements());
     else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
         auto&& name = str->hasName() ? str->getStructName().str() : util::toString(*str);
-        return getRecord(name, str);
+        return getRecord(name, str, dl);
     } else if (type->isMetadataTy()) // we use metadata for unknown stuff
         return getUnknownType();
     else if (auto* func = llvm::dyn_cast<llvm::FunctionType>(type)) {
         return getFunction(
-            cast(func->getReturnType()),
+            cast(func->getReturnType(), dl),
             util::view(func->param_begin(), func->param_end())
-                .map([this](const llvm::Type* argty) { return cast(argty); })
+                .map([this, dl](const llvm::Type* argty) { return cast(argty, dl); })
                 .toVector()
         );
     } else return getTypeError("Unsupported llvm type: " + util::toString(*type));
@@ -159,74 +163,14 @@ void TypeFactory::mergeRecordBodyInto(type::RecordBody& lhv, const type::RecordB
         lhv = rhv;
         return;
     }
-
-    for (auto&& pr : util::viewContainer(lhv) ^ util::viewContainer(rhv)) {
-        auto&& lfield = pr.first;
-        auto&& rfield = pr.second;
-        for (auto&& id : rfield.getIds()) {
-            lfield.pushId(id);
-        }
-    }
 }
 
-Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, DIType meta, const llvm::DataLayout* DL) const {
-    if (auto structType = llvm::dyn_cast<llvm::StructType>(type)) {
-
-        DIStructType str = meta;
-        ASSERTC(!!str);
-
-        if (structType->isOpaque()) {
-            ASSERTC(str.isOpaque());
-            return getUnknownType(); // XXX: o_O
-        }
-
-        auto members = str.getMembers();
-        using Members = decltype(members);
-
-        type::RecordBody body;
-
-        if (str.isUnion()) {
-            ASSERTC(1 == type->getStructNumElements());
-
-            body.push_back(type::RecordField{
-                cast(type->getStructElementType(0)),
-                util::range(0U, members.getNumElements())
-                    .map(std::bind(&Members::getElement, members, std::placeholders::_1))
-                    .fold(std::unordered_set<std::string>{}, [](auto&& a, auto&& e) {
-                        a.insert(e.getName());
-                        return a;
-                    })
-            });
-
-        } else {
-
-            auto&& layout = DL->getStructLayout(structType);
-
-            for (auto&& metaMember :
-                util::range(0U, members.getNumElements())
-                    .map(std::bind(&Members::getElement, members, std::placeholders::_1))
-            ) {
-                auto&& idx = layout->getElementContainingOffset(metaMember.getOffsetInBits() / 8);
-                auto&& field = structType->getElementType(idx);
-                body.push_back(type::RecordField{
-                    cast(field),
-                    std::unordered_set<std::string>{ metaMember.getName() }
-                });
-            }
-        }
-
-        return embedRecordBodyNoRecursion(type->getStructName(), body);
-    }
-
-    return cast(type, meta.getSignedness());
+Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, const llvm::DataLayout* DL, CType::Ptr meta) const {
+    return cast(type, DL, CTypeUtils::getSignedness(meta));
 }
 
-Type::Ptr TypeFactory::embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, DIType meta) const {
-    // FIXME: huh?
-    for (auto&& expanded : flattenTypeTree(dfi, DL, {type, meta})) {
-        embedRecordBodyNoRecursion(expanded.first, stripAliases(dfi, expanded.second), DL); // just for the side effects
-    }
-    return cast(type);
+Type::Ptr TypeFactory::embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, CType::Ptr meta) const {
+    return cast(type, DL, CTypeUtils::getSignedness(meta));
 }
 
 Type::Ptr TypeFactory::merge(Type::Ptr one, Type::Ptr two) {

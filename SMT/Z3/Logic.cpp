@@ -169,8 +169,16 @@ Bool operator!(Bool bv0) {
 
 #define REDEF_OP(OP) \
     Bool operator OP(const ComparableExpr& lhv, const ComparableExpr& rhv) { \
+        if(z3impl::getExpr(lhv).is_bv()) { \
+            auto&& ll = DynBitVectorExpr(lhv); \
+            auto&& rr = DynBitVectorExpr(rhv); \
+            return ll OP rr; \
+        } \
+        z3::expr l_raw = z3impl::getExpr(lhv); \
+        z3::expr r_raw = z3impl::getExpr(rhv); \
+        \
         return Bool{ \
-            z3impl::getExpr(lhv) OP z3impl::getExpr(rhv), \
+            l_raw OP r_raw, \
             z3impl::spliceAxioms(lhv, rhv) \
         }; \
     }

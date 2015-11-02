@@ -50,6 +50,7 @@ template<class T>
 struct is_using_llvm_output {
     enum { value =
             std::is_base_of<clang::Decl, T>::value ||
+            std::is_base_of<clang::QualType::StreamedQualTypeHelper, T>::value ||
             std::is_base_of<llvm::Value, T>::value ||
             std::is_base_of<llvm::Type, T>::value ||
             std::is_base_of<const llvm::StringRef, T>::value ||
