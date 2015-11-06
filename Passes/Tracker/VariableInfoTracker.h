@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include <llvm/Pass.h>
+#include <Actions/VariableInfoFinder.h>
 #include "Codegen/CType/CTypeFactory.h"
 
 #include "Codegen/VarInfoContainer.h"
@@ -29,9 +30,10 @@ namespace borealis {
 // not really a pass, just some functionality bundled into llvm pass system
 class VariableInfoTracker : public llvm::ModulePass {
     typedef DataProvider<clang::FileManager> sm_t;
+    typedef DataProvider<ExtVariableInfoData> ext_vars_t;
 
     VarInfoContainer vars;
-    CTypeFactory CTF;
+    std::unique_ptr<CTypeFactory> CTF;
 
     llvm::LLVMContext* ctx;
     const llvm::Module* m;
@@ -205,7 +207,7 @@ public:
 
     const VarInfoContainer& getVars() const { return vars; }
 
-    CTypeFactory& getCTypeFactory() { return CTF; }
+    CTypeFactory& getCTypeFactory() { return *CTF; }
 
     ValueDescriptor locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const {
         ValueDescriptor res;

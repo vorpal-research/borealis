@@ -35,6 +35,27 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CFloat.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CFloat {
+    extend borealis.proto.CType {
+        optional CFloat ext = $COUNTER_CTYPE;
+    }
+
+
+    optional uint32 bitsize = 1;
+}
+
+**/
+
 class CFloat : public CType {
 
     typedef CFloat Self;

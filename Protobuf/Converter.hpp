@@ -48,6 +48,24 @@ std::unique_ptr<Locus>       deprotobuffy(const proto::Locus& p);
 std::unique_ptr<proto::LocusRange> protobuffy(const LocusRange& p);
 std::unique_ptr<LocusRange>      deprotobuffy(const proto::LocusRange& p);
 
+namespace util {
+
+template<class T, class Ctx>
+auto read_as_protobuf(std::istream& str, Ctx&& ctx) -> decltype(auto) {
+    typename protobuf_traits<T>::proto_t proto;
+    proto.ParseFromIstream(&str);
+    return protobuf_traits<T>::fromProtobuf(ctx, proto);
+}
+
+template<class T>
+void write_as_protobuf(std::ostream& str, const T& rep) {
+    auto&& proto = protobuf_traits<T>::toProtobuf(rep);
+    proto->SerializeToOstream(&str);
+};
+
+} /* namespace util */
+
+
 } // namespace borealis
 
 #endif /* PROTOBUF_CONVERTER_HPP_ */

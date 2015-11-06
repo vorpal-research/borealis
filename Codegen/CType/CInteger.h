@@ -36,6 +36,28 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CInteger.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+import "Util/Signedness.proto";
+
+package borealis.proto;
+
+message CInteger {
+    extend borealis.proto.CType {
+        optional CInteger ext = $COUNTER_CTYPE;
+    }
+
+
+    optional uint32 bitsize = 1;
+    optional borealis.proto.Signedness signedness = 2;
+}
+
+**/
+
 class CInteger : public CType {
 
     typedef CInteger Self;

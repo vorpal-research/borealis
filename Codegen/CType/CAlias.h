@@ -35,6 +35,28 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CAlias.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CAlias {
+    extend borealis.proto.CType {
+        optional CAlias ext = $COUNTER_CTYPE;
+    }
+
+
+    optional CTypeRef original = 1;
+    optional CQualifier qualifier = 2;
+}
+
+**/
+
 class CAlias : public CType {
 
     typedef CAlias Self;

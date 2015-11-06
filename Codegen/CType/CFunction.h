@@ -35,6 +35,28 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CFunction.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CFunction {
+    extend borealis.proto.CType {
+        optional CFunction ext = $COUNTER_CTYPE;
+    }
+
+
+    optional CTypeRef resultType = 1;
+    repeated CTypeRef argumentTypes = 2;
+}
+
+**/
+
 class CFunction : public CType {
 
     typedef CFunction Self;

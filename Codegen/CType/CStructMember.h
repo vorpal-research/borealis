@@ -9,6 +9,19 @@
 #include <string>
 #include "Codegen/CType/CTypeRef.h"
 
+/** protobuf -> Codegen/CType/CStructMember.proto
+import "Codegen/CType/CTypeRef.proto";
+
+package borealis.proto;
+
+message CStructMember {
+    optional uint32 offset = 1;
+    optional string name = 2;
+    optional CTypeRef type = 3;
+}
+
+**/
+
 namespace borealis {
 
 class CStructMember {
@@ -16,6 +29,7 @@ public:
     CStructMember(size_t offset, const std::string& name, const CTypeRef& type) :
         offset(offset), name(name), type(type) { }
     CStructMember(const CStructMember&) = default;
+    CStructMember(CStructMember&&) = default;
 
 private:
     size_t offset;

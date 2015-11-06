@@ -35,6 +35,28 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CStruct.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CStruct {
+    extend borealis.proto.CType {
+        optional CStruct ext = $COUNTER_CTYPE;
+    }
+
+
+    repeated CStructMember elements = 1;
+    optional bool opaque = 2;
+}
+
+**/
+
 class CStruct : public CType {
 
     typedef CStruct Self;

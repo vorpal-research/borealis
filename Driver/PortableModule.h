@@ -13,15 +13,17 @@
 #include <memory>
 
 #include "Annotation/AnnotationContainer.h"
+#include "Actions/VariableInfoFinder.h"
 
 namespace borealis {
 namespace driver {
 
-struct AnnotatedModule {
+struct PortableModule {
     std::shared_ptr<llvm::Module> module;
     AnnotationContainer::Ptr annotations;
+    ExtVariableInfoData extVars;
 
-    typedef std::shared_ptr<AnnotatedModule> Ptr;
+    typedef std::shared_ptr<PortableModule> Ptr;
 };
 
 } // namespace driver

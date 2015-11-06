@@ -169,7 +169,7 @@ VariableInfoTracker::ValueDescriptors AnnotationMaterializer::forValue(llvm::Val
 
 VariableInfoTracker::ValueDescriptor AnnotationMaterializer::forValueSingle(llvm::Value* value) const {
     auto&& descs = forValue(value);
-    ASSERTC(descs.size() == 1);
+    ASSERTC(descs.size() >= 1);
     return descs.front();
 }
 

@@ -27,9 +27,11 @@ class VariableInfoFinderVisitor
     std::vector<VarInfo> vars_;
     const clang::SourceManager* sm_ = nullptr;
     const clang::ASTContext* ac_ = nullptr;
-    CTypeFactory CTF;
+    CTypeFactory* CTF;
 
 public:
+    VariableInfoFinderVisitor(CTypeFactory* CTF): CTF(CTF) {}
+
     void setASTContext(const clang::ASTContext* ac) {
         ac_ = ac;
         sm_ = &ac->getSourceManager();
@@ -38,27 +40,27 @@ public:
     void handleDecl(clang::ValueDecl* decl) {
         VarInfo info;
         ON_SCOPE_EXIT(vars_.push_back(std::move(info)));
-        info.type = CTF.getType(decl->getType(), *ac_);
+        info.type = CTF->getRef(CTF->getType(decl->getType(), *ac_));
         info.name = decl->getName();
         info.locus = Locus{decl->getLocation(), *sm_};
-        info.storage = StorageSpec::Unknown,
-            info.kind = (!decl->isDefinedOutsideFunctionOrMethod()) ? VariableKind::Local
-                                                                    : (decl->getLinkageAndVisibility().getLinkage() ==
-                                                                       clang::Linkage::ExternalLinkage
-                                                                       ||
-                                                                       decl->getLinkageAndVisibility().getLinkage() ==
-                                                                       clang::Linkage::UniqueExternalLinkage)
-                                                                      ? VariableKind::Extern
-                                                                      : VariableKind::Global;
+        info.storage = StorageSpec::Unknown;
+        if(!decl->isDefinedOutsideFunctionOrMethod()) info.kind = VariableKind::Local;
+        else switch (decl->getLinkageAndVisibility().getLinkage()) {
+            case clang::Linkage::ExternalLinkage:
+            case clang::Linkage::UniqueExternalLinkage:
+                info.kind = VariableKind::Extern;
+            default:
+                info.kind = VariableKind::Global;
+        }
     }
 
     bool VisitQualifiedTypeLoc(clang::QualifiedTypeLoc typeloc) {
-        CTF.getType(typeloc.getType(), *ac_);
+        CTF->getType(typeloc.getType(), *ac_);
         return true;
     }
 
     bool VisitFunctionDecl(clang::FunctionDecl* decl) {
-        CTF.getType(decl->getType(), *ac_);
+        CTF->getType(decl->getType(), *ac_);
         handleDecl(decl);
         for (auto&& param : decl->parameters()) {
             handleDecl(param);
@@ -74,10 +76,16 @@ public:
     llvm::ArrayRef<VarInfo> vars() const {
         return vars_;
     }
+
+    CTypeContext::Ptr getTypeContext() const {
+        return CTF->getCtx();
+    }
 };
 
 class VariableInfoFinderConsumer : public clang::ASTConsumer {
 public:
+    VariableInfoFinderConsumer(CTypeFactory* CTF) : Visitor(CTF) {};
+
     virtual void HandleTranslationUnit(clang::ASTContext& Context) {
         // Traversing the translation unit decl via a RecursiveASTVisitor
         // will visit all nodes in the AST.
@@ -87,6 +95,10 @@ public:
 
     llvm::ArrayRef<VarInfo> vars() const {
         return Visitor.vars();
+    }
+
+    CTypeContext::Ptr getTypeContext() const {
+        return Visitor.getTypeContext();
     }
 
 private:
@@ -112,17 +124,17 @@ clang::ASTConsumer* VariableInfoFinder::CreateASTConsumer(
 }
 
 
-VariableInfoFinder::VariableInfoFinder() :
+VariableInfoFinder::VariableInfoFinder(CTypeFactory* CTF) :
     pimpl_{
         util::make_unique<VariableInfoFinderImpl>(
-            util::make_unique<VariableInfoFinderConsumer>()
+            util::make_unique<VariableInfoFinderConsumer>(CTF)
         )
     } { }
 
 VariableInfoFinder::~VariableInfoFinder() { }
 
-llvm::ArrayRef<VarInfo> VariableInfoFinder::vars() const {
-    return pimpl_->consumer->vars();
+ExtVariableInfoData VariableInfoFinder::vars() const {
+    return ExtVariableInfoData{ util::viewContainer(pimpl_->consumer->vars()).toHashSet(), pimpl_->consumer->getTypeContext() };
 }
 
 } /* namespace borealis */

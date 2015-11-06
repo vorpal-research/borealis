@@ -264,6 +264,13 @@ ext2guard (x : tail) | x == '.'  = '_'       : ext2guard tail
                      | otherwise = toUpper x : ext2guard tail
 
 
+replace :: Eq a => [a] -> [a] -> [a] -> [a]
+replace [] _ _ = []
+replace s find repl =
+    if take (length find) s == find
+        then repl ++ (replace (drop (length find) s) find repl)
+        else [head s] ++ (replace (tail s) find repl)
+
 data CPlusPlus = CPlusPlus{ cppPrelude :: String, cppGuard :: String, cppConstructors :: [CppDerivedDescriptor], cppDescription :: (Maybe CppDerivedDescriptor) } deriving (Show, Eq)
 
 instance ToSElem CPlusPlus where
@@ -299,7 +306,7 @@ main = do
 
     dt_string <- readFile source_file
 
-    let base_files = filter (\ it -> thrine it == "base") templates
+    let base_files = filter (\ it -> thrine it /= "derived") templates
     template_base_contents <- mapM (readFile . zipTEFNWithExt dir) base_files
     let template_bases :: [(StringTemplate String, TwoExtensionFileName)]; template_bases = (map newSTMP template_base_contents) `zip` base_files
     let derived_files = filter (\ it -> thrine it == "derived") templates
@@ -312,7 +319,8 @@ main = do
 
     flip mapM (template_bases) $ \ (template_base, fname) -> do
       let outExt = extension fname
-      let outname = zipWithExt dir (dtname datatype, outExt)
+      let basename = dtname datatype
+      let outname = zipWithExt dir (replace (thrine fname) "base" basename, outExt)
       let include_guard = (map toUpper $ dtname datatype) ++ ext2guard outExt
       let filled_base :: StringTemplate String
           filled_base = template_base <+= ("dir", dir)

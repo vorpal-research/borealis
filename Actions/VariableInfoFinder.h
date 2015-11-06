@@ -10,9 +10,18 @@
 
 #include <clang/Frontend/FrontendAction.h>
 
+#include "Codegen/CType/CTypeFactory.h"
 #include "Codegen/VarInfo.h"
 
 namespace borealis {
+
+struct ExtVariableInfoData {
+    std::unordered_set<VarInfo> vars;
+    CTypeContext::Ptr types;
+
+    auto begin() const { return vars.begin(); }
+    auto end() const { return vars.end(); }
+};
 
 class VariableInfoFinder: public clang::ASTFrontendAction {
     struct VariableInfoFinderImpl;
@@ -22,10 +31,10 @@ public:
     virtual clang::ASTConsumer*
         CreateASTConsumer(clang::CompilerInstance &Compiler, llvm::StringRef InFile) override;
 
-    VariableInfoFinder();
+    VariableInfoFinder(CTypeFactory* ctf);
     virtual ~VariableInfoFinder();
 
-    llvm::ArrayRef<VarInfo> vars() const;
+    ExtVariableInfoData vars() const;
 };
 
 } /* namespace borealis */

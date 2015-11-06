@@ -35,6 +35,26 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CVoid.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CVoid {
+    extend borealis.proto.CType {
+        optional CVoid ext = $COUNTER_CTYPE;
+    }
+
+
+}
+
+**/
+
 class CVoid : public CType {
 
     typedef CVoid Self;

@@ -8,6 +8,17 @@
 #include <string>
 #include "Codegen/CType/CType.h"
 
+/** protobuf -> Codegen/CType/CTypeContext.proto
+import "Codegen/CType/CType.proto";
+
+package borealis.proto;
+
+message CTypeContext {
+    repeated CType types = 1;
+}
+
+**/
+
 namespace borealis {
 
 class CTypeContext {
@@ -28,6 +39,9 @@ public:
     void put(CType::Ptr ptr) {
         types[ptr->getName()] = ptr;
     }
+
+    auto begin() const { return types.begin(); }
+    auto end() const { return types.end(); }
 };
 
 } /* namespace borealis */

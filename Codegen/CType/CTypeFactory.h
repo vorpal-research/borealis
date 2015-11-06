@@ -36,20 +36,27 @@ class CTypeFactory {
         else return getRef(record(borealis::util::make_shared_restricted<Type>(*this, name, std::forward<Params>(params)...)));
     }
 
-    CTypeRef getRef(const std::string& name) {
-        return CTypeRef(name, ctx);
-    }
-
     CTypeRef getRef(CTypeRef ptr) {
         return ptr;
     }
 
 public:
     CTypeFactory() : ctx(std::make_shared<CTypeContext>()) {}
+    CTypeFactory(CTypeFactory&&) = default;
+    CTypeFactory(const CTypeFactory&) = default;
+    CTypeFactory(CTypeContext::Ptr ctx) : ctx(ctx) {}
+
+    CTypeRef getRef(const std::string& name) {
+        return CTypeRef(name, ctx);
+    }
 
     CTypeRef getRef(CType::Ptr tp) {
         ctx->put(tp);
         return CTypeRef(tp->getName(), ctx);
+    }
+
+    CType::Ptr getAlias(const std::string& name, CQualifier qual, CTypeRef tp) {
+        return make<CAlias>(name, getRef(tp), qual);
     }
 
     CType::Ptr getTypedef(const std::string& name, CTypeRef tp) {
@@ -148,6 +155,10 @@ public:
     CType::Ptr getType(clang::QualType ast, const clang::ASTContext& ctx) {
         std::unordered_map<clang::QualType, CTypeRef, QualTypeHash> cache;
         return processType(ast, ctx, cache).get();
+    }
+
+    CTypeContext::Ptr getCtx() const {
+        return ctx;
     }
 
 };

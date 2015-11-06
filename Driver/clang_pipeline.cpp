@@ -16,6 +16,7 @@
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/Host.h>
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/TypeBuilder.h>
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/Support/SourceMgr.h>
@@ -24,9 +25,9 @@
 
 #include <fstream>
 #include <unordered_map>
-#include <llvm/IR/DIBuilder.h>
 
 #include "Actions/VariableInfoFinder.h"
+#include "Codegen/CType/ProtobufConverterImpl.hpp"
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Driver/clang_pipeline.h"
@@ -96,8 +97,9 @@ static void postProcessClangGeneratedModule(clang::SourceManager& SM, llvm::Modu
 
 struct clang_pipeline::impl: public DelegateLogging {
     clang::CompilerInstance ci;
-    std::unordered_map<std::string, AnnotatedModule::Ptr> fileCache;
+    std::unordered_map<std::string, PortableModule::Ptr> fileCache;
     FactoryNest fn;
+    CTypeFactory ctf;
 
     impl(clang_pipeline* abs): DelegateLogging(*abs), fn() {};
 
@@ -146,11 +148,11 @@ struct clang_pipeline::impl: public DelegateLogging {
         ASSERTC(ci.ExecuteAction(gatherAnnotations));
         AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
 
-        borealis::VariableInfoFinder vif;
+        borealis::VariableInfoFinder vif(&ctf);
         ASSERTC(ci.ExecuteAction(vif));
 
-        fileCache[ci.getFrontendOpts().OutputFile] = AnnotatedModule::Ptr{
-            new AnnotatedModule{ module, annotations }
+        fileCache[ci.getFrontendOpts().OutputFile] = PortableModule::Ptr{
+            new PortableModule{ module, annotations, vif.vars() }
         };
     }
 
@@ -161,6 +163,8 @@ struct clang_pipeline::impl: public DelegateLogging {
     void readFor(const std::string& fname) {
         auto bcfile = fname + ".bc";
         auto annofile = fname + ".anno";
+        auto typetablefile = fname + ".ctypetable";
+        auto vartablefile = fname + ".cvartable";
 
         llvm::SMDiagnostic diag;
         std::shared_ptr<llvm::Module> module{ llvm::ParseIRFile(bcfile, diag, llvm::getGlobalContext()) };
@@ -169,20 +173,30 @@ struct clang_pipeline::impl: public DelegateLogging {
         std::ifstream annoStream(annofile, std::iostream::in | std::iostream::binary);
         if (!annoStream) return;
 
-        AnnotationContainer::ProtoPtr proto{ new proto::AnnotationContainer{} };
-        proto->ParseFromIstream(&annoStream);
-
-        AnnotationContainer::Ptr annotations = deprotobuffy(fn, *proto);
+        AnnotationContainer::Ptr annotations = util::read_as_protobuf<AnnotationContainer>(annoStream, fn);
         if (!annotations) return;
 
-        fileCache[fname] = AnnotatedModule::Ptr{
-            new AnnotatedModule{ module, annotations }
+        std::ifstream typeStream(typetablefile, std::iostream::in | std::iostream::binary);
+        if(!typeStream) return;
+
+        CTypeContext::Ptr types = util::read_as_protobuf<CTypeContext>(typeStream, &ctf);
+        if(!types) return;
+
+        std::ifstream varStream(vartablefile, std::iostream::in);
+        if(!typeStream) return;
+
+        auto vars = util::read_as_json<std::unordered_set<VarInfo>>(varStream);
+
+        fileCache[fname] = PortableModule::Ptr{
+            new PortableModule{ module, annotations, ExtVariableInfoData{*vars, types} }
         };
     }
 
     void writeFor(const std::string& fname) {
         auto bcfile = fname + ".bc";
         auto annofile = fname + ".anno";
+        auto typetablefile = fname + ".ctypetable";
+        auto vartablefile = fname + ".cvartable";
 
         auto annotatedModule = fileCache[fname];
         ASSERTC(annotatedModule != nullptr);
@@ -190,14 +204,19 @@ struct clang_pipeline::impl: public DelegateLogging {
         std::string error;
         llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error, llvm::sys::fs::F_Text | llvm::sys::fs::F_RW);
         llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
-        errs() << error << endl;
+        if(error != "") errs() << error << endl;
 
-        AnnotationContainer::ProtoPtr proto = protobuffy(annotatedModule->annotations);
         std::ofstream annoStream(annofile, std::iostream::out | std::iostream::binary);
-        proto->SerializeToOstream(&annoStream);
+        util::write_as_protobuf(annoStream, *annotatedModule->annotations);
+
+        std::ofstream varStream(vartablefile);
+        util::write_as_json(varStream, annotatedModule->extVars.vars );
+
+        std::ofstream typeStream(typetablefile);
+        util::write_as_protobuf(typeStream, *annotatedModule->extVars.types );
     }
 
-    AnnotatedModule::Ptr get(const std::string& name) {
+    PortableModule::Ptr get(const std::string& name) {
         auto it = fileCache.find(name);
         if (it != fileCache.end()) return it->second;
 
@@ -232,6 +251,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         auto module = util::uniq(new llvm::Module(moduleName, llvm::getGlobalContext()));
         llvm::Linker linker(module.get(), false);
         AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
+        ExtVariableInfoData edif{ std::unordered_set<VarInfo>{}, ctf.getCtx() };
 
         for (const auto& arg: util::view(
             args.filtered_begin(clang::driver::options::OPT_INPUT),
@@ -249,6 +269,8 @@ struct clang_pipeline::impl: public DelegateLogging {
                     errs() << "Errors during linking: " << err << endl;
                 }
                 annotations->mergeIn(am->annotations);
+                edif.vars.insert(am->extVars.begin(), am->extVars.end());
+
                 claim(subarg);
             }
         }
@@ -256,12 +278,12 @@ struct clang_pipeline::impl: public DelegateLogging {
         IntrinsicsManager::getInstance().updateForModule(*module);
         MetaInserter::unliftAllDebugIntrinsics(*module);
 
-        fileCache[linkerOutputFile] = AnnotatedModule::Ptr{
-            new AnnotatedModule{ std::move(module), std::move(annotations) }
+        fileCache[linkerOutputFile] = PortableModule::Ptr{
+            new PortableModule{ std::move(module), std::move(annotations), std::move(edif) }
         };
     }
 
-    AnnotatedModule::Ptr result() {
+    PortableModule::Ptr result() {
         auto it = fileCache.find(linkerOutputFile);
         if (it != fileCache.end()) return it->second;
         else return nullptr;
@@ -301,7 +323,7 @@ void clang_pipeline::invoke(const std::vector<command>& cmds) {
     }
 }
 
-AnnotatedModule::Ptr clang_pipeline::result() {
+PortableModule::Ptr clang_pipeline::result() {
     return pimpl->result();
 }
 

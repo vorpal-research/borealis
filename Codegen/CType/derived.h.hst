@@ -25,6 +25,27 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> $dir$/$derivedname$.proto
+import "$dir$/$basename$.proto";
+import "$dir$/CStructMember.proto";
+import "$dir$/CQualifier.proto";
+import "$dir$/CTypeRef.proto";
+
+$protobuf.prelude$
+
+package borealis.proto;
+
+message $derivedname$ {
+    extend borealis.proto.$basename$ {
+        optional $derivedname$ ext = $"$COUNTER_CTYPE"$;
+    }
+
+$protobuf.locals$
+$protobuf.descriptor.fields: {f|$if(f.type.builtin)$    $f.type.spec$ $f.type.name$ $f.name$ = $i$;$else$    $f.type.spec$ borealis.proto.$f.type.name$ $f.name$ = $i$;$endif$
+}$}
+
+**/
+
 class $derivedname$ : public $basename$ {
 
     typedef $derivedname$ Self;

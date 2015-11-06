@@ -36,6 +36,28 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CArray.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CArray {
+    extend borealis.proto.CType {
+        optional CArray ext = $COUNTER_CTYPE;
+    }
+
+
+    optional CTypeRef element = 1;
+    optional uint32 size = 2;
+}
+
+**/
+
 class CArray : public CType {
 
     typedef CArray Self;

@@ -14,7 +14,7 @@
 #include <string>
 
 #include "Codegen/llvm.h"
-#include "Codegen/CType/CType.h"
+#include "Codegen/CType/CTypeRef.h"
 #include "Logging/logger.hpp"
 #include "Util/util.h"
 #include "Util/enums.hpp"
@@ -60,13 +60,42 @@ GENERATE_OUTLINE_ENUM_HASH(borealis::DiscoveryPolicy)
 GENERATE_OUTLINE_ENUM_HASH(borealis::StorageSpec)
 GENERATE_OUTLINE_ENUM_HASH(borealis::VariableKind)
 
+GENERATE_OUTLINE_ENUM_JSON_TRAITS(DiscoveryDirection,
+    Next,
+    Previous
+)
+
+GENERATE_OUTLINE_ENUM_JSON_TRAITS(DiscoveryPolicy,
+    NextVal,
+    PreviousVal,
+    NextFunction,
+    PreviousFunction,
+    NextArgument,
+    PreviousArgument,
+    Loop,
+    Global
+)
+
+GENERATE_OUTLINE_ENUM_JSON_TRAITS(StorageSpec,
+    Register,
+    Memory,
+    Unknown
+)
+
+GENERATE_OUTLINE_ENUM_JSON_TRAITS(VariableKind,
+    Local,
+    Global,
+    Static,
+    Extern
+)
+
 namespace borealis{
 
 struct VarInfo {
     std::string name;
     Locus locus;
     StorageSpec storage;
-    CType::Ptr type;
+    CTypeRef type;
     VariableKind kind;
 
     GENERATE_DATA_TYPE_BP(VarInfo, name, locus, storage, type, kind);
@@ -75,6 +104,8 @@ struct VarInfo {
 } /* namespace borealis */
 
 INLINE_TO_OUTLINE_HASH(borealis::VarInfo)
+
+GENERATE_OUTLINE_JSON_TRAITS(borealis::VarInfo, name, locus, storage, type, kind)
 
 #include "Util/generate_unmacros.h"
 

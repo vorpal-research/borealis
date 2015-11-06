@@ -23,6 +23,7 @@ VariableInfoTracker::~VariableInfoTracker() {}
 void VariableInfoTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
     AUX<sm_t>::addRequiredTransitive(AU);
+    AUX<ext_vars_t>::addRequiredTransitive(AU);
 }
 
 using namespace llvm;
@@ -40,7 +41,7 @@ static VarInfo mkVI(
         node.getName().str(),
         Locus{ node.getFilename().str(), node.getLineNumber(), 0U },
         allocated ? StorageSpec::Memory : StorageSpec::Register,
-        CTF.getType(node.getType(), DFI),
+        CTF.getRef(CTF.getType(node.getType(), DFI)),
         VariableKind::Global
     );
 }
@@ -55,7 +56,7 @@ static VarInfo mkVI(
         node.getName().str(),
         Locus(node.getFilename().str(), node.getLineNumber(), 0U),
         allocated ? StorageSpec::Memory : StorageSpec::Register,
-        CTF.getType(DFI.resolve(node.getType()), DFI),
+        CTF.getRef(CTF.getType(DFI.resolve(node.getType()), DFI)),
         VariableKind::Global
     };
 }
@@ -70,7 +71,7 @@ static VarInfo mkVI(
         node.getName().str(),
         Locus(node.getFile().getName().str(), node.getLineNumber(), 0U),
         allocated ? StorageSpec::Memory : StorageSpec::Register,
-        CTF.getType(DFI.resolve(node.getType()), DFI),
+        CTF.getRef(CTF.getType(DFI.resolve(node.getType()), DFI)),
         VariableKind::Local
     };
     return ret;
@@ -100,9 +101,10 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     dfi = DebugInfoFinder{};
     dfi.processModule(M);
 
-    CTF.processTypes(dfi);
-
     auto& sm = GetAnalysis<sm_t>::doit(this).provide();
+    auto& ext_vars = GetAnalysis<ext_vars_t>::doit(this).provide();
+    CTF = util::make_unique<CTypeFactory>(ext_vars.types);
+
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
     auto* GlobalsDesc = M.getFunction(
@@ -122,10 +124,10 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
             auto* garg = call->getArgOperand(0);
             if (auto* load = dyn_cast<LoadInst>(garg)) {
                 // if garg is a load, add it dereferenced
-                vars.put(load->getPointerOperand(), mkVI(CTF, sm, glob, dfi, true));
+                vars.put(load->getPointerOperand(), mkVI(*CTF, sm, glob, dfi, true));
             } else {
                 // else it has been optimized away, put it as-is
-                vars.put(garg, mkVI(CTF, sm, glob, dfi));
+                vars.put(garg, mkVI(*CTF, sm, glob, dfi));
             }
         }
     }
@@ -136,7 +138,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
         DISubprogram sp(msp);
         // FIXME: this is generally fucked up...
         if (auto f = sp.getFunction()) {
-            vars.put(f, mkVI(CTF, sm, sp, dfi, true));
+            vars.put(f, mkVI(*CTF, sm, sp, dfi, true));
         }
     }
 
@@ -173,7 +175,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
             auto&& llvmType = val->getType();
             auto&& metaType = dfi.resolve(var.getType());
 
-            auto vi = mkVI(CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
+            auto vi = mkVI(*CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
 
             // debug declare has additional location data attached through
             // dbg metadata
@@ -193,7 +195,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto&& llvmType = val->getType();
                 auto&& metaType = dfi.resolve(var.getType());
 
-                auto vi = mkVI(CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
+                auto vi = mkVI(*CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
 
                 // debug value has additional location data attached through
                 // dbg metadata
@@ -212,7 +214,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto&& llvmType = val->getType();
                 auto&& metaType = dfi.resolve(var.getType());
 
-                auto vi = mkVI(CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
+                auto vi = mkVI(*CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
 
                 // debug value has additional location data attached through
                 // dbg metadata

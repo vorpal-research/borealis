@@ -1368,7 +1368,7 @@ MACRO(A31, MARG)
     namespace std { \
         template<> \
         struct hash<type> { \
-            size_t operator()(const type& value){ \
+            size_t operator()(const type& value) const noexcept{ \
                 return hash_value(value); \
             } \
         }; \
