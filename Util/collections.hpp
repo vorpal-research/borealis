@@ -225,6 +225,11 @@ bool equal(const C1& c1, const C2& c2, BinaryPred pred) {
     return c1beg == c1end && c2beg == c2end;
 }
 
+template<class Container>
+auto max_element(Container&& c) -> decltype(*c.begin()) {
+    return *std::max_element(std::forward<Container>(c).begin(), std::forward<Container>(c).end());
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace impl_ {
