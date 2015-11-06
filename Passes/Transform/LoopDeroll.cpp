@@ -295,7 +295,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
             builder.CreateCall(
                 assumeIntr,
-                builder.CreateICmpSGE(nondetCall, ConstantInt::get(indexType, 0)),
+                builder.CreateICmpUGE(nondetCall, ConstantInt::get(indexType, 0)),
                 ""
             );
 
@@ -306,7 +306,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
                 // remember that backEdgeTaken is not the loop limit, but loop limit minus 1!
                 builder.CreateCall(
                     assumeIntr,
-                    builder.CreateICmpSLE(nondetCall, generatedBackEdge), // hence SLE
+                    builder.CreateICmpULE(nondetCall, generatedBackEdge), // hence SLE
                     ""
                 );
             }
