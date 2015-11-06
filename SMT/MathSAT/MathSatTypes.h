@@ -44,6 +44,8 @@ struct MathSAT {
     // dynamic logic type
     using Dynamic = mathsat_::logic::SomeExpr;
 
+    using add_no_overflow = mathsat_::logic::add_no_overflow;
+
     template<class Elem, class Index> using ArrayImpl = mathsat_::logic::InlinedFuncArray<Elem, Index>;
 
     // memory array

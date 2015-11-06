@@ -45,6 +45,8 @@ struct Z3 {
     // dynamic logic type
     using Dynamic = z3_::logic::SomeExpr;
 
+    using add_no_overflow = z3_::logic::add_no_overflow;
+
 #if defined USE_FUNC_ARRAY
     template<class Elem, class Index> using ArrayImpl = z3_::logic::FuncArray<Elem, Index>;
 #elif defined USE_INLINED_FUNC_ARRAY

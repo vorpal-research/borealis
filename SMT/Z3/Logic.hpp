@@ -709,9 +709,9 @@ public:
         };
     }
 
-    DynBitVectorExpr adapt(size_t N) const {
+    DynBitVectorExpr adapt(size_t N, bool isSigned = false) const {
         if (N > getBitSize()) {
-            return zgrowTo(N);
+            return isSigned ? growTo(N) : zgrowTo(N);
         } else if (N < getBitSize()) {
             return extract(N - 1, 0);
         } else {
@@ -720,8 +720,8 @@ public:
     }
 
     template<class Expr>
-    Expr adapt(GUARDED(void*, Expr::bitsize >= 0) = nullptr) const {
-        return adapt(Expr::bitsize);
+    Expr adapt(GUARDED(void*, Expr::bitsize >= 0) = nullptr, bool isSigned = false) const {
+        return adapt(Expr::bitsize, isSigned);
     }
 
     DynBitVectorExpr lshr(const DynBitVectorExpr& shift) {
@@ -977,6 +977,46 @@ public:
             z3impl::getExpr(this) != z3impl::getExpr(that),
             z3impl::spliceAxioms(*this, that)
         };
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct add_no_overflow {
+    static DynBitVectorExpr doit(DynBitVectorExpr bv0, DynBitVectorExpr bv1, bool isSigned) {
+        auto& ctx = z3impl::getContext(bv0);
+
+        auto sz = std::max(bv0.getBitSize(), bv1.getBitSize());
+        auto ebv0 = bv0.adapt(sz, isSigned);
+        auto ebv1 = bv1.adapt(sz, isSigned);
+
+        auto zero = DynBitVectorExpr{ ctx.bv_val(0, sz) };
+        auto zero_ = DynBitVectorExpr{ ctx.bv_val(0, 1) };
+
+        if (isSigned) {
+            auto res = ebv0 + ebv1;
+            auto axm = implies(ebv0 > zero && ebv1 > zero, res > zero) &&
+                       implies(ebv0 < zero && ebv1 < zero, res < zero);
+            return res.withAxiom(axm);
+        } else {
+            ebv0 = ebv0.zgrowTo(sz + 1);
+            ebv1 = ebv1.zgrowTo(sz + 1);
+
+            auto res = ebv0 + ebv1;
+            auto axm = zero_ == res.extract(sz, sz);
+
+            return res.extract(sz - 1, 0).withAxiom(axm);
+        }
+    }
+
+    template<size_t N>
+    static DynBitVectorExpr doit(BitVector<N> bv0, DynBitVectorExpr bv1, bool isSigned) {
+        return doit(DynBitVectorExpr{ bv0 }, bv1, isSigned);
+    }
+
+    template<size_t N>
+    static DynBitVectorExpr doit(DynBitVectorExpr bv0, BitVector<N> bv1, bool isSigned) {
+        return doit(bv0, DynBitVectorExpr{ bv1 }, isSigned);
     }
 };
 

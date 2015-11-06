@@ -834,6 +834,24 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct add_no_overflow {
+    static DynBitVectorExpr doit(DynBitVectorExpr bv0, DynBitVectorExpr bv1, bool) {
+        return bv0 + bv1; // FIXME: Implement
+    }
+
+    template<size_t N>
+    static DynBitVectorExpr doit(BitVector<N> bv0, DynBitVectorExpr bv1, bool isSigned) {
+        return doit(DynBitVectorExpr{ bv0 }, bv1, isSigned);
+    }
+
+    template<size_t N>
+    static DynBitVectorExpr doit(DynBitVectorExpr bv0, BitVector<N> bv1, bool isSigned) {
+        return doit(bv0, DynBitVectorExpr{ bv1 }, isSigned);
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template<class Elem>
 Bool distinct(mathsat::Env& env, const std::vector<Elem>& elems) {
     if (elems.empty()) return Bool::mkConst(env, true);
