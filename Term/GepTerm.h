@@ -133,7 +133,7 @@ struct SMTImpl<Impl, GepTerm> {
 
         auto diff = ctx->getBound(p, gepBitSize) - shift;
         auto zero = ef.getIntConst(0, gepBitSize);
-        auto shifted = p + shift;
+        auto shifted = Impl::add_no_overflow::doit(p, shift, true);
 
         static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
 
