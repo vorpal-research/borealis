@@ -115,8 +115,12 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     }
 
     for(auto&& V : M.getGlobalList()) {
-        auto&& vext = util::at(extVarByName, V.getName());
-        if(vext) vars.put(&V, vext.getUnsafe());
+        auto vext = util::at(extVarByName, V.getName());
+        if(vext) {
+            auto&& resolve = vext.getUnsafe();
+            resolve.storage = StorageSpec::Memory;
+            vars.put(&V, std::move(resolve));
+        }
     }
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();

@@ -13,7 +13,12 @@ namespace borealis {
 
 CallSiteInitializer::CallSiteInitializer(
         llvm::ImmutableCallSite CI,
-        FactoryNest FN) : Base(FN), ci(CI) {
+        FactoryNest FN) : CallSiteInitializer(CI, FN, nullptr){}
+
+CallSiteInitializer::CallSiteInitializer(
+        llvm::ImmutableCallSite CI,
+        FactoryNest FN,
+        const Locus* loc) : Base(FN), ci(CI) {
 
     using borealis::util::toString;
 
@@ -28,6 +33,7 @@ CallSiteInitializer::CallSiteInitializer(
                             : toString(callerInst);
 
     prefix = callerFuncName + "." + callerInstName + ".";
+    if(loc) overrideLoc = loc;
 }
 
 Predicate::Ptr CallSiteInitializer::transformPredicate(Predicate::Ptr p) {
@@ -42,11 +48,18 @@ Predicate::Ptr CallSiteInitializer::transformPredicate(Predicate::Ptr p) {
 }
 
 Annotation::Ptr CallSiteInitializer::transformRequiresAnnotation(RequiresAnnotationPtr p) {
-    return AssertAnnotation::fromTerms(p->getLocus(), p->getMeta(), util::make_vector(p->getTerm()));
+    auto loc = overrideLoc? *overrideLoc : borealis::Locus(ci->getDebugLoc());
+    return AssertAnnotation::fromTerms(loc, p->getMeta(), util::make_vector(p->getTerm()));
 }
 
 Annotation::Ptr CallSiteInitializer::transformEnsuresAnnotation(EnsuresAnnotationPtr p) {
-    return AssumeAnnotation::fromTerms(p->getLocus(), p->getMeta(), util::make_vector(p->getTerm()));
+    auto loc = overrideLoc? *overrideLoc : borealis::Locus(ci->getDebugLoc());
+    return AssumeAnnotation::fromTerms(loc, p->getMeta(), util::make_vector(p->getTerm()));
+}
+
+Annotation::Ptr CallSiteInitializer::transformGlobalAnnotation(GlobalAnnotationPtr p) {
+    auto loc = overrideLoc? *overrideLoc : borealis::Locus(ci->getDebugLoc());
+    return AssumeAnnotation::fromTerms(loc, p->getMeta(), util::make_vector(p->getTerm()));
 }
 
 Term::Ptr CallSiteInitializer::transformArgumentTerm(ArgumentTermPtr t) {

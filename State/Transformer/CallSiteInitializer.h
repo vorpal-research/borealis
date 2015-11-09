@@ -28,10 +28,12 @@ class CallSiteInitializer : public borealis::Transformer<CallSiteInitializer> {
 public:
 
     CallSiteInitializer(llvm::ImmutableCallSite CI, FactoryNest FN);
+    CallSiteInitializer(llvm::ImmutableCallSite CI, FactoryNest FN, const Locus* loc);
 
     Predicate::Ptr transformPredicate(Predicate::Ptr p);
     Annotation::Ptr transformRequiresAnnotation(RequiresAnnotationPtr p);
     Annotation::Ptr transformEnsuresAnnotation(EnsuresAnnotationPtr p);
+    Annotation::Ptr transformGlobalAnnotation(GlobalAnnotationPtr p);
 
     Term::Ptr transformArgumentTerm(ArgumentTermPtr t);
     Term::Ptr transformArgumentCountTerm(ArgumentCountTermPtr t);
@@ -45,6 +47,7 @@ private:
 
     llvm::ImmutableCallSite ci;
     std::string prefix;
+    const Locus* overrideLoc;
 
 };
 

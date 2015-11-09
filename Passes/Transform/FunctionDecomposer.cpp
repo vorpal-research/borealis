@@ -264,6 +264,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     for(llvm::CallInst* call : funcs) {
         llvm::Function* f = call->getCalledFunction();
         llvm::Value* predefinedReturn = nullptr;
+        auto loc = SLT.getLocFor(call);
         if (FIP.hasInfo(f)) {
 
             auto&& funcInfo = FIP.getInfo(f);
@@ -279,6 +280,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
 
             contracts.insert(std::end(contracts), std::begin(impContracts), std::end(impContracts));
 
+            std::vector<Annotation::Ptr> beforeAlls;
             std::vector<Annotation::Ptr> befores;
             std::vector<Annotation::Ptr> afters;
             std::vector<Annotation::Ptr> middles;
@@ -293,14 +295,16 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                         contract = AM.transform(contract);
                     }
 
-                    CallSiteInitializer CSI(call, FN);
-                    contract = CSI.transform(contract);
-                    if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
-                        afters.push_back(contract);
-                    } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation, GlobalAnnotation>(contract)) {
-                        befores.push_back(contract);
+                    CallSiteInitializer CSI(call, FN, &loc);
+                    auto onCallContract = CSI.transform(contract);
+                    if(llvm::isa<GlobalAnnotation>(contract)) {
+                        beforeAlls.push_back(onCallContract);
+                    } else if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
+                        afters.push_back(onCallContract);
+                    } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation>(contract)) {
+                        befores.push_back(onCallContract);
                     } else {
-                        middles.push_back(contract);
+                        middles.push_back(onCallContract);
                     }
                 } catch(std::exception& ex) {
                     // FIXME: this is generally fucked up
@@ -311,6 +315,9 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
 
             for (auto&& before: befores) AnnotationProcessor::landOnInstructionOrFirst(before, M, FN, *call);
             for (auto&& middle: middles) AnnotationProcessor::landOnInstructionOrFirst(middle, M, FN, *call);
+            for (auto&& beforeAll: beforeAlls) {
+                AnnotationProcessor::landOnInstructionOrFirst(beforeAll, M, FN, *call->getParent()->getParent());
+            }
 
             for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
                 auto realIx = f->isVarArg() && i > f->getArgumentList().size() ? f->getArgumentList().size() : i;
