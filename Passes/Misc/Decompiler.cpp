@@ -54,7 +54,7 @@ bool DecompilerPass::runOnModule(Module& M) {
         bbInfo.clear();
         phiInfo.clear();
         Function &F = *func_iter;
-        di.displayFunction(F);
+        if(!di.displayFunction(F)) continue;
         if (!F.isDeclaration()) {
             //get loops info
             LoopInfo &LI = getAnalysis<LoopInfo>(F);
