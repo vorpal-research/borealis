@@ -480,12 +480,17 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
             }
 
             auto&& ft = forValueSingle(ctx.func);
-            auto&& funcType = llvm::dyn_cast<CFunction>(ft.type);
-            auto&& argType = funcType->getArgumentTypes()[val];
+            auto&& funcCType = llvm::dyn_cast<CFunction>(ft.type);
+            auto&& argCType = funcCType->getArgumentTypes()[val];
+            auto&& argType = FN.Type->cast(ctx.func->getFunctionType()->getParamType(val), ctx.func->getDataLayout(), CTypeUtils::getSignedness(argCType));
 
             return pimpl->withCType(
-                factory().getArgumentTermExternal(val, tfm::format("%s$arg%d", ctx.func->getName(), val), FN.Type->getUnknownType()),
-                argType
+                factory().getArgumentTermExternal(
+                    val,
+                    tfm::format("%s$arg%d", ctx.func->getName(), val),
+                    argType
+                ),
+                argCType
             );
 
         } else {

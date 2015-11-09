@@ -7,6 +7,7 @@
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
+#include <Codegen/CType/CTypeInfer.h>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
@@ -104,6 +105,19 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     auto& sm = GetAnalysis<sm_t>::doit(this).provide();
     auto& ext_vars = GetAnalysis<ext_vars_t>::doit(this).provide();
     CTF = util::make_unique<CTypeFactory>(ext_vars.types);
+
+    std::unordered_map<std::string, VarInfo> extVarByName;
+    for(auto&& extv : ext_vars.vars) extVarByName.emplace(extv.name, extv);
+
+    for(auto&& V : M.getFunctionList()) {
+        auto&& vext = util::at(extVarByName, V.getName());
+        if(vext) vars.put(&V, vext.getUnsafe());
+    }
+
+    for(auto&& V : M.getGlobalList()) {
+        auto&& vext = util::at(extVarByName, V.getName());
+        if(vext) vars.put(&V, vext.getUnsafe());
+    }
 
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 

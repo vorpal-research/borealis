@@ -138,12 +138,14 @@ struct LocalLocus {
         LocalLocus that(*this);
         switch(what) {
             case measure::col: {
-                long long newCol = that.col + howmuch;
+                long long newCol = that.col;
+                newCol += howmuch;
                 that.col = newCol < 1 ? 1U : static_cast<unsigned>(newCol);
                 break;
             }
             case measure::line: {
-                long long newLine = that.line + howmuch;
+                long long newLine = that.line;
+                newLine += howmuch;
                 that.line = newLine < 1 ? 1U : static_cast<unsigned>(newLine);
                 that.col = 1U;
                 break;

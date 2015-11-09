@@ -37,6 +37,22 @@ public:
         sm_ = &ac->getSourceManager();
     }
 
+    bool VisitDeclRefExpr(clang::DeclRefExpr* del) {
+        if(auto&& fun = dyn_cast<clang::FunctionDecl>(del->getDecl())) {
+            handleFunctionDecl(fun);
+        }
+        else handleDecl(del->getDecl());
+        return true;
+    }
+
+    void handleFunctionDecl(clang::FunctionDecl* decl) {
+        CTF->getType(decl->getType(), *ac_);
+        handleDecl(decl);
+        for (auto&& param : decl->parameters()) {
+            handleDecl(param);
+        }
+    }
+
     void handleDecl(clang::ValueDecl* decl) {
         VarInfo info;
         ON_SCOPE_EXIT(vars_.push_back(std::move(info)));
@@ -59,19 +75,19 @@ public:
         return true;
     }
 
-    bool VisitFunctionDecl(clang::FunctionDecl* decl) {
-        CTF->getType(decl->getType(), *ac_);
-        handleDecl(decl);
-        for (auto&& param : decl->parameters()) {
-            handleDecl(param);
-        }
-        return true;
-    }
-
-    bool VisitVarDecl(clang::VarDecl* decl) {
-        handleDecl(decl);
-        return true;
-    }
+    //bool VisitFunctionDecl(clang::FunctionDecl* decl) {
+    //    CTF->getType(decl->getType(), *ac_);
+    //    handleDecl(decl);
+    //    for (auto&& param : decl->parameters()) {
+    //        handleDecl(param);
+    //    }
+    //    return true;
+    //}
+//
+    //bool VisitVarDecl(clang::VarDecl* decl) {
+    //    handleDecl(decl);
+    //    return true;
+    //}
 
     llvm::ArrayRef<VarInfo> vars() const {
         return vars_;

@@ -51,7 +51,7 @@ public:
         } else if(auto&& load = dyn_cast<LoadTerm>(term)) {
             return res = CTypeUtils::loadType(inferType(load->getRhv()));
         } else if(auto&& index = dyn_cast<OpaqueIndexingTerm>(term)) {
-            return res = CTypeUtils::indexType(inferType(load->getRhv()));
+            return res = CTypeUtils::indexType(inferType(index->getLhv()));
         } else if(auto&& ma = dyn_cast<OpaqueMemberAccessTerm>(term)) {
             if(ma->isIndirect()) {
                 return res = CTypeUtils::getField(CTypeUtils::loadType(inferType(ma->getLhv())), ma->getProperty())->getType();
@@ -106,6 +106,10 @@ public:
         return res = tryCastTypeToCType(term->getType());
     }
 
+    CType::Ptr tryCastLLVMTypeToCType(llvm::Type* tp) {
+        return nullptr;
+    }
+
     CType::Ptr tryCastTypeToCType(Type::Ptr tp) {
         if(auto&& te = dyn_cast<type::TypeError>(tp)) {
             UNREACHABLE(tfm::format("Type error detected: %s", te->getMessage()));
@@ -157,7 +161,7 @@ public:
             } else return CTF->getArray(CTF->getRef(tryCastTypeToCType(arr->getElement())));
         }
 
-        UNREACHABLE("Unknown type encountered");
+        UNREACHABLE("Unsupported type encountered");
     }
 };
 
