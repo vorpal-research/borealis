@@ -90,12 +90,13 @@ public:
             rSize
         };
 
-        for (auto&& field : rec.getBody()->get()) {
-            auto&& offset = TypeUtils::getStructOffsetInElems(rec.shared_from_this(), field.getIndex());
-            auto&& nested = visit(field.getType(), addr + offset,
+        for (auto&& indexedField : util::range(0UL, rec.getBody()->get().getNumFields())
+                                   ^ util::viewContainer(rec.getBody()->get())) {
+            auto&& offset = TypeUtils::getStructOffsetInElems(rec.shared_from_this(), indexedField.first);
+            auto&& nested = visit(indexedField.second.getType(), addr + offset,
                                   r.getResult().derefValueOf(addr + offset));
 
-            baseMemoryObject.add(field.getIndex(), nested);
+            baseMemoryObject.add(indexedField.first, nested);
         }
 
         return baseMemoryObject;
