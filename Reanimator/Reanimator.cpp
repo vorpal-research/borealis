@@ -91,8 +91,9 @@ public:
         };
 
         for (auto&& field : rec.getBody()->get()) {
-            auto&& nested = visit(field.getType(), addr + field.getIndex(),
-                                  r.getResult().derefValueOf(addr + field.getIndex()));
+            auto&& offset = TypeUtils::getStructOffsetInElems(rec.shared_from_this(), field.getIndex());
+            auto&& nested = visit(field.getType(), addr + offset,
+                                  r.getResult().derefValueOf(addr + offset));
 
             baseMemoryObject.add(field.getIndex(), nested);
         }
