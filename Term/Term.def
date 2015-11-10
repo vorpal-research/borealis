@@ -6,6 +6,7 @@
 #undef INCLUDE_MODE
 
 #include "Term/ArgumentTerm.h"
+#include "Term/ArgumentCountTerm.h"
 #include "Term/AxiomTerm.h"
 #include "Term/BoundTerm.h"
 #include "Term/BinaryTerm.h"
@@ -33,12 +34,14 @@
 #include "Term/TernaryTerm.h"
 #include "Term/UnaryTerm.h"
 #include "Term/ValueTerm.h"
+#include "Term/VarArgumentTerm.h"
 
 #define HANDLE_TERM(NAME, CLASS)
 
 #endif
 
 HANDLE_TERM(Argument, ArgumentTerm)
+HANDLE_TERM(ArgumentCount, ArgumentCountTerm)
 HANDLE_TERM(Axiom, AxiomTerm)
 HANDLE_TERM(Bound, BoundTerm)
 HANDLE_TERM(Binary, BinaryTerm)
@@ -66,6 +69,7 @@ HANDLE_TERM(Sign, SignTerm)
 HANDLE_TERM(Ternary, TernaryTerm)
 HANDLE_TERM(Unary, UnaryTerm)
 HANDLE_TERM(Value, ValueTerm)
+HANDLE_TERM(VarArgument, VarArgumentTerm)
 
 #ifdef HANDLE_TERM
 #undef HANDLE_TERM

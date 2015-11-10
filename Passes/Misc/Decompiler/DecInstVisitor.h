@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/InstVisitor.h>
+#include <Factory/Nest.h>
 
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Misc/Decompiler/BasicBlockInformation.h"
@@ -33,6 +34,7 @@ private:
     PhiNodeInformation phiInfo;
     decltype(borealis::infos())& infos_;
     borealis::SlotTrackerPass* STP;
+    std::unique_ptr<FactoryNest> FN;
 
     void printType(llvm::Type* t);
     void printCond(llvm::Instruction* ins);
@@ -56,7 +58,7 @@ public:
 
     void displayBasicBlock(llvm::BasicBlock& B,BBPosition position = BBPosition::NONE);
     void displayGlobals(llvm::Module& M);
-    void displayFunction(llvm::Function& M);
+    bool displayFunction(llvm::Function& M);
     void displayStructs();
 
     void visitInstruction(llvm::Instruction &i);

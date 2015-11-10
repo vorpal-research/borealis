@@ -14,7 +14,7 @@
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 
-#include "Driver/AnnotatedModule.h"
+#include "PortableModule.h"
 #include "Driver/cl.h"
 #include "Driver/interviewer.h"
 #include "Logging/logger.hpp"
@@ -37,7 +37,7 @@ public:
 
     void invoke(const command&);
     void invoke(const std::vector<command>&);
-    AnnotatedModule::Ptr result();
+    PortableModule::Ptr result();
 };
 
 } // namespace driver

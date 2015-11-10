@@ -1350,3 +1350,26 @@ MACRO(A31, MARG)
     CLASSNAME& operator=(const CLASSNAME&) = default; \
     CLASSNAME& operator=(CLASSNAME&&) = default;
 
+#define GENERATE_DATA_TYPE_BP(name, ...) \
+    DEFAULT_CONSTRUCTOR_AND_ASSIGN(name) \
+    GENERATE_CONSTRUCTOR(name, __VA_ARGS__) \
+    GENERATE_EQ(name, __VA_ARGS__) \
+    GENERATE_LESS(name, __VA_ARGS__) \
+    GENERATE_PRINT(name, __VA_ARGS__) \
+    GENERATE_INLINE_HASH(name, __VA_ARGS__)
+
+#define GENERATE_OUTLINE_ENUM_HASH(type) \
+    namespace std { \
+        template<> \
+        struct hash<type> : borealis::util::enums::enum_hash<type> {}; \
+    }
+
+#define INLINE_TO_OUTLINE_HASH(type) \
+    namespace std { \
+        template<> \
+        struct hash<type> { \
+            size_t operator()(const type& value) const noexcept{ \
+                return hash_value(value); \
+            } \
+        }; \
+    }

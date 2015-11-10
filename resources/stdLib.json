@@ -797,6 +797,9 @@
             { "access" : "Read", "array": true }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@ensures (\\result == \\nullptr && \\property(file, \\result) == @closed) || (\\result != \\nullptr && \\property(file, \\result) == @opened)"
       ]
 },
@@ -808,6 +811,9 @@
             { "access" : "Read", "array": true }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@ensures (\\result == \\nullptr && \\property(file, \\result) == @closed) || (\\result != \\nullptr && \\property(file, \\result) == @opened)"
       ]
 },
@@ -820,6 +826,9 @@
             { "access" : "Read" }
       ], 
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
 },
@@ -831,6 +840,9 @@
             { "access" : "None" }
       ], 
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg1) == @opened"
       ]
 },
@@ -842,6 +854,9 @@
             { "access" : "None" }
       ], 
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg1) == @opened"
       ]
 },
@@ -855,6 +870,9 @@
             { "access" : "None" }
       ], 
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg3) == @opened"
       ]
 },
@@ -899,6 +917,9 @@
             { "access": "Write" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -911,6 +932,9 @@
             {}
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -923,6 +947,9 @@
             {}
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -935,6 +962,9 @@
             {}
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -946,6 +976,9 @@
             { "access": "Read" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1000,6 +1033,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1010,6 +1046,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1020,6 +1059,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1030,6 +1072,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1040,6 +1085,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1053,6 +1101,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg3) == @opened"
       ]
 },
@@ -1063,6 +1114,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
@@ -1073,6 +1127,9 @@
             { "access": "None" }
       ],
       "contracts" : [
+            "@global \\property(file, stderr) == @opened",
+            "@global \\property(file, stdout) == @opened",
+            "@global \\property(file, stdin) == @opened",
             "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },

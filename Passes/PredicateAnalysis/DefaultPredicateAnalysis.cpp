@@ -285,7 +285,7 @@ bool DefaultPredicateAnalysis::runOnFunction(llvm::Function& F) {
     init();
 
     auto* st = GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F);
-    FN = FactoryNest(st);
+    FN = FactoryNest(F.getDataLayout(), st);
 
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
     TD = &GetAnalysis<llvm::DataLayoutPass>::doit(this, F).getDataLayout();

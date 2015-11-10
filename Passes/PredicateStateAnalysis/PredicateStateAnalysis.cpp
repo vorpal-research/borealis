@@ -84,7 +84,7 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
     }
 
-    FN = FactoryNest(GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     if ("inline" == Summaries()) {
         updateInlineSummary(F);

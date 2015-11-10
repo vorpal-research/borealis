@@ -6,7 +6,7 @@
 
 namespace borealis {
 
-RandomSlicer::RandomSlicer() : Base(nullptr), rd(), mtr(rd()) {}
+RandomSlicer::RandomSlicer() : Base(FactoryNest{}), rd(), mtr(rd()) {}
 
 double RandomSlicer::getNextRandom() {
     return std::generate_canonical<double, 10>(mtr);

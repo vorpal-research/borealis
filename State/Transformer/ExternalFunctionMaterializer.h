@@ -6,6 +6,7 @@
 #define EXTERNAL_FUNCTION_MATERIALIZER_H
 
 #include "Annotation/AssertAnnotation.h"
+#include "Codegen/CType/CTypeUtils.h"
 #include "State/Transformer/Transformer.hpp"
 
 namespace borealis {
@@ -41,8 +42,9 @@ public:
 
             auto arg = theCallSite.getArgument(ix);
             for(auto&& argInfo : util::view(VIT->getVars().get(arg))) {
-                borealis::DIType dt = argInfo.second.type;
-                auto argSignedness = dt.getSignedness();
+                auto tp = argInfo.second.type;
+
+                auto argSignedness = CTypeUtils::getSignedness(tp);
                 return FN.Term->getValueTerm(arg, argSignedness);
             }
 
@@ -51,8 +53,8 @@ public:
         } else if(term->getVName() == "result") {
             auto res = theCallSite.getInstruction();
             for (auto&& resInfo : util::view(VIT->getVars().get(res))) {
-                borealis::DIType dt = resInfo.second.type;
-                auto resSignedness = dt.getSignedness();
+                auto tp = resInfo.second.type;
+                auto resSignedness = CTypeUtils::getSignedness(tp);
                 return FN.Term->getValueTerm(res, resSignedness);
             }
 

@@ -88,4 +88,7 @@ TermBuilder operator!=(TermBuilder TB, Term::Ptr term) {
     return res;
 }
 
+Term::Ptr TermBuilder::operator->() const {
+    return term;
+}
 } /* namespace borealis */

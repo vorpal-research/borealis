@@ -43,7 +43,7 @@ TEST(Term, classof) {
         arg.setName("mock-arg");
 
         SlotTracker st{ &m };
-        auto&& TF = FactoryNest(&st).Term;
+        auto&& TF = FactoryNest(m.getDataLayout(), &st).Term;
 
         auto&& t1 = TF->getArgumentTerm(&arg);
 
@@ -77,7 +77,7 @@ TEST(Term, equals) {
         arg.setName("mock-arg");
 
         SlotTracker st{ &m };
-        auto&& TF = FactoryNest(&st).Term;
+        auto&& TF = FactoryNest(m.getDataLayout(), &st).Term;
 
         auto&& t1 = TF->getReturnValueTerm(f);
         auto&& t2 = TF->getReturnValueTerm(f);

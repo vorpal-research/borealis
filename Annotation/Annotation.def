@@ -15,6 +15,7 @@
 #include "Annotation/AssignsAnnotation.h"
 #include "Annotation/AssumeAnnotation.h"
 #include "Annotation/EnsuresAnnotation.h"
+#include "Annotation/GlobalAnnotation.h"
 #include "Annotation/RequiresAnnotation.h"
 
 #include "Annotation/EndMaskAnnotation.h"
@@ -34,6 +35,7 @@ HANDLE_ANNOTATION_WITH_BASE("assert", LogicAnnotation, Assert, AssertAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("assigns", LogicAnnotation, Assigns, AssignsAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("assume", LogicAnnotation, Assume, AssumeAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("ensures", LogicAnnotation, Ensures, EnsuresAnnotation)
+HANDLE_ANNOTATION_WITH_BASE("global", LogicAnnotation, Global, GlobalAnnotation)
 HANDLE_ANNOTATION_WITH_BASE("requires", LogicAnnotation, Requires, RequiresAnnotation)
 
 HANDLE_ANNOTATION("endmask", EndMask, EndMaskAnnotation)

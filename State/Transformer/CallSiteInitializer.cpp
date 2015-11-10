@@ -12,22 +12,18 @@
 namespace borealis {
 
 CallSiteInitializer::CallSiteInitializer(
-        const llvm::CallInst& CI,
-        FactoryNest FN) : Base(FN) {
+        llvm::ImmutableCallSite CI,
+        FactoryNest FN) : CallSiteInitializer(CI, FN, nullptr){}
+
+CallSiteInitializer::CallSiteInitializer(
+        llvm::ImmutableCallSite CI,
+        FactoryNest FN,
+        const Locus* loc) : Base(FN), ci(CI) {
 
     using borealis::util::toString;
 
-    returnValue = &CI;
-
-    if (auto* calledFunc = CI.getCalledFunction()) {
-        auto&& argNum = calledFunc->arg_size();
-        for (auto&& argIdx = 0U; argIdx < argNum; ++argIdx) {
-            callSiteArguments[argIdx] = CI.getArgOperand(argIdx);
-        }
-    }
-
-    auto* callerFunc = CI.getParent()->getParent();
-    auto* callerInst = &CI;
+    auto* callerInst = CI.getInstruction();
+    auto* callerFunc = callerInst->getParent()->getParent();
 
     auto&& callerFuncName = callerFunc && callerFunc->hasName()
                             ? callerFunc->getName().str()
@@ -37,6 +33,7 @@ CallSiteInitializer::CallSiteInitializer(
                             : toString(callerInst);
 
     prefix = callerFuncName + "." + callerInstName + ".";
+    if(loc) overrideLoc = loc;
 }
 
 Predicate::Ptr CallSiteInitializer::transformPredicate(Predicate::Ptr p) {
@@ -50,15 +47,29 @@ Predicate::Ptr CallSiteInitializer::transformPredicate(Predicate::Ptr p) {
     }
 }
 
+Annotation::Ptr CallSiteInitializer::transformRequiresAnnotation(RequiresAnnotationPtr p) {
+    auto loc = overrideLoc? *overrideLoc : borealis::Locus(ci->getDebugLoc());
+    return AssertAnnotation::fromTerms(loc, p->getMeta(), util::make_vector(p->getTerm()));
+}
+
+Annotation::Ptr CallSiteInitializer::transformEnsuresAnnotation(EnsuresAnnotationPtr p) {
+    auto loc = overrideLoc? *overrideLoc : borealis::Locus(ci->getDebugLoc());
+    return AssumeAnnotation::fromTerms(loc, p->getMeta(), util::make_vector(p->getTerm()));
+}
+
+Annotation::Ptr CallSiteInitializer::transformGlobalAnnotation(GlobalAnnotationPtr p) {
+    auto loc = overrideLoc? *overrideLoc : borealis::Locus(ci->getDebugLoc());
+    return AssumeAnnotation::fromTerms(loc, p->getMeta(), util::make_vector(p->getTerm()));
+}
 
 Term::Ptr CallSiteInitializer::transformArgumentTerm(ArgumentTermPtr t) {
     auto argIdx = t->getIdx();
 
-    ASSERT(callSiteArguments.count(argIdx) > 0,
+    ASSERT(ci.arg_size() > argIdx,
            "Cannot find an actual function argument at call site: " +
-           llvm::valueSummary(returnValue));
+           llvm::valueSummary(ci.getInstruction()));
 
-    auto* actual = callSiteArguments.at(argIdx);
+    auto* actual = ci.getArgument(argIdx);
 
     switch (t->getKind()) {
     case ArgumentKind::STRING: {
@@ -72,8 +83,24 @@ Term::Ptr CallSiteInitializer::transformArgumentTerm(ArgumentTermPtr t) {
     }
 }
 
+Term::Ptr CallSiteInitializer::transformArgumentCountTerm(ArgumentCountTermPtr t) {
+    return FN.Term->getIntTerm(ci.arg_size(), TypeFactory::defaultTypeSize);
+}
+
+Term::Ptr CallSiteInitializer::transformVarArgumentTerm(VarArgumentTermPtr t) {
+    auto argIdx = t->getIdx() + ci.getCalledFunction()->arg_size();
+
+    ASSERT(ci.arg_size() > argIdx,
+           "Cannot find an actual function argument at call site: " +
+           llvm::valueSummary(ci.getInstruction()));
+
+    auto* actual = ci.getArgument(argIdx);
+
+    return FN.Term->getValueTerm(actual);
+}
+
 Term::Ptr CallSiteInitializer::transformReturnValueTerm(ReturnValueTermPtr) {
-    return FN.Term->getValueTerm(returnValue);
+    return FN.Term->getValueTerm(ci.getInstruction());
 }
 
 Term::Ptr CallSiteInitializer::transformValueTerm(ValueTermPtr t) {

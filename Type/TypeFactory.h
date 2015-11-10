@@ -46,13 +46,13 @@ public:
     Type::Ptr getUnknownType() const;
     Type::Ptr getPointer(Type::Ptr to) const;
     Type::Ptr getArray(Type::Ptr elem, size_t size = 0U) const;
-    Type::Ptr getRecord(const std::string& name, const llvm::StructType* st = nullptr) const;
+    Type::Ptr getRecord(const std::string& name, const llvm::StructType* st = nullptr, const llvm::DataLayout* DL = nullptr) const;
     Type::Ptr getTypeError(const std::string& message) const;
     Type::Ptr getFunction(Type::Ptr retty, const std::vector<Type::Ptr>& args) const;
 
     void initialize(const VariableInfoTracker& mit);
 
-    Type::Ptr cast(const llvm::Type* type, llvm::Signedness sign = llvm::Signedness::Unknown) const;
+    Type::Ptr cast(const llvm::Type* type, const llvm::DataLayout* dl, llvm::Signedness sign = llvm::Signedness::Unknown) const;
 
     Type::Ptr embedRecordBodyNoRecursion(const std::string& name, const type::RecordBody& body) const;
 
@@ -60,9 +60,9 @@ private:
 
     void mergeRecordBodyInto(type::RecordBody& lhv, const type::RecordBody& rhv) const;
 
-    Type::Ptr embedRecordBodyNoRecursion(llvm::Type* type, DIType meta, const llvm::DataLayout* DL) const;
+    Type::Ptr embedRecordBodyNoRecursion(llvm::Type* type, const llvm::DataLayout* DL, CType::Ptr meta) const;
 
-    Type::Ptr embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, DIType meta) const;
+    Type::Ptr embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, CType::Ptr meta) const;
 
 public:
 

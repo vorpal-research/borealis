@@ -9,7 +9,7 @@
     CPointer { element :: Param CTypeRef } |
     CAlias { original :: Param CTypeRef, qualifier :: Exact CQualifier } |
     CArray { element :: Param CTypeRef, size :: Maybe Size } |
-    CStruct { elements :: [Exact CStructMember] } |
+    CStruct { elements :: [Exact CStructMember], opaque :: Bool } |
     CFunction { resultType :: Param CTypeRef, argumentTypes :: [Param CTypeRef] }
       deriving (Show, Eq, Data, Typeable)
 
@@ -23,6 +23,8 @@
 #ifndef CSTRUCT_H
 #define CSTRUCT_H
 
+#include "Util/util.hpp"
+
 #include "Codegen/CType/CType.h"
 #include "Codegen/CType/CTypeRef.h"
 #include "Codegen/CType/CStructMember.h"
@@ -33,25 +35,50 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CStruct.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CStruct {
+    extend borealis.proto.CType {
+        optional CStruct ext = $COUNTER_CTYPE;
+    }
+
+
+    repeated CStructMember elements = 1;
+    optional bool opaque = 2;
+}
+
+**/
+
 class CStruct : public CType {
 
     typedef CStruct Self;
     typedef CType Base;
 
-    CStruct(const std::string& name, const std::vector<CStructMember>& elements): CType(class_tag(*this), name), elements(elements) {}
+    CStruct(const std::string& name, const std::vector<CStructMember>& elements, bool opaque): CType(class_tag(*this), name), elements(elements), opaque(opaque) {}
 
 public:
 
     friend class ::borealis::CTypeFactory;
+    friend class util::enable_special_make_shared<CStruct, CTypeFactory>; // enable factory-construction only
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }
 
 private:
     std::vector<CStructMember> elements;
+    bool opaque;
 
 public:
     const std::vector<CStructMember>& getElements() const { return this->elements; }
+    bool getOpaque() const { return this->opaque; }
 
 };
 

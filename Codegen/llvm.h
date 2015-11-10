@@ -250,7 +250,7 @@ struct DIBorealisVarDesc : public llvm::DIDescriptor {
     DEFAULT_CONSTRUCTOR_AND_ASSIGN(DIBorealisVarDesc);
     DIBorealisVarDesc(const llvm::MDNode* node): llvm::DIDescriptor(node) {
         if( node->getNumOperands() != 5
-        || !llvm::isa<llvm::GlobalValue>(node->getOperand(0))
+        || (node->getOperand(0) && !llvm::isa<llvm::GlobalVariable>(node->getOperand(0)))
         || !llvm::isa<llvm::MDString>   (node->getOperand(1))
         || !llvm::isa<llvm::ConstantInt>(node->getOperand(2))
         || !llvm::isa<llvm::ConstantInt>(node->getOperand(3))

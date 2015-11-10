@@ -208,8 +208,8 @@ bool contains(const Container& con, const T& t) {
 
 template<class M, class K>
 auto at(M&& m, K&& k) -> decltype(justRef(std::forward<M>(m).at(std::forward<K>(k)))) {
-    auto it = m.find(std::forward<K>(k));
-    if(it != std::end(std::forward<M>(m))) {
+    auto it = m.find(k);
+    if(it != std::end(m)) {
         return justRef(std::forward<M>(m).at(std::forward<K>(k)));
     }
     return nothing();

@@ -9,7 +9,7 @@
     CPointer { element :: Param CTypeRef } |
     CAlias { original :: Param CTypeRef, qualifier :: Exact CQualifier } |
     CArray { element :: Param CTypeRef, size :: Maybe Size } |
-    CStruct { elements :: [Exact CStructMember] } |
+    CStruct { elements :: [Exact CStructMember], opaque :: Bool } |
     CFunction { resultType :: Param CTypeRef, argumentTypes :: [Param CTypeRef] }
       deriving (Show, Eq, Data, Typeable)
 

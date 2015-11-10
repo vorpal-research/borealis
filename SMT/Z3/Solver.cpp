@@ -355,7 +355,7 @@ z3::expr model2expr(const z3::model& model,
 PredicateState::Ptr model2state(const z3::model& model,
                                 const std::vector<Term::Ptr>& collectibles,
                                 const std::vector<z3::expr>& z3collects) {
-    FactoryNest FN(nullptr);
+    FactoryNest FN;
     auto PSB = FN.State * FN.State->Basic();
     for (auto zipped: util::viewContainer(collectibles) ^ util::viewContainer(z3collects)) {
         auto val = model.eval(zipped.second, true);
@@ -402,7 +402,7 @@ PredicateState::Ptr Solver::probeModels(
     solver.add(logic::z3impl::asAxiom(z3query));
     for (auto&& axiom : ctx.getAxioms()) solver.add(logic::z3impl::asAxiom(axiom));
 
-    FactoryNest FN(nullptr);
+    FactoryNest FN;
     std::vector<PredicateState::Ptr> states;
     states.reserve(countLimit);
 

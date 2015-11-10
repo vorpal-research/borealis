@@ -7,6 +7,7 @@
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
+#include <Codegen/CType/CTypeInfer.h>
 
 #include "Codegen/intrinsics_manager.h"
 #include "Logging/logger.hpp"
@@ -23,6 +24,7 @@ VariableInfoTracker::~VariableInfoTracker() {}
 void VariableInfoTracker::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
     AUX<sm_t>::addRequiredTransitive(AU);
+    AUX<ext_vars_t>::addRequiredTransitive(AU);
 }
 
 using namespace llvm;
@@ -30,57 +32,64 @@ using borealis::util::option;
 using borealis::util::nothing;
 using borealis::util::just;
 
-static VarInfo mkVI(const clang::FileManager&, const llvm::DISubprogram& node,
-        const borealis::DebugInfoFinder&,
-        clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret{
-        just(node.getName().str()),
-        just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
-        allocated ? VarInfo::Allocated : VarInfo::Plain,
-        node.getType(),
-        ast
-    };
-    return ret;
+static VarInfo mkVI(
+        CTypeFactory& CTF,
+        const clang::FileManager&,
+        const llvm::DISubprogram& node,
+        borealis::DebugInfoFinder& DFI,
+        bool allocated = false) {
+    return VarInfo(
+        node.getName().str(),
+        Locus{ node.getFilename().str(), node.getLineNumber(), 0U },
+        allocated ? StorageSpec::Memory : StorageSpec::Register,
+        CTF.getRef(CTF.getType(node.getType(), DFI)),
+        VariableKind::Global
+    );
 }
 
-static VarInfo mkVI(const clang::FileManager&, const llvm::DIGlobalVariable& node,
-        const borealis::DebugInfoFinder& context,
-        clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret{
-        just(node.getName().str()),
-        just(Locus(node.getFilename().str(), node.getLineNumber(), 0U)),
-        allocated ? VarInfo::Allocated : VarInfo::Plain,
-        stripAliases(context, context.resolve(node.getType())),
-        ast
+static VarInfo mkVI(
+        CTypeFactory& CTF,
+        const clang::FileManager&,
+        const llvm::DIGlobalVariable& node,
+        borealis::DebugInfoFinder& DFI,
+        bool allocated = false) {
+    return VarInfo{
+        node.getName().str(),
+        Locus(node.getFilename().str(), node.getLineNumber(), 0U),
+        allocated ? StorageSpec::Memory : StorageSpec::Register,
+        CTF.getRef(CTF.getType(DFI.resolve(node.getType()), DFI)),
+        VariableKind::Global
     };
-    return ret;
 }
 
-static VarInfo mkVI(const clang::FileManager&, const llvm::DIVariable& node,
-        const borealis::DebugInfoFinder& context,
-        clang::Decl* ast = nullptr, bool allocated = false) {
+static VarInfo mkVI(
+        CTypeFactory& CTF,
+        const clang::FileManager&,
+        const llvm::DIVariable& node,
+        borealis::DebugInfoFinder& DFI,
+        bool allocated = false) {
     VarInfo ret{
-        just(node.getName().str()),
-        just(Locus(node.getContext().getFilename(), node.getLineNumber(), 0U)),
-        allocated ? VarInfo::Allocated : VarInfo::Plain,
-        stripAliases(context, context.resolve(node.getType())),
-        ast
+        node.getName().str(),
+        Locus(node.getFile().getName().str(), node.getLineNumber(), 0U),
+        allocated ? StorageSpec::Memory : StorageSpec::Register,
+        CTF.getRef(CTF.getType(DFI.resolve(node.getType()), DFI)),
+        VariableKind::Local
     };
     return ret;
 }
-
-static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
-        const borealis::DebugInfoFinder&,
-        clang::Decl* ast = nullptr, bool allocated = false) {
-    VarInfo ret{
-        just(desc.getVarName().str()),
-        just(Locus(desc.getFileName().str(), desc.getLine(), desc.getCol())),
-        allocated ? VarInfo::Allocated : VarInfo::Plain,
-        DIType{},
-        ast
-    };
-    return ret;
-}
+//
+//static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
+//        const borealis::DebugInfoFinder&,
+//        clang::Decl* ast = nullptr, bool allocated = false) {
+//    VarInfo ret{
+//        desc.getVarName().str(),
+//        Locus(desc.getFileName().str(), desc.getLine(), desc.getCol()),
+//        allocated ? StorageSpec::Memory : StorageSpec::Register,
+//        nullptr,
+//        VariableKind::Global
+//    };
+//    return ret;
+//}
 
 bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     using borealis::ops::take_pointer;
@@ -93,9 +102,27 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     dfi = DebugInfoFinder{};
     dfi.processModule(M);
 
-    CTF.processTypes(dfi);
-
     auto& sm = GetAnalysis<sm_t>::doit(this).provide();
+    auto& ext_vars = GetAnalysis<ext_vars_t>::doit(this).provide();
+    CTF = util::make_unique<CTypeFactory>(ext_vars.types);
+
+    std::unordered_map<std::string, VarInfo> extVarByName;
+    for(auto&& extv : ext_vars.vars) extVarByName.emplace(extv.name, extv);
+
+    for(auto&& V : M.getFunctionList()) {
+        auto&& vext = util::at(extVarByName, V.getName());
+        if(vext) vars.put(&V, vext.getUnsafe());
+    }
+
+    for(auto&& V : M.getGlobalList()) {
+        auto vext = util::at(extVarByName, V.getName());
+        if(vext) {
+            auto&& resolve = vext.getUnsafe();
+            resolve.storage = StorageSpec::Memory;
+            vars.put(&V, std::move(resolve));
+        }
+    }
+
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
 
     auto* GlobalsDesc = M.getFunction(
@@ -115,10 +142,10 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
             auto* garg = call->getArgOperand(0);
             if (auto* load = dyn_cast<LoadInst>(garg)) {
                 // if garg is a load, add it dereferenced
-                vars.put(load->getPointerOperand(), mkVI(sm, glob, dfi, nullptr, true));
+                vars.put(load->getPointerOperand(), mkVI(*CTF, sm, glob, dfi, true));
             } else {
                 // else it has been optimized away, put it as-is
-                vars.put(garg, mkVI(sm, glob, dfi));
+                vars.put(garg, mkVI(*CTF, sm, glob, dfi));
             }
         }
     }
@@ -129,7 +156,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
         DISubprogram sp(msp);
         // FIXME: this is generally fucked up...
         if (auto f = sp.getFunction()) {
-            vars.put(f, mkVI(sm, sp, dfi, nullptr, true));
+            vars.put(f, mkVI(*CTF, sm, sp, dfi, true));
         }
     }
 
@@ -141,7 +168,9 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
 //           .map([clangGlobals](size_t i){ return clangGlobals->getOperand(i); });
 //        for(auto md : clangGlobalsView) {
 //            if(DIBorealisVarDesc clangDesc = md) {
-//                vars.put(clangDesc.getGlobal(), mkVI(sm, clangDesc));
+//                // FIXME: think of something better for these guys
+//                if(clangDesc.getGlobal() && clangDesc.getGlobal()->isExternalLinkage(clangDesc.getGlobal()->getLinkage()))
+//                    vars.put(clangDesc.getGlobal(), mkVI(CTF, sm, clangDesc, dfi));
 //            }
 //        }
 //    }
@@ -164,17 +193,14 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
             auto&& llvmType = val->getType();
             auto&& metaType = dfi.resolve(var.getType());
 
-            auto vi = mkVI(sm, var, dfi, decl, isAllocaLikeTypes(llvmType, metaType, dfi));
+            auto vi = mkVI(*CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
 
             // debug declare has additional location data attached through
             // dbg metadata
             if (auto* nodeloc = inst->getMetadata("dbg")) {
                 DILocation dloc(nodeloc);
 
-                for (auto& locus : vi.originalLocus) {
-                    locus.loc.line = dloc.getLineNumber();
-                    locus.loc.col = dloc.getColumnNumber();
-                }
+                vi.locus = dloc;
             }
 
             vars.put(val, vi);
@@ -187,17 +213,14 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto&& llvmType = val->getType();
                 auto&& metaType = dfi.resolve(var.getType());
 
-                auto vi = mkVI(sm, var, dfi, nullptr, isAllocaLikeTypes(llvmType, metaType, dfi));
+                auto vi = mkVI(*CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
 
                 // debug value has additional location data attached through
                 // dbg metadata
                 if (auto* nodeloc = inst->getMetadata("dbg")) {
                     DILocation dloc(nodeloc);
 
-                    for (auto& locus: vi.originalLocus) {
-                        locus.loc.line = dloc.getLineNumber();
-                        locus.loc.col = dloc.getColumnNumber();
-                    }
+                    vi.locus = dloc;
                 }
 
                 vars.put(val, vi);
@@ -209,17 +232,13 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto&& llvmType = val->getType();
                 auto&& metaType = dfi.resolve(var.getType());
 
-                auto vi = mkVI(sm, var, dfi, nullptr, isAllocaLikeTypes(llvmType, metaType, dfi));
+                auto vi = mkVI(*CTF, sm, var, dfi, isAllocaLikeTypes(llvmType, metaType, dfi));
 
                 // debug value has additional location data attached through
                 // dbg metadata
                 if (auto* nodeloc = inst->getMetadata("dbg")) {
                     DILocation dloc(nodeloc);
-
-                    for (auto& locus: vi.originalLocus) {
-                        locus.loc.line = dloc.getLineNumber();
-                        locus.loc.col = dloc.getColumnNumber();
-                    }
+                    vi.locus = dloc;
                 }
 
                 vars.put(val, vi);

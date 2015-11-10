@@ -9,7 +9,7 @@
     CPointer { element :: Param CTypeRef } |
     CAlias { original :: Param CTypeRef, qualifier :: Exact CQualifier } |
     CArray { element :: Param CTypeRef, size :: Maybe Size } |
-    CStruct { elements :: [Exact CStructMember] } |
+    CStruct { elements :: [Exact CStructMember], opaque :: Bool } |
     CFunction { resultType :: Param CTypeRef, argumentTypes :: [Param CTypeRef] }
       deriving (Show, Eq, Data, Typeable)
 
@@ -25,12 +25,35 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include "Util/typeindex.hpp"
 
 namespace borealis {
 
-enum class CQualifier{ CONST, VOLATILE, RESTRICT, TYPEDEF };
+enum class CQualifier{ CONST = 0, VOLATILE = 1, RESTRICT = 2, TYPEDEF = 3 };
+
+/** protobuf -> Codegen/CType/CQualifier.proto
+package borealis.proto;
+
+enum CQualifier {
+    CONST = 0; VOLATILE = 1; RESTRICT = 2; TYPEDEF = 3;
+}
+
+**/
+
+namespace proto { class CType; }
+
+/** protobuf -> Codegen/CType/CType.proto
+package borealis.proto;
+
+message CType {
+    optional string name = 1;
+
+    extensions 16 to 64;
+}
+
+**/
 
 class CType : public ClassTag {
     std::string name;
@@ -44,6 +67,19 @@ public:
     typedef std::shared_ptr<const CType> Ptr;
 
     const std::string& getName() const { return name; }
+
+    friend std::ostream& operator<<(std::ostream& ost, const CType& ct) {
+        return ost << ct.getName();
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, CType::Ptr ct) {
+        return ost << ct->getName();
+    }
+
+private:
+    void dump() {
+        std::cerr << getName() << std::endl;
+    }
 };
 
 } // namespace borealis

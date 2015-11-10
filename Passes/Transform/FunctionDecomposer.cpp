@@ -21,6 +21,7 @@
 #include "Passes/Transform/FunctionDecomposer.h"
 #include "State/Transformer/ExternalFunctionMaterializer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
+#include "State/Transformer/CallSiteInitializer.h"
 #include "State/Transformer/OldValueExtractor.h"
 #include "Statistics/statistics.h"
 #include "Util/passes.hpp"
@@ -196,8 +197,8 @@ static std::vector<std::string> implicitContracts(const llvm::Function* func, co
     }
 
     for(size_t i = 0; i < fi.argInfo.size(); ++i) {
-        auto ptype = func->getFunctionType()->getParamType(i);
-        if(ptype->isPointerTy()) {
+        auto ptype = func->isVarArg()? func->getFunctionType()->getParamType(i) : nullptr;
+        if(!ptype || ptype->isPointerTy()) {
             auto&& ai = fi.argInfo[i];
             if(ai.access != func_info::AccessPatternTag::None) {
                 if(ai.isArray == func_info::ArrayTag::IsArray && ai.sizeArgument) {
@@ -263,12 +264,13 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     for(llvm::CallInst* call : funcs) {
         llvm::Function* f = call->getCalledFunction();
         llvm::Value* predefinedReturn = nullptr;
+        auto loc = SLT.getLocFor(call);
         if (FIP.hasInfo(f)) {
 
             auto&& funcInfo = FIP.getInfo(f);
 
             infos() << "FIPping " << f->getName() << endl;
-            FactoryNest FN(STP.getSlotTracker(call));
+            FactoryNest FN(M.getDataLayout(), STP.getSlotTracker(call));
 
             auto contracts = FIP.getContracts(f);
             auto impContracts = util::viewContainer(implicitContracts(f, funcInfo))
@@ -278,28 +280,44 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
 
             contracts.insert(std::end(contracts), std::begin(impContracts), std::end(impContracts));
 
+            std::vector<Annotation::Ptr> beforeAlls;
             std::vector<Annotation::Ptr> befores;
             std::vector<Annotation::Ptr> afters;
             std::vector<Annotation::Ptr> middles;
 
             for (auto contract : contracts) {
-                ExternalFunctionMaterializer efm(FN, llvm::CallSite(call), &VIT, SLT.getLocFor(call));
-                contract = efm.transform(contract);
-                OldValueExtractor ove(FN);
-                contract = ove.transform(contract);
-                befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
-                contract = materialize(contract, FN, &VIT);
-                if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
-                    afters.push_back(contract);
-                } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation>(contract)) {
-                    befores.push_back(contract);
-                } else {
-                    middles.push_back(contract);
+                try{
+                    OldValueExtractor ove(FN);
+                    contract = ove.transform(contract);
+                    befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
+                    if(auto&& la = dyn_cast<LogicAnnotation>(contract)) {
+                        AnnotationMaterializer AM(*la, FN, &VIT, call->getCalledFunction());
+                        contract = AM.transform(contract);
+                    }
+
+                    CallSiteInitializer CSI(call, FN, &loc);
+                    auto onCallContract = CSI.transform(contract);
+                    if(llvm::isa<GlobalAnnotation>(contract)) {
+                        beforeAlls.push_back(onCallContract);
+                    } else if (llvm::is_one_of<EnsuresAnnotation, AssumeAnnotation>(contract)) {
+                        afters.push_back(onCallContract);
+                    } else if (llvm::is_one_of<RequiresAnnotation, AssertAnnotation>(contract)) {
+                        befores.push_back(onCallContract);
+                    } else {
+                        middles.push_back(onCallContract);
+                    }
+                } catch(std::exception& ex) {
+                    // FIXME: this is generally fucked up
+                    auto log = llvm::isa<GlobalAnnotation>(contract)? infos() : errs();
+                    log << "Unable to materialize annotation " << *contract << ": " << ex.what() << endl;
                 }
             }
 
             for (auto&& before: befores) AnnotationProcessor::landOnInstructionOrFirst(before, M, FN, *call);
             for (auto&& middle: middles) AnnotationProcessor::landOnInstructionOrFirst(middle, M, FN, *call);
+            for (auto&& beforeAll: beforeAlls) {
+                AnnotationProcessor::landOnInstructionOrFirst(beforeAll, M, FN, *call->getParent()->getParent());
+            }
 
             for (auto i = 0U; i < call->getNumArgOperands(); ++i) {
                 auto realIx = f->isVarArg() && i > f->getArgumentList().size() ? f->getArgumentList().size() : i;

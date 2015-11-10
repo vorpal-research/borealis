@@ -213,6 +213,7 @@ int gestalt::main(int argc, const char** argv) {
     llvm.assignLogger(*this);
 
     llvm.add(*annotatedModule->annotations);
+    llvm.add(annotatedModule->extVars);
     clang::FileManager files{ FileSystemOptions() };
     llvm.add(files);
     for (StringRef pass : passes2run) {

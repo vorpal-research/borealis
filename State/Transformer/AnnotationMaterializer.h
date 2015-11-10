@@ -50,11 +50,6 @@ public:
 
     Annotation::Ptr doit();
 
-    void failWith(const std::string& message);
-    inline void failWith(llvm::Twine twine) { failWith(twine.str()); }
-    // resolving ambiguity
-    inline void failWith(const char* r) { failWith(std::string(r)); }
-
     // note this is called without a "Term" at the end, meaning
     // it is called before (and instead of) transforming children
     Term::Ptr transformOpaqueCall(OpaqueCallTermPtr trm);

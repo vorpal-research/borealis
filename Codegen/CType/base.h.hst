@@ -15,12 +15,35 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include "Util/typeindex.hpp"
 
 namespace borealis {
 
-enum class CQualifier{ CONST, VOLATILE, RESTRICT, TYPEDEF };
+enum class CQualifier{ CONST = 0, VOLATILE = 1, RESTRICT = 2, TYPEDEF = 3 };
+
+/** protobuf -> $dir$/CQualifier.proto
+package borealis.proto;
+
+enum CQualifier {
+    CONST = 0; VOLATILE = 1; RESTRICT = 2; TYPEDEF = 3;
+}
+
+**/
+
+namespace proto { class $basename$; }
+
+/** protobuf -> $dir$/$basename$.proto
+package borealis.proto;
+
+message $basename$ {
+    optional string name = 1;
+
+    extensions 16 to 64;
+}
+
+**/
 
 class $basename$ : public ClassTag {
     std::string name;
@@ -34,6 +57,19 @@ public:
     typedef std::shared_ptr<const $basename$> Ptr;
 
     const std::string& getName() const { return name; }
+
+    friend std::ostream& operator<<(std::ostream& ost, const $basename$& ct) {
+        return ost << ct.getName();
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, $basename$::Ptr ct) {
+        return ost << ct->getName();
+    }
+
+private:
+    void dump() {
+        std::cerr << getName() << std::endl;
+    }
 };
 
 } // namespace borealis

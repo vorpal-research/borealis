@@ -206,6 +206,10 @@ inline bool isMain(const Function& f) {
 } // namespace llvm
 
 namespace borealis {
+using llvm::isa;
+using llvm::cast;
+using llvm::dyn_cast;
+
 namespace util {
 
 void initFilePaths(const char ** argv);

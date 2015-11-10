@@ -18,6 +18,7 @@
 #include "Protobuf/Gen/Annotation/AssumeAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/EndMaskAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/EnsuresAnnotation.pb.h"
+#include "Protobuf/Gen/Annotation/GlobalAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/IgnoreAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/InlineAnnotation.pb.h"
 #include "Protobuf/Gen/Annotation/MaskAnnotation.pb.h"
@@ -151,6 +152,7 @@ MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL(AssertAnnotation)
 MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL(AssignsAnnotation)
 MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL(AssumeAnnotation)
 MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL(EnsuresAnnotation)
+MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL(GlobalAnnotation)
 MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL(RequiresAnnotation)
 
 #undef MAKE_EMPTY_LOGIC_ANNOTATION_PB_IMPL

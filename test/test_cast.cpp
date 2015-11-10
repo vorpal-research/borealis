@@ -22,7 +22,7 @@ TEST(Cast, visit) {
     {
         using borealis::util::visit;
 
-        auto TF = FactoryNest(nullptr).Term;
+        auto TF = FactoryNest().Term;
         auto check = false;
 
         auto trm = TF->getOpaqueConstantTerm(true);
@@ -48,7 +48,7 @@ TEST(Cast, visit) {
 
 TEST(Cast, pair_matcher) {
     {
-        auto TF = FactoryNest(nullptr).Term;
+        auto TF = FactoryNest().Term;
         auto lhv = TF->getOpaqueConstantTerm(true);
         auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEF, 0x0);
 
@@ -68,7 +68,7 @@ TEST(Cast, pair_matcher) {
 
 TEST(Cast, tuple_matcher) {
     {
-        auto TF = FactoryNest(nullptr).Term;
+        auto TF = FactoryNest().Term;
         auto lhv = TF->getOpaqueConstantTerm(true);
         auto rhv = TF->getOpaqueConstantTerm(0xC0DEBEEF, 0x0);
 

@@ -9,7 +9,7 @@
     CPointer { element :: Param CTypeRef } |
     CAlias { original :: Param CTypeRef, qualifier :: Exact CQualifier } |
     CArray { element :: Param CTypeRef, size :: Maybe Size } |
-    CStruct { elements :: [Exact CStructMember] } |
+    CStruct { elements :: [Exact CStructMember], opaque :: Bool } |
     CFunction { resultType :: Param CTypeRef, argumentTypes :: [Param CTypeRef] }
       deriving (Show, Eq, Data, Typeable)
 
@@ -23,6 +23,8 @@
 #ifndef CARRAY_H
 #define CARRAY_H
 
+#include "Util/util.hpp"
+
 #include "Codegen/CType/CType.h"
 #include "Codegen/CType/CTypeRef.h"
 #include "Codegen/CType/CStructMember.h"
@@ -34,6 +36,28 @@ namespace borealis {
 
 class CTypeFactory;
 
+/** protobuf -> Codegen/CType/CArray.proto
+import "Codegen/CType/CType.proto";
+import "Codegen/CType/CStructMember.proto";
+import "Codegen/CType/CQualifier.proto";
+import "Codegen/CType/CTypeRef.proto";
+
+
+
+package borealis.proto;
+
+message CArray {
+    extend borealis.proto.CType {
+        optional CArray ext = $COUNTER_CTYPE;
+    }
+
+
+    optional CTypeRef element = 1;
+    optional uint32 size = 2;
+}
+
+**/
+
 class CArray : public CType {
 
     typedef CArray Self;
@@ -44,6 +68,7 @@ class CArray : public CType {
 public:
 
     friend class ::borealis::CTypeFactory;
+    friend class util::enable_special_make_shared<CArray, CTypeFactory>; // enable factory-construction only
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

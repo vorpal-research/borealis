@@ -36,7 +36,7 @@ public:
     FactoryNest& operator=(const FactoryNest&);
     FactoryNest& operator=(FactoryNest&&);
 
-    FactoryNest(SlotTracker* st);
+    FactoryNest(const llvm::DataLayout* DL, SlotTracker* st);
 
     PredicateState::Ptr getGlobalState(const llvm::Module* M);
 

@@ -14,6 +14,7 @@
 
 #include "Protobuf/Gen/Term/ArgumentKind.pb.h"
 #include "Protobuf/Gen/Term/ArgumentTerm.pb.h"
+#include "Protobuf/Gen/Term/ArgumentCountTerm.pb.h"
 #include "Protobuf/Gen/Term/AxiomTerm.pb.h"
 #include "Protobuf/Gen/Term/BinaryTerm.pb.h"
 #include "Protobuf/Gen/Term/BoundTerm.pb.h"
@@ -41,6 +42,7 @@
 #include "Protobuf/Gen/Term/TernaryTerm.pb.h"
 #include "Protobuf/Gen/Term/UnaryTerm.pb.h"
 #include "Protobuf/Gen/Term/ValueTerm.pb.h"
+#include "Protobuf/Gen/Term/VarArgumentTerm.pb.h"
 
 #include "Type/ProtobufConverterImpl.hpp"
 #include "Util/ProtobufConverterImpl.hpp"
@@ -84,6 +86,27 @@ struct protobuf_traits_impl<ArgumentTerm> {
                 t.idx(),
                 base->getName(),
                 static_cast<ArgumentKind>(t.kind())
+            )
+        };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<ArgumentCountTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::ArgumentCountTerm> toProtobuf(const ArgumentCountTerm&) {
+        return util::uniq(new proto::ArgumentCountTerm());
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest&,
+            Term::Ptr base,
+            const proto::ArgumentCountTerm&) {
+        return Term::Ptr{
+            new ArgumentCountTerm(
+                base->getType()
             )
         };
     }
@@ -709,6 +732,30 @@ struct protobuf_traits_impl<ValueTerm> {
             Term::Ptr base,
             const proto::ValueTerm& t) {
         return Term::Ptr{ new ValueTerm(base->getType(), base->getName(), t.global()) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<VarArgumentTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::VarArgumentTerm> toProtobuf(const VarArgumentTerm& t) {
+        auto res = util::uniq(new proto::VarArgumentTerm());
+        res->set_idx(t.getIdx());
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest&,
+            Term::Ptr base,
+            const proto::VarArgumentTerm& t) {
+        return Term::Ptr{
+            new VarArgumentTerm(
+                base->getType(),
+                t.idx()
+            )
+        };
     }
 };
 

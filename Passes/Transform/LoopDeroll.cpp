@@ -565,8 +565,17 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
             backEdge->eraseFromParent();
 
         } else {
-            new UnreachableInst(Term->getContext(), Term);
+            // potentially infinite loop, make a small loop in the end
+            auto&& UBB = CreateUnreachableBasicBlock(F, Twine(Latches[LL]->getName()));
+            L->addBasicBlockToLoop(UBB, LI->getBase());
+
+            // this should be already an unconditional branch, but Things May Happen
+            BranchInst::Create(UBB, Term);
             Term->eraseFromParent();
+
+            auto&& backEdge = UBB->getTerminator();
+            BranchInst::Create(Dest, backEdge);
+            backEdge->eraseFromParent();
         }
     }
 

@@ -6,6 +6,9 @@
  */
 
 #include "State/Transformer/AnnotationMaterializer.h"
+
+#include "Codegen/CType/CTypeUtils.h"
+#include "Codegen/CType/CTypeInfer.h"
 #include "Term/TermBuilder.h"
 #include "Util/util.h"
 
@@ -18,6 +21,41 @@ struct AnnotationMaterializer::AnnotationMaterializerImpl {
     TermFactory::Ptr TF;
     VariableInfoTracker* MI;
     NameContext nc;
+    CTypeInfer ctypeInfer;
+
+    CType::Ptr propertyCType() {
+        return MI->getCTypeFactory().getInteger("bor_property_t", 8, llvm::Signedness::Unknown);
+    }
+
+    CType::Ptr intConstantCType() {
+        return ctypeInfer.getPropertyType();
+    }
+
+    CType::Ptr boolCType() {
+        return ctypeInfer.getBoolType();
+    }
+
+    Term::Ptr withCType(Term::Ptr term, CType::Ptr type) {
+        ctypeInfer.hintType(term, type);
+        return term;
+    }
+
+    template<class ...Args>
+    inline void failWith(const char* fmt, Args&&... args) {
+        throw std::runtime_error(
+            tfm::format(
+                "Error while processing annotation: %s; scope %s: %s",
+                A->toString(),
+                nc,
+                tfm::format(fmt, std::forward<Args>(args)...)
+            )
+        );
+    }
+
+    template<class ...Args>
+    inline void require(bool what, const char* fmt, Args&&... args) {
+        if(!what) failWith(fmt, std::forward<Args>(args)...);
+    }
 };
 
 static size_t getNextUniqueNumber() {
@@ -46,7 +84,8 @@ AnnotationMaterializer::AnnotationMaterializer(
                     &A,
                     FN.Term,
                     MI,
-                    NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
+                    NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() },
+                    CTypeInfer(MI->getCTypeFactory())
                 }
             ) {
 
@@ -69,6 +108,9 @@ AnnotationMaterializer::AnnotationMaterializer(
         )) {
             pimpl->nc.func = f;
         }
+    } else if(llvm::isa<GlobalAnnotation>(A)){
+        pimpl->nc.placement = NameContext::Placement::GlobalScope;
+        pimpl->nc.func = nullptr;
     }
 };
 
@@ -83,18 +125,12 @@ AnnotationMaterializer::AnnotationMaterializer(
                     &A,
                     FN.Term,
                     MI,
-                    NameContext{ NameContext::Placement::GlobalScope, nullptr, A.getLocus() }
+                    NameContext{ NameContext::Placement::GlobalScope, F, A.getLocus() },
+                    CTypeInfer(MI->getCTypeFactory())
                 }
             ) {
 
     FN.Type->initialize(*MI);
-
-    if (llvm::isa<EnsuresAnnotation>(A) ||
-        llvm::isa<RequiresAnnotation>(A) ||
-        llvm::isa<AssignsAnnotation>(A)) {
-        pimpl->nc.placement = NameContext::Placement::OuterScope;
-        pimpl->nc.func = F;
-    } else failWith("Cannot bind annotation to an external function");
 };
 
 AnnotationMaterializer::~AnnotationMaterializer() {}
@@ -111,6 +147,7 @@ llvm::LLVMContext& AnnotationMaterializer::getLLVMContext() const {
 VariableInfoTracker::ValueDescriptor AnnotationMaterializer::forName(const std::string& name) const {
     switch (pimpl->nc.placement) {
     case NameContext::Placement::GlobalScope:
+        return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::Global);
     case NameContext::Placement::InnerScope:
         return pimpl->MI->locate(name, pimpl->A->getLocus(), DiscoveryPolicy::PreviousVal);
     case NameContext::Placement::OuterScope:
@@ -132,47 +169,42 @@ VariableInfoTracker::ValueDescriptors AnnotationMaterializer::forValue(llvm::Val
 
 VariableInfoTracker::ValueDescriptor AnnotationMaterializer::forValueSingle(llvm::Value* value) const {
     auto&& descs = forValue(value);
-    ASSERTC(descs.size() == 1);
+    ASSERTC(descs.size() >= 1);
     return descs.front();
-}
-
-void AnnotationMaterializer::failWith(const std::string& message) {
-    static std::string buf;
-
-    std::ostringstream str;
-    str << "Error while processing annotation: "
-        << pimpl->A->toString()
-        << "; scope "
-        << pimpl->nc
-        << ": "
-        << message;
-
-    buf = str.str();
-    throw std::runtime_error(buf.c_str());
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
     if (auto* builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(trm->getLhv())) {
         if (builtin->getVName() == "property") {
             auto&& rhv = trm->getRhv().toVector();
-            if (rhv.size() != 2) failWith("Illegal \\property access " + trm->getName() + ": exactly two operands expected");
+            pimpl->require(
+                rhv.size() == 2,
+                "Illegal \\property access %s: exactly two operands expected",
+                trm->getName()
+            );
 
             auto&& prop = FN.Term->getOpaqueConstantTerm(rhv[0]->getName());
             auto&& val = this->transform(rhv[1]);
 
             return FN.Term->getReadPropertyTerm(FN.Type->getInteger(), prop, val);
-
         } else if (builtin->getVName() == "bound") {
             auto&& rhv = trm->getRhv().toVector();
-            if (rhv.size() != 1) failWith("Illegal \\bound access " + trm->getName() + ": exactly one operand expected");
+            pimpl->require(
+                rhv.size() == 1,
+                "Illegal \\bound access %s: exactly one operand expected",
+                trm->getName()
+            );
 
             auto&& val = this->transform(rhv[0]);
 
             return FN.Term->getBoundTerm(val);
-
         } else if (builtin->getVName() == "is_valid_ptr") {
             auto&& rhv = trm->getRhv().toVector();
-            if (rhv.size() != 1) failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": exactly one operand expected");
+            pimpl->require(
+                rhv.size() == 1,
+                "Illegal \\is_valid_ptr access %s: exactly one operand expected",
+                trm->getName()
+            );
 
             auto&& val = this->transform(rhv[0]);
             auto&& type = val->getType();
@@ -183,17 +215,18 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
                 auto&& bval = builder(val);
 
                 return bval != null()
-                       && bval != invalid()
-                       && bval.bound().uge( builder(TypeUtils::getTypeSizeInElems(pointed)) );
+                    && bval != invalid()
+                    && bval.bound().uge( builder(TypeUtils::getTypeSizeInElems(pointed)) );
             } else {
-                failWith("Illegal \\is_valid_ptr access " + trm->getName() + ": called on non-pointer");
+                pimpl->failWith("Illegal \\is_valid_ptr access %s: called on non-pointer", trm->getName());
             }
         } else if (builtin->getVName() == "is_valid_array") {
             auto&& rhv = trm->getRhv().toVector();
-            if (rhv.size() != 2)
-                failWith(
-                    "Illegal \\is_valid_array access " + trm->getName() + ": exactly two operands expected"
-                );
+            pimpl->require(
+                rhv.size() == 2,
+                "Illegal \\is_valid_array access %s: exactly two operands expected",
+                trm->getName()
+            );
 
             auto&& val = this->transform(rhv[0]);
             auto&& type = val->getType();
@@ -206,34 +239,44 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
                 auto&& bval = builder(val);
 
                 return bval != null()
-                       && bval != invalid()
-                       && bval.bound().uge(builder(TypeUtils::getTypeSizeInElems(pointed)) * size);
+                    && bval != invalid()
+                    && bval.bound().uge(builder(TypeUtils::getTypeSizeInElems(pointed)) * size);
             } else {
-                failWith("Illegal \\is_valid_array access " + trm->getName() + ": called on non-pointer");
+                pimpl->failWith("Illegal \\is_valid_array access %s: called on non-pointer", trm->getName());
             }
         } else if (builtin->getVName() == "umax") {
             auto&& rhv = trm->getRhv().map(APPLY(this->transform)).toVector();
-            if (rhv.size() != 2)
-                failWith(
-                    "Illegal \\umax invocation " + trm->getName() + ": exactly two operands expected"
-                );
-            return FN.Term->getTernaryTerm(builder(rhv[0]).uge(rhv[1]), rhv[0], rhv[1]);
+            pimpl->require(
+                rhv.size() == 2,
+                "Illegal \\umax invocation %s: exactly two operands expected",
+                trm->getName()
+            );
+            auto&& arg0 = builder(rhv[0]);
+            auto&& arg1 = builder(rhv[1]);
+
+            return FN.Term->getTernaryTerm(arg0.uge(arg1), arg0, arg1);
+
         } else if (builtin->getVName() == "umin") {
             auto&& rhv = trm->getRhv().map(APPLY(this->transform)).toVector();
-            if (rhv.size() != 2)
-                failWith(
-                    "Illegal \\umin invocation " + trm->getName() + ": exactly two operands expected"
-                );
-            return FN.Term->getTernaryTerm(builder(rhv[1]).uge(rhv[0]), rhv[0], rhv[1]);
+            pimpl->require(
+                rhv.size() == 2,
+                "Illegal \\umin invocation %s: exactly two operands expected",
+                trm->getName()
+            );
+
+            auto&& arg0 = builder(rhv[0]);
+            auto&& arg1 = builder(rhv[1]);
+
+            return FN.Term->getTernaryTerm(arg1.uge(arg0), arg0, arg1);
         } else if (builtin->getVName() == "old") {
             // all \old's should be already taken care of, let's try to guess the problem
-            if (trm->getRhv().size() != 1) failWith("Illegal \\old invocation " + trm->getName() + ": exactly one operand expected");
-            else failWith("Malformed \\old invocation");
+            if (trm->getRhv().size() != 1) pimpl->failWith("Illegal \\old invocation %s: exactly one operand expected", trm->getName());
+            else pimpl->failWith("Malformed \\old invocation");
         } else {
-            failWith("Cannot call " + trm->getName() + ": not supported");
+            pimpl->failWith("Cannot call %s: not supported", trm->getName());
         }
     } else {
-        failWith("Cannot call " + trm->getName() + ": only builtins can be called in this way");
+        pimpl->failWith("Cannot call %s: only builtins can be called in this way", trm->getName());
     }
 
     BYE_BYE(Term::Ptr, "Unreachable!");
@@ -243,62 +286,49 @@ Term::Ptr AnnotationMaterializer::transformDirectOpaqueMemberAccessTerm(OpaqueMe
     auto&& arg = trm->getLhv();
 
     auto&& load = llvm::dyn_cast<LoadTerm>(arg);
-    if (not load)
-        failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": term is not an instance of load"
-        );
+    pimpl->require(!!load, "Cannot access member %s: term is not an instance of load", trm->getProperty());
 
     auto&& daStruct = llvm::dyn_cast<type::Record>(load->getType());
-    if (not daStruct)
-        failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": term is not a structure type"
-        );
+    pimpl->require(!!daStruct, "Cannot access member %s: term is not a structure type", trm->getProperty());
 
-    auto&& field = daStruct->getBody()->get().getFieldByName(trm->getProperty());
-    if (not field)
-        failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": no such member defined or structure not available on " +
-            util::toString(*daStruct)
-        );
+    auto&& cdaStruct = pimpl->ctypeInfer.inferType(arg);
+    auto&& cfield = CTypeUtils::getField(cdaStruct, trm->getProperty());
+    pimpl->require(!!cfield, "Cannot access member %s: no such member defined or structrure not available for %s",
+                   trm->getProperty(), cdaStruct->getName());
 
-    return *builder(load->getRhv()).gep(builder(0), builder(field.getUnsafe().getIndex()));
+    auto&& structBody = daStruct->getBody()->get();
+    auto index = structBody.offsetToIndex(cfield->getOffset());
+    pimpl->require(index != ~size_t(0), "Cannot access member %s: no field by offset %d defined for %s",
+                   trm->getProperty(), cfield->getOffset(), util::toString(*daStruct));
+
+    auto&& base = builder(load->getRhv());
+    auto&& gep = base.gep(builder(0), builder(index));
+
+    return pimpl->withCType(*gep, cfield->getType());
 }
 
 Term::Ptr AnnotationMaterializer::transformIndirectOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
     auto&& arg = trm->getLhv();
 
     auto&& daPointer = llvm::dyn_cast<type::Pointer>(arg->getType());
-    if (not daPointer)
-        failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": term is not a pointer"
-        );
+    pimpl->require(!!daPointer, "Cannot access member %s: term is not a pointer", trm->getProperty());
 
     auto&& daStruct = llvm::dyn_cast<type::Record>(daPointer->getPointed());
-    if (not daStruct)
-        failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": term is not a pointer to a structure type"
-        );
+    pimpl->require(!!daStruct, "Cannot access member %s: term is not a pointer to a structure type", trm->getProperty());
 
-    auto&& field = daStruct->getBody()->get().getFieldByName(trm->getProperty());
-    if (not field)
-        failWith(
-            "Cannot access member " +
-            trm->getProperty() +
-            ": no such member defined or structure not available on " +
-            util::toString(*daStruct)
-        );
+    auto&& cdaStructPtr = pimpl->ctypeInfer.inferType(arg);
+    auto&& cdaStruct = CTypeUtils::loadType(cdaStructPtr);
+    auto&& cfield = CTypeUtils::getField(cdaStruct, trm->getProperty());
+    pimpl->require(!!cfield, "Cannot access member %s: no such member defined or structrure not available for %s",
+                  trm->getProperty(), cdaStructPtr->getName());
 
-    return *builder(arg).gep(builder(0), builder(field.getUnsafe().getIndex()));
+    auto&& structBody = daStruct->getBody()->get();
+    auto index = structBody.offsetToIndex(cfield->getOffset());
+    pimpl->require(index != ~size_t(0), "Cannot access member %s: no field by offset %d defined for %s",
+                   trm->getProperty(), cfield->getOffset(), util::toString(*daStruct));
+
+    auto&& gep = builder(arg).gep(builder(0), builder(index));
+    return pimpl->withCType(*gep, cfield->getType());
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr trm) {
@@ -311,12 +341,15 @@ Term::Ptr AnnotationMaterializer::transformArrayOpaqueIndexingTerm(OpaqueIndexin
     auto&& arg = trm->getLhv();
 
     auto&& load = llvm::dyn_cast<LoadTerm>(arg);
-    if (not load) failWith("Cannot access member: term is not an instance of load");
+    pimpl->require(!!load, "Cannot access member: term is not an instance of load");
 
     auto&& daArray = llvm::dyn_cast<type::Array>(load->getType());
-    if (not daArray) failWith("Cannot access element: term is not an array type");
+    pimpl->require(!!daArray, "Cannot access member: term is not an array type");
 
-    return *builder(load->getRhv()).gep(builder(0), trm->getRhv());
+    auto&& base = builder(load->getRhv());
+    auto gep = base.gep(builder(0), trm->getRhv());
+    return pimpl->withCType(*gep, pimpl->ctypeInfer.inferType(trm));
+
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueIndexingTerm(OpaqueIndexingTermPtr trm) {
@@ -325,23 +358,28 @@ Term::Ptr AnnotationMaterializer::transformOpaqueIndexingTerm(OpaqueIndexingTerm
         return transformArrayOpaqueIndexingTerm(trm);
     }
 
-    auto&& gep = builder(trm->getLhv()).gep(trm->getRhv())();
+    auto&& base = builder(trm->getLhv());
+    auto&& gep = base.gep(trm->getRhv());
 
     // check types
     if (auto* terr = llvm::dyn_cast<type::TypeError>(gep->getType())) {
-        failWith(terr->getMessage());
+        pimpl->failWith("Type error: %s", terr->getMessage());
     } else if (llvm::isa<type::Pointer>(gep->getType())) {
-        return *builder(gep);
+        return pimpl->withCType(
+            *gep,
+            pimpl->ctypeInfer.inferType(trm)
+        );
     } else {
-        failWith("Type " + util::toString(gep->getType()) + " not dereferenceable");
+        pimpl->failWith("Type %s not dereferenceable", trm->getType());
     }
 
-    BYE_BYE(Term::Ptr, "Unreachable!");
+    UNREACHABLE("transformOpaqueIndexingTerm");
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
     auto&& ret = forName(trm->getVName());
-    if (ret.isInvalid()) failWith(trm->getVName() + " : variable not found in scope");
+    pimpl->require(not ret.isInvalid(),
+                   "%s: variable not found in scope", trm->getVName());
 
     auto&& shouldBeDereferenced = ret.shouldBeDereferenced;
     // FIXME: Need to sort out memory model
@@ -350,13 +388,10 @@ Term::Ptr AnnotationMaterializer::transformOpaqueVarTerm(OpaqueVarTermPtr trm) {
         shouldBeDereferenced &= ptrType->getPointerElementType()->isSingleValueType();
     }
 
-    auto&& var = factory().getValueTerm(ret.val, ret.type.getSignedness());
+    auto&& var = builder(factory().getValueTerm(ret.val, CTypeUtils::getSignedness(ret.type)));
 
-    if (shouldBeDereferenced) {
-        return *builder(var);
-    } else {
-        return var;
-    }
+    auto res = shouldBeDereferenced? *var : var;
+    return pimpl->withCType(res, ret.type);
 }
 
 Term::Ptr AnnotationMaterializer::transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermPtr trm) {
@@ -369,73 +404,125 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
     auto&& ctx = nameContext();
 
     if (name == "result") {
-        if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
-            if(ctx.func->getReturnType()->isVoidTy()){
-                failWith("\\result cannot be used with functions returning void");
-            }
+        if (ctx.func && (ctx.placement == NameContext::Placement::OuterScope
+            || ctx.placement == NameContext::Placement::GlobalScope)) {
+            pimpl->require(!ctx.func->getReturnType()->isVoidTy(),
+                           "\\result cannot be used with functions returning void");
 
             auto&& desc = forValueSingle(ctx.func);
-            auto&& funcType = DISubroutineType(desc.type);
+            auto&& funcType = llvm::dyn_cast<CFunction>(desc.type);
             ASSERTC(funcType);
-            auto&& diContext = pimpl->MI->getDebugInfo();
-            auto&& retType_ = stripAliases(diContext, funcType.getReturnType());
-            return factory().getReturnValueTerm(ctx.func, retType_.getSignedness());
-
+            auto&& retType_ = funcType->getResultType().get();
+            return pimpl->withCType(
+                factory().getReturnValueTerm(ctx.func, CTypeUtils::getSignedness(retType_)),
+                retType_
+            );
         } else {
-            failWith("\\result can only be bound to functions' outer scope");
+            pimpl->failWith("\\result can only be bound to functions' outer scope");
         }
 
     } else if (name == "null" || name == "nullptr") {
+        // we treat CType of null as int, because that way it will infer correctly
         return null();
-
     } else if (name == "invalid" || name == "invalidptr") {
         return invalid();
+    } else if (name == "arg_count" || name == "num_args") {
+        if(!ctx.func) {
+            pimpl->failWith("\\arg_count can only be bound to functions' outer scope");
+        }
+
+        if(!ctx.func->isVarArg()) {
+            warns() << "\\" << name << " is used on a non-vararg function";
+            return factory().getOpaqueConstantTerm(ctx.func->arg_size(), TypeFactory::defaultTypeSize);
+        } else {
+            return factory().getArgumentCountTerm();
+        }
     } else if (name.startswith("arg")) {
         if (ctx.func && ctx.placement == NameContext::Placement::OuterScope) {
-            std::istringstream ist(name.drop_front(3).str());
-            unsigned val = 0U;
-            ist >> val;
+            unsigned val;
+            if(name.drop_front(3).getAsInteger(10, val)) val = 0;
 
-            if (ctx.func->isDeclaration()) failWith("annotations on function declarations are not supported");
+            pimpl->require(!ctx.func->isDeclaration(),
+                           "annotations on function declarations are not supported");
 
-            ASSERTC(val < ctx.func->arg_size());
+            if(ctx.func->isVarArg() && val >= ctx.func->arg_size()) {
+                return pimpl->withCType(
+                    factory().getVarArgumentTerm(val - ctx.func->arg_size()),
+                    pimpl->ctypeInfer.getSmallIntegerType()
+                );
+            }
+
+            if(!ctx.func->isVarArg() && val >= ctx.func->arg_size()) {
+                pimpl->failWith("Function %s does not have argument %d", ctx.func->getName(), val);
+            }
 
             auto&& arg = std::next(ctx.func->arg_begin(), val);
 
             auto&& desc = forValueSingle(&*arg);
-            return factory().getArgumentTerm(arg, desc.type.getSignedness());
+            return pimpl->withCType(
+                factory().getArgumentTerm(arg, CTypeUtils::getSignedness(desc.type)),
+                desc.type
+            );
+
+        } else if (ctx.func && ctx.placement == NameContext::Placement::GlobalScope) { // external function
+            unsigned val;
+            if(name.drop_front(3).getAsInteger(10, val)) val = 0;
+
+            if(ctx.func->isVarArg() && val >= ctx.func->arg_size()) {
+                return pimpl->withCType(
+                    factory().getVarArgumentTerm(val - ctx.func->arg_size()),
+                    pimpl->ctypeInfer.getSmallIntegerType()
+                );
+            }
+
+            if(!ctx.func->isVarArg() && val >= ctx.func->arg_size()) {
+                pimpl->failWith("Function %s does not have argument %d", ctx.func->getName(), val);
+            }
+
+            auto&& ft = forValueSingle(ctx.func);
+            auto&& funcCType = llvm::dyn_cast<CFunction>(ft.type);
+            auto&& argCType = funcCType->getArgumentTypes()[val];
+            auto&& argType = FN.Type->cast(ctx.func->getFunctionType()->getParamType(val), ctx.func->getDataLayout(), CTypeUtils::getSignedness(argCType));
+
+            return pimpl->withCType(
+                factory().getArgumentTermExternal(
+                    val,
+                    tfm::format("%s$arg%d", ctx.func->getName(), val),
+                    argType
+                ),
+                argCType
+            );
 
         } else {
-            failWith("\\argXXX can only be bound to functions' outer scope");
+            pimpl->failWith("\\argXXX can only be bound to functions' outer scope");
         }
     } else {
-        failWith("\\" + name + " : unknown builtin");
+        pimpl->failWith("\\%s: unknown builtin", name);
     }
 
     BYE_BYE(Term::Ptr, "Unreachable!");
 };
 
 Term::Ptr AnnotationMaterializer::transformCmpTerm(CmpTermPtr trm) {
-    auto&& lhvt = trm->getLhv()->getType();
-    auto&& rhvt = trm->getRhv()->getType();
+    auto&& lhvt = pimpl->ctypeInfer.inferType(trm->getLhv());
+    auto&& rhvt = pimpl->ctypeInfer.inferType(trm->getRhv());
+    auto&& merged = CTypeUtils::commonType(pimpl->MI->getCTypeFactory(), lhvt, rhvt);
 
     // XXX: Tricky stuff follows...
     //      CmpTerm from annotations is signed by default,
     //      need to change that to unsigned when needed
-    if (auto match = util::match_pair<type::Integer, type::Integer>(lhvt, rhvt)) {
-        if (
-            match->first->getSignedness() == llvm::Signedness::Unsigned ||
-            match->second->getSignedness() == llvm::Signedness::Unsigned
-        ) {
-            return factory().getCmpTerm(
+    if(CTypeUtils::getSignedness(merged) == llvm::Signedness::Unsigned) {
+        return pimpl->withCType(
+            factory().getCmpTerm(
                 llvm::forceUnsigned(trm->getOpcode()),
                 trm->getLhv(),
                 trm->getRhv()
-            );
-        }
+            ),
+            pimpl->boolCType()
+        );
     }
 
-    return trm;
+    return pimpl->withCType(trm, pimpl->boolCType());
 }
 
 Annotation::Ptr materialize(
@@ -451,6 +538,7 @@ Annotation::Ptr materialize(
     }
     return res;
 }
+
 
 } // namespace borealis
 

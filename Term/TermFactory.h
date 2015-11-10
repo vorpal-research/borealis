@@ -27,6 +27,9 @@ public:
 
     Term::Ptr getArgumentTerm(const llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getStringArgumentTerm(const llvm::Argument* arg, llvm::Signedness sign = llvm::Signedness::Unknown);
+    Term::Ptr getArgumentTermExternal(size_t numero, const std::string& name, Type::Ptr type);
+    Term::Ptr getArgumentCountTerm();
+    Term::Ptr getVarArgumentTerm(size_t numero);
 
     Term::Ptr getConstTerm(const llvm::Constant* c, llvm::Signedness sign = llvm::Signedness::Unknown);
 
@@ -86,15 +89,17 @@ public:
 
     Term::Ptr getBoundTerm(Term::Ptr rhv);
 
-    static TermFactory::Ptr get(SlotTracker* st, TypeFactory::Ptr TyF);
-    static TermFactory::Ptr get(TypeFactory::Ptr TyF);
+    static TermFactory::Ptr get(SlotTracker* st, const llvm::DataLayout* DL, TypeFactory::Ptr TyF);
+    static TermFactory::Ptr get(const llvm::DataLayout* DL, TypeFactory::Ptr TyF);
 
 private:
 
     SlotTracker* st;
+    const llvm::DataLayout* DL;
     TypeFactory::Ptr TyF;
 
-    TermFactory(SlotTracker* st, TypeFactory::Ptr TyF);
+
+    TermFactory(SlotTracker* st, const llvm::DataLayout* DL, TypeFactory::Ptr TyF);
 
 };
 

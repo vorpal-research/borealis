@@ -99,7 +99,7 @@ void MallocMutator::mutateMemoryInst(
     auto* sizeType = llvm::Type::getInt64Ty(M.getContext());
 
     auto elemSize = TypeUtils::getTypeSizeInElems(
-        TyF->cast(elemType)
+        TyF->cast(elemType, M.getDataLayout())
     );
 
     auto* resolvedElemSize = ConstantInt::get(sizeType, elemSize);

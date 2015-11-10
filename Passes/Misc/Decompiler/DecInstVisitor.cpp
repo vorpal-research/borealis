@@ -21,6 +21,8 @@
 #include <stack>
 #include <iterator>
 
+#include "Codegen/intrinsics_manager.h"
+#include "State/Transformer/AnnotationSubstitutor.h"
 #include "Util/streams.hpp"
 
 using namespace llvm;
@@ -29,18 +31,18 @@ using namespace std;
 namespace borealis {
 namespace decompiler{
 
-const std::map<Type::TypeID, std::string> types = {
-        {Type::TypeID::IntegerTyID, "int"},
-        {Type::TypeID::DoubleTyID, "double"},
-        {Type::TypeID::FP128TyID, "long double"},
-        {Type::TypeID::FloatTyID, "float"},
-        {Type::TypeID::HalfTyID, "float16"},
-        {Type::TypeID::PPC_FP128TyID, "long double"},
-        {Type::TypeID::X86_FP80TyID, "float80"},
-        {Type::TypeID::FunctionTyID, "function"},
-        {Type::TypeID::LabelTyID, "label"},
-        {Type::TypeID::MetadataTyID, "metadata"},
-        {Type::TypeID::VoidTyID, "void"}
+const std::map<llvm::Type::TypeID, std::string> types = {
+        {llvm::Type::TypeID::IntegerTyID, "int"},
+        {llvm::Type::TypeID::DoubleTyID, "double"},
+        {llvm::Type::TypeID::FP128TyID, "long double"},
+        {llvm::Type::TypeID::FloatTyID, "float"},
+        {llvm::Type::TypeID::HalfTyID, "float16"},
+        {llvm::Type::TypeID::PPC_FP128TyID, "long double"},
+        {llvm::Type::TypeID::X86_FP80TyID, "float80"},
+        {llvm::Type::TypeID::FunctionTyID, "function"},
+        {llvm::Type::TypeID::LabelTyID, "label"},
+        {llvm::Type::TypeID::MetadataTyID, "metadata"},
+        {llvm::Type::TypeID::VoidTyID, "void"}
 };
 
 std::map<int, std::string> intTypes = {
@@ -190,7 +192,14 @@ void DecInstVisitor::writeValueToStream(llvm::Value* v, bool deleteType) {
 
 
     if(auto cs = llvm::dyn_cast<ConstantDataSequential>(v)) {
-        if(cs->isString() || cs->isCString()) infos_ << "\"" << cs->getRawDataValues().str().c_str() << "\"";
+        if(cs->isString() || cs->isCString()) {
+            std::string res;
+            llvm::raw_string_ostream rso(res);
+            rso << "\"";
+            rso.write_escaped(cs->getRawDataValues(), true);
+            rso << "\"";
+            infos_ << rso.str();
+        }
         else {
             infos_ << "{";
             writeValueToStream(cs->getAggregateElement(0U));
@@ -367,11 +376,47 @@ void DecInstVisitor::visitPtrToIntOperator(llvm::PtrToIntOperator& i) {
 }
 
 void DecInstVisitor::visitCallInst(llvm::CallInst &i) {
+    static auto&& im = IntrinsicsManager::getInstance();
+
+    if(im.getIntrinsicType(i) != function_type::UNKNOWN) {
+        auto type = im.getIntrinsicType(i);
+        switch(type) {
+        case function_type::INTRINSIC_NONDET: {
+            printTabulation(nesting);
+            writeValueToStream(&i);
+            infos_ << " = (?);\n";
+            return;
+        }
+        case function_type::INTRINSIC_ANNOTATION: {
+            auto&& anno = substituteAnnotationCall(*FN, &i);
+            printTabulation(nesting);
+            infos_ << "@" << anno->getKeyword() << " " << anno->argToString() << " // " << anno->getLocus() << "\n";
+            return;
+        }
+        case function_type::INTRINSIC_CONSUME:
+        case function_type::INTRINSIC_UNREACHABLE:
+        case function_type::INTRINSIC_VALUE:
+        case function_type::INTRINSIC_DECLARE:
+        case function_type::INTRINSIC_GLOBAL:
+            return;
+        case function_type::ACTION_DEFECT: {
+            printTabulation(nesting);
+            infos_ << "!defect(";
+            writeValueToStream(i.getArgOperand(0), true);
+            infos_ << ");\n";
+            return;
+        }
+        default:
+            break;
+        }
+    }
+
     printTabulation(nesting);
     if(!i.getType()->isVoidTy()) {
         writeValueToStream(&i);
         infos_ << " = ";
     }
+
     if(i.getCalledFunction() != nullptr) {
         infos_ << i.getCalledFunction()->getName()<<"(";
     } else { // this is an indirect call
@@ -729,7 +774,11 @@ void DecInstVisitor::displayGlobals(llvm::Module &M) {
     infos_ << "\n\n";
 }
 
-void DecInstVisitor::displayFunction(llvm::Function &F) {
+bool DecInstVisitor::displayFunction(llvm::Function &F) {
+    static auto&& im = IntrinsicsManager::getInstance();
+    if(im.getIntrinsicType(&F) != function_type::UNKNOWN) return false;
+    if(F.isIntrinsic()) return false;
+
     printType(F.getReturnType());
     infos_ << " "<<F.getName().str()+"(";
     size_t argNum = F.arg_size();
@@ -748,6 +797,8 @@ void DecInstVisitor::displayFunction(llvm::Function &F) {
     isOutGoto = false;
     while(!conditions.empty()) conditions.pop();
     currPos = BBPosition::NONE;
+    FN = util::make_unique<FactoryNest>(F.getDataLayout(), STP->getSlotTracker(F));
+    return true;
 }
 
 void DecInstVisitor::displayBasicBlock(llvm::BasicBlock& B, BBPosition position) {

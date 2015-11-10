@@ -21,7 +21,7 @@ PredicateStateBuilder::PredicateStateBuilder(
         PSF(PSF), State(PSF->Basic() + pred) {};
 
 PredicateState::Ptr PredicateStateBuilder::operator()() const {
-    return Retyper(FactoryNest(nullptr)).transform(State);
+    return Retyper(FactoryNest()).transform(State);
 }
 
 PredicateState::Ptr PredicateStateBuilder::apply() const {

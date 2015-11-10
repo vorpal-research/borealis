@@ -52,7 +52,7 @@ Term::Ptr undoThat(Dynamic dyn) {
     std::stack<AbstractSymbol::Ptr> symbolStack;
     expr.visit(callback, &symbolStack);
 
-    FactoryNest FN(nullptr);
+    FactoryNest FN;
 
     auto jointSymbol = makeSymbol(symbolStack);
     return jointSymbol->undoThat(FN);

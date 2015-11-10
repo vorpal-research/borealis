@@ -261,6 +261,12 @@ bool is_one_of(const Input& input) {
 
 } /* namespace llvm */
 
+namespace borealis {
+
+using llvm::is_one_of;
+
+} /* namespace borealis */
+
 #include "Util/unmacros.h"
 
 #endif /* CAST_HPP_ */

@@ -38,7 +38,7 @@ public:
             auto&& PSA = GetAnalysis<PredicateStateAnalysis>::doit(this, *adi.atFunc);
             auto&& ps = PSA.getInstructionState(adi.atInst);
 
-            auto&& FN = FactoryNest(STP.getSlotTracker(adi.atFunc));
+            auto&& FN = FactoryNest(adi.atFunc->getDataLayout(), STP.getSlotTracker(adi.atFunc));
 
             auto&& TC = TermCollector(FN);
             auto&& AC = ArrayBoundsCollector(FN);

@@ -51,7 +51,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     FM = &GetAnalysis< FunctionManager >::doit(this, F);
     SLT = &GetAnalysis< SourceLocationTracker >::doit(this, F);
 
-    FN = FactoryNest(GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F));
+    FN = FactoryNest(F.getDataLayout(), GetAnalysis< SlotTrackerPass >::doit(this, F).getSlotTracker(F));
 
 #define HANDLE_ANALYSIS(CLASS) \
     PA.push_back(static_cast<AbstractPredicateAnalysis*>(&GetAnalysis<CLASS>::doit(this, F)));
@@ -158,7 +158,7 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
             ).apply();
 
             auto&& instantiatedCallState =
-                    CallSiteInitializer(CI, FN).transform(callState);
+                    CallSiteInitializer(&CI, FN).transform(callState);
 
             instructionState = (
                 FN.State *

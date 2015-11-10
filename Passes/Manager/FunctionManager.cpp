@@ -40,7 +40,7 @@ bool FunctionManager::runOnModule(llvm::Module& M) {
     auto&& locs = GetAnalysis< SourceLocationTracker >::doit(this);
     auto&& meta =  GetAnalysis< VariableInfoTracker >::doit(this);
 
-    FN = FactoryNest(GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M));
+    FN = FactoryNest(M.getDataLayout(), GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(M));
 
     unsigned int i = 1;
     for (auto&& F : M) ids[&F] = i++;

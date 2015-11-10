@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include <llvm/Pass.h>
+#include <Actions/VariableInfoFinder.h>
 #include "Codegen/CType/CTypeFactory.h"
 
 #include "Codegen/VarInfoContainer.h"
@@ -29,11 +30,10 @@ namespace borealis {
 // not really a pass, just some functionality bundled into llvm pass system
 class VariableInfoTracker : public llvm::ModulePass {
     typedef DataProvider<clang::FileManager> sm_t;
+    typedef DataProvider<ExtVariableInfoData> ext_vars_t;
 
     VarInfoContainer vars;
-
-    CTypeFactory CTF;
-    std::unordered_map<llvm::Type*, CType::Ptr> typeMapping;
+    std::unique_ptr<CTypeFactory> CTF;
 
     llvm::LLVMContext* ctx;
     const llvm::Module* m;
@@ -43,7 +43,7 @@ public:
 
     struct ValueDescriptor {
         llvm::Value* val;
-        borealis::DIType type;
+        CType::Ptr type;
         bool shouldBeDereferenced;
 
         bool isInvalid() const {
@@ -52,7 +52,7 @@ public:
 
         friend std::ostream& operator<<(std::ostream& ost, const ValueDescriptor& vd) {
             if(vd.isInvalid()) return ost << "<invalid vd>";
-            return ost << llvm::valueSummary(vd.val) << "::" << vd.type.getName();
+            return ost << llvm::valueSummary(vd.val) << "::" << vd.type->getName();
         }
     };
     using ValueDescriptors = std::vector<ValueDescriptor>;
@@ -73,20 +73,20 @@ private:
 
         // fnd :: (Locus, llvm::Value*)
         auto fnd = std::find_if(begin, end, f);
-        if (fnd == end) return ValueDescriptor{ nullptr, DIType{}, false };
+        if (fnd == end) return ValueDescriptor{ nullptr, nullptr, false };
 
         Value* foundValue = fnd->second;
         const Locus& foundLocus = *fnd->first;
 
-        DIType type;
+        CType::Ptr type;
         bool deref = false;
 
         // vars :: llvm::Value* -> (llvm::Value*, VarInfo)
         for (auto& pr : view(vars.get(foundValue))) {
             const VarInfo& varInfo = pr.second;
-            if (varInfo.originalLocus == foundLocus) {
+            if (varInfo.locus == foundLocus) {
                 type = varInfo.type;
-                deref = (varInfo.treatment == VarInfo::Allocated);
+                deref = (varInfo.storage == StorageSpec::Memory);
                 break;
             }
         }
@@ -122,19 +122,19 @@ private:
                 // vars :: llvm::Value* -> (llvm::Value*, VarInfo)
                 for (auto& pr : view(vars.get(foundValue))) {
                     const VarInfo& varInfo = pr.second;
-                    if (varInfo.originalLocus == foundLocus &&
-                        varInfo.originalName == foundName) {
+                    if (varInfo.locus == foundLocus &&
+                        varInfo.name == foundName) {
                         return ValueDescriptor{
                             foundValue,
                             varInfo.type,
-                            (varInfo.treatment == VarInfo::Allocated)
+                            (varInfo.storage == StorageSpec::Memory)
                         };
                     }
                 }
             }
         }
 
-        return ValueDescriptor{ nullptr, DIType{}, false };
+        return ValueDescriptor{ nullptr, nullptr, false };
     }
 
     static bool isFunc(VarInfoContainer::loc_value_iterator::reference pr) {
@@ -150,7 +150,7 @@ private:
     }
 
     static bool isGlobal(VarInfoContainer::loc_value_iterator::reference pr) {
-        return llvm::isa<llvm::GlobalValue>(pr.second);
+        return llvm::isa<llvm::GlobalVariable>(pr.second);
     }
 
 public:
@@ -170,7 +170,7 @@ public:
                 return ValueDescriptor {
                     e.first,
                     e.second.type,
-                    e.second.treatment == VarInfo::Allocated
+                    (e.second.storage == StorageSpec::Memory)
                 };
             }
         ).toVector();
@@ -207,6 +207,8 @@ public:
 
     const VarInfoContainer& getVars() const { return vars; }
 
+    CTypeFactory& getCTypeFactory() { return *CTF; }
+
     ValueDescriptor locate(const std::string& name, const Locus& loc, DiscoveryPolicy policy) const {
         ValueDescriptor res;
 
@@ -228,6 +230,9 @@ public:
             break;
         case DiscoveryPolicy::PreviousArgument:
             res = locate_simple(name, vars.byLocReverse(loc), vars.byLocReverseEnd(), isArg);
+            break;
+        case DiscoveryPolicy::Global:
+            res = locate_simple(name, vars.byLocBegin(), vars.byLocEnd(), isGlobal);
             break;
         default:
             BYE_BYE(ValueDescriptor, "Unknown discovery policy requested");

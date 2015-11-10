@@ -1,0 +1,130 @@
+[
+    {
+        "signature": "int pthread_create(pthread_t *t, const pthread_attr_t *a, void *(*target_func)(void *), void *a)",
+        "name": "pthread_create",
+        "args":[
+            { "access": "None" },
+            { "access": "None" },
+            { "access": "None" },
+            { "access": "None" }
+        ],
+        "contracts": [
+            "@requires \\is_valid_ptr(\\arg0)",
+            "@requires \\arg1 == \\nullptr || \\is_valid_ptr(\\arg1)",
+            "@assigns \\property(pthread, *\\arg0)",
+            "@ensures \\result != 0 || \\property(pthread, *\\arg0) == @created",
+            "@ensures *\\arg0 != @current_pthread"
+        ]
+    },
+    {
+        "signature": "int pthread_join(pthread_t t, void **value_ptr)",
+        "name": "pthread_join",
+        "args":[
+            {},
+            { "access": "None" }
+        ],
+        "contracts": [
+            "@requires \\arg1 == \\nullptr || \\is_valid_ptr(\\arg1)",
+            "@requires \\arg0 != @current_pthread",
+            "@requires \\property(pthread, \\arg0) != @joined",
+            "@requires \\property(pthread, \\arg0) != @detached",
+            "@assigns \\property(pthread, \\arg0)",
+            "@ensures \\result != 0 || \\property(pthread, \\arg0) == @joined"
+        ]
+    },
+    {
+        "signature": "int pthread_exit(void *value_ptr)",
+        "name": "pthread_exit"
+    },
+    {
+        "signature": "int pthread_detach(pthread_t t)",
+        "name": "pthread_detach",
+        "args":[
+            {}
+        ],
+        "contracts": [
+            "@requires \\property(pthread, \\arg0) != @joined",
+            "@requires \\property(pthread, \\arg0) != @detached",
+            "@assigns \\property(pthread, \\arg0)",
+            "@ensures \\result != 0 || \\result == 0 && \\property(pthread, \\arg0) == @detached"
+        ]
+    },
+    {
+        "signature": "int pthread_self(void)",
+        "name": "pthread_self",
+        "contracts": [
+            "@ensures \\result == @current_pthread"
+        ]
+    },
+    {
+        "signature": "int pthread_equal(pthread_t t1, pthread_t t2)",
+        "name": "pthread_equal",
+        "contracts": [
+            "@ensures \\result == (\\arg0 == \\arg1)"
+        ]
+    },
+    {
+        "signature": "int sched_yield(void)",
+        "name": "sched_yield"
+    },
+    {
+        "signature": "int pthread_mutex_lock(pthread_mutex_t *m)",
+        "name": "pthread_mutex_lock",
+        "args": [
+            { "access" : "None" }
+        ],
+        "contracts": [
+            "@requires \\property(pthread_mutex, \\arg) == @unlocked",
+            "@assigns \\property(pthread_mutex, \\arg)",
+            "@ensures \\result != 0 || (\\result == 0 && \\property(pthread_mutex, \\arg) == @locked)"
+        ]
+    },
+    {
+        "signature": "int pthread_mutex_unlock(pthread_mutex_t *m)",
+        "name": "pthread_mutex_lock",
+        "args": [
+            { "access" : "None" }
+        ],
+        "contracts": [
+            "@requires \\property(pthread_mutex, \\arg) == @locked",
+            "@assigns \\property(pthread_mutex, \\arg)",
+            "@ensures \\result != 0 || (\\result == 0 && \\property(pthread_mutex, \\arg) == @unlocked)"
+        ]
+    },
+    {
+        "signature": "int pthread_mutex_trylock(pthread_mutex_t *m)",
+        "name": "pthread_mutex_trylock",
+        "args": [
+            { "access" : "None" }
+        ],
+        "contracts": [
+            "@assigns \\property(pthread_mutex, \\arg)",
+            "@ensures \\result != 0 || (\\result == 0 && \\property(pthread_mutex, \\arg) == @locked)"
+        ]
+    },
+    {
+        "signature": "int pthread_mutex_init(pthread_mutex_t *m, pthread_mutexattr_t *attr)",
+        "name": "pthread_mutex_init",
+        "args": [
+            { "access" : "None" },
+            { "access" : "Read" }
+        ],
+        "contracts": [
+            "@assigns \\property(pthread_mutex, \\arg)",
+            "@ensures \\result != 0 || (\\result == 0 && \\property(pthread_mutex, \\arg) == @unlocked)"
+        ]
+    },
+    {
+        "signature": "int pthread_mutex_destroy(pthread_mutex_t *m)",
+        "name": "pthread_mutex_destroy",
+        "args": [
+            { "access" : "None" }
+        ],
+        "contracts": [
+            "@requires \\property(pthread_mutex, \\arg) == @destroyed",
+            "@assigns \\property(pthread_mutex, \\arg)",
+            "@ensures \\result != 0 || (\\result == 0 && \\property(pthread_mutex, \\arg) == @destroyed)"
+        ]
+    }
+
+]

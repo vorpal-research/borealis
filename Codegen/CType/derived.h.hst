@@ -13,6 +13,8 @@
 #ifndef $cpp.guard$
 #define $cpp.guard$
 
+#include "Util/util.hpp"
+
 #include "$dir$/$basename$.h"
 #include "$dir$/CTypeRef.h"
 #include "$dir$/CStructMember.h"
@@ -22,6 +24,27 @@ $cpp.prelude$
 namespace borealis {
 
 class CTypeFactory;
+
+/** protobuf -> $dir$/$derivedname$.proto
+import "$dir$/$basename$.proto";
+import "$dir$/CStructMember.proto";
+import "$dir$/CQualifier.proto";
+import "$dir$/CTypeRef.proto";
+
+$protobuf.prelude$
+
+package borealis.proto;
+
+message $derivedname$ {
+    extend borealis.proto.$basename$ {
+        optional $derivedname$ ext = $"$COUNTER_CTYPE"$;
+    }
+
+$protobuf.locals$
+$protobuf.descriptor.fields: {f|$if(f.type.builtin)$    $f.type.spec$ $f.type.name$ $f.name$ = $i$;$else$    $f.type.spec$ borealis.proto.$f.type.name$ $f.name$ = $i$;$endif$
+}$}
+
+**/
 
 class $derivedname$ : public $basename$ {
 
@@ -33,6 +56,7 @@ class $derivedname$ : public $basename$ {
 public:
 
     friend class ::borealis::CTypeFactory;
+    friend class util::enable_special_make_shared<$derivedname$, CTypeFactory>; // enable factory-construction only
 
     static bool classof(const Self*) { return true; }
     static bool classof(const Base* b) { return b->getClassTag() == class_tag<Self>(); }

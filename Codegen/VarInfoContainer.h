@@ -25,7 +25,6 @@ class VarInfoContainer {
     typedef std::unordered_multimap<llvm::Value*, VarInfo> v2vi_t;
     typedef std::unordered_multimap<util::key_ptr<std::string>, llvm::Value*> str2v_t;
     typedef std::multimap<util::key_ptr<Locus>, llvm::Value*> loc2v_t;
-    typedef std::unordered_map<clang::Decl*, llvm::Value*> clang2v_t;
 
     // fwd keeps the actual data
     v2vi_t fwd;
@@ -34,7 +33,6 @@ class VarInfoContainer {
     // (or just plain pointers into llvm or clang inner memory)
     str2v_t bwd_names;
     loc2v_t bwd_locs;
-    clang2v_t bwd_clang;
 
 public:
     typedef loc2v_t::const_iterator loc_value_iterator;
@@ -57,15 +55,8 @@ public:
 
         const auto& new_vi = new_it->second;
 
-        for (const auto& name: new_vi.originalName) {
-            bwd_names.insert({ name, val });
-        }
-        for (const auto& loc: new_vi.originalLocus) {
-            bwd_locs.insert({ loc, val });
-        }
-        if (auto* ast = new_vi.ast) {
-            bwd_clang.insert({ ast, val });
-        }
+        bwd_names.insert({ new_vi.name, val });
+        bwd_locs.insert({ new_vi.locus,  val });
     }
 
     value_range get(llvm::Value* val) const {
@@ -102,10 +93,6 @@ public:
 
     reverse_loc_value_iterator byLocReverseEnd() const {
         return bwd_locs.rend();
-    }
-
-    llvm::Value* byClang(clang::Decl* dcl) const {
-        return bwd_clang.at(dcl);
     }
 
     const_iterator begin() const {
