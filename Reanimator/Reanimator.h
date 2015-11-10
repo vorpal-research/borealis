@@ -6,8 +6,8 @@
 #define SANDBOX_REANIMATOR_H
 
 #include "SMT/Result.h"
-#include "Term/Term.h"
 #include "State/Transformer/ArrayBoundsCollector.h"
+#include "Term/Term.h"
 
 namespace borealis {
 
@@ -15,14 +15,18 @@ class Reanimator {
 
 public:
 
-    using ArrayBounds = std::unordered_set<unsigned long long>;
+    using ArrayBounds = std::unordered_set<long long>;
     using ArrayBoundsMap = std::unordered_map<unsigned long long, ArrayBounds>;
 
     Reanimator(const smt::SatResult& result, const ArrayBoundsCollector::ArrayBounds& arrayBounds);
 
     const smt::SatResult& getResult() const;
+
     const ArrayBoundsMap& getArrayBoundsMap() const;
+
     const ArrayBounds& getArrayBounds(unsigned long long base) const;
+
+    long long getArraySize(unsigned long long base) const;
 
 private:
 
@@ -36,10 +40,12 @@ private:
 class ReanimatorView {
 public:
     ReanimatorView(const Reanimator& r, Term::Ptr term);
+
     friend borealis::logging::logstream& operator<<(
         borealis::logging::logstream& s,
         const ReanimatorView& rv
     );
+
 private:
     Reanimator r;
     Term::Ptr term;

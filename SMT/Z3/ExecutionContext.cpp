@@ -24,6 +24,9 @@ ExecutionContext::ExecutionContext(
     localPtr(localMemoryStart),
     localMemoryStart(localMemoryStart),
     localMemoryEnd(localMemoryEnd) {
+
+    initialMemArrays.emplace(MEMORY_ID, factory.getNoMemoryArray(MEMORY_ID));
+
     initGepBounds();
 };
 

@@ -2,184 +2,173 @@
 // Created by ice-phoenix on 5/20/15.
 //
 
+#include "Reanimator/Memory.h"
+#include "Reanimator/MemoryObject.h"
 #include "Reanimator/Reanimator.h"
-#include "Type/TypeVisitor.hpp"
 
 namespace borealis {
 
-class RaisingTypeVisitor : public TypeVisitor<RaisingTypeVisitor> {
+class RaisingTypeVisitor {
 
-    using RetTy = void;
-    using Base = TypeVisitor<RaisingTypeVisitor>;
+    using RetTy = MemoryObject;
 
 public:
 
-    RaisingTypeVisitor(
-        const Reanimator& r,
-        const util::option<long long>& currentValue,
-        logging::logstream& log
-    ) : r(r), log(log) {
-        in(currentValue);
-    }
+    RaisingTypeVisitor(const Reanimator& r) : r(r) { }
 
-    RetTy visit(Type::Ptr type) {
-        return Base::visit(type);
-    }
-
-    RetTy visitBool(const type::Bool&) {
-        if (values.top()) {
-            auto&& v = values.top().getUnsafe();
-            log << (v ? "true" : "false");
-        } else {
-            log << "unknown";
+    RetTy visit(Type::Ptr theType, unsigned long long addr, util::option<long long> value) {
+        if (false) { }
+#define HANDLE_TYPE(NAME, CLASS) \
+        else if (auto resolved = llvm::dyn_cast<type::CLASS>(theType)) { \
+            return visit##NAME(*resolved, addr, value); \
         }
-        return;
+#include "Type/Type.def"
+#include "Util/macros.h"
+        BYE_BYE(RetTy, "Unknown type in RaisingTypeVisitor");
+#include "Util/unmacros.h"
     }
 
-    RetTy visitInteger(const type::Integer& i) {
-        if (values.top()) {
-            auto&& v = values.top().getUnsafe();
-            log << (llvm::Signedness::Unsigned == i.getSignedness() ? (unsigned long long) v : v);
-        } else {
-            log << "unknown";
-        }
-        return;
+    RetTy visitBool(const type::Bool& t, unsigned long long, util::option<long long> value) {
+        return MemoryObject{
+            t.shared_from_this(),
+            value,
+            1
+        };
     }
 
-    RetTy visitFloat(const type::Float&) {
-        if (values.top()) {
-            auto&& v = values.top().getUnsafe();
-            log << (double) v;
-        } else {
-            log << "unknown";
-        }
-        return;
+    RetTy visitInteger(const type::Integer& i, unsigned long long, util::option<long long> value) {
+        return MemoryObject{
+            i.shared_from_this(),
+            value,
+            1
+        };
     }
 
-    RetTy visitPointer(const type::Pointer& p) {
-        log << "*";
+    RetTy visitFloat(const type::Float& f, unsigned long long, util::option<long long> value) {
+        return MemoryObject{
+            f.shared_from_this(),
+            value,
+            1
+        };
+    }
 
+    RetTy visitPointer(const type::Pointer& p, unsigned long long, util::option<long long> value) {
         auto&& pType = p.getPointed();
         auto&& pSize = TypeUtils::getTypeSizeInElems(pType);
 
-        if (values.top()) {
-            auto&& base = values.top().getUnsafe();
+        if (value) {
+            auto&& base = value.getUnsafe();
+
+            auto&& baseMemoryObject = MemoryObject{
+                p.shared_from_this(),
+                base,
+                r.getArraySize(base) * pSize
+            };
+
             for (auto&& shift : r.getArrayBounds(base)) {
-                long long addr = base + shift * pSize;
-                printAddr(util::just(addr));
+                auto&& nested = visit(pType, base + shift * pSize, r.getResult().derefValueOf(base + shift * pSize));
 
-                auto&& v = r.getResult().derefValueOf(addr);
-                in(v);
-                visit(pType);
-                out();
+                baseMemoryObject.add(shift, nested);
             }
+
+            return baseMemoryObject;
         } else {
-            in(util::nothing());
-            visit(pType);
-            out();
+            auto&& baseMemoryObject = MemoryObject{
+                p.shared_from_this(),
+                pSize
+            };
+
+            return baseMemoryObject;
         }
-        return;
     }
 
-    RetTy visitRecord(const type::Record& rec) {
-        out();
+    RetTy visitRecord(const type::Record& rec, unsigned long long addr, util::option<long long>) {
+        auto&& rSize = TypeUtils::getTypeSizeInElems(rec.shared_from_this());
 
-        log << "{" << logging::il;
-        if (values.top()) {
-            auto&& base = values.top().getUnsafe();
-            for (auto&& f : rec.getBody()->get()) {
-                log << endl << f.getOffset() << " : ";
-                in(r.getResult().derefValueOf(base + f.getOffset()));
-                visit(f.getType());
-                out();
-            }
-        } else {
-            log << endl << "unknown";
+        auto&& baseMemoryObject = MemoryObject{
+            rec.shared_from_this(),
+            rSize
+        };
+
+        for (auto&& field : rec.getBody()->get()) {
+            auto&& offset = TypeUtils::getStructOffsetInElems(rec.shared_from_this(), field.getIndex());
+            auto&& nested = visit(field.getType(), addr + offset,
+                                  r.getResult().derefValueOf(addr + offset));
+
+            baseMemoryObject.add(field.getIndex(), nested);
         }
-        log << logging::ir << endl << "}";
 
-        in(util::nothing());
-        return;
+        return baseMemoryObject;
     }
 
-    RetTy visitArray(const type::Array& arr) {
-        out();
-
+    RetTy visitArray(const type::Array& arr, unsigned long long addr, util::option<long long>) {
         auto&& elemType = arr.getElement();
         auto&& elemSize = TypeUtils::getTypeSizeInElems(elemType);
 
-        log << "[" << logging::il;
-        if (values.top()) {
-            auto&& base = values.top().getUnsafe();
-            for (auto&& size : arr.getSize()) {
-                for (auto&& i = 0U; i < size; ++i) {
-                    log << endl;
-                    long long addr = base + i * elemSize;
-                    printAddr(util::just(addr));
+        if (arr.getSize()) {
+            auto&& arraySize = arr.getSize().getUnsafe();
 
-                    auto&& v = r.getResult().derefValueOf(addr);
-                    in(v);
-                    visit(arr.getElement());
-                    out();
-                }
+            auto&& baseMemoryObject = MemoryObject{
+                arr.shared_from_this(),
+                arraySize * elemSize
+            };
+
+            for (auto&& i = 0U; i < arraySize; ++i) {
+                auto&& nested = visit(elemType, addr + i * elemSize, r.getResult().derefValueOf(addr + i * elemSize));
+
+                baseMemoryObject.add(i, nested);
             }
+
+            return baseMemoryObject;
         } else {
-            log << endl << "unknown";
+            auto&& baseMemoryObject = MemoryObject{
+                arr.shared_from_this(),
+                elemSize
+            };
+
+            return baseMemoryObject;
         }
-        log << logging::ir << endl << "]";
-
-        in(util::nothing());
-        return;
     }
 
-    RetTy visitUnknownType(const type::UnknownType&) {
-        log << "???";
-        return;
+    RetTy visitUnknownType(const type::UnknownType& ut, unsigned long long, util::option<long long>) {
+        return MemoryObject{
+            ut.shared_from_this(),
+            1
+        };
     }
 
-    RetTy visitTypeError(const type::TypeError& err) {
-        log << "|" << err.getMessage() << "|";
-        return;
+    RetTy visitTypeError(const type::TypeError& te, unsigned long long, util::option<long long>) {
+        return MemoryObject{
+            te.shared_from_this(),
+            1
+        };
+    }
+
+    RetTy visitFunction(const type::Function& f, unsigned long long, util::option<long long>) {
+        return MemoryObject{
+            f.shared_from_this(),
+            1
+        };
     }
 
 private:
+
     Reanimator r;
-    logging::logstream& log;
-
-    std::stack<util::option<long long>> values;
-    std::unordered_set<util::option<long long>> visited;
-
-    void printAddr(util::option<long long> addr) {
-        if (addr) {
-            log << " [" << addr.getUnsafe() << "] ";
-        } else {
-            log << " [unknown] ";
-        }
-    }
-
-    void in(util::option<long long> addr) {
-        values.push(addr);
-        visited.insert(values.top());
-    }
-
-    void out() {
-        visited.erase(values.top());
-        values.pop();
-    }
 
 };
 
 ReanimatorView::ReanimatorView(const Reanimator& r, Term::Ptr term) :
-    r(r), term(term) {}
+    r(r), term(term) { }
 
 borealis::logging::logstream& operator<<(
     borealis::logging::logstream& s,
     const ReanimatorView& rv
 ) {
-    if (auto&& v = rv.r.getResult().valueOf(rv.term->getName())) {
-        s << "Raising " << rv.term << " from the dead..." << endl;
-        RaisingTypeVisitor(rv.r, v, s).visit(rv.term->getType());
-        s << endl;
+    if (auto&& value = rv.r.getResult().valueOf(rv.term->getName())) {
+        s << "Raising (" << *rv.term->getType() << ") " << rv.term << " from the dead..." << endl;
+
+        s << RaisingTypeVisitor(rv.r).visit(rv.term->getType(), 0xDEADBEEF, value) << endl;
+
     } else {
         s << "Cannot raise " << rv.term << " from the dead!" << endl;
     }
@@ -200,7 +189,7 @@ const Reanimator::ArrayBoundsMap& Reanimator::getArrayBoundsMap() const {
 }
 
 const Reanimator::ArrayBounds& Reanimator::getArrayBounds(unsigned long long base) const {
-    static ArrayBounds empty{ 0 };
+    static ArrayBounds const empty{0};
     if (util::contains(arrayBoundsMap, base)) {
         return arrayBoundsMap.at(base);
     } else {
@@ -208,15 +197,31 @@ const Reanimator::ArrayBounds& Reanimator::getArrayBounds(unsigned long long bas
     }
 }
 
+long long Reanimator::getArraySize(unsigned long long base) const {
+    return 1 + util::max_element(getArrayBounds(base));
+}
+
 void Reanimator::processArrayBounds(const ArrayBoundsCollector::ArrayBounds& arrayBounds_) {
+
+    static long long const null_ptr = 0;
+    static long long const invalid_ptr = -1;
+
     for (auto&& e : arrayBounds_) {
         auto&& pType = llvm::dyn_cast<type::Pointer>(e.first->getType());
+        auto&& pElemTypeSize = (long long) TypeUtils::getTypeSizeInElems(pType->getPointed());
+
         for (auto&& base : result.valueOf(e.first->getName())) {
             for (auto&& bound : e.second) {
                 for (auto&& bound_ : result.valueOf(bound->getName())) {
-                    arrayBoundsMap[base].insert(
-                        (bound_ - base) / TypeUtils::getTypeSizeInElems(pType->getPointed())
-                    );
+                    if (null_ptr == bound_) continue;
+                    if (invalid_ptr == bound_) continue;
+
+                    auto&& delta = bound_ - base;
+                    auto&& shift = delta / pElemTypeSize;
+
+                    if (delta < 0) shift -= 1;
+
+                    arrayBoundsMap[base].insert(shift);
                 }
             }
         }

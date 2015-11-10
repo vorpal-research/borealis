@@ -32,7 +32,7 @@ message $basename$ {
 
 **/
 
-class $basename$ : public ClassTag {
+class $basename$ : public ClassTag, public std::enable_shared_from_this<const $basename$> {
 protected:
     $basename$(const $basename$&) = default;
     
