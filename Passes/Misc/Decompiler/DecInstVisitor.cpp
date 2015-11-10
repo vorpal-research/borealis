@@ -390,7 +390,7 @@ void DecInstVisitor::visitCallInst(llvm::CallInst &i) {
         case function_type::INTRINSIC_ANNOTATION: {
             auto&& anno = substituteAnnotationCall(*FN, &i);
             printTabulation(nesting);
-            infos_ << "@" << anno->getKeyword() << " " << anno->argToString() << " // " << anno->getLocus() << "\n";
+            infos_ << "@" << anno->getKeyword() << anno->argToString() << " // " << anno->getLocus() << "\n";
             return;
         }
         case function_type::INTRINSIC_CONSUME:
@@ -402,6 +402,18 @@ void DecInstVisitor::visitCallInst(llvm::CallInst &i) {
         case function_type::ACTION_DEFECT: {
             printTabulation(nesting);
             infos_ << "!defect(";
+            writeValueToStream(i.getArgOperand(0), true);
+            infos_ << ");\n";
+            return;
+        }
+        case function_type::BUILTIN_BOR_ASSERT: {
+            infos_ << "@assert (";
+            writeValueToStream(i.getArgOperand(0), true);
+            infos_ << ");\n";
+            return;
+        }
+        case function_type::BUILTIN_BOR_ASSUME: {
+            infos_ << "@assume (";
             writeValueToStream(i.getArgOperand(0), true);
             infos_ << ");\n";
             return;

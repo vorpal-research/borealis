@@ -92,7 +92,7 @@ inline llvm::Instruction* mkLoad(
 
     ASSERTC(arg->getType()->isPointerTy());
 
-    auto&& name = "bor.decomposed.load." + originalCall.getCalledFunction()->getName()
+    auto&& name = "bor.dc.load." + originalCall.getCalledFunction()->getName()
                 + (originalCall.hasName() ? "." + originalCall.getName() : "")
                 + ".arg" + llvm::Twine(argNum);
 
@@ -126,7 +126,7 @@ inline llvm::Instruction* mkStoreNondet(
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
-    auto&& name = "bor.decomposed.nondet." + originalCall.getCalledFunction()->getName()
+    auto&& name = "bor.dc.nondet." + originalCall.getCalledFunction()->getName()
                 + (originalCall.hasName() ? "." + originalCall.getName() : "")
                 + ".arg" + llvm::Twine(argNum);
 
@@ -151,7 +151,7 @@ inline llvm::CallInst* mkNondet(
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
-    auto&& name = "bor.decomposed.nondet." + modifier;
+    auto&& name = "bor.dc.nondet." + modifier;
 
     return createCall(f, name, insertBefore);
 }
@@ -177,9 +177,8 @@ inline llvm::CallInst* mkNondet(
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
-    auto&& name = "bor.decomposed.nondet." + originalCall.getCalledFunction()->getName()
-                + (originalCall.hasName() ? "." + originalCall.getName() : "")
-                + ".res";
+    auto&& name = "bor.dc.nondet." + originalCall.getCalledFunction()->getName()
+                + (originalCall.hasName() ? "." + originalCall.getName() : "");
 
     return createCall(f, name, &originalCall);
 }
@@ -381,7 +380,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                     call->getType()->getPointerElementType(),
                     sizeArgument,
                     [call, &predefinedReturn](llvm::Instruction*, llvm::Instruction* new_) {
-                        new_->setName("bor.decomposed.malloc." + call->getCalledFunction()->getName());
+                        new_->setName("bor.dc.malloc." + call->getCalledFunction()->getName());
                         predefinedReturn = new_;
                     }
                 );
