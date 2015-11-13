@@ -31,7 +31,17 @@ public:
 
     Term::Ptr transformUnaryTerm(UnaryTermPtr t);
 
+    Term::Ptr transformBinaryTerm(BinaryTermPtr t);
+
+    Term::Ptr transformCmpTerm(CmpTermPtr t);
+
 };
+
+template<class Entity>
+typename Entity::Ptr simplify(const FactoryNest& FN, typename Entity::Ptr wha) {
+    Simplifier tr(FN);
+    return tr.transform(wha);
+}
 
 } /* namespace borealis */
 

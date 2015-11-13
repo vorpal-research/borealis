@@ -41,6 +41,9 @@ Term::Ptr Simplifier::transformUnaryTerm(UnaryTermPtr t) {
     auto op = t->getOpcode();
     auto rhv = t->getRhv();
 
+    auto tru = FN.Term->getTrueTerm();
+    auto fls = FN.Term->getFalseTerm();
+
     if (op == llvm::UnaryArithType::NOT) {
         if (auto* cmp = llvm::dyn_cast<CmpTerm>(rhv)) {
             return FN.Term->getCmpTerm(
@@ -49,9 +52,57 @@ Term::Ptr Simplifier::transformUnaryTerm(UnaryTermPtr t) {
                 cmp->getRhv()
             );
         }
+
+        if(*rhv == *tru) return fls;
+        if(*rhv == *fls) return tru;
     }
 
     return t;
+}
+
+Term::Ptr Simplifier::transformBinaryTerm(BinaryTermPtr t) {
+    auto op = t->getOpcode();
+    auto lhv = t->getLhv();
+    auto rhv = t->getRhv();
+
+    auto tru = FN.Term->getTrueTerm();
+    auto fls = FN.Term->getFalseTerm();
+
+    if(op == llvm::ArithType::LAND && (*lhv == *tru)) return rhv;
+    if(op == llvm::ArithType::LAND && (*rhv == *tru)) return lhv;
+    if(op == llvm::ArithType::LAND && (*lhv == *fls)) return fls;
+    if(op == llvm::ArithType::LAND && (*rhv == *fls)) return fls;
+
+    if(op == llvm::ArithType::LOR && (*lhv == *fls)) return rhv;
+    if(op == llvm::ArithType::LOR && (*rhv == *fls)) return lhv;
+    if(op == llvm::ArithType::LOR && (*lhv == *tru)) return tru;
+    if(op == llvm::ArithType::LOR && (*rhv == *tru)) return tru;
+
+    return t;
+}
+
+Term::Ptr Simplifier::transformCmpTerm(CmpTermPtr t) {
+    auto op = t->getOpcode();
+    auto lhv = t->getLhv();
+    auto rhv = t->getRhv();
+
+    auto tru = FN.Term->getTrueTerm();
+    auto fls = FN.Term->getFalseTerm();
+
+    switch(op) {
+    case llvm::ConditionType::NEQ:
+    case llvm::ConditionType::GT:
+    case llvm::ConditionType::UGT:
+    case llvm::ConditionType::LT:
+    case llvm::ConditionType::ULT:
+        if(*lhv == *rhv) return fls;
+    case llvm::ConditionType::FALSE:
+        return fls;
+    case llvm::ConditionType::TRUE:
+        return tru;
+    default:
+        return t;
+    }
 }
 
 } /* namespace borealis */
