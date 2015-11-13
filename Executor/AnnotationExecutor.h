@@ -33,6 +33,7 @@ public:
     Term::Ptr transformTernaryTerm(TernaryTermPtr t);
     Term::Ptr transformSignTerm(SignTermPtr t);
     Term::Ptr transformReturnValueTerm(ReturnValueTermPtr t);
+    Term::Ptr transformReturnPtrTerm(ReturnPtrTermPtr t);
     Term::Ptr transformArgumentTerm(ArgumentTermPtr t);
     Term::Ptr transformGepTerm(GepTermPtr t);
     Term::Ptr transformLoadTerm(LoadTermPtr t);

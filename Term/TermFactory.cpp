@@ -211,6 +211,17 @@ Term::Ptr TermFactory::getReturnValueTerm(const llvm::Function* F, llvm::Signedn
     };
 }
 
+Term::Ptr TermFactory::getReturnPtrTerm(const llvm::Function* F) {
+    ASSERT(st, "Missing SlotTracker");
+
+    return Term::Ptr{
+        new ReturnPtrTerm(
+            TyF->getPointer(TyF->cast(F->getFunctionType()->getReturnType(), DL)),
+            F->getName().str()
+        )
+    };
+}
+
 Term::Ptr TermFactory::getValueTerm(const llvm::Value* v, llvm::Signedness sign) {
     ASSERT(st, "Missing SlotTracker");
     using llvm::dyn_cast;

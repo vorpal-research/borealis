@@ -150,6 +150,23 @@ Term::Ptr AnnotationExecutor::transformReturnValueTerm(ReturnValueTermPtr t) {
     pimpl_->value_stack.push({ret, rval->getType()});
     return t;
 }
+
+Term::Ptr AnnotationExecutor::transformReturnPtrTerm(ReturnPtrTermPtr t) {
+    TRACE_FUNC;
+    auto term = pimpl_->ee->getCurrentContext().CurBB->getTerminator();
+    llvm::Value* rval = nullptr;
+    if(llvm::ReturnInst* rinst = llvm::dyn_cast<llvm::ReturnInst>(term)) {
+        if(auto&& load = dyn_cast<llvm::LoadInst>(rinst->getReturnValue())) {
+            rval = load->getPointerOperand();
+        } else UNREACHABLE("Cannot bind return pointer to any pointer value");
+    } else {
+        UNREACHABLE("Annotation placement implies no return value");
+    }
+    auto ret = pimpl_->ee->getOperandValue(rval, pimpl_->ee->getCurrentContext());
+    pimpl_->value_stack.push({ret, rval->getType()});
+    return t;
+}
+
 Term::Ptr AnnotationExecutor::transformArgumentTerm(ArgumentTermPtr t) {
     TRACE_FUNC;
     auto arglist = util::viewContainer(pimpl_->ee->getCurrentContext().CurFunction->getArgumentList()).map(LAM(x,&x)).toVector();

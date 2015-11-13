@@ -39,6 +39,18 @@ Term::Ptr TermValueMapper::transformReturnValueTerm(ReturnValueTermPtr trm) {
     return trm;
 }
 
+Term::Ptr TermValueMapper::transformReturnPtrTerm(ReturnPtrTermPtr trm) {
+    auto termInst = getSingleReturnFor(context);
+    if(auto returnInst = llvm::dyn_cast<llvm::ReturnInst>(termInst)) {
+        if(auto&& returnLoad = dyn_cast<llvm::LoadInst>(returnInst->getReturnValue())) {
+            mapping[trm] = returnLoad->getPointerOperand();
+        } else {
+            UNREACHABLE("Cannot map return_ptr to any pointer in scope");
+        }
+    } else if(llvm::dyn_cast<llvm::UnreachableInst>(termInst)) {
+    } else UNREACHABLE("Unknown return-type instruction");
+    return trm;
+}
 
 const std::map<Term::Ptr, const llvm::Value*, TermCompare>& TermValueMapper::getMapping() const {
     return mapping;

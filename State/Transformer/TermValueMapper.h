@@ -23,6 +23,7 @@ public:
     Term::Ptr transformArgumentTerm(ArgumentTermPtr trm);
 
     Term::Ptr transformReturnValueTerm(ReturnValueTermPtr trm);
+    Term::Ptr transformReturnPtrTerm(ReturnPtrTermPtr trm);
 
     const std::map<Term::Ptr, const llvm::Value*, TermCompare>& getMapping() const;
 

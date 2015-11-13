@@ -48,6 +48,7 @@ public:
     Term::Ptr getRealTerm(double d);
 
     Term::Ptr getReturnValueTerm(const llvm::Function* F, llvm::Signedness sign = llvm::Signedness::Unknown);
+    Term::Ptr getReturnPtrTerm(const llvm::Function* F);
 
     Term::Ptr getValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getValueTerm(Type::Ptr type, const std::string& name);

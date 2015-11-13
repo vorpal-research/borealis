@@ -12,6 +12,8 @@
 
 #include <llvm/Analysis/MemoryBuiltins.h>
 #include <llvm/Target/TargetLibraryInfo.h>
+#include <llvm/Transforms/Utils/PromoteMemToReg.h>
+#include <llvm/IR/Dominators.h>
 
 #include "Annotation/AnnotationCast.h"
 #include "Codegen/intrinsics_manager.h"
@@ -19,6 +21,7 @@
 #include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Transform/AnnotationProcessor.h"
 #include "Passes/Transform/FunctionDecomposer.h"
+#include "Passes/Transform/MetaInserter.h"
 #include "State/Transformer/ExternalFunctionMaterializer.h"
 #include "State/Transformer/AnnotationMaterializer.h"
 #include "State/Transformer/CallSiteInitializer.h"
@@ -219,6 +222,27 @@ void FunctionDecomposer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<borealis::SlotTrackerPass>::addRequiredTransitive(AU);
     AUX<borealis::VariableInfoTracker>::addRequiredTransitive(AU);
     AUX<borealis::SourceLocationTracker>::addRequiredTransitive(AU);
+
+    AUX<llvm::DominatorTreeWrapperPass>::addRequired(AU);
+}
+
+
+static void manualMem2Reg(llvm::Function* f, llvm::DominatorTree& DT) {
+
+    while(1) {
+        auto allocas =
+            util::viewContainer(*f)
+                .flatten()
+                .map(ops::take_pointer)
+                .map(llvm::ops::dyn_cast<llvm::AllocaInst>)
+                .filter()
+                .filter(llvm::isAllocaPromotable)
+                .toVector();
+        if(allocas.empty()) break;
+
+        llvm::PromoteMemToReg(allocas, DT);
+    }
+
 }
 
 bool FunctionDecomposer::runOnModule(llvm::Module& M) {
@@ -254,7 +278,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .flatten()
                  .flatten()
                  .map(ops::take_pointer)
-                 .map(llvm::dyn_caster<llvm::CallInst>{})
+                 .map(llvm::ops::dyn_cast<llvm::CallInst>)
                  .filter(isDecomposable)
                  .toHashSet();
 
@@ -432,8 +456,17 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
         FunctionsDecomposed++;
     }
 
+    // FIXME: this is insanely fucked up
+    MetaInserter::unliftAllDebugIntrinsics(M);
+    for(auto&& F: M) if(!F.isDeclaration()) {
+        auto&& DT = GetAnalysis<llvm::DominatorTreeWrapperPass>::doit(this, F).getDomTree();
+        manualMem2Reg(&F, DT);
+    }
+    MetaInserter::liftAllDebugIntrinsics(M);
+
     return false;
 }
+
 
 void FunctionDecomposer::print(llvm::raw_ostream&, const llvm::Module*) const {
 

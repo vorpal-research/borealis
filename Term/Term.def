@@ -30,6 +30,7 @@
 #include "Term/OpaqueMemberAccessTerm.h"
 #include "Term/ReadPropertyTerm.h"
 #include "Term/ReturnValueTerm.h"
+#include "Term/ReturnPtrTerm.h"
 #include "Term/SignTerm.h"
 #include "Term/TernaryTerm.h"
 #include "Term/UnaryTerm.h"
@@ -65,6 +66,7 @@ HANDLE_TERM(OpaqueVar, OpaqueVarTerm)
 HANDLE_TERM(OpaqueMemberAccess, OpaqueMemberAccessTerm)
 HANDLE_TERM(ReadProperty, ReadPropertyTerm)
 HANDLE_TERM(ReturnValue, ReturnValueTerm)
+HANDLE_TERM(ReturnPtr, ReturnPtrTerm)
 HANDLE_TERM(Sign, SignTerm)
 HANDLE_TERM(Ternary, TernaryTerm)
 HANDLE_TERM(Unary, UnaryTerm)

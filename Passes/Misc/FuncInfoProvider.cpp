@@ -23,6 +23,17 @@ struct FuncInfoProvider::Impl {
 
     std::unordered_map<std::string, func_info::FuncInfo> functions;
     std::unordered_map<std::string, std::vector<Annotation::Ptr>> contracts;
+
+    llvm::StringRef getNameIgnoringState(llvm::LibFunc::Func f) {
+        if(TLI->has(f)) {
+            return TLI->getName(f);
+        } else {
+            TLI->setAvailable(f);
+            auto name = TLI->getName(f);
+            TLI->setUnavailable(f);
+            return name;
+        }
+    }
 };
 
 char FuncInfoProvider::ID = 42;
@@ -64,9 +75,12 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
                 errs() << "cannot parse json: " << val;
             } else {
                 std::string fname = opt->id;
+
                 auto lfn = util::fromString<llvm::LibFunc::Func>(opt->id).getOrElse(llvm::LibFunc::NumLibFuncs);
+
                 if(lfn != llvm::LibFunc::NumLibFuncs) {
-                    fname = pimpl_->TLI->getName(lfn).str();
+                    // XXX: this is somewhat fucked up
+                    fname = pimpl_->getNameIgnoringState(lfn);
                 }
 
                 auto func = M.getFunction(fname);

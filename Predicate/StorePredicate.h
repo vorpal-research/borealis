@@ -74,6 +74,13 @@ struct SMTImpl<Impl, StorePredicate> {
         ASSERT(not l.empty(), "Store dealing with a non-pointer value");
         auto&& lp = l.getUnsafe();
 
+        if(isa<type::Record>(p->getRhv()->getType())) {
+            /// FIXME: for now, we do not do anything to store records
+            /// record stores can only come from function calls returning records by value,
+            /// which should be handled by contracts & stuff
+            return ef.getTrue();
+        }
+
         auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx).template to<DynBV>();
         ASSERT(not r.empty(), "Store dealing with a non-BV value");
         auto&& rbv = r.getUnsafe();

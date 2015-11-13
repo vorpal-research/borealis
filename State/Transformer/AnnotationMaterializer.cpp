@@ -270,8 +270,19 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
             return FN.Term->getTernaryTerm(arg1.uge(arg0), arg0, arg1);
         } else if (builtin->getVName() == "old") {
             // all \old's should be already taken care of, let's try to guess the problem
-            if (trm->getRhv().size() != 1) pimpl->failWith("Illegal \\old invocation %s: exactly one operand expected", trm->getName());
+            if (trm->getRhv().size() != 1)
+                pimpl->failWith(
+                    "Illegal \\old invocation %s: exactly one operand expected", trm->getName());
             else pimpl->failWith("Malformed \\old invocation");
+        } else if (builtin->getVName() == "free"){
+            pimpl->require(
+                trm->getRhv().size() == 1,
+                "Illegal \\free invocation %s: exactly one operand expected",
+                trm->getName()
+            );
+            auto arg = trm->getRhv().first_or(nullptr);
+            auto newName = tfm::format("$$free(%s)$$", arg->getName());
+            return FN.Term->getValueTerm(FN.Type->getInteger(), newName);
         } else {
             pimpl->failWith("Cannot call %s: not supported", trm->getName());
         }
@@ -413,6 +424,15 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
             auto&& funcType = llvm::dyn_cast<CFunction>(desc.type);
             ASSERTC(funcType);
             auto&& retType_ = funcType->getResultType().get();
+
+            if(is_one_of<CStruct, CArray>(retType_)) {
+                /// XXX: indirect return
+                return pimpl->withCType(
+                    factory().getLoadTerm(factory().getReturnPtrTerm(ctx.func)),
+                    retType_
+                );
+            }
+
             return pimpl->withCType(
                 factory().getReturnValueTerm(ctx.func, CTypeUtils::getSignedness(retType_)),
                 retType_

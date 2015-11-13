@@ -38,6 +38,7 @@
 #include "Protobuf/Gen/Term/OpaqueVarTerm.pb.h"
 #include "Protobuf/Gen/Term/ReadPropertyTerm.pb.h"
 #include "Protobuf/Gen/Term/ReturnValueTerm.pb.h"
+#include "Protobuf/Gen/Term/ReturnPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/SignTerm.pb.h"
 #include "Protobuf/Gen/Term/TernaryTerm.pb.h"
 #include "Protobuf/Gen/Term/UnaryTerm.pb.h"
@@ -637,6 +638,26 @@ struct protobuf_traits_impl<ReturnValueTerm> {
             const proto::ReturnValueTerm& t) {
         auto fName = t.funcname();
         return Term::Ptr{ new ReturnValueTerm(base->getType(), fName) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<ReturnPtrTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::ReturnPtrTerm> toProtobuf(const ReturnPtrTerm& t) {
+        auto res = util::uniq(new proto::ReturnPtrTerm());
+        res->set_funcname(t.getFunctionName());
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+            const FactoryNest&,
+            Term::Ptr base,
+            const proto::ReturnPtrTerm& t) {
+        auto fName = t.funcname();
+        return Term::Ptr{ new ReturnPtrTerm(base->getType(), fName) };
     }
 };
 

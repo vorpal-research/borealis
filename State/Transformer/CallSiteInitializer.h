@@ -39,6 +39,7 @@ public:
     Term::Ptr transformArgumentCountTerm(ArgumentCountTermPtr t);
     Term::Ptr transformVarArgumentTerm(VarArgumentTermPtr t);
     Term::Ptr transformReturnValueTerm(ReturnValueTermPtr);
+    Term::Ptr transformReturnPtrTerm(ReturnPtrTermPtr);
     Term::Ptr transformValueTerm(ValueTermPtr t);
 
 private:

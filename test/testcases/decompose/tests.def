@@ -1,3 +1,4 @@
 file.c
 pthread.c
+scanf.c
 strdup.c

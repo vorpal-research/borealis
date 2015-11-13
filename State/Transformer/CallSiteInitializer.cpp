@@ -103,6 +103,17 @@ Term::Ptr CallSiteInitializer::transformReturnValueTerm(ReturnValueTermPtr) {
     return FN.Term->getValueTerm(ci.getInstruction());
 }
 
+Term::Ptr CallSiteInitializer::transformReturnPtrTerm(ReturnPtrTermPtr) {
+    auto&& binder = util::viewContainer(ci.getInstruction()->uses())
+                          .map(llvm::ops::dyn_cast<llvm::StoreInst>)
+                          .filter()
+                          .first_or(nullptr);
+    ASSERTC(binder);
+    auto&& realPtr = binder->getPointerOperand();
+
+    return FN.Term->getValueTerm(realPtr);
+}
+
 Term::Ptr CallSiteInitializer::transformValueTerm(ValueTermPtr t) {
     if (t->isGlobal()) return t;
     else return t->withNewName(prefix + t->getName());

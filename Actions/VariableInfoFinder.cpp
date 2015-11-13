@@ -41,23 +41,28 @@ public:
         if(auto&& fun = dyn_cast<clang::FunctionDecl>(del->getDecl())) {
             handleFunctionDecl(fun);
         }
-        else handleDecl(del->getDecl());
+        else handleDecl(del->getDecl(), del->getDecl()->getName());
         return true;
     }
 
     void handleFunctionDecl(clang::FunctionDecl* decl) {
+        // this magically handles renamed functions
+        // like __isoc99_scanf instead of scanf
+        if(auto&& asm_ = decl->getAttr<clang::AsmLabelAttr>()) {
+            handleDecl(decl, asm_->getLabel());
+        }
         CTF->getType(decl->getType(), *ac_);
-        handleDecl(decl);
+        handleDecl(decl, decl->getName());
         for (auto&& param : decl->parameters()) {
-            handleDecl(param);
+            handleDecl(param, param->getName());
         }
     }
 
-    void handleDecl(clang::ValueDecl* decl) {
+    void handleDecl(clang::ValueDecl* decl, llvm::StringRef name) {
         VarInfo info;
         ON_SCOPE_EXIT(vars_.push_back(std::move(info)));
         info.type = CTF->getRef(CTF->getType(decl->getType(), *ac_));
-        info.name = decl->getName();
+        info.name = name;
         info.locus = Locus{decl->getLocation(), *sm_};
         info.storage = StorageSpec::Unknown;
         if(!decl->isDefinedOutsideFunctionOrMethod()) info.kind = VariableKind::Local;

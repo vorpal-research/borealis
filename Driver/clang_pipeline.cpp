@@ -135,6 +135,7 @@ struct clang_pipeline::impl: public DelegateLogging {
 
         ci.getCodeGenOpts().EmitDeclMetadata = true;
         ci.getCodeGenOpts().setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
+        ci.getCodeGenOpts().OptimizationLevel = 0;
         ci.getDiagnosticOpts().ShowCarets = false;
 
         clang::EmitLLVMOnlyAction compile_to_llvm{ &llvm::getGlobalContext() };

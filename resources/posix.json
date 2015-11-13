@@ -29,5 +29,12 @@
             "@ensures \\result == -1 || \\result >= 0",
             "@requires[[RES-02]] \\property(file, \\arg0) == @opened"
       ]
+},
+{
+    "signature": "int* __errno_location()",
+    "name": "__errno_location",
+    "contracts": [
+        "@ensures \\is_valid_ptr(\\result)"
+    ]
 }
 ]
