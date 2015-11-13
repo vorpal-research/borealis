@@ -407,12 +407,14 @@ void DecInstVisitor::visitCallInst(llvm::CallInst &i) {
             return;
         }
         case function_type::BUILTIN_BOR_ASSERT: {
+            printTabulation(nesting);
             infos_ << "@assert (";
             writeValueToStream(i.getArgOperand(0), true);
             infos_ << ");\n";
             return;
         }
         case function_type::BUILTIN_BOR_ASSUME: {
+            printTabulation(nesting);
             infos_ << "@assume (";
             writeValueToStream(i.getArgOperand(0), true);
             infos_ << ");\n";
