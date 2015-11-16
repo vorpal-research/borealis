@@ -94,6 +94,11 @@ public:
         return logic::switch_(cases, default_);
     }
 
+    template <class VT>
+    Bool forAllConst(VT var, Bool body) {
+        return logic::forAllConst(*ctx, var, body);
+    }
+
     template<class ...Args>
     Bool forAll(std::function<Bool(Args...)> func) {
         return logic::forAll(*ctx, func);

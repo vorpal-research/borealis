@@ -590,6 +590,11 @@ z3::expr forAll(
     return axiom;
 }
 
+template<class VarT>
+z3::expr forAllConst(z3::context& ctx, VarT var, Bool body) {
+    return z3::forall(getExpr(var), getExpr(body));
+}
+
 template<class Res, class Patterns, class ...Args>
 z3::expr forAll(
         z3::context& ctx,
@@ -1047,6 +1052,12 @@ Bool forAll(
         std::function<Bool(Args...)> func
     ) {
     return Bool{ z3impl::forAll(ctx, func) };
+}
+
+
+template <class VT>
+Bool forAllConst(z3::context& ctx, VT var, Bool body) {
+    return Bool{ z3impl::forAllConst(ctx, var, body) };
 }
 
 template<class ...Args>

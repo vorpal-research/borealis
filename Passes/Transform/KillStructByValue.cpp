@@ -11,9 +11,21 @@
 #include "Util/functional.hpp"
 #include "Util/util.h"
 
+#include "Util/llvm_matchers.hpp"
+
 #include "Util/macros.h"
 
 namespace borealis {
+
+static void copyDbgMD(llvm::Instruction* from, llvm::Instruction* to) {
+    if(from->getMetadata("dbg")) to->setMetadata("dbg", from->getMetadata("dbg"));
+}
+
+static void eraseIfNotUsed(llvm::Value* v) {
+    if(auto&& i = dyn_cast<llvm::Instruction>(v)) {
+        if(i->getNumUses() == 0) i->eraseFromParent();
+    }
+}
 
 class KillStructByValue : public llvm::FunctionPass {
 
@@ -30,6 +42,12 @@ public:
     }
 
     virtual bool runOnFunction(llvm::Function& F) override {
+        auto&& i32 = llvm::Type::getInt32Ty(F.getContext());
+
+        auto toLLVMConstant = [&](auto&& i) -> llvm::Value* {
+            return llvm::ConstantInt::get(i32, i);
+        };
+
         auto toReplace =
             util::viewContainer(F)
             .flatten()
@@ -41,78 +59,78 @@ public:
             llvm::DemoteRegToStack(*A);
         }
 
+#include <functional-hell/matchers_fancy_syntax.h>
+
+        using namespace functional_hell::matchers::placeholders;
+        // Extract(Load($ptr), $indices) -> Load(Gep($ptr, $indices))
+
         auto extracts =
             util::viewContainer(F)
             .flatten()
             .map(ops::take_pointer)
-            .map(llvm::ops::dyn_cast<llvm::ExtractValueInst>)
-            .filter()
+            .filter(llvm::pattern_matcher(llvm::$ExtractValueInst(llvm::$LoadInst(_), _)))
             .toVector();
 
-        auto&& i32 = llvm::Type::getInt32Ty(F.getContext());
+        for(auto&& E : extracts) SWITCH(E) {
+                NAMED_CASE(m, llvm::$ExtractValueInst(_3 & llvm::$LoadInst(_1), _2)) {
+                    auto ptr = m->_1;
+                    auto param = m->_3;
+                    auto indices = (util::itemize(0) >> util::viewContainer(m->_2))
+                                  .map(toLLVMConstant)
+                                  .toVector();
 
-        // Extract(Load($ptr), $indices) -> Load(Gep($ptr, $indices))
+                    auto&& gep = llvm::GetElementPtrInst::Create(ptr, indices, E->getName() + ".ptr", E);
+                    auto&& load = new llvm::LoadInst(gep, E->getName(), false, E);
 
-        for(llvm::ExtractValueInst* E: extracts) {
-            if(auto&& param = dyn_cast<llvm::LoadInst>(E->getAggregateOperand())) {
-                auto indices = (util::itemize(0) >> util::viewContainer(E->getIndices()))
-                               .map(LAM(Ix, static_cast<llvm::Value*>(llvm::ConstantInt::get(i32, Ix))))
-                               .toVector();
+                    copyDbgMD(E, gep);
+                    copyDbgMD(E, load);
 
-                auto&& gep = llvm::GetElementPtrInst::Create(param->getPointerOperand(), indices, E->getName() + ".ptr", E);
-                auto&& load = new llvm::LoadInst(gep, E->getName(), false, E);
+                    E->replaceAllUsesWith(load);
+                    E->eraseFromParent();
 
-                if(auto dbg = E->getMetadata("dbg")) {
-                    gep->setMetadata("dbg", dbg);
-                    load->setMetadata("dbg", dbg);
+                    eraseIfNotUsed(param);
                 }
-
-                E->replaceAllUsesWith(load);
-                E->eraseFromParent();
-
-                if(param->getNumUses() == 0) param->eraseFromParent();
             }
-        }
+
+        // Store($ptr, InsertValue(Load($ptr), $indices, $value)) -> Store(Gep($ptr, $indices), $value)
 
         auto inserts =
             util::viewContainer(F)
             .flatten()
             .map(ops::take_pointer)
-            .map(llvm::ops::dyn_cast<llvm::StoreInst>)
-            .filter()
-            .filter(LAM(store, llvm::isa<llvm::InsertValueInst>(store->getValueOperand())))
+            .filter(llvm::pattern_matcher(llvm::$StoreInst(_1, llvm::$InsertValueInst(llvm::$LoadInst(_1), _, _))))
             .toVector();
 
-        // Store($ptr, InsertValue(Load($ptr), $indices, $value)) -> Store(Gep($ptr, $indices), $value)
 
-        for(auto&& store : inserts) {
-            auto&& insert = llvm::cast<llvm::InsertValueInst>(store->getValueOperand());
-            if(auto&& load = dyn_cast<llvm::LoadInst>(insert->getAggregateOperand())) {
-                auto indices = (util::itemize(0) >> util::viewContainer(insert->getIndices()))
-                              .map(LAM(Ix, static_cast<llvm::Value*>(llvm::ConstantInt::get(i32, Ix))))
+        for(auto&& E : inserts) SWITCH(E) {
+            NAMED_CASE(
+                m,
+                llvm::$StoreInst(_1, llvm::$InsertValueInst(llvm::$LoadInst(_1), _2, _3))
+            ) {
+                auto indices = (util::itemize(0) >> util::viewContainer(m->_3))
+                              .map(toLLVMConstant)
                               .toVector();
+                auto ptr = m->_1;
+                auto value = m->_2;
 
-                auto&& ptr = store->getPointerOperand();
-                auto&& ptr2 = load->getPointerOperand();
-                if(ptr != ptr2) continue;
+                auto insert = cast<llvm::StoreInst>(E)->getValueOperand();
+                auto load = cast<llvm::InsertValueInst>(insert)->getAggregateOperand();
 
-                auto&& value = insert->getInsertedValueOperand();
+                auto&& gep = llvm::GetElementPtrInst::Create(ptr, indices, E->getName() + ".ptr", E);
+                auto&& newStore = new llvm::StoreInst(gep, value, false, E);
 
-                auto&& gep = llvm::GetElementPtrInst::Create(ptr, indices, insert->getName() + ".ptr", store);
-                auto&& newStore = new llvm::StoreInst(gep, value, false, store);
+                copyDbgMD(E, newStore);
+                copyDbgMD(E, gep);
 
-                if(auto&& dbg = store->getMetadata("dbg")) {
-                    newStore->setMetadata("dbg", dbg);
-                    gep->setMetadata("dbg", dbg);
-                }
+                E->replaceAllUsesWith(newStore);
+                E->eraseFromParent();
 
-                store->replaceAllUsesWith(newStore);
-                store->eraseFromParent();
-
-                if(insert->getNumUses() == 0) insert->eraseFromParent();
-                if(load->getNumUses() == 0) load->eraseFromParent();
+                eraseIfNotUsed(insert);
+                eraseIfNotUsed(load);
             }
         }
+
+#include <functional-hell/matchers_fancy_syntax_off.h>
 
         return not toReplace.empty();
     }
