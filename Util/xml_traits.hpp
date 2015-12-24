@@ -41,6 +41,20 @@ struct xml_traits<std::set<T>> {
     }
 };
 
+template<class T>
+struct xml_traits<std::unordered_set<T>> {
+    static XMLNodePtr toXml(XMLNodePtr p, const std::unordered_set<T>& set, const std::string& elemName) {
+        auto* doc = p->GetDocument();
+        for (const auto& e : set) {
+            auto* node = doc->NewElement(elemName.c_str());
+            p->InsertEndChild(
+                util::toXml(node, e)
+            );
+        }
+        return p;
+    }
+};
+
 } // namespace util
 } // namespace borealis
 

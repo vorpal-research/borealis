@@ -25,7 +25,7 @@ struct container_json_traits {
     using optional_ptr_t = std::unique_ptr<value_type>;
 
     static Json::Value toJson(const value_type& val) {
-        Json::Value ret;
+        Json::Value ret = Json::ValueType::arrayValue;
         for(const auto& m : val) ret.append(util::toJson(m));
         return ret;
     }
@@ -96,6 +96,28 @@ struct json_traits<std::unordered_map<K, V, Hash, Equal, Alloc>> {
         }
 
         return optional_ptr_t { new theMap_t{ std::move(ret) } };
+    }
+};
+
+template<class A, class B>
+struct json_traits<std::pair<A, B>> {
+    using value_t = std::pair<A, B>;
+    using optional_ptr_t = std::unique_ptr<std::pair<A, B>>;
+
+    static Json::Value toJson(const value_t& v) {
+        Json::Value ret = Json::arrayValue;
+        ret.append(util::toJson(v.first));
+        ret.append(util::toJson(v.second));
+        return ret;
+    }
+
+    static optional_ptr_t fromJson(const Json::Value& val) {
+        if(!val.isArray() || val.size() != 2) return nullptr;
+        auto&& jfirst = util::fromJson<A>(val[0]);
+        auto&& jsecond = util::fromJson<B>(val[1]);
+        if(!jfirst || !jsecond) return nullptr;
+
+        return optional_ptr_t{ new value_t{ *jfirst, *jsecond } };
     }
 };
 

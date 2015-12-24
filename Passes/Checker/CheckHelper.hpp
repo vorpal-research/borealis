@@ -24,6 +24,7 @@ class CheckHelper {
     DefectType defectType;
 
 public:
+    using explicit_result = smt::Result;
 
     CheckHelper(Pass* pass, llvm::Instruction* I, DefectType defectType) :
         pass(pass), I(I), defectType(defectType) {};
@@ -33,7 +34,7 @@ public:
     }
     bool skip(const DefectInfo& di) {
         if (pass->CM->shouldSkipInstruction(I)) return true;
-        if (pass->DM->hasDefect(di)) return true;
+        if (pass->DM->hasInfo(di)) return true;
         return false;
     }
 
@@ -41,10 +42,15 @@ public:
         return check(query, state, pass->DM->getDefect(defectType, I));
     }
     bool check(PredicateState::Ptr query, PredicateState::Ptr state, const DefectInfo& di) {
+        TRACE_FUNC;
 
         if (not query or not state) return false;
         if (query->isEmpty()) return false;
         if (state->isEmpty()) return true;
+
+        dbgs() << "Defect: " << di << endl;
+        dbgs() << "Checking: " << *I << endl;
+        dbgs() << "  Query: " << query << endl;
 
         auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
         if (*state == *sliced) {
@@ -53,9 +59,6 @@ public:
             dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
         }
 
-        dbgs() << "Defect: " << di << endl;
-        dbgs() << "Checking: " << *I << endl;
-        dbgs() << "  Query: " << query << endl;
         dbgs() << "  State: " << sliced << endl;
 
         auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
@@ -74,8 +77,32 @@ public:
             pass->DM->getAdditionalInfo(di).satModel = util::just(*satRes);
             pass->DM->getAdditionalInfo(di).atFunc = I->getParent()->getParent();
             pass->DM->getAdditionalInfo(di).atInst = I;
+            dbgs() << "Defect confirmed: " << di << endl;
             return true;
         } else {
+            pass->DM->addNoDefect(di);
+            dbgs() << "Defect falsified: " << di << endl;
+            return false;
+        }
+    }
+
+    bool alias(llvm::Instruction* other) {
+        auto&& otherDI = pass->DM->getDefect(defectType, other);
+        auto&& di = pass->DM->getDefect(defectType, I);
+        dbgs() << "Defect: " << di << endl;
+        dbgs() << "Checking: " << *I << endl;
+        dbgs() << "Using explicit defect result info" << endl;
+
+        if(pass->DM->hasDefect(otherDI)) {
+            pass->DM->addDefect(di);
+            pass->DM->getAdditionalInfo(di).satModel = pass->DM->getAdditionalInfo(otherDI).satModel;
+            pass->DM->getAdditionalInfo(di).atFunc = I->getParent()->getParent();
+            pass->DM->getAdditionalInfo(di).atInst = I;
+            dbgs() << "Defect confirmed as alias: " << di << endl;
+            return true;
+        } else {
+            pass->DM->addNoDefect(di);
+            dbgs() << "Defect falsified as alias: " << di << endl;
             return false;
         }
     }
@@ -96,6 +123,7 @@ public:
             pass->DM->addDefect(di);
             return true;
         } else {
+            pass->DM->addNoDefect(di);
             return false;
         }
     }

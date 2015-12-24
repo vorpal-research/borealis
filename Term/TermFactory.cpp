@@ -110,7 +110,10 @@ Term::Ptr TermFactory::getConstTerm(const llvm::Constant* c, llvm::Signedness si
         } else if (&fp.getSemantics() == &APFloat::IEEEdouble) {
             return getRealTerm(fp.convertToDouble());
         } else {
-            BYE_BYE(Term::Ptr, "Unsupported semantics of APFloat");
+            auto refined = fp;
+            bool success;
+            refined.convert(APFloat::IEEEdouble, APFloat::rmNearestTiesToEven, &success);
+            return getRealTerm(refined.convertToDouble());
         }
 
     } else if (auto undef = dyn_cast<UndefValue>(c)) {

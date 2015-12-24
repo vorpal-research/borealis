@@ -29,7 +29,7 @@ bool TypeUtils::isUnknown(Type::Ptr type) {
     return type->getClassTag() == class_tag<type::UnknownType>();
 }
 
-std::string TypeUtils::toString(const Type& type) {
+std::string TypeUtils::toString(const Type& type, Verbosity verb) {
     using llvm::isa;
     using llvm::dyn_cast;
 
@@ -37,10 +37,10 @@ std::string TypeUtils::toString(const Type& type) {
     if (isa<type::Float>(type)) return "Float";
     if (isa<type::Bool>(type)) return "Bool";
     if (isa<type::UnknownType>(type)) return "Unknown";
-    if (auto* Ptr = dyn_cast<type::Pointer>(&type)) return TypeUtils::toString(*Ptr->getPointed()) + "*";
+    if (auto* Ptr = dyn_cast<type::Pointer>(&type)) return TypeUtils::toString(*Ptr->getPointed(), Short) + "*";
     if (auto* Err = dyn_cast<type::TypeError>(&type)) return "<Type Error>: " + Err->getMessage();
     if (auto* Arr = dyn_cast<type::Array>(&type)) {
-        auto&& ret = TypeUtils::toString(*Arr->getElement()) + "[";
+        auto&& ret = TypeUtils::toString(*Arr->getElement(), Short) + "[";
         for (auto&& size : Arr->getSize()) {
             ret += util::toString(size);
         }
@@ -48,19 +48,27 @@ std::string TypeUtils::toString(const Type& type) {
         return std::move(ret);
     }
     if (auto* Rec = dyn_cast<type::Record>(&type)) {
-        auto&& ret = Rec->getName() + "{ ";
+        auto ret = Rec->getName();
+        if(verb != Short) {
+            ret += "{ ";
 
-        ret += util::viewContainer(Rec->getBody()->get())
-            .map([](auto&& e) {
-                return util::toString(e.getOffset()) +
-                       ": " +
-                       toString(*e.getType());
-            })
-            .reduce("", [](auto&& e1, auto&& e2) {
-                return e1 + ", " + e2;
-            });
+            ret += util::viewContainer(Rec->getBody()->get())
+                .map(
+                    [](auto&& e) {
+                        return util::toString(e.getOffset()) +
+                               ": " +
+                               toString(*e.getType(), Short);
+                    }
+                )
+                .reduce(
+                    "",
+                    [](auto&& e1, auto&& e2) {
+                        return e1 + ", " + e2;
+                    }
+                );
 
-        ret += " }";
+            ret += " }";
+        }
         return std::move(ret);
     }
     if (auto* Fun = dyn_cast<type::Function>(&type)) {
@@ -68,7 +76,7 @@ std::string TypeUtils::toString(const Type& type) {
 
         ret += util::viewContainer(Fun->getArgs())
             .map(ops::dereference)
-            .map(TypeUtils::toString)
+            .map(LAM(t, TypeUtils::toString(t, Short)))
             .reduce("", [](auto&& a, auto&& b) {
                 return a + ", " + b;
             });

@@ -107,7 +107,42 @@ public:
     }
 
     CType::Ptr tryCastLLVMTypeToCType(llvm::Type* tp) {
-        return nullptr;
+        if(tp == nullptr) return CTF->getVoid(); // void in llvm is indistinguishable from error
+
+        if(auto&& rec = dyn_cast<llvm::StructType>(tp)) {
+            UNREACHABLE(tfm::format("Stray record type detected: %s", util::toString(*rec)));
+        }
+
+        if(auto&& int_ = dyn_cast<llvm::IntegerType>(tp)) {
+            auto name = tfm::format("bor.integer.%d", int_->getIntegerBitWidth());
+            return CTF->getInteger(name, int_->getIntegerBitWidth(), llvm::Signedness::Unknown);
+        }
+
+        if(tp->isFloatingPointTy()) {
+            return CTF->getFloat("bor.float", TypeFactory::defaultTypeSize);
+        }
+
+        if(auto&& ptr = dyn_cast<llvm::PointerType>(tp)) {
+            return CTF->getPointer(tryCastLLVMTypeToCType(ptr->getPointerElementType()));
+        }
+
+        if(auto&& fun = dyn_cast<llvm::FunctionType>(tp)) {
+            return CTF->getFunction(
+                CTF->getRef(tryCastLLVMTypeToCType(fun->getReturnType())),
+                util::view(fun->param_begin(), fun->param_end())
+                     .map(APPLY(tryCastLLVMTypeToCType))
+                     .map(APPLY(CTF->getRef))
+                     .toVector()
+            );
+        }
+
+        if(auto&& arr = dyn_cast<llvm::ArrayType>(tp)) {
+            if(arr->getArrayNumElements()) {
+                return CTF->getArray(CTF->getRef(tryCastLLVMTypeToCType(arr->getArrayElementType())), arr->getArrayNumElements());
+            } else return CTF->getArray(CTF->getRef(tryCastLLVMTypeToCType(arr->getArrayElementType())));
+        }
+
+        UNREACHABLE("Unsupported type encountered");
     }
 
     CType::Ptr tryCastTypeToCType(Type::Ptr tp) {

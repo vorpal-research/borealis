@@ -222,8 +222,9 @@ Result Solver::isViolated(
     static config::ConfigEntry<bool> sanity_check("analysis", "sanity-check");
     static config::ConfigEntry<int> sanity_check_timeout("analysis", "sanity-check-timeout");
     if (sanity_check.get(false)) {
+        TRACE_BLOCK("z3::sanity_check");
         auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
-        for (auto&& axiom : ctx.getAxioms()) ss.add(z3impl::asAxiom(axiom));
+        for (auto&& axiom : ctx.getAxioms()) ss.add(axiom);
         ss.add(z3impl::asAxiom(z3state));
 
         auto&& dbg = dbgs();
@@ -400,7 +401,7 @@ PredicateState::Ptr Solver::probeModels(
     auto solver = tactics().mk_solver();
     solver.add(logic::z3impl::asAxiom(z3body));
     solver.add(logic::z3impl::asAxiom(z3query));
-    for (auto&& axiom : ctx.getAxioms()) solver.add(logic::z3impl::asAxiom(axiom));
+    for (auto&& axiom : ctx.getAxioms()) solver.add(axiom);
 
     FactoryNest FN;
     std::vector<PredicateState::Ptr> states;

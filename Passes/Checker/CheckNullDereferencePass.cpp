@@ -7,6 +7,8 @@
 
 #include <llvm/IR/InstVisitor.h>
 
+#include "Util/disjoint_sets.hpp"
+
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckNullDereferencePass.h"
 #include "State/PredicateStateBuilder.h"
@@ -26,21 +28,32 @@ private:
     void visitMemoryInst(Inst& I) {
         auto* ptr = I.getPointerOperand();
         if (ptr->isDereferenceablePointer()) return;
+        if(llvm::is_one_of<llvm::GetElementPtrInst, llvm::Constant>(ptr)) return;
 
-        CheckHelper<CheckNullDereferencePass> h(pass, &I, DefectType::INI_03);
+        if(auto&& iopt = util::at(p2i, ptr)) {
+            CheckHelper<CheckNullDereferencePass> h(pass, &I, DefectType::INI_03);
 
-        if (h.skip()) return;
+            if (h.skip()) return;
 
-        auto q = (
-            pass->FN.State *
-            pass->FN.Predicate->getInequalityPredicate(
-                pass->FN.Term->getValueTerm(ptr),
-                pass->FN.Term->getNullPtrTerm()
-            )
-        )();
-        auto ps = pass->PSA->getInstructionState(&I);
+            h.alias(iopt.getUnsafe());
+        } else {
+            p2i[ptr] = &I;
 
-        h.check(q, ps);
+            CheckHelper<CheckNullDereferencePass> h(pass, &I, DefectType::INI_03);
+
+            if (h.skip()) return;
+
+            auto q = (
+                pass->FN.State *
+                pass->FN.Predicate->getInequalityPredicate(
+                    pass->FN.Term->getValueTerm(ptr),
+                    pass->FN.Term->getNullPtrTerm()
+                )
+            )();
+            auto ps = pass->PSA->getInstructionState(&I);
+
+            h.check(q, ps);
+        }
     }
 
 public:
@@ -55,9 +68,11 @@ public:
         visitMemoryInst(I);
     }
 
+
 private:
 
     CheckNullDereferencePass* pass;
+    std::unordered_map<llvm::Value*, llvm::Instruction*> p2i;
 
 };
 

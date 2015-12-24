@@ -12,10 +12,31 @@
 #include <unordered_set>
 #include <vector>
 
+
 #include "SMT/Z3/ExprFactory.h"
+#include "Util/union_set.hpp"
 
 namespace borealis {
 namespace z3_ {
+
+namespace impl_ {
+
+struct z3exprEq {
+    bool operator()(const z3::expr& lhv, const z3::expr& rhv) const noexcept {
+        return z3::eq(lhv, rhv);
+    }
+};
+
+struct z3exprHash {
+    size_t operator()(const z3::expr& e) const noexcept {
+        return e.hash();
+    }
+};
+
+template<class T> using z3_set_instance = std::unordered_set<T, z3exprHash, z3exprEq>;
+using z3exprSet = util::union_set<z3::expr, z3_set_instance>;
+
+} /* namespace impl_ */
 
 class ExecutionContext {
 
@@ -31,7 +52,7 @@ class ExecutionContext {
     unsigned long long localMemoryStart;
     unsigned long long localMemoryEnd;
 
-    std::vector<Bool> contextAxioms;
+    impl_::z3exprSet contextAxioms;
 
     static const std::string MEMORY_ID;
     MemArray memory() const;
@@ -67,7 +88,7 @@ public:
     using LocalMemoryBounds = std::pair<unsigned long long, unsigned long long>;
     LocalMemoryBounds getLocalMemoryBounds() const;
 
-    const std::vector<Bool>& getAxioms() const { return contextAxioms; }
+    const impl_::z3exprSet& getAxioms() const { return contextAxioms; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -106,7 +127,7 @@ public:
 
         auto&& axiom = factory.forAll(fun, patterns);
 
-        contextAxioms.push_back(axiom);
+        contextAxioms.insert(z3_::logic::z3impl::asAxiom(axiom));
 
         return memory(newMem);
     }

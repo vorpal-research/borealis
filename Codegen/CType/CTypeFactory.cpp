@@ -12,30 +12,38 @@
 namespace borealis {
 
 
-CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI) {
-
+CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI, std::unordered_map<llvm::MDNode*, CTypeRef>& cache) {
     if(!meta) {
         return getRef(getVoid());
     }
 
+    CTypeRef result;
+    if(cache.count(meta)) return cache[meta];
+
+    ON_SCOPE_EXIT(cache.emplace(meta, result))
+
+    if(auto struct_ = DIStructType(meta)) {
+        cache.emplace(meta, getRef(struct_->getName()));
+    }
+
     if(auto array = DIArrayType(meta)) {
-        auto elem = processType(DFI.resolve(array.getBaseType()), DFI);
+        auto elem = processType(DFI.resolve(array.getBaseType()), DFI, cache);
         auto size = array.getArraySize();
-        if(size == 0) return getRef(getArray(elem));
-        else return getRef(getArray(elem, size));
+        if(size == 0) return result = getRef(getArray(elem));
+        else return result = getRef(getArray(elem, size));
     }
 
     if(auto pointer = DIDerivedType(meta)) if(pointer.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
         auto elem = DFI.resolve(pointer.getTypeDerivedFrom());
         if(auto struct_ = DIStructType(elem)) {
-            return getRef(getPointer(getRef(struct_.getName())));
+            return result = getRef(getPointer(getRef(struct_.getName())));
         }
-        auto deptr = processType(elem, DFI);
-        return getRef(getPointer(deptr));
+        auto deptr = processType(elem, DFI, cache);
+        return result = getRef(getPointer(deptr));
     }
 
     if(auto composite = DICompositeType(meta)) if(composite.getTag() == llvm::dwarf::DW_TAG_enumeration_type) {
-        return getRef(getInteger(composite.getName().str(), composite.getSizeInBits(), llvm::Signedness::Unsigned));
+        return result = getRef(getInteger(composite.getName().str(), composite.getSizeInBits(), llvm::Signedness::Unsigned));
     }
 
     if(auto struct_ = DIStructType(meta)) {
@@ -43,27 +51,26 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI) {
         auto elements = struct_.getMembers().asView().map(
             [&](DIMember member) {
                 auto memType = DFI.resolve(member.getType());
-                auto resolved = processType(memType, DFI);
+                auto resolved = processType(memType, DFI, cache);
 
                 return CStructMember(member.getOffsetInBits(), member.getName().str(), resolved);
             }
         ).toVector();
-        return getRef(getStruct(name, elements));
+        return result = getRef(getStruct(name, elements));
     }
 
     if(auto alias = DIAlias(meta)) {
         auto elem = DFI.resolve(alias.getOriginal());
-        auto processed = processType(elem, DFI);
+        auto processed = processType(elem, DFI, cache);
         switch (alias.getTag()) {
         case llvm::dwarf::DW_TAG_typedef:
-            return getRef(getTypedef(alias.getName().str(), processed));
+            return result = getRef(getTypedef(alias.getName().str(), processed));
         case llvm::dwarf::DW_TAG_const_type:
-            return getRef(getConst(processed));
+            return result = getRef(getConst(processed));
         case llvm::dwarf::DW_TAG_volatile_type:
-            return getRef(getVolatile(processed));
-        default: break;
+            return result = getRef(getVolatile(processed));
+        default: return result = processed;
         }
-        UNREACHABLE("Unsupported alias type encountered");
     }
 
     if(auto basic = llvm::DIBasicType(meta)) if(basic.getTag() == llvm::dwarf::DW_TAG_base_type) {
@@ -72,29 +79,29 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI) {
         case llvm::dwarf::DW_ATE_signed:
         case llvm::dwarf::DW_ATE_signed_char:
         case llvm::dwarf::DW_ATE_signed_fixed:
-            return getRef(getInteger(basic.getName().str(), basic.getSizeInBits(), llvm::Signedness::Signed));
+            return result = getRef(getInteger(basic.getName().str(), basic.getSizeInBits(), llvm::Signedness::Signed));
         case llvm::dwarf::DW_ATE_boolean:
         case llvm::dwarf::DW_ATE_unsigned:
         case llvm::dwarf::DW_ATE_unsigned_char:
         case llvm::dwarf::DW_ATE_unsigned_fixed:
-            return getRef(getInteger(basic.getName().str(), basic.getSizeInBits(), llvm::Signedness::Unsigned));
+            return result = getRef(getInteger(basic.getName().str(), basic.getSizeInBits(), llvm::Signedness::Unsigned));
         case llvm::dwarf::DW_ATE_float:
         case llvm::dwarf::DW_ATE_decimal_float:
-            return getRef(getFloat(basic.getName().str(), basic.getSizeInBits()));
+            return result = getRef(getFloat(basic.getName().str(), basic.getSizeInBits()));
         }
 
         UNREACHABLE("Unsupported basic type encountered");
     }
 
     if(auto basic = DISubroutineType(meta)) {
-        auto retTy = processType(DFI.resolve(basic.getReturnType()), DFI);
+        auto retTy = processType(DFI.resolve(basic.getReturnType()), DFI, cache);
         auto pTypes = basic.getArgumentTypeView()
             .map([&](llvm::DITypeRef ref) {
                 return DFI.resolve(ref);
             })
-            .map(LAM(tp, this->processType(tp, DFI)))
+            .map(LAM(tp, this->processType(tp, DFI, cache)))
             .toVector();
-        return getRef(getFunction(retTy, pTypes));
+        return result = getRef(getFunction(retTy, pTypes));
     }
 
     UNREACHABLE("Unsupported DIType encountered");
@@ -114,19 +121,38 @@ CTypeRef CTypeFactory::processType(clang::QualType qtype, const clang::ASTContex
     ON_SCOPE_EXIT(visited.emplace(qtype, result));
 
     if(visited.count(qtype)) return result = visited.at(qtype);
-    else if(qtype.getBaseTypeIdentifier()) {
-        visited.emplace(qtype, getRef(qtype.getBaseTypeIdentifier()->getName().str()));
-    }
 
     if(auto rt = clang::dyn_cast<clang::RecordType>(qtype)) {
-        if(rt->getDecl()->getDefinition() == nullptr)
+        if(rt->isIncompleteType()) {
             return result = getRef(getOpaqueStruct(getQTName(qtype))); // it is an opaque decl
+        } else {
+            auto name = getQTName(qtype);
+            if(name != "") visited.emplace(qtype, getRef(name.str()));
+        }
     }
 
     if(auto et = clang::dyn_cast<clang::ElaboratedType>(qtype)) {
         auto named = et->getNamedType();
         return result = processType(named, ctx, visited);
         // it is a forward decl
+    }
+
+    if(llvm::is_one_of<
+        clang::TypeOfType,
+        clang::TypeOfExprType,
+        clang::DecltypeType,
+        clang::UnaryTransformType,
+        clang::AdjustedType,
+        clang::AttributedType,
+        clang::DependentNameType>(qtype)) { /* XXX: are there others? */
+        auto canon = qtype.getCanonicalType();
+        ASSERTC(canon != qtype);
+        return result = processType(canon, ctx, visited);
+    }
+
+    if(auto* tt = clang::dyn_cast<clang::TypedefType>(qtype)) {
+        auto base = getRef(processType(qtype.getCanonicalType(), ctx, visited));
+        return result = getRef(getTypedef(tt->getDecl()->getName().str(), base));
     }
 
     auto typeInfo = ctx.getTypeInfo(qtype);
@@ -142,11 +168,6 @@ CTypeRef CTypeFactory::processType(clang::QualType qtype, const clang::ASTContex
         if (const_) baseType = getRef(getConst(getRef(baseType)));
         if (volatile_) baseType = getRef(getVolatile(getRef(baseType)));
         return result = baseType;
-    }
-
-    if(auto* tt = clang::dyn_cast<clang::TypedefType>(qtype)) {
-        auto base = getRef(processType(qtype.getCanonicalType(), ctx, visited));
-        return result = getRef(getTypedef(tt->getDecl()->getName().str(), base));
     }
 
     if(qtype->isVoidType()) {

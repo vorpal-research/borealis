@@ -14,6 +14,8 @@
 #include <llvm/Target/TargetLibraryInfo.h>
 #include <llvm/Transforms/Utils/PromoteMemToReg.h>
 #include <llvm/IR/Dominators.h>
+#include <llvm/Analysis/ScalarEvolutionExpressions.h>
+#include <llvm/Transforms/Utils/ValueMapper.h>
 
 #include "Annotation/AnnotationCast.h"
 #include "Codegen/intrinsics_manager.h"
@@ -282,7 +284,8 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .filter(isDecomposable)
                  .toHashSet();
 
-    std::unordered_map<llvm::CallInst*, llvm::Value*> replacements;
+    //std::unordered_map<llvm::CallInst*, llvm::Value*> replacements;
+    llvm::DenseMap<llvm::CallInst*, llvm::WeakVH> replacements;
 
     for(llvm::CallInst* call : funcs) {
         llvm::Function* f = call->getCalledFunction();
@@ -408,6 +411,11 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                         predefinedReturn = new_;
                     }
                 );
+
+                if(call->getType() != predefinedReturn->getType()) {
+                    auto cast = llvm::CastInst::CreatePointerCast(predefinedReturn, call->getType(), "bor.dc.malloc.backcast", call);
+                    predefinedReturn = cast;
+                }
             }
 
             for (auto&& require: afters) AnnotationProcessor::landOnInstructionOrLast(require, M, FN, *call);

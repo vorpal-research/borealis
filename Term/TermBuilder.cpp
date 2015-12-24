@@ -48,12 +48,33 @@ TermBuilder operator+(TermBuilder TB, Term::Ptr term) {
     return res;
 }
 
+TermBuilder operator+(TermBuilder TB, long long v) {
+    TermBuilder res{TB};
+    res.term = res.TF->getBinaryTerm(
+        llvm::ArithType::ADD,
+        res.term,
+        TB.TF->getIntTerm(v, TB->getType())
+    );
+    return res;
+}
+
+
 TermBuilder operator*(TermBuilder TB, Term::Ptr term) {
     TermBuilder res{TB};
     res.term = res.TF->getBinaryTerm(
         llvm::ArithType::MUL,
         res.term,
         term
+    );
+    return res;
+}
+
+TermBuilder operator*(TermBuilder TB, long long v) {
+    TermBuilder res{TB};
+    res.term = res.TF->getBinaryTerm(
+        llvm::ArithType::MUL,
+        res.term,
+        res.TF->getIntTerm(v, TB.term->getType())
     );
     return res;
 }

@@ -19,7 +19,8 @@ struct TypeUtils {
     static bool isInvalid(Type::Ptr type);
     static bool isUnknown(Type::Ptr type);
 
-    static std::string toString(const Type& type);
+    enum Verbosity{ Verbose, Short };
+    static std::string toString(const Type& type, Verbosity verb = Verbose);
 
     static unsigned long long getTypeSizeInElems(Type::Ptr type);
     static unsigned long long getStructOffsetInElems(Type::Ptr type, unsigned idx);

@@ -78,11 +78,11 @@ public:
     }
 
     CType::Ptr getArray(CTypeRef tp) {
-        return make<CArray>(tp->getName() + "[]", getRef(tp), util::nothing());
+        return make<CArray>(tp.getName() + "[]", getRef(tp), util::nothing());
     }
 
     CType::Ptr getArray(CTypeRef tp, size_t size) {
-        return make<CArray>(tp->getName() + "[" + util::toString(size) + "]", getRef(tp), util::just(size));
+        return make<CArray>(tp.getName() + "[" + util::toString(size) + "]", getRef(tp), util::just(size));
     }
 
     CType::Ptr getInteger(const std::string& name, size_t bitsize, llvm::Signedness sign) {
@@ -107,7 +107,7 @@ public:
             auto generatedName =
                 "{\n" +
                 util::viewContainer(members)
-                     .fold(std::string{}, LAM2(l, r, tfm::format("%s\n %s %s;", l, r.getType()->getName(), r.getName()))) +
+                     .fold(std::string{}, LAM2(l, r, tfm::format("%s\n %s %s;", l, r.getType().getName(), r.getName()))) +
                 "}";
             return make<CStruct>(generatedName, members, false);
         }
@@ -131,7 +131,7 @@ public:
     }
 
 private:
-    CTypeRef processType(DIType meta, DebugInfoFinder& DFI);
+    CTypeRef processType(DIType meta, DebugInfoFinder& DFI, std::unordered_map<llvm::MDNode*, CTypeRef>& cache);
 
     struct QualTypeHash {
         size_t operator()(const clang::QualType& qt) const noexcept{
@@ -142,18 +142,25 @@ private:
     CTypeRef processType(clang::QualType type, const clang::ASTContext& ctx, std::unordered_map<clang::QualType, CTypeRef, QualTypeHash>& cache);
 public:
     void processTypes(DebugInfoFinder& DFI) {
+        std::unordered_map<llvm::MDNode*, CTypeRef> cache;
         for(DIType dt : DFI.types()) if(dt) {
             if(DIMember(dt)) continue; // skip members
-            processType(dt, DFI);
+            processType(dt, DFI, cache);
         }
     }
 
     CType::Ptr getType(DIType meta, DebugInfoFinder& DFI) {
-        return processType(meta, DFI).get();
+        std::unordered_map<llvm::MDNode*, CTypeRef> cache;
+        return processType(meta, DFI, cache).get();
     }
 
+    CType::Ptr getType(DIType meta, DebugInfoFinder& DFI, std::unordered_map<llvm::MDNode*, CTypeRef>& cache) {
+        return processType(meta, DFI, cache).get();
+    }
+
+    std::unordered_map<clang::QualType, CTypeRef, QualTypeHash> cache;
     CType::Ptr getType(clang::QualType ast, const clang::ASTContext& ctx) {
-        std::unordered_map<clang::QualType, CTypeRef, QualTypeHash> cache;
+        //std::unordered_map<clang::QualType, CTypeRef, QualTypeHash> cache;
         return processType(ast, ctx, cache).get();
     }
 

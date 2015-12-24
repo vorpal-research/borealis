@@ -37,11 +37,22 @@ public:
         sm_ = &ac->getSourceManager();
     }
 
+    std::unordered_set<clang::Decl*> visited;
+    llvm::StringRef getName(clang::NamedDecl* d) {
+        auto id = d->getIdentifier();
+        if(!id) return "";
+        else return id->getName();
+    }
+
     bool VisitDeclRefExpr(clang::DeclRefExpr* del) {
-        if(auto&& fun = dyn_cast<clang::FunctionDecl>(del->getDecl())) {
+        auto decl = del->getDecl();
+        if(visited.count(decl)) return true;
+        visited.insert(decl);
+
+        if(auto&& fun = dyn_cast<clang::FunctionDecl>(decl)) {
             handleFunctionDecl(fun);
         }
-        else handleDecl(del->getDecl(), del->getDecl()->getName());
+        else handleDecl(decl, getName(decl));
         return true;
     }
 
@@ -52,13 +63,21 @@ public:
             handleDecl(decl, asm_->getLabel());
         }
         CTF->getType(decl->getType(), *ac_);
-        handleDecl(decl, decl->getName());
+        handleDecl(decl, getName(decl));
+
+        llvm::StringRef prefix = "__builtin_";
+        if(getName(decl).startswith(prefix)) {
+            handleDecl(decl, getName(decl).drop_front(prefix.size()));
+        }
+
         for (auto&& param : decl->parameters()) {
-            handleDecl(param, param->getName());
+            handleDecl(param, getName(param));
         }
     }
 
     void handleDecl(clang::ValueDecl* decl, llvm::StringRef name) {
+        if(name == "") return;
+
         VarInfo info;
         ON_SCOPE_EXIT(vars_.push_back(std::move(info)));
         info.type = CTF->getRef(CTF->getType(decl->getType(), *ac_));

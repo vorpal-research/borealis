@@ -8,6 +8,9 @@
 #ifndef BOREALIS_SMTUTIL_H_
 #define BOREALIS_SMTUTIL_H_
 
+#include <type_traits>
+#include <unordered_map>
+
 namespace borealis {
 
 #define BRING_FROM_IMPL(CLASS) \
@@ -53,6 +56,15 @@ BRING_FROM_IMPL(MemArray)
 
 template<class Impl, class SubClass>
 struct SMTImpl;
+
+#define AUTO_CACHE_IMPL(PNAME, CTX, RESOLVE) \
+    static std::unordered_map< std::decay_t< decltype(PNAME) >, Dynamic > cache; \
+    static decltype(CTX) lastContext; \
+    if(CTX != lastContext) cache.clear(); \
+    lastContext = CTX; \
+    if(cache.count(PNAME)) return cache[PNAME]; \
+    Dynamic RESULT = RESOLVE; \
+    return cache.emplace(PNAME, RESULT).second->second; \
 
 template<class Impl>
 struct SMT;

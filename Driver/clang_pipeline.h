@@ -30,8 +30,7 @@ public:
     enum class status { SUCCESS, FAILURE };
 
     clang_pipeline(
-        const std::string& what,
-        llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags
+        const std::string& what
     );
     ~clang_pipeline();
 

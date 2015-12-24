@@ -361,6 +361,22 @@ TEST(Util, generation_macros) {
     }
 }
 
+TEST(Util, indexed_string) {
+    {
+        indexed_string is0 = "Hello";
+        std::string tmp = "Hello";
+        indexed_string is1 = tmp;
+
+        EXPECT_EQ(is0.hash(), is1.hash());
+
+        indexed_string is2 = is0;
+        EXPECT_EQ(is2.hash(), is1.hash());
+
+        EXPECT_EQ(is0.c_str(), is1.c_str());
+        EXPECT_EQ(is0.str(), is1.str());
+    }
+}
+
 #include "Util/generate_unmacros.h"
 
 

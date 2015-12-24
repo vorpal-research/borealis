@@ -20,6 +20,7 @@ namespace borealis {
 class GepInstVisitor : public llvm::InstVisitor<GepInstVisitor> {
 
     std::unordered_set<llvm::Value*> visited;
+    std::unordered_map<std::pair<llvm::Value*, llvm::Value*>, llvm::Instruction*> overApp;
 
 public:
 
@@ -34,13 +35,19 @@ public:
         if (h.skip()) return;
 
         if (isTriviallyInboundsGEP(&GI)) return;
+        if (GI.isDereferenceablePointer(loc.getDataLayout())) return;
+
+        static config::BoolConfigEntry OverApproximatedGeps("analysis", "overapproximate-geps");
+        auto overGeps = OverApproximatedGeps.get(true);
+
+        auto constantIdxs = GI.hasAllConstantIndices();
 
         auto shift = (
-                        pass->FN.Term *
-                        pass->FN.Term->getValueTerm(&GI)
-                        -
-                        pass->FN.Term->getValueTerm(GI.getPointerOperand())
-                    );
+            pass->FN.Term *
+            pass->FN.Term->getValueTerm(&GI)
+            -
+            pass->FN.Term->getValueTerm(GI.getPointerOperand())
+        );
 
         auto q = (
             pass->FN.State *

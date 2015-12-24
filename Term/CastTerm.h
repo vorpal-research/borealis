@@ -82,6 +82,12 @@ struct SMTImpl<Impl, CastTerm> {
             } else {
                 return rhv;
             }
+        } else if (auto match = util::match_tuple<type::Float, type::Float>::doit(lt, rt)) {
+            return rhv;
+        } else if (auto match = util::match_tuple<type::Float, type::Integer>::doit(lt, rt)) {
+            return rhv.template adapt<Real>();
+        } else if (auto match = util::match_tuple<type::Integer, type::Float>::doit(lt, rt)) {
+            return rhv.adapt(match->get<0>()->getBitsize());
         } else if (auto match = util::match_tuple<type::Pointer, type::Integer>::doit(lt, rt)) {
             return rhv.template adapt<Pointer>();
         } else if (auto match = util::match_tuple<type::Integer, type::Pointer>::doit(lt, rt)) {

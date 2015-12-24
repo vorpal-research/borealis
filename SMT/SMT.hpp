@@ -28,6 +28,7 @@ struct SMT {
             Predicate::Ptr p,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
 #define HANDLE_PREDICATE(NAME, CLASS) \
         if (auto* pp = llvm::dyn_cast<CLASS>(p)) { \
             return SMTImpl<Impl, CLASS>::doit(pp, ef, ctx); \
@@ -41,6 +42,7 @@ struct SMT {
             PredicateState::Ptr s,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
 #define HANDLE_STATE(NAME, CLASS) \
         if (auto* ss = llvm::dyn_cast<CLASS>(s)) { \
             return SMTImpl<Impl, CLASS>::doit(ss, ef, ctx); \
@@ -54,6 +56,7 @@ struct SMT {
             Term::Ptr t,
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>* ctx) {
+        TRACE_FUNC;
 #define HANDLE_TERM(NAME, CLASS) \
         if (auto* tt = llvm::dyn_cast<CLASS>(t)) { \
             return SMTImpl<Impl, CLASS>::doit(tt, ef, ctx); \
