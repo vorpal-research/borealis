@@ -22,7 +22,7 @@ CXXFLAGS := \
 	-D__STDC_CONSTANT_MACROS \
 	-D__STDC_FORMAT_MACROS \
 	-D__STDC_LIMIT_MACROS \
-	-O0 \
+	-O2 \
 	-fPIC \
 	-std=c++14 \
 	-g \

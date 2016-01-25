@@ -14,7 +14,7 @@
 
 
 #include "SMT/Z3/ExprFactory.h"
-#include "Util/union_set.hpp"
+#include "Util/split_join.hpp"
 
 namespace borealis {
 namespace z3_ {
@@ -34,7 +34,7 @@ struct z3exprHash {
 };
 
 template<class T> using z3_set_instance = std::unordered_set<T, z3exprHash, z3exprEq>;
-using z3exprSet = util::union_set<z3::expr, z3_set_instance>;
+using z3exprSet = util::split_join<const z3::expr>;
 
 } /* namespace impl_ */
 

@@ -107,7 +107,9 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     CTF = util::make_unique<CTypeFactory>(ext_vars.types);
 
     std::unordered_map<std::string, VarInfo> extVarByName;
-    for(auto&& extv : ext_vars.vars) extVarByName.emplace(extv.name, extv);
+    // FIXME: this works for now, but in general is fucked up
+    // we should find a way to deal with multiple symbols with same name
+    for(auto&& extv : ext_vars.vars) if(extv.kind != VariableKind::Local) extVarByName.emplace(extv.name, extv);
 
     for(auto&& V : M.getFunctionList()) {
         auto&& vext = util::at(extVarByName, V.getName());

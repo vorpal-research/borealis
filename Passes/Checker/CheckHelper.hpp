@@ -52,7 +52,7 @@ public:
         dbgs() << "Checking: " << *I << endl;
         dbgs() << "  Query: " << query << endl;
 
-        auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
+        auto&& sliced = state; /* StateSlicer(pass->FN, query, pass->AA).transform(state); */
         if (*state == *sliced) {
             dbgs() << "Slicing failed" << endl;
         } else {

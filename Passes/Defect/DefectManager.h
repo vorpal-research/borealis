@@ -65,13 +65,26 @@ struct persistentDefectData {
     }
 
     ~persistentDefectData() {
+//        if(usePersistentDefectData.get(false)) {
+//            for (auto&& e : trueData) falseData.erase(e);
+//            truePastData.insert(trueData.begin(), trueData.end());
+//            falsePastData.insert(falseData.begin(), falseData.end());
+//
+//            std::ofstream out{filename};
+//            util::write_as_json(out, std::make_pair(truePastData, falsePastData));
+//        }
+    }
+
+    void forceDump() {
         if(usePersistentDefectData.get(false)) {
+            auto tpd = truePastData;
+            auto fpd = falsePastData;
             for (auto&& e : trueData) falseData.erase(e);
-            truePastData.insert(trueData.begin(), trueData.end());
-            falsePastData.insert(falseData.begin(), falseData.end());
+            tpd.insert(trueData.begin(), trueData.end());
+            fpd.insert(falseData.begin(), falseData.end());
 
             std::ofstream out{filename};
-            util::write_as_json(out, std::make_pair(truePastData, falsePastData));
+            util::write_as_json(out, std::make_pair(std::move(tpd), std::move(fpd)));
         }
     }
 };
@@ -97,7 +110,10 @@ public:
     DefectManager();
     virtual bool runOnModule(llvm::Module&) override { return false; }
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
-    virtual ~DefectManager() {};
+    virtual ~DefectManager() {
+        // this is a bit fucked up
+        data.forceDump();
+    };
 
     void addDefect(DefectType type, llvm::Instruction* where);
     void addDefect(const std::string& type, llvm::Instruction* where);

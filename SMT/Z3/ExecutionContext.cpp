@@ -192,7 +192,7 @@ ExecutionContext ExecutionContext::mergeMemory(
         auto&& t = util::tail(contexts);
         for(auto&& ctx : t) {
             auto&& e = ctx.second.contextAxioms;
-            auto&& newh = impl_::z3exprSet::unite(std::move(h), e);
+            auto&& newh = impl_::z3exprSet::join(std::move(h), e);
             h = std::move(newh);
         }
         res.contextAxioms = std::move(h);
