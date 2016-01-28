@@ -14,6 +14,8 @@
 #include <llvm/Target/TargetLibraryInfo.h>
 #include <llvm/Transforms/Utils/PromoteMemToReg.h>
 #include <llvm/IR/Dominators.h>
+#include <llvm/Analysis/ScalarEvolutionExpressions.h>
+#include <llvm/Transforms/Utils/ValueMapper.h>
 
 #include "Annotation/AnnotationCast.h"
 #include "Codegen/intrinsics_manager.h"
@@ -199,7 +201,7 @@ static std::vector<std::string> implicitContracts(const llvm::Function* func, co
     }
 
     for(size_t i = 0; i < fi.argInfo.size(); ++i) {
-        auto ptype = func->isVarArg()? func->getFunctionType()->getParamType(i) : nullptr;
+        auto ptype = (!func->isVarArg())? func->getFunctionType()->getParamType(i) : nullptr;
         if(!ptype || ptype->isPointerTy()) {
             auto&& ai = fi.argInfo[i];
             if(ai.access != func_info::AccessPatternTag::None) {
@@ -282,7 +284,8 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                  .filter(isDecomposable)
                  .toHashSet();
 
-    std::unordered_map<llvm::CallInst*, llvm::Value*> replacements;
+    //std::unordered_map<llvm::CallInst*, llvm::Value*> replacements;
+    llvm::DenseMap<llvm::CallInst*, llvm::WeakVH> replacements;
 
     for(llvm::CallInst* call : funcs) {
         llvm::Function* f = call->getCalledFunction();
@@ -408,6 +411,11 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                         predefinedReturn = new_;
                     }
                 );
+
+                if(call->getType() != predefinedReturn->getType()) {
+                    auto cast = llvm::CastInst::CreatePointerCast(predefinedReturn, call->getType(), "bor.dc.malloc.backcast", call);
+                    predefinedReturn = cast;
+                }
             }
 
             for (auto&& require: afters) AnnotationProcessor::landOnInstructionOrLast(require, M, FN, *call);

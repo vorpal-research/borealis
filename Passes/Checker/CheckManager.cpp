@@ -9,6 +9,7 @@
 #include "Config/config.h"
 #include "Passes/Checker/CheckManager.h"
 #include "Util/passes.hpp"
+#include "Passes/Checker/CallGraphSlicer.h"
 
 namespace borealis {
 
@@ -16,6 +17,7 @@ CheckManager::CheckManager() : llvm::ImmutablePass(ID) {}
 
 void CheckManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
+    AUX<CallGraphSlicer>::addRequiredTransitive(AU);
 }
 
 void CheckManager::initializePass() {
@@ -27,6 +29,9 @@ void CheckManager::initializePass() {
 }
 
 bool CheckManager::shouldSkipFunction(llvm::Function* F) const {
+
+    auto&& cgs = GetAnalysis<CallGraphSlicer>::doit(this);
+    if(cgs.doSlicing() && !cgs.getSlice().count(F)) return true;
 
     IntrinsicsManager& im = IntrinsicsManager::getInstance();
 

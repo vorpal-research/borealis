@@ -138,6 +138,11 @@ static RegisterIntrinsic INTRINSIC_UNREACHABLE {
     "unreachable"
 };
 
+static RegisterIntrinsic INTRINSIC_CALL_AND_STORE {
+    function_type::INTRINSIC_CALL_AND_STORE,
+    "call_and_store"
+};
+
 static RegisterIntrinsic BUILTIN_BOR_ASSERT {
     function_type::BUILTIN_BOR_ASSERT,
     "borealis_assert",

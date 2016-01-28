@@ -117,7 +117,7 @@ SOURCES := \
 	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cpp" -type f) \
 	$(shell find $(ADDITIONAL_SOURCE_DIRS) -name "*.cc"  -type f)
 
-SOURCES_WITH_MAIN := $(PWD)/wrapper.cpp
+SOURCES_WITH_MAIN := $(PWD)/wrapper.cpp $(PWD)/ar_wrapper.cpp
 
 SOURCES_WITHOUT_MAIN := $(filter-out $(SOURCES_WITH_MAIN),$(SOURCES))
 
@@ -192,7 +192,7 @@ ANDERSEN_CPP_DIR := $(PWD)/lib/andersen
 # Exes
 ################################################################################
 
-EXES := wrapper
+EXES := wrapper ar_wrapper
 TEST_EXES := run-tests
 
 RUN_TEST_EXES := $(PWD)/$(TEST_EXES) \
@@ -342,8 +342,11 @@ clean.cfgparser: clean.dbglog
 	$(MAKE) CXX=$(CXX) -C $(ANDERSEN_CPP_DIR)
 	touch $@
 
-$(EXES): $(OBJECTS) .protobuf .yaml-cpp .cfgparser .andersen
-	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(OBJECTS) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
+wrapper: $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen
+	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
+
+ar_wrapper: $(PWD)/ar_wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen
+	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(PWD)/ar_wrapper.o $(OBJECTS_WITHOUT_MAIN) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 .google-test:
 	$(MAKE) CXX=$(CXX) -C $(GOOGLE_TEST_DIR)/make gtest.a

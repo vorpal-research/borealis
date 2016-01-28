@@ -30,6 +30,7 @@ using namespace borealis::smt;
 
 static borealis::config::IntConfigEntry forceTimeout("z3", "force-timeout");
 static borealis::config::BoolConfigEntry simplifyPrint("z3", "print-simplified");
+static borealis::config::BoolConfigEntry logFormulas("z3", "log-formulae");
 
 Solver::Solver(ExprFactory& z3ef, unsigned long long memoryStart, unsigned long long memoryEnd) :
         z3ef(z3ef), memoryStart(memoryStart), memoryEnd(memoryEnd) {}
@@ -49,6 +50,12 @@ z3::tactic Solver::tactics(unsigned int timeout) {
 
 }
 
+static impl_::z3_set_instance<z3::expr> uniqueAxioms(const ExecutionContext& ctx) {
+    impl_::z3_set_instance<z3::expr> ret;
+    ctx.getAxioms().foreach(APPLY(ret.insert));
+    return std::move(ret);
+}
+
 Solver::check_result Solver::check(
         const Bool& z3query_,
         const Bool& z3state_,
@@ -63,22 +70,32 @@ Solver::check_result Solver::check(
     auto dbg = dbgs();
     auto wtf = logging::wtf();
 
-    auto z3state = useProactiveSimplify.get(true) ? z3state_.simplify() : z3state_;
-    auto z3query = useProactiveSimplify.get(true) ? z3query_.simplify() : z3query_;
+    auto z3state = useProactiveSimplify.get(false) ? z3state_.simplify() : z3state_;
+    auto z3query = useProactiveSimplify.get(false) ? z3query_.simplify() : z3query_;
 
+    dbgs() << "! adding axioms started" << endl;
     s.add(z3impl::asAxiom(z3state));
-    for (auto&& axiom : ctx.getAxioms()) {
-        s.add(z3impl::asAxiom(axiom));
-    }
-    s.add(z3impl::getAxiom(z3query));
+    auto axioms = uniqueAxioms(ctx);
+    for(auto&& ax: axioms) s.add(z3impl::asAxiom(ax));
+    dbgs() << "! adding axioms finished" << endl;
 
-    dbg << "  Query: " << endl << (simplifyPrint.get(false) ? z3query.simplify() : z3query) << endl;
-    dbg << "  State: " << endl << (simplifyPrint.get(false) ? z3state.simplify() : z3state) << endl;
-    dbg << "  Axioms: " << endl;
-    for (auto&& axiom : ctx.getAxioms()) {
-        dbg << (simplifyPrint.get(false) ? axiom.simplify() : axiom) << endl;
+    dbgs() << "! adding query started" << endl;
+    s.add(z3impl::getAxiom(z3query));
+    dbgs() << "! adding query finished" << endl;
+
+    if(logFormulas.get(true)) {
+        dbgs() << "! printing stuff started" << endl;
+        dbg << "  Query: " << endl << (simplifyPrint.get(false) ? z3query.simplify() : z3query) << endl;
+        dbg << "  State: " << endl << (simplifyPrint.get(false) ? z3state.simplify() : z3state) << endl;
+        dbg << "  Axioms: " << endl;
+
+        for(auto&& ax: axioms)
+            dbg << (simplifyPrint.get(false) ? ax.simplify() : ax) << endl;
+
+        dbg << end;
+
+        dbgs() << "! printing stuff finished" << endl;
     }
-    dbg << end;
 
     Bool pred = z3ef.getBoolVar("$CHECK$");
     s.add(z3impl::getExpr(implies(pred, z3query)));
@@ -104,8 +121,11 @@ Solver::check_result Solver::check(
     {
         TRACE_BLOCK("z3::check");
 
+        dbgs() << "! z3 started" << endl;
         z3::expr pred_e = logic::z3impl::getExpr(pred);
         z3::check_result r = s.check(1, &pred_e);
+        dbgs() << "! z3 finished" << endl;
+
         dbg << "Acquired result: "
             << ((r == z3::sat) ? "sat" : (r == z3::unsat) ? "unsat" : "unknown")
             << endl;
@@ -216,14 +236,20 @@ Result Solver::isViolated(
            << state << endl;
 
     ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
+    dbgs() << "! state conversion started" << endl;
     auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
+    dbgs() << "! state conversion finished" << endl;
+    dbgs() << "! query conversion started" << endl;
     auto z3query = SMT<Z3>::doit(query, z3ef, &ctx);
+    dbgs() << "! query conversion finished" << endl;
 
     static config::ConfigEntry<bool> sanity_check("analysis", "sanity-check");
     static config::ConfigEntry<int> sanity_check_timeout("analysis", "sanity-check-timeout");
     if (sanity_check.get(false)) {
+        TRACE_BLOCK("z3::sanity_check");
         auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
-        for (auto&& axiom : ctx.getAxioms()) ss.add(z3impl::asAxiom(axiom));
+        ctx.getAxioms().foreach(APPLY(ss.add));
+        //for (auto&& axiom : ctx.getAxioms()) ss.add(axiom);
         ss.add(z3impl::asAxiom(z3state));
 
         auto&& dbg = dbgs();
@@ -245,7 +271,9 @@ Result Solver::isViolated(
 
     z3::check_result res;
     util::option<z3::model> model;
+    dbgs() << "! check started" << endl;
     std::tie(res, model, std::ignore, std::ignore) = check(!z3query, z3state, ctx);
+    dbgs() << "! check finished" << endl;
 
     if (res == z3::sat) {
         auto m = model.getUnsafe(); // You shall not fail! (c)
@@ -400,7 +428,8 @@ PredicateState::Ptr Solver::probeModels(
     auto solver = tactics().mk_solver();
     solver.add(logic::z3impl::asAxiom(z3body));
     solver.add(logic::z3impl::asAxiom(z3query));
-    for (auto&& axiom : ctx.getAxioms()) solver.add(logic::z3impl::asAxiom(axiom));
+    //for (auto&& axiom : ctx.getAxioms()) solver.add(axiom);
+    ctx.getAxioms().foreach(APPLY(solver.add));
 
     FactoryNest FN;
     std::vector<PredicateState::Ptr> states;

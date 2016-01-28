@@ -27,6 +27,82 @@ static void eraseIfNotUsed(llvm::Value* v) {
     }
 }
 
+static std::pair<llvm::Value*,llvm::Value*> breakOverflowIntrinsic(llvm::IntrinsicInst* ii) {
+    using namespace llvm;
+    IRBuilder<> builder(ii->getParent(), ii);
+
+    Value *op1 = ii->getArgOperand(0);
+    Value *op2 = ii->getArgOperand(1);
+
+    Value *result = 0;
+    Value *result_ext = 0;
+    Value *overflow = 0;
+
+    unsigned int bw = op1->getType()->getPrimitiveSizeInBits();
+    unsigned int bw2 = op1->getType()->getPrimitiveSizeInBits()*2;
+
+    if ((ii->getIntrinsicID() == Intrinsic::uadd_with_overflow) ||
+        (ii->getIntrinsicID() == Intrinsic::usub_with_overflow) ||
+        (ii->getIntrinsicID() == Intrinsic::umul_with_overflow)) {
+
+        Value *op1ext =
+            builder.CreateZExt(op1, IntegerType::get(ii->getContext(), bw2));
+        Value *op2ext =
+            builder.CreateZExt(op2, IntegerType::get(ii->getContext(), bw2));
+        Value *int_max_s =
+            ConstantInt::get(op1->getType(), APInt::getMaxValue(bw));
+        Value *int_max =
+            builder.CreateZExt(int_max_s, IntegerType::get(ii->getContext(), bw2));
+
+        if (ii->getIntrinsicID() == Intrinsic::uadd_with_overflow){
+            result_ext = builder.CreateAdd(op1ext, op2ext);
+        } else if (ii->getIntrinsicID() == Intrinsic::usub_with_overflow){
+            result_ext = builder.CreateSub(op1ext, op2ext);
+        } else if (ii->getIntrinsicID() == Intrinsic::umul_with_overflow){
+            result_ext = builder.CreateMul(op1ext, op2ext);
+        }
+        overflow = builder.CreateICmpUGT(result_ext, int_max);
+
+    } else if ((ii->getIntrinsicID() == Intrinsic::sadd_with_overflow) ||
+               (ii->getIntrinsicID() == Intrinsic::ssub_with_overflow) ||
+               (ii->getIntrinsicID() == Intrinsic::smul_with_overflow)) {
+
+        Value *op1ext =
+            builder.CreateSExt(op1, IntegerType::get(ii->getContext(), bw2));
+        Value *op2ext =
+            builder.CreateSExt(op2, IntegerType::get(ii->getContext(), bw2));
+        Value *int_max_s =
+            ConstantInt::get(op1->getType(), APInt::getSignedMaxValue(bw));
+        Value *int_min_s =
+            ConstantInt::get(op1->getType(), APInt::getSignedMinValue(bw));
+        Value *int_max =
+            builder.CreateSExt(int_max_s, IntegerType::get(ii->getContext(), bw2));
+        Value *int_min =
+            builder.CreateSExt(int_min_s, IntegerType::get(ii->getContext(), bw2));
+
+        if (ii->getIntrinsicID() == Intrinsic::sadd_with_overflow){
+            result_ext = builder.CreateAdd(op1ext, op2ext);
+        } else if (ii->getIntrinsicID() == Intrinsic::ssub_with_overflow){
+            result_ext = builder.CreateSub(op1ext, op2ext);
+        } else if (ii->getIntrinsicID() == Intrinsic::smul_with_overflow){
+            result_ext = builder.CreateMul(op1ext, op2ext);
+        }
+        overflow = builder.CreateOr(builder.CreateICmpSGT(result_ext, int_max),
+                                    builder.CreateICmpSLT(result_ext, int_min));
+    }
+
+    // This trunc cound be replaced by a more general trunc replacement
+    // that allows to detect also undefined behavior in assignments or
+    // overflow in operation with integers whose dimension is smaller than
+    // int's dimension, e.g.
+    //     uint8_t = uint8_t + uint8_t;
+    // if one desires the wrapping should write
+    //     uint8_t = (uint8_t + uint8_t) & 0xFF;
+    // before this, must check if it has side effects on other operations
+    result = builder.CreateTrunc(result_ext, op1->getType());
+    return { result, overflow };
+};
+
 class KillStructByValue : public llvm::FunctionPass {
 
 public:
@@ -43,6 +119,8 @@ public:
 
     virtual bool runOnFunction(llvm::Function& F) override {
         auto&& i32 = llvm::Type::getInt32Ty(F.getContext());
+        auto&& intrinsics = IntrinsicsManager::getInstance();
+        LLVM_type_builder type_builder(&F);
 
         auto toLLVMConstant = [&](auto&& i) -> llvm::Value* {
             return llvm::ConstantInt::get(i32, i);
@@ -62,6 +140,97 @@ public:
 #include <functional-hell/matchers_fancy_syntax.h>
 
         using namespace functional_hell::matchers::placeholders;
+
+        auto $SomeStructTy = functional_hell::matchers::Guard([](llvm::Type* t){ return t && t -> isStructTy(); });
+
+        auto intr_stores =
+            util::viewContainer(F)
+            .flatten()
+            .map(ops::take_pointer)
+            .filter(llvm::pattern_matcher(llvm::$StoreInst(_, llvm::$CallInst(llvm::$Intrinsic(_), _) & llvm::$OfType($SomeStructTy))))
+            .toVector();
+
+        for(auto&& E : intr_stores) SWITCH(E) {
+                NAMED_CASE(m,
+                           llvm::$StoreInst(
+                               _1,
+                               _2
+                               & llvm::$CallInst(llvm::$Intrinsic(_), _)
+                               & llvm::$OfType($SomeStructTy)
+                           )
+                ) {
+                    auto dst = m->_1;
+                    auto call = m->_2;
+
+                    auto resolves = breakOverflowIntrinsic(llvm::cast<llvm::IntrinsicInst>(call));
+                    auto&& gep0 = llvm::GetElementPtrInst::Create(
+                        dst,
+                        util::itemize(0, 0).map(toLLVMConstant).toVector(),
+                        dst->getName() + ".value",
+                        E
+                    );
+                    auto&& gep1 = llvm::GetElementPtrInst::Create(
+                        dst,
+                        util::itemize(0, 1).map(toLLVMConstant).toVector(),
+                        dst->getName() + ".overflow",
+                        E
+                    );
+
+                    auto&& store0 = new llvm::StoreInst(gep0, resolves.first, E);
+                    auto&& store1 = new llvm::StoreInst(gep1, resolves.second, E);
+                    copyDbgMD(E, gep0);
+                    copyDbgMD(E, gep1);
+                    copyDbgMD(E, store0);
+                    copyDbgMD(E, store1);
+
+                    E->eraseFromParent();
+                    eraseIfNotUsed(call);
+                }
+        }
+
+        auto $LocalFunction = functional_hell::matchers::Guard([](llvm::Value* v){
+            if(auto&& f = dyn_cast<llvm::Function>(v)) {
+                return !f->isDeclaration();
+            }
+            return false;
+        });
+
+        auto func_stores =
+            util::viewContainer(F)
+            .flatten()
+            .map(ops::take_pointer)
+            .filter(llvm::pattern_matcher(llvm::$StoreInst(_, llvm::$CallInst($LocalFunction, _) & llvm::$OfType($SomeStructTy))))
+            .toVector();
+
+        for(auto&& E : func_stores) SWITCH(E) {
+                NAMED_CASE(m,
+                           llvm::$StoreInst(
+                               _1,
+                               llvm::$CallInst(_2 & $LocalFunction, _3)
+                               & llvm::$OfType($SomeStructTy)
+                           )
+                ) {
+                    auto dst = m->_1;
+                    auto func = m->_2;
+                    auto args = m->_3;
+
+                    auto refinedArgs = util::itemize(dst, func) >> util::viewContainer(args);
+
+                    auto callAndStore = intrinsics.createIntrinsic(
+                        function_type::INTRINSIC_CALL_AND_STORE,
+                        util::toString(*func->getType()),
+                        type_builder.getFunction(type_builder.getVoid(), refinedArgs.map(LAM(arg, arg->getType())) ),
+                        F.getParent()
+                    );
+
+                    auto call = llvm::CallInst::Create(callAndStore, refinedArgs.toVector(), "", E);
+                    copyDbgMD(E, call);
+
+                    eraseIfNotUsed(llvm::cast<llvm::StoreInst>(E)->getValueOperand());
+                    E->eraseFromParent();
+                }
+        }
+
         // Extract(Load($ptr), $indices) -> Load(Gep($ptr, $indices))
 
         auto extracts =

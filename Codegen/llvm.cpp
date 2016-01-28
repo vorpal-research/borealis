@@ -61,6 +61,7 @@ bool isTriviallyInboundsGEP(const llvm::Value* I) {
     return true;
 }
 
+
 llvm::DebugLoc getFirstLocusForBlock(const llvm::BasicBlock* bb) {
     for(auto& I : *bb) {
         const auto& dl = I.getDebugLoc();

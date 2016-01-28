@@ -136,7 +136,8 @@ Z3::Dynamic ExprFactory::getVarByTypeAndName(
     else if (isa<type::TypeError>(type))
         BYE_BYE(Dynamic, "Encountered type error in Z3 conversion: " + util::toString(*type));
 
-    BYE_BYE(Dynamic, "Unreachable with type: " + util::toString(*type));
+    warns() << "getVarByTypeAndName: Unsupported type encountered: " << *type << endl;
+    return getIntVar(name, sizeForType(type), fresh);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

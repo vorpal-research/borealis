@@ -71,6 +71,8 @@ static llvm::SmallVector<llvm::Value*, 2> tryFindAdjustedIndices(
         }
     }
 
+    if(!Scale) return {};
+
     auto iScale = Scale->getZExtValue();
 
     if(iScale % eltSize != 0) return {};

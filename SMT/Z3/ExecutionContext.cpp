@@ -8,6 +8,7 @@
 #include "SMT/Z3/ExecutionContext.h"
 
 #include <unordered_set>
+#include "Util/union_set.hpp"
 
 namespace borealis {
 
@@ -140,11 +141,11 @@ ExecutionContext& ExecutionContext::switchOn(
     const std::vector<Choice>& contexts) {
     auto&& merged = ExecutionContext::mergeMemory(name, *this, contexts);
 
-    this->memArrays = merged.memArrays;
+    this->memArrays = std::move(merged.memArrays);
     this->globalPtr = merged.globalPtr;
     this->localPtr = merged.localPtr;
 
-    this->contextAxioms = merged.contextAxioms;
+    this->contextAxioms = std::move(merged.contextAxioms);
 
     return *this;
 }
@@ -182,15 +183,21 @@ ExecutionContext ExecutionContext::mergeMemory(
     }
 
     // Merge context axioms
-    auto bool_hash = [](Bool b) { return logic::z3impl::asAxiom(b).hash(); };
-    auto bool_eq = [](Bool a, Bool b) { return z3::eq(logic::z3impl::asAxiom(a), logic::z3impl::asAxiom(b)); };
 
-    auto&& mergedAxioms = std::unordered_set<Bool, decltype(bool_hash), decltype(bool_eq)>(16, bool_hash, bool_eq);
-    for (auto&& e : contexts) {
-        auto&& cax = e.second.contextAxioms;
-        mergedAxioms.insert(cax.begin(), cax.end());
+    impl_::z3exprSet mergedAxioms;
+    if(contexts.empty()) {
+        res.contextAxioms = impl_::z3exprSet{};
+    } else {
+        auto h = util::head(contexts).second.contextAxioms;
+        auto&& t = util::tail(contexts);
+        for(auto&& ctx : t) {
+            auto&& e = ctx.second.contextAxioms;
+            auto&& newh = impl_::z3exprSet::join(std::move(h), e);
+            h = std::move(newh);
+        }
+        res.contextAxioms = std::move(h);
+        //res.contextAxioms.finalize();
     }
-    res.contextAxioms = std::vector<Bool>(mergedAxioms.begin(), mergedAxioms.end());
 
     return res;
 };
@@ -240,7 +247,7 @@ void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
     if (CraigColtonMode.get(false)) {
         gepBounds( gepBounds().store(p, bound.adapt<Byte>()) );
     } else {
-        contextAxioms.push_back(getBound(p, bound.getBitSize()) == bound);
+        contextAxioms.insert(z3_::logic::z3impl::asAxiom(getBound(p, bound.getBitSize()) == bound));
     }
 }
 

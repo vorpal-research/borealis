@@ -65,6 +65,7 @@ public:
 #include "Util/macros.h"
 template<class Impl>
 struct SMTImpl<Impl, BinaryTerm> {
+
     static Dynamic<Impl> doit(
             const BinaryTerm* t,
             ExprFactory<Impl>& ef,
@@ -123,6 +124,15 @@ struct SMTImpl<Impl, BinaryTerm> {
 
         BYE_BYE(Dynamic, "Unsupported BinaryTerm: " + t->getName());
     }
+
+//    static Dynamic<Impl> doit(
+//            const BinaryTerm* t,
+//            ExprFactory<Impl>& ef,
+//            ExecutionContext<Impl>* ctx) {
+//        TRACE_FUNC;
+//        USING_SMT_IMPL(Impl);
+//        AUTO_CACHE_IMPL(t, ctx, doit_(t, ef, ctx));
+//    }
 };
 #include "Util/unmacros.h"
 

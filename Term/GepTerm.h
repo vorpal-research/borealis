@@ -155,6 +155,15 @@ struct SMTImpl<Impl, GepTerm> {
 
         return shifted.withAxiom(shifted > zero);
     }
+
+//    static Dynamic<Impl> doit(
+//            const GepTerm* t,
+//            ExprFactory<Impl>& ef,
+//            ExecutionContext<Impl>* ctx) {
+//        TRACE_FUNC;
+//        USING_SMT_IMPL(Impl);
+//        AUTO_CACHE_IMPL(t, ctx, doit_(t, ef, ctx));
+//    }
 };
 
 struct GepTermExtractor {

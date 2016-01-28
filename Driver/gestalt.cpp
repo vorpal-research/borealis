@@ -156,7 +156,7 @@ int gestalt::main(int argc, const char** argv) {
 
     if (compileCommands.empty()) return E_ILLEGAL_COMPILER_OPTIONS;
 
-    clang_pipeline clang { "clang", diags };
+    clang_pipeline clang { "clang" };
 
 
     clang.assignLogger(*this);

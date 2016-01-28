@@ -153,9 +153,9 @@ void DecInstVisitor::printCond(llvm::Instruction* ins){
         writeValueToStream(ins->getOperand(0), true);
         infos_ << " "<<icmpOp.find(ici->getSignedPredicate())->second<<" ";
         writeValueToStream(ins->getOperand(1), true);
-    } else if(isa<FCmpInst>(ins)) {
+    } else if(auto&& fci = dyn_cast<FCmpInst>(ins)) {
         writeValueToStream(ins->getOperand(0), true);
-        infos_ << " "<<fcmpOp.find(ici->getPredicate())->second<<" ";
+        infos_ << " "<<fcmpOp.find(fci->getPredicate())->second<<" ";
         writeValueToStream(ins->getOperand(1), true);
     } else if(auto&& bi = dyn_cast<BranchInst>(ins)) { // inst not found
         writeValueToStream(bi->getCondition(), true);

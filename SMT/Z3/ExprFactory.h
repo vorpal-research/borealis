@@ -26,12 +26,24 @@ public:
     static size_t sizeForType(Type::Ptr type) {
         using llvm::isa;
         using llvm::cast;
-        return isa<type::Integer>(type) ? cast<type::Integer>(type)->getBitsize() :
-               isa<type::Pointer>(type) ? Pointer::bitsize :
-               isa<type::Array>(type)   ? Pointer::bitsize : // FIXME: ???
-               isa<type::Float>(type)   ? Real::bitsize :
-               isa<type::Bool>(type)    ? 1 :
-               util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
+        using llvm::dyn_cast;
+        if(isa<type::Integer>(type)) return cast<type::Integer>(type)->getBitsize();
+        if(isa<type::Pointer>(type)) return Pointer::bitsize;
+        if(isa<type::Array>(type)) return Pointer::bitsize; // FIXME: ???
+        if(isa<type::Float>(type)) return Real::bitsize;
+        if(isa<type::Bool>(type)) return 1;
+
+        // XXX: this should not normally happen
+        if(auto record = dyn_cast<type::Record>(type)) {
+            size_t sum = 0;
+            auto&& body = record->getBody()->get();
+            for(auto&& field: body) {
+                sum += sizeForType(field.getType());
+            }
+            return sum ? sum : 1;
+        }
+
+        util::sayonara<size_t>(__FILE__, __LINE__, __PRETTY_FUNCTION__,
                        "Cannot acquire bitsize for type " + util::toString(*type));
     }
 

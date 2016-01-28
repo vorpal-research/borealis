@@ -5,6 +5,7 @@
  *      Author: belyaev
  */
 
+#include <clang/Basic/TargetInfo.h>
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Driver.h>
@@ -28,6 +29,7 @@
 
 #include "Actions/VariableInfoFinder.h"
 #include "Codegen/CType/ProtobufConverterImpl.hpp"
+#include "Codegen/DiagnosticLogger.h"
 #include "Codegen/intrinsics_manager.h"
 #include "Codegen/llvm.h"
 #include "Driver/clang_pipeline.h"
@@ -96,15 +98,27 @@ static void postProcessClangGeneratedModule(clang::SourceManager& SM, llvm::Modu
 }
 
 struct clang_pipeline::impl: public DelegateLogging {
-    clang::CompilerInstance ci;
+
     std::unordered_map<std::string, PortableModule::Ptr> fileCache;
     FactoryNest fn;
     CTypeFactory ctf;
+    llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> diags;
 
     impl(clang_pipeline* abs): DelegateLogging(*abs), fn() {};
 
-    void compile(const llvm::opt::InputArgList& args) {
-        llvm::IntrusiveRefCntPtr<CompilerInvocation> CI{ new CompilerInvocation() };
+    template<class ActionKind, class Continuation>
+    auto runAction(const llvm::opt::InputArgList& args, ActionKind&& act, Continuation cont) -> decltype(auto) {
+        clang::CompilerInstance ci;
+
+        auto diagOpts = llvm::IntrusiveRefCntPtr<DiagnosticOptions>(new DiagnosticOptions{});
+        diagOpts->ShowCarets = false;
+
+        auto diagBuffer = borealis::util::uniq(new DiagnosticLogger(*this));
+        auto diags = CompilerInstance::createDiagnostics(diagOpts.get(), diagBuffer.get(), /* ownClient = */false);
+
+        ci.setDiagnostics(diags.get());
+
+        llvm::IntrusiveRefCntPtr<CompilerInvocation> inv{new CompilerInvocation() };
         std::vector<const char*> ccArgs;
         ccArgs.reserve(args.getNumInputArgStrings());
 
@@ -122,7 +136,7 @@ struct clang_pipeline::impl: public DelegateLogging {
 
         ASSERT(
             CompilerInvocation::CreateFromArgs(
-                *CI,
+                *inv,
                 const_cast<const char**>(ccArgs.data()),
                 const_cast<const char**>(ccArgs.data()) + ccArgs.size(),
                 ci.getDiagnostics()
@@ -130,7 +144,7 @@ struct clang_pipeline::impl: public DelegateLogging {
             "No CompilerInvocation for clang_pipeline"
         );
 
-        ci.setInvocation(CI.get());
+        ci.setInvocation(inv.get());
         ASSERT(ci.hasInvocation(), "No CompilerInvocation for clang_pipeline");
 
         ci.getCodeGenOpts().EmitDeclMetadata = true;
@@ -138,21 +152,34 @@ struct clang_pipeline::impl: public DelegateLogging {
         ci.getCodeGenOpts().OptimizationLevel = 0;
         ci.getDiagnosticOpts().ShowCarets = false;
 
+        ci.ExecuteAction(act);
+        return cont(ci, FWD(act));
+    }
+
+    template<class ActionKind>
+    void runAction(const llvm::opt::InputArgList& args, ActionKind& act) {
+        runAction(args, act, [](auto&&, auto&&) {});
+    };
+
+    void compile(const llvm::opt::InputArgList& args) {
         clang::EmitLLVMOnlyAction compile_to_llvm{ &llvm::getGlobalContext() };
         borealis::comments::GatherCommentsAction gatherAnnotations;
-
-        ASSERTC(ci.ExecuteAction(compile_to_llvm));
-        std::shared_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
-
-        postProcessClangGeneratedModule(ci.getSourceManager(), *module);
-
-        ASSERTC(ci.ExecuteAction(gatherAnnotations));
-        AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
-
         borealis::VariableInfoFinder vif(&ctf);
-        ASSERTC(ci.ExecuteAction(vif));
 
-        fileCache[ci.getFrontendOpts().OutputFile] = PortableModule::Ptr{
+        std::string resultFile;
+
+        auto module = runAction(args, compile_to_llvm, [&](auto&& ci, auto&& act){
+            std::shared_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
+            postProcessClangGeneratedModule(ci.getSourceManager(), *module);
+            resultFile = ci.getFrontendOpts().OutputFile;
+            return module;
+        });
+
+        runAction(args, gatherAnnotations);
+        runAction(args, vif);
+
+        AnnotationContainer::Ptr annotations{ new AnnotationContainer(gatherAnnotations, fn.Term) };
+        fileCache[resultFile] = PortableModule::Ptr{
             new PortableModule{ module, annotations, vif.vars() }
         };
     }
@@ -184,12 +211,16 @@ struct clang_pipeline::impl: public DelegateLogging {
         if(!types) return;
 
         std::ifstream varStream(vartablefile, std::iostream::in);
-        if(!typeStream) return;
+        if(!varStream) return;
 
-        auto vars = util::read_as_json<std::unordered_set<VarInfo>>(varStream);
+        auto vars = util::read_as_json<std::vector<VarInfo>>(varStream);
+
+        for(auto&& var : *vars) {
+            var.type = ctf.getRef(var.type.getName());
+        }
 
         fileCache[fname] = PortableModule::Ptr{
-            new PortableModule{ module, annotations, ExtVariableInfoData{*vars, types} }
+            new PortableModule{ module, annotations, ExtVariableInfoData{ util::viewContainer(*vars).toHashSet(), types } }
         };
     }
 
@@ -254,34 +285,41 @@ struct clang_pipeline::impl: public DelegateLogging {
         AnnotationContainer::Ptr annotations{ new AnnotationContainer() };
         ExtVariableInfoData edif{ std::unordered_set<VarInfo>{}, ctf.getCtx() };
 
-        for (const auto& arg: util::view(
-            args.filtered_begin(clang::driver::options::OPT_INPUT),
-            args.filtered_end()
-        )) {
-            for (const auto& subarg: arg->getValues()) {
-                const auto& am = get(subarg);
-                if (!am) {
-                    warns() << subarg << ": file or module not found" << endl;
-                    continue;
-                }
+        auto inputs =
+            util::view(
+                args.filtered_begin(clang::driver::options::OPT_INPUT),
+                args.filtered_end()
+            )
+            .map(LAM(arg, arg->getValues()))
+            .flatten()
+            .map(LAM(cstr, util::string_ref(cstr)))
+            .toHashSet();
 
-                std::string err;
-                if(linker.linkInModule(am->module.get(), llvm::Linker::DestroySource, &err)) {
-                    errs() << "Errors during linking: " << err << endl;
-                }
-                annotations->mergeIn(am->annotations);
-                edif.vars.insert(am->extVars.begin(), am->extVars.end());
 
-                claim(subarg);
+        for (const auto& subarg: inputs) {
+            const auto& am = get(subarg);
+            if (!am) {
+                warns() << subarg << ": file or module not found" << endl;
+                continue;
             }
+
+            std::string err;
+            if(linker.linkInModule(am->module.get(), llvm::Linker::DestroySource, &err)) {
+                errs() << "Errors during linking: " << err << endl;
+            }
+            annotations->mergeIn(am->annotations);
+            edif.vars.insert(am->extVars.begin(), am->extVars.end());
+
+            claim(subarg);
         }
 
         IntrinsicsManager::getInstance().updateForModule(*module);
         MetaInserter::unliftAllDebugIntrinsics(*module);
 
-        fileCache[linkerOutputFile] = PortableModule::Ptr{
+        fileCache[moduleName] = fileCache[linkerOutputFile] = PortableModule::Ptr{
             new PortableModule{ std::move(module), std::move(annotations), std::move(edif) }
         };
+
     }
 
     PortableModule::Ptr result() {
@@ -306,11 +344,9 @@ struct clang_pipeline::impl: public DelegateLogging {
 clang_pipeline::~clang_pipeline() {};
 
 clang_pipeline::clang_pipeline(
-    const std::string&,
-    llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine>& diags):
+    const std::string&):
         pimpl{ new impl{ this } } {
     pimpl->assignLogger(*this);
-    pimpl->ci.setDiagnostics(diags.get());
 }
 
 void clang_pipeline::invoke(const command& cmd) {

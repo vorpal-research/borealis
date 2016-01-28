@@ -420,8 +420,14 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
             pimpl->require(!ctx.func->getReturnType()->isVoidTy(),
                            "\\result cannot be used with functions returning void");
 
-            auto&& desc = forValueSingle(ctx.func);
-            auto&& funcType = llvm::dyn_cast<CFunction>(desc.type);
+            auto&& descs = forValue(ctx.func);
+            if(descs.empty()) {
+                warns() << "Cannot materialize function " <<  ctx.func->getName() << ", trying to deduce type from llvm" << endl;
+            }
+
+            auto ctype = descs.empty()? pimpl->ctypeInfer.tryCastLLVMTypeToCType(ctx.func->getType()->getPointerElementType()) : descs.front().type;
+
+            auto&& funcType = llvm::dyn_cast<CFunction>(ctype);
             ASSERTC(funcType);
             auto&& retType_ = funcType->getResultType().get();
 
@@ -479,6 +485,7 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
             auto&& arg = std::next(ctx.func->arg_begin(), val);
 
             auto&& desc = forValueSingle(&*arg);
+
             return pimpl->withCType(
                 factory().getArgumentTerm(arg, CTypeUtils::getSignedness(desc.type)),
                 desc.type
@@ -499,8 +506,14 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
                 pimpl->failWith("Function %s does not have argument %d", ctx.func->getName(), val);
             }
 
-            auto&& ft = forValueSingle(ctx.func);
-            auto&& funcCType = llvm::dyn_cast<CFunction>(ft.type);
+            auto&& descs = forValue(ctx.func);
+            if(descs.empty()) {
+                warns() << "Cannot materialize function " <<  ctx.func->getName() << ", trying to deduce type from llvm" << endl;
+            }
+
+            auto ctype = descs.empty()? pimpl->ctypeInfer.tryCastLLVMTypeToCType(ctx.func->getType()->getPointerElementType()) : descs.front().type;
+            auto&& funcCType = llvm::dyn_cast<CFunction>(ctype);
+
             auto&& argCType = funcCType->getArgumentTypes()[val];
             auto&& argType = FN.Type->cast(ctx.func->getFunctionType()->getParamType(val), ctx.func->getDataLayout(), CTypeUtils::getSignedness(argCType));
 

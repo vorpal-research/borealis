@@ -67,11 +67,15 @@ Type::Ptr TypeFactory::getArray(Type::Ptr elem, size_t size) const {
 Type::Ptr TypeFactory::getRecord(const std::string& name, const llvm::StructType* st, const llvm::DataLayout* dl) const {
     static std::unordered_set<const llvm::StructType*> visitedRecordTypes;
 
-
     if (auto existing = util::at(records, name)) return existing.getUnsafe();
     else {
-        if (not recordBodies->count(name) && not visitedRecordTypes.count(st)) {
+        if (not recordBodies->count(name) && st && not visitedRecordTypes.count(st)) {
             visitedRecordTypes.insert(st);
+
+            if(st->isOpaque()) {
+                return records[name] = getUnknownType();
+            }
+
             auto sl = dl->getStructLayout(const_cast<llvm::StructType*>(st)); // why, llvm, why???
 
             type::RecordBody rb{
@@ -112,6 +116,11 @@ Type::Ptr TypeFactory::getFunction(Type::Ptr retty, const std::vector<Type::Ptr>
 }
 
 void TypeFactory::initialize(const VariableInfoTracker& mit) {
+    // FIXME: this is stupid as hell
+    static const VariableInfoTracker* lastMIT;
+    if(&mit == lastMIT) return;
+    lastMIT = &mit;
+
     DebugInfoFinder dfi;
     dfi.processModule(mit.getModule());
 

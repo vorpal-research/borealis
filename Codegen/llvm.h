@@ -11,6 +11,7 @@
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <llvm/IR/Metadata.h>
+#include <llvm/IR/LLVMContext.h>
 
 #include "Util/util.h"
 #include "Util/collections.hpp"
@@ -121,7 +122,7 @@ STEAL_FROM_LLVM_BEGIN(DICompositeType)
         return llvm::DICompositeType::Verify() && getTag() != llvm::dwarf::DW_TAG_array_type;
     }
 
-    DITypedArray<llvm::DITypeRef> getTypeArray() const  {
+    DITypedArray<llvm::DITypeRef> getTypeArray() const {
         return llvm::DICompositeType::getTypeArray();
     }
 
@@ -156,10 +157,24 @@ struct DISubroutineType : public DICompositeType {
     DISubroutineType(const llvm::DIDescriptor& node): DISubroutineType(static_cast<llvm::MDNode*>(node)) {};
 
     llvm::DITypeRef getReturnType() const {
-        return getTypeArray().getElement(0);
+        return DITypedArray<llvm::DITypeRef>(getTypeArray()).getElement(0);
     }
 
-    auto getArgumentTypeView() const QUICK_RETURN(getTypeArray().asView().drop(1))
+    bool isVarArg() const {
+        auto rawElements = llvm::DICompositeType::getTypeArray();
+        if(!rawElements) return false;
+        if(rawElements.getNumElements() == 0) return false;
+
+        return rawElements.getElement(rawElements.getNumElements() - 1).isUnspecifiedParameter();
+    }
+
+    auto getArgumentTypeView() const -> decltype(getTypeArray().asView()) {
+        if(!isVarArg()) return getTypeArray().asView().drop(1);
+        else {
+            auto size = getTypeArray().getNumElements();
+            return getTypeArray().asView().take(size-1).drop(1);
+        }
+    }
 };
 
 struct DIMember : public llvm::DIDerivedType {
@@ -409,6 +424,9 @@ std::map<llvm::Type*, DIType> flattenTypeTree(
 bool isAllocaLikeValue(const llvm::Value* value);
 bool isAllocaLikeTypes(const llvm::Type* llvmType, const llvm::DIType& metaType, const DebugInfoFinder& dfi);
 
+template<class AdditionalData>
+void addTracking(llvm::Value* v, const AdditionalData& ad);
+
 namespace impl_ {
 
 template<class AdditionalData>
@@ -420,7 +438,7 @@ public:
     MagicVH() = default;
 
 private:
-    std::shared_ptr<AdditionalData> keep;
+    std::shared_ptr<const AdditionalData> keep;
 
 public:
     virtual void deleted() override {
@@ -428,8 +446,12 @@ public:
         keep = nullptr;
     }
 
-    virtual void allUsesReplacedWith(llvm::Value *) override {
-        keep = nullptr;
+    virtual void allUsesReplacedWith(llvm::Value * ne) override {
+        if(!ne) return;
+        if(ne == getValPtr()) return; // it happens
+
+        addTracking(ne, *keep);
+        //keep = nullptr;
     }
 
     std::shared_ptr<AdditionalData>& getData() {
@@ -462,6 +484,42 @@ void addTracking(llvm::Value* v, const AdditionalData& ad) {
         }
     }
 }
+
+struct LLVM_type_builder {
+    llvm::LLVMContext* ctx;
+
+    template<class Anything>
+    explicit LLVM_type_builder(Anything* a): ctx(&a->getContext()) {}
+
+    llvm::Type* getVoid() {
+        return llvm::Type::getVoidTy(*ctx);
+    }
+
+    llvm::IntegerType* getInt(size_t sz) {
+        return llvm::Type::getIntNTy(*ctx, sz);
+    }
+
+    llvm::IntegerType* getBool() {
+        return getInt(1);
+    }
+
+    llvm::Type* getDouble() {
+        return llvm::Type::getDoubleTy(*ctx);
+    }
+
+    llvm::Type* getFloat() {
+        return llvm::Type::getFloatTy(*ctx);
+    }
+
+    template<class Args>
+    llvm::FunctionType* getFunction(llvm::Type* result, Args&& args, bool varArg = false) {
+        return llvm::FunctionType::get(result, util::viewContainer(args).toVector(), varArg);
+    }
+
+    llvm::PointerType* getPointer(llvm::Type* dept) {
+        return llvm::PointerType::get(dept, 0U);
+    }
+};
 
 } // namespace borealis
 namespace std {
