@@ -338,7 +338,7 @@ clean.cfgparser: clean.dbglog
 	rm -rf $(CFGPARSER_DIR)/dist
 
 .andersen:
-	cd $(ANDERSEN_CPP_DIR) && cmake .
+	cd $(ANDERSEN_CPP_DIR) && LLVM_DIR=$(LLVMDIR) cmake .
 	$(MAKE) CXX=$(CXX) -C $(ANDERSEN_CPP_DIR)
 	touch $@
 
