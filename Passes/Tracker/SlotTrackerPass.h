@@ -28,7 +28,7 @@ public:
 
     SlotTrackerPass() : llvm::ModulePass(ID) {}
 
-    bool doInitialization(llvm::Module& M);
+    bool doInitialization(llvm::Module& M) override;
     virtual bool runOnModule(llvm::Module& M) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
 

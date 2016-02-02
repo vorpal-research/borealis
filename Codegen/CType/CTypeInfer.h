@@ -150,7 +150,7 @@ public:
             UNREACHABLE(tfm::format("Type error detected: %s", te->getMessage()));
         }
 
-        if(auto&& ut = dyn_cast<type::UnknownType>(tp)) {
+        if(isa<type::UnknownType>(tp)) {
             UNREACHABLE(tfm::format("Unknown type detected"));
         }
 
@@ -168,11 +168,11 @@ public:
             return CTF->getInteger(name, int_->getBitsize(), int_->getSignedness());
         }
 
-        if(auto&& float_ = dyn_cast<type::Float>(tp)) {
+        if(isa<type::Float>(tp)) {
             return CTF->getFloat("bor.float", TypeFactory::defaultTypeSize);
         }
 
-        if(auto&& bool_ = dyn_cast<type::Bool>(tp)) {
+        if(isa<type::Bool>(tp)) {
             return CTF->getInteger("bor.bool", 1, llvm::Signedness::Unsigned);
         }
 

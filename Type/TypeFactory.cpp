@@ -178,7 +178,7 @@ Type::Ptr TypeFactory::embedRecordBodyNoRecursion(llvm::Type* type, const llvm::
     return cast(type, DL, CTypeUtils::getSignedness(meta));
 }
 
-Type::Ptr TypeFactory::embedType(const DebugInfoFinder& dfi, const llvm::DataLayout* DL, llvm::Type* type, CType::Ptr meta) const {
+Type::Ptr TypeFactory::embedType(const DebugInfoFinder& /* dfi */, const llvm::DataLayout* DL, llvm::Type* type, CType::Ptr meta) const {
     return cast(type, DL, CTypeUtils::getSignedness(meta));
 }
 

@@ -87,12 +87,12 @@ struct protobuf_traits_impl<CVoid> {
     typedef proto::CVoid proto_t;
     typedef CTypeFactory* context_t;
 
-    static std::unique_ptr<proto_t> toProtobuf(const normal_t& p) {
+    static std::unique_ptr<proto_t> toProtobuf(const normal_t& /* p */) {
         auto res = util::uniq(new proto_t());
         return std::move(res);
     }
 
-    static CType::Ptr fromProtobuf(context_t f, const std::string&, const proto_t& p) {
+    static CType::Ptr fromProtobuf(context_t f, const std::string&, const proto_t& /* p */) {
         return f->getVoid();
     }
 };

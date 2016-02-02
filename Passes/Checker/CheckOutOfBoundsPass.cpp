@@ -37,11 +37,6 @@ public:
         if (isTriviallyInboundsGEP(&GI)) return;
         if (GI.isDereferenceablePointer(loc.getDataLayout())) return;
 
-        static config::BoolConfigEntry OverApproximatedGeps("analysis", "overapproximate-geps");
-        auto overGeps = OverApproximatedGeps.get(true);
-
-        auto constantIdxs = GI.hasAllConstantIndices();
-
         auto shift = (
             pass->FN.Term *
             pass->FN.Term->getValueTerm(&GI)

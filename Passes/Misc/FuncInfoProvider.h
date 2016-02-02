@@ -22,7 +22,7 @@ public:
 
     FuncInfoProvider();
 
-    void getAnalysisUsage(llvm::AnalysisUsage& AU) const;
+    void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 
     const func_info::FuncInfo& getInfo(llvm::Function* f);
     const std::vector<Annotation::Ptr>& getContracts(llvm::Function* f);

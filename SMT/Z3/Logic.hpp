@@ -591,7 +591,7 @@ z3::expr forAll(
 }
 
 template<class VarT>
-z3::expr forAllConst(z3::context& ctx, VarT var, Bool body) {
+z3::expr forAllConst(z3::context& /*ctx*/, VarT var, Bool body) {
     return z3::forall(getExpr(var), getExpr(body));
 }
 

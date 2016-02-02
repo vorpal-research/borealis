@@ -168,7 +168,7 @@ struct clang_pipeline::impl: public DelegateLogging {
 
         std::string resultFile;
 
-        auto module = runAction(args, compile_to_llvm, [&](auto&& ci, auto&& act){
+        auto module = runAction(args, compile_to_llvm, [&](auto&& ci, auto&& /*act*/){
             std::shared_ptr<llvm::Module> module{ compile_to_llvm.takeModule() };
             postProcessClangGeneratedModule(ci.getSourceManager(), *module);
             resultFile = ci.getFrontendOpts().OutputFile;

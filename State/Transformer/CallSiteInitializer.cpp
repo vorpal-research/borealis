@@ -83,7 +83,7 @@ Term::Ptr CallSiteInitializer::transformArgumentTerm(ArgumentTermPtr t) {
     }
 }
 
-Term::Ptr CallSiteInitializer::transformArgumentCountTerm(ArgumentCountTermPtr t) {
+Term::Ptr CallSiteInitializer::transformArgumentCountTerm(ArgumentCountTermPtr /*t*/) {
     return FN.Term->getIntTerm(ci.arg_size(), TypeFactory::defaultTypeSize);
 }
 
