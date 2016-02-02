@@ -351,14 +351,8 @@ struct SegmentTree {
                 TRACE_FUNC;
                 TRACE_FMT("where: 0x%x", where);
 
-                auto available = maxbound - minbound;
+                // auto available = maxbound - minbound;
                 auto mid = middle(minbound, maxbound);
-
-                TRACE_PARAM(available);
-                TRACE_PARAM(minbound);
-                TRACE_PARAM(maxbound);
-                TRACE_PARAM(t->status);
-                TRACE_PARAM(t->state);
 
                 if(handleEthereal(tree, minbound, maxbound, t, where)) {
                     return true;

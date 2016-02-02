@@ -91,8 +91,8 @@ inline null_trace_stream_t operator<<(null_trace_stream_t st, Arg&&) { return st
 
 #else
 #define TRACE_FUNC
-#define TRACE_PARAM(...)
-#define TRACE_FMT(...)
+#define TRACE_PARAM(...) borealis::util::use(__VA_ARGS__)
+#define TRACE_FMT(...) borealis::util::use(__VA_ARGS__)
 #define TRACES() borealis::logging::null_trace_stream
 #define TRACE_BLOCK(ID)
 #define TRACE_MEASUREMENT(M...)
