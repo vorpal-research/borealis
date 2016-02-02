@@ -159,7 +159,7 @@ struct protobuf_traits_impl<type::Record> {
         // Crazy shit starts here
         // XXX: make this a thread-local static
         //      if we ever decide to do threads and shit
-        static bool discardAllBodies = false;
+        thread_local static bool discardAllBodies = false;
         if(discardAllBodies) return res;
         discardAllBodies = true;
         ON_SCOPE_EXIT(discardAllBodies = false)
