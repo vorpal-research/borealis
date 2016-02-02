@@ -7,7 +7,7 @@ CXX := clang++
 RTTIFLAG := -fno-rtti
 
 DEFS := \
-	-DGOOGLE_PROTOBUF_NO_RTTI \
+	-DGOOGLE_PROTOBUF_NO_RTTI
 #	-DUSE_MATHSAT_SOLVER
 
 USER_DEFS := # -DNO_TRACING
@@ -22,7 +22,8 @@ CXXFLAGS := \
 	-D__STDC_CONSTANT_MACROS \
 	-D__STDC_FORMAT_MACROS \
 	-D__STDC_LIMIT_MACROS \
-	-O2 \
+	-D_GLIBCXX_USE_CXX11_ABI=1 \
+	-O0 \
 	-fPIC \
 	-std=c++14 \
 	-g \
@@ -30,6 +31,11 @@ CXXFLAGS := \
 	$(INCLUDES) \
 	$(DEFS) \
 	$(USER_DEFS)
+
+LLVMDIR := /opt/clang/3.5.1
+
+CXXFLAGS += \
+	-isystem $(LLVMDIR)/include
 
 #LLVMCOMPONENTS := analysis asmparser asmprinter bitreader bitwriter \
 #	codegen core cppbackend cppbackendcodegen cppbackendinfo debuginfo engine \
@@ -56,7 +62,7 @@ WARNINGS_ON := all extra cast-qual float-equal switch \
 	strict-prototypes strict-overflow=5 write-strings \
 	aggregate-return super-class-method-mismatch
 # warnings to hide
-WARNINGS_OFF := unused-function redundant-decls
+WARNINGS_OFF := unused-function redundant-decls unused-local-typedef pessimizing-move
 # warnings to treat as errors
 WARNINGS_TAE := overloaded-virtual return-stack-address \
 	implicit-function-declaration address-of-temporary \
@@ -94,8 +100,6 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Type \
 	$(PWD)/Util \
 
-#$(PWD)/lib/poolalloc/src
-
 ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD) \
 	$(PWD)/Protobuf/Gen \
@@ -106,6 +110,7 @@ ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD)/lib/cfgparser/include
 
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
+CXXFLAGS += -isystem $(PWD)/lib
 
 SOURCES := \
 	$(shell ls $(PWD)/*.cpp) \
@@ -333,12 +338,9 @@ clean.cfgparser: clean.dbglog
 	rm -rf $(CFGPARSER_DIR)/dist
 
 .andersen:
-	cd $(ANDERSEN_CPP_DIR) && cmake .
+	cd $(ANDERSEN_CPP_DIR) && LLVM_DIR=$(LLVMDIR) cmake .
 	$(MAKE) CXX=$(CXX) -C $(ANDERSEN_CPP_DIR)
 	touch $@
-
-#$(EXES): $(OBJECTS_WITHOUT_MAIN) $*.o .protobuf .yaml-cpp .cfgparser .andersen
-#	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(OBJECTS_WITHOUT_MAIN) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 wrapper: $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen
 	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
