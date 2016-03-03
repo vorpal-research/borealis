@@ -26,7 +26,7 @@ void UglyGEPKiller::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.addRequired<llvm::DataLayoutPass>();
 }
 
-static llvm::SmallVector<llvm::Value*, 2> tryFindAdjustedIndices(
+static llvm::SmallVector<llvm::Value*, 2>  tryFindAdjustedIndices(
     llvm::Value* idx,
     llvm::Type* dePointed,
     const llvm::DataLayout* TD,
@@ -141,9 +141,10 @@ bool UglyGEPKiller::runOnModule(llvm::Module& M) {
         } else {
             newIdxs = tryFindAdjustedIndices(idx, endType, TD, builder);
             if(newIdxs.empty()) continue;
+            if(newIdxs.size() > 1) continue; // only single-index GEPs allowed on return types
 
-            auto* tmp = builder.CreateBitCast(srcPtr, endType -> getPointerTo(), "bor.reformed.uglygep.cast");
-            res = builder.CreateGEP(tmp, newIdxs, "bor.reformed.uglygep");
+            auto* ibc = builder.CreateBitCast(srcPtr, endType -> getPointerTo(), "bor.reformed.uglygep.icast");
+            res = builder.CreateGEP(ibc, newIdxs, "bor.reformed.uglygep");
         }
 
         I.replaceAllUsesWith(res);
