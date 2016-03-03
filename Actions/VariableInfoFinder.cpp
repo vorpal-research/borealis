@@ -124,35 +124,36 @@ public:
 
 class VariableInfoFinderConsumer : public clang::ASTConsumer {
 public:
-    VariableInfoFinderConsumer(CTypeFactory* CTF) : Visitor(CTF) {};
+    VariableInfoFinderConsumer(VariableInfoFinderVisitor& visitor) : visitor_(&visitor) {};
 
     virtual void HandleTranslationUnit(clang::ASTContext& Context) {
         // Traversing the translation unit decl via a RecursiveASTVisitor
         // will visit all nodes in the AST.
-        Visitor.setASTContext(&Context);
-        Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+        visitor_->setASTContext(&Context);
+        visitor_->TraverseDecl(Context.getTranslationUnitDecl());
     }
 
     llvm::ArrayRef<VarInfo> vars() const {
-        return Visitor.vars();
+        return visitor_->vars();
     }
 
     CTypeContext::Ptr getTypeContext() const {
-        return Visitor.getTypeContext();
+        return visitor_->getTypeContext();
     }
 
 private:
     // A RecursiveASTVisitor implementation.
-    VariableInfoFinderVisitor Visitor;
+    // @notnull
+    VariableInfoFinderVisitor* visitor_;
 };
 
 }
 /* namespace */
 
 struct VariableInfoFinder::VariableInfoFinderImpl {
-    std::unique_ptr<VariableInfoFinderConsumer> consumer;
+    VariableInfoFinderVisitor visitor;
 
-    VariableInfoFinderImpl(decltype(consumer)&& consumer) : consumer(std::move(consumer)) { }
+    VariableInfoFinderImpl(CTypeFactory* ctf) : visitor(ctf) { }
 
 };
 
@@ -160,21 +161,19 @@ clang::ASTConsumer* VariableInfoFinder::CreateASTConsumer(
     clang::CompilerInstance&,
     llvm::StringRef
 ) {
-    return pimpl_->consumer.get();
+    return new VariableInfoFinderConsumer(pimpl_->visitor);
 }
 
 
 VariableInfoFinder::VariableInfoFinder(CTypeFactory* CTF) :
     pimpl_{
-        util::make_unique<VariableInfoFinderImpl>(
-            util::make_unique<VariableInfoFinderConsumer>(CTF)
-        )
+        util::make_unique<VariableInfoFinderImpl>(CTF)
     } { }
 
 VariableInfoFinder::~VariableInfoFinder() { }
 
 ExtVariableInfoData VariableInfoFinder::vars() const {
-    return ExtVariableInfoData{ util::viewContainer(pimpl_->consumer->vars()).toHashSet(), pimpl_->consumer->getTypeContext() };
+    return ExtVariableInfoData{ util::viewContainer(pimpl_->visitor.vars()).toHashSet(), pimpl_->visitor.getTypeContext() };
 }
 
 } /* namespace borealis */
