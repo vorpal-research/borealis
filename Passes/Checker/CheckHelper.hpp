@@ -16,6 +16,7 @@
 
 namespace borealis {
 
+
 template<class Pass>
 class CheckHelper {
 
@@ -67,7 +68,7 @@ public:
         MathSAT::ExprFactory ef;
         MathSAT::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #else
-        Z3::ExprFactory ef;
+        auto&& ef = util::threadLocalInstance<Z3::ExprFactory>();
         Z3::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #endif
 

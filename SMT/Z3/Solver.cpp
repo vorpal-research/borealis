@@ -6,6 +6,7 @@
  */
 
 #include <fstream>
+#include <Util/cache.hpp>
 
 #include "Config/config.h"
 #include "Factory/Nest.h"
@@ -235,10 +236,30 @@ Result Solver::isViolated(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
-    dbgs() << "! state conversion started" << endl;
-    auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
-    dbgs() << "! state conversion finished" << endl;
+    //ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
+    //dbgs() << "! state conversion started" << endl;
+    //auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
+    //dbgs() << "! state conversion finished" << endl;
+
+    // XXX: measure if it really helps anywhere
+    thread_local static util::cache<
+        std::tuple<decltype(memoryStart), decltype(memoryEnd), decltype(state)>,
+        std::tuple<ExecutionContext, Bool>
+    > cacher = [this](auto membounds) {
+        thread_local static auto&& z3ef = this->z3ef;
+        unsigned long long memoryStart, memoryEnd;
+        PredicateState::Ptr state;
+        std::tie(memoryStart, memoryEnd, state) = membounds;
+        ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
+        dbgs() << "! state conversion started" << endl;
+        auto z3state = SMT<Z3>::doit(state, z3ef, &ctx);
+        dbgs() << "! state conversion finished" << endl;
+        return std::make_tuple(ctx, z3state);
+    };
+    auto pr = cacher[ std::make_tuple(memoryStart, memoryEnd, state) ];
+    auto ctx = std::get<0>(pr);
+    auto z3state = std::get<1>(pr);
+
     dbgs() << "! query conversion started" << endl;
     auto z3query = SMT<Z3>::doit(query, z3ef, &ctx);
     dbgs() << "! query conversion finished" << endl;

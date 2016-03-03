@@ -20,30 +20,28 @@ const char* ConversionException::what() const throw() {
     return message.c_str();
 }
 
-struct ValueExpr::Impl {
-    z3::expr inner;
-    z3::expr axiomatic;
-};
+//struct ValueExpr::Impl {
+//    z3::expr inner;
+//    z3::expr axiomatic;
+//};
 
-ValueExpr::ValueExpr(const ValueExpr& that):
-    pimpl(new Impl(*that.pimpl)) {}
+ValueExpr::ValueExpr(const ValueExpr& that) = default;
 
-ValueExpr::ValueExpr(ValueExpr&& that):
-    pimpl(std::move(that.pimpl)) {}
+ValueExpr::ValueExpr(ValueExpr&& that) = default;
 
 ValueExpr::ValueExpr(z3::expr e, z3::expr axiom):
-    pimpl(new Impl{e, axiom}) {}
+    impl{e, axiom} {}
 
 ValueExpr::ValueExpr(z3::expr e):
-    pimpl(new Impl{e, z3impl::defaultAxiom(e)}) {}
+    impl{e, z3impl::defaultAxiom(e)} {}
 
 ValueExpr::ValueExpr(z3::context& ctx, Z3_ast e):
-    pimpl(new Impl{z3::to_expr(ctx, e), z3impl::defaultAxiom(ctx)}) {}
+    impl{z3::to_expr(ctx, e), z3impl::defaultAxiom(ctx)} {}
 
 ValueExpr::~ValueExpr() {}
 
 void ValueExpr::swap(ValueExpr& that) {
-    std::swap(pimpl, that.pimpl);
+    std::swap(impl, that.impl);
 }
 
 ValueExpr& ValueExpr::operator=(const ValueExpr& that) {
@@ -61,7 +59,7 @@ std::string ValueExpr::toSmtLib() const {
 }
 
 ValueExpr ValueExpr::simplify() const {
-    z3::params params(this->pimpl->inner.ctx());
+    z3::params params(this->impl.inner.ctx());
 
     // XXX: Push to settings???
     params.set(":pull-cheap-ite", true);
@@ -69,26 +67,26 @@ ValueExpr ValueExpr::simplify() const {
     params.set(":expand-select-store", true);
 
     return ValueExpr{
-        this->pimpl->inner.simplify(params),
-        this->pimpl->axiomatic.simplify(params)
+        this->impl.inner.simplify(params),
+        this->impl.axiomatic.simplify(params)
     };
 }
 
 namespace z3impl {
     z3::expr getExpr(const ValueExpr& a) {
-        return a.pimpl->inner;
+        return a.impl.inner;
     }
 
     z3::expr getAxiom(const ValueExpr& a) {
-        return a.pimpl->axiomatic;
+        return a.impl.axiomatic;
     }
 
     z3::sort getSort(const ValueExpr& a) {
-        return a.pimpl->inner.get_sort();
+        return a.impl.inner.get_sort();
     }
 
     z3::context& getContext(const ValueExpr& a) {
-        return a.pimpl->inner.ctx();
+        return a.impl.inner.ctx();
     }
 
     std::string getName(const ValueExpr& a) {
@@ -98,7 +96,8 @@ namespace z3impl {
     }
 
     z3::expr asAxiom(const ValueExpr& a) {
-        return a.pimpl->inner && a.pimpl->axiomatic;
+        return spliceAxiomsImpl(a.impl.inner, a.impl.axiomatic);
+        //return a.impl.inner && a.impl.axiomatic;
     }
 
     std::string asSmtLib(const ValueExpr& a) {

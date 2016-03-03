@@ -177,7 +177,10 @@ TEST(Solver, logic) {
         z3::solver solver(z3impl::getContext(e));
         solver.add(z3impl::getAxiom(e));
         solver.add(!z3impl::getExpr(e));
-        return solver.check() == z3::unsat;
+        auto res = solver.check();
+        std::cerr << solver << std::endl;
+        std::cerr << res << std::endl;
+        return res == z3::unsat;
     };
 
     {
@@ -208,9 +211,12 @@ TEST(Solver, logic) {
         auto d = BitVector<16>::mkVar(ctx, "pyish", [&ctx](BitVector<16> v){
             return (v == BitVector<16>::mkConst(ctx, 0x0f));
         });
+        std::cerr << d << std::endl;
         auto e = BitVector<32>::mkConst(ctx, 0x0f);
-
-        EXPECT_TRUE(check_expr(d == e));
+        std::cerr << e << std::endl;
+        auto res = d == e;
+        std::cerr << res << std::endl;
+        EXPECT_TRUE(check_expr(res));
     }
 
     {

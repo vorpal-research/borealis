@@ -23,6 +23,12 @@
 namespace borealis {
 namespace util {
 
+template<class T>
+T& threadLocalInstance() {
+    thread_local static T instance;
+    return instance;
+}
+
 template<class ...T>
 inline void use(T&&...) noexcept {}
 

@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 #include <functional>
+#include <memory>
 
 namespace borealis{
 namespace util{
