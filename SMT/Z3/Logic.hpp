@@ -13,6 +13,7 @@
 #include <functional>
 
 #include "Util/util.h"
+#include "Util/functional.hpp"
 
 #include "Config/config.h"
 
@@ -41,22 +42,32 @@ namespace z3impl {
     inline z3::expr defaultAxiom(z3::expr& e) {
         return defaultAxiom(e.ctx());
     }
-    inline z3::expr spliceAxioms(z3::expr e0, z3::expr e1) {
+    inline z3::expr spliceAxiomsImpl(z3::expr e0, z3::expr e1) {
+        if(z3::eq(e0, defaultAxiom(e0))) return e1;
+        if(z3::eq(e1, defaultAxiom(e1))) return e0;
         return (e0 && e1);
     }
-    inline z3::expr spliceAxioms(std::initializer_list<z3::expr> il) {
-        util::copyref<z3::expr> accum{ util::head(il) };
-        for (const auto& e : util::tail(il)) {
-            accum = (accum && e);
-        }
-        return accum;
+    inline z3::expr spliceAxiomsImpl(z3::expr e0, z3::expr e1, z3::expr e2) {
+        if(z3::eq(e0, defaultAxiom(e0))) return spliceAxiomsImpl(e1, e2);
+        if(z3::eq(e1, defaultAxiom(e1))) return spliceAxiomsImpl(e0, e2);
+        if(z3::eq(e2, defaultAxiom(e2))) return spliceAxiomsImpl(e0, e1);
+        return (e0 && e1 && e2);
     }
-    inline z3::expr spliceAxioms(const std::vector<z3::expr>& v) {
-        util::copyref<z3::expr> accum{ util::head(v) };
-        for (const auto& e : util::tail(v)) {
-            accum = (accum && e);
-        }
-        return accum;
+    inline z3::expr spliceAxiomsImpl(std::initializer_list<z3::expr> il) {
+        auto&& ctx = util::head(il).ctx();
+        auto res = util::viewContainer(il).map(ops::static_caster<Z3_ast>()).toVector();
+
+        return z3::expr(ctx, Z3_mk_and(ctx, res.size(), res.data()));
+//        util::copyref<z3::expr> accum{ util::head(il) };
+//        for (const auto& e : util::tail(il)) {
+//            accum = (accum && e);
+//        }
+//        return accum;
+    }
+    inline z3::expr spliceAxiomsImpl(const std::vector<z3::expr>& v) {
+        auto&& ctx = util::head(v).ctx();
+        auto res = util::viewContainer(v).map(ops::static_caster<Z3_ast>()).toVector();
+        return z3::expr(ctx, Z3_mk_and(ctx, res.size(), res.data()));
     }
 } // namespace z3impl
 
@@ -101,8 +112,11 @@ namespace z3impl {
 } // namespace z3impl
 
 class ValueExpr: public Expr {
-    struct Impl;
-    std::unique_ptr<Impl> pimpl;
+    struct Impl {
+        z3::expr inner;
+        z3::expr axiomatic;
+    } impl;
+    //std::unique_ptr<Impl> pimpl;
 
 public:
     ValueExpr(const ValueExpr&);
@@ -135,19 +149,32 @@ public:
 };
 
 namespace z3impl {
+
+// FIXME: this overload is genuinly stupid, but optimizes smth
+template<class Expr0, class Expr1>
+inline z3::expr spliceAxioms(const Expr0& e0, const Expr1& e1) {
+    return spliceAxiomsImpl(getAxiom(e0), getAxiom(e1));
+};
+
+template<class Expr0, class Expr1, class Expr2>
+inline z3::expr spliceAxioms(const Expr0& e0, const Expr1& e1, const Expr2& e2) {
+    return spliceAxiomsImpl(getAxiom(e0), getAxiom(e1), getAxiom(e2));
+};
+
 template<class ...Exprs>
 inline z3::expr spliceAxioms(const Exprs&... exprs) {
-    return spliceAxioms(
+    return spliceAxiomsImpl(
         { getAxiom(exprs)... }
     );
 }
+
 } // namespace z3impl
 
 template<class ExprClass>
 ExprClass addAxiom(const ExprClass& expr, const ValueExpr& axiom) {
     return ExprClass{
         z3impl::getExpr(expr),
-        z3impl::spliceAxioms(z3impl::getAxiom(expr), z3impl::asAxiom(axiom))
+        z3impl::spliceAxiomsImpl(z3impl::getAxiom(expr), z3impl::asAxiom(axiom))
     };
 }
 
@@ -197,7 +224,7 @@ struct generator;
             CLASS nav = mkVar(ctx, name); \
             return CLASS{ \
                 z3impl::getExpr(nav), \
-                z3impl::spliceAxioms( \
+                z3impl::spliceAxiomsImpl( \
                     z3impl::getAxiom(nav), \
                     z3impl::asAxiom(daAxiom(nav)) \
                 ) \
@@ -216,7 +243,7 @@ struct generator;
             CLASS nav = mkFreshVar(ctx, name); \
             return CLASS{ \
                 z3impl::getExpr(nav), \
-                z3impl::spliceAxioms( \
+                z3impl::spliceAxiomsImpl( \
                     z3impl::getAxiom(nav), \
                     z3impl::asAxiom(daAxiom(nav)) \
                 ) \
@@ -515,6 +542,7 @@ T switch_(
     };
 
     return std::accumulate(cases.begin(), cases.end(), default_, mkIte);
+
 }
 
 template<class T>
@@ -1049,7 +1077,7 @@ Bool distinct(z3::context& ctx, const std::vector<Elem>& elems) {
 
     z3::expr axiom = z3impl::getAxiom(elems[0]);
     for (const auto& elem : elems) {
-        axiom = z3impl::spliceAxioms(axiom, z3impl::getAxiom(elem));
+        axiom = z3impl::spliceAxiomsImpl(axiom, z3impl::getAxiom(elem));
     }
 
     return Bool{ ret, axiom };
@@ -1091,7 +1119,7 @@ class Function<Res(Args...)> : public Expr {
     template<class ...CArgs>
     inline static z3::expr massAxiomAnd(CArgs... args) {
         static_assert(sizeof...(args) > 0, "Trying to massAxiomAnd zero axioms");
-        return z3impl::spliceAxioms({ z3impl::getAxiom(args)... });
+        return z3impl::spliceAxioms(args...);
     }
 
     static z3::func_decl constructFunc(z3::context& ctx, const std::string& name) {
@@ -1138,11 +1166,11 @@ public:
     z3::context& ctx() const { return inner.ctx(); }
 
     Self withAxiom(const ValueExpr& ax) const {
-        return Self{ inner, z3impl::spliceAxioms(axiom(), z3impl::asAxiom(ax)) };
+        return Self{ inner, z3impl::spliceAxiomsImpl(axiom(), z3impl::asAxiom(ax)) };
     }
 
     Res operator()(Args... args) const {
-        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxioms(axiom(), massAxiomAnd(args...)));
+        return Res(inner(z3impl::getExpr(args)...), z3impl::spliceAxiomsImpl(axiom(), massAxiomAnd(args...)));
     }
 
     static z3::sort range(z3::context& ctx) {
@@ -1181,7 +1209,7 @@ public:
             std::function<Res(Args...)> body) {
         z3::func_decl f = constructFreshFunc(ctx, name);
         z3::expr ax = constructAxiomatic(ctx, f, body);
-        return Self{ f, z3impl::spliceAxioms(oldFunc.axiom(), ax) };
+        return Self{ f, z3impl::spliceAxiomsImpl(oldFunc.axiom(), ax) };
     }
 
     static Self mkDerivedFunc(
@@ -1197,7 +1225,7 @@ public:
             [](const Self& oldFunc) { return oldFunc.axiom(); });
         axs.push_back(constructAxiomatic(ctx, f, body));
 
-        return Self{ f, z3impl::spliceAxioms(axs) };
+        return Self{ f, z3impl::spliceAxiomsImpl(axs) };
     }
 };
 
@@ -1504,7 +1532,7 @@ BitVector<N> concatBytes(const std::vector<BitVector<ElemSize>>& bytes) {
 
     z3::expr axiom = z3impl::getAxiom(bytes[0]);
     for (size_t i = 1; i < bytes.size(); ++i) {
-        axiom = z3impl::spliceAxioms(z3impl::getAxiom(bytes[i]), axiom);
+        axiom = z3impl::spliceAxiomsImpl(z3impl::getAxiom(bytes[i]), axiom);
     }
 
     return BitVector<N>{ head, axiom };
@@ -1525,7 +1553,7 @@ SomeExpr concatBytesDynamic(const std::vector<BitVector<ElemSize>>& bytes, size_
 
     z3::expr axiom = z3impl::getAxiom(bytes[0]);
     for (size_t i = 1; i < bytes.size(); ++i) {
-        axiom = z3impl::spliceAxioms(z3impl::getAxiom(bytes[i]), axiom);
+        axiom = z3impl::spliceAxiomsImpl(z3impl::getAxiom(bytes[i]), axiom);
     }
 
     return DynBitVectorExpr{ head, axiom }.adapt(bitSize);

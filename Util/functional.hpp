@@ -69,6 +69,13 @@ static auto call_swap = [](auto&& a, auto&& b) -> DECLTYPE_AUTO {
     swap(FWD(a), FWD(b));
 };
 
+template<class Dst>
+auto static_caster() {
+    return [](auto&& c) -> DECLTYPE_AUTO {
+        return static_cast<Dst>(FWD(c));
+    };
+}
+
 } /* namespace ops */
 
 static auto konst = [](auto&& a) {
