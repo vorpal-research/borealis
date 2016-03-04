@@ -56,8 +56,17 @@ std::string ValueExpr::getName() const {
     return z3impl::getName(this);
 }
 
+size_t ValueExpr::getHash() const {
+    return z3impl::getHash(this);
+}
+
 std::string ValueExpr::toSmtLib() const {
     return z3impl::asSmtLib(this);
+}
+
+bool ValueExpr::eq(const ValueExpr& a, const ValueExpr& b) {
+    return z3::eq(z3impl::getExpr(a), z3impl::getExpr(b))
+        && z3::eq(z3impl::getAxiom(a), z3impl::getAxiom(b));
 }
 
 ValueExpr ValueExpr::simplify() const {
@@ -95,6 +104,10 @@ namespace z3impl {
         std::ostringstream oss;
         oss << getExpr(a).decl().name();
         return oss.str();
+    }
+
+    size_t getHash(const ValueExpr& a) {
+        return (size_t) a.pimpl->inner.hash() << 32 | a.pimpl->axiomatic.hash();
     }
 
     z3::expr asAxiom(const ValueExpr& a) {
