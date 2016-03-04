@@ -105,7 +105,7 @@ namespace z3impl {
     }
 
     size_t getHash(const ValueExpr& a) {
-        return (size_t) a.pimpl->inner.hash() << 32 | a.pimpl->axiomatic.hash();
+        return (size_t) a.impl.inner.hash() << 32 | a.impl.axiomatic.hash();
     }
 
     z3::expr asAxiom(const ValueExpr& a) {
