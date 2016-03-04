@@ -422,7 +422,6 @@ PredicateState::Ptr Solver::probeModels(
         const std::vector<Term::Ptr>& diversifiers,
         const std::vector<Term::Ptr>& collectibles) {
 
-
     TRACE_FUNC
 
     static auto countLimit = getCountLimit();
@@ -449,7 +448,6 @@ PredicateState::Ptr Solver::probeModels(
     auto solver = tactics().mk_solver();
     solver.add(logic::z3impl::asAxiom(z3body));
     solver.add(logic::z3impl::asAxiom(z3query));
-    //for (auto&& axiom : ctx.getAxioms()) solver.add(axiom);
     ctx.getAxioms().foreach(APPLY(solver.add));
 
     FactoryNest FN;
@@ -464,7 +462,7 @@ PredicateState::Ptr Solver::probeModels(
         auto models = z3::diversify_unsafe(solver, z3divers, countLimit*2);
 
         for (const auto& model : models) {
-            ++fullCount;    // for logging
+            ++fullCount; // for logging
 
             auto z3model = model2expr(model, z3collects);
             auto stateModel = model2state(model, collectibles, z3collects);
