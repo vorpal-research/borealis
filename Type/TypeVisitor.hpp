@@ -140,9 +140,7 @@ public:
 
     RetTy visitArray(const type::Array& arr) {
         auto res = self()->visit(arr.getElement());
-        for(const auto& size : arr.getSize()) {
-            res *= size;
-        }
+        res *= arr.getSize().getOrElse(0ULL);
         return res;
     }
     RetTy visitRecord(const type::Record& rec) {
