@@ -15,20 +15,20 @@ namespace borealis {
 class MemoryObject {
 
 public:
-    MemoryObject(Type::Ptr type, util::option<long long> value, unsigned long long size)
+    MemoryObject(Type::Ptr type, util::option<int64_t> value, unsigned long long size)
         : type(type), value(value), size(size) { }
 
     MemoryObject(Type::Ptr type, unsigned long long size)
         : MemoryObject(type, util::nothing(), size) { }
 
-    MemoryObject(Type::Ptr type, long long value, unsigned long long size)
+    MemoryObject(Type::Ptr type, int64_t value, unsigned long long size)
         : MemoryObject(type, util::just(value), size) { }
 
     Type::Ptr getType() const {
         return type;
     }
 
-    util::option<long long> getValue() const {
+    util::option<int64_t> getValue() const {
         return value;
     }
 
@@ -50,7 +50,7 @@ public:
 
 private:
     Type::Ptr type;
-    util::option<long long> value;
+    util::option<int64_t> value;
 
     unsigned long long size;
     std::map<unsigned long long, MemoryObject> nested;

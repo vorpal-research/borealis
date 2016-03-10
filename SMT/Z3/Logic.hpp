@@ -781,6 +781,10 @@ public:
         return DynBitVectorExpr{ ctx.bv_val(value, bitSize) };
     }
 
+    static DynBitVectorExpr mkSizedConst(z3::context& ctx, const std::string& value, size_t bitSize) {
+        return DynBitVectorExpr{ ctx.bv_val(value.c_str(), bitSize) };
+    }
+
     static DynBitVectorExpr mkSizedVar(z3::context& ctx, const std::string& name, size_t bitSize) {
         return DynBitVectorExpr{ ctx.bv_const(name.c_str(), bitSize) };
     }

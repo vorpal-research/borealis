@@ -62,6 +62,10 @@ MathSAT::Integer ExprFactory::getIntConst(int v, unsigned int size) {
     return Integer::mkSizedConst(*env, v, size);
 }
 
+MathSAT::Integer ExprFactory::getIntConst(const std::string& v, unsigned int size) {
+    return Integer::mkSizedConst(*env, v, size);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 MathSAT::Real ExprFactory::getRealVar(const std::string& name, bool fresh) {

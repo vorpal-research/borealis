@@ -16,7 +16,7 @@ public:
 
     RaisingTypeVisitor(const Reanimator& r) : r(r) { }
 
-    RetTy visit(Type::Ptr theType, unsigned long long addr, util::option<long long> value) {
+    RetTy visit(Type::Ptr theType, unsigned long long addr, util::option<int64_t> value) {
         if (false) { }
 #define HANDLE_TYPE(NAME, CLASS) \
         else if (auto resolved = llvm::dyn_cast<type::CLASS>(theType)) { \
@@ -28,7 +28,7 @@ public:
 #include "Util/unmacros.h"
     }
 
-    RetTy visitBool(const type::Bool& t, unsigned long long, util::option<long long> value) {
+    RetTy visitBool(const type::Bool& t, unsigned long long, util::option<int64_t> value) {
         return MemoryObject{
             t.shared_from_this(),
             value,
@@ -36,7 +36,7 @@ public:
         };
     }
 
-    RetTy visitInteger(const type::Integer& i, unsigned long long, util::option<long long> value) {
+    RetTy visitInteger(const type::Integer& i, unsigned long long, util::option<int64_t> value) {
         return MemoryObject{
             i.shared_from_this(),
             value,
@@ -44,7 +44,7 @@ public:
         };
     }
 
-    RetTy visitFloat(const type::Float& f, unsigned long long, util::option<long long> value) {
+    RetTy visitFloat(const type::Float& f, unsigned long long, util::option<int64_t> value) {
         return MemoryObject{
             f.shared_from_this(),
             value,
@@ -52,7 +52,7 @@ public:
         };
     }
 
-    RetTy visitPointer(const type::Pointer& p, unsigned long long, util::option<long long> value) {
+    RetTy visitPointer(const type::Pointer& p, unsigned long long, util::option<int64_t> value) {
         auto&& pType = p.getPointed();
         auto&& pSize = TypeUtils::getTypeSizeInElems(pType);
 
@@ -82,7 +82,7 @@ public:
         }
     }
 
-    RetTy visitRecord(const type::Record& rec, unsigned long long addr, util::option<long long>) {
+    RetTy visitRecord(const type::Record& rec, unsigned long long addr, util::option<int64_t>) {
         auto&& rSize = TypeUtils::getTypeSizeInElems(rec.shared_from_this());
 
         auto&& baseMemoryObject = MemoryObject{
@@ -102,7 +102,7 @@ public:
         return baseMemoryObject;
     }
 
-    RetTy visitArray(const type::Array& arr, unsigned long long addr, util::option<long long>) {
+    RetTy visitArray(const type::Array& arr, unsigned long long addr, util::option<int64_t>) {
         auto&& elemType = arr.getElement();
         auto&& elemSize = TypeUtils::getTypeSizeInElems(elemType);
 
@@ -131,21 +131,21 @@ public:
         }
     }
 
-    RetTy visitUnknownType(const type::UnknownType& ut, unsigned long long, util::option<long long>) {
+    RetTy visitUnknownType(const type::UnknownType& ut, unsigned long long, util::option<int64_t>) {
         return MemoryObject{
             ut.shared_from_this(),
             1
         };
     }
 
-    RetTy visitTypeError(const type::TypeError& te, unsigned long long, util::option<long long>) {
+    RetTy visitTypeError(const type::TypeError& te, unsigned long long, util::option<int64_t>) {
         return MemoryObject{
             te.shared_from_this(),
             1
         };
     }
 
-    RetTy visitFunction(const type::Function& f, unsigned long long, util::option<long long>) {
+    RetTy visitFunction(const type::Function& f, unsigned long long, util::option<int64_t>) {
         return MemoryObject{
             f.shared_from_this(),
             1

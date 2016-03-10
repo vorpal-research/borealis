@@ -47,7 +47,7 @@ struct protobuf_traits<CTypeRef> {
 
     static std::unique_ptr<proto_t> toProtobuf(const normal_t& p) {
         auto res = util::uniq(new proto_t());
-        res->set_name(p->getName());
+        res->set_name(p.getName());
         return std::move(res);
     }
 

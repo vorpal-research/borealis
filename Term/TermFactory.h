@@ -42,8 +42,9 @@ public:
     Term::Ptr getTrueTerm();
     Term::Ptr getFalseTerm();
 
-    Term::Ptr getIntTerm(long long value, unsigned int size, llvm::Signedness sign = llvm::Signedness::Unknown);
-    Term::Ptr getIntTerm(long long value, Type::Ptr type);
+    Term::Ptr getIntTerm(int64_t value, unsigned int size, llvm::Signedness sign = llvm::Signedness::Unknown);
+    Term::Ptr getIntTerm(const llvm::APInt& value, llvm::Signedness sign = llvm::Signedness::Unknown);
+    Term::Ptr getIntTerm(int64_t value, Type::Ptr type);
 
     Term::Ptr getRealTerm(double d);
 
@@ -73,7 +74,7 @@ public:
     Term::Ptr getOpaqueVarTerm(const std::string& name);
     Term::Ptr getOpaqueBuiltinTerm(const std::string& name);
     Term::Ptr getOpaqueNamedConstantTerm(const std::string& name);
-    Term::Ptr getOpaqueConstantTerm(long long v, size_t bitSize = 0x0);
+    Term::Ptr getOpaqueConstantTerm(int64_t v, size_t bitSize = 0x0);
     Term::Ptr getOpaqueConstantTerm(double v);
     Term::Ptr getOpaqueConstantTerm(bool v);
     Term::Ptr getOpaqueConstantTerm(const char* v);

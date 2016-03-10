@@ -464,6 +464,15 @@ Term::Ptr AnnotationExecutor::transformOpaqueIntConstantTerm(OpaqueIntConstantTe
     pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->getLLVMContext())});
     return t;
 }
+Term::Ptr AnnotationExecutor::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr t) {
+    TRACE_FUNC;
+
+    llvm::GenericValue res;
+    auto&& needed = llvm::APInt::getBitsNeeded(t->getRepresentation(), 10);
+    res.IntVal = llvm::APInt(std::max(needed, 64U), t->getRepresentation(), 10);
+    pimpl_->value_stack.push({res, llvm::Type::getVoidTy(pimpl_->getLLVMContext())});
+    return t;
+}
 Term::Ptr AnnotationExecutor::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr t) {
     TRACE_FUNC;
 

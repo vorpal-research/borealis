@@ -99,9 +99,8 @@ Term::Ptr TermFactory::getConstTerm(const llvm::Constant* c, llvm::Signedness si
             if (cInt->isOne()) return getTrueTerm();
             else if (cInt->isZero()) return getFalseTerm();
         } else {
-            return getIntTerm(cInt->getZExtValue(), cInt->getType()->getPrimitiveSizeInBits(), sign);
+            return getIntTerm(cInt->getValue(), sign);
         }
-
     } else if (auto cFP = dyn_cast<ConstantFP>(c)) {
         auto&& fp = cFP->getValueAPF();
 
@@ -179,7 +178,7 @@ Term::Ptr TermFactory::getFalseTerm() {
     return getBooleanTerm(false);
 }
 
-Term::Ptr TermFactory::getIntTerm(long long value, unsigned int size, llvm::Signedness sign) {
+Term::Ptr TermFactory::getIntTerm(int64_t value, unsigned int size, llvm::Signedness sign) {
     return Term::Ptr{
         new OpaqueIntConstantTerm(
             TyF->getInteger(size, sign), value
@@ -187,7 +186,26 @@ Term::Ptr TermFactory::getIntTerm(long long value, unsigned int size, llvm::Sign
     };
 }
 
-Term::Ptr TermFactory::getIntTerm(long long value, Type::Ptr type) {
+Term::Ptr TermFactory::getIntTerm(const llvm::APInt& value, llvm::Signedness sign) {
+    auto size = value.getBitWidth();
+    if(size > sizeof(int64_t) * 8) {
+        llvm::SmallString<30> ss;
+        value.toStringUnsigned(ss);
+        return Term::Ptr{
+            new OpaqueBigIntConstantTerm(
+                TyF->getInteger(size, sign), ss.str().str()
+            )
+        };
+    }
+
+    return Term::Ptr{
+        new OpaqueIntConstantTerm(
+            TyF->getInteger(size, sign), value.getZExtValue() // XXX: zext?
+        )
+    };
+}
+
+Term::Ptr TermFactory::getIntTerm(int64_t value, Type::Ptr type) {
     return Term::Ptr{
         new OpaqueIntConstantTerm(
             type, value
@@ -371,7 +389,7 @@ Term::Ptr TermFactory::getOpaqueNamedConstantTerm(const std::string& name) {
     };
 }
 
-Term::Ptr TermFactory::getOpaqueConstantTerm(long long v, size_t bitSize) {
+Term::Ptr TermFactory::getOpaqueConstantTerm(int64_t v, size_t bitSize) {
     return Term::Ptr{
         new OpaqueIntConstantTerm(
             bitSize == 0 ? TyF->getUnknownType() : TyF->getInteger(bitSize),

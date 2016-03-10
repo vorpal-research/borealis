@@ -66,6 +66,7 @@ public:
     // Integers
     Integer getIntVar(const std::string& name, unsigned int size = Byte::bitsize, bool fresh = false);
     Integer getIntConst(int v, unsigned int size = Byte::bitsize);
+    Integer getIntConst(const std::string& v, unsigned int size = Byte::bitsize);
     // Reals
     Real getRealVar(const std::string& name, bool fresh = false);
     Real getRealConst(int v);

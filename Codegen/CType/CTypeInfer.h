@@ -96,7 +96,7 @@ public:
                 return res = CTF->getPointer(CTF->getVoid());
         }
 
-        if(is_one_of<OpaqueIntConstantTerm, OpaqueNamedConstantTerm>(term))
+        if(is_one_of<OpaqueIntConstantTerm, OpaqueBigIntConstantTerm, OpaqueNamedConstantTerm>(term))
             if(isa<type::UnknownType>(term->getType())){
                 return res = getSmallIntegerType();
         }

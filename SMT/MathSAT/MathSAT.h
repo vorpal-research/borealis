@@ -143,6 +143,7 @@ public:
     Expr bool_val(bool b) const;
     Expr num_val(int i) const;
     Expr bv_val(int i, unsigned size) const;
+    Expr bv_val(const std::string& i, unsigned size) const;
 
     Decl function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);
     Decl fresh_function(const std::string& name, const std::vector<Sort>& params, const Sort& ret);

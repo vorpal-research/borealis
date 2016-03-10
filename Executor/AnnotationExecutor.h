@@ -45,6 +45,7 @@ public:
     Term::Ptr transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr t);
     Term::Ptr transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr t);
     Term::Ptr transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr t);
+    Term::Ptr transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr t);
     Term::Ptr transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr t);
     Term::Ptr transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr t);
 };

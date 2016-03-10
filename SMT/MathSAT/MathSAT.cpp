@@ -192,6 +192,12 @@ Expr Env::bv_val(int i, unsigned size) const {
     return Expr(*this, new_term);
 }
 
+Expr Env::bv_val(const std::string& i, unsigned size) const {
+    auto new_term = msat_make_bv_number(*env_, i.c_str(), size, 10);
+    ASSERTMSAT_TERM(new_term);
+    return Expr(*this, new_term);
+}
+
 Decl Env::function(const std::string& name, const std::vector<Sort>& params, const Sort& ret) {
     std::vector<msat_type> msat_param(params.begin(), params.end());
     auto type = msat_get_function_type(*env_, msat_param.data(), msat_param.size(), ret);

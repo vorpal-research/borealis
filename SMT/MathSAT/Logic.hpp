@@ -592,6 +592,10 @@ public:
         return DynBitVectorExpr{ env.bv_val(value, bitSize) };
     }
 
+    static DynBitVectorExpr mkSizedConst(mathsat::Env& env, const std::string& value, size_t bitSize) {
+        return DynBitVectorExpr{ env.bv_val(value, bitSize) };
+    }
+
     static DynBitVectorExpr mkSizedVar(mathsat::Env& env, const std::string& name, size_t bitSize) {
         return DynBitVectorExpr{ env.bv_const(name, bitSize) };
     }
