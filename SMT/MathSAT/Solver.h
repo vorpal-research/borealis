@@ -22,8 +22,8 @@ class Solver : public borealis::logging::ClassLevelLogging<Solver> {
 
     USING_SMT_LOGIC(MathSAT);
 
-    typedef MathSAT::ExprFactory ExprFactory;
-    typedef MathSAT::ExecutionContext ExecutionContext;
+    using ExprFactory = MathSAT::ExprFactory;
+    using ExecutionContext = MathSAT::ExecutionContext;
 
 public:
 
@@ -71,11 +71,6 @@ private:
     check_result check(
             const Bool& msatquery_,
             const Bool& msatstate_);
-
-    Bool probeZ3(PredicateState::Ptr body,
-                 PredicateState::Ptr query,
-                 const std::vector<Term::Ptr>& args,
-                 const std::vector<Term::Ptr>& pathVars);
 
 };
 

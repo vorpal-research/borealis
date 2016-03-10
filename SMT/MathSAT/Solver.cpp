@@ -23,6 +23,12 @@ using namespace borealis::smt;
 
 USING_SMT_IMPL(MathSAT);
 
+static config::BoolConfigEntry gather_smt_models("analysis", "collect-models");
+static config::BoolConfigEntry gather_msat_models("analysis", "collect-mathsat-models");
+
+static config::BoolConfigEntry model_sampling("summary", "model-sampling");
+static config::StringConfigEntry sampling_solver("summary", "sampling-solver");
+
 Solver::Solver(ExprFactory& msatef, unsigned long long memoryStart, unsigned long long memoryEnd) :
         msatef(msatef), memoryStart(memoryStart), memoryEnd(memoryEnd) {}
 
@@ -34,8 +40,8 @@ Solver::check_result Solver::check(
 
     TRACE_FUNC;
 
-    mathsat::Solver s(msatef.unwrap());
-    auto dbg = dbgs();
+    mathsat::Solver s{ msatef.unwrap() };
+    auto&& dbg = dbgs();
 
     s.add(msatimpl::asAxiom(msatstate_));
 
@@ -43,31 +49,31 @@ Solver::check_result Solver::check(
     dbg << "  State: " << endl << msatstate_ << endl;
     dbg << end;
 
-    Bool pred = msatef.getBoolVar("$CHECK$");
+    auto&& pred = msatef.getBoolVar("$CHECK$");
     s.add(msatimpl::asAxiom(implies(pred, msatquery_)));
 
     {
         TRACE_BLOCK("mathsat::check");
 
-        mathsat::Expr pred_e = logic::msatimpl::getExpr(pred);
-        msat_result r = s.check({pred_e});
+        auto&& pred_e = logic::msatimpl::getExpr(pred);
+        auto&& r = s.check({pred_e});
         dbg << "Acquired result: "
             << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
             << endl;
 
         dbg << "With:" << endl;
         if (r == MSAT_SAT) {
-            auto model = s.get_model();
+            auto&& model = s.get_model();
             dbg << util::viewContainer(model).toVector() << endl;
             return std::make_tuple(r, util::just(model), util::nothing(), util::nothing());
 
         } else if (r == MSAT_UNSAT) {
-            auto core = s.unsat_core();
-            for (size_t i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
+            auto&& core = s.unsat_core();
+            for (auto&& i = 0U; i < core.size(); ++i) dbg << core[i] << endl;
             return std::make_tuple(r, util::nothing(), util::just(core), util::nothing());
 
         } else {
-            std::string reason{"UNKNOWN"}; // XXX: Extraction for reason???
+            std::string reason{ "UNKNOWN" }; // XXX: Extraction for reason???
             dbg << reason << endl;
             return std::make_tuple(r, util::nothing(), util::nothing(), util::just(reason));
         }
@@ -75,24 +81,24 @@ Solver::check_result Solver::check(
 }
 
 template<class TermCollection>
-SatResult::model_t recollectModel(ExprFactory& z3ef, ExecutionContext& ctx, mathsat::Model& implModel, const TermCollection& vars) {
-    return
-        util::viewContainer(vars)
-        .map([&](Term::Ptr var) -> std::pair<std::string, Term::Ptr> {
-            auto e = SMT<MathSAT>::doit(var, z3ef, &ctx);
-            auto solver_e = logic::msatimpl::getExpr(e);
+SatResult::model_t recollectModel(
+    ExprFactory& z3ef,
+    ExecutionContext& ctx,
+    mathsat::Model& implModel,
+    const TermCollection& vars) {
+    return util::viewContainer(vars)
+        .map([&](auto&& var) {
+            auto&& e = SMT<MathSAT>::doit(var, z3ef, &ctx);
+            auto&& solver_e = logic::msatimpl::getExpr(e);
 
             dbgs() << "Evaluating " << solver_e << endl;
 
-            auto retz3e = implModel.eval(solver_e);
+            auto&& retz3e = implModel.eval(solver_e);
 
-            return { var->getName(), unlogic::undoThat(retz3e) };
+            return std::make_pair(var->getName(), unlogic::undoThat(retz3e));
         })
         .template to<SatResult::model_t>();
 }
-
-static config::BoolConfigEntry gatherSMTModels("analysis", "collect-models");
-static config::BoolConfigEntry gatherMSatModels("analysis", "collect-mathsat-models");
 
 smt::Result Solver::isViolated(
         PredicateState::Ptr query,
@@ -104,25 +110,25 @@ smt::Result Solver::isViolated(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
-    auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
-    auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+    ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
+    auto&& msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
+    auto&& msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
     msat_result res;
     util::option<mathsat::Model> model;
     std::tie(res, model, std::ignore, std::ignore) = check(!msatquery, msatstate);
 
     if (res == MSAT_SAT) {
-        auto m = model.getUnsafe(); // You shall not fail! (c)
+        auto&& m = model.getUnsafe(); // You shall not fail! (c)
 
-        auto cex = state
-        ->filterByTypes({PredicateType::PATH})
-        ->filter([this,&m,&ctx](Predicate::Ptr p) -> bool {
-            auto msatp = SMT<MathSAT>::doit(p, msatef, &ctx);
-            auto valid = m.eval(logic::msatimpl::asAxiom(msatp));
-            auto bValid = util::stringCast<bool>(valid);
-            return bValid.getOrElse(false);
-        });
+        auto&& cex = state
+            ->filterByTypes({PredicateType::PATH})
+            ->filter([&](auto&& p) {
+                auto&& msatp = SMT<MathSAT>::doit(p, msatef, &ctx);
+                auto&& valid = m.eval(logic::msatimpl::asAxiom(msatp));
+                auto&& bValid = util::stringCast<bool>(valid);
+                return bValid.getOrElse(false);
+            });
 
         using namespace logging;
         dbgs() << "CEX: "
@@ -131,13 +137,17 @@ smt::Result Solver::isViolated(
                << print_predicate_locus_off
                << endl;
 
-        if(gatherMSatModels.get(false) or gatherSMTModels.get(false)) {
-            auto vars = collectVariables(FactoryNest{}, query, state);
+        if (gather_msat_models.get(false) or gather_smt_models.get(false)) {
+            auto&& vars = collectVariables(FactoryNest{}, query, state);
 
-            auto collectedModel = recollectModel(msatef, ctx, m, vars);
+            auto&& collectedModel = recollectModel(msatef, ctx, m, vars);
 
             // FIXME: implement memory collection for MathSAT
-            return SatResult{ util::copy_or_share(collectedModel), nullptr, nullptr };
+            return SatResult{
+                util::copy_or_share(collectedModel),
+                nullptr,
+                nullptr
+            };
         }
 
         return SatResult{};
@@ -156,24 +166,29 @@ smt::Result Solver::isPathImpossible(
            << "in: " << endl
            << state << endl;
 
-    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
-    auto msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
-    auto msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
+    ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
+    auto&& msatstate = SMT<MathSAT>::doit(state, msatef, &ctx);
+    auto&& msatpath = SMT<MathSAT>::doit(path, msatef, &ctx);
 
     msat_result res;
     util::option<mathsat::Model> model;
     std::tie(res, model, std::ignore, std::ignore) = check(msatpath, msatstate);
 
     if (res == MSAT_SAT) {
-        auto m = model.getUnsafe(); // You shall not fail! (c)
+        auto&& m = model.getUnsafe(); // You shall not fail! (c)
 
-        if(gatherMSatModels.get(false) or gatherSMTModels.get(false)) {
-            auto vars = collectVariables(FactoryNest{}, path, state);
+        if (gather_msat_models.get(false) or gather_smt_models.get(false)) {
+            auto&& vars = collectVariables(FactoryNest{}, path, state);
 
-            auto collectedModel = recollectModel(msatef, ctx, m, vars);
+            auto&& collectedModel = recollectModel(msatef, ctx, m, vars);
 
             // FIXME: implement memory collection for MathSAT
-            return SatResult{ util::copy_or_share(collectedModel), nullptr, nullptr };
+            // XXX: do we need collection for path possibility queries?
+            return SatResult{
+                util::copy_or_share(collectedModel),
+                nullptr,
+                nullptr
+            };
         }
 
         return SatResult{};
@@ -190,37 +205,37 @@ Dynamic Solver::getInterpolant(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
-    auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
-    auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+    ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
+    auto&& msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
+    auto&& msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
     dbgs() << "Interpolating: " << endl
            << msatquery << endl
            << "in: " << endl
            << msatbody << endl;
 
-    mathsat::ISolver s(msatef.unwrap());
+    mathsat::ISolver s{ msatef.unwrap() };
 
-    auto B = s.create_and_set_itp_group();
+    auto&& B = s.create_and_set_itp_group();
     s.add(msatimpl::asAxiom(msatbody));
-    s.create_and_set_itp_group();
+    /* auto&& Q = */ s.create_and_set_itp_group();
     s.add(msatimpl::asAxiom(msatquery));
 
     {
         TRACE_BLOCK("mathsat::interpol");
-        msat_result r = s.check();
+        auto&& r = s.check();
 
         dbgs() << "Acquired result: "
                << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
                << endl;
 
-        mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
+        auto&& interpol = msatimpl::asAxiom(msatef.getTrue());
 
         if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
 
         dbgs() << "Got: " << endl
                << interpol << endl;
-        return Dynamic(interpol);
+        return Dynamic{ interpol };
     }
 }
 
@@ -239,64 +254,63 @@ unsigned getAttemptLimit() {
 }
 
 std::vector<Term::Ptr> getPathVars(PredicateState::Ptr state) {
-    USING_SMT_LOGIC(MathSAT);
-
     PredicateState::Ptr pathState;
     std::tie(pathState, std::ignore) = state->splitByTypes({PredicateType::PATH});
 
     std::vector<Term::Ptr> pathTerms;
-    pathState->map([&pathTerms](Predicate::Ptr p) -> Predicate::Ptr {
-        if (auto pp = llvm::dyn_cast<EqualityPredicate>(p)) {
-            pathTerms.push_back(pp->getLhv());
+    pathState->map([&](auto&& p) {
+        if (auto&& ep = llvm::dyn_cast<EqualityPredicate>(p)) {
+            pathTerms.push_back(ep->getLhv());
             return p;
-        } else if (auto pp = llvm::dyn_cast<InequalityPredicate>(p)) {
-            pathTerms.push_back(pp->getLhv());
+        } else if (auto&& ip = llvm::dyn_cast<InequalityPredicate>(p)) {
+            pathTerms.push_back(ip->getLhv());
             return p;
         } else if (llvm::dyn_cast<DefaultSwitchCasePredicate>(p)) {
             return p;
         } else {
-            BYE_BYE(Predicate::Ptr, "Wrong path predicate type. " + p->toString());
+            BYE_BYE(Predicate::Ptr, "Wrong path predicate type: " + p->toString());
         }
     });
 
     return pathTerms;
 }
 
-Bool getProbeModels(
+Bool probeMathSat(
         ExprFactory& msatef,
         Bool body,
         Bool query,
         const std::vector<mathsat::Expr>& args,
         const std::vector<mathsat::Expr>& pathVars) {
+
     using namespace logic;
 
-    static auto countLimit = getCountLimit();
-    static auto attemptLimit = getAttemptLimit();
+    static auto&& countLimit = getCountLimit();
+    static auto&& attemptLimit = getAttemptLimit();
 
-    mathsat::DSolver d(msatef.unwrap());
+    mathsat::DSolver d{ msatef.unwrap() };
     d.add(msatimpl::asAxiom( body  ));
     d.add(msatimpl::asAxiom( query ));
 
-    auto ms = msatef.getFalse();
-    auto count = 0U;
-    auto attempt = 0U;
+    auto&& ms = msatef.getFalse();
 
-    auto fullCount = 0U; // for logging
+    auto&& count = 0U;
+    auto&& attempt = 0U;
+    auto&& fullCount = 0U; // for logging
 
-    std::vector<mathsat::Expr>  dvrs(args);
+    std::vector<mathsat::Expr> dvrs{ args };
     dvrs.insert(dvrs.end(), pathVars.begin(), pathVars.end());
 
     while (count < countLimit && attempt < attemptLimit) {
-        auto models = d.diversify_unsafe(dvrs, args, countLimit * 2);
+        auto&& models = d.diversify_unsafe(dvrs, args, countLimit * 2);
 
-        for (const auto& m : models) {
+        for (auto&& m : models) {
             ++fullCount;    // for logging
 
-            mathsat::ISolver s(msatef.unwrap());
+            mathsat::ISolver s{ msatef.unwrap() };
             s.create_and_set_itp_group();
-            s.add(msatimpl::asAxiom(   body  ));
-            s.add(msatimpl::asAxiom( ! query ));
-            s.add(msatimpl::asAxiom(   m ));
+            s.add(msatimpl::asAxiom(    body));
+            s.add(msatimpl::asAxiom(not query));
+            s.add(msatimpl::asAxiom(    m));
 
             if (MSAT_SAT == s.check()) continue;
 
@@ -315,22 +329,23 @@ Bool getProbeModels(
     return ms;
 }
 
-
-Bool Solver::probeZ3(PredicateState::Ptr body,
+Bool probeZ3(ExprFactory& msatef,
+             unsigned long long memoryStart,
+             unsigned long long memoryEnd,
+             PredicateState::Ptr body,
              PredicateState::Ptr query,
              const std::vector<Term::Ptr>& args,
              const std::vector<Term::Ptr>& pathVars) {
-    std::vector<Term::Ptr> dvrs(args);
+    std::vector<Term::Ptr> dvrs{ args };
     dvrs.insert(dvrs.end(), pathVars.begin(), pathVars.end());
 
     z3_::ExprFactory z3ef;
-    z3_::Solver z3solver(z3ef, memoryStart, memoryEnd);
-    auto modelState = z3solver.probeModels(body, query, dvrs, args);
+    z3_::Solver z3solver{ z3ef, memoryStart, memoryEnd };
+    auto&& modelState = z3solver.probeModels(body, query, dvrs, args);
 
-    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
+    ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
     return SMT<MathSAT>::doit(modelState, msatef, &ctx);
 }
-
 
 Dynamic Solver::getSummary(
         const std::vector<Term::Ptr>& args,
@@ -341,64 +356,60 @@ Dynamic Solver::getSummary(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
-    auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
-    auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+    ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
+    auto&& msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
+    auto&& msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
     dbgs() << "Summarizing: " << endl
            << msatquery << endl
            << "in: " << endl
            << msatbody << endl;
 
-    mathsat::ISolver s(msatef.unwrap());
+    mathsat::ISolver s{ msatef.unwrap() };
 
-    auto B = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(   msatbody));
-    auto Q = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom( ! msatquery));
+    auto&& B = s.create_and_set_itp_group();
+    s.add(msatimpl::asAxiom(     msatbody));
+    auto&& Q = s.create_and_set_itp_group();
+    s.add(msatimpl::asAxiom( not msatquery));
 
-
-    auto toExpr =
-        [this](const Term::Ptr& term) -> mathsat::Expr {
-            ExecutionContext ctx(msatef, memoryStart, memoryEnd);
+    auto&& toExpr = [&](auto&& term) {
+            ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
             return msatimpl::getExpr(
-                    SMT<MathSAT>::doit(term, msatef, &ctx)
+                SMT<MathSAT>::doit(term, msatef, &ctx)
             );
         };
 
-    auto argExprs = util::viewContainer(args).map(toExpr).toVector();
-    auto pathVars = getPathVars(body);
-    auto pathExprs = util::viewContainer(pathVars).map(toExpr).toVector();
+    auto&& argExprs = util::viewContainer(args).map(toExpr).toVector();
+    auto&& pathVars = getPathVars(body);
+    auto&& pathExprs = util::viewContainer(pathVars).map(toExpr).toVector();
 
     {
         TRACE_BLOCK("mathsat::summarize");
-        msat_result r = s.check();
+        auto&& r = s.check();
 
         dbgs() << "Acquired result: "
                << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
                << endl;
 
-        mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
-
-        static config::ConfigEntry<bool> ModelSampling("summary", "model-sampling");
-        static config::ConfigEntry<std::string> SamplingSolver("summary", "sampling-solver");
+        auto&& interpol = msatimpl::asAxiom(msatef.getTrue());
 
         if (r == MSAT_UNSAT) {
             interpol = s.get_interpolant({B});
 
-        } else if (r == MSAT_SAT && ModelSampling.get(true)) {
-            std::string dbgStr = "Model:\n";
-            for (auto me: s.get_model()) {
-                dbgStr += me.term.decl().name() + std::string(" = ")
-                       + me.value.decl().name() + std::string("\n");
-            }
-            dbgs() << dbgStr;
+        } else if (r == MSAT_SAT && model_sampling.get(true)) {
+            std::ostringstream dbgStr;
 
-            auto ms = msatef.getTrue();
-            if (SamplingSolver.get("mathsat") == "mathsat") {
-                ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
+            dbgStr << "Model:" << std::endl;
+            for (auto&& me : s.get_model()) {
+                dbgStr << me.term.decl().name() << " = " << me.value.decl().name() << std::endl;
+            }
+            dbgs() << dbgStr.str();
+
+            auto&& ms = msatef.getTrue();
+            if ("mathsat" == sampling_solver.get("mathsat")) {
+                ms = probeMathSat(msatef, msatbody, msatquery, argExprs, pathExprs);
             } else { // Z3
-                ms = probeZ3(body, query, args, pathVars);
+                ms = probeZ3(msatef, memoryStart, memoryEnd, body, query, args, pathVars);
             }
 
             dbgs() << "Probes: " << endl
@@ -414,7 +425,7 @@ Dynamic Solver::getSummary(
 
         dbgs() << "Got: " << endl
                << interpol << endl;
-        return Dynamic(interpol);
+        return Dynamic{ interpol };
     }
 }
 
@@ -427,50 +438,55 @@ Dynamic Solver::getContract(
 
     TRACE_FUNC;
 
-    ExecutionContext ctx(msatef, memoryStart, memoryEnd);
-    auto msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
-    auto msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
+    ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
+    auto&& msatbody = SMT<MathSAT>::doit(body, msatef, &ctx);
+    auto&& msatquery = SMT<MathSAT>::doit(query, msatef, &ctx);
 
     dbgs() << "Generating contract for: " << endl
            << msatquery << endl
            << "in: " << endl
            << msatbody << endl;
 
-    mathsat::ISolver s(msatef.unwrap());
+    mathsat::ISolver s{ msatef.unwrap() };
 
-    auto B = s.create_and_set_itp_group();
+    auto&& B = s.create_and_set_itp_group();
 
-    /* auto Q = */ s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(   msatbody));
-    s.add(msatimpl::asAxiom( ! msatquery));
+    /* auto&& Q = */ s.create_and_set_itp_group();
+    s.add(msatimpl::asAxiom(     msatbody));
+    s.add(msatimpl::asAxiom( not msatquery));
 
-    auto toExpr =
-        [this](const Term::Ptr& term) -> mathsat::Expr {
-            ExecutionContext ctx(msatef, memoryStart, memoryEnd);
-            return msatimpl::getExpr(
-                    SMT<MathSAT>::doit(term, msatef, &ctx)
-            );
-        };
+    auto&& toExpr = [&](auto&& term) {
+        ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
+        return msatimpl::getExpr(
+            SMT<MathSAT>::doit(term, msatef, &ctx)
+        );
+    };
 
-    auto argExprs = util::viewContainer(args).map(toExpr).toVector();
-    auto pathVars = getPathVars(body);
-    auto pathExprs = util::viewContainer(pathVars).map(toExpr).toVector();
+    auto&& argExprs = util::viewContainer(args).map(toExpr).toVector();
+    auto&& pathVars = getPathVars(body);
+    auto&& pathExprs = util::viewContainer(pathVars).map(toExpr).toVector();
 
     {
         TRACE_BLOCK("mathsat::contract");
-        msat_result r = s.check();
+        auto&& r = s.check();
 
         dbgs() << "Acquired result: "
                << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
                << endl;
 
-        mathsat::Expr interpol = msatimpl::asAxiom(msatef.getTrue());
+        auto&& interpol = msatimpl::asAxiom(msatef.getTrue());
 
         if (r == MSAT_UNSAT) {
             BYE_BYE(Dynamic, "No contract exists for UNSAT formula");
 
         } else if (r == MSAT_SAT) {
-            auto ms = getProbeModels(msatef, msatbody, msatquery, argExprs, pathExprs);
+
+            auto&& ms = msatef.getTrue();
+            if ("mathsat" == sampling_solver.get("mathsat")) {
+                ms = probeMathSat(msatef, msatbody, msatquery, argExprs, pathExprs);
+            } else { // Z3
+                ms = probeZ3(msatef, memoryStart, memoryEnd, body, query, args, pathVars);
+            }
 
             dbgs() << "Probes: " << endl
                    << ms << endl;
@@ -486,7 +502,7 @@ Dynamic Solver::getContract(
 
         dbgs() << "Got: " << endl
                << interpol << endl;
-        return Dynamic(interpol);
+        return Dynamic{ interpol };
     }
 }
 
