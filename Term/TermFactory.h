@@ -43,6 +43,7 @@ public:
     Term::Ptr getFalseTerm();
 
     Term::Ptr getIntTerm(int64_t value, unsigned int size, llvm::Signedness sign = llvm::Signedness::Unknown);
+    Term::Ptr getIntTerm(const std::string& value, unsigned int size, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getIntTerm(const llvm::APInt& value, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getIntTerm(int64_t value, Type::Ptr type);
 

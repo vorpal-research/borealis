@@ -186,6 +186,25 @@ Term::Ptr TermFactory::getIntTerm(int64_t value, unsigned int size, llvm::Signed
     };
 }
 
+Term::Ptr TermFactory::getIntTerm(const std::string& representation, unsigned int size, llvm::Signedness sign) {
+    if(size > sizeof(int64_t) * 8) {
+        return Term::Ptr{
+            new OpaqueBigIntConstantTerm(
+                TyF->getInteger(size, sign), representation
+            )
+        };
+    }
+
+    auto rep = util::fromString<uint64_t>(representation);
+    ASSERTC(rep);
+
+    return Term::Ptr{
+        new OpaqueIntConstantTerm(
+            TyF->getInteger(size, sign), rep.getUnsafe()
+        )
+    };
+}
+
 Term::Ptr TermFactory::getIntTerm(const llvm::APInt& value, llvm::Signedness sign) {
     auto size = value.getBitWidth();
     if(size > sizeof(int64_t) * 8) {

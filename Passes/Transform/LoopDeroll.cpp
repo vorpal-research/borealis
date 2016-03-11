@@ -295,7 +295,7 @@ static util::option<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> UnrollFromT
 
             builder.CreateCall(
                 assumeIntr,
-                builder.CreateICmpUGE(nondetCall, ConstantInt::get(indexType, 0)),
+                builder.CreateICmpUGE(nondetCall, Constant::getNullValue(indexType)),
                 ""
             );
 

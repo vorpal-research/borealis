@@ -17,10 +17,10 @@ namespace unlogic {
 USING_SMT_LOGIC(Z3);
 
 Term::Ptr undoBv(const z3::expr& expr, const FactoryNest& FN) {
-    unsigned long long i;
-    auto res = Z3_get_numeral_uint64(expr.ctx(), expr, &i);
-    ASSERT(res != 0, "Something bad occurs while getting int value from Z3 expression");
-    return FN.Term->getIntTerm(i, expr.get_sort().bv_size(), llvm::Signedness::Unknown);
+    auto res = Z3_get_numeral_string(expr.ctx(), expr);
+    auto size = expr.get_sort().bv_size();
+
+    return FN.Term->getIntTerm(res, expr.get_sort().bv_size(), llvm::Signedness::Unknown);
 }
 
 Term::Ptr undoBool(const z3::expr& expr, const FactoryNest& FN) {
