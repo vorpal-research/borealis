@@ -235,8 +235,11 @@ struct clang_pipeline::impl: public DelegateLogging {
 
         std::string error;
         llvm::raw_fd_ostream bc_stream(bcfile.c_str(), error, llvm::sys::fs::F_Text | llvm::sys::fs::F_RW);
-        llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
-        if(error != "") errs() << error << endl;
+        if (error != "") {
+            errs() << error << endl;
+        } else {
+            llvm::WriteBitcodeToFile(annotatedModule->module.get(), bc_stream);
+        }
 
         std::ofstream annoStream(annofile, std::iostream::out | std::iostream::binary);
         util::write_as_protobuf(annoStream, *annotatedModule->annotations);
