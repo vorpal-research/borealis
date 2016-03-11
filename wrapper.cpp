@@ -31,6 +31,7 @@ void handler(int sig) {
 
 int main(int argc, const char** argv) {
     signal(SIGSEGV, handler);   // install crash handler
+    signal(SIGABRT, handler);
     using namespace borealis::driver;
     try{
         gestalt gestalt{ "wrapper" };
