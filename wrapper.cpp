@@ -7,31 +7,20 @@
 
 #include <iostream>
 
-#include <execinfo.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
+#define BACKWARD_HAS_UNWIND 1
+#define BACKWARD_HAS_BACKTRACE 0
+#define BACKWARD_HAS_DW 0
+#define BACKWARD_HAS_BFD 0
+#define BACKWARD_HAS_BACKTRACE_SYMBOL 1
+#include <backward.hpp>
 
 #include <z3/z3++.h>
 
 #include "Driver/gestalt.h"
 
-void handler(int sig) {
-    void *array[30];
-    size_t size;
-
-    // get void*'s for all entries on the stack
-    size = backtrace(array, 30);
-
-    // print out all the frames to stderr
-    std::cerr << "Error: signal %d:\n" << sig << std::endl;
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
-    exit(1);
-}
+static backward::SignalHandling sh{std::vector<int>{ SIGABRT, SIGSEGV, SIGILL, SIGINT }};
 
 int main(int argc, const char** argv) {
-    signal(SIGSEGV, handler);   // install crash handler
-    signal(SIGABRT, handler);
     using namespace borealis::driver;
     try{
         gestalt gestalt{ "wrapper" };

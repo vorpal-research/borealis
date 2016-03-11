@@ -109,7 +109,7 @@ ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD)/lib/yaml-cpp/include \
 	$(PWD)/lib/cfgparser/include \
 	$(PWD)/lib/backward-cpp \
-	
+
 
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
 CXXFLAGS += -isystem $(PWD)/lib
