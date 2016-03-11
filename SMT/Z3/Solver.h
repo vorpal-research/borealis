@@ -21,8 +21,8 @@ namespace z3_ {
 class Solver : public borealis::logging::ClassLevelLogging<Solver> {
 
     USING_SMT_LOGIC(Z3);
-    typedef Z3::ExprFactory ExprFactory;
-    typedef Z3::ExecutionContext ExecutionContext;
+    using ExprFactory = Z3::ExprFactory;
+    using ExecutionContext = Z3::ExecutionContext;
 
 public:
 
@@ -56,7 +56,7 @@ private:
         z3::check_result,
         util::option<z3::model>,
         util::option<z3::expr_vector>,
-        util::option<std::string>
+        util::option<std::string> // FIXME: Z3 proof?
     >;
 
     check_result check(

@@ -77,7 +77,7 @@ static VarInfo mkVI(
     };
     return ret;
 }
-//
+
 //static VarInfo mkVI(const clang::FileManager&, const DIBorealisVarDesc& desc,
 //        const borealis::DebugInfoFinder&,
 //        clang::Decl* ast = nullptr, bool allocated = false) {
@@ -212,6 +212,8 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
                 auto* val = inst->getArgOperand(1);
                 DIVariable var(inst->getMetadata("var"));
 
+                if (not var) continue;
+
                 auto&& llvmType = val->getType();
                 auto&& metaType = dfi.resolve(var.getType());
 
@@ -230,6 +232,8 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
             } else if (intrinsic_manager.getIntrinsicType(*inst) == function_type::INTRINSIC_DECLARE) {
                 auto* val = inst->getArgOperand(0);
                 DIVariable var(inst->getMetadata("var"));
+
+                if (not var) continue;
 
                 auto&& llvmType = val->getType();
                 auto&& metaType = dfi.resolve(var.getType());

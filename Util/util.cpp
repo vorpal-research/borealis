@@ -78,9 +78,13 @@ ConditionDescription analyzeCondition(const int cond) {
     case P::FCMP_ULT:
         return {"?<", CT::LT};
 
+    // FIXME: correct processing for FCMP_ORD / FCMP_UNO
+
     case P::FCMP_TRUE:
+    case P::FCMP_ORD:
         return {"true", CT::TRUE};
     case P::FCMP_FALSE:
+    case P::FCMP_UNO:
         return {"false", CT::FALSE};
 
     default:
