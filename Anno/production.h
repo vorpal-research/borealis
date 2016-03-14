@@ -205,6 +205,7 @@ public:
     static prod_t createBuiltin(const std::string& v);
     static prod_t createNamedConstant(const std::string& v);
     static prod_t createMask(const std::string& v);
+    static prod_t createEmptyList();
     static prod_t createList(const prod_t& op0, const prod_t& op1);
     static prod_t createBinary(bin_opcode code, const prod_t& op0, const prod_t& op1);
     static prod_t createUnary(un_opcode code, const prod_t& op);

@@ -164,6 +164,10 @@ prod_t productionFactory::createList(const prod_t& op0, const prod_t& op1) {
     op0List.insert(op0List.end(), op1List.begin(), op1List.end());
     return make_shared<productionList>(std::move(op0List));
 }
+prod_t productionFactory::createEmptyList() {
+    get_list_visitor asker{};
+    return make_shared<productionList>(std::move(asker.res));
+}
 prod_t productionFactory::createBinary(bin_opcode code, const prod_t& op0, const prod_t& op1) {
     return make_shared<binary>(code, std::move(op0), std::move(op1));
 }

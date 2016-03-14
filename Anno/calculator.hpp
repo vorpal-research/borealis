@@ -188,6 +188,13 @@ struct store_command :
         coms.push_back(std::move(com));
     }
 };
+// FIXME: this is a terrible hack, sort out the grammar
+struct push_empty_list:
+        action_base<push_empty_list> {
+    static void apply(const std::string&, expr_stack& s, command_type&, commands_t&) {
+        s.push(productionFactory::createEmptyList());
+    }
+};
 
 struct op_collect_list:
         action_base<op_collect_list> {
