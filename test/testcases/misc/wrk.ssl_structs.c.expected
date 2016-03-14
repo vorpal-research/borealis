@@ -1,0 +1,14 @@
+[
+	{
+		"location" : 
+		{
+			"filename" : "test/testcases/misc/wrk.ssl_structs.c",
+			"loc" : 
+			{
+				"col" : 5,
+				"line" : 13
+			}
+		},
+		"type" : "BUF-01"
+	}
+]

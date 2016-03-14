@@ -162,6 +162,11 @@ struct clang_pipeline::impl: public DelegateLogging {
     };
 
     void compile(const llvm::opt::InputArgList& args) {
+        if ((*args.begin())->getSpelling() == "-cc1as") {
+            errs() << "Skipping -cc1as job..." << endl;
+            return;
+        }
+
         clang::EmitLLVMOnlyAction compile_to_llvm{ &llvm::getGlobalContext() };
         borealis::comments::GatherCommentsAction gatherAnnotations;
         borealis::VariableInfoFinder vif(&ctf);
