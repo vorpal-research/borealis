@@ -76,7 +76,7 @@ private:
     }
 
     template<class Lhv, class Rhv>
-    long long propagate(llvm::ArithType opcode, Lhv lhv, Rhv rhv) {
+    std::common_type_t<Lhv, Rhv> propagate(llvm::ArithType opcode, Lhv lhv, Rhv rhv) {
         switch (opcode) {
         case llvm::ArithType::ADD:  return lhv +  rhv;
         case llvm::ArithType::BAND: return lhv &  rhv;

@@ -23,6 +23,7 @@
 #include "Term/OpaqueIndexingTerm.h"
 #include "Term/OpaqueInvalidPtrTerm.h"
 #include "Term/OpaqueIntConstantTerm.h"
+#include "Term/OpaqueBigIntConstantTerm.h"
 #include "Term/OpaqueNullPtrTerm.h"
 #include "Term/OpaqueStringConstantTerm.h"
 #include "Term/OpaqueUndefTerm.h"
@@ -59,6 +60,7 @@ HANDLE_TERM(OpaqueFloatingConstant, OpaqueFloatingConstantTerm)
 HANDLE_TERM(OpaqueIndexing, OpaqueIndexingTerm)
 HANDLE_TERM(OpaqueInvalidPtr, OpaqueInvalidPtrTerm)
 HANDLE_TERM(OpaqueIntConstant, OpaqueIntConstantTerm)
+HANDLE_TERM(OpaqueBigIntConstant, OpaqueBigIntConstantTerm)
 HANDLE_TERM(OpaqueNullPtr, OpaqueNullPtrTerm)
 HANDLE_TERM(OpaqueStringConstant, OpaqueStringConstantTerm)
 HANDLE_TERM(OpaqueUndef, OpaqueUndefTerm)

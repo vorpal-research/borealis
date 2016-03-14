@@ -58,8 +58,8 @@ public:
     bool empty() const { return modelPtr->empty(); }
     bool valid() const { return !!modelPtr; }
 
-    util::option<long long> valueOf(const std::string& str) const;
-    util::option<long long> derefValueOf(uintptr_t ptr) const;
+    util::option<int64_t> valueOf(const std::string& str) const;
+    util::option<int64_t> derefValueOf(uintptr_t ptr) const;
 
     friend std::ostream& operator<<(std::ostream& ost, const SatResult& res);
 };

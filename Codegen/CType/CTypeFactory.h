@@ -64,16 +64,18 @@ public:
     }
 
     CType::Ptr getConst(CTypeRef tp) {
-        auto&& name = (is_one_of<CPointer, CArray>(tp.get()))?
-                                                 tp.getName() + " const"
-                                               : "const " + tp.getName();
+        auto&& inner = tp.get();
+        auto&& isArrayLike = inner && is_one_of<CPointer, CArray>(inner);
+        auto&& name = isArrayLike? tp.getName() + " const" : "const " + tp.getName();
+
         return make<CAlias>(name, getRef(tp), CQualifier::CONST);
     }
 
     CType::Ptr getVolatile(CTypeRef tp) {
-                auto&& name = (is_one_of<CPointer, CArray>(tp.get()))?
-                                                 tp.getName() + " volatile"
-                                               : "volatile " + tp.getName();
+        auto&& inner = tp.get();
+        auto&& isArrayLike = inner && is_one_of<CPointer, CArray>(inner);
+        auto&& name = isArrayLike? tp.getName() + " volatile" : "volatile " + tp.getName();
+
         return make<CAlias>(name, getRef(tp), CQualifier::VOLATILE);
     }
 

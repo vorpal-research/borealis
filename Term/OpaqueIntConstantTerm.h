@@ -27,16 +27,15 @@ message OpaqueIntConstantTerm {
 
 **/
 class OpaqueIntConstantTerm: public borealis::Term {
+    int64_t value;
 
-    long long value;
-
-    OpaqueIntConstantTerm(Type::Ptr type, long long value);
+    OpaqueIntConstantTerm(Type::Ptr type, int64_t value);
 
 public:
 
     MK_COMMON_TERM_IMPL(OpaqueIntConstantTerm);
 
-    long long getValue() const;
+    int64_t getValue() const;
 
     template<class Sub>
     auto accept(Transformer<Sub>*) const -> Term::Ptr {
@@ -52,7 +51,11 @@ struct SMTImpl<Impl, OpaqueIntConstantTerm> {
             ExprFactory<Impl>& ef,
             ExecutionContext<Impl>*) {
         TRACE_FUNC;
-        return ef.getIntConst(t->getValue(), ExprFactory<Impl>::sizeForType(t->getType()));
+        auto&& size = ExprFactory<Impl>::sizeForType(t->getType());
+        if(size > sizeof(int) * 8) {
+            return ef.getIntConst(util::toString(t->getValue()), size);
+        }
+        return ef.getIntConst(t->getValue(), size);
     }
 };
 

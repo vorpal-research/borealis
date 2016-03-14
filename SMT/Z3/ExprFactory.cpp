@@ -68,6 +68,11 @@ Z3::Integer ExprFactory::getIntConst(int v, unsigned int size) {
     return Integer::mkSizedConst(*ctx, v, size);
 }
 
+Z3::Integer ExprFactory::getIntConst(const std::string& v, unsigned int size) {
+    return Integer::mkSizedConst(*ctx, v, size);
+}
+
+
 Z3::Real ExprFactory::getRealVar(const std::string& name, bool fresh) {
     return fresh ? Real::mkFreshVar(*ctx, name) : Real::mkVar(*ctx, name);
 }

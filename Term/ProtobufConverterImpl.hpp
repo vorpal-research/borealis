@@ -32,6 +32,7 @@
 #include "Protobuf/Gen/Term/OpaqueMemberAccessTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueInvalidPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueIntConstantTerm.pb.h"
+#include "Protobuf/Gen/Term/OpaqueBigIntConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueNullPtrTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueStringConstantTerm.pb.h"
 #include "Protobuf/Gen/Term/OpaqueUndefTerm.pb.h"
@@ -518,6 +519,26 @@ struct protobuf_traits_impl<OpaqueIntConstantTerm> {
             const proto::OpaqueIntConstantTerm& t) {
         auto value = t.value();
         return Term::Ptr{ new OpaqueIntConstantTerm(base->getType(), value) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<OpaqueBigIntConstantTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::OpaqueBigIntConstantTerm> toProtobuf(const OpaqueBigIntConstantTerm& t) {
+        auto res = util::uniq(new proto::OpaqueBigIntConstantTerm());
+        res->set_representation(t.getRepresentation());
+        return std::move(res);
+    }
+
+    static Term::Ptr fromProtobuf(
+        const FactoryNest&,
+        Term::Ptr base,
+        const proto::OpaqueBigIntConstantTerm& t) {
+        auto value = t.representation();
+        return Term::Ptr{ new OpaqueBigIntConstantTerm(base->getType(), value) };
     }
 };
 

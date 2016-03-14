@@ -6,6 +6,7 @@
 #define C_TYPE_CONTEXT_H
 
 #include <string>
+#include "Util/collections.hpp"
 #include "Codegen/CType/CType.h"
 
 /** protobuf -> Codegen/CType/CTypeContext.proto
@@ -33,7 +34,8 @@ public:
     }
 
     CType::Ptr get(const std::string& name) const {
-        return types.at(name);
+        if(auto&& res = util::at(types, name)) return res.getUnsafe();
+        else return nullptr;
     }
 
     void put(CType::Ptr ptr) {

@@ -4,12 +4,15 @@
 [submodule "lib/tinyformat"]
 	path = lib/tinyformat
 	url = https://github.com/c42f/tinyformat.git
-[submodule "lib/iterations"]
-	path = lib/iterations
-	url = ../iterations
 [submodule "lib/typesig"]
 	path = lib/typesig
 	url = ../typesig
+[submodule "lib/backward-cpp"]
+	path = lib/backward-cpp
+	url = https://github.com/bombela/backward-cpp.git
+[submodule "lib/iterations"]
+	path = lib/iterations
+	url = ../iterations
 [submodule "lib/functional-hell"]
 	path = lib/functional-hell
 	url = ../functional-hell
