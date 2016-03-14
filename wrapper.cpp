@@ -20,20 +20,18 @@
 
 static backward::SignalHandling sh{std::vector<int>{ SIGABRT, SIGSEGV, SIGILL, SIGINT }};
 
+void on_terminate(void) {
+    try{ throw; }
+    catch (const z3::exception& ex) {
+        std::cerr << "z3 exception caught: " << ex.msg() << std::endl;
+    }
+    abort();
+}
+
+static bool th = !!std::set_terminate(on_terminate);
+
 int main(int argc, const char** argv) {
     using namespace borealis::driver;
-    try{
-        gestalt gestalt{ "wrapper" };
-        return gestalt.main(argc, argv);
-    } catch(const std::exception& ex) {
-        std::cerr << "Exception caught: " << ex.what() << std::endl;
-        exit(1);
-    } catch(const z3::exception& ex) {
-        std::cerr << "Exception caught: " << ex.msg() << std::endl;
-        exit(1);
-    } catch(...) {
-        std::cerr << "Exception caught " << std::endl;
-        exit(1);
-    }
-
+    gestalt gestalt{ "wrapper" };
+    return gestalt.main(argc, argv);
 }
