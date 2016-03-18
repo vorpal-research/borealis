@@ -282,7 +282,7 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
             );
             auto arg = trm->getRhv().first_or(nullptr);
             auto newName = tfm::format("$$free(%s)$$", arg->getName());
-            return FN.Term->getValueTerm(FN.Type->getInteger(), newName);
+            return FN.Term->getFreeVarTerm(FN.Type->getInteger(), newName);
         } else {
             pimpl->failWith("Cannot call %s: not supported", trm->getName());
         }

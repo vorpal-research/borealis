@@ -12,7 +12,7 @@ namespace borealis {
 MemoryContextSplitter::MemoryContextSplitter(FactoryNest FN) : Base(FN) {}
 
 Term::Ptr MemoryContextSplitter::transformBoundTerm(BoundTermPtr ptr) {
-    auto&& freeTerm = FN.Term->getValueTerm(ptr->getType(), "$$" + ptr->getName() + "$$");
+    auto&& freeTerm = FN.Term->getFreeVarTerm(ptr->getType(), "$$" + ptr->getName() + "$$");
 
     if (not util::contains(processedTerms, freeTerm)) {
         processedTerms.insert(freeTerm);

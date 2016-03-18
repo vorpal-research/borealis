@@ -69,6 +69,9 @@ CType::Ptr CTypeUtils::loadType(CType::Ptr base) {
 }
 
 CType::Ptr CTypeUtils::commonType(CTypeFactory& ctx, CType::Ptr lhv, CType::Ptr rhv) {
+    if(!lhv) return rhv;
+    if(!rhv) return lhv;
+
     if(lhv == rhv) return lhv;
     // we do not really handle aliasing complexity here, but for our purposes it's ok
     lhv = stripAllAliasing(lhv);

@@ -71,7 +71,8 @@ public:
         if(is_one_of<ArgumentTerm, ConstTerm, OpaqueBuiltinTerm, OpaqueCallTerm,
                      OpaqueStringConstantTerm, OpaqueUndefTerm, OpaqueVarTerm, ReturnValueTerm, ValueTerm>(term)) {
             // wheew
-            UNREACHABLE(tfm::format("Cannot infer CType for term %s", term->getName()));
+            warns() << tfm::format("Cannot infer CType for term %s", term->getName()) << endl;
+            return res = nullptr;
         }
 
         // unhandled here:
@@ -151,7 +152,8 @@ public:
         }
 
         if(isa<type::UnknownType>(tp)) {
-            UNREACHABLE(tfm::format("Unknown type detected"));
+            warns() << "tryCastTypeToCType: Unknown type detected" << endl;
+            return nullptr;
         }
 
         if(auto&& rec = dyn_cast<type::Record>(tp)) {

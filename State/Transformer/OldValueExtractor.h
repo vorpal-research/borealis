@@ -43,7 +43,7 @@ public:
         auto arg = util::head(call->getRhv());
 
         auto genName = getFreeName();
-        auto genTerm = FN.Term->getValueTerm(arg->getType(), genName);
+        auto genTerm = FN.Term->getFreeVarTerm(arg->getType(), genName);
 
         auto predicate = FN.Term->getCmpTerm(llvm::ConditionType::EQ, genTerm, arg);
         std::vector<Term::Ptr> args { predicate };
