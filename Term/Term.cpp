@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include <z3/z3++.h>
 #include "Statistics/statistics.h"
 #include "Term/Term.h"
 

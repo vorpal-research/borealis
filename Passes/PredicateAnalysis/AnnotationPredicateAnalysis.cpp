@@ -59,7 +59,7 @@ public:
                         pass->FN.Predicate->getWritePropertyPredicate(
                             rpt->getPropertyName(),
                             rpt->getRhv(),
-                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(currentSeed)),
+                            pass->FN.Term->getFreeVarTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(currentSeed)),
                             pass->SLT->getLocFor(&CI)
                         );
                 } else if (llvm::isa<BoundTerm>(trm)) {
@@ -67,7 +67,7 @@ public:
                     pass->PM[&CI] =
                         pass->FN.Predicate->getWriteBoundPredicate(
                             rpt->getRhv(),
-                            pass->FN.Term->getValueTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(currentSeed)),
+                            pass->FN.Term->getFreeVarTerm(pass->FN.Type->getInteger(), "borealis.fresh.var." + util::toString(currentSeed)),
                             pass->SLT->getLocFor(&CI)
                         );
                 } else if (llvm::isa<LoadTerm>(trm)) {
@@ -77,7 +77,7 @@ public:
                     pass->PM[&CI] =
                         pass->FN.Predicate->getStorePredicate(
                             rpt->getRhv(),
-                            pass->FN.Term->getValueTerm(ptr->getPointed(), "borealis.fresh.var." + util::toString(currentSeed)),
+                            pass->FN.Term->getFreeVarTerm(ptr->getPointed(), "borealis.fresh.var." + util::toString(currentSeed)),
                             pass->SLT->getLocFor(&CI)
                         );
                 }

@@ -36,6 +36,7 @@
 #include "Term/TernaryTerm.h"
 #include "Term/UnaryTerm.h"
 #include "Term/ValueTerm.h"
+#include "Term/FreeVarTerm.h"
 #include "Term/VarArgumentTerm.h"
 
 #define HANDLE_TERM(NAME, CLASS)
@@ -73,6 +74,7 @@ HANDLE_TERM(Sign, SignTerm)
 HANDLE_TERM(Ternary, TernaryTerm)
 HANDLE_TERM(Unary, UnaryTerm)
 HANDLE_TERM(Value, ValueTerm)
+HANDLE_TERM(FreeVar, FreeVarTerm)
 HANDLE_TERM(VarArgument, VarArgumentTerm)
 
 #ifdef HANDLE_TERM

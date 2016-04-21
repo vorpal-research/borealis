@@ -54,6 +54,7 @@ public:
 
     Term::Ptr getValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getValueTerm(Type::Ptr type, const std::string& name);
+    Term::Ptr getFreeVarTerm(Type::Ptr type, const std::string& name);
     Term::Ptr getGlobalValueTerm(const llvm::GlobalValue* gv, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getLocalValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown);
 

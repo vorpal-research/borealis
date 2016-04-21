@@ -44,6 +44,7 @@
 #include "Protobuf/Gen/Term/TernaryTerm.pb.h"
 #include "Protobuf/Gen/Term/UnaryTerm.pb.h"
 #include "Protobuf/Gen/Term/ValueTerm.pb.h"
+#include "Protobuf/Gen/Term/FreeVarTerm.pb.h"
 #include "Protobuf/Gen/Term/VarArgumentTerm.pb.h"
 
 #include "Type/ProtobufConverterImpl.hpp"
@@ -256,6 +257,23 @@ struct protobuf_traits_impl<ConstTerm> {
             Term::Ptr base,
             const proto::ConstTerm&) {
         return Term::Ptr{ new ConstTerm(base->getType(), base->getName()) };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<FreeVarTerm> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::FreeVarTerm> toProtobuf(const FreeVarTerm&) {
+        return util::uniq(new proto::FreeVarTerm());
+    }
+
+    static Term::Ptr fromProtobuf(
+        const FactoryNest&,
+        Term::Ptr base,
+        const proto::FreeVarTerm&) {
+        return Term::Ptr{ new FreeVarTerm(base->getType(), base->getName()) };
     }
 };
 

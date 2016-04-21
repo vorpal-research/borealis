@@ -280,6 +280,10 @@ Term::Ptr TermFactory::getValueTerm(Type::Ptr type, const std::string& name) {
     return Term::Ptr{ new ValueTerm(type, name) };
 }
 
+Term::Ptr TermFactory::getFreeVarTerm(Type::Ptr type, const std::string& name) {
+    return Term::Ptr{ new FreeVarTerm(type, name) };
+}
+
 Term::Ptr TermFactory::getGlobalValueTerm(const llvm::GlobalValue* gv, llvm::Signedness sign) {
     return Term::Ptr{
         new ValueTerm(

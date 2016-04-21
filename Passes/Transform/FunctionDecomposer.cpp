@@ -315,6 +315,9 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                 try{
                     OldValueExtractor ove(FN);
                     contract = ove.transform(contract);
+
+                    // FIXME: materialize ove results
+
                     befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
                     if(auto&& la = dyn_cast<LogicAnnotation>(contract)) {
                         AnnotationMaterializer AM(*la, FN, &VIT, call->getCalledFunction());

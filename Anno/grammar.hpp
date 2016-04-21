@@ -88,7 +88,7 @@ struct read_expr_list : SGRAMMAR(read_expr_list,
     (G(read_comma) >= G(read_expr)) & G(op_collect_list)
 );
 struct read_expr_list2: SGRAMMAR(read_expr_list2,
-    G(read_expr) >> *G(read_expr_list)
+    (G(read_expr) & G(push_empty_list) & G(op_collect_list)) >> *G(read_expr_list)
 );
 // property_expr := '.' variable
 struct read_property_expr: SGRAMMAR(read_property_expr,

@@ -300,7 +300,7 @@ public:
             return ctor(args_[0]->undoThat(FN));
         } else {
             auto&& name = "(initial)" + memory_name + "(idx:" + util::toString(idx_++) + ")";
-            auto&& idx = FN.Term->getValueTerm(
+            auto&& idx = FN.Term->getFreeVarTerm(
                 FN.Type->getInteger(0),
                 name
             );
