@@ -14,6 +14,8 @@
 #include "Util/passes.hpp"
 #include "Util/util.h"
 
+#include "Util/macros.h"
+
 // Fixing llvm stupidity
 // XXX: move this spec somewhere else if you want to reuse scc_iterator in util::view
 namespace std {
@@ -21,7 +23,7 @@ namespace std {
     struct iterator_traits<llvm::scc_iterator<T, GT>> {
         typedef std::forward_iterator_tag iterator_category;
         typedef std::vector<typename GT::NodeType> value_type;
-        typedef ptrdiff_t   difference_type;
+        typedef ptrdiff_t difference_type;
         typedef value_type* pointer;
         typedef value_type& reference;
     };
@@ -37,15 +39,28 @@ void SCCPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<llvm::CallGraphWrapperPass>::addRequiredTransitive(AU);
 }
 
-bool SCCPass::runOnModule(llvm::Module&) {
+bool SCCPass::runOnModule(llvm::Module& M) {
     using namespace llvm;
     using borealis::util::view;
 
     bool changed = false;
 
+    std::unordered_set<llvm::Function*> visited;
+
     CallGraph* CG = &GetAnalysis<CallGraphWrapperPass>::doit(this).getCallGraph();
     for (auto&& SCC : view(scc_begin(CG), scc_end(CG))) {
         changed |= runOnSCC(SCC);
+
+        util::viewContainer(SCC)
+            .map(LAM(node, node->getFunction()))
+            .foreach(APPLY(visited.insert));
+    }
+
+    for (auto&& F : util::viewContainer(M)
+                        .map(ops::take_pointer)
+                        .filter(LAM(FF, not util::contains(visited, FF)))) {
+        auto&& FN = std::make_unique<CallGraphNode>(F);
+        changed |= runOnSCC(CallGraphSCC{FN.get()});
     }
 
     return changed;
@@ -85,3 +100,5 @@ static RegisterPass<SCCTestPass>
 X("scc-test", "Test pass for SCCPass");
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
