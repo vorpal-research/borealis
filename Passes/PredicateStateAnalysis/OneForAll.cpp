@@ -58,7 +58,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 #include "Passes/PredicateAnalysis/Defines.def"
 
     // Register globals in our predicate state
-    auto&& gState = FN.getGlobalState(F.getParent());
+    auto&& gState = FN.getGlobalState(&F);
 
     // Register requires
     auto&& requires = FM->getReq(&F);

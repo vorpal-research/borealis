@@ -203,6 +203,12 @@ inline bool isMain(const Function& f) {
     return (f.getName() == "main")  || (f.getName() == "__main");
 }
 
+
+llvm::Function* getCalledFunction(const llvm::Value* v);
+inline llvm::Function* getCalledFunction(const llvm::Value& v) {
+    return getCalledFunction(&v);
+}
+
 } // namespace llvm
 
 namespace borealis {

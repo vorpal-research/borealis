@@ -38,7 +38,7 @@ public:
 
     FactoryNest(const llvm::DataLayout* DL, SlotTracker* st);
 
-    PredicateState::Ptr getGlobalState(const llvm::Module* M);
+    PredicateState::Ptr getGlobalState(const llvm::Function* F);
 
 };
 

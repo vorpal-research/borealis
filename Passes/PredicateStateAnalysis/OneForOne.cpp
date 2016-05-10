@@ -48,7 +48,7 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
 #include "Passes/PredicateAnalysis/Defines.def"
 
     // Register globals in our predicate state
-    PredicateState::Ptr gState = FN.getGlobalState(F.getParent());
+    PredicateState::Ptr gState = FN.getGlobalState(&F);
 
     // Register REQUIRES
     PredicateState::Ptr requires = FM->getReq(&F);

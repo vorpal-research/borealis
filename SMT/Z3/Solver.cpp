@@ -240,17 +240,21 @@ Result Solver::isViolated(
 
     TRACE_FUNC;
 
-    dbgs() << "Checking query: " << endl
-           << query << endl
-           << "in: " << endl
-           << state << endl;
+    static config::BoolConfigEntry logQueries("output", "smt-query-logging");
+    bool noQueryLogging = not logQueries.get(false);
+    if(!noQueryLogging)
+        dbgs() << "Checking query: " << endl
+               << query << endl
+               << "in: " << endl
+               << state << endl;
 
     // XXX: measure if it really helps
-    thread_local static util::cache<
+    /* thread_local static util::cache<
         std::tuple<decltype(memoryStart), decltype(memoryEnd), decltype(state)>,
         std::tuple<ExecutionContext, Bool>
-    > cacher = [&](auto&& membounds) {
-        thread_local static auto&& z3ef = this->z3ef;
+    > cacher */
+    auto cacher = [&](auto&& membounds) {
+        //thread_local static auto&& z3ef = this->z3ef;
         unsigned long long memoryStart, memoryEnd;
         PredicateState::Ptr state;
         std::tie(memoryStart, memoryEnd, state) = membounds;
@@ -261,7 +265,7 @@ Result Solver::isViolated(
         return std::make_tuple(ctx, z3state);
     };
 
-    auto&& pr = cacher[ std::make_tuple(memoryStart, memoryEnd, state) ];
+    auto&& pr = cacher( std::make_tuple(memoryStart, memoryEnd, state) );
     auto&& ctx = std::get<0>(pr);
     auto&& z3state = std::get<1>(pr);
 

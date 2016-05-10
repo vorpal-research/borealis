@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include <complex>
 #include "Factory/Nest.h"
 #include "State/PredicateStateBuilder.h"
 
@@ -69,13 +70,52 @@ Predicate::Ptr fromGlobalVariable(FactoryNest& FN, const llvm::GlobalVariable& g
     return FN.Predicate->getGlobalsPredicate({base});
 }
 
-PredicateState::Ptr FactoryNest::getGlobalState(const llvm::Module* M) {
+namespace {
+
+template<class Pred>
+struct AllInstructionUsersChecker {
+    std::unordered_set<const llvm::Value*> visited;
+
+    bool operator() (const llvm::Value* v, Pred f) {
+        if(visited.count(v)) return false;
+        visited.insert(v);
+
+        for(auto&& user : v->users()) {
+            bool interm;
+            if(auto&& inst = llvm::dyn_cast<llvm::Instruction>(user)) {
+                interm = f(inst);
+            } else {
+                interm = (*this)(user, f);
+            }
+            if(interm) return true;
+        }
+        return false;
+    }
+};
+
+template<class Pred>
+bool visitAllInstructionUsersForPred(const llvm::Value* v, Pred f) {
+    return AllInstructionUsersChecker<Pred>{}(v, f);
+}
+
+} /* namespace */
+
+PredicateState::Ptr FactoryNest::getGlobalState(const llvm::Function* F) {
+    auto&& M = F->getParent();
     auto&& globals = M->getGlobalList();
+
+    std::unordered_set<const llvm::Function*> callSet { F };
+    for(auto&& i : util::viewContainer(*F).flatten()) {
+        if(auto&& called = llvm::getCalledFunction(i)) callSet.insert(called);
+    }
 
     // FIXME: Marker predicate
     auto&& init = Predicate->getGlobalsPredicate({});
 
     auto&& gvPredicates = util::viewContainer(globals)
+            .filter([&](auto&& gv) {
+                return visitAllInstructionUsersForPred(&gv, LAM(i, callSet.count(i->getParent()->getParent())));
+            })
             .map([&](auto&& gv) { return fromGlobalVariable(*this, gv); })
             .toVector();
 

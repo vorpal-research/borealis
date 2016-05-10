@@ -45,22 +45,25 @@ public:
     bool check(PredicateState::Ptr query, PredicateState::Ptr state, const DefectInfo& di) {
         TRACE_FUNC;
 
+        static config::BoolConfigEntry logQueries("output", "smt-query-logging");
+        bool noQueryLogging = not logQueries.get(false);
+
         if (not query or not state) return false;
         if (query->isEmpty()) return false;
         if (state->isEmpty()) return true;
 
         dbgs() << "Defect: " << di << endl;
         dbgs() << "Checking: " << *I << endl;
-        dbgs() << "  Query: " << query << endl;
+        if(!noQueryLogging) dbgs() << "  Query: " << query << endl;
 
         auto&& sliced = state; /* StateSlicer(pass->FN, query, pass->AA).transform(state); */
         if (*state == *sliced) {
             dbgs() << "Slicing failed" << endl;
         } else {
-            dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
+            if(!noQueryLogging) dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
         }
 
-        dbgs() << "  State: " << sliced << endl;
+        if(!noQueryLogging) dbgs() << "  State: " << sliced << endl;
 
         auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
@@ -68,7 +71,8 @@ public:
         MathSAT::ExprFactory ef;
         MathSAT::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #else
-        auto&& ef = util::threadLocalInstance<Z3::ExprFactory>();
+        //auto&& ef = util::threadLocalInstance<Z3::ExprFactory>();
+        Z3::ExprFactory ef;
         Z3::Solver s(ef, fMemInfo.first, fMemInfo.second);
 #endif
 

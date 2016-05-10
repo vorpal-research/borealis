@@ -278,6 +278,17 @@ ReturnInst* getSingleRetOpt(Function* F) {
     }
 }
 
+llvm::Function* getCalledFunction(const llvm::Value* v) {
+    if(auto&& ii = llvm::dyn_cast<llvm::InvokeInst>(v)) {
+        return ii->getCalledFunction();
+    }
+    if(auto&& i = llvm::dyn_cast<llvm::CallInst>(v)) {
+        return i->getCalledFunction();
+    }
+
+    return nullptr;
+}
+
 } // namespace llvm
 
 namespace borealis {
