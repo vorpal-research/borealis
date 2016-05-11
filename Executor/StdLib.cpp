@@ -205,8 +205,9 @@ util::option<llvm::GenericValue> ExecutionEngine::callStdLibFunction(
     TRACE_FUNC;
 
     if(util::viewContainer(F->getArgumentList())
+        .map(ops::take_pointer)
         .zipWith(ArgVals)
-        .any_of(as_packed(LAM2(arg, gv, arg.getType()->isPointerTy() && Mem.isOpaquePointer(gv.PointerVal))))) {
+        .any_of(as_packed(LAM2(arg, gv, arg->getType()->isPointerTy() && Mem.isOpaquePointer(gv.PointerVal))))) {
         return nothing();
     }
 
