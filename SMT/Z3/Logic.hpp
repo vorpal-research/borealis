@@ -11,6 +11,8 @@
 #include <z3/z3++.h>
 
 #include <functional>
+#include <numeric>
+#include <algorithm>
 
 #include "Util/util.h"
 #include "Util/functional.hpp"

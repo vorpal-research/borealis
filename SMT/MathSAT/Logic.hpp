@@ -10,6 +10,8 @@
 
 #include <functional>
 #include <vector>
+#include <numeric>
+#include <algorithm>
 
 #include "SMT/MathSAT/MathSAT.h"
 #include "Util/util.h"

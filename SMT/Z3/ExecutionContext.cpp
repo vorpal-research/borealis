@@ -210,7 +210,7 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bi
 
     auto&& zero = factory.getIntConst(0, bitSize);
 
-    auto storedBound = [&](auto ptr) -> Integer { return readProperty(GEP_BOUNDS_ID, ptr, bitSize); };
+    auto storedBound = [&](auto ptr) -> Integer { return this->readProperty(GEP_BOUNDS_ID, ptr, bitSize); };
 
     auto&& pSize = storedBound(p);
 

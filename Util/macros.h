@@ -30,8 +30,8 @@
  * Note that the one-liners can be big and the impact will be significant.
  *
  * */
-#define LAM(X, ...) [&](auto&& X) -> decltype((__VA_ARGS__)) { return __VA_ARGS__; }
-#define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype((__VA_ARGS__)) { return __VA_ARGS__; }
+#define LAM(X, ...) [&](auto&& X) -> decltype(auto) { return __VA_ARGS__; }
+#define LAM2(X, Y, ...) [&](auto&& X, auto&& Y) -> decltype(auto) { return __VA_ARGS__; }
 #define FWD(...) (std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__))
 #define APPLY(...) LAM(...Args, __VA_ARGS__(FWD(Args)...))
 

@@ -131,7 +131,7 @@ public:
             return CTF->getFunction(
                 CTF->getRef(tryCastLLVMTypeToCType(fun->getReturnType())),
                 util::view(fun->param_begin(), fun->param_end())
-                     .map(APPLY(tryCastLLVMTypeToCType))
+                     .map(APPLY(this->tryCastLLVMTypeToCType))
                      .map(APPLY(CTF->getRef))
                      .toVector()
             );
@@ -186,7 +186,7 @@ public:
             return CTF->getFunction(
                 CTF->getRef(tryCastTypeToCType(fun->getRetty())),
                 util::viewContainer(fun->getArgs())
-                     .map(APPLY(tryCastTypeToCType))
+                     .map(APPLY(this->tryCastTypeToCType))
                      .map(APPLY(CTF->getRef))
                      .toVector()
             );

@@ -80,7 +80,7 @@ Type::Ptr TypeFactory::getRecord(const std::string& name, const llvm::StructType
 
             type::RecordBody rb{
                 util::range(0U, st->getNumElements())
-                .map(LAM(ix, type::RecordField{cast(st->getElementType(ix), dl), sl->getElementOffsetInBits(ix)} ))
+                .map(LAM(ix, type::RecordField{this->cast(st->getElementType(ix), dl), sl->getElementOffsetInBits(ix)} ))
                 .toVector()
             };
 

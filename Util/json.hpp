@@ -208,13 +208,21 @@ struct json_object_builder {
     // exactly the same as the number of types in Args
     json_object_builder(const type_K_comb_q<std::string, Args>&... keys) : keys { keys... } {}
 
+    template<size_t Ix>
+    using type_arg_at = util::index_in_row_q<Ix, Args...>;
+
+    template <size_t Ix>
+    std::unique_ptr<type_arg_at<Ix>> buildSingle(const Json::Value& val) const {
+        return util::fromJson<type_arg_at<Ix>>(val[keys[Ix]]);
+    };
+
     template<size_t ...Ixs>
     Obj* build_(const Json::Value& val, util::indexer<Ixs...>) const {
         if(!val.isObject()) return nullptr;
 
-        std::tuple<typename json_traits<util::index_in_row_q<Ixs, Args...>>::optional_ptr_t...> ptrs {
-            util::fromJson<util::index_in_row_q<Ixs, Args...>>(val[keys[Ixs]])...
-        };
+        auto ptrs = std::make_tuple(
+            buildSingle<Ixs>(val)...
+        );
 
         if(!impl::allptrs(std::get<Ixs>(ptrs)...)) return nullptr;
 

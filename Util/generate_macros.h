@@ -1247,7 +1247,7 @@ MACRO(A31, MARG)
     }
 
 #define JSON_DICT_WRITE(NAME, ...) dict[#NAME] = borealis::util::toJson(val.NAME);
-#define PP_VAL_DECLTYPE(NAME, PARENT_TYPE) decltype(std::declval<PARENT_TYPE>().NAME)
+#define PP_VAL_DECLTYPE(NAME, PARENT_TYPE) std::decay_t<decltype((std::declval<PARENT_TYPE>().NAME))>
 #define FIELD_NAMES(NAME, ...) #NAME
 #define GENERATE_OUTLINE_JSON_TRAITS(TYPE, ...) \
 \

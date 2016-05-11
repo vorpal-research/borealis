@@ -5,6 +5,9 @@
  *      Author: ice-phoenix
  */
 
+#include <numeric>
+#include <algorithm>
+
 #include "State/Transformer/Simplifier.h"
 
 namespace borealis {
