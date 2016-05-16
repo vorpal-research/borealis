@@ -75,16 +75,18 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
         ASSERTC(ctx != nullptr);
 
         ASSERT(llvm::isa<OpaqueStringConstantTerm>(p->getPropertyName()),
-               "Property write with non-string property name");
+               tfm::format("Property write with non-string property name: %s", p->getPropertyName()));
         auto* propName = llvm::cast<OpaqueStringConstantTerm>(p->getPropertyName());
         auto&& strPropName = propName->getValue();
 
-        auto&& l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
-        ASSERT(not l.empty(), "Property write with a non-pointer value");
-        auto&& lp = l.getUnsafe();
+        auto&& l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<DynBV>();
+        ASSERT(not l.empty(),
+               tfm::format("Property write with a non-BV address: %s", p->getLhv()));
+        auto&& lp = l.getUnsafe().template adapt<Pointer>();
 
         auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx).template to<DynBV>();
-        ASSERT(not r.empty(), "Property write with a non-BV value");
+        ASSERT(not r.empty(),
+               tfm::format("Property write with a non-BV value: %s", p->getRhv()));
         auto&& rbv = r.getUnsafe();
 
         ctx->writeProperty(strPropName, lp, rbv);

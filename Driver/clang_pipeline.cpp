@@ -150,6 +150,12 @@ struct clang_pipeline::impl: public DelegateLogging {
         ci.getCodeGenOpts().EmitDeclMetadata = true;
         ci.getCodeGenOpts().setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
         ci.getCodeGenOpts().OptimizationLevel = 0;
+        ci.getCodeGenOpts().NoInline = 1;
+        ci.getCodeGenOpts().setInlining(clang::CodeGenOptions::NoInlining);
+        ci.getCodeGenOpts().setStructReturnConvention(clang::CodeGenOptions::StructReturnConventionKind::SRCK_OnStack);
+        ci.getCodeGenOpts().UnrollLoops = 0;
+        ci.getCodeGenOpts().RerollLoops = 0;
+        ci.getCodeGenOpts().DebugColumnInfo = 1;
         ci.getDiagnosticOpts().ShowCarets = false;
 
         ci.ExecuteAction(act);

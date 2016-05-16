@@ -15,6 +15,7 @@
 #include "State/Transformer/MemoryContextSplitter.h"
 #include "State/Transformer/Retyper.h"
 #include "State/Transformer/StateOptimizer.h"
+#include "State/Transformer/TermSizeCalculator.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -50,6 +51,8 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
     // Register globals in our predicate state
     PredicateState::Ptr gState = FN.getGlobalState(&F);
 
+    dbgs() << "Global state size: " << TermSizeCalculator::measure(gState) << endl;
+
     // Register REQUIRES
     PredicateState::Ptr requires = FM->getReq(&F);
     // Memory split requires
@@ -64,6 +67,8 @@ bool OneForOne::runOnFunction(llvm::Function& F) {
         mcs.getGeneratedPredicates() +
         splittedRequires
     )();
+
+    dbgs() << "Initial state size: " << TermSizeCalculator::measure(initialState) << endl;
 
     // Register arguments as visited values
     for (auto& arg : F.getArgumentList()) {
@@ -123,10 +128,12 @@ void OneForOne::finalize() {
     if (PredicateStateAnalysis::OptimizeStates()) {
         StateOptimizer so{FN};
 
+        dbgs() << "Optimizer started" << endl;
         initialState = so.transform(initialState);
         for (auto&& v : util::viewContainerValues(instructionStates)) {
             v = so.transform(v);
         }
+        dbgs() << "Optimizer finished" << endl;
     }
 
     Retyper retyper{FN};

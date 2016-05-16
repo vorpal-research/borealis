@@ -17,6 +17,7 @@
 #include "State/Transformer/MemoryContextSplitter.h"
 #include "State/Transformer/Retyper.h"
 #include "State/Transformer/StateOptimizer.h"
+#include "State/Transformer/TermSizeCalculator.h"
 #include "Util/graph.h"
 #include "Util/util.h"
 
@@ -60,6 +61,7 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     // Register globals in our predicate state
     auto&& gState = FN.getGlobalState(&F);
 
+    dbgs() << "Global state size: " << TermSizeCalculator::measure(gState) << endl;
     // Register requires
     auto&& requires = FM->getReq(&F);
     // Memory split requires
@@ -80,6 +82,8 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
 
     // Save initial state
     this->initialState = initialState;
+
+    dbgs() << "Initial state size: " << TermSizeCalculator::measure(initialState) << endl;
 
     // Process basic blocks in topological order
     auto&& ordered = TopologicalSorter().doit(F);
@@ -115,12 +119,15 @@ void OneForAll::finalize() {
     AbstractPredicateStateAnalysis::finalize();
 
     if (PredicateStateAnalysis::OptimizeStates()) {
+
+        dbgs() << "Optimizer started" << endl;
         StateOptimizer so{FN};
 
         initialState = so.transform(initialState);
         for (auto&& v : util::viewContainerValues(instructionStates)) {
             v = so.transform(v);
         }
+        dbgs() << "Optimizer finished" << endl;
     }
 
     Retyper retyper{FN};

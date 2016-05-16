@@ -13,6 +13,7 @@
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "State/Transformer/StateSlicer.h"
+#include "State/Transformer/TermSizeCalculator.h"
 
 namespace borealis {
 
@@ -48,6 +49,9 @@ public:
         static config::BoolConfigEntry logQueries("output", "smt-query-logging");
         bool noQueryLogging = not logQueries.get(false);
 
+        dbgs() << "Query size:" << TermSizeCalculator::measure(query) << endl;
+        dbgs() << "State size:" << TermSizeCalculator::measure(state) << endl;
+
         if (not query or not state) return false;
         if (query->isEmpty()) return false;
         if (state->isEmpty()) return true;
@@ -56,8 +60,13 @@ public:
         dbgs() << "Checking: " << *I << endl;
         if(!noQueryLogging) dbgs() << "  Query: " << query << endl;
 
-        auto&& sliced = state; /* StateSlicer(pass->FN, query, pass->AA).transform(state); */
-        if (*state == *sliced) {
+        dbgs() << "Slicing started" << endl;
+        auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
+        dbgs() << "Slicing finished" << endl;
+
+        dbgs() << "State size after slicing:" << TermSizeCalculator::measure(sliced) << endl;
+
+        if (state == sliced) {
             dbgs() << "Slicing failed" << endl;
         } else {
             if(!noQueryLogging) dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
