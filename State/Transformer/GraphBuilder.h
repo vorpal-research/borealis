@@ -109,6 +109,10 @@ public:
     }
 };
 
+PSGraph buildGraphRep(PredicateState::Ptr ps) {
+    return GraphBuilder::apply(ps).getGraph();
+}
+
 } /* namespace borealis */
 
 namespace llvm {
@@ -150,14 +154,27 @@ struct DOTGraphTraits<borealis::PSGraph*>: DefaultDOTGraphTraits {
     DOTGraphTraits(){}
     DOTGraphTraits(bool ignore){}
 
-    static bool isNodeHidden(const borealis::PSGraphNode* node) {
-        return false; //node->data == nullptr;
+    template<typename GraphType>
+    static std::string getNodeAttributes(const borealis::PSGraphNode* node,
+                                         const GraphType& g) {
+        if(node->data == nullptr) return "shape=diamond";
+        return DefaultDOTGraphTraits::getNodeAttributes(node, g);
     }
 
     template<typename GraphType>
     std::string getNodeLabel(const borealis::PSGraphNode* node, GraphType &) {
-        if(node->data == nullptr) return "<>";
-        return node->data->toString();
+        using namespace borealis;
+        if(node->data == nullptr) return "@";
+        if(auto basic = llvm::dyn_cast<BasicPredicateState>(node->data)) {
+            auto head = util::head(basic->getData());
+            auto tail = util::tail(basic->getData());
+            std::ostringstream oss;
+            oss << head;
+            for(auto&& p: tail) oss << std::endl << p;
+            return oss.str();
+        }
+
+        return "[Incorrect node]";
     }
 };
 

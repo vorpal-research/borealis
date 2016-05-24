@@ -127,8 +127,6 @@ void OneForAll::finalize() {
 
         initialState = so.transform(initialState);
         for (auto&& v : util::viewContainerValues(instructionStates)) {
-            //auto gb = GraphBuilder::apply(v);
-            //llvm::ViewGraph(&gb.getGraph(), "wha" );
             v = so.transform(v);
         }
         dbgs() << "Optimizer finished" << endl;
