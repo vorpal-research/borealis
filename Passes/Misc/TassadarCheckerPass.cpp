@@ -65,6 +65,8 @@ public:
         for(auto&& defect: DM.getData()) if(auto&& model = DM.getAdditionalInfo(defect).satModel) {
             ASSERT(model.getUnsafe().valid(), "Cannot run tassadar checker without collected data. Did you forget to enable model collection?");
 
+            dbgs() << "Running tassadar on " << defect << endl;
+
             llvm::Function* func = DM.getAdditionalInfo(defect).atFunc;
             auto st = getAnalysis<SlotTrackerPass>().getSlotTracker(func);
 

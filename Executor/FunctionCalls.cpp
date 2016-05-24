@@ -103,7 +103,8 @@ llvm::GenericValue ExecutionEngine::executeMalloc(const llvm::Function* f, const
     }
 
     llvm::GenericValue RetVal{};
-    auto sz = TD->getTypeStoreSize(f->getReturnType()->getPointerElementType());
+    auto reType = f->getReturnType()->getPointerElementType();
+    auto sz = reType->isSized()? TD->getTypeStoreSize(reType) : 1;
     RetVal.PointerVal = Mem.MallocMemory(sz * ArgVals[0].IntVal.getLimitedValue(), MemorySimulator::MallocFill::UNINIT);
     return RetVal;
 }
@@ -134,6 +135,9 @@ llvm::GenericValue ExecutionEngine::executeMemcpy(const llvm::Function*, const s
     if(size <= MemcpyThreshold.get(1024U) * Mem.getQuant()) {
         auto Dst = static_cast<uint8_t*>(ArgVals[0].PointerVal);
         auto Src = static_cast<uint8_t*>(ArgVals[1].PointerVal);
+
+        if(isSymbolicPointer(Dst)) throw std::logic_error("Cannot store to a symbolic location");
+        if(isSymbolicPointer(Src)) throw std::logic_error("Cannot load from a symbolic location with no instruction");
 
         std::vector<uint8_t> buf(size);
         llvm::MutableArrayRef<uint8_t> to{ Dst, size };

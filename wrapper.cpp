@@ -18,7 +18,7 @@
 
 #include "Driver/gestalt.h"
 
-static backward::SignalHandling sh{std::vector<int>{ SIGABRT, SIGSEGV, SIGILL, SIGINT }};
+static backward::SignalHandling sh{std::vector<int>{ SIGABRT, SIGSEGV, SIGILL, SIGINT, SIGTRAP }};
 
 void on_terminate(void) {
     try{ throw; }

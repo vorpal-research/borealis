@@ -46,9 +46,10 @@ public:
     illegal_mem_free_exception(void* ptr): memory_exception("Illegal free() at %x", ptr) {};
 };
 
-class out_of_memory_exception : public memory_exception {
+class out_of_memory_exception :  public std::runtime_error {
 public:
-    out_of_memory_exception(): memory_exception("Executor run out of available memory", nullptr) {};
+    out_of_memory_exception(uintptr_t howmuch):
+        std::runtime_error(tfm::format("Executor run out of available memory: %d", howmuch)) {};
 };
 
 class assertion_failed : public std::runtime_error {

@@ -114,7 +114,9 @@ void borealis::ExecutionEngine::LoadValueFromMemory(llvm::GenericValue &Result, 
         Mem.LoadBytesFromMemory(bufferOfPod(Result.DoubleVal, LoadBytes), buffer);
         break;
     case llvm::Type::PointerTyID:
-        Mem.LoadBytesFromMemory(bufferOfPod(Result.PointerVal, LoadBytes), buffer);
+        if(!Mem.isGlobalPointer(Ptr)) { // pointers stored in globals cannot be trusted
+            Mem.LoadBytesFromMemory(bufferOfPod(Result.PointerVal, LoadBytes), buffer);
+        }
         break;
     case llvm::Type::X86_FP80TyID: {
         // This is endian dependent, but it will only work on x86 anyway.

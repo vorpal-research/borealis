@@ -90,7 +90,12 @@ inline std::ostream& operator<<(std::ostream& ost, SegmentNode::MemoryState st) 
 
 static void signalUnsupported(SimulatedPtr where) {
     TRACE_FUNC;
-    throw std::runtime_error("Unsupported operation on " + tfm::format("0x%x", where));
+    throw std::runtime_error(tfm::format("Unsupported operation on 0x%x", where));
+}
+
+static void signalUnsupported(SimulatedPtr where, const std::string& message) {
+    TRACE_FUNC;
+    throw std::runtime_error(tfm::format("Unsupported operation on 0x%x: %s", where, message));
 }
 
 static void signalIllegalFree(SimulatedPtr where) {
@@ -113,9 +118,9 @@ static void signalInconsistency(const std::string& error) {
     throw std::logic_error(error);
 }
 
-static void signalOutOfMemory(SimulatedPtrSize) {
+static void signalOutOfMemory(SimulatedPtrSize size) {
     TRACE_FUNC;
-    throw out_of_memory_exception{};
+    throw out_of_memory_exception{size};
 }
 
 static SegmentNode::Ptr& force(SegmentNode::Ptr& t) {
@@ -192,9 +197,9 @@ struct SegmentTree {
         TRACE_PARAM(minbound);
         TRACE_PARAM(maxbound);
 
-        ASSERTC(maxbound > minbound);
-        ASSERTC(where >= minbound);
-        ASSERTC(where < maxbound);
+        ASSERT(maxbound > minbound, tfm::format("maxbound = %s, minbound = %s", maxbound, minbound));
+        ASSERT(where >= minbound, tfm::format("where = %s, minbound = %s", where, minbound));
+        ASSERT(where < maxbound, tfm::format("where = %s, maxbound = %s", where, maxbound));
 
         if(!t) theTraverser.handleEmptyNode(where);
 

@@ -46,8 +46,11 @@ public:
     void* MemChr(void* ptr, uint8_t ch, size_t limit);
     void Memset(void* dst, uint8_t fill, size_t size);
 
-    bool isOpaquePointer(void* ptr);
+    bool isOpaquePointer(const void* ptr);
     void* getOpaquePtr();
+
+    bool isGlobalPointer(const void* ptr);
+    bool isLocalPointer(const void* ptr);
 
     void* getPointerToFunction(llvm::Function* f, size_t size);
     void* getPointerBasicBlock(llvm::BasicBlock* bb, size_t size);

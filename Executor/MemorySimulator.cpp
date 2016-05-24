@@ -80,7 +80,9 @@ struct MemorySimulator::Impl {
     Impl(const llvm::DataLayout& dl): DL(&dl) {
         TRACE_FUNC;
 
-        auto grain = dl.getPointerABIAlignment();
+        auto grain = dl.getPointerPrefAlignment(0);
+        if(!grain) grain = dl.getPointerSize(0);
+        if(!grain) grain = 1;
         tree.chunk_size = K.get(1) * grain;
         tree.start = 1 << 20;
         tree.end = tree.start + (1ULL << M.get(33ULL)) * tree.chunk_size;
@@ -178,9 +180,20 @@ void* MemorySimulator::getOpaquePtr() {
     return ptr_cast(pimpl_->unmeaningfulPtr);
 }
 
-bool MemorySimulator::isOpaquePointer(void* ptr) {
+bool MemorySimulator::isOpaquePointer(const void* ptr) {
     TRACE_FUNC;
     return pimpl_->unmeaningfulPtr == ptr_cast(ptr);
+}
+
+bool MemorySimulator::isGlobalPointer(const void *ptr) {
+    TRACE_FUNC;
+    return pimpl_->isFromGlobalSpace(ptr_cast(ptr));
+}
+
+bool MemorySimulator::isLocalPointer(const void *ptr) {
+    TRACE_FUNC;
+    auto realPtr = ptr_cast(ptr);
+    return pimpl_->isFromDynMem(realPtr) || pimpl_->isFromStack(realPtr);
 }
 
 void* MemorySimulator::getPointerToFunction(llvm::Function* f, size_t size) {
@@ -748,8 +761,14 @@ std::pair<llvm::GlobalValue*, SimulatedPtrSize> MemorySimulator::accessGlobal(vo
 
 static SimulatedPtrSize calc_real_memory_amount(SimulatedPtrSize amount, SimulatedPtrSize chunk_size) {
     TRACE_FUNC;
+    static const auto max_chunk_size = SimulatedPtrSize(1) << (8 * sizeof(SimulatedPtrSize) - 1);
+    if(amount >= max_chunk_size) signalOutOfMemory(amount);
+
+    dbgs() << tfm::format("amount = %s", amount) << endl;
+    dbgs() << tfm::format("chunk_size = %s", chunk_size) << endl;
     while(amount > chunk_size) {
-        chunk_size <<= 1;
+        chunk_size *= 2;
+        dbgs() << tfm::format("chunk_size = %s", chunk_size) << endl;
     }
     return chunk_size;
 }
@@ -927,7 +946,7 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
         // if the piece crosses the chunk border
         TRACE_FMT("While loading from 0x%x", realPtr);
         TRACE_FMT("Chunk size = %d", chunk_size);
-        throw std::runtime_error("unsupported, sorry");
+        signalUnsupported(realPtr);
     }
     uint8_t* Dst = reinterpret_cast<uint8_t*>(const_cast<uint64_t*>(val.getRawData()));
 

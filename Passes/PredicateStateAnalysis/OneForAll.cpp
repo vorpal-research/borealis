@@ -6,6 +6,7 @@
  */
 
 #include <llvm/IR/CFG.h>
+#include <llvm/Support/GraphWriter.h>
 
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateAnalysis/Defines.def"
@@ -18,6 +19,7 @@
 #include "State/Transformer/Retyper.h"
 #include "State/Transformer/StateOptimizer.h"
 #include "State/Transformer/TermSizeCalculator.h"
+#include "State/Transformer/GraphBuilder.h"
 #include "Util/graph.h"
 #include "Util/util.h"
 
@@ -125,6 +127,8 @@ void OneForAll::finalize() {
 
         initialState = so.transform(initialState);
         for (auto&& v : util::viewContainerValues(instructionStates)) {
+            //auto gb = GraphBuilder::apply(v);
+            //llvm::ViewGraph(&gb.getGraph(), "wha" );
             v = so.transform(v);
         }
         dbgs() << "Optimizer finished" << endl;
