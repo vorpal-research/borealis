@@ -109,7 +109,7 @@ public:
     }
 };
 
-PSGraph buildGraphRep(PredicateState::Ptr ps) {
+static PSGraph buildGraphRep(PredicateState::Ptr ps) {
     return GraphBuilder::apply(ps).getGraph();
 }
 
