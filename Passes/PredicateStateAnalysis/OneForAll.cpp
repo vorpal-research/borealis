@@ -8,6 +8,7 @@
 #include <llvm/IR/CFG.h>
 #include <llvm/Support/GraphWriter.h>
 
+#include "Config/config.h"
 #include "Logging/tracer.hpp"
 #include "Passes/PredicateAnalysis/Defines.def"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
@@ -184,6 +185,88 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+PredicateState::Ptr getFront(PredicateState::Ptr state) {
+    if (auto* basic = llvm::dyn_cast<BasicPredicateState>(state)) {
+        return basic->self();
+
+    } else if (auto* chain = llvm::dyn_cast<PredicateStateChain>(state)) {
+        return getFront(chain->getBase());
+
+    } else if (auto* choice = llvm::dyn_cast<PredicateStateChoice>(state)) {
+        // hacky hack!
+        // this makes us optimize over the biggest possible choice state
+        // (and this is kinda what we want here)
+        return choice->self();
+
+    } else {
+        UNREACHABLE("Should never happen!");
+    }
+}
+
+std::vector<PredicateState::Ptr> optimizeChoices(
+    const std::vector<PredicateState::Ptr>& choices,
+    PredicateStateFactory::Ptr PSF
+) {
+    auto&& has_empty = util::viewContainer(choices)
+                       .any_of(LAM(c, c->isEmpty()));
+
+    auto&& non_empty = util::viewContainer(choices)
+                       .filter(LAM(c, not c->isEmpty()))
+                       .toVector();
+
+    if (non_empty.size() < 2) return choices;
+
+    auto&& frontGroups = util::viewContainer(non_empty)
+                        .map([](auto&& c) { return std::make_pair(getFront(c), c); })
+                        .toHashMultiMap();
+
+    std::unordered_map<PredicateState::Ptr, std::vector<PredicateState::Ptr>> results;
+
+    for (auto&& e : frontGroups) {
+        auto&& candidate = e.first;
+        auto&& state = e.second;
+
+        if (not candidate or candidate->isEmpty()) {
+            results[candidate].push_back(state);
+        } else if (*candidate == *state) {
+            results[candidate].push_back(PSF->Basic());
+        } else {
+            results[candidate].push_back(state->sliceOn(candidate));
+        }
+    }
+
+    std::vector<PredicateState::Ptr> result;
+
+    if (has_empty) result.push_back(PSF->Basic());
+
+    for (auto&& e : results) {
+        auto&& candidate = e.first;
+        auto&& states = e.second;
+
+        auto&& shouldOptimize = candidate and not candidate->isEmpty();
+
+        if (shouldOptimize) {
+            result.push_back(
+                PSF->Chain(
+                    candidate,
+                    PSF->Choice(
+                        optimizeChoices(
+                            states,
+                            PSF
+                        )
+                    )
+                )
+            );
+        } else {
+            result.push_back(
+                PSF->Choice(states)
+            );
+        }
+    }
+
+    return result;
+}
+
 PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
     using namespace llvm;
     using borealis::util::containsKey;
@@ -225,6 +308,12 @@ PredicateState::Ptr OneForAll::BBM(llvm::BasicBlock* BB) {
         ASSERT(nullptr != slice, "Could not slice state on its predecessor");
 
         choices.push_back(slice);
+    }
+
+    static config::ConfigEntry<bool> doAggressiveChoiceOptimization("analysis", "do-aggressive-choice-optimization");
+
+    if (doAggressiveChoiceOptimization.get(false)) {
+        choices = optimizeChoices(choices, FN.State);
     }
 
     TRACE_DOWN("psa::bbm", valueSummary(BB));
