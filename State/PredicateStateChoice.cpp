@@ -109,6 +109,7 @@ PredicateState::Ptr PredicateStateChoice::sliceOn(PredicateState::Ptr base) cons
 PredicateState::Ptr PredicateStateChoice::simplify() const {
     auto&& simplified = viewContainer(choices)
                         .map([](auto&& choice) { return choice->simplify(); })
+                        .memo()
                         .filter([](auto&& choice) { return not choice->isEmpty(); })
                         .toVector();
 
