@@ -196,7 +196,7 @@ ExecutionContext ExecutionContext::mergeMemory(
             h = std::move(newh);
         }
         res.contextAxioms = std::move(h);
-        //res.contextAxioms.finalize();
+        // res.contextAxioms.finalize();
     }
 
     return res;
