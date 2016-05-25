@@ -92,7 +92,7 @@ struct SMTImpl<Impl, PredicateStateChoice> {
 
             auto&& path = choice->filterByTypes({PredicateType::PATH});
             auto&& z3state = SMT<Impl>::doit(choice, ef, &choiceCtx);
-            auto&& z3path = SMT<Impl>::doit(path, ef, &choiceCtx);
+            auto&& z3path = *path == *choice ? z3state : SMT<Impl>::doit(path, ef, &choiceCtx);
 
             res = res || z3state;
             memories.push_back({z3path, choiceCtx});
