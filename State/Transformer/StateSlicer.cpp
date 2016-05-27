@@ -15,7 +15,11 @@
 namespace borealis {
 
 StateSlicer::StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA) :
-    Base(FN), query(query), AA(AA), AST(nullptr == AA ? nullptr : new llvm::AliasSetTracker(*AA)) { init(); }
+    Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}{ init(AA); }
+
+StateSlicer::StateSlicer(FactoryNest FN, PredicateState::Ptr query) :
+    Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}{ init(nullptr); }
+
 
 static struct {
     using argument_type = Term::Ptr;
@@ -37,7 +41,13 @@ static struct {
     }
 } isInterestingTerm;
 
-void StateSlicer::init() {
+void StateSlicer::init(llvm::AliasAnalysis* llvmAA) {
+    if(llvmAA) {
+        AA = util::make_unique<AliasAnalysisAdapter>(llvmAA, FN);
+    } else {
+        AA = util::make_unique<LocalStensgaardAA>(FN);
+    }
+
     auto&& tc = TermCollector(FN);
     tc.transform(query);
 
@@ -55,6 +65,7 @@ void StateSlicer::addSliceTerm(Term::Ptr term) {
 }
 
 PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
+    if(AA) AA->prepare(ps);
     return nullptr == AA
            ? ps
            : Base::transform(ps->reverse())
@@ -125,7 +136,7 @@ bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
             .any_of([&](auto&& a) {
                 return util::viewContainer(slicePtrs)
                     .any_of([&](auto&& b) {
-                        return this->aliases(a, b);
+                        return AA->mayAlias(a, b);
                     });
             })
         ) {
@@ -134,52 +145,6 @@ bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
         return true;
     }
     return false;
-}
-
-uint64_t StateSlicer::getLLVMAliasSize(llvm::Type* t) {
-    if (auto* st = llvm::dyn_cast<llvm::StructType>(t)) {
-        if (st->isOpaque()) {
-            return llvm::AliasAnalysis::UnknownSize;
-        }
-    } else if (llvm::dyn_cast<llvm::FunctionType>(t)) {
-        return llvm::AliasAnalysis::UnknownSize;
-    }
-    return AA->getTypeStoreSize(t);
-}
-
-bool StateSlicer::aliases(Term::Ptr a, Term::Ptr b) {
-    auto&& p = term2value(a);
-    auto&& q = term2value(b);
-
-#define AS_POINTER(V) \
-    V, \
-    getLLVMAliasSize(V->getType()->getPointerElementType()), \
-    nullptr
-
-    if (p and q) {
-        AST->add(AS_POINTER(p));
-        AST->add(AS_POINTER(q));
-        return AST->getAliasSetForPointer(AS_POINTER(p)).aliasesPointer(AS_POINTER(q), *AA);
-    } else {
-        return true;
-    }
-
-#undef AS_POINTER
-}
-
-llvm::Value* StateSlicer::term2value(Term::Ptr t) {
-    if (auto* vt = llvm::dyn_cast<ValueTerm>(t)) {
-        if (vt->isGlobal()) {
-            return const_cast<llvm::Value*>(FN.Slot->getGlobalValue(vt->getVName()));
-        } else {
-            return const_cast<llvm::Value*>(FN.Slot->getLocalValue(vt->getVName()));
-        }
-    } else if (auto* at = llvm::dyn_cast<ArgumentTerm>(t)) {
-        return const_cast<llvm::Value*>(FN.Slot->getLocalValue(at->getName()));
-    } else {
-        // FIXME: akhin Logging
-        return nullptr;
-    }
 }
 
 #include "Util/unmacros.h"

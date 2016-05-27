@@ -764,11 +764,11 @@ static SimulatedPtrSize calc_real_memory_amount(SimulatedPtrSize amount, Simulat
     static const auto max_chunk_size = SimulatedPtrSize(1) << (8 * sizeof(SimulatedPtrSize) - 1);
     if(amount >= max_chunk_size) signalOutOfMemory(amount);
 
-    dbgs() << tfm::format("amount = %s", amount) << endl;
-    dbgs() << tfm::format("chunk_size = %s", chunk_size) << endl;
+    //dbgs() << tfm::format("amount = %s", amount) << endl;
+    //dbgs() << tfm::format("chunk_size = %s", chunk_size) << endl;
     while(amount > chunk_size) {
         chunk_size *= 2;
-        dbgs() << tfm::format("chunk_size = %s", chunk_size) << endl;
+        //dbgs() << tfm::format("chunk_size = %s", chunk_size) << endl;
     }
     return chunk_size;
 }

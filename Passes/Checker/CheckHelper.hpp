@@ -61,7 +61,8 @@ public:
         if(!noQueryLogging) dbgs() << "  Query: " << query << endl;
 
         dbgs() << "Slicing started" << endl;
-        auto&& sliced = StateSlicer(pass->FN, query, pass->AA).transform(state);
+        static config::BoolConfigEntry useLocalAA("analysis", "use-local-aa");
+        auto&& sliced = StateSlicer(pass->FN, query, useLocalAA.get(false)? nullptr : pass->AA).transform(state);
         dbgs() << "Slicing finished" << endl;
 
         dbgs() << "State size after slicing:" << TermSizeCalculator::measure(sliced) << endl;

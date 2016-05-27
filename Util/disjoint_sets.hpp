@@ -50,6 +50,7 @@ class disjoint_set {
     std::list<subset<T>> children_;
 public:
     // copying DSs is a pain =(
+    disjoint_set() = default;
     disjoint_set(const disjoint_set&) = delete;
     disjoint_set(disjoint_set&&) = delete;
 
