@@ -41,12 +41,11 @@ struct SMT {
     static Bool<Impl> doit(
             PredicateState::Ptr s,
             ExprFactory<Impl>& ef,
-            ExecutionContext<Impl>* ctx,
-            bool pathMode = false) {
+            ExecutionContext<Impl>* ctx) {
         TRACE_FUNC;
 #define HANDLE_STATE(NAME, CLASS) \
         if (auto* ss = llvm::dyn_cast<CLASS>(s)) { \
-            return SMTImpl<Impl, CLASS>::doit(ss, ef, ctx, pathMode); \
+            return SMTImpl<Impl, CLASS>::doit(ss, ef, ctx); \
         }
 #include "State/PredicateState.def"
         BYE_BYE(Bool<Impl>, "Should never happen!");
