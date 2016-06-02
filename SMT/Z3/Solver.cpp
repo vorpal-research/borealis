@@ -35,6 +35,7 @@ static borealis::config::BoolConfigEntry simplify_print("z3", "print-simplified"
 static borealis::config::BoolConfigEntry log_formulae("z3", "log-formulae");
 
 static borealis::config::StringConfigEntry dump_smt2_state{ "output", "dump-smt2-states" };
+static borealis::config::StringConfigEntry dump_unknown_smt2_state{ "output", "dump-unknown-smt2-states" };
 
 static config::BoolConfigEntry gather_smt_models("analysis", "collect-models");
 static config::BoolConfigEntry gather_z3_models("analysis", "collect-z3-models");
@@ -164,6 +165,19 @@ Solver::check_result Solver::check(
             return std::make_tuple(r, util::nothing(), util::just(core), util::nothing());
 
         } else { // z3::unknown
+            if(auto&& dump_dir = dump_unknown_smt2_state.get()) {
+                auto&& uuid = UUID::generate();
+                auto&& smtlib2_state = s.to_smt2();
+
+                std::ofstream dump{ dump_dir.getUnsafe() + "/" + uuid.unparsed() + ".smt2" };
+
+                if (dump) {
+                    dump << smtlib2_state << std::endl;
+                } else {
+                    wtf << "Could not dump Z3 state to: " << dump_dir.getUnsafe() << endl;
+                }
+            }
+
             auto&& reason = s.reason_unknown();
             dbg << reason << endl;
             return std::make_tuple(r, util::nothing(), util::nothing(), util::just(reason));

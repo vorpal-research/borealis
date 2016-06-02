@@ -23,7 +23,7 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI, std::unord
     ON_SCOPE_EXIT(cache.emplace(meta, result))
 
     if(auto struct_ = DIStructType(meta)) {
-        cache.emplace(meta, getRef(struct_->getName()));
+        cache.emplace(meta, getRef("struct." + struct_->getName().str()));
     }
 
     if(auto array = DIArrayType(meta)) {
@@ -36,7 +36,7 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI, std::unord
     if(auto pointer = DIDerivedType(meta)) if(pointer.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
         auto elem = DFI.resolve(pointer.getTypeDerivedFrom());
         if(auto struct_ = DIStructType(elem)) {
-            return result = getRef(getPointer(getRef(struct_.getName())));
+            return result = getRef(getPointer(getRef("struct." + struct_.getName().str())));
         }
         auto deptr = processType(elem, DFI, cache);
         return result = getRef(getPointer(deptr));
@@ -127,7 +127,7 @@ CTypeRef CTypeFactory::processType(clang::QualType qtype, const clang::ASTContex
             return result = getRef(getOpaqueStruct(getQTName(qtype))); // it is an opaque decl
         } else {
             auto name = getQTName(qtype);
-            if(name != "") visited.emplace(qtype, getRef(name.str()));
+            if(name != "") visited.emplace(qtype, getRef("struct." + name.str()));
         }
     }
 
@@ -248,7 +248,15 @@ CTypeRef CTypeFactory::processType(clang::QualType qtype, const clang::ASTContex
         return result = processType(at->getAdjustedType(), ctx, visited);
     }
 
-    UNREACHABLE("Unsupported QualType encountered");
+    if(qtype.getTypePtr()->isVectorType()) {
+        auto vc = qtype.getTypePtr()->getAs<clang::VectorType>();
+        auto el = processType(vc->getElementType(), ctx, visited);
+        auto sz = vc->getNumElements();
+        // FIXME: think what to do with vectors
+        return result = getRef(getOpaqueStruct(tfm::format("vector<%s, %d>", el->getName(), sz)));
+    }
+
+    UNREACHABLE(tfm::format("Unsupported QualType encountered: %s", qtype.getAsString()));
 }
 } /* namespace borealis */
 

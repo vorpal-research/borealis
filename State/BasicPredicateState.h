@@ -89,7 +89,8 @@ struct SMTImpl<Impl, BasicPredicateState> {
     static Bool<Impl> doit(
             const BasicPredicateState* s,
             ExprFactory<Impl>& ef,
-            ExecutionContext<Impl>* ctx) {
+            ExecutionContext<Impl>* ctx,
+            bool = false) {
         TRACE_FUNC;
 
         auto&& res = ef.getTrue();

@@ -113,11 +113,11 @@ public:
                 "}";
             return make<CStruct>(generatedName, members, false);
         }
-        return make<CStruct>(name, members, false);
+        return make<CStruct>("struct." + name, members, false);
     }
 
     CType::Ptr getOpaqueStruct(const std::string& name) {
-        return make<CStruct>(name, std::vector<CStructMember>{}, true);
+        return make<CStruct>("struct." + name, std::vector<CStructMember>{}, true);
     }
 
     CType::Ptr getFunction(const CTypeRef& resultType, const std::vector<CTypeRef>& argumentTypes) {

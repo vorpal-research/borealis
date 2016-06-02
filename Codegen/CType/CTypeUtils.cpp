@@ -14,9 +14,11 @@
 namespace borealis {
 
 CType::Ptr CTypeUtils::stripAllAliasing(CType::Ptr type) {
+    dbgs() << "StripAllAliasing for " << type->getName() << endl;
     while(auto alias = llvm::dyn_cast<CAlias>(type)) {
         type = alias->getOriginal().get();
     }
+    dbgs() << "StripAllAliasing for " << type->getName() << "<exit>" << endl;
     return type;
 }
 

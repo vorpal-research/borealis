@@ -118,6 +118,7 @@ public:
 
     std::string getName() const;
     std::string toSmtLib() const;
+    ValueExpr simplify() const { return *this; }
 };
 
 template<class ExprClass>

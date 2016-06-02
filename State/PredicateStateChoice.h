@@ -78,7 +78,8 @@ struct SMTImpl<Impl, PredicateStateChoice> {
     static Bool<Impl> doit(
             const PredicateStateChoice* s,
             ExprFactory<Impl>& ef,
-            ExecutionContext<Impl>* ctx) {
+            ExecutionContext<Impl>* ctx,
+            bool pathMode = false) {
         TRACE_FUNC;
 
         USING_SMT_IMPL(Impl);
@@ -91,14 +92,17 @@ struct SMTImpl<Impl, PredicateStateChoice> {
             ExecutionContext choiceCtx(*ctx);
 
             auto&& path = choice->filterByTypes({PredicateType::PATH});
-            auto&& z3state = SMT<Impl>::doit(choice, ef, &choiceCtx);
-            auto&& z3path = *path == *choice ? z3state : SMT<Impl>::doit(path, ef, &choiceCtx);
+            auto&& z3state = SMT<Impl>::doit(choice, ef, &choiceCtx, pathMode);
 
             res = res || z3state;
-            memories.push_back({z3path, choiceCtx});
+
+            if(!pathMode) {
+                auto&& z3path = *path == *choice ? z3state : SMT<Impl>::doit(path, ef, &choiceCtx, true);
+                memories.push_back({z3path.simplify(), choiceCtx});
+            }
         }
 
-        ctx->switchOn("choice", memories);
+        if(!pathMode) ctx->switchOn("choice", memories);
 
         return res;
     }
