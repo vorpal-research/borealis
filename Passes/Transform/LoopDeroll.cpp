@@ -586,6 +586,7 @@ bool LoopDeroll::runOnLoop(llvm::Loop* L, llvm::LPPassManager& LPM) {
         DT->runOnFunction(*F);
     }
     // This loop shall be no more...
+    SE->forgetLoop(L);
     LPM.deleteLoopFromQueue(L);
 
     return true;

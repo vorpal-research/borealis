@@ -280,6 +280,7 @@ struct protobuf_traits<CTypeContext> {
             auto tp = protobuf_traits<CType>::fromProtobuf(f, pp);
             res->put(tp);
         }
+        res->selfCheck();
         return std::move(res);
     }
 };

@@ -44,6 +44,8 @@ public:
 
     auto begin() const { return types.begin(); }
     auto end() const { return types.end(); }
+
+    void selfCheck() const;
 };
 
 } /* namespace borealis */

@@ -23,7 +23,7 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI, std::unord
     ON_SCOPE_EXIT(cache.emplace(meta, result))
 
     if(auto struct_ = DIStructType(meta)) {
-        cache.emplace(meta, getRef("struct." + struct_->getName().str()));
+        cache.emplace(meta, getRef(getStructName(struct_->getName())));
     }
 
     if(auto array = DIArrayType(meta)) {
@@ -36,7 +36,7 @@ CTypeRef CTypeFactory::processType(DIType meta, DebugInfoFinder& DFI, std::unord
     if(auto pointer = DIDerivedType(meta)) if(pointer.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
         auto elem = DFI.resolve(pointer.getTypeDerivedFrom());
         if(auto struct_ = DIStructType(elem)) {
-            return result = getRef(getPointer(getRef("struct." + struct_.getName().str())));
+            return result = getRef(getPointer(getRef(getStructName(struct_.getName()))));
         }
         auto deptr = processType(elem, DFI, cache);
         return result = getRef(getPointer(deptr));
@@ -127,7 +127,7 @@ CTypeRef CTypeFactory::processType(clang::QualType qtype, const clang::ASTContex
             return result = getRef(getOpaqueStruct(getQTName(qtype))); // it is an opaque decl
         } else {
             auto name = getQTName(qtype);
-            if(name != "") visited.emplace(qtype, getRef("struct." + name.str()));
+            if(name != "") visited.emplace(qtype, getRef(getStructName(name)));
         }
     }
 

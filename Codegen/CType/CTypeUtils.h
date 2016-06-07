@@ -21,6 +21,8 @@ struct CTypeUtils {
     static CStructMember::Ptr getField(CType::Ptr struct_, const std::string& fieldName);
     static CType::Ptr decayType(CTypeFactory& ctx, CType::Ptr tp);
     static CType::Ptr commonType(CTypeFactory& ctx, CType::Ptr lhv, CType::Ptr rhv);
+
+    static std::vector<CTypeRef> memberRefs(CType::Ptr lhv);
 };
 
 } /* namespace borealis */

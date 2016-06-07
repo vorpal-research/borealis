@@ -123,6 +123,28 @@ CType::Ptr CTypeUtils::decayType(CTypeFactory& ctx, CType::Ptr tp) {
     }
     return tp;
 }
+
+std::vector<CTypeRef> CTypeUtils::memberRefs(CType::Ptr lhv) {
+    std::vector<CTypeRef> ret;
+    if(auto&& alias = llvm::dyn_cast<CAlias>(lhv)) {
+        ret.push_back(alias->getOriginal());
+    } else if(auto&& array = llvm::dyn_cast<CArray>(lhv)) {
+        ret.push_back(array->getElement());
+    } else if(auto&& func = llvm::dyn_cast<CFunction>(lhv)) {
+        ret.push_back(func->getResultType());
+        auto&& elems = func->getArgumentTypes();
+        ret.insert(std::end(ret), std::begin(elems), std::end(elems));
+    } else if(auto&& pointer = llvm::dyn_cast<CPointer>(lhv)) {
+        ret.push_back(pointer->getElement());
+    } else if(auto&& struct_ = llvm::dyn_cast<CStruct>(lhv)) {
+        for(auto&& el: struct_->getElements()) {
+            ret.push_back(el.getType());
+        }
+    }
+
+    return std::move(ret);
+}
+
 } /* namespace borealis */
 
 #include "Util/unmacros.h"

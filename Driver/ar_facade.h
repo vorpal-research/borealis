@@ -83,6 +83,12 @@ public:
             new FileConfigSource{ args.suffixes("---config:").single(util::getFilePathIfExists(configPath).c_str()) }
         );
 
+        config::StringConfigEntry logFile("logging", "ini");
+
+        borealis::logging::configureLoggingFacility(
+            util::getFilePathIfExists(logFile.get().getOrElse(defaultLogIni))
+        );
+
         auto argsC = util::view(argv, argv+argc)
             .filter( [](const char* entry){ return llvm::StringRef(entry).endswith_lower(".o") || llvm::StringRef(entry).endswith_lower(".a"); } );
 

@@ -30,6 +30,12 @@ class CTypeFactory {
         return tp;
     }
 
+    inline std::string getStructName(llvm::StringRef name) {
+        // XXX: this is a bit f**ked up, but we need to be sure
+        if(name.startswith("struct.")) return name.str();
+        else return ("struct." + name).str();
+    }
+
     template<class Type, class ...Params>
     CTypeRef make(const std::string& name, Params&&... params) {
         if(ctx->has(name)) return getRef(name);
@@ -107,17 +113,17 @@ public:
     CType::Ptr getStruct(const std::string& name, const std::vector<CStructMember>& members) {
         if(name == "") {
             auto generatedName =
-                "{\n" +
+                "{" +
                 util::viewContainer(members)
-                     .fold(std::string{}, LAM2(l, r, tfm::format("%s\n %s %s;", l, r.getType().getName(), r.getName()))) +
-                "}";
-            return make<CStruct>(generatedName, members, false);
+                     .fold(std::string{}, LAM2(l, r, tfm::format("%s %s %s;", l, r.getType().getName(), r.getName()))) +
+                " }";
+            return make<CStruct>(getStructName(generatedName), members, false);
         }
-        return make<CStruct>("struct." + name, members, false);
+        return make<CStruct>(getStructName(name), members, false);
     }
 
     CType::Ptr getOpaqueStruct(const std::string& name) {
-        return make<CStruct>("struct." + name, std::vector<CStructMember>{}, true);
+        return make<CStruct>(getStructName(name), std::vector<CStructMember>{}, true);
     }
 
     CType::Ptr getFunction(const CTypeRef& resultType, const std::vector<CTypeRef>& argumentTypes) {
