@@ -70,13 +70,11 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
         auto* propName = llvm::cast<OpaqueStringConstantTerm>(t->getPropertyName());
         auto&& strPropName = propName->getValue();
 
-        auto&& r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<DynBV>();
+        DynBV rp = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        ASSERT(not r.empty(), "Property read with non-bv right side");
+        ASSERT(rp, "Property read with non-bv right side");
 
-        auto&& rp = r.getUnsafe();
-
-        return ctx->readProperty(strPropName, rp.template adapt<Pointer>(), ExprFactory::sizeForType(t->getType()));
+        return ctx->readProperty(strPropName, Pointer::forceCast(rp), ExprFactory::sizeForType(t->getType()));
     }
 };
 #include "Util/unmacros.h"

@@ -61,15 +61,15 @@ Z3::Bool ExprFactory::getFalse() {
 ////////////////////////////////////////////////////////////////////////////////
 
 Z3::Integer ExprFactory::getIntVar(const std::string& name, unsigned int size, bool fresh) {
-    return fresh ? Integer::mkFreshSizedVar(*ctx, name, size) : Integer::mkSizedVar(*ctx, name, size);
+    return fresh ? Integer::mkFreshVar(*ctx, name, size) : Integer::mkVar(*ctx, name, size);
 }
 
 Z3::Integer ExprFactory::getIntConst(int v, unsigned int size) {
-    return Integer::mkSizedConst(*ctx, v, size);
+    return Integer::mkConst(*ctx, v, size);
 }
 
 Z3::Integer ExprFactory::getIntConst(const std::string& v, unsigned int size) {
-    return Integer::mkSizedConst(*ctx, v, size);
+    return Integer::mkConst(*ctx, v, size);
 }
 
 

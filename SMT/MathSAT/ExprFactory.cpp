@@ -55,15 +55,15 @@ MathSAT::Bool ExprFactory::getFalse() {
 ////////////////////////////////////////////////////////////////////////////////
 
 MathSAT::Integer ExprFactory::getIntVar(const std::string& name, unsigned int size, bool fresh) {
-    return fresh ? Integer::mkFreshSizedVar(*env, name, size) : Integer::mkSizedVar(*env, name, size);
+    return fresh ? Integer::mkFreshVar(*env, name, size) : Integer::mkVar(*env, name, size);
 }
 
 MathSAT::Integer ExprFactory::getIntConst(int v, unsigned int size) {
-    return Integer::mkSizedConst(*env, v, size);
+    return Integer::mkConst(*env, v, size);
 }
 
 MathSAT::Integer ExprFactory::getIntConst(const std::string& v, unsigned int size) {
-    return Integer::mkSizedConst(*env, v, size);
+    return Integer::mkConst(*env, v, size);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

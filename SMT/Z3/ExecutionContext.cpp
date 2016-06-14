@@ -245,9 +245,9 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bi
 
 void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
     if (CraigColtonMode.get(false)) {
-        gepBounds( gepBounds().store(p, bound.adapt<Byte>()) );
+        gepBounds( gepBounds().store(p, Byte::forceCast(bound)) );
     } else {
-        contextAxioms.insert(z3_::logic::z3impl::asAxiom(getBound(p, bound.getBitSize()) == bound));
+        contextAxioms.insert((getBound(p, bound.getBitSize()) == bound).asAxiom());
     }
 }
 

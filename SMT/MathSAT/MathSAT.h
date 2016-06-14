@@ -254,6 +254,10 @@ public:
 
     const Env& env() const { return env_; }
 
+    size_t get_id() const { return msat_term_id(term_); }
+
+    Expr simplify() const { return *this; }
+
     Sort get_sort() const { return Sort(env_, msat_term_get_type(term_)); }
 
     bool is_bool() const { return msat_is_bool_type(env_, get_sort()); }
@@ -328,6 +332,7 @@ public:
     friend Expr comp(const Expr& a, const Expr& b);
     friend Expr rol(const Expr& a, unsigned b);
     friend Expr ror(const Expr& a, unsigned b);
+    friend Expr udiv(const Expr& a, const Expr& b);
     friend Expr distinct(const std::vector<Expr>& exprs);
 
     friend std::ostream& operator<<(std::ostream& out, const Expr& e) {
@@ -369,6 +374,7 @@ Expr ashr(const Expr& a, const Expr& b);
 Expr comp(const Expr& a, const Expr& b);
 Expr rol(const Expr& a, unsigned b);
 Expr ror(const Expr& a, unsigned b);
+Expr udiv(const Expr& a, const Expr& b);
 Expr distinct(const std::vector<Expr>& exprs);
 
 ////////////////////////////////////////////////////////////////////////////////

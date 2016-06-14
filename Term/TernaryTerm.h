@@ -66,16 +66,15 @@ struct SMTImpl<Impl, TernaryTerm> {
             ExecutionContext<Impl>* ctx) {
 
         TRACE_FUNC;
+        USING_SMT_IMPL(Impl);
 
-        auto&& cndz3 = SMT<Impl>::doit(t->getCnd(), ef, ctx);
+        Bool cndz3 = SMT<Impl>::doit(t->getCnd(), ef, ctx);
         auto&& truz3 = SMT<Impl>::doit(t->getTru(), ef, ctx);
         auto&& flsz3 = SMT<Impl>::doit(t->getFls(), ef, ctx);
 
-        ASSERT(cndz3.isBool(), "Ternary operation with non-Bool condition");
+        ASSERT(cndz3, "Ternary operation with non-Bool condition");
 
-        auto cndb = cndz3.toBool().getUnsafe();
-
-        return ef.if_(cndb)
+        return ef.if_(cndz3)
                  .then_(truz3)
                  .else_(flsz3);
     }

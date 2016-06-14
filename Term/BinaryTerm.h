@@ -77,12 +77,12 @@ struct SMTImpl<Impl, BinaryTerm> {
         auto&& lhvz3 = SMT<Impl>::doit(t->getLhv(), ef, ctx);
         auto&& rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        auto&& lhvb = lhvz3.template to<Bool>();
-        auto&& rhvb = rhvz3.template to<Bool>();
+        Bool lhvb = lhvz3;
+        Bool rhvb = rhvz3;
 
-        if (not lhvb.empty() && not rhvb.empty()) {
-            auto&& lhv = lhvb.getUnsafe();
-            auto&& rhv = rhvb.getUnsafe();
+        if (bool(lhvb) && bool(rhvb)) {
+            auto&& lhv = lhvb;
+            auto&& rhv = rhvb;
 
             switch (t->getOpcode()) {
             case llvm::ArithType::BAND:
@@ -97,12 +97,12 @@ struct SMTImpl<Impl, BinaryTerm> {
             }
         }
 
-        auto&& lhvbv = lhvz3.template to<DynBV>();
-        auto&& rhvbv = rhvz3.template to<DynBV>();
+        DynBV lhvbv = lhvz3;
+        DynBV rhvbv = rhvz3;
 
-        if (not lhvbv.empty() && not rhvbv.empty()) {
-            auto&& lhv = lhvbv.getUnsafe();
-            auto&& rhv = rhvbv.getUnsafe();
+        if (bool(lhvbv) && bool(rhvbv)) {
+            auto&& lhv = lhvbv;
+            auto&& rhv = rhvbv;
 
             switch (t->getOpcode()) {
             case llvm::ArithType::ADD:  return lhv +  rhv;
@@ -125,14 +125,6 @@ struct SMTImpl<Impl, BinaryTerm> {
         BYE_BYE(Dynamic, "Unsupported BinaryTerm: " + t->getName());
     }
 
-//    static Dynamic<Impl> doit(
-//            const BinaryTerm* t,
-//            ExprFactory<Impl>& ef,
-//            ExecutionContext<Impl>* ctx) {
-//        TRACE_FUNC;
-//        USING_SMT_IMPL(Impl);
-//        AUTO_CACHE_IMPL(t, ctx, doit_(t, ef, ctx));
-//    }
 };
 #include "Util/unmacros.h"
 

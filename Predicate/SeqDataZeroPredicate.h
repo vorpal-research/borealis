@@ -74,9 +74,8 @@ struct SMTImpl<Impl, SeqDataZeroPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        auto&& l = SMT<Impl>::doit(p->getBase(), ef, ctx).template to<Pointer>();
-        ASSERT(not l.empty(), "SeqData with non-pointer base");
-        auto&& lp = l.getUnsafe();
+        Pointer lp = SMT<Impl>::doit(p->getBase(), ef, ctx);
+        ASSERT(lp, "SeqData with non-pointer base");
 
         auto&& base = ctx->getGlobalPtr(p->getSize());
         auto&& res = lp == base;

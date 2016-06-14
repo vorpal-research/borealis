@@ -81,7 +81,7 @@ public:
 #include "Util/unmacros.h"
 
     Bool implies(Bool lhv, Bool rhv) {
-        return logic::implies(lhv, rhv);
+        return lhv.implies(rhv);
     }
 
     template<class T, class U>

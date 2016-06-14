@@ -77,17 +77,15 @@ struct SMTImpl<Impl, GepTerm> {
 
         size_t gepBitSize = 64;
 
-        auto&& base = SMT<Impl>::doit(t->getBase(), ef, ctx).template to<Pointer>();
+        Pointer base = SMT<Impl>::doit(t->getBase(), ef, ctx);
 
-        ASSERT(not base.empty(),
+        ASSERT(base,
                "Encountered a GEP term with non-pointer operand");
-
-        auto&& p = base.getUnsafe();
 
         if (t->getShifts().empty() || util::viewContainer(t->getShifts())
                                            .map(llvm::dyn_caster<OpaqueIntConstantTerm>{})
                                            .all_of(LAM(I, I && I->getValue() == 0))) {
-            return p;
+            return base;
         }
 
         auto&& shift = ef.getIntConst(0, gepBitSize);
@@ -100,11 +98,11 @@ struct SMTImpl<Impl, GepTerm> {
         auto&& tp = baseType->getPointed();
         auto&& size = TypeUtils::getTypeSizeInElems(tp);
 
-        auto&& by = SMT<Impl>::doit(h, ef, ctx).template to<Integer>();
-        ASSERT(not by.empty(),
+        Integer by = SMT<Impl>::doit(h, ef, ctx);
+        ASSERT(by,
                "Encountered a GEP term with incorrect shifts");
 
-        shift = shift + by.getUnsafe() * size;
+        shift = shift + by * size;
 
         for (auto&& s : util::tail(t->getShifts())) {
 
@@ -121,19 +119,19 @@ struct SMTImpl<Impl, GepTerm> {
                 tp = GepTerm::getAggregateElement(tp, s);
                 size = TypeUtils::getTypeSizeInElems(tp);
 
-                auto&& by = SMT<Impl>::doit(s, ef, ctx).template to<Integer>();
-                ASSERT(not by.empty(),
+                Integer by = SMT<Impl>::doit(s, ef, ctx);
+                ASSERT(by,
                        "Encountered a GEP term with incorrect shifts");
 
-                shift = shift + by.getUnsafe() * size;
+                shift = shift + by * size;
 
             } else BYE_BYE(Dynamic, "Encountered non-aggregate type in GEP: " + TypeUtils::toString(*tp));
 
         }
 
-        auto diff = ctx->getBound(p, gepBitSize) - shift;
+        auto diff = ctx->getBound(base, gepBitSize) - shift;
         auto zero = ef.getIntConst(0, gepBitSize);
-        auto shifted = Impl::add_no_overflow::doit(p, shift, true);
+        auto shifted = Impl::add_no_overflow::doit(base, shift, true);
 
         static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
 

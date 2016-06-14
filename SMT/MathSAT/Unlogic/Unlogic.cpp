@@ -48,7 +48,7 @@ AbstractSymbol::Ptr makeSymbol(std::stack<AbstractSymbol::Ptr>& symbolStack) {
 }
 
 Term::Ptr undoThat(Dynamic dyn) {
-    auto expr = borealis::mathsat_::logic::msatimpl::getExpr(dyn);
+    auto expr = dyn.getExpr();
     std::stack<AbstractSymbol::Ptr> symbolStack;
     expr.visit(callback, &symbolStack);
 

@@ -65,38 +65,29 @@ struct SMTImpl<Impl, CastTerm> {
         TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
-        auto&& rhvbv = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<DynBV>();
-        ASSERT(not rhvbv.empty(), "Cast for non BV");
-        auto&& rhv = rhvbv.getUnsafe();
+        DynBV rhv = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+        ASSERT(rhv, "Cast for non BV");
 
         auto&& lt = t->getType();
         auto&& rt = t->getRhv()->getType();
 
         if (auto m = util::match_tuple<type::Integer, type::Integer>::doit(lt, rt)) {
-            if (m->get<0>()->getBitsize() > m->get<1>()->getBitsize()) {
-                return t->isSignExtend()
-                       ? rhv.growTo(m->get<0>()->getBitsize())
-                       : rhv.zgrowTo(m->get<0>()->getBitsize());
-            } else if (m->get<0>()->getBitsize() < m->get<1>()->getBitsize()) {
-                return rhv.extract(m->get<0>()->getBitsize() - 1, 0);
-            } else {
-                return rhv;
-            }
+            return rhv.adaptTo(m->get<0>()->getBitsize(), t->isSignExtend());
         } else if (auto match = util::match_tuple<type::Float, type::Float>::doit(lt, rt)) {
             return rhv;
         } else if (auto match = util::match_tuple<type::Float, type::Integer>::doit(lt, rt)) {
-            return rhv.template adapt<Real>();
+            return Real::forceCast(rhv);
         } else if (auto match = util::match_tuple<type::Integer, type::Float>::doit(lt, rt)) {
-            return rhv.adapt(match->get<0>()->getBitsize());
+            return rhv.adaptTo(match->get<0>()->getBitsize());
         } else if (auto match = util::match_tuple<type::Pointer, type::Integer>::doit(lt, rt)) {
-            return rhv.template adapt<Pointer>();
+            return Pointer::forceCast(rhv);
         } else if (auto match = util::match_tuple<type::Integer, type::Pointer>::doit(lt, rt)) {
-            return rhv.adapt(match->get<0>()->getBitsize());
+            return rhv.adaptTo(match->get<0>()->getBitsize());
         } else if (auto match = util::match_tuple<type::Pointer, type::Pointer>::doit(lt, rt)) {
             return rhv;
         }
 
-        BYE_BYE(Dynamic, "Uncastable types: " + util::toString(*lt) + " and " + util::toString(*rt));
+        BYE_BYE(Dynamic, tfm::format("Uncastable types: %s and %s", *lt, *rt));
     }
 };
 #include "Util/unmacros.h"

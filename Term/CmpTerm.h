@@ -79,50 +79,44 @@ struct SMTImpl<Impl, CmpTerm> {
         auto&& lhvz3 = SMT<Impl>::doit(t->getLhv(), ef, ctx);
         auto&& rhvz3 = SMT<Impl>::doit(t->getRhv(), ef, ctx);
 
-        if (lhvz3.isComparable() && rhvz3.isComparable()) {
-            auto lhv = lhvz3.toComparable().getUnsafe();
-            auto rhv = rhvz3.toComparable().getUnsafe();
-
-            switch (t->getOpcode()) {
-            case llvm::ConditionType::EQ:    return lhv == rhv;
-            case llvm::ConditionType::NEQ:   return lhv != rhv;
-
-            case llvm::ConditionType::GT:    return lhv >  rhv;
-            case llvm::ConditionType::GE:    return lhv >= rhv;
-            case llvm::ConditionType::LT:    return lhv <  rhv;
-            case llvm::ConditionType::LE:    return lhv <= rhv;
-
+        switch(t->getOpcode()) {
             case llvm::ConditionType::TRUE:  return ef.getTrue();
             case llvm::ConditionType::FALSE: return ef.getFalse();
-
-            default: break; // fall-through and try to unsigned compare
-            }
+            default: break;
         }
 
-        if (lhvz3.isUnsignedComparable() && rhvz3.isUnsignedComparable()) {
-            auto lhv = lhvz3.toUnsignedComparable().getUnsafe();
-            auto rhv = rhvz3.toUnsignedComparable().getUnsafe();
-
-            switch (t->getOpcode()) {
-            case llvm::ConditionType::UGT:   return lhv.ugt(rhv);
-            case llvm::ConditionType::UGE:   return lhv.uge(rhv);
-            case llvm::ConditionType::ULT:   return lhv.ult(rhv);
-            case llvm::ConditionType::ULE:   return lhv.ule(rhv);
+        Bool lbool = lhvz3;
+        Bool rbool = rhvz3;
+        if(bool(lbool) && bool(rbool))
+            switch(t->getOpcode()) {
+            case llvm::ConditionType::EQ:    return lbool == rbool;
+            case llvm::ConditionType::NEQ:   return lbool != rbool;
             default: break;
+        }
+
+        DynBV lbv = lhvz3;
+        DynBV rbv = rhvz3;
+
+        if (bool(lbv) && bool(rbv)) {
+            switch (t->getOpcode()) {
+            case llvm::ConditionType::EQ:    return lbv == rbv;
+            case llvm::ConditionType::NEQ:   return lbv != rbv;
+            case llvm::ConditionType::GT:    return lbv >  rbv;
+            case llvm::ConditionType::GE:    return lbv >= rbv;
+            case llvm::ConditionType::LT:    return lbv <  rbv;
+            case llvm::ConditionType::LE:    return lbv <= rbv;
+            case llvm::ConditionType::UGT:   return lbv.ugt(rbv);
+            case llvm::ConditionType::UGE:   return lbv.uge(rbv);
+            case llvm::ConditionType::ULT:   return lbv.ult(rbv);
+            case llvm::ConditionType::ULE:   return lbv.ule(rbv);
+
+            default: break; // fall-through and try to unsigned compare
             }
         }
 
         BYE_BYE(Dynamic, "Unsupported CmpTerm: " + t->getName());
     }
 
-//    static Dynamic<Impl> doit(
-//            const CmpTerm* t,
-//            ExprFactory<Impl>& ef,
-//            ExecutionContext<Impl>* ctx) {
-//        TRACE_FUNC;
-//        USING_SMT_IMPL(Impl);
-//        AUTO_CACHE_IMPL(t, ctx, doit_(t, ef, ctx));
-//    }
 };
 #include "Util/unmacros.h"
 

@@ -70,14 +70,10 @@ struct SMTImpl<Impl, SignTerm> {
         TRACE_FUNC;
         USING_SMT_IMPL(Impl);
 
-        auto&& rhvsmt = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+        DynBV rhv = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+        ASSERT(rhv, "Sign for non bit-vector");
 
-        auto&& rhvbv = rhvsmt.template to<DynBV>();
-        ASSERT(not rhvbv.empty(), "Sign for non bit-vector");
-
-        auto&& rhv = rhvbv.getUnsafe();
         auto&& size = rhv.getBitSize();
-
         return rhv.extract(size-1, size-1);
     }
 };

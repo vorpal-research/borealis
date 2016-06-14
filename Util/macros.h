@@ -54,13 +54,13 @@
         return; \
     }
 
-#define ASSERT(cond, msg) while(!(cond)){ borealis::util::sayonara( \
+#define ASSERT(cond, msg) while(!static_cast<bool>(cond)){ borealis::util::sayonara( \
         __FILE__, \
         __LINE__, \
         __PRETTY_FUNCTION__, \
         msg); }
 
-#define ASSERTC(cond) while(!(cond)){ borealis::util::sayonara( \
+#define ASSERTC(cond) while(!static_cast<bool>(cond)){ borealis::util::sayonara( \
         __FILE__, \
         __LINE__, \
         __PRETTY_FUNCTION__, \

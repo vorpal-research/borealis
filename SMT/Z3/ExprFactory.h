@@ -123,7 +123,7 @@ public:
     }
 
     Bool implies(Bool from, Bool to) {
-        return logic::implies(from, to);
+        return from.implies(to);
     }
 
     static void initialize(const llvm::DataLayout* TD);

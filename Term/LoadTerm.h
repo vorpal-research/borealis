@@ -74,9 +74,8 @@ struct SMTImpl<Impl, LoadTerm> {
 
         ASSERTC(ctx != nullptr);
 
-        auto&& r = SMT<Impl>::doit(t->getRhv(), ef, ctx).template to<Pointer>();
-        ASSERT(not r.empty(), "Load with non-pointer right side");
-        auto&& rp = r.getUnsafe();
+        Pointer rp = SMT<Impl>::doit(t->getRhv(), ef, ctx);
+        ASSERT(rp, "Load with non-pointer right side");
 
         return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getType()));
     }

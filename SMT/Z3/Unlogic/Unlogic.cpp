@@ -51,7 +51,7 @@ Term::Ptr undoReal(const z3::expr& expr, const FactoryNest& FN) {
 Term::Ptr undoThat(Z3::Dynamic dyn) {
     FactoryNest FN;
 
-    auto&& expr = logic::z3impl::getExpr(dyn);
+    auto&& expr = dyn.getExpr();
     ASSERT(expr.is_numeral() || expr.is_bool(), "Trying to unlogic non-numeral or bool");
 
     if (expr.is_bv()) {

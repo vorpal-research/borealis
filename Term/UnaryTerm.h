@@ -74,19 +74,19 @@ struct SMTImpl<Impl, UnaryTerm> {
 
         switch (t->getOpcode()) {
         case llvm::UnaryArithType::BNOT: {
-            auto&& rhvi = rhvz3.template to<Integer>();
-            ASSERT(not rhvi.empty(), "Bit not: rhv is not an integer");
-            return ~rhvi.getUnsafe();
+            Integer rhvi = rhvz3;
+            ASSERT(rhvi, "Bit not: rhv is not an integer");
+            return ~rhvi;
         }
         case llvm::UnaryArithType::NEG: {
-            auto&& rhvi = rhvz3.template to<Integer>();
-            ASSERT(not rhvi.empty(), "Negate: rhv is not an integer");
-            return -rhvi.getUnsafe();
+            Integer rhvi = rhvz3;
+            ASSERT(rhvi, "Negate: rhv is not an integer");
+            return -rhvi;
         }
         case llvm::UnaryArithType::NOT: {
-            auto&& rhvi = rhvz3.toBool();
-            ASSERT(not rhvi.empty(), "Logic not: rhv is not a boolean");
-            return not rhvi.getUnsafe();
+            Bool rhvb = rhvz3;
+            ASSERT(rhvb, "Logic not: rhv is not a boolean");
+            return not rhvb;
         }
         }
     }

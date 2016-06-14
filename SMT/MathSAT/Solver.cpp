@@ -43,19 +43,19 @@ Solver::check_result Solver::check(
     mathsat::Solver s{ msatef.unwrap() };
     auto&& dbg = dbgs();
 
-    s.add(msatimpl::asAxiom(msatstate_));
+    s.add(msatstate_.asAxiom());
 
     dbg << "  Query: " << endl << msatquery_ << endl;
     dbg << "  State: " << endl << msatstate_ << endl;
     dbg << end;
 
     auto&& pred = msatef.getBoolVar("$CHECK$");
-    s.add(msatimpl::asAxiom(implies(pred, msatquery_)));
+    s.add(pred.implies(msatquery_).asAxiom());
 
     {
         TRACE_BLOCK("mathsat::check");
 
-        auto&& pred_e = logic::msatimpl::getExpr(pred);
+        auto&& pred_e = pred.getExpr();
         auto&& r = s.check({pred_e});
         dbg << "Acquired result: "
             << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
@@ -89,13 +89,13 @@ SatResult::model_t recollectModel(
     return util::viewContainer(vars)
         .map([&](auto&& var) {
             auto&& e = SMT<MathSAT>::doit(var, z3ef, &ctx);
-            auto&& solver_e = logic::msatimpl::getExpr(e);
+            auto&& solver_e = e.getExpr();
 
             dbgs() << "Evaluating " << solver_e << endl;
 
             auto&& retz3e = implModel.eval(solver_e);
 
-            return std::make_pair(var->getName(), unlogic::undoThat(retz3e));
+            return std::make_pair(var->getName(), unlogic::undoThat(Dynamic(z3ef.unwrap(), retz3e)));
         })
         .template to<SatResult::model_t>();
 }
@@ -125,7 +125,7 @@ smt::Result Solver::isViolated(
             ->filterByTypes({PredicateType::PATH})
             ->filter([&](auto&& p) {
                 auto&& msatp = SMT<MathSAT>::doit(p, msatef, &ctx);
-                auto&& valid = m.eval(logic::msatimpl::asAxiom(msatp));
+                auto&& valid = m.eval(msatp.asAxiom());
                 auto&& bValid = util::stringCast<bool>(valid);
                 return bValid.getOrElse(false);
             });
@@ -217,9 +217,9 @@ Dynamic Solver::getInterpolant(
     mathsat::ISolver s{ msatef.unwrap() };
 
     auto&& B = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(msatbody));
+    s.add(msatbody.asAxiom());
     /* auto&& Q = */ s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(msatquery));
+    s.add(msatquery.asAxiom());
 
     {
         TRACE_BLOCK("mathsat::interpol");
@@ -229,13 +229,13 @@ Dynamic Solver::getInterpolant(
                << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
                << endl;
 
-        auto&& interpol = msatimpl::asAxiom(msatef.getTrue());
+        auto&& interpol = msatef.getTrue().asAxiom();
 
         if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
 
         dbgs() << "Got: " << endl
                << interpol << endl;
-        return Dynamic{ interpol };
+        return Dynamic{ msatef.unwrap(), interpol };
     }
 }
 
@@ -287,9 +287,11 @@ Bool probeMathSat(
     static auto&& countLimit = getCountLimit();
     static auto&& attemptLimit = getAttemptLimit();
 
-    mathsat::DSolver d{ msatef.unwrap() };
-    d.add(msatimpl::asAxiom( body  ));
-    d.add(msatimpl::asAxiom( query ));
+    auto && smtCtx = msatef.unwrap();
+
+    mathsat::DSolver d{ smtCtx };
+    d.add(body.asAxiom());
+    d.add(query.asAxiom());
 
     auto&& ms = msatef.getFalse();
 
@@ -308,13 +310,13 @@ Bool probeMathSat(
 
             mathsat::ISolver s{ msatef.unwrap() };
             s.create_and_set_itp_group();
-            s.add(msatimpl::asAxiom(    body));
-            s.add(msatimpl::asAxiom(not query));
-            s.add(msatimpl::asAxiom(    m));
+            s.add(body.asAxiom());
+            s.add((not query).asAxiom());
+            s.add(m);
 
             if (MSAT_SAT == s.check()) continue;
 
-            ms = ms || m;
+            ms = ms || Bool(smtCtx, m);
             ++count;
 
             if (count >= countLimit) break;
@@ -368,15 +370,13 @@ Dynamic Solver::getSummary(
     mathsat::ISolver s{ msatef.unwrap() };
 
     auto&& B = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(     msatbody));
+    s.add(msatbody.asAxiom());
     auto&& Q = s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom( not msatquery));
+    s.add(( not msatquery).asAxiom());
 
     auto&& toExpr = [&](auto&& term) {
             ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
-            return msatimpl::getExpr(
-                SMT<MathSAT>::doit(term, msatef, &ctx)
-            );
+            return SMT<MathSAT>::doit(term, msatef, &ctx).getExpr();
         };
 
     auto&& argExprs = util::viewContainer(args).map(toExpr).toVector();
@@ -391,7 +391,7 @@ Dynamic Solver::getSummary(
                << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
                << endl;
 
-        auto&& interpol = msatimpl::asAxiom(msatef.getTrue());
+        auto&& interpol = msatef.getTrue().asAxiom();
 
         if (r == MSAT_UNSAT) {
             interpol = s.get_interpolant({B});
@@ -416,7 +416,7 @@ Dynamic Solver::getSummary(
                    << ms << endl;
 
             s.set_itp_group(Q);
-            s.add(msatimpl::asAxiom(ms));
+            s.add(ms.asAxiom());
 
             r = s.check();
             if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
@@ -425,7 +425,7 @@ Dynamic Solver::getSummary(
 
         dbgs() << "Got: " << endl
                << interpol << endl;
-        return Dynamic{ interpol };
+        return Dynamic{ msatef.unwrap(), interpol };
     }
 }
 
@@ -452,14 +452,12 @@ Dynamic Solver::getContract(
     auto&& B = s.create_and_set_itp_group();
 
     /* auto&& Q = */ s.create_and_set_itp_group();
-    s.add(msatimpl::asAxiom(     msatbody));
-    s.add(msatimpl::asAxiom( not msatquery));
+    s.add(msatbody.asAxiom());
+    s.add(( not msatquery).asAxiom());
 
     auto&& toExpr = [&](auto&& term) {
         ExecutionContext ctx{ msatef, memoryStart, memoryEnd };
-        return msatimpl::getExpr(
-            SMT<MathSAT>::doit(term, msatef, &ctx)
-        );
+        return SMT<MathSAT>::doit(term, msatef, &ctx).getExpr();
     };
 
     auto&& argExprs = util::viewContainer(args).map(toExpr).toVector();
@@ -474,7 +472,7 @@ Dynamic Solver::getContract(
                << ((r == MSAT_SAT) ? "sat" : (r == MSAT_UNSAT) ? "unsat" : "unknown")
                << endl;
 
-        auto&& interpol = msatimpl::asAxiom(msatef.getTrue());
+        auto&& interpol = msatef.getTrue().asAxiom();
 
         if (r == MSAT_UNSAT) {
             BYE_BYE(Dynamic, "No contract exists for UNSAT formula");
@@ -492,7 +490,7 @@ Dynamic Solver::getContract(
                    << ms << endl;
 
             s.set_itp_group(B);
-            s.add(msatimpl::asAxiom(ms));
+            s.add(ms.asAxiom());
 
             r = s.check();
             if (r == MSAT_UNSAT) interpol = s.get_interpolant({B});
@@ -502,7 +500,7 @@ Dynamic Solver::getContract(
 
         dbgs() << "Got: " << endl
                << interpol << endl;
-        return Dynamic{ interpol };
+        return Dynamic{ msatef.unwrap(), interpol };
     }
 }
 

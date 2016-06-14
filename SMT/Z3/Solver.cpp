@@ -85,12 +85,12 @@ Solver::check_result Solver::check(
     auto&& axioms = uniqueAxioms(ctx);
 
     dbgs() << "! adding axioms started" << endl;
-    s.add(z3impl::asAxiom(z3state));
+    s.add(z3state.asAxiom());
     util::viewContainer(axioms).foreach(APPLY(s.add));
     dbgs() << "! adding axioms finished" << endl;
 
     dbgs() << "! adding query started" << endl;
-    s.add(z3impl::getAxiom(z3query));
+    s.add(z3query.getAxiom());
     dbgs() << "! adding query finished" << endl;
 
     if (log_formulae.get(true)) {
@@ -110,7 +110,7 @@ Solver::check_result Solver::check(
     }
 
     auto&& pred = z3ef.getBoolVar("$CHECK$");
-    s.add(z3impl::getExpr(implies(pred, z3query)));
+    s.add(pred.implies(z3query).getExpr());
 
     if (auto&& dump_dir = dump_smt2_state.get()) {
         auto&& uuid = UUID::generate();
@@ -129,7 +129,7 @@ Solver::check_result Solver::check(
         TRACE_BLOCK("z3::check");
 
         dbgs() << "! z3 started" << endl;
-        auto&& pred_e = logic::z3impl::getExpr(pred);
+        auto&& pred_e = pred.getExpr();
         auto&& r = s.check(1, &pred_e);
         dbgs() << "! z3 finished" << endl;
 
@@ -192,17 +192,18 @@ SatResult::model_t recollectModel(
     z3::model& implModel,
     const TermCollection& vars) {
     TRACE_FUNC
+    USING_SMT_LOGIC(Z3)
 
     return util::viewContainer(vars)
         .map([&](auto&& var) {
             auto&& e = SMT<Z3>::doit(var, z3ef, &ctx);
-            auto&& z3e = logic::z3impl::getExpr(e);
+            auto&& z3e = e.getExpr();
 
             dbgs() << "Evaluating " << z3e << endl;
 
             auto&& retz3e = implModel.eval(z3e, true);
 
-            return std::make_pair(var->getName(), unlogic::undoThat(retz3e));
+            return std::make_pair(var->getName(), unlogic::undoThat(Dynamic(z3ef.unwrap(), retz3e)));
         })
         .template to<SatResult::model_t>();
 }
@@ -214,8 +215,7 @@ std::pair<SatResult::memory_shape_t, SatResult::memory_shape_t> recollectMemory(
     z3::model& implModel,
     const TermCollection& ptrs) {
     TRACE_FUNC
-
-    using namespace logic::z3impl;
+    USING_SMT_LOGIC(Z3)
 
     SatResult::memory_shape_t retStart;
     SatResult::memory_shape_t retFinal;
@@ -226,21 +226,21 @@ std::pair<SatResult::memory_shape_t, SatResult::memory_shape_t> recollectMemory(
     auto&& finalMem = ctx.getCurrentMemoryContents();
 
     for (auto&& ptr: ptrs) {
-        auto eptr = SMT<Z3>::doit(ptr, z3ef, &ctx).template to<Z3::Pointer>().getUnsafe();
+        Z3::Pointer eptr = SMT<Z3>::doit(ptr, z3ef, &ctx);
 
         auto&& startV = startMem.select(eptr, z3ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
         auto&& finalV = finalMem.select(eptr, z3ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
 
-        auto&& modelPtr = implModel.eval(getExpr(eptr), true);
-        auto&& modelStartV = implModel.eval(getExpr(startV), true);
-        auto&& modelFinalV = implModel.eval(getExpr(finalV), true);
+        auto&& modelPtr = implModel.eval(eptr.getExpr(), true);
+        auto&& modelStartV = implModel.eval(startV.getExpr(), true);
+        auto&& modelFinalV = implModel.eval(finalV.getExpr(), true);
 
-        auto&& undonePtr = unlogic::undoThat(modelPtr);
+        auto&& undonePtr = unlogic::undoThat(Dynamic(z3ef.unwrap(), modelPtr));
         ASSERTC(llvm::isa<OpaqueIntConstantTerm>(undonePtr));
         auto&& actualPtrValue = llvm::cast<OpaqueIntConstantTerm>(undonePtr)->getValue();
 
-        retStart[actualPtrValue] = unlogic::undoThat(modelStartV);
-        retFinal[actualPtrValue] = unlogic::undoThat(modelFinalV);
+        retStart[actualPtrValue] = unlogic::undoThat(Dynamic(z3ef.unwrap(), modelStartV));
+        retFinal[actualPtrValue] = unlogic::undoThat(Dynamic(z3ef.unwrap(), modelFinalV));
     }
 
     return { std::move(retStart), std::move(retFinal) };
@@ -291,7 +291,7 @@ Result Solver::isViolated(
         TRACE_BLOCK("z3::sanity_check");
         auto&& ss = tactics(sanity_check_timeout.get(5) * 1000).mk_solver();
         util::viewContainer(uniqueAxioms(ctx)).foreach(APPLY(ss.add));
-        ss.add(z3impl::asAxiom(z3state));
+        ss.add(z3state.asAxiom());
 
         auto&& dbg = dbgs();
 
@@ -323,7 +323,7 @@ Result Solver::isViolated(
             ->filterByTypes({PredicateType::PATH})
             ->filter([&](auto&& p) {
                 auto&& z3p = SMT<Z3>::doit(p, z3ef, &ctx);
-                auto&& valid = m.eval(logic::z3impl::asAxiom(z3p));
+                auto&& valid = m.eval(z3p.asAxiom());
                 auto&& bValid = util::stringCast<bool>(valid);
                 return bValid.getOrElse(false);
             });
@@ -425,13 +425,15 @@ z3::expr model2expr(const z3::model& model,
 PredicateState::Ptr model2state(const z3::model& model,
                                 const std::vector<Term::Ptr>& collectibles,
                                 const std::vector<z3::expr>& z3collects) {
+    USING_SMT_LOGIC(Z3)
+
     FactoryNest FN;
     auto&& PSB = FN.State * FN.State->Basic();
     for (auto&& zipped : util::viewContainer(collectibles) ^ util::viewContainer(z3collects)) {
         auto&& val = model.eval(zipped.second, true);
         PSB += FN.Predicate->getEqualityPredicate(
             zipped.first,
-            z3_::unlogic::undoThat(val)
+            z3_::unlogic::undoThat(Dynamic(val.ctx(), val))
         );
     }
     return PSB();
@@ -455,7 +457,7 @@ PredicateState::Ptr Solver::probeModels(
     auto&& t2e = [&](auto&& terms) {
         return util::viewContainer(terms)
             .map([&](auto&& t) {
-                return logic::z3impl::getExpr(SMT<Z3>::doit(t, z3ef, &ctx));
+                return SMT<Z3>::doit(t, z3ef, &ctx).getExpr();
             })
             .toVector();
     };
@@ -464,8 +466,8 @@ PredicateState::Ptr Solver::probeModels(
     auto&& z3collects = t2e(collectibles);
 
     auto&& solver = tactics(force_timeout.get(0)).mk_solver();
-    solver.add(logic::z3impl::asAxiom(z3body));
-    solver.add(logic::z3impl::asAxiom(z3query));
+    solver.add(z3body.asAxiom());
+    solver.add(z3query.asAxiom());
     util::viewContainer(uniqueAxioms(ctx)).foreach(APPLY(solver.add));
 
     FactoryNest FN;
@@ -486,8 +488,8 @@ PredicateState::Ptr Solver::probeModels(
             auto&& stateModel = model2state(model, collectibles, z3collects);
 
             auto&& usolver = tactics(force_timeout.get(0)).mk_solver();
-            usolver.add(logic::z3impl::asAxiom(z3body));
-            usolver.add(logic::z3impl::asAxiom(not z3query));
+            usolver.add(z3body.asAxiom());
+            usolver.add((not z3query).asAxiom());
             usolver.add( z3model );
 
             if (z3::sat == usolver.check()) continue;

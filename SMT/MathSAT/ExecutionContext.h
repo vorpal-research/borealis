@@ -71,14 +71,14 @@ public:
         return memory().select<ExprClass>(ix);
     }
     void writeExprToMemory(Pointer ix, DynBV val) {
-        writeExprToMemory(ix, val.adapt<Byte>());
+        writeExprToMemory(ix, Byte::forceCast(val));
     }
     template<class ExprClass>
     void writeExprToMemory(Pointer ix, ExprClass val) {
         memory( memory().store(ix, val) );
     }
     void writeExprRangeToMemory(Pointer from, size_t size, DynBV val) {
-        writeExprRangeToMemory(from, size, val.adapt<Byte>());
+        writeExprRangeToMemory(from, size, Byte::forceCast(val));
     }
     template<class ExprClass>
     void writeExprRangeToMemory(Pointer from, size_t size, ExprClass val) {
@@ -95,7 +95,7 @@ public:
         return get(id).select<ExprClass>(ix);
     }
     void writeProperty(const std::string& id, Pointer ix, DynBV val) {
-        writeProperty(id, ix, val.adapt<Byte>());
+        writeProperty(id, ix, Byte::forceCast(val));
     }
     template<class ExprClass>
     void writeProperty(const std::string& id, Pointer ix, ExprClass val) {

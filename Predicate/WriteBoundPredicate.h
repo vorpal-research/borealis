@@ -70,13 +70,11 @@ struct SMTImpl<Impl, WriteBoundPredicate> {
 
         ASSERTC(ctx != nullptr);
 
-        auto&& l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<Pointer>();
-        ASSERT(not l.empty(), "Bound write with a non-pointer value");
-        auto&& lp = l.getUnsafe();
+        Pointer lp = SMT<Impl>::doit(p->getLhv(), ef, ctx);
+        ASSERT(lp, "Bound write with a non-pointer value");
 
-        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx).template to<Integer>();
-        ASSERT(not r.empty(), "Bound write with a non-integer value");
-        auto&& ri = r.getUnsafe();
+        Integer ri = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+        ASSERT(ri, "Bound write with a non-integer value");
 
         ctx->writeBound(lp, ri);
 

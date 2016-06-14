@@ -32,18 +32,18 @@ struct Z3 {
     // logic type to represent memory units
     using Byte = z3_::logic::BitVector<64>;
     // logic type to represent integers
-    using Integer = z3_::logic::DynBitVectorExpr;
+    using Integer = z3_::logic::AnyBitVector;
     // logic type to represent reals
     using Real = z3_::logic::BitVector<64>;
     // bit vector
     template<size_t N>
     using BV = z3_::logic::BitVector<N>;
     // dynamic bit vector
-    using DynBV = z3_::logic::DynBitVectorExpr;
+    using DynBV = z3_::logic::AnyBitVector;
     // unsigned comparable type
-    using UComparable = z3_::logic::UComparableExpr;
+    using UComparable = z3_::logic::AnyBitVector;
     // dynamic logic type
-    using Dynamic = z3_::logic::SomeExpr;
+    using Dynamic = z3_::logic::ValueExpr;
 
     using add_no_overflow = z3_::logic::add_no_overflow;
 

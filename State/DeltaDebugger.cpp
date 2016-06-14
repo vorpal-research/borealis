@@ -27,7 +27,7 @@ PredicateState::Ptr DeltaDebugger::reduce(PredicateState::Ptr ps) {
         ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
         auto&& z3state = SMT<Z3>::doit(opt, z3ef, &ctx);
 
-        s.add(z3_::logic::z3impl::asAxiom(z3state));
+        s.add(z3state.asAxiom());
 
         if (z3::sat != s.check()) {
             if (opt->size() < curr->size()) {

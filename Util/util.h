@@ -258,4 +258,14 @@ template<> struct hash<llvm::UnaryArithType> : borealis::util::enums::enum_hash<
 template<> struct hash<const llvm::UnaryArithType> : borealis::util::enums::enum_hash<llvm::UnaryArithType> {};
 }
 
+inline size_t operator ""_size (unsigned long long ull) { return static_cast<size_t>(ull); }
+inline int8_t operator ""_i8 (unsigned long long ull) { return static_cast<int8_t>(ull); }
+inline uint8_t operator ""_ui8 (unsigned long long ull) { return static_cast<uint8_t>(ull); }
+inline int16_t operator ""_i16 (unsigned long long ull) { return static_cast<int16_t>(ull); }
+inline uint16_t operator ""_ui16 (unsigned long long ull) { return static_cast<uint16_t>(ull); }
+inline int32_t operator ""_i32 (unsigned long long ull) { return static_cast<int32_t>(ull); }
+inline uint32_t operator ""_ui32 (unsigned long long ull) { return static_cast<uint32_t>(ull); }
+inline int64_t operator ""_i64 (unsigned long long ull) { return static_cast<int64_t>(ull); }
+inline uint64_t operator ""_ui64 (unsigned long long ull) { return static_cast<uint64_t>(ull); }
+
 #endif /* UTIL_H_ */

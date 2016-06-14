@@ -26,9 +26,6 @@ static stream_t infos() {
 TEST(Z3, diversify) {
     USING_SMT_IMPL(borealis::Z3);
 
-    using borealis::z3_::logic::z3impl::asAxiom;
-    using borealis::z3_::logic::z3impl::getExpr;
-
     ExprFactory ef;
 
     auto&& a = ef.getIntVar("a");
@@ -45,13 +42,13 @@ TEST(Z3, diversify) {
                           .else_(one);
 
     z3::solver s{ ef.unwrap() };
-    s.add(asAxiom(query));
-    s.add(asAxiom(state));
+    s.add(query.asAxiom());
+    s.add(state.asAxiom());
 
     auto&& res = s.check();
     ASSERT_EQ(z3::sat, res);
 
-    auto&& models = z3::diversify(s, {getExpr(a), getExpr(b)}, {getExpr(a), getExpr(b)});
+    auto&& models = z3::diversify(s, { a.getExpr(), b.getExpr()}, {a.getExpr(), b.getExpr()});
     ASSERT_EQ(32, models.size());
 }
 
@@ -65,9 +62,9 @@ TEST(Z3ExprFactory, memoryArray) {
         auto&& mkbyte = [&](auto&& val) { return Byte::mkConst(factory.unwrap(), val); };
 
         auto&& check_expr = [&](auto&& e) {
-            z3::solver solver{ z3impl::getContext(e) };
-            solver.add(z3impl::getAxiom(e));
-            solver.add(not z3impl::getExpr(e));
+            z3::solver solver{ factory.unwrap() };
+            solver.add(e.getAxiom());
+            solver.add(not e.getExpr());
             return z3::unsat == solver.check();
         };
 
@@ -125,15 +122,15 @@ TEST(ExecutionContext, mergeMemory) {
 
             z3::solver s{ factory.unwrap() };
 
-            s.add(z3impl::asAxiom(in));
+            s.add(in.asAxiom());
 
             auto&& pred = factory.getBoolVar("$CHECK$");
-            s.add(z3impl::asAxiom(implies(pred, not e)));
+            s.add(pred.implies(not e).asAxiom());
 
             infos() << "$CHECK$:" << endl
-            		<< implies(pred, not e) << endl;
+            		<< pred.implies(not e) << endl;
 
-            auto&& pred_e = z3impl::getExpr(pred);
+            auto&& pred_e = pred.getExpr();
             auto&& r = s.check(1, &pred_e);
 
             if (r == z3::sat) {
@@ -174,9 +171,9 @@ TEST(Solver, logic) {
 
     z3::context ctx;
     auto&& check_expr = [&](auto&& e) {
-        z3::solver solver{ z3impl::getContext(e) };
-        solver.add(z3impl::getAxiom(e));
-        solver.add(!z3impl::getExpr(e));
+        z3::solver solver{ e.getCtx() };
+        solver.add(e.getAxiom());
+        solver.add(!e.getExpr());
         auto&& res = solver.check();
         return res == z3::unsat;
     };

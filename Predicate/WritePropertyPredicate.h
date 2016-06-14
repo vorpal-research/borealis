@@ -79,15 +79,14 @@ struct SMTImpl<Impl, WritePropertyPredicate> {
         auto* propName = llvm::cast<OpaqueStringConstantTerm>(p->getPropertyName());
         auto&& strPropName = propName->getValue();
 
-        auto&& l = SMT<Impl>::doit(p->getLhv(), ef, ctx).template to<DynBV>();
-        ASSERT(not l.empty(),
+        DynBV l = SMT<Impl>::doit(p->getLhv(), ef, ctx);
+        ASSERT(l,
                tfm::format("Property write with a non-BV address: %s", p->getLhv()));
-        auto&& lp = l.getUnsafe().template adapt<Pointer>();
+        auto&& lp = Pointer::forceCast(l);
 
-        auto&& r = SMT<Impl>::doit(p->getRhv(), ef, ctx).template to<DynBV>();
-        ASSERT(not r.empty(),
+        DynBV rbv = SMT<Impl>::doit(p->getRhv(), ef, ctx);
+        ASSERT(rbv,
                tfm::format("Property write with a non-BV value: %s", p->getRhv()));
-        auto&& rbv = r.getUnsafe();
 
         ctx->writeProperty(strPropName, lp, rbv);
 
