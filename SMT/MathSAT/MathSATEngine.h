@@ -25,6 +25,11 @@ public:
     using context_t = mathsat::Env;
     using solver_t = mathsat::Solver;
 
+    static std::unique_ptr<context_t> init() {
+        mathsat::Config cfg;
+        return std::unique_ptr<mathsat::Env>(new mathsat::Env(cfg));
+    }
+
     inline static size_t hash(expr_t e) { return e.get_id(); }
     inline static std::string name(expr_t e) { return e.decl().name(); }
     inline static std::string toString(expr_t e) { return util::toString(e);  }

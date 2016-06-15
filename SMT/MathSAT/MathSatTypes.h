@@ -20,6 +20,8 @@ class Solver;
 }
 
 struct MathSAT {
+    using Engine = MathSATEngine;
+
     using ExprFactory = mathsat_::ExprFactory;
     using ExecutionContext = mathsat_::ExecutionContext;
     using Solver = mathsat_::Solver;

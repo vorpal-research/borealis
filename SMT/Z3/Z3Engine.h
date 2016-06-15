@@ -10,6 +10,7 @@
 #include <z3/z3++.h>
 
 #include "SMT/Result.h"
+#include "SMT/Z3/Params.h"
 
 #include "Util/macros.h"
 
@@ -25,6 +26,16 @@ public:
     using context_t = z3::context;
     using solver_t = z3::solver;
 
+    static std::unique_ptr<context_t> init() {
+        z3::config cfg;
+
+        z3_::Params::load().apply();
+
+        auto ctx = std::unique_ptr<z3::context>(new z3::context(cfg));
+
+        Z3_set_ast_print_mode(*ctx, Z3_PRINT_SMTLIB2_COMPLIANT);
+        return std::move(ctx);
+    }
 
     inline static size_t hash(expr_t e) { return e.hash(); }
     inline static std::string name(expr_t e) { return e.decl().name().str(); }
@@ -310,6 +321,12 @@ public:
     }
 
     using Result = smt::Result;
+
+    struct equality {
+         bool operator()(expr_t e1, expr_t e2) const noexcept {
+             return z3::eq(e1, e2);
+         }
+    };
 };
 
 }

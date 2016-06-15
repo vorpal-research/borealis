@@ -20,6 +20,7 @@ class Solver;
 }
 
 struct Z3 {
+    using Engine = Z3Engine;
 
     using ExprFactory = z3_::ExprFactory;
     using ExecutionContext = z3_::ExecutionContext;

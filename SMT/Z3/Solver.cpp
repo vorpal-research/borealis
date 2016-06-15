@@ -60,9 +60,8 @@ z3::tactic Solver::tactics(unsigned int timeout) {
     return z3::try_for(st, timeout);
 }
 
-// TODO: Move this stuff to ExecutionContext???
-static impl_::z3_set_instance<z3::expr> uniqueAxioms(const ExecutionContext& ctx) {
-    impl_::z3_set_instance<z3::expr> ret;
+static std::unordered_set<z3::expr, std::hash<z3::expr>, Z3Engine::equality> uniqueAxioms(const ExecutionContext& ctx) {
+    std::unordered_set<z3::expr, std::hash<z3::expr>, Z3Engine::equality> ret;
     ctx.getAxioms().foreach(APPLY(ret.insert));
     return std::move(ret);
 }
