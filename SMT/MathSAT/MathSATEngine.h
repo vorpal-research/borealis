@@ -84,17 +84,23 @@ public:
         return ctx.bool_val(value);
     }
 
-    template<class Numeric,
-             class = std::enable_if_t<std::is_integral<Numeric>::value>>
-    inline static expr_t mkNumericConst(context_t& ctx, sort_t sort, Numeric value){
-        if(sort.is_bool()) return mkBoolConst(ctx, !!value);
-        return ctx.bv_val(util::toString(static_cast<unsigned long long>(value)), sort.bv_size());
-    }
-
     inline static expr_t mkNumericConst(context_t& ctx, sort_t sort, const std::string& valueRep){
-        if(sort.is_bv()) return ctx.bv_val(valueRep.c_str(), sort.bv_size());
+        util::string_ref ref = valueRep;
+        if(sort.is_bv()) {
+            if(ref[0] == '-') {
+                auto&& v = ctx.bv_val(ref.substr(1), sort.bv_size());
+                return -v;
+            }
+            return ctx.bv_val(valueRep, sort.bv_size());
+        }
         if(sort.is_bool()) return mkBoolConst(ctx, valueRep != "0" && valueRep != "false");
         UNREACHABLE("unknown sort encountered by MathSAT backend")
+    }
+
+    template<class Numeric,
+        class = std::enable_if_t<std::is_integral<Numeric>::value>>
+    inline static expr_t mkNumericConst(context_t& ctx, sort_t sort, Numeric value){
+        return mkNumericConst(ctx, sort, util::toString(value));
     }
 
     inline static expr_t mkArrayConst(context_t&, sort_t, expr_t){
