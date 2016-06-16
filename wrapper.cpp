@@ -15,6 +15,7 @@
 #include <backward.hpp>
 
 #include <z3/z3++.h>
+#include "SMT/CVC4/cvc4_fixed.h"
 
 #include "Driver/gestalt.h"
 
@@ -24,6 +25,9 @@ void on_terminate(void) {
     try{ throw; }
     catch (const z3::exception& ex) {
         std::cerr << "z3 exception caught: " << ex.msg() << std::endl;
+    }
+    catch(const CVC4::Exception& ex) {
+        std::cerr << "cvc4 exception caught: " << ex.what() << std::endl;
     }
     abort();
 }

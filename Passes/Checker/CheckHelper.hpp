@@ -12,8 +12,12 @@
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
+#include "SMT/CVC4/Solver.h"
 #include "State/Transformer/StateSlicer.h"
 #include "State/Transformer/TermSizeCalculator.h"
+
+
+#include "Util/macros.h"
 
 namespace borealis {
 
@@ -39,6 +43,44 @@ public:
         if (pass->DM->hasInfo(di)) return true;
         return false;
     }
+
+private:
+    static smt::Result checkViolationZ3(
+        std::pair<size_t, size_t> memoryBounds,
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
+        Z3::ExprFactory ef;
+        Z3::Solver s(ef, memoryBounds.first, memoryBounds.second);
+        return s.isViolated(query, state);
+    }
+    static smt::Result checkViolationCVC4(
+        std::pair<size_t, size_t> memoryBounds,
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
+        CVC4::ExprFactory ef;
+        CVC4::Solver s(ef, memoryBounds.first, memoryBounds.second);
+        return s.isViolated(query, state);
+    }
+    static smt::Result checkViolationMathSAT(
+        std::pair<size_t, size_t> memoryBounds,
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
+        MathSAT::ExprFactory ef;
+        MathSAT::Solver s(ef, memoryBounds.first, memoryBounds.second);
+        return s.isViolated(query, state);
+    }
+    static smt::Result checkViolation(
+        std::pair<size_t, size_t> memoryBounds,
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
+        static config::StringConfigEntry engine{ "analysis", "smt-engine" };
+        auto engineName = engine.get("z3");
+        if(engineName == "mathsat") return checkViolationMathSAT(memoryBounds, query, state);
+        if(engineName == "z3") return checkViolationZ3(memoryBounds, query, state);
+        if(engineName == "cvc4") return checkViolationCVC4(memoryBounds, query, state);
+        UNREACHABLE(tfm::format("Unknown solver specified: %s", engineName));
+    }
+public:
 
     bool check(PredicateState::Ptr query, PredicateState::Ptr state) {
         return check(query, state, pass->DM->getDefect(defectType, I));
@@ -77,16 +119,7 @@ public:
 
         auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
-#if defined USE_MATHSAT_SOLVER
-        MathSAT::ExprFactory ef;
-        MathSAT::Solver s(ef, fMemInfo.first, fMemInfo.second);
-#else
-        //auto&& ef = util::threadLocalInstance<Z3::ExprFactory>();
-        Z3::ExprFactory ef;
-        Z3::Solver s(ef, fMemInfo.first, fMemInfo.second);
-#endif
-
-        auto solverResult = s.isViolated(query, sliced);
+        auto solverResult = checkViolation(fMemInfo, query, state);
         if (auto satRes = solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
             pass->DM->getAdditionalInfo(di).satModel = util::just(*satRes);
@@ -146,5 +179,7 @@ public:
 };
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* CHECKVISITOR_HPP_ */

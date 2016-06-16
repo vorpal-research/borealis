@@ -224,6 +224,8 @@ LIBS := \
 	$(CLANGLIBS) \
 	$(LLVMLIBS) \
 	-lz3 \
+	-lcvc4 \
+	-lcln \
 	-llog4cpp \
 	-lprofiler \
 	-ljsoncpp \

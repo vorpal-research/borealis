@@ -58,6 +58,9 @@ public:
     inline static bool is_bv(context_t&, expr_t e) {
         return e.is_bv();
     }
+    inline static bool is_array(context_t&, expr_t e) {
+        return e.is_array();
+    }
 
     inline static pattern_t mkPattern(context_t& ctx, expr_t expr) {
         Z3_ast pats[] { expr };

@@ -303,7 +303,7 @@ struct generator< AnyBitVector > {
             auto bv1 = smt::bv_sort(ctx, 1);
             return smt::ite(ctx, e, smt::mkNumericConst(ctx, bv1, 1_i64), smt::mkNumericConst(ctx, bv1, 0_i64));
         }
-        ASSERTC(e.is_bv());
+        ASSERTC(smt::is_bv(ctx, e));
         return e;
     }
 };
@@ -324,7 +324,7 @@ struct generator< BitVector<N> > {
         if(smt::is_bool(ctx, e)) {
             return smt::ite(ctx, e, smt::mkNumericConst(ctx, sort(ctx), uint64_t(1)), smt::mkNumericConst(ctx, sort(ctx), uint64_t(0)));
         }
-        ASSERTC(e.is_bv());
+        ASSERTC(smt::is_bv(ctx, e));
         auto size = smt::bv_size(ctx, sort(ctx));
         auto esize = smt::bv_size(ctx, smt::get_sort(ctx, e));
         if(size == esize) return e;
@@ -1044,10 +1044,10 @@ class TheoryArray: public ValueExpr {
 public:
 
     TheoryArray(smt::context_t& ctx, smt::expr_t inner) : ValueExpr(ctx, inner) {
-        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
+        ASSERT(smt::is_array(ctx, inner), "TheoryArray constructed from non-array");
     };
     TheoryArray(smt::context_t& ctx, smt::expr_t inner, smt::expr_t axioms) : ValueExpr(ctx, inner, axioms) {
-        ASSERT(inner.is_array(), "TheoryArray constructed from non-array");
+        ASSERT(smt::is_array(ctx, inner), "TheoryArray constructed from non-array");
     };
     TheoryArray(const TheoryArray&) = default;
 
