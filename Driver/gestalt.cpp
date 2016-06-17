@@ -100,10 +100,11 @@ int gestalt::main(int argc, const char** argv) {
     CommandLine args(argc, argv);
     std::string configPath = "wrapper.conf";
     std::string defaultLogIni = "log.ini";
+    auto realConfigPath = util::getFilePathIfExists(configPath);
 
     AppConfiguration::initialize(
         new CommandLineConfigSource{ args.suffixes("---").stlRep() },
-        new FileConfigSource{ args.suffixes("---config:").single(util::getFilePathIfExists(configPath).c_str()) }
+        new FileConfigSource{ args.suffixes("---config:").single(realConfigPath.c_str()) }
     );
 
     CommandLine opt = CommandLine("wrapper") +
@@ -122,6 +123,8 @@ int gestalt::main(int argc, const char** argv) {
     for (const auto& op : z3log) {
         borealis::logging::configureZ3Log(util::getFilePathIfExists(op));
     }
+
+    infos() << "Using config at " << realConfigPath << endl;
 
     auto prePasses = MultiConfigEntry("passes", "pre").get();
     auto inPasses = MultiConfigEntry("passes", "in").get();

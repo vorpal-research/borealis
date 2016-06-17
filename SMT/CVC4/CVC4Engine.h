@@ -224,6 +224,7 @@ public:
         if(lhv.getType().isBoolean() && rhv.getType().isBoolean()) {
             if(bop == binOp::EQUAL) return ctx.em.mkExpr(kind::IFF, lhv, rhv);
             if(bop == binOp::NEQUAL) return ctx.em.mkExpr(kind::XOR, lhv, rhv);
+            if(bop == binOp::XOR) return ctx.em.mkExpr(kind::XOR, lhv, rhv);
         }
         if(bop == binOp::NEQUAL) {
             return ctx.em.mkExpr(kind::NOT, binop(ctx, binOp::EQUAL, lhv, rhv));

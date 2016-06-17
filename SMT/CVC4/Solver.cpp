@@ -61,7 +61,10 @@ Solver::check_result Solver::check(
 
     TRACE_FUNC;
 
-    auto&& s = std::make_shared<::CVC4::SmtEngine>(&cvc4ef.unwrap().em);
+    currentEngine = std::make_shared<::CVC4::SmtEngine>(&cvc4ef.unwrap().em);
+    ON_SCOPE_EXIT(currentEngine.reset());
+
+    auto s = currentEngine;
     s->setLogic("QF_AUFBV");
     s->setOption("produce-models", true);
     s->setOption("output-language", "smt2");
@@ -74,6 +77,17 @@ Solver::check_result Solver::check(
     auto&& axioms = uniqueAxioms(ctx);
 
     std::vector<::CVC4::Expr> assertions;
+
+    ON_SCOPE_EXIT(
+        if(std::uncaught_exception()) {
+            std::cerr << "CVC4 threw:" << std::endl;
+            std::cerr << "Assertions:" << std::endl;
+            for(auto&& as : assertions) {
+                std::cerr << as << std::endl;
+            }
+        }
+    )
+
 
     dbgs() << "! adding axioms started" << endl;
     assertions.insert(assertions.begin(), axioms.begin(), axioms.end());
@@ -105,6 +119,8 @@ Solver::check_result Solver::check(
 
     for(auto&& ass : assertions) s->assertFormula(ass);
     //s.assertFormula(cvc4ef.unwrap().mkExpr(::CVC4::kind::AND, assertions));
+
+
 
     {
         TRACE_BLOCK("cvc4::check");
@@ -292,6 +308,10 @@ Result Solver::isPathImpossible(
     }
 
     return UnsatResult{};
+}
+
+void Solver::interrupt() {
+    if(currentEngine) currentEngine->interrupt();
 }
 
 } // namespace cvc4_

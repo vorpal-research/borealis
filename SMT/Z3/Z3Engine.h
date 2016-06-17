@@ -279,6 +279,9 @@ public:
     }
 
     inline static expr_t binop(context_t& ctx, binOp bop, expr_t lhv, expr_t rhv) {
+        if((bop == binOp::XOR || bop == binOp::NEQUAL) && lhv.is_bool() && rhv.is_bool()) {
+            return z3::to_expr(ctx, Z3_mk_xor(ctx, lhv, rhv));
+        }
         return z3::to_expr(ctx, binop2z3(bop)(ctx, lhv, rhv));
     }
 

@@ -46,6 +46,8 @@ public:
             const std::vector<Term::Ptr>& diversifiers,
             const std::vector<Term::Ptr>& collectibles);
 
+    void interrupt(); // here be dragons
+
 private:
 
     ExprFactory& z3ef;

@@ -25,9 +25,11 @@ void on_terminate(void) {
     try{ throw; }
     catch (const z3::exception& ex) {
         std::cerr << "z3 exception caught: " << ex.msg() << std::endl;
+        throw;
     }
     catch(const CVC4::Exception& ex) {
         std::cerr << "cvc4 exception caught: " << ex.what() << std::endl;
+        throw;
     }
     abort();
 }

@@ -66,6 +66,10 @@ static std::unordered_set<z3::expr, std::hash<z3::expr>, Z3Engine::equality> uni
     return std::move(ret);
 }
 
+void Solver::interrupt() {
+    z3ef.unwrap().interrupt();
+}
+
 Solver::check_result Solver::check(
         const Bool& z3query_,
         const Bool& z3state_,

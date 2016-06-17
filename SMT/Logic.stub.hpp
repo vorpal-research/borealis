@@ -1198,7 +1198,8 @@ std::vector<BitVector<ElemSize>> splitBytes(BitVector<N> bv) {
 
     std::vector<Byte> ret;
     for (size_t ix = 0; ix < N; ix += ElemSize) {
-        ret.push_back( Byte(bv.extract(ix+ElemSize-1, ix)) );
+        auto hi = std::min(ix + ElemSize - 1, N - 1);
+        ret.push_back( Byte::forceCast(bv.extract(hi, ix)) );
     }
     return ret;
 }
@@ -1220,7 +1221,8 @@ std::vector<BitVector<ElemSize>> splitBytes(const ValueExpr& bv) {
 
     std::vector<Byte> ret;
     for (size_t ix = 0; ix < width; ix += ElemSize) {
-        ret.push_back( Byte(dbv.extract(ix+ElemSize-1, ix)) );
+        auto hi = std::min(ix + ElemSize - 1, width - 1);
+        ret.push_back( Byte::forceCast(dbv.extract(hi, ix)) );
     }
     return ret;
 }

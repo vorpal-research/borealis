@@ -40,9 +40,13 @@ public:
             PredicateState::Ptr path,
             PredicateState::Ptr state);
 
+    void interrupt(); // here be dragons
+
 private:
 
     ExprFactory& cvc4ef;
+    std::shared_ptr<::CVC4::SmtEngine> currentEngine;
+
     unsigned long long memoryStart;
     unsigned long long memoryEnd;
 
