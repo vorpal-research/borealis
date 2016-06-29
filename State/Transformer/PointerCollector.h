@@ -17,12 +17,14 @@ public:
     PointerCollector(const FactoryNest& FN) : Transformer(FN) { }
 
     Term::Ptr transformLoadTerm(LoadTermPtr term) {
-        collection.insert(term->getRhv());
+        auto ptr = term->getRhv();
+        collection.insert(ptr);
         return term;
     }
 
     Predicate::Ptr transformStorePredicate(StorePredicatePtr pred) {
-        collection.insert(pred->getLhv());
+        auto&& ptr = pred->getLhv();
+        collection.insert(ptr);
         return pred;
     }
 

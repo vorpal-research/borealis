@@ -13,12 +13,12 @@ namespace borealis {
 
 class SmtDrivenArbiter: public Arbiter {
 
-    SlotTracker* ST;
+    FactoryNest FN;
     smt::SatResult model;
 
 public:
-    SmtDrivenArbiter(SlotTracker* ST, const smt::SatResult& model):
-        ST(ST), model(model) {}
+    SmtDrivenArbiter(const llvm::DataLayout* DL, SlotTracker* ST, const smt::SatResult& model):
+        FN(DL, ST), model(model) {}
 
     virtual llvm::GenericValue map(llvm::Value* val);
 };

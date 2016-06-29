@@ -69,6 +69,7 @@ private:
 
     PredicateState::Ptr BBM(llvm::BasicBlock* BB);
     PredicateState::Ptr PM(const llvm::Instruction* I);
+    PredicateState::Ptr PostPM(const llvm::Instruction* I);
     PredicateState::Ptr PPM(const PhiBranch& key);
     PredicateState::Ptr TPM(const TerminatorBranch& key);
 

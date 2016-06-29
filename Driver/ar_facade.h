@@ -74,6 +74,7 @@ public:
         borealis::util::initFilePaths(argv);
 
         CommandLine args(argc, argv);
+        std::cerr << args << std::endl;
 
         std::string configPath = "wrapper.conf";
         std::string defaultLogIni = "log.ini";
@@ -95,13 +96,17 @@ public:
         auto output = argsC.first_or("");
         auto inputs = argsC.drop(1).toVector();
 
+        std::cerr << "output:" << output << std::endl;
+        std::cerr << "inputs:" << inputs << std::endl;
+
         clang_pipeline clang { "clang" };
 
         //clang.assignLogger(*this);
 
-        CommandLine pseudoLinker = CommandLine("ar");
+        CommandLine pseudoLinker = CommandLine();
         pseudoLinker = pseudoLinker.push_back("-o").push_back(output) + CommandLine(inputs);
 
+        std::cerr << pseudoLinker << std::endl;
         infos() << pseudoLinker << endl;
 
         driver::command cmd;
@@ -110,6 +115,7 @@ public:
         auto optTable = util::uniq(clang::driver::createDriverOptTable());
 
         unsigned missingArg, missingIndex;
+        std::cerr << pseudoLinker << std::endl;
         cmd.cl = decltype(cmd.cl)(optTable->ParseArgs( pseudoLinker.argv(), pseudoLinker.argv() + pseudoLinker.argc(), missingIndex, missingArg ));
 
         clang.invoke(cmd);

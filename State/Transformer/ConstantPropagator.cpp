@@ -36,4 +36,12 @@ Term::Ptr ConstantPropagator::transformCmpTerm(CmpTermPtr term) {
     return t == nullptr ? term : t;
 }
 
+Term::Ptr ConstantPropagator::transformTernaryTerm(TernaryTermPtr term) {
+    auto cnd = term->getCnd();
+    if(auto&& cndt = llvm::dyn_cast<OpaqueBoolConstantTerm>(cnd)) {
+        return cndt->getValue()? term->getTru() : term->getFls();
+    }
+    return term;
+}
+
 } /* namespace borealis */

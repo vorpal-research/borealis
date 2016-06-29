@@ -22,9 +22,63 @@ class ExecutionContext {
     USING_SMT_LOGIC(BACKEND);
     using ExprFactory = BACKEND::ExprFactory;
 
+    class MemArrayWithVersion {
+        MemArray mem;
+        size_t version = 0;
+
+    public:
+        MemArrayWithVersion(MemArray mem, size_t version): mem(mem), version(version) {}
+        MemArrayWithVersion(MemArray mem): mem(mem) {}
+
+        const MemArray& getMem() const { return mem; }
+        size_t getVersion() const { return version; }
+
+        void incVersion() { ++version; }
+
+        template<class Elem, class T>
+        auto select(const T& key) const {
+            return mem.select<Elem>(key);
+        }
+
+        template<class T>
+        auto select(const T& key, size_t bs) const {
+            return mem.select(key, bs);
+        }
+
+        template<class ...T>
+        auto store(const T&... wha) {
+            auto&& nmem = mem.store(wha...);
+            return MemArrayWithVersion{ nmem, version + 1};
+        }
+
+        static auto merge(const std::string& name,
+                          MemArrayWithVersion deflt,
+                          const std::vector<std::pair<Bool, MemArrayWithVersion>>& alts) {
+            auto ver = deflt.getVersion();
+            auto maxVersion = ver;
+            for(auto&& alt: alts) {
+                maxVersion = std::max(maxVersion, alt.second.getVersion());
+            }
+            if(ver == maxVersion) return deflt;
+            else{
+                auto reMem = util::viewContainer(alts)
+                            .map([&](auto&& alt){ return std::make_pair(alt.first, alt.second.getMem()); })
+                            .toVector();
+                return MemArrayWithVersion{
+                    MemArray::merge(name, deflt.getMem(), reMem),
+                    maxVersion + 1
+                };
+            }
+        }
+
+        friend std::ostream& operator<<(std::ostream& ost, const MemArrayWithVersion& m) {
+            return ost << m.getMem() << "{version:" << m.getVersion() << "}";
+        }
+    };
+
     ExprFactory& factory;
-    mutable std::unordered_map<std::string, MemArray> memArrays;
-    mutable std::unordered_map<std::string, MemArray> initialMemArrays;
+    mutable std::unordered_map<std::string, MemArrayWithVersion> memArrays;
+    mutable std::unordered_map<std::string, MemArrayWithVersion> initialMemArrays;
     unsigned long long globalPtr;
     unsigned long long localPtr;
 
@@ -34,16 +88,16 @@ class ExecutionContext {
     impl_::smtExprSet contextAxioms;
 
     static const std::string MEMORY_ID;
-    MemArray memory() const;
-    void memory(const MemArray& value);
+    MemArrayWithVersion memory(size_t memspace) const;
+    void memory(size_t memspace, const MemArrayWithVersion& value);
 
     static const std::string GEP_BOUNDS_ID;
-    void initGepBounds();
-    MemArray gepBounds() const;
-    void gepBounds(const MemArray& value);
+    void initGepBounds(size_t memspace);
+    MemArrayWithVersion gepBounds(size_t memspace);
+    void gepBounds(size_t memspace, const MemArrayWithVersion& value);
 
-    MemArray get(const std::string& id) const;
-    void set(const std::string& id, const MemArray& value);
+    MemArrayWithVersion get(const std::string& id) const;
+    void set(const std::string& id, const MemArrayWithVersion& value);
 
     using MemArrayIds = std::unordered_set<std::string>;
     MemArrayIds getMemArrayIds() const;
@@ -53,16 +107,17 @@ public:
     ExecutionContext(ExprFactory& factory, unsigned long long localMemoryStart, unsigned long long localMemoryEnd);
     ExecutionContext(const ExecutionContext&) = default;
 
-    MemArray getCurrentMemoryContents();
-    MemArray getCurrentGepBounds();
+    MemArray getCurrentMemoryContents(size_t memspace);
+    MemArray getCurrentGepBounds(size_t memspace);
+    MemArray getCurrentProperties(const std::string& pname);
 
-    MemArray getInitialMemoryContents();
+    MemArray getInitialMemoryContents(size_t memspace);
 
-    Pointer getGlobalPtr(size_t offsetSize = 1U);
-    Pointer getGlobalPtr(size_t offsetSize, Integer origSize);
+    Pointer getGlobalPtr(size_t memspace, size_t offsetSize = 1U);
+    Pointer getGlobalPtr(size_t memspace, size_t offsetSize, Integer origSize);
 
-    Pointer getLocalPtr(size_t offsetSize = 1U);
-    Pointer getLocalPtr(size_t offsetSize, Integer origSize);
+    Pointer getLocalPtr(size_t memspace, size_t offsetSize = 1U);
+    Pointer getLocalPtr(size_t memspace, size_t offsetSize, Integer origSize);
 
     using LocalMemoryBounds = std::pair<unsigned long long, unsigned long long>;
     LocalMemoryBounds getLocalMemoryBounds() const;
@@ -71,28 +126,31 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-    Dynamic readExprFromMemory(Pointer ix, size_t bitSize) {
-        return memory().select(ix, bitSize);
+    Dynamic readExprFromMemory(Pointer ix, size_t bitSize, size_t memspace) {
+        return memory(memspace).select(ix, bitSize);
     }
     template<class ExprClass>
-    ExprClass readExprFromMemory(Pointer ix) {
-        return memory().select<ExprClass>(ix);
+    ExprClass readExprFromMemory(Pointer ix, size_t memspace) {
+        return memory(memspace).select<ExprClass>(ix);
     }
-    void writeExprToMemory(Pointer ix, DynBV val) {
-        writeExprToMemory(ix, Byte::forceCast(val));
-    }
-    template<class ExprClass>
-    void writeExprToMemory(Pointer ix, ExprClass val) {
-        memory( memory().store(ix, val) );
-    }
-    void writeExprRangeToMemory(Pointer from, size_t size, DynBV val) {
-        writeExprRangeToMemory(from, size, Byte::forceCast(val));
+    void writeExprToMemory(Pointer ix, DynBV val, size_t memspace) {
+        writeExprToMemory(ix, Byte::forceCast(val), memspace);
     }
     template<class ExprClass>
-    void writeExprRangeToMemory(Pointer from, size_t size, ExprClass val) {
-        auto&& currentMemory = memory();
+    void writeExprToMemory(Pointer ix, ExprClass val, size_t memspace) {
+        memory( memspace, memory(memspace).store(ix, val) );
+    }
+    void writeExprRangeToMemory(Pointer from, size_t size, DynBV val, size_t memspace) {
+        writeExprRangeToMemory(from, size, Byte::forceCast(val), memspace);
+    }
+    template<class ExprClass>
+    void writeExprRangeToMemory(Pointer from, size_t size, ExprClass val, size_t memspace) {
+        auto&& currentMemory = memory(memspace);
 
-        auto&& newMem = factory.getEmptyMemoryArray(MEMORY_ID);
+        auto&& newMem = MemArrayWithVersion{
+            factory.getEmptyMemoryArray(tfm::format("%s%d", MEMORY_ID, memspace)),
+            currentMemory.getVersion() + 1
+        };
 
         std::function<Bool(Pointer)> fun = [=](Pointer inner) {
             return
@@ -108,7 +166,7 @@ public:
 
         contextAxioms.insert(axiom.asAxiom());
 
-        return memory(newMem);
+        return memory(memspace, newMem);
     }
 
     Dynamic readProperty(const std::string& id, Pointer ix, size_t bitSize) {
@@ -139,8 +197,8 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-    Integer getBound(const Pointer& p, size_t bitSize);
-    void writeBound(const Pointer& p, const Integer& bound);
+    Integer getBound(const Pointer& p, size_t bitSize, size_t memspace);
+    void writeBound(const Pointer& p, const Integer& bound, size_t memspace);
 
 ////////////////////////////////////////////////////////////////////////////////
 

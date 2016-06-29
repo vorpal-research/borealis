@@ -41,6 +41,11 @@ public:
                        "Cannot acquire bitsize for type " + util::toString(*type));
     }
 
+    bool astEquals(Dynamic l, Dynamic r) {
+        return smt::term_equality(*ctx, l.getExpr(), r.getExpr())
+             && smt::term_equality(*ctx, l.getAxiom(), r.getAxiom());
+    }
+
     ExprFactory();
 
     smt::context_t& unwrap() {

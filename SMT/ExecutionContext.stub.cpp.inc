@@ -24,60 +24,71 @@ ExecutionContext::ExecutionContext(
 
     initialMemArrays.emplace(MEMORY_ID, factory.getNoMemoryArray(MEMORY_ID));
 
-    initGepBounds();
+    initGepBounds(0);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExecutionContext::MemArray ExecutionContext::memory() const {
-    return get(MEMORY_ID);
+ExecutionContext::MemArrayWithVersion ExecutionContext::memory(size_t memspace) const {
+    auto id = tfm::format("%s%d", MEMORY_ID, memspace);
+    return get(id);
 }
 
-void ExecutionContext::memory(const MemArray& value) {
-    set(MEMORY_ID, value);
+void ExecutionContext::memory(size_t memspace, const MemArrayWithVersion& value) {
+    auto id = tfm::format("%s%d", MEMORY_ID, memspace);
+    set(id, value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ExecutionContext::initGepBounds() {
+void ExecutionContext::initGepBounds(size_t memspace) {
+    auto id = tfm::format("%s%d", GEP_BOUNDS_ID, memspace);
     if (CraigColtonMode.get(false)) {
         memArrays.emplace(
-            GEP_BOUNDS_ID,
-            factory.getDefaultMemoryArray(GEP_BOUNDS_ID, 0)
+            id,
+            factory.getDefaultMemoryArray(id, 0)
         );
     } else {
         memArrays.emplace(
-            GEP_BOUNDS_ID,
-            factory.getEmptyMemoryArray(GEP_BOUNDS_ID)
+            id,
+            factory.getEmptyMemoryArray(id)
         );
     }
 
-    gepBounds( gepBounds().store(
+    gepBounds(memspace, gepBounds(memspace).store(
         factory.getNullPtr(),
         factory.getIntConst(-1)
     ) );
 }
 
-ExecutionContext::MemArray ExecutionContext::gepBounds() const {
-    return get(GEP_BOUNDS_ID);
+ExecutionContext::MemArrayWithVersion ExecutionContext::gepBounds(size_t memspace) {
+    auto id = tfm::format("%s%d", GEP_BOUNDS_ID, memspace);
+    if(not util::containsKey(memArrays, id)) {
+        initGepBounds(memspace);
+    }
+    return get(id);
 }
 
-void ExecutionContext::gepBounds(const MemArray& value) {
-    set(GEP_BOUNDS_ID, value);
+void ExecutionContext::gepBounds(size_t memspace, const MemArrayWithVersion& value) {
+    auto id = tfm::format("%s%d", GEP_BOUNDS_ID, memspace);
+    if(not util::containsKey(memArrays, id)) {
+        initGepBounds(memspace);
+    }
+    set(id, value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExecutionContext::MemArray ExecutionContext::get(const std::string& id) const {
+ExecutionContext::MemArrayWithVersion ExecutionContext::get(const std::string& id) const {
     if (not util::containsKey(memArrays, id)) {
-        auto mem = factory.getNoMemoryArray(id);
+        MemArrayWithVersion mem = factory.getNoMemoryArray(id);
         memArrays.emplace(id, mem);
         initialMemArrays.emplace(id, mem);
     }
     return memArrays.at(id);
 }
 
-void ExecutionContext::set(const std::string& id, const MemArray& value) {
+void ExecutionContext::set(const std::string& id, const MemArrayWithVersion& value) {
     if (util::containsKey(memArrays, id)) {
         memArrays.erase(id);
     }
@@ -90,39 +101,47 @@ ExecutionContext::MemArrayIds ExecutionContext::getMemArrayIds() const {
     return util::viewContainerKeys(memArrays).toHashSet();
 }
 
-ExecutionContext::MemArray ExecutionContext::getCurrentMemoryContents() {
-    return memory();
+ExecutionContext::MemArray ExecutionContext::getCurrentMemoryContents(size_t memspace) {
+    return memory(memspace).getMem();
 }
 
-ExecutionContext::MemArray ExecutionContext::getInitialMemoryContents() {
-    return initialMemArrays.at(MEMORY_ID);
+ExecutionContext::MemArray ExecutionContext::getInitialMemoryContents(size_t memspace) {
+    auto id = tfm::format("%s%d", MEMORY_ID, memspace);
+    for(auto&& k : util::at(initialMemArrays, id)) {
+        return k.getMem();
+    }
+    return get(id).getMem();
 }
 
-ExecutionContext::MemArray ExecutionContext::getCurrentGepBounds() {
-    return gepBounds();
+ExecutionContext::MemArray ExecutionContext::getCurrentGepBounds(size_t memspace) {
+    return gepBounds(memspace).getMem();
+}
+
+ExecutionContext::MemArray ExecutionContext::getCurrentProperties(const std::string& pname) {
+    return get(pname).getMem();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t offsetSize) {
-    return getGlobalPtr(offsetSize, factory.getIntConst(offsetSize));
+ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t memspace, size_t offsetSize) {
+    return getGlobalPtr(memspace, offsetSize, factory.getIntConst(offsetSize));
 }
 
-ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t offsetSize, Integer origSize) {
+ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t memspace, size_t offsetSize, Integer origSize) {
     auto&& ret = factory.getPtrConst(globalPtr);
     globalPtr += offsetSize;
-    writeBound(ret, origSize);
+    writeBound(ret, origSize, memspace);
     return ret;
 }
 
-ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t offsetSize) {
-    return getLocalPtr(offsetSize, factory.getIntConst(offsetSize));
+ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t memspace,size_t offsetSize) {
+    return getLocalPtr(memspace, offsetSize, factory.getIntConst(offsetSize));
 }
 
-ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t offsetSize, Integer origSize) {
+ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t memspace,size_t offsetSize, Integer origSize) {
     auto&& ret = factory.getPtrConst(localPtr);
     localPtr += offsetSize;
-    writeBound(ret, origSize);
+    writeBound(ret, origSize, memspace);
     return ret;
 }
 
@@ -175,7 +194,7 @@ ExecutionContext ExecutionContext::mergeMemory(
             .map([&](auto&& p) { return std::make_pair(p.first, p.second.get(id)); })
             .toVector();
 
-        res.set(id, MemArray::merge(name, defaultContext.get(id), alternatives));
+        res.set(id, MemArrayWithVersion::merge(name, defaultContext.get(id), alternatives));
     }
 
     // Merge context axioms
@@ -200,13 +219,15 @@ ExecutionContext ExecutionContext::mergeMemory(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bitSize) {
+ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bitSize, size_t memspace) {
 
-    if (not CraigColtonMode.get(false)) return gepBounds().select(p, bitSize);
+    auto gepKey = tfm::format("%s%d", GEP_BOUNDS_ID, memspace);
+
+    if (not CraigColtonMode.get(false)) return gepBounds(memspace).select(p, bitSize);
 
     auto&& zero = factory.getIntConst(0, bitSize);
 
-    auto storedBound = [&](auto ptr) -> Integer { return this->readProperty(GEP_BOUNDS_ID, ptr, bitSize); };
+    auto storedBound = [&](auto ptr) -> Integer { return this->readProperty(gepKey, ptr, bitSize); };
 
     auto&& pSize = storedBound(p);
 
@@ -239,11 +260,11 @@ ExecutionContext::Integer ExecutionContext::getBound(const Pointer& p, size_t bi
             );
 }
 
-void ExecutionContext::writeBound(const Pointer& p, const Integer& bound) {
+void ExecutionContext::writeBound(const Pointer& p, const Integer& bound, size_t memspace) {
     if (CraigColtonMode.get(false)) {
-        gepBounds( gepBounds().store(p, Byte::forceCast(bound)) );
+        gepBounds( memspace, gepBounds(memspace).store(p, Byte::forceCast(bound)) );
     } else {
-        contextAxioms.insert((getBound(p, bound.getBitSize()) == bound).asAxiom());
+        contextAxioms.insert((getBound(p, bound.getBitSize(), memspace) == bound).asAxiom());
     }
 }
 

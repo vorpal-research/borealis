@@ -4,16 +4,17 @@
 import Prelude hiding (unlines)
 import qualified Prelude (unlines)
 
-import Language.Haskell.Exts hiding (CPlusPlus)
+import Data.Map(fromList)
 import Data.Typeable
 import Data.Data
-import Data.Map(fromList)
 import Data.Char
 import Data.List hiding (unlines)
 
 import System.Environment
 import System.FilePath
 import System.Directory
+
+import Language.Haskell.Exts hiding (CPlusPlus)
 
 import Text.StringTemplate
 import Text.StringTemplate.GenericStandard

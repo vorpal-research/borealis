@@ -26,6 +26,26 @@ public:
         return term;
     }
 
+    Term::Ptr transformConstTerm(ConstTermPtr term) {
+        collection.insert(term);
+        return term;
+    }
+
+    Term::Ptr transformFreeVarTerm(FreeVarTermPtr term) {
+        collection.insert(term);
+        return term;
+    }
+
+    Term::Ptr transformReturnValueTerm(ReturnValueTermPtr term) {
+        collection.insert(term);
+        return term;
+    }
+
+    Term::Ptr transformReturnPtrTerm(ReturnPtrTermPtr term) {
+        collection.insert(term);
+        return term;
+    }
+
     const std::unordered_set<Term::Ptr, TermHash, TermEquals>& getCollectedTerms() const {
         return collection;
     }

@@ -110,13 +110,16 @@ struct protobuf_traits_impl<type::Pointer> {
 
         auto pointed = protobuf_traits_impl<Type>::toProtobuf(*p.getPointed());
         res->set_allocated_pointed(pointed.release());
+        res->set_memspace(p.getMemspace());
 
         return std::move(res);
     }
 
     static Type::Ptr fromProtobuf(const context_t& fn, const proto_t& p) {
         auto pointed = protobuf_traits<Type>::fromProtobuf(fn, p.pointed());
-        return fn.Type->getPointer(pointed);
+        size_t memspace = 0;
+        if(p.has_memspace()) memspace = p.memspace();
+        return fn.Type->getPointer(pointed, memspace);
     }
 };
 

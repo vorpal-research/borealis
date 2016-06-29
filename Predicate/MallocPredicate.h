@@ -74,6 +74,10 @@ struct SMTImpl<Impl, MallocPredicate> {
         USING_SMT_IMPL(Impl);
 
         ASSERTC(ctx != nullptr);
+        size_t memspace = 0;
+        if(auto&& ptr = llvm::dyn_cast<type::Pointer>(p->getLhv()->getType())) {
+            memspace = ptr->getMemspace();
+        }
 
         Pointer lhvp = SMT<Impl>::doit(p->getLhv(), ef, ctx);
         ASSERT(lhvp, "Malloc produces a non-pointer");
@@ -90,9 +94,9 @@ struct SMTImpl<Impl, MallocPredicate> {
 
         static config::ConfigEntry<bool> NullableMallocs("analysis", "nullable-mallocs");
         if (NullableMallocs.get(true)) {
-            return lhvp == ef.getNullPtr() || lhvp == ctx->getLocalPtr(elems, origSize);
+            return lhvp == ef.getNullPtr() || lhvp == ctx->getLocalPtr(memspace, elems, origSize);
         } else {
-            return lhvp == ctx->getLocalPtr(elems, origSize);
+            return lhvp == ctx->getLocalPtr(memspace, elems, origSize);
         }
     }
 };

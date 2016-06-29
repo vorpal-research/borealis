@@ -8,6 +8,7 @@
 #include <llvm/IR/InstVisitor.h>
 
 #include <vector>
+#include <Term/TermBuilder.h>
 
 #include "Codegen/llvm.h"
 #include "Passes/PredicateAnalysis/DefaultPredicateAnalysis.h"
@@ -25,6 +26,21 @@ using borealis::util::view;
 // Default predicate analysis instruction visitor
 //
 ////////////////////////////////////////////////////////////////////////////////
+
+static Term::Ptr isValidPtr(FactoryNest FN, Term::Ptr t) {
+    auto type = t->getType();
+    if (auto* ptrType = llvm::dyn_cast<type::Pointer>(type)) {
+        auto&& pointed = ptrType->getPointed();
+
+        auto&& bval = TermBuilder{ FN.Term, t };
+        auto&& bound = bval.bound();
+
+        return bval != FN.Term->getNullPtrTerm()->setType(type)
+               && bval != FN.Term->getInvalidPtrTerm()->setType(type)
+               && bound.uge( FN.Term->getOpaqueConstantTerm(TypeUtils::getTypeSizeInElems(pointed), 0)->setType(bound->getType()) );
+    }
+    return nullptr;
+}
 
 class DPAInstVisitor : public llvm::InstVisitor<DPAInstVisitor> {
 
@@ -45,6 +61,13 @@ public:
             ),
             pass->SLT->getLocFor(&I)
         );
+
+        pass->PostPM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            isValidPtr(pass->FN, pass->FN.Term->getValueTerm(rhv)),
+            pass->FN.Term->getTrueTerm(),
+            pass->SLT->getLocFor(&I),
+            PredicateType::ASSUME
+        );
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
@@ -57,6 +80,13 @@ public:
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getValueTerm(rhv),
             pass->SLT->getLocFor(&I)
+        );
+
+        pass->PostPM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            isValidPtr(pass->FN, pass->FN.Term->getValueTerm(lhv)),
+            pass->FN.Term->getTrueTerm(),
+            pass->SLT->getLocFor(&I),
+            PredicateType::ASSUME
         );
     }
 

@@ -152,7 +152,7 @@ struct GraphTraits<borealis::PSGraph*> {
 template<>
 struct DOTGraphTraits<borealis::PSGraph*>: DefaultDOTGraphTraits {
     DOTGraphTraits(){}
-    DOTGraphTraits(bool ignore){}
+    DOTGraphTraits(bool){}
 
     template<typename GraphType>
     static std::string getNodeAttributes(const borealis::PSGraphNode* node,

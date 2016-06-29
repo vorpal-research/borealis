@@ -10,7 +10,7 @@
 namespace borealis {
 
 class CallGraphSlicer:
-    public llvm::ImmutablePass,
+    public llvm::ModulePass,
     public logging::ClassLevelLogging<CallGraphSlicer> {
 
     std::unordered_set<const llvm::Function*> slice;

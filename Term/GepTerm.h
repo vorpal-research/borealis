@@ -62,7 +62,7 @@ public:
 
     static Type::Ptr getAggregateElement(Type::Ptr parent, Term::Ptr idx);
     static Type::Ptr getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& index);
-
+    static Term::Ptr calcShift(const GepTerm*);
 };
 
 template<class Impl>
@@ -76,6 +76,11 @@ struct SMTImpl<Impl, GepTerm> {
         USING_SMT_IMPL(Impl);
 
         size_t gepBitSize = 64;
+
+        size_t memspace = 0;
+        if(auto&& ptr = llvm::dyn_cast<type::Pointer>(t->getBase()->getType())) {
+            memspace = ptr->getMemspace();
+        }
 
         Pointer base = SMT<Impl>::doit(t->getBase(), ef, ctx);
 
@@ -129,7 +134,7 @@ struct SMTImpl<Impl, GepTerm> {
 
         }
 
-        auto diff = ctx->getBound(base, gepBitSize) - shift;
+        auto diff = ctx->getBound(base, gepBitSize, memspace) - shift;
         auto zero = ef.getIntConst(0, gepBitSize);
         auto shifted = Impl::add_no_overflow::doit(base, shift, true);
 
@@ -145,7 +150,7 @@ struct SMTImpl<Impl, GepTerm> {
             );
         }
 
-        ctx->writeBound(shifted, diff);
+        ctx->writeBound(shifted, diff, memspace);
 
         if (t->isTriviallyInbounds()) {
             return shifted;

@@ -336,8 +336,8 @@ TEST(MathSAT, mergeMemory) {
         Bool cond_a = cond == a;
         Bool cond_b = cond == b;
 
-        memory_with_a.writeExprToMemory(ptr, a);
-        memory_with_b.writeExprToMemory(ptr, b);
+        memory_with_a.writeExprToMemory(ptr, a, 0);
+        memory_with_b.writeExprToMemory(ptr, b, 0);
 
         ExecutionContext merged = ExecutionContext::mergeMemory(
                 "merged",
@@ -347,7 +347,7 @@ TEST(MathSAT, mergeMemory) {
                     { cond_b, memory_with_b }
                 }
         );
-        Integer c = merged.readExprFromMemory<Byte>(ptr);
+        Integer c = merged.readExprFromMemory<Byte>(ptr, 0);
 
         auto check_expr_in = [&](Bool e, Bool in)->bool {
 

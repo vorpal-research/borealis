@@ -111,6 +111,12 @@ struct TermHash {
     }
 };
 
+struct TermShallowHash {
+    size_t operator()(Term::Ptr trm) const noexcept {
+        return std::hash<const void*>{}(trm.get());
+    }
+};
+
 struct TermEquals {
     bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
         return lhv->equals(rhv.get());

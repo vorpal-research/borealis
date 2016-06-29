@@ -91,7 +91,7 @@ struct SMTImpl<Impl, PredicateStateChoice> {
         for (auto&& choice : s->getChoices()) {
             ExecutionContext choiceCtx(*ctx);
 
-            auto&& path = choice->filterByTypes({PredicateType::PATH});
+            auto&& path = choice->filterByTypes({PredicateType::PATH})->simplify();
             auto&& z3state = SMT<Impl>::doit(choice, ef, &choiceCtx, pathMode);
 
             res = res || z3state;

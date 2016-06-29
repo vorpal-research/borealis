@@ -13,7 +13,7 @@
 
 namespace borealis {
 
-CheckManager::CheckManager() : llvm::ImmutablePass(ID) {}
+CheckManager::CheckManager() : llvm::ModulePass(ID) {}
 
 void CheckManager::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();

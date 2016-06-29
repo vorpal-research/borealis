@@ -73,6 +73,10 @@ struct SMTImpl<Impl, AllocaPredicate> {
         USING_SMT_IMPL(Impl);
 
         ASSERTC(ctx != nullptr);
+        size_t memspace = 0;
+        if(auto&& ptr = llvm::dyn_cast<type::Pointer>(p->getLhv()->getType())) {
+            memspace = ptr->getMemspace();
+        }
 
         Pointer lhvp = SMT<Impl>::doit(p->getLhv(), ef, ctx);
         ASSERT(lhvp, "Encountered alloca with non-Pointer left side");
@@ -87,7 +91,7 @@ struct SMTImpl<Impl, AllocaPredicate> {
         Integer origSizeInt = SMT<Impl>::doit(p->getOrigNumElems(), ef, ctx);
         ASSERT(origSizeInt, "Encountered alloca with non-integer original size");
 
-        return lhvp == ctx->getLocalPtr(elems, origSizeInt);
+        return lhvp == ctx->getLocalPtr(memspace, elems, origSizeInt);
     }
 };
 #include "Util/unmacros.h"

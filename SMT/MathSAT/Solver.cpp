@@ -81,7 +81,7 @@ Solver::check_result Solver::check(
 }
 
 template<class TermCollection>
-SatResult::model_t recollectModel(
+Model::assignments_t recollectModel(
     ExprFactory& z3ef,
     ExecutionContext& ctx,
     mathsat::Model& implModel,
@@ -95,9 +95,9 @@ SatResult::model_t recollectModel(
 
             auto&& retz3e = implModel.eval(solver_e);
 
-            return std::make_pair(var->getName(), unlogic::undoThat(Dynamic(z3ef.unwrap(), retz3e)));
+            return std::make_pair(var, unlogic::undoThat(Dynamic(z3ef.unwrap(), retz3e)));
         })
-        .template to<SatResult::model_t>();
+        .template to<Model::assignments_t>();
 }
 
 smt::Result Solver::isViolated(
@@ -138,16 +138,14 @@ smt::Result Solver::isViolated(
                << endl;
 
         if (gather_msat_models.get(false) or gather_smt_models.get(false)) {
-            auto&& vars = collectVariables(FactoryNest{}, query, state);
+            FactoryNest FN;
+            auto&& vars = collectVariables(FN, query, state);
 
-            auto&& collectedModel = recollectModel(msatef, ctx, m, vars);
+            auto&& model = std::make_shared<Model>(FN);
+            model->getAssignments() = recollectModel(msatef, ctx, m, vars);
 
             // FIXME: implement memory collection for MathSAT
-            return SatResult{
-                util::copy_or_share(collectedModel),
-                nullptr,
-                nullptr
-            };
+            return SatResult(model);
         }
 
         return SatResult{};
@@ -178,17 +176,15 @@ smt::Result Solver::isPathImpossible(
         auto&& m = model.getUnsafe(); // You shall not fail! (c)
 
         if (gather_msat_models.get(false) or gather_smt_models.get(false)) {
-            auto&& vars = collectVariables(FactoryNest{}, path, state);
+            FactoryNest FN;
+            auto&& vars = collectVariables(FN, path, state);
 
-            auto&& collectedModel = recollectModel(msatef, ctx, m, vars);
+            auto&& model = std::make_shared<Model>(FN);
+            model->getAssignments() = recollectModel(msatef, ctx, m, vars);
 
             // FIXME: implement memory collection for MathSAT
             // XXX: do we need collection for path possibility queries?
-            return SatResult{
-                util::copy_or_share(collectedModel),
-                nullptr,
-                nullptr
-            };
+            return SatResult(model);
         }
 
         return SatResult{};

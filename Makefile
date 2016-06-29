@@ -109,6 +109,8 @@ ADDITIONAL_INCLUDE_DIRS := \
 	$(PWD)/lib/yaml-cpp/include \
 	$(PWD)/lib/cfgparser/include \
 	$(PWD)/lib/backward-cpp \
+	$(PWD)/lib/boolector \
+
 
 
 CXXFLAGS += $(foreach dir,$(ADDITIONAL_INCLUDE_DIRS),-I"$(dir)")
@@ -189,6 +191,18 @@ ARCHIVES += $(DBGLOG_LIB)
 ################################################################################
 
 ANDERSEN_CPP_DIR := $(PWD)/lib/andersen
+
+################################################################################
+# boolector
+################################################################################
+
+BOOLECTOR_BASE_DIR := $(PWD)/lib/boolector
+BOOLECTOR_DIR := $(BOOLECTOR_BASE_DIR)/boolector
+LINGELING_DIR := $(BOOLECTOR_BASE_DIR)/lingeling
+BOOLECTOR_LIB := $(BOOLECTOR_DIR)/libboolector.a
+LINGELING_LIB := $(LINGELING_DIR)/liblgl.a
+ARCHIVES += $(BOOLECTOR_LIB)
+ARCHIVES += $(LINGELING_LIB)
 
 ################################################################################
 # Exes
@@ -346,10 +360,14 @@ clean.cfgparser: clean.dbglog
 	$(MAKE) CXX=$(CXX) -C $(ANDERSEN_CPP_DIR)
 	touch $@
 
-wrapper: $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen
+.boolector:
+	cd $(BOOLECTOR_BASE_DIR) && make
+	touch $@
+
+wrapper: $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen .boolector
 	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(PWD)/wrapper.o $(OBJECTS_WITHOUT_MAIN) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
-ar_wrapper: $(PWD)/ar_wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen
+ar_wrapper: $(PWD)/ar_wrapper.o $(OBJECTS_WITHOUT_MAIN) .protobuf .yaml-cpp .cfgparser .andersen .boolector
 	$(CXX) -fuse-ld=gold -rdynamic -g -o $@ $(PWD)/ar_wrapper.o $(OBJECTS_WITHOUT_MAIN) $(LLVMLDFLAGS) $(LIBS) $(ARCHIVES)
 
 .google-test:

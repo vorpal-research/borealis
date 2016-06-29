@@ -7,12 +7,13 @@
     Bool |
     Float |
     UnknownType |
-    Pointer { pointed :: Type } |
+    Pointer { pointed :: Type, memspace :: Size } |
     Array { element :: Type, size :: Maybe Size } |
     Record { name :: String, body :: RecordBodyRef } |
     TypeError { message :: String } |
     Function { retty :: Type, args :: [Type] }
       deriving (Show, Eq, Data, Typeable)
+
  * 
  * stored in Type/Type.datatype
  * using the template file Type/base.cpp.hst

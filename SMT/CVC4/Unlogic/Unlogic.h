@@ -15,7 +15,7 @@ namespace borealis {
 namespace cvc4_ {
 namespace unlogic {
 
-Term::Ptr undoThat(borealis::CVC4::Dynamic dyn);
+Term::Ptr undoThat(const FactoryNest& FN, Term::Ptr witness, borealis::CVC4::Dynamic dyn);
 
 } // namespace unlogic
 } // namespace z3_

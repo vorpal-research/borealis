@@ -189,13 +189,15 @@ Solver::check_result Solver::check(
 }
 
 template<class TermCollection>
-SatResult::model_t recollectModel(
+Model::assignments_t recollectModel(
     ExprFactory& z3ef,
     ExecutionContext& ctx,
     z3::model& implModel,
     const TermCollection& vars) {
     TRACE_FUNC
     USING_SMT_LOGIC(Z3)
+
+    FactoryNest FN;
 
     return util::viewContainer(vars)
         .map([&](auto&& var) {
@@ -206,13 +208,14 @@ SatResult::model_t recollectModel(
 
             auto&& retz3e = implModel.eval(z3e, true);
 
-            return std::make_pair(var->getName(), unlogic::undoThat(Dynamic(z3ef.unwrap(), retz3e)));
+            return std::make_pair(var, unlogic::undoThat(FN, var, Dynamic(z3ef.unwrap(), retz3e)));
         })
-        .template to<SatResult::model_t>();
+        .template to<Model::assignments_t>();
 }
 
 template<class TermCollection>
-std::pair<SatResult::memory_shape_t, SatResult::memory_shape_t> recollectMemory(
+void recollectMemory(
+    Model& m,
     ExprFactory& z3ef,
     ExecutionContext& ctx,
     z3::model& implModel,
@@ -220,33 +223,50 @@ std::pair<SatResult::memory_shape_t, SatResult::memory_shape_t> recollectMemory(
     TRACE_FUNC
     USING_SMT_LOGIC(Z3)
 
-    SatResult::memory_shape_t retStart;
-    SatResult::memory_shape_t retFinal;
+    if (ptrs.empty()) return;
 
-    if (ptrs.empty()) return { retStart, retFinal };
-
-    auto&& startMem = ctx.getInitialMemoryContents();
-    auto&& finalMem = ctx.getCurrentMemoryContents();
+    auto FN = m.getFactoryNest();
+    auto TB = TermBuilder(FN.Term, nullptr);
 
     for (auto&& ptr: ptrs) {
+        size_t memspace = 0;
+        if(auto&& pt = llvm::dyn_cast<type::Pointer>(ptr->getType())) {
+            memspace = pt->getMemspace();
+        }
+        auto&& startMem = ctx.getInitialMemoryContents(memspace);
+        auto&& finalMem = ctx.getCurrentMemoryContents(memspace);
+
+        auto&& startBounds = ctx.getCurrentGepBounds(memspace);
+        auto&& endBounds = ctx.getCurrentGepBounds(memspace);
+
         Z3::Pointer eptr = SMT<Z3>::doit(ptr, z3ef, &ctx);
 
         auto&& startV = startMem.select(eptr, z3ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
         auto&& finalV = finalMem.select(eptr, z3ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
 
+        auto&& startBound = startBounds[eptr];
+        auto&& finalBound = endBounds[eptr];
+
         auto&& modelPtr = implModel.eval(eptr.getExpr(), true);
         auto&& modelStartV = implModel.eval(startV.getExpr(), true);
         auto&& modelFinalV = implModel.eval(finalV.getExpr(), true);
+        auto&& modelStartBound = implModel.eval(startBound.getExpr(), true);
+        auto&& modelFinalBound = implModel.eval(finalBound.getExpr(), true);
 
-        auto&& undonePtr = unlogic::undoThat(Dynamic(z3ef.unwrap(), modelPtr));
-        ASSERTC(llvm::isa<OpaqueIntConstantTerm>(undonePtr));
-        auto&& actualPtrValue = llvm::cast<OpaqueIntConstantTerm>(undonePtr)->getValue();
+        auto&& undonePtr = unlogic::undoThat(FN, ptr, Dynamic(z3ef.unwrap(), modelPtr));
 
-        retStart[actualPtrValue] = unlogic::undoThat(Dynamic(z3ef.unwrap(), modelStartV));
-        retFinal[actualPtrValue] = unlogic::undoThat(Dynamic(z3ef.unwrap(), modelFinalV));
+        m.getMemories()[memspace].getInitialMemoryShape()[undonePtr] =
+            unlogic::undoThat(FN, *TB(undonePtr), Dynamic(z3ef.unwrap(), modelStartV));
+        m.getMemories()[memspace].getFinalMemoryShape()[undonePtr] =
+            unlogic::undoThat(FN, *TB(undonePtr), Dynamic(z3ef.unwrap(), modelFinalV));
+
+        m.getBounds()[memspace].getInitialMemoryShape()[undonePtr] =
+            unlogic::undoThat(FN, TB(undonePtr).bound(), Dynamic(z3ef.unwrap(), modelStartBound));
+        m.getBounds()[memspace].getFinalMemoryShape()[undonePtr] =
+            unlogic::undoThat(FN, TB(undonePtr).bound(), Dynamic(z3ef.unwrap(), modelFinalBound));
     }
 
-    return { std::move(retStart), std::move(retFinal) };
+    return;
 }
 
 Result Solver::isViolated(
@@ -339,17 +359,15 @@ Result Solver::isViolated(
                << endl;
 
         if (gather_z3_models.get(false) or gather_smt_models.get(false)) {
-            auto&& vars = collectVariables(FactoryNest{}, query, state);
-            auto&& pointers = collectPointers(FactoryNest{}, query, state);
+            FactoryNest FN;
+            auto&& vars = collectVariables(FN, query, state);
+            auto&& pointers = collectPointers(FN, query, state);
 
-            auto&& collectedModel = recollectModel(z3ef, ctx, m, vars);
-            auto&& collectedMems = recollectMemory(z3ef, ctx, m, pointers);
+            auto&& model = std::make_shared<Model>(FN);
 
-            return SatResult{
-                util::copy_or_share(collectedModel),
-                util::copy_or_share(collectedMems.first),
-                util::copy_or_share(collectedMems.second)
-            };
+            model->getAssignments() = recollectModel(z3ef, ctx, m, vars);
+            recollectMemory(*model, z3ef, ctx, m, pointers);
+            return SatResult(model);
         }
 
         return SatResult{};
@@ -381,17 +399,15 @@ Result Solver::isPathImpossible(
 
         // XXX: Do we need model collection for path possibility queries???
         if (gather_z3_models.get(false) or gather_smt_models.get(false)) {
-            auto&& vars = collectVariables(FactoryNest{}, path, state);
-            auto&& pointers = collectPointers(FactoryNest{}, path, state);
+            FactoryNest FN;
+            auto&& vars = collectVariables(FN, path, state);
+            auto&& pointers = collectPointers(FN, path, state);
 
-            auto&& collectedModel = recollectModel(z3ef, ctx, m, vars);
-            auto&& collectedMems = recollectMemory(z3ef, ctx, m, pointers);
+            auto&& model = std::make_shared<Model>(FN);
 
-            return SatResult{
-                util::copy_or_share(collectedModel),
-                util::copy_or_share(collectedMems.first),
-                util::copy_or_share(collectedMems.second)
-            };
+            model->getAssignments() = recollectModel(z3ef, ctx, m, vars);
+            recollectMemory(*model, z3ef, ctx, m, pointers);
+            return SatResult(model);
         }
 
         return SatResult{};
@@ -436,7 +452,7 @@ PredicateState::Ptr model2state(const z3::model& model,
         auto&& val = model.eval(zipped.second, true);
         PSB += FN.Predicate->getEqualityPredicate(
             zipped.first,
-            z3_::unlogic::undoThat(Dynamic(val.ctx(), val))
+            z3_::unlogic::undoThat(FN, zipped.first, Dynamic(val.ctx(), val))
         );
     }
     return PSB();

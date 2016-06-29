@@ -70,9 +70,14 @@ struct SMTImpl<Impl, GlobalsPredicate> {
 
         auto&& res = ef.getTrue();
         for (auto&& g : p->getGlobals()) {
+            size_t memspace = 0;
+            if(auto&& ptr = llvm::dyn_cast<type::Pointer>(g->getType())) {
+                memspace = ptr->getMemspace();
+            }
+
             Pointer gp = SMT<Impl>::doit(g, ef, ctx);
             ASSERT(gp, "Encountered non-Pointer global value: " + g->getName());
-            res = res && gp == ctx->getGlobalPtr();
+            res = res && gp == ctx->getGlobalPtr(memspace);
         }
         return res;
     }

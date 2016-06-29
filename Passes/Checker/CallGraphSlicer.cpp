@@ -17,16 +17,18 @@ namespace borealis {
 static config::MultiConfigEntry roots{"analysis", "root-function"};
 
 bool CallGraphSlicer::runOnModule(llvm::Module& M) {
-
     if(roots.size() == 0) return false;
 
     std::unordered_set<const llvm::Function*> keep;
+    std::queue<const llvm::Function*> que;
+
     for(auto&& name: roots) {
-        if(auto&& F = M.getFunction(name)) keep.insert(F);
+        if(auto&& F = M.getFunction(name)) que.push(F);
     }
 
-    std::queue<const llvm::Function*> que;
-    for(auto&& F : keep) que.push(F);
+    for(auto&& F : M) {
+        if(F.hasAddressTaken()) que.push(&F);
+    }
 
     while(!que.empty()) {
         auto F = que.front();
@@ -34,16 +36,17 @@ bool CallGraphSlicer::runOnModule(llvm::Module& M) {
 
         if(F->isDeclaration()) continue;
         if(keep.count(F)) continue;
+        keep.insert(F);
 
         auto called =
             util::viewContainer(*F)
             .flatten()
             .filter(LAM(it, llvm::is_one_of<llvm::CallInst, llvm::InvokeInst>(it)))
             .map(LAM(i, llvm::ImmutableCallSite(&i).getCalledFunction()))
-            .filter();
+            .filter()
+            .toHashSet();
 
         for(auto&& F: called) {
-            keep.insert(F);
             que.push(F);
         }
     }
@@ -58,7 +61,7 @@ void CallGraphSlicer::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 }
 
-CallGraphSlicer::CallGraphSlicer(): llvm::ImmutablePass(ID) {}
+CallGraphSlicer::CallGraphSlicer(): llvm::ModulePass(ID) {}
 CallGraphSlicer::~CallGraphSlicer() {}
 
 char CallGraphSlicer::ID;

@@ -74,10 +74,15 @@ struct SMTImpl<Impl, LoadTerm> {
 
         ASSERTC(ctx != nullptr);
 
+        size_t memspace = 0;
+        if(auto&& ptr = llvm::dyn_cast<type::Pointer>(t->getRhv()->getType())) {
+            memspace = ptr->getMemspace();
+        }
+
         Pointer rp = SMT<Impl>::doit(t->getRhv(), ef, ctx);
         ASSERT(rp, "Load with non-pointer right side");
 
-        return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getType()));
+        return ctx->readExprFromMemory(rp, ExprFactory::sizeForType(t->getType()), memspace);
     }
 //
 //    static Dynamic<Impl> doit(

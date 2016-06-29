@@ -6,6 +6,8 @@
 #include "Reanimator/MemoryObject.h"
 #include "Reanimator/Reanimator.h"
 
+#include "Term/TermUtils.hpp"
+
 namespace borealis {
 
 class RaisingTypeVisitor {
@@ -55,6 +57,9 @@ public:
     RetTy visitPointer(const type::Pointer& p, unsigned long long, util::option<int64_t> value) {
         auto&& pType = p.getPointed();
         auto&& pSize = TypeUtils::getTypeSizeInElems(pType);
+        auto&& model = r.getResult().getModel();
+        auto FN = r.getResult().getModel().getFactoryNest();
+        TermBuilder TB(FN.Term, nullptr);
 
         if (value) {
             auto&& base = value.getUnsafe();
@@ -66,7 +71,15 @@ public:
             };
 
             for (auto&& shift : r.getArrayBounds(base)) {
-                auto&& nested = visit(pType, base + shift * pSize, r.getResult().derefValueOf(base + shift * pSize));
+                auto&& offset = base + shift * pSize;
+                auto&& value = model.query(*TB(offset).cast(p.shared_from_this()));
+
+                auto&& nested =
+                    visit(
+                        pType,
+                        offset,
+                        TermUtils::getIntegerValue(value)
+                    );
 
                 baseMemoryObject.add(shift, nested);
             }
@@ -83,6 +96,9 @@ public:
     }
 
     RetTy visitRecord(const type::Record& rec, unsigned long long addr, util::option<int64_t>) {
+        auto FN = r.getResult().getModel().getFactoryNest();
+        TermBuilder TB(FN.Term, nullptr);
+
         auto&& rSize = TypeUtils::getTypeSizeInElems(rec.shared_from_this());
 
         auto&& baseMemoryObject = MemoryObject{
@@ -93,8 +109,11 @@ public:
         for (auto&& indexedField : util::range(0UL, rec.getBody()->get().getNumFields())
                                    ^ util::viewContainer(rec.getBody()->get())) {
             auto&& offset = TypeUtils::getStructOffsetInElems(rec.shared_from_this(), indexedField.first);
-            auto&& nested = visit(indexedField.second.getType(), addr + offset,
-                                  r.getResult().derefValueOf(addr + offset));
+            auto&& sf = addr + offset;
+            auto ptrTerm = TB(sf).cast(FN.Type->getPointer(indexedField.second.getType(), 0/*FIXME: ???*/));
+            auto val = r.getResult().getModel().query(*ptrTerm);
+
+            auto&& nested = visit(indexedField.second.getType(), sf, TermUtils::getIntegerValue(val));
 
             baseMemoryObject.add(indexedField.first, nested);
         }
@@ -103,6 +122,9 @@ public:
     }
 
     RetTy visitArray(const type::Array& arr, unsigned long long addr, util::option<int64_t>) {
+        auto FN = r.getResult().getModel().getFactoryNest();
+        TermBuilder TB(FN.Term, nullptr);
+
         auto&& elemType = arr.getElement();
         auto&& elemSize = TypeUtils::getTypeSizeInElems(elemType);
 
@@ -115,7 +137,10 @@ public:
             };
 
             for (auto&& i = 0U; i < arraySize; ++i) {
-                auto&& nested = visit(elemType, addr + i * elemSize, r.getResult().derefValueOf(addr + i * elemSize));
+                auto off = addr + i * elemSize;
+                auto ptrTerm = TB(off).cast(FN.Type->getPointer(elemType, 0 /* FIXME: ??? */));
+                auto valueTerm = r.getResult().getModel().query(*ptrTerm);
+                auto&& nested = visit(elemType, off, TermUtils::getIntegerValue(valueTerm));
 
                 baseMemoryObject.add(i, nested);
             }
@@ -165,10 +190,10 @@ borealis::logging::logstream& operator<<(
     borealis::logging::logstream& s,
     const ReanimatorView& rv
 ) {
-    if (auto&& value = rv.r.getResult().valueOf(rv.term->getName())) {
+    if (auto&& value = rv.r.getResult().getModel().query(rv.term)) {
         s << "Raising (" << *rv.term->getType() << ") " << rv.term << " from the dead..." << endl;
 
-        s << RaisingTypeVisitor(rv.r).visit(rv.term->getType(), 0xDEADBEEF, value) << endl;
+        s << RaisingTypeVisitor(rv.r).visit(rv.term->getType(), 0xDEADBEEF, TermUtils::getIntegerValue(value)) << endl;
 
     } else {
         s << "Cannot raise " << rv.term << " from the dead!" << endl;
@@ -211,9 +236,10 @@ void Reanimator::processArrayBounds(const ArrayBoundsCollector::ArrayBounds& arr
         auto&& pType = llvm::dyn_cast<type::Pointer>(e.first->getType());
         auto&& pElemTypeSize = (long long) TypeUtils::getTypeSizeInElems(pType->getPointed());
 
-        for (auto&& base : result.valueOf(e.first->getName())) {
+        for (auto&& base : TermUtils::getIntegerValue(result.getModel().query(e.first))) {
             for (auto&& bound : e.second) {
-                for (auto&& bound_ : result.valueOf(bound->getName())) {
+                auto&& boundTerm = result.getModel().query(bound);
+                for (auto&& bound_ : TermUtils::getIntegerValue(boundTerm)) {
                     if (null_ptr == bound_) continue;
                     if (invalid_ptr == bound_) continue;
 

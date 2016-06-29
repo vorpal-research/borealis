@@ -22,15 +22,15 @@ class TypeFactory {
     mutable Type::Ptr theFloat;
     mutable Type::Ptr theUnknown;
 
-    mutable std::map<std::pair<size_t, llvm::Signedness>, Type::Ptr> integers;
-    mutable std::map<Type::Ptr,                           Type::Ptr> pointers;
-    mutable std::map<std::pair<Type::Ptr, size_t>,        Type::Ptr> arrays;
-    mutable std::map<std::string,                         Type::Ptr> errors;
+    mutable std::unordered_map<std::pair<size_t, llvm::Signedness>, Type::Ptr> integers;
+    mutable std::unordered_map<std::pair<Type::Ptr, size_t>,        Type::Ptr> pointers;
+    mutable std::unordered_map<std::pair<Type::Ptr, size_t>,        Type::Ptr> arrays;
+    mutable std::unordered_map<std::string,                         Type::Ptr> errors;
 
-    mutable std::map<std::string, Type::Ptr> records;
+    mutable std::unordered_map<std::string, Type::Ptr> records;
     mutable type::RecordRegistry::StrongPtr  recordBodies;
 
-    mutable std::map<std::vector<Type::Ptr>, Type::Ptr> functions;
+    mutable std::unordered_map<std::vector<Type::Ptr>, Type::Ptr> functions;
 
 public:
 
@@ -44,7 +44,7 @@ public:
     Type::Ptr getInteger(size_t bitsize = defaultTypeSize, llvm::Signedness sign = llvm::Signedness::Unknown) const;
     Type::Ptr getFloat() const;
     Type::Ptr getUnknownType() const;
-    Type::Ptr getPointer(Type::Ptr to) const;
+    Type::Ptr getPointer(Type::Ptr to, size_t memspace = 0) const;
     Type::Ptr getArray(Type::Ptr elem, size_t size = 0U) const;
     Type::Ptr getRecord(const std::string& name, const llvm::StructType* st = nullptr, const llvm::DataLayout* DL = nullptr) const;
     Type::Ptr getTypeError(const std::string& message) const;

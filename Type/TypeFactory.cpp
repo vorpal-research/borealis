@@ -46,10 +46,12 @@ Type::Ptr TypeFactory::getUnknownType() const {
     else return theUnknown;
 }
 
-Type::Ptr TypeFactory::getPointer(Type::Ptr to) const {
+Type::Ptr TypeFactory::getPointer(Type::Ptr to, size_t memspace) const {
     if (TypeUtils::isInvalid(to)) return to;
-    if (auto existing = util::at(pointers, to)) return existing.getUnsafe();
-    else return pointers[to] = Type::Ptr(new type::Pointer(to));
+    auto key = std::make_pair(to, memspace);
+
+    if (auto existing = util::at(pointers, key)) return existing.getUnsafe();
+    else return pointers[key] = Type::Ptr(new type::Pointer(to, memspace));
 }
 
 Type::Ptr TypeFactory::getArray(Type::Ptr elem, size_t size) const {

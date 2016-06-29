@@ -18,7 +18,7 @@
 namespace borealis {
 
 class CheckManager :
-        public llvm::ImmutablePass,
+        public llvm::ModulePass,
         public borealis::logging::ClassLevelLogging<CheckManager> {
 
 public:
@@ -30,7 +30,11 @@ public:
 #include "Util/unmacros.h"
 
     CheckManager();
-    virtual void initializePass() override;
+    void initializePass();
+    virtual bool runOnModule(llvm::Module&) override {
+        initializePass();
+        return false;
+    }
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~CheckManager();
 

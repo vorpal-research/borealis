@@ -74,10 +74,14 @@ struct SMTImpl<Impl, SeqDataZeroPredicate> {
 
         ASSERTC(ctx != nullptr);
 
+        size_t memspace = 0;
+        if(auto&& ptr = llvm::dyn_cast<type::Pointer>(p->getBase()->getType())) {
+            memspace = ptr->getMemspace();
+        }
         Pointer lp = SMT<Impl>::doit(p->getBase(), ef, ctx);
         ASSERT(lp, "SeqData with non-pointer base");
 
-        auto&& base = ctx->getGlobalPtr(p->getSize());
+        auto&& base = ctx->getGlobalPtr(memspace, p->getSize());
         auto&& res = lp == base;
         auto&& zero = ef.getIntConst(0);
 
@@ -85,10 +89,10 @@ struct SMTImpl<Impl, SeqDataZeroPredicate> {
         static config::ConfigEntry<bool> UseRangedStore("analysis", "use-range-stores");
         if (not SkipStaticInit.get(true)) {
             if (UseRangedStore.get(false)) {
-                ctx->writeExprRangeToMemory(base, p->getSize(), zero);
+                ctx->writeExprRangeToMemory(base, p->getSize(), zero, memspace);
             } else {
                 for (auto i = 0U; i < p->getSize(); ++i) {
-                    ctx->writeExprToMemory(base + i, zero);
+                    ctx->writeExprToMemory(base + i, zero, memspace);
                 }
             }
         }

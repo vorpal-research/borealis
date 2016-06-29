@@ -70,7 +70,7 @@ public:
             llvm::Function* func = DM.getAdditionalInfo(defect).atFunc;
             auto st = getAnalysis<SlotTrackerPass>().getSlotTracker(func);
 
-            auto judicator = std::make_shared<SmtDrivenArbiter>(st, model.getUnsafe());
+            auto judicator = std::make_shared<SmtDrivenArbiter>(M.getDataLayout(), st, model.getUnsafe());
 
             ExecutionEngine tassadar{&M,
                 &getAnalysis<llvm::DataLayoutPass>().getDataLayout(),

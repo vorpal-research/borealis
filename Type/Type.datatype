@@ -3,7 +3,7 @@ data Type =
     Bool |
     Float |
     UnknownType |
-    Pointer { pointed :: Type } |
+    Pointer { pointed :: Type, memspace :: Size } |
     Array { element :: Type, size :: Maybe Size } |
     Record { name :: String, body :: RecordBodyRef } |
     TypeError { message :: String } |

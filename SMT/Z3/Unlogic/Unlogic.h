@@ -15,7 +15,7 @@ namespace borealis {
 namespace z3_ {
 namespace unlogic {
 
-Term::Ptr undoThat(borealis::Z3::Dynamic dyn);
+Term::Ptr undoThat(const FactoryNest& FN, Term::Ptr witness, borealis::Z3::Dynamic dyn);
 
 } // namespace unlogic
 } // namespace z3_

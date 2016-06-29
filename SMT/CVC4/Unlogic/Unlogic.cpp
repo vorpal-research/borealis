@@ -16,40 +16,38 @@ namespace unlogic {
 
 USING_SMT_LOGIC(CVC4);
 
-Term::Ptr undoBv(const ::CVC4::Expr& bv, const FactoryNest& FN) {
+Term::Ptr undoBv(Term::Ptr witness, const ::CVC4::Expr& bv, const FactoryNest& FN) {
     ASSERTC(bv.isConst());
     auto cnst = bv.template getConst<::CVC4::BitVector>();
     auto&& iv = cnst.getValue();
     auto size = cnst.getSize();
 
-    return FN.Term->getIntTerm(iv.toString(10), size, llvm::Signedness::Unknown);
+    return FN.Term->getIntTerm(iv.toString(10), size, llvm::Signedness::Unknown)->setType(witness->getType());
 }
 
-Term::Ptr undoBool(const ::CVC4::Expr& b, const FactoryNest& FN) {
+Term::Ptr undoBool(Term::Ptr, const ::CVC4::Expr& b, const FactoryNest& FN) {
     ASSERTC(b.isConst());
     return FN.Term->getOpaqueConstantTerm(b.template getConst<bool>());
 }
 
-Term::Ptr undoReal(const ::CVC4::Expr& bv, const FactoryNest& FN) {
+Term::Ptr undoReal(Term::Ptr witness, const ::CVC4::Expr& bv, const FactoryNest& FN) {
     ASSERTC(bv.isConst());
     ::CVC4::Rational cnst = bv.template getConst<::CVC4::Rational>();
 
-    return FN.Term->getOpaqueConstantTerm(cnst.getDouble());
+    return FN.Term->getOpaqueConstantTerm(cnst.getDouble())->setType(witness->getType());
 
 }
 
-Term::Ptr undoThat(CVC4::Dynamic dyn) {
-    FactoryNest FN;
-
+Term::Ptr undoThat(const FactoryNest& FN, Term::Ptr witness, CVC4::Dynamic dyn) {
     ::CVC4::Expr expr = dyn.getExpr();
     auto type = expr.getType(false);
 
     if (type.isBitVector()) {
-        return undoBv(expr, FN);
+        return undoBv(witness, expr, FN);
     } else if (type.isReal()) {
-        return undoReal(expr, FN);
+        return undoReal(witness, expr, FN);
     } else if (type.isBoolean()) {
-        return undoBool(expr, FN);
+        return undoBool(witness, expr, FN);
     }
 
     BYE_BYE(Term::Ptr, "Unsupported numeral type");

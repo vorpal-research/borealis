@@ -31,6 +31,7 @@ public:
     Term::Ptr transformBinaryTerm(BinaryTermPtr);
     Term::Ptr transformUnaryTerm(UnaryTermPtr);
     Term::Ptr transformCmpTerm(CmpTermPtr);
+    Term::Ptr transformTernaryTerm(TernaryTermPtr);
 
 private:
 

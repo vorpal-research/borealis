@@ -4,7 +4,15 @@
 
 #include "Executor/SmtDrivenArbiter.h"
 
+#include "Term/TermUtils.hpp"
+
 #include "Util/macros.h"
+
+static llvm::GenericValue integerRepToGeneric(const std::string& rep, llvm::Type* tp) {
+    llvm::GenericValue ret;
+    ret.IntVal = llvm::APInt(tp->getIntegerBitWidth(), rep, 10);
+    return ret;
+}
 
 static llvm::GenericValue adjustIntegerToType(long long i, llvm::Type* tp) {
     llvm::GenericValue ret;
@@ -24,13 +32,16 @@ static llvm::GenericValue adjustIntegerToType(long long i, llvm::Type* tp) {
 
 llvm::GenericValue borealis::SmtDrivenArbiter::map(llvm::Value* val) {
 
-    auto name = ST->getLocalName(val);
+    auto term = FN.Term->getValueTerm(val);
+    auto qres = model.getModel().query(term);
 
-    if(auto&& v = model.valueOf(name)) {
-        auto numeric = v.getUnsafe();
-
-        return adjustIntegerToType(numeric, val->getType());
-    } else {
+    if(auto&& v = TermUtils::getBoolValue(qres)) {
+        return adjustIntegerToType(v.getUnsafe(), val->getType());
+    } else if(auto&& v = TermUtils::getIntegerValue(qres)) {
+        return adjustIntegerToType(v.getUnsafe(), val->getType());
+    } else if(auto&& v = TermUtils::getIntegerValueRep(qres)) {
+        return integerRepToGeneric(v.getUnsafe(), val->getType());
+    }else {
         return adjustIntegerToType(-0xdeadbeef, val->getType());
     }
 }

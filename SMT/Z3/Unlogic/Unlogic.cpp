@@ -16,14 +16,14 @@ namespace unlogic {
 
 USING_SMT_LOGIC(Z3);
 
-Term::Ptr undoBv(const z3::expr& expr, const FactoryNest& FN) {
+Term::Ptr undoBv(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN) {
     auto res = Z3_get_numeral_string(expr.ctx(), expr);
     auto size = expr.get_sort().bv_size();
 
-    return FN.Term->getIntTerm(res, expr.get_sort().bv_size(), llvm::Signedness::Unknown);
+    return FN.Term->getIntTerm(res, expr.get_sort().bv_size(), llvm::Signedness::Unknown)->setType(witness->getType());
 }
 
-Term::Ptr undoBool(const z3::expr& expr, const FactoryNest& FN) {
+Term::Ptr undoBool(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN) {
     auto res = Z3_get_bool_value(expr.ctx(), expr);
     if (res == Z3_L_TRUE) {
         return FN.Term->getTrueTerm();
@@ -35,31 +35,29 @@ Term::Ptr undoBool(const z3::expr& expr, const FactoryNest& FN) {
     }
 }
 
-Term::Ptr undoReal(const z3::expr& expr, const FactoryNest& FN) {
+Term::Ptr undoReal(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN) {
     long long n, d;
     auto res = Z3_get_numeral_rational_int64(expr.ctx(), expr, &n, &d);
     if (res != 0) {
         double dn = n;
         double dd = d;
-        return FN.Term->getOpaqueConstantTerm(dn / dd);
+        return FN.Term->getOpaqueConstantTerm(dn / dd)->setType(witness->getType());
     } else {
         // FIXME: what to do when we can't get the rational from Z3?
-        return FN.Term->getOpaqueConstantTerm(std::numeric_limits<double>::max());
+        return FN.Term->getOpaqueConstantTerm(std::numeric_limits<double>::max())->setType(witness->getType());
     }
 }
 
-Term::Ptr undoThat(Z3::Dynamic dyn) {
-    FactoryNest FN;
-
+Term::Ptr undoThat(const FactoryNest& FN, Term::Ptr witness, Z3::Dynamic dyn) {
     auto&& expr = dyn.getExpr();
     ASSERT(expr.is_numeral() || expr.is_bool(), "Trying to unlogic non-numeral or bool");
 
     if (expr.is_bv()) {
-        return undoBv(expr, FN);
+        return undoBv(witness, expr, FN);
     } else if (expr.is_real()) {
-        return undoReal(expr, FN);
+        return undoReal(witness, expr, FN);
     } else if (expr.is_bool()) {
-        return undoBool(expr, FN);
+        return undoBool(witness, expr, FN);
     }
 
     BYE_BYE(Term::Ptr, "Unsupported numeral type");

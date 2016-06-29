@@ -12,7 +12,9 @@
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
+#include "SMT/Boolector/Solver.h"
 #include "SMT/CVC4/Solver.h"
+#include "State/Transformer/MemorySpacer.h"
 #include "State/Transformer/StateSlicer.h"
 #include "State/Transformer/TermSizeCalculator.h"
 
@@ -53,6 +55,14 @@ private:
         Z3::Solver s(ef, memoryBounds.first, memoryBounds.second);
         return s.isViolated(query, state);
     }
+    static smt::Result checkViolationBoolector(
+        std::pair<size_t, size_t> memoryBounds,
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
+        Boolector::ExprFactory ef;
+        Boolector::Solver s(ef, memoryBounds.first, memoryBounds.second);
+        return s.isViolated(query, state);
+    }
     static smt::Result checkViolationCVC4(
         std::pair<size_t, size_t> memoryBounds,
         PredicateState::Ptr query,
@@ -78,6 +88,7 @@ private:
         if(engineName == "mathsat") return checkViolationMathSAT(memoryBounds, query, state);
         if(engineName == "z3") return checkViolationZ3(memoryBounds, query, state);
         if(engineName == "cvc4") return checkViolationCVC4(memoryBounds, query, state);
+        if(engineName == "boolector") return checkViolationBoolector(memoryBounds, query, state);
         UNREACHABLE(tfm::format("Unknown solver specified: %s", engineName));
     }
 public:
@@ -87,6 +98,8 @@ public:
     }
     bool check(PredicateState::Ptr query, PredicateState::Ptr state, const DefectInfo& di) {
         TRACE_FUNC;
+
+        auto&& FN = pass->FN;
 
         static config::BoolConfigEntry logQueries("output", "smt-query-logging");
         bool noQueryLogging = not logQueries.get(false);
@@ -104,7 +117,7 @@ public:
 
         dbgs() << "Slicing started" << endl;
         static config::BoolConfigEntry useLocalAA("analysis", "use-local-aa");
-        auto&& sliced = StateSlicer(pass->FN, query, useLocalAA.get(false)? nullptr : pass->AA).transform(state);
+        auto&& sliced = StateSlicer(FN, query, useLocalAA.get(false)? nullptr : pass->AA).transform(state);
         dbgs() << "Slicing finished" << endl;
 
         dbgs() << "State size after slicing:" << TermSizeCalculator::measure(sliced) << endl;
@@ -115,11 +128,19 @@ public:
             if(!noQueryLogging) dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
         }
 
+        dbgs() << "Memspacing started" << endl;
+        static config::BoolConfigEntry memSpacing("analysis", "memory-spaces");
+
+        MemorySpacer msp(FN, FN.State->Chain(sliced, query));
+        auto&& restate = msp.transform(sliced);
+        auto&& requery = msp.transform(query);
+        dbgs() << "Memspacing finished" << endl;
+
         if(!noQueryLogging) dbgs() << "  State: " << sliced << endl;
 
         auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
-        auto solverResult = checkViolation(fMemInfo, query, state);
+        auto solverResult = checkViolation(fMemInfo, requery, restate);
         if (auto satRes = solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
             pass->DM->getAdditionalInfo(di).satModel = util::just(*satRes);

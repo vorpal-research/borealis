@@ -67,12 +67,14 @@ SlotTracker::SlotTracker(const Function *F)
   mNext(0), fNext(0), mdnNext(0) {
 }
 
-inline void SlotTracker::initialize() {
+inline void SlotTracker::initializeModule() {
     if (TheModule) {
         processModule();
         TheModule = 0; ///< Prevent re-processing next time we're called.
     }
+}
 
+inline void SlotTracker::initializeFunction() {
     if (TheFunction && !FunctionProcessed)
         processFunction();
 }
@@ -171,7 +173,7 @@ void SlotTracker::purgeFunction() {
 /// getGlobalSlot - Get the slot number of a global value.
 int SlotTracker::getGlobalSlot(const GlobalValue *V) {
     // Check for uninitialized state and do lazy initialization.
-    initialize();
+    initializeModule();
 
     // Find the value in the module map
     ValueMap::iterator MI = mMap.find(V);
@@ -181,7 +183,7 @@ int SlotTracker::getGlobalSlot(const GlobalValue *V) {
 /// getMetadataSlot - Get the slot number of a MDNode.
 int SlotTracker::getMetadataSlot(const MDNode *N) {
     // Check for uninitialized state and do lazy initialization.
-    initialize();
+    initializeModule();
 
     // Find the MDNode in the module map
     mdn_iterator MI = mdnMap.find(N);
@@ -194,7 +196,7 @@ int SlotTracker::getLocalSlot(const Value *V) {
     assert(!isa<Constant>(V) && "Can't get a constant or global slot with this!");
 
     // Check for uninitialized state and do lazy initialization.
-    initialize();
+    initializeFunction();
 
     ValueMap::iterator FI = fMap.find(V);
     return FI == fMap.end() ? -1 : (int)FI->second;
@@ -277,7 +279,7 @@ std::string SlotTracker::getLocalName(const Value *V) {
 
 const llvm::Value* SlotTracker::getLocalValue(const std::string& name) {
     if ('%' == name[0]) {
-        initialize();
+        initializeFunction();
         auto&& slot = std::stoul(name.substr(1));
         return fSap.lookup(slot);
     } else {

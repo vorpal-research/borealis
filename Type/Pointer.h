@@ -7,12 +7,13 @@
     Bool |
     Float |
     UnknownType |
-    Pointer { pointed :: Type } |
+    Pointer { pointed :: Type, memspace :: Size } |
     Array { element :: Type, size :: Maybe Size } |
     Record { name :: String, body :: RecordBodyRef } |
     TypeError { message :: String } |
     Function { retty :: Type, args :: [Type] }
       deriving (Show, Eq, Data, Typeable)
+
  * 
  * stored in Type/Type.datatype
  * using the template file Type/derived.h.hst
@@ -26,7 +27,7 @@
 #include "Type/Type.h"
 #include "Type/RecordBody.h" // including this is generally fucked up
 
-
+#include <cstddef>
 
 namespace borealis {
 
@@ -48,6 +49,7 @@ message Pointer {
     }
 
     optional borealis.proto.Type pointed = 1;
+    optional uint32 memspace = 2;
 }
 
 **/
@@ -56,7 +58,7 @@ class Pointer : public Type {
     typedef Pointer Self;
     typedef Type Base;
 
-    Pointer(Type::Ptr pointed): Type(class_tag(*this)), pointed(pointed) {}
+    Pointer(Type::Ptr pointed, size_t memspace): Type(class_tag(*this)), pointed(pointed), memspace(memspace) {}
 
 public:
     friend class ::borealis::TypeFactory;
@@ -66,9 +68,11 @@ public:
 
 private:
     Type::Ptr pointed;
+    size_t memspace;
 
 public:
     Type::Ptr getPointed() const { return this->pointed; }
+    size_t getMemspace() const { return this->memspace; }
 
 };
 

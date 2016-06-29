@@ -100,8 +100,8 @@ TEST(ExecutionContext, mergeMemory) {
         auto&& cond_a = cond == a;
         auto&& cond_b = cond == b;
 
-        memory_with_a.writeExprToMemory(ptr, a);
-        memory_with_b.writeExprToMemory(ptr, b);
+        memory_with_a.writeExprToMemory(ptr, a, 0);
+        memory_with_b.writeExprToMemory(ptr, b, 0);
 
         auto&& merged = ExecutionContext::mergeMemory(
                 "merged",
@@ -111,7 +111,7 @@ TEST(ExecutionContext, mergeMemory) {
                     { cond_b, memory_with_b }
                 }
         );
-        auto&& c = merged.readExprFromMemory<Byte>(ptr);
+        auto&& c = merged.readExprFromMemory<Byte>(ptr, 0);
 
         auto&& check_expr_in = [&](auto&& e, auto&& in) {
 

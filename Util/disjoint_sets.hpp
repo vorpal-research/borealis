@@ -31,7 +31,7 @@ public:
     T& data() { return data_; }
     const T& data() const { return data_; }
 
-    bool isRoot() { return parent_ == this; }
+    bool isRoot() const { return parent_ == this; }
 
     subset* getRoot() {
         if(!isRoot()) {
@@ -40,6 +40,11 @@ public:
             return ancestor;
         }
         return this;
+    }
+
+    const subset* getRootConst() const {
+        if(!isRoot()) return parent_->getRootConst();
+        else return this;
     }
 };
 
@@ -57,7 +62,13 @@ public:
     using iterator = typename std::list<subset<T>>::iterator;
 
     subset<T>* find(subset<T>* needle) {
+        if(needle == nullptr) return nullptr;
         return needle->getRoot();
+    }
+
+    const subset<T>* findConst(const subset<T>* needle) const {
+        if(needle == nullptr) return nullptr;
+        return needle->getRootConst();
     }
 
     subset<T>* unite(subset<T>* left, subset<T>* right) {

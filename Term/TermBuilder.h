@@ -21,11 +21,15 @@ private:
 
 public:
 
-    TermBuilder(TermFactory::Ptr TF, Term::Ptr term);
+    TermBuilder(TermFactory::Ptr TF, Term::Ptr term = nullptr);
     TermBuilder(const TermBuilder&) = default;
     TermBuilder(TermBuilder&&) = default;
+    TermBuilder& operator=(const TermBuilder&) = default;
+    TermBuilder& operator=(TermBuilder&&) = default;
 
     Term::Ptr operator()() const;
+    TermBuilder operator()(Term::Ptr t) const;
+    TermBuilder operator()(long long t) const;
 
     operator Term::Ptr() const;
 
@@ -43,6 +47,8 @@ public:
 
     TermBuilder uge(Term::Ptr term) const;
     TermBuilder bound() const;
+
+    TermBuilder cast(Type::Ptr type) const;
 
     template<class ...Terms>
     TermBuilder gep(Terms... ptrs) const {

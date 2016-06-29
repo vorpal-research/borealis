@@ -145,6 +145,9 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
     using namespace llvm;
     using borealis::util::viewContainer;
 
+    static config::BoolConfigEntry assumeDefectsTriggerOnceSetting("analysis", "assume-defects-trigger-once");
+    bool assumeDefectsTriggerOnce = assumeDefectsTriggerOnceSetting.get(false);
+
     auto&& inState = BBM(BB);
 
     auto&& fMemInfo = FM->getMemoryBounds(BB->getParent());
@@ -177,7 +180,12 @@ void OneForAll::processBasicBlock(llvm::BasicBlock* BB) {
             ).apply();
         }
 
-        inState = instructionState;
+        if(assumeDefectsTriggerOnce) {
+            inState = (FN.State * instructionState + PostPM(&I)).apply();
+        } else {
+            inState = instructionState;
+        }
+
     }
 
     basicBlockStates[BB] = inState;
@@ -337,6 +345,21 @@ PredicateState::Ptr OneForAll::PM(const llvm::Instruction* I) {
 
     for (auto* APA : PA) {
         auto&& map = APA->getPredicateMap();
+        if (containsKey(map, I)) {
+            res = res + map.at(I);
+        }
+    }
+
+    return res << SLT->getLocFor(I);
+}
+
+PredicateState::Ptr OneForAll::PostPM(const llvm::Instruction* I) {
+    using borealis::util::containsKey;
+
+    auto&& res = FN.State->Basic();
+
+    for (auto* APA : PA) {
+        auto&& map = APA->getPostPredicateMap();
         if (containsKey(map, I)) {
             res = res + map.at(I);
         }

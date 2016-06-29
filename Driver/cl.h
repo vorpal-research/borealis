@@ -24,14 +24,14 @@ public:
 
 private:
     std::vector<const char*> args;
-    std::vector<std::string> additional_data;
+    std::list<std::string> additional_data;
 
     typedef CommandLine self;
 
-    CommandLine(const args_t& args, const std::vector<std::string>& additional_data):
+    CommandLine(const args_t& args, const std::list<std::string>& additional_data):
             args{args},
             additional_data{additional_data} {};
-    CommandLine(args_t&& args, std::vector<std::string>&& additional_data):
+    CommandLine(args_t&& args, std::list<std::string>&& additional_data):
             args{std::move(args)},
             additional_data{std::move(additional_data)} {};
 
@@ -51,7 +51,9 @@ public:
         args.push_back(additional_data.back().c_str());
     }
 
-    CommandLine(const self&) = default;
+    CommandLine(const self& that): args(), additional_data(that.args.begin(), that.args.end()) {
+        for(auto&& arg: additional_data) args.push_back(arg.c_str());
+    }
     CommandLine(self&&) = default;
 
     CommandLine(const std::vector<const char*>& theArgs):
@@ -62,12 +64,19 @@ public:
             additional_data{} {};
 
     CommandLine(const std::vector<std::string>& theArgs):
+        args{},
+        additional_data{theArgs.begin(), theArgs.end()} {
+        args.reserve(additional_data.size());
+        for (const auto& arg: additional_data) args.push_back(arg.c_str());
+    };
+
+    CommandLine(const std::list<std::string>& theArgs):
             args{},
             additional_data{theArgs} {
         args.reserve(additional_data.size());
         for (const auto& arg: additional_data) args.push_back(arg.c_str());
     };
-    CommandLine(std::vector<std::string>&& theArgs):
+    CommandLine(std::list<std::string>&& theArgs):
             args{},
             additional_data{std::move(theArgs)} {
         args.reserve(additional_data.size());

@@ -788,6 +788,7 @@ struct add_no_overflow {
                        (ebv0 < zero && ebv1 < zero).implies(res < zero);
             return res.withAxiom(axm);
         } else {
+
             ebv0 = ebv0.zgrowTo(sz + 1);
             ebv1 = ebv1.zgrowTo(sz + 1);
 

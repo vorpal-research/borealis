@@ -6,6 +6,10 @@
  */
 
 #include "Term/GepTerm.h"
+#include "Factory/Nest.h"
+#include "Term/TermBuilder.h"
+
+#include "State/Transformer/ConstantPropagator.h"
 
 #include "Util/macros.h"
 
@@ -67,6 +71,47 @@ Type::Ptr GepTerm::getGepChild(Type::Ptr parent, const std::vector<Term::Ptr>& i
         ret = getAggregateElement(ret, ix);
     }
     return ret;
+}
+
+Term::Ptr GepTerm::calcShift(const GepTerm *t) {
+    FactoryNest FN;
+    TermBuilder TB(FN.Term);
+
+    size_t gepBitSize = 64; // FIXME: wat?
+
+    auto&& shift = TB(FN.Term->getIntTerm(0, gepBitSize, llvm::Signedness::Unsigned));
+
+    auto* baseType = llvm::dyn_cast<type::Pointer>(t->getBase()->getType());
+    ASSERTC(!!baseType);
+
+    auto&& h = TB(util::head(t->getShifts()));
+
+    auto&& tp = baseType->getPointed();
+    auto&& size = TypeUtils::getTypeSizeInElems(tp);
+
+    shift = shift + h * size;
+
+    for (auto&& s : util::tail(t->getShifts())) {
+        if (llvm::isa<type::Record>(tp)) {
+            auto&& ss = llvm::dyn_cast<OpaqueIntConstantTerm>(s);
+            ASSERTC(!!ss);
+            auto&& offset = TypeUtils::getStructOffsetInElems(tp, ss->getValue());
+
+            shift = shift + offset;
+
+            tp = GepTerm::getAggregateElement(tp, s);
+
+        } else if (llvm::isa<type::Array>(tp)) {
+            tp = GepTerm::getAggregateElement(tp, s);
+            size = TypeUtils::getTypeSizeInElems(tp);
+
+            shift = shift + TB(s) * size;
+
+        } else BYE_BYE(Term::Ptr, "Encountered non-aggregate type in GEP: " + TypeUtils::toString(*tp));
+
+    }
+
+    return ConstantPropagator{FN}.transform(shift);
 }
 
 } // namespace borealis

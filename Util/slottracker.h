@@ -108,7 +108,8 @@ public:
   bool mdn_empty() const { return mdnMap.empty(); }
 
   /// This function does the actual initialization.
-  inline void initialize();
+  inline void initializeModule();
+  inline void initializeFunction();
 
   // Implementation Details
 private:

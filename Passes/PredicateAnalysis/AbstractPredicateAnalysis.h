@@ -35,6 +35,7 @@ public:
     virtual ~AbstractPredicateAnalysis();
 
     PredicateMap& getPredicateMap() { return PM; }
+    PredicateMap& getPostPredicateMap() { return PostPM; }
     TerminatorPredicateMap& getTerminatorPredicateMap() { return TPM; }
     PhiPredicateMap& getPhiPredicateMap() { return PPM; }
 
@@ -42,11 +43,13 @@ protected:
 
     virtual void init() {
         PM.clear();
+        PostPM.clear();
         TPM.clear();
         PPM.clear();
     }
 
     PredicateMap PM;
+    PredicateMap PostPM;
     TerminatorPredicateMap TPM;
     PhiPredicateMap PPM;
 

@@ -18,6 +18,13 @@ Term::Ptr TermBuilder::operator()() const {
     return term;
 }
 
+TermBuilder TermBuilder::operator()(Term::Ptr t) const {
+    return { TF, t };
+}
+TermBuilder TermBuilder::operator()(long long t) const {
+    return { TF, TF->getOpaqueConstantTerm((int64_t)t) };
+}
+
 TermBuilder::operator Term::Ptr() const {
     return term;
 }
@@ -32,6 +39,10 @@ TermBuilder TermBuilder::uge(Term::Ptr that) const {
 
 TermBuilder TermBuilder::bound() const {
     return { TF, TF->getBoundTerm(term) };
+}
+
+TermBuilder TermBuilder::cast(Type::Ptr type) const {
+    return { TF, TF->getCastTerm(type, false, term) };
 }
 
 TermBuilder operator*(TermFactory::Ptr TF, Term::Ptr term) {

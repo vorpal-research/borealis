@@ -69,6 +69,10 @@ struct SMTImpl<Impl, WriteBoundPredicate> {
         USING_SMT_IMPL(Impl);
 
         ASSERTC(ctx != nullptr);
+        size_t memspace = 0;
+        if(auto&& ptr = llvm::dyn_cast<type::Pointer>(p->getLhv()->getType())) {
+            memspace = ptr->getMemspace();
+        }
 
         Pointer lp = SMT<Impl>::doit(p->getLhv(), ef, ctx);
         ASSERT(lp, "Bound write with a non-pointer value");
@@ -76,7 +80,7 @@ struct SMTImpl<Impl, WriteBoundPredicate> {
         Integer ri = SMT<Impl>::doit(p->getRhv(), ef, ctx);
         ASSERT(ri, "Bound write with a non-integer value");
 
-        ctx->writeBound(lp, ri);
+        ctx->writeBound(lp, ri, memspace);
 
         return ef.getTrue();
     }

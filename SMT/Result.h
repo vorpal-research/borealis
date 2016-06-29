@@ -10,10 +10,33 @@
 #include <unordered_map>
 
 #include "Term/Term.h"
+#include "Term/ProtobufConverterImpl.hpp"
+#include "Factory/Nest.h"
+#include "Protobuf/Gen/SMT/Result.pb.h"
+#include "SMT/Model.h"
 
 #include "Util/unions.hpp"
 
 #include "Util/macros.h"
+
+/** protobuf -> SMT/Result.proto
+
+import "SMT/Model.proto";
+
+package borealis.proto;
+
+message Result {
+    enum ResType {
+        SAT = 0;
+        UNSAT = 1;
+        UNKNOWN = 2;
+    };
+
+    optional ResType restype = 1;
+    optional borealis.smt.proto.Model model = 2;
+}
+
+**/
 
 namespace borealis {
 namespace smt {
@@ -25,43 +48,32 @@ public:
     UnsatResult(const UnsatResult&) = default;
 };
 
+class UnknownResult {
+    /* ... */
+public:
+    UnknownResult() = default;
+    UnknownResult(const UnknownResult&) = default;
+};
+
+
 class SatResult {
 public:
-    using model_t = std::unordered_map<std::string, Term::Ptr>;
-    using memory_shape_t = std::unordered_map<uintptr_t, Term::Ptr>;
-
+    std::shared_ptr<const Model> model;
 private:
-    std::shared_ptr<model_t> modelPtr;
-    std::shared_ptr<memory_shape_t> initialMemoryShapePtr;
-    std::shared_ptr<memory_shape_t> finalMemoryShapePtr;
-
     friend struct borealis::util::json_traits<SatResult>;
-
-    // this is here only for json traits
-    const model_t& getModel() const { return *modelPtr; }
-    const memory_shape_t& getInitialMemoryShape() const { return *initialMemoryShapePtr; }
-    const memory_shape_t& getFinalMemoryShape() const { return *finalMemoryShapePtr; }
 
 public:
     SatResult();
     SatResult(const SatResult&) = default;
 
-    SatResult(
-        std::shared_ptr<model_t> modelPtr,
-        std::shared_ptr<memory_shape_t> initialShapePtr,
-        std::shared_ptr<memory_shape_t> finalShapePtr
-    );
+    SatResult(std::shared_ptr<const Model> model): model(model){}
 
-    util::option_ref<Term::Ptr> at(const std::string& str) const;
-    util::option_ref<Term::Ptr> deref(uintptr_t ptr) const;
+    bool valid() const { return static_cast<bool>(model); }
 
-    bool empty() const { return modelPtr->empty(); }
-    bool valid() const { return !!modelPtr; }
-
-    util::option<int64_t> valueOf(const std::string& str) const;
-    util::option<int64_t> derefValueOf(uintptr_t ptr) const;
+    const Model& getModel() const { return *model; }
 
     friend std::ostream& operator<<(std::ostream& ost, const SatResult& res);
+    //friend struct borealis::protobuf_traits<Result>;
 };
 
 // poor man's variant
@@ -69,35 +81,67 @@ class Result {
     union {
         SatResult sat;
         UnsatResult unsat;
+        UnknownResult unknown;
     };
-    bool isUnsat_;
+    enum {SAT, UNSAT, UNKNOWN} restype;
+    std::string watermark;
 
 public:
-    Result(const SatResult& sat) : sat(sat), isUnsat_(false) {}
-    Result(const UnsatResult& unsat) : unsat(unsat), isUnsat_(true) {}
-    Result(const Result& that) : isUnsat_(that.isUnsat_) {
-        if (isUnsat_) unions::construct(&unsat, that.unsat);
+    Result(const SatResult& sat) : sat(sat), restype(SAT) {}
+    Result(const UnsatResult& unsat) : unsat(unsat), restype(UNSAT) {}
+    Result(const UnknownResult& unknown): unknown(unknown), restype(UNKNOWN) {}
+    Result(const Result& that) : restype(that.restype) {
+        if (restype == UNSAT) unions::construct(&unsat, that.unsat);
+        else if (restype == UNKNOWN) unions::construct(&unknown, that.unknown);
         else unions::construct(&sat, that.sat);
     }
     ~Result() {
-        if (isUnsat_) unions::destruct(&unsat);
+        if (restype == UNSAT) unions::destruct(&unsat);
+        else if(restype == UNKNOWN) unions::destruct(&unknown);
         else unions::destruct(&sat);
     }
 
     const SatResult* getSatPtr() const {
-        return isUnsat_ ? nullptr : &sat;
+        return (restype != SAT) ? nullptr : &sat;
     }
 
     bool isUnsat() const {
-        return isUnsat_;
+        return restype == UNSAT;
+    }
+
+    bool isUnknown() const {
+        return restype == UNKNOWN;
     }
 
     bool isSat() const {
-        return not isUnsat();
+        return restype == SAT;
     }
+
+    //friend struct borealis::protobuf_traits<Result>;
 };
 
 } /* namespace smt */
+
+//template<>
+//struct protobuf_traits<smt::Result> {
+//    typedef smt::Result normal_t;
+//    typedef proto::Result proto_t;
+//    typedef borealis::FactoryNest context_t;
+//
+//    static std::unique_ptr<proto_t> toProtobuf(const normal_t& t) {
+//        std::unique_ptr<proto_t> ret(new proto_t());
+//        ret->set_restype(t.isSat()? proto::Result_ResType_SAT : t.isUnsat()? proto::Result_ResType_UNSAT : proto::Result_ResType_UNKNOWN);
+//        if(t.isSat()) {
+//            for(auto&& mi : *t.getSatPtr()->modelPtr) {
+//                auto kv = ret->mutable_model()->Add();
+//                kv->set_key(mi.first);
+//                kv->set_allocated_value(protobuf_traits<Term>::toProtobuf(*mi.second).release());
+//            }
+//        }
+//    }
+//    static std::unique_ptr<normal_t> fromProtobuf(const context_t& fn, const proto_t& t);
+//};
+
 } /* namespace borealis */
 
 #include "Util/unmacros.h"
