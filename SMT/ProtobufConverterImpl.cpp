@@ -113,4 +113,67 @@ std::shared_ptr<smt::Model> protobuf_traits<smt::Model>::fromProtobuf(
     return ret;
 }
 
+std::unique_ptr<smt::proto::Result> protobuf_traits<smt::Result>::toProtobuf(const normal_t& t) {
+    std::unique_ptr<smt::proto::Result> ret (new smt::proto::Result());
+
+    if(t.isUnsat()) {
+        ret->set_restype(smt::proto::Result_ResType_UNSAT);
+        return std::move(ret);
+    }
+
+    if(t.isUnknown()) {
+        ret->set_restype(smt::proto::Result_ResType_UNKNOWN);
+        return std::move(ret);
+    }
+
+    if(t.isSat()) {
+        ret->set_restype(smt::proto::Result_ResType_SAT);
+        ret->set_allocated_model(
+            protobuf_traits<smt::Model>::toProtobuf(t.getSatPtr()->getModel()).release()
+        );
+        return std::move(ret);
+    }
+
+    return nullptr;
+}
+
+std::unique_ptr<smt::Result> protobuf_traits<smt::Result>::fromProtobuf(
+    const FactoryNest& FN, const smt::proto::Result& m
+) {
+    if (m.restype() == smt::proto::Result_ResType_SAT) {
+        auto mdl = protobuf_traits<smt::Model>::fromProtobuf(FN, m.model());
+        return std::unique_ptr<smt::Result>(new smt::Result(smt::SatResult(mdl)));
+    }
+
+    if (m.restype() == smt::proto::Result_ResType_UNSAT) {
+        return std::unique_ptr<smt::Result>(new smt::Result(smt::UnsatResult()));
+    }
+
+    if (m.restype() == smt::proto::Result_ResType_UNKNOWN) {
+        return std::unique_ptr<smt::Result>(new smt::Result(smt::UnknownResult()));
+    }
+
+    return nullptr;
+}
+
+namespace smt {
+
+std::unique_ptr<proto::Model> protobuffy(const Model& m) {
+    return protobuf_traits<Model>::toProtobuf(m);
+}
+std::unique_ptr<proto::Result> protobuffy(const Result& m) {
+    return protobuf_traits<Result>::toProtobuf(m);
+}
+
+namespace proto {
+
+std::shared_ptr<const smt::Model> deprotobuffy(const FactoryNest& FN, const proto::Model& m) {
+    return protobuf_traits<smt::Model>::fromProtobuf(FN, m);
+}
+std::unique_ptr<smt::Result> deprotobuffy(const FactoryNest& FN, const proto::Result& m) {
+    return protobuf_traits<smt::Result>::fromProtobuf(FN, m);
+}
+
+} /* namespace proto */
+} /* namespace smt */
 } /* namespace borealis */

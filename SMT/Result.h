@@ -23,7 +23,7 @@
 
 import "SMT/Model.proto";
 
-package borealis.proto;
+package borealis.smt.proto;
 
 message Result {
     enum ResType {
@@ -117,30 +117,23 @@ public:
         return restype == SAT;
     }
 
+    friend std::ostream& operator<<(std::ostream& ost, const Result& res) {
+        if(res.isUnknown()) {
+            ost << "unknown";
+        }
+        if(res.isUnsat()) {
+            ost << "unsat";
+        }
+        if(res.isSat()) {
+            ost << *res.getSatPtr();
+        }
+        return ost;
+    }
+
     //friend struct borealis::protobuf_traits<Result>;
 };
 
 } /* namespace smt */
-
-//template<>
-//struct protobuf_traits<smt::Result> {
-//    typedef smt::Result normal_t;
-//    typedef proto::Result proto_t;
-//    typedef borealis::FactoryNest context_t;
-//
-//    static std::unique_ptr<proto_t> toProtobuf(const normal_t& t) {
-//        std::unique_ptr<proto_t> ret(new proto_t());
-//        ret->set_restype(t.isSat()? proto::Result_ResType_SAT : t.isUnsat()? proto::Result_ResType_UNSAT : proto::Result_ResType_UNKNOWN);
-//        if(t.isSat()) {
-//            for(auto&& mi : *t.getSatPtr()->modelPtr) {
-//                auto kv = ret->mutable_model()->Add();
-//                kv->set_key(mi.first);
-//                kv->set_allocated_value(protobuf_traits<Term>::toProtobuf(*mi.second).release());
-//            }
-//        }
-//    }
-//    static std::unique_ptr<normal_t> fromProtobuf(const context_t& fn, const proto_t& t);
-//};
 
 } /* namespace borealis */
 

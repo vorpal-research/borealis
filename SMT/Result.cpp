@@ -17,7 +17,7 @@ SatResult::SatResult() :
 std::ostream& operator<<(std::ostream& ost, const SatResult& res) {
     ost << "sat";
     if(res.model) {
-        ost << "[model:" << res.getModel() << "]";
+        ost << "[" << res.getModel() << "]";
     }
     return ost;
 }

@@ -11,7 +11,7 @@
 namespace borealis {
 namespace smt {
 
-static Term::Ptr getOrUndef(const FactoryNest& FN, const Model::assignments_t& map, Term::Ptr key) {
+static Term::Ptr getOrUndef(const FactoryNest&, const Model::assignments_t& map, Term::Ptr key) {
     for(auto&& res : util::at(map, key)) {
         return res;
     }
@@ -20,9 +20,6 @@ static Term::Ptr getOrUndef(const FactoryNest& FN, const Model::assignments_t& m
 }
 
 Term::Ptr Model::query(Term::Ptr t) const {
-    std::cerr << *this << std::endl;
-    std::cerr << tfm::format("query(%s)", t) << std::endl;
-
     if(TermUtils::isConstantTerm(t)) return t;
 
     if(TermUtils::isNamedTerm(t)) {

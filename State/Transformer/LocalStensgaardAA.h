@@ -9,10 +9,13 @@
 #include <llvm/Support/DOTGraphTraits.h>
 #include <llvm/Support/GraphWriter.h>
 
+#include "Term/TermUtils.hpp"
+
 #include "Util/disjoint_sets.hpp"
 
 #include "State/Transformer/Transformer.hpp"
 
+#include "Util/macros.h"
 namespace borealis {
 
 class LocalAABase {
@@ -24,10 +27,22 @@ public:
 
 class LocalStensgaardAA: public Transformer<LocalStensgaardAA>, public LocalAABase {
 
+    struct WeirdTermEquals { // FIXME: think
+        TermEquals delegate;
+
+        bool operator()(const Term::Ptr& lhv, const Term::Ptr& rhv) const noexcept{
+            if(TermUtils::isConstantTerm(lhv) && TermUtils::isConstantTerm(rhv)) {
+                // we need shallow equality for constants to escape undesired sharing
+                return lhv.get() == rhv.get();
+            }
+            return delegate(lhv, rhv);
+        }
+    };
+
     using token = util::subset<Term::Ptr>*;
 
     util::disjoint_set<Term::Ptr> relatedPtrs;
-    std::unordered_map<Term::Ptr, token, TermHash, TermEquals> view;
+    std::unordered_map<Term::Ptr, token, TermHash, WeirdTermEquals> view;
     std::unordered_map<token, token> pointsTo;
     Term::Set noalias;
     Term::Set nonFreeTerms;
@@ -38,15 +53,7 @@ public:
         Transformer<LocalStensgaardAA>(FN) {}
 
     static bool isNamedTerm(Term::Ptr t) {
-        return llvm::is_one_of<
-            ValueTerm,
-            ConstTerm,
-            ArgumentTerm,
-            VarArgumentTerm,
-            OpaqueVarTerm,
-            ReturnValueTerm,
-            ReturnPtrTerm
-        >(t);
+        return TermUtils::isNamedTerm(t);
     }
 
     token quasi() {
@@ -54,12 +61,28 @@ public:
     }
 
     token join(token& l, token& r) {
-        if(l and r) return l = r = relatedPtrs.unite(l, r);
-        if(l) return r = l;
-        if(r) return l = r;
+        if(l and r) {
+            auto&& pl = relatedPtrs.find(pointsTo[l]);
+            auto&& pr = relatedPtrs.find(pointsTo[r]);
+            auto res = relatedPtrs.unite(l, r);
+            pointsTo[l] = pointsTo[r] = pointsTo[res] = pl;
+            if(pl != pr) join(pl, pr);
+            return l = r = res;
+        }
+        if(l) {
+            auto res = relatedPtrs.find(l);
+            auto pres = relatedPtrs.find(pointsTo[l]);
+            pointsTo[res] = pointsTo[l] = pres;
+            return l = r = res;
+        }
+        if(r) {
+            auto res = relatedPtrs.find(r);
+            auto pres = relatedPtrs.find(pointsTo[r]);
+            pointsTo[res] = pointsTo[r] = pres;
+            return l = r = res;
+        }
         return l = r = quasi();
     }
-
 
     token get(Term::Ptr t) {
         if(auto k = util::at(view, t)) return k.getUnsafe()->getRoot();
@@ -324,5 +347,7 @@ struct DOTGraphTraits<borealis::LocalStensgaardAA::GraphRep>: DefaultDOTGraphTra
 };
 
 } /* namespace llvm */
+
+#include "Util/unmacros.h"
 
 #endif // LOCAL_STENSGAARD_AA

@@ -72,22 +72,9 @@ Solver::check_result Solver::check(
 
     for(auto&& tl : force_timeout.get()) s->setTimeLimit(tl);
 
-    auto&& wtf = logging::wtf();
-
     auto&& axioms = uniqueAxioms(ctx);
 
     std::vector<::CVC4::Expr> assertions;
-
-    ON_SCOPE_EXIT(
-        if(std::uncaught_exception()) {
-            std::cerr << "CVC4 threw:" << std::endl;
-            std::cerr << "Assertions:" << std::endl;
-            for(auto&& as : assertions) {
-                std::cerr << as << std::endl;
-            }
-        }
-    )
-
 
     dbgs() << "! adding axioms started" << endl;
     assertions.insert(assertions.begin(), axioms.begin(), axioms.end());
@@ -217,7 +204,7 @@ void recollectMemory(
         auto&& finalV = finalMem.select(eptr, ef.sizeForType(TypeUtils::getPointerElementType(ptr->getType())));
 
         auto&& startBound = startBounds[eptr];
-        auto&& finalBound = startBounds[eptr];
+        auto&& finalBound = finalBounds[eptr];
 
         auto&& modelPtr = smt.getValue(eptr.getExpr());
         auto&& modelStartV = smt.getValue(startV.getExpr());

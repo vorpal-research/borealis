@@ -222,7 +222,8 @@ void recollectProperties(
 
         auto&&  arr = ctx.getCurrentProperties(pname);
 
-        Boolector::Pointer eptr = SMT<Boolector>::doit(ptr, ef, &ctx);
+        auto e = SMT<Boolector>::doit(ptr, ef, &ctx);
+        auto eptr = Boolector::Pointer::forceCast(e);
 
         auto&& startV = arr[eptr];
 
