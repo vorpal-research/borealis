@@ -9,6 +9,7 @@
 #define DEFECTMANAGER_H_
 
 #include <llvm/Pass.h>
+#include <llvm/Support/LockFileManager.h>
 
 #include <set>
 #include <fstream>
@@ -83,8 +84,20 @@ struct persistentDefectData {
             tpd.insert(trueData.begin(), trueData.end());
             fpd.insert(falseData.begin(), falseData.end());
 
-            std::ofstream out{filename};
-            util::write_as_json(out, std::make_pair(std::move(tpd), std::move(fpd)));
+            while(true) {
+                llvm::LockFileManager fileLock(filename);
+                if(fileLock == llvm::LockFileManager::LFS_Shared) {
+                    fileLock.waitForUnlock();
+                    continue;
+                }
+                if(fileLock == llvm::LockFileManager::LFS_Error) {
+                    errs() << "error while trying to lock file \"" << filename << "\"" << endl;
+                }
+                std::ofstream out{filename};
+                util::write_as_json(out, std::make_pair(std::move(tpd), std::move(fpd)));
+                break;
+            }
+
         }
     }
 };

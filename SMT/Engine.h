@@ -5,6 +5,8 @@
 #ifndef AURORA_SANDBOX_ENGINE_H
 #define AURORA_SANDBOX_ENGINE_H
 
+#include <string>
+
 namespace borealis {
 
 template<class T, class Ix, Ix size>

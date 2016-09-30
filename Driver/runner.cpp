@@ -5,6 +5,7 @@
  *      Author: ice-phoenix
  */
 
+#include <cstdlib>
 #include <sys/wait.h>
 #include <unistd.h>
 
