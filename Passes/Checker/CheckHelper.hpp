@@ -124,32 +124,40 @@ public:
         dbgs() << "Checking: " << *I << endl;
         if(!noQueryLogging) dbgs() << "  Query: " << query << endl;
 
-        dbgs() << "Slicing started" << endl;
+
         static config::BoolConfigEntry useLocalAA("analysis", "use-local-aa");
-        auto&& sliced = StateSlicer(FN, query, useLocalAA.get(false)? nullptr : pass->AA).transform(state);
-        dbgs() << "Slicing finished" << endl;
-
-        dbgs() << "State size after slicing:" << TermSizeCalculator::measure(sliced) << endl;
-
-        if (state == sliced) {
-            dbgs() << "Slicing failed" << endl;
+        static config::BoolConfigEntry doSlicing("analysis", "do-slicing");
+        if(doSlicing.get(true)) {
+            dbgs() << "Slicing started" << endl;
+            auto sliced = StateSlicer(FN, query, useLocalAA.get(false)? nullptr : pass->AA).transform(state);
+            dbgs() << "Slicing finished" << endl;
+            dbgs() << "State size after slicing:" << TermSizeCalculator::measure(sliced) << endl;
+            if (state == sliced) {
+                dbgs() << "Slicing failed" << endl;
+            } else {
+                if(!noQueryLogging) dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
+            }
+            state = sliced;
         } else {
-            if(!noQueryLogging) dbgs() << "Sliced: " << state << endl << "to: " << sliced << endl;
+            dbgs() << "Slicing disabled" << endl;
         }
 
-        dbgs() << "Memspacing started" << endl;
         static config::BoolConfigEntry memSpacing("analysis", "memory-spaces");
+        if(memSpacing.get(false)) {
+            dbgs() << "Memspacing started" << endl;
+            MemorySpacer msp(FN, FN.State->Chain(state, query));
+            state = msp.transform(state);
+            query = msp.transform(query);
+            dbgs() << "Memspacing finished" << endl;
+        } else {
+            dbgs() << "Memspacing disabled" << endl;
+        }
 
-        MemorySpacer msp(FN, FN.State->Chain(sliced, query));
-        auto&& restate = msp.transform(sliced);
-        auto&& requery = msp.transform(query);
-        dbgs() << "Memspacing finished" << endl;
-
-        if(!noQueryLogging) dbgs() << "  State: " << sliced << endl;
+        if(!noQueryLogging) dbgs() << "  State: " << state << endl;
 
         auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());
 
-        auto solverResult = checkViolation(fMemInfo, requery, restate);
+        auto solverResult = checkViolation(fMemInfo, query, state);
         if (auto satRes = solverResult.getSatPtr()) {
             pass->DM->addDefect(di);
             pass->DM->getAdditionalInfo(di).satModel = util::just(*satRes);

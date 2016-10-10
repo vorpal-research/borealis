@@ -20,7 +20,7 @@ namespace impl_ {
 
 struct string_cache {
     std::vector<std::string> fwd;
-    std::unordered_map<string_ref, size_t> bwd;
+    std::unordered_map<std::string, size_t> bwd;
 
     size_t operator[](string_ref key) {
         auto it = bwd.find(key);

@@ -656,7 +656,7 @@
             { "access" : "None" }
       ],
       "contracts" : [
-            "@requires[[RES-02]] \\property(file, \\result) == @opened"
+            "@requires[[RES-02]] \\property(file, \\arg) == @opened"
       ]
 },
 {
