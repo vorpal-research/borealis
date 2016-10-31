@@ -130,6 +130,9 @@ public:
 std::vector<command> parse(const std::string& v);
 prod_t parseTerm(const std::string& v);
 
+std::vector<command> parse(const char* vbegin, const char* vend);
+prod_t parseTerm(const char* vbegin, const char* vend);
+
 } // namespace anno
 } // namespace borealis
 

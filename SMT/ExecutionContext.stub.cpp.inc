@@ -129,7 +129,7 @@ ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t memspace, size_t
 
 ExecutionContext::Pointer ExecutionContext::getGlobalPtr(size_t memspace, size_t offsetSize, Integer origSize) {
     auto&& ret = factory.getPtrConst(globalPtr);
-    globalPtr += offsetSize;
+    globalPtr += 2 * offsetSize;
     writeBound(ret, origSize, memspace);
     return ret;
 }
@@ -140,7 +140,7 @@ ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t memspace,size_t o
 
 ExecutionContext::Pointer ExecutionContext::getLocalPtr(size_t memspace,size_t offsetSize, Integer origSize) {
     auto&& ret = factory.getPtrConst(localPtr);
-    localPtr += offsetSize;
+    localPtr += 2 * offsetSize;
     writeBound(ret, origSize, memspace);
     return ret;
 }

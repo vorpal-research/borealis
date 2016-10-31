@@ -30,6 +30,9 @@ llvm::Function* IntrinsicsManager::createIntrinsic(
         module
     );
 
+    f->addFnAttr(llvm::Attribute::NoInline);
+    f->addFnAttr(llvm::Attribute::NoUnwind);
+
     intrinsics_cache[key] = f;
     type_cache[f] = ft;
 

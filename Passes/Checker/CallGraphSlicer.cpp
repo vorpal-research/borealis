@@ -65,7 +65,7 @@ CallGraphSlicer::CallGraphSlicer(): llvm::ModulePass(ID) {}
 CallGraphSlicer::~CallGraphSlicer() {}
 
 char CallGraphSlicer::ID;
-static RegisterPass<CallGraphSlicer> X("cfg-slicer", "Pass that masks out unused functions");
+static RegisterPass<CallGraphSlicer> X("callgraph-slicer", "Pass that masks out unused functions");
 
 } /* namespace borealis */
 

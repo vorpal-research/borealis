@@ -35,9 +35,7 @@ static struct {
     using argument_type = Term::Ptr;
 
     bool operator()(Term::Ptr t) const {
-        return llvm::isa<ArgumentTerm>(t) ||
-               llvm::isa<ReturnValueTerm>(t) ||
-               llvm::isa<ValueTerm>(t);
+        return TermUtils::isNamedTerm(t);
     }
 } isInterestingTerm;
 
@@ -74,6 +72,17 @@ PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
                ->simplify();
 }
 
+
+PredicateState::Ptr StateSlicer::transformChoice(PredicateStateChoicePtr ps) {
+    // TODO
+
+    auto psi = ps->simplify();
+
+    if(llvm::isa<PredicateStateChoice>(psi)) {
+        return Base::transformChoice(std::static_pointer_cast<const PredicateStateChoice>(psi));
+    } else return Base::transformBase(psi);
+}
+
 Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
     if (nullptr == AA) return pred;
 
@@ -98,7 +107,7 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
         res = pred;
     } else if (checkVars(lhvTerms, rhvTerms)) {
         res = pred;
-    } else if (checkPtrs(lhvTerms, rhvTerms)) {
+    } else if (checkPtrs(pred, lhvTerms, rhvTerms)) {
         res = pred;
     }
 
@@ -129,23 +138,49 @@ bool StateSlicer::checkVars(const Term::Set& lhv, const Term::Set& rhv) {
     return false;
 }
 
-bool StateSlicer::checkPtrs(const Term::Set& lhv, const Term::Set& rhv) {
+bool StateSlicer::checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
+    auto added = false;
     if (
         util::viewContainer(lhv)
             .filter(isPointerTerm)
-            .any_of([&](auto&& a) {
-                return util::viewContainer(slicePtrs)
-                    .any_of([&](auto&& b) {
-                        return AA->mayAlias(a, b);
-                    });
-            })
+            .any_of([&](auto&& t) { return util::contains(slicePtrs, t); })
         ) {
         util::viewContainer(rhv)
             .foreach(APPLY(this->addSliceTerm));
-        return true;
+        added = true;
     }
-    return false;
+
+
+    if(llvm::is_one_of<
+                StorePredicate,
+                WriteBoundPredicate,
+                WritePropertyPredicate,
+                AllocaPredicate,
+                MallocPredicate,
+                SeqDataPredicate,
+                SeqDataZeroPredicate
+            >(pred)) {
+        if (
+            util::viewContainer(lhv)
+                .filter(isPointerTerm)
+                .any_of([&](auto&& a) {
+                    return util::viewContainer(slicePtrs)
+                        .any_of([&](auto&& b) {
+                            return AA->mayAlias(a, b);
+                        });
+                })
+            ) {
+            util::viewContainer(lhv)
+                .foreach(APPLY(this->addSliceTerm));
+            util::viewContainer(rhv)
+                .foreach(APPLY(this->addSliceTerm));
+            added = true;
+        }
+    }
+
+    return added;
 }
+
 
 #include "Util/unmacros.h"
 

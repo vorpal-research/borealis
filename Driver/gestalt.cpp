@@ -5,6 +5,9 @@
  *      Author: belyaev
  */
 
+#include <thread>
+#include <future>
+
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/ASTContext.h>
 #include <clang/Basic/Diagnostic.h>
@@ -152,7 +155,13 @@ int gestalt::main(int argc, const char** argv) {
 
     auto compileCommands = nativeClang.getCompileCommands();
 
-    if (!skipClang) if (nativeClang.run() == interviewer::status::FAILURE) return E_CLANG_INVOKE;
+    std::future<int> clangRes;
+    if (!skipClang) {
+        clangRes = std::async(std::launch::async, [&nativeClang]{
+            if (nativeClang.run() == interviewer::status::FAILURE) return (int)E_CLANG_INVOKE;
+            return (int)OK;
+        });
+    }
 
     // prep for borealis business
     // compile sources to llvm::Module
@@ -233,6 +242,7 @@ int gestalt::main(int argc, const char** argv) {
         errs() << "Module errors detected: " << rso.str() << endl;
     }
 
+    if (!skipClang) return clangRes.get();
     return OK;
 }
 

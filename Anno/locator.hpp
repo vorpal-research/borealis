@@ -161,6 +161,14 @@ calc_parse_string( const std::string& string, States&&... st ) {
    return cp;
 }
 
+template< typename TopRule, typename Location, typename Iter, typename ...States >
+calc_parser< TopRule, pegtl::forward_input<Iter, Location>, States... >
+calc_parse_string( const std::pair<Iter, Iter>& string, States&&... st ) {
+    pegtl::forward_input<Iter, Location> in{ string.first, string.second };
+    calc_parser< TopRule, decltype(in), States... > cp{ in, std::forward<States>(st)... };
+    return cp;
+}
+
 } // namespace anno
 } // namespace borealis
 

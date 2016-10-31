@@ -46,7 +46,7 @@ static comment_container getRawTextSlow(const clang::SourceManager &SourceMgr, c
 
     auto comment = llvm::StringRef(BufferStart + BeginOffset, Length);
     auto locus = Locus(SourceMgr.getPresumedLoc(Range.getBegin()));
-    auto commands = borealis::anno::parse(comment.str());
+    auto commands = borealis::anno::parse(comment.begin(), comment.end());
 
     auto ret = comment_container();
     for (auto& cmd : commands) {

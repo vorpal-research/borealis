@@ -7,8 +7,10 @@
 
 #include <llvm/IR/InstVisitor.h>
 
+
 #include "Util/disjoint_sets.hpp"
 
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/Checker/CheckHelper.hpp"
 #include "Passes/Checker/CheckNullDereferencePass.h"
 #include "State/PredicateStateBuilder.h"
@@ -16,6 +18,40 @@
 namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
+
+static llvm::Value* stripAllOffsets(llvm::Value* base) {
+    auto ptr = base->stripPointerCasts();
+    if(auto gep = llvm::dyn_cast<llvm::GEPOperator>(base)) {
+        return stripAllOffsets(gep->getPointerOperand());
+    }
+    return ptr;
+}
+
+static bool isNonNull(llvm::Value* ptr) {
+    if(ptr->isDereferenceablePointer()) return true;
+
+    auto&& im = IntrinsicsManager::getInstance();
+
+    if(llvm::isa<llvm::GetElementPtrInst>(ptr)) return true;
+
+    ptr = stripAllOffsets(ptr);
+
+    if(llvm::isa<llvm::ConstantPointerNull>(ptr)) return false;
+    if(llvm::is_one_of<llvm::Constant, llvm::AllocaInst>(ptr)) return true;
+
+    if(auto call = llvm::ImmutableCallSite(ptr)) {
+        if(auto f = call.getCalledFunction()) {
+            if(f->getAttributes().hasAttribute(llvm::AttributeSet::ReturnIndex, llvm::Attribute::NonNull)) {
+                return true;
+            }
+            if(im.getIntrinsicType(const_cast<llvm::Function*>(f)) == function_type::INTRINSIC_ALLOC) {
+                return true;
+            }
+        }
+
+    }
+    return false;
+}
 
 class CheckNullsVisitor :
     public llvm::InstVisitor<CheckNullsVisitor>,
@@ -27,8 +63,9 @@ private:
     template<class Inst>
     void visitMemoryInst(Inst& I) {
         auto* ptr = I.getPointerOperand();
-        if (ptr->isDereferenceablePointer()) return;
-        if(llvm::is_one_of<llvm::GetElementPtrInst, llvm::Constant>(ptr)) return;
+        if(isNonNull(ptr)) return;
+
+        ptr = stripAllOffsets(ptr);
 
         if(auto&& iopt = util::at(p2i, ptr)) {
             CheckHelper<CheckNullDereferencePass> h(pass, &I, DefectType::INI_03);
@@ -65,6 +102,10 @@ public:
     }
 
     void visitStoreInst(llvm::StoreInst& I) {
+        visitMemoryInst(I);
+    }
+
+    void visitGetElementPtrInst(llvm::GetElementPtrInst& I) {
         visitMemoryInst(I);
     }
 

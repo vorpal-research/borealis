@@ -67,17 +67,9 @@ struct LocalLocus {
         return *this;
     }
 
-    bool operator==(const LocalLocus& that) const {
-        return (line == that.line) && (col == that.col);
-    }
-
-    bool operator<(const LocalLocus& that) const {
-        return (line < that.line) || (line == that.line && col < that.col);
-    }
-
-    bool operator>(const LocalLocus& that) const {
-        return !(*this == that || *this < that);
-    }
+    GENERATE_EQ(LocalLocus, line, col)
+    GENERATE_LESS(LocalLocus, line, col)
+    GENERATE_AUX_COMPARISONS(LocalLocus)
 
     const LocalLocus& operator+=(const LocalLocus& that) {
         this->line += that.line;
@@ -232,17 +224,9 @@ struct Locus {
         return *this;
     }
 
-    bool operator==(const Locus& that) const {
-        return (filename == that.filename) && (loc == that.loc);
-    }
-
-    bool operator<(const Locus& that) const {
-        return (filename < that.filename) || ((filename == that.filename) && (loc < that.loc));
-    }
-
-    bool operator>(const Locus& that) const {
-        return !(*this == that || *this < that);
-    }
+    GENERATE_EQ(Locus, filename, loc)
+    GENERATE_LESS(Locus, filename, loc)
+    GENERATE_AUX_COMPARISONS(Locus)
 
     bool isUnknown() const {
         return filename.empty() || loc.isUnknown();
@@ -260,14 +244,12 @@ struct Locus {
         return advance(howmuch, LocalLocus::measure::col);
     }
 
-    operator void*() {
-        if (isUnknown()) return nullptr;
-        else return this;
+    explicit operator bool() {
+        return not isUnknown();
     }
 
-    void* operator!() {
-        if (isUnknown()) return this;
-        else return nullptr;
+    bool operator!() {
+        return isUnknown();
     }
 
     // FIXME: some ambiguity shit going on here, fix

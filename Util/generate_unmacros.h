@@ -91,6 +91,7 @@ with open("Util/generate_macros.h") as f:
 #undef FIELD_RHV
 #undef GENERATE_EQ
 #undef GENERATE_LESS
+#undef GENERATE_AUX_COMPARISONS
 #undef CONSTRUCTOR_PARAM
 #undef CONSTRUCTOR_INIT_FIELD
 #undef CONSTRUCTOR_COPY_FIELD

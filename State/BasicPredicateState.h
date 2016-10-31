@@ -103,6 +103,20 @@ struct SMTImpl<Impl, BasicPredicateState> {
     }
 };
 
+struct BasicPredicateStateExtractor {
+
+    auto unapply(PredicateState::Ptr t) const -> functional_hell::matchers::storage_t<decltype(std::declval<BasicPredicateState>().getData())> {
+        if (auto&& tt = llvm::dyn_cast<BasicPredicateState>(t)) {
+            return functional_hell::matchers::make_storage(tt->getData());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $BasicPredicateState = functional_hell::matchers::make_pattern(BasicPredicateStateExtractor());
+
 } /* namespace borealis */
 
 #endif /* BASICPREDICATESTATE_H_ */

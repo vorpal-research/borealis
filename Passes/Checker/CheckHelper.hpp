@@ -8,6 +8,7 @@
 #ifndef CHECKVISITOR_HPP_
 #define CHECKVISITOR_HPP_
 
+#include <State/Transformer/GraphBuilder.h>
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
@@ -168,6 +169,14 @@ public:
         } else {
             pass->DM->addNoDefect(di);
             dbgs() << "Defect falsified: " << di << endl;
+            if(solverResult.isUnknown()) dbgs() << "{Unknown}" << endl;
+            else dbgs() << "{Unsat}" << endl;
+
+            //if(solverResult.isUnknown()) {
+            //    auto graph = buildGraphRep(state);
+            //    llvm::ViewGraph(&graph, "Unknown state");
+            //}
+
             return false;
         }
     }

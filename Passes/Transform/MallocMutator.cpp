@@ -72,11 +72,27 @@ void eliminateMallocBitcasts(llvm::Instruction* old_, llvm::Instruction* new_) {
 void mutateMalloc(llvm::Instruction* old_, llvm::Instruction* new_) {
     old_->replaceAllUsesWith(new_);
     old_->eraseFromParent();
+
+    if(auto cs = llvm::CallSite(new_)) {
+        if(auto f = cs.getCalledFunction()) {
+            f->setDoesNotAccessMemory();
+            f->addAttribute(llvm::AttributeSet::ReturnIndex, llvm::Attribute::NoAlias);
+        }
+    }
+
 }
 
 void mutateAlloc(llvm::Instruction* old_, llvm::Instruction* new_) {
     old_->replaceAllUsesWith(new_);
     old_->eraseFromParent();
+
+    if(auto cs = llvm::CallSite(new_)) {
+        if(auto f = cs.getCalledFunction()) {
+            f->setDoesNotAccessMemory();
+            f->addAttribute(llvm::AttributeSet::ReturnIndex, llvm::Attribute::NoAlias);
+            f->addAttribute(llvm::AttributeSet::ReturnIndex, llvm::Attribute::NonNull);
+        }
+    }
 }
 
 void MallocMutator::mutateMemoryInst(

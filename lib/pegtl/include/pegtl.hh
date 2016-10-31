@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <set>
 #include <sstream>

@@ -1183,6 +1183,20 @@ MACRO(A31, MARG)
         return std::tie(PP_FOREACH_COMMA(FIELD_LHV,, __VA_ARGS__)) < std::tie(PP_FOREACH_COMMA(FIELD_RHV,, __VA_ARGS__)); \
     }
 
+#define GENERATE_AUX_COMPARISONS(TYPE) \
+    friend bool operator !=(const TYPE& lhv, const TYPE& rhv) { \
+        return !(lhv == rhv); \
+    } \
+    friend bool operator >(const TYPE& lhv, const TYPE& rhv) { \
+        return rhv < lhv; \
+    } \
+    friend bool operator <=(const TYPE& lhv, const TYPE& rhv) { \
+        return lhv < rhv || lhv == rhv; \
+    } \
+    friend bool operator >=(const TYPE& lhv, const TYPE& rhv) { \
+        return lhv > rhv || lhv == rhv; \
+    } \
+
 #define CONSTRUCTOR_PARAM(X,...) const decltype(X)& X
 #define CONSTRUCTOR_INIT_FIELD(X,...) X{X}
 #define CONSTRUCTOR_COPY_FIELD(X,...) X{rhv.X}

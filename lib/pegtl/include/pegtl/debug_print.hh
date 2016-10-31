@@ -30,7 +30,7 @@ namespace pegtl
       };
 
       typedef std::string key_type;
-      typedef std::map< key_type, value_type > map_type;
+      typedef std::unordered_map< key_type, value_type > map_type;
 
    public:
       template< typename TopRule >

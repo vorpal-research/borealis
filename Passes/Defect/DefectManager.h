@@ -45,25 +45,36 @@ struct persistentDefectData {
 
     std::string filename;
 
-    persistentDefectData(const std::string& filename): filename(filename) {
-        if(usePersistentDefectData.get(false)) {
-            std::ifstream in(filename);
-            if(auto&& loaded = util::read_as_json<SimpleT>(in)) {
-                truePastData = std::move(loaded->first);
-                falsePastData = std::move(loaded->second);
+    template<class Body>
+    void locked(Body body) {
+        while(true) {
+            llvm::LockFileManager fileLock(filename);
+            if(fileLock == llvm::LockFileManager::LFS_Shared) {
+                fileLock.waitForUnlock();
+                continue;
             }
+            if(fileLock == llvm::LockFileManager::LFS_Error) {
+                errs() << "error while trying to lock file \"" << filename << "\"" << endl;
+            }
+
+            body();
+            break;
         }
     }
 
-    persistentDefectData(const char* filename): trueData(), falseData(), filename(filename) {
+    persistentDefectData(const std::string& filename): trueData(), falseData(), filename(filename) {
         if(usePersistentDefectData.get(false)) {
-            std::ifstream in(filename);
-            if (auto&& loaded = util::read_as_json<SimpleT>(in)) {
-                truePastData = std::move(loaded->first);
-                falsePastData = std::move(loaded->second);
-            }
+            locked([&](){
+                std::ifstream in(filename);
+                if(auto&& loaded = util::read_as_json<SimpleT>(in)) {
+                    truePastData = std::move(loaded->first);
+                    falsePastData = std::move(loaded->second);
+                }
+            });
         }
     }
+
+    persistentDefectData(const char* filename): persistentDefectData(std::string(filename)) {}
 
     ~persistentDefectData() {
 //        if(usePersistentDefectData.get(false)) {
@@ -84,19 +95,18 @@ struct persistentDefectData {
             tpd.insert(trueData.begin(), trueData.end());
             fpd.insert(falseData.begin(), falseData.end());
 
-            while(true) {
-                llvm::LockFileManager fileLock(filename);
-                if(fileLock == llvm::LockFileManager::LFS_Shared) {
-                    fileLock.waitForUnlock();
-                    continue;
+            locked([&](){
+                {
+                    std::ifstream in{filename};
+                    if(auto existing = util::read_as_json<SimpleT>(in)) {
+                        tpd.insert(std::make_move_iterator(existing->first.begin()), std::make_move_iterator(existing->first.end()));
+                        fpd.insert(std::make_move_iterator(existing->second.begin()), std::make_move_iterator(existing->second.end()));
+                    }
                 }
-                if(fileLock == llvm::LockFileManager::LFS_Error) {
-                    errs() << "error while trying to lock file \"" << filename << "\"" << endl;
-                }
+
                 std::ofstream out{filename};
                 util::write_as_json(out, std::make_pair(std::move(tpd), std::move(fpd)));
-                break;
-            }
+             });
 
         }
     }
@@ -122,10 +132,13 @@ public:
 
     DefectManager();
     virtual bool runOnModule(llvm::Module&) override { return false; }
+
+    virtual bool doFinalization(llvm::Module &module) override;
+
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual ~DefectManager() {
         // this is a bit fucked up
-        data.forceDump();
+        getStaticData().forceDump();
     };
 
     void addDefect(DefectType type, llvm::Instruction* where);
@@ -150,16 +163,23 @@ public:
 
 private:
 
-    static impl_::persistentDefectData data;
-    static AdditionalDefectData supplemental;
+    static impl_::persistentDefectData& getStaticData() {
+        static impl_::persistentDefectData data("persistentDefectData.json");
+        return data;
+    }
+
+    static AdditionalDefectData& getSupplemental() {
+        static AdditionalDefectData data;
+        return data;
+    }
 
 public:
 
-    const DefectData& getData() const { return data.trueData; }
+    const DefectData& getData() const { return getStaticData().trueData; }
 
 #include "Util/macros.h"
-    auto begin() QUICK_CONST_RETURN(data.trueData.begin())
-    auto end() QUICK_CONST_RETURN(data.trueData.end())
+    auto begin() QUICK_CONST_RETURN(getStaticData().trueData.begin())
+    auto end() QUICK_CONST_RETURN(getStaticData().trueData.end())
 #include "Util/unmacros.h"
 
 };

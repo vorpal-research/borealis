@@ -56,6 +56,21 @@ struct SMTImpl<Impl, OpaqueBoolConstantTerm> {
     }
 };
 
+struct OpaqueBoolConstantTermExtractor {
+
+    auto unapply(Term::Ptr t) const -> functional_hell::matchers::storage_t<bool> {
+        if (auto&& tt = llvm::dyn_cast<OpaqueBoolConstantTerm>(t)) {
+            return functional_hell::matchers::make_storage(tt->getValue());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $OpaqueBoolConstantTerm = functional_hell::matchers::make_pattern(OpaqueBoolConstantTermExtractor());
+
+
 } /* namespace borealis */
 
 #endif /* OPAQUEBOOLCONSTANTTERM_H_ */

@@ -91,6 +91,7 @@ public:
     PredicateState::Ptr transform(PredicateState::Ptr ps);
     using Base::transformBase;
     Predicate::Ptr transformBase(Predicate::Ptr pred);
+    PredicateState::Ptr transformChoice(PredicateStateChoicePtr ps);
 
 private:
 
@@ -106,7 +107,7 @@ private:
 
     bool checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv);
     bool checkVars(const Term::Set& lhv, const Term::Set& rhv);
-    bool checkPtrs(const Term::Set& lhv, const Term::Set& rhv);
+    bool checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv);
 
 };
 

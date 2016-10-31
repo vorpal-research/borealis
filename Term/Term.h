@@ -142,6 +142,19 @@ template<>
 struct hash<const borealis::Term::Ptr> : hash<borealis::Term::Ptr> {};
 } // namespace std
 
+namespace functional_hell {
+namespace matchers {
+
+template<>
+struct compare_trait<borealis::Term::Ptr> {
+    bool operator()(const borealis::Term::Ptr& lhv, const borealis::Term::Ptr& rhv) const {
+        return lhv->equals(rhv.get());
+    }
+};
+
+} /* namespace matchers */
+} /* namespace functional_hell */
+
 #define MK_COMMON_TERM_IMPL(CLASS) \
 private: \
     using Self = CLASS; \

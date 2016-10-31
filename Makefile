@@ -23,10 +23,9 @@ CXXFLAGS := \
 	-D__STDC_FORMAT_MACROS \
 	-D__STDC_LIMIT_MACROS \
 	-D_GLIBCXX_USE_CXX11_ABI=1 \
-	-O0 \
+	-O2 \
 	-fPIC \
 	-std=c++14 \
-	-g \
 	$(RTTIFLAG) \
 	$(INCLUDES) \
 	$(DEFS) \

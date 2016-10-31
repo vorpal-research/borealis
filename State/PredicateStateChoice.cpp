@@ -5,9 +5,11 @@
  *      Author: ice-phoenix
  */
 
+#include <Predicate/EqualityPredicate.h>
 #include "State/PredicateStateChoice.h"
 
 #include "Util/macros.h"
+#include "BasicPredicateState.h"
 
 namespace borealis {
 
@@ -107,11 +109,27 @@ PredicateState::Ptr PredicateStateChoice::sliceOn(PredicateState::Ptr base) cons
 }
 
 PredicateState::Ptr PredicateStateChoice::simplify() const {
+    using namespace functional_hell::matchers;
+    using namespace functional_hell::matchers::placeholders;
     auto&& simplified = viewContainer(choices)
                         .map([](auto&& choice) { return choice->simplify(); })
                         .memo()
                         .filter([](auto&& choice) { return not choice->isEmpty(); })
                         .toVector();
+
+    if(auto m =
+        (
+            BSeq(
+                $BasicPredicateState(BSeq($EqualityPredicate(_1, $OpaqueBoolConstantTerm(true)))),
+                $BasicPredicateState(BSeq($EqualityPredicate(_1, $OpaqueBoolConstantTerm(false))))
+            )
+          | BSeq(
+                $BasicPredicateState(BSeq($EqualityPredicate(_1, $OpaqueBoolConstantTerm(false)))),
+                $BasicPredicateState(BSeq($EqualityPredicate(_1, $OpaqueBoolConstantTerm(true))))
+            )
+        ) >> simplified) {
+        return PredicateState::Ptr{ new Self(Choices()) };
+    }
 
     // FIXME: akhin Do smth if simplified.size() == 0
     //              Maybe return empty state???

@@ -28,20 +28,26 @@ void DefectManager::addDefect(const std::string& type, llvm::Instruction* where)
 }
 
 void DefectManager::addDefect(const DefectInfo& info) {
-    data.trueData.insert(info);
-    supplemental.insert({info, {}});
+    getStaticData().trueData.insert(info);
+    getSupplemental().insert({info, {}});
 }
 
 void DefectManager::addNoDefect(const DefectInfo& info) {
-    data.falseData.insert(info);
+    getStaticData().falseData.insert(info);
 }
 
 const AdditionalDefectInfo& DefectManager::getAdditionalInfo(const DefectInfo& di) const {
-    return supplemental.at(di);
+    auto&& ret = util::at(getSupplemental(), di);
+    if(ret) {
+        return ret.getUnsafe();
+    } else {
+        static AdditionalDefectInfo empty;
+        return empty;
+    }
 }
 
 AdditionalDefectInfo& DefectManager::getAdditionalInfo(const DefectInfo& di) {
-    return supplemental.at(di);
+    return getSupplemental()[di];
 }
 
 DefectInfo DefectManager::getDefect(DefectType type, llvm::Instruction* where) const {
@@ -62,25 +68,27 @@ bool DefectManager::hasDefect(const std::string& type, llvm::Instruction* where)
 }
 
 bool DefectManager::hasDefect(const DefectInfo& di) const {
-    return util::contains(data.trueData, di) || util::contains(data.truePastData, di);
+    return util::contains(getStaticData().trueData, di) || util::contains(getStaticData().truePastData, di);
 }
 
 bool DefectManager::hasInfo(const DefectInfo& di) const {
-    return util::contains(data.trueData, di) || util::contains(data.truePastData, di) || util::contains(data.falsePastData, di);
+    return util::contains(getStaticData().trueData, di) || util::contains(getStaticData().truePastData, di) || util::contains(getStaticData().falsePastData, di);
 }
 
 
 void DefectManager::print(llvm::raw_ostream&, const llvm::Module*) const {
-    for (const auto& defect : data.trueData) {
+    for (const auto& defect : getStaticData().trueData) {
         infos() << defect.type << " at " << defect.location << endl;
     }
+}
+
+bool DefectManager::doFinalization(llvm::Module &module) {
+    getStaticData().forceDump();
+    return llvm::Pass::doFinalization(module);
 }
 
 char DefectManager::ID;
 static RegisterPass<DefectManager>
 X("defect-manager", "Pass that collects and filters detected defects");
-
-DefectManager::AdditionalDefectData DefectManager::supplemental;
-impl_::persistentDefectData DefectManager::data("persistentDefectData.json");
 
 } /* namespace borealis */

@@ -27,6 +27,9 @@
 
 #include "Util/macros.h"
 
+#define DUMP(...) // std::cerr << # __VA_ARGS__ " = " << __VA_ARGS__ << std::endl;
+#define DUMPING(...) /*(std::cerr << # __VA_ARGS__ " = " << __VA_ARGS__ << std::endl, __VA_ARGS__)*/ (__VA_ARGS__)
+
 namespace borealis {
 
 bool isTriviallyInboundsGEP(const llvm::Value* I) {
@@ -34,14 +37,17 @@ bool isTriviallyInboundsGEP(const llvm::Value* I) {
     std::vector<const llvm::Value*> indices;
 
     const llvm::GEPOperator* gepi = llvm::dyn_cast<llvm::GEPOperator>(I);
-    if(!gepi) return false;
+    if(not gepi) return false;
 
-    if (!gepi->hasAllConstantIndices()) return false;
+    if (not gepi->hasAllConstantIndices()) return false;
     if (gepi->hasAllZeroIndices()) return true;
 
     pointerOp = gepi->getPointerOperand();
 
-    if(!llvm::is_one_of<llvm::AllocaInst, llvm::GlobalValue, llvm::Constant>(pointerOp)) return false;
+    if(pointerOp->getType()->isStructTy() &&
+       llvm::is_one_of<llvm::AllocaInst, llvm::Constant>(pointerOp)) return DUMPING(true);
+
+    DUMP(llvm::valueSummary(gepi));
 
     for (auto gt = llvm::gep_type_begin(gepi); gt != llvm::gep_type_end(gepi); ++gt) {
         auto type = *gt;
@@ -49,16 +55,19 @@ bool isTriviallyInboundsGEP(const llvm::Value* I) {
 
         auto index = llvm::dyn_cast<llvm::ConstantInt>(value)->getValue().getLimitedValue();
 
+        DUMP(index)
+        DUMP(*type)
+
         if(auto stt = llvm::dyn_cast<llvm::StructType>(type)) {
-            if(index >= stt->getStructNumElements()) return false;
+            if(index >= stt->getStructNumElements()) return DUMPING(false);
         } else if(auto stt = llvm::dyn_cast<llvm::ArrayType>(type)) {
-            if(index >= stt->getArrayNumElements()) return false;
+            if(index >= stt->getArrayNumElements()) return DUMPING(false);
         } else {
-            if(index != 0) return false;
+            if(index != 0) return DUMPING(false);
         }
     }
 
-    return true;
+    return DUMPING(true);
 }
 
 
