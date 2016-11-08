@@ -68,6 +68,7 @@
 #include "Actions/GatherCommentsAction.h"
 #include "Config/config.h"
 #include "Codegen/DiagnosticLogger.h"
+#include "Database/Util.hpp"
 #include "Driver/cl.h"
 #include "Driver/clang_pipeline.h"
 #include "Driver/gestalt.h"
@@ -114,6 +115,8 @@ int gestalt::main(int argc, const char** argv) {
         args.suffixes("---opt:") +
         MultiConfigEntry("opt", "load").get();
     llvm::cl::ParseCommandLineOptions(opt.argc(), opt.argv());
+
+    borealis::startDatabaseDaemon();
 
     StringConfigEntry logFile("logging", "ini");
     StringConfigEntry z3log("logging", "z3log");
