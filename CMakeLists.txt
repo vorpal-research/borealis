@@ -24,20 +24,6 @@ if (NOT ${LLVM_FOUND})
 endif ()
 
 ################################################################################
-# MPI
-################################################################################
-find_package(MPI REQUIRED)
-
-include_directories(${MPI_INCLUDE_PATH})
-link_directories(${MPI_LINK_PATH})
-
-if (NOT ${MPI_FOUND})
-    message(FATAL_ERROR "LLVM libraries not found")
-endif ()
-
-list(APPEND ARCHIVES ${MPI_LIBRARIES})
-
-################################################################################
 # warnings
 ################################################################################
 set(WARNINGS_ON all extra cast-qual float-equal switch
@@ -78,7 +64,6 @@ set(COMPILER_FLAGS
         ${CMAKE_CXX_FLAGS}
         ${LLVM_CXX_FLAGS}
         ${LLVM_LD_FLAGS}
-        ${MPI_COMPILE_FLAGS}
         -O0
         -g
         -fPIC
