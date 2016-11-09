@@ -8,6 +8,7 @@
 #include <DB.hpp>
 
 #include "Config/config.h"
+#include "Database/SerialTemplateSpec.hpp"
 
 #include "Util/macros.h"
 
