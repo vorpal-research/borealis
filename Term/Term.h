@@ -119,6 +119,7 @@ struct TermShallowHash {
 
 struct TermEquals {
     bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
+        if(!lhv) return !rhv;
         return lhv->equals(rhv.get());
     }
 };

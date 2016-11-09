@@ -121,6 +121,32 @@ bool operator==(const Predicate& a, const Predicate& b);
 std::ostream& operator<<(std::ostream& s, Predicate::Ptr p);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Predicate::Ptr p);
 
+struct PredicateHash {
+    size_t operator()(Predicate::Ptr pred) const noexcept {
+        if(!pred) return 0;
+        return pred->hashCode();
+    }
+};
+
+struct PredicateShallowHash {
+    size_t operator()(Predicate::Ptr pred) const noexcept {
+        return std::hash<const void*>{}(pred.get());
+    }
+};
+
+struct PredicateEquals {
+    bool operator()(Predicate::Ptr lhv, Predicate::Ptr rhv) const noexcept {
+        if(!lhv) return !rhv;
+        return lhv->equals(rhv.get());
+    }
+};
+
+struct PredicateShallowEquals {
+    bool operator()(Predicate::Ptr lhv, Predicate::Ptr rhv) const noexcept {
+        return lhv.get() == rhv.get();
+    }
+};
+
 } /* namespace borealis */
 
 namespace std {
