@@ -13,6 +13,9 @@
 [submodule "lib/iterations"]
 	path = lib/iterations
 	url = ../iterations
+[submodule "lib/leveldb-mp"]
+	path = lib/leveldb-mp
+	url = ../leveldb-mp
 [submodule "lib/functional-hell"]
 	path = lib/functional-hell
 	url = ../functional-hell

@@ -2,5 +2,6 @@
 3dd3eca24dd50cb862ac6349875dd8d91d93d5a0 lib/backward-cpp
 019d117aeedaaef5fb2cf06bc2c2b4619f0a0143 lib/functional-hell
 3cb9c502ee498c7430484f0594965625adaeb52b lib/iterations
+5e64d18f628fafc1d2bd98da550d91367b13d7e4 lib/leveldb-mp
 325199ff49e092ed96fd854ed7d26e74ab6c2622 lib/tinyformat
 d3c74ef7cb109d988959117b331259ff563acd1a lib/typesig

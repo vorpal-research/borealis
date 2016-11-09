@@ -84,6 +84,7 @@ ADDITIONAL_SOURCE_DIRS := \
 	$(PWD)/Annotation \
 	$(PWD)/Codegen \
 	$(PWD)/Config \
+	$(PWD)/Database \
 	$(PWD)/Driver \
 	$(PWD)/Executor \
 	$(PWD)/Factory \

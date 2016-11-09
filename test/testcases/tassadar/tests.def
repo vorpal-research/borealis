@@ -2,11 +2,11 @@ cstring.c
 cstring_offset.c
 huge_malloc.c
 illegal_strlen.c
+simple.c
 simple2.c
 simple2_fail.c
 simple_assert.c
-simple.c
 small_access.c
-strlen2.c
 strlen.c
+strlen2.c
 too_small.c
