@@ -33,6 +33,7 @@ struct AdditionalDefectInfo {
 namespace impl_ {
 
 static config::BoolConfigEntry usePersistentDefectData("analysis", "persistent-defect-data");
+static config::BoolConfigEntry persistentDefectDataSync("analysis", "persistent-defect-data-sync");
 
 struct persistentDefectData {
     using DefectData = std::unordered_set<DefectInfo>;
@@ -85,6 +86,32 @@ struct persistentDefectData {
 //            std::ofstream out{filename};
 //            util::write_as_json(out, std::make_pair(truePastData, falsePastData));
 //        }
+    }
+
+    void sync() {
+        if(usePersistentDefectData.get(false)) {
+            auto tpd = std::move(truePastData);
+            auto fpd = std::move(falsePastData);
+            tpd.insert(trueData.begin(), trueData.end());
+            fpd.insert(falseData.begin(), falseData.end());
+            for (auto&& e : tpd) fpd.erase(e);
+
+            locked([&](){
+                {
+                    std::ifstream in{filename};
+                    if(auto existing = util::read_as_json<SimpleT>(in)) {
+                        tpd.insert(std::make_move_iterator(existing->first.begin()), std::make_move_iterator(existing->first.end()));
+                        fpd.insert(std::make_move_iterator(existing->second.begin()), std::make_move_iterator(existing->second.end()));
+                    }
+                }
+
+                std::ofstream out{filename};
+                util::write_as_json(out, std::make_pair(tpd, fpd));
+            });
+
+            truePastData = std::move(tpd);
+            falsePastData = std::move(fpd);
+        }
     }
 
     void forceDump() {
@@ -160,6 +187,12 @@ public:
     bool hasInfo(const DefectInfo& di) const;
 
     virtual void print(llvm::raw_ostream&, const llvm::Module*) const override;
+
+    void sync() {
+        if(impl_::persistentDefectDataSync.get(false)) {
+            getStaticData().sync();
+        }
+    }
 
 private:
 

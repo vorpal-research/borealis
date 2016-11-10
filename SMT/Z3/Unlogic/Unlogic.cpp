@@ -20,10 +20,10 @@ Term::Ptr undoBv(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN)
     auto res = Z3_get_numeral_string(expr.ctx(), expr);
     auto size = expr.get_sort().bv_size();
 
-    return FN.Term->getIntTerm(res, expr.get_sort().bv_size(), llvm::Signedness::Unknown)->setType(witness->getType());
+    return FN.Term->getIntTerm(res, size, llvm::Signedness::Unknown)->setType(witness->getType());
 }
 
-Term::Ptr undoBool(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN) {
+Term::Ptr undoBool(Term::Ptr /* witness */, const z3::expr& expr, const FactoryNest& FN) {
     auto res = Z3_get_bool_value(expr.ctx(), expr);
     if (res == Z3_L_TRUE) {
         return FN.Term->getTrueTerm();

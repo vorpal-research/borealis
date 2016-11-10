@@ -14,11 +14,23 @@
 
 namespace borealis {
 
+static Predicate::Ptr inverse(FactoryNest& FN, const Predicate::Ptr& predicate) {
+    using namespace functional_hell::matchers;
+    using namespace functional_hell::matchers::placeholders;
+    if(auto m = $EqualityPredicate(_1, $OpaqueBoolConstantTerm(true)) >> predicate) {
+        return FN.Predicate->getEqualityPredicate(m->_1, FN.Term->getFalseTerm(), predicate->getLocation(), predicate->getType());
+    }
+    if(auto m = $EqualityPredicate(_1, $OpaqueBoolConstantTerm(false)) >> predicate) {
+        return FN.Predicate->getEqualityPredicate(m->_1, FN.Term->getTrueTerm(), predicate->getLocation(), predicate->getType());
+    }
+    return nullptr;
+}
+
 StateSlicer::StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA) :
-    Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}{ init(AA); }
+    Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}, CFDT{FN}{ init(AA); }
 
 StateSlicer::StateSlicer(FactoryNest FN, PredicateState::Ptr query) :
-    Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}{ init(nullptr); }
+    Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}, CFDT{FN}{ init(nullptr); }
 
 
 static struct {
@@ -64,12 +76,35 @@ void StateSlicer::addSliceTerm(Term::Ptr term) {
 
 PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
     if(AA) AA->prepare(ps);
-    return nullptr == AA
-           ? ps
-           : Base::transform(ps->reverse())
-               ->filter([](auto&& p) { return !!p; })
-               ->reverse()
-               ->simplify();
+    CFDT.reset();
+    CFDT.transform(ps);
+
+    if(nullptr == AA) return ps;
+
+    {
+        std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>& paths = CFDT.getFinalPaths();
+
+        // CFDT.getFinalPaths().foreach_non_unique(APPLY(paths.insert));
+
+        for(auto&& pred: paths) {
+            if(paths.count(inverse(FN, pred))) {
+                continue;
+            }
+
+            for (auto&& e : util::viewContainer(pred->getOperands())) {
+                auto&& nested = Term::getFullTermSet(e);
+                util::viewContainer(nested)
+                    .filter(isInterestingTerm)
+                    .foreach(APPLY(this->addSliceTerm));
+            }
+        }
+    }
+
+    auto reversed = ps->reverse();
+    return Base::transform(reversed)
+           ->filter([](auto&& p) { return !!p; })
+           ->reverse()
+           ->simplify();
 }
 
 
@@ -83,8 +118,32 @@ PredicateState::Ptr StateSlicer::transformChoice(PredicateStateChoicePtr ps) {
     } else return Base::transformBase(psi);
 }
 
+void StateSlicer::addControlFlowDeps(Predicate::Ptr res) {
+    std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>& paths = CFDT.getDominatingPaths(res);
+
+    //CFDT.getDominatingPaths(res).foreach_non_unique(APPLY(paths.insert));
+
+    for(auto&& pred: paths) {
+        if(paths.count(inverse(FN, pred))) {
+            continue;
+        }
+
+        for (auto&& e : util::viewContainer(pred->getOperands())) {
+            auto&& nested = Term::getFullTermSet(e);
+            util::viewContainer(nested)
+                .filter(isInterestingTerm)
+                .foreach(APPLY(this->addSliceTerm));
+        }
+    }
+}
+
 Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
+    //if (checkPath(pred, lhvTerms, rhvTerms)) {
+    //    res = pred;
+    //} else
+
     if (nullptr == AA) return pred;
+    if (PredicateType::STATE != pred->getType()) return pred;
 
     auto&& lhvTerms = Term::Set{};
     for (auto&& lhv : util::viewContainer(pred->getOperands()).take(1)) {
@@ -103,13 +162,13 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
 
     Predicate::Ptr res = nullptr;
 
-    if (checkPath(pred, lhvTerms, rhvTerms)) {
-        res = pred;
-    } else if (checkVars(lhvTerms, rhvTerms)) {
+    if (checkVars(lhvTerms, rhvTerms)) {
         res = pred;
     } else if (checkPtrs(pred, lhvTerms, rhvTerms)) {
         res = pred;
     }
+
+    if(res) addControlFlowDeps(res);
 
     return res;
 }
@@ -118,6 +177,7 @@ bool StateSlicer::checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Ter
     if (PredicateType::PATH == pred->getType() ||
         PredicateType::ASSUME == pred->getType() ||
         PredicateType::REQUIRES == pred->getType()) {
+
         (util::viewContainer(lhv) >> util::viewContainer(rhv))
             .foreach(APPLY(this->addSliceTerm));
         return true;

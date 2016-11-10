@@ -47,6 +47,8 @@ public:
 
 private:
 
+    PredicateState::Ptr getInstructionState(llvm::Instruction* I);
+
     CheckManager* CM;
 
     llvm::AliasAnalysis* AA;

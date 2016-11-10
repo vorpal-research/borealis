@@ -70,6 +70,10 @@ public:
         }
     }
 
+    void insert(const split_join& that) {
+        (*this) = join(*this, that);
+    }
+
     static split_join join(const split_join& lhv, const split_join& rhv) {
         if(lhv.root == rhv.root || rhv.root == nullptr) return lhv;
         if(lhv.root == nullptr) return rhv;
@@ -103,6 +107,42 @@ public:
             f(leaf->value);
         }
         
+    }
+
+    template<class F>
+    void foreach_non_unique(F f) const {
+        using namespace impl_;
+        std::queue<node_t> que;
+        if(!root) return;
+        que.push(root);
+
+        while(!que.empty()) {
+            auto node = que.front();
+            que.pop();
+            if(!node->isLeaf) {
+                auto branch = std::static_pointer_cast<sj_branch<T>>(node);
+                if(branch->left) que.push(branch->left);
+                if(branch->right) que.push(branch->right);
+            } else {
+                f(std::static_pointer_cast<sj_leaf<T>>(node)->value);
+            }
+        }
+    }
+
+    friend std::ostream& operator<<(std::ostream& ost, const split_join& sj) {
+        ost << "split_join{";
+        bool first = true;
+        sj.foreach_non_unique([&](auto&& el){
+            if(!first) ost << ", ";
+            ost << el;
+            first = false;
+        });
+        ost << "}";
+        return ost;
+    }
+
+    void clear() {
+        root = nullptr;
     }
 };
 

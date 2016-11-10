@@ -117,14 +117,13 @@ public:
         dbgs() << "Query size:" << TermSizeCalculator::measure(query) << endl;
         dbgs() << "State size:" << TermSizeCalculator::measure(state) << endl;
 
-        if (not query or not state) return false;
-        if (query->isEmpty()) return false;
-        if (state->isEmpty()) return true;
-
         dbgs() << "Defect: " << di << endl;
         dbgs() << "Checking: " << *I << endl;
         if(!noQueryLogging) dbgs() << "  Query: " << query << endl;
 
+        if (not query or not state) return false;
+        if (query->isEmpty()) return false;
+        if (state->isEmpty()) return true;
 
         static config::BoolConfigEntry useLocalAA("analysis", "use-local-aa");
         static config::BoolConfigEntry doSlicing("analysis", "do-slicing");
@@ -172,10 +171,10 @@ public:
             if(solverResult.isUnknown()) dbgs() << "{Unknown}" << endl;
             else dbgs() << "{Unsat}" << endl;
 
-            //if(solverResult.isUnknown()) {
-            //    auto graph = buildGraphRep(state);
-            //    llvm::ViewGraph(&graph, "Unknown state");
-            //}
+           // if(solverResult.isUnknown()) {
+           //     auto graph = buildGraphRep(state);
+           //     llvm::ViewGraph(&graph, "Unknown state");
+           // }
 
             return false;
         }

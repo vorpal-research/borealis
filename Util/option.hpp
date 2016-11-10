@@ -324,6 +324,11 @@ public:
         return empty();
     }
 
+    friend std::ostream& operator<<(std::ostream& ost, const self& x) {
+        for(auto&& el: x) return ost << "just(" << el << ")";
+        return ost << "nothing";
+    }
+
     const T* get() const {
         return holder;
     }

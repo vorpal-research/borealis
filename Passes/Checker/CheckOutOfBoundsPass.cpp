@@ -55,7 +55,7 @@ public:
                 pass->FN.Term->getTrueTerm()
             )
         )();
-        auto ps = pass->PSA->getInstructionState(&loc);
+        auto ps = pass->getInstructionState(&loc);
 
         h.check(q, ps);
     }
@@ -105,14 +105,22 @@ bool CheckOutOfBoundsPass::runOnFunction(llvm::Function& F) {
     AA = getAnalysisIfAvailable<llvm::AliasAnalysis>();
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
-    PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+    //PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+    PSA = nullptr;
 
     FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     GepInstVisitor giv(this);
     giv.visit(F);
 
+    DM->sync();
     return false;
+}
+
+PredicateState::Ptr CheckOutOfBoundsPass::getInstructionState(llvm::Instruction* I) {
+    auto F = I->getParent()->getParent();
+    if(!PSA) PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, *F);
+    return PSA->getInstructionState(I);
 }
 
 CheckOutOfBoundsPass::~CheckOutOfBoundsPass() {}
