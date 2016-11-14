@@ -61,7 +61,7 @@ public:
             auto q = bond->map(
                 [&t](Predicate::Ptr p) { return t.transform(p); }
             );
-            auto ps = pass->PSA->getInstructionState(&CI);
+            auto ps = pass->getInstructionState(&CI);
 
             h.check(q, ps, defect);
         }
@@ -74,13 +74,14 @@ public:
         if (h.skip()) return;
 
         auto contract = pass->FM->getReq(CI, pass->FN);
+        if(contract->isEmpty()) return;
 
         auto t = CallSiteInitializer(&CI, pass->FN);
         auto q = contract->map(
             [&t](Predicate::Ptr p) { return t.transform(p); }
         );
 
-        auto ps = pass->PSA->getInstructionState(&CI);
+        auto ps = pass->getInstructionState(&CI);
 
         h.check(q, ps);
     }
@@ -95,7 +96,7 @@ public:
 
         if (h.skip(defect)) return;
 
-        auto state = pass->PSA->getInstructionState(&CI);
+        auto state = pass->getInstructionState(&CI);
 
         h.isReachable(state, defect);
     }
@@ -117,7 +118,7 @@ public:
                     pass->FN.Term->getTrueTerm()
                 )
             )();
-            auto ps = pass->PSA->getInstructionState(&CI);
+            auto ps = pass->getInstructionState(&CI);
 
             h.check(q, ps);
         }
@@ -130,7 +131,9 @@ public:
         if (h.skip()) return;
 
         auto q = pass->FM->getEns(RI.getParent()->getParent());
-        auto ps = pass->PSA->getInstructionState(&RI);
+        if(q->isEmpty()) return;
+
+        auto ps = pass->getInstructionState(&RI);
 
         h.check(q, ps);
     }
@@ -168,14 +171,22 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     DM = &GetAnalysis<DefectManager>::doit(this, F);
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     MI = &GetAnalysis<VariableInfoTracker>::doit(this, F);
-    PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+    // PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+    PSA = nullptr;
 
     FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
 
     CallInstVisitor civ(this);
     civ.visit(F);
 
+    DM->sync();
     return false;
+}
+
+PredicateState::Ptr CheckContractPass::getInstructionState(llvm::Instruction* I) {
+    auto F = I->getParent()->getParent();
+    if(!PSA) PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, *F);
+    return PSA->getInstructionState(I);
 }
 
 CheckContractPass::~CheckContractPass() {}

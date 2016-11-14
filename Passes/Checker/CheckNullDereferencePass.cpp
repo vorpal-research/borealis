@@ -87,7 +87,7 @@ private:
                     pass->FN.Term->getNullPtrTerm()
                 )
             )();
-            auto ps = pass->PSA->getInstructionState(&I);
+            auto ps = pass->getInstructionState(&I);
 
             h.check(q, ps);
         }
@@ -141,7 +141,8 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     CM = &GetAnalysis<CheckManager>::doit(this, F);
     if (CM->shouldSkipFunction(&F)) return false;
 
-    PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+    PSA = nullptr;
+    //PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
 
     AA = getAnalysisIfAvailable<llvm::AliasAnalysis>();
     DM = &GetAnalysis<DefectManager>::doit(this, F);
@@ -154,7 +155,14 @@ bool CheckNullDereferencePass::runOnFunction(llvm::Function& F) {
     CheckNullsVisitor cnv(this);
     cnv.visit(F);
 
+    DM->sync();
     return false;
+}
+
+PredicateState::Ptr CheckNullDereferencePass::getInstructionState(llvm::Instruction* I) {
+    auto F = I->getParent()->getParent();
+    if(!PSA) PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, *F);
+    return PSA->getInstructionState(I);
 }
 
 CheckNullDereferencePass::~CheckNullDereferencePass() {}

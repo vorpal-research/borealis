@@ -63,8 +63,6 @@ Solver::check_result Solver::check(
     auto&& bctx = bef.unwrap();
     boolector_set_opt(bctx, "model_gen", 2);
 
-    auto&& wtf = logging::wtf();
-
     auto&& axioms = uniqueAxioms(ctx);
 
     dbgs() << "! adding axioms started" << endl;
@@ -129,7 +127,7 @@ Model::assignments_t recollectModel(
     const FactoryNest& FN,
     ExprFactory& ef,
     ExecutionContext& ctx,
-    Btor* smt,
+    Btor* /* smt */,
     const TermCollection& vars) {
     TRACE_FUNC
     USING_SMT_LOGIC(Boolector)
@@ -149,7 +147,7 @@ void recollectMemory(
     Model& model,
     ExprFactory& ef,
     ExecutionContext& ctx,
-    Btor* smt,
+    Btor* /* smt */,
     const TermCollection& ptrs) {
     TRACE_FUNC
     USING_SMT_LOGIC(Boolector)
@@ -168,7 +166,7 @@ void recollectMemory(
         auto&& finalMem = ctx.getCurrentMemoryContents(memspace);
 
         auto&& startBounds = ctx.getCurrentGepBounds(memspace);
-        auto&& finalBounds = ctx.getCurrentGepBounds(memspace);
+        // auto&& finalBounds = ctx.getCurrentGepBounds(memspace);
 
         Boolector::Pointer eptr = SMT<Boolector>::doit(ptr, ef, &ctx);
 
@@ -206,7 +204,7 @@ void recollectProperties(
     Model& model,
     ExprFactory& ef,
     ExecutionContext& ctx,
-    Btor* smt,
+    Btor* /* smt */,
     const TermCollection& props) {
     TRACE_FUNC
     USING_SMT_LOGIC(Boolector)

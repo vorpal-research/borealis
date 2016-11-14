@@ -1,6 +1,7 @@
 lib/iterations = ../borealis-libs/iterations
 lib/typesig = ../borealis-libs/typesig
 lib/functional-hell = ../borealis-libs/functional-hell
+lib/leveldb-mp = ../leveldb-mp
 
 lib/tinyformat = [git]https://github.com/c42f/tinyformat.git
 lib/backward-cpp = [git]https://github.com/bombela/backward-cpp.git

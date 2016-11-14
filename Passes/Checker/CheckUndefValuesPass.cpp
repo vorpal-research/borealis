@@ -73,6 +73,7 @@ bool CheckUndefValuesPass::runOnFunction(llvm::Function& F) {
     UndefInstVisitor uiv(this);
     uiv.visit(F);
 
+    DM->sync();
     return false;
 }
 
