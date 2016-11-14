@@ -28,3 +28,4 @@ lib/andersen
 lib/backward-cpp
 lib/cfgparser
 lib/dbglog
+lib/boolector
