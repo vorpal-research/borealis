@@ -1,4 +1,3 @@
-adaptor.c
 bitfields.c
 globals_01.c
 infinite_loop.c
