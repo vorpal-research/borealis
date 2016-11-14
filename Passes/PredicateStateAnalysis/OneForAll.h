@@ -21,6 +21,9 @@
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "Passes/Tracker/SourceLocationTracker.h"
 #include "Passes/Util/ProxyFunctionPass.h"
+#include "State/Transformer/StateOptimizer.h"
+#include "State/Transformer/Retyper.h"
+#include "Util/graph.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -51,23 +54,31 @@ public:
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnFunction(llvm::Function& F) override;
 
+    virtual PredicateState::Ptr getInstructionState(const llvm::Instruction* I) override;
+
 private:
 
     BasicBlockStates basicBlockStates;
     PredicateAnalyses PA;
 
+    FactoryNest FN;
+
+    StateOptimizer SO;
+    Retyper RR;
+
+    TopologicalSorter::Ordered TO;
+
     llvm::DominatorTree* DT;
     FunctionManager* FM;
     SourceLocationTracker* SLT;
 
-    FactoryNest FN;
-
     virtual void init() override;
     virtual void finalize() override;
 
-    void processBasicBlock(llvm::BasicBlock* BB);
+    void processBasicBlock(const llvm::BasicBlock* BB);
+    void finalizeBasicBlock(const llvm::BasicBlock* BB);
 
-    PredicateState::Ptr BBM(llvm::BasicBlock* BB);
+    PredicateState::Ptr BBM(const llvm::BasicBlock* BB);
     PredicateState::Ptr PM(const llvm::Instruction* I);
     PredicateState::Ptr PostPM(const llvm::Instruction* I);
     PredicateState::Ptr PPM(const PhiBranch& key);

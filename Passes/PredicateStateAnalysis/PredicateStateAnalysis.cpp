@@ -39,11 +39,11 @@ void AbstractPredicateStateAnalysis::printInstructionStates(llvm::raw_ostream&, 
     infos() << "End of predicate state analysis results" << endl;
 }
 
-PredicateState::Ptr AbstractPredicateStateAnalysis::getInitialState() const {
+PredicateState::Ptr AbstractPredicateStateAnalysis::getInitialState() {
     return initialState;
 }
 
-PredicateState::Ptr AbstractPredicateStateAnalysis::getInstructionState(const llvm::Instruction* I) const {
+PredicateState::Ptr AbstractPredicateStateAnalysis::getInstructionState(const llvm::Instruction* I) {
     if (borealis::util::containsKey(instructionStates, I)) {
         return instructionStates.at(I);
     } else {

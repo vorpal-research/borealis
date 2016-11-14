@@ -40,8 +40,8 @@ public:
 
     void printInstructionStates(llvm::raw_ostream&, const llvm::Module*) const;
 
-    PredicateState::Ptr getInitialState() const;
-    PredicateState::Ptr getInstructionState(const llvm::Instruction* I) const;
+    virtual PredicateState::Ptr getInitialState();
+    virtual PredicateState::Ptr getInstructionState(const llvm::Instruction* I);
 
 protected:
 
