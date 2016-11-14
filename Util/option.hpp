@@ -395,12 +395,12 @@ struct json_traits<option<T>> {
     typedef std::unique_ptr<option<T>> optional_ptr_t;
     using delegate = json_traits<T>;
 
-    static Json::Value toJson(const option<T>& val) {
+    static json::Value toJson(const option<T>& val) {
         for(auto&& el: val) return delegate::toJson(el);
-        return Json::Value{};
+        return json::Value{};
     }
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
+    static optional_ptr_t fromJson(const json::Value& json) {
         if(json.isNull()) return optional_ptr_t{ new option<T>{nothing()} };
         auto del = delegate::fromJson(json);
         if(!del) return nullptr;

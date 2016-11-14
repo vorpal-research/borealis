@@ -95,12 +95,12 @@ template<>
 struct json_traits<indexed_string> {
     using optional_ptr_t = std::unique_ptr<indexed_string>;
 
-    static Json::Value toJson(const indexed_string& val) {
-        Json::Value ret = Json::StaticString(val.c_str());
+    static json::Value toJson(const indexed_string& val) {
+        json::Value ret{ json::Value::StaticString, val.c_str(), val.size() };
         return ret;
     }
 
-    static optional_ptr_t fromJson(const Json::Value& val) {
+    static optional_ptr_t fromJson(const json::Value& val) {
         if(!val.isString()) return nullptr;
         return std::make_unique<indexed_string>(val.asCString());
     }

@@ -20,7 +20,7 @@ namespace z3_ {
 struct TacticData {
     std::string name;
     std::string type;
-    std::unordered_map<std::string, Json::Value> params;
+    std::unordered_map<std::string, util::json::Value> params;
 };
 
 class Tactics {

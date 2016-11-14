@@ -67,7 +67,7 @@ bool FuncInfoProvider::runOnModule(llvm::Module& M) {
 
     for(auto&& filename : FunctionDefinitionFiles) {
         std::ifstream input(util::getFilePathIfExists(filename));
-        Json::Value allShit;
+        util::json::Value allShit;
         input >> allShit;
         for(auto&& val : allShit){
             auto opt = util::fromJson< func_info::FuncInfo >(val);

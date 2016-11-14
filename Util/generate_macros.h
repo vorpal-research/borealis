@@ -1270,13 +1270,13 @@ MACRO(A31, MARG)
     struct json_traits<TYPE> {\
         typedef std::unique_ptr<TYPE> optional_ptr_t; \
 \
-        static Json::Value toJson(const TYPE& val) { \
-            Json::Value dict; \
+        static json::Value toJson(const TYPE& val) { \
+            json::Value dict; \
             PP_FOREACH(JSON_DICT_WRITE, , , __VA_ARGS__) \
-            return dict; \
+            return std::move(dict); \
         } \
 \
-        static optional_ptr_t fromJson(const Json::Value& json) { \
+        static optional_ptr_t fromJson(const json::Value& json) { \
             using borealis::util::json_object_builder; \
 \
             json_object_builder<TYPE, PP_FOREACH_COMMA(PP_VAL_DECLTYPE, TYPE, __VA_ARGS__)> builder { \
@@ -1290,7 +1290,7 @@ MACRO(A31, MARG)
     } \
     }
 
-#define ENUM_CHECK(NAME, ENAME) case ENAME::NAME: return #NAME;
+#define ENUM_CHECK(NAME, ENAME) case ENAME::NAME: return json::Value(#NAME);
 #define ENUM_REVERSE_CHECK(NAME, ENAME) else if (json == #NAME) return optional_ptr_t(new ENAME(ENAME::NAME));
 
 #define GENERATE_OUTLINE_ENUM_JSON_TRAITS(TYPE, ...) \
@@ -1300,13 +1300,13 @@ MACRO(A31, MARG)
     struct json_traits<TYPE> {\
         typedef std::unique_ptr<TYPE> optional_ptr_t; \
 \
-        static Json::Value toJson(TYPE val) { \
+        static json::Value toJson(TYPE val) { \
             switch(val) { \
                 PP_FOREACH(ENUM_CHECK, , TYPE, __VA_ARGS__); \
             }\
         } \
 \
-        static optional_ptr_t fromJson(const Json::Value& json) { \
+        static optional_ptr_t fromJson(const json::Value& json) { \
             if(0) return nullptr; \
             PP_FOREACH(ENUM_REVERSE_CHECK, , TYPE, __VA_ARGS__); \
             return nullptr; \

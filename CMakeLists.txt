@@ -79,7 +79,7 @@ set(COMPILER_FLAGS
         ${LLVM_CXX_FLAGS}
         ${LLVM_LD_FLAGS}
         ${MPI_COMPILE_FLAGS}
-        -O0
+        -O2
         -g
         -fPIC
         -fno-rtti
@@ -92,6 +92,7 @@ set(INCLUDE_DIRS
         ${PROJECT_SOURCE_DIR}/Protobuf/Gen
         ${PROJECT_SOURCE_DIR}/lib
         ${PROJECT_SOURCE_DIR}/lib/pegtl/include
+        ${PROJECT_SOURCE_DIR}/lib/rapidjson/include
         ${PROJECT_SOURCE_DIR}/lib/google-test/include
         ${PROJECT_SOURCE_DIR}/lib/yaml-cpp/include
         ${PROJECT_SOURCE_DIR}/lib/yaml-cpp/test
