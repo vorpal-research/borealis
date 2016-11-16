@@ -25,14 +25,14 @@ template<>
 struct json_traits<test_json_structure> {
     typedef std::unique_ptr<test_json_structure> optional_ptr_t;
 
-    static Json::Value toJson(const test_json_structure& val) {
-        Json::Value dict;
+    static json::Value toJson(const test_json_structure& val) {
+        json::Value dict;
         dict["x"] = val.x;
         dict["str"] = val.str;
         return dict;
     }
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
+    static optional_ptr_t fromJson(const json::Value& json) {
         using borealis::util::json_object_builder;
 
         json_object_builder<test_json_structure, int, std::string> builder {
@@ -117,7 +117,7 @@ TEST(Json, readwrite) {
 
     {
         test_json_structure v0 { 20, "an object that is" };
-        Json::Value v1;
+        json::Value v1;
         v1["str"] = "a different object";
 
         std::stringstream buf;
@@ -131,7 +131,7 @@ TEST(Json, readwrite) {
 
     {
         test_json_structure v0 { 22, "stupid temporary value" };
-        Json::Value v1;
+        json::Value v1;
         v1["x"] = 20;
         v1["str"] = "an object that is";
 

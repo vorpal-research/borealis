@@ -24,13 +24,13 @@ struct container_json_traits {
     using value_type = Container;
     using optional_ptr_t = std::unique_ptr<value_type>;
 
-    static Json::Value toJson(const value_type& val) {
-        Json::Value ret = Json::ValueType::arrayValue;
-        for(const auto& m : val) ret.append(util::toJson(m));
-        return ret;
+    static json::Value toJson(const value_type& val) {
+        json::Value ret = json::Value::Array;
+        for(const auto& m : val) ret.push_back(util::toJson(m));
+        return std::move(ret);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& val) {
+    static optional_ptr_t fromJson(const json::Value& val) {
         using T = std::decay_t<decltype(*std::begin(std::declval<Container>()))>;
 
         value_type ret;
@@ -76,18 +76,18 @@ struct json_traits<std::unordered_map<K, V, Hash, Equal, Alloc>> {
     using theMap_t = std::unordered_map<K, V, Hash, Equal, Alloc>;
     using optional_ptr_t = std::unique_ptr<theMap_t>;
 
-    static Json::Value toJson(const theMap_t& val) {
-        Json::Value ret = Json::arrayValue;
+    static json::Value toJson(const theMap_t& val) {
+        json::Value ret;
         for(const auto& kv : val) {
-            Json::Value field = Json::objectValue;
+            json::Value field;
             field["key"] = util::toJson(kv.first);
             field["value"] = util::toJson(kv.second);
-            ret.append(field);
+            ret.push_back(field);
         }
-        return ret;
+        return std::move(ret);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& val) {
+    static optional_ptr_t fromJson(const json::Value& val) {
         theMap_t ret;
         if(!val.isArray()) return nullptr;
         for(const auto& kv : val) {
@@ -104,20 +104,20 @@ struct json_traits<std::pair<A, B>> {
     using value_t = std::pair<A, B>;
     using optional_ptr_t = std::unique_ptr<std::pair<A, B>>;
 
-    static Json::Value toJson(const value_t& v) {
-        Json::Value ret = Json::arrayValue;
-        ret.append(util::toJson(v.first));
-        ret.append(util::toJson(v.second));
-        return ret;
+    static json::Value toJson(const value_t& v) {
+        json::Value ret;
+        ret.push_back(util::toJson(v.first));
+        ret.push_back(util::toJson(v.second));
+        return std::move(ret);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& val) {
-        if(!val.isArray() || val.size() != 2) return nullptr;
+    static optional_ptr_t fromJson(const json::Value& val) {
+        if(!val.isArray() || val.arraySize() != 2) return nullptr;
         auto&& jfirst = util::fromJson<A>(val[0]);
         auto&& jsecond = util::fromJson<B>(val[1]);
         if(!jfirst || !jsecond) return nullptr;
 
-        return optional_ptr_t{ new value_t{ *jfirst, *jsecond } };
+        return optional_ptr_t{ new value_t{ std::move(*jfirst), std::move(*jsecond) } };
     }
 };
 

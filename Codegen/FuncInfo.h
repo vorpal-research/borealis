@@ -63,18 +63,18 @@ struct json_traits<borealis::func_info::ResultInfo> {
     using value_type = borealis::func_info::ResultInfo;
     using optional_ptr_t = std::unique_ptr<value_type>;
 
-    static Json::Value toJson(const value_type& val) {
+    static json::Value toJson(const value_type& val) {
         using namespace borealis::func_info;
 
-        Json::Value ret = Json::objectValue;
+        json::Value ret;
         ret["special"] = util::toJson(val.special);
         ret["size"] = util::toJson(val.sizeArgument);
         ret["arg"] = util::toJson(val.boundArgument);
         ret["array"] = util::toJson(val.isArray == ArrayTag::IsArray);
-        return ret;
+        return std::move(ret);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
+    static optional_ptr_t fromJson(const json::Value& json) {
         using namespace borealis::func_info;
         if(!json.isObject()) return nullptr;
 
@@ -92,17 +92,17 @@ struct json_traits<borealis::func_info::ArgInfo> {
     using value_type = borealis::func_info::ArgInfo;
     using optional_ptr_t = std::unique_ptr<value_type>;
 
-    static Json::Value toJson(const value_type& val) {
+    static json::Value toJson(const value_type& val) {
         using namespace borealis::func_info;
 
-        Json::Value ret = Json::objectValue;
+        json::Value ret;
         ret["access"] = util::toJson(val.access);
         ret["size"] = util::toJson(val.sizeArgument);
         ret["array"] = util::toJson(val.isArray == ArrayTag::IsArray);
-        return ret;
+        return std::move(ret);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
+    static optional_ptr_t fromJson(const json::Value& json) {
         using namespace borealis::func_info;
         if(!json.isObject()) return nullptr;
 
@@ -119,19 +119,19 @@ struct json_traits<borealis::func_info::FuncInfo> {
     using value_type = borealis::func_info::FuncInfo;
     using optional_ptr_t = std::unique_ptr<value_type>;
 
-    static Json::Value toJson(const value_type& val) {
+    static json::Value toJson(const value_type& val) {
         using namespace borealis::func_info;
 
-        Json::Value ret = Json::objectValue;
+        json::Value ret;
         ret["name"] = util::toJson(val.id);
         ret["signature"] = util::toJson(val.signature);
         ret["result"] = util::toJson(val.resultInfo);
         ret["args"] = util::toJson(val.argInfo);
         ret["contracts"] = util::toJson(val.contracts);
-        return ret;
+        return std::move(ret);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
+    static optional_ptr_t fromJson(const json::Value& json) {
         using namespace borealis::func_info;
         if(!json.isObject()) return nullptr;
         if(!json["name"].isString()) return nullptr;

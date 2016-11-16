@@ -51,11 +51,11 @@ template<>
 struct json_traits<DefectType> {
     typedef std::unique_ptr<DefectType> optional_ptr_t;
 
-    static Json::Value toJson(const DefectType& val) {
+    static json::Value toJson(const DefectType& val) {
         return util::toJson(DefectTypes.at(val).type);
     }
 
-    static optional_ptr_t fromJson(const Json::Value& json) {
+    static optional_ptr_t fromJson(const json::Value& json) {
         if (auto v = util::fromJson<std::string>(json)) {
             return optional_ptr_t{ new DefectType{ DefectTypesByName.at(*v) } };
         } else return nullptr;

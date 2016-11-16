@@ -37,12 +37,12 @@ z3::tactic Tactics::build(z3::context& ctx) const {
 
                     if (value.isBool()) {
                         params.set(key.c_str(), value.asBool());
-                    } else if (value.isUInt()) {
-                        params.set(key.c_str(), value.asUInt());
-                    } else if (value.isDouble()) {
+                    } else if (value.isUnsigned()) {
+                        params.set(key.c_str(), value.asUnsignedInt());
+                    } else if (value.isFloating()) {
                         params.set(key.c_str(), value.asDouble());
                     } else {
-                        params.set(key.c_str(), value.asString().c_str());
+                        params.set(key.c_str(), value.asCString());
                     }
                 }
                 return z3::with(

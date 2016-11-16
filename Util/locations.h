@@ -161,33 +161,6 @@ struct LocalLocus {
     }
 };
 
-
-
-namespace util {
-template<>
-struct json_traits<LocalLocus> {
-    typedef std::unique_ptr<LocalLocus> optional_ptr_t;
-
-    static Json::Value toJson(const LocalLocus& val) {
-        Json::Value dict;
-        dict["line"] = util::toJson(val.line);
-        dict["col"] = util::toJson(val.col);
-        return dict;
-    }
-
-    static optional_ptr_t fromJson(const Json::Value& json) {
-        using borealis::util::json_object_builder;
-
-        json_object_builder<LocalLocus, unsigned, unsigned> builder {
-            "line", "col"
-        };
-        return optional_ptr_t {
-            builder.build(json)
-        };
-    }
-};
-} // namespace util
-
 struct Locus {
     static constexpr auto UNKNOWN_NAME = "";
 
@@ -265,29 +238,6 @@ struct Locus {
 namespace util {
 
 template<>
-struct json_traits<Locus> {
-    typedef std::unique_ptr<Locus> optional_ptr_t;
-
-    static Json::Value toJson(const Locus& val) {
-        Json::Value dict;
-        dict["filename"] = util::toJson(val.filename);
-        dict["loc"] = util::toJson(val.loc);
-        return dict;
-    }
-
-    static optional_ptr_t fromJson(const Json::Value& json) {
-        using borealis::util::json_object_builder;
-
-        json_object_builder<Locus, std::string, LocalLocus> builder {
-            "filename", "loc"
-        };
-        return optional_ptr_t {
-            builder.build(json)
-        };
-    }
-};
-
-template<>
 struct xml_traits<Locus> {
     static XMLNodePtr toXml(XMLNodePtr p, const Locus& val) {
         return util::toXml(p, util::toString(val));
@@ -303,24 +253,13 @@ struct LocusRange {
 
 } // namespace borealis
 
+
+GENERATE_OUTLINE_HASH(borealis::LocalLocus, line, col);
+GENERATE_OUTLINE_JSON_TRAITS(borealis::LocalLocus, line, col);
+GENERATE_OUTLINE_HASH(borealis::Locus, filename, loc);
+GENERATE_OUTLINE_JSON_TRAITS(borealis::Locus, filename, loc);
 GENERATE_OUTLINE_HASH(borealis::LocusRange, lhv, rhv);
 GENERATE_OUTLINE_JSON_TRAITS(borealis::LocusRange, lhv, rhv);
-
-namespace std {
-template<>
-struct hash<borealis::LocalLocus> {
-    size_t operator()(const borealis::LocalLocus &l) const {
-        return borealis::util::hash::defaultHasher()(l.line, l.col);
-    }
-};
-
-template<>
-struct hash<borealis::Locus> {
-    size_t operator()(const borealis::Locus &l) const {
-        return borealis::util::hash::defaultHasher()(l.filename, l.loc);
-    }
-};
-} // namespace std
 
 #include "Util/generate_unmacros.h"
 

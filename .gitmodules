@@ -19,4 +19,7 @@
 [submodule "lib/functional-hell"]
 	path = lib/functional-hell
 	url = ../functional-hell
+[submodule "lib/rapidjson"]
+	path = lib/rapidjson
+	url = https://github.com/miloyip/rapidjson
 
