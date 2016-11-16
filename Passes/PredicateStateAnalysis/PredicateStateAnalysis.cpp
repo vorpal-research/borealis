@@ -92,7 +92,8 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         updateInterpolSummary(F);
     }
 
-    updateVisitedLocs(F);
+    // FIXME: do not trigger PS instantiation
+    // updateVisitedLocs(F);
 
     return false;
 }
