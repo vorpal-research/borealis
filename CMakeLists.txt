@@ -58,6 +58,7 @@ add_definitions(${LLVM_DEFINITIONS}
 set(COMPILER_DEFINITIONS
         -D_GLIBCXX_USE_CXX11_ABI=1
         -DGOOGLE_PROTOBUF_NO_RTTI
+        -DPROTOBUF_INLINE_NOT_IN_HEADERS=0
         -DNO_TRACING)
 
 set(COMPILER_FLAGS
@@ -129,7 +130,7 @@ set(PROTOC protoc --proto_path=${PROJECT_SOURCE_DIR} --cpp_out=${PROTO_SOURCE_DI
 set(PROTOEXT ${PROJECT_SOURCE_DIR}/extract-protobuf-desc.awk)
 
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/.protobuf")
-    message("Generating protobuf files")
+    message("-- Generating protobuf files")
     file(MAKE_DIRECTORY ${PROTO_SOURCE_DIR})
     file(GLOB_RECURSE PROTO_DESC_FILES ${PROJECT_SOURCE_DIR}/*.cpp
             ${PROJECT_SOURCE_DIR}/*.h
