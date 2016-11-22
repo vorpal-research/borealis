@@ -4,7 +4,7 @@ set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 project(borealis)
 
 ################################################################################
-# link directories
+# Link directories
 ################################################################################
 link_directories(/usr/lib)                              # system libraries directory
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)       # subprojects output directory
@@ -24,7 +24,7 @@ if (NOT ${LLVM_FOUND})
 endif ()
 
 ################################################################################
-# warnings
+# Warnings
 ################################################################################
 set(WARNINGS_ON all extra cast-qual float-equal switch
         undef init-self pointer-arith cast-align effc++
@@ -50,7 +50,7 @@ if (${CMAKE_CXX_COMPILER} STREQUAL "/usr/bin/clang++")
 endif ()
 
 ################################################################################
-# compiler flags
+# Compiler flags
 ################################################################################
 add_definitions(${LLVM_DEFINITIONS}
         -std=c++14)
@@ -71,8 +71,15 @@ set(COMPILER_FLAGS
         -fno-rtti
         ${COMPILER_WARNINGS})
 
+set(PROTO_COMPILER_FLAGS
+        ${CMAKE_CXX_FLAGS}
+        -O2
+        -g
+        -fPIC
+        -fno-rtti)
+
 ################################################################################
-# include directories
+# Include directories
 ################################################################################
 set(INCLUDE_DIRS
         ${PROJECT_SOURCE_DIR}/Protobuf/Gen
@@ -96,7 +103,7 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})        # compiler warnings on i
 include_directories(SYSTEM ${INCLUDE_DIRS})
 
 ################################################################################
-# source directories
+# Source directories
 ################################################################################
 
 set(SOURCE_DIRS
@@ -113,7 +120,7 @@ set(SOURCE_DIRS
         ${PROJECT_SOURCE_DIR}/Logging
         ${PROJECT_SOURCE_DIR}/Passes
         ${PROJECT_SOURCE_DIR}/Predicate
-        ${PROJECT_SOURCE_DIR}/Protobuf
+        # ${PROJECT_SOURCE_DIR}/Protobuf
         ${PROJECT_SOURCE_DIR}/Reanimator
         ${PROJECT_SOURCE_DIR}/SMT
         ${PROJECT_SOURCE_DIR}/State
@@ -123,7 +130,7 @@ set(SOURCE_DIRS
         ${PROJECT_SOURCE_DIR}/Util)
 
 ################################################################################
-# Protobuf
+# Protobuf generation
 ################################################################################
 set(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Protobuf/Gen)
 set(PROTOC protoc --proto_path=${PROJECT_SOURCE_DIR} --cpp_out=${PROTO_SOURCE_DIR})
@@ -152,8 +159,31 @@ add_custom_target(clean.protobuf
         COMMAND find ${PROJECT_SOURCE_DIR} -name *.proto -delete
         COMMAND rm -rf ${PROTO_SOURCE_DIR})
 
+add_custom_target(regenerate_protobuf
+        COMMAND make clean.protobuf
+        COMMAND cmake ${PROJECT_SOURCE_DIR})
+
 ################################################################################
-# source files
+# Protobuf sources
+################################################################################
+
+set(PROTO_DIR ${PROJECT_SOURCE_DIR}/Protobuf)
+file(GLOB_RECURSE PROTO_SRC ${PROTO_DIR}/*.cc
+                            ${PROTO_DIR}/*.cpp
+                            ${PROTO_DIR}/*.h
+                            ${PROTO_DIR}/*.hpp)
+
+foreach(file ${PROTO_SRC})
+    list(APPEND PROTO_SOURCES "${file}")
+endforeach()
+
+add_library(protobuf_objects OBJECT ${PROTO_SOURCES})
+
+target_compile_options(protobuf_objects PUBLIC ${PROTO_COMPILER_FLAGS})
+target_compile_definitions(protobuf_objects PUBLIC ${COMPILER_DEFINITIONS})
+
+################################################################################
+# Source files
 ################################################################################
 
 foreach(dir ${SOURCE_DIRS})
@@ -164,13 +194,13 @@ foreach(dir ${SOURCE_DIRS})
     endforeach()
 endforeach()
 
-add_library(SourceObjects OBJECT ${SOURCES})
+add_library(source_objects OBJECT ${SOURCES})
 
-target_compile_options(SourceObjects PUBLIC ${COMPILER_FLAGS})
-target_compile_definitions(SourceObjects PUBLIC ${COMPILER_DEFINITIONS})
+target_compile_options(source_objects PUBLIC ${COMPILER_FLAGS})
+target_compile_definitions(source_objects PUBLIC ${COMPILER_DEFINITIONS})
 
 ################################################################################
-# header files
+# Header files
 ################################################################################
 
 foreach(dir ${SOURCE_DIRS})
@@ -193,10 +223,10 @@ foreach(dir ${TEST_DIRS})
     endforeach()
 endforeach()
 
-add_library(TestObjects OBJECT ${TEST_SOURCES})
+add_library(test_objects OBJECT ${TEST_SOURCES})
 
-target_compile_options(TestObjects PUBLIC ${COMPILER_FLAGS})
-target_compile_definitions(TestObjects PUBLIC ${COMPILER_DEFINITIONS})
+target_compile_options(test_objects PUBLIC ${COMPILER_FLAGS})
+target_compile_definitions(test_objects PUBLIC ${COMPILER_DEFINITIONS})
 
 ################################################################################
 # Google Test
@@ -327,7 +357,7 @@ list(APPEND ARCHIVES ${LINGELING_LIB})
 set(VALGRIND "valgrind --leak-check=yes --suppressions=valgrind.supp")
 
 ################################################################################
-# libraries
+# Libraries
 ################################################################################
 set(SYSTEM_LIBS
         z3
@@ -370,12 +400,14 @@ set(CLANG_LIBS
         clangBasic)
 
 ################################################################################
-# executables
+# Executables
 ################################################################################
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 # wrapper
-add_executable(wrapper wrapper.cpp $<TARGET_OBJECTS:SourceObjects> ${HEADERS})
+add_executable(wrapper wrapper.cpp $<TARGET_OBJECTS:source_objects>
+                                   $<TARGET_OBJECTS:protobuf_objects>
+                                   ${HEADERS})
 
 target_compile_options(wrapper PUBLIC ${COMPILER_FLAGS})
 target_compile_definitions(wrapper PUBLIC ${COMPILER_DEFINITIONS})
@@ -390,7 +422,9 @@ target_link_libraries(wrapper ${ARCHIVES})
 target_link_libraries(wrapper ${SYSTEM_LIBS} ${CLANG_LIBS} ${LLVM_AVAILABLE_LIBS})
 
 # ar_wrapper
-add_executable(ar_wrapper ar_wrapper.cpp  $<TARGET_OBJECTS:SourceObjects> ${HEADERS})
+add_executable(ar_wrapper ar_wrapper.cpp $<TARGET_OBJECTS:source_objects>
+                                         $<TARGET_OBJECTS:protobuf_objects>
+                                         ${HEADERS})
 
 target_compile_options(ar_wrapper PUBLIC ${COMPILER_FLAGS})
 target_compile_definitions(ar_wrapper PUBLIC ${COMPILER_DEFINITIONS})
@@ -405,13 +439,16 @@ target_link_libraries(ar_wrapper ${ARCHIVES})
 target_link_libraries(ar_wrapper ${SYSTEM_LIBS} ${CLANG_LIBS} ${LLVM_AVAILABLE_LIBS})
 
 ################################################################################
-# test executable
+# Test executable
 ################################################################################
 set(TEST_OUTPUT test_results.xml)
 set(TEST_EXE wrapper-tests)
 set(RUN_TEST_EXES ${PROJECT_SOURCE_DIR}/${TEST_EXE} --gtest_output="xml:${TEST_OUTPUT}" --gtest_color=yes)
 
-add_executable(${TEST_EXE} EXCLUDE_FROM_ALL $<TARGET_OBJECTS:SourceObjects> $<TARGET_OBJECTS:TestObjects> ${HEADERS})
+add_executable(${TEST_EXE} EXCLUDE_FROM_ALL $<TARGET_OBJECTS:source_objects>
+                                            $<TARGET_OBJECTS:test_objects>
+                                            $<TARGET_OBJECTS:protobuf_objects>
+                                            ${HEADERS})
 add_dependencies(${TEST_EXE}
         wrapper
         ar_wrapper
@@ -427,7 +464,7 @@ target_link_libraries(${TEST_EXE} ${ARCHIVES} ${TEST_ARCHIVES})
 target_link_libraries(${TEST_EXE} ${SYSTEM_LIBS} ${CLANG_LIBS} ${LLVM_AVAILABLE_LIBS})
 
 ################################################################################
-# regenerate tests.def files
+# Regenerate tests.def files
 ################################################################################
 
 execute_process(COMMAND find ${TEST_DIRS} -name "tests.def" -printf "%h;" OUTPUT_VARIABLE TEST_DEF_FILES)
@@ -455,7 +492,7 @@ foreach(def_file_dir ${TEST_DEF_FILES})
 endforeach()
 
 ################################################################################
-# testing targets
+# Testing targets
 ################################################################################
 add_custom_target(.regenerate-test-defs
         COMMAND find ${TEST_DIRS} -name "*.tmp" -delete)
@@ -503,7 +540,7 @@ add_dependencies(check-all
         ${TEST_EXE})
 
 ################################################################################
-# custom clean target
+# Custom clean target
 ################################################################################
 add_custom_target(clean-all
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
