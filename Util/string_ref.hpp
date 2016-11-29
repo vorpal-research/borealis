@@ -39,7 +39,7 @@ public:
     : Data(Str), Length(::strlen(Str)) {}
 
     // Construct a string ref from a pointer and length.
-    /*implicit*/string_ref(const char *_Data, unsigned _Length)
+    /*implicit*/string_ref(const char *_Data, size_t _Length)
     : Data(_Data), Length(_Length) {}
 
     // Construct a string ref from an std::string.
@@ -148,6 +148,28 @@ public:
 
         auto Idx = it - begin();
         return std::make_pair(slice(0, Idx), slice(Idx + 1, npos));
+    }
+
+    string_ref trimFront() const {
+        auto cp = begin();
+        auto daEnd = end();
+        while(cp < daEnd && std::isspace(*cp)) {
+            ++cp;
+        }
+        return{ cp, static_cast<size_t>(daEnd - cp) };
+    }
+
+    string_ref trimBack() const {
+        auto cp = end();
+        auto daBegin = begin();
+        while(cp > daBegin && std::isspace(*(cp - 1))) {
+            --cp;
+        }
+        return{ daBegin, static_cast<size_t>(cp - daBegin) };
+    }
+
+    string_ref trim() const {
+        return trimFront().trimBack();
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const string_ref& str) {
