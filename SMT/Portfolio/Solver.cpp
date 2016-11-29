@@ -9,12 +9,15 @@
 #include "SMT/CVC4/Solver.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/ProtobufConverterImpl.hpp"
+#include "State/Transformer/GraphBuilder.h"
 
 #include <chrono>
 #include <unordered_map>
 
 #include <unistd.h>
 #include <sys/wait.h>
+
+#include <llvm/Support/GraphWriter.h>
 
 #include "Util/macros.h"
 
@@ -132,7 +135,7 @@ static std::unordered_set<fd_t> better_select(Duration&& d, Descs&& fdescs) {
         FD_SET(raw(f), &fds);
         maxfd = std::max(raw(f), maxfd);
     }
-    auto select_call = select(maxfd + 1, &fds, nullptr, nullptr, (d.count() == 0)? nullptr : &tv);
+    int select_call = select(maxfd + 1, &fds, nullptr, nullptr, (d.count() == 0)? nullptr : &tv);
     ASSERT(select_call != -1, tfm::format("System error on select: %s", strerror(errno)))
 
     std::unordered_set<fd_t> res;
@@ -164,6 +167,9 @@ std::pair<fd_t, pid_t> forkSolver(
         typename Logic::Solver solver(ef, memoryStart, memoryEnd);
         auto res = solver.isViolated(query, state);
 
+        if(res.isUnknown()) sleep(force_timeout.get(0)); // we are not interested in unknowns
+        // FIXME: if all solvers break to unknown, this would lead to waiting for timeout, which is not good
+
         if(!protobuffy(res)->SerializeToFileDescriptor(raw(pipe))) {
             UNREACHABLE("Cannot serialize result to pipe");
         }
@@ -172,13 +178,32 @@ std::pair<fd_t, pid_t> forkSolver(
 
 smt::Result Solver::isViolated(PredicateState::Ptr query, PredicateState::Ptr state) {
 
+    using namespace std::chrono_literals;
+
     std::unordered_map<fd_t, pid_t> forks;
+    std::unordered_map<fd_t, std::string> solverNames;
 
     auto solversToRun = util::viewContainer(solvers).toHashSet();
-    if(solversToRun.count("z3"))        forks.insert(forkSolver<Z3>(       pimpl_->memoryStart, pimpl_->memoryEnd, query, state));
-    if(solversToRun.count("cvc4"))      forks.insert(forkSolver<CVC4>(     pimpl_->memoryStart, pimpl_->memoryEnd, query, state));
-    if(solversToRun.count("boolector")) forks.insert(forkSolver<Boolector>(pimpl_->memoryStart, pimpl_->memoryEnd, query, state));
-    if(solversToRun.count("mathsat"))   forks.insert(forkSolver<MathSAT>(  pimpl_->memoryStart, pimpl_->memoryEnd, query, state));
+    if(solversToRun.count("z3")) {
+        auto fork = forkSolver<Z3>(pimpl_->memoryStart, pimpl_->memoryEnd, query, state);
+        forks.insert(fork);
+        solverNames[fork.first] = "z3";
+    }
+    if(solversToRun.count("cvc4")) {
+        auto fork = forkSolver<CVC4>(     pimpl_->memoryStart, pimpl_->memoryEnd, query, state);
+        forks.insert(fork);
+        solverNames[fork.first] = "cvc4";
+    }
+    if(solversToRun.count("boolector")) {
+        auto fork = forkSolver<Boolector>(pimpl_->memoryStart, pimpl_->memoryEnd, query, state);
+        forks.insert(fork);
+        solverNames[fork.first] = "boolector";
+    }
+    if(solversToRun.count("mathsat")) {
+        auto fork = forkSolver<MathSAT>(  pimpl_->memoryStart, pimpl_->memoryEnd, query, state);
+        forks.insert(fork);
+        solverNames[fork.first] = "mathsat";
+    }
 
     ASSERT(not solversToRun.empty(), "No solvers to run");
 
@@ -190,29 +215,72 @@ smt::Result Solver::isViolated(PredicateState::Ptr query, PredicateState::Ptr st
         while(wait(nullptr) != -1);
     )
 
-    auto timeout = force_timeout.get(0);
+    auto timeout = std::chrono::milliseconds(force_timeout.get(0));
+    auto startTime = std::chrono::steady_clock::now();
 
-    auto files = better_select(std::chrono::milliseconds(timeout), util::viewContainer(forks).map(LAM(kv, kv.first)));
-    if(files.empty()) {
-        for(auto&& kv: forks) kill(kv.second, SIGTERM);
-        dbgs() << "Acquired result: unknown" << endl;
-        return smt::UnknownResult();
+    std::unordered_set<fd_t> files;
+
+    while(files.size() < 1) {
+        files = better_select(timeout, util::viewContainer(forks).map(LAM(kv, kv.first)));
+        timeout -= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+        if(files.empty()) {
+            for(auto&& kv: forks) {
+                kill(kv.second, SIGTERM);
+                dbgs() << solverNames[kv.first] << ": timed out and was killed" << endl;
+            }
+            dbgs() << "Acquired result: unknown" << endl;
+            return smt::UnknownResult();
+        }
     }
 
-    auto pipe = util::head(files);
-    for(auto&& kv: forks) if(kv.first != pipe) kill(kv.second, SIGTERM);
+    // auto pipe = util::head(files);
+    std::vector<std::unique_ptr<borealis::smt::Result>> results;
 
-    if(!pres.ParseFromFileDescriptor(raw(pipe))) {
-        UNREACHABLE("Cannot parse result from pipe");
+    for(auto&& kv: forks) {
+        if(not files.count(kv.first)) {
+            kill(kv.second, SIGTERM);
+            dbgs() << solverNames[kv.first] << ": timed out and was killed" << endl;
+        }
+    }
+    for(auto&& pipe : files) {
+        if(not pres.ParseFromFileDescriptor(raw(pipe))) {
+            UNREACHABLE("Cannot parse result from pipe");
+        }
+
+        results.push_back(deprotobuffy(FN, pres));
+
+        dbgs() << solverNames[pipe] << ": " << (results.back()->isSat()? "sat" : (results.back()->isUnsat()? "unsat" : "unknown")) << endl;
     }
 
-    auto&& res = deprotobuffy(FN, pres);
+    for(auto&& res0: results) {
+        for(auto&& res1: results) {
+            if(res0->isSat() && res1->isUnsat()) {
+                errs() << "Conflicting results in portfolio: ";
+                errs() << "Query: " << query << endl;
+                errs() << "State: " << state << endl;
+
+                //auto graph = buildGraphRep(state);
+                //static int pos = 0;
+                //++pos;
+                //std::string realFileName = llvm::WriteGraph<PSGraph*>(&graph, "graph-conflict." + util::toString(pos), false);
+                //if (realFileName.empty()) continue;
+                //llvm::DisplayGraph(realFileName, false, llvm::GraphProgram::DOT);
+
+                //UNREACHABLE(tfm::format(
+                //    "Conflicting results in portfolio: \n"
+                //    "Query: %s \n"
+                //    "State: %s \n",
+                //    query, state
+                //))
+            }
+        }
+    }
 
     dbgs() << "Acquired result: "
-           << (res->isSat()? "sat" : (res->isUnsat()? "unsat" : "unknown"))
+           << (results.front()->isSat()? "sat" : (results.front()->isUnsat()? "unsat" : "unknown"))
            << endl;
 
-    return *res;
+    return *results.front();
 }
 
 } /* namespace portfolio_ */

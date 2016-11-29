@@ -8,7 +8,7 @@
 #ifndef CHECKVISITOR_HPP_
 #define CHECKVISITOR_HPP_
 
-#include <State/Transformer/GraphBuilder.h>
+
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
@@ -16,6 +16,7 @@
 #include "SMT/Boolector/Solver.h"
 #include "SMT/CVC4/Solver.h"
 #include "SMT/Portfolio/Solver.h"
+#include "State/Transformer/GraphBuilder.h"
 #include "State/Transformer/MemorySpacer.h"
 #include "State/Transformer/StateSlicer.h"
 #include "State/Transformer/TermSizeCalculator.h"
@@ -171,10 +172,10 @@ public:
             if(solverResult.isUnknown()) dbgs() << "{Unknown}" << endl;
             else dbgs() << "{Unsat}" << endl;
 
-           // if(solverResult.isUnknown()) {
-           //     auto graph = buildGraphRep(state);
-           //     llvm::ViewGraph(&graph, "Unknown state");
-           // }
+            //if(solverResult.isUnknown()) {
+            //    auto graph = buildGraphRep(state);
+            //    llvm::ViewGraph(&graph, "Unknown state");
+            //}
 
             return false;
         }

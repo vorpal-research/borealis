@@ -128,9 +128,11 @@ std::unique_ptr<smt::proto::Result> protobuf_traits<smt::Result>::toProtobuf(con
 
     if(t.isSat()) {
         ret->set_restype(smt::proto::Result_ResType_SAT);
-        ret->set_allocated_model(
-            protobuf_traits<smt::Model>::toProtobuf(t.getSatPtr()->getModel()).release()
-        );
+        if(t.getSatPtr()->valid()) {
+            ret->set_allocated_model(
+                protobuf_traits<smt::Model>::toProtobuf(t.getSatPtr()->getModel()).release()
+            );
+        }
         return std::move(ret);
     }
 
@@ -140,9 +142,16 @@ std::unique_ptr<smt::proto::Result> protobuf_traits<smt::Result>::toProtobuf(con
 std::unique_ptr<smt::Result> protobuf_traits<smt::Result>::fromProtobuf(
     const FactoryNest& FN, const smt::proto::Result& m
 ) {
+    if (not m.has_restype()) {
+        return std::unique_ptr<smt::Result>(new smt::Result(smt::UnknownResult()));
+    }
+
     if (m.restype() == smt::proto::Result_ResType_SAT) {
-        auto mdl = protobuf_traits<smt::Model>::fromProtobuf(FN, m.model());
-        return std::unique_ptr<smt::Result>(new smt::Result(smt::SatResult(mdl)));
+        if(m.has_model()) {
+            auto mdl = protobuf_traits<smt::Model>::fromProtobuf(FN, m.model());
+            return std::unique_ptr<smt::Result>(new smt::Result(smt::SatResult(mdl)));
+        }
+        return std::unique_ptr<smt::Result>(new smt::Result(smt::SatResult()));
     }
 
     if (m.restype() == smt::proto::Result_ResType_UNSAT) {

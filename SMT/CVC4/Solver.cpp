@@ -85,7 +85,7 @@ Solver::check_result Solver::check(
     assertions.push_back(query.getAxiom());
     dbgs() << "! adding query finished" << endl;
 
-    if (log_formulae.get(true)) {
+    if (log_formulae.get(false)) {
         dbgs() << "! printing stuff started" << endl;
 
         auto&& dbg = dbgs();
@@ -294,6 +294,8 @@ Result Solver::isViolated(
 
         return SatResult{};
     }
+
+    if(res.isUnknown()) return UnknownResult{};
 
     return UnsatResult{};
 }

@@ -96,7 +96,7 @@ Solver::check_result Solver::check(
     s.add(z3query.getAxiom());
     dbgs() << "! adding query finished" << endl;
 
-    if (log_formulae.get(true)) {
+    if (log_formulae.get(false)) {
         dbgs() << "! printing stuff started" << endl;
 
         auto&& dbg = dbgs();
@@ -371,6 +371,10 @@ Result Solver::isViolated(
         }
 
         return SatResult{};
+    }
+
+    if(z3::unknown == res) {
+        return UnknownResult{};
     }
 
     return UnsatResult{};

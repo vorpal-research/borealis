@@ -76,7 +76,7 @@ Solver::check_result Solver::check(
     boolector_assert(bctx, query.getAxiom());
     dbgs() << "! adding query finished" << endl;
 
-    if (log_formulae.get(true)) {
+    if (log_formulae.get(false)) {
         dbgs() << "! printing stuff started" << endl;
 
         auto&& dbg = dbgs();
