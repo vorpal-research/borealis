@@ -187,6 +187,11 @@ public:
 
     friend bool operator==(const Sort& a, const Sort& b);
     friend bool operator!=(const Sort& a, const Sort& b);
+
+    friend std::ostream& operator<<(std::ostream& ost, const Sort& sort) {
+        return ost << msat_type_repr(sort.type_);
+    }
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////

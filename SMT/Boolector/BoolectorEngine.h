@@ -452,7 +452,7 @@ public:
         };
     }
     inline static expr_t mkNumericConst(context_t& ctx, sort_t sort, const std::string& valueRep){
-        if(sort.bv_size() == 1) return mkBoolConst(ctx, valueRep != "0" && valueRep != "false");
+        if(sort.is_bool()) return mkBoolConst(ctx, valueRep != "0" && valueRep != "false");
         if(sort.is_bv()) {
             llvm::APInt biggy(sort.bv_size(), valueRep, 10);
             auto rep = asBinString(biggy, sort.bv_size());
@@ -597,28 +597,58 @@ public:
         return conv[bop];
     }
 
-    inline static expr_t binop(context_t& ctx, binOp bop, expr_t lhv, expr_t rhv) {
-        size_t lw = boolector_get_width(ctx, lhv);
+    inline static sort_t calcBinopSort(context_t& ctx, binOp bop, sort_t lhv) {
+        switch(bop) {
+            case binOp::LOAD:
+                return lhv.el();
+            case binOp::EQUAL:
+            case binOp::NEQUAL:
+            case binOp::SGT:
+            case binOp::SLT:
+            case binOp::SGE:
+            case binOp::SLE:
+            case binOp::UGT:
+            case binOp::ULT:
+            case binOp::UGE:
+            case binOp::ULE:
+                return bool_sort(ctx);
+            case binOp::CONJ:
+            case binOp::DISJ:
+            case binOp::IMPLIES:
+            case binOp::IFF:
+            case binOp::BAND:
+            case binOp::BOR:
+            case binOp::XOR:
+            case binOp::ADD:
+            case binOp::SUB:
+            case binOp::SMUL:
+            case binOp::SDIV:
+            case binOp::SMOD:
+            case binOp::SREM:
+            case binOp::UMUL:
+            case binOp::UDIV:
+            case binOp::UMOD:
+            case binOp::UREM:
+            case binOp::ASHL:
+            case binOp::ASHR:
+            case binOp::LSHR:
+                return lhv;
+            default:
+                UNREACHABLE("illegal binop")
+        }
+    }
 
+    inline static expr_t binop(context_t& ctx, binOp bop, expr_t lhv, expr_t rhv) {
         auto f = binop2btor(bop);
 
         auto res = f(ctx, lhv, rhv);
         size_t bw = boolector_get_width(ctx, res);
 
-
-        if(bop == binOp::LOAD) {
-            return expr_t(ctx, res, lhv.srt.el());
-        }
-
         if(bop == binOp::CONCAT) {
             return expr_t(ctx, res, bv_sort(ctx, bw));
         }
 
-        if(bw == lw) {
-            return expr_t(ctx, res, lhv.srt);
-        } else if(bw == 1) {
-            return expr_t(ctx, res, bool_sort(ctx));
-        } else UNREACHABLE("illegal binop");
+        return expr_t(ctx, res, calcBinopSort(ctx, bop, lhv.srt));
     }
 
     inline static expr_t unop(context_t& ctx, unOp op, expr_t e) {
