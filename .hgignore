@@ -10,10 +10,12 @@ syntax: glob
 
 CMakeLists.txt
 build/*
+headers/*
 
 wrapper
 ar_wrapper
 run-tests
+leveldb_daemon
 
 Protobuf/Gen/*
 *.proto

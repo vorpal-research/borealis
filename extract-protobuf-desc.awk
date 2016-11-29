@@ -7,7 +7,7 @@ BEGIN {
 
 /^\/\*\*\s*protobuf\s*->/ {
     PROTOBUF_DESC=$4;
-    print "" > PROTOBUF_DESC;
+    print "syntax = \"proto2\";" > PROTOBUF_DESC;
     next;
 }
 
