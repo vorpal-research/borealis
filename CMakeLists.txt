@@ -89,7 +89,6 @@ set(INCLUDE_DIRS
         ${PROJECT_SOURCE_DIR}/lib/google-test/include
         ${PROJECT_SOURCE_DIR}/lib/yaml-cpp/include
         ${PROJECT_SOURCE_DIR}/lib/yaml-cpp/test
-        ${PROJECT_SOURCE_DIR}/lib/cfgparser/include
         ${PROJECT_SOURCE_DIR}/lib/backward-cpp
         ${PROJECT_SOURCE_DIR}/lib/boolector
         ${PROJECT_SOURCE_DIR}/lib/leveldb-mp/include
@@ -249,60 +248,6 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/yaml-cpp)
 list(APPEND ARCHIVES yaml-cpp)
 
 ################################################################################
-# dbglog
-################################################################################
-# cfgparser needs dbglog, but we don't
-set(DBGLOG_DIR ${PROJECT_SOURCE_DIR}/lib/dbglog)
-set(DBGLOG_DIST ${DBGLOG_DIR}/dist)
-set(DBGLOG_LIB ${DBGLOG_DIST}/lib/)
-
-add_custom_command(OUTPUT ${DBGLOG_DIR}/.dbglog
-        COMMAND ./configure CXX=${CMAKE_CXX_COMPILER} --prefix=${DBGLOG_DIST}
-        COMMAND make CXX=${CMAKE_CXX_COMPILER} -C ${DBGLOG_DIR} install
-        COMMAND touch ${DBGLOG_DIR}/.dbglog
-        WORKING_DIRECTORY ${DBGLOG_DIR})
-
-add_custom_target(.dbglog
-        DEPENDS ${DBGLOG_DIR}/.dbglog)
-
-add_custom_target(clean.dbglog
-        COMMAND rm ${DBGLOG_DIR}/.dbglog || true
-        COMMAND make -C ${DBGLOG_DIR} clean
-        COMMAND make -C ${DBGLOG_DIR} distclean
-        COMMAND rm -rf ${DBGLOG_DIST})
-
-link_directories(${DBGLOG_LIB})
-list(APPEND ARCHIVES dbglog)
-
-################################################################################
-# cfgparser
-################################################################################
-set(CFGPARSER_DIR ${PROJECT_SOURCE_DIR}/lib/cfgparser)
-set(CFGPARSER_LIB ${CFGPARSER_DIR}/dist/lib/)
-
-add_custom_command(OUTPUT ${CFGPARSER_DIR}/.cfgparser
-        COMMAND ./configure --prefix=${CFGPARSER_DIR}/dist --with-dbglog=${DBGLOG_DIST}
-        COMMAND make CXX=${CMAKE_CXX_COMPILER} -C ${CFGPARSER_DIR} install
-        COMMAND touch ${CFGPARSER_DIR}/.cfgparser
-        WORKING_DIRECTORY ${CFGPARSER_DIR})
-
-add_custom_target(.cfgparser
-        DEPENDS ${CFGPARSER_DIR}/.cfgparser)
-
-add_custom_target(clean.cfgparser
-        COMMAND rm ${CFGPARSER_DIR}/.cfgparser || true
-        COMMAND make CXX=${CMAKE_CXX_COMPILER} -C ${CFGPARSER_DIR} clean
-        COMMAND make CXX=${CMAKE_CXX_COMPILER} -C ${CFGPARSER_DIR} distclean
-        COMMAND rm -rf ${CFGPARSER_DIR}/dist)
-
-#dependencies with dbglog
-add_dependencies(.cfgparser .dbglog)
-add_dependencies(clean.cfgparser clean.dbglog)
-
-link_directories(${CFGPARSER_LIB})
-list(APPEND ARCHIVES cfgparser)
-
-################################################################################
 # LevelDB-MP
 ################################################################################
 set(LEVELDB_MP_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/leveldb-mp)
@@ -325,6 +270,16 @@ add_subdirectory(${ANDERSEN_CPP_DIR})
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/andersen/lib)
 list(APPEND ARCHIVES libAndersen.so)
+
+################################################################################
+# inih
+################################################################################
+set(INIH_CPP_DIR ${PROJECT_SOURCE_DIR}/lib/inih)
+
+add_subdirectory(${INIH_CPP_DIR})
+
+link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/inih)
+list(APPEND ARCHIVES libinih.a)
 
 ################################################################################
 # boolector
@@ -414,7 +369,6 @@ target_compile_definitions(wrapper PUBLIC ${COMPILER_DEFINITIONS})
 
 add_dependencies(wrapper
         yaml-cpp
-        .cfgparser
         Andersen
         .boolector)
 
@@ -431,7 +385,6 @@ target_compile_definitions(ar_wrapper PUBLIC ${COMPILER_DEFINITIONS})
 
 add_dependencies(ar_wrapper
         yaml-cpp
-        .cfgparser
         Andersen
         .boolector)
 
@@ -453,7 +406,6 @@ add_dependencies(${TEST_EXE}
         wrapper
         ar_wrapper
         yaml-cpp
-        .cfgparser
         Andersen
         gtest)
 
@@ -544,5 +496,4 @@ add_dependencies(check-all
 ################################################################################
 add_custom_target(clean-all
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND make clean.cfgparser
         COMMAND make clean)

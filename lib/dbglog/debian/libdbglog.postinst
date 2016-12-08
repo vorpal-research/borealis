@@ -1,5 +1,0 @@
-#!/bin/bash
-
-echo -n "Running ldconfig... "
-ldconfig
-echo "done."
