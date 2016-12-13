@@ -7,3 +7,4 @@ lib/tinyformat = [git]https://github.com/c42f/tinyformat.git
 lib/backward-cpp = [git]https://github.com/bombela/backward-cpp.git
 lib/andersen = [git]../andersen
 lib/rapidjson = [git]https://github.com/miloyip/rapidjson
+lib/inih = [git]https://github.com/ice-phoenix/inih

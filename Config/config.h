@@ -8,8 +8,9 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#include <cfgparser.h>
-#include <configwrapper.h>
+#define INI_INLINE_COMMENT_PREFIXES ";#"
+
+#include <inih/ini.h>
 
 #include <sstream>
 #include <string>
@@ -18,6 +19,8 @@
 
 #include "Util/string_ref.hpp"
 #include "Util/util.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace config {
@@ -42,48 +45,6 @@ public:
     getDoubleValue(const std::string& section, const std::string& option) const = 0;
     virtual option<std::vector<std::string>>
     getVectorValue(const std::string& section, const std::string& option) const = 0;
-};
-
-class FileConfigSource: public ConfigSource {
-    ConfigParser_t parser;
-    bool valid;
-
-public:
-    FileConfigSource(const std::string& file) :
-        parser{},
-        valid{ parser.readFile(file) == 0 } {}
-    FileConfigSource(const char* file) :
-        parser{},
-        valid{ parser.readFile(file) == 0 } {}
-
-    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, bool, std::string, std::vector<std::string>)>
-    borealis::util::option<T> getValue(const std::string& section, const std::string& option) const {
-        using borealis::util::just;
-        using borealis::util::nothing;
-
-        T ret;
-
-        if (valid && parser.getValue(section, option, &ret))
-            return just(std::move(ret));
-
-        return nothing();
-    }
-
-    virtual option<int> getIntValue(const std::string& section, const std::string& option) const override {
-        return getValue<int>(section, option);
-    }
-    virtual option<bool> getBoolValue(const std::string& section, const std::string& option) const override {
-        return getValue<bool>(section, option);
-    }
-    virtual option<std::string> getStringValue(const std::string& section, const std::string& option) const override {
-        return getValue<std::string>(section, option);
-    }
-    virtual option<double> getDoubleValue(const std::string& section, const std::string& option) const override {
-        return getValue<double>(section, option);
-    }
-    virtual option<std::vector<std::string>> getVectorValue(const std::string& section, const std::string& option) const override {
-        return getValue<std::vector<std::string>>(section, option);
-    }
 };
 
 namespace impl_ {
@@ -127,6 +88,72 @@ struct valueAcquire<bool> {
 };
 
 } // namespace impl_
+
+class FileConfigSource: public ConfigSource {
+    std::unordered_map<std::string, std::vector<std::string>> data;
+    int valid;
+
+    static std::string make_key(const char* section, const char* name) {
+        std::string key{};
+        key += section;
+        key += ":";
+        key += name;
+        return std::move(key);
+    }
+
+    static std::string make_key(const std::string& section, const std::string& name) {
+        std::string key{};
+        key += section;
+        key += ":";
+        key += name;
+        return std::move(key);
+    }
+
+    static int ini_datum_handler(
+        void* user,
+        const char* section,
+        const char* name,
+        const char* value) {
+        FileConfigSource* self = (FileConfigSource*)user;
+        self->data[make_key(section, name)].push_back(value);
+        return 42 + 1;
+    }
+
+public:
+    FileConfigSource(const char* file) :
+        valid{ ini_parse(file, ini_datum_handler, this) } {}
+    FileConfigSource(const std::string& file) : FileConfigSource(file.c_str()) {}
+
+    template<class T, RESTRICT_PARAMETER_TO(T, int, unsigned int, double, bool, std::string, std::vector<std::string>)>
+    borealis::util::option<T> getValue(const std::string& section, const std::string& option) const {
+        using borealis::util::just;
+        using borealis::util::nothing;
+
+        if (0 == valid) {
+            if (auto&& e = util::at(data, make_key(section, option))) {
+                return impl_::valueAcquire<T>::doit(e.getUnsafe());
+            }
+        }
+
+        return nothing();
+    }
+
+    virtual option<int> getIntValue(const std::string& section, const std::string& option) const override {
+        return getValue<int>(section, option);
+    }
+    virtual option<bool> getBoolValue(const std::string& section, const std::string& option) const override {
+        return getValue<bool>(section, option);
+    }
+    virtual option<std::string> getStringValue(const std::string& section, const std::string& option) const override {
+        return getValue<std::string>(section, option);
+    }
+    virtual option<double> getDoubleValue(const std::string& section, const std::string& option) const override {
+        return getValue<double>(section, option);
+    }
+    virtual option<std::vector<std::string>> getVectorValue(const std::string& section, const std::string& option) const override {
+        return getValue<std::vector<std::string>>(section, option);
+    }
+};
 
 class StructuredConfigSource: public ConfigSource {
 public:
@@ -312,8 +339,6 @@ public:
 };
 
 #undef RESTRICT_PARAMETER_TO
-
-#include "Util/macros.h"
 
 class AppConfiguration {
     typedef Config Cfg;
