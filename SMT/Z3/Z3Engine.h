@@ -244,10 +244,11 @@ public:
                 [](Z3_context ctx, Z3_ast l, Z3_ast r) -> Z3_ast { Z3_ast data[2]{l, r}; return Z3_mk_or(ctx, 2, data); };
             ret[binOp::IMPLIES] = Z3_mk_implies;
             ret[binOp::IFF]     = Z3_mk_iff;
+            ret[binOp::XOR]     = Z3_mk_xor;
             ret[binOp::CONCAT]  = Z3_mk_concat;
             ret[binOp::BAND]    = Z3_mk_bvand;
             ret[binOp::BOR]     = Z3_mk_bvor;
-            ret[binOp::XOR]     = Z3_mk_bvxor;
+            ret[binOp::BXOR]    = Z3_mk_bvxor;
             ret[binOp::ADD]     = Z3_mk_bvadd;
             ret[binOp::SUB]     = Z3_mk_bvsub;
             ret[binOp::SMUL]    = Z3_mk_bvmul;

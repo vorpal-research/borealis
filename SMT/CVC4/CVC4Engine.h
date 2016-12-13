@@ -186,10 +186,11 @@ public:
             ret[binOp::DISJ]    = []() { return kind::OR; };
             ret[binOp::IMPLIES] = []() { return kind::IMPLIES; };
             ret[binOp::IFF]     = []() { return kind::IFF; };
+            ret[binOp::XOR]     = []() { return kind::XOR; };
             ret[binOp::CONCAT]  = []() { return kind::BITVECTOR_CONCAT; };
             ret[binOp::BAND]    = []() { return kind::BITVECTOR_AND; };
             ret[binOp::BOR]     = []() { return kind::BITVECTOR_OR; };
-            ret[binOp::XOR]     = []() { return kind::BITVECTOR_XOR; };
+            ret[binOp::BXOR]    = []() { return kind::BITVECTOR_XOR; };
             ret[binOp::ADD]     = []() { return kind::BITVECTOR_PLUS; };
             ret[binOp::SUB]     = []() { return kind::BITVECTOR_SUB; };
             ret[binOp::SMUL]    = []() { return kind::BITVECTOR_MULT; };

@@ -176,6 +176,8 @@ public:
                 [](expr_t l, expr_t r) -> expr_t { return l | r; };
             ret[binOp::XOR]     =
                 [](expr_t l, expr_t r) -> expr_t { return l ^ r; };
+            ret[binOp::BXOR]     =
+                [](expr_t l, expr_t r) -> expr_t { return l ^ r; };
             ret[binOp::ADD]     =
                 [](expr_t l, expr_t r) -> expr_t { return l + r; };
             ret[binOp::SUB]     =

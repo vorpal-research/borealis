@@ -369,6 +369,7 @@ set(SYSTEM_LIBS
         protobuf
         tinyxml2
         mathsat
+        stp
         gmpxx
         gmp
         uuid
