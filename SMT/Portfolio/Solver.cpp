@@ -7,6 +7,7 @@
 #include "SMT/Boolector/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "SMT/CVC4/Solver.h"
+#include "SMT/STP/Solver.h"
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/ProtobufConverterImpl.hpp"
 #include "State/Transformer/GraphBuilder.h"
@@ -198,6 +199,11 @@ smt::Result Solver::isViolated(PredicateState::Ptr query, PredicateState::Ptr st
         auto fork = forkSolver<Boolector>(pimpl_->memoryStart, pimpl_->memoryEnd, query, state);
         forks.insert(fork);
         solverNames[fork.first] = "boolector";
+    }
+    if(solversToRun.count("stp")) {
+        auto fork = forkSolver<STP>(pimpl_->memoryStart, pimpl_->memoryEnd, query, state);
+        forks.insert(fork);
+        solverNames[fork.first] = "stp";
     }
     if(solversToRun.count("mathsat")) {
         auto fork = forkSolver<MathSAT>(  pimpl_->memoryStart, pimpl_->memoryEnd, query, state);

@@ -2,8 +2,8 @@
 // Created by belyaev on 6/7/16.
 //
 
-#ifndef BOOLECTOR_ENGINE_H_H
-#define BOOLECTOR_ENGINE_H_H
+#ifndef STP_ENGINE_H_H
+#define STP_ENGINE_H_H
 
 #include <memory>
 #include <vector>
@@ -11,118 +11,7 @@
 
 #include "SMT/Engine.h"
 
-extern "C" {
-#include <boolector/boolector.h>
-
-static BoolectorNode *
-btor_translate_shift_smt2 (Btor * btor,
-                           BoolectorNode * a0,
-                           BoolectorNode * a1,
-                           BoolectorNode * (* f)(Btor *,
-                                                 BoolectorNode *,
-                                                 BoolectorNode *))
-{
-    BoolectorNode * c, * e, * t, * e0, * u, * l, * tmp, * res;
-    int len, l0, l1, p0, p1;
-
-    len = boolector_get_width (btor, a0);
-
-    assert (len == boolector_get_width (btor, a1));
-
-    l1 = 0;
-    for (l0 = 1; l0 < len; l0 *= 2)
-        l1++;
-
-    assert (l0 == (1 << l1));
-
-    if (len == 1)
-    {
-        assert (l0 == 1);
-        assert (l1 == 0);
-
-        if (f != boolector_sra)
-        {
-            tmp = boolector_not (btor, a1);
-            res = boolector_and (btor, a0, tmp);
-            boolector_release (btor, tmp);
-        }
-        else
-            res = boolector_copy (btor, a0);
-    }
-    else
-    {
-        assert (len >= 1);
-
-        p0 = l0 - len;
-        p1 = len - l1;
-
-        assert (p0 >= 0);
-        assert (p1 > 0);
-
-        u = boolector_slice (btor, a1, len - 1, len - p1);
-        l = boolector_slice (btor, a1, l1 - 1, 0);
-
-        assert (boolector_get_width (btor, u) == p1);
-        assert (boolector_get_width (btor, l) == l1);
-
-        if (p1 > 1) c = boolector_redor (btor, u);
-        else c = boolector_copy (btor, u);
-
-        boolector_release (btor, u);
-
-        if (f == boolector_sra)
-        {
-            tmp = boolector_slice (btor, a0, len - 1, len - 1);
-            t = boolector_sext (btor, tmp, len - 1);
-            boolector_release (btor, tmp);
-        }
-        else
-            t = boolector_zero (btor, len);
-
-        if (!p0) e0 = boolector_copy (btor, a0);
-        else if (f == boolector_sra) e0 = boolector_sext (btor, a0, p0);
-        else e0 = boolector_uext (btor, a0, p0);
-
-        assert (boolector_get_width (btor, e0) == l0);
-
-        e = f (btor, e0, l);
-        boolector_release (btor, e0);
-        boolector_release (btor, l);
-
-        if (p0 > 0)
-        {
-            tmp = boolector_slice (btor, e, len - 1, 0);
-            boolector_release (btor, e);
-            e = tmp;
-        }
-
-        res =  boolector_cond (btor, c, t, e);
-
-        boolector_release (btor, c);
-        boolector_release (btor, t);
-        boolector_release (btor, e);
-    }
-    return res;
-}
-
-
-static BoolectorNode* boolector_distinct (Btor* btor, BoolectorNode** nodes, size_t nargs) {
-    BoolectorNode* exp = boolector_true (btor);
-    for (size_t i = 1; i < nargs; i++)
-    {
-        for (size_t j = i + 1; j <= nargs; j++)
-        {
-            BoolectorNode* tmp = boolector_ne (btor, nodes[i], nodes[j]);
-            BoolectorNode* old = exp;
-            exp = boolector_and (btor, old, tmp);
-            boolector_release (btor, old);
-            boolector_release (btor, tmp);
-        }
-    }
-    return exp;
-}
-
-} /* extern "C" */
+#include <stp/c_interface.h>
 
 #include "SMT/Result.h"
 
@@ -131,19 +20,18 @@ static BoolectorNode* boolector_distinct (Btor* btor, BoolectorNode** nodes, siz
 
 namespace borealis {
 
-namespace boolectorpp {
+namespace stppp {
     struct context{
-        Btor* data;
+        VC data;
 
-        context(): data(boolector_new()) {}
+        context(): data(vc_createValidityChecker()) {}
         context(const context&) = delete;
 
         ~context() {
-            boolector_release_all(data);
-            boolector_delete(data);
+            vc_Destroy(data);
         }
 
-        operator Btor* () const noexcept {
+        operator VC () const noexcept {
             return data;
         }
     };
@@ -154,6 +42,7 @@ namespace boolectorpp {
         sort_impl(id_t derived): class_id(derived){};
 
         virtual void dump(std::ostream& ost) = 0;
+        virtual ::Type toSTP(context* ctx) const = 0;
         virtual ~sort_impl(){};
     };
     struct sort{
@@ -177,7 +66,9 @@ namespace boolectorpp {
         static sort mk_array(sort, sort);
         static sort mk_fun(sort, const std::vector<sort>&);
 
-
+        ::Type toSTP(context* ctx) const {
+            return impl_->toSTP(ctx);
+        }
         friend std::ostream& operator<<(std::ostream& ost, sort s) {
             s.impl_->dump(ost);
             return ost;
@@ -187,6 +78,10 @@ namespace boolectorpp {
     struct bool_sort_impl: sort_impl{
         bool_sort_impl(): sort_impl(class_tag<bool_sort_impl>()){};
 
+        virtual ::Type toSTP(context* ctx) const {
+            return vc_boolType(*ctx);
+        }
+
         virtual void dump(std::ostream& ost) {
             ost << "bool";
         }
@@ -194,6 +89,11 @@ namespace boolectorpp {
     struct bv_sort_impl: sort_impl{
         bv_sort_impl(size_t bv_size): sort_impl(class_tag<bv_sort_impl>()), bv_size{bv_size}{};
         size_t bv_size;
+
+        virtual ::Type toSTP(context* ctx) const {
+            return vc_bvType(*ctx, bv_size);
+        }
+
 
         virtual void dump(std::ostream& ost) {
             ost << "bv[" << bv_size << "]";
@@ -204,6 +104,10 @@ namespace boolectorpp {
         sort res;
         std::vector<sort> args;
 
+        virtual ::Type toSTP(context*) const {
+            UNREACHABLE("UF not supported by stp");
+        }
+
         virtual void dump(std::ostream& ost) {
             ost << res << "(" << args << ")";
         }
@@ -212,6 +116,10 @@ namespace boolectorpp {
         array_sort_impl(sort ix, sort el): sort_impl(class_tag<array_sort_impl>()), ix{ix}, el{el}{};
         sort ix;
         sort el;
+
+        virtual ::Type toSTP(context* ctx) const {
+            return vc_arrayType(*ctx, ix.toSTP(ctx), el.toSTP(ctx));
+        }
 
         virtual void dump(std::ostream& ost) {
             ost << "array<" << ix << ", " << el << ">";
@@ -249,42 +157,49 @@ namespace boolectorpp {
 
     struct node {
         context* ctx;
-        std::shared_ptr<BoolectorNode> data;
+        std::shared_ptr<void> data;
         sort srt;
 
-        node(context* ctx, BoolectorNode* data, sort srt):
+        node(context* ctx, ::Expr data, sort srt):
             ctx{ctx},
             data{},
             srt{srt}{
-            this->data = std::shared_ptr<BoolectorNode>(data, [ctx](auto&& p){ boolector_release(*ctx, p); });
+            this->data = std::shared_ptr<void>(data, [](auto&& p){ vc_DeleteExpr(p); });
         }
         DEFAULT_CONSTRUCTOR_AND_ASSIGN(node);
 
-
-        operator BoolectorNode* () const {
+        operator ::Expr () const {
             return data.get();
         }
+
+        friend std::ostream& operator<<(std::ostream& ost, const node& n) {
+            auto rep = exprString(n);
+            ON_SCOPE_EXIT(free(rep));
+            return ost << rep << "::" << n.srt;
+        }
+
     };
 
 }
 
-struct BoolectorEngine: SmtEngine {
+struct STPEngine: SmtEngine {
 public:
-    using expr_t = boolectorpp::node;
-    using sort_t = boolectorpp::sort;
+    using expr_t = stppp::node;
+    using sort_t = stppp::sort;
     using function_t = expr_t;
     using pattern_t = int;
 
     struct context_t {
-        boolectorpp::context ctx;
+        stppp::context ctx;
         std::unordered_map<std::string, expr_t> symbols;
+        std::unordered_map<std::string, std::string> renaming;
         size_t key = 0;
 
-        operator Btor*() {
+        operator VC() {
             return ctx;
         }
 
-        operator boolectorpp::context*() {
+        operator stppp::context*() {
             return &ctx;
         }
 
@@ -293,29 +208,43 @@ public:
             ++key;
             return std::move(ret);
         }
+
+        const std::string& rename(const std::string& name) {
+            static int i = 0;
+            auto it = renaming.find(name);
+            if(it == std::end(renaming)) {
+                return renaming[name] = tfm::format("stp%d", ++i);
+            } else return it->second;
+        }
     };
 
-    using solver_t = boolectorpp::context;
+    using solver_t = stppp::context;
 
     static std::unique_ptr<context_t> init() {
         return std::unique_ptr<context_t>{ new context_t{} };
     }
 
-    inline static size_t hash(expr_t e) { return boolector_get_id(*e.ctx, e); }
-    inline static std::string name(expr_t e) { return boolector_get_symbol(*e.ctx, e); }
+    inline static size_t hash(expr_t e) { return static_cast<size_t>(getExprID(e)); }
+    inline static std::string name(expr_t e) {
+        char* buf;
+        ON_SCOPE_EXIT(std::free(buf))
+        unsigned long length;
+        vc_printExprToBuffer(*e.ctx, e, &buf, &length);
+        return std::string(buf, length);
+    }
     inline static std::string toString(expr_t e) {
-        auto&& ctx = *e.ctx;
-        if(boolector_is_const(ctx, e)) return boolector_get_bits(*e.ctx, e);
-
-        auto res = boolector_get_symbol(*e.ctx, e);
-        if(!res) res = "<boolector node>";
-        return res;
+        return name(e);
     }
     inline static std::string toSMTLib(expr_t e) { return toString(e);  }
-    inline static bool term_equality(context_t& ctx, expr_t e1, expr_t e2) {
-        return boolector_get_id(ctx, e1) == boolector_get_id(ctx, e2);
+    inline static bool term_equality(context_t&, expr_t e1, expr_t e2) {
+        return getExprID(e1) == getExprID(e2);
     }
-    inline static expr_t simplify(context_t&, expr_t e) { return e; }
+    inline static expr_t simplify(context_t& ctx, expr_t e) {
+        if(e.srt.is_bool()) { // for some bizarre reason, simplify is not supposed to work on bools in stp
+            return e;
+        }
+        return expr_t{ ctx, vc_simplify(ctx, e), e.srt };
+    }
 
     inline static sort_t bool_sort(context_t&){ return sort_t::mk_bool(); }
     inline static sort_t bv_sort(context_t&, size_t bitsize){ return sort_t::mk_bv(bitsize); }
@@ -336,15 +265,15 @@ public:
     }
 
     inline static pattern_t mkPattern(context_t&, expr_t) {
-        UNREACHABLE("patterns not supported by boolector")
+        UNREACHABLE("patterns not supported by stp")
     }
 
     inline static expr_t mkBound(context_t&, size_t, sort_t) {
-        UNREACHABLE("bounds not supported by boolector")
+        UNREACHABLE("bounds not supported by stp")
     }
 
     inline static expr_t mkForAll(context_t&, expr_t, expr_t) {
-        UNREACHABLE("quantifiers not supported by boolector")
+        UNREACHABLE("quantifiers not supported by stp")
     }
 
     inline static expr_t mkForAll(
@@ -352,7 +281,7 @@ public:
             const std::vector<sort_t>&,
             std::function<expr_t(const std::vector<expr_t>&)>
     ) {
-        UNREACHABLE("quantifiers not supported by boolector")
+        UNREACHABLE("quantifiers not supported by stp")
     }
 
     inline static expr_t mkForAll(
@@ -361,7 +290,7 @@ public:
             std::function<expr_t(const std::vector<expr_t>&)>,
             std::function<std::vector<pattern_t>(const std::vector<expr_t>&)>
     ) {
-        UNREACHABLE("quantifiers not supported by boolector")
+        UNREACHABLE("quantifiers not supported by stp")
     }
 
     inline static expr_t mkArrayVar(context_t& ctx, sort_t sort, const std::string& name, freshness fresh) {
@@ -370,7 +299,7 @@ public:
             if(it == std::end(ctx.symbols)) {
                 return ctx.symbols[name] = expr_t{
                     ctx,
-                    boolector_array(ctx, sort.el().bv_size(), sort.ix().bv_size(), name.c_str()),
+                    vc_varExpr1(ctx, ctx.rename(name).c_str(), sort.ix().bv_size(), sort.el().bv_size()),
                     sort
                 };
             } else return it->second;
@@ -381,15 +310,22 @@ public:
     }
 
     inline static expr_t mkNonArrayVar(context_t& ctx, sort_t sort, const std::string& name, freshness fresh) {
+        // std::cerr << name << "::" << sort << std::endl;
         if(fresh == freshness::normal) {
             auto it = ctx.symbols.find(name);
             if(it == std::end(ctx.symbols)) {
                 return ctx.symbols[name] = expr_t{
                     ctx,
-                    boolector_var(ctx, sort.bv_size(), name.c_str()),
+                    vc_varExpr(ctx, ctx.rename(name).c_str(), sort.toSTP(ctx)),
                     sort
                 };
-            } else return it->second;
+            } else {
+                if(sort.toSTP(ctx) != it->second.srt.toSTP(ctx)) {
+                    // std::cerr << sort << " -> " << typeString(sort.toSTP(ctx)) << std::endl;
+                    // std::cerr << it->second.srt << " -> " << typeString(it->second.srt.toSTP(ctx)) << std::endl;
+                }
+                return it->second;
+            }
         } else {
             auto uname = ctx.getFreshName(name);
             return mkNonArrayVar(ctx, sort, uname, freshness::normal);
@@ -404,7 +340,7 @@ public:
     inline static expr_t mkBoolConst(context_t& ctx, bool value) {
         return expr_t{
             ctx,
-            value? boolector_true(ctx) : boolector_false(ctx),
+            value? vc_trueExpr(ctx) : vc_falseExpr(ctx),
             bool_sort(ctx)
         };
     }
@@ -426,7 +362,7 @@ public:
             auto v = mkNumericConst(ctx, sort, -value);
             return expr_t {
                 ctx,
-                boolector_neg(ctx, v),
+                vc_bvUMinusExpr(ctx, v),
                 sort
             };
         } else {
@@ -434,7 +370,7 @@ public:
             auto rep = asBinString(biggy, sort.bv_size());
             return expr_t {
                 ctx,
-                boolector_const(ctx, rep.c_str()),
+                vc_bvConstExprFromStr(ctx, rep.c_str()),
                 sort
             };
         }
@@ -447,7 +383,7 @@ public:
         auto rep = asBinString(biggy, sort.bv_size());
         return expr_t {
             ctx,
-            boolector_const(ctx, rep.c_str()),
+            vc_bvConstExprFromStr(ctx, rep.c_str()),
             sort
         };
     }
@@ -458,7 +394,7 @@ public:
             auto rep = asBinString(biggy, sort.bv_size());
             return expr_t {
                 ctx,
-                boolector_const(ctx, rep.c_str()),
+                vc_bvConstExprFromStr(ctx, rep.c_str()),
                 sort
             };
         }
@@ -486,9 +422,10 @@ public:
 
     template<class HExpr, class ...Exprs>
     inline static expr_t conjunction(context_t& ctx, HExpr h, Exprs... es) {
+        std::vector<::Expr> eps{h, es...};
         return expr_t{
             ctx,
-            boolector_and(ctx, h, conjunction(ctx, es...)),
+            vc_andExprN(ctx, eps.data(), eps.size()),
             get_sort(ctx, h)
         };
     }
@@ -498,17 +435,11 @@ public:
         auto size = ec.size();
         if(size == 0) return mkBoolConst(ctx, true);
         if(size == 1) return util::head(ec);
-        if(size == 2) {
-            return expr_t{
-                ctx,
-                boolector_and(ctx, util::head(ec), util::head(util::tail(ec))),
-                get_sort(ctx, util::head(ec))
-            };
-        }
 
+        std::vector<::Expr> eps(ec.begin(), ec.end());
         return expr_t{
             ctx,
-            boolector_and(ctx, util::head(ec), conjunctionOfCollection(ctx, util::tail(ec))),
+            vc_andExprN(ctx, eps.data(), eps.size()),
             get_sort(ctx, util::head(ec))
         };
     }
@@ -519,9 +450,10 @@ public:
 
     template<class HExpr, class ...Exprs>
     inline static expr_t disjunction(context_t& ctx, HExpr h, Exprs... es) {
+        std::vector<::Expr> eps{h, es...};
         return expr_t{
             ctx,
-            boolector_or(ctx, h, conjunction(ctx, es...)),
+            vc_orExprN(ctx, eps.data(), eps.size()),
             get_sort(ctx, h)
         };
     }
@@ -529,70 +461,68 @@ public:
     template<class ExprContainer>
     inline static expr_t disjunctionOfCollection(context_t& ctx, const ExprContainer& ec) {
         auto size = ec.size();
-        if(size == 0) return mkBoolConst(ctx, false);
+        if(size == 0) return mkBoolConst(ctx, true);
         if(size == 1) return util::head(ec);
-        if(size == 2) {
-            return expr_t{
-                ctx,
-                boolector_or(ctx, util::head(ec), util::head(util::tail(ec))),
-                get_sort(ctx, util::head(ec))
-            };
-        }
 
+        std::vector<::Expr> eps(ec.begin(), ec.end());
         return expr_t{
             ctx,
-            boolector_or(ctx, util::head(ec), conjunctionOfCollection(ctx, util::tail(ec))),
+            vc_orExprN(ctx, eps.data(), eps.size()),
             get_sort(ctx, util::head(ec))
         };
     }
 
-    using Btor_capi_binop = std::add_pointer_t< BoolectorNode*(Btor*, BoolectorNode*, BoolectorNode*) >;
-    static Btor_capi_binop binop2btor(binOp bop) {
-        static const stdarray_wrapper<Btor_capi_binop, binOp, binOp::LAST> conv = []() {
-            stdarray_wrapper<Btor_capi_binop, binOp, binOp::LAST> ret;
-            for(auto&& el: ret) el = [](Btor*, BoolectorNode*, BoolectorNode*) -> BoolectorNode* { UNREACHABLE("Incorrect opcode"); };
-            ret[binOp::CONJ]    = boolector_and;
-            ret[binOp::DISJ]    = boolector_or;
-            ret[binOp::IMPLIES] = boolector_implies;
-            ret[binOp::IFF]     = boolector_iff;
-            ret[binOp::CONCAT]  = boolector_concat;
-            ret[binOp::BAND]    = boolector_and;
-            ret[binOp::BOR]     = boolector_or;
-            ret[binOp::XOR]     = boolector_xor;
-            ret[binOp::BXOR]    = boolector_xor;
-            ret[binOp::ADD]     = boolector_add;
-            ret[binOp::SUB]     = boolector_sub;
-            ret[binOp::SMUL]    = boolector_mul;
-            ret[binOp::SDIV]    = boolector_sdiv;
-            ret[binOp::SMOD]    = boolector_smod;
-            ret[binOp::SREM]    = boolector_srem;
-            ret[binOp::UMUL]    = boolector_mul;
-            ret[binOp::UDIV]    = boolector_udiv;
-            ret[binOp::UMOD]    = boolector_urem;
-            ret[binOp::UREM]    = boolector_urem;
-            ret[binOp::ASHL]    =
-                [](Btor* ctx, BoolectorNode* lhv, BoolectorNode* rhv) -> BoolectorNode* {
-                    return btor_translate_shift_smt2(ctx, lhv, rhv, boolector_sll);
+    using STP_standard_api = std::add_pointer_t< ::Expr(::VC, ::Expr, ::Expr) >;
+    static STP_standard_api binop2standard(binOp bop) {
+        static const stdarray_wrapper<STP_standard_api, binOp, binOp::LAST> conv = []() {
+            stdarray_wrapper<STP_standard_api, binOp, binOp::LAST> ret;
+            for(auto&& el: ret) el = nullptr;
+            ret[binOp::CONJ]    = vc_andExpr;
+            ret[binOp::DISJ]    = vc_orExpr;
+            ret[binOp::IMPLIES] = vc_impliesExpr;
+            ret[binOp::IFF]     = vc_iffExpr;
+            ret[binOp::CONCAT]  = vc_bvConcatExpr;
+            ret[binOp::BAND]    = vc_bvAndExpr;
+            ret[binOp::BOR]     = vc_bvOrExpr;
+            ret[binOp::XOR]     = vc_xorExpr;
+            ret[binOp::BXOR]    = vc_bvXorExpr;
+            ret[binOp::EQUAL]   = vc_eqExpr;
+            ret[binOp::NEQUAL]  =
+                [](::VC ctx, ::Expr lhv, ::Expr rhv) -> ::Expr {
+                    return vc_notExpr(ctx, vc_eqExpr(ctx, lhv, rhv));
                 };
-            ret[binOp::ASHR]    =
-                [](Btor* ctx, BoolectorNode* lhv, BoolectorNode* rhv) -> BoolectorNode* {
-                    return btor_translate_shift_smt2(ctx, lhv, rhv, boolector_sra);
-                };
-            ret[binOp::LSHR]    =
-                [](Btor* ctx, BoolectorNode* lhv, BoolectorNode* rhv) -> BoolectorNode* {
-                    return btor_translate_shift_smt2(ctx, lhv, rhv, boolector_srl);
-                };
-            ret[binOp::EQUAL]   = boolector_eq;
-            ret[binOp::NEQUAL]  = boolector_ne;
-            ret[binOp::SGT]     = boolector_sgt;
-            ret[binOp::SLT]     = boolector_slt;
-            ret[binOp::SGE]     = boolector_sgte;
-            ret[binOp::SLE]     = boolector_slte;
-            ret[binOp::UGT]     = boolector_ugt;
-            ret[binOp::ULT]     = boolector_ult;
-            ret[binOp::UGE]     = boolector_ugte;
-            ret[binOp::ULE]     = boolector_ulte;
-            ret[binOp::LOAD]    = boolector_read;
+            ret[binOp::SGT]     = vc_sbvGtExpr;
+            ret[binOp::SLT]     = vc_sbvLtExpr;
+            ret[binOp::SGE]     = vc_sbvGeExpr;
+            ret[binOp::SLE]     = vc_sbvLeExpr;
+            ret[binOp::UGT]     = vc_bvGtExpr;
+            ret[binOp::ULT]     = vc_bvLtExpr;
+            ret[binOp::UGE]     = vc_bvGeExpr;
+            ret[binOp::ULE]     = vc_bvLeExpr;
+            ret[binOp::LOAD]    = vc_readExpr;
+            return ret;
+        }();
+        return conv[bop];
+    }
+
+    using STP_bv_api = std::add_pointer_t< ::Expr(::VC, int, ::Expr, ::Expr) >;
+    static STP_bv_api binop2bv(binOp bop) {
+        static const stdarray_wrapper<STP_bv_api, binOp, binOp::LAST> conv = []() {
+            stdarray_wrapper<STP_bv_api, binOp, binOp::LAST> ret;
+            for(auto&& el: ret) el = nullptr;
+            ret[binOp::ADD]     = vc_bvPlusExpr;
+            ret[binOp::SUB]     = vc_bvMinusExpr;
+            ret[binOp::SMUL]    = vc_bvMultExpr;
+            ret[binOp::SDIV]    = vc_sbvDivExpr;
+            ret[binOp::SMOD]    = vc_sbvModExpr;
+            ret[binOp::SREM]    = vc_sbvRemExpr;
+            ret[binOp::UMUL]    = vc_bvMultExpr;
+            ret[binOp::UDIV]    = vc_bvDivExpr;
+            ret[binOp::UMOD]    = vc_bvModExpr;
+            ret[binOp::UREM]    = vc_bvModExpr;
+            ret[binOp::ASHL]    = vc_bvLeftShiftExprExpr;
+            ret[binOp::ASHR]    = vc_bvSignedRightShiftExprExpr;
+            ret[binOp::LSHR]    = vc_bvRightShiftExprExpr;
             return ret;
         }();
         return conv[bop];
@@ -641,30 +571,41 @@ public:
     }
 
     inline static expr_t binop(context_t& ctx, binOp bop, expr_t lhv, expr_t rhv) {
-        auto f = binop2btor(bop);
 
-        auto res = f(ctx, lhv, rhv);
-        size_t bw = boolector_get_width(ctx, res);
+        if(bop == binOp::EQUAL && lhv.srt.is_bool()) bop = binOp::IFF;
+        if(bop == binOp::NEQUAL && lhv.srt.is_bool()) bop = binOp::XOR;
 
-        if(bop == binOp::CONCAT) {
-            return expr_t(ctx, res, bv_sort(ctx, bw));
+        if(auto f = binop2standard(bop)) {
+            auto res = f(ctx, lhv, rhv);
+
+            if(bop == binOp::CONCAT) {
+                size_t bw = vc_getBVLength(ctx, res);
+                return expr_t(ctx, res, bv_sort(ctx, bw));
+            }
+
+            return expr_t(ctx, res, calcBinopSort(ctx, bop, lhv.srt));
+        } else if(auto f = binop2bv(bop)) {
+            int size = static_cast<int>(lhv.srt.bv_size());
+            auto res = f(ctx, size, lhv, rhv);
+            return expr_t(ctx, res, calcBinopSort(ctx, bop, lhv.srt));
         }
 
-        return expr_t(ctx, res, calcBinopSort(ctx, bop, lhv.srt));
+        UNREACHABLE("Incorrect opcode")
+
     }
 
     inline static expr_t unop(context_t& ctx, unOp op, expr_t e) {
-        std::add_pointer_t< BoolectorNode*(Btor*, BoolectorNode*) > call;
+        std::add_pointer_t< ::Expr(::VC, ::Expr) > call;
 
         switch(op) {
             case SmtEngine::unOp::NEGATE:
-                call = boolector_not;
+                call = vc_notExpr;
                 break;
             case SmtEngine::unOp::BNOT:
-                call = boolector_not;
+                call = vc_bvNotExpr;
                 break;
             case SmtEngine::unOp::UMINUS:
-                call = boolector_neg;
+                call = vc_bvUMinusExpr;
                 break;
             default:
                 UNREACHABLE("Incorrect unOp value");
@@ -677,7 +618,7 @@ public:
     inline static expr_t ite(context_t& ctx, expr_t cond, expr_t t, expr_t f) {
         return expr_t{
             ctx,
-            boolector_cond(ctx, cond, t, f),
+            vc_iteExpr(ctx, cond, t, f),
             get_sort(ctx, t)
         };
     }
@@ -685,50 +626,52 @@ public:
     inline static expr_t extract(context_t& ctx, expr_t lhv, size_t hi, size_t lo){
         return expr_t{
             ctx,
-            boolector_slice(ctx, lhv, hi, lo),
+            vc_bvExtract(ctx, lhv, hi, lo),
             sort_t::mk_bv(hi - lo + 1)
         };
     }
     inline static expr_t sext(context_t& ctx, expr_t lhv, size_t sz) {
         return expr_t{
             ctx,
-            boolector_sext(ctx, lhv, sz),
+            vc_bvSignExtend(ctx, lhv, lhv.srt.bv_size() + sz),
             sort_t::mk_bv(lhv.srt.bv_size() + sz)
         };
     }
     inline static expr_t zext(context_t& ctx, expr_t lhv, size_t sz) {
+        auto ext = mkNumericConst(ctx, bv_sort(ctx, sz), 0);
+
         return expr_t{
             ctx,
-            boolector_uext(ctx, lhv, sz),
+            vc_bvConcatExpr(ctx, ext, lhv),
             sort_t::mk_bv(lhv.srt.bv_size() + sz)
         };
     }
     inline static expr_t store(context_t& ctx, expr_t arr, expr_t ix, expr_t elem){
         return expr_t{
             ctx,
-            boolector_write(ctx, arr, ix, elem),
+            vc_writeExpr(ctx, arr, ix, elem),
             get_sort(ctx, arr)
         };
     }
     inline static expr_t apply(context_t&, function_t, const std::vector<expr_t>&){
-        UNREACHABLE("functions are not supported by boolector backend yet")
+        UNREACHABLE("functions are not supported by stp backend yet")
     }
 
     inline static expr_t distinct(context_t& ctx, const std::vector<expr_t>& args) {
-        std::vector<BoolectorNode*> cargs{ args.begin(), args.end() };
-        return expr_t{
-            ctx,
-            boolector_distinct(ctx, cargs.data(), cargs.size()),
-            bool_sort(ctx)
-        };
+        std::vector<expr_t> res;
+        for(auto i = 0U; i < args.size(); ++i) {
+            for(auto j = i + 1; j < args.size(); ++j) {
+                res.push_back(binop(ctx, binOp::NEQUAL, args[i], args[j]));
+            }
+        }
+        return conjunctionOfCollection(ctx, res);
     }
 
     using Result = smt::Result;
 
     struct equality {
          bool operator()(expr_t e1, expr_t e2) const noexcept {
-             auto&& ctx = e1.ctx;
-             return boolector_get_id(*ctx, e1) == boolector_get_id(*ctx, e2);
+             return getExprID(e1) == getExprID(e2);
          }
     };
 };
@@ -738,10 +681,9 @@ public:
 namespace std {
 
 template<>
-struct hash<borealis::BoolectorEngine::expr_t> {
-    size_t operator()(borealis::BoolectorEngine::expr_t e) const noexcept {
-        auto&& ctx = e.ctx;
-        return static_cast<size_t>(boolector_get_id(*ctx, e));
+struct hash<borealis::STPEngine::expr_t> {
+    size_t operator()(borealis::STPEngine::expr_t e) const noexcept {
+        return static_cast<size_t>(getExprID(e));
     }
 };
 
@@ -750,4 +692,4 @@ struct hash<borealis::BoolectorEngine::expr_t> {
 #include "Util/unmacros.h"
 #include "Util/generate_unmacros.h"
 
-#endif //BOOLECTOR_ENGINE_H_H
+#endif //STP_ENGINE_H_H

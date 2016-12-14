@@ -14,6 +14,7 @@
 #include "SMT/MathSAT/Solver.h"
 #include "SMT/Z3/Solver.h"
 #include "SMT/Boolector/Solver.h"
+#include "SMT/STP/Solver.h"
 #include "SMT/CVC4/Solver.h"
 #include "SMT/Portfolio/Solver.h"
 #include "State/Transformer/GraphBuilder.h"
@@ -66,6 +67,14 @@ private:
         Boolector::Solver s(ef, memoryBounds.first, memoryBounds.second);
         return s.isViolated(query, state);
     }
+    static smt::Result checkViolationSTP(
+        std::pair<size_t, size_t> memoryBounds,
+        PredicateState::Ptr query,
+        PredicateState::Ptr state) {
+        STP::ExprFactory ef;
+        STP::Solver s(ef, memoryBounds.first, memoryBounds.second);
+        return s.isViolated(query, state);
+    }
     static smt::Result checkViolationCVC4(
         std::pair<size_t, size_t> memoryBounds,
         PredicateState::Ptr query,
@@ -99,6 +108,7 @@ private:
         if(engineName == "z3") return checkViolationZ3(memoryBounds, query, state);
         if(engineName == "cvc4") return checkViolationCVC4(memoryBounds, query, state);
         if(engineName == "boolector") return checkViolationBoolector(memoryBounds, query, state);
+        if(engineName == "stp") return checkViolationSTP(memoryBounds, query, state);
         if(engineName == "portfolio") return checkViolationPortfolio(memoryBounds, query, state);
         UNREACHABLE(tfm::format("Unknown solver specified: %s", engineName));
     }
