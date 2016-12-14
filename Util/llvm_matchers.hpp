@@ -24,7 +24,7 @@ static auto $OfType = functional_hell::matchers::function_as_pattern([](auto&& v
 template <class Derived, class F>
 static auto fwdAsDynCast(llvm::Value* v, F f) -> decltype(f(cast<Derived>(v))) {
     if(auto der = dyn_cast<Derived>(v)) return f(der);
-    else return {};
+    else return functional_hell::matchers::no_match;
 }
 
 struct ExtractValueExtractor {

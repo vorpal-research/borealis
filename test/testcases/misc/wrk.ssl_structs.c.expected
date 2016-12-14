@@ -1,14 +1,12 @@
 [
-	{
-		"location" : 
-		{
-			"filename" : "test/testcases/misc/wrk.ssl_structs.c",
-			"loc" : 
-			{
-				"col" : 5,
-				"line" : 13
-			}
-		},
-		"type" : "BUF-01"
-	}
+    {
+        "location": {
+            "loc": {
+                "col": 5,
+                "line": 13
+            },
+            "filename": "test/testcases/misc/wrk.ssl_structs.c"
+        },
+        "type": "INI-03"
+    }
 ]
