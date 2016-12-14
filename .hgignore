@@ -9,6 +9,9 @@ syntax: glob
 *.pyc
 
 CMakeLists.txt
+Makefile
+CMakeFiles
+*.cmake
 build/*
 headers/*
 
@@ -27,6 +30,7 @@ Protobuf/Gen/*
 *.png
 
 lib/yaml-cpp/build
+lib/yaml-cpp/yaml-cpp.pc
 lib/andersen
 lib/backward-cpp
 lib/cfgparser
