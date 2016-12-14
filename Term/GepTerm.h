@@ -11,6 +11,7 @@
 #include "Config/config.h"
 #include "Term/Term.h"
 #include "Term/OpaqueIntConstantTerm.h"
+#include "Util/llvm_matchers.hpp"
 
 #include "Util/macros.h"
 
@@ -159,24 +160,13 @@ struct SMTImpl<Impl, GepTerm> {
         return shifted.withAxiom(shifted > zero);
     }
 
-//    static Dynamic<Impl> doit(
-//            const GepTerm* t,
-//            ExprFactory<Impl>& ef,
-//            ExecutionContext<Impl>* ctx) {
-//        TRACE_FUNC;
-//        USING_SMT_IMPL(Impl);
-//        AUTO_CACHE_IMPL(t, ctx, doit_(t, ef, ctx));
-//    }
 };
 
 struct GepTermExtractor {
 
-    auto unapply(Term::Ptr t) const -> functional_hell::matchers::storage_t<Term::Ptr, decltype(std::declval<GepTerm>().getShifts())> {
-        if (auto&& tt = llvm::dyn_cast<GepTerm>(t)) {
-            return functional_hell::matchers::make_storage(tt->getBase(), tt->getShifts());
-        } else {
-            return {};
-        }
+    auto unapply(Term::Ptr t) const {
+        using namespace functional_hell::matchers;
+        return llvm::fwdAsDynCast<GepTerm>(t, LAM(tt, make_storage(tt->getBase(), tt->getShifts())));
     }
 
 };

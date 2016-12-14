@@ -8,6 +8,7 @@
 #include <functional-hell/matchers_aux.hpp>
 
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/ADT/ArrayRef.h>
 
 #include "Util/macros.h"
@@ -23,9 +24,9 @@ static auto pattern_matcher(Wha pattern) {
 
 static auto $OfType = function_as_pattern([](auto&& v){ return make_storage(v->getType()); });
 
-template <class Derived, class F>
-inline auto fwdAsDynCast(llvm::Value* v, F f) -> decltype(f(cast<Derived>(v))) {
-    if(auto der = dyn_cast<Derived>(v)) return f(der);
+template <class Derived, class V, class F>
+inline auto fwdAsDynCast(V&& v, F f) -> decltype(f(cast<Derived>(v))) {
+    if(auto der = dyn_cast<Derived>(std::forward<V>(v))) return f(der);
     else return no_match;
 }
 
