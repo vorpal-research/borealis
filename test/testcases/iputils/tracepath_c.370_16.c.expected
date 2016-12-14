@@ -1,1 +1,12 @@
-null
+[
+    {
+        "location": {
+            "loc": {
+                "col": 25,
+                "line": 20
+            },
+            "filename": "test/testcases/iputils/tracepath_c.370_16.c"
+        },
+        "type": "BUF-01"
+    }
+]
