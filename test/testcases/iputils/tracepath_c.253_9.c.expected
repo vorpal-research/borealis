@@ -1,0 +1,12 @@
+[
+    {
+        "location": {
+            "loc": {
+                "col": 5,
+                "line": 8
+            },
+            "filename": "test/testcases/iputils/tracepath_c.253_9.c"
+        },
+        "type": "INI-03"
+    }
+]
