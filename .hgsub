@@ -1,6 +1,6 @@
-lib/iterations = ../borealis-libs/iterations
-lib/typesig = ../borealis-libs/typesig
-lib/functional-hell = ../borealis-libs/functional-hell
+lib/iterations = ../iterations
+lib/typesig = ../typesig
+lib/functional-hell = ../functional-hell
 lib/leveldb-mp = ../leveldb-mp
 
 lib/tinyformat = [git]https://github.com/c42f/tinyformat.git
