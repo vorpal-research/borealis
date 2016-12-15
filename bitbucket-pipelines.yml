@@ -1,0 +1,8 @@
+image: vorpal/borealis-standalone:squashed
+
+pipelines:
+  default:
+    - step:
+        script:
+          - make
+          - make check
