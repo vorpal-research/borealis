@@ -345,6 +345,7 @@ target_compile_options(wrapper PUBLIC ${COMPILER_FLAGS})
 target_compile_definitions(wrapper PUBLIC ${COMPILER_DEFINITIONS})
 
 add_dependencies(wrapper
+        inih
         yaml-cpp
         Andersen)
 
@@ -360,6 +361,7 @@ target_compile_options(ar_wrapper PUBLIC ${COMPILER_FLAGS})
 target_compile_definitions(ar_wrapper PUBLIC ${COMPILER_DEFINITIONS})
 
 add_dependencies(ar_wrapper
+        inih
         yaml-cpp
         Andersen)
 
@@ -380,6 +382,7 @@ add_executable(${TEST_EXE} EXCLUDE_FROM_ALL $<TARGET_OBJECTS:source_objects>
 add_dependencies(${TEST_EXE}
         wrapper
         ar_wrapper
+        inih
         yaml-cpp
         Andersen
         gtest)
