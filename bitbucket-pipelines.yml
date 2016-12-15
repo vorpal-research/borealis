@@ -4,5 +4,8 @@ pipelines:
   default:
     - step:
         script:
+          - mkdir build
+          - cd build
+          - cmake ..
           - make
           - make check
