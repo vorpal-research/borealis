@@ -9,6 +9,7 @@
 #define OPAQUEBUILTINTERM_H_
 
 #include "Term/Term.h"
+#include "Util/llvm_matchers.hpp"
 
 namespace borealis {
 
@@ -55,8 +56,20 @@ struct SMTImpl<Impl, OpaqueBuiltinTerm> {
         BYE_BYE(Dynamic<Impl>, "Should not be called!");
     }
 };
-#include "Util/unmacros.h"
+
+struct OpaqueBuiltinTermExtractor {
+
+    auto unapply(Term::Ptr t) const {
+        using namespace functional_hell::matchers;
+        return llvm::fwdAsDynCast<OpaqueBuiltinTerm>(t, LAM(tt, make_storage(tt->getVName())));
+    }
+
+};
+
+static auto $OpaqueBuiltinTerm = functional_hell::matchers::make_pattern(OpaqueBuiltinTermExtractor());
 
 } /* namespace borealis */
+
+#include "Util/unmacros.h"
 
 #endif /* OPAQUEBUILTINTERM_H_ */

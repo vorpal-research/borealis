@@ -9,6 +9,7 @@
 #define OPAQUECALLTERM_H_
 
 #include "Term/Term.h"
+#include "Util/llvm_matchers.hpp"
 
 namespace borealis {
 
@@ -53,6 +54,7 @@ public:
 };
 
 #include "Util/macros.h"
+
 template<class Impl>
 struct SMTImpl<Impl, OpaqueCallTerm> {
     static Dynamic<Impl> doit(
@@ -62,8 +64,21 @@ struct SMTImpl<Impl, OpaqueCallTerm> {
         BYE_BYE(Dynamic<Impl>, "Should not be called!");
     }
 };
-#include "Util/unmacros.h"
+
+
+struct OpaqueCallTermExtractor {
+
+    auto unapply(Term::Ptr t) const {
+        using namespace functional_hell::matchers;
+        return llvm::fwdAsDynCast<OpaqueCallTerm>(t, LAM(tt, make_storage(tt->getLhv(), tt->getRhv())));
+    }
+
+};
+
+static auto $OpaqueCallTerm = functional_hell::matchers::make_pattern(OpaqueCallTermExtractor());
 
 } // namespace borealis
+
+#include "Util/unmacros.h"
 
 #endif /* OPAQUECALLTERM_H_ */

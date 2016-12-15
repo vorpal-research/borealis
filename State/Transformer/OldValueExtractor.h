@@ -17,6 +17,14 @@
 
 namespace borealis {
 
+// \old(X) -> X
+class OldValueEraser: public borealis::Transformer<OldValueEraser> {
+public:
+    OldValueEraser(const FactoryNest &FN) : Transformer(FN) {}
+
+    Term::Ptr transformOpaqueCallTerm(OpaqueCallTermPtr call);
+};
+
 // break ``@ensures( ... \old(x+y) ... )'' to
 //       ``@assume(borealis.old.1 = x + y)'' && ``@ensures( ... borealis.old.1 ...)''
 // where exactly this assumes should be put into depends on the current meaning of ``\old''
@@ -24,6 +32,7 @@ class OldValueExtractor: public borealis::Transformer<OldValueExtractor> {
     Locus locus;
     size_t seed = 0U;
     std::list<Annotation::Ptr> assumes;
+    OldValueEraser eraser;
 
     std::string getFreeName() {
         return "borealis.old." + util::toString(seed++);
@@ -33,24 +42,10 @@ public:
     OldValueExtractor(
         const FactoryNest& FN,
         size_t seed = 0U
-    ) : Transformer{ FN }, locus{}, seed{ seed }, assumes{} {}
+    ) : Transformer{ FN }, locus{}, seed{ seed }, assumes{}, eraser{FN} {}
     ~OldValueExtractor() {}
 
-    Term::Ptr transformOpaqueCall(OpaqueCallTermPtr call) {
-        auto builtin = llvm::dyn_cast<OpaqueBuiltinTerm>(call->getLhv());
-        if( ! builtin || builtin->getVName() != "old" ) return call;
-        if(call->getRhv().size() != 1) return call; // treated as an error in AnnotationMaterializer later
-        auto arg = util::head(call->getRhv());
-
-        auto genName = getFreeName();
-        auto genTerm = FN.Term->getFreeVarTerm(arg->getType(), genName);
-
-        auto predicate = FN.Term->getCmpTerm(llvm::ConditionType::EQ, genTerm, arg);
-        std::vector<Term::Ptr> args { predicate };
-
-        assumes.push_back(AssumeAnnotation::fromTerms(locus, "", args));
-        return genTerm;
-    }
+    Term::Ptr transformOpaqueCallTerm(OpaqueCallTermPtr call);
 
     size_t getSeed() const { return seed; }
     const std::list<Annotation::Ptr>& getResults() const {
