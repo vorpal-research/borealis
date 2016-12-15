@@ -307,6 +307,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
             contracts.insert(std::end(contracts), std::begin(impContracts), std::end(impContracts));
 
             std::vector<Annotation::Ptr> beforeAlls;
+            std::vector<Annotation::Ptr> oldBindings;
             std::vector<Annotation::Ptr> befores;
             std::vector<Annotation::Ptr> afters;
             std::vector<Annotation::Ptr> middles;
@@ -316,9 +317,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                     OldValueExtractor ove(FN);
                     contract = ove.transform(contract);
 
-                    // FIXME: materialize ove results
-
-                    befores.insert(befores.end(), ove.getResults().begin(), ove.getResults().end());
+                    oldBindings.insert(oldBindings.end(), ove.getResults().begin(), ove.getResults().end());
                     if(auto&& la = dyn_cast<LogicAnnotation>(contract)) {
                         AnnotationMaterializer AM(*la, FN, &VIT, call->getCalledFunction());
                         contract = AM.transform(contract);
@@ -342,6 +341,13 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                 }
             }
 
+            for (auto&& oldBinding: oldBindings) {
+                if(auto&& la = dyn_cast<LogicAnnotation>(oldBinding)) {
+                    AnnotationMaterializer AM(*la, FN, &VIT, call->getCalledFunction());
+                    oldBinding = AM.transform(oldBinding);
+                }
+                AnnotationProcessor::landOnInstructionOrFirst(oldBinding, M, FN, *call);
+            }
             for (auto&& before: befores) AnnotationProcessor::landOnInstructionOrFirst(before, M, FN, *call);
             for (auto&& middle: middles) AnnotationProcessor::landOnInstructionOrFirst(middle, M, FN, *call);
             for (auto&& beforeAll: beforeAlls) {
