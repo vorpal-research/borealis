@@ -14,8 +14,7 @@
 
 namespace borealis {
 
-static config::StringConfigEntry db_name("database", "database-name");
-static config::StringConfigEntry socket_name("database", "daemon-socket-name");
+static config::StringConfigEntry db_name("database", "database");
 
 std::string getexepath() {
     char result[PATH_MAX];
@@ -26,19 +25,18 @@ std::string getexepath() {
 
 void startDatabaseDaemon() {
     auto& name = db_name.get();
-    auto& socket = socket_name.get();
-    if (not (name && socket)) return;
+    if (not name) return;
 
-    if (not leveldb_mp::DB::isDaemonStarted(socket.getUnsafe())) {
+    if (not leveldb_mp::DB::isDaemonStarted(name.getUnsafe())) {
         std::string exePath = getexepath();
         auto pid = fork();
         if (pid == 0) {
-            std::string runCmd = exePath + "leveldb_daemon " + name.getUnsafe() + " " + socket.getUnsafe();
-            system(runCmd.c_str());
+            std::string runCmd = exePath + "leveldb_daemon";
+            execl(runCmd.c_str(), "leveldb_daemon", name.getUnsafe().c_str());
         }
     }
     auto&& db = leveldb_mp::DB::getInstance();
-    db->connect(socket.getUnsafe());
+    db->connect(name.getUnsafe());
 }
 
 }   /* namespace borealis */
