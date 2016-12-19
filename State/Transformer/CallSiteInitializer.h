@@ -50,6 +50,22 @@ private:
     std::string prefix;
     const Locus* overrideLoc;
 
+    template<class ...Args>
+    void failWith(const char* error, Args&&... args) {
+        throw std::runtime_error {
+            tfm::format(
+                "CallSiteInitializer error while processing callsite %s: %s",
+                llvm::valueSummary(ci.getInstruction()),
+                tfm::format(error, std::forward<Args>(args)...)
+            )
+        };
+    }
+
+    template<class ...Args>
+    void failWith(const std::string& error, Args&&... args) {
+        return failWith(error.c_str(), std::forward<Args>(args)...);
+    }
+
 };
 
 } /* namespace borealis */

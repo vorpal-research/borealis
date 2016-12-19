@@ -9,6 +9,9 @@
 
 #include "Util/macros.h"
 
+#define LASSERT(X, ...) { if(not (X)) failWith(__VA_ARGS__); }
+#define LASSERTC(...) LASSERT(static_cast<bool>(__VA_ARGS__), #__VA_ARGS__)
+
 namespace borealis {
 
 CallSiteInitializer::CallSiteInitializer(
@@ -65,17 +68,17 @@ Annotation::Ptr CallSiteInitializer::transformGlobalAnnotation(GlobalAnnotationP
 Term::Ptr CallSiteInitializer::transformArgumentTerm(ArgumentTermPtr t) {
     auto argIdx = t->getIdx();
 
-    ASSERT(ci.arg_size() > argIdx,
-           "Cannot find an actual function argument at call site: " +
-           llvm::valueSummary(ci.getInstruction()));
+    LASSERT(ci.arg_size() > argIdx,
+            "Cannot find an actual function argument at call site: " +
+            llvm::valueSummary(ci.getInstruction()));
 
     auto* actual = ci.getArgument(argIdx);
 
     switch (t->getKind()) {
     case ArgumentKind::STRING: {
         auto&& argAsString = getAsCompileTimeString(actual);
-        ASSERT(not argAsString.empty(),
-               "Non-string actual argument for ArgumentKind::STRING");
+        LASSERT(not argAsString.empty(),
+                "Non-string actual argument for ArgumentKind::STRING");
         return FN.Term->getOpaqueConstantTerm(*argAsString.get());
     }
     default:
@@ -90,9 +93,9 @@ Term::Ptr CallSiteInitializer::transformArgumentCountTerm(ArgumentCountTermPtr /
 Term::Ptr CallSiteInitializer::transformVarArgumentTerm(VarArgumentTermPtr t) {
     auto argIdx = t->getIdx() + ci.getCalledFunction()->arg_size();
 
-    ASSERT(ci.arg_size() > argIdx,
-           "Cannot find an actual function argument at call site: " +
-           llvm::valueSummary(ci.getInstruction()));
+    LASSERT(ci.arg_size() > argIdx,
+            "Cannot find an actual function argument at call site: " +
+            llvm::valueSummary(ci.getInstruction()));
 
     auto* actual = ci.getArgument(argIdx);
 
@@ -108,7 +111,7 @@ Term::Ptr CallSiteInitializer::transformReturnPtrTerm(ReturnPtrTermPtr) {
                           .map(llvm::ops::dyn_cast<llvm::StoreInst>)
                           .filter()
                           .first_or(nullptr);
-    ASSERTC(binder);
+    LASSERTC(binder);
     auto&& realPtr = binder->getPointerOperand();
 
     return FN.Term->getValueTerm(realPtr);
