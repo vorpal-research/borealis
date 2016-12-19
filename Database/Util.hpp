@@ -29,7 +29,7 @@ void startDatabaseDaemon() {
     auto& socket = socket_name.get();
     if (not (name && socket)) return;
 
-    if (not leveldb_daemon::DB::isDaemonStarted()) {
+    if (not leveldb_mp::DB::isDaemonStarted(socket.getUnsafe())) {
         std::string exePath = getexepath();
         auto pid = fork();
         if (pid == 0) {
@@ -37,8 +37,8 @@ void startDatabaseDaemon() {
             system(runCmd.c_str());
         }
     }
-    auto&& db = leveldb_daemon::DB::getInstance();
-    db->setSocket(socket.getUnsafe());
+    auto&& db = leveldb_mp::DB::getInstance();
+    db->connect(socket.getUnsafe());
 }
 
 }   /* namespace borealis */

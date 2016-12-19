@@ -258,7 +258,7 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/leveldb-mp)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/leveldb-mp/libsocket/C++)
 
 list(APPEND ARCHIVES socket++)          #needed for leveldb-mp
-list(APPEND ARCHIVES leveldb_client)
+list(APPEND ARCHIVES leveldb_mp)
 
 ################################################################################
 # andersen
