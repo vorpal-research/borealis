@@ -148,6 +148,8 @@ Type::Ptr TypeFactory::cast(const llvm::Type* type, const llvm::DataLayout* dl, 
         return getPointer(cast(type->getPointerElementType(), dl));
     else if (type->isArrayTy())
         return getArray(cast(type->getArrayElementType(), dl), type->getArrayNumElements());
+    else if (type->isVectorTy())
+        return getArray(cast(type->getVectorElementType(), dl), type->getVectorNumElements());
     else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
         auto&& name = str->hasName() ? str->getStructName().str() : util::toString(*str);
         return getRecord(name, str, dl);

@@ -174,6 +174,19 @@ CTypeRef CTypeFactory::processType(clang::QualType qtype, const clang::ASTContex
         return result =  getRef(getVoid());
     }
 
+    if(qtype->isAnyComplexType()) {
+        auto ct = dyn_cast<clang::ComplexType>(qtype);
+        auto base = getRef(processType(ct->getElementType(), ctx, visited));
+        return result = getRef(getStruct(
+            tfm::format("_Complex<%s>", base.getName()),
+            util::make_vector(
+                CStructMember(0, "real", base),
+                CStructMember(ctx.getTypeAlign(ct->getElementType()), "imag", base)
+            )
+        ));
+    }
+
+
     if(qtype->isIntegralOrEnumerationType() && qtype->isBuiltinType()) {
         auto bt = dyn_cast<clang::BuiltinType>(qtype);
         auto signedness = bt->isSignedIntegerOrEnumerationType() ? llvm::Signedness::Signed : llvm::Signedness::Unsigned;
