@@ -82,9 +82,7 @@ PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
     if(nullptr == AA) return ps;
 
     {
-        std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>& paths = CFDT.getFinalPaths();
-
-        // CFDT.getFinalPaths().foreach_non_unique(APPLY(paths.insert));
+        auto& paths = CFDT.getFinalPaths();
 
         for(auto&& pred: paths) {
             if(paths.count(inverse(FN, pred))) {
@@ -119,9 +117,7 @@ PredicateState::Ptr StateSlicer::transformChoice(PredicateStateChoicePtr ps) {
 }
 
 void StateSlicer::addControlFlowDeps(Predicate::Ptr res) {
-    std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>& paths = CFDT.getDominatingPaths(res);
-
-    //CFDT.getDominatingPaths(res).foreach_non_unique(APPLY(paths.insert));
+    auto& paths = CFDT.getDominatingPaths(res);
 
     for(auto&& pred: paths) {
         if(paths.count(inverse(FN, pred))) {

@@ -33,6 +33,10 @@ class compacting_array {
     }
 
 public:
+    std::bitset<MaxSize> mask() const {
+        return bitmask;
+    }
+
     size_t size() const {
         return bitmask.count();
     }
@@ -57,6 +61,9 @@ public:
             bitmask(that.bitmask), data(new T[that.size()]) {
         std::copy(that.data, that.data + size(), data);
     }
+    explicit compacting_array(const std::bitset<MaxSize>& mask):
+            bitmask(mask), data(new T[mask.count()]){}
+
     compacting_array& operator= (compacting_array&& that) {
         clear();
         swap(*this, that);
@@ -373,6 +380,41 @@ class hamt_set {
         UNREACHABLE("Incorrect hamt_node encountered");
     }
 
+    node_ptr merge(const node_ptr& lnode, const node_ptr & rnode, uint8_t level) const {
+        if(lnode == rnode) return lnode;
+        if(lnode == nullptr) return rnode;
+        if(rnode == nullptr) return lnode;
+
+        if(!!as_branch(*lnode) && !!as_branch(*rnode)) {
+            auto l = as_branch(*lnode);
+            auto r = as_branch(*rnode);
+
+            auto mask = l->data.mask() | r->data.mask();
+            compacting_array<node_ptr, 32> newData{mask};
+
+            for(int i = 0; i < 32; ++i) { // XXX: can we do better?
+                if(l->data.count(i) && r->data.count(i)) {
+                    newData.at(i) = merge(l->data.at(i), r->data.at(i), ++level);
+                }
+                if(l->data.count(i)) {
+                    newData.at(i) = l->data.at(i);
+                }
+                if(r->data.count(i)) {
+                    newData.at(i) = r->data.at(i);
+                }
+            }
+            return std::make_shared<branch>(std::move(newData));
+        }
+        if(auto leaf = as_leaf(*lnode)) {
+            return insert(rnode, level, this->hash(leaf->value), leaf->value);
+        }
+        if(auto leaf = as_leaf(*rnode)) {
+            return insert(lnode, level, this->hash(leaf->value), leaf->value);
+        }
+
+        UNREACHABLE("Incorrect hamt_node encountered");
+    }
+
     void dump(const node_ptr& what, size_t indent) const {
         std::cerr << "\n>";
         for(auto i = indent; i > 0; --i) std::cerr << " ";
@@ -422,6 +464,7 @@ class hamt_set {
 public:
     hamt_set() = default;
     hamt_set(const hamt_set&) = default;
+    hamt_set& operator=(const hamt_set&) = default;
 
     const leaf* find_node(const T& value) const {
         if(auto leaf = seek_bucket(*root_, hash(value))) {
@@ -474,6 +517,10 @@ public:
     void dump() const {
         dump(root_, 0);
         std::cerr << std::endl;
+    }
+
+    friend hamt_set unite(const hamt_set& l, const hamt_set& r) {
+        return { l.merge(l.root_, r.root_, 0) };
     }
 
 };
