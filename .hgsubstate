@@ -3,7 +3,7 @@
 d9890d6c183b751075a97075c1b9f908be5be34e lib/functional-hell
 eab4bf289e2fd489914d9825a69e3715b695d09c lib/inih
 448a01c3fc61a625adb88edb1d7692cb51ce93f2 lib/iterations
-b824afed615ca0dc58799fb88897d5932eafe018 lib/leveldb-mp
+59830380ee40e33210140f8aa367e4742b09e0de lib/leveldb-mp
 f54b0e47a08782a6131cc3d60f94d038fa6e0a51 lib/rapidjson
 325199ff49e092ed96fd854ed7d26e74ab6c2622 lib/tinyformat
 afe602af6f486cfe46990fe2ad33f62d1675095f lib/typesig
