@@ -230,7 +230,7 @@ public:
         ON_SCOPE_EXIT(std::free(buf))
         unsigned long length;
         vc_printExprToBuffer(*e.ctx, e, &buf, &length);
-        return std::string(buf, length);
+        return std::string(buf, length - 1);
     }
     inline static std::string toString(expr_t e) {
         return name(e);
