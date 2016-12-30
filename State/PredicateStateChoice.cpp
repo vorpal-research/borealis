@@ -114,7 +114,7 @@ PredicateState::Ptr PredicateStateChoice::simplify() const {
     auto&& simplified = viewContainer(choices)
                         .map([](auto&& choice) { return choice->simplify(); })
                         .memo()
-                        .filter([](auto&& choice) { return not choice->isEmpty(); })
+                        .filter([](auto&& choice) { return not choice->isEmpty(); }) // FIXME: wth?
                         .toVector();
 
     if(auto m =

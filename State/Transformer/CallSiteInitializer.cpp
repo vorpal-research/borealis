@@ -94,7 +94,7 @@ Term::Ptr CallSiteInitializer::transformVarArgumentTerm(VarArgumentTermPtr t) {
     auto argIdx = t->getIdx() + ci.getCalledFunction()->arg_size();
 
     LASSERT(ci.arg_size() > argIdx,
-            "Cannot find an actual function argument at call site: " +
+            "Cannot find an actual function argument at call site: %s",
             llvm::valueSummary(ci.getInstruction()));
 
     auto* actual = ci.getArgument(argIdx);

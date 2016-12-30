@@ -7,7 +7,7 @@
 
 #include "State/Transformer/Transformer.hpp"
 
-#include "Util/split_join.hpp"
+#include "Util/hamt.hpp"
 
 namespace borealis {
 
@@ -16,8 +16,12 @@ class ControlFlowDepsTracker: public Transformer<ControlFlowDepsTracker> {
 
     using Base = borealis::Transformer<ControlFlowDepsTracker>;
 
-    std::unordered_map<Predicate::Ptr, std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>, PredicateShallowHash, PredicateShallowEquals> dominatorMap_;
-    std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals> currentDominators_;
+public:
+    using PredicateSet = util::hamt_set<Predicate::Ptr, PredicateHash, PredicateEquals>;
+
+private:
+    std::unordered_map<Predicate::Ptr, PredicateSet, PredicateShallowHash, PredicateShallowEquals> dominatorMap_;
+    PredicateSet currentDominators_;
 
 public:
     ControlFlowDepsTracker(FactoryNest FN);
@@ -28,12 +32,16 @@ public:
 
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr choice);
 
-    std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>& getDominatingPaths(Predicate::Ptr state);
-    std::unordered_set<Predicate::Ptr, PredicateHash, PredicateEquals>& getFinalPaths();
+    PredicateState::Ptr transform(PredicateState::Ptr stt);
+
+    void cleanup();
+
+    PredicateSet& getDominatingPaths(Predicate::Ptr state);
+    PredicateSet& getFinalPaths();
 
     void reset() {
         dominatorMap_.clear();
-        currentDominators_.clear();
+        currentDominators_ = PredicateSet();
     }
 };
 

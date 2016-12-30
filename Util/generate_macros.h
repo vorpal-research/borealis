@@ -1185,16 +1185,16 @@ MACRO(A31, MARG)
 
 #define GENERATE_AUX_COMPARISONS(TYPE) \
     friend bool operator !=(const TYPE& lhv, const TYPE& rhv) { \
-        return !(lhv == rhv); \
+        return not (lhv == rhv); \
     } \
     friend bool operator >(const TYPE& lhv, const TYPE& rhv) { \
         return rhv < lhv; \
     } \
     friend bool operator <=(const TYPE& lhv, const TYPE& rhv) { \
-        return lhv < rhv || lhv == rhv; \
+        return not (lhv > rhv); \
     } \
     friend bool operator >=(const TYPE& lhv, const TYPE& rhv) { \
-        return lhv > rhv || lhv == rhv; \
+        return not (lhv < rhv); \
     } \
 
 #define CONSTRUCTOR_PARAM(X,...) const decltype(X)& X

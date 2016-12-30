@@ -21,9 +21,9 @@ size_t MemorySpacer::getMemspace(Term::Ptr t) {
 }
 
 MemorySpacer::MemorySpacer(FactoryNest FN, PredicateState::Ptr space): Base{FN}, aa{FN}, indices{}, currentIndex{1} {
-    dbgs() << "State " << endl << space << endl;
+    //dbgs() << "State " << endl << space << endl;
     aa.transform(space);
-    dbgs() << "Stensgaard results: " << endl << aa << endl;
+    //dbgs() << "Stensgaard results: " << endl << aa << endl;
     //aa.viewGraph();
 }
 
@@ -38,7 +38,7 @@ Term::Ptr MemorySpacer::transformTerm(Term::Ptr t) {
                 space == ptr->getMemspace() || 0 == ptr->getMemspace(),
                 tfm::format("Illegal memory space: %d for term %s: term is already in space %d", space, t, ptr->getMemspace())
             );
-            dbgs() << t << " remapped to memory space " << space << endl;
+            //dbgs() << t << " remapped to memory space " << space << endl;
             return t->setType(FN.Type->getPointer(ptr->getPointed(), space));
         }
     //}

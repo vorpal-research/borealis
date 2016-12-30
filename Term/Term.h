@@ -96,7 +96,7 @@ public:
 protected:
 
     Type::Ptr type;
-    std::string name;
+    util::indexed_string name;
 
     Subterms subterms;
 

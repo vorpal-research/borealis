@@ -13,6 +13,8 @@
 #include "Util/json.hpp"
 #include "Util/hash.hpp"
 
+#include "Util/generate_macros.h"
+
 namespace borealis {
 namespace util {
 
@@ -86,6 +88,8 @@ public:
         return a.id < b.id;
     }
 
+    GENERATE_AUX_COMPARISONS(indexed_string);
+
     friend std::ostream& operator<<(std::ostream& ost, indexed_string str) {
         return ost << str.str();
     }
@@ -119,5 +123,7 @@ struct hash<borealis::util::indexed_string> {
 };
 
 } /* namespace std */
+
+#include "Util/generate_unmacros.h"
 
 #endif //INDEXED_STRING_HPP

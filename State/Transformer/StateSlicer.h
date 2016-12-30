@@ -92,6 +92,7 @@ public:
     PredicateState::Ptr transform(PredicateState::Ptr ps);
     using Base::transformBase;
     Predicate::Ptr transformBase(Predicate::Ptr pred);
+    PredicateState::Ptr transformBase(PredicateState::Ptr ps);
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr ps);
 
 private:
@@ -103,6 +104,7 @@ private:
 
     std::unique_ptr<LocalAABase> AA;
     ControlFlowDepsTracker CFDT;
+    ControlFlowDepsTracker::PredicateSet currentPathDeps;
 
     void init(llvm::AliasAnalysis* llvmAA);
     void addSliceTerm(Term::Ptr term);

@@ -395,8 +395,8 @@ namespace std {
 
 template<>
 struct hash<hash_colliding> {
-    size_t operator()(const hash_colliding&) const noexcept {
-        return 54; // sic!
+    size_t operator()(const hash_colliding& hc) const noexcept {
+        return hc.value > 25? 42 : 23; // sic!
     }
 };
 
@@ -438,6 +438,158 @@ TEST(Util, hamt) {
     }
 }
 
+#include "Util/macros.h"
+
+TEST(Util, hamt_complex) {
+    {
+        hamt_set<size_t> s;
+
+        for(auto&& e : range(1, 50000)) {
+            s = s.insert(e);
+        }
+        for(auto&& e : range(1, 50000)) {
+            ASSERT_TRUE(s.count(e));
+        }
+        ASSERT_EQ(viewContainer(s).toHashSet(), range(size_t(1), size_t(50000)).toHashSet());
+    }
+
+    {
+        hamt_set<hash_colliding> s;
+
+        for(auto&& e : range(1, 50)) {
+            s = s.insert(e);
+        }
+
+        for(auto&& e : range(1, 50)) {
+            ASSERT_TRUE(s.count(e));
+        }
+
+        auto actual = viewContainer(s).map(LAM(hc, hc.value)).toHashSet();
+        ASSERT_EQ(actual, range(size_t(1), size_t(50)).toHashSet());
+    }
+
+    {
+        hamt_set<size_t> s;
+
+        for(auto&& e : range(1, 50000)) {
+            s = s.insert(e);
+        }
+        for(auto&& e : range(1, 20000)) {
+            s = s.erase(e);
+        }
+        for(auto&& e : range(50000, 150000)) {
+            s = s.erase(e);
+        }
+        for(auto&& e : range(20000, 50000)) {
+            ASSERT_TRUE(s.count(e));
+        }
+
+        ASSERT_EQ(viewContainer(s).toHashSet(), range(size_t(20000), size_t(50000)).toHashSet());
+    }
+
+    {
+        hamt_set<hash_colliding> s;
+
+        for(auto&& e : range(1, 50)) {
+            s = s.insert(e);
+        }
+        for(auto&& e : range(1, 20)) {
+            s = s.erase(e);
+        }
+        for(auto&& e : range(50, 150)) {
+            s = s.erase(e);
+        }
+        for(auto&& e : range(size_t(20), size_t(50))) {
+            ASSERT_TRUE(s.count(e));
+        }
+
+        auto actual = viewContainer(s).map(LAM(hc, hc.value)).toHashSet();
+        ASSERT_EQ(actual, range(size_t(20), size_t(50)).toHashSet());
+    }
+
+    {
+        hamt_set<size_t> s;
+
+        for(auto&& e : range(1, 50000)) {
+            s = s.insert(e);
+        }
+
+        auto s1 = s;
+        auto s2 = s;
+
+        for(auto&& e : range(1, 15000)) {
+            s1 = s1.erase(e);
+        }
+
+        for(auto&& e : range(50000, 60000)) {
+            s2 = s2.insert(e);
+        }
+
+        s = unite(s1, s2);
+
+        for(auto&& e : range(size_t(1), size_t(60000))) {
+            ASSERT_TRUE(s.count(e));
+        }
+
+        ASSERT_EQ(viewContainer(s).toHashSet(), range(size_t(1), size_t(60000)).toHashSet());
+    }
+
+    {
+        hamt_set<hash_colliding> s;
+
+        for(auto&& e : range(1, 50)) {
+            s = s.insert(e);
+        }
+
+        auto s1 = s;
+        auto s2 = s;
+
+        for(auto&& e : range(1, 15)) {
+            s1 = s1.erase(e);
+        }
+        for(auto&& e : range(50, 60)) {
+            s2 = s2.insert(e);
+        }
+
+        s = unite(s1, s2);
+
+        for(auto&& e : range(size_t(1), size_t(60))) {
+            ASSERT_TRUE(s.count(e));
+        }
+
+        auto actual = viewContainer(s).map(LAM(hc, hc.value)).toHashSet();
+        ASSERT_EQ(actual, range(size_t(1), size_t(60)).toHashSet());
+    }
+
+    {
+        hamt_set<hash_colliding> s;
+
+        for(auto&& e : range(15, 35)) {
+            s = s.insert(e);
+        }
+
+        auto s1 = s;
+        auto s2 = s;
+
+        for(auto&& e : range(1, 12)) {
+            s1 = s1.insert(e);
+        }
+        for(auto&& e : range(11, 15)) {
+            s2 = s2.insert(e);
+        }
+
+        s = unite(s1, s2);
+
+        for(auto&& e : range(size_t(1), size_t(35))) {
+            ASSERT_TRUE(s.count(e));
+        }
+
+        auto actual = viewContainer(s).map(LAM(hc, hc.value)).toHashSet();
+        ASSERT_EQ(actual, range(size_t(1), size_t(35)).toHashSet());
+    }
+}
+
+#include "Util/unmacros.h"
 #include "Util/generate_unmacros.h"
 
 

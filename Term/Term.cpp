@@ -23,7 +23,7 @@ Type::Ptr Term::getType() const {
 }
 
 const std::string& Term::getName() const {
-    return name;
+    return name.str();
 }
 
 size_t Term::getNumSubterms() const {

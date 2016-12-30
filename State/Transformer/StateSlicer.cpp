@@ -78,25 +78,9 @@ PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
     if(AA) AA->prepare(ps);
     CFDT.reset();
     CFDT.transform(ps);
+    currentPathDeps = CFDT.getFinalPaths();
 
     if(nullptr == AA) return ps;
-
-    {
-        auto& paths = CFDT.getFinalPaths();
-
-        for(auto&& pred: paths) {
-            if(paths.count(inverse(FN, pred))) {
-                continue;
-            }
-
-            for (auto&& e : util::viewContainer(pred->getOperands())) {
-                auto&& nested = Term::getFullTermSet(e);
-                util::viewContainer(nested)
-                    .filter(isInterestingTerm)
-                    .foreach(APPLY(this->addSliceTerm));
-            }
-        }
-    }
 
     auto reversed = ps->reverse();
     return Base::transform(reversed)
@@ -106,40 +90,69 @@ PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
 }
 
 
+PredicateState::Ptr StateSlicer::transformBase(PredicateState::Ptr ps) {
+    return Base::transformBase(ps);
+}
+
 PredicateState::Ptr StateSlicer::transformChoice(PredicateStateChoicePtr ps) {
     // TODO
 
     auto psi = ps->simplify();
 
-    if(llvm::isa<PredicateStateChoice>(psi)) {
-        return Base::transformChoice(std::static_pointer_cast<const PredicateStateChoice>(psi));
+    if(auto choice = llvm::dyn_cast<PredicateStateChoice>(psi)) {
+        auto savedPathDeps = currentPathDeps;
+        auto result = choice->fmap([this, savedPathDeps](auto&& st){
+            currentPathDeps = savedPathDeps;
+            return Base::transformBase(st);
+        });
+        currentPathDeps = savedPathDeps;
+        return result;
     } else return Base::transformBase(psi);
 }
 
 void StateSlicer::addControlFlowDeps(Predicate::Ptr res) {
-    auto& paths = CFDT.getDominatingPaths(res);
+    currentPathDeps = CFDT.getDominatingPaths(res);
+//    std::cerr << res << std::endl;
+//    currentPathDeps.dump();
 
-    for(auto&& pred: paths) {
-        if(paths.count(inverse(FN, pred))) {
-            continue;
-        }
-
-        for (auto&& e : util::viewContainer(pred->getOperands())) {
-            auto&& nested = Term::getFullTermSet(e);
-            util::viewContainer(nested)
-                .filter(isInterestingTerm)
-                .foreach(APPLY(this->addSliceTerm));
-        }
-    }
+//    for(auto&& pred: paths) {
+//        if(paths.count(inverse(FN, pred))) {
+//            continue;
+//        }
+//
+//        for (auto&& e : util::viewContainer(pred->getOperands())) {
+//            auto&& nested = Term::getFullTermSet(e);
+//            util::viewContainer(nested)
+//                .filter(isInterestingTerm)
+//                .foreach(APPLY(this->addSliceTerm));
+//        }
+//    }
 }
 
 Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
-    //if (checkPath(pred, lhvTerms, rhvTerms)) {
-    //    res = pred;
-    //} else
+    if(auto&& globals = llvm::dyn_cast<GlobalsPredicate>(pred)) {
+        // by the global definition, everything relevant must be in slice
+        // we count only pointers because all globals are pointers
+        auto data = globals->getGlobals().filter(LAM(t, slicePtrs.count(t))).toVector();
+        if(data.empty()) return nullptr;
+        return FN.Predicate->getGlobalsPredicate(data, globals->getLocation());
+    }
 
     if (nullptr == AA) return pred;
-    if (PredicateType::STATE != pred->getType()) return pred;
+    if (PredicateType::STATE != pred->getType()){
+        auto anti = inverse(FN, pred);
+        if(currentPathDeps.count(pred) && not currentPathDeps.count(anti)) {
+            for (auto&& e : util::viewContainer(pred->getOperands())) {
+                auto&& nested = Term::getFullTermSet(e);
+                util::viewContainer(nested)
+                    .filter(isInterestingTerm)
+                    .foreach(APPLY(this->addSliceTerm));
+            }
+            addControlFlowDeps(pred);
+            return pred;
+        }
+        return nullptr;
+    }
 
     auto&& lhvTerms = Term::Set{};
     for (auto&& lhv : util::viewContainer(pred->getOperands()).take(1)) {
@@ -164,7 +177,9 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
         res = pred;
     }
 
-    if(res) addControlFlowDeps(res);
+    if(res) {
+        addControlFlowDeps(res);
+    }
 
     return res;
 }
@@ -195,17 +210,19 @@ bool StateSlicer::checkVars(const Term::Set& lhv, const Term::Set& rhv) {
 }
 
 bool StateSlicer::checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
+    if(lhv.empty()) return false;
+
     auto added = false;
     if (
         util::viewContainer(lhv)
-            .filter(isPointerTerm)
-            .any_of([&](auto&& t) { return util::contains(slicePtrs, t); })
-        ) {
+             .filter(isPointerTerm)
+             .any_of(LAM(t, slicePtrs.count(t)))
+    ) {
         util::viewContainer(rhv)
             .foreach(APPLY(this->addSliceTerm));
         added = true;
     }
-
+    if(added) return added;
 
     if(llvm::is_one_of<
                 StorePredicate,
@@ -216,8 +233,8 @@ bool StateSlicer::checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Ter
                 SeqDataPredicate,
                 SeqDataZeroPredicate
             >(pred)) {
-        if (
-            util::viewContainer(lhv)
+
+        if (util::viewContainer(lhv)
                 .filter(isPointerTerm)
                 .any_of([&](auto&& a) {
                     return util::viewContainer(slicePtrs)
@@ -236,7 +253,6 @@ bool StateSlicer::checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Ter
 
     return added;
 }
-
 
 #include "Util/unmacros.h"
 

@@ -27,7 +27,9 @@ FileManager::~FileManager() {}
 
 // TODO: implement this in a fancy way using seek(), tell() and caches
 std::string FileManager::read(const LocusRange& where) {
-    ASSERTC(where.lhv.filename == where.rhv.filename);
+    if(where.lhv.filename != where.rhv.filename) {
+        return "";
+    }
 
     std::ifstream file(where.lhv.filename.c_str());
     if(!file) return "";
