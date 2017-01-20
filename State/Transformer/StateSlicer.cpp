@@ -26,6 +26,16 @@ static Predicate::Ptr inverse(FactoryNest& FN, const Predicate::Ptr& predicate) 
     return nullptr;
 }
 
+static std::unordered_set<Predicate::Ptr> inverseSwitch(FactoryNest& FN, const Predicate::Ptr& predicate) {
+    if(auto dscp = llvm::dyn_cast<DefaultSwitchCasePredicate>(predicate)) {
+        auto cond = dscp->getCond();
+        return dscp->getCases()
+              .map(LAM(value, FN.Predicate->getEqualityPredicate(cond, value, predicate->getLocation(), predicate->getType())))
+              .toHashSet();
+    }
+    return {};
+}
+
 StateSlicer::StateSlicer(FactoryNest FN, PredicateState::Ptr query, llvm::AliasAnalysis* AA) :
     Base(FN), query(query), sliceVars{}, slicePtrs{}, AA{}, CFDT{FN}{ init(AA); }
 
@@ -112,24 +122,10 @@ PredicateState::Ptr StateSlicer::transformChoice(PredicateStateChoicePtr ps) {
 
 void StateSlicer::addControlFlowDeps(Predicate::Ptr res) {
     currentPathDeps = CFDT.getDominatingPaths(res);
-//    std::cerr << res << std::endl;
-//    currentPathDeps.dump();
-
-//    for(auto&& pred: paths) {
-//        if(paths.count(inverse(FN, pred))) {
-//            continue;
-//        }
-//
-//        for (auto&& e : util::viewContainer(pred->getOperands())) {
-//            auto&& nested = Term::getFullTermSet(e);
-//            util::viewContainer(nested)
-//                .filter(isInterestingTerm)
-//                .foreach(APPLY(this->addSliceTerm));
-//        }
-//    }
 }
 
 Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
+
     if(auto&& globals = llvm::dyn_cast<GlobalsPredicate>(pred)) {
         // by the global definition, everything relevant must be in slice
         // we count only pointers because all globals are pointers

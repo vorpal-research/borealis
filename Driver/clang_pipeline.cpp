@@ -157,6 +157,7 @@ struct clang_pipeline::impl: public DelegateLogging {
         ci.getCodeGenOpts().UnrollLoops = 0;
         ci.getCodeGenOpts().RerollLoops = 0;
         ci.getCodeGenOpts().DebugColumnInfo = 1;
+        ci.getCodeGenOpts().setStructReturnConvention(CodeGenOptions::StructReturnConventionKind::SRCK_OnStack);
         ci.getDiagnosticOpts().ShowCarets = false;
 
         ci.ExecuteAction(act);

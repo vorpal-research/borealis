@@ -6,8 +6,6 @@
 
 namespace borealis {
 
-
-
 ControlFlowDepsTracker::ControlFlowDepsTracker(borealis::FactoryNest FN) : Transformer(FN) {}
 
 Predicate::Ptr ControlFlowDepsTracker::transformBase(Predicate::Ptr pred) {
@@ -33,12 +31,12 @@ PredicateState::Ptr ControlFlowDepsTracker::transformChoice(Transformer::Predica
     return choice;
 }
 
-util::hamt_set<Predicate::Ptr, PredicateHash, PredicateEquals>& ControlFlowDepsTracker::getDominatingPaths(Predicate::Ptr state){
-    static util::hamt_set<Predicate::Ptr, PredicateHash, PredicateEquals> empty;
+ControlFlowDepsTracker::PredicateSet& ControlFlowDepsTracker::getDominatingPaths(Predicate::Ptr state){
+    static ControlFlowDepsTracker::PredicateSet empty;
     return util::at(dominatorMap_, state).getOrElse(empty);
 }
 
-util::hamt_set<Predicate::Ptr, PredicateHash, PredicateEquals>& ControlFlowDepsTracker::getFinalPaths() {
+ControlFlowDepsTracker::PredicateSet& ControlFlowDepsTracker::getFinalPaths() {
     return currentDominators_;
 }
 
@@ -54,31 +52,7 @@ static Predicate::Ptr inverse(FactoryNest& FN, const Predicate::Ptr& predicate) 
     return nullptr;
 }
 
-void ControlFlowDepsTracker::cleanup() {
-//    auto save = currentDominators_;
-////    std::cerr << "Current doms" << std::endl;
-////    save.dump();
-//    save.foreach(
-//        [this](auto&& p) {
-//            auto notP = inverse(FN, p);
-//            if(!notP) return; // not our client
-////            std::cerr << "Erasing " << p << std::endl;
-//            for(auto&& entry: dominatorMap_) {
-//                auto&& set = entry.second;
-//                if(set.count(p) && set.count(notP)) {
-//                    set = set.erase(p).erase(notP);
-////                    std::cerr << "Erased: " << std::endl
-////                              << "   " << p << std::endl
-////                              << "   " << notP << std::endl;
-//                }
-//            }
-//
-//            if(currentDominators_.count(p) && currentDominators_.count(notP)) {
-//                currentDominators_ = currentDominators_.erase(p).erase(notP);
-//            }
-//        }
-//    );
-}
+void ControlFlowDepsTracker::cleanup() {}
 
 PredicateState::Ptr ControlFlowDepsTracker::transform(PredicateState::Ptr stt) {
     auto result = Base::transform(stt);
