@@ -22,7 +22,7 @@ Term::Ptr undoBv(Term::Ptr witness, const ::CVC4::Expr& bv, const FactoryNest& F
     auto&& iv = cnst.getValue();
     auto size = cnst.getSize();
 
-    return FN.Term->getIntTerm(iv.toString(10), size, llvm::Signedness::Unknown)->setType(witness->getType());
+    return FN.Term->getIntTerm(iv.toString(10), size, llvm::Signedness::Unknown)->setType(FN.Term.get(), witness->getType());
 }
 
 Term::Ptr undoBool(Term::Ptr, const ::CVC4::Expr& b, const FactoryNest& FN) {
@@ -34,7 +34,7 @@ Term::Ptr undoReal(Term::Ptr witness, const ::CVC4::Expr& bv, const FactoryNest&
     ASSERTC(bv.isConst());
     ::CVC4::Rational cnst = bv.template getConst<::CVC4::Rational>();
 
-    return FN.Term->getOpaqueConstantTerm(cnst.getDouble())->setType(witness->getType());
+    return FN.Term->getOpaqueConstantTerm(cnst.getDouble())->setType(FN.Term.get(), witness->getType());
 
 }
 

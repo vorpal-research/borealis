@@ -39,7 +39,7 @@ Term::Ptr MemorySpacer::transformTerm(Term::Ptr t) {
                 tfm::format("Illegal memory space: %d for term %s: term is already in space %d", space, t, ptr->getMemspace())
             );
             //dbgs() << t << " remapped to memory space " << space << endl;
-            return t->setType(FN.Type->getPointer(ptr->getPointed(), space));
+            return t->setType(FN.Term.get(), FN.Type->getPointer(ptr->getPointed(), space));
         }
     //}
     return Base::transformTerm(t);

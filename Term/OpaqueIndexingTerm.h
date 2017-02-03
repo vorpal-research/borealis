@@ -42,10 +42,9 @@ public:
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto&& _lhv = tr->transform(getLhv());
         auto&& _rhv = tr->transform(getRhv());
-        auto&& _type = tr->FN.Type->getUnknownType(); // FIXME: Can we do better?
         TERM_ON_CHANGED(
             getLhv() != _lhv || getRhv() != _rhv,
-            new Self( _type, _lhv, _rhv )
+            tr->FN.Term->getOpaqueIndexingTerm(_lhv, _rhv)
         );
     }
 

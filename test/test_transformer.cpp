@@ -14,6 +14,8 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
 
+#include <typesig/typesig.hpp>
+
 #include <gtest/gtest.h>
 
 #include "Factory/Nest.h"
@@ -138,7 +140,9 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         );
 
         ConstantPropagator cp(FN);
-        auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
+        auto tr = cp.transform(testTerm);
+
+        auto result = dyn_cast<OpaqueFloatingConstantTerm>(tr);
 
         ASSERT_NE(nullptr, result);
         EXPECT_DOUBLE_EQ(3.0, result->getValue());
@@ -166,7 +170,8 @@ TEST_F(TransformerTest, ConstantPropagatorBinary) {
         );
 
         ConstantPropagator cp(FN);
-        auto result = dyn_cast<OpaqueFloatingConstantTerm>(cp.transform(testTerm));
+        auto cped = cp.transform(testTerm);
+        auto result = dyn_cast<OpaqueFloatingConstantTerm>(cped);
 
         ASSERT_NE(nullptr, result);
         EXPECT_NEAR(8.7, result->getValue(), 0.1);
@@ -197,7 +202,8 @@ TEST_F(TransformerTest, ConstantPropagator) {
         );
 
         ConstantPropagator cp(FN);
-        auto result = dyn_cast<OpaqueBoolConstantTerm>(cp.transform(testTerm));
+        auto cped = cp.transform(testTerm);
+        auto result = dyn_cast<OpaqueBoolConstantTerm>(cped);
 
         ASSERT_NE(nullptr, result);
         EXPECT_TRUE(result->getValue());

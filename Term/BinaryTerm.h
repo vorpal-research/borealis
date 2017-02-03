@@ -49,7 +49,7 @@ public:
         auto&& _rhv = tr->transform(getRhv());
         TERM_ON_CHANGED(
             getLhv() != _lhv || getRhv() != _rhv,
-            new Self( getTermType(tr->FN.Type, _lhv, _rhv), opcode, _lhv, _rhv )
+            tr->FN.Term->getBinaryTerm(opcode, _lhv, _rhv)
         );
     }
 
@@ -59,7 +59,6 @@ public:
     static Type::Ptr getTermType(TypeFactory::Ptr TyF, Term::Ptr lhv, Term::Ptr rhv) {
         return TyF->merge(lhv->getType(), rhv->getType());
     }
-
 };
 
 #include "Util/macros.h"

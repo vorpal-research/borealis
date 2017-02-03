@@ -44,7 +44,7 @@ public:
         auto&& _rhv = tr->transform(getRhv());
         TERM_ON_CHANGED(
             getLhv() != _lhv || getRhv() != _rhv,
-            new Self( getTermType(tr->FN.Type, _lhv, _rhv), _lhv, _rhv )
+            tr->FN.Term->getAxiomTerm(_lhv, _rhv)
         );
     }
 

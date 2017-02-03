@@ -12,7 +12,7 @@ Predicate::Ptr ArrayBoundsCollector::transformPredicate(Predicate::Ptr pred) {
     using namespace functional_hell::matchers;
     using namespace functional_hell::matchers::placeholders;
 
-    if (auto&& m = $EqualityPredicate(_1, $GepTerm(_2, _3)) >> pred) {
+    if (auto&& m = $EqualityPredicate(_1, $GepTerm(_2, _)) >> pred) {
         if (llvm::isa<type::Pointer>(m->_2->getType())) {
             arrayBounds[m->_2].insert(m->_1);
         }

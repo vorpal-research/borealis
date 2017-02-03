@@ -47,7 +47,7 @@ public:
         );
         TERM_ON_CHANGED(
             getLhv() != _lhv || not util::equal(getRhv(), _rhv, ops::equals_to),
-            new Self( tr->FN.Type->getUnknownType(), _lhv, _rhv.toVector() )
+            tr->FN.Term->getOpaqueCallTerm(_lhv, _rhv.toVector())
         );
     }
 

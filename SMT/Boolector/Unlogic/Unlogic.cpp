@@ -21,7 +21,7 @@ Term::Ptr undoThat(const FactoryNest& FN, Term::Ptr witness, borealis::Boolector
         return FN.Term->getBooleanTerm(!!parsed);
     }
 
-    return FN.Term->getIntTerm(parsed)->setType(witness->getType());
+    return FN.Term->getIntTerm(parsed)->setType(FN.Term.get(), witness->getType());
 }
 
 } /* namespace unlogic */

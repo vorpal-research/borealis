@@ -28,13 +28,13 @@ message ValueTerm {
 **/
 class ValueTerm: public borealis::Term {
 
-    std::string vname;
+    util::indexed_string vname;
     bool global;
 
     ValueTerm(Type::Ptr type, const std::string& vname, bool global = false);
+    ValueTerm(Type::Ptr type, util::indexed_string vname, bool global = false);
 
 public:
-
     MK_COMMON_TERM_IMPL(ValueTerm);
 
     const std::string& getVName() const;

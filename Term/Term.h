@@ -18,6 +18,8 @@
 #include "SMT/SMTUtil.h"
 #include "Type/TypeFactory.h"
 #include "Util/typeindex.hpp"
+#include "Util/irf_ptr.hpp"
+#include "Util/unions.hpp"
 #include "Util/util.h"
 
 #include "functional-hell/matchers_aux.hpp"
@@ -42,13 +44,27 @@ message Term {
 }
 
 **/
-class Term : public ClassTag, public std::enable_shared_from_this<const Term> {
+
+class TermFactory;
+
+template<class T>
+struct PoolDeleter {
+    void* poolPtr = nullptr;
+    std::add_pointer_t<void(void*, T*)> deleter = nullptr;
+
+    void operator()(T* ptr) {
+        if(poolPtr && deleter) deleter(poolPtr, ptr);
+        else delete ptr;
+    }
+};
+
+class Term : public ClassTag, public util::irfd_base<const Term, PoolDeleter<const Term>> {
 
     friend bool operator==(const Term& a, const Term& b);
 
 public:
 
-    using Ptr = std::shared_ptr<const Term>;
+    using Ptr = util::irfd_ptr<const Term, PoolDeleter<const Term>>;
     using ProtoPtr = std::unique_ptr<proto::Term>;
     using Subterms = std::vector<Term::Ptr>;
 
@@ -61,6 +77,8 @@ public:
 protected:
 
     Term(id_t classTag, Type::Ptr type, const std::string& name);
+    Term(id_t classTag, Type::Ptr type, util::indexed_string name);
+    Term(id_t classTag, Type::Ptr type, const char* name); // ambiguity resolution
     Term(const Term&) = default;
 
     void update();
@@ -80,12 +98,8 @@ public:
     virtual bool equals(const Term* other) const;
     virtual size_t hashCode() const;
 
-    virtual Term::Ptr setType(Type::Ptr newtype) const {
-        auto&& res = std::unique_ptr<Term>{ new Term(*this) };
-        res->type = newtype;
-        res->update();
-        return Term::Ptr{ std::move(res) };
-    }
+    friend class ::borealis::TermFactory;
+    Term::Ptr setType(TermFactory* TF, Type::Ptr newtype) const;
 
     static bool classof(const Term*) {
         return true;
@@ -101,6 +115,9 @@ protected:
     Subterms subterms;
 
 };
+
+template<class Sub> struct AllocationPoint; // needed in TermFactory
+
 
 std::ostream& operator<<(std::ostream& s, Term::Ptr t);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Term::Ptr t);
@@ -156,6 +173,8 @@ struct compare_trait<borealis::Term::Ptr> {
 } /* namespace matchers */
 } /* namespace functional_hell */
 
+struct EmplacePoint; // needed for pool allocation
+
 #define MK_COMMON_TERM_IMPL(CLASS) \
 private: \
     using Self = CLASS; \
@@ -170,12 +189,8 @@ public: \
     static bool classof(const Term* t) { \
         return t->getClassTag() == class_tag<Self>(); \
     } \
-    virtual Term::Ptr setType(Type::Ptr newtype) const override { \
-        auto&& res = std::unique_ptr<Self>{ new Self(*this) }; \
-        res->type = newtype; \
-        res->update(); \
-        return Term::Ptr{ std::move(res) }; \
-    }
+    friend struct AllocationPoint<Self>; \
+    friend struct ::EmplacePoint; \
 
 #define TERM_ON_CHANGED(COND, CTOR) \
     if (COND) return Term::Ptr{ CTOR }; \

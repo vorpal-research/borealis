@@ -54,10 +54,9 @@ public:
         auto&& _shifts = getShifts().map(
             [&](auto&& shift) { return tr->transform(shift); }
         );
-        auto&& _type = type;
         TERM_ON_CHANGED(
             getBase() != _base || not util::equal(getShifts(), _shifts, ops::equals_to),
-            new Self( _type, _base, _shifts.toVector(), isTriviallyInbounds_ ) // XXX: check that transformers do not invalidate isTriviallyInbounds
+            tr->FN.Term->getGepTerm(_base, _shifts.toVector(), isTriviallyInbounds_) // XXX: check that transformers do not invalidate isTriviallyInbounds
         );
     }
 

@@ -43,10 +43,9 @@ public:
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto&& _rhv = tr->transform(getRhv());
         auto&& _propName = tr->transform(getPropertyName());
-        auto&& _type = type;
         TERM_ON_CHANGED(
             getRhv() != _rhv || getPropertyName() != _propName,
-            new Self( _type, _propName, _rhv )
+            tr->FN.Term->getReadPropertyTerm(type,  _propName, _rhv)
         );
     }
 

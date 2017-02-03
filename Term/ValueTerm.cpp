@@ -16,8 +16,15 @@ ValueTerm::ValueTerm(Type::Ptr type, const std::string& vname, bool global) :
         vname + (global ? ".global" : "")
     ), vname(vname), global(global) {};
 
+ValueTerm::ValueTerm(Type::Ptr type, util::indexed_string vname, bool global) :
+    Term(
+        class_tag(*this),
+        type,
+        vname.str() + (global ? ".global" : "")
+    ), vname(vname), global(global) {};
+
 const std::string& ValueTerm::getVName() const {
-    return vname;
+    return vname.str();
 }
 
 bool ValueTerm::isGlobal() const {

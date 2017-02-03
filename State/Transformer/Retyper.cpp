@@ -13,7 +13,7 @@ Retyper::Retyper(FactoryNest FN) : Base(FN) {}
 Term::Ptr Retyper::transformBase(Term::Ptr t) {
     Term::Ptr res = t;
     if (not types.empty() and TypeUtils::isUnknown(t->getType())) {
-        res = t->setType(types.top());
+        res = t->setType(FN.Term.get(), types.top());
     }
     return Base::transformBase(res);
 }

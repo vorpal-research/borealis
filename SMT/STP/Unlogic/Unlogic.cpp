@@ -34,7 +34,7 @@ Term::Ptr undoThat(const FactoryNest& FN, Term::Ptr witness, borealis::STP::Dyna
     llvm::APInt parsed;
     sr.getAsInteger(0x10, parsed);
 
-    return FN.Term->getIntTerm(parsed)->setType(witness->getType());
+    return FN.Term->getIntTerm(parsed)->setType(FN.Term.get(), witness->getType());
 }
 
 } /* namespace unlogic */

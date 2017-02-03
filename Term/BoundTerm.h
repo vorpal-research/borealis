@@ -39,10 +39,9 @@ public:
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto&& _rhv = tr->transform(getRhv());
-        auto&& _type = type;
         TERM_ON_CHANGED(
             getRhv() != _rhv,
-            new Self( _type, _rhv )
+            tr->FN.Term->getBoundTerm(_rhv)
         );
     }
 

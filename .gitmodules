@@ -19,6 +19,9 @@
 [submodule "lib/leveldb-mp"]
 	path = lib/leveldb-mp
 	url = ../leveldb-mp
+[submodule "lib/memorypool"]
+	path = lib/memorypool
+	url = ../memorypool
 [submodule "lib/functional-hell"]
 	path = lib/functional-hell
 	url = ../functional-hell

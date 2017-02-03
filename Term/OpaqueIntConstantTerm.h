@@ -12,6 +12,8 @@
 
 namespace borealis {
 
+template<class T> struct AllocationPoint;
+
 /** protobuf -> Term/OpaqueIntConstantTerm.proto
 import "Term/Term.proto";
 

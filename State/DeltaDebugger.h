@@ -7,28 +7,40 @@
 
 #include "SMT/Z3/Z3.h"
 #include "State/PredicateState.h"
+#include "State/Transformer/RandomSlicer.h"
 
 namespace borealis {
 
+template<class Predicate>
 class DeltaDebugger {
-
-    USING_SMT_IMPL(Z3);
+    Predicate pred;
+    size_t tries;
 
 public:
+    DeltaDebugger(Predicate pred, size_t tries = 1000): pred(pred), tries(tries) {}
 
-    DeltaDebugger(ExprFactory& ef);
+    PredicateState::Ptr reduce(PredicateState::Ptr ps) {
+        auto&& curr = ps;
 
-    PredicateState::Ptr reduce(PredicateState::Ptr ps);
+        for (auto&& i = 0_size; i < tries; ++i) {
+            auto&& opt = RandomSlicer().transform(curr);
+            dbgs() << "Delta-debugging from " << curr->size() << " to " << opt->size() << endl;
 
-private:
+            if (pred(opt)) {
+                if (opt->size() < curr->size()) {
+                    curr = opt;
+                }
+            }
+        }
 
-    ExprFactory& z3ef;
-    unsigned long long memoryStart;
-    unsigned long long memoryEnd;
-
-    z3::tactic tactics(unsigned int timeout);
-
+        return curr;
+    }
 };
+
+template<class Predicate>
+DeltaDebugger<Predicate> makeDeltaDebugger(Predicate pred, size_t tries = 1000) {
+    return {pred, tries};
+}
 
 } // namespace borealis
 

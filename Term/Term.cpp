@@ -8,6 +8,7 @@
 #include <z3/z3++.h>
 #include "Statistics/statistics.h"
 #include "Term/Term.h"
+#include "Term/TermFactory.h"
 
 namespace borealis {
 
@@ -16,7 +17,17 @@ static Statistic totalTermsCreated("misc", "totalTerms", "Total number of terms 
 Term::Term(id_t classTag, Type::Ptr type, const std::string& name):
     ClassTag(classTag), type(type), name(name) { ++totalTermsCreated; };
 
+Term::Term(id_t classTag, Type::Ptr type, util::indexed_string name):
+    ClassTag(classTag), type(type), name(name) { ++totalTermsCreated; };
+
+Term::Term(id_t classTag, Type::Ptr type, const char* name):
+    Term(classTag, type, util::indexed_string(name)) {};
+
 void Term::update() {}
+
+Term::Ptr Term::setType(TermFactory* TF, Type::Ptr newtype) const {
+    return TF->setType(newtype, shared_from_this());
+}
 
 Type::Ptr Term::getType() const {
     return type;

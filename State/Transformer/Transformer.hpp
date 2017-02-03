@@ -60,6 +60,7 @@ protected:
 public:
 
     Transformer(FactoryNest FN) : FN(FN) {};
+    FactoryNest& factories() { return FN; }
 
     ////////////////////////////////////////////////////////////////////////////
     //
@@ -77,14 +78,15 @@ public:
 protected:
 
 #define HANDLE_STATE(NAME, CLASS) \
-    using CLASS##Ptr = std::shared_ptr<const CLASS>;
+    using CLASS##Ptr = std::pointer_traits<PredicateState::Ptr>::template rebind<const CLASS>;
 #include "State/PredicateState.def"
 
     PredicateState::Ptr transformBase(PredicateState::Ptr ps) {
         TRACE_FUNC;
         PredicateState::Ptr res;
+        if(false) {}
 #define HANDLE_STATE(NAME, CLASS) \
-        if (llvm::isa<CLASS>(ps)) { \
+        else if (llvm::isa<CLASS>(ps)) { \
             res = static_cast<SubClass*>(this)-> \
                 transform##NAME(std::static_pointer_cast<const CLASS>(ps)); \
         }
@@ -111,8 +113,9 @@ protected:
     PredicateState::Ptr transformEsab(PredicateState::Ptr ps) {
         TRACE_FUNC;
         PredicateState::Ptr res;
+        if(false) {}
 #define HANDLE_STATE(NAME, CLASS) \
-        if (llvm::isa<CLASS>(ps)) { \
+        else if (llvm::isa<CLASS>(ps)) { \
             res = static_cast<SubClass*>(this)-> \
                 transform##CLASS(std::static_pointer_cast<const CLASS>(ps)); \
         }
@@ -149,8 +152,9 @@ protected:
 
     Predicate::Ptr transformBase(Predicate::Ptr pred) {
         Predicate::Ptr res;
+        if(false) {}
 #define HANDLE_PREDICATE(NAME, CLASS) \
-        if (llvm::isa<CLASS>(pred)) { \
+        else if (llvm::isa<CLASS>(pred)) { \
             res = static_cast<SubClass*>(this)-> \
                 transform##NAME(std::static_pointer_cast<const CLASS>(pred)); \
         }
@@ -164,7 +168,7 @@ protected:
     }
 
 #define HANDLE_PREDICATE(NAME, CLASS) \
-    using CLASS##Ptr = std::shared_ptr<const CLASS>; \
+    using CLASS##Ptr = std::pointer_traits<Predicate::Ptr>::template rebind<const CLASS>; \
     Predicate::Ptr transform##NAME(CLASS##Ptr p) { \
         CLASS##Ptr pp = std::static_pointer_cast<const CLASS>(p->accept(this)); \
         DELEGATE(CLASS, pp); \
@@ -193,10 +197,11 @@ protected:
 
     Term::Ptr transformBase(Term::Ptr term) {
         Term::Ptr res;
+        if(false) {}
 #define HANDLE_TERM(NAME, CLASS) \
-        if (llvm::isa<CLASS>(term)) { \
+        else if (llvm::isa<CLASS>(term)) { \
             res = static_cast<SubClass*>(this)-> \
-                transform##NAME(std::static_pointer_cast<const CLASS>(term)); \
+                transform##NAME(borealis::util::static_pointer_cast<const CLASS>(term)); \
         }
 #include "Term/Term.def"
         ASSERT(res, "Unsupported term type");
@@ -208,9 +213,9 @@ protected:
     }
 
 #define HANDLE_TERM(NAME, CLASS) \
-    using CLASS##Ptr = std::shared_ptr<const CLASS>; \
+    using CLASS##Ptr = std::pointer_traits<Term::Ptr>::template rebind<const CLASS>; \
     Term::Ptr transform##NAME(CLASS##Ptr t) { \
-        CLASS##Ptr tt = std::static_pointer_cast<const CLASS>(t->accept(this)); \
+        CLASS##Ptr tt = borealis::util::static_pointer_cast<const CLASS>(t->accept(this)); \
         DELEGATE(CLASS, tt); \
     }
 #include "Term/Term.def"
@@ -258,7 +263,7 @@ protected:
     }
 
 #define HANDLE_ANNOTATION(IGNORE, NAME, CLASS) \
-    using CLASS##Ptr = std::shared_ptr<const CLASS>; \
+    using CLASS##Ptr = std::pointer_traits<Annotation::Ptr>::template rebind<const CLASS>; \
     Annotation::Ptr transform##NAME(CLASS##Ptr a) { \
         CLASS##Ptr ta = std::static_pointer_cast<const CLASS>(a->accept(this)); \
         DELEGATE(CLASS, ta); \
@@ -267,8 +272,9 @@ protected:
 
     using LogicAnnotationPtr = std::shared_ptr<const LogicAnnotation>;
     Annotation::Ptr transformLogic(LogicAnnotationPtr anno) {
+        if(false) {}
 #define HANDLE_LogicAnnotation(NAME, CLASS) \
-        if (llvm::isa<CLASS>(anno)) { \
+        else if (llvm::isa<CLASS>(anno)) { \
             DELEGATE(NAME, std::static_pointer_cast<const CLASS>(anno)); \
         }
 #define HANDLE_ANNOTATION(A, B, C)

@@ -20,7 +20,7 @@ Term::Ptr undoBv(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN)
     auto res = Z3_get_numeral_string(expr.ctx(), expr);
     auto size = expr.get_sort().bv_size();
 
-    return FN.Term->getIntTerm(res, size, llvm::Signedness::Unknown)->setType(witness->getType());
+    return FN.Term->getIntTerm(res, size, llvm::Signedness::Unknown)->setType(FN.Term.get(), witness->getType());
 }
 
 Term::Ptr undoBool(Term::Ptr /* witness */, const z3::expr& expr, const FactoryNest& FN) {
@@ -41,10 +41,10 @@ Term::Ptr undoReal(Term::Ptr witness, const z3::expr& expr, const FactoryNest& F
     if (res != 0) {
         double dn = n;
         double dd = d;
-        return FN.Term->getOpaqueConstantTerm(dn / dd)->setType(witness->getType());
+        return FN.Term->getOpaqueConstantTerm(dn / dd)->setType(FN.Term.get(), witness->getType());
     } else {
         // FIXME: what to do when we can't get the rational from Z3?
-        return FN.Term->getOpaqueConstantTerm(std::numeric_limits<double>::max())->setType(witness->getType());
+        return FN.Term->getOpaqueConstantTerm(std::numeric_limits<double>::max())->setType(FN.Term.get(), witness->getType());
     }
 }
 

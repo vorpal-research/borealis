@@ -395,68 +395,68 @@ TEST(MathSAT, mergeMemory) {
     }
 }
 
-TEST(MathSAT, Unlogic) {
-    using namespace borealis::mathsat;
-    using namespace borealis::mathsat_;
-
-    USING_SMT_IMPL(borealis::MathSAT);
-
-    ExprFactory factory;
-    Env env = factory.unwrap();
-
-    auto check_undo = [&](Expr e)->bool {
-        ExecutionContext ctx(factory, (1 << 16) + 1, (2 << 16) + 1);
-        Dynamic dynE(factory.unwrap(), e);
-        auto undoed = unlogic::undoThat(dynE);
-        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, factory, &ctx);
-        auto b = (dynE == Dynamic(redoed));
-
-        borealis::mathsat::Solver solver(b.getCtx());
-        solver.add(b.getAxiom());
-        solver.add(not b.getExpr());
-        return solver.check() == MSAT_UNSAT;
-    };
-
-    Sort bv = env.bv_sort(32);
-    Expr x1 = env.bv_const("x1", 32);
-    Expr x2 = env.bv_const("x2", 32);
-    Expr x3 = env.bv_const("x3", 32);
-    Expr y1 = env.bv_const("y1", 32);
-    Expr y2 = env.bv_const("y2", 32);
-    Expr y3 = env.bv_const("y3", 32);
-    Expr c1 = env.bv_val(32, 32);
-    Expr c2 = env.bv_val(-32, 32);
-
-    {
-        Expr A = x1 == x2;
-        EXPECT_TRUE(check_undo(A));
-    }
-
-    {
-        Expr A = c1 == -c2;
-        EXPECT_TRUE(check_undo(A));
-    }
-
-    {
-        Expr A = (x1 >= c1) && (x2 <= c2);
-        EXPECT_TRUE(check_undo(A));
-    }
-
-    {
-        Expr A = ((x1 + x2 - x3) >= -c1) || ((y1 * y2 / y3) == (x3 & x1));
-        EXPECT_TRUE(check_undo(A));
-    }
-
-    {
-        Expr A = (x1 == x2 && x2 == x3);
-        Expr B = (x1 == x3);
-
-        borealis::mathsat::DSolver s(env);
-        s.add(A && !B);
-
-        EXPECT_EQ(MSAT_UNSAT, s.check());
-    }
-}
+//TEST(MathSAT, Unlogic) {
+//    using namespace borealis::mathsat;
+//    using namespace borealis::mathsat_;
+//
+//    USING_SMT_IMPL(borealis::MathSAT);
+//
+//    ExprFactory factory;
+//    Env env = factory.unwrap();
+//
+//    auto check_undo = [&](Expr e)->bool {
+//        ExecutionContext ctx(factory, (1 << 16) + 1, (2 << 16) + 1);
+//        Dynamic dynE(factory.unwrap(), e);
+//        auto undoed = unlogic::undoThat(dynE);
+//        auto redoed = borealis::SMT<borealis::MathSAT>::doit(undoed, factory, &ctx);
+//        auto b = (dynE == Dynamic(redoed));
+//
+//        borealis::mathsat::Solver solver(b.getCtx());
+//        solver.add(b.getAxiom());
+//        solver.add(not b.getExpr());
+//        return solver.check() == MSAT_UNSAT;
+//    };
+//
+//    Sort bv = env.bv_sort(32);
+//    Expr x1 = env.bv_const("x1", 32);
+//    Expr x2 = env.bv_const("x2", 32);
+//    Expr x3 = env.bv_const("x3", 32);
+//    Expr y1 = env.bv_const("y1", 32);
+//    Expr y2 = env.bv_const("y2", 32);
+//    Expr y3 = env.bv_const("y3", 32);
+//    Expr c1 = env.bv_val(32, 32);
+//    Expr c2 = env.bv_val(-32, 32);
+//
+//    {
+//        Expr A = x1 == x2;
+//        EXPECT_TRUE(check_undo(A));
+//    }
+//
+//    {
+//        Expr A = c1 == -c2;
+//        EXPECT_TRUE(check_undo(A));
+//    }
+//
+//    {
+//        Expr A = (x1 >= c1) && (x2 <= c2);
+//        EXPECT_TRUE(check_undo(A));
+//    }
+//
+//    {
+//        Expr A = ((x1 + x2 - x3) >= -c1) || ((y1 * y2 / y3) == (x3 & x1));
+//        EXPECT_TRUE(check_undo(A));
+//    }
+//
+//    {
+//        Expr A = (x1 == x2 && x2 == x3);
+//        Expr B = (x1 == x3);
+//
+//        borealis::mathsat::DSolver s(env);
+//        s.add(A && !B);
+//
+//        EXPECT_EQ(MSAT_UNSAT, s.check());
+//    }
+//}
 
 TEST(MathSAT, diversify) {
     {

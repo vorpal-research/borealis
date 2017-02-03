@@ -269,6 +269,19 @@ void recollectMemory(
     return;
 }
 
+static z3::tactic dd_tactics(ExprFactory& z3ef, unsigned int timeout) {
+    auto&& c = z3ef.unwrap();
+
+    auto&& smt_params = z3::params(c);
+    smt_params.set("auto_config", true);
+    smt_params.set("timeout", timeout);
+    auto&& smt_tactic = with(z3::tactic(c, "smt"), smt_params);
+
+    auto&& useful = z3::tactic(c, "ctx-simplify");
+
+    return useful & smt_tactic;
+}
+
 Result Solver::isViolated(
         PredicateState::Ptr query,
         PredicateState::Ptr state) {
@@ -324,7 +337,21 @@ Result Solver::isViolated(
             dbg << (z3::unsat == r ? "FAILED" : "TIMEOUT") << endl;
 
             logging::wtf() << "Sanity check failed for: " << state << endl;
-            auto&& dd = DeltaDebugger{ z3ef }.reduce(state);
+
+            static config::ConfigEntry<int> dd_number("analysis", "dd-number");
+            static config::ConfigEntry<int> dd_timeout("analysis", "dd-timeout");
+            auto reduction = [&](auto&& state) {
+                auto&& s = dd_tactics(z3ef, dd_timeout.get(5) * 1000).mk_solver();
+
+                ExecutionContext ctx(z3ef, memoryStart, memoryEnd);
+                auto&& z3state = SMT<Z3>::doit(state, z3ef, &ctx);
+
+                s.add(z3state.asAxiom());
+
+                return (z3::sat == s.check());
+            };
+
+            auto&& dd = makeDeltaDebugger(reduction, dd_number.get(1000)).reduce(state);
             logging::wtf() << "Delta debugged to: " << dd << endl;
 
         } else {

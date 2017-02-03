@@ -35,9 +35,9 @@ static Term::Ptr isValidPtr(FactoryNest FN, Term::Ptr t) {
         auto&& bval = TermBuilder{ FN.Term, t };
         auto&& bound = bval.bound();
 
-        return bval != FN.Term->getNullPtrTerm()->setType(type)
-               && bval != FN.Term->getInvalidPtrTerm()->setType(type)
-               && bound.uge( FN.Term->getOpaqueConstantTerm(TypeUtils::getTypeSizeInElems(pointed), 0)->setType(bound->getType()) );
+        return bval != FN.Term->getNullPtrTerm()->setType(FN.Term.get(), type)
+               && bval != FN.Term->getInvalidPtrTerm()->setType(FN.Term.get(), type)
+               && bound.uge( FN.Term->getOpaqueConstantTerm(TypeUtils::getTypeSizeInElems(pointed), 0)->setType(FN.Term.get(), bound->getType()) );
     }
     return nullptr;
 }

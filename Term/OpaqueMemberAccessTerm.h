@@ -46,10 +46,9 @@ public:
     template<class Sub>
     auto accept(Transformer<Sub>* tr) const -> Term::Ptr {
         auto&& _lhv = tr->transform(getLhv());
-        auto&& _type = type;
         TERM_ON_CHANGED(
             getLhv() != _lhv,
-            new Self( _type, _lhv, property, indirect )
+            tr->FN.Term->getOpaqueMemberAccessTerm(_lhv, property, indirect)
         );
     }
 

@@ -10,6 +10,8 @@
 
 #include <memory>
 
+#include <memorypool/MemoryPool.h>
+
 #include "Codegen/llvm.h"
 #include "Term/Term.def"
 #include "Type/TypeFactory.h"
@@ -52,8 +54,10 @@ public:
     Term::Ptr getReturnValueTerm(const llvm::Function* F, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getReturnPtrTerm(const llvm::Function* F);
 
+    enum class Globality{ Local, Global };
+
     Term::Ptr getValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown);
-    Term::Ptr getValueTerm(Type::Ptr type, const std::string& name);
+    Term::Ptr getValueTerm(Type::Ptr type, const std::string& name, Globality globality = Globality::Local);
     Term::Ptr getFreeVarTerm(Type::Ptr type, const std::string& name);
     Term::Ptr getGlobalValueTerm(const llvm::GlobalValue* gv, llvm::Signedness sign = llvm::Signedness::Unknown);
     Term::Ptr getLocalValueTerm(const llvm::Value* v, llvm::Signedness sign = llvm::Signedness::Unknown);
@@ -96,12 +100,13 @@ public:
     static TermFactory::Ptr get(SlotTracker* st, const llvm::DataLayout* DL, TypeFactory::Ptr TyF);
     static TermFactory::Ptr get(const llvm::DataLayout* DL, TypeFactory::Ptr TyF);
 
+    Term::Ptr setType(Type::Ptr type, Term::Ptr term);
+
 private:
 
     SlotTracker* st;
     const llvm::DataLayout* DL;
     TypeFactory::Ptr TyF;
-
 
     TermFactory(SlotTracker* st, const llvm::DataLayout* DL, TypeFactory::Ptr TyF);
 

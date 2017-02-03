@@ -47,7 +47,7 @@ public:
         auto&& _fls = tr->transform(getFls());
         TERM_ON_CHANGED(
             getCnd() != _cnd || getTru() != _tru || getFls() != _fls,
-            new Self( getTermType(tr->FN.Type, _cnd, _tru, _fls), _cnd, _tru, _fls )
+            tr->FN.Term->getTernaryTerm(_cnd, _tru, _fls)
         );
     }
 
