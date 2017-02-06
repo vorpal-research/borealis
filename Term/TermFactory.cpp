@@ -26,7 +26,7 @@ static Term::Ptr poolAlloc(Pool& pool, Args&&... args) {
 
 template<class T, class ...Args>
 static Term::Ptr make_pooled(Args &&... args) {
-    using pool_t = MemoryPool<T, 64 * sizeof(T)>;
+    using pool_t = MemoryPool<T, 128 * sizeof(T)>;
     static pool_t valuePool;
 
     return poolAlloc<T>(valuePool, std::forward<Args>(args)...);
