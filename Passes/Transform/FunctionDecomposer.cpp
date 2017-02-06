@@ -55,6 +55,14 @@ FunctionDecomposer::FunctionDecomposer() : llvm::ModulePass{ID}, pimpl_{ new Imp
 
 FunctionDecomposer::~FunctionDecomposer() {}
 
+struct TwineReceiver { // morale: never use Twines directly
+    std::string contents;
+
+    TwineReceiver(llvm::Twine twine): contents(twine.str()) {}
+
+    operator llvm::Twine() { return contents; }
+};
+
 inline llvm::CallInst* createCall(llvm::Function* what, llvm::Value* arg,
     llvm::Twine name, llvm::Instruction* insertBefore) {
     bool noName = what->getReturnType()->isVoidTy();
@@ -97,9 +105,9 @@ inline llvm::Instruction* mkLoad(
 
     ASSERTC(arg->getType()->isPointerTy());
 
-    auto&& name = "bor.dc.load." + originalCall.getCalledFunction()->getName()
-                + (originalCall.hasName() ? "." + originalCall.getName() : "")
-                + ".arg" + llvm::Twine(argNum);
+    TwineReceiver name = "bor.dc.load." + originalCall.getCalledFunction()->getName()
+                        + (originalCall.hasName() ? "." + originalCall.getName() : "")
+                        + ".arg" + llvm::Twine(argNum);
 
     return new llvm::LoadInst(arg, name, &originalCall);
 }
@@ -131,9 +139,9 @@ inline llvm::Instruction* mkStoreNondet(
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
-    auto&& name = "bor.dc.nondet." + originalCall.getCalledFunction()->getName()
-                + (originalCall.hasName() ? "." + originalCall.getName() : "")
-                + ".arg" + llvm::Twine(argNum);
+    TwineReceiver name = "bor.dc.nondet." + originalCall.getCalledFunction()->getName()
+                        + (originalCall.hasName() ? "." + originalCall.getName() : "")
+                        + ".arg" + llvm::Twine(argNum);
 
     auto&& call = createCall(f, name, &originalCall);
 
@@ -182,8 +190,8 @@ inline llvm::CallInst* mkNondet(
     f->setDoesNotAccessMemory();
     f->setDoesNotThrow();
 
-    auto&& name = "bor.dc.nondet." + originalCall.getCalledFunction()->getName()
-                + (originalCall.hasName() ? "." + originalCall.getName() : "");
+    TwineReceiver name = "bor.dc.nondet." + originalCall.getCalledFunction()->getName()
+                        + (originalCall.hasName() ? "." + originalCall.getName() : "");
 
     return createCall(f, name, &originalCall);
 }
