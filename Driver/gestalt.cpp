@@ -137,6 +137,7 @@ int gestalt::main(int argc, const char** argv) {
     auto postPasses = MultiConfigEntry("passes", "post").get();
     auto libs = MultiConfigEntry("libs", "load").get();
     auto skipClang = BoolConfigEntry("run", "skipClangDriver").get(false);
+    auto postVerify = BoolConfigEntry("run", "verifyModule").get(false);
 
     CommandLine compilerArgs = args.tail().unprefix("---");
 
@@ -241,7 +242,7 @@ int gestalt::main(int argc, const char** argv) {
 
     std::string err;
     llvm::raw_string_ostream rso{err};
-    if (verifyModule(*module_ptr, &rso)) {
+    if (postVerify && verifyModule(*module_ptr, &rso)) {
         errs() << "Module errors detected: " << rso.str() << endl;
     }
 

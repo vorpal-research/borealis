@@ -9,11 +9,15 @@
 #include "SMT/Z3/Solver.h"
 #include "State/PredicateState.h"
 
+#include "Statistics/statistics.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
 
-PredicateState::PredicateState(id_t classTag) : ClassTag(classTag) {};
+static Statistic totalPredicateStatesCreated("misc", "totalPredicateStates", "Total number of predicate states created");
+
+PredicateState::PredicateState(id_t classTag) : ClassTag(classTag) { ++totalPredicateStatesCreated; };
 
 PredicateState::Ptr PredicateState::self() const {
     return this->shared_from_this();

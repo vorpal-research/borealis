@@ -12,9 +12,13 @@
 #include "Annotation/RequiresAnnotation.h"
 #include "Predicate/Predicate.h"
 
+#include "Statistics/statistics.h"
+
 #include "Util/macros.h"
 
 namespace borealis {
+
+static Statistic totalPredicatesCreated("misc", "totalPredicates", "Total number of predicates created");
 
 PredicateType predicateType(const Annotation* a) {
    using namespace llvm;
@@ -28,13 +32,13 @@ PredicateType predicateType(const Annotation* a) {
 }
 
 Predicate::Predicate(id_t classTag) :
-        Predicate(classTag, PredicateType::STATE) {}
+        Predicate(classTag, PredicateType::STATE) { ++totalPredicatesCreated; }
 
 Predicate::Predicate(id_t classTag, PredicateType type) :
-        ClassTag(classTag), type(type) {}
+        ClassTag(classTag), type(type) { ++totalPredicatesCreated; }
 
 Predicate::Predicate(id_t classTag, PredicateType type, const Locus& loc) :
-        ClassTag(classTag), type(type), location(loc) {}
+        ClassTag(classTag), type(type), location(loc) { ++totalPredicatesCreated; }
 
 PredicateType Predicate::getType() const {
    return type;
