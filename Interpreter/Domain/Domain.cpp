@@ -1,0 +1,98 @@
+//
+// Created by abdullin on 2/3/17.
+//
+
+#include <Util/sayonara.hpp>
+#include "Domain.h"
+
+#include "Util/macros.h"
+
+namespace borealis {
+namespace absint {
+
+#define MK_BINOP_IMPL(inst) Domain::Ptr Domain::inst(Domain::Ptr) const { \
+    UNREACHABLE("Unimplemented binary operation"); \
+}
+
+MK_BINOP_IMPL(add);
+MK_BINOP_IMPL(fadd);
+MK_BINOP_IMPL(sub);
+MK_BINOP_IMPL(fsub);
+MK_BINOP_IMPL(mul);
+MK_BINOP_IMPL(fmul);
+MK_BINOP_IMPL(udiv);
+MK_BINOP_IMPL(sdiv);
+MK_BINOP_IMPL(fdiv);
+MK_BINOP_IMPL(urem);
+MK_BINOP_IMPL(srem);
+MK_BINOP_IMPL(frem);
+MK_BINOP_IMPL(shl);
+MK_BINOP_IMPL(lshr);
+MK_BINOP_IMPL(ashr);
+MK_BINOP_IMPL(bAnd);
+MK_BINOP_IMPL(bOr);
+MK_BINOP_IMPL(bXor);
+
+#undef MK_BINOP_IMPL
+
+
+Domain::Ptr Domain::extractElement(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented vector operation");
+}
+
+Domain::Ptr Domain::insertElement(Domain::Ptr, Domain::Ptr) const {
+    UNREACHABLE("Unimplemented vector operation");
+}
+
+Domain::Ptr Domain::extractValue(const std::vector<Domain::Ptr>&) const {
+    UNREACHABLE("Unimplemented aggregate operation");
+}
+
+Domain::Ptr Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+    UNREACHABLE("Unimplemented aggregate operation");
+}
+
+Domain::Ptr Domain::load(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+    UNREACHABLE("Unimplemented memory operation");
+}
+
+Domain::Ptr Domain::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+    UNREACHABLE("Unimplemented memory operation");
+}
+
+Domain::Ptr Domain::gep(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+    UNREACHABLE("Unimplemented memory operation");
+}
+
+
+#define MK_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(const llvm::Type&) const { \
+    UNREACHABLE("Unimplemented cast operation"); \
+}
+
+MK_CAST_OP_IMPL(trunc);
+MK_CAST_OP_IMPL(zext);
+MK_CAST_OP_IMPL(sext);
+MK_CAST_OP_IMPL(fptrunc);
+MK_CAST_OP_IMPL(fpext);
+MK_CAST_OP_IMPL(fptoui);
+MK_CAST_OP_IMPL(fptosi);
+MK_CAST_OP_IMPL(uitofp);
+MK_CAST_OP_IMPL(sitofp);
+MK_CAST_OP_IMPL(ptrtoint);
+MK_CAST_OP_IMPL(inttoptr);
+
+#undef MK_CAST_OP_IMPL
+
+
+Domain::Ptr Domain::icmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
+    UNREACHABLE("Unimplemented cmp operation");
+}
+
+Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
+    UNREACHABLE("Unimplemented cmp operation");
+}
+
+}   /* namespace absint */
+}   /* namespace borealis */
+
+#include "Util/unmacros.h"
