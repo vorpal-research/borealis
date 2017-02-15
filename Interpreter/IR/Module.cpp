@@ -11,7 +11,9 @@ namespace absint {
 Module::Module(const Environment* environment, const llvm::Module* module) : environment_(environment),
                                                                              instance_(module) {
     for (auto&& function : util::viewContainer(*instance_)) {
-        functions_.insert({&function, Function(environment_, &function)});
+        if (not function.isDeclaration()) {
+            functions_.insert({&function, Function(environment_, &function)});
+        }
     }
     // TODO: add global variables
 }
@@ -44,6 +46,16 @@ const Function* Module::getFunction(const llvm::Function* function) const {
     if (auto&& opt = util::at(functions_, function))
         return &opt.getUnsafe();
     return nullptr;
+}
+
+std::ostream& operator<<(std::ostream& s, const Module& m) {
+    s << m.toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m) {
+    s << m.toString();
+    return s;
 }
 
 }   /* namespace absint */

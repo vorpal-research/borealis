@@ -8,7 +8,7 @@
 namespace borealis {
 namespace absint {
 
-
+/// Assumes that llvm::Function is not a declaration
 Function::Function(const Environment* environment, const llvm::Function* function) : environment_(environment),
                                                                                    instance_(function) {
     inputState_ = std::make_shared<State>(State(environment_));
@@ -17,10 +17,17 @@ Function::Function(const Environment* environment, const llvm::Function* functio
         auto&& aiBlock = BasicBlock(environment_, &block);
         blocks_.insert({&block, aiBlock});
     }
-    // TODO: add arguments to states
-    // TODO: init basic blocks
-    // TODO: add return value
 
+    // adding function arguments to input state
+    for (auto&& arg : instance_->getArgumentList()) {
+        auto&& argDomain = environment_->getDomainFactory().get(&arg);
+        if (argDomain) inputState_->addLocalVariable(&arg, argDomain);
+    }
+
+    // merging the fron block's input state with function input state
+    getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
+
+    // adding return value
     auto&& returnType = instance_->getReturnType();
     if (not returnType->isVoidTy()) {
         auto&& retDomain = environment_->getDomainFactory().get(*returnType);
@@ -60,10 +67,13 @@ std::string Function::getName() const {
 
 std::string Function::toString() const {
     std::ostringstream ss;
-    ss << "Function ";
-    ss << instance_->getName().str() << std::endl;
+    ss << "Function \"";
+    ss << instance_->getName().str() << "\"";
     for (auto&& it : util::viewContainer(blocks_))
-        ss << it.second.toString() << std::endl;
+        ss << std::endl << it.second.toString();
+
+    ss << std::endl << "Retval = ";
+    ss << outputState_->getReturnValue()->toString();
 
     return ss.str();
 }
@@ -82,6 +92,26 @@ std::vector<const BasicBlock*> Function::getSuccessorsFor(const llvm::BasicBlock
         successors.push_back(getBasicBlock(*it));
     }
     return std::move(successors);
+}
+
+std::ostream& operator<<(std::ostream& s, const Function& f) {
+    s << f.toString();
+    return s;
+}
+
+std::ostream& operator<<(std::ostream& s, const Function* f) {
+    s << *f;
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function& f) {
+    s << f.toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function* f) {
+    s << *f;
+    return s;
 }
 
 }   /* namespace absint */

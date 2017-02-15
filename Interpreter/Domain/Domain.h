@@ -79,7 +79,9 @@ public:
 
     /// Other
     virtual size_t hashCode() const = 0;
-    virtual std::string toString() const = 0;
+    virtual std::string toString() const {
+        return "unknown";
+    }
     virtual Domain* clone() const = 0;
 
     virtual bool isCorrect() const {
@@ -149,6 +151,9 @@ protected:
     Value value_;
     Type type_;
 };
+
+std::ostream& operator<<(std::ostream& s, Domain::Ptr d);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Domain::Ptr d);
 
 }   /* namespace absint */
 }   /* namespace borealis*/

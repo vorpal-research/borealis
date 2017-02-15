@@ -92,6 +92,16 @@ Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
     UNREACHABLE("Unimplemented cmp operation");
 }
 
+std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {
+    s << d->toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Domain::Ptr d) {
+    s << d->toString();
+    return s;
+}
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

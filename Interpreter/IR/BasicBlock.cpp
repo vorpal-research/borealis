@@ -9,7 +9,8 @@ namespace absint {
 
 
 BasicBlock::BasicBlock(const Environment* environment, const llvm::BasicBlock* bb) : environment_(environment),
-                                                                                   instance_(bb) {
+                                                                                     instance_(bb),
+                                                                                     atFixpoint_(false) {
     inputState_ = std::make_shared<State>(State(environment_));
     outputState_ = std::make_shared<State>(State(environment_));
 }
@@ -33,15 +34,30 @@ std::string BasicBlock::getName() const {
 std::string BasicBlock::toString() const {
     std::ostringstream ss;
 
-    ss << "*** basicBlock ";
     if (instance_->hasName())
-        ss << instance_->getName().str();
+        ss << instance_->getName().str() << ":";
     else
         ss << "<label>:" << environment_->getSlotTracker().getLocalSlot(instance_);
 
     ss << std::endl;
-    ss << outputState_->toString() << std::endl;
+    ss << outputState_->toString();
     return ss.str();
+}
+
+bool BasicBlock::atFixpoint() const {
+    if (atFixpoint_) return true;
+    atFixpoint_ = inputState_->equals(outputState_.get());
+    return atFixpoint_;
+}
+
+std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
+    s << b.toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock& b) {
+    s << b.toString();
+    return s;
 }
 
 }   /* namespace absint */

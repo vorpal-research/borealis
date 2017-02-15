@@ -5,14 +5,15 @@
 #ifndef BOREALIS_INTERVALDOMAIN_H
 #define BOREALIS_INTERVALDOMAIN_H
 
-#include <Util/util.h>
+#include <llvm/ADT/APSInt.h>
+
 #include "Domain.h"
 
 namespace borealis {
 namespace absint {
 
 class IntervalDomain : public Domain {
-public:
+protected:
 
     friend class DomainFactory;
 

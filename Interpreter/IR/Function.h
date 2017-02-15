@@ -49,6 +49,11 @@ private:
     State::Ptr outputState_;
 };
 
+std::ostream& operator<<(std::ostream& s, const Function& f);
+std::ostream& operator<<(std::ostream& s, const Function* f);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function& f);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function* f);
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

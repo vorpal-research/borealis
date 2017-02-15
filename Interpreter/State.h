@@ -24,6 +24,9 @@ public:
     State(const Environment* environment);
     State(const State& other);
 
+    bool equals(const State* other) const;
+    friend bool operator==(const State& lhv, const State& rhv);
+
     void addGlobalVariable(const llvm::Value* val, Domain::Ptr domain);
     void addLocalVariable(const llvm::Value* val, Domain::Ptr domain);
     void setReturnValue(Domain::Ptr domain);

@@ -35,6 +35,9 @@ private:
     FunctionMap functions_;
 };
 
+std::ostream& operator<<(std::ostream& s, const Module& m);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m);
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

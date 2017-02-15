@@ -4,10 +4,11 @@
 
 #include "IntervalDomain.h"
 
-#include "Util/hash.hpp"
-#include "Util/macros.h"
-
 #include "Util.hpp"
+#include "Util/hash.hpp"
+#include "Util/sayonara.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
@@ -60,7 +61,7 @@ Domain::Ptr IntervalDomain::join(Domain::Ptr other) const {
     } else {
         auto newFrom = (from_ < value->from_) ? from_ : value->from_;
         auto newTo = (to_ < value->to_) ? value->to_ : to_;
-        return std::make_shared<IntervalDomain>(IntervalDomain(newFrom, newTo));
+        return Domain::Ptr{ new IntervalDomain(newFrom, newTo) };
     }
 }
 
@@ -76,7 +77,7 @@ Domain::Ptr IntervalDomain::meet(Domain::Ptr other) const {
         auto right = (to_ < value->to_) ? to_ : value->to_;
         return (left > right) ?
                clone()->shared_from_this() :
-               std::make_shared<IntervalDomain>(IntervalDomain(left, right));
+               Domain::Ptr{ new IntervalDomain(left, right) };
     }
 }
 
@@ -146,14 +147,11 @@ Domain::Ptr IntervalDomain::add(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
     } else {
         auto&& left = from_ + value->from_;
         auto&& right = to_ + value->to_;
-        auto&& newInterval = std::make_shared<IntervalDomain>(left, right);
-        ASSERT(newInterval->isCorrect(), "Error because of overflow");
-
-        return newInterval;
+        return Domain::Ptr{ new IntervalDomain(left, right) };
     }
 }
 
@@ -163,14 +161,11 @@ Domain::Ptr IntervalDomain::sub(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
     } else {
         auto&& left = from_ - value->to_;
         auto&& right = to_ - value->from_;
-        auto&& newInterval = std::make_shared<IntervalDomain>(left, right);
-        ASSERT(newInterval->isCorrect(), "Error because of overflow");
-
-        return newInterval;
+        return Domain::Ptr{ new IntervalDomain(left, right) };
     }
 }
 
@@ -180,7 +175,7 @@ Domain::Ptr IntervalDomain::mul(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
     } else {
 
         using namespace borealis::util;
@@ -189,9 +184,7 @@ Domain::Ptr IntervalDomain::mul(Domain::Ptr other) const {
         auto second = Domain::Ptr{ new IntervalDomain(min(from_ * value->to_, to_ * value->to_),
                                                       max(from_ * value->to_, to_ * value->to_)) };
 
-        auto newInterval = first->join(second);
-        ASSERT(newInterval->isCorrect(), "error because of overflow");
-        return newInterval;
+        return first->join(second);
     }
 }
 
@@ -201,13 +194,13 @@ Domain::Ptr IntervalDomain::udiv(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (isBottom() || value->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
     } else {
 
         if (value->from_ == 0 && value->to_ == 0) {
-            auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+            auto&& result = new IntervalDomain(this->width_, this->isSigned());
             result->setTop();
-            return result;
+            return Domain::Ptr{ result };
         } else {
 
             using namespace borealis::util;
@@ -215,10 +208,7 @@ Domain::Ptr IntervalDomain::udiv(Domain::Ptr other) const {
                                                          umax(from_.udiv(value->from_), to_.udiv(value->from_))) };
             auto second = Domain::Ptr{ new IntervalDomain(umin(from_.udiv(value->to_), to_.udiv(value->to_)),
                                                           umax(from_.udiv(value->to_), to_.udiv(value->to_))) };
-            auto newInterval = first->join(second);
-            // TODO: do we need this?
-            ASSERT(newInterval->isCorrect(), "error because of overflow");
-            return newInterval;
+            return first->join(second);
         }
     }
 }
@@ -229,13 +219,13 @@ Domain::Ptr IntervalDomain::sdiv(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (isBottom() || value->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
     } else {
 
         if (value->from_ == 0 && value->to_ == 0) {
-            auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
+            auto&& result = new IntervalDomain(this->width_, this->isSigned());
             result->setTop();
-            return result->shared_from_this();
+            return Domain::Ptr{ result };
         } else {
 
             using namespace borealis::util;
@@ -243,35 +233,12 @@ Domain::Ptr IntervalDomain::sdiv(Domain::Ptr other) const {
                                                          smax(from_.sdiv(value->from_), to_.sdiv(value->from_))) };
             auto second = Domain::Ptr{ new IntervalDomain(smin(from_.sdiv(value->to_), to_.sdiv(value->to_)),
                                                           smax(from_.sdiv(value->to_), to_.sdiv(value->to_))) };
-            auto newInterval = first->join(second);
-            // TODO: do we need this?
-            ASSERT(newInterval->isCorrect(), "error because of overflow");
-            return newInterval;
+            return first->join(second);
         }
     }
 }
 
 Domain::Ptr IntervalDomain::urem(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<IntervalDomain>(other.get());
-    ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
-
-    if (isBottom() || value->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
-    } else if (value->isTop()) {
-        auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
-        result->setTop();
-        return result;
-    }
-
-    if (value->isConstant() && value->from_ == 0) {
-        auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(this->width_, this->isSigned()));
-        result->setTop();
-        return result;
-    }
-
-
-
     return Domain::urem(other);
 }
 
@@ -280,57 +247,57 @@ Domain::Ptr IntervalDomain::srem(Domain::Ptr other) const {
 }
 
 Domain::Ptr IntervalDomain::shl(Domain::Ptr other) const {
-    auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(width_, isSigned()));
+    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return result;
+        return Domain::Ptr{ result };
 
     result->setTop();
-    return result;
+    return Domain::Ptr{ result };
 }
 
 Domain::Ptr IntervalDomain::lshr(Domain::Ptr other) const {
-    auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(width_, isSigned()));
+    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return result;
+        return Domain::Ptr{ result };
 
     result->setTop();
-    return result;
+    return Domain::Ptr{ result };
 }
 
 Domain::Ptr IntervalDomain::ashr(Domain::Ptr other) const {
-    auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(width_, isSigned()));
+    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return result;
+        return Domain::Ptr{ result };
 
     result->setTop();
-    return result;
+    return Domain::Ptr{ result };
 }
 
 Domain::Ptr IntervalDomain::bAnd(Domain::Ptr other) const {
-    auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(width_, isSigned()));
+    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return result;
+        return Domain::Ptr{ result };
 
     result->setTop();
-    return result;
+    return Domain::Ptr{ result };
 }
 
 Domain::Ptr IntervalDomain::bOr(Domain::Ptr other) const {
-    auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(width_, isSigned()));
+    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return result;
+        return Domain::Ptr{ result };
 
     result->setTop();
-    return result;
+    return Domain::Ptr{ result };
 }
 
 Domain::Ptr IntervalDomain::bXor(Domain::Ptr other) const {
-    auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(width_, isSigned()));
+    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return result;
+        return Domain::Ptr{ result };
 
     result->setTop();
-    return result;
+    return Domain::Ptr{ result };
 }
 
 Domain::Ptr IntervalDomain::trunc(const llvm::Type& type) const {
@@ -362,17 +329,17 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
         llvm::APSInt retval(1, true);
         if (val) retval = 1;
         else retval = 0;
-        return std::make_shared<IntervalDomain>(IntervalDomain(retval));
+        return Domain::Ptr{ new IntervalDomain(retval) };
     };
 
     auto&& getTop = [] () -> IntervalDomain::Ptr {
-        auto&& result = std::make_shared<IntervalDomain>(IntervalDomain(1, false));
+        auto&& result = new IntervalDomain(1, false);
         result->setTop();
-        return result;
+        return Domain::Ptr{ result };
     };
 
     if (this->isBottom() || other->isBottom()) {
-        return std::make_shared<IntervalDomain>(IntervalDomain(1, false));  // bottom by default
+        return Domain::Ptr{ new IntervalDomain(1, false) };  // bottom by default
     } else if (this->isTop() || other->isTop()) {
         return getTop();
     }

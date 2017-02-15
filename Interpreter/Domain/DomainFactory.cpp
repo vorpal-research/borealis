@@ -17,8 +17,8 @@ Domain::Ptr DomainFactory::get(const llvm::Type& type) const {
     if (auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type)) {
         return getInteger(intType->getBitWidth());
     } else {
-        errs() << type << endl;
-        UNREACHABLE("Creating domain of unknown type");
+        errs() << "Creating domain of unknown type " << type << endl;
+        return nullptr;
     }
 }
 
@@ -35,15 +35,15 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
 }
 
 Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) const {
-    return std::make_shared<IntervalDomain>(IntervalDomain(width, isSigned));
+    return Domain::Ptr{ new IntervalDomain(width, isSigned) };
 }
 
 Domain::Ptr DomainFactory::getInteger(const llvm::APSInt& val) const {
-    return std::make_shared<IntervalDomain>(IntervalDomain(val));
+    return Domain::Ptr{ new IntervalDomain(val) };
 }
 
 Domain::Ptr DomainFactory::getInteger(const llvm::APSInt& from, const llvm::APSInt& to) const {
-    return std::make_shared<IntervalDomain>(IntervalDomain(from, to));
+    return Domain::Ptr{ new IntervalDomain(from, to) };
 }
 
 }   /* namespace absint */

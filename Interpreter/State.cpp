@@ -89,17 +89,30 @@ std::string State::toString() const {
     std::ostringstream ss;
     auto& tracker = environment_->getSlotTracker();
 
-    ss << "Globals: " << std::endl;
-    for (auto&& global : globals_) {
-        ss << "    " << tracker.getLocalName(global.first) << " = " << global.second->toString() << std::endl;
+    if (not globals_.empty()) {
+        ss << "  globals: " << std::endl;
+        for (auto&& global : globals_) {
+            ss << "    " << tracker.getLocalName(global.first) << " = " << global.second->toString() << std::endl;
+        }
     }
-    ss << "Locals: " << std::endl;
-    for (auto&& local : locals_) {
-        ss << "    " << tracker.getLocalName(local.first) << " = " << local.second->toString() << std::endl;
+    if (not locals_.empty()) {
+        ss << "  locals: " << std::endl;
+        for (auto&& local : locals_) {
+            ss << "    " << tracker.getLocalName(local.first) << " = " << local.second->toString() << std::endl;
+        }
     }
     return ss.str();
 }
 
+bool State::equals(const State* other) const {
+    return this->globals_ == other->globals_ &&
+            this->locals_ == other->locals_ &&
+            this->retval_ == other->retval_;
+}
+
+bool operator==(const State& lhv, const State& rhv) {
+    return lhv.equals(&rhv);
+}
 }   /* namespace absint */
 }   /* namespace borealis */
 
