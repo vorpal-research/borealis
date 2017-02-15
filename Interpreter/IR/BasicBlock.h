@@ -16,7 +16,7 @@ namespace absint {
 class BasicBlock {
 public:
 
-    BasicBlock(const Environment* environment, const llvm::BasicBlock* bb);
+    BasicBlock(Environment::Ptr environment, const llvm::BasicBlock* bb);
 
     const llvm::BasicBlock* getInstance() const;
     State::Ptr getInputState() const;
@@ -29,7 +29,7 @@ public:
 
 private:
 
-    const Environment* environment_;
+    Environment::Ptr environment_;
     const llvm::BasicBlock* instance_;
     State::Ptr inputState_;
     State::Ptr outputState_;

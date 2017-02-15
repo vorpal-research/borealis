@@ -8,8 +8,8 @@
 namespace borealis {
 namespace absint {
 
-Module::Module(const Environment* environment, const llvm::Module* module) : environment_(environment),
-                                                                             instance_(module) {
+Module::Module(Environment::Ptr environment, const llvm::Module* module) : environment_(environment),
+                                                                           instance_(module) {
     for (auto&& function : util::viewContainer(*instance_)) {
         if (not function.isDeclaration()) {
             functions_.insert({&function, Function(environment_, &function)});
@@ -18,8 +18,8 @@ Module::Module(const Environment* environment, const llvm::Module* module) : env
     // TODO: add global variables
 }
 
-const Environment& Module::getEnvironment() const {
-    return *environment_;
+Environment::Ptr Module::getEnvironment() const {
+    return environment_;
 }
 
 const llvm::Module* Module::getInstance() const {
@@ -45,6 +45,13 @@ std::string Module::toString() const {
 const Function* Module::getFunction(const llvm::Function* function) const {
     if (auto&& opt = util::at(functions_, function))
         return &opt.getUnsafe();
+    return nullptr;
+}
+
+const Function* Module::getFunction(const std::string& fname) const {
+    for (auto&& it : util::viewContainer(functions_)) {
+        if (it.second.getName() == fname) return &(it.second);
+    }
     return nullptr;
 }
 

@@ -17,7 +17,7 @@ Domain::Ptr DomainFactory::get(const llvm::Type& type) const {
     if (auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type)) {
         return getInteger(intType->getBitWidth());
     } else {
-        errs() << "Creating domain of unknown type " << type << endl;
+        errs() << "Creating domain of unknown type <" << type << ">" << endl;
         return nullptr;
     }
 }

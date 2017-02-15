@@ -16,7 +16,8 @@ class Function {
 public:
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, BasicBlock>;
 
-    Function(const Environment* environment, const llvm::Function* function);
+    /// Assumes that llvm::Function is not a declaration
+    Function(Environment::Ptr environment, const llvm::Function* function);
 
     const llvm::Function* getInstance() const;
     const BlockMap& getBasicBlocks() const;
@@ -24,6 +25,8 @@ public:
     State::Ptr getInputState() const;
     State::Ptr getOutputState() const;
 
+    /// Assumes that @args[i] corresponds to i-th argument of the function
+    void setArguments(const std::vector<Domain::Ptr>& args);
 
     const BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
 
@@ -42,7 +45,7 @@ public:
 
 private:
 
-    const Environment* environment_;
+    Environment::Ptr environment_;
     const llvm::Function* instance_;
     BlockMap blocks_;
     State::Ptr inputState_;

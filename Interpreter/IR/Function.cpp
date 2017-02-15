@@ -4,12 +4,14 @@
 
 #include "Function.h"
 #include "Util/collections.hpp"
+#include "Util/streams.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
 
-/// Assumes that llvm::Function is not a declaration
-Function::Function(const Environment* environment, const llvm::Function* function) : environment_(environment),
+Function::Function(Environment::Ptr environment, const llvm::Function* function) : environment_(environment),
                                                                                    instance_(function) {
     inputState_ = std::make_shared<State>(State(environment_));
     outputState_ = std::make_shared<State>(State(environment_));
@@ -17,15 +19,6 @@ Function::Function(const Environment* environment, const llvm::Function* functio
         auto&& aiBlock = BasicBlock(environment_, &block);
         blocks_.insert({&block, aiBlock});
     }
-
-    // adding function arguments to input state
-    for (auto&& arg : instance_->getArgumentList()) {
-        auto&& argDomain = environment_->getDomainFactory().get(&arg);
-        if (argDomain) inputState_->addLocalVariable(&arg, argDomain);
-    }
-
-    // merging the fron block's input state with function input state
-    getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
 
     // adding return value
     auto&& returnType = instance_->getReturnType();
@@ -67,8 +60,8 @@ std::string Function::getName() const {
 
 std::string Function::toString() const {
     std::ostringstream ss;
-    ss << "Function \"";
-    ss << instance_->getName().str() << "\"";
+    ss << "--- Function \"";
+    ss << instance_->getName().str() << "\" ---";
     for (auto&& it : util::viewContainer(blocks_))
         ss << std::endl << it.second.toString();
 
@@ -94,6 +87,26 @@ std::vector<const BasicBlock*> Function::getSuccessorsFor(const llvm::BasicBlock
     return std::move(successors);
 }
 
+void Function::setArguments(const std::vector<Domain::Ptr>& args) {
+    if (args.empty()) {
+        for (auto&& arg : util::viewContainer(instance_->getArgumentList())) {
+            auto&& argDomain = environment_->getDomainFactory().get(&arg);
+            if (argDomain) inputState_->addLocalVariable(&arg, argDomain);
+        }
+    } else {
+        ASSERT(instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
+
+        // adding function arguments to input state
+        auto&& it = instance_->getArgumentList().begin();
+        for (auto i = 0U; i < args.size(); ++i) {
+            inputState_->addLocalVariable(it, args[i]);
+            ++it;
+        }
+    }
+    // merging the fron block's input state with function input state
+    getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
+}
+
 std::ostream& operator<<(std::ostream& s, const Function& f) {
     s << f.toString();
     return s;
@@ -116,3 +129,5 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
 
 }   /* namespace absint */
 }   /* namespace borealis */
+
+#include "Util/unmacros.h"

@@ -10,7 +10,7 @@
 namespace borealis {
 namespace absint {
 
-State::State(const Environment* environment) : environment_(environment), retval_(nullptr) {}
+State::State(Environment::Ptr environment) : environment_(environment), retval_(nullptr) {}
 State::State(const State &other) : environment_(other.environment_), globals_(other.globals_),
                                    locals_(other.locals_), retval_(other.retval_) {}
 
@@ -31,7 +31,7 @@ void State::mergeToReturnValue(Domain::Ptr domain) {
     retval_ = (not retval_) ? domain : retval_->join(domain);
 }
 
-const Environment& State::getEnvironment() const { return *environment_; }
+Environment::Ptr State::getEnvironment() const { return environment_; }
 const State::Map& State::getGlobals() const { return globals_; }
 const State::Map& State::getLocals() const { return locals_; }
 Domain::Ptr State::getReturnValue() const { return retval_; }

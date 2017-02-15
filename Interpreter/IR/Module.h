@@ -15,9 +15,9 @@ class Module {
 public:
     using FunctionMap = std::unordered_map<const llvm::Function*, Function>;
 
-    Module(const Environment* environment, const llvm::Module* module);
+    Module(Environment::Ptr environment, const llvm::Module* module);
 
-    const Environment& getEnvironment() const;
+    Environment::Ptr getEnvironment() const;
     const llvm::Module* getInstance() const;
     const FunctionMap& getFunctions() const;
 
@@ -25,12 +25,13 @@ public:
     const Function* getFunction(const llvm::Function& function) const {
         return getFunction(&function);
     }
+    const Function* getFunction(const std::string& fname) const;
 
     std::string toString() const;
 
 private:
 
-    const Environment* environment_;
+    Environment::Ptr environment_;
     const llvm::Module* instance_;
     FunctionMap functions_;
 };

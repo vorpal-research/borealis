@@ -8,7 +8,7 @@ namespace borealis {
 namespace absint {
 
 
-BasicBlock::BasicBlock(const Environment* environment, const llvm::BasicBlock* bb) : environment_(environment),
+BasicBlock::BasicBlock(Environment::Ptr environment, const llvm::BasicBlock* bb) : environment_(environment),
                                                                                      instance_(bb),
                                                                                      atFixpoint_(false) {
     inputState_ = std::make_shared<State>(State(environment_));
