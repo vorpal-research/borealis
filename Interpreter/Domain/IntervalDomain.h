@@ -18,6 +18,7 @@ protected:
     friend class DomainFactory;
 
     IntervalDomain(unsigned width, bool isSigned = false);
+    IntervalDomain(Domain::Value value, unsigned width, bool isSigned = false);
     IntervalDomain(const llvm::APSInt& constant);
     IntervalDomain(const llvm::APSInt& from, const llvm::APSInt& to);
     IntervalDomain(const IntervalDomain& interval);
@@ -30,6 +31,7 @@ public:
     /// Lattice
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
+    virtual Domain::Ptr widen(Domain::Ptr other) const;
 
     /// Other
     bool equalFormat(const IntervalDomain& other) const;

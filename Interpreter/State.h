@@ -45,6 +45,7 @@ public:
     Domain::Ptr findGlobal(const llvm::Value* val) const;
     Domain::Ptr findLocal(const llvm::Value* val) const;
 
+    bool empty() const;
     std::string toString() const;
 
 private:

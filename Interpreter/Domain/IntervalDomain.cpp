@@ -18,6 +18,14 @@ IntervalDomain::IntervalDomain(unsigned width, bool isSigned) : Domain(BOTTOM, I
                                                                 from_(width_, not isSigned),
                                                                 to_(width_, not isSigned) {}
 
+
+IntervalDomain::IntervalDomain(Domain::Value value, unsigned width, bool isSigned) : Domain(value, IntegerInterval),
+                                                                                     width_(width),
+                                                                                     from_(width_, not isSigned),
+                                                                                     to_(width_, not isSigned) {
+    if (value == TOP) setTop();
+}
+
 IntervalDomain::IntervalDomain(const llvm::APSInt &constant) : Domain(VALUE, IntegerInterval),
                                                                width_(constant.getBitWidth()),
                                                                from_(constant),
@@ -45,8 +53,8 @@ IntervalDomain::IntervalDomain(const IntervalDomain &interval) : Domain(interval
 
 void IntervalDomain::setTop() {
     Domain::setTop();
-    from_ = llvm::APSInt::getMinValue(width_, not isSigned());
-    to_ = llvm::APSInt::getMaxValue(width_, not isSigned());
+    from_ = llvm::APSInt::getMinValue(getWidth(), not isSigned());
+    to_ = llvm::APSInt::getMaxValue(getWidth(), not isSigned());
 }
 
 Domain::Ptr IntervalDomain::join(Domain::Ptr other) const {
@@ -81,6 +89,14 @@ Domain::Ptr IntervalDomain::meet(Domain::Ptr other) const {
     }
 }
 
+Domain::Ptr IntervalDomain::widen(Domain::Ptr other) const {
+    auto&& value = llvm::dyn_cast<IntervalDomain>(other.get());
+    ASSERT(value, "Nullptr in interval");
+    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
+}
+
 unsigned IntervalDomain::getWidth() const { return width_; }
 bool IntervalDomain::isSigned() const { return from_.isSigned(); }
 bool IntervalDomain::isConstant() const { return from_ == to_; }
@@ -111,7 +127,7 @@ bool IntervalDomain::equalFormat(const IntervalDomain &other) const {
 bool IntervalDomain::equals(const Domain *other) const {
     auto&& value = llvm::dyn_cast<IntervalDomain>(other);
     if (not value) return false;
-    return this->width_ == value->width_ &&
+    return this->getWidth() == value->getWidth() &&
             this->from_ == value->from_ &&
             this->to_ == value->to_;
 }
@@ -127,7 +143,7 @@ bool IntervalDomain::classof(const Domain *other) {
 }
 
 size_t IntervalDomain::hashCode() const {
-    return util::hash::simple_hash_value(value_, type_, width_,
+    return util::hash::simple_hash_value(value_, getType(), getWidth(),
                                          from_.toString(10, isSigned()),
                                          to_.toString(10, isSigned()));
 }
@@ -147,7 +163,9 @@ Domain::Ptr IntervalDomain::add(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
+        return Domain::Ptr{ new IntervalDomain(this->getWidth(), this->isSigned()) };
+    } else if (this->isTop() || value->isTop()) {
+        return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
     } else {
         auto&& left = from_ + value->from_;
         auto&& right = to_ + value->to_;
@@ -161,7 +179,9 @@ Domain::Ptr IntervalDomain::sub(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
+        return Domain::Ptr{ new IntervalDomain(this->getWidth(), this->isSigned()) };
+    } else if (this->isTop() || value->isTop()) {
+        return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
     } else {
         auto&& left = from_ - value->to_;
         auto&& right = to_ - value->from_;
@@ -175,7 +195,9 @@ Domain::Ptr IntervalDomain::mul(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
+        return Domain::Ptr{ new IntervalDomain(this->getWidth(), this->isSigned()) };
+    } else if (this->isTop() || value->isTop()) {
+        return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
     } else {
 
         using namespace borealis::util;
@@ -194,13 +216,13 @@ Domain::Ptr IntervalDomain::udiv(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (isBottom() || value->isBottom()) {
-        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
+        return Domain::Ptr{ new IntervalDomain(this->getWidth(), this->isSigned()) };
+    } else if (this->isTop() || value->isTop()) {
+        return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
     } else {
 
         if (value->from_ == 0 && value->to_ == 0) {
-            auto&& result = new IntervalDomain(this->width_, this->isSigned());
-            result->setTop();
-            return Domain::Ptr{ result };
+            return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
         } else {
 
             using namespace borealis::util;
@@ -219,13 +241,13 @@ Domain::Ptr IntervalDomain::sdiv(Domain::Ptr other) const {
     ASSERT(equalFormat(*value), "Joining two intervals of different format");
 
     if (isBottom() || value->isBottom()) {
-        return Domain::Ptr{ new IntervalDomain(this->width_, this->isSigned()) };
+        return Domain::Ptr{ new IntervalDomain(this->getWidth(), this->isSigned()) };
+    } else if (this->isTop() || value->isTop()) {
+        return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
     } else {
 
         if (value->from_ == 0 && value->to_ == 0) {
-            auto&& result = new IntervalDomain(this->width_, this->isSigned());
-            result->setTop();
-            return Domain::Ptr{ result };
+            return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
         } else {
 
             using namespace borealis::util;
@@ -247,57 +269,45 @@ Domain::Ptr IntervalDomain::srem(Domain::Ptr other) const {
 }
 
 Domain::Ptr IntervalDomain::shl(Domain::Ptr other) const {
-    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return Domain::Ptr{ result };
+        return Domain::Ptr{ new IntervalDomain(getWidth(), isSigned()) };
 
-    result->setTop();
-    return Domain::Ptr{ result };
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
 }
 
 Domain::Ptr IntervalDomain::lshr(Domain::Ptr other) const {
-    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return Domain::Ptr{ result };
+        return Domain::Ptr{ new IntervalDomain(getWidth(), isSigned()) };
 
-    result->setTop();
-    return Domain::Ptr{ result };
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
 }
 
 Domain::Ptr IntervalDomain::ashr(Domain::Ptr other) const {
-    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return Domain::Ptr{ result };
+        return Domain::Ptr{ new IntervalDomain(getWidth(), isSigned()) };
 
-    result->setTop();
-    return Domain::Ptr{ result };
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
 }
 
 Domain::Ptr IntervalDomain::bAnd(Domain::Ptr other) const {
-    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return Domain::Ptr{ result };
+        return Domain::Ptr{ new IntervalDomain(getWidth(), isSigned()) };
 
-    result->setTop();
-    return Domain::Ptr{ result };
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
 }
 
 Domain::Ptr IntervalDomain::bOr(Domain::Ptr other) const {
-    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return Domain::Ptr{ result };
+        return Domain::Ptr{ new IntervalDomain(getWidth(), isSigned()) };
 
-    result->setTop();
-    return Domain::Ptr{ result };
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
 }
 
 Domain::Ptr IntervalDomain::bXor(Domain::Ptr other) const {
-    auto&& result = new IntervalDomain(width_, isSigned());
     if (this->isBottom() || other->isBottom())
-        return Domain::Ptr{ result };
+        return Domain::Ptr{ new IntervalDomain(getWidth(), isSigned()) };
 
-    result->setTop();
-    return Domain::Ptr{ result };
+    return Domain::Ptr{ new IntervalDomain(TOP, this->getWidth(), this->isSigned()) };
 }
 
 Domain::Ptr IntervalDomain::trunc(const llvm::Type& type) const {
@@ -332,16 +342,10 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
         return Domain::Ptr{ new IntervalDomain(retval) };
     };
 
-    auto&& getTop = [] () -> IntervalDomain::Ptr {
-        auto&& result = new IntervalDomain(1, false);
-        result->setTop();
-        return Domain::Ptr{ result };
-    };
-
     if (this->isBottom() || other->isBottom()) {
         return Domain::Ptr{ new IntervalDomain(1, false) };  // bottom by default
     } else if (this->isTop() || other->isTop()) {
-        return getTop();
+        return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
     }
 
     auto&& value = llvm::dyn_cast<IntervalDomain>(other.get());
@@ -353,7 +357,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             if (this->isConstant() && value->isConstant() && from_ == value->from_) {
                 return getBool(true);
             } else if (this->intersects(value)) {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             } else {
                 return getBool(false);
             }
@@ -362,7 +366,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             if (this->isConstant() && value->isConstant() && from_ == value->from_) {
                 return getBool(false);
             } else if (this->intersects(value)) {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             } else {
                 return getBool(true);
             }
@@ -373,7 +377,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (to_.slt(value->from_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_SGT:
@@ -382,7 +386,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (to_.sle(value->from_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_SLE:
@@ -391,7 +395,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (from_.sgt(value->to_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_SLT:
@@ -400,7 +404,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (from_.sge(value->to_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_UGE:
@@ -409,7 +413,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (to_.ult(value->from_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_UGT:
@@ -418,7 +422,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (to_.ule(value->from_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_ULE:
@@ -427,7 +431,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (from_.ugt(value->to_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         case llvm::CmpInst::ICMP_ULT:
@@ -436,7 +440,7 @@ Domain::Ptr IntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate ope
             } else if (from_.uge(value->to_)) {
                 return getBool(false);
             } else {
-                return getTop();
+                return Domain::Ptr{ new IntervalDomain(TOP, 1, false) };
             }
 
         default:

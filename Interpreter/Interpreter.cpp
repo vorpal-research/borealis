@@ -3,6 +3,7 @@
 //
 
 #include <memory>
+#include <queue>
 
 #include "Interpreter.h"
 
@@ -30,20 +31,27 @@ void Interpreter::interpretFunction(Function* function, const std::vector<Domain
     callstack.push(function);
 
     function->setArguments(args);
+    std::deque<const llvm::BasicBlock*> deque;
+    deque.push_back(&function->getInstance()->front());
 
-    for (auto&& bb : util::viewContainer(*function->getInstance())) {
-        auto&& basicBlock = function->getBasicBlock(&bb);
+
+    while (not deque.empty()) {
+        auto&& basicBlock = function->getBasicBlock(deque.front());
 
         // updating output block with new information
         basicBlock->getOutputState()->merge(basicBlock->getInputState());
         currentState_ = basicBlock->getOutputState();
-        visit(const_cast<llvm::BasicBlock&>(bb));
+        visit(const_cast<llvm::BasicBlock*>(deque.front()));
 
         // merging new information in successor blocks
         function->getOutputState()->merge(basicBlock->getOutputState());
-        for (auto&& pred : function->getSuccessorsFor(&bb)) {
+        for (auto&& pred : function->getSuccessorsFor(basicBlock)) {
             pred->getInputState()->merge(basicBlock->getOutputState());
+            if (not pred->atFixpoint() && not util::contains(deque, pred->getInstance())) {
+                deque.push_back(pred->getInstance());
+            }
         }
+        deque.pop_front();
     }
     errs() << endl << function << endl << endl;
 
@@ -110,13 +118,27 @@ void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst&) {
 }
 
 void Interpreter::visitPHINode(llvm::PHINode& i) {
+    if (auto&& result = currentState_->find(&i)) {
+        for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
+            auto&& incoming = getVariable(i.getIncomingValue(j));
+            if (not incoming) {
+                errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i) << endl;
+                continue;
+            }
+            result = result->widen(incoming);
+        }
+        currentState_->addLocalVariable(&i, result);
+        return;
+    }
+
     auto&& result = getVariable(i.getIncomingValue(0));
     if (not result) return;
 
     for (auto j = 1U; j < i.getNumIncomingValues(); ++j) {
         auto&& incoming = getVariable(i.getIncomingValue(j));
         if (not incoming) {
-            errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i) << endl;
+            errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i)
+                   << endl;
             continue;
         }
         result = result->join(incoming);

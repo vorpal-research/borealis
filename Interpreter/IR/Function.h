@@ -35,12 +35,12 @@ public:
     std::string toString() const;
 
     std::vector<const BasicBlock*> getPredecessorsFor(const llvm::BasicBlock* bb) const;
-    std::vector<const BasicBlock*> getPredecessorsFor(const BasicBlock& bb) const {
-        return std::move(getPredecessorsFor(bb.getInstance()));
+    std::vector<const BasicBlock*> getPredecessorsFor(const BasicBlock* bb) const {
+        return std::move(getPredecessorsFor(bb->getInstance()));
     }
     std::vector<const BasicBlock*> getSuccessorsFor(const llvm::BasicBlock* bb) const;
-    std::vector<const BasicBlock*> getSuccessorsFor(const BasicBlock& bb) const {
-        return std::move(getSuccessorsFor(bb.getInstance()));
+    std::vector<const BasicBlock*> getSuccessorsFor(const BasicBlock* bb) const {
+        return std::move(getSuccessorsFor(bb->getInstance()));
     }
 
 private:

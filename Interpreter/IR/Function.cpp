@@ -13,8 +13,8 @@ namespace absint {
 
 Function::Function(Environment::Ptr environment, const llvm::Function* function) : environment_(environment),
                                                                                    instance_(function) {
-    inputState_ = std::make_shared<State>(State(environment_));
-    outputState_ = std::make_shared<State>(State(environment_));
+    inputState_ = State::Ptr{ new State(environment_) };
+    outputState_ = State::Ptr{ new State(environment_) };
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(environment_, &block);
         blocks_.insert({&block, aiBlock});
@@ -61,12 +61,15 @@ std::string Function::getName() const {
 std::string Function::toString() const {
     std::ostringstream ss;
     ss << "--- Function \"";
-    ss << instance_->getName().str() << "\" ---";
-    for (auto&& it : util::viewContainer(blocks_))
-        ss << std::endl << it.second.toString();
+    ss << getName() << "\" ---";
+    for (auto&& it : util::viewContainer(*instance_)) {
+        ss << std::endl << getBasicBlock(&it)->toString();
+    }
 
     ss << std::endl << "Retval = ";
-    ss << outputState_->getReturnValue()->toString();
+    if (outputState_->getReturnValue())
+        ss << outputState_->getReturnValue()->toString();
+    else ss << "void";
 
     return ss.str();
 }
@@ -99,7 +102,7 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
         // adding function arguments to input state
         auto&& it = instance_->getArgumentList().begin();
         for (auto i = 0U; i < args.size(); ++i) {
-            inputState_->addLocalVariable(it, args[i]);
+            if (args[i]) inputState_->addLocalVariable(it, args[i]);
             ++it;
         }
     }

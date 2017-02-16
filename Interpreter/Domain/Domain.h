@@ -74,8 +74,8 @@ public:
     }
 
     virtual Domain::Ptr join(Domain::Ptr other) const = 0;
-
     virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
+    virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
 
     /// Other
     virtual size_t hashCode() const = 0;

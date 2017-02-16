@@ -11,8 +11,8 @@ namespace absint {
 BasicBlock::BasicBlock(Environment::Ptr environment, const llvm::BasicBlock* bb) : environment_(environment),
                                                                                      instance_(bb),
                                                                                      atFixpoint_(false) {
-    inputState_ = std::make_shared<State>(State(environment_));
-    outputState_ = std::make_shared<State>(State(environment_));
+    inputState_ = State::Ptr{ new State(environment_) };
+    outputState_ = State::Ptr{ new State(environment_) };
 }
 
 const llvm::BasicBlock* BasicBlock::getInstance() const {
@@ -44,7 +44,12 @@ std::string BasicBlock::toString() const {
     return ss.str();
 }
 
+bool BasicBlock::empty() const {
+    return inputState_->empty() && outputState_->empty();
+}
+
 bool BasicBlock::atFixpoint() const {
+    if (empty()) return false;
     if (atFixpoint_) return true;
     atFixpoint_ = inputState_->equals(outputState_.get());
     return atFixpoint_;

@@ -25,6 +25,7 @@ public:
     std::string getName() const;
     std::string toString() const;
 
+    bool empty() const;
     bool atFixpoint() const;
 
 private:

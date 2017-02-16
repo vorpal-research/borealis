@@ -10,6 +10,16 @@
 namespace borealis {
 namespace absint {
 
+bool compare(const State::Map& lhv, const State::Map& rhv) {
+    if (lhv.size() != rhv.size()) return false;
+    for (auto&& it : lhv) {
+        auto&& its = rhv.find(it.first);
+        if (its == rhv.end()) return false;
+        if (not it.second->equals(its->second.get())) return false;
+    }
+    return true;
+}
+
 State::State(Environment::Ptr environment) : environment_(environment), retval_(nullptr) {}
 State::State(const State &other) : environment_(other.environment_), globals_(other.globals_),
                                    locals_(other.locals_), retval_(other.retval_) {}
@@ -85,6 +95,10 @@ Domain::Ptr State::findLocal(const llvm::Value *val) const {
     return (it == locals_.end()) ? nullptr : it->second;
 }
 
+bool State::empty() const {
+    return locals_.empty() && globals_.empty();
+}
+
 std::string State::toString() const {
     std::ostringstream ss;
     auto& tracker = environment_->getSlotTracker();
@@ -105,9 +119,9 @@ std::string State::toString() const {
 }
 
 bool State::equals(const State* other) const {
-    return this->globals_ == other->globals_ &&
-            this->locals_ == other->locals_ &&
-            this->retval_ == other->retval_;
+    return compare(this->globals_, other->globals_) &&
+           compare(this->locals_, other->locals_) &&
+           this->retval_ == other->retval_;
 }
 
 bool operator==(const State& lhv, const State& rhv) {
