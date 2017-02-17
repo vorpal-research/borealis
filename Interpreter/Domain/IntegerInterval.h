@@ -12,16 +12,16 @@
 namespace borealis {
 namespace absint {
 
-class IntervalDomain : public Domain {
+class IntegerInterval : public Domain {
 protected:
 
     friend class DomainFactory;
 
-    IntervalDomain(unsigned width, bool isSigned = false);
-    IntervalDomain(Domain::Value value, unsigned width, bool isSigned = false);
-    IntervalDomain(const llvm::APSInt& constant);
-    IntervalDomain(const llvm::APSInt& from, const llvm::APSInt& to);
-    IntervalDomain(const IntervalDomain& interval);
+    IntegerInterval(const DomainFactory* factory, unsigned width, bool isSigned = false);
+    IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width, bool isSigned = false);
+    IntegerInterval(const DomainFactory* factory, const llvm::APSInt& constant);
+    IntegerInterval(const DomainFactory* factory, const llvm::APSInt& from, const llvm::APSInt& to);
+    IntegerInterval(const IntegerInterval& interval);
 
 public:
     /// Poset
@@ -34,14 +34,14 @@ public:
     virtual Domain::Ptr widen(Domain::Ptr other) const;
 
     /// Other
-    bool equalFormat(const IntervalDomain& other) const;
+    bool equalFormat(const IntegerInterval& other) const;
 
     unsigned getWidth() const;
     bool isSigned() const;
     bool isConstant() const;
     const llvm::APSInt& from() const;
     const llvm::APSInt& to() const;
-    bool intersects(const IntervalDomain* other) const;
+    bool intersects(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
     virtual std::string toString() const;

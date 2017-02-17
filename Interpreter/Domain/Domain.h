@@ -17,11 +17,15 @@
 namespace borealis {
 namespace absint {
 
+class DomainFactory;
+
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
     enum Type {IntegerInterval,
-        FloatInterval};
+        FloatInterval,
+        Pointer
+    };
 
     enum Value {TOP, VALUE, BOTTOM};
 
@@ -146,10 +150,14 @@ public:
 
 protected:
 
-    Domain(Domain::Value value, Domain::Type type) : ObjectLevelLogging("domain"), value_(value), type_(type) {}
+    Domain(Domain::Value value, Domain::Type type, const DomainFactory* factory) : ObjectLevelLogging("domain"),
+                                                                                   value_(value),
+                                                                                   type_(type),
+                                                                                   factory_(factory) {}
 
     Value value_;
     Type type_;
+    const DomainFactory* factory_;
 };
 
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d);

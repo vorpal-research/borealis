@@ -137,8 +137,7 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
     for (auto j = 1U; j < i.getNumIncomingValues(); ++j) {
         auto&& incoming = getVariable(i.getIncomingValue(j));
         if (not incoming) {
-            errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i)
-                   << endl;
+            errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i) << endl;
             continue;
         }
         result = result->join(incoming);

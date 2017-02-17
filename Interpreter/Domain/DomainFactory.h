@@ -21,8 +21,13 @@ public:
     Domain::Ptr get(const llvm::Value* val) const;
     Domain::Ptr get(const llvm::Constant* constant) const;
     Domain::Ptr getInteger(unsigned width, bool isSigned = false) const;
+    Domain::Ptr getInteger(Domain::Value value, unsigned width, bool isSigned = false) const;
     Domain::Ptr getInteger(const llvm::APSInt& val) const;
     Domain::Ptr getInteger(const llvm::APSInt& from, const llvm::APSInt& to) const;
+    Domain::Ptr getFloat(const llvm::fltSemantics& semantics) const;
+    Domain::Ptr getFloat(Domain::Value value, const llvm::fltSemantics& semantics) const;
+    Domain::Ptr getFloat(const llvm::APFloat& val) const;
+    Domain::Ptr getFloat(const llvm::APFloat& from, const llvm::APFloat& to) const;
 
 };
 
