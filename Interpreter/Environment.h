@@ -17,14 +17,12 @@ class Environment : public std::enable_shared_from_this<const Environment> {
 public:
     using Ptr = std::shared_ptr<const Environment>;
 
-    Environment(const llvm::Module* module);
+    Environment() = default;
 
-    SlotTracker& getSlotTracker() const;
     const DomainFactory& getDomainFactory() const;
 
 private:
 
-    mutable SlotTracker tracker_;
     DomainFactory factory_;
 };
 

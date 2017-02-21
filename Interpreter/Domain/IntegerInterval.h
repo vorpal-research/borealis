@@ -34,8 +34,6 @@ public:
     virtual Domain::Ptr widen(Domain::Ptr other) const;
 
     /// Other
-    bool equalFormat(const IntegerInterval& other) const;
-
     unsigned getWidth() const;
     bool isSigned() const;
     bool isConstant() const;

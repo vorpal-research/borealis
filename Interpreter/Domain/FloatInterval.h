@@ -32,7 +32,9 @@ public:
     virtual Domain::Ptr widen(Domain::Ptr other) const;
 
     const llvm::fltSemantics& getSemantics() const;
+    llvm::APFloat::roundingMode getRoundingMode() const;
     bool isConstant() const;
+    bool isNaN() const;
     const llvm::APFloat& from() const;
     const llvm::APFloat& to() const;
     bool intersects(const FloatInterval* other) const;

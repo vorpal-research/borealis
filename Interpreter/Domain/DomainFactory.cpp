@@ -15,21 +15,23 @@
 namespace borealis {
 namespace absint {
 
-Domain::Ptr DomainFactory::get(const llvm::Type& type) const {
+Domain::Ptr DomainFactory::get(const llvm::Type& type, Domain::Value value) const {
     if (type.isIntegerTy()) {
         auto&& intType = llvm::cast<llvm::IntegerType>(&type);
-        return getInteger(intType->getBitWidth());
+        return getInteger(value, intType->getBitWidth());
     } else if (type.isFloatingPointTy()) {
         auto& semantics = util::getSemantics(type);
-        return getFloat(semantics);
+        return getFloat(value, semantics);
+    } else if (type.isPointerTy()) {
+        return getPointer(value);
     } else {
         errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
         return nullptr;
     }
 }
 
-Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val) const {
-    return get(*val->getType());
+Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val, Domain::Value value) const {
+    return get(*val->getType(), value);
 }
 
 Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
@@ -37,6 +39,8 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
         return getInteger(llvm::APSInt(intConstant->getValue()));
     } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
+    } else if (auto&& ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
+        return getPointer(false);
     } else {
         return get(llvm::cast<llvm::Value>(constant));
     }
@@ -72,6 +76,23 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& val) const {
 
 Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFloat& to) const {
     return Domain::Ptr{ new FloatInterval(this, from, to) };
+}
+
+Domain::Ptr DomainFactory::getPointer() const {
+    return Domain::Ptr{ new Pointer(this) };
+}
+
+Domain::Ptr DomainFactory::getPointer(Domain::Value value) const {
+    return Domain::Ptr{ new Pointer(value, this) };
+}
+
+Domain::Ptr DomainFactory::getPointer(bool isValid) const {
+    Pointer::Status status = isValid ? Pointer::VALID : Pointer::NON_VALID;
+    return Domain::Ptr{ new Pointer(this, status) };
+}
+
+Domain::Ptr DomainFactory::getPointer(Pointer::Status status) const {
+    return Domain::Ptr{ new Pointer(this, status) };
 }
 
 }   /* namespace absint */

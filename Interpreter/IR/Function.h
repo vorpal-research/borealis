@@ -15,18 +15,21 @@ namespace absint {
 class Function {
 public:
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, BasicBlock>;
+    using CallMap = std::unordered_map<const llvm::Value*, Function*>;
 
     /// Assumes that llvm::Function is not a declaration
     Function(Environment::Ptr environment, const llvm::Function* function);
 
     const llvm::Function* getInstance() const;
     const BlockMap& getBasicBlocks() const;
+    const CallMap& getCallMap() const;
 
     State::Ptr getInputState() const;
     State::Ptr getOutputState() const;
 
     /// Assumes that @args[i] corresponds to i-th argument of the function
     void setArguments(const std::vector<Domain::Ptr>& args);
+    void addCall(const llvm::Value* call, Function* function);
 
     const BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
 
@@ -47,9 +50,12 @@ private:
 
     Environment::Ptr environment_;
     const llvm::Function* instance_;
+    mutable SlotTracker tracker_;
     BlockMap blocks_;
     State::Ptr inputState_;
     State::Ptr outputState_;
+
+    CallMap callMap_;
 };
 
 std::ostream& operator<<(std::ostream& s, const Function& f);

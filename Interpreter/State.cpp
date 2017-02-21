@@ -20,9 +20,10 @@ bool compare(const State::Map& lhv, const State::Map& rhv) {
     return true;
 }
 
-State::State(Environment::Ptr environment) : environment_(environment), retval_(nullptr) {}
-State::State(const State &other) : environment_(other.environment_), globals_(other.globals_),
-                                   locals_(other.locals_), retval_(other.retval_) {}
+State::State() : retval_(nullptr) {}
+State::State(const State &other) : globals_(other.globals_),
+                                   locals_(other.locals_),
+                                   retval_(other.retval_) {}
 
 void State::addGlobalVariable(const llvm::Value *val, Domain::Ptr domain) {
     globals_[val] = domain;
@@ -41,7 +42,6 @@ void State::mergeToReturnValue(Domain::Ptr domain) {
     retval_ = (not retval_) ? domain : retval_->join(domain);
 }
 
-Environment::Ptr State::getEnvironment() const { return environment_; }
 const State::Map& State::getGlobals() const { return globals_; }
 const State::Map& State::getLocals() const { return locals_; }
 Domain::Ptr State::getReturnValue() const { return retval_; }
@@ -99,20 +99,23 @@ bool State::empty() const {
     return locals_.empty() && globals_.empty();
 }
 
-std::string State::toString() const {
+std::string State::toString(SlotTracker& tracker) const {
     std::ostringstream ss;
-    auto& tracker = environment_->getSlotTracker();
 
     if (not globals_.empty()) {
         ss << "  globals: " << std::endl;
         for (auto&& global : globals_) {
-            ss << "    " << tracker.getLocalName(global.first) << " = " << global.second->toString() << std::endl;
+            ss << "    ";
+            ss << tracker.getLocalName(global.first) << " = ";
+            ss << global.second->toString() << std::endl;
         }
     }
     if (not locals_.empty()) {
         ss << "  locals: " << std::endl;
         for (auto&& local : locals_) {
-            ss << "    " << tracker.getLocalName(local.first) << " = " << local.second->toString() << std::endl;
+            ss << "    ";
+            ss << tracker.getLocalName(local.first) << " = ";
+            ss << local.second->toString() << std::endl;
         }
     }
     return ss.str();

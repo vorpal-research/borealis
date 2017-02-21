@@ -66,7 +66,7 @@ void IntegerInterval::setTop() {
 Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval join");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (value->isBottom()) {
         return Domain::Ptr{ clone() };
@@ -81,11 +81,11 @@ Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
 
 Domain::Ptr IntegerInterval::meet(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
-    ASSERT(value, "Nullptr in interval join");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(value, "Nullptr in interval meet");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
-        return clone()->shared_from_this();
+        return Domain::Ptr{ clone() };
     } else {
         auto left = (from_ < value->from_) ? value->from_ : from_;
         auto right = (to_ < value->to_) ? to_ : value->to_;
@@ -98,7 +98,7 @@ Domain::Ptr IntegerInterval::meet(Domain::Ptr other) const {
 Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
     // TODO: add proper widening
     return factory_->getInteger(TOP, getWidth(), isSigned());
 }
@@ -125,14 +125,13 @@ bool IntegerInterval::isCorrect() const {
     return from_ <= to_;
 }
 
-bool IntegerInterval::equalFormat(const IntegerInterval &other) const {
-    return this->getWidth() == other.getWidth()
-           && this->isSigned() == other.isSigned();
-}
-
 bool IntegerInterval::equals(const Domain *other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other);
     if (not value) return false;
+
+    if (this->isBottom() && value->isBottom()) return true;
+    if (this->isTop() && value->isTop()) return true;
+
     return this->getWidth() == value->getWidth() &&
             this->from_ == value->from_ &&
             this->to_ == value->to_;
@@ -141,6 +140,11 @@ bool IntegerInterval::equals(const Domain *other) const {
 bool IntegerInterval::operator<(const Domain &other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(&other);
     ASSERT(value, "Comparing domains of different type");
+
+    if (value->isBottom()) return false;
+    if (this->isBottom()) return true;
+    if (this->isTop()) return false;
+
     return value->from_ < this->from_ && this->to_ < value->to_;
 }
 
@@ -167,7 +171,7 @@ Domain *IntegerInterval::clone() const {
 Domain::Ptr IntegerInterval::add(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
         return factory_->getInteger(getWidth(), isSigned());
@@ -183,7 +187,7 @@ Domain::Ptr IntegerInterval::add(Domain::Ptr other) const {
 Domain::Ptr IntegerInterval::sub(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
         return factory_->getInteger(getWidth(), isSigned());
@@ -199,7 +203,7 @@ Domain::Ptr IntegerInterval::sub(Domain::Ptr other) const {
 Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (this->isBottom() || value->isBottom()) {
         return factory_->getInteger(getWidth(), isSigned());
@@ -220,7 +224,7 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
 Domain::Ptr IntegerInterval::udiv(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (isBottom() || value->isBottom()) {
         return factory_->getInteger(getWidth(), isSigned());
@@ -245,7 +249,7 @@ Domain::Ptr IntegerInterval::udiv(Domain::Ptr other) const {
 Domain::Ptr IntegerInterval::sdiv(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     if (isBottom() || value->isBottom()) {
         return factory_->getInteger(getWidth(), isSigned());
@@ -325,31 +329,56 @@ Domain::Ptr IntegerInterval::bXor(Domain::Ptr other) const {
 }
 
 Domain::Ptr IntegerInterval::trunc(const llvm::Type& type) const {
-    return Domain::trunc(type);
+    ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
+    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+
+    auto&& newFrom = from_.trunc(intType->getBitWidth());
+    auto&& newTo = to_.trunc(intType->getBitWidth());
+    return factory_->getInteger(newFrom, newTo);
 }
 
 Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
-    return Domain::zext(type);
+    ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
+    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+
+    auto&& newFrom = from_.zext(intType->getBitWidth());
+    auto&& newTo = to_.zext(intType->getBitWidth());
+    return factory_->getInteger(llvm::APSInt(newFrom), llvm::APSInt(newTo));
 }
 
 Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
-    return Domain::sext(type);
+    ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
+    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+
+    auto&& newFrom = from_.sext(intType->getBitWidth());
+    auto&& newTo = to_.sext(intType->getBitWidth());
+    return factory_->getInteger(llvm::APSInt(newFrom), llvm::APSInt(newTo));
 }
 
 Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {
-    return Domain::uitofp(type);
+    ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
+    auto& newSemantics = util::getSemantics(type);
+
+    llvm::APSInt ufrom(from_, true), uto(to_, true);
+    llvm::APFloat from(newSemantics, ufrom), to(newSemantics, uto);
+    return factory_->getFloat(from, to);
 }
 
 Domain::Ptr IntegerInterval::sitofp(const llvm::Type& type) const {
-    return Domain::sitofp(type);
+    ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
+    auto& newSemantics = util::getSemantics(type);
+
+    llvm::APSInt sfrom(from_, false), sto(to_, false);
+    llvm::APFloat from(newSemantics, sfrom), to(newSemantics, sto);
+    return factory_->getFloat(from, to);
 }
 
 Domain::Ptr IntegerInterval::inttoptr(const llvm::Type& type) const {
-    return Domain::inttoptr(type);
+    return factory_->getPointer(TOP);
 }
 
 Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
-    auto&& getBool = [&] (bool val) -> IntegerInterval::Ptr {
+    auto&& getBool = [&] (bool val) -> Domain::Ptr {
         llvm::APSInt retval(1, true);
         if (val) retval = 1;
         else retval = 0;
@@ -364,7 +393,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
 
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    ASSERT(equalFormat(*value), "Joining two intervals of different format");
+    ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:

@@ -16,7 +16,7 @@ namespace absint {
 class BasicBlock {
 public:
 
-    BasicBlock(Environment::Ptr environment, const llvm::BasicBlock* bb);
+    BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker);
 
     const llvm::BasicBlock* getInstance() const;
     State::Ptr getInputState() const;
@@ -30,8 +30,8 @@ public:
 
 private:
 
-    Environment::Ptr environment_;
     const llvm::BasicBlock* instance_;
+    mutable SlotTracker* tracker_;
     State::Ptr inputState_;
     State::Ptr outputState_;
     mutable bool atFixpoint_;

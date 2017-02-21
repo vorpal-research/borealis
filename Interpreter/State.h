@@ -21,7 +21,7 @@ public:
     using Map = std::unordered_map<const llvm::Value*, Domain::Ptr>;
     using Ptr = std::shared_ptr<State>;
 
-    State(Environment::Ptr environment);
+    State();
     State(const State& other);
 
     bool equals(const State* other) const;
@@ -32,7 +32,6 @@ public:
     void setReturnValue(Domain::Ptr domain);
     void mergeToReturnValue(Domain::Ptr domain);
 
-    Environment::Ptr getEnvironment() const;
     const State::Map& getGlobals() const;
     const State::Map& getLocals() const;
     Domain::Ptr getReturnValue() const;
@@ -46,11 +45,10 @@ public:
     Domain::Ptr findLocal(const llvm::Value* val) const;
 
     bool empty() const;
-    std::string toString() const;
+    std::string toString(SlotTracker& tracker) const;
 
 private:
 
-    Environment::Ptr environment_;
     Map globals_;
     Map locals_;
     Domain::Ptr retval_;

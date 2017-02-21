@@ -12,11 +12,12 @@ namespace borealis {
 namespace absint {
 
 Function::Function(Environment::Ptr environment, const llvm::Function* function) : environment_(environment),
-                                                                                   instance_(function) {
-    inputState_ = State::Ptr{ new State(environment_) };
-    outputState_ = State::Ptr{ new State(environment_) };
+                                                                                   instance_(function),
+                                                                                   tracker_(instance_) {
+    inputState_ = State::Ptr{ new State() };
+    outputState_ = State::Ptr{ new State() };
     for (auto&& block : util::viewContainer(*instance_)) {
-        auto&& aiBlock = BasicBlock(environment_, &block);
+        auto&& aiBlock = BasicBlock(&block, &tracker_);
         blocks_.insert({&block, aiBlock});
     }
 
@@ -97,7 +98,7 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
             if (argDomain) inputState_->addLocalVariable(&arg, argDomain);
         }
     } else {
-        ASSERT(instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
+        ASSERT(instance_->isVarArg() || instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
 
         // adding function arguments to input state
         auto&& it = instance_->getArgumentList().begin();
@@ -108,6 +109,17 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     }
     // merging the fron block's input state with function input state
     getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
+}
+
+void Function::addCall(const llvm::Value* call, Function* function) {
+    auto&& inst = llvm::dyn_cast<llvm::CallInst>(call);
+    ASSERT(inst && inst->getParent()->getParent() == instance_, "Unknown call instruction");
+
+    callMap_[call] = function;
+}
+
+const Function::CallMap& Function::getCallMap() const {
+    return callMap_;
 }
 
 std::ostream& operator<<(std::ostream& s, const Function& f) {

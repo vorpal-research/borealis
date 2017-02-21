@@ -10,7 +10,7 @@
 #include <llvm/IR/InstVisitor.h>
 
 #include "Interpreter/Environment.h"
-#include "Interpreter/IR/Module.h"
+#include "Interpreter/IR/Function.h"
 
 namespace borealis {
 namespace absint {

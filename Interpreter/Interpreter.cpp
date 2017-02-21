@@ -16,7 +16,7 @@ namespace borealis {
 namespace absint {
 
 Interpreter::Interpreter(const llvm::Module* module) : module_(module) {
-    environment_ = Environment::Ptr{ new Environment(module_) };
+    environment_ = Environment::Ptr{ new Environment() };
     currentState_ = nullptr;
 }
 
@@ -102,19 +102,29 @@ void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
     currentState_->addLocalVariable(&i, result);
 }
 
-void Interpreter::visitAllocaInst(llvm::AllocaInst&) {
-    // TODO: implement
+void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
+    if (currentState_->find(&i)) {
+        errs() << "Double allocation!" << endl;
+    }
+    auto&& ptr = environment_->getDomainFactory().getPointer(true);
+    currentState_->addLocalVariable(&i, ptr);
 }
 
-void Interpreter::visitLoadInst(llvm::LoadInst&) {
-    // TODO: implement
+void Interpreter::visitLoadInst(llvm::LoadInst& i) {
+    auto&& ptr = getVariable(i.getPointerOperand());
+    if (not ptr) return;
+    auto&& result = ptr->load(*i.getType(), {});
+    currentState_->addLocalVariable(&i, result);
 }
 
 void Interpreter::visitStoreInst(llvm::StoreInst&) {
     // TODO: implement
 }
-void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst&) {
-    // TODO: implement
+void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
+    auto&& ptr = getVariable(i.getPointerOperand());
+    if (not ptr) return;
+    auto&& result = ptr->load(*i.getType(), {});
+    currentState_->addLocalVariable(&i, result);
 }
 
 void Interpreter::visitPHINode(llvm::PHINode& i) {
@@ -299,7 +309,7 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) const {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    if (i.getCalledFunction()->isDeclaration()) return;
+    if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) return;
     auto&& function = Function(environment_, i.getCalledFunction());
 
     std::vector<Domain::Ptr> args;

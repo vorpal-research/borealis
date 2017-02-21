@@ -7,12 +7,6 @@
 namespace borealis {
 namespace absint {
 
-Environment::Environment(const llvm::Module* module) : tracker_(module) {}
-
-SlotTracker& Environment::getSlotTracker() const {
-    return tracker_;
-}
-
 const DomainFactory& Environment::getDomainFactory() const {
     return factory_;
 }

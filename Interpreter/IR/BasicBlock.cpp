@@ -8,11 +8,11 @@ namespace borealis {
 namespace absint {
 
 
-BasicBlock::BasicBlock(Environment::Ptr environment, const llvm::BasicBlock* bb) : environment_(environment),
-                                                                                     instance_(bb),
-                                                                                     atFixpoint_(false) {
-    inputState_ = State::Ptr{ new State(environment_) };
-    outputState_ = State::Ptr{ new State(environment_) };
+BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : instance_(bb),
+                                                                           tracker_(tracker),
+                                                                           atFixpoint_(false) {
+    inputState_ = State::Ptr{ new State() };
+    outputState_ = State::Ptr{ new State() };
 }
 
 const llvm::BasicBlock* BasicBlock::getInstance() const {
@@ -28,7 +28,7 @@ State::Ptr BasicBlock::getOutputState() const {
 }
 
 std::string BasicBlock::getName() const {
-    return (instance_->hasName()) ? instance_->getName().str() : environment_->getSlotTracker().getLocalName(instance_);
+    return (instance_->hasName()) ? instance_->getName().str() : tracker_->getLocalName(instance_);
 }
 
 std::string BasicBlock::toString() const {
@@ -37,10 +37,10 @@ std::string BasicBlock::toString() const {
     if (instance_->hasName())
         ss << instance_->getName().str() << ":";
     else
-        ss << "<label>:" << environment_->getSlotTracker().getLocalSlot(instance_);
+        ss << "<label>:" << tracker_->getLocalSlot(instance_);
 
     ss << std::endl;
-    ss << outputState_->toString();
+    ss << outputState_->toString(*tracker_);
     return ss.str();
 }
 
