@@ -15,25 +15,24 @@
 namespace borealis {
 namespace absint {
 
-Interpreter::Interpreter(const llvm::Module* module) : module_(module) {
+Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter"), module_(module) {
     environment_ = Environment::Ptr{ new Environment() };
     currentState_ = nullptr;
 }
 
 void Interpreter::run() {
-    auto&& main = Function(environment_, module_->getFunction("main"));
-    interpretFunction(&main, {});
+    auto&& main = Function::Ptr{ new Function(environment_, module_->getFunction("main")) };
+    interpretFunction(main, {});
 }
 
-void Interpreter::interpretFunction(Function* function, const std::vector<Domain::Ptr>& args) {
+void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
     // saving callstack
     auto oldState = currentState_;
-    callstack.push(function);
+    callstack.push_back(function);
 
     function->setArguments(args);
     std::deque<const llvm::BasicBlock*> deque;
     deque.push_back(&function->getInstance()->front());
-
 
     while (not deque.empty()) {
         auto&& basicBlock = function->getBasicBlock(deque.front());
@@ -56,7 +55,7 @@ void Interpreter::interpretFunction(Function* function, const std::vector<Domain
     errs() << endl << function << endl << endl;
 
     //restoring callstack
-    callstack.pop();
+    callstack.pop_back();
     currentState_ = oldState;
 }
 
@@ -64,7 +63,7 @@ void Interpreter::interpretFunction(Function* function, const std::vector<Domain
 /// Visitors
 /////////////////////////////////////////////////////////////////////
 void Interpreter::visitInstruction(llvm::Instruction& i) {
-    errs() << "Unsupported instruction: " << util::toString(i) << endl;
+    warns() << "Unsupported instruction: " << util::toString(i) << endl;
     return;
 }
 
@@ -104,7 +103,7 @@ void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
 
 void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
     if (currentState_->find(&i)) {
-        errs() << "Double allocation!" << endl;
+        return;;
     }
     auto&& ptr = environment_->getDomainFactory().getPointer(true);
     currentState_->addLocalVariable(&i, ptr);
@@ -131,10 +130,8 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
     if (auto&& result = currentState_->find(&i)) {
         for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
             auto&& incoming = getVariable(i.getIncomingValue(j));
-            if (not incoming) {
-                errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i) << endl;
-                continue;
-            }
+            if (not incoming) continue;
+
             result = result->widen(incoming);
         }
         currentState_->addLocalVariable(&i, result);
@@ -146,10 +143,8 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
 
     for (auto j = 1U; j < i.getNumIncomingValues(); ++j) {
         auto&& incoming = getVariable(i.getIncomingValue(j));
-        if (not incoming) {
-            errs() << "No variable for " << util::toString(*i.getIncomingValue(j)) << " in " << util::toString(i) << endl;
-            continue;
-        }
+        if (not incoming) continue;
+
         result = result->join(incoming);
     }
     currentState_->addLocalVariable(&i, result);
@@ -310,18 +305,54 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) const {
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
     if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) return;
-    auto&& function = Function(environment_, i.getCalledFunction());
 
+    auto&& function = Function::Ptr{ new Function(environment_, i.getCalledFunction()) };
     std::vector<Domain::Ptr> args;
-    for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-        args.push_back(getVariable(i.getArgOperand(j)));
-    }
 
-    interpretFunction(&function, args);
+    // recursion handling
+    auto&& it = std::find_if(callstack.rbegin(), callstack.rend(), [&i, &function](Function::Ptr f) {
+        return f->getName() == function->getName();
+    });
+    if (it != callstack.rend()) {
+        auto& oldArgs = it->get()->getArguments();
+        for (auto j = 0U; j < oldArgs.size(); ++j) {
+            auto&& newArg = getVariable(i.getArgOperand(j));
+            args.push_back(oldArgs[j]->widen(newArg));
+        }
 
-    if (function.getOutputState()->getReturnValue()) {
-        currentState_->addLocalVariable(&i, function.getOutputState()->getReturnValue());
+        if (util::equal(args, oldArgs, [] (Domain::Ptr a, Domain::Ptr b) {
+            return a->equals(b.get());
+        })) {
+            auto&& result = environment_->getDomainFactory().get(&i, Domain::TOP);
+            if (result) currentState_->addLocalVariable(&i, result);
+        } else {
+            interpretFunction(function, args);
+            if (function->getOutputState()->getReturnValue()) {
+                currentState_->addLocalVariable(&i, function->getOutputState()->getReturnValue());
+            }
+            callstack.back()->addCall(&i, function);
+        }
+
+    } else {
+        for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
+            args.push_back(getVariable(i.getArgOperand(j)));
+        }
+
+        interpretFunction(function, args);
+
+        if (function->getOutputState()->getReturnValue()) {
+            currentState_->addLocalVariable(&i, function->getOutputState()->getReturnValue());
+        }
+        callstack.back()->addCall(&i, function);
     }
+}
+
+void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
+    auto&& op = getVariable(i.getOperand(0));
+    if (not op) return;
+
+    auto&& result = op->bitcast(*i.getDestTy());
+    if (result) currentState_->addLocalVariable(&i, result);
 }
 
 }   /* namespace absint */

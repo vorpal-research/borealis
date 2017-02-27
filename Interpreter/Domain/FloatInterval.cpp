@@ -66,8 +66,10 @@ bool FloatInterval::operator<(const Domain& other) const {
     if (this->isBottom()) return true;
     if (this->isTop()) return false;
 
-    return value->from_.compare(this->from_) == llvm::APFloat::cmpLessThan &&
-           this->to_.compare(value->to_) == llvm::APFloat::cmpLessThan;
+    auto fromcmp = value->from_.compare(this->from_);
+    auto tocmp = this->to_.compare(value->to_);
+    return (fromcmp == llvm::APFloat::cmpLessThan || fromcmp == llvm::APFloat::cmpEqual) &&
+            (tocmp == llvm::APFloat::cmpLessThan || tocmp == llvm::APFloat::cmpEqual);
 }
 
 Domain::Ptr FloatInterval::join(Domain::Ptr other) const {
@@ -103,7 +105,31 @@ Domain::Ptr FloatInterval::meet(Domain::Ptr other) const {
 Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
     ASSERT(value, "Nullptr in interval");
-    // TODO: add proper widening
+
+    if (value->isBottom()) {
+        return Domain::Ptr{ clone() };
+    } else if (this->isBottom()) {
+        return Domain::Ptr{ value->clone() };
+    } else if (this->isTop() || value->isTop()) {
+        return factory_->getFloat(TOP, getSemantics());
+    } else if (this->equals(value)) {
+        return Domain::Ptr{ clone() };
+    }
+
+    if (this->operator<(*value)) {
+        return Domain::Ptr{ value->clone() };
+    } else if (value->operator<(*this)) {
+        return Domain::Ptr{ clone() };
+    } else if (util::less(to_, value->from_)) {
+        auto left = from_;
+        auto right = llvm::APFloat::getInf(getSemantics());
+        return factory_->getFloat(left, right);
+    } else if (util::less(value->to_, from_)) {
+        auto left = llvm::APFloat::getInf(getSemantics(), true);
+        auto right = to_;
+        return factory_->getFloat(left, right);
+    }
+
     return factory_->getFloat(TOP, getSemantics());
 }
 
@@ -327,6 +353,21 @@ Domain::Ptr FloatInterval::fptosi(const llvm::Type& type) const {
     return factory_->getInteger(from, to);
 }
 
+Domain::Ptr FloatInterval::bitcast(const llvm::Type& type) const {
+    if (type.isIntegerTy()) {
+        auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type);
+        auto&& from = llvm::APInt(intType->getBitWidth(), *from_.bitcastToAPInt().getRawData());
+        auto&& to = llvm::APInt(intType->getBitWidth(), *to_.bitcastToAPInt().getRawData());
+        return factory_->getInteger(from, to);
+
+    } else if (type.isFloatingPointTy()) {
+        return Domain::Ptr{ clone() };
+        
+    } else {
+        UNREACHABLE("Bitcast to unknown type");
+    }
+}
+
 Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
     auto&& getBool = [&] (bool val) -> Domain::Ptr {
         llvm::APSInt retval(1, true);
@@ -336,9 +377,9 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
     };
 
     if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(1, false);
+        return factory_->getInteger(1);
     } else if (this->isTop() || other->isTop()) {
-        return factory_->getInteger(TOP, 1, false);
+        return factory_->getInteger(TOP, 1);
     }
 
     auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
@@ -386,7 +427,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             if (isConstant() && this->equals(value))
                 return getBool(true);
             else if (intersects(value))
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
@@ -396,7 +437,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             if (res == llvm::APFloat::cmpGreaterThan)
                 return getBool(true);
             else if (intersects(value))
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
@@ -406,7 +447,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             if (res == llvm::APFloat::cmpGreaterThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
             else if (intersects(value))
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
@@ -416,7 +457,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             if (res == llvm::APFloat::cmpLessThan)
                 return getBool(true);
             else if (intersects(value))
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
@@ -426,7 +467,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             if (res == llvm::APFloat::cmpLessThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
             else if (intersects(value))
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
@@ -435,7 +476,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             if (not intersects(value))
                 return getBool(true);
             else if (not (isConstant() && this->equals(value)))
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 

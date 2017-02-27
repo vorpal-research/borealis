@@ -12,15 +12,17 @@
 namespace borealis {
 namespace absint {
 
-class Function {
+class Function: public std::enable_shared_from_this<Function> {
 public:
+    using Ptr = std::shared_ptr<Function>;
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, BasicBlock>;
-    using CallMap = std::unordered_map<const llvm::Value*, Function*>;
+    using CallMap = std::unordered_map<const llvm::Value*, Function::Ptr>;
 
     /// Assumes that llvm::Function is not a declaration
     Function(Environment::Ptr environment, const llvm::Function* function);
 
     const llvm::Function* getInstance() const;
+    const std::vector<Domain::Ptr>& getArguments() const;
     const BlockMap& getBasicBlocks() const;
     const CallMap& getCallMap() const;
 
@@ -29,11 +31,13 @@ public:
 
     /// Assumes that @args[i] corresponds to i-th argument of the function
     void setArguments(const std::vector<Domain::Ptr>& args);
-    void addCall(const llvm::Value* call, Function* function);
+    void addCall(const llvm::Value* call, Function::Ptr function);
 
     const BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
+    const SlotTracker& getSlotTracker() const;
 
     bool empty() const;
+    bool atFixpoint() const;
     std::string getName() const;
     std::string toString() const;
 
@@ -51,6 +55,7 @@ private:
     Environment::Ptr environment_;
     const llvm::Function* instance_;
     mutable SlotTracker tracker_;
+    std::vector<Domain::Ptr> arguments_;
     BlockMap blocks_;
     State::Ptr inputState_;
     State::Ptr outputState_;
@@ -60,8 +65,10 @@ private:
 
 std::ostream& operator<<(std::ostream& s, const Function& f);
 std::ostream& operator<<(std::ostream& s, const Function* f);
+std::ostream& operator<<(std::ostream& s, const Function::Ptr f);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function& f);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function* f);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function::Ptr f);
 
 }   /* namespace absint */
 }   /* namespace borealis */

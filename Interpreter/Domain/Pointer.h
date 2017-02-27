@@ -46,6 +46,7 @@ public:
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
+    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Cmp
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
 

@@ -16,7 +16,10 @@ namespace borealis {
 namespace absint {
 
 Domain::Ptr DomainFactory::get(const llvm::Type& type, Domain::Value value) const {
-    if (type.isIntegerTy()) {
+    if (type.isVoidTy()) {
+        // return nothing
+        return nullptr;
+    } else if (type.isIntegerTy()) {
         auto&& intType = llvm::cast<llvm::IntegerType>(&type);
         return getInteger(value, intType->getBitWidth());
     } else if (type.isFloatingPointTy()) {
@@ -36,7 +39,7 @@ Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val, Domain:
 
 Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
     if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
-        return getInteger(llvm::APSInt(intConstant->getValue()));
+        return getInteger(intConstant->getValue());
     } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
     } else if (auto&& ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
@@ -46,19 +49,19 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
     }
 }
 
-Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) const {
-    return Domain::Ptr{ new IntegerInterval(this, width, isSigned) };
+Domain::Ptr DomainFactory::getInteger(unsigned width) const {
+    return Domain::Ptr{ new IntegerInterval(this, width) };
 }
 
-Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width, bool isSigned) const {
-    return Domain::Ptr{ new IntegerInterval(value, this, width, isSigned) };
+Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width) const {
+    return Domain::Ptr{ new IntegerInterval(value, this, width) };
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APSInt& val) const {
+Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val) const {
     return Domain::Ptr{ new IntegerInterval(this, val) };
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APSInt& from, const llvm::APSInt& to) const {
+Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to) const {
     return Domain::Ptr{ new IntegerInterval(this, from, to) };
 }
 

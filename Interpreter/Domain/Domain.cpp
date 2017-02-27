@@ -80,6 +80,7 @@ MK_CAST_OP_IMPL(uitofp);
 MK_CAST_OP_IMPL(sitofp);
 MK_CAST_OP_IMPL(ptrtoint);
 MK_CAST_OP_IMPL(inttoptr);
+MK_CAST_OP_IMPL(bitcast);
 
 #undef MK_CAST_OP_IMPL
 

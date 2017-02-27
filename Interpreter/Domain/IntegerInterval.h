@@ -17,10 +17,10 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(const DomainFactory* factory, unsigned width, bool isSigned = false);
-    IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width, bool isSigned = false);
-    IntegerInterval(const DomainFactory* factory, const llvm::APSInt& constant);
-    IntegerInterval(const DomainFactory* factory, const llvm::APSInt& from, const llvm::APSInt& to);
+    IntegerInterval(const DomainFactory* factory, unsigned width);
+    IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width);
+    IntegerInterval(const DomainFactory* factory, const llvm::APInt& constant);
+    IntegerInterval(const DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to);
     IntegerInterval(const IntegerInterval& interval);
 
 public:
@@ -35,10 +35,9 @@ public:
 
     /// Other
     unsigned getWidth() const;
-    bool isSigned() const;
     bool isConstant() const;
-    const llvm::APSInt& from() const;
-    const llvm::APSInt& to() const;
+    const llvm::APInt& from() const;
+    const llvm::APInt& to() const;
     bool intersects(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
@@ -71,6 +70,7 @@ public:
     virtual Domain::Ptr uitofp(const llvm::Type& type) const;
     virtual Domain::Ptr sitofp(const llvm::Type& type) const;
     virtual Domain::Ptr inttoptr(const llvm::Type& type) const;
+    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
 
@@ -80,8 +80,8 @@ private:
 
 
     unsigned width_;
-    llvm::APSInt from_;
-    llvm::APSInt to_;
+    llvm::APInt from_;
+    llvm::APInt to_;
 };
 
 }   /* namespace absint */

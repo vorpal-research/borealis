@@ -144,6 +144,7 @@ public:
     virtual Domain::Ptr sitofp(const llvm::Type& type) const;
     virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
     virtual Domain::Ptr inttoptr(const llvm::Type& type) const;
+    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;

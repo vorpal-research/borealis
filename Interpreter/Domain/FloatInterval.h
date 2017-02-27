@@ -56,6 +56,7 @@ public:
     virtual Domain::Ptr fpext(const llvm::Type& type) const;
     virtual Domain::Ptr fptoui(const llvm::Type& type) const;
     virtual Domain::Ptr fptosi(const llvm::Type& type) const;
+    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Other
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
 

@@ -105,28 +105,27 @@ Domain* Pointer::clone() const {
 }
 
 Domain::Ptr Pointer::load(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
-    if (not isValid()) {
-        infos() << "Warning: trying to load from non-valid ptr" << endl;
-    }
-    return factory_->get(type, (isValid()) ? TOP : BOTTOM);
+    return factory_->get(type, TOP);
 }
 
 Domain::Ptr Pointer::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
-    if (not isValid()) {
-        infos() << "Warning: trying to write to non-valid ptr" << endl;
-    }
     return shared_from_this();
 }
 
 Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
-    if (not isValid()) {
-        infos() << "Warning: trying to load from non-valid ptr" << endl;
-    }
-    return factory_->get(type, (isValid()) ? TOP : BOTTOM);
+    return factory_->get(type, TOP);
 }
 
 Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
     return factory_->get(type, TOP);
+}
+
+Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
+    if (type.isPointerTy()) {
+        return Domain::Ptr{ clone() };
+    } else {
+        UNREACHABLE("Bitcast to unknown type");
+    }
 }
 
 bool Pointer::isValid() const {
@@ -142,9 +141,9 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
     };
 
     if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(1, false);
+        return factory_->getInteger(1);
     } else if (this->isTop() || other->isTop()) {
-        return factory_->getInteger(TOP, 1, false);
+        return factory_->getInteger(TOP, 1);
     }
 
     auto&& value = llvm::dyn_cast<Pointer>(other.get());
@@ -155,13 +154,13 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
             if (this->isValid() ^ value->isValid())
                 return getBool(false);
             else
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
 
         case llvm::CmpInst::ICMP_NE:
             if (this->isValid() ^ value->isValid())
                 return getBool(true);
             else
-                return factory_->getInteger(TOP, 1, false);
+                return factory_->getInteger(TOP, 1);
 
         default:
             UNREACHABLE("Unknown operation in icmp");

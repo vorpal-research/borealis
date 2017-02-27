@@ -5,9 +5,10 @@
 #ifndef BOREALIS_INTERPRETER_H
 #define BOREALIS_INTERPRETER_H
 
-#include <stack>
+#include <deque>
 
 #include <llvm/IR/InstVisitor.h>
+#include <unordered_set>
 
 #include "Interpreter/Environment.h"
 #include "Interpreter/IR/Function.h"
@@ -15,14 +16,14 @@
 namespace borealis {
 namespace absint {
 
-class Interpreter : public llvm::InstVisitor<Interpreter> {
+class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
     Interpreter(const llvm::Module* module);
 
     void run();
 
-    void interpretFunction(Function* function, const std::vector<Domain::Ptr>& args);
+    void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
 
 
     /// llvm instructions visitors
@@ -58,6 +59,7 @@ public:
     void visitInsertValueInst(llvm::InsertValueInst& i);
     void visitBinaryOperator(llvm::BinaryOperator& i);
     void visitCallInst(llvm::CallInst& i);
+    void visitBitCastInst(llvm::BitCastInst &i);
 
 private:
 
@@ -65,7 +67,7 @@ private:
 
     Environment::Ptr environment_;
     const llvm::Module* module_;
-    std::stack<const Function*> callstack;
+    std::deque<Function::Ptr> callstack;
     State::Ptr currentState_;
 };
 

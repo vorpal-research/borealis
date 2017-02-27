@@ -14,28 +14,14 @@
 namespace borealis {
 namespace util {
 
-static llvm::APSInt umin(const llvm::APInt& lhv, const llvm::APInt& rhv) {
-    return llvm::APSInt((lhv.ult(rhv)) ? lhv : rhv);
+static llvm::APInt min(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+    if (isSigned) return lhv.slt(rhv) ? lhv : rhv;
+    else return lhv.ult(rhv) ? lhv : rhv;
 }
 
-static llvm::APSInt smin(const llvm::APInt& lhv, const llvm::APInt& rhv) {
-    return llvm::APSInt((lhv.slt(rhv)) ? lhv : rhv);
-}
-
-static llvm::APSInt umax(const llvm::APInt& lhv, const llvm::APInt& rhv) {
-    return llvm::APSInt((lhv.ugt(rhv)) ? lhv : rhv);
-}
-
-static llvm::APSInt smax(const llvm::APInt& lhv, const llvm::APInt& rhv) {
-    return llvm::APSInt((lhv.sgt(rhv)) ? lhv : rhv);
-}
-
-static llvm::APSInt min(const llvm::APSInt& lhv, const llvm::APSInt& rhv) {
-    return (lhv < rhv) ? lhv : rhv;
-}
-
-static llvm::APSInt max(const llvm::APSInt& lhv, const llvm::APSInt& rhv) {
-    return (lhv > rhv) ? lhv : rhv;
+static llvm::APInt max(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+    if (isSigned) return lhv.sgt(rhv) ? lhv : rhv;
+    else return lhv.ugt(rhv) ? lhv : rhv;
 }
 
 static bool less(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
@@ -56,6 +42,30 @@ static llvm::APFloat min(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
 
 static llvm::APFloat max(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     return less(lhv, rhv) ? rhv : lhv;
+}
+
+static bool lt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+    return isSigned ?
+           lhv.slt(rhv) :
+           rhv.ult(rhv);
+}
+
+static bool le(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+    return isSigned ?
+           lhv.sle(rhv) :
+           rhv.ule(rhv);
+}
+
+static bool gt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+    return isSigned ?
+           lhv.sgt(rhv) :
+           rhv.ugt(rhv);
+}
+
+static bool ge(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+    return isSigned ?
+           lhv.sge(rhv) :
+           rhv.uge(rhv);
 }
 
 static const llvm::fltSemantics& getSemantics(const llvm::Type& type) {
