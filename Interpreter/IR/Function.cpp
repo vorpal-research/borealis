@@ -21,6 +21,12 @@ Function::Function(Environment::Ptr environment, const llvm::Function* function)
         blocks_.insert({&block, aiBlock});
     }
 
+    // adding global variables
+    for (auto&& it : environment_->getModule()->getGlobalList()) {
+        auto&& globalDomain = environment_->getDomainFactory().get(*it.getType());
+        if (globalDomain) inputState_->addGlobalVariable(&it, globalDomain);
+    }
+
     // adding return value
     auto&& returnType = instance_->getReturnType();
     if (not returnType->isVoidTy()) {
@@ -108,28 +114,19 @@ std::vector<const BasicBlock*> Function::getSuccessorsFor(const llvm::BasicBlock
 }
 
 void Function::setArguments(const std::vector<Domain::Ptr>& args) {
-    if (args.empty()) {
-        for (auto&& arg : util::viewContainer(instance_->getArgumentList())) {
-            auto&& argDomain = environment_->getDomainFactory().get(&arg);
-            if (argDomain) {
-                arguments_.push_back(argDomain);
-                inputState_->addLocalVariable(&arg, argDomain);
-            }
-        }
-    } else {
-        ASSERT(instance_->isVarArg() || instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
+    ASSERT(instance_->isVarArg() || instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
 
-        // adding function arguments to input state
-        auto&& it = instance_->getArgumentList().begin();
-        for (auto i = 0U; i < args.size(); ++i) {
-            if (args[i]) {
-                inputState_->addLocalVariable(it, args[i]);
-                arguments_.push_back(args[i]);
-            }
-            if (++it == instance_->getArgumentList().end()) break;
+    // adding function arguments to input state
+    auto&& it = instance_->getArgumentList().begin();
+    for (auto i = 0U; i < args.size(); ++i) {
+        if (args[i]) {
+            inputState_->addLocalVariable(it, args[i]);
+            arguments_.push_back(args[i]);
         }
+        if (++it == instance_->getArgumentList().end()) break;
     }
-    // merging the fron block's input state with function input state
+
+    // merge the front block's input state with function input state
     getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
 }
 

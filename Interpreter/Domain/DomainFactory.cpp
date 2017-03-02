@@ -49,20 +49,20 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
     }
 }
 
-Domain::Ptr DomainFactory::getInteger(unsigned width) const {
-    return Domain::Ptr{ new IntegerInterval(this, width) };
+Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) const {
+    return Domain::Ptr{ new IntegerInterval(this, width, isSigned) };
 }
 
-Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width) const {
-    return Domain::Ptr{ new IntegerInterval(value, this, width) };
+Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width, bool isSigned) const {
+    return Domain::Ptr{ new IntegerInterval(value, this, width, isSigned) };
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val) const {
-    return Domain::Ptr{ new IntegerInterval(this, val) };
+Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val, bool isSigned) const {
+    return Domain::Ptr{ new IntegerInterval(this, val, isSigned) };
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to) const {
-    return Domain::Ptr{ new IntegerInterval(this, from, to) };
+Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned) const {
+    return Domain::Ptr{ new IntegerInterval(this, from, to, isSigned) };
 }
 
 Domain::Ptr DomainFactory::getFloat(const llvm::fltSemantics& semantics) const {

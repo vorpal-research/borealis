@@ -14,12 +14,20 @@
 namespace borealis {
 namespace util {
 
-static llvm::APInt min(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+static llvm::APInt getMaxValue(unsigned width, bool isSigned = false) {
+    return isSigned ? llvm::APInt::getSignedMaxValue(width) : llvm::APInt::getMaxValue(width);
+}
+
+static llvm::APInt getMinValue(unsigned width, bool isSigned = false) {
+    return isSigned ? llvm::APInt::getSignedMinValue(width) : llvm::APInt::getMinValue(width);
+}
+
+static llvm::APInt min(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false) {
     if (isSigned) return lhv.slt(rhv) ? lhv : rhv;
     else return lhv.ult(rhv) ? lhv : rhv;
 }
 
-static llvm::APInt max(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+static llvm::APInt max(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false) {
     if (isSigned) return lhv.sgt(rhv) ? lhv : rhv;
     else return lhv.ugt(rhv) ? lhv : rhv;
 }
@@ -44,25 +52,29 @@ static llvm::APFloat max(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     return less(lhv, rhv) ? rhv : lhv;
 }
 
-static bool lt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+static bool eq(const llvm::APInt& lhv, const llvm::APInt& rhv) {
+    return lhv.eq(rhv);
+}
+
+static bool lt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false) {
     return isSigned ?
            lhv.slt(rhv) :
            rhv.ult(rhv);
 }
 
-static bool le(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+static bool le(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false) {
     return isSigned ?
            lhv.sle(rhv) :
-           rhv.ule(rhv);
+           lhv.ule(rhv);
 }
 
-static bool gt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+static bool gt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false) {
     return isSigned ?
            lhv.sgt(rhv) :
            rhv.ugt(rhv);
 }
 
-static bool ge(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
+static bool ge(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false) {
     return isSigned ?
            lhv.sge(rhv) :
            rhv.uge(rhv);

@@ -22,10 +22,10 @@ public:
     Domain::Ptr get(const llvm::Value* val, Domain::Value value = Domain::BOTTOM) const;
     Domain::Ptr get(const llvm::Constant* constant) const;
 
-    Domain::Ptr getInteger(unsigned width) const;
-    Domain::Ptr getInteger(Domain::Value value, unsigned width) const;
-    Domain::Ptr getInteger(const llvm::APInt& val) const;
-    Domain::Ptr getInteger(const llvm::APInt& from, const llvm::APInt& to) const;
+    Domain::Ptr getInteger(unsigned width, bool isSigned = false) const;
+    Domain::Ptr getInteger(Domain::Value value, unsigned width, bool isSigned = false) const;
+    Domain::Ptr getInteger(const llvm::APInt& val, bool isSigned = false) const;
+    Domain::Ptr getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned = false) const;
 
     Domain::Ptr getFloat(const llvm::fltSemantics& semantics) const;
     Domain::Ptr getFloat(Domain::Value value, const llvm::fltSemantics& semantics) const;

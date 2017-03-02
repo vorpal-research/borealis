@@ -68,6 +68,7 @@ private:
     Environment::Ptr environment_;
     const llvm::Module* module_;
     std::deque<Function::Ptr> callstack;
+    std::unordered_map<std::string, int> fcount;
     State::Ptr currentState_;
 };
 

@@ -17,10 +17,10 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(const DomainFactory* factory, unsigned width);
-    IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width);
-    IntegerInterval(const DomainFactory* factory, const llvm::APInt& constant);
-    IntegerInterval(const DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to);
+    IntegerInterval(const DomainFactory* factory, unsigned width, bool isSigned = false);
+    IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width, bool isSigned  = false);
+    IntegerInterval(const DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
+    IntegerInterval(const DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
     IntegerInterval(const IntegerInterval& interval);
 
 public:
@@ -80,6 +80,7 @@ private:
 
 
     unsigned width_;
+    bool signed_;
     llvm::APInt from_;
     llvm::APInt to_;
 };

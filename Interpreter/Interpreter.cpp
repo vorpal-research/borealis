@@ -16,19 +16,29 @@ namespace borealis {
 namespace absint {
 
 Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter"), module_(module) {
-    environment_ = Environment::Ptr{ new Environment() };
+    environment_ = Environment::Ptr{ new Environment(module_) };
     currentState_ = nullptr;
 }
 
 void Interpreter::run() {
-    auto&& main = Function::Ptr{ new Function(environment_, module_->getFunction("main")) };
-    interpretFunction(main, {});
+    auto&& llvmMain = module_->getFunction("main");
+    auto&& main = environment_->getFunction(llvmMain);
+    std::vector<Domain::Ptr> args;
+    for (auto&& arg : llvmMain->getArgumentList()) {
+        args.push_back(environment_->getDomainFactory().get(&arg));
+    }
+
+    interpretFunction(main, args);
+    for (auto&& it : fcount) {
+        errs() << it.first << " " << it.second << endl;
+    }
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
     // saving callstack
     auto oldState = currentState_;
     callstack.push_back(function);
+    ++fcount[function->getName()];
 
     function->setArguments(args);
     std::deque<const llvm::BasicBlock*> deque;
@@ -52,7 +62,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
         }
         deque.pop_front();
     }
-    errs() << endl << function << endl << endl;
+//    errs() << endl << function << endl << endl;
 
     //restoring callstack
     callstack.pop_back();
@@ -103,7 +113,7 @@ void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
 
 void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
     if (currentState_->find(&i)) {
-        return;;
+        return;
     }
     auto&& ptr = environment_->getDomainFactory().getPointer(true);
     currentState_->addLocalVariable(&i, ptr);
@@ -306,7 +316,7 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) const {
 void Interpreter::visitCallInst(llvm::CallInst& i) {
     if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) return;
 
-    auto&& function = Function::Ptr{ new Function(environment_, i.getCalledFunction()) };
+    auto&& function = environment_->getFunction(i.getCalledFunction());
     std::vector<Domain::Ptr> args;
 
     // recursion handling

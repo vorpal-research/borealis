@@ -18,9 +18,13 @@ public:
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, BasicBlock>;
     using CallMap = std::unordered_map<const llvm::Value*, Function::Ptr>;
 
+protected:
     /// Assumes that llvm::Function is not a declaration
     Function(Environment::Ptr environment, const llvm::Function* function);
 
+    friend class Environment;
+
+public:
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;
     const BlockMap& getBasicBlocks() const;
