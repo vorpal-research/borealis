@@ -23,7 +23,6 @@ public:
 
     const llvm::Module* getModule() const;
     const DomainFactory& getDomainFactory() const;
-    std::shared_ptr<Function> getFunction(const llvm::Function* function) const;
 
 private:
 

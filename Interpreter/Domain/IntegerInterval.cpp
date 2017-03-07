@@ -2,6 +2,7 @@
 // Created by abdullin on 2/2/17.
 //
 
+#include <llvm/Support/raw_ostream.h>
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
 
@@ -146,8 +147,13 @@ bool IntegerInterval::intersects(const IntegerInterval* other) const {
     return false;
 }
 
-bool IntegerInterval::isCorrect() const {
-    return util::le(from_, to_, signed_);
+bool IntegerInterval::isCorrect() {
+    if (util::le(from_, to_, signed_)) return true;
+    if (util::le(from_, to_, not signed_)) {
+        signed_ = not signed_;
+        return true;
+    }
+    return false;
 }
 
 bool IntegerInterval::equals(const Domain *other) const {
@@ -231,11 +237,11 @@ Domain::Ptr IntegerInterval::sub(Domain::Ptr other) const {
         bool ovLeft = false, ovRight = false;
         llvm::APInt left, right;
         if (signed_) {
-            left = from_.ssub_ov(value->from_, ovLeft);
-            right = to_.ssub_ov(value->to_, ovRight);
+            left = from_.ssub_ov(value->to_, ovLeft);
+            right = to_.ssub_ov(value->from_, ovRight);
         } else {
-            left = from_.usub_ov(value->from_, ovLeft);
-            right = to_.usub_ov(value->to_, ovRight);
+            left = from_.usub_ov(value->to_, ovLeft);
+            right = to_.usub_ov(value->from_, ovRight);
         }
         if (ovLeft) left = util::getMinValue(width_, signed_);
         if (ovRight) right = util::getMaxValue(width_, signed_);
@@ -296,12 +302,21 @@ Domain::Ptr IntegerInterval::udiv(Domain::Ptr other) const {
         } else {
 
             using namespace borealis::util;
-            auto first = factory_->getInteger(min(from_.udiv(value->from_), to_.udiv(value->from_), signed_),
-                                              max(from_.udiv(value->from_), to_.udiv(value->from_), signed_),
+            Domain::Ptr first, second;
+            if (value->from_ == 0) {
+                first = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
+            } else {
+                first = factory_->getInteger(min(from_.udiv(value->from_), to_.udiv(value->from_), signed_),
+                                             max(from_.udiv(value->from_), to_.udiv(value->from_), signed_),
+                                             signed_);
+            }
+            if (value->to_ == 0) {
+                second = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
+            } else {
+                second = factory_->getInteger(min(from_.udiv(value->to_), to_.udiv(value->to_), signed_),
+                                              max(from_.udiv(value->to_), to_.udiv(value->to_), signed_),
                                               signed_);
-            auto second = factory_->getInteger(min(from_.udiv(value->to_), to_.udiv(value->to_), signed_),
-                                               max(from_.udiv(value->to_), to_.udiv(value->to_), signed_),
-                                               signed_);
+            }
             return first->join(second);
         }
     }
@@ -323,12 +338,21 @@ Domain::Ptr IntegerInterval::sdiv(Domain::Ptr other) const {
         } else {
 
             using namespace borealis::util;
-            auto first = factory_->getInteger(min(from_.sdiv(value->from_), to_.sdiv(value->from_), signed_),
-                                              max(from_.sdiv(value->from_), to_.sdiv(value->from_), signed_),
+            Domain::Ptr first, second;
+            if (value->from_ == 0) {
+                first = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
+            } else {
+                first = factory_->getInteger(min(from_.sdiv(value->from_), to_.sdiv(value->from_), signed_),
+                                             max(from_.sdiv(value->from_), to_.sdiv(value->from_), signed_),
+                                             signed_);
+            }
+            if (value->to_ == 0) {
+                second = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
+            } else {
+                second = factory_->getInteger(min(from_.sdiv(value->to_), to_.sdiv(value->to_), signed_),
+                                              max(from_.sdiv(value->to_), to_.sdiv(value->to_), signed_),
                                               signed_);
-            auto second = factory_->getInteger(min(from_.sdiv(value->to_), to_.sdiv(value->to_), signed_),
-                                               max(from_.sdiv(value->to_), to_.sdiv(value->to_), signed_),
-                                               signed_);
+            }
             return first->join(second);
         }
     }
@@ -428,8 +452,28 @@ Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
     auto& newSemantics = util::getSemantics(type);
 
-    llvm::APSInt ufrom(from_, true), uto(to_, true);
-    llvm::APFloat from(newSemantics, ufrom), to(newSemantics, uto);
+    unsigned width = 32;
+    if (type.isHalfTy())
+        width = 16;
+    else if (type.isFloatTy())
+        width = 32;
+    else if (type.isDoubleTy())
+        width = 64;
+    else if (type.isFP128Ty())
+        width = 128;
+    else if (type.isPPC_FP128Ty())
+        width = 128;
+    else if (type.isX86_FP80Ty())
+        width = 80;
+    llvm::APInt newFrom = from_, newTo = to_;
+    if (width < width_) {
+        newFrom = from_.trunc(width);
+        newTo = to_.trunc(width);
+    } else if (width > width_) {
+        newFrom = from_.zext(width);
+        newTo = to_.zext(width);
+    }
+    llvm::APFloat from(newSemantics, newFrom), to(newSemantics, newTo);
     return factory_->getFloat(from, to);
 }
 
@@ -437,8 +481,28 @@ Domain::Ptr IntegerInterval::sitofp(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
     auto& newSemantics = util::getSemantics(type);
 
-    llvm::APSInt sfrom(from_, false), sto(to_, false);
-    llvm::APFloat from(newSemantics, sfrom), to(newSemantics, sto);
+    unsigned width = 32;
+    if (type.isHalfTy())
+        width = 16;
+    else if (type.isFloatTy())
+        width = 32;
+    else if (type.isDoubleTy())
+        width = 64;
+    else if (type.isFP128Ty())
+        width = 128;
+    else if (type.isPPC_FP128Ty())
+        width = 128;
+    else if (type.isX86_FP80Ty())
+        width = 80;
+    llvm::APInt newFrom = from_, newTo = to_;
+    if (width < width_) {
+        newFrom = from_.trunc(width);
+        newTo = to_.trunc(width);
+    } else if (width > width_) {
+        newFrom = from_.sext(width);
+        newTo = to_.sext(width);
+    }
+    llvm::APFloat from(newSemantics, newFrom), to(newSemantics, newTo);
     return factory_->getFloat(from, to);
 }
 

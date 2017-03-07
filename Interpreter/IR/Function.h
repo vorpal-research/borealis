@@ -22,7 +22,7 @@ protected:
     /// Assumes that llvm::Function is not a declaration
     Function(Environment::Ptr environment, const llvm::Function* function);
 
-    friend class Environment;
+    friend class Module;
 
 public:
     const llvm::Function* getInstance() const;
@@ -32,6 +32,7 @@ public:
 
     State::Ptr getInputState() const;
     State::Ptr getOutputState() const;
+    Domain::Ptr getReturnValue() const;
 
     /// Assumes that @args[i] corresponds to i-th argument of the function
     void setArguments(const std::vector<Domain::Ptr>& args);

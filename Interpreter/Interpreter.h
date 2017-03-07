@@ -12,6 +12,7 @@
 
 #include "Interpreter/Environment.h"
 #include "Interpreter/IR/Function.h"
+#include "Interpreter/IR/Module.h"
 
 namespace borealis {
 namespace absint {
@@ -66,9 +67,7 @@ private:
     Domain::Ptr getVariable(const llvm::Value* value) const;
 
     Environment::Ptr environment_;
-    const llvm::Module* module_;
-    std::deque<Function::Ptr> callstack;
-    std::unordered_map<std::string, int> fcount;
+    Module module_;
     State::Ptr currentState_;
 };
 

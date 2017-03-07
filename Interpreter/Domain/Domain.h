@@ -88,10 +88,6 @@ public:
     }
     virtual Domain* clone() const = 0;
 
-    virtual bool isCorrect() const {
-        return true;
-    }
-
     virtual Type getType() const {
         return type_;
     }

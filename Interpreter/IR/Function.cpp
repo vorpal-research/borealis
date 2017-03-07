@@ -55,6 +55,10 @@ State::Ptr Function::getOutputState() const {
     return outputState_;
 }
 
+Domain::Ptr Function::getReturnValue() const {
+    return outputState_->getReturnValue();
+}
+
 const BasicBlock* Function::getBasicBlock(const llvm::BasicBlock* bb) const {
     if (auto&& opt = util::at(blocks_, bb))
         return &opt.getUnsafe();
@@ -115,6 +119,7 @@ std::vector<const BasicBlock*> Function::getSuccessorsFor(const llvm::BasicBlock
 
 void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     ASSERT(instance_->isVarArg() || instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
+    arguments_.clear();
 
     // adding function arguments to input state
     auto&& it = instance_->getArgumentList().begin();

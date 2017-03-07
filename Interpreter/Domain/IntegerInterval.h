@@ -43,7 +43,8 @@ public:
     virtual size_t hashCode() const;
     virtual std::string toString() const;
     virtual Domain* clone() const;
-    virtual bool isCorrect() const;
+    // changes sign of the domain if it's incorrect
+    virtual bool isCorrect();
 
     static bool classof(const Domain* other);
 

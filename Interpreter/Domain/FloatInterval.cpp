@@ -77,9 +77,9 @@ Domain::Ptr FloatInterval::join(Domain::Ptr other) const {
     ASSERT(value, "Nullptr in interval join");
 
     if (value->isBottom()) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     } else if (this->isBottom()) {
-        return Domain::Ptr{ value->clone() };
+        return value->shared_from_this();
     } else {
         auto newFrom = util::less(this->from_, value->from_) ? from_ : value->from_;
         auto newTo = util::less(this->to_, value->to_) ? value->to_ : to_;
@@ -107,19 +107,19 @@ Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
     ASSERT(value, "Nullptr in interval");
 
     if (value->isBottom()) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     } else if (this->isBottom()) {
-        return Domain::Ptr{ value->clone() };
+        return value->shared_from_this();
     } else if (this->isTop() || value->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else if (this->equals(value)) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     }
 
     if (this->operator<(*value)) {
-        return Domain::Ptr{ value->clone() };
+        return value->shared_from_this();
     } else if (value->operator<(*this)) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     } else if (util::less(to_, value->from_)) {
         auto left = from_;
         auto right = llvm::APFloat::getInf(getSemantics());
@@ -350,7 +350,7 @@ Domain::Ptr FloatInterval::fptosi(const llvm::Type& type) const {
 
     from_.convertToInteger(from, getRoundingMode(), &isExact);
     to_.convertToInteger(to, getRoundingMode(), &isExact);
-    return factory_->getInteger(from, to);
+    return factory_->getInteger(from, to, true);
 }
 
 Domain::Ptr FloatInterval::bitcast(const llvm::Type& type) const {
@@ -361,7 +361,7 @@ Domain::Ptr FloatInterval::bitcast(const llvm::Type& type) const {
         return factory_->getInteger(from, to);
 
     } else if (type.isFloatingPointTy()) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
         
     } else {
         UNREACHABLE("Bitcast to unknown type");

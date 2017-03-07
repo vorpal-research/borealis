@@ -52,9 +52,9 @@ Domain::Ptr Pointer::join(Domain::Ptr other) const {
     ASSERT(value, "Nullptr in pointer join");
 
     if (value->isBottom()) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     } else if (this->isBottom()) {
-        return Domain::Ptr{ value->clone() };
+        return value->shared_from_this();
     } else if (this->isTop() || value->isTop()) {
         return factory_->getPointer(TOP);
     } else {
@@ -69,7 +69,7 @@ Domain::Ptr Pointer::meet(Domain::Ptr other) const {
     ASSERT(value, "Nullptr in pointer meet");
 
     if (this->isBottom() || value->isBottom()) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     } else if (this->isTop() || value->isTop()) {
         return factory_->getPointer(TOP);
     } else {
@@ -79,8 +79,11 @@ Domain::Ptr Pointer::meet(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr Pointer::widen(Domain::Ptr) const {
-    return factory_->getPointer(TOP);
+Domain::Ptr Pointer::widen(Domain::Ptr other) const {
+    auto&& value = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(value, "Nullptr in pointer domain");
+
+    return (status_ == value->status_) ? shared_from_this() : factory_->getPointer(TOP);
 }
 
 Pointer::Status Pointer::getStatus() const {
@@ -122,7 +125,7 @@ Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
 
 Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
     if (type.isPointerTy()) {
-        return Domain::Ptr{ clone() };
+        return shared_from_this();
     } else {
         UNREACHABLE("Bitcast to unknown type");
     }

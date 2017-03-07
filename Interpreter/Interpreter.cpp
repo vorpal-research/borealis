@@ -15,30 +15,25 @@
 namespace borealis {
 namespace absint {
 
-Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter"), module_(module) {
-    environment_ = Environment::Ptr{ new Environment(module_) };
+Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter") {
+    environment_ = Environment::Ptr{ new Environment(module) };
+    module_ = Module(environment_);
     currentState_ = nullptr;
 }
 
 void Interpreter::run() {
-    auto&& llvmMain = module_->getFunction("main");
-    auto&& main = environment_->getFunction(llvmMain);
+    auto&& main = module_.createFunction("main");
     std::vector<Domain::Ptr> args;
-    for (auto&& arg : llvmMain->getArgumentList()) {
+    for (auto&& arg : main->getInstance()->getArgumentList()) {
         args.push_back(environment_->getDomainFactory().get(&arg));
     }
 
     interpretFunction(main, args);
-    for (auto&& it : fcount) {
-        errs() << it.first << " " << it.second << endl;
-    }
+    errs() << module_ << endl;
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
-    // saving callstack
     auto oldState = currentState_;
-    callstack.push_back(function);
-    ++fcount[function->getName()];
 
     function->setArguments(args);
     std::deque<const llvm::BasicBlock*> deque;
@@ -62,10 +57,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
         }
         deque.pop_front();
     }
-//    errs() << endl << function << endl << endl;
 
-    //restoring callstack
-    callstack.pop_back();
     currentState_ = oldState;
 }
 
@@ -308,55 +300,47 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) const {
     } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
         return environment_->getDomainFactory().get(constant);
 
-    } else {
+    } else if (value->getType()->isVoidTy()) {
         return nullptr;
     }
+    return environment_->getDomainFactory().get(*value->getType(), Domain::TOP);
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
     if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) return;
 
-    auto&& function = environment_->getFunction(i.getCalledFunction());
     std::vector<Domain::Ptr> args;
 
-    // recursion handling
-    auto&& it = std::find_if(callstack.rbegin(), callstack.rend(), [&i, &function](Function::Ptr f) {
-        return f->getName() == function->getName();
-    });
-    if (it != callstack.rend()) {
-        auto& oldArgs = it->get()->getArguments();
+    Function::Ptr function = module_.contains(i.getCalledFunction());
+    if (function) {
+        auto& oldArgs = function->getArguments();
         for (auto j = 0U; j < oldArgs.size(); ++j) {
             auto&& newArg = getVariable(i.getArgOperand(j));
             args.push_back(oldArgs[j]->widen(newArg));
         }
 
-        if (util::equal(args, oldArgs, [] (Domain::Ptr a, Domain::Ptr b) {
+        if (not util::equal(args, oldArgs, [](Domain::Ptr a, Domain::Ptr b) {
             return a->equals(b.get());
         })) {
+            interpretFunction(function, args);
             auto&& result = environment_->getDomainFactory().get(&i, Domain::TOP);
             if (result) currentState_->addLocalVariable(&i, result);
-        } else {
-            interpretFunction(function, args);
-            if (function->getOutputState()->getReturnValue()) {
-                currentState_->addLocalVariable(&i, function->getOutputState()->getReturnValue());
-            }
-            callstack.back()->addCall(&i, function);
+            return;
         }
 
     } else {
+        function = module_.createFunction(i.getCalledFunction());
         for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
             args.push_back(getVariable(i.getArgOperand(j)));
         }
-
         interpretFunction(function, args);
+    }
 
-        if (function->getOutputState()->getReturnValue()) {
-            currentState_->addLocalVariable(&i, function->getOutputState()->getReturnValue());
-        }
-        callstack.back()->addCall(&i, function);
+    if (function->getReturnValue()) {
+        currentState_->addLocalVariable(&i, function->getReturnValue());
     }
 }
-
+//r -g -O2 -Wall -I. -DHAVE_ALLOCA_H -DUSE_CURL_FOR_IMAP_SEND -DHAVE_PATHS_H -DHAVE_DEV_TTY -DXDL_FAST_HASH -DHAVE_CLOCK_GETTIME -DHAVE_CLOCK_MONOTONIC -DHAVE_GETDELIM -DSHA1_HEADER='<openssl/sha.h>' -DNO_STRLCPY -DNO_MKSTEMPS -DSHELL_PATH='"/bin/sh"' -o git-upload-pack upload-pack.o libgit.a xdiff/lib.a -lz -lcrypto -lpthread -lrt
 void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
     auto&& op = getVariable(i.getOperand(0));
     if (not op) return;
