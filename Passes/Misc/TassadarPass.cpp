@@ -6,6 +6,7 @@
  */
 #include <iostream>
 #include <fstream>
+#include <random>
 
 #include <llvm/Pass.h>
 #include <llvm/PassAnalysisSupport.h>
@@ -48,6 +49,31 @@ public:
     virtual ~ZeroArbiter(){}
 };
 
+class RandomArbiter: public Arbiter {
+    std::random_device rd;
+    std::mt19937 gen;
+    std::uniform_real_distribution<> dis;
+
+public:
+    RandomArbiter(): rd(), gen(rd()), dis(0.0, 8000000.0) {}
+
+    virtual llvm::GenericValue map(llvm::Value* val) override {
+        llvm::GenericValue RetVal;
+        if(val->getType()->isIntegerTy()) {
+            RetVal.IntVal = llvm::APInt{ val->getType()->getIntegerBitWidth(), gen()  };
+        } else if(val->getType()->isFloatTy()) {
+            RetVal.FloatVal = static_cast<float>(dis(gen));
+        } else if(val->getType()->isDoubleTy()) {
+            RetVal.DoubleVal = dis(gen);
+        } else if(val->getType()->isPointerTy()) {
+            RetVal.PointerVal = nullptr;
+        } else UNREACHABLE("unsupported type: " + util::toString(*val->getType()));
+
+        return RetVal;
+    }
+    virtual ~RandomArbiter(){}
+};
+
 class TassadarPass : public llvm::ModulePass {
 public:
     static char ID;
@@ -71,7 +97,7 @@ public:
             &getAnalysis<llvm::TargetLibraryInfo>(),
             &getAnalysis<SlotTrackerPass>(),
             &getAnalysis<VariableInfoTracker>(),
-            std::make_shared<ZeroArbiter>()
+            std::make_shared<RandomArbiter>()
         };
 
         auto funcs = util::viewContainer(M)
