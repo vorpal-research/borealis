@@ -71,6 +71,10 @@ class ExecutionContext {
             }
         }
 
+        Bool operator==(MemArrayWithVersion that) const {
+            return mem == that.mem;
+        }
+
         friend std::ostream& operator<<(std::ostream& ost, const MemArrayWithVersion& m) {
             return ost << m.getMem() << "{version:" << m.getVersion() << "}";
         }
@@ -110,6 +114,16 @@ public:
     MemArray getCurrentMemoryContents(size_t memspace);
     MemArray getCurrentGepBounds(size_t memspace);
     MemArray getCurrentProperties(const std::string& pname);
+
+    Bool externalizeEverythingMutable(const std::string& postfix) {
+        Bool ret = factory.getTrue();
+        for(auto&& kv: memArrays) {
+            auto fresh = MemArrayWithVersion(MemArray::mkVar(factory.unwrap(), tfm::format("%s%s", kv.first, postfix)), 0);
+            ret = ret && (fresh == kv.second);
+            kv.second = fresh;
+        }
+        return ret;
+    };
 
     MemArray getInitialMemoryContents(size_t memspace);
 
@@ -189,11 +203,16 @@ public:
     using Choice = std::pair<Bool, ExecutionContext>;
 
     ExecutionContext& switchOn(const std::string& name, const std::vector<Choice>& contexts);
+    ExecutionContext& externalSwitchOn(const std::vector<Choice>& contexts, const std::string& prefix);
 
     static ExecutionContext mergeMemory(
         const std::string& name,
         ExecutionContext defaultContext,
         const std::vector<Choice>& contexts);
+    static ExecutionContext externalMergeMemory(
+        ExecutionContext defaultContext,
+        const std::vector<Choice>& contexts,
+        const std::string& prefix);
 
 ////////////////////////////////////////////////////////////////////////////////
 

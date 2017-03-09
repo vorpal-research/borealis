@@ -206,10 +206,41 @@ PredicateState::Ptr getFront(PredicateState::Ptr state) {
     }
 }
 
+
+enum OptimizeSubsEnum { OptimizeSubs, DoNotOptimizeSubs };
+
 std::vector<PredicateState::Ptr> optimizeChoices(
-    const std::vector<PredicateState::Ptr>& choices,
-    PredicateStateFactory::Ptr PSF
+    const std::vector<PredicateState::Ptr>& choices_,
+    PredicateStateFactory::Ptr PSF,
+    OptimizeSubsEnum optimizeSubs = DoNotOptimizeSubs
 ) {
+
+    auto choices = choices_;
+
+    /* be thoroughly aggressive about head choices */
+
+    if(optimizeSubs == OptimizeSubs) {
+        for(auto i = 0U; i < choices.size(); ++i) {
+            auto front = getFront(choices[i]);
+
+            if(front) if(auto ch = llvm::dyn_cast<PredicateStateChoice>(front)) {
+                    auto&& smallChoices = ch->getChoices();
+                    if(smallChoices.size() == 0) continue;
+                    auto tail = choices[i]->sliceOn(front);
+                    for(auto&& ip: smallChoices) {
+                        if(ip && tail) {
+                            choices.push_back(PSF->Chain(ip, tail));
+                        }
+                        else if(!ip) choices.push_back(tail);
+                        else if(!tail) choices.push_back(ip);
+                    }
+                    choices[i] = nullptr;
+                }
+        }
+    }
+
+    choices = util::viewContainer(choices).filter().toVector();
+
     auto&& has_empty = util::viewContainer(choices)
         .any_of(LAM(c, c->isEmpty()));
 
@@ -255,7 +286,8 @@ std::vector<PredicateState::Ptr> optimizeChoices(
                     PSF->Choice(
                         optimizeChoices(
                             states,
-                            PSF
+                            PSF,
+                            optimizeSubs
                         )
                     )
                 )
@@ -268,6 +300,13 @@ std::vector<PredicateState::Ptr> optimizeChoices(
     }
 
     return result;
+}
+
+std::vector<PredicateState::Ptr> reoptimizeChoices(
+    const std::vector<PredicateState::Ptr>& choices,
+    PredicateStateFactory::Ptr PSF
+) {
+    return optimizeChoices(choices, PSF, OptimizeSubs);
 }
 
 PredicateState::Ptr OneForAll::BBM(const llvm::BasicBlock* BB) {
@@ -316,7 +355,8 @@ PredicateState::Ptr OneForAll::BBM(const llvm::BasicBlock* BB) {
     static config::ConfigEntry<bool> doAggressiveChoiceOptimization("analysis", "do-aggressive-choice-optimization");
 
     if (doAggressiveChoiceOptimization.get(false)) {
-        choices = optimizeChoices(choices, FN.State);
+        choices = optimizeChoices(choices, FN.State, DoNotOptimizeSubs);
+        //choices = optimizeChoices(choices, FN.State, OptimizeSubs);
     }
 
     TRACE_DOWN("psa::bbm", valueSummary(BB));

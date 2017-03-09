@@ -5,6 +5,9 @@
  *      Author: ice-phoenix
  */
 
+#include <llvm/Support/GraphWriter.h>
+
+#include "State/Transformer/GraphBuilder.h"
 #include "Config/config.h"
 #include "Passes/PredicateStateAnalysis/Defines.def"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
@@ -65,6 +68,8 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
         AUX<OneForOne>::addRequiredTransitive(AU);
     } else if ("one-for-all" == Mode()) {
         AUX<OneForAll>::addRequiredTransitive(AU);
+    } else if ("one-for-all-reverse" == Mode()) {
+        AUX<OneForAllTD>::addRequiredTransitive(AU);
     } else {
         BYE_BYE_VOID("Unknown PSA mode: " + Mode());
     }
@@ -75,11 +80,24 @@ void PredicateStateAnalysis::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<SlotTrackerPass>::addRequiredTransitive(AU);
 }
 
+template<class G>
+static void popupGraph(G* g, llvm::StringRef name = "", bool wait = false) {
+    static int pos = 0;
+    ++pos;
+    std::string realFileName = llvm::WriteGraph<G*>(g, "debug." + util::toString(pos), false, name);
+    if (realFileName.empty()) return;
+    llvm::DisplayGraph(realFileName, wait, llvm::GraphProgram::DOT);
+}
+
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
     if ("one-for-one" == Mode()) {
         delegate = &GetAnalysis<OneForOne>::doit(this, F);
     } else if ("one-for-all" == Mode()) {
-        delegate = &GetAnalysis<OneForAll>::doit(this, F);
+        auto ofa = &GetAnalysis<OneForAll>::doit(this, F);
+        delegate = ofa;
+    } else if("one-for-all-reverse" == Mode()) {
+        auto ofatd = &GetAnalysis<OneForAllTD>::doit(this, F);
+        delegate = ofatd;
     } else {
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
     }
@@ -217,6 +235,21 @@ void PredicateStateAnalysis::print(llvm::raw_ostream& O, const llvm::Module* M) 
 }
 
 PredicateState::Ptr PredicateStateAnalysis::getInstructionState(const llvm::Instruction* I) const {
+
+    auto ret = delegate->getInstructionState(I);
+
+    auto&& F = I->getParent()->getParent();
+
+//    std::cerr << ret->size() << " predicates from " << util::viewContainer(*F).flatten().size() << " instructions" << std::endl;
+
+//    if(ret->size() > util::viewContainer(*F).flatten().size() * 2) {
+////        std::cerr << "Bailing out..." << std::endl;
+////        std::exit(52);
+//        auto g = buildGraphRep(ret);
+//        popupGraph(&g);
+//        popupGraph(F);
+//    }
+
     return delegate->getInstructionState(I);
 }
 

@@ -26,21 +26,23 @@ namespace borealis {
 package borealis.proto;
 
 enum PredicateType {
-    PATH     = 0;
-    STATE    = 1;
-    REQUIRES = 2;
-    ENSURES  = 3;
-    ASSERT   = 4;
-    ASSUME   = 5;
+    PATH      = 0;
+    STATE     = 1;
+    REQUIRES  = 2;
+    ENSURES   = 3;
+    ASSERT    = 4;
+    ASSUME    = 5;
+    INVARIANT = 6;
 }
 **/
 enum class PredicateType {
-    PATH     = 0,
-    STATE    = 1,
-    REQUIRES = 2,
-    ENSURES  = 3,
-    ASSERT   = 4,
-    ASSUME   = 5
+    PATH      = 0,
+    STATE     = 1,
+    REQUIRES  = 2,
+    ENSURES   = 3,
+    ASSERT    = 4,
+    ASSUME    = 5,
+    INVARIANT = 6
 };
 
 PredicateType predicateType(const Annotation* a);

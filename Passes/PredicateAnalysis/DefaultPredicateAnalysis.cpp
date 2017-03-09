@@ -54,12 +54,13 @@ public:
         Value* lhv = &I;
         Value* rhv = I.getPointerOperand();
 
-        pass->PM[&I] = pass->FN.Predicate->getLoadPredicate(
+        pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getLoadTerm(
                 pass->FN.Term->getValueTerm(rhv)
             ),
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
 
         pass->PostPM[&I] = pass->FN.Predicate->getEqualityPredicate(
@@ -79,7 +80,8 @@ public:
         pass->PM[&I] = pass->FN.Predicate->getStorePredicate(
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getValueTerm(rhv),
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
 
         pass->PostPM[&I] = pass->FN.Predicate->getEqualityPredicate(
@@ -106,7 +108,8 @@ public:
                 pass->FN.Term->getValueTerm(op1),
                 pass->FN.Term->getValueTerm(op2)
             ),
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
     }
 
@@ -180,7 +183,8 @@ public:
                 pass->FN.Term->getValueTerm(tru),
                 pass->FN.Term->getValueTerm(fls)
             ),
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
     }
 
@@ -199,7 +203,8 @@ public:
         pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             pass->FN.Term->getValueTerm(lhv),
             pass->FN.Term->getGepTerm(rhv, idxs, isTriviallyInboundsGEP(&I)),
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
     }
 
@@ -236,7 +241,8 @@ public:
         pass->PM[&I] = pass->FN.Predicate->getEqualityPredicate(
             lhvt,
             rhvt,
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
     }
 
@@ -272,7 +278,8 @@ public:
                 pass->FN.Term->getValueTerm(op1),
                 pass->FN.Term->getValueTerm(op2)
             ),
-            pass->SLT->getLocFor(&I)
+            pass->SLT->getLocFor(&I),
+            PredicateType::INVARIANT
         );
     }
 

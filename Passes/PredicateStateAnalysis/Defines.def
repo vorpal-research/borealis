@@ -11,6 +11,7 @@
 
 #include "Passes/PredicateStateAnalysis/OneForOne.h"
 #include "Passes/PredicateStateAnalysis/OneForAll.h"
+#include "Passes/PredicateStateAnalysis/OneForAllTD.h"
 
 #define HANDLE_PSA(CLASS)
 
@@ -18,6 +19,7 @@
 
 HANDLE_PSA(OneForOne)
 HANDLE_PSA(OneForAll)
+HANDLE_PSA(OneForAllTD)
 
 #ifdef HANDLE_PSA
 #undef HANDLE_PSA

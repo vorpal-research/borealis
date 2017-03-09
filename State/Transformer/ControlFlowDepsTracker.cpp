@@ -9,7 +9,7 @@ namespace borealis {
 ControlFlowDepsTracker::ControlFlowDepsTracker(borealis::FactoryNest FN) : Transformer(FN) {}
 
 Predicate::Ptr ControlFlowDepsTracker::transformBase(Predicate::Ptr pred) {
-    if(pred->getType() != PredicateType::STATE) {
+    if(pred->getType() != PredicateType::STATE && pred->getType() != PredicateType::INVARIANT ) {
         currentDominators_ = currentDominators_.insert(pred);
     }
 

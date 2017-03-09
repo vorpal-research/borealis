@@ -135,7 +135,7 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
     }
 
     if (nullptr == AA) return pred;
-    if (PredicateType::STATE != pred->getType()){
+    if (PredicateType::STATE != pred->getType() && PredicateType::INVARIANT != pred->getType()){
         auto anti = inverse(FN, pred);
         if(currentPathDeps.count(pred) && not currentPathDeps.count(anti)) {
             for (auto&& e : util::viewContainer(pred->getOperands())) {

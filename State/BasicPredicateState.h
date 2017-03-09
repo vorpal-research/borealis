@@ -40,6 +40,9 @@ public:
 
     const Data& getData() const;
 
+    inline auto begin() const { return std::begin(getData()); }
+    inline auto end() const { return std::end(getData()); }
+
     virtual PredicateState::Ptr addPredicate(Predicate::Ptr pred) const override;
 
     virtual PredicateState::Ptr addVisited(const Locus& locus) const override;
@@ -95,7 +98,11 @@ struct SMTImpl<Impl, BasicPredicateState> {
 
         auto&& res = ef.getTrue();
         for (auto&& v : s->getData()) {
-            res = res && SMT<Impl>::doit(v, ef, ctx);
+            if(v->getType() == PredicateType::INVARIANT) {
+                res = res.withAxiom(SMT<Impl>::doit(v, ef, ctx));
+            } else {
+                res = res && SMT<Impl>::doit(v, ef, ctx);
+            }
         }
         res = res && ctx->toSMT();
 

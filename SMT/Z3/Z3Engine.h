@@ -239,9 +239,19 @@ public:
             stdarray_wrapper<Z3_capi_binop, binOp, binOp::LAST> ret;
             for(auto&& el: ret) el = [](Z3_context, Z3_ast, Z3_ast) -> Z3_ast { UNREACHABLE("Incorrect opcode"); };
             ret[binOp::CONJ]    =
-                [](Z3_context ctx, Z3_ast l, Z3_ast r) -> Z3_ast { Z3_ast data[2]{l, r}; return Z3_mk_and(ctx, 2, data); };
+                [](Z3_context ctx, Z3_ast l, Z3_ast r) -> Z3_ast {
+                    Z3_ast data[2]{l, r};
+                    if(Z3_L_TRUE == Z3_get_bool_value(ctx, l)) return r;
+                    if(Z3_L_TRUE == Z3_get_bool_value(ctx, r)) return l;
+                    return Z3_mk_and(ctx, 2, data);
+                };
             ret[binOp::DISJ]    =
-                [](Z3_context ctx, Z3_ast l, Z3_ast r) -> Z3_ast { Z3_ast data[2]{l, r}; return Z3_mk_or(ctx, 2, data); };
+                [](Z3_context ctx, Z3_ast l, Z3_ast r) -> Z3_ast {
+                    Z3_ast data[2]{l, r};
+                    if(Z3_L_FALSE == Z3_get_bool_value(ctx, l)) return r;
+                    if(Z3_L_FALSE == Z3_get_bool_value(ctx, r)) return l;
+                    return Z3_mk_or(ctx, 2, data);
+                };
             ret[binOp::IMPLIES] = Z3_mk_implies;
             ret[binOp::IFF]     = Z3_mk_iff;
             ret[binOp::XOR]     = Z3_mk_xor;
