@@ -115,6 +115,7 @@ set(SOURCE_DIRS
         ${PROJECT_SOURCE_DIR}/Driver
         ${PROJECT_SOURCE_DIR}/Executor
         ${PROJECT_SOURCE_DIR}/Factory
+        ${PROJECT_SOURCE_DIR}/Interpreter
         ${PROJECT_SOURCE_DIR}/Logging
         ${PROJECT_SOURCE_DIR}/Passes
         ${PROJECT_SOURCE_DIR}/Predicate
