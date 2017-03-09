@@ -64,12 +64,12 @@ ExecutionEngine::runFunction(llvm::Function *F,
     // parameters than it is declared to take. This does not attempt to
     // take into account gratuitous differences in declared types,
     // though.
-    std::vector<llvm::GenericValue> ActualArgs;
+    std::vector<llvm::GenericValue> ActualArgs = ArgValues;
     const unsigned ArgCount = F->getFunctionType()->getNumParams();
-    const auto realArgCount = ArgValues.size();
 
-    for (unsigned i = 0; i < ArgCount; ++i)
-        ActualArgs.push_back(i < realArgCount ? ArgValues[i] : llvm::GenericValue{});
+    while(ActualArgs.size() < ArgCount) {
+        ActualArgs.push_back( Judicator->map(std::next(F->arg_begin(), ActualArgs.size())) );
+    }
 
     // Set up the function call.
     callFunction(F, ActualArgs);
