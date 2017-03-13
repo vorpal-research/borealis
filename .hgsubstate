@@ -1,7 +1,7 @@
 8f64d85a7c07775fd2aac198a7393f3e28e8eb08 lib/andersen
 3dd3eca24dd50cb862ac6349875dd8d91d93d5a0 lib/backward-cpp
 d9890d6c183b751075a97075c1b9f908be5be34e lib/functional-hell
-6d6cc0adad23005ea2217797a90536e2bb5c3507 lib/inih
+eab4bf289e2fd489914d9825a69e3715b695d09c lib/inih
 bbf1f4cee8d36a66367870affcc1459964d017ec lib/iterations
 59830380ee40e33210140f8aa367e4742b09e0de lib/leveldb-mp
 bde884bbcd54e6f7857bce9af73cbcc5939e0895 lib/memorypool
