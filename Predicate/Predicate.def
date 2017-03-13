@@ -16,6 +16,7 @@
 #include "Predicate/StorePredicate.h"
 #include "Predicate/WritePropertyPredicate.h"
 #include "Predicate/WriteBoundPredicate.h"
+#include "Predicate/MarkPredicate.h"
 
 #define HANDLE_PREDICATE(NAME, CLASS)
 
@@ -32,6 +33,7 @@ HANDLE_PREDICATE(SeqDataZero, SeqDataZeroPredicate)
 HANDLE_PREDICATE(Store, StorePredicate)
 HANDLE_PREDICATE(WriteProperty, WritePropertyPredicate)
 HANDLE_PREDICATE(WriteBound, WriteBoundPredicate)
+HANDLE_PREDICATE(Mark, MarkPredicate)
 
 #ifdef HANDLE_PREDICATE
 #undef HANDLE_PREDICATE

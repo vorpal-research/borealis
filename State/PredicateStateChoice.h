@@ -88,21 +88,36 @@ struct SMTImpl<Impl, PredicateStateChoice> {
         std::vector<std::pair<Bool, ExecutionContext>> memories;
         memories.reserve(s->getChoices().size());
 
+        static borealis::config::BoolConfigEntry freeVarChoicesSetting("analysis", "freevar-choices");
+        auto freeVarChoices = freeVarChoicesSetting.get(false);
+        static int uniqueness = 0;
+        auto pfix = tfm::format("$ext%d", ++uniqueness);
+
         for (auto&& choice : s->getChoices()) {
             ExecutionContext choiceCtx(*ctx);
 
-            auto&& path = choice->filterByTypes({PredicateType::PATH})->simplify();
             auto&& z3state = SMT<Impl>::doit(choice, ef, &choiceCtx, pathMode);
 
-            res = res || z3state;
+            if(not freeVarChoices) {
+                auto&& path = choice->filterByTypes({PredicateType::PATH})->simplify();
+                res = res || z3state;
 
-            if(!pathMode) {
-                auto&& z3path = *path == *choice ? z3state : SMT<Impl>::doit(path, ef, &choiceCtx, true);
-                memories.push_back({z3path.simplify(), choiceCtx});
+                if(!pathMode) {
+                    auto&& z3path = *path == *choice ? z3state : SMT<Impl>::doit(path, ef, &choiceCtx, true);
+                    memories.push_back({z3path.simplify(), choiceCtx});
+                }
+            } else {
+                res = res || (z3state && choiceCtx.externalizeEverythingMutable(pfix));
+                memories.push_back({ef.getTrue(), choiceCtx});
             }
         }
 
-        if(!pathMode) ctx->switchOn("choice", memories);
+        if(not freeVarChoices) {
+            if(not pathMode) ctx->switchOn("choice", memories);
+        } else {
+            ctx->externalSwitchOn(memories, pfix);
+        }
+
 
         return res;
     }

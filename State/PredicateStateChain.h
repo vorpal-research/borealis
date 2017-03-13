@@ -91,6 +91,20 @@ struct SMTImpl<Impl, PredicateStateChain> {
     }
 };
 
+struct PredicateStateChainExtractor {
+
+    auto unapply(PredicateState::Ptr t) const -> functional_hell::matchers::storage_t<PredicateState::Ptr, PredicateState::Ptr> {
+        if (auto&& tt = llvm::dyn_cast<PredicateStateChain>(t)) {
+            return functional_hell::matchers::make_storage(tt->getBase(), tt->getCurr());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $PredicateStateChain = functional_hell::matchers::make_pattern(PredicateStateChainExtractor());
+
 } /* namespace borealis */
 
 #endif /* PREDICATESTATECHAIN_H_ */

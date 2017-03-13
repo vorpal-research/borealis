@@ -1004,6 +1004,10 @@ public:
         return Self{ ctx, name };
     }
 
+    static Self mkVar(smt::context_t& ctx, const std::string& name) {
+        return Self{ name, inner_t::mkFunc(ctx, name) };
+    }
+
     static Self merge(
         const std::string& name,
         Self defaultArray,
@@ -1034,6 +1038,10 @@ public:
 
     friend std::ostream& operator<<(std::ostream& ost, const Self& fa) {
         return ost << "funcArray " << *fa.name << " {" << fa.inner << "}";
+    }
+
+    Bool operator==(Self other) const {
+        BYE_BYE(Bool, "operator== not supported by function-based array");
     }
 };
 
@@ -1088,11 +1096,26 @@ public:
         return TheoryArray(ctx, smt::mkVar(ctx, as, name, SmtEngine::freshness::fresh));
     }
 
+    static TheoryArray mkVar(smt::context_t& ctx, const std::string& name) {
+        auto as = smt::array_sort(
+            ctx,
+            impl::generator<Index>::sort(ctx),
+            impl::generator<Elem>::sort(ctx)
+        );
+        return TheoryArray(ctx, smt::mkVar(ctx, as, name, SmtEngine::freshness::normal));
+    }
+
     static TheoryArray merge(
         const std::string&,
         TheoryArray defaultArray,
         const std::vector<std::pair<Bool, TheoryArray>>& arrays) {
         return switch_(arrays, defaultArray);
+    }
+
+    Bool operator==(TheoryArray that) const {
+        auto&& ctx = getCtx();
+        auto ax = smt_impl::spliceAxioms(*this, that);
+        return Bool(ctx, smt::binop(ctx, SmtEngine::binOp::EQUAL, getExpr(), that.getExpr()), ax);
     }
 };
 
@@ -1162,6 +1185,10 @@ public:
         return Self{ ctx, name };
     }
 
+    static Self mkVar(smt::context_t& ctx, const std::string& name) {
+        BYE_BYE(Self, "mkVar not supported");
+    }
+
     static Self merge(
         const std::string& name,
         Self defaultArray,
@@ -1180,6 +1207,10 @@ public:
         };
 
         return Self{ defaultArray.getCtx(), name, nf };
+    }
+
+    Bool operator==(Self other) const {
+        BYE_BYE(Bool, "operator== not supported by inlined function arrays");
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const Self& ifa) {
@@ -1353,6 +1384,11 @@ public:
         return ScatterArray{ Inner::mkFree(ctx, name) };
     }
 
+    static ScatterArray mkVar(smt::context_t& ctx, const std::string& name) {
+        return ScatterArray{ Inner::mkVar(ctx, name) };
+    }
+
+
     static ScatterArray merge(
         const std::string& name,
         ScatterArray defaultArray,
@@ -1370,6 +1406,10 @@ public:
         Inner merged = Inner::merge(name, defaultArray.inner, inners);
 
         return ScatterArray{ merged };
+    }
+
+    Bool operator==(ScatterArray other) const {
+        return inner == other.inner;
     }
 
     friend std::ostream& operator<<(std::ostream& ost, const ScatterArray& arr) {

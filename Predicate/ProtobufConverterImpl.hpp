@@ -23,6 +23,7 @@
 #include "Protobuf/Gen/Predicate/StorePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WritePropertyPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/WriteBoundPredicate.pb.h"
+#include "Protobuf/Gen/Predicate/MarkPredicate.pb.h"
 
 #include "Term/ProtobufConverterImpl.hpp"
 #include "Util/ProtobufConverterImpl.hpp"
@@ -382,6 +383,30 @@ struct protobuf_traits_impl<WriteBoundPredicate> {
         auto rhv = TermConverter::fromProtobuf(fn, p.rhv());
         return Predicate::Ptr{
             new WriteBoundPredicate(lhv, rhv, base->getLocation(), base->getType())
+        };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<MarkPredicate> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::MarkPredicate> toProtobuf(const MarkPredicate& p) {
+        auto res = util::uniq(new proto::MarkPredicate());
+        res->set_allocated_id(
+            TermConverter::toProtobuf(*p.getId()).release()
+        );
+        return std::move(res);
+    }
+
+    static Predicate::Ptr fromProtobuf(
+        const FactoryNest& fn,
+        Predicate::Ptr base,
+        const proto::MarkPredicate& p) {
+        auto id = TermConverter::fromProtobuf(fn, p.id());
+        return Predicate::Ptr{
+            new MarkPredicate(id, base->getLocation(), base->getType())
         };
     }
 };

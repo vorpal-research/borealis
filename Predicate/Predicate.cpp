@@ -68,13 +68,14 @@ const Predicate::Operands& Predicate::getOperands() const {
 
 std::string Predicate::toString() const {
    switch (type) {
-   case PredicateType::REQUIRES: return "@R " + asString;
-   case PredicateType::ENSURES:  return "@E " + asString;
-   case PredicateType::ASSERT:   return "@A " + asString;
-   case PredicateType::ASSUME:   return "@U " + asString;
-   case PredicateType::PATH:     return "@P " + asString;
-   case PredicateType::STATE:    return asString;
-   default:                      return "@?" + asString;
+   case PredicateType::REQUIRES:  return "@R " + asString;
+   case PredicateType::ENSURES:   return "@E " + asString;
+   case PredicateType::ASSERT:    return "@A " + asString;
+   case PredicateType::ASSUME:    return "@U " + asString;
+   case PredicateType::PATH:      return "@P " + asString;
+   case PredicateType::STATE:     return asString;
+   case PredicateType::INVARIANT: return "@I" + asString;
+   default:                       return "@?" + asString;
    }
 }
 

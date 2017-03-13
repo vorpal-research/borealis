@@ -154,7 +154,23 @@ ExecutionContext::LocalMemoryBounds ExecutionContext::getLocalMemoryBounds() con
 ExecutionContext& ExecutionContext::switchOn(
     const std::string& name,
     const std::vector<Choice>& contexts) {
+
     auto&& merged = ExecutionContext::mergeMemory(name, *this, contexts);
+
+    this->memArrays = std::move(merged.memArrays);
+    this->globalPtr = merged.globalPtr;
+    this->localPtr = merged.localPtr;
+
+    this->contextAxioms = std::move(merged.contextAxioms);
+
+    return *this;
+}
+
+ExecutionContext& ExecutionContext::externalSwitchOn(
+    const std::vector<Choice>& contexts,
+    const std::string& prefix) {
+
+    auto&& merged = ExecutionContext::externalMergeMemory(*this, contexts, prefix);
 
     this->memArrays = std::move(merged.memArrays);
     this->globalPtr = merged.globalPtr;
@@ -169,19 +185,19 @@ ExecutionContext ExecutionContext::mergeMemory(
     const std::string& name,
     ExecutionContext defaultContext,
     const std::vector<Choice>& contexts) {
-    ExecutionContext res{ defaultContext.factory, 0ULL, 0ULL };
+    ExecutionContext res{defaultContext.factory, 0ULL, 0ULL};
 
     // Merge pointers
-    for (auto&& e : contexts) {
+    for (auto &&e : contexts) {
         res.globalPtr = std::max(res.globalPtr, e.second.globalPtr);
         res.localPtr = std::max(res.localPtr, e.second.localPtr);
     }
 
     // Collect all active memory array ids
-    auto&& memArrayIds = util::viewContainer(contexts)
+    auto &&memArrayIds = util::viewContainer(contexts)
         .fold(
             defaultContext.getMemArrayIds(),
-            [](auto&& a, auto&& e) {
+            [](auto &&a, auto &&e) {
                 auto ids = e.second.getMemArrayIds();
                 a.insert(ids.begin(), ids.end());
                 return a;
@@ -189,12 +205,59 @@ ExecutionContext ExecutionContext::mergeMemory(
         );
 
     // Merge memory arrays
-    for (auto&& id : memArrayIds) {
-        auto&& alternatives = util::viewContainer(contexts)
-            .map([&](auto&& p) { return std::make_pair(p.first, p.second.get(id)); })
+    for (auto &&id : memArrayIds) {
+        auto &&alternatives = util::viewContainer(contexts)
+             .map([&](auto &&p) { return std::make_pair(p.first, p.second.get(id)); })
             .toVector();
-
         res.set(id, MemArrayWithVersion::merge(name, defaultContext.get(id), alternatives));
+    }
+
+    // Merge context axioms
+
+    impl_::smtExprSet mergedAxioms;
+    if(contexts.empty()) {
+        res.contextAxioms = impl_::smtExprSet{};
+    } else {
+        auto h = util::head(contexts).second.contextAxioms;
+        auto&& t = util::tail(contexts);
+        for(auto&& ctx : t) {
+            auto&& e = ctx.second.contextAxioms;
+            auto&& newh = impl_::smtExprSet::join(std::move(h), e);
+            h = std::move(newh);
+        }
+        res.contextAxioms = std::move(h);
+        // res.contextAxioms.finalize();
+    }
+
+    return res;
+};
+
+ExecutionContext ExecutionContext::externalMergeMemory(
+        ExecutionContext defaultContext,
+        const std::vector<Choice>& contexts,
+        const std::string& prefix) {
+    ExecutionContext res{defaultContext.factory, 0ULL, 0ULL};
+
+    // Merge pointers
+    for (auto &&e : contexts) {
+        res.globalPtr = std::max(res.globalPtr, e.second.globalPtr);
+        res.localPtr = std::max(res.localPtr, e.second.localPtr);
+    }
+
+    // Collect all active memory array ids
+    auto &&memArrayIds = util::viewContainer(contexts)
+        .fold(
+            defaultContext.getMemArrayIds(),
+            [](auto &&a, auto &&e) {
+                auto ids = e.second.getMemArrayIds();
+                a.insert(ids.begin(), ids.end());
+                return a;
+            }
+        );
+
+    // Merge memory arrays
+    for (auto &&id : memArrayIds) {
+        res.set(id, MemArray::mkVar(defaultContext.factory.unwrap(), tfm::format("%s%s", id, prefix)));
     }
 
     // Merge context axioms

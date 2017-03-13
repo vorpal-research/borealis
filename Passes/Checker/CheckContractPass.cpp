@@ -24,6 +24,15 @@ namespace borealis {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template<class G>
+static void popupGraph(G* g, bool wait = false) {
+    static int pos = 0;
+    ++pos;
+    std::string realFileName = llvm::WriteGraph<G*>(g, "debug." + util::toString(pos), false, "Title");
+    if (realFileName.empty()) return;
+    llvm::DisplayGraph(realFileName, wait, llvm::GraphProgram::DOT);
+}
+
 class CallInstVisitor : public llvm::InstVisitor<CallInstVisitor> {
 
 public:
@@ -97,6 +106,8 @@ public:
         if (h.skip(defect)) return;
 
         auto state = pass->getInstructionState(&CI);
+//        auto gr = buildGraphRep(state);
+//        popupGraph(&gr, true);
 
         h.isReachable(state, defect);
     }

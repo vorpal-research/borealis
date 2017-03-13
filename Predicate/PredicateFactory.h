@@ -31,9 +31,10 @@ public:
     Predicate::Ptr getStorePredicate(
             Term::Ptr lhv,
             Term::Ptr rhv,
-            const Locus& loc = Locus()) {
+            const Locus& loc = Locus(),
+            PredicateType type = PredicateType::STATE) {
         return Predicate::Ptr(
-                new StorePredicate(lhv, rhv, loc));
+                new StorePredicate(lhv, rhv, loc, type));
     }
 
     Predicate::Ptr getWritePropertyPredicate(
@@ -137,7 +138,9 @@ public:
                 new SeqDataZeroPredicate(base, size, loc));
     }
 
-
+    Predicate::Ptr getMarkPredicate(Term::Ptr id, const Locus& loc = Locus()) {
+        return Predicate::Ptr(new MarkPredicate(id, loc));
+    }
 
     static PredicateFactory::Ptr get() {
         static PredicateFactory::Ptr instance(new PredicateFactory());
