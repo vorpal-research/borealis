@@ -235,21 +235,6 @@ void PredicateStateAnalysis::print(llvm::raw_ostream& O, const llvm::Module* M) 
 }
 
 PredicateState::Ptr PredicateStateAnalysis::getInstructionState(const llvm::Instruction* I) const {
-
-    auto ret = delegate->getInstructionState(I);
-
-    auto&& F = I->getParent()->getParent();
-
-//    std::cerr << ret->size() << " predicates from " << util::viewContainer(*F).flatten().size() << " instructions" << std::endl;
-
-//    if(ret->size() > util::viewContainer(*F).flatten().size() * 2) {
-////        std::cerr << "Bailing out..." << std::endl;
-////        std::exit(52);
-//        auto g = buildGraphRep(ret);
-//        popupGraph(&g);
-//        popupGraph(F);
-//    }
-
     return delegate->getInstructionState(I);
 }
 

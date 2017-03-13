@@ -1040,7 +1040,7 @@ public:
         return ost << "funcArray " << *fa.name << " {" << fa.inner << "}";
     }
 
-    Bool operator==(Self other) const {
+    Bool operator==(Self) const {
         BYE_BYE(Bool, "operator== not supported by function-based array");
     }
 };
@@ -1185,7 +1185,7 @@ public:
         return Self{ ctx, name };
     }
 
-    static Self mkVar(smt::context_t& ctx, const std::string& name) {
+    static Self mkVar(smt::context_t& /* ctx */, const std::string& /* name */) {
         BYE_BYE(Self, "mkVar not supported");
     }
 
@@ -1209,7 +1209,7 @@ public:
         return Self{ defaultArray.getCtx(), name, nf };
     }
 
-    Bool operator==(Self other) const {
+    Bool operator==(Self) const {
         BYE_BYE(Bool, "operator== not supported by inlined function arrays");
     }
 
