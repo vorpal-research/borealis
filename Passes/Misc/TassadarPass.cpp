@@ -29,6 +29,7 @@ const std::string DumpOutputFileDefault = "tassadar.report";
 
 using namespace borealis::config;
 MultiConfigEntry functionsToRun {"executor", "function"};
+StringConfigEntry arbiterMode{"executor", "defaultArbiter"};
 
 class ZeroArbiter: public Arbiter {
 public:
@@ -92,12 +93,20 @@ public:
         TRACE_FUNC;
 
         auto funcNames = util::viewContainer(functionsToRun).toHashSet();
+        auto arbiterName = arbiterMode.get("zero");
+        using arbiter_ptr = std::shared_ptr<Arbiter>;
+        auto arbiter =
+            ("zero" == arbiterName) ? arbiter_ptr(std::make_shared<ZeroArbiter>()) :
+            ("random" == arbiterName) ? arbiter_ptr(std::make_shared<RandomArbiter>()) :
+            nullptr;
+        ASSERT(nullptr != arbiter, tfm::format("Unknown arbiter mode: %s", arbiterName));
+
         ExecutionEngine tassadar{&M,
             &getAnalysis<llvm::DataLayoutPass>().getDataLayout(),
             &getAnalysis<llvm::TargetLibraryInfo>(),
             &getAnalysis<SlotTrackerPass>(),
             &getAnalysis<VariableInfoTracker>(),
-            std::make_shared<RandomArbiter>()
+            arbiter
         };
 
         auto funcs = util::viewContainer(M)
