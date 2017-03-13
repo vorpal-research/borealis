@@ -22,12 +22,12 @@ public:
     Environment(const llvm::Module* module);
 
     const llvm::Module* getModule() const;
-    const DomainFactory& getDomainFactory() const;
+    DomainFactory& getDomainFactory() const;
 
 private:
 
     const llvm::Module* module_;
-    DomainFactory factory_;
+    mutable DomainFactory factory_;
 };
 
 }   /* namespace absint */

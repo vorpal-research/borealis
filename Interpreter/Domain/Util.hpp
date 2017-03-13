@@ -6,6 +6,7 @@
 #define BOREALIS_UTILS_HPP
 
 #include <llvm/ADT/APSInt.h>
+#include <llvm/ADT/Hashing.h>
 
 #include "Util/sayonara.hpp"
 
@@ -32,27 +33,31 @@ static llvm::APInt max(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSi
     else return lhv.ugt(rhv) ? lhv : rhv;
 }
 
-static bool less(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
+static bool lt(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
+    if (lhv.isNaN() && rhv.isNaN()) return false;
     return lhv.compare(rhv) == llvm::APFloat::cmpLessThan;
 }
 
-static bool equals(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
+static bool eq(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
+    if (lhv.isNaN() && rhv.isNaN()) return true;
     return lhv.compare(rhv) == llvm::APFloat::cmpEqual;
 }
 
-static bool greater(const llvm::APFloat& lhv, const llvm::APFloat rhv) {
+static bool gt(const llvm::APFloat& lhv, const llvm::APFloat rhv) {
+    if (lhv.isNaN() && rhv.isNaN()) return false;
     return lhv.compare(rhv) == llvm::APFloat::cmpGreaterThan;
 }
 
 static llvm::APFloat min(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
-    return less(lhv, rhv) ? lhv : rhv;
+    return lt(lhv, rhv) ? lhv : rhv;
 }
 
 static llvm::APFloat max(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
-    return less(lhv, rhv) ? rhv : lhv;
+    return lt(lhv, rhv) ? rhv : lhv;
 }
 
 static bool eq(const llvm::APInt& lhv, const llvm::APInt& rhv) {
+    if (lhv.getBitWidth() != rhv.getBitWidth()) return false;
     return lhv.eq(rhv);
 }
 
@@ -100,6 +105,24 @@ static const llvm::fltSemantics& getSemantics(const llvm::Type& type) {
 
 }   /* namespace util */
 }   /* namespace borealis */
+
+namespace std {
+
+template <>
+struct hash<llvm::APFloat> {
+    size_t operator() (const llvm::APFloat& apFloat) const noexcept {
+        return llvm::hash_value(apFloat);
+    }
+};
+
+template <>
+struct hash<llvm::APInt> {
+    size_t operator() (const llvm::APInt& apInt) const noexcept {
+        return llvm::hash_value(apInt);
+    }
+};
+
+}   /* namespace std */
 
 #include "Util/unmacros.h"
 

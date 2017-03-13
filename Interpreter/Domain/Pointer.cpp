@@ -12,18 +12,20 @@
 namespace borealis {
 namespace absint {
 
-Pointer::Pointer(const borealis::absint::DomainFactory* factory) :
-        Domain(BOTTOM, Type::Pointer, factory),
-        status_(NON_VALID) {}
+Pointer::Pointer(DomainFactory* factory) :
+        Pointer(BOTTOM, factory) {}
 
-Pointer::Pointer(Domain::Value value, const DomainFactory* factory) :
-        Domain(value, Type::Pointer, factory) {
-    if (value == BOTTOM) status_ = NON_VALID;
+Pointer::Pointer(Domain::Value value, DomainFactory* factory) :
+        Pointer(factory, std::make_tuple(value, NON_VALID)) {}
+
+Pointer::Pointer(DomainFactory* factory, Pointer::Status status) :
+        Pointer(factory, std::make_tuple(VALUE, status)) {}
+
+Pointer::Pointer(DomainFactory* factory, Pointer::ID id) :
+        Domain(std::get<0>(id), Type::Pointer, factory),
+        status_(std::get<1>(id)) {
+    if (value_ == BOTTOM) status_ = NON_VALID;
 }
-
-Pointer::Pointer(const DomainFactory* factory, Pointer::Status status) :
-        Domain(VALUE, Type::Pointer, factory),
-        status_(status) {}
 
 Pointer::Pointer(const Pointer& other) :
         Domain(other.value_, Type::Pointer, other.factory_),
@@ -36,7 +38,7 @@ bool Pointer::equals(const Domain* other) const {
     if (this->isBottom() && other->isBottom()) return true;
     if (this->isTop() && other->isTop()) return true;
 
-    return value && this->getStatus() == value->getStatus();
+    return this->getStatus() == value->getStatus();
 }
 
 bool Pointer::operator<(const Domain& other) const {
@@ -168,6 +170,10 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
         default:
             UNREACHABLE("Unknown operation in icmp");
     }
+}
+
+bool Pointer::classof(const Domain* other) {
+    return other->getType() == Domain::Pointer;
 }
 
 }   /* namespace absint */

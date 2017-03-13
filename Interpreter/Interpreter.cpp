@@ -23,13 +23,15 @@ Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("inter
 
 void Interpreter::run() {
     auto&& main = module_.createFunction("main");
-    std::vector<Domain::Ptr> args;
-    for (auto&& arg : main->getInstance()->getArgumentList()) {
-        args.push_back(environment_->getDomainFactory().get(&arg));
-    }
+    if (main) {
+        std::vector<Domain::Ptr> args;
+        for (auto&& arg : main->getInstance()->getArgumentList()) {
+            args.push_back(environment_->getDomainFactory().get(&arg));
+        }
 
-    interpretFunction(main, args);
-    errs() << module_ << endl;
+        interpretFunction(main, args);
+        infos() << module_ << endl;
+    } else errs() << "No main function" << endl;
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
@@ -49,10 +51,10 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
 
         // merging new information in successor blocks
         function->getOutputState()->merge(basicBlock->getOutputState());
-        for (auto&& pred : function->getSuccessorsFor(basicBlock)) {
-            pred->getInputState()->merge(basicBlock->getOutputState());
-            if (not pred->atFixpoint() && not util::contains(deque, pred->getInstance())) {
-                deque.push_back(pred->getInstance());
+        for (auto&& succ : function->getSuccessorsFor(basicBlock)) {
+            succ->getInputState()->merge(basicBlock->getOutputState());
+            if (not succ->atFixpoint() && not util::contains(deque, succ->getInstance())) {
+                deque.push_back(succ->getInstance());
             }
         }
         deque.pop_front();
@@ -340,7 +342,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
         currentState_->addLocalVariable(&i, function->getReturnValue());
     }
 }
-//r -g -O2 -Wall -I. -DHAVE_ALLOCA_H -DUSE_CURL_FOR_IMAP_SEND -DHAVE_PATHS_H -DHAVE_DEV_TTY -DXDL_FAST_HASH -DHAVE_CLOCK_GETTIME -DHAVE_CLOCK_MONOTONIC -DHAVE_GETDELIM -DSHA1_HEADER='<openssl/sha.h>' -DNO_STRLCPY -DNO_MKSTEMPS -DSHELL_PATH='"/bin/sh"' -o git-upload-pack upload-pack.o libgit.a xdiff/lib.a -lz -lcrypto -lpthread -lrt
+
 void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
     auto&& op = getVariable(i.getOperand(0));
     if (not op) return;

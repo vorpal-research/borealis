@@ -15,53 +15,45 @@
 namespace borealis {
 namespace absint {
 
-IntegerInterval::IntegerInterval(const DomainFactory* factory, unsigned width, bool isSigned) :
-        Domain(BOTTOM, Type::IntegerInterval, factory),
-        width_(width),
-        signed_(isSigned),
-        from_(width, 0, false),
-        to_(width_, 0, false) {}
+IntegerInterval::IntegerInterval(DomainFactory* factory, unsigned width, bool isSigned) :
+        IntegerInterval(BOTTOM, factory, width, isSigned) {}
 
+IntegerInterval::IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned) :
+        IntegerInterval(factory, constant, constant, isSigned) {}
 
-IntegerInterval::IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width, bool isSigned) :
-        Domain(value, Type::IntegerInterval, factory),
-        width_(width),
-        signed_(isSigned),
-        from_(width, 0, false),
-        to_(width_, 0, false) {
-    if (value == TOP) setTop();
-}
+IntegerInterval::IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width, bool isSigned) :
+        IntegerInterval(factory, std::make_tuple(value,
+                                                 isSigned,
+                                                 llvm::APInt(width, 0, false),
+                                                 llvm::APInt(width, 0, false))) {}
 
-IntegerInterval::IntegerInterval(const DomainFactory* factory, const llvm::APInt& constant, bool isSigned) :
-        Domain(VALUE, Type::IntegerInterval, factory),
-        width_(constant.getBitWidth()),
-        signed_(isSigned),
-        from_(constant),
-        to_(constant) {
-}
-
-IntegerInterval::IntegerInterval(const DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned) :
-        Domain(VALUE, Type::IntegerInterval, factory),
-        width_(from.getBitWidth()),
-        signed_(isSigned),
-        from_(from),
-        to_(to) {
-    ASSERT(from.getBitWidth() == to.getBitWidth(), "Different bit width of interval bounds");
-    ASSERT(isCorrect(), "Interval lower bound is greater than upper bound:" + from_.toString(10, false) + " " + to_.toString(10, false));
-    if (from.isMinValue() && to.isMaxValue()) value_ = TOP;
-}
+IntegerInterval::IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned) :
+        IntegerInterval(factory, std::make_tuple(VALUE,
+                                                 isSigned,
+                                                 from,
+                                                 to)) {}
 
 IntegerInterval::IntegerInterval(const IntegerInterval &interval) :
         Domain(interval.value_, Type::IntegerInterval, interval.factory_),
-        width_(interval.width_),
         signed_(interval.signed_),
         from_(interval.from_),
         to_(interval.to_) {}
 
+IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::ID& key) :
+        Domain(std::get<0>(key), Type::IntegerInterval, factory),
+        signed_(std::get<1>(key)),
+        from_(std::get<2>(key)),
+        to_(std::get<3>(key)) {
+    ASSERT(from_.getBitWidth() == to_.getBitWidth(), "Different bit width of interval bounds");
+    ASSERT(isCorrect(), "Interval lower bound is greater than upper bound:" + from_.toString(10, false) + " " + to_.toString(10, false));
+    if (from_.isMinValue() && to_.isMaxValue()) value_ = TOP;
+    else if (value_ == TOP) setTop();
+}
+
 void IntegerInterval::setTop() {
     Domain::setTop();
-    from_ = util::getMinValue(width_, signed_);
-    to_ = util::getMaxValue(width_, signed_);
+    from_ = util::getMinValue(getWidth(), signed_);
+    to_ = util::getMaxValue(getWidth(), signed_);
 }
 
 Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
@@ -130,8 +122,9 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
     return factory_->getInteger(TOP, getWidth(), signed_);
 }
 
-unsigned IntegerInterval::getWidth() const { return width_; }
+unsigned IntegerInterval::getWidth() const { return from_.getBitWidth(); }
 bool IntegerInterval::isConstant() const { return util::eq(from_, to_); }
+bool IntegerInterval::isConstant(uint64_t constant) const { return isConstant() && from_ == constant; }
 const llvm::APInt& IntegerInterval::from() const { return from_; }
 const llvm::APInt& IntegerInterval::to() const { return to_; }
 
@@ -160,10 +153,15 @@ bool IntegerInterval::equals(const Domain *other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other);
     if (not value) return false;
 
-    if (this->isBottom() && value->isBottom()) return true;
-    if (this->isTop() && value->isTop()) return true;
+    if (this->isBottom() && value->isBottom()) {
+        return this->getWidth() == value->getWidth();
+    }
+    if (this->isTop() && value->isTop()) {
+        return this->getWidth() == value->getWidth();
+    }
 
-    return this->getWidth() == value->getWidth() &&
+    return  this->value_ == value->value_ &&
+            this->getWidth() == value->getWidth() &&
             util::eq(from_, value->from_) &&
             util::eq(to_, value->to_);
 }
@@ -185,9 +183,7 @@ bool IntegerInterval::classof(const Domain *other) {
 
 size_t IntegerInterval::hashCode() const {
     return util::hash::simple_hash_value(value_, getType(), getWidth(),
-                                         // fix that
-                                         from_.toString(10, false),
-                                         to_.toString(10, false));
+                                         from_, to_);
 }
 
 std::string IntegerInterval::toString() const {
@@ -218,8 +214,8 @@ Domain::Ptr IntegerInterval::add(Domain::Ptr other) const {
             left = from_.uadd_ov(value->from_, ovLeft);
             right = to_.uadd_ov(value->to_, ovRight);
         }
-        if (ovLeft) left = util::getMinValue(width_, signed_);
-        if (ovRight) right = util::getMaxValue(width_, signed_);
+        if (ovLeft) left = util::getMinValue( getWidth(), signed_);
+        if (ovRight) right = util::getMaxValue( getWidth(), signed_);
         return factory_->getInteger(left, right, signed_);
     }
 }
@@ -243,8 +239,8 @@ Domain::Ptr IntegerInterval::sub(Domain::Ptr other) const {
             left = from_.usub_ov(value->to_, ovLeft);
             right = to_.usub_ov(value->from_, ovRight);
         }
-        if (ovLeft) left = util::getMinValue(width_, signed_);
-        if (ovRight) right = util::getMaxValue(width_, signed_);
+        if (ovLeft) left = util::getMinValue( getWidth(), signed_);
+        if (ovRight) right = util::getMaxValue( getWidth(), signed_);
         return factory_->getInteger(left, right, signed_);
     }
 }
@@ -273,10 +269,10 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
             fromTo = from_.umul_ov(value->to_, ovFT);
             toTo = to_.umul_ov(value->to_, ovTT);
         }
-        if (ovFF) fromFrom = util::getMinValue(width_, signed_);
-        if (ovTF) toFrom = util::getMaxValue(width_, signed_);
-        if (ovFT) fromTo = util::getMinValue(width_, signed_);
-        if (ovTT) toTo = util::getMaxValue(width_, signed_);
+        if (ovFF) fromFrom = util::getMinValue( getWidth(), signed_);
+        if (ovTF) toFrom = util::getMaxValue( getWidth(), signed_);
+        if (ovFT) fromTo = util::getMinValue( getWidth(), signed_);
+        if (ovTT) toTo = util::getMaxValue( getWidth(), signed_);
 
         using namespace borealis::util;
         auto first = factory_->getInteger(min(fromFrom, toFrom, signed_), max(fromFrom, toFrom, signed_), signed_);
@@ -286,112 +282,88 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr IntegerInterval::udiv(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
-    ASSERT(this->getWidth() == value->getWidth(), "Dividing two intervals of different format");
-
-    if (isBottom() || value->isBottom()) {
-        return factory_->getInteger(getWidth(), signed_);
-    } else if (this->isTop() || value->isTop()) {
-        return factory_->getInteger(TOP, getWidth(), signed_);
-    } else {
-
-        if (value->from_ == 0 && value->to_ == 0) {
-            return factory_->getInteger(TOP, getWidth(), signed_);
-        } else {
-
-            using namespace borealis::util;
-            Domain::Ptr first, second;
-            if (value->from_ == 0) {
-                first = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
-            } else {
-                first = factory_->getInteger(min(from_.udiv(value->from_), to_.udiv(value->from_), signed_),
-                                             max(from_.udiv(value->from_), to_.udiv(value->from_), signed_),
-                                             signed_);
-            }
-            if (value->to_ == 0) {
-                second = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
-            } else {
-                second = factory_->getInteger(min(from_.udiv(value->to_), to_.udiv(value->to_), signed_),
-                                              max(from_.udiv(value->to_), to_.udiv(value->to_), signed_),
-                                              signed_);
-            }
-            return first->join(second);
-        }
+#define DIV_OPERATION(OPER) \
+    auto&& value = llvm::dyn_cast<IntegerInterval>(other.get()); \
+    ASSERT(value, "Nullptr in interval"); \
+    ASSERT(this->getWidth() == value->getWidth(), "Dividing two intervals of different format"); \
+     \
+    if (isBottom() || value->isBottom()) { \
+        return factory_->getInteger(getWidth(), signed_); \
+    } else if (this->isTop() || value->isTop()) { \
+        return factory_->getInteger(TOP, getWidth(), signed_); \
+    } else { \
+        \
+        if (value->isConstant(0)) { \
+            return factory_->getInteger(TOP, getWidth(), signed_); \
+        } else { \
+         \
+            using namespace borealis::util; \
+            Domain::Ptr first, second; \
+            if (value->from_ == 0) { \
+                first = factory_->getInteger(llvm::APInt( getWidth(), 0, false), to_, false); \
+            } else { \
+                first = factory_->getInteger(min(from_.OPER(value->from_), to_.OPER(value->from_), signed_), \
+                                             max(from_.OPER(value->from_), to_.OPER(value->from_), signed_), \
+                                             signed_); \
+            } \
+            if (value->to_ == 0) { \
+                second = factory_->getInteger(llvm::APInt( getWidth(), 0, false), to_, false); \
+            } else { \
+                second = factory_->getInteger(min(from_.OPER(value->to_), to_.OPER(value->to_), signed_), \
+                                              max(from_.OPER(value->to_), to_.OPER(value->to_), signed_), \
+                                              signed_); \
+            } \
+            return first->join(second); \
+        } \
     }
+
+
+Domain::Ptr IntegerInterval::udiv(Domain::Ptr other) const {
+    DIV_OPERATION(udiv);
 }
 
 Domain::Ptr IntegerInterval::sdiv(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
-    ASSERT(this->getWidth() == value->getWidth(), "Dividing two intervals of different format");
-
-    if (isBottom() || value->isBottom()) {
-        return factory_->getInteger(getWidth(), signed_);
-    } else if (this->isTop() || value->isTop()) {
-        return factory_->getInteger(TOP, getWidth(), signed_);
-    } else {
-
-        if (value->from_ == 0 && value->to_ == 0) {
-            return factory_->getInteger(TOP, getWidth(), signed_);
-        } else {
-
-            using namespace borealis::util;
-            Domain::Ptr first, second;
-            if (value->from_ == 0) {
-                first = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
-            } else {
-                first = factory_->getInteger(min(from_.sdiv(value->from_), to_.sdiv(value->from_), signed_),
-                                             max(from_.sdiv(value->from_), to_.sdiv(value->from_), signed_),
-                                             signed_);
-            }
-            if (value->to_ == 0) {
-                second = factory_->getInteger(llvm::APInt(width_, 0, false), to_, false);
-            } else {
-                second = factory_->getInteger(min(from_.sdiv(value->to_), to_.sdiv(value->to_), signed_),
-                                              max(from_.sdiv(value->to_), to_.sdiv(value->to_), signed_),
-                                              signed_);
-            }
-            return first->join(second);
-        }
-    }
+    DIV_OPERATION(sdiv);
 }
 
-// TODO: implement proper rem operations
 Domain::Ptr IntegerInterval::urem(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
-
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    DIV_OPERATION(urem);
 }
 
 Domain::Ptr IntegerInterval::srem(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
-
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    DIV_OPERATION(srem);
 }
 
-Domain::Ptr IntegerInterval::shl(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
+#define BIT_OPERATION(OPER) \
+    auto&& value = llvm::dyn_cast<IntegerInterval>(other.get()); \
+    ASSERT(value, "Nullptr in shl"); \
+     \
+    if (isBottom() || value->isBottom()) { \
+        return factory_->getInteger(getWidth(), signed_); \
+    } else if (this->isTop() || value->isTop()) { \
+        return factory_->getInteger(TOP, getWidth(), signed_); \
+    } else { \
+        using namespace borealis::util; \
+        Domain::Ptr first = factory_->getInteger(min(from_.OPER(value->from_), to_.OPER(value->from_), signed_), \
+                                                 max(from_.OPER(value->from_), to_.OPER(value->from_), signed_), \
+                                                 signed_); \
+        Domain::Ptr second = factory_->getInteger(min(from_.OPER(value->to_), to_.OPER(value->to_), signed_), \
+                                                  max(from_.OPER(value->to_), to_.OPER(value->to_), signed_), \
+                                                  signed_); \
+         \
+        return first->join(second); \
+    } \
 
-    return factory_->getInteger(TOP, getWidth(), signed_);
+Domain::Ptr IntegerInterval::shl(Domain::Ptr other) const {
+    BIT_OPERATION(shl);
 }
 
 Domain::Ptr IntegerInterval::lshr(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
-
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    BIT_OPERATION(lshr);
 }
 
 Domain::Ptr IntegerInterval::ashr(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
-
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    BIT_OPERATION(ashr);
 }
 
 Domain::Ptr IntegerInterval::bAnd(Domain::Ptr other) const {
@@ -419,18 +391,26 @@ Domain::Ptr IntegerInterval::trunc(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
+    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth(), signed_);
     if (isTop()) return factory_->getInteger(TOP, intType->getBitWidth(), signed_);
 
-    auto&& newFrom = from_.trunc(intType->getBitWidth());
-    auto&& newTo = to_.trunc(intType->getBitWidth());
-    return factory_->getInteger(newFrom, newTo, signed_);
+    auto maxTruncVal = util::getMaxValue(intType->getBitWidth(), signed_);
+    llvm::APInt extendedTo = signed_ ? maxTruncVal.sext( getWidth()) : maxTruncVal.zext( getWidth());
+    if (util::le(to_, extendedTo)) {
+        auto&& newFrom = from_.trunc(intType->getBitWidth());
+        auto&& newTo = to_.trunc(intType->getBitWidth());
+        return factory_->getInteger(newFrom, newTo, signed_);
+
+    } else {
+        return factory_->getInteger(TOP, intType->getBitWidth(), signed_);
+    }
 }
 
 Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
+    ASSERT(type.isIntegerTy(), "Non-integer type in zext");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isTop()) return factory_->getInteger(TOP, intType->getBitWidth(), signed_);
+    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth(), signed_);
 
     auto&& newFrom = from_.zext(intType->getBitWidth());
     auto&& newTo = to_.zext(intType->getBitWidth());
@@ -438,72 +418,52 @@ Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
 }
 
 Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
+    ASSERT(type.isIntegerTy(), "Non-integer type in sext");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isTop()) return factory_->getInteger(TOP, intType->getBitWidth(), signed_);
+    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth(), signed_);
 
     auto&& newFrom = from_.sext(intType->getBitWidth());
     auto&& newTo = to_.sext(intType->getBitWidth());
     return factory_->getInteger(newFrom, newTo, signed_);
 }
 
-Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {
-    ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
-    auto& newSemantics = util::getSemantics(type);
-
-    unsigned width = 32;
-    if (type.isHalfTy())
-        width = 16;
-    else if (type.isFloatTy())
-        width = 32;
-    else if (type.isDoubleTy())
-        width = 64;
-    else if (type.isFP128Ty())
-        width = 128;
-    else if (type.isPPC_FP128Ty())
-        width = 128;
-    else if (type.isX86_FP80Ty())
-        width = 80;
-    llvm::APInt newFrom = from_, newTo = to_;
-    if (width < width_) {
-        newFrom = from_.trunc(width);
-        newTo = to_.trunc(width);
-    } else if (width > width_) {
-        newFrom = from_.zext(width);
-        newTo = to_.zext(width);
-    }
-    llvm::APFloat from(newSemantics, newFrom), to(newSemantics, newTo);
+#define INT_TO_FP(OPER) \
+    ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp"); \
+    auto& newSemantics = util::getSemantics(type); \
+    if (isBottom()) return factory_->getFloat(BOTTOM, newSemantics); \
+    if (isTop()) return factory_->getFloat(TOP, newSemantics); \
+     \
+    unsigned width = 32; \
+    if (type.isHalfTy()) \
+        width = 16; \
+    else if (type.isFloatTy()) \
+        width = 32; \
+    else if (type.isDoubleTy()) \
+        width = 64; \
+    else if (type.isFP128Ty()) \
+        width = 128; \
+    else if (type.isPPC_FP128Ty()) \
+        width = 128; \
+    else if (type.isX86_FP80Ty()) \
+        width = 80; \
+    llvm::APInt newFrom = from_, newTo = to_; \
+    if (width <  getWidth()) { \
+        newFrom = from_.trunc(width); \
+        newTo = to_.trunc(width); \
+    } else if (width >  getWidth()) { \
+        newFrom = from_.OPER(width); \
+        newTo = to_.OPER(width); \
+    } \
+    llvm::APFloat from(newSemantics, newFrom), to(newSemantics, newTo); \
     return factory_->getFloat(from, to);
+
+Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {
+    INT_TO_FP(zext)
 }
 
 Domain::Ptr IntegerInterval::sitofp(const llvm::Type& type) const {
-    ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
-    auto& newSemantics = util::getSemantics(type);
-
-    unsigned width = 32;
-    if (type.isHalfTy())
-        width = 16;
-    else if (type.isFloatTy())
-        width = 32;
-    else if (type.isDoubleTy())
-        width = 64;
-    else if (type.isFP128Ty())
-        width = 128;
-    else if (type.isPPC_FP128Ty())
-        width = 128;
-    else if (type.isX86_FP80Ty())
-        width = 80;
-    llvm::APInt newFrom = from_, newTo = to_;
-    if (width < width_) {
-        newFrom = from_.trunc(width);
-        newTo = to_.trunc(width);
-    } else if (width > width_) {
-        newFrom = from_.sext(width);
-        newTo = to_.sext(width);
-    }
-    llvm::APFloat from(newSemantics, newFrom), to(newSemantics, newTo);
-    return factory_->getFloat(from, to);
+    INT_TO_FP(sext)
 }
 
 Domain::Ptr IntegerInterval::inttoptr(const llvm::Type&) const {

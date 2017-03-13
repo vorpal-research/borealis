@@ -6,8 +6,6 @@
 #include <Type/TypeUtils.h>
 
 #include "DomainFactory.h"
-#include "IntegerInterval.h"
-#include "FloatInterval.h"
 #include "Util.hpp"
 
 #include "Util/macros.h"
@@ -15,9 +13,21 @@
 namespace borealis {
 namespace absint {
 
-Domain::Ptr DomainFactory::get(const llvm::Type& type, Domain::Value value) const {
+DomainFactory::DomainFactory() : ObjectLevelLogging("domain") {}
+
+DomainFactory::~DomainFactory() {
+    auto&& info = infos();
+    info << "DomainFactory statistics:" << endl;
+    info << "Integers: " << ints_.size() << endl;
+    info << "Floats: " << floats_.size() << endl;
+    info << "Pointers: " << ptrs_.size() << endl;
+    info << endl;
+}
+
+
+/*  General */
+Domain::Ptr DomainFactory::get(const llvm::Type& type, Domain::Value value) {
     if (type.isVoidTy()) {
-        // return nothing
         return nullptr;
     } else if (type.isIntegerTy()) {
         auto&& intType = llvm::cast<llvm::IntegerType>(&type);
@@ -33,11 +43,11 @@ Domain::Ptr DomainFactory::get(const llvm::Type& type, Domain::Value value) cons
     }
 }
 
-Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val, Domain::Value value) const {
+Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val, Domain::Value value) {
     return get(*val->getType(), value);
 }
 
-Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
+Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
         return getInteger(intConstant->getValue());
     } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
@@ -49,53 +59,89 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) const {
     }
 }
 
-Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) const {
-    return Domain::Ptr{ new IntegerInterval(this, width, isSigned) };
+Domain::Ptr DomainFactory::cached(const IntegerInterval::ID& key) {
+    if (ints_.find(key) == ints_.end()) {
+        ints_[key] = Domain::Ptr{ new IntegerInterval(this, key) };
+    }
+    return ints_[key];
 }
 
-Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width, bool isSigned) const {
-    return Domain::Ptr{ new IntegerInterval(value, this, width, isSigned) };
+Domain::Ptr DomainFactory::cached(const FloatInterval::ID& key) {
+    if (floats_.find(key) == floats_.end()) {
+        floats_[key] = Domain::Ptr{ new FloatInterval(this, key) };
+    }
+    return floats_[key];
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val, bool isSigned) const {
-    return Domain::Ptr{ new IntegerInterval(this, val, isSigned) };
+Domain::Ptr DomainFactory::cached(const Pointer::ID& key) {
+    if (ptrs_.find(key) == ptrs_.end()) {
+        ptrs_[key] = Domain::Ptr{ new Pointer(this, key) };
+    }
+    return ptrs_[key];
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned) const {
-    return Domain::Ptr{ new IntegerInterval(this, from, to, isSigned) };
+
+/* Integer */
+Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) {
+    return getInteger(Domain::BOTTOM, width, isSigned);
 }
 
-Domain::Ptr DomainFactory::getFloat(const llvm::fltSemantics& semantics) const {
-    return Domain::Ptr{ new FloatInterval(this, semantics) };
+Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val, bool isSigned) {
+    return getInteger(val, val, isSigned);
 }
 
-Domain::Ptr DomainFactory::getFloat(Domain::Value value, const llvm::fltSemantics& semantics) const {
-    return Domain::Ptr{ new FloatInterval(value, this, semantics) };
+Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width, bool isSigned) {
+    return cached(std::make_tuple(value,
+                                  isSigned,
+                                  llvm::APInt(width, 0, isSigned),
+                                  llvm::APInt(width, 0, isSigned)));
 }
 
-Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& val) const {
-    return Domain::Ptr{ new FloatInterval(this, val) };
+Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned) {
+    return cached(std::make_tuple(Domain::VALUE,
+                                  isSigned,
+                                  from,
+                                  to));
 }
 
-Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFloat& to) const {
-    return Domain::Ptr{ new FloatInterval(this, from, to) };
+
+/* Float */
+Domain::Ptr DomainFactory::getFloat(const llvm::fltSemantics& semantics) {
+    return getFloat(Domain::BOTTOM, semantics);
 }
 
-Domain::Ptr DomainFactory::getPointer() const {
-    return Domain::Ptr{ new Pointer(this) };
+Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& val) {
+    return getFloat(val, val);
 }
 
-Domain::Ptr DomainFactory::getPointer(Domain::Value value) const {
-    return Domain::Ptr{ new Pointer(value, this) };
+Domain::Ptr DomainFactory::getFloat(Domain::Value value, const llvm::fltSemantics& semantics) {
+    return cached(std::make_tuple(value,
+                                  llvm::APFloat(semantics),
+                                  llvm::APFloat(semantics)));
 }
 
-Domain::Ptr DomainFactory::getPointer(bool isValid) const {
-    Pointer::Status status = isValid ? Pointer::VALID : Pointer::NON_VALID;
-    return Domain::Ptr{ new Pointer(this, status) };
+Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFloat& to) {
+    return cached(std::make_tuple(Domain::VALUE,
+                                  llvm::APFloat(from),
+                                  llvm::APFloat(to)));
 }
 
-Domain::Ptr DomainFactory::getPointer(Pointer::Status status) const {
-    return Domain::Ptr{ new Pointer(this, status) };
+
+/* Pointer */
+Domain::Ptr DomainFactory::getPointer() {
+    return getPointer(Domain::BOTTOM);
+}
+
+Domain::Ptr DomainFactory::getPointer(bool isValid) {
+    return getPointer(isValid ? Pointer::VALID : Pointer::NON_VALID);
+}
+
+Domain::Ptr DomainFactory::getPointer(Domain::Value value) {
+    return cached(std::make_tuple(value, Pointer::NON_VALID));
+}
+
+Domain::Ptr DomainFactory::getPointer(Pointer::Status status) {
+    return cached(std::make_tuple(Domain::VALUE, status));
 }
 
 }   /* namespace absint */

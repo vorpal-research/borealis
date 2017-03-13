@@ -5,22 +5,30 @@
 #ifndef BOREALIS_INTERVALDOMAIN_H
 #define BOREALIS_INTERVALDOMAIN_H
 
-#include <llvm/ADT/APSInt.h>
-
 #include "Domain.h"
+#include "Util.hpp"
+#include "Util/hash.hpp"
 
 namespace borealis {
 namespace absint {
 
 class IntegerInterval : public Domain {
+public:
+
+    /// Structure that identifies int interval
+    using ID = std::tuple<Domain::Value, bool, llvm::APInt, llvm::APInt>;
+    struct IDHash;
+    struct IDEquals;
+
 protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(const DomainFactory* factory, unsigned width, bool isSigned = false);
-    IntegerInterval(Domain::Value value, const DomainFactory* factory, unsigned width, bool isSigned  = false);
-    IntegerInterval(const DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
-    IntegerInterval(const DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
+    IntegerInterval(DomainFactory* factory, unsigned width, bool isSigned = false);
+    IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
+    IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width, bool isSigned  = false);
+    IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
+    IntegerInterval(DomainFactory* factory, const ID& key);
     IntegerInterval(const IntegerInterval& interval);
 
 public:
@@ -36,6 +44,7 @@ public:
     /// Other
     unsigned getWidth() const;
     bool isConstant() const;
+    bool isConstant(uint64_t constant) const;
     const llvm::APInt& from() const;
     const llvm::APInt& to() const;
     bool intersects(const IntegerInterval* other) const;
@@ -79,11 +88,24 @@ private:
 
     virtual void setTop();
 
-
-    unsigned width_;
     bool signed_;
     llvm::APInt from_;
     llvm::APInt to_;
+};
+
+struct IntegerInterval::IDHash {
+    size_t operator()(const ID& id) const {
+        return std::hash<ID>()(id);
+    }
+};
+
+struct IntegerInterval::IDEquals {
+    bool operator()(const ID& lhv, const ID& rhv) const {
+        return std::get<0>(lhv) == std::get<0>(rhv) &&
+               std::get<1>(lhv) == std::get<1>(rhv) &&
+               util::eq(std::get<2>(lhv), std::get<2>(rhv)) &&
+               util::eq(std::get<3>(lhv), std::get<3>(rhv));
+    }
 };
 
 }   /* namespace absint */

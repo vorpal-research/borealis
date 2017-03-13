@@ -6,19 +6,29 @@
 #define BOREALIS_FLOATINTERVAL_H
 
 #include "Domain.h"
+#include "Util.hpp"
+#include "Util/hash.hpp"
 
 namespace borealis {
 namespace absint {
 
 class FloatInterval : public Domain {
+public:
+
+    /// Structure that identifies float interval
+    using ID = std::tuple<Domain::Value, llvm::APFloat, llvm::APFloat>;
+    struct IDHash;
+    struct IDEquals;
+
 protected:
 
     friend class DomainFactory;
 
-    FloatInterval(const DomainFactory* factory, const llvm::fltSemantics& semantics);
-    FloatInterval(Domain::Value value, const DomainFactory* factory, const llvm::fltSemantics& semantics);
-    FloatInterval(const DomainFactory* factory, const llvm::APFloat& constant);
-    FloatInterval(const DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
+    FloatInterval(DomainFactory* factory, const llvm::fltSemantics& semantics);
+    FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics);
+    FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
+    FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
+    FloatInterval(DomainFactory* factory, const ID& id);
     FloatInterval(const FloatInterval& interval);
 
 public:
@@ -66,6 +76,20 @@ private:
 
     llvm::APFloat from_;
     llvm::APFloat to_;
+};
+
+struct FloatInterval::IDHash {
+    size_t operator()(const ID& id) const {
+        return std::hash<ID>()(id);
+    }
+};
+
+struct FloatInterval::IDEquals {
+    bool operator()(const ID& lhv, const ID& rhv) const {
+        return std::get<0>(lhv) == std::get<0>(rhv) &&
+               util::eq(std::get<1>(lhv), std::get<1>(rhv)) &&
+               util::eq(std::get<2>(lhv), std::get<2>(rhv));
+    }
 };
 
 }   /* namespace absint */

@@ -14,27 +14,27 @@
 namespace borealis {
 namespace absint {
 
-FloatInterval::FloatInterval(const DomainFactory* factory, const llvm::fltSemantics& semantics) :
-        Domain(BOTTOM, Type::FloatInterval, factory),
-        from_(semantics),
-        to_(semantics) {}
+FloatInterval::FloatInterval(DomainFactory* factory, const llvm::fltSemantics& semantics) :
+        FloatInterval(BOTTOM, factory, semantics) {}
 
-FloatInterval::FloatInterval(Domain::Value value, const DomainFactory* factory, const llvm::fltSemantics& semantics) :
-        Domain(value, Type::FloatInterval, factory),
-        from_(semantics),
-        to_(semantics) {
-    if (value == TOP) setTop();
+FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& constant) :
+        FloatInterval(factory, constant, constant) {}
+
+FloatInterval::FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics) :
+        FloatInterval(factory, std::make_tuple(value,
+                                               llvm::APFloat(semantics),
+                                               llvm::APFloat(semantics))) {}
+
+FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to) :
+        FloatInterval(factory, std::make_tuple(VALUE, from, to)) {}
+
+FloatInterval::FloatInterval(DomainFactory* factory, const FloatInterval::ID& id) :
+        Domain(std::get<0>(id), Type::FloatInterval, factory),
+        from_(std::get<1>(id)),
+        to_(std::get<2>(id)) {
+    if (value_ == TOP) setTop();
+    else if (from_.isSmallest() && to_.isLargest()) value_ = TOP;
 }
-
-FloatInterval::FloatInterval(const DomainFactory* factory, const llvm::APFloat& constant) :
-        Domain(VALUE, Type::FloatInterval, factory),
-        from_(constant),
-        to_(constant) {}
-
-FloatInterval::FloatInterval(const DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to) :
-        Domain(VALUE, Type::FloatInterval, factory),
-        from_(from),
-        to_(to) {}
 
 FloatInterval::FloatInterval(const FloatInterval& interval) :
         Domain(interval.value_, Type::FloatInterval, interval.factory_),
@@ -54,8 +54,8 @@ bool FloatInterval::equals(const Domain* other) const {
     if (this->isBottom() && value->isBottom()) return true;
     if (this->isTop() && value->isTop()) return true;
 
-    return util::equals(this->from_, value->from_) &&
-           util::equals(this->to_, value->to_);
+    return util::eq(this->from_, value->from_) &&
+            util::eq(this->to_, value->to_);
 }
 
 bool FloatInterval::operator<(const Domain& other) const {
@@ -81,8 +81,8 @@ Domain::Ptr FloatInterval::join(Domain::Ptr other) const {
     } else if (this->isBottom()) {
         return value->shared_from_this();
     } else {
-        auto newFrom = util::less(this->from_, value->from_) ? from_ : value->from_;
-        auto newTo = util::less(this->to_, value->to_) ? value->to_ : to_;
+        auto newFrom = util::lt(this->from_, value->from_) ? from_ : value->from_;
+        auto newTo = util::lt(this->to_, value->to_) ? value->to_ : to_;
         return factory_->getFloat(newFrom, newTo);
     }
 }
@@ -94,9 +94,9 @@ Domain::Ptr FloatInterval::meet(Domain::Ptr other) const {
     if (this->isBottom() || value->isBottom()) {
         return clone()->shared_from_this();
     } else {
-        auto left = util::less(this->from_, value->from_) ? value->from_ : from_;
-        auto right = util::less(this->to_, value->to_) ? to_ : value->to_;
-        return util::greater(left, right) ?
+        auto left = util::lt(this->from_, value->from_) ? value->from_ : from_;
+        auto right = util::lt(this->to_, value->to_) ? to_ : value->to_;
+        return util::gt(left, right) ?
                clone()->shared_from_this() :
                factory_->getFloat(left, right);
     }
@@ -120,11 +120,11 @@ Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
         return value->shared_from_this();
     } else if (value->operator<(*this)) {
         return shared_from_this();
-    } else if (util::less(to_, value->from_)) {
+    } else if (util::lt(to_, value->from_)) {
         auto left = from_;
         auto right = llvm::APFloat::getInf(getSemantics());
         return factory_->getFloat(left, right);
-    } else if (util::less(value->to_, from_)) {
+    } else if (util::lt(value->to_, from_)) {
         auto left = llvm::APFloat::getInf(getSemantics(), true);
         auto right = to_;
         return factory_->getFloat(left, right);
@@ -142,7 +142,7 @@ llvm::APFloat::roundingMode FloatInterval::getRoundingMode() const {
 }
 
 bool FloatInterval::isConstant() const {
-    return util::equals(from_, to_);
+    return util::eq(from_, to_);
 }
 
 const llvm::APFloat& FloatInterval::from() const {
@@ -157,9 +157,9 @@ const llvm::APFloat& FloatInterval::to() const {
 bool FloatInterval::intersects(const FloatInterval* other) const {
     ASSERT(this->isValue() && other->isValue(), "Not value intervals");
 
-    if (util::less(this->from_, other->from_) && util::less(other->from_, to_)) {
+    if (util::lt(this->from_, other->from_) && util::lt(other->from_, to_)) {
         return true;
-    } else if (util::less(other->from_, to_) && util::less(to_, other->to_)) {
+    } else if (util::lt(other->from_, to_) && util::lt(to_, other->to_)) {
         return true;
     }
     return false;
@@ -167,8 +167,7 @@ bool FloatInterval::intersects(const FloatInterval* other) const {
 
 size_t FloatInterval::hashCode() const {
     return util::hash::simple_hash_value(value_, getType(),
-                                         from_.convertToDouble(),
-                                         to_.convertToDouble());
+                                         from_, to_);
 }
 
 std::string FloatInterval::toString() const {

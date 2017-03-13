@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include <llvm/IR/Type.h>
 #include <llvm/IR/InstrTypes.h>
@@ -22,7 +23,7 @@ class DomainFactory;
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
-    enum Type {IntegerInterval,
+    enum Type {IntegerInterval = 0,
         FloatInterval,
         Pointer
     };
@@ -147,18 +148,30 @@ public:
 
 protected:
 
-    Domain(Domain::Value value, Domain::Type type, const DomainFactory* factory) : ObjectLevelLogging("domain"),
+    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory) : ObjectLevelLogging("domain"),
                                                                                    value_(value),
                                                                                    type_(type),
                                                                                    factory_(factory) {}
 
     Value value_;
     Type type_;
-    const DomainFactory* factory_;
+    DomainFactory* factory_;
 };
 
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Domain::Ptr d);
+
+struct DomainEquals {
+    bool operator()(Domain::Ptr lhv, Domain::Ptr rhv) const noexcept {
+        return lhv->equals(rhv.get());
+    }
+};
+
+struct DomainHash {
+    size_t operator()(Domain::Ptr lhv) const noexcept {
+        return lhv->hashCode();
+    }
+};
 
 }   /* namespace absint */
 }   /* namespace borealis*/

@@ -10,7 +10,7 @@ namespace absint {
 
 Environment::Environment(const llvm::Module* module) : module_(module) {}
 
-const DomainFactory& Environment::getDomainFactory() const {
+DomainFactory& Environment::getDomainFactory() const {
     return factory_;
 }
 
