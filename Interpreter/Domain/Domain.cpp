@@ -80,6 +80,7 @@ MK_CAST_OP_IMPL(uitofp);
 MK_CAST_OP_IMPL(sitofp);
 MK_CAST_OP_IMPL(ptrtoint);
 MK_CAST_OP_IMPL(inttoptr);
+MK_CAST_OP_IMPL(bitcast);
 
 #undef MK_CAST_OP_IMPL
 
@@ -90,6 +91,16 @@ Domain::Ptr Domain::icmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
 
 Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
     UNREACHABLE("Unimplemented cmp operation");
+}
+
+std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {
+    s << d->toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Domain::Ptr d) {
+    s << d->toString();
+    return s;
 }
 
 }   /* namespace absint */

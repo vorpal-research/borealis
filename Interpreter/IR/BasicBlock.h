@@ -16,7 +16,7 @@ namespace absint {
 class BasicBlock {
 public:
 
-    BasicBlock(const Environment* environment, const llvm::BasicBlock* bb);
+    BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker);
 
     const llvm::BasicBlock* getInstance() const;
     State::Ptr getInputState() const;
@@ -25,13 +25,20 @@ public:
     std::string getName() const;
     std::string toString() const;
 
+    bool empty() const;
+    bool atFixpoint() const;
+
 private:
 
-    const Environment* environment_;
     const llvm::BasicBlock* instance_;
+    mutable SlotTracker* tracker_;
     State::Ptr inputState_;
     State::Ptr outputState_;
+    mutable bool atFixpoint_;
 };
+
+std::ostream& operator<<(std::ostream& s, const BasicBlock& b);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock& b);
 
 }   /* namespace absint */
 }   /* namespace borealis */

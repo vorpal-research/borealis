@@ -8,10 +8,11 @@ namespace borealis {
 namespace absint {
 
 
-BasicBlock::BasicBlock(const Environment* environment, const llvm::BasicBlock* bb) : environment_(environment),
-                                                                                   instance_(bb) {
-    inputState_ = std::make_shared<State>(State(environment_));
-    outputState_ = std::make_shared<State>(State(environment_));
+BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : instance_(bb),
+                                                                           tracker_(tracker),
+                                                                           atFixpoint_(false) {
+    inputState_ = State::Ptr{ new State() };
+    outputState_ = State::Ptr{ new State() };
 }
 
 const llvm::BasicBlock* BasicBlock::getInstance() const {
@@ -27,21 +28,41 @@ State::Ptr BasicBlock::getOutputState() const {
 }
 
 std::string BasicBlock::getName() const {
-    return (instance_->hasName()) ? instance_->getName().str() : environment_->getSlotTracker().getLocalName(instance_);
+    return (instance_->hasName()) ? instance_->getName().str() : tracker_->getLocalName(instance_);
 }
 
 std::string BasicBlock::toString() const {
     std::ostringstream ss;
 
-    ss << "*** basicBlock ";
     if (instance_->hasName())
-        ss << instance_->getName().str();
+        ss << instance_->getName().str() << ":";
     else
-        ss << "<label>:" << environment_->getSlotTracker().getLocalSlot(instance_);
+        ss << "<label>:" << tracker_->getLocalSlot(instance_);
 
     ss << std::endl;
-    ss << outputState_->toString() << std::endl;
+    ss << outputState_->toString(*tracker_);
     return ss.str();
+}
+
+bool BasicBlock::empty() const {
+    return inputState_->empty() && outputState_->empty();
+}
+
+bool BasicBlock::atFixpoint() const {
+    if (empty()) return false;
+    if (atFixpoint_) return true;
+    atFixpoint_ = inputState_->equals(outputState_.get());
+    return atFixpoint_;
+}
+
+std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
+    s << b.toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock& b) {
+    s << b.toString();
+    return s;
 }
 
 }   /* namespace absint */

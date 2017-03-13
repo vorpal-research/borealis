@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include <llvm/IR/Type.h>
 #include <llvm/IR/InstrTypes.h>
@@ -17,11 +18,15 @@
 namespace borealis {
 namespace absint {
 
+class DomainFactory;
+
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
-    enum Type {IntegerInterval,
-        FloatInterval};
+    enum Type {IntegerInterval = 0,
+        FloatInterval,
+        Pointer
+    };
 
     enum Value {TOP, VALUE, BOTTOM};
 
@@ -74,17 +79,15 @@ public:
     }
 
     virtual Domain::Ptr join(Domain::Ptr other) const = 0;
-
     virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
+    virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
 
     /// Other
     virtual size_t hashCode() const = 0;
-    virtual std::string toString() const = 0;
-    virtual Domain* clone() const = 0;
-
-    virtual bool isCorrect() const {
-        return true;
+    virtual std::string toString() const {
+        return "unknown";
     }
+    virtual Domain* clone() const = 0;
 
     virtual Type getType() const {
         return type_;
@@ -138,16 +141,36 @@ public:
     virtual Domain::Ptr sitofp(const llvm::Type& type) const;
     virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
     virtual Domain::Ptr inttoptr(const llvm::Type& type) const;
+    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
 
 protected:
 
-    Domain(Domain::Value value, Domain::Type type) : ObjectLevelLogging("domain"), value_(value), type_(type) {}
+    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory) : ObjectLevelLogging("domain"),
+                                                                                   value_(value),
+                                                                                   type_(type),
+                                                                                   factory_(factory) {}
 
     Value value_;
     Type type_;
+    DomainFactory* factory_;
+};
+
+std::ostream& operator<<(std::ostream& s, Domain::Ptr d);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Domain::Ptr d);
+
+struct DomainEquals {
+    bool operator()(Domain::Ptr lhv, Domain::Ptr rhv) const noexcept {
+        return lhv->equals(rhv.get());
+    }
+};
+
+struct DomainHash {
+    size_t operator()(Domain::Ptr lhv) const noexcept {
+        return lhv->hashCode();
+    }
 };
 
 }   /* namespace absint */

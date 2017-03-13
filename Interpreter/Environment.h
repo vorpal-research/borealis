@@ -13,18 +13,21 @@
 namespace borealis {
 namespace absint {
 
+class Function;
+
 class Environment : public std::enable_shared_from_this<const Environment> {
 public:
+    using Ptr = std::shared_ptr<const Environment>;
 
     Environment(const llvm::Module* module);
 
-    SlotTracker& getSlotTracker() const;
-    const DomainFactory& getDomainFactory() const;
+    const llvm::Module* getModule() const;
+    DomainFactory& getDomainFactory() const;
 
 private:
 
-    mutable SlotTracker tracker_;
-    DomainFactory factory_;
+    const llvm::Module* module_;
+    mutable DomainFactory factory_;
 };
 
 }   /* namespace absint */

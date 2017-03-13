@@ -10,9 +10,20 @@
 namespace borealis {
 namespace absint {
 
-State::State(const Environment* environment) : environment_(environment), retval_(nullptr) {}
-State::State(const State &other) : environment_(other.environment_), globals_(other.globals_),
-                                   locals_(other.locals_), retval_(other.retval_) {}
+bool compare(const State::Map& lhv, const State::Map& rhv) {
+    if (lhv.size() != rhv.size()) return false;
+    for (auto&& it : lhv) {
+        auto&& its = rhv.find(it.first);
+        if (its == rhv.end()) return false;
+        if (not it.second->equals(its->second.get())) return false;
+    }
+    return true;
+}
+
+State::State() : retval_(nullptr) {}
+State::State(const State &other) : globals_(other.globals_),
+                                   locals_(other.locals_),
+                                   retval_(other.retval_) {}
 
 void State::addGlobalVariable(const llvm::Value *val, Domain::Ptr domain) {
     globals_[val] = domain;
@@ -31,7 +42,6 @@ void State::mergeToReturnValue(Domain::Ptr domain) {
     retval_ = (not retval_) ? domain : retval_->join(domain);
 }
 
-const Environment& State::getEnvironment() const { return *environment_; }
 const State::Map& State::getGlobals() const { return globals_; }
 const State::Map& State::getLocals() const { return locals_; }
 Domain::Ptr State::getReturnValue() const { return retval_; }
@@ -85,21 +95,41 @@ Domain::Ptr State::findLocal(const llvm::Value *val) const {
     return (it == locals_.end()) ? nullptr : it->second;
 }
 
-std::string State::toString() const {
-    std::ostringstream ss;
-    auto& tracker = environment_->getSlotTracker();
+bool State::empty() const {
+    return locals_.empty() && globals_.empty();
+}
 
-    ss << "Globals: " << std::endl;
-    for (auto&& global : globals_) {
-        ss << "    " << tracker.getLocalName(global.first) << " = " << global.second->toString() << std::endl;
+std::string State::toString(SlotTracker& tracker) const {
+    std::ostringstream ss;
+
+    if (not globals_.empty()) {
+        ss << "  globals: " << std::endl;
+        for (auto&& global : globals_) {
+            ss << "    ";
+            ss << tracker.getLocalName(global.first) << " = ";
+            ss << global.second->toString() << std::endl;
+        }
     }
-    ss << "Locals: " << std::endl;
-    for (auto&& local : locals_) {
-        ss << "    " << tracker.getLocalName(local.first) << " = " << local.second->toString() << std::endl;
+    if (not locals_.empty()) {
+        ss << "  locals: " << std::endl;
+        for (auto&& local : locals_) {
+            ss << "    ";
+            ss << tracker.getLocalName(local.first) << " = ";
+            ss << local.second->toString() << std::endl;
+        }
     }
     return ss.str();
 }
 
+bool State::equals(const State* other) const {
+    return compare(this->globals_, other->globals_) &&
+           compare(this->locals_, other->locals_) &&
+           this->retval_ == other->retval_;
+}
+
+bool operator==(const State& lhv, const State& rhv) {
+    return lhv.equals(&rhv);
+}
 }   /* namespace absint */
 }   /* namespace borealis */
 

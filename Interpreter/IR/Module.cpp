@@ -1,5 +1,5 @@
 //
-// Created by abdullin on 2/10/17.
+// Created by abdullin on 3/2/17.
 //
 
 #include "Module.h"
@@ -8,42 +8,45 @@
 namespace borealis {
 namespace absint {
 
-Module::Module(const Environment* environment, const llvm::Module* module) : environment_(environment),
-                                                                             instance_(module) {
-    for (auto&& function : util::viewContainer(*instance_)) {
-        functions_.insert({&function, Function(environment_, &function)});
+Module::Module(borealis::absint::Environment::Ptr environment) : environment_(environment) {}
+
+Function::Ptr Module::createFunction(const llvm::Function* function) {
+    if (auto&& opt = util::at(functions_, function)) {
+        return opt.getUnsafe();
+    } else {
+        auto result = Function::Ptr{ new Function(environment_, function) };
+        functions_.insert( {function, result} );
+        return result;
     }
-    // TODO: add global variables
 }
 
-const Environment& Module::getEnvironment() const {
-    return *environment_;
+Function::Ptr Module::createFunction(const std::string& fname) {
+    auto&& function = environment_->getModule()->getFunction(fname);
+    return (function) ? createFunction(function) : nullptr;
 }
 
-const llvm::Module* Module::getInstance() const {
-    return instance_;
-}
-
-const Module::FunctionMap& Module::getFunctions() const {
-    return functions_;
+Function::Ptr Module::contains(const llvm::Function* function) const {
+    if (auto&& opt = util::at(functions_, function))
+        return opt.getUnsafe();
+    return nullptr;
 }
 
 std::string Module::toString() const {
     std::ostringstream ss;
-
-    ss << "Module ";
-    ss << instance_->getModuleIdentifier() << std::endl;
-
-    for (auto&& it : util::viewContainer(functions_)) {
-        ss << std::endl << it.second.toString() << std::endl;
+    for (auto&& it : functions_) {
+        ss << std::endl << it.second << std::endl;
     }
     return ss.str();
 }
 
-const Function* Module::getFunction(const llvm::Function* function) const {
-    if (auto&& opt = util::at(functions_, function))
-        return &opt.getUnsafe();
-    return nullptr;
+std::ostream& operator<<(std::ostream& s, const Module& m) {
+    s << m.toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m) {
+    s << m.toString();
+    return s;
 }
 
 }   /* namespace absint */

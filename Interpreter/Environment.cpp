@@ -3,18 +3,19 @@
 //
 
 #include "Environment.h"
+#include "Interpreter/IR/Function.h"
 
 namespace borealis {
 namespace absint {
 
-Environment::Environment(const llvm::Module* module) : tracker_(module) {}
+Environment::Environment(const llvm::Module* module) : module_(module) {}
 
-SlotTracker& Environment::getSlotTracker() const {
-    return tracker_;
+DomainFactory& Environment::getDomainFactory() const {
+    return factory_;
 }
 
-const DomainFactory& Environment::getDomainFactory() const {
-    return factory_;
+const llvm::Module* Environment::getModule() const {
+    return module_;
 }
 
 }   /* namespace absint */
