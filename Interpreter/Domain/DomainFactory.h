@@ -11,9 +11,9 @@
 #include <llvm/IR/Value.h>
 
 #include "Domain.h"
-#include "Pointer.h"
-#include "IntegerInterval.h"
 #include "FloatInterval.h"
+#include "IntegerInterval.h"
+#include "Pointer.h"
 
 namespace borealis {
 namespace absint {

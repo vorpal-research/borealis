@@ -3,9 +3,9 @@
 //
 
 #include <llvm/Support/raw_ostream.h>
+
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
-
 #include "Util.hpp"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"

@@ -2,6 +2,7 @@
 // Created by abdullin on 2/10/17.
 //
 
+#include "Interpreter/Domain/DomainFactory.h"
 #include "Function.h"
 #include "Util/collections.hpp"
 #include "Util/streams.hpp"
@@ -11,26 +12,20 @@
 namespace borealis {
 namespace absint {
 
-Function::Function(Environment::Ptr environment, const llvm::Function* function) : environment_(environment),
-                                                                                   instance_(function),
-                                                                                   tracker_(instance_) {
+Function::Function(const llvm::Function* function, DomainFactory* factory) : instance_(function),
+                                                                             tracker_(instance_),
+                                                                             factory_(factory) {
     inputState_ = State::Ptr{ new State() };
     outputState_ = State::Ptr{ new State() };
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(&block, &tracker_);
-        blocks_.insert({&block, aiBlock});
-    }
-
-    // adding global variables
-    for (auto&& it : environment_->getModule()->getGlobalList()) {
-        auto&& globalDomain = environment_->getDomainFactory().get(*it.getType());
-        if (globalDomain) inputState_->addGlobalVariable(&it, globalDomain);
+        blocks_.insert( {&block, aiBlock} );
     }
 
     // adding return value
     auto&& returnType = instance_->getReturnType();
     if (not returnType->isVoidTy()) {
-        auto&& retDomain = environment_->getDomainFactory().get(*returnType);
+        auto&& retDomain = factory_->get(*returnType);
         if (retDomain) outputState_->setReturnValue(retDomain);
     }
 }
@@ -125,7 +120,7 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     auto&& it = instance_->getArgumentList().begin();
     for (auto i = 0U; i < args.size(); ++i) {
         if (args[i]) {
-            inputState_->addLocalVariable(it, args[i]);
+            inputState_->addVariable(it, args[i]);
             arguments_.push_back(args[i]);
         }
         if (++it == instance_->getArgumentList().end()) break;
@@ -133,17 +128,6 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
 
     // merge the front block's input state with function input state
     getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
-}
-
-void Function::addCall(const llvm::Value* call, Function::Ptr function) {
-    auto&& inst = llvm::dyn_cast<llvm::CallInst>(call);
-    ASSERT(inst && inst->getParent()->getParent() == instance_, "Unknown call instruction");
-
-    callMap_[call] = function;
-}
-
-const Function::CallMap& Function::getCallMap() const {
-    return callMap_;
 }
 
 bool Function::atFixpoint() const {

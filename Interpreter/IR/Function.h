@@ -6,8 +6,8 @@
 #define BOREALIS_FUNCTION_H
 
 #include "BasicBlock.h"
-#include "Interpreter/Environment.h"
 #include "Interpreter/State.h"
+#include "Util/slottracker.h"
 
 namespace borealis {
 namespace absint {
@@ -20,7 +20,7 @@ public:
 
 protected:
     /// Assumes that llvm::Function is not a declaration
-    Function(Environment::Ptr environment, const llvm::Function* function);
+    Function(const llvm::Function* function, DomainFactory* factory);
 
     friend class Module;
 
@@ -28,7 +28,6 @@ public:
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;
     const BlockMap& getBasicBlocks() const;
-    const CallMap& getCallMap() const;
 
     State::Ptr getInputState() const;
     State::Ptr getOutputState() const;
@@ -36,7 +35,6 @@ public:
 
     /// Assumes that @args[i] corresponds to i-th argument of the function
     void setArguments(const std::vector<Domain::Ptr>& args);
-    void addCall(const llvm::Value* call, Function::Ptr function);
 
     const BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
     const SlotTracker& getSlotTracker() const;
@@ -57,15 +55,13 @@ public:
 
 private:
 
-    Environment::Ptr environment_;
     const llvm::Function* instance_;
     mutable SlotTracker tracker_;
+    DomainFactory* factory_;
     std::vector<Domain::Ptr> arguments_;
     BlockMap blocks_;
     State::Ptr inputState_;
     State::Ptr outputState_;
-
-    CallMap callMap_;
 };
 
 std::ostream& operator<<(std::ostream& s, const Function& f);

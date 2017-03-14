@@ -7,8 +7,8 @@
 
 #include <llvm/IR/BasicBlock.h>
 
-#include "Interpreter/Environment.h"
 #include "Interpreter/State.h"
+#include "Util/slottracker.h"
 
 namespace borealis {
 namespace absint {

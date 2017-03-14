@@ -5,12 +5,8 @@
 #ifndef BOREALIS_INTERPRETER_H
 #define BOREALIS_INTERPRETER_H
 
-#include <deque>
-
 #include <llvm/IR/InstVisitor.h>
-#include <unordered_set>
 
-#include "Interpreter/Environment.h"
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
 
@@ -64,9 +60,8 @@ public:
 
 private:
 
-    Domain::Ptr getVariable(const llvm::Value* value) const;
+    Domain::Ptr getVariable(const llvm::Value* value);
 
-    Environment::Ptr environment_;
     Module module_;
     State::Ptr currentState_;
 };

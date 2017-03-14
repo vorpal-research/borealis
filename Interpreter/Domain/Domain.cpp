@@ -2,8 +2,8 @@
 // Created by abdullin on 2/3/17.
 //
 
-#include <Util/sayonara.hpp>
 #include "Domain.h"
+#include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
 

@@ -7,11 +7,11 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <tuple>
+#include <vector>
 
-#include <llvm/IR/Type.h>
 #include <llvm/IR/InstrTypes.h>
+#include <llvm/IR/Type.h>
 
 #include "Logging/logger.hpp"
 
@@ -149,9 +149,9 @@ public:
 protected:
 
     Domain(Domain::Value value, Domain::Type type, DomainFactory* factory) : ObjectLevelLogging("domain"),
-                                                                                   value_(value),
-                                                                                   type_(type),
-                                                                                   factory_(factory) {}
+                                                                             value_(value),
+                                                                             type_(type),
+                                                                             factory_(factory) {}
 
     Value value_;
     Type type_;

@@ -16,8 +16,7 @@ namespace borealis {
 namespace absint {
 
 Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter") {
-    environment_ = Environment::Ptr{ new Environment(module) };
-    module_ = Module(environment_);
+    module_ = Module(module);
     currentState_ = nullptr;
 }
 
@@ -26,7 +25,7 @@ void Interpreter::run() {
     if (main) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : main->getInstance()->getArgumentList()) {
-            args.push_back(environment_->getDomainFactory().get(&arg));
+            args.push_back(module_.getDomainFactory()->get(&arg));
         }
 
         interpretFunction(main, args);
@@ -93,7 +92,7 @@ void Interpreter::visitICmpInst(llvm::ICmpInst& i) {
     if (not lhv || not rhv) return;
 
     auto&& result = lhv->icmp(rhv, i.getPredicate());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
@@ -102,32 +101,33 @@ void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
     if (not lhv || not rhv) return;
 
     auto&& result = lhv->fcmp(rhv, i.getPredicate());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
     if (currentState_->find(&i)) {
         return;
     }
-    auto&& ptr = environment_->getDomainFactory().getPointer(true);
-    currentState_->addLocalVariable(&i, ptr);
+    auto&& ptr = module_.getDomainFactory()->getPointer(true);
+    currentState_->addVariable(&i, ptr);
 }
 
 void Interpreter::visitLoadInst(llvm::LoadInst& i) {
     auto&& ptr = getVariable(i.getPointerOperand());
     if (not ptr) return;
     auto&& result = ptr->load(*i.getType(), {});
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitStoreInst(llvm::StoreInst&) {
     // TODO: implement
 }
+
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
     auto&& ptr = getVariable(i.getPointerOperand());
     if (not ptr) return;
     auto&& result = ptr->load(*i.getType(), {});
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitPHINode(llvm::PHINode& i) {
@@ -138,7 +138,7 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
 
             result = result->widen(incoming);
         }
-        currentState_->addLocalVariable(&i, result);
+        currentState_->addVariable(&i, result);
         return;
     }
 
@@ -151,7 +151,7 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
 
         result = result->join(incoming);
     }
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitTruncInst(llvm::TruncInst& i) {
@@ -159,7 +159,7 @@ void Interpreter::visitTruncInst(llvm::TruncInst& i) {
     if (not value) return;
 
     auto&& result = value->trunc(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitZExtInst(llvm::ZExtInst& i) {
@@ -167,7 +167,7 @@ void Interpreter::visitZExtInst(llvm::ZExtInst& i) {
     if (not value) return;
 
     auto&& result = value->zext(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitSExtInst(llvm::SExtInst& i) {
@@ -175,7 +175,7 @@ void Interpreter::visitSExtInst(llvm::SExtInst& i) {
     if (not value) return;
 
     auto&& result = value->sext(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitFPTruncInst(llvm::FPTruncInst& i) {
@@ -183,7 +183,7 @@ void Interpreter::visitFPTruncInst(llvm::FPTruncInst& i) {
     if (not value) return;
 
     auto&& result = value->fptrunc(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitFPExtInst(llvm::FPExtInst& i) {
@@ -191,7 +191,7 @@ void Interpreter::visitFPExtInst(llvm::FPExtInst& i) {
     if (not value) return;
 
     auto&& result = value->fpext(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitFPToUIInst(llvm::FPToUIInst& i) {
@@ -199,7 +199,7 @@ void Interpreter::visitFPToUIInst(llvm::FPToUIInst& i) {
     if (not value) return;
 
     auto&& result = value->fptoui(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitFPToSIInst(llvm::FPToSIInst& i) {
@@ -207,7 +207,7 @@ void Interpreter::visitFPToSIInst(llvm::FPToSIInst& i) {
     if (not value) return;
 
     auto&& result = value->fptosi(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitUIToFPInst(llvm::UIToFPInst& i) {
@@ -215,7 +215,7 @@ void Interpreter::visitUIToFPInst(llvm::UIToFPInst& i) {
     if (not value) return;
 
     auto&& result = value->uitofp(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i) {
@@ -223,7 +223,7 @@ void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i) {
     if (not value) return;
 
     auto&& result = value->sitofp(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i) {
@@ -231,7 +231,7 @@ void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i) {
     if (not value) return;
 
     auto&& result = value->ptrtoint(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i) {
@@ -239,7 +239,7 @@ void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i) {
     if (not value) return;
 
     auto&& result = value->inttoptr(*i.getDestTy());
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitSelectInst(llvm::SelectInst&) {
@@ -292,20 +292,23 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
             UNREACHABLE("Unknown binary operator:" + i .getName().str());
     }
 
-    currentState_->addLocalVariable(&i, result);
+    currentState_->addVariable(&i, result);
 }
 
-Domain::Ptr Interpreter::getVariable(const llvm::Value* value) const {
-    if (auto&& result = currentState_->find(value)) {
-        return result;
+Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
+    if (auto&& global = module_.findGLobal(value)) {
+        return global;
+
+    } else if (auto&& local = currentState_->find(value)) {
+        return local;
 
     } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
-        return environment_->getDomainFactory().get(constant);
+        return module_.getDomainFactory()->get(constant);
 
     } else if (value->getType()->isVoidTy()) {
         return nullptr;
     }
-    return environment_->getDomainFactory().get(*value->getType(), Domain::TOP);
+    return module_.getDomainFactory()->get(*value->getType(), Domain::TOP);
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
@@ -325,8 +328,8 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
             return a->equals(b.get());
         })) {
             interpretFunction(function, args);
-            auto&& result = environment_->getDomainFactory().get(&i, Domain::TOP);
-            if (result) currentState_->addLocalVariable(&i, result);
+            auto&& result = module_.getDomainFactory()->get(&i, Domain::TOP);
+            if (result) currentState_->addVariable(&i, result);
             return;
         }
 
@@ -339,7 +342,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
     }
 
     if (function->getReturnValue()) {
-        currentState_->addLocalVariable(&i, function->getReturnValue());
+        currentState_->addVariable(&i, function->getReturnValue());
     }
 }
 
@@ -348,7 +351,7 @@ void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
     if (not op) return;
 
     auto&& result = op->bitcast(*i.getDestTy());
-    if (result) currentState_->addLocalVariable(&i, result);
+    if (result) currentState_->addVariable(&i, result);
 }
 
 }   /* namespace absint */

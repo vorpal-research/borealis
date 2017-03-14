@@ -21,15 +21,10 @@ bool compare(const State::Map& lhv, const State::Map& rhv) {
 }
 
 State::State() : retval_(nullptr) {}
-State::State(const State &other) : globals_(other.globals_),
-                                   locals_(other.locals_),
+State::State(const State &other) : locals_(other.locals_),
                                    retval_(other.retval_) {}
 
-void State::addGlobalVariable(const llvm::Value *val, Domain::Ptr domain) {
-    globals_[val] = domain;
-}
-
-void State::addLocalVariable(const llvm::Value *val, Domain::Ptr domain) {
+void State::addVariable(const llvm::Value* val, Domain::Ptr domain) {
     locals_[val] = domain;
 }
 
@@ -42,30 +37,28 @@ void State::mergeToReturnValue(Domain::Ptr domain) {
     retval_ = (not retval_) ? domain : retval_->join(domain);
 }
 
-const State::Map& State::getGlobals() const { return globals_; }
 const State::Map& State::getLocals() const { return locals_; }
 Domain::Ptr State::getReturnValue() const { return retval_; }
 
 
 void State::merge(State::Ptr other) {
-    mergeGlobal(other);
-    mergeLocal(other);
+    mergeVariables(other);
     mergeReturnValue(other);
 }
 
-void State::mergeGlobal(State::Ptr other) {
-    for (auto&& it : other->globals_) {
-        if (findGlobal(it.first)) {
-            globals_[it.first] = globals_[it.first]->join(it.second);
-        } else {
-            globals_[it.first] = it.second;
-        }
-    }
-}
+//void State::mergeGlobal(State::Ptr other) {
+//    for (auto&& it : other->globals_) {
+//        if (findGlobal(it.first)) {
+//            globals_[it.first] = globals_[it.first]->join(it.second);
+//        } else {
+//            globals_[it.first] = it.second;
+//        }
+//    }
+//}
 
-void State::mergeLocal(State::Ptr other) {
+void State::mergeVariables(State::Ptr other) {
     for (auto&& it : other->locals_) {
-        if (findLocal(it.first)) {
+        if (find(it.first)) {
             locals_[it.first] = locals_[it.first]->join(it.second);
         } else {
             locals_[it.first] = it.second;
@@ -80,36 +73,17 @@ void State::mergeReturnValue(State::Ptr other) {
 }
 
 Domain::Ptr State::find(const llvm::Value *val) const {
-    if (auto global = findGlobal(val)) return global;
-    if (auto local = findLocal(val)) return local;
-    return nullptr;
-}
-
-Domain::Ptr State::findGlobal(const llvm::Value *val) const {
-    auto&& it = globals_.find(val);
-    return (it == globals_.end()) ? nullptr : it->second;
-}
-
-Domain::Ptr State::findLocal(const llvm::Value *val) const {
     auto&& it = locals_.find(val);
     return (it == locals_.end()) ? nullptr : it->second;
 }
 
 bool State::empty() const {
-    return locals_.empty() && globals_.empty();
+    return locals_.empty();
 }
 
 std::string State::toString(SlotTracker& tracker) const {
     std::ostringstream ss;
 
-    if (not globals_.empty()) {
-        ss << "  globals: " << std::endl;
-        for (auto&& global : globals_) {
-            ss << "    ";
-            ss << tracker.getLocalName(global.first) << " = ";
-            ss << global.second->toString() << std::endl;
-        }
-    }
     if (not locals_.empty()) {
         ss << "  locals: " << std::endl;
         for (auto&& local : locals_) {
@@ -122,8 +96,7 @@ std::string State::toString(SlotTracker& tracker) const {
 }
 
 bool State::equals(const State* other) const {
-    return compare(this->globals_, other->globals_) &&
-           compare(this->locals_, other->locals_) &&
+    return compare(this->locals_, other->locals_) &&
            this->retval_ == other->retval_;
 }
 

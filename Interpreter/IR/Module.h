@@ -5,10 +5,13 @@
 #ifndef BOREALIS_MODULE_H
 #define BOREALIS_MODULE_H
 
+#include <string>
+
+#include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 
 #include "Function.h"
-#include "Interpreter/Environment.h"
+#include "Interpreter/Domain/DomainFactory.h"
 
 namespace borealis {
 namespace absint {
@@ -21,20 +24,29 @@ protected:
 
 public:
 
+    using GlobalsMap = std::unordered_map<const llvm::Value*, Domain::Ptr>;
     using FunctionMap = std::unordered_map<const llvm::Function*, Function::Ptr>;
 
-    Module(Environment::Ptr environment);
+    Module(const llvm::Module* module);
     Function::Ptr contains(const llvm::Function* function) const;
     Function::Ptr createFunction(const llvm::Function* function);
     Function::Ptr createFunction(const std::string& fname);
+
+    GlobalsMap& getGloabls();
+    void setGlobal(const llvm::Value* val, Domain::Ptr domain);
+    Domain::Ptr findGLobal(const llvm::Value* val) const;
+
+    DomainFactory* getDomainFactory();
 
     std::string toString() const;
 
 
 private:
 
-    Environment::Ptr environment_;
+    const llvm::Module* instance_;
+    DomainFactory factory_;
     FunctionMap functions_;
+    GlobalsMap globals_;
 
 };
 
