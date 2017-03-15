@@ -46,16 +46,6 @@ void State::merge(State::Ptr other) {
     mergeReturnValue(other);
 }
 
-//void State::mergeGlobal(State::Ptr other) {
-//    for (auto&& it : other->globals_) {
-//        if (findGlobal(it.first)) {
-//            globals_[it.first] = globals_[it.first]->join(it.second);
-//        } else {
-//            globals_[it.first] = it.second;
-//        }
-//    }
-//}
-
 void State::mergeVariables(State::Ptr other) {
     for (auto&& it : other->locals_) {
         if (find(it.first)) {

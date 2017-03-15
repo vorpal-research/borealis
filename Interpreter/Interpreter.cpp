@@ -15,8 +15,7 @@
 namespace borealis {
 namespace absint {
 
-Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter") {
-    module_ = Module(module);
+Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter"), module_(module) {
     currentState_ = nullptr;
 }
 

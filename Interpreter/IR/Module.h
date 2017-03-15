@@ -17,11 +17,6 @@ namespace borealis {
 namespace absint {
 
 class Module {
-protected:
-
-    friend class Interpreter;
-    Module() = default;
-
 public:
 
     using GlobalsMap = std::unordered_map<const llvm::Value*, Domain::Ptr>;
