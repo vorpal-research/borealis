@@ -6,7 +6,7 @@
 #define BOREALIS_INTERVALDOMAIN_H
 
 #include "Domain.h"
-#include "Util.hpp"
+#include "Util.h"
 #include "Util/hash.hpp"
 
 namespace borealis {
@@ -40,6 +40,7 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
+    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
     unsigned getWidth() const;

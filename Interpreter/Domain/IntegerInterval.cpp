@@ -2,12 +2,8 @@
 // Created by abdullin on 2/2/17.
 //
 
-#include <llvm/Support/raw_ostream.h>
-
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
-#include "Util.hpp"
-#include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
@@ -46,7 +42,7 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::
         to_(std::get<3>(key)) {
     ASSERT(from_.getBitWidth() == to_.getBitWidth(), "Different bit width of interval bounds");
     ASSERT(isCorrect(), "Interval lower bound is greater than upper bound:" + from_.toString(10, false) + " " + to_.toString(10, false));
-    if (from_.isMinValue() && to_.isMaxValue()) value_ = TOP;
+    if (util::isMinValue(from_, signed_) && util::isMaxValue(to_, signed_)) value_ = TOP;
     else if (value_ == TOP) setTop();
 }
 
@@ -77,15 +73,17 @@ Domain::Ptr IntegerInterval::meet(Domain::Ptr other) const {
     ASSERT(value, "Nullptr in interval meet");
     ASSERT(this->getWidth() == value->getWidth(), "Joining two intervals of different format");
 
-    if (this->isBottom() || value->isBottom()) {
+    if (this->isBottom()) {
         return shared_from_this();
+    } else if (value->isBottom()) {
+        return value->shared_from_this();
     } else {
         using borealis::util::lt;
         llvm::APInt left = lt(from_, value->from_, signed_) ? value->from_ : from_;
         llvm::APInt right = lt(to_, value->to_, signed_) ? to_ : value->to_;
 
         return util::gt(left, right, signed_) ?
-               clone()->shared_from_this() :
+               shared_from_this() :
                factory_->getInteger(left, right, signed_);
     }
 }
@@ -99,27 +97,29 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
         return shared_from_this();
     } else if (this->isBottom()) {
         return value->shared_from_this();
-    } else if (this->isTop() || value->isTop()) {
-        return factory_->getInteger(TOP, getWidth(), signed_);
-    } else if (this->equals(value)) {
-        return shared_from_this();
     }
 
-    if (this->operator<(*value)) {
+    auto left = (util::lt(value->from_, from_, signed_)) ? util::getMinValue(getWidth(), signed_) : from_;
+    auto right = (util::lt(to_, value->to_, signed_)) ? util::getMaxValue(getWidth(), signed_) : to_;
+
+    return factory_->getInteger(left, right, signed_);
+}
+
+Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
+    auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
+    ASSERT(value, "Nullptr in interval");
+    ASSERT(this->getWidth() == value->getWidth(), "Widening two intervals of different format");
+
+    if (this->isBottom()) {
+        return shared_from_this();
+    } else if (value->isBottom()) {
         return value->shared_from_this();
-    } else if (value->operator<(*this)) {
-        return shared_from_this();
-    } else if (util::le(to_, value->from_, signed_)) {
-        auto left = from_;
-        auto right = llvm::APInt::getMaxValue(getWidth());
-        return factory_->getInteger(left, right, signed_);
-    } else if (util::le(value->to_, from_, signed_)) {
-        auto left = llvm::APInt::getMinValue(getWidth());
-        auto right = to_;
-        return factory_->getInteger(left, right, signed_);
     }
 
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    auto left = (util::eq(from_, util::getMinValue(getWidth(), signed_))) ? value->from_ : from_;
+    auto right = (util::eq(to_, util::getMaxValue(getWidth(), signed_))) ? value->to_ : to_;
+
+    return factory_->getInteger(left, right, signed_);
 }
 
 unsigned IntegerInterval::getWidth() const { return from_.getBitWidth(); }
@@ -152,6 +152,7 @@ bool IntegerInterval::isCorrect() {
 bool IntegerInterval::equals(const Domain *other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other);
     if (not value) return false;
+    if (this == other) return true;
 
     if (this->isBottom() && value->isBottom()) {
         return this->getWidth() == value->getWidth();
@@ -188,12 +189,18 @@ size_t IntegerInterval::hashCode() const {
 
 std::string IntegerInterval::toString() const {
     if (isBottom()) return "[]";
-    return "[" + from_.toString(10, false) + ", " + to_.toString(10, false) + "]";
+    std::ostringstream ss;
+    ss << "[" << util::toString(from_, signed_) << ", " << util::toString(to_, signed_) << "]";
+    return ss.str();
 }
 
 Domain *IntegerInterval::clone() const {
     return new IntegerInterval(*this);
 }
+
+///////////////////////////////////////////////////////////////
+/// LLVM IR Semantics
+///////////////////////////////////////////////////////////////
 
 Domain::Ptr IntegerInterval::add(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<IntegerInterval>(other.get());
@@ -414,7 +421,9 @@ Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
 
     auto&& newFrom = from_.zext(intType->getBitWidth());
     auto&& newTo = to_.zext(intType->getBitWidth());
-    return factory_->getInteger(newFrom, newTo, signed_);
+    return factory_->getInteger(llvm::APInt(intType->getBitWidth(), 0, signed_),
+                                util::max(newFrom, newTo, signed_),
+                                signed_);
 }
 
 Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {

@@ -3,8 +3,8 @@
 //
 
 #include <llvm/Pass.h>
-#include <Interpreter/Interpreter.h>
 
+#include "Interpreter/Interpreter.h"
 #include "Util/passes.hpp"
 
 namespace borealis {

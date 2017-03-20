@@ -34,6 +34,7 @@ Pointer::Pointer(const Pointer& other) :
 bool Pointer::equals(const Domain* other) const {
     auto&& value = llvm::dyn_cast<Pointer>(other);
     if (not value) return false;
+    if (this == other) return true;
 
     if (this->isBottom() && other->isBottom()) return true;
     if (this->isTop() && other->isTop()) return true;
@@ -65,7 +66,7 @@ Domain::Ptr Pointer::join(Domain::Ptr other) const {
                factory_->getPointer(TOP);
     }
 }
-// TODO: check this
+
 Domain::Ptr Pointer::meet(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<Pointer>(other.get());
     ASSERT(value, "Nullptr in pointer meet");
@@ -85,7 +86,26 @@ Domain::Ptr Pointer::widen(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<Pointer>(other.get());
     ASSERT(value, "Nullptr in pointer domain");
 
-    return (status_ == value->status_) ? shared_from_this() : factory_->getPointer(TOP);
+    if (value->isBottom()) {
+        return shared_from_this();
+    } else if (this->isBottom()) {
+        return value->shared_from_this();
+    }
+
+    return factory_->getPointer(TOP);
+}
+
+Domain::Ptr Pointer::narrow(Domain::Ptr other) const {
+    auto&& value = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(value, "Nullptr in pointer domain");
+
+    if (this->isBottom()) {
+        return shared_from_this();
+    } else if (value->isBottom()) {
+        return value->shared_from_this();
+    }
+
+    return factory_->getPointer(TOP);
 }
 
 Pointer::Status Pointer::getStatus() const {

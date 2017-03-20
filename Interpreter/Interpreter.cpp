@@ -115,7 +115,8 @@ void Interpreter::visitLoadInst(llvm::LoadInst& i) {
     auto&& ptr = getVariable(i.getPointerOperand());
     if (not ptr) return;
     auto&& result = ptr->load(*i.getType(), {});
-    currentState_->addVariable(&i, result);
+    if (result)
+        currentState_->addVariable(&i, result);
 }
 
 void Interpreter::visitStoreInst(llvm::StoreInst&) {

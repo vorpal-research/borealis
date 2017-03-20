@@ -4,7 +4,7 @@
 
 #include "DomainFactory.h"
 #include "FloatInterval.h"
-#include "Util.hpp"
+#include "Util.h"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/streams.hpp"
@@ -43,13 +43,14 @@ FloatInterval::FloatInterval(const FloatInterval& interval) :
 
 void FloatInterval::setTop() {
     value_ = TOP;
-    from_ = llvm::APFloat::getInf(getSemantics(), true);
-    to_ = llvm::APFloat::getInf(getSemantics(), false);
+    from_ = util::getMinValue(getSemantics());
+    to_ = util::getMaxValue(getSemantics());
 }
 
 bool FloatInterval::equals(const Domain* other) const {
     auto&& value = llvm::dyn_cast<FloatInterval>(other);
     if (not value) return false;
+    if (this == other) return true;
 
     if (this->isBottom() && value->isBottom()) return true;
     if (this->isTop() && value->isTop()) return true;
@@ -91,13 +92,15 @@ Domain::Ptr FloatInterval::meet(Domain::Ptr other) const {
     auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
     ASSERT(value, "Nullptr in interval meet");
 
-    if (this->isBottom() || value->isBottom()) {
-        return clone()->shared_from_this();
+    if (this->isBottom()) {
+        return shared_from_this();
+    } else if (value->isBottom()) {
+        return value->shared_from_this();
     } else {
         auto left = util::lt(this->from_, value->from_) ? value->from_ : from_;
         auto right = util::lt(this->to_, value->to_) ? to_ : value->to_;
         return util::gt(left, right) ?
-               clone()->shared_from_this() :
+               shared_from_this() :
                factory_->getFloat(left, right);
     }
 }
@@ -110,27 +113,28 @@ Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
         return shared_from_this();
     } else if (this->isBottom()) {
         return value->shared_from_this();
-    } else if (this->isTop() || value->isTop()) {
-        return factory_->getFloat(TOP, getSemantics());
-    } else if (this->equals(value)) {
-        return shared_from_this();
     }
 
-    if (this->operator<(*value)) {
+    auto left = (util::lt(value->from_, from_)) ? util::getMinValue(getSemantics()) : from_;
+    auto right = (util::lt(to_, value->to_)) ? util::getMaxValue(getSemantics()) : to_;
+
+    return factory_->getFloat(left, right);
+}
+
+Domain::Ptr FloatInterval::narrow(Domain::Ptr other) const {
+    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(value, "Nullptr in interval");
+
+    if (this->isBottom()) {
+        return shared_from_this();
+    } else if (value->isBottom()) {
         return value->shared_from_this();
-    } else if (value->operator<(*this)) {
-        return shared_from_this();
-    } else if (util::lt(to_, value->from_)) {
-        auto left = from_;
-        auto right = llvm::APFloat::getInf(getSemantics());
-        return factory_->getFloat(left, right);
-    } else if (util::lt(value->to_, from_)) {
-        auto left = llvm::APFloat::getInf(getSemantics(), true);
-        auto right = to_;
-        return factory_->getFloat(left, right);
     }
 
-    return factory_->getFloat(TOP, getSemantics());
+    auto left = (util::eq(from_, util::getMinValue(getSemantics()))) ? value->from_ : from_;
+    auto right = (util::eq(to_, util::getMaxValue(getSemantics()))) ? value->to_ : to_;
+
+    return factory_->getFloat(left, right);
 }
 
 const llvm::fltSemantics& FloatInterval::getSemantics() const {
@@ -173,16 +177,7 @@ size_t FloatInterval::hashCode() const {
 std::string FloatInterval::toString() const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
-    llvm::SmallVector<char, 32> from, to;
-    from_.toString(from, 8);
-    to_.toString(to, 8);
-    ss << "[";
-    for (auto&& it : from)
-        ss << it;
-    ss << ", ";
-    for (auto&& it : to)
-        ss << it;
-    ss << "]";
+    ss << "[" << util::toString(from_) << ", " << util::toString(to_) << "]";
     return ss.str();
 }
 
@@ -193,6 +188,10 @@ Domain* FloatInterval::clone() const {
 bool FloatInterval::classof(const Domain* other) {
     return other->getType() == Type::FloatInterval;
 }
+
+///////////////////////////////////////////////////////////////
+/// LLVM IR Semantics
+///////////////////////////////////////////////////////////////
 
 #define CHECKED_OP(op) \
 if (op != llvm::APFloat::opOK) \

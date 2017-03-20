@@ -55,7 +55,7 @@ std::string Module::toString() const {
     std::ostringstream ss;
 
     if (not globals_.empty()) {
-        ss << "  locals: " << std::endl;
+        ss << "globals: " << std::endl;
         for (auto&& global : globals_) {
             ss << "    ";
             ss << global.first->getName().str() << " = ";
