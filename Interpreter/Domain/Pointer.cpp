@@ -188,7 +188,7 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
                 return factory_->getInteger(TOP, 1);
 
         default:
-            UNREACHABLE("Unknown operation in icmp");
+            return factory_->getInteger(TOP, 1);
     }
 }
 

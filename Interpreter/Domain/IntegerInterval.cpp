@@ -2,6 +2,7 @@
 // Created by abdullin on 2/2/17.
 //
 
+#include <llvm/Support/raw_ostream.h>
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
 #include "Util/sayonara.hpp"
@@ -140,12 +141,16 @@ bool IntegerInterval::intersects(const IntegerInterval* other) const {
     return false;
 }
 
+bool IntegerInterval::intersects(const llvm::APInt& constant) const {
+    return util::le(from_, constant, signed_) && util::le(to_, constant, signed_);
+}
+
 bool IntegerInterval::isCorrect() {
     if (util::le(from_, to_, signed_)) return true;
-    if (util::le(from_, to_, not signed_)) {
-        signed_ = not signed_;
-        return true;
-    }
+//    if (util::le(from_, to_, not signed_)) {
+//        signed_ = not signed_;
+//        return true;
+//    }
     return false;
 }
 

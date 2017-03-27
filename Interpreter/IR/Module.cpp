@@ -11,7 +11,7 @@ namespace absint {
 Module::Module(const llvm::Module* module) : instance_(module) {
     // adding global variables
     for (auto&& it : instance_->getGlobalList()) {
-        auto&& globalDomain = factory_.get(*it.getType());
+        auto globalDomain = factory_.get(*it.getType());
         if (globalDomain) globals_.insert( {&it, globalDomain} );
     }
 }
@@ -57,7 +57,7 @@ std::string Module::toString() const {
     if (not globals_.empty()) {
         ss << "globals: " << std::endl;
         for (auto&& global : globals_) {
-            ss << "    ";
+            ss << " ";
             ss << global.first->getName().str() << " = ";
             ss << global.second->toString() << std::endl;
         }

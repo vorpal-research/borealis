@@ -54,9 +54,9 @@ Domain::Ptr Function::getReturnValue() const {
     return outputState_->getReturnValue();
 }
 
-const BasicBlock* Function::getBasicBlock(const llvm::BasicBlock* bb) const {
+BasicBlock* Function::getBasicBlock(const llvm::BasicBlock* bb) const {
     if (auto&& opt = util::at(blocks_, bb))
-        return &opt.getUnsafe();
+        return const_cast<BasicBlock*>(&opt.getUnsafe());
     return nullptr;
 }
 
@@ -130,7 +130,7 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
 }
 
-bool Function::atFixpoint() const {
+bool Function::atFixpoint() {
     for (auto& block : blocks_) {
         if (not block.second.atFixpoint()) return false;
     }

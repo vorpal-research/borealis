@@ -36,11 +36,11 @@ public:
     /// Assumes that @args[i] corresponds to i-th argument of the function
     void setArguments(const std::vector<Domain::Ptr>& args);
 
-    const BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
+    BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
     const SlotTracker& getSlotTracker() const;
 
     bool empty() const;
-    bool atFixpoint() const;
+    bool atFixpoint();
     std::string getName() const;
     std::string toString() const;
 

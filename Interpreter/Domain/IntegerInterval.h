@@ -48,6 +48,7 @@ public:
     bool isConstant(uint64_t constant) const;
     const llvm::APInt& from() const;
     const llvm::APInt& to() const;
+    bool intersects(const llvm::APInt& constant) const;
     bool intersects(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;

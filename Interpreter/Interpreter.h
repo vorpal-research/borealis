@@ -5,6 +5,9 @@
 #ifndef BOREALIS_INTERPRETER_H
 #define BOREALIS_INTERPRETER_H
 
+#include <memory>
+#include <queue>
+
 #include <llvm/IR/InstVisitor.h>
 
 #include "Interpreter/IR/Function.h"
@@ -60,10 +63,16 @@ public:
 
 private:
 
+    /// Util functions
     Domain::Ptr getVariable(const llvm::Value* value);
+    void addSuccessors(const std::vector<const llvm::BasicBlock*>& successors);
 
     Module module_;
-    State::Ptr currentState_;
+
+    /// Context
+    Function::Ptr function_;
+    State::Ptr state_;
+    std::deque<const llvm::BasicBlock*> deque_;
 };
 
 }   /* namespace absint */

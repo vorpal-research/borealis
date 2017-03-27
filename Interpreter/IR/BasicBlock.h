@@ -26,7 +26,10 @@ public:
     std::string toString() const;
 
     bool empty() const;
-    bool atFixpoint() const;
+    bool atFixpoint();
+
+    void setVisited();
+    bool isVisited() const;
 
 private:
 
@@ -34,7 +37,8 @@ private:
     mutable SlotTracker* tracker_;
     State::Ptr inputState_;
     State::Ptr outputState_;
-    mutable bool atFixpoint_;
+    bool atFixpoint_;
+    bool visited_;
 };
 
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b);

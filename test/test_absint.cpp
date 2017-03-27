@@ -19,11 +19,14 @@ TEST(AbstractInterpreter, IntegerInterval) {
     auto int3 = factory.getInteger(llvm::APInt(32, 0, false), llvm::APInt(32, 10, false));
     auto int4 = factory.getInteger(llvm::APInt(32, 1, false), llvm::APInt(32, 11, false));
     auto int5 = factory.getInteger(llvm::APInt(32, 0, false), llvm::APInt(32, 11, false));
+    auto int6 = factory.getInteger(llvm::APInt(32, 1, false), llvm::APInt(32, 10, false));
 
     ASSERT_EQ(int1, int2);
     ASSERT_EQ(int3->join(int4), int5);
     ASSERT_EQ(int3->widen(int4)->isTop(), true);
     ASSERT_EQ(int4->widen(int3), int5);
+    ASSERT_EQ(int3->narrow(int4), int6);
+    ASSERT_EQ(int4->narrow(int3), int4);
 }
 
 TEST(AbstractInterpreter, FloatInterval) {
@@ -45,6 +48,8 @@ TEST(AbstractInterpreter, FloatInterval) {
     ASSERT_EQ(float2->join(float3), float4);
     ASSERT_EQ(float2->widen(float3), float5);
     ASSERT_EQ(float3->widen(float2), float6);
+    ASSERT_EQ(float2->narrow(float3), float2);
+    ASSERT_EQ(float3->narrow(float2), float3);
 }
 
 TEST(AbstractInterpreter, Pointer) {
