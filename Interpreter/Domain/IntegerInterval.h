@@ -24,9 +24,8 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(DomainFactory* factory, unsigned width, bool isSigned = false);
-    IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
     IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width, bool isSigned  = false);
+    IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
     IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
     IntegerInterval(DomainFactory* factory, const ID& key);
     IntegerInterval(const IntegerInterval& interval);

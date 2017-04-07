@@ -40,7 +40,7 @@ Domain::Ptr Domain::extractElement(Domain::Ptr) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::insertElement(Domain::Ptr, Domain::Ptr) const {
+void Domain::insertElement(Domain::Ptr, Domain::Ptr) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
@@ -48,7 +48,7 @@ Domain::Ptr Domain::extractValue(const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-Domain::Ptr Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 

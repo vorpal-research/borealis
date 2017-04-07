@@ -12,9 +12,6 @@
 namespace borealis {
 namespace absint {
 
-Pointer::Pointer(DomainFactory* factory) :
-        Pointer(BOTTOM, factory) {}
-
 Pointer::Pointer(Domain::Value value, DomainFactory* factory) :
         Pointer(factory, std::make_tuple(value, NON_VALID)) {}
 
@@ -22,87 +19,87 @@ Pointer::Pointer(DomainFactory* factory, Pointer::Status status) :
         Pointer(factory, std::make_tuple(VALUE, status)) {}
 
 Pointer::Pointer(DomainFactory* factory, Pointer::ID id) :
-        Domain(std::get<0>(id), Type::Pointer, factory),
+        Domain(std::get<0>(id), Type::POINTER, factory),
         status_(std::get<1>(id)) {
     if (value_ == BOTTOM) status_ = NON_VALID;
 }
 
 Pointer::Pointer(const Pointer& other) :
-        Domain(other.value_, Type::Pointer, other.factory_),
+        Domain(other.value_, Type::POINTER, other.factory_),
         status_(other.status_) {}
 
 bool Pointer::equals(const Domain* other) const {
-    auto&& value = llvm::dyn_cast<Pointer>(other);
-    if (not value) return false;
+    auto&& ptr = llvm::dyn_cast<Pointer>(other);
+    if (not ptr) return false;
     if (this == other) return true;
 
     if (this->isBottom() && other->isBottom()) return true;
     if (this->isTop() && other->isTop()) return true;
 
-    return this->getStatus() == value->getStatus();
+    return this->getStatus() == ptr->getStatus();
 }
 
 bool Pointer::operator<(const Domain& other) const {
-    auto&& value = llvm::dyn_cast<Pointer>(&other);
-    ASSERT(value, "Comparing domains of different type");
+    auto&& ptr = llvm::dyn_cast<Pointer>(&other);
+    ASSERT(ptr, "Comparing domains of different type");
 
-    if (this->isBottom() && not value->isBottom()) return true;
-    return this->isValue() && value->isTop();
+    if (this->isBottom() && not ptr->isBottom()) return true;
+    return this->isValue() && ptr->isTop();
 }
 
 Domain::Ptr Pointer::join(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(value, "Nullptr in pointer join");
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Nullptr in pointer join");
 
-    if (value->isBottom()) {
+    if (ptr->isBottom()) {
         return shared_from_this();
     } else if (this->isBottom()) {
-        return value->shared_from_this();
-    } else if (this->isTop() || value->isTop()) {
+        return ptr->shared_from_this();
+    } else if (this->isTop() || ptr->isTop()) {
         return factory_->getPointer(TOP);
     } else {
-        return this->getStatus() == value->getStatus() ?
+        return this->getStatus() == ptr->getStatus() ?
                factory_->getPointer(this->getStatus()) :
                factory_->getPointer(TOP);
     }
 }
 
 Domain::Ptr Pointer::meet(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(value, "Nullptr in pointer meet");
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Nullptr in pointer meet");
 
-    if (this->isBottom() || value->isBottom()) {
+    if (this->isBottom() || ptr->isBottom()) {
         return shared_from_this();
-    } else if (this->isTop() || value->isTop()) {
+    } else if (this->isTop() || ptr->isTop()) {
         return factory_->getPointer(TOP);
     } else {
-        return this->getStatus() == value->getStatus() ?
+        return this->getStatus() == ptr->getStatus() ?
                factory_->getPointer(this->getStatus()) :
                factory_->getPointer(TOP);
     }
 }
 
 Domain::Ptr Pointer::widen(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(value, "Nullptr in pointer domain");
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Nullptr in pointer domain");
 
-    if (value->isBottom()) {
+    if (ptr->isBottom()) {
         return shared_from_this();
     } else if (this->isBottom()) {
-        return value->shared_from_this();
+        return ptr->shared_from_this();
     }
 
     return factory_->getPointer(TOP);
 }
 
 Domain::Ptr Pointer::narrow(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(value, "Nullptr in pointer domain");
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Nullptr in pointer domain");
 
     if (this->isBottom()) {
         return shared_from_this();
-    } else if (value->isBottom()) {
-        return value->shared_from_this();
+    } else if (ptr->isBottom()) {
+        return ptr->shared_from_this();
     }
 
     return factory_->getPointer(TOP);
@@ -130,7 +127,7 @@ Domain* Pointer::clone() const {
 }
 
 Domain::Ptr Pointer::load(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
-    return factory_->get(type, TOP);
+    return factory_->getTop(type);
 }
 
 Domain::Ptr Pointer::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
@@ -138,11 +135,11 @@ Domain::Ptr Pointer::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
 }
 
 Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
-    return factory_->get(type, TOP);
+    return factory_->getTop(type);
 }
 
 Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
-    return factory_->get(type, TOP);
+    return factory_->getTop(type);
 }
 
 Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
@@ -171,18 +168,18 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
         return factory_->getInteger(TOP, 1);
     }
 
-    auto&& value = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(value, "Nullptr in pointer");
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Nullptr in pointer");
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
-            if (this->isValid() ^ value->isValid())
+            if (this->isValid() ^ ptr->isValid())
                 return getBool(false);
             else
                 return factory_->getInteger(TOP, 1);
 
         case llvm::CmpInst::ICMP_NE:
-            if (this->isValid() ^ value->isValid())
+            if (this->isValid() ^ ptr->isValid())
                 return getBool(true);
             else
                 return factory_->getInteger(TOP, 1);
@@ -193,7 +190,7 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
 }
 
 bool Pointer::classof(const Domain* other) {
-    return other->getType() == Domain::Pointer;
+    return other->getType() == Domain::POINTER;
 }
 
 }   /* namespace absint */

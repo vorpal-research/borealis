@@ -11,7 +11,7 @@ namespace absint {
 Module::Module(const llvm::Module* module) : instance_(module) {
     // adding global variables
     for (auto&& it : instance_->getGlobalList()) {
-        auto globalDomain = factory_.get(*it.getType());
+        auto globalDomain = factory_.getBottom(*it.getType());
         if (globalDomain) globals_.insert( {&it, globalDomain} );
     }
 }

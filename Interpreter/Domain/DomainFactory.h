@@ -39,10 +39,13 @@ public:
     DomainFactory();
     ~DomainFactory();
 
-    Domain::Ptr get(const llvm::Type& type, Domain::Value value = Domain::BOTTOM);
-    Domain::Ptr get(const llvm::Value* val, Domain::Value value = Domain::BOTTOM);
+    Domain::Ptr getTop(const llvm::Type& type);
+    Domain::Ptr getBottom(const llvm::Type& type);
+
+    Domain::Ptr get(const llvm::Value* val);
     Domain::Ptr get(const llvm::Constant* constant);
 
+    Domain::Ptr getIndex(uint64_t indx);
     Domain::Ptr getInteger(unsigned width, bool isSigned = false);
     Domain::Ptr getInteger(Domain::Value value, unsigned width, bool isSigned = false);
     Domain::Ptr getInteger(const llvm::APInt& val, bool isSigned = false);

@@ -26,25 +26,56 @@ DomainFactory::~DomainFactory() {
 
 
 /*  General */
-Domain::Ptr DomainFactory::get(const llvm::Type& type, Domain::Value value) {
+Domain::Ptr DomainFactory::getTop(const llvm::Type& type) {
     if (type.isVoidTy()) {
         return nullptr;
     } else if (type.isIntegerTy()) {
         auto&& intType = llvm::cast<llvm::IntegerType>(&type);
-        return getInteger(value, intType->getBitWidth());
+        return getInteger(Domain::TOP, intType->getBitWidth());
     } else if (type.isFloatingPointTy()) {
         auto& semantics = util::getSemantics(type);
-        return getFloat(value, semantics);
+        return getFloat(Domain::TOP, semantics);
     } else if (type.isPointerTy()) {
-        return getPointer(value);
+        return getPointer(Domain::TOP);
     } else {
         errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
         return nullptr;
     }
 }
 
-Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val, Domain::Value value) {
-    return get(*val->getType(), value);
+Domain::Ptr DomainFactory::getBottom(const llvm::Type& type) {
+    if (type.isVoidTy()) {
+        return nullptr;
+    } else if (type.isIntegerTy()) {
+        auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+        return getInteger(Domain::BOTTOM, intType->getBitWidth());
+    } else if (type.isFloatingPointTy()) {
+        auto& semantics = util::getSemantics(type);
+        return getFloat(Domain::BOTTOM, semantics);
+    } else if (type.isPointerTy()) {
+        return getPointer(Domain::BOTTOM);
+    } else {
+        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
+        return nullptr;
+    }
+}
+
+Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val) {
+    auto&& type = *val->getType();
+    if (type.isVoidTy()) {
+        return nullptr;
+    } else if (type.isIntegerTy()) {
+        auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+        return getInteger(intType->getBitWidth());
+    } else if (type.isFloatingPointTy()) {
+        auto& semantics = util::getSemantics(type);
+        return getFloat(semantics);
+    } else if (type.isPointerTy()) {
+        return getPointer();
+    } else {
+        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
+        return nullptr;
+    }
 }
 
 Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
@@ -82,6 +113,10 @@ Domain::Ptr DomainFactory::cached(const Pointer::ID& key) {
 
 
 /* Integer */
+Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
+    return getInteger(llvm::APInt(32, indx, false), false);
+}
+
 Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) {
     return getInteger(Domain::BOTTOM, width, isSigned);
 }

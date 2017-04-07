@@ -14,9 +14,6 @@
 namespace borealis {
 namespace absint {
 
-FloatInterval::FloatInterval(DomainFactory* factory, const llvm::fltSemantics& semantics) :
-        FloatInterval(BOTTOM, factory, semantics) {}
-
 FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& constant) :
         FloatInterval(factory, constant, constant) {}
 
@@ -29,7 +26,7 @@ FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& from, 
         FloatInterval(factory, std::make_tuple(VALUE, from, to)) {}
 
 FloatInterval::FloatInterval(DomainFactory* factory, const FloatInterval::ID& id) :
-        Domain(std::get<0>(id), Type::FloatInterval, factory),
+        Domain(std::get<0>(id), Type::FLOAT_INTERVAL, factory),
         from_(std::get<1>(id)),
         to_(std::get<2>(id)) {
     if (value_ == TOP) setTop();
@@ -37,7 +34,7 @@ FloatInterval::FloatInterval(DomainFactory* factory, const FloatInterval::ID& id
 }
 
 FloatInterval::FloatInterval(const FloatInterval& interval) :
-        Domain(interval.value_, Type::FloatInterval, interval.factory_),
+        Domain(interval.value_, Type::FLOAT_INTERVAL, interval.factory_),
         from_(interval.from_),
         to_(interval.to_) {}
 
@@ -48,57 +45,57 @@ void FloatInterval::setTop() {
 }
 
 bool FloatInterval::equals(const Domain* other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other);
-    if (not value) return false;
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other);
+    if (not interval) return false;
     if (this == other) return true;
 
-    if (this->isBottom() && value->isBottom()) return true;
-    if (this->isTop() && value->isTop()) return true;
+    if (this->isBottom() && interval->isBottom()) return true;
+    if (this->isTop() && interval->isTop()) return true;
 
-    return util::eq(this->from_, value->from_) &&
-            util::eq(this->to_, value->to_);
+    return util::eq(this->from_, interval->from_) &&
+            util::eq(this->to_, interval->to_);
 }
 
 bool FloatInterval::operator<(const Domain& other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(&other);
-    ASSERT(value, "Comparing domains of different type");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(&other);
+    ASSERT(interval, "Comparing domains of different type");
 
     if (other.isBottom()) return false;
     if (this->isBottom()) return true;
     if (this->isTop()) return false;
 
-    auto fromcmp = value->from_.compare(this->from_);
-    auto tocmp = this->to_.compare(value->to_);
+    auto fromcmp = interval->from_.compare(this->from_);
+    auto tocmp = this->to_.compare(interval->to_);
     return (fromcmp == llvm::APFloat::cmpLessThan || fromcmp == llvm::APFloat::cmpEqual) &&
             (tocmp == llvm::APFloat::cmpLessThan || tocmp == llvm::APFloat::cmpEqual);
 }
 
 Domain::Ptr FloatInterval::join(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval join");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval join");
 
-    if (value->isBottom()) {
+    if (interval->isBottom()) {
         return shared_from_this();
     } else if (this->isBottom()) {
-        return value->shared_from_this();
+        return interval->shared_from_this();
     } else {
-        auto newFrom = util::lt(this->from_, value->from_) ? from_ : value->from_;
-        auto newTo = util::lt(this->to_, value->to_) ? value->to_ : to_;
+        auto newFrom = util::lt(this->from_, interval->from_) ? from_ : interval->from_;
+        auto newTo = util::lt(this->to_, interval->to_) ? interval->to_ : to_;
         return factory_->getFloat(newFrom, newTo);
     }
 }
 
 Domain::Ptr FloatInterval::meet(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval meet");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval meet");
 
     if (this->isBottom()) {
         return shared_from_this();
-    } else if (value->isBottom()) {
-        return value->shared_from_this();
+    } else if (interval->isBottom()) {
+        return interval->shared_from_this();
     } else {
-        auto left = util::lt(this->from_, value->from_) ? value->from_ : from_;
-        auto right = util::lt(this->to_, value->to_) ? to_ : value->to_;
+        auto left = util::lt(this->from_, interval->from_) ? interval->from_ : from_;
+        auto right = util::lt(this->to_, interval->to_) ? to_ : interval->to_;
         return util::gt(left, right) ?
                shared_from_this() :
                factory_->getFloat(left, right);
@@ -106,33 +103,33 @@ Domain::Ptr FloatInterval::meet(Domain::Ptr other) const {
 }
 
 Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
-    if (value->isBottom()) {
+    if (interval->isBottom()) {
         return shared_from_this();
     } else if (this->isBottom()) {
-        return value->shared_from_this();
+        return interval->shared_from_this();
     }
 
-    auto left = (util::lt(value->from_, from_)) ? util::getMinValue(getSemantics()) : from_;
-    auto right = (util::lt(to_, value->to_)) ? util::getMaxValue(getSemantics()) : to_;
+    auto left = (util::lt(interval->from_, from_)) ? util::getMinValue(getSemantics()) : from_;
+    auto right = (util::lt(to_, interval->to_)) ? util::getMaxValue(getSemantics()) : to_;
 
     return factory_->getFloat(left, right);
 }
 
 Domain::Ptr FloatInterval::narrow(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom()) {
         return shared_from_this();
-    } else if (value->isBottom()) {
-        return value->shared_from_this();
+    } else if (interval->isBottom()) {
+        return interval->shared_from_this();
     }
 
-    auto left = (util::eq(from_, util::getMinValue(getSemantics()))) ? value->from_ : from_;
-    auto right = (util::eq(to_, util::getMaxValue(getSemantics()))) ? value->to_ : to_;
+    auto left = (util::eq(from_, util::getMinValue(getSemantics()))) ? interval->from_ : from_;
+    auto right = (util::eq(to_, util::getMaxValue(getSemantics()))) ? interval->to_ : to_;
 
     return factory_->getFloat(left, right);
 }
@@ -186,7 +183,7 @@ Domain* FloatInterval::clone() const {
 }
 
 bool FloatInterval::classof(const Domain* other) {
-    return other->getType() == Type::FloatInterval;
+    return other->getType() == Type::FLOAT_INTERVAL;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -198,55 +195,55 @@ if (op != llvm::APFloat::opOK) \
     return factory_->getFloat(TOP, getSemantics());
 
 Domain::Ptr FloatInterval::fadd(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
-    if (this->isBottom() || value->isBottom()) {
+    if (this->isBottom() || interval->isBottom()) {
         return factory_->getFloat(getSemantics());
-    } else if (this->isTop() || value->isTop()) {
+    } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
         auto left = from_;
         auto right = to_;
-        CHECKED_OP(left.add(value->from(), getRoundingMode()));
-        CHECKED_OP(right.add(value->to(), getRoundingMode()));
+        CHECKED_OP(left.add(interval->from(), getRoundingMode()));
+        CHECKED_OP(right.add(interval->to(), getRoundingMode()));
         return factory_->getFloat(left, right);
     }
 }
 
 Domain::Ptr FloatInterval::fsub(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
-    if (this->isBottom() || value->isBottom()) {
+    if (this->isBottom() || interval->isBottom()) {
         return factory_->getFloat(getSemantics());
-    } else if (this->isTop() || value->isTop()) {
+    } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
         auto left = from_;
         auto right = to_;
-        CHECKED_OP(left.subtract(value->to(), getRoundingMode()));
-        CHECKED_OP(right.subtract(value->from(), getRoundingMode()));
+        CHECKED_OP(left.subtract(interval->to(), getRoundingMode()));
+        CHECKED_OP(right.subtract(interval->from(), getRoundingMode()));
         return factory_->getFloat(left, right);
     }
 }
 
 Domain::Ptr FloatInterval::fmul(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
-    if (this->isBottom() || value->isBottom()) {
+    if (this->isBottom() || interval->isBottom()) {
         return factory_->getFloat(getSemantics());
-    } else if (this->isTop() || value->isTop()) {
+    } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
 
         using namespace borealis::util;
         auto fromFrom(from_), toFrom(to_), fromTo(from_), toTo(to_);
-        CHECKED_OP(fromFrom.multiply(value->from(), getRoundingMode()));
-        CHECKED_OP(toFrom.multiply(value->from(), getRoundingMode()));
-        CHECKED_OP(fromTo.multiply(value->to(), getRoundingMode()));
-        CHECKED_OP(toTo.multiply(value->to(), getRoundingMode()));
+        CHECKED_OP(fromFrom.multiply(interval->from(), getRoundingMode()));
+        CHECKED_OP(toFrom.multiply(interval->from(), getRoundingMode()));
+        CHECKED_OP(fromTo.multiply(interval->to(), getRoundingMode()));
+        CHECKED_OP(toTo.multiply(interval->to(), getRoundingMode()));
 
         auto first = factory_->getFloat(min(fromFrom, toFrom), max(fromFrom, toFrom));
         auto second = factory_->getFloat(min(fromTo, toTo), max(fromTo, toTo));
@@ -256,39 +253,39 @@ Domain::Ptr FloatInterval::fmul(Domain::Ptr other) const {
 }
 
 Domain::Ptr FloatInterval::fdiv(Domain::Ptr other) const {
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
-    if (this->isBottom() || value->isBottom()) {
+    if (this->isBottom() || interval->isBottom()) {
         return factory_->getFloat(getSemantics());
-    } else if (this->isTop() || value->isTop()) {
+    } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
 
         using namespace borealis::util;
 
-        if (value->isConstant() && value->from_.isZero()) {
+        if (interval->isConstant() && interval->from_.isZero()) {
             return factory_->getFloat(TOP, getSemantics());
         }
 
         auto fromFrom(from_), toFrom(to_), fromTo(from_), toTo(to_);
 
-        if (value->from().isZero()) { //From is zero -> divide by very small number larger than zero -> infinity with same sign
+        if (interval->from().isZero()) { //From is zero -> divide by very small number larger than zero -> infinity with same sign
             fromFrom = llvm::APFloat::getInf(fromFrom.getSemantics(), from_.isNegative());
             toFrom = llvm::APFloat::getInf(fromFrom.getSemantics(), to_.isNegative());
         }
         else {
-            CHECKED_OP(fromFrom.divide(value->from(), getRoundingMode()));
-            CHECKED_OP(toFrom.divide(value->from(), getRoundingMode()));
+            CHECKED_OP(fromFrom.divide(interval->from(), getRoundingMode()));
+            CHECKED_OP(toFrom.divide(interval->from(), getRoundingMode()));
         }
 
-        if (value->to().isZero()) { //To is zero -> divide by very small number smaller than zero -> infinity with changed sign
+        if (interval->to().isZero()) { //To is zero -> divide by very small number smaller than zero -> infinity with changed sign
             fromTo = llvm::APFloat::getInf(fromFrom.getSemantics(), not from_.isNegative());
             toTo = llvm::APFloat::getInf(fromFrom.getSemantics(), not to_.isNegative());
         }
         else {
-            CHECKED_OP(fromTo.divide(value->to(), getRoundingMode()));
-            CHECKED_OP(toTo.divide(value->to(), getRoundingMode()));
+            CHECKED_OP(fromTo.divide(interval->to(), getRoundingMode()));
+            CHECKED_OP(toTo.divide(interval->to(), getRoundingMode()));
         }
 
         auto first = factory_->getFloat(min(fromFrom, toFrom), max(fromFrom, toFrom));
@@ -380,8 +377,8 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
         return factory_->getInteger(TOP, 1);
     }
 
-    auto&& value = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(value, "Nullptr in interval");
+    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Nullptr in interval");
 
     switch (operation)
     {
@@ -394,21 +391,21 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
         case llvm::CmpInst::FCMP_OLT:   // 0 1 0 0  ordered and less than
         case llvm::CmpInst::FCMP_OLE:   // 0 1 0 1  ordered and less than or equal
         case llvm::CmpInst::FCMP_ONE:   // 0 1 1 0  ordered and operands are unequal
-            if (this->isNaN() || value->isNaN())
+            if (this->isNaN() || interval->isNaN())
                 return getBool(false); // Is unordered
 
             break;
         case llvm::CmpInst::FCMP_ORD:   // 0 1 1 1  ordered (no nans)
-            return getBool( not (this->isNaN() || value->isNaN()) );
+            return getBool( not (this->isNaN() || interval->isNaN()) );
         case llvm::CmpInst::FCMP_UNO:   // 1 0 0 0  unordered: isnan(X) | isnan(Y)
-            return getBool( (this->isNaN() || value->isNaN()) );
+            return getBool( (this->isNaN() || interval->isNaN()) );
         case llvm::CmpInst::FCMP_UEQ:   // 1 0 0 1  unordered or equal
         case llvm::CmpInst::FCMP_UGT:   // 1 0 1 0  unordered or greater than
         case llvm::CmpInst::FCMP_UGE:   // 1 0 1 1  unordered, greater than, or equal
         case llvm::CmpInst::FCMP_ULT:   // 1 1 0 0  unordered or less than
         case llvm::CmpInst::FCMP_ULE:   // 1 1 0 1  unordered, less than, or equal
         case llvm::CmpInst::FCMP_UNE:   // 1 1 1 0  unordered or not equal
-            if (this->isNaN() || value->isNaN())
+            if (this->isNaN() || interval->isNaN())
                 return getBool(true); // Is unordered
 
             break;
@@ -422,58 +419,58 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
     switch (operation) {
         case llvm::CmpInst::FCMP_OEQ:   // 0 0 0 1  ordered and equal
         case llvm::CmpInst::FCMP_UEQ:   // 1 0 0 1  unordered or equal
-            if (isConstant() && this->equals(value))
+            if (isConstant() && this->equals(interval))
                 return getBool(true);
-            else if (intersects(value))
+            else if (intersects(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_OGT:   // 0 0 1 0  ordered and greater than
         case llvm::CmpInst::FCMP_UGT:   // 1 0 1 0  unordered or greater than
-            res = from_.compare(value->to_);
+            res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpGreaterThan)
                 return getBool(true);
-            else if (intersects(value))
+            else if (intersects(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_OGE:   // 0 0 1 1  ordered and greater than or equal
         case llvm::CmpInst::FCMP_UGE:   // 1 0 1 1  unordered, greater than, or equal
-            res = from_.compare(value->to_);
+            res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpGreaterThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
-            else if (intersects(value))
+            else if (intersects(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_OLT:   // 0 1 0 0  ordered and less than
         case llvm::CmpInst::FCMP_ULT:   // 1 1 0 0  unordered or less than
-            res = from_.compare(value->to_);
+            res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpLessThan)
                 return getBool(true);
-            else if (intersects(value))
+            else if (intersects(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_OLE:   // 0 1 0 1  ordered and less than or equal
         case llvm::CmpInst::FCMP_ULE:   // 1 1 0 1  unordered, less than, or equal
-            res = from_.compare(value->to_);
+            res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpLessThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
-            else if (intersects(value))
+            else if (intersects(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_ONE:   // 0 1 1 0  ordered and operands are unequal
         case llvm::CmpInst::FCMP_UNE:   // 1 1 1 0  unordered or not equal
-            if (not intersects(value))
+            if (not intersects(interval))
                 return getBool(true);
-            else if (not (isConstant() && this->equals(value)))
+            else if (not (isConstant() && this->equals(interval)))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);

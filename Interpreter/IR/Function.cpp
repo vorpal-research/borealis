@@ -25,7 +25,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory) : ins
     // adding return value
     auto&& returnType = instance_->getReturnType();
     if (not returnType->isVoidTy()) {
-        auto&& retDomain = factory_->get(*returnType);
+        auto&& retDomain = factory_->getBottom(*returnType);
         if (retDomain) outputState_->setReturnValue(retDomain);
     }
 }

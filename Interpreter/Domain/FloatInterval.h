@@ -24,7 +24,6 @@ protected:
 
     friend class DomainFactory;
 
-    FloatInterval(DomainFactory* factory, const llvm::fltSemantics& semantics);
     FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);

@@ -309,7 +309,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
             return a->equals(b.get());
         })) {
             interpretFunction(function, args);
-            auto&& result = module_.getDomainFactory()->get(&i, Domain::TOP);
+            auto&& result = module_.getDomainFactory()->getTop(*i.getType());
             if (result) state_->addVariable(&i, result);
             return;
         }
@@ -351,7 +351,7 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
     } else if (value->getType()->isVoidTy()) {
         return nullptr;
     }
-    return module_.getDomainFactory()->get(*value->getType(), Domain::TOP);
+    return module_.getDomainFactory()->getTop(*value->getType());
 }
 
 void Interpreter::addSuccessors(const std::vector<const llvm::BasicBlock*>& successors) {

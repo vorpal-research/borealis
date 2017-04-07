@@ -23,9 +23,10 @@ class DomainFactory;
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
-    enum Type {IntegerInterval = 0,
-        FloatInterval,
-        Pointer
+    enum Type {INTEGER_INTERVAL = 0,
+        FLOAT_INTERVAL,
+        POINTER,
+        ARRAY
     };
 
     enum Value {TOP, VALUE, BOTTOM};
@@ -122,10 +123,10 @@ public:
     virtual Domain::Ptr bXor(Domain::Ptr other) const;
     /// Vector
     virtual Domain::Ptr extractElement(Domain::Ptr indx) const;
-    virtual Domain::Ptr insertElement(Domain::Ptr element, Domain::Ptr indx) const;
+    virtual void insertElement(Domain::Ptr element, Domain::Ptr indx) const;
     /// Aggregate
     virtual Domain::Ptr extractValue(const std::vector<Domain::Ptr>& indices) const;
-    virtual Domain::Ptr insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
+    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
     virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
     virtual Domain::Ptr store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;

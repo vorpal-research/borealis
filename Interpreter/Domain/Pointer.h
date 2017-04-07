@@ -25,7 +25,6 @@ protected:
 
     friend class DomainFactory;
 
-    Pointer(DomainFactory* factory);
     Pointer(Domain::Value value, DomainFactory* factory);
     Pointer(DomainFactory* factory, Pointer::Status status);
     Pointer(DomainFactory* factory, Pointer::ID id);
