@@ -38,6 +38,17 @@ FloatInterval::FloatInterval(const FloatInterval& interval) :
         from_(interval.from_),
         to_(interval.to_) {}
 
+Domain& FloatInterval::operator=(const Domain& other) {
+    auto&& interval = llvm::dyn_cast<FloatInterval>(&other);
+    ASSERT(interval, "Nullptr in interval join");
+    if (this == interval) return *this;
+
+    Domain::operator=(other);
+    from_ = interval->from_;
+    to_ = interval->to_;
+    return *this;
+}
+
 void FloatInterval::setTop() {
     value_ = TOP;
     from_ = util::getMinValue(getSemantics());

@@ -1,9 +1,12 @@
 //
-// Created by abdullin on 2/17/17.
+// Created by abdullin on 4/7/17.
 //
 
 #include "DomainFactory.h"
+#include "IntegerInterval.h"
 #include "Pointer.h"
+#include "Util.h"
+#include "Util/collections.hpp"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
 
@@ -12,21 +15,30 @@
 namespace borealis {
 namespace absint {
 
-Pointer::Pointer(Domain::Value value, DomainFactory* factory) :
-        Pointer(factory, std::make_tuple(value, NON_VALID)) {}
+Pointer::Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType)
+        : Domain{value, POINTER, factory},
+          elementType_(elementType) {}
 
-Pointer::Pointer(DomainFactory* factory, Pointer::Status status) :
-        Pointer(factory, std::make_tuple(VALUE, status)) {}
+Pointer::Pointer(DomainFactory* factory, const llvm::Type& elementType, const Pointer::Locations& locations)
+        : Domain{VALUE, POINTER, factory},
+          elementType_(elementType),
+          locations_(locations) {}
 
-Pointer::Pointer(DomainFactory* factory, Pointer::ID id) :
-        Domain(std::get<0>(id), Type::POINTER, factory),
-        status_(std::get<1>(id)) {
-    if (value_ == BOTTOM) status_ = NON_VALID;
+Pointer::Pointer(const Pointer& other)
+        : Domain{other.value_, other.type_, other.factory_},
+          elementType_(other.elementType_),
+          locations_(other.locations_) {}
+
+Domain& Pointer::operator=(const Domain& other) {
+    auto&& ptr = llvm::dyn_cast<Pointer>(&other);
+    ASSERT(ptr, "Nullptr in Pointer join");
+    if (this == ptr) return *this;
+
+    Domain::operator=(other);
+    ASSERT(elementType_.getTypeID() == ptr->elementType_.getTypeID(), "Different types");
+    locations_ = ptr->locations_;
+    return *this;
 }
-
-Pointer::Pointer(const Pointer& other) :
-        Domain(other.value_, Type::POINTER, other.factory_),
-        status_(other.status_) {}
 
 bool Pointer::equals(const Domain* other) const {
     auto&& ptr = llvm::dyn_cast<Pointer>(other);
@@ -36,106 +48,150 @@ bool Pointer::equals(const Domain* other) const {
     if (this->isBottom() && other->isBottom()) return true;
     if (this->isTop() && other->isTop()) return true;
 
-    return this->getStatus() == ptr->getStatus();
+    return elementType_.getTypeID() == ptr->elementType_.getTypeID() &&
+            locations_ == ptr->locations_;
 }
 
-bool Pointer::operator<(const Domain& other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(&other);
-    ASSERT(ptr, "Comparing domains of different type");
-
-    if (this->isBottom() && not ptr->isBottom()) return true;
-    return this->isValue() && ptr->isTop();
+bool Pointer::operator<(const Domain&) const {
+    UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr Pointer::join(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(ptr, "Nullptr in pointer join");
-
-    if (ptr->isBottom()) {
-        return shared_from_this();
-    } else if (this->isBottom()) {
-        return ptr->shared_from_this();
-    } else if (this->isTop() || ptr->isTop()) {
-        return factory_->getPointer(TOP);
-    } else {
-        return this->getStatus() == ptr->getStatus() ?
-               factory_->getPointer(this->getStatus()) :
-               factory_->getPointer(TOP);
-    }
+const Pointer::Locations& Pointer::getLocations() const {
+    return locations_;
 }
 
-Domain::Ptr Pointer::meet(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(ptr, "Nullptr in pointer meet");
-
-    if (this->isBottom() || ptr->isBottom()) {
-        return shared_from_this();
-    } else if (this->isTop() || ptr->isTop()) {
-        return factory_->getPointer(TOP);
-    } else {
-        return this->getStatus() == ptr->getStatus() ?
-               factory_->getPointer(this->getStatus()) :
-               factory_->getPointer(TOP);
-    }
-}
-
-Domain::Ptr Pointer::widen(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(ptr, "Nullptr in pointer domain");
-
-    if (ptr->isBottom()) {
-        return shared_from_this();
-    } else if (this->isBottom()) {
-        return ptr->shared_from_this();
-    }
-
-    return factory_->getPointer(TOP);
-}
-
-Domain::Ptr Pointer::narrow(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(ptr, "Nullptr in pointer domain");
-
-    if (this->isBottom()) {
-        return shared_from_this();
-    } else if (ptr->isBottom()) {
-        return ptr->shared_from_this();
-    }
-
-    return factory_->getPointer(TOP);
-}
-
-Pointer::Status Pointer::getStatus() const {
-    return status_;
+const llvm::Type& Pointer::getElementType() const {
+    return elementType_;
 }
 
 size_t Pointer::hashCode() const {
-    return util::hash::simple_hash_value(value_, getType(), getStatus());
+    return util::hash::simple_hash_value(value_, getType(), getElementType().getTypeID(), getLocations());
 }
 
 std::string Pointer::toString() const {
-    if (isBottom()) return "**Bottom**";
-    if (isTop()) return "**Top**";
-    else {
-        if (getStatus() == VALID) return "**Valid**";
-        else return "**Non-valid**";
+    std::ostringstream ss;
+    ss << "[";
+    for (auto&& it : locations_) {
+        if (it) ss << std::endl << it->toString();
     }
+    ss << std::endl << "]";
+    return ss.str();
 }
 
 Domain* Pointer::clone() const {
     return new Pointer(*this);
 }
 
-Domain::Ptr Pointer::load(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
-    return factory_->getTop(type);
+bool Pointer::classof(const Domain* other) {
+    return other->getType() == Domain::POINTER;
 }
 
-Domain::Ptr Pointer::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Pointer::join(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Non-pointer in pointer domain");
+    for (auto&& it : locations_) {
+        for (auto&& itptr : ptr->locations_) {
+            if (it) it = it->join(itptr);
+        }
+    }
     return shared_from_this();
 }
 
-Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
-    return factory_->getTop(type);
+Domain::Ptr Pointer::widen(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Non-pointer in pointer domain");
+    for (auto&& it : locations_) {
+        for (auto&& itptr : ptr->locations_) {
+            if (it) it = it->widen(itptr);
+        }
+    }
+    return shared_from_this();
+}
+
+Domain::Ptr Pointer::meet(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented, sorry...");
+}
+
+Domain::Ptr Pointer::narrow(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented, sorry...");
+}
+
+Domain::Ptr Pointer::load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const {
+    auto&& intOffset = llvm::dyn_cast<IntegerInterval>(offsets.begin()->get());
+    if (not intOffset->isConstant(0)) {
+        errs() << "big offset" << endl;
+        return factory_->getTop(type);
+    }
+
+    if (isBottom())
+        return factory_->getBottom(type);
+    else if (isTop())
+        return factory_->getTop(type);
+
+    auto result = factory_->getBottom(elementType_);
+    if (offsets.size() == 1) {
+        ASSERT(elementType_.getTypeID() == type.getTypeID(), "Different load types");
+        for (auto&& it : locations_)
+            if (it) result = result->join(it);
+
+    } else {
+        std::vector<Domain::Ptr> subOffsets(offsets.begin() + 1, offsets.end());
+        for (auto&& it : locations_)
+            if (it) result = result->join(it->load(type, subOffsets));
+    }
+    return result;
+}
+
+void Pointer::store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const {
+    auto&& intOffset = llvm::dyn_cast<IntegerInterval>(offsets.begin()->get());
+    ASSERT(intOffset->isConstant(0), "Too big offset in pointer");
+
+    if (offsets.size() == 1) {
+        for (auto&& it : locations_) {
+            // This is generally fucked up
+            if (it) {
+                auto withoutConst = const_cast<Domain*>(it.get());
+                *withoutConst = *(it->join(value).get());
+            }
+        }
+
+    } else {
+        std::vector<Domain::Ptr> subOffsets(offsets.begin() + 1, offsets.end());
+        for (auto&& it : locations_)
+            if (it) it->store(value, subOffsets);
+    }
+}
+
+Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+    auto&& intOffset = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    if (not intOffset->isConstant(0)) {
+        return factory_->getTop(type);
+    }
+
+    if (isBottom())
+        return factory_->getBottom(type);
+    else if (isTop())
+        return factory_->getTop(type);
+
+    std::vector<Domain::Ptr> newLocations;
+    if (indices.size() == 1) {
+        ASSERT(elementType_.getTypeID() == type.getTypeID(), "Different load types");
+        for (auto&& it : locations_)
+            if (it) newLocations.push_back(it);
+
+    } else {
+        std::vector<Domain::Ptr> subOffsets(indices.begin() + 1, indices.end());
+        for (auto&& it : locations_) {
+            if (it) {
+                auto gepResult = it->gep(type, subOffsets);
+                auto ptr = llvm::dyn_cast<Pointer>(gepResult.get());
+                util::viewContainer(ptr->getLocations()).foreach([&newLocations](Domain::Ptr loc) {
+                    newLocations.push_back(loc);
+                });
+            }
+        }
+    }
+    return factory_->getPointer(*type.getPointerElementType(), newLocations);
 }
 
 Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
@@ -143,54 +199,11 @@ Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
 }
 
 Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
-    if (type.isPointerTy()) {
-        return shared_from_this();
-    } else {
-        UNREACHABLE("Bitcast to unknown type");
-    }
+    return factory_->getTop(type);
 }
 
-bool Pointer::isValid() const {
-    return isValue() && status_ == VALID;
-}
-
-Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
-    auto&& getBool = [&] (bool val) -> Domain::Ptr {
-        llvm::APSInt retval(1, true);
-        if (val) retval = 1;
-        else retval = 0;
-        return factory_->getInteger(retval);
-    };
-
-    if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(1);
-    } else if (this->isTop() || other->isTop()) {
-        return factory_->getInteger(TOP, 1);
-    }
-
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(ptr, "Nullptr in pointer");
-
-    switch (operation) {
-        case llvm::CmpInst::ICMP_EQ:
-            if (this->isValid() ^ ptr->isValid())
-                return getBool(false);
-            else
-                return factory_->getInteger(TOP, 1);
-
-        case llvm::CmpInst::ICMP_NE:
-            if (this->isValid() ^ ptr->isValid())
-                return getBool(true);
-            else
-                return factory_->getInteger(TOP, 1);
-
-        default:
-            return factory_->getInteger(TOP, 1);
-    }
-}
-
-bool Pointer::classof(const Domain* other) {
-    return other->getType() == Domain::POINTER;
+Domain::Ptr Pointer::icmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
+    return factory_->getInteger(TOP, 1, false);
 }
 
 }   /* namespace absint */

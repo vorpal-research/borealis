@@ -1,34 +1,28 @@
 //
-// Created by abdullin on 2/17/17.
+// Created by abdullin on 4/7/17.
 //
 
 #ifndef BOREALIS_POINTER_H
 #define BOREALIS_POINTER_H
 
 #include "Domain.h"
-#include "Util.h"
-#include "Util/hash.hpp"
 
 namespace borealis {
 namespace absint {
 
 class Pointer : public Domain {
 public:
-    enum Status {VALID, NON_VALID};
 
-    /// Structure that identifies pointer domain
-    using ID = std::tuple<Domain::Value, Pointer::Status>;
-    struct IDHash;
-    struct IDEquals;
+    using Locations = std::vector<Domain::Ptr>;
 
 protected:
 
     friend class DomainFactory;
 
-    Pointer(Domain::Value value, DomainFactory* factory);
-    Pointer(DomainFactory* factory, Pointer::Status status);
-    Pointer(DomainFactory* factory, Pointer::ID id);
+    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
+    Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
     Pointer(const Pointer& other);
+    virtual Domain& operator=(const Domain& other);
 
 public:
     /// Poset
@@ -42,8 +36,8 @@ public:
     virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
-    Pointer::Status getStatus() const;
-    bool isValid() const;
+    const llvm::Type& getElementType() const;
+    const Locations& getLocations() const;
     virtual size_t hashCode() const;
     virtual std::string toString() const;
     virtual Domain* clone() const;
@@ -52,7 +46,7 @@ public:
 
     /// Semantics
     virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
-    virtual Domain::Ptr store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
+    virtual void store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
@@ -62,20 +56,8 @@ public:
 
 private:
 
-    Status status_;
-};
-
-struct Pointer::IDHash {
-    size_t operator()(const ID& id) const {
-        return std::hash<ID>()(id);
-    }
-};
-
-struct Pointer::IDEquals {
-    bool operator()(const ID& lhv, const ID& rhv) const {
-        return std::get<0>(lhv) == std::get<0>(rhv) &&
-               std::get<1>(lhv) == std::get<1>(rhv);
-    }
+    const llvm::Type& elementType_;
+    mutable Locations locations_;
 };
 
 }   /* namespace absint */

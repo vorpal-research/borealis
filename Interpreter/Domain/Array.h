@@ -23,6 +23,7 @@ protected:
     Array(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
     Array(DomainFactory* factory, const llvm::Type& elementType, const Elements& elements);
     Array(const Array& other);
+    virtual Domain& operator=(const Domain& other);
 
 public:
 

@@ -9,11 +9,13 @@
 
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
+#include <andersen/include/Andersen.h>
 
 #include "Domain.h"
 #include "FloatInterval.h"
 #include "IntegerInterval.h"
 #include "Pointer.h"
+#include "Array.h"
 
 namespace borealis {
 namespace absint {
@@ -31,12 +33,7 @@ public:
             FloatInterval::IDHash,
             FloatInterval::IDEquals>;
 
-    using PtrCache = std::unordered_map<Pointer::ID,
-            Domain::Ptr,
-            Pointer::IDHash,
-            Pointer::IDEquals>;
-
-    DomainFactory();
+    DomainFactory(const Andersen* aa);
     ~DomainFactory();
 
     Domain::Ptr getTop(const llvm::Type& type);
@@ -56,21 +53,26 @@ public:
     Domain::Ptr getFloat(const llvm::APFloat& val);
     Domain::Ptr getFloat(const llvm::APFloat& from, const llvm::APFloat& to);
 
-    Domain::Ptr getPointer();
-    Domain::Ptr getPointer(Domain::Value value);
-    Domain::Ptr getPointer(bool isValid);
-    Domain::Ptr getPointer(Pointer::Status status);
+    Domain::Ptr getArray(Domain::Value value, const llvm::ArrayType& type);
+    Domain::Ptr getArray(const llvm::ArrayType& type);
+    Domain::Ptr getArray(const llvm::ArrayType& type, const Array::Elements& elements);
+
+    Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
+    Domain::Ptr getPointer(const llvm::Type& elementType);
+    Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
 
 private:
+    /// Private get for inner purposes, can create domains for random types, not onoly for llvm values
+    Domain::Ptr get(const llvm::Type& type);
 
     Domain::Ptr cached(const IntegerInterval::ID& key);
     Domain::Ptr cached(const FloatInterval::ID& key);
-    Domain::Ptr cached(const Pointer::ID& key);
 
     IntCache ints_;
     FloatCache floats_;
-    PtrCache ptrs_;
+    std::unordered_map<const llvm::Value*, Domain::Ptr> heap_;
 
+    const Andersen* aa_;
 };
 
 }   /* namespace absint */

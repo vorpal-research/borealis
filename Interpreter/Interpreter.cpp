@@ -12,7 +12,8 @@
 namespace borealis {
 namespace absint {
 
-Interpreter::Interpreter(const llvm::Module* module) : ObjectLevelLogging("interpreter"), module_(module) {
+Interpreter::Interpreter(const llvm::Module* module, const Andersen* aa)
+        : ObjectLevelLogging("interpreter"), module_(module, aa) {
     function_ = nullptr;
     state_ = nullptr;
 }
@@ -163,26 +164,48 @@ void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
     if (state_->find(&i)) {
         return;
     }
-    auto&& ptr = module_.getDomainFactory()->getPointer(true);
+    auto&& ptr = module_.getDomainFactory()->get(&i);
     state_->addVariable(&i, ptr);
 }
 
 void Interpreter::visitLoadInst(llvm::LoadInst& i) {
-    auto&& ptr = getVariable(i.getPointerOperand());
+    std::vector<Domain::Ptr> offsets;
+    Domain::Ptr ptr;
+    auto gepOper = llvm::dyn_cast<llvm::GEPOperator>(i.getPointerOperand());
+    if (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper)) {
+        ptr = getVariable(gepOper->getPointerOperand());
+        for (auto j = gepOper->idx_begin(); j != gepOper->idx_end(); ++j) {
+            auto val = llvm::cast<llvm::Value>(j);
+            offsets.push_back(getVariable(val));
+        }
+    } else {
+        ptr = getVariable(i.getPointerOperand());
+        offsets.push_back(module_.getDomainFactory()->getIndex(0));
+    }
     if (not ptr) return;
-    auto&& result = ptr->load(*i.getType(), {});
-    if (result)
+
+    auto&& result = ptr->load(*i.getType(), {module_.getDomainFactory()->getIndex(0)});
+    if (result) {
         state_->addVariable(&i, result);
+    }
 }
 
-void Interpreter::visitStoreInst(llvm::StoreInst&) {
-    // TODO: implement
+void Interpreter::visitStoreInst(llvm::StoreInst& i) {
+    auto&& ptr = getVariable(i.getPointerOperand());
+    auto&& storeVal = getVariable(i.getValueOperand());
+    if (not ptr || not storeVal) return;
+    ptr->store(storeVal, { module_.getDomainFactory()->getIndex(0) });
 }
 
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
     auto&& ptr = getVariable(i.getPointerOperand());
     if (not ptr) return;
-    auto&& result = ptr->load(*i.getType(), {});
+    std::vector<Domain::Ptr> offsets;
+    for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
+        auto val = llvm::cast<llvm::Value>(j);
+        offsets.push_back(getVariable(val));
+    }
+    auto&& result = ptr->gep(*i.getType(), offsets);
     state_->addVariable(&i, result);
 }
 
@@ -293,7 +316,14 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) return;
+    if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) {
+        auto bitcast = llvm::dyn_cast<llvm::BitCastInst>(i.getNextNode());
+        if (bitcast && bitcast->getOperand(0) == &i) {
+            errs() << util::toString(i) << endl;
+            errs() << util::toString(*bitcast) << endl;
+        }
+        return;
+    }
 
     std::vector<Domain::Ptr> args;
 

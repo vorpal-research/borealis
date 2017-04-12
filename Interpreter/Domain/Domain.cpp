@@ -56,7 +56,7 @@ Domain::Ptr Domain::load(const llvm::Type&, const std::vector<Domain::Ptr>&) con
     UNREACHABLE("Unimplemented memory operation");
 }
 
-Domain::Ptr Domain::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented memory operation");
 }
 

@@ -44,6 +44,18 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::
     else if (value_ == TOP) setTop();
 }
 
+Domain& IntegerInterval::operator=(const Domain& other) {
+    auto&& interval = llvm::dyn_cast<IntegerInterval>(&other);
+    ASSERT(interval, "Nullptr in interval join");
+    if (this == interval) return *this;
+
+    Domain::operator=(other);
+    signed_ = interval->signed_;
+    from_ = interval->from_;
+    to_ = interval->to_;
+    return *this;
+}
+
 void IntegerInterval::setTop() {
     Domain::setTop();
     from_ = util::getMinValue(getWidth(), signed_);
@@ -477,8 +489,8 @@ Domain::Ptr IntegerInterval::sitofp(const llvm::Type& type) const {
     INT_TO_FP(sext)
 }
 
-Domain::Ptr IntegerInterval::inttoptr(const llvm::Type&) const {
-    return factory_->getPointer(TOP);
+Domain::Ptr IntegerInterval::inttoptr(const llvm::Type& type) const {
+    return factory_->getTop(type);
 }
 
 Domain::Ptr IntegerInterval::bitcast(const llvm::Type& type) const {

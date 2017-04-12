@@ -13,54 +13,46 @@
 namespace borealis {
 namespace absint {
 
-DomainFactory::DomainFactory() : ObjectLevelLogging("domain") {}
+DomainFactory::DomainFactory(const Andersen* aa) : ObjectLevelLogging("domain"), aa_(aa) {}
 
 DomainFactory::~DomainFactory() {
     auto&& info = infos();
     info << "DomainFactory statistics:" << endl;
     info << "Integers: " << ints_.size() << endl;
     info << "Floats: " << floats_.size() << endl;
-    info << "Pointers: " << ptrs_.size() << endl;
     info << endl;
 }
+
+#define GENERATE_GET_VALUE(VALUE) \
+    if (type.isVoidTy()) { \
+        return nullptr; \
+    } else if (type.isIntegerTy()) { \
+        auto&& intType = llvm::cast<llvm::IntegerType>(&type); \
+        return getInteger(VALUE, intType->getBitWidth()); \
+    } else if (type.isFloatingPointTy()) { \
+        auto& semantics = util::getSemantics(type); \
+        return getFloat(VALUE, semantics); \
+    } else if (type.isArrayTy()) { \
+        auto&& arrayType = llvm::cast<llvm::ArrayType>(type); \
+        return getArray(VALUE, arrayType); \
+    } else if (type.isPointerTy()) { \
+        return getPointer(VALUE, *type.getPointerElementType()); \
+    } else { \
+        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl; \
+        return nullptr; \
+    }
 
 
 /*  General */
 Domain::Ptr DomainFactory::getTop(const llvm::Type& type) {
-    if (type.isVoidTy()) {
-        return nullptr;
-    } else if (type.isIntegerTy()) {
-        auto&& intType = llvm::cast<llvm::IntegerType>(&type);
-        return getInteger(Domain::TOP, intType->getBitWidth());
-    } else if (type.isFloatingPointTy()) {
-        auto& semantics = util::getSemantics(type);
-        return getFloat(Domain::TOP, semantics);
-    } else if (type.isPointerTy()) {
-        return getPointer(Domain::TOP);
-    } else {
-        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
-        return nullptr;
-    }
+    GENERATE_GET_VALUE(Domain::TOP);
 }
 
 Domain::Ptr DomainFactory::getBottom(const llvm::Type& type) {
-    if (type.isVoidTy()) {
-        return nullptr;
-    } else if (type.isIntegerTy()) {
-        auto&& intType = llvm::cast<llvm::IntegerType>(&type);
-        return getInteger(Domain::BOTTOM, intType->getBitWidth());
-    } else if (type.isFloatingPointTy()) {
-        auto& semantics = util::getSemantics(type);
-        return getFloat(Domain::BOTTOM, semantics);
-    } else if (type.isPointerTy()) {
-        return getPointer(Domain::BOTTOM);
-    } else {
-        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
-        return nullptr;
-    }
+    GENERATE_GET_VALUE(Domain::BOTTOM);
 }
 
-Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val) {
+Domain::Ptr DomainFactory::get(const llvm::Value* val) {
     auto&& type = *val->getType();
     if (type.isVoidTy()) {
         return nullptr;
@@ -70,8 +62,36 @@ Domain::Ptr borealis::absint::DomainFactory::get(const llvm::Value* val) {
     } else if (type.isFloatingPointTy()) {
         auto& semantics = util::getSemantics(type);
         return getFloat(semantics);
+    } else if (type.isArrayTy()) {
+        auto&& arrayType = llvm::cast<llvm::ArrayType>(type);
+        return getArray(arrayType);
     } else if (type.isPointerTy()) {
-        return getPointer();
+        std::vector<const llvm::Value*> aliases;
+        aa_->getPointsToSet(val, aliases);
+
+        auto&& location = get(*type.getPointerElementType());
+        return getPointer(*type.getPointerElementType(), {location});
+    } else {
+        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
+        return nullptr;
+    }
+}
+
+Domain::Ptr DomainFactory::get(const llvm::Type& type) {
+    if (type.isVoidTy()) {
+        return nullptr;
+    } else if (type.isIntegerTy()) {
+        auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+        return getInteger(intType->getBitWidth());
+    } else if (type.isFloatingPointTy()) {
+        auto& semantics = util::getSemantics(type);
+        return getFloat(semantics);
+    } else if (type.isArrayTy()) {
+        auto&& arrayType = llvm::cast<llvm::ArrayType>(type);
+        return getArray(arrayType);
+    } else if (type.isPointerTy()) {
+        auto&& location = get(*type.getPointerElementType());
+        return getPointer(*type.getPointerElementType(), {location});
     } else {
         errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
         return nullptr;
@@ -84,7 +104,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
     } else if (auto&& ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
-        return getPointer(false);
+        return getPointer(*constant->getType());
     } else {
         return get(llvm::cast<llvm::Value>(constant));
     }
@@ -104,13 +124,6 @@ Domain::Ptr DomainFactory::cached(const FloatInterval::ID& key) {
     return floats_[key];
 }
 
-Domain::Ptr DomainFactory::cached(const Pointer::ID& key) {
-    if (ptrs_.find(key) == ptrs_.end()) {
-        ptrs_[key] = Domain::Ptr{ new Pointer(this, key) };
-    }
-    return ptrs_[key];
-}
-
 
 /* Integer */
 Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
@@ -126,17 +139,17 @@ Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val, bool isSigned) {
 }
 
 Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width, bool isSigned) {
-    return cached(std::make_tuple(value,
-                                  isSigned,
-                                  llvm::APInt(width, 0, isSigned),
-                                  llvm::APInt(width, 0, isSigned)));
+    return Domain::Ptr{ new IntegerInterval(this, std::make_tuple(value,
+                                                                  isSigned,
+                                                                  llvm::APInt(width, 0, isSigned),
+                                                                  llvm::APInt(width, 0, isSigned))) };
 }
 
 Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned) {
-    return cached(std::make_tuple(Domain::VALUE,
-                                  isSigned,
-                                  from,
-                                  to));
+    return Domain::Ptr{ new IntegerInterval(this, std::make_tuple(Domain::VALUE,
+                                                                  isSigned,
+                                                                  from,
+                                                                  to)) };
 }
 
 
@@ -150,33 +163,42 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& val) {
 }
 
 Domain::Ptr DomainFactory::getFloat(Domain::Value value, const llvm::fltSemantics& semantics) {
-    return cached(std::make_tuple(value,
-                                  llvm::APFloat(semantics),
-                                  llvm::APFloat(semantics)));
+    return Domain::Ptr{ new FloatInterval(this, std::make_tuple(value,
+                                                                llvm::APFloat(semantics),
+                                                                llvm::APFloat(semantics))) };
 }
 
 Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFloat& to) {
-    return cached(std::make_tuple(Domain::VALUE,
-                                  llvm::APFloat(from),
-                                  llvm::APFloat(to)));
+    return Domain::Ptr{ new FloatInterval(this, std::make_tuple(Domain::VALUE,
+                                                                llvm::APFloat(from),
+                                                                llvm::APFloat(to))) };
 }
 
 
 /* Pointer */
-Domain::Ptr DomainFactory::getPointer() {
-    return getPointer(Domain::BOTTOM);
+Domain::Ptr DomainFactory::getPointer(Domain::Value value, const llvm::Type& elementType) {
+    return Domain::Ptr{ new Pointer(value, this, elementType) };
 }
 
-Domain::Ptr DomainFactory::getPointer(bool isValid) {
-    return getPointer(isValid ? Pointer::VALID : Pointer::NON_VALID);
+Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType) {
+    return Domain::Ptr{ new Pointer(Domain::BOTTOM, this, elementType) };
 }
 
-Domain::Ptr DomainFactory::getPointer(Domain::Value value) {
-    return cached(std::make_tuple(value, Pointer::NON_VALID));
+Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType, const Pointer::Locations& locations) {
+    return Domain::Ptr{ new Pointer(this, elementType, locations) };
 }
 
-Domain::Ptr DomainFactory::getPointer(Pointer::Status status) {
-    return cached(std::make_tuple(Domain::VALUE, status));
+/* Array */
+Domain::Ptr DomainFactory::getArray(Domain::Value value, const llvm::ArrayType& type) {
+    return Domain::Ptr{ new Array(value, this, *type.getElementType()) };
+}
+
+Domain::Ptr DomainFactory::getArray(const llvm::ArrayType& type) {
+    return Domain::Ptr{ new Array(this, *type.getElementType(), getIndex(type.getArrayNumElements())) };
+}
+
+Domain::Ptr DomainFactory::getArray(const llvm::ArrayType& type, const Array::Elements& elements) {
+    return Domain::Ptr{ new Array(this, *type.getElementType(), elements) };
 }
 
 }   /* namespace absint */

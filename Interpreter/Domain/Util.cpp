@@ -3,6 +3,7 @@
 //
 
 
+#include <llvm/Support/raw_ostream.h>
 #include "Util.h"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -143,6 +144,13 @@ std::string toString(const llvm::APFloat& val) {
     std::ostringstream ss;
     for (auto&& it : valVector) ss << it;
     return std::move(ss.str());
+}
+
+std::string toString(const llvm::Type& type) {
+    std::string str;
+    llvm::raw_string_ostream ss(str);
+    type.print(ss);
+    return ss.str();
 }
 
 }   /* namespace util */

@@ -2,13 +2,15 @@
 // Created by abdullin on 3/2/17.
 //
 
+#include <andersen/include/Andersen.h>
+
 #include "Module.h"
 #include "Util/collections.hpp"
 
 namespace borealis {
 namespace absint {
 
-Module::Module(const llvm::Module* module) : instance_(module) {
+Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(module), factory_(aa) {
     // adding global variables
     for (auto&& it : instance_->getGlobalList()) {
         auto globalDomain = factory_.getBottom(*it.getType());

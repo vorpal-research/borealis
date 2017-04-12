@@ -9,6 +9,7 @@
 #include <queue>
 
 #include <llvm/IR/InstVisitor.h>
+#include <andersen/include/Andersen.h>
 
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
@@ -19,7 +20,7 @@ namespace absint {
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    Interpreter(const llvm::Module* module);
+    Interpreter(const llvm::Module* module, const Andersen* aa);
 
     void run();
 

@@ -25,6 +25,7 @@ public:
 
     enum Type {INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
+        SIMPLE_POINTER,
         POINTER,
         ARRAY
     };
@@ -129,7 +130,7 @@ public:
     virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
     virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
-    virtual Domain::Ptr store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
+    virtual void store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr trunc(const llvm::Type& type) const;
@@ -154,6 +155,17 @@ protected:
                                                                              value_(value),
                                                                              type_(type),
                                                                              factory_(factory) {}
+
+    virtual Domain& operator=(const Domain& other) {
+        if (this == &other) return *this;
+
+        value_ = other.value_;
+        type_ = other.type_;
+        factory_ = other.factory_;
+        return *this;
+    }
+
+    friend class Pointer;
 
     Value value_;
     Type type_;

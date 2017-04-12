@@ -42,6 +42,18 @@ Array::Array(const Array& other)
           elements_(other.elements_),
           length_(other.length_) {}
 
+Domain& Array::operator=(const Domain& other) {
+    auto&& array = llvm::dyn_cast<Array>(&other);
+    ASSERT(array, "Nullptr in array join");
+    if (this == array) return *this;
+
+    Domain::operator=(other);
+    ASSERT(elementType_.getTypeID() == array->elementType_.getTypeID(), "Different array types in assigment");
+    elements_ = array->elements_;
+    length_ = array->length_;
+    return *this;
+}
+
 bool Array::equals(const Domain* other) const {
     auto&& array = llvm::dyn_cast<Array>(other);
     if (not array) return false;
@@ -50,7 +62,8 @@ bool Array::equals(const Domain* other) const {
     if (this->isBottom() && other->isBottom()) return true;
     if (this->isTop() && other->isTop()) return true;
 
-    return length_->equals(array) &&
+    return elementType_.getTypeID() == array->elementType_.getTypeID() &&
+            length_->equals(array) &&
             elements_ == array->elements_;
 }
 
@@ -150,6 +163,11 @@ Domain::Ptr Array::extractValue(const std::vector<Domain::Ptr>& indices) const {
         warns() << "Buffer overflow" << endl;
     }
 
+    if (isBottom())
+        return factory_->getPointer(elementType_, { factory_->getBottom(elementType_) });
+    else if (isTop())
+        return factory_->getPointer(elementType_, { factory_->getTop(elementType_) });
+
     Domain::Ptr result = factory_->getBottom(elementType_);
     if (indices.size() == 1) {
         for (auto i = indexStart; i <indexEnd && i < maxLength; ++i)
@@ -189,6 +207,11 @@ Domain::Ptr Array::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& i
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
+    if (isBottom())
+        return factory_->getPointer(type, { factory_->getBottom(type) });
+    else if (isTop())
+        return factory_->getPointer(type, { factory_->getTop(type) });
+
     auto indexStart = *indexInterval->from().getRawData();
     auto indexEnd = *indexInterval->from().getRawData();
 
@@ -198,17 +221,18 @@ Domain::Ptr Array::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& i
         warns() << "Buffer overflow" << endl;
     }
 
-    Domain::Ptr result = factory_->getBottom(elementType_);
+    std::vector<Domain::Ptr> locations;
     if (indices.size() == 1) {
-        for (auto i = indexStart; i <indexEnd && i < maxLength; ++i)
-            result = result->join(elements_[i]);
+        for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
+            locations.push_back(elements_[i]);
+        }
 
     } else {
         std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
-        for (auto i = indexStart; i <indexEnd && i < maxLength; ++i)
-            result = result->join(elements_[i]->gep(type, subIndices));
+        for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i)
+            locations.push_back(elements_[i]->gep(type, subIndices));
     }
-    return factory_->getPointer(); //TODO: getPointer(result);
+    return factory_->getPointer(type, locations);
 }
 
 }   /* namespace absint */

@@ -51,6 +51,12 @@ const llvm::fltSemantics& getSemantics(const llvm::Type& type);
 
 std::string toString(const llvm::APFloat& val);
 
+///////////////////////////////////////////////////////////////
+/// Other
+///////////////////////////////////////////////////////////////
+
+std::string toString(const llvm::Type& type);
+
 }   /* namespace util */
 }   /* namespace borealis */
 
