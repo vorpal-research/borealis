@@ -1,27 +1,30 @@
 //
-// Created by abdullin on 4/7/17.
+// Created by abdullin on 4/14/17.
 //
 
-#ifndef BOREALIS_POINTER_H
-#define BOREALIS_POINTER_H
+#ifndef BOREALIS_GEPPOINTER_H
+#define BOREALIS_GEPPOINTER_H
+
+#include <vector>
+#include <unordered_set>
 
 #include "Domain.h"
+#include "MemoryObject.h"
 
 namespace borealis {
 namespace absint {
 
-class Pointer : public Domain {
+class GepPointer : public Domain {
 public:
 
-    using Locations = std::vector<Domain::Ptr>;
+    using Objects = std::unordered_set<MemoryObject::Ptr, MemoryObjectHash, MemoryObjectEquals>;
 
 protected:
 
-    friend class DomainFactory;
+    GepPointer(DomainFactory* factory, const llvm::Type& elementType, const Objects& objects);
+    GepPointer(const GepPointer& other);
 
-    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
-    Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
-    Pointer(const Pointer& other);
+    friend class DomainFactory;
 
 public:
     /// Poset
@@ -36,7 +39,7 @@ public:
 
     /// Other
     const llvm::Type& getElementType() const;
-    const Locations& getLocations() const;
+    const Objects& getObjects() const;
     virtual std::size_t hashCode() const;
     virtual std::string toString() const;
     virtual Domain* clone() const;
@@ -53,13 +56,14 @@ public:
     /// Cmp
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
 
+
 private:
 
     const llvm::Type& elementType_;
-    mutable Locations locations_;
+    Objects objects_;
 };
 
-}   /* namespace absint */
-}   /* namespace borealis */
+}
+}
 
-#endif //BOREALIS_POINTER_H
+#endif //BOREALIS_GEPPOINTER_H

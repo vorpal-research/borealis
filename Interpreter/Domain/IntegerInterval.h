@@ -29,7 +29,6 @@ protected:
     IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
     IntegerInterval(DomainFactory* factory, const ID& key);
     IntegerInterval(const IntegerInterval& interval);
-    virtual Domain& operator=(const Domain& other);
 
 public:
     /// Poset

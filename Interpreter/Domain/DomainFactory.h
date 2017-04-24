@@ -15,7 +15,8 @@
 #include "FloatInterval.h"
 #include "IntegerInterval.h"
 #include "Pointer.h"
-#include "Array.h"
+#include "AggregateObject.h"
+#include "GepPointer.h"
 
 namespace borealis {
 namespace absint {
@@ -41,6 +42,7 @@ public:
 
     Domain::Ptr get(const llvm::Value* val);
     Domain::Ptr get(const llvm::Constant* constant);
+    Domain::Ptr getInMemory(const llvm::Type& type);
 
     Domain::Ptr getIndex(uint64_t indx);
     Domain::Ptr getInteger(unsigned width, bool isSigned = false);
@@ -53,17 +55,18 @@ public:
     Domain::Ptr getFloat(const llvm::APFloat& val);
     Domain::Ptr getFloat(const llvm::APFloat& from, const llvm::APFloat& to);
 
-    Domain::Ptr getArray(Domain::Value value, const llvm::ArrayType& type);
-    Domain::Ptr getArray(const llvm::ArrayType& type);
-    Domain::Ptr getArray(const llvm::ArrayType& type, const Array::Elements& elements);
+    Domain::Ptr getAggregateObject(Domain::Value value, const llvm::Type& type);
+    Domain::Ptr getAggregateObject(const llvm::Type& type);
 
     Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
 
+    Domain::Ptr getGepPointer(const llvm::Type& elementType, const GepPointer::Objects& objects);
+
+    MemoryObject::Ptr getMemoryObject(const llvm::Type& type);
+
 private:
-    /// Private get for inner purposes, can create domains for random types, not onoly for llvm values
-    Domain::Ptr get(const llvm::Type& type);
 
     Domain::Ptr cached(const IntegerInterval::ID& key);
     Domain::Ptr cached(const FloatInterval::ID& key);

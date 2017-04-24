@@ -23,7 +23,7 @@ void Interpreter::run() {
     if (main) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : main->getInstance()->getArgumentList()) {
-            args.push_back(module_.getDomainFactory()->get(&arg));
+            args.push_back(module_.getDomainFactory()->getTop(*arg.getType()));
         }
 
         interpretFunction(main, args);
@@ -184,7 +184,7 @@ void Interpreter::visitLoadInst(llvm::LoadInst& i) {
     }
     if (not ptr) return;
 
-    auto&& result = ptr->load(*i.getType(), {module_.getDomainFactory()->getIndex(0)});
+    auto&& result = ptr->load(*i.getType(), offsets);
     if (result) {
         state_->addVariable(&i, result);
     }
@@ -205,7 +205,7 @@ void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
         auto val = llvm::cast<llvm::Value>(j);
         offsets.push_back(getVariable(val));
     }
-    auto&& result = ptr->gep(*i.getType(), offsets);
+    auto&& result = ptr->gep(*i.getType()->getPointerElementType(), offsets);
     state_->addVariable(&i, result);
 }
 
@@ -316,12 +316,18 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) {
-        auto bitcast = llvm::dyn_cast<llvm::BitCastInst>(i.getNextNode());
-        if (bitcast && bitcast->getOperand(0) == &i) {
-            errs() << util::toString(i) << endl;
-            errs() << util::toString(*bitcast) << endl;
+    if (i.getCalledFunction() &&
+            (i.getCalledFunction()->getName().startswith("borealis.alloc") ||
+                    i.getCalledFunction()->getName().startswith("borealis.malloc"))) {
+        auto domain = module_.getDomainFactory()->getInMemory(*i.getType());
+        if (domain) {
+            state_->addVariable(&i, domain);
         }
+        return;
+    }
+
+    if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) {
+        errs() << "Unknown function: " << i.getCalledFunction()->getName() << endl;
         return;
     }
 

@@ -25,9 +25,9 @@ public:
 
     enum Type {INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
-        SIMPLE_POINTER,
         POINTER,
-        ARRAY
+        GEP,
+        AGGREGATE
     };
 
     enum Value {TOP, VALUE, BOTTOM};
@@ -126,7 +126,7 @@ public:
     virtual Domain::Ptr extractElement(Domain::Ptr indx) const;
     virtual void insertElement(Domain::Ptr element, Domain::Ptr indx) const;
     /// Aggregate
-    virtual Domain::Ptr extractValue(const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
     virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
@@ -155,17 +155,7 @@ protected:
                                                                              value_(value),
                                                                              type_(type),
                                                                              factory_(factory) {}
-
-    virtual Domain& operator=(const Domain& other) {
-        if (this == &other) return *this;
-
-        value_ = other.value_;
-        type_ = other.type_;
-        factory_ = other.factory_;
-        return *this;
-    }
-
-    friend class Pointer;
+    virtual ~Domain() = default;
 
     Value value_;
     Type type_;
@@ -189,5 +179,16 @@ struct DomainHash {
 
 }   /* namespace absint */
 }   /* namespace borealis*/
+
+namespace std {
+
+template <>
+struct hash<borealis::absint::Domain::Ptr> {
+    size_t operator()(const borealis::absint::Domain::Ptr& domain) const noexcept {
+        return domain->hashCode();
+    }
+};
+
+}
 
 #endif //BOREALIS_DOMAIN_HPP

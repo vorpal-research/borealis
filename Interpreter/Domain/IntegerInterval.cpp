@@ -44,18 +44,6 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::
     else if (value_ == TOP) setTop();
 }
 
-Domain& IntegerInterval::operator=(const Domain& other) {
-    auto&& interval = llvm::dyn_cast<IntegerInterval>(&other);
-    ASSERT(interval, "Nullptr in interval join");
-    if (this == interval) return *this;
-
-    Domain::operator=(other);
-    signed_ = interval->signed_;
-    from_ = interval->from_;
-    to_ = interval->to_;
-    return *this;
-}
-
 void IntegerInterval::setTop() {
     Domain::setTop();
     from_ = util::getMinValue(getWidth(), signed_);
@@ -103,15 +91,19 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
     ASSERT(this->getWidth() == interval->getWidth(), "Widening two intervals of different format");
 
+    errs() << "Widen: " << toString() << " and " << interval->toString() << endl;
     if (interval->isBottom()) {
+        errs() << toString() << endl << endl;
         return shared_from_this();
     } else if (this->isBottom()) {
+        errs() << interval->toString() << endl << endl;
         return interval->shared_from_this();
     }
 
     auto left = (util::lt(interval->from_, from_, signed_)) ? util::getMinValue(getWidth(), signed_) : from_;
     auto right = (util::lt(to_, interval->to_, signed_)) ? util::getMaxValue(getWidth(), signed_) : to_;
 
+    errs() << factory_->getInteger(left, right, signed_) << endl << endl;
     return factory_->getInteger(left, right, signed_);
 }
 

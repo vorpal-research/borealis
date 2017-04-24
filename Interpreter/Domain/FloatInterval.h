@@ -29,7 +29,6 @@ protected:
     FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
     FloatInterval(DomainFactory* factory, const ID& id);
     FloatInterval(const FloatInterval& interval);
-    virtual Domain& operator=(const Domain& other);
 
 public:
     /// Poset
