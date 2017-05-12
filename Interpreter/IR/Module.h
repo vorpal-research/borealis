@@ -19,8 +19,8 @@ namespace absint {
 class Module {
 public:
 
-    using GlobalsMap = std::unordered_map<const llvm::Value*, Domain::Ptr>;
-    using FunctionMap = std::unordered_map<const llvm::Function*, Function::Ptr>;
+    using GlobalsMap = std::map<const llvm::Value*, Domain::Ptr>;
+    using FunctionMap = std::map<const llvm::Function*, Function::Ptr>;
 
     Module(const llvm::Module* module, const Andersen* aa);
     Function::Ptr contains(const llvm::Function* function) const;

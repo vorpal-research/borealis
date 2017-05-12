@@ -6,7 +6,7 @@
 #define BOREALIS_FLOATINTERVAL_H
 
 #include "Domain.h"
-#include "Util.h"
+#include "Interpreter/Util.h"
 #include "Util/hash.hpp"
 
 namespace borealis {

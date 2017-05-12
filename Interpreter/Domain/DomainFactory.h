@@ -16,7 +16,6 @@
 #include "IntegerInterval.h"
 #include "Pointer.h"
 #include "AggregateObject.h"
-#include "GepPointer.h"
 
 namespace borealis {
 namespace absint {
@@ -57,14 +56,14 @@ public:
 
     Domain::Ptr getAggregateObject(Domain::Value value, const llvm::Type& type);
     Domain::Ptr getAggregateObject(const llvm::Type& type);
+    Domain::Ptr getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements);
 
     Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
 
-    Domain::Ptr getGepPointer(const llvm::Type& elementType, const GepPointer::Objects& objects);
-
     MemoryObject::Ptr getMemoryObject(const llvm::Type& type);
+    MemoryObject::Ptr getMemoryObject(Domain::Ptr value);
 
 private:
 

@@ -4,17 +4,42 @@
 
 #include <andersen/include/Andersen.h>
 
+#include "Interpreter/Util.h"
 #include "Module.h"
 #include "Util/collections.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
 
 Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(module), factory_(aa) {
-    // adding global variables
+    /// Adding global variables
     for (auto&& it : instance_->getGlobalList()) {
-        auto globalDomain = factory_.getBottom(*it.getType());
-        if (globalDomain) globals_.insert( {&it, globalDomain} );
+        Domain::Ptr globalDomain;
+        if (it.hasInitializer()) {
+            Domain::Ptr content;
+            auto& elementType = *it.getType()->getPointerElementType();
+            // If global is simple type, that we should wrap it like array of size 1
+            if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
+                auto simpleConst = factory_.get(it.getInitializer());
+                auto&& arrayType = llvm::ArrayType::get(&elementType, 1);
+                content = factory_.getAggregateObject(*arrayType, {simpleConst});
+            // else just create domain
+            } else {
+                content = factory_.get(it.getInitializer());
+            }
+            ASSERT(content, "Unsupported constant");
+
+            PointerLocation loc = {factory_.getIndex(0), content};
+            globalDomain = factory_.getPointer(elementType, {loc});
+
+        } else {
+            factory_.getBottom(*it.getType());
+        }
+
+        if (not globalDomain) continue;
+        globals_.insert( {&it, globalDomain} );
     }
 }
 
@@ -87,3 +112,5 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
 
 }   /* namespace absint */
 }   /* namespace borealis */
+
+#include "Util/unmacros.h"

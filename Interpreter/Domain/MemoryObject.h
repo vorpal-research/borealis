@@ -13,6 +13,7 @@
 namespace borealis {
 namespace absint {
 
+/// Mutable
 class MemoryObject : public std::enable_shared_from_this<const MemoryObject> {
 public:
 

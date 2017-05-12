@@ -5,15 +5,35 @@
 #ifndef BOREALIS_POINTER_H
 #define BOREALIS_POINTER_H
 
+#include <unordered_set>
+
 #include "Domain.h"
 
 namespace borealis {
 namespace absint {
 
+struct PointerLocation {
+    mutable Domain::Ptr offset_;
+    Domain::Ptr location_;
+};
+
+struct PtrLocationHash {
+    size_t operator() (const PointerLocation& loc) const noexcept {
+        return loc.location_->hashCode();
+    }
+};
+
+struct PtrLocationEquals {
+    bool operator() (const PointerLocation& lhv, const PointerLocation& rhv) const noexcept {
+        return lhv.location_.get() == rhv.location_.get();
+    }
+};
+
+/// Mutable
 class Pointer : public Domain {
 public:
 
-    using Locations = std::vector<Domain::Ptr>;
+    using Locations = std::unordered_set<PointerLocation, PtrLocationHash, PtrLocationEquals>;
 
 protected:
 
@@ -44,8 +64,8 @@ public:
     static bool classof(const Domain* other);
 
     /// Semantics
-    virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
-    virtual void store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
+    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;

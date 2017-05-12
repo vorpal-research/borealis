@@ -5,7 +5,7 @@
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
 #include "Pointer.h"
-#include "Util.h"
+#include "Interpreter/Util.h"
 #include "Util/collections.hpp"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
@@ -36,8 +36,10 @@ bool Pointer::equals(const Domain* other) const {
 
     if (locations_.size() != ptr->locations_.size()) return false;
 
-    for (auto i = 0U; i < locations_.size(); ++i) {
-        if (not locations_[i]->equals(ptr->locations_[i].get())) return false;
+    for (auto&& it : locations_) {
+        auto&& itptr = ptr->locations_.find(it);
+        if (itptr == ptr->locations_.end()) return false;
+        if (not itptr->location_->equals(it.location_.get())) return false;
     }
     return true;
 }
@@ -55,7 +57,8 @@ const llvm::Type& Pointer::getElementType() const {
 }
 
 std::size_t Pointer::hashCode() const {
-    return util::hash::simple_hash_value(value_, getType(), getElementType().getTypeID(), getLocations());
+    return 0;
+    //return util::hash::simple_hash_value(value_, getType(), getElementType().getTypeID(), getLocations());
 }
 
 std::string Pointer::toString() const {
@@ -65,7 +68,7 @@ std::string Pointer::toString() const {
     else if (isBottom()) ss << " BOTTOM ]" << std::endl;
     else {
         for (auto&& it : locations_) {
-            ss << std::endl << it->toString();
+            ss << std::endl << it.offset_->toString() << " " << it.location_->toString();
         }
         ss << std::endl << "]";
     }
@@ -81,51 +84,31 @@ bool Pointer::classof(const Domain* other) {
 }
 
 Domain::Ptr Pointer::join(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Non-pointer domain in pointer join");
+
     if (other->isBottom()) {
         return shared_from_this();
     } else if (this->isBottom()) {
         return other->shared_from_this();
     } else if (other->isTop() || this->isTop()) {
         return factory_->getPointer(TOP, elementType_);
-    } else if (auto&& ptr = llvm::dyn_cast<Pointer>(other.get())) {
-        for (auto&& it : locations_) {
-            for (auto&& itptr : ptr->locations_) {
-                it = it->join(itptr);
-            }
-        }
-        return shared_from_this();
-
-    } else if (auto&& gep = llvm::dyn_cast<GepPointer>(other.get())) {
-        ASSERT(elementType_.getTypeID() == gep->getElementType().getTypeID(), "Different types in ptr and gep join");
-
-        if (elementType_.isPointerTy() || elementType_.isAggregateType()) {
-            for (auto&& it : locations_) {
-                for (auto&& mo : gep->getObjects()) {
-                    it = it->join(mo->load());
-                }
-            }
-
-        } else {
-            for (auto&& it : locations_) {
-                for (auto&& mo : gep->getObjects()) {
-                    it->insertValue(mo->load(), {factory_->getIndex(0)});
-                }
-            }
-        }
-        return shared_from_this();
     }
-    UNREACHABLE("Unknown domain in pointer join");
-}
 
-Domain::Ptr Pointer::widen(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
-    ASSERT(ptr, "Non-pointer in pointer domain");
-    for (auto&& it : locations_) {
-        for (auto&& itptr : ptr->locations_) {
-            it = it->widen(itptr);
+    for (auto&& itptr : ptr->locations_) {
+        auto&& it = locations_.find(itptr);
+        if (it == locations_.end()) {
+            locations_.insert(itptr);
+        } else {
+            /// Assume that length and location are same
+            it->offset_ = it->offset_->join(itptr.offset_);
         }
     }
     return shared_from_this();
+}
+
+Domain::Ptr Pointer::widen(Domain::Ptr other) const {
+    return join(other);
 }
 
 Domain::Ptr Pointer::meet(Domain::Ptr) const {
@@ -136,114 +119,60 @@ Domain::Ptr Pointer::narrow(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr Pointer::load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const {
+Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
     if (isBottom()) {
         return factory_->getBottom(type);
     } else if (isTop()) {
         return factory_->getTop(type);
     }
 
-    auto result = factory_->getBottom(elementType_);
-    if (elementType_.isAggregateType()) {
-        if (offsets.size() == 1) {
-            auto&& intOffset = llvm::dyn_cast<IntegerInterval>(offsets.begin()->get());
-            ASSERT(intOffset->isConstant(0), "Big offset in integer");
-
-            ASSERT(elementType_.getTypeID() == type.getTypeID(), "Different load types");
-            for (auto&& it : locations_)
-                result = result->join(it);
-
+    auto result = factory_->getBottom(type);
+    for (auto&& it : locations_) {
+        auto totalOffset = it.offset_->add(offset);
+        if (elementType_.isPointerTy() && not type.isPointerTy()) {
+            auto gep = it.location_->gep(*type.getPointerElementType(), {totalOffset});
+            result = result->join(gep);
         } else {
-            std::vector<Domain::Ptr> subOffsets(offsets.begin() + 1, offsets.end());
-            for (auto&& it : locations_)
-                result = result->join(it->extractValue(type, subOffsets));
-        }
-
-    } else if (elementType_.isPointerTy()) {
-        if (offsets.size() == 1) {
-            auto&& intOffset = llvm::dyn_cast<IntegerInterval>(offsets.begin()->get());
-            ASSERT(elementType_.getTypeID() == type.getTypeID(), "Different load types");
-            ASSERT(intOffset->isConstant(0), "Big offset in integer");
-            for (auto&& it : locations_) {
-                result = result->join(it);
-            }
-
-        } else {
-            std::vector<Domain::Ptr> subOffsets(offsets.begin() + 1, offsets.end());
-            for (auto&& it : locations_)
-                result = result->join(it->load(type, subOffsets));
-        }
-
-    } else {
-        for (auto&& it : locations_) {
-            result = result->join(it->extractValue(type, offsets));
+            result = result->join(it.location_->load(type, totalOffset));
         }
     }
     return result;
 }
 
-void Pointer::store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const {
-    if (elementType_.isAggregateType()) {
-        UNREACHABLE("Don't know what to do");
-    } else if (elementType_.isPointerTy()) {
-        if (offsets.size() == 1) {
-            auto&& intOffset = llvm::dyn_cast<IntegerInterval>(offsets.begin()->get());
-            ASSERT(intOffset->isConstant(0), "Big offset in integer");
-            for (auto&& it : locations_) {
-                it = it->join(value);
-            }
+void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
+    if (isBottom() || isTop()) return;
 
-        } else {
-            std::vector<Domain::Ptr> subOffsets(offsets.begin() + 1, offsets.end());
-            for (auto&& it : locations_) {
-                it->store(value, subOffsets);
-            }
-        }
-
+    if (elementType_.isPointerTy()) {
+        locations_.clear();
+        locations_.insert({factory_->getIndex(0), value});
     } else {
-        ASSERT(offsets.size() == 1, "Too big offset in pointer");
-        for (auto&& it : locations_)
-            it->insertValue(value, offsets);
+        for (auto&& it : locations_) {
+            auto totalOffset = it.offset_->add(offset);
+            it.location_->store(value, {totalOffset});
+        }
     }
 }
 
 Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
-    if (isBottom())
-        return factory_->getPointer(BOTTOM, type);
-    else if (isTop())
+    if (isBottom() || isTop()) {
         return factory_->getPointer(TOP, type);
+    }
 
-    Domain::Ptr result = nullptr;
-    if (elementType_.isAggregateType()) {
-        std::vector<Domain::Ptr> subOffsets(indices.begin() + 1, indices.end());
+    auto result = factory_->getPointer(BOTTOM, type);
+
+    if (indices.size() == 1) {
         for (auto&& it : locations_) {
-            auto gepResult = it->gep(type, subOffsets);
-            result = result ?
-                     result->join(gepResult) :
-                     gepResult;
-        }
-    } else if (elementType_.isPointerTy()) {
-        if (indices.size() == 1) {
-            auto&& intOffset = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
-            ASSERT(intOffset->isConstant(0), "Big offset in integer");
-
-            return factory_->getPointer(type, locations_);
-
-        } else {
-            std::vector<Domain::Ptr> subOffsets(indices.begin() + 1, indices.end());
-            for (auto&& it : locations_) {
-                result = result ?
-                         result->join(it->gep(type, subOffsets)) :
-                         it;
-            }
+            auto totalOffset = indices[0]->add(it.offset_);
+            result = result->join(it.location_->gep(type, {totalOffset}));
         }
 
     } else {
+        std::vector<Domain::Ptr> subOffsets(indices.begin() + 1, indices.end());
+        auto zeroElement = subOffsets[0];
+
         for (auto&& it : locations_) {
-            auto gepResult = it->gep(type, indices);
-            result = result ?
-                     result->join(gepResult) :
-                     gepResult;
+            subOffsets[0] = zeroElement->add(indices[0]->add(it.offset_));
+            result = result->join(it.location_->gep(type, subOffsets));
         }
     }
     return result;

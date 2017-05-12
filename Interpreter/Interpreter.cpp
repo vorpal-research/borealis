@@ -67,34 +67,41 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
 /////////////////////////////////////////////////////////////////////
 void Interpreter::visitInstruction(llvm::Instruction& i) {
     warns() << "Unsupported instruction: " << util::toString(i) << endl;
+    addStubFor(i);
     return;
 }
 
 void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
     auto&& retVal = i.getReturnValue();
-    if (not retVal) return;
+    if (not retVal) {
+        addStubFor(i);
+        return;
+    }
 
     auto&& retDomain = getVariable(retVal);
     if (retDomain) {
         state_->mergeToReturnValue(retDomain);
+    } else {
+        addStubFor(i);
     }
 }
 
 void Interpreter::visitBranchInst(llvm::BranchInst& i) {
     std::vector<const llvm::BasicBlock*> successors;
     if (i.isConditional()) {
-        auto&& cond = getVariable(i.getCondition());
+        auto cond = getVariable(i.getCondition());
         if (not cond || not cond->isValue()) {
             successors.push_back(i.getSuccessor(0));
             successors.push_back(i.getSuccessor(1));
+
+        } else {
+            auto&& boolean = llvm::dyn_cast<IntegerInterval>(cond.get());
+            ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
+
+            successors.push_back(boolean->isConstant(1) ?
+                                 i.getSuccessor(0) :
+                                 i.getSuccessor(1));
         }
-
-        auto&& boolean = llvm::dyn_cast<IntegerInterval>(cond.get());
-        ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
-
-        successors.push_back( boolean->isConstant(1) ?
-                              i.getSuccessor(0) :
-                              i.getSuccessor(1) );
     } else {
         successors.push_back(i.getSuccessor(0));
     }
@@ -145,19 +152,27 @@ void Interpreter::visitUnreachableInst(llvm::UnreachableInst&)   { /* ignore thi
 void Interpreter::visitICmpInst(llvm::ICmpInst& i) {
     auto&& lhv = getVariable(i.getOperand(0));
     auto&& rhv = getVariable(i.getOperand(1));
-    if (not lhv || not rhv) return;
+    if (not lhv || not rhv) {
+        addStubFor(i);
+        return;
+    }
 
     auto&& result = lhv->icmp(rhv, i.getPredicate());
-    state_->addVariable(&i, result);
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
     auto&& lhv = getVariable(i.getOperand(0));
     auto&& rhv = getVariable(i.getOperand(1));
-    if (not lhv || not rhv) return;
+    if (not lhv || not rhv) {
+        addStubFor(i);
+        return;
+    }
 
     auto&& result = lhv->fcmp(rhv, i.getPredicate());
-    state_->addVariable(&i, result);
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
@@ -165,48 +180,42 @@ void Interpreter::visitAllocaInst(llvm::AllocaInst& i) {
         return;
     }
     auto&& ptr = module_.getDomainFactory()->get(&i);
-    state_->addVariable(&i, ptr);
+    if (ptr) state_->addVariable(&i, ptr);
+    else addStubFor(i);
 }
 
 void Interpreter::visitLoadInst(llvm::LoadInst& i) {
-    std::vector<Domain::Ptr> offsets;
     Domain::Ptr ptr;
     auto gepOper = llvm::dyn_cast<llvm::GEPOperator>(i.getPointerOperand());
     if (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper)) {
-        ptr = getVariable(gepOper->getPointerOperand());
-        for (auto j = gepOper->idx_begin(); j != gepOper->idx_end(); ++j) {
-            auto val = llvm::cast<llvm::Value>(j);
-            offsets.push_back(getVariable(val));
-        }
+        ptr = gepOperator(*gepOper);
     } else {
         ptr = getVariable(i.getPointerOperand());
-        offsets.push_back(module_.getDomainFactory()->getIndex(0));
     }
-    if (not ptr) return;
+    if (not ptr) {
+        addStubFor(i);
+        return;
+    }
 
-    auto&& result = ptr->load(*i.getType(), offsets);
-    if (result) {
-        state_->addVariable(&i, result);
-    }
+    auto&& result = ptr->load(*i.getType(), module_.getDomainFactory()->getIndex(0));
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 void Interpreter::visitStoreInst(llvm::StoreInst& i) {
     auto&& ptr = getVariable(i.getPointerOperand());
     auto&& storeVal = getVariable(i.getValueOperand());
-    if (not ptr || not storeVal) return;
-    ptr->store(storeVal, { module_.getDomainFactory()->getIndex(0) });
+    if (not ptr || not storeVal) {
+        addStubFor(i);
+        return;
+    }
+    ptr->store(storeVal, module_.getDomainFactory()->getIndex(0));
 }
 
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
-    auto&& ptr = getVariable(i.getPointerOperand());
-    if (not ptr) return;
-    std::vector<Domain::Ptr> offsets;
-    for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
-        auto val = llvm::cast<llvm::Value>(j);
-        offsets.push_back(getVariable(val));
-    }
-    auto&& result = ptr->gep(*i.getType()->getPointerElementType(), offsets);
-    state_->addVariable(&i, result);
+    auto&& result = gepOperator(llvm::cast<llvm::GEPOperator>(i));
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 void Interpreter::visitPHINode(llvm::PHINode& i) {
@@ -236,18 +245,22 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
         }
     }
 
-    if (result)
-        state_->addVariable(&i, result);
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 #define CAST_INST(CAST) \
     auto&& value = getVariable(i.getOperand(0)); \
-    if (not value) return; \
-     \
+    if (not value) { \
+        addStubFor(i); \
+        return; \
+    }; \
     auto&& result = value->CAST(*i.getDestTy()); \
     if (result) state_->addVariable(&i, result); \
-    else warns() << "Nullptr from " << #CAST << " operation" << endl; \
-
+    else { \
+        addStubFor(i); \
+        warns() << "Nullptr from " << #CAST << " operation" << endl; \
+    }\
 
 void Interpreter::visitTruncInst(llvm::TruncInst& i)        { CAST_INST(trunc);     }
 void Interpreter::visitZExtInst(llvm::ZExtInst& i)          { CAST_INST(zext);      }
@@ -285,7 +298,10 @@ void Interpreter::visitInsertValueInst(llvm::InsertValueInst&) {
 void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
     auto&& lhv = getVariable(i.getOperand(0));
     auto&& rhv = getVariable(i.getOperand(1));
-    if (not lhv || not rhv) return;
+    if (not lhv || not rhv) {
+        addStubFor(i);
+        return;
+    }
 
     Domain::Ptr result = nullptr;
 
@@ -312,22 +328,44 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
             UNREACHABLE("Unknown binary operator:" + i .getName().str());
     }
 
-    state_->addVariable(&i, result);
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
     if (i.getCalledFunction() &&
             (i.getCalledFunction()->getName().startswith("borealis.alloc") ||
                     i.getCalledFunction()->getName().startswith("borealis.malloc"))) {
-        auto domain = module_.getDomainFactory()->getInMemory(*i.getType());
-        if (domain) {
-            state_->addVariable(&i, domain);
+        auto&& size = getVariable(i.getArgOperand(2));
+        if (not size) {
+            errs() << "Allocating unknown amount of memory: " << util::toString(i) << endl;
+            addStubFor(i);
+            return;
         }
+
+        auto&& integer = llvm::dyn_cast<IntegerInterval>(size.get());
+        ASSERT(integer, "Non-integer domain in memory allocation");
+
+        Domain::Ptr domain;
+        // If function is borealis.alloc, then type of allocation is correct
+        if (i.getCalledFunction()->getName().startswith("borealis.alloc")) {
+            domain = module_.getDomainFactory()->getInMemory(*i.getType());
+        // Else we should wrap type of allocation like pointer to array
+        } else {
+            auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), *integer->to().getRawData());
+            auto&& ptrType = llvm::PointerType::get(arrayType, 0);
+            domain = module_.getDomainFactory()->getInMemory(*ptrType);
+        }
+
+        if (domain) state_->addVariable(&i, domain);
+        else addStubFor(i);
         return;
     }
 
     if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) {
-        errs() << "Unknown function: " << i.getCalledFunction()->getName() << endl;
+        std::string functionName = i.getCalledFunction() ? i.getCalledFunction()->getName() : "<unnamed>";
+        errs() << "Unknown function: " << functionName << endl;
+        addStubFor(i);
         return;
     }
 
@@ -345,9 +383,6 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
             return a->equals(b.get());
         })) {
             interpretFunction(function, args);
-            auto&& result = module_.getDomainFactory()->getTop(*i.getType());
-            if (result) state_->addVariable(&i, result);
-            return;
         }
 
     } else {
@@ -360,15 +395,21 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
 
     if (function->getReturnValue()) {
         state_->addVariable(&i, function->getReturnValue());
+    } else {
+        addStubFor(i);
     }
 }
 
 void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
     auto&& op = getVariable(i.getOperand(0));
-    if (not op) return;
+    if (not op) {
+        addStubFor(i);
+        return;
+    }
 
     auto&& result = op->bitcast(*i.getDestTy());
     if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -387,7 +428,8 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
     } else if (value->getType()->isVoidTy()) {
         return nullptr;
     }
-    return module_.getDomainFactory()->getTop(*value->getType());
+    errs() << "Unknown value: " << util::toString(*value) << endl;
+    return nullptr;
 }
 
 void Interpreter::addSuccessors(const std::vector<const llvm::BasicBlock*>& successors) {
@@ -400,6 +442,30 @@ void Interpreter::addSuccessors(const std::vector<const llvm::BasicBlock*>& succ
         }
 
     }
+}
+
+Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
+    auto&& ptr = getVariable(gep.getPointerOperand());
+    if (not ptr) return nullptr;
+
+    std::vector<Domain::Ptr> offsets;
+    for (auto j = gep.idx_begin(); j != gep.idx_end(); ++j) {
+        auto val = llvm::cast<llvm::Value>(j);
+        if (auto indx = state_->find(val)) {
+            offsets.push_back(indx);
+        } else if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
+            offsets.push_back(module_.getDomainFactory()->getIndex(*intConstant->getValue().getRawData()));
+        } else {
+            UNREACHABLE("Non-integer constant in gep");
+        }
+    }
+
+    return ptr->gep(*gep.getType()->getPointerElementType(), offsets);
+}
+
+void Interpreter::addStubFor(const llvm::Instruction& i) {
+    if (not i.getType()->isVoidTy())
+        state_->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
 }
 
 }   /* namespace absint */

@@ -126,11 +126,11 @@ public:
     virtual Domain::Ptr extractElement(Domain::Ptr indx) const;
     virtual void insertElement(Domain::Ptr element, Domain::Ptr indx) const;
     /// Aggregate
-    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
-    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, Domain::Ptr index) const;
+    virtual void insertValue(Domain::Ptr element, Domain::Ptr index) const;
     /// Memory
-    virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
-    virtual void store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
+    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr trunc(const llvm::Type& type) const;

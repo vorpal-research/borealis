@@ -66,6 +66,8 @@ private:
 
     /// Util functions
     Domain::Ptr getVariable(const llvm::Value* value);
+    Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
+    void addStubFor(const llvm::Instruction& i);
     void addSuccessors(const std::vector<const llvm::BasicBlock*>& successors);
 
     Module module_;

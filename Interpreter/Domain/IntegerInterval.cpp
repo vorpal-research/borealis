@@ -91,19 +91,15 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
     ASSERT(this->getWidth() == interval->getWidth(), "Widening two intervals of different format");
 
-    errs() << "Widen: " << toString() << " and " << interval->toString() << endl;
     if (interval->isBottom()) {
-        errs() << toString() << endl << endl;
         return shared_from_this();
     } else if (this->isBottom()) {
-        errs() << interval->toString() << endl << endl;
         return interval->shared_from_this();
     }
 
     auto left = (util::lt(interval->from_, from_, signed_)) ? util::getMinValue(getWidth(), signed_) : from_;
     auto right = (util::lt(to_, interval->to_, signed_)) ? util::getMaxValue(getWidth(), signed_) : to_;
 
-    errs() << factory_->getInteger(left, right, signed_) << endl << endl;
     return factory_->getInteger(left, right, signed_);
 }
 
@@ -470,7 +466,7 @@ Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
         newFrom = from_.OPER(width); \
         newTo = to_.OPER(width); \
     } \
-    llvm::APFloat from(newSemantics, newFrom), to(newSemantics, newTo); \
+    llvm::APFloat from(newSemantics, util::toString(newFrom)), to(newSemantics, util::toString(newTo)); \
     return factory_->getFloat(from, to);
 
 Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {

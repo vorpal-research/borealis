@@ -13,6 +13,7 @@
 namespace borealis {
 namespace absint {
 
+/// Mutable
 class AggregateObject : public Domain {
 public:
 
@@ -31,9 +32,11 @@ protected:
     /// Struct constructors
     AggregateObject(Domain::Value value, DomainFactory* factory, const AggregateObject::Types& elementTypes, Domain::Ptr length);
     AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes, Domain::Ptr length);
+    AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes, const AggregateObject::Elements& elements);
     /// Array constructors
     AggregateObject(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
     AggregateObject(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
+    AggregateObject(DomainFactory* factory, const llvm::Type& elementType, const AggregateObject::Elements& elements);
     AggregateObject(const AggregateObject& other);
 
 public:
@@ -59,9 +62,11 @@ public:
     bool isStruct() const;
 
     /// Aggregate
-    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
-    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, Domain::Ptr index) const;
+    virtual void insertValue(Domain::Ptr element, Domain::Ptr index) const;
     /// Memory
+    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
 
     static bool classof(const Domain* other);

@@ -44,19 +44,19 @@ void Domain::insertElement(Domain::Ptr, Domain::Ptr) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::extractValue(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::extractValue(const llvm::Type&, Domain::Ptr index) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::insertValue(Domain::Ptr, Domain::Ptr index) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-Domain::Ptr Domain::load(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::load(const llvm::Type&, Domain::Ptr) const {
     UNREACHABLE("Unimplemented memory operation");
 }
 
-void Domain::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::store(Domain::Ptr, Domain::Ptr) const {
     UNREACHABLE("Unimplemented memory operation");
 }
 
