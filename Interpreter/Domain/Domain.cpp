@@ -93,6 +93,19 @@ Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
     UNREACHABLE("Unimplemented cmp operation");
 }
 
+bool Domain::isAggregateType() const {
+    return this->type_ == Type::AGGREGATE;
+}
+
+bool Domain::isPointerType() const {
+    return this->type_ == Type::POINTER;
+}
+
+bool Domain::isSimpleType() const {
+    return this->type_ == Type::INTEGER_INTERVAL ||
+            this->type_ == Type::FLOAT_INTERVAL;
+}
+
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {
     s << d->toString();
     return s;

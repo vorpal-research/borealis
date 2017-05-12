@@ -32,7 +32,17 @@ Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(modul
             ASSERT(content, "Unsupported constant");
 
             PointerLocation loc = {factory_.getIndex(0), content};
-            globalDomain = factory_.getPointer(elementType, {loc});
+            auto newDomain = factory_.getPointer(elementType, {loc});
+            // This is generally fucked up
+            // we need this because GEPs for global structs and arrays contain one additional index at the start
+            if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
+                auto newArray = llvm::ArrayType::get(it.getType(), 1);
+                auto newLevel = factory_.getAggregateObject(*newArray, {newDomain});
+                PointerLocation loc2 = {factory_.getIndex(0), newLevel};
+                globalDomain = factory_.getPointer(*newArray, {loc2});
+            } else {
+                globalDomain = newDomain;
+            }
 
         } else {
             factory_.getBottom(*it.getType());

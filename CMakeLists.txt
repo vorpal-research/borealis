@@ -65,8 +65,8 @@ set(COMPILER_FLAGS
         ${CMAKE_CXX_FLAGS}
         ${LLVM_CXX_FLAGS}
         ${LLVM_LD_FLAGS}
-        -O2
-        -g
+        -O0
+        -g3
         -fPIC
         -fno-rtti
         ${COMPILER_WARNINGS})

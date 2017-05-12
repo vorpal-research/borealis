@@ -229,11 +229,11 @@ Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type) {
 }
 
 Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::Type& type) {
-    if (llvm::isa<llvm::ArrayType>(type)) {
+    if (type.isArrayTy()) {
         return Domain::Ptr{new AggregateObject(value, this,
                                                *type.getArrayElementType(),
                                                getIndex(type.getArrayNumElements()))};
-    } else if (llvm::isa<llvm::StructType>(type)) {
+    } else if (type.isStructTy()) {
         AggregateObject::Types types;
         for (auto i = 0U; i < type.getStructNumElements(); ++i)
             types[i] = type.getStructElementType(i);
@@ -246,14 +246,14 @@ Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::T
 }
 
 Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements) {
-    if (llvm::isa<llvm::ArrayType>(type)) {
+    if (type.isArrayTy()) {
         AggregateObject::Elements elementMap;
         for (auto i = 0U; i < elements.size(); ++i) {
             elementMap[i] = getMemoryObject(elements[i]);
         }
         return Domain::Ptr { new AggregateObject(this, *type.getArrayElementType(), elementMap) };
 
-    } else if (llvm::isa<llvm::StructType>(type)) {
+    } else if (type.isStructTy()) {
         AggregateObject::Types types;
         AggregateObject::Elements elementMap;
         for (auto i = 0U; i < type.getStructNumElements(); ++i) {

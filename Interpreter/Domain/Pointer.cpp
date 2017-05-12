@@ -129,12 +129,7 @@ Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
     auto result = factory_->getBottom(type);
     for (auto&& it : locations_) {
         auto totalOffset = it.offset_->add(offset);
-        if (elementType_.isPointerTy() && not type.isPointerTy()) {
-            auto gep = it.location_->gep(*type.getPointerElementType(), {totalOffset});
-            result = result->join(gep);
-        } else {
-            result = result->join(it.location_->load(type, totalOffset));
-        }
+        result = result->join(it.location_->load(type, totalOffset));
     }
     return result;
 }
@@ -159,21 +154,12 @@ Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&
     }
 
     auto result = factory_->getPointer(BOTTOM, type);
+    std::vector<Domain::Ptr> subOffsets(indices.begin(), indices.end());
+    auto zeroElement = subOffsets[0];
 
-    if (indices.size() == 1) {
-        for (auto&& it : locations_) {
-            auto totalOffset = indices[0]->add(it.offset_);
-            result = result->join(it.location_->gep(type, {totalOffset}));
-        }
-
-    } else {
-        std::vector<Domain::Ptr> subOffsets(indices.begin() + 1, indices.end());
-        auto zeroElement = subOffsets[0];
-
-        for (auto&& it : locations_) {
-            subOffsets[0] = zeroElement->add(indices[0]->add(it.offset_));
-            result = result->join(it.location_->gep(type, subOffsets));
-        }
+    for (auto&& it : locations_) {
+        subOffsets[0] = zeroElement->add(it.offset_);
+        result = result->join(it.location_->gep(type, subOffsets));
     }
     return result;
 }

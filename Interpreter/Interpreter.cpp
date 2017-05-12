@@ -346,16 +346,13 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
         auto&& integer = llvm::dyn_cast<IntegerInterval>(size.get());
         ASSERT(integer, "Non-integer domain in memory allocation");
 
-        Domain::Ptr domain;
-        // If function is borealis.alloc, then type of allocation is correct
-        if (i.getCalledFunction()->getName().startswith("borealis.alloc")) {
-            domain = module_.getDomainFactory()->getInMemory(*i.getType());
-        // Else we should wrap type of allocation like pointer to array
-        } else {
-            auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), *integer->to().getRawData());
-            auto&& ptrType = llvm::PointerType::get(arrayType, 0);
-            domain = module_.getDomainFactory()->getInMemory(*ptrType);
-        }
+        // Creating domain in memory
+        // Adding new level of abstraction (pointer to array to real value), because:
+        // - if this is alloc, we need one more level for correct GEP handler
+        // - if this is malloc, we create array of dynamically allocated objects
+        auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), *integer->to().getRawData());
+        auto&& ptrType = llvm::PointerType::get(arrayType, 0);
+        Domain::Ptr domain = module_.getDomainFactory()->getInMemory(*ptrType);
 
         if (domain) state_->addVariable(&i, domain);
         else addStubFor(i);

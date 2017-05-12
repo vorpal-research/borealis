@@ -79,7 +79,7 @@ std::size_t AggregateObject::hashCode() const {
 std::string AggregateObject::toString() const {
     std::stringstream ss;
 
-    if (isArray()) ss << "Array " << util::toString(getTypeFor(0));
+    if (isArray()) ss << "Array [" << getMaxLength() << " x " << util::toString(getTypeFor(0)) << "] ";
     else {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
@@ -282,23 +282,21 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
         return factory_->getPointer(type, { {factory_->getInteger(start, end), shared_from_this()} });
 
     } else {
-//        Domain::Ptr result = nullptr;
-//
-//        std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
-//        for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
-//            if (not util::at(elements_, i)) {
-//                elements_[i] = factory_->getMemoryObject(getTypeFor(i));
-//            }
-//            auto subGep = elements_[i]->load()->gep(type, subIndices);
-//            result = result ?
-//                     result->join(subGep) :
-//                     subGep;
-//        }
-//
-//        return result;
+        Domain::Ptr result = nullptr;
+
+        std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
+        for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
+            if (not util::at(elements_, i)) {
+                elements_[i] = factory_->getMemoryObject(getTypeFor(i));
+            }
+            auto subGep = elements_[i]->load()->gep(type, subIndices);
+            result = result ?
+                     result->join(subGep) :
+                     subGep;
+        }
+
+        return result;
     }
-    ASSERT(false, "error");
-    return nullptr;
 }
 
 void AggregateObject::store(Domain::Ptr value, Domain::Ptr offset) const {

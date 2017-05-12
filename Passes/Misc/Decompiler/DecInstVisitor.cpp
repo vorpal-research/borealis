@@ -167,7 +167,7 @@ void DecInstVisitor::writeValueToStream(llvm::Value* v, bool deleteType) {
         printType(v->getType());
         infos_ << " ";
     }
-    isStruct(v->getType()); // wtf???
+    registerStructs(v->getType()); // wtf???
 
     if(auto I = llvm::dyn_cast<llvm::Instruction>(v)) {
         auto ST = STP->getSlotTracker(I);
@@ -256,21 +256,18 @@ bool DecInstVisitor::isString(llvm::Type* t) {
     return isStr;
 }
 
-bool DecInstVisitor::isStruct(llvm::Type* t) {
-    bool isStr = false;
+void DecInstVisitor::registerStructs(llvm::Type* t) {
     if(t->isStructTy()) {
         auto&& st = cast<llvm::StructType>(t);
         if(!st->isLiteral()) {
             usedStructs.insert(cast<StructType>(t));
-            isStr = true;
         }
     } else if(t->isPointerTy()) {
-        isStr = isStruct(t->getPointerElementType());
+        registerStructs(t->getPointerElementType());
     }
     else if(t->isArrayTy()) {
-        isStr = isStruct(t->getArrayElementType());
+        registerStructs(t->getArrayElementType());
     }
-    return isStr;
 }
 
 void DecInstVisitor::visitInstruction(llvm::Instruction &i) {

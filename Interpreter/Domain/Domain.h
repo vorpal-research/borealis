@@ -26,7 +26,6 @@ public:
     enum Type {INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
         POINTER,
-        GEP,
         AGGREGATE
     };
 
@@ -99,6 +98,10 @@ public:
     static bool classof(const Domain*) {
         return true;
     }
+
+    virtual bool isAggregateType() const;
+    virtual bool isPointerType() const;
+    virtual bool isSimpleType() const;
 
     /// LLVM Semantics
     /// Arithmetical

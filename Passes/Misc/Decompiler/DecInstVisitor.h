@@ -45,7 +45,7 @@ private:
 
 
     bool isString(llvm::Type* t);
-    bool isStruct(llvm::Type* t);
+    void registerStructs(llvm::Type* t);
 
 public:
     DecInstVisitor(decltype(borealis::infos())& writer, borealis::SlotTrackerPass* STP) :
