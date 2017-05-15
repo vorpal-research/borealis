@@ -62,8 +62,8 @@ public:
     bool isStruct() const;
 
     /// Aggregate
-    virtual Domain::Ptr extractValue(const llvm::Type& type, Domain::Ptr index) const;
-    virtual void insertValue(Domain::Ptr element, Domain::Ptr index) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
     virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
     virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;

@@ -63,6 +63,7 @@ AggregateObject::AggregateObject(DomainFactory* factory,
           length_(factory_->getIndex(elements.size())),
           elements_(elements) {}
 
+/// Copy constructor
 AggregateObject::AggregateObject(const AggregateObject& other)
         : Domain{VALUE, AGGREGATE, other.factory_},
           aggregateType_(other.aggregateType_),
@@ -72,8 +73,7 @@ AggregateObject::AggregateObject(const AggregateObject& other)
 
 
 std::size_t AggregateObject::hashCode() const {
-    // TODO: proper hash
-    return 0;//util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_, elements_);
+    return util::hash::simple_hash_value(aggregateType_, type_, length_, elements_.size(), elementTypes_.size());
 }
 
 std::string AggregateObject::toString() const {
@@ -83,13 +83,13 @@ std::string AggregateObject::toString() const {
     else {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
-            ss << util::toString(*it.second) << ", ";
+            ss << "  " << util::toString(*it.second) << ", ";
         }
         ss << "}";
     }
     ss << ": [";
     for (auto&& it : elements_) {
-        ss << std::endl << it.first << " : " << it.second->toString();
+        ss << std::endl << "  " << it.first << " : " << it.second->toString();
     }
     ss << std::endl << "]";
     return ss.str();
@@ -199,9 +199,9 @@ Domain::Ptr AggregateObject::narrow(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, Domain::Ptr index) const {
+Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
     auto maxLength = getMaxLength();
-    auto indexInterval = llvm::dyn_cast<IntegerInterval>(index.get());
+    auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
     if (isBottom()) {
@@ -220,19 +220,24 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, Domain::Ptr in
     }
 
     Domain::Ptr result = factory_->getBottom(type);
+    std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
     for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
-        ASSERT(getTypeFor(i).getTypeID() == type.getTypeID(), "Wrong types in aggregate extractValue");
+        if (indices.size() == 1)
+            ASSERT(getTypeFor(i).getTypeID() == type.getTypeID(), "Wrong types in aggregate extractValue");
+
         if (not util::at(elements_, i)) {
             elements_[i] = factory_->getMemoryObject(getTypeFor(i));
         }
-        result = result->join(elements_.at(i)->load());
+        result = indices.size() == 1 ?
+                 result->join(elements_.at(i)->load()) :
+                 result->join(elements_.at(i)->load()->extractValue(type, subIndices));
     }
     return result;
 }
 
-void AggregateObject::insertValue(Domain::Ptr element, Domain::Ptr index) const {
+void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const {
     auto maxLength = getMaxLength();
-    auto indexInterval = llvm::dyn_cast<IntegerInterval>(index.get());
+    auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
     if (isBottom() || isTop())
@@ -247,12 +252,15 @@ void AggregateObject::insertValue(Domain::Ptr element, Domain::Ptr index) const 
         warns() << "Buffer overflow" << endl;
     }
 
+    std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
     for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
-        if (auto&& opt = util::at(elements_, i)) {
-            opt.getUnsafe()->store(element);
-        } else {
+        if (not util::at(elements_, i)) {
             elements_[i] = factory_->getMemoryObject(getTypeFor(i));
+        }
+        if (indices.size() == 1) {
             elements_[i]->store(element);
+        } else {
+            elements_[i]->load()->insertValue(element, subIndices);
         }
     }
 }
@@ -300,11 +308,11 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
 }
 
 void AggregateObject::store(Domain::Ptr value, Domain::Ptr offset) const {
-    return insertValue(value, offset);
+    return insertValue(value, {offset});
 }
 
 Domain::Ptr AggregateObject::load(const llvm::Type& type, Domain::Ptr offset) const {
-    return extractValue(type, offset);
+    return extractValue(type, {offset});
 }
 
 const llvm::Type& AggregateObject::getTypeFor(std::size_t index) const {

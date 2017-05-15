@@ -36,19 +36,19 @@ MK_BINOP_IMPL(bXor);
 #undef MK_BINOP_IMPL
 
 
-Domain::Ptr Domain::extractElement(Domain::Ptr) const {
+Domain::Ptr Domain::extractElement(const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-void Domain::insertElement(Domain::Ptr, Domain::Ptr) const {
+void Domain::insertElement(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::extractValue(const llvm::Type&, Domain::Ptr index) const {
+Domain::Ptr Domain::extractValue(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-void Domain::insertValue(Domain::Ptr, Domain::Ptr index) const {
+void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 

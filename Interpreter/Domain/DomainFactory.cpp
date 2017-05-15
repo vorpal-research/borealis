@@ -127,18 +127,18 @@ Domain::Ptr DomainFactory::getInMemory(const llvm::Type& type) {
     /// Void type - do nothing
     if (type.isVoidTy()) {
         return nullptr;
-        /// Simple type - allocating like array
+    /// Simple type - allocating like array
     } else if (type.isIntegerTy() || type.isFloatingPointTy()) {
         auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&type), 1);
         return getInMemory(*arrayType);
-        /// Struct or Array type
+    /// Struct or Array type
     } else if (type.isAggregateType()) {
         return getAggregateObject(type);
-        /// Pointer
+    /// Pointer
     } else if (type.isPointerTy()) {
         auto&& location = getInMemory(*type.getPointerElementType());
         return getPointer(*type.getPointerElementType(), { {getIndex(0), location} });
-        /// Otherwise
+    /// Otherwise
     } else {
         errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
         return nullptr;
@@ -265,6 +265,7 @@ Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vecto
     UNREACHABLE("Unknown aggregate type: " + util::toString(type));
 }
 
+/* heap */
 MemoryObject::Ptr DomainFactory::getMemoryObject(const llvm::Type& type) {
     return MemoryObject::Ptr{ new MemoryObject(getBottom(type)) };
 }

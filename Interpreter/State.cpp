@@ -75,7 +75,6 @@ std::string State::toString(SlotTracker& tracker) const {
     std::ostringstream ss;
 
     if (not locals_.empty()) {
-        ss << "  locals: " << std::endl;
         for (auto&& local : locals_) {
             ss << "    ";
             ss << tracker.getLocalName(local.first) << " = ";

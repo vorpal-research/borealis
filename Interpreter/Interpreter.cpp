@@ -275,24 +275,59 @@ void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i)  { CAST_INST(ptrtoint
 void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i)  { CAST_INST(inttoptr);  }
 
 
-void Interpreter::visitSelectInst(llvm::SelectInst&) {
-    // TODO: implement
+void Interpreter::visitSelectInst(llvm::SelectInst& i) {
+    auto cond = getVariable(i.getCondition());
+    auto trueVal = getVariable(i.getTrueValue());
+    auto falseVal = getVariable(i.getFalseValue());
+    if (not (cond && trueVal && falseVal)) {
+        addStubFor(i);
+        return;
+    }
+
+    Domain::Ptr result = cond->equals(trueVal.get()) ? trueVal :
+                         cond->equals(falseVal.get()) ? falseVal :
+                         module_.getDomainFactory()->getTop(*i.getType());
+    state_->addVariable(&i, result);
 }
 
 void Interpreter::visitExtractElementInst(llvm::ExtractElementInst&) {
-    // TODO: implement
+    UNREACHABLE("ExtractElement Instruction is not implemented");
 }
 
 void Interpreter::visitInsertElementInst(llvm::InsertElementInst&) {
-    // TODO: implement
+    UNREACHABLE("InsertElement Instruction is not implemented");
 }
 
-void Interpreter::visitExtractValueInst(llvm::ExtractValueInst&) {
-    // TODO: implement
+void Interpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
+    auto aggregate = getVariable(i.getAggregateOperand());
+    if (not aggregate) {
+        addStubFor(i);
+        return;
+    }
+
+    std::vector<Domain::Ptr> indices;
+    for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
+        indices.push_back(module_.getDomainFactory()->getIndex(*j));
+    }
+
+    auto result = aggregate->extractValue(*i.getType(), indices);
+    if (result) state_->addVariable(&i, result);
+    else addStubFor(i);
 }
 
-void Interpreter::visitInsertValueInst(llvm::InsertValueInst&) {
-    // TODO: implement
+void Interpreter::visitInsertValueInst(llvm::InsertValueInst& i) {
+    auto aggregate = getVariable(i.getAggregateOperand());
+    auto value = getVariable(i.getInsertedValueOperand());
+    if (not aggregate || not value) {
+        return;
+    }
+
+    std::vector<Domain::Ptr> indices;
+    for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
+        indices.push_back(module_.getDomainFactory()->getIndex(*j));
+    }
+
+    aggregate->insertValue(value, indices);
 }
 
 void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {

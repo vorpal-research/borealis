@@ -38,6 +38,8 @@ public:
 
 private:
 
+    void initGLobals();
+
     const llvm::Module* instance_;
     DomainFactory factory_;
     FunctionMap functions_;

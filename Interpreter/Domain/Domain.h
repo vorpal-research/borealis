@@ -126,11 +126,11 @@ public:
     virtual Domain::Ptr bOr(Domain::Ptr other) const;
     virtual Domain::Ptr bXor(Domain::Ptr other) const;
     /// Vector
-    virtual Domain::Ptr extractElement(Domain::Ptr indx) const;
-    virtual void insertElement(Domain::Ptr element, Domain::Ptr indx) const;
+    virtual Domain::Ptr extractElement(const std::vector<Domain::Ptr>& indices) const;
+    virtual void insertElement(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Aggregate
-    virtual Domain::Ptr extractValue(const llvm::Type& type, Domain::Ptr index) const;
-    virtual void insertValue(Domain::Ptr element, Domain::Ptr index) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
     virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
     virtual void store(Domain::Ptr value, Domain::Ptr offset) const;

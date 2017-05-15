@@ -57,8 +57,7 @@ const llvm::Type& Pointer::getElementType() const {
 }
 
 std::size_t Pointer::hashCode() const {
-    return 0;
-    //return util::hash::simple_hash_value(value_, getType(), getElementType().getTypeID(), getLocations());
+    return util::hash::simple_hash_value(value_, type_, elementType_.getTypeID(), locations_.size());
 }
 
 std::string Pointer::toString() const {
@@ -68,7 +67,7 @@ std::string Pointer::toString() const {
     else if (isBottom()) ss << " BOTTOM ]" << std::endl;
     else {
         for (auto&& it : locations_) {
-            ss << std::endl << it.offset_->toString() << " " << it.location_->toString();
+            ss << std::endl << "  " << it.offset_->toString() << " " << it.location_->toString();
         }
         ss << std::endl << "]";
     }

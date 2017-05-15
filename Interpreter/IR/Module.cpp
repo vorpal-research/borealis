@@ -14,7 +14,11 @@ namespace borealis {
 namespace absint {
 
 Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(module), factory_(aa) {
-    /// Adding global variables
+    /// Initialize all global variables
+    initGLobals();
+}
+
+void Module::initGLobals() {
     for (auto&& it : instance_->getGlobalList()) {
         Domain::Ptr globalDomain;
         if (it.hasInitializer()) {
@@ -33,7 +37,6 @@ Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(modul
 
             PointerLocation loc = {factory_.getIndex(0), content};
             auto newDomain = factory_.getPointer(elementType, {loc});
-            // This is generally fucked up
             // we need this because GEPs for global structs and arrays contain one additional index at the start
             if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
                 auto newArray = llvm::ArrayType::get(it.getType(), 1);
@@ -52,7 +55,6 @@ Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(modul
         globals_.insert( {&it, globalDomain} );
     }
 }
-
 
 Function::Ptr Module::createFunction(const llvm::Function* function) {
     if (auto&& opt = util::at(functions_, function)) {
