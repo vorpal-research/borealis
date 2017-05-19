@@ -13,7 +13,7 @@
 namespace borealis {
 namespace absint {
 
-Module::Module(const llvm::Module* module, const Andersen* aa) : instance_(module), factory_(aa) {
+Module::Module(const llvm::Module* module) : instance_(module) {
     /// Initialize all global variables
     initGLobals();
 }

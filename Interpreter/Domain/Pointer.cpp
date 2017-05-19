@@ -22,7 +22,15 @@ Pointer::Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& 
 Pointer::Pointer(DomainFactory* factory, const llvm::Type& elementType, const Pointer::Locations& locations)
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
-          locations_(locations) {}
+          locations_(locations) {
+    for (auto&& it : locations) {
+        if (it.offset_->isTop() || it.location_->isTop()) {
+            value_ = TOP;
+            locations_.clear();
+            break;
+        }
+    }
+}
 
 Pointer::Pointer(const Pointer& other)
         : Domain{other.value_, other.type_, other.factory_},
@@ -57,7 +65,7 @@ const llvm::Type& Pointer::getElementType() const {
 }
 
 std::size_t Pointer::hashCode() const {
-    return util::hash::simple_hash_value(value_, type_, elementType_.getTypeID(), locations_.size());
+    return util::hash::simple_hash_value(value_, type_, elementType_.getTypeID());
 }
 
 std::string Pointer::toString() const {
@@ -86,6 +94,7 @@ Domain::Ptr Pointer::join(Domain::Ptr other) const {
     auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
+    if (this == other.get()) return shared_from_this();
     if (other->isBottom()) {
         return shared_from_this();
     } else if (this->isBottom()) {

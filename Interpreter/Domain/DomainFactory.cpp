@@ -14,7 +14,7 @@
 namespace borealis {
 namespace absint {
 
-DomainFactory::DomainFactory(const Andersen* aa) : ObjectLevelLogging("domain"), aa_(aa) {}
+DomainFactory::DomainFactory() : ObjectLevelLogging("domain") {}
 
 DomainFactory::~DomainFactory() {
     auto&& info = infos();
@@ -70,9 +70,6 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
         return getAggregateObject(type);
     /// Pointer
     } else if (type.isPointerTy()) {
-        std::vector<const llvm::Value*> aliases;
-        aa_->getPointsToSet(val, aliases);
-
         return getInMemory(type);
     /// Otherwise
     } else {

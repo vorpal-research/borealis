@@ -4,6 +4,8 @@
 
 #include "BasicBlock.h"
 
+#include "Util/collections.hpp"
+
 namespace borealis {
 namespace absint {
 
@@ -40,8 +42,28 @@ std::string BasicBlock::toString() const {
     else
         ss << "<label>:" << tracker_->getLocalSlot(instance_);
 
+    for (auto&& it : util::viewContainer(*instance_)) {
+        auto value = llvm::cast<llvm::Value>(&it);
+        auto domain = outputState_->find(value);
+        if (not domain) continue;
+        ss << std::endl << "    ";
+        ss << tracker_->getLocalName(value) << " = ";
+        ss << domain->toString();
+    }
     ss << std::endl;
+    return ss.str();
+}
+
+std::string BasicBlock::toFullString() const {
+    std::ostringstream ss;
+
+    if (instance_->hasName())
+        ss << instance_->getName().str() << ":";
+    else
+        ss << "<label>:" << tracker_->getLocalSlot(instance_);
+
     ss << outputState_->toString(*tracker_);
+    ss << std::endl;
     return ss.str();
 }
 

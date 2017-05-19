@@ -20,7 +20,7 @@ namespace absint {
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    Interpreter(const llvm::Module* module, const Andersen* aa);
+    Interpreter(const llvm::Module* module);
 
     void run();
 
@@ -76,6 +76,7 @@ private:
     Function::Ptr function_;
     State::Ptr state_;
     std::deque<const llvm::BasicBlock*> deque_;
+    std::map<const llvm::Value*, bool> stores_;
 };
 
 }   /* namespace absint */

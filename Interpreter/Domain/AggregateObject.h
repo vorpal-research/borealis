@@ -5,7 +5,7 @@
 #ifndef BOREALIS_ARRAY_H
 #define BOREALIS_ARRAY_H
 
-#include <unordered_map>
+#include <map>
 
 #include "Domain.h"
 #include "MemoryObject.h"
@@ -17,8 +17,8 @@ namespace absint {
 class AggregateObject : public Domain {
 public:
 
-    using Types = std::unordered_map<std::size_t, const llvm::Type*>;
-    using Elements = std::unordered_map<std::size_t, MemoryObject::Ptr>;
+    using Types = std::map<std::size_t, const llvm::Type*>;
+    using Elements = std::map<std::size_t, MemoryObject::Ptr>;
 
 protected:
 
@@ -58,6 +58,7 @@ public:
     const Elements& getElements() const;
     Domain::Ptr getLength() const;
     std::size_t getMaxLength() const;
+    bool isMaxLengthTop() const;
     bool isArray() const;
     bool isStruct() const;
 

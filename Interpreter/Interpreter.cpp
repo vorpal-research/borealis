@@ -12,8 +12,8 @@
 namespace borealis {
 namespace absint {
 
-Interpreter::Interpreter(const llvm::Module* module, const Andersen* aa)
-        : ObjectLevelLogging("interpreter"), module_(module, aa) {
+Interpreter::Interpreter(const llvm::Module* module)
+        : ObjectLevelLogging("interpreter"), module_(module) {
     function_ = nullptr;
     state_ = nullptr;
 }
@@ -209,7 +209,12 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
         addStubFor(i);
         return;
     }
-    ptr->store(storeVal, module_.getDomainFactory()->getIndex(0));
+    if (stores_.find(&i) != stores_.end())
+        ptr->store(module_.getDomainFactory()->getTop(*i.getValueOperand()->getType()), module_.getDomainFactory()->getIndex(0));
+    else {
+        ptr->store(storeVal, module_.getDomainFactory()->getIndex(0));
+        stores_.insert({&i, true});
+    }
 }
 
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {

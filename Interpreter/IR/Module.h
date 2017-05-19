@@ -22,7 +22,7 @@ public:
     using GlobalsMap = std::map<const llvm::Value*, Domain::Ptr>;
     using FunctionMap = std::map<const llvm::Function*, Function::Ptr>;
 
-    Module(const llvm::Module* module, const Andersen* aa);
+    Module(const llvm::Module* module);
     Function::Ptr contains(const llvm::Function* function) const;
     Function::Ptr createFunction(const llvm::Function* function);
     Function::Ptr createFunction(const std::string& fname);

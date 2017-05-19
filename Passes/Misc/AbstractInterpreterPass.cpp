@@ -18,16 +18,13 @@ public:
     AbstractInterpreterPass() : llvm::ModulePass(ID) {};
 
     virtual bool runOnModule(llvm::Module& M) override {
-        //auto aa = &GetAnalysis<Andersen>::doit(this);
-        absint::Interpreter interpreter(&M, /* aa */ nullptr);
+        absint::Interpreter interpreter(&M);
         interpreter.run();
         return false;
     }
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override {
         AU.setPreservesAll();
-
-        //AUX<Andersen>::addRequired(AU);
     }
 
     virtual ~AbstractInterpreterPass() = default;

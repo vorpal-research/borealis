@@ -19,7 +19,9 @@ namespace absint {
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const AggregateObject::Types& elementTypes,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementTypes, length) {}
+        : AggregateObject(VALUE, factory, elementTypes, length) {
+    if (isMaxLengthTop()) value_ = TOP;
+}
 
 AggregateObject::AggregateObject(Domain::Value value,
                                  DomainFactory* factory,
@@ -28,7 +30,9 @@ AggregateObject::AggregateObject(Domain::Value value,
         : Domain{value, AGGREGATE, factory},
           aggregateType_(STRUCT),
           elementTypes_(elementTypes),
-          length_(length) {}
+          length_(length) {
+    if (isMaxLengthTop()) value_ = TOP;
+}
 
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const AggregateObject::Types& elementTypes,
@@ -43,7 +47,9 @@ AggregateObject::AggregateObject(DomainFactory* factory,
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const llvm::Type& elementType,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementType, length) {}
+        : AggregateObject(VALUE, factory, elementType, length) {
+    if (isMaxLengthTop()) value_ = TOP;
+}
 
 AggregateObject::AggregateObject(Domain::Value value,
                                  DomainFactory* factory,
@@ -52,7 +58,9 @@ AggregateObject::AggregateObject(Domain::Value value,
         : Domain{value, AGGREGATE, factory},
           aggregateType_(ARRAY),
           elementTypes_({{0, &elementType}}),
-          length_(length) {}
+          length_(length) {
+    if (isMaxLengthTop()) value_ = TOP;
+}
 
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const llvm::Type& elementType,
@@ -73,7 +81,7 @@ AggregateObject::AggregateObject(const AggregateObject& other)
 
 
 std::size_t AggregateObject::hashCode() const {
-    return util::hash::simple_hash_value(aggregateType_, type_, length_, elements_.size(), elementTypes_.size());
+    return util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_.size());
 }
 
 std::string AggregateObject::toString() const {
@@ -114,6 +122,11 @@ Domain::Ptr AggregateObject::getLength() const {
 std::size_t AggregateObject::getMaxLength() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
     return *intLength->to().getRawData();
+}
+
+bool AggregateObject::isMaxLengthTop() const {
+    auto intLength = llvm::cast<IntegerInterval>(length_.get());
+    return (*intLength->to().getRawData() == std::numeric_limits<uint64_t>::max());
 }
 
 bool AggregateObject::equals(const Domain* other) const {
@@ -211,7 +224,7 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
     }
 
     auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->from().getRawData();
+    auto indexEnd = *indexInterval->to().getRawData();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -244,7 +257,7 @@ void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain:
         return;
 
     auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->from().getRawData();
+    auto indexEnd = *indexInterval->to().getRawData();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -276,7 +289,7 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
         return factory_->getTop(type);
 
     auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->from().getRawData();
+    auto indexEnd = *indexInterval->to().getRawData();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -287,7 +300,7 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     if (indices.size() == 1) {
         llvm::APInt start(64, indexStart);
         llvm::APInt end(64, indexEnd);
-        return factory_->getPointer(type, { {factory_->getInteger(start, end), shared_from_this()} });
+        return factory_->getPointer(type, { {indices[0], shared_from_this()} });
 
     } else {
         Domain::Ptr result = nullptr;
@@ -301,6 +314,10 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
             result = result ?
                      result->join(subGep) :
                      subGep;
+        }
+        if (not result) {
+            warns() << "Gep is out of bounds" << endl;
+            return factory_->getPointer(TOP, type);
         }
 
         return result;

@@ -33,10 +33,7 @@ public:
             FloatInterval::IDHash,
             FloatInterval::IDEquals>;
 
-    using PointerCache = std::unordered_map<const llvm::Value*,
-            Domain::Ptr>;
-
-    DomainFactory(const Andersen* aa);
+    DomainFactory();
     ~DomainFactory();
 
     Domain::Ptr getTop(const llvm::Type& type);
@@ -75,9 +72,7 @@ private:
 
     IntCache ints_;
     FloatCache floats_;
-    PointerCache heap_;
 
-    const Andersen* aa_;
 };
 
 }   /* namespace absint */
