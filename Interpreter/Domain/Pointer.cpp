@@ -71,8 +71,8 @@ std::size_t Pointer::hashCode() const {
 std::string Pointer::toString() const {
     std::ostringstream ss;
     ss << "Ptr " << util::toString(elementType_) << " [";
-    if (isTop()) ss << " TOP ]" << std::endl;
-    else if (isBottom()) ss << " BOTTOM ]" << std::endl;
+    if (isTop()) ss << " TOP ]";
+    else if (isBottom()) ss << " BOTTOM ]";
     else {
         for (auto&& it : locations_) {
             ss << std::endl << "  " << it.offset_->toString() << " " << it.location_->toString();

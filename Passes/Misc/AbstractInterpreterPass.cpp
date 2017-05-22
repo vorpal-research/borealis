@@ -9,6 +9,7 @@
 #include "Interpreter/Interpreter.h"
 #include "Interpreter/IR/GraphTraits.hpp"
 #include "Util/passes.hpp"
+#include "FuncInfoProvider.h"
 
 namespace borealis {
 
@@ -35,6 +36,8 @@ public:
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override {
         AU.setPreservesAll();
+
+        AUX<FuncInfoProvider>::addRequired(AU);
     }
 
     virtual ~AbstractInterpreterPass() = default;
