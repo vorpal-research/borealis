@@ -20,6 +20,16 @@ Function::Function(const llvm::Function* function, DomainFactory* factory) : ins
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(&block, &tracker_);
         blocks_.insert( {&block, aiBlock} );
+        blockVector_.push_back(&blocks_.at(&block));
+    }
+
+    for (auto&& it : blocks_) {
+        for (auto bb = pred_begin(it.first), et = pred_end(it.first); bb != et; ++bb) {
+            it.second.addPredecessor(getBasicBlock(*bb));
+        }
+        for (auto bb = succ_begin(it.first), et = succ_end(it.first); bb != et; ++bb) {
+            it.second.addSuccessor(getBasicBlock(*bb));
+        }
     }
 
     // adding return value
@@ -52,6 +62,10 @@ State::Ptr Function::getOutputState() const {
 
 Domain::Ptr Function::getReturnValue() const {
     return outputState_->getReturnValue();
+}
+
+BasicBlock* Function::getEntryNode() const {
+    return getBasicBlock(&instance_->getEntryBlock());
 }
 
 BasicBlock* Function::getBasicBlock(const llvm::BasicBlock* bb) const {
@@ -94,22 +108,6 @@ std::string Function::toString() const {
     else ss << "void";
 
     return ss.str();
-}
-
-std::vector<const BasicBlock*> Function::getPredecessorsFor(const llvm::BasicBlock* bb) const {
-    std::vector<const BasicBlock*> predecessors;
-    for (auto it = pred_begin(bb), et = pred_end(bb); it != et; ++it) {
-        predecessors.push_back(getBasicBlock(*it));
-    }
-    return std::move(predecessors);
-}
-
-std::vector<const BasicBlock*> Function::getSuccessorsFor(const llvm::BasicBlock* bb) const {
-    std::vector<const BasicBlock*> successors;
-    for (auto it = succ_begin(bb), et = succ_end(bb); it != et; ++it) {
-        successors.push_back(getBasicBlock(*it));
-    }
-    return std::move(successors);
 }
 
 void Function::setArguments(const std::vector<Domain::Ptr>& args) {

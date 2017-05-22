@@ -23,6 +23,7 @@ public:
     Interpreter(const llvm::Module* module);
 
     void run();
+    const Module& getModule() const;
 
     void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
 

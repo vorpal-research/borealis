@@ -86,6 +86,14 @@ void BasicBlock::setVisited() {
     visited_ = true;
 }
 
+void BasicBlock::addPredecessor(BasicBlock* pred) {
+    predecessors_.push_back(pred);
+}
+
+void BasicBlock::addSuccessor(BasicBlock* succ) {
+    successors_.push_back(succ);
+}
+
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
     s << b.toString();
     return s;

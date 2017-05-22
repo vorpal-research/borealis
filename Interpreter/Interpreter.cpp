@@ -31,6 +31,10 @@ void Interpreter::run() {
     } else errs() << "No main function" << endl;
 }
 
+const Module& Interpreter::getModule() const {
+    return module_;
+}
+
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
     auto oldFunction = function_;
     auto oldState = state_;

@@ -30,6 +30,7 @@ public:
     GlobalsMap& getGloabls();
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);
     Domain::Ptr findGLobal(const llvm::Value* val) const;
+    const FunctionMap& getFunctions() const;
 
     DomainFactory* getDomainFactory();
 

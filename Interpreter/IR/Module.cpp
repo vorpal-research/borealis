@@ -112,6 +112,10 @@ DomainFactory* Module::getDomainFactory() {
     return &factory_;
 }
 
+const Module::FunctionMap& Module::getFunctions() const {
+    return functions_;
+}
+
 std::ostream& operator<<(std::ostream& s, const Module& m) {
     s << m.toString();
     return s;
