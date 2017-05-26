@@ -8,6 +8,7 @@
 #include "Interpreter/Util.h"
 #include "Util/collections.hpp"
 #include "Util/hash.hpp"
+#include "Util/streams.hpp"
 #include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
@@ -68,16 +69,16 @@ std::size_t Pointer::hashCode() const {
     return util::hash::simple_hash_value(value_, type_, elementType_.getTypeID());
 }
 
-std::string Pointer::toString() const {
+std::string Pointer::toString(const std::string prefix) const {
     std::ostringstream ss;
     ss << "Ptr " << util::toString(elementType_) << " [";
     if (isTop()) ss << " TOP ]";
     else if (isBottom()) ss << " BOTTOM ]";
     else {
         for (auto&& it : locations_) {
-            ss << std::endl << "  " << it.offset_->toString() << " " << it.location_->toString();
+            ss << std::endl << prefix << "  " << it.offset_->toString() << " " << it.location_->toString(prefix + "  ");
         }
-        ss << std::endl << "]";
+        ss << std::endl << prefix << "]";
     }
     return ss.str();
 }

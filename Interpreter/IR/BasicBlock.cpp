@@ -46,9 +46,9 @@ std::string BasicBlock::toString() const {
         auto value = llvm::cast<llvm::Value>(&it);
         auto domain = outputState_->find(value);
         if (not domain) continue;
-        ss << std::endl << "    ";
+        ss << std::endl << "  ";
         ss << tracker_->getLocalName(value) << " = ";
-        ss << domain->toString();
+        ss << domain->toString("  ");
     }
     ss << std::endl;
     return ss.str();

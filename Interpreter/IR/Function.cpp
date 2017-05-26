@@ -88,12 +88,9 @@ std::string Function::toString() const {
     ss << getName() << "\" ---";
 
     if (not arguments_.empty()) {
-        ss << std::endl << "Args: ";
-        bool comma = false;
-        for (auto&& it : arguments_) {
-            if (comma) ss << ", ";
-            ss << it;
-            comma = true;
+        auto i = 0U;
+        for (auto&& it : instance_->args()) {
+            ss << std::endl << tracker_.getLocalName(&it) << " = " << arguments_[i++];
         }
         ss << std::endl;
     }

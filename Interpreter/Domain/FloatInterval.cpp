@@ -7,7 +7,6 @@
 #include "Interpreter/Util.h"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
-#include "Util/streams.hpp"
 
 #include "Util/macros.h"
 
@@ -171,7 +170,7 @@ size_t FloatInterval::hashCode() const {
                                          from_, to_);
 }
 
-std::string FloatInterval::toString() const {
+std::string FloatInterval::toString(const std::string) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
     ss << "[" << util::toString(from_) << ", " << util::toString(to_) << "]";

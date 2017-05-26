@@ -26,7 +26,7 @@ public:
 
     bool equals(const MemoryObject* other) const;
     size_t hashCode() const;
-    std::string toString() const;
+    std::string toString(const std::string prefix = "") const;
 
 private:
 

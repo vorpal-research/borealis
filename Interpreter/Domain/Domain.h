@@ -86,8 +86,8 @@ public:
 
     /// Other
     virtual size_t hashCode() const = 0;
-    virtual std::string toString() const {
-        return "unknown";
+    virtual std::string toString(const std::string prefix = "") const {
+        return prefix + "unknown";
     }
     virtual Domain* clone() const = 0;
 

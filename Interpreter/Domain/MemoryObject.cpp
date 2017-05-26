@@ -21,9 +21,9 @@ size_t MemoryObject::hashCode() const {
     return content_->hashCode();
 }
 
-std::string MemoryObject::toString() const {
+std::string MemoryObject::toString(const std::string prefix) const {
     std::ostringstream ss;
-    ss << "@MO: " << content_->toString();
+    ss << "@MO: " << content_->toString(prefix);
     return ss.str();
 }
 

@@ -52,7 +52,7 @@ public:
 
     /// Other
     virtual std::size_t hashCode() const;
-    virtual std::string toString() const;
+    virtual std::string toString(const std::string prefix = "") const;
     virtual Domain* clone() const;
     const Types& getElementTypes() const;
     const Elements& getElements() const;

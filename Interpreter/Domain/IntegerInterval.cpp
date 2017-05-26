@@ -189,7 +189,7 @@ size_t IntegerInterval::hashCode() const {
                                          from_, to_);
 }
 
-std::string IntegerInterval::toString() const {
+std::string IntegerInterval::toString(const std::string) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
     ss << "[" << util::toString(from_, signed_) << ", " << util::toString(to_, signed_) << "]";

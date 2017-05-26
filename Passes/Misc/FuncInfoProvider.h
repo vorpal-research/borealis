@@ -24,7 +24,7 @@ public:
 
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 
-    const func_info::FuncInfo& getInfo(llvm::Function* f);
+    const func_info::FuncInfo& getInfo(const llvm::Function* f);
     const std::vector<Annotation::Ptr>& getContracts(llvm::Function* f);
     bool hasInfo(llvm::Function* f);
 

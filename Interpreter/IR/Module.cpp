@@ -96,9 +96,9 @@ std::string Module::toString() const {
     if (not globals_.empty()) {
         ss << "globals: " << std::endl;
         for (auto&& global : globals_) {
-            ss << " ";
+            ss << "  ";
             ss << global.first->getName().str() << " = ";
-            ss << global.second->toString() << std::endl;
+            ss << global.second->toString("  ") << std::endl;
         }
     }
     ss << std::endl;

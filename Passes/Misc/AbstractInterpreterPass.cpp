@@ -5,11 +5,12 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/GraphWriter.h>
 
+#include "Annotation/Annotation.h"
 #include "Config/config.h"
+#include "FuncInfoProvider.h"
 #include "Interpreter/Interpreter.h"
 #include "Interpreter/IR/GraphTraits.hpp"
 #include "Util/passes.hpp"
-#include "FuncInfoProvider.h"
 
 namespace borealis {
 
@@ -24,7 +25,9 @@ public:
     AbstractInterpreterPass() : llvm::ModulePass(ID) {};
 
     virtual bool runOnModule(llvm::Module& M) override {
-        absint::Interpreter interpreter(&M);
+        auto&& fip = &GetAnalysis<FuncInfoProvider>().doit(this);
+
+        absint::Interpreter interpreter(&M, fip);
         interpreter.run();
         auto&& module_ = interpreter.getModule();
 

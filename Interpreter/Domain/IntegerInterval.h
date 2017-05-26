@@ -51,7 +51,7 @@ public:
     bool intersects(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
-    virtual std::string toString() const;
+    virtual std::string toString(const std::string prefix = "") const;
     virtual Domain* clone() const;
     // changes sign of the domain if it's incorrect
     virtual bool isCorrect();

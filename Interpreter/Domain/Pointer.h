@@ -58,7 +58,7 @@ public:
     const llvm::Type& getElementType() const;
     const Locations& getLocations() const;
     virtual std::size_t hashCode() const;
-    virtual std::string toString() const;
+    virtual std::string toString(const std::string prefix = "") const;
     virtual Domain* clone() const;
 
     static bool classof(const Domain* other);

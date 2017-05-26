@@ -10,6 +10,7 @@
 
 #include <llvm/IR/InstVisitor.h>
 #include <andersen/include/Andersen.h>
+#include <Passes/Misc/FuncInfoProvider.h>
 
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
@@ -20,7 +21,7 @@ namespace absint {
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    Interpreter(const llvm::Module* module);
+    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP);
 
     void run();
     const Module& getModule() const;
@@ -68,10 +69,13 @@ private:
     /// Util functions
     Domain::Ptr getVariable(const llvm::Value* value);
     Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
-    void addStubFor(const llvm::Instruction& i);
+    void stub(const llvm::Instruction& i);
     void addSuccessors(const std::vector<const llvm::BasicBlock*>& successors);
+    void handleMemoryAllocation(const llvm::CallInst& i);
+    void handleDeclaration(const llvm::CallInst& i);
 
     Module module_;
+    FuncInfoProvider* FIP_;
 
     /// Context
     Function::Ptr function_;

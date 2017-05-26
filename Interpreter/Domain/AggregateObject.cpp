@@ -84,7 +84,7 @@ std::size_t AggregateObject::hashCode() const {
     return util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_.size());
 }
 
-std::string AggregateObject::toString() const {
+std::string AggregateObject::toString(const std::string prefix) const {
     std::stringstream ss;
 
     if (isArray()) ss << "Array [" << getMaxLength() << " x " << util::toString(getTypeFor(0)) << "] ";
@@ -97,9 +97,9 @@ std::string AggregateObject::toString() const {
     }
     ss << ": [";
     for (auto&& it : elements_) {
-        ss << std::endl << "  " << it.first << " : " << it.second->toString();
+        ss << std::endl << prefix << "  " << it.first << " : " << it.second->toString(prefix + "  ");
     }
-    ss << std::endl << "]";
+    ss << std::endl << prefix << "]";
     return ss.str();
 }
 

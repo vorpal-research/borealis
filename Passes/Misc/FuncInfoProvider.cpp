@@ -44,7 +44,7 @@ static config::MultiConfigEntry FunctionDefinitionFiles("analysis", "ext-functio
 FuncInfoProvider::FuncInfoProvider() : llvm::ModulePass(ID), pimpl_(std::make_unique<Impl>()) {}
 FuncInfoProvider::~FuncInfoProvider() {}
 
-const func_info::FuncInfo& FuncInfoProvider::getInfo(llvm::Function* f) {
+const func_info::FuncInfo& FuncInfoProvider::getInfo(const llvm::Function* f) {
     return pimpl_->functions.at(f->getName().str());
 }
 
