@@ -2,6 +2,7 @@
 // Created by abdullin on 2/10/17.
 //
 
+#include "Interpreter/Domain/DomainFactory.h"
 #include "Function.h"
 #include "Util/collections.hpp"
 #include "Util/streams.hpp"
@@ -11,26 +12,30 @@
 namespace borealis {
 namespace absint {
 
-Function::Function(Environment::Ptr environment, const llvm::Function* function) : environment_(environment),
-                                                                                   instance_(function),
-                                                                                   tracker_(instance_) {
+Function::Function(const llvm::Function* function, DomainFactory* factory) : instance_(function),
+                                                                             tracker_(instance_),
+                                                                             factory_(factory) {
     inputState_ = State::Ptr{ new State() };
     outputState_ = State::Ptr{ new State() };
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(&block, &tracker_);
-        blocks_.insert({&block, aiBlock});
+        blocks_.insert( {&block, aiBlock} );
+        blockVector_.push_back(&blocks_.at(&block));
     }
 
-    // adding global variables
-    for (auto&& it : environment_->getModule()->getGlobalList()) {
-        auto&& globalDomain = environment_->getDomainFactory().get(*it.getType());
-        if (globalDomain) inputState_->addGlobalVariable(&it, globalDomain);
+    for (auto&& it : blocks_) {
+        for (auto bb = pred_begin(it.first), et = pred_end(it.first); bb != et; ++bb) {
+            it.second.addPredecessor(getBasicBlock(*bb));
+        }
+        for (auto bb = succ_begin(it.first), et = succ_end(it.first); bb != et; ++bb) {
+            it.second.addSuccessor(getBasicBlock(*bb));
+        }
     }
 
     // adding return value
     auto&& returnType = instance_->getReturnType();
     if (not returnType->isVoidTy()) {
-        auto&& retDomain = environment_->getDomainFactory().get(*returnType);
+        auto&& retDomain = factory_->getBottom(*returnType);
         if (retDomain) outputState_->setReturnValue(retDomain);
     }
 }
@@ -59,9 +64,13 @@ Domain::Ptr Function::getReturnValue() const {
     return outputState_->getReturnValue();
 }
 
-const BasicBlock* Function::getBasicBlock(const llvm::BasicBlock* bb) const {
+BasicBlock* Function::getEntryNode() const {
+    return getBasicBlock(&instance_->getEntryBlock());
+}
+
+BasicBlock* Function::getBasicBlock(const llvm::BasicBlock* bb) const {
     if (auto&& opt = util::at(blocks_, bb))
-        return &opt.getUnsafe();
+        return const_cast<BasicBlock*>(&opt.getUnsafe());
     return nullptr;
 }
 
@@ -79,12 +88,9 @@ std::string Function::toString() const {
     ss << getName() << "\" ---";
 
     if (not arguments_.empty()) {
-        ss << std::endl << "Args: ";
-        bool comma = false;
-        for (auto&& it : arguments_) {
-            if (comma) ss << ", ";
-            ss << it;
-            comma = true;
+        auto i = 0U;
+        for (auto&& it : instance_->args()) {
+            ss << std::endl << tracker_.getLocalName(&it) << " = " << arguments_[i++];
         }
         ss << std::endl;
     }
@@ -101,22 +107,6 @@ std::string Function::toString() const {
     return ss.str();
 }
 
-std::vector<const BasicBlock*> Function::getPredecessorsFor(const llvm::BasicBlock* bb) const {
-    std::vector<const BasicBlock*> predecessors;
-    for (auto it = pred_begin(bb), et = pred_end(bb); it != et; ++it) {
-        predecessors.push_back(getBasicBlock(*it));
-    }
-    return std::move(predecessors);
-}
-
-std::vector<const BasicBlock*> Function::getSuccessorsFor(const llvm::BasicBlock* bb) const {
-    std::vector<const BasicBlock*> successors;
-    for (auto it = succ_begin(bb), et = succ_end(bb); it != et; ++it) {
-        successors.push_back(getBasicBlock(*it));
-    }
-    return std::move(successors);
-}
-
 void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     ASSERT(instance_->isVarArg() || instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
     arguments_.clear();
@@ -125,7 +115,7 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     auto&& it = instance_->getArgumentList().begin();
     for (auto i = 0U; i < args.size(); ++i) {
         if (args[i]) {
-            inputState_->addLocalVariable(it, args[i]);
+            inputState_->addVariable(it, args[i]);
             arguments_.push_back(args[i]);
         }
         if (++it == instance_->getArgumentList().end()) break;
@@ -135,18 +125,7 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
 }
 
-void Function::addCall(const llvm::Value* call, Function::Ptr function) {
-    auto&& inst = llvm::dyn_cast<llvm::CallInst>(call);
-    ASSERT(inst && inst->getParent()->getParent() == instance_, "Unknown call instruction");
-
-    callMap_[call] = function;
-}
-
-const Function::CallMap& Function::getCallMap() const {
-    return callMap_;
-}
-
-bool Function::atFixpoint() const {
+bool Function::atFixpoint() {
     for (auto& block : blocks_) {
         if (not block.second.atFixpoint()) return false;
     }

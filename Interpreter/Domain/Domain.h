@@ -7,11 +7,11 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <tuple>
+#include <vector>
 
-#include <llvm/IR/Type.h>
 #include <llvm/IR/InstrTypes.h>
+#include <llvm/IR/Type.h>
 
 #include "Logging/logger.hpp"
 
@@ -23,9 +23,10 @@ class DomainFactory;
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
-    enum Type {IntegerInterval = 0,
-        FloatInterval,
-        Pointer
+    enum Type {INTEGER_INTERVAL = 0,
+        FLOAT_INTERVAL,
+        POINTER,
+        AGGREGATE
     };
 
     enum Value {TOP, VALUE, BOTTOM};
@@ -81,11 +82,12 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const = 0;
     virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
     virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
+    virtual Domain::Ptr narrow(Domain::Ptr other) const = 0;
 
     /// Other
     virtual size_t hashCode() const = 0;
-    virtual std::string toString() const {
-        return "unknown";
+    virtual std::string toString(const std::string prefix = "") const {
+        return prefix + "unknown";
     }
     virtual Domain* clone() const = 0;
 
@@ -96,6 +98,10 @@ public:
     static bool classof(const Domain*) {
         return true;
     }
+
+    virtual bool isAggregateType() const;
+    virtual bool isPointerType() const;
+    virtual bool isSimpleType() const;
 
     /// LLVM Semantics
     /// Arithmetical
@@ -120,14 +126,14 @@ public:
     virtual Domain::Ptr bOr(Domain::Ptr other) const;
     virtual Domain::Ptr bXor(Domain::Ptr other) const;
     /// Vector
-    virtual Domain::Ptr extractElement(Domain::Ptr indx) const;
-    virtual Domain::Ptr insertElement(Domain::Ptr element, Domain::Ptr indx) const;
+    virtual Domain::Ptr extractElement(const std::vector<Domain::Ptr>& indices) const;
+    virtual void insertElement(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Aggregate
-    virtual Domain::Ptr extractValue(const std::vector<Domain::Ptr>& indices) const;
-    virtual Domain::Ptr insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
-    virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
-    virtual Domain::Ptr store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
+    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr trunc(const llvm::Type& type) const;
@@ -149,9 +155,10 @@ public:
 protected:
 
     Domain(Domain::Value value, Domain::Type type, DomainFactory* factory) : ObjectLevelLogging("domain"),
-                                                                                   value_(value),
-                                                                                   type_(type),
-                                                                                   factory_(factory) {}
+                                                                             value_(value),
+                                                                             type_(type),
+                                                                             factory_(factory) {}
+    virtual ~Domain() = default;
 
     Value value_;
     Type type_;
@@ -175,5 +182,16 @@ struct DomainHash {
 
 }   /* namespace absint */
 }   /* namespace borealis*/
+
+namespace std {
+
+template <>
+struct hash<borealis::absint::Domain::Ptr> {
+    size_t operator()(const borealis::absint::Domain::Ptr& domain) const noexcept {
+        return domain->hashCode();
+    }
+};
+
+}
 
 #endif //BOREALIS_DOMAIN_HPP

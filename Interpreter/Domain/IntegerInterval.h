@@ -6,7 +6,7 @@
 #define BOREALIS_INTERVALDOMAIN_H
 
 #include "Domain.h"
-#include "Util.hpp"
+#include "Interpreter/Util.h"
 #include "Util/hash.hpp"
 
 namespace borealis {
@@ -24,9 +24,8 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(DomainFactory* factory, unsigned width, bool isSigned = false);
-    IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
     IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width, bool isSigned  = false);
+    IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
     IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
     IntegerInterval(DomainFactory* factory, const ID& key);
     IntegerInterval(const IntegerInterval& interval);
@@ -40,6 +39,7 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
+    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
     unsigned getWidth() const;
@@ -47,10 +47,11 @@ public:
     bool isConstant(uint64_t constant) const;
     const llvm::APInt& from() const;
     const llvm::APInt& to() const;
+    bool intersects(const llvm::APInt& constant) const;
     bool intersects(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
-    virtual std::string toString() const;
+    virtual std::string toString(const std::string prefix = "") const;
     virtual Domain* clone() const;
     // changes sign of the domain if it's incorrect
     virtual bool isCorrect();

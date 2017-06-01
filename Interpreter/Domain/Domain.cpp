@@ -2,8 +2,8 @@
 // Created by abdullin on 2/3/17.
 //
 
-#include <Util/sayonara.hpp>
 #include "Domain.h"
+#include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
 
@@ -36,27 +36,27 @@ MK_BINOP_IMPL(bXor);
 #undef MK_BINOP_IMPL
 
 
-Domain::Ptr Domain::extractElement(Domain::Ptr) const {
+Domain::Ptr Domain::extractElement(const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::insertElement(Domain::Ptr, Domain::Ptr) const {
+void Domain::insertElement(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::extractValue(const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::extractValue(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-Domain::Ptr Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-Domain::Ptr Domain::load(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::load(const llvm::Type&, Domain::Ptr) const {
     UNREACHABLE("Unimplemented memory operation");
 }
 
-Domain::Ptr Domain::store(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::store(Domain::Ptr, Domain::Ptr) const {
     UNREACHABLE("Unimplemented memory operation");
 }
 
@@ -91,6 +91,19 @@ Domain::Ptr Domain::icmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
 
 Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
     UNREACHABLE("Unimplemented cmp operation");
+}
+
+bool Domain::isAggregateType() const {
+    return this->type_ == Type::AGGREGATE;
+}
+
+bool Domain::isPointerType() const {
+    return this->type_ == Type::POINTER;
+}
+
+bool Domain::isSimpleType() const {
+    return this->type_ == Type::INTEGER_INTERVAL ||
+            this->type_ == Type::FLOAT_INTERVAL;
 }
 
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {

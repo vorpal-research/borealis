@@ -1,34 +1,46 @@
 //
-// Created by abdullin on 2/17/17.
+// Created by abdullin on 4/7/17.
 //
 
 #ifndef BOREALIS_POINTER_H
 #define BOREALIS_POINTER_H
 
+#include <unordered_set>
+
 #include "Domain.h"
-#include "Util.hpp"
-#include "Util/hash.hpp"
 
 namespace borealis {
 namespace absint {
 
+struct PointerLocation {
+    mutable Domain::Ptr offset_;
+    Domain::Ptr location_;
+};
+
+struct PtrLocationHash {
+    size_t operator() (const PointerLocation& loc) const noexcept {
+        return loc.location_->hashCode();
+    }
+};
+
+struct PtrLocationEquals {
+    bool operator() (const PointerLocation& lhv, const PointerLocation& rhv) const noexcept {
+        return lhv.location_.get() == rhv.location_.get();
+    }
+};
+
+/// Mutable
 class Pointer : public Domain {
 public:
-    enum Status {VALID, NON_VALID};
 
-    /// Structure that identifies pointer domain
-    using ID = std::tuple<Domain::Value, Pointer::Status>;
-    struct IDHash;
-    struct IDEquals;
+    using Locations = std::unordered_set<PointerLocation, PtrLocationHash, PtrLocationEquals>;
 
 protected:
 
     friend class DomainFactory;
 
-    Pointer(DomainFactory* factory);
-    Pointer(Domain::Value value, DomainFactory* factory);
-    Pointer(DomainFactory* factory, Pointer::Status status);
-    Pointer(DomainFactory* factory, Pointer::ID id);
+    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
+    Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
     Pointer(const Pointer& other);
 
 public:
@@ -40,19 +52,20 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
+    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
-    Pointer::Status getStatus() const;
-    bool isValid() const;
-    virtual size_t hashCode() const;
-    virtual std::string toString() const;
+    const llvm::Type& getElementType() const;
+    const Locations& getLocations() const;
+    virtual std::size_t hashCode() const;
+    virtual std::string toString(const std::string prefix = "") const;
     virtual Domain* clone() const;
 
     static bool classof(const Domain* other);
 
     /// Semantics
-    virtual Domain::Ptr load(const llvm::Type& type, const std::vector<Domain::Ptr>& offsets) const;
-    virtual Domain::Ptr store(Domain::Ptr value, const std::vector<Domain::Ptr>& offsets) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
+    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
@@ -62,20 +75,8 @@ public:
 
 private:
 
-    Status status_;
-};
-
-struct Pointer::IDHash {
-    size_t operator()(const ID& id) const {
-        return std::hash<ID>()(id);
-    }
-};
-
-struct Pointer::IDEquals {
-    bool operator()(const ID& lhv, const ID& rhv) const {
-        return std::get<0>(lhv) == std::get<0>(rhv) &&
-               std::get<1>(lhv) == std::get<1>(rhv);
-    }
+    const llvm::Type& elementType_;
+    mutable Locations locations_;
 };
 
 }   /* namespace absint */

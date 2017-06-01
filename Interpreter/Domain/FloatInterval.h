@@ -6,7 +6,7 @@
 #define BOREALIS_FLOATINTERVAL_H
 
 #include "Domain.h"
-#include "Util.hpp"
+#include "Interpreter/Util.h"
 #include "Util/hash.hpp"
 
 namespace borealis {
@@ -24,7 +24,6 @@ protected:
 
     friend class DomainFactory;
 
-    FloatInterval(DomainFactory* factory, const llvm::fltSemantics& semantics);
     FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
@@ -40,6 +39,7 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
+    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     const llvm::fltSemantics& getSemantics() const;
     llvm::APFloat::roundingMode getRoundingMode() const;
@@ -50,7 +50,7 @@ public:
     bool intersects(const FloatInterval* other) const;
 
     virtual size_t hashCode() const;
-    virtual std::string toString() const;
+    virtual std::string toString(const std::string prefix) const;
     virtual Domain* clone() const;
 
     static bool classof(const Domain* other);

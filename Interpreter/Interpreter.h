@@ -5,12 +5,13 @@
 #ifndef BOREALIS_INTERPRETER_H
 #define BOREALIS_INTERPRETER_H
 
-#include <deque>
+#include <memory>
+#include <queue>
 
 #include <llvm/IR/InstVisitor.h>
-#include <unordered_set>
+#include <andersen/include/Andersen.h>
+#include <Passes/Misc/FuncInfoProvider.h>
 
-#include "Interpreter/Environment.h"
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
 
@@ -20,9 +21,10 @@ namespace absint {
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    Interpreter(const llvm::Module* module);
+    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP);
 
     void run();
+    const Module& getModule() const;
 
     void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
 
@@ -64,11 +66,22 @@ public:
 
 private:
 
-    Domain::Ptr getVariable(const llvm::Value* value) const;
+    /// Util functions
+    Domain::Ptr getVariable(const llvm::Value* value);
+    Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
+    void stub(const llvm::Instruction& i);
+    void addSuccessors(const std::vector<const llvm::BasicBlock*>& successors);
+    void handleMemoryAllocation(const llvm::CallInst& i);
+    void handleDeclaration(const llvm::CallInst& i);
 
-    Environment::Ptr environment_;
     Module module_;
-    State::Ptr currentState_;
+    FuncInfoProvider* FIP_;
+
+    /// Context
+    Function::Ptr function_;
+    State::Ptr state_;
+    std::deque<const llvm::BasicBlock*> deque_;
+    std::map<const llvm::Value*, bool> stores_;
 };
 
 }   /* namespace absint */
