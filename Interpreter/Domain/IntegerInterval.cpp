@@ -419,7 +419,8 @@ Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in zext");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth(), signed_);
+    if (isBottom()) return factory_->getBottom(type);
+    if (isTop()) return factory_->getTop(type);
 
     auto&& newFrom = from_.zext(intType->getBitWidth());
     auto&& newTo = to_.zext(intType->getBitWidth());
@@ -432,7 +433,8 @@ Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in sext");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth(), signed_);
+    if (isBottom()) return factory_->getBottom(type);
+    if (isTop()) return factory_->getTop(type);
 
     auto&& newFrom = from_.sext(intType->getBitWidth());
     auto&& newTo = to_.sext(intType->getBitWidth());

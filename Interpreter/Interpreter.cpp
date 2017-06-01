@@ -4,7 +4,6 @@
 
 #include "Annotation/Annotation.h"
 #include "Interpreter.h"
-#include "Passes/Misc/FuncInfoProvider.h"
 
 #include "Util/collections.hpp"
 #include "Util/streams.hpp"
@@ -13,6 +12,8 @@
 
 namespace borealis {
 namespace absint {
+
+static config::BoolConfigEntry printModule("absint", "print-module");
 
 Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP)
         : ObjectLevelLogging("interpreter"), module_(module), FIP_(FIP) {
@@ -29,7 +30,7 @@ void Interpreter::run() {
         }
 
         interpretFunction(main, args);
-        infos() << endl << module_ << endl;
+        if (printModule.get(false)) infos() << endl << module_ << endl;
     } else errs() << "No main function" << endl;
 }
 
@@ -481,8 +482,10 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
 }
 
 void Interpreter::stub(const llvm::Instruction& i) {
-    if (not i.getType()->isVoidTy())
-        state_->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
+    if (not i.getType()->isVoidTy()) {
+        auto&& val = module_.getDomainFactory()->getTop(*i.getType());
+        if (val) state_->addVariable(&i, val);
+    }
 }
 
 void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
