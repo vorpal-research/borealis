@@ -90,6 +90,7 @@ static void popupGraph(G* g, llvm::StringRef name = "", bool wait = false) {
 }
 
 bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
+    slots = &GetAnalysis<SlotTrackerPass>::doit(this, F);
     if ("one-for-one" == Mode()) {
         delegate = &GetAnalysis<OneForOne>::doit(this, F);
     } else if ("one-for-all" == Mode()) {
@@ -102,7 +103,7 @@ bool PredicateStateAnalysis::runOnFunction(llvm::Function& F) {
         BYE_BYE(bool, "Unknown PSA mode: " + Mode());
     }
 
-    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    FN = FactoryNest(F.getDataLayout(), slots->getSlotTracker(F));
 
     if ("inline" == Summaries()) {
         updateInlineSummary(F);
@@ -132,10 +133,10 @@ void PredicateStateAnalysis::updateInlineSummary(llvm::Function& F) {
 
     auto&& initial = delegate->getInitialState();
     auto&& riState = delegate->getInstructionState(RI);
-    ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+    ASSERT(riState, "No state found for: " + slots->toString(RI));
 
     auto&& bdy = riState->sliceOn(initial);
-    ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
+    ASSERT(bdy, "Function state slicing failed for: " + slots->toString(RI));
 
     FM.update(&F, bdy);
 }
@@ -181,10 +182,10 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
 
     auto&& initial = delegate->getInitialState();
     auto&& riState = delegate->getInstructionState(RI);
-    ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+    ASSERT(riState, "No state found for: " + slots->toString(RI));
 
     auto&& bdy = riState->sliceOn(initial);
-    ASSERT(bdy, "Function state slicing failed for: " + llvm::valueSummary(RI));
+    ASSERT(bdy, "Function state slicing failed for: " + slots->toString(RI));
 
     auto&& PSB = FN.State * FN.State->Basic();
     for (auto&& ptr : pointers) {
@@ -200,7 +201,7 @@ void PredicateStateAnalysis::updateInterpolSummary(llvm::Function& F) {
     auto&& query = PSB();
 
     dbgs() << "Generating summary: " << endl
-           << "  At: " << llvm::valueSummary(RI) << endl
+           << "  At: " << slots->toString(RI) << endl
            << "  Query: " << query << endl
            << "  State: " << bdy << endl;
 
@@ -225,7 +226,7 @@ void PredicateStateAnalysis::updateVisitedLocs(llvm::Function& F) {
     if (not RI) return;
 
     auto&& riState = delegate->getInstructionState(RI);
-    ASSERT(riState, "No state found for: " + llvm::valueSummary(RI));
+    ASSERT(riState, "No state found for: " + slots->toString(RI));
 
     LM.addLocations(riState->getVisited());
 }

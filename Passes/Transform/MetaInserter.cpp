@@ -40,7 +40,7 @@ static llvm::Value* mkBorealisValue(
 
     auto* current = intrinsic_manager.createIntrinsic(
         function_type::INTRINSIC_VALUE,
-        util::toString(*val->getType()),
+        util::toString(*val->getType()), // FIXME: use TypePrinting or SlotTrackerPass
         ty,
         &M
     );
@@ -78,7 +78,7 @@ static llvm::Value* mkBorealisDeclare(
 
     auto* current = intrinsic_manager.createIntrinsic(
         function_type::INTRINSIC_DECLARE,
-        util::toString(*addr->getType()->getPointerElementType()),
+        util::toString(*addr->getType()->getPointerElementType()), // FIXME: use TypePrinting or SlotTrackerPass
         ty,
         &M
     );

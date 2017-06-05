@@ -23,7 +23,7 @@ llvm::Function* StoreLoadInjectionPass::createNuevoFunc(
     auto* ftype = llvm::FunctionType::get(ptr, ptr, false /* isVarArg */);
     return IntrinsicsManager::getInstance().createIntrinsic(
             function_type::INTRINSIC_PTR_VERSION,
-            borealis::util::toString(*pointed),
+            borealis::util::toString(*pointed), // FIXME: use TypePrinting or SlotTrackerPass
             ftype,
             daModule);
 }

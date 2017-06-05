@@ -9,6 +9,7 @@
 #define FACTORY_NEST_H_
 
 #include <llvm/IR/Module.h>
+#include <Util/ir_writer.h>
 
 #include "Predicate/PredicateFactory.h"
 #include "State/PredicateStateFactory.h"

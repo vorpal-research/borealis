@@ -85,7 +85,7 @@ inline llvm::CallInst* mkConsumeCall(
 
     auto&& f = IM.createIntrinsic(
         function_type::INTRINSIC_CONSUME,
-        util::toString(*arg->getType()),
+        util::toString(*arg->getType()), // FIXME: use TypePrinting or SlotTrackerPass
         llvm::FunctionType::get(llvm::Type::getVoidTy(M.getContext()), arg->getType(), false),
         &M
     );
@@ -124,7 +124,7 @@ inline llvm::Instruction* mkStoreNondet(
 
     auto&& f = IM.createIntrinsic(
         function_type::INTRINSIC_NONDET,
-        util::toString(*arg->getType()->getPointerElementType()),
+        util::toString(*arg->getType()->getPointerElementType()), // FIXME: use TypePrinting or SlotTrackerPass
         llvm::FunctionType::get(arg->getType()->getPointerElementType(), false),
         &M
     );
@@ -156,7 +156,7 @@ inline llvm::CallInst* mkNondet(
         llvm::Instruction* insertBefore) {
     auto&& f = IM.createIntrinsic(
         function_type::INTRINSIC_NONDET,
-        util::toString(*type),
+        util::toString(*type), // FIXME: use TypePrinting or SlotTrackerPass
         llvm::FunctionType::get(type, false),
         &M
     );
@@ -175,7 +175,7 @@ inline llvm::CallInst* mkNondet(
         llvm::CallInst& originalCall) {
     auto&& f = IM.createIntrinsic(
         function_type::INTRINSIC_NONDET,
-        util::toString(*originalCall.getType()),
+        util::toString(*originalCall.getType()), // FIXME: use TypePrinting or SlotTrackerPass
         llvm::FunctionType::get(originalCall.getType(), false),
         &M
     );
