@@ -31,7 +31,9 @@ void Interpreter::run() {
 
         interpretFunction(main, args);
         if (printModule.get(false)) infos() << endl << module_ << endl;
-    } else errs() << "No main function" << endl;
+    } else {
+        errs() << "No main function" << endl;
+    }
 }
 
 const Module& Interpreter::getModule() const {
@@ -126,7 +128,8 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
         ASSERT(integer, "Non-integer condition in switch");
 
         for (auto&& cs : i.cases()) {
-            if (integer->intersects(cs.getCaseValue()->getValue())) {
+            auto caseVal = module_.getDomainFactory()->getInt(cs.getCaseValue()->getValue());
+            if (integer->intersects(caseVal)) {
                 successors.push_back(cs.getCaseSuccessor());
                 isDefault = false;
             }
@@ -503,7 +506,12 @@ void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
     // Adding new level of abstraction (pointer to array to real value), because:
     // - if this is alloc, we need one more level for correct GEP handler
     // - if this is malloc, we create array of dynamically allocated objects
-    auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), *integer->to().getRawData());
+    if (integer->to()->isMax()) {
+        stub(i);
+        return;
+    }
+
+    auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), integer->to()->getRawValue());
     auto&& ptrType = llvm::PointerType::get(arrayType, 0);
     Domain::Ptr domain = module_.getDomainFactory()->getInMemory(*ptrType);
 

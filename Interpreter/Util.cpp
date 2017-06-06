@@ -4,6 +4,9 @@
 
 
 #include <llvm/Support/raw_ostream.h>
+
+#include "Interpreter/Domain/Integer/MaxInteger.h"
+#include "Interpreter/Domain/Integer/MinInteger.h"
 #include "Util.h"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -15,63 +18,22 @@ namespace util {
 /// APInt util
 ///////////////////////////////////////////////////////////////
 
-llvm::APInt getMaxValue(unsigned width, bool isSigned) {
-    return isSigned ? llvm::APInt::getSignedMaxValue(width) : llvm::APInt::getMaxValue(width);
+absint::Integer::Ptr getMaxValue(unsigned width) {
+    return Integer::Ptr{ new MaxInteger(width) };
 }
 
-llvm::APInt getMinValue(unsigned width, bool isSigned) {
-    return isSigned ? llvm::APInt::getSignedMinValue(width) : llvm::APInt::getMinValue(width);
+absint::Integer::Ptr getMinValue(unsigned width) {
+    return Integer::Ptr{ new MinInteger(width) };
 }
 
-bool isMaxValue(const llvm::APInt& val, bool isSigned) {
-    return isSigned ?
-           val.isMaxSignedValue() :
-           val.isMaxValue();
+absint::Integer::Ptr min(Integer::Ptr lhv, Integer::Ptr rhv, bool isSigned) {
+    if (isSigned) return lhv->slt(rhv) ? lhv : rhv;
+    else return lhv->lt(rhv) ? lhv : rhv;
 }
 
-bool isMinValue(const llvm::APInt& val, bool isSigned) {
-    return isSigned ?
-           val.isMinSignedValue() :
-           val.isMinValue();
-}
-
-llvm::APInt min(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
-    if (isSigned) return lhv.slt(rhv) ? lhv : rhv;
-    else return lhv.ult(rhv) ? lhv : rhv;
-}
-
-llvm::APInt max(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
-    if (isSigned) return lhv.sgt(rhv) ? lhv : rhv;
-    else return lhv.ugt(rhv) ? lhv : rhv;
-}
-
-bool eq(const llvm::APInt& lhv, const llvm::APInt& rhv) {
-    if (lhv.getBitWidth() != rhv.getBitWidth()) return false;
-    return lhv.eq(rhv);
-}
-
-bool lt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
-    return isSigned ?
-           lhv.slt(rhv) :
-           lhv.ult(rhv);
-}
-
-bool le(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
-    return isSigned ?
-           lhv.sle(rhv) :
-           lhv.ule(rhv);
-}
-
-bool gt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
-    return isSigned ?
-           lhv.sgt(rhv) :
-           lhv.ugt(rhv);
-}
-
-bool ge(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned) {
-    return isSigned ?
-           lhv.sge(rhv) :
-           lhv.uge(rhv);
+absint::Integer::Ptr max(Integer::Ptr lhv, Integer::Ptr rhv, bool isSigned) {
+    if (isSigned) return lhv->sgt(rhv) ? lhv : rhv;
+    else return lhv->gt(rhv) ? lhv : rhv;
 }
 
 std::string toString(const llvm::APInt& val, bool isSigned) {

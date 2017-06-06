@@ -121,12 +121,12 @@ Domain::Ptr AggregateObject::getLength() const {
 
 std::size_t AggregateObject::getMaxLength() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
-    return *intLength->to().getRawData();
+    return intLength->to()->getRawValue();
 }
 
 bool AggregateObject::isMaxLengthTop() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
-    return (*intLength->to().getRawData() == std::numeric_limits<uint64_t>::max());
+    return intLength->to()->isMax();
 }
 
 bool AggregateObject::equals(const Domain* other) const {
@@ -223,8 +223,8 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
         return factory_->getTop(type);
     }
 
-    auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->to().getRawData();
+    auto indexStart = indexInterval->from()->getRawValue();
+    auto indexEnd = indexInterval->to()->getRawValue();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -256,8 +256,8 @@ void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain:
     if (isBottom() || isTop())
         return;
 
-    auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->to().getRawData();
+    auto indexStart = indexInterval->from()->getRawValue();
+    auto indexEnd = indexInterval->to()->getRawValue();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -288,8 +288,8 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     else if (isTop())
         return factory_->getTop(type);
 
-    auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->to().getRawData();
+    auto indexStart = indexInterval->from()->getRawValue();
+    auto indexEnd = indexInterval->to()->getRawValue();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;

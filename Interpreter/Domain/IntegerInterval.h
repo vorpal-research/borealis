@@ -6,6 +6,7 @@
 #define BOREALIS_INTERVALDOMAIN_H
 
 #include "Domain.h"
+#include "Integer/Integer.h"
 #include "Interpreter/Util.h"
 #include "Util/hash.hpp"
 
@@ -16,7 +17,7 @@ class IntegerInterval : public Domain {
 public:
 
     /// Structure that identifies int interval
-    using ID = std::tuple<Domain::Value, bool, llvm::APInt, llvm::APInt>;
+    using ID = std::tuple<Domain::Value, Integer::Ptr, Integer::Ptr>;
     struct IDHash;
     struct IDEquals;
 
@@ -24,9 +25,9 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width, bool isSigned  = false);
-    IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned  = false);
-    IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned  = false);
+    IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width);
+    IntegerInterval(DomainFactory* factory, Integer::Ptr constant);
+    IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to);
     IntegerInterval(DomainFactory* factory, const ID& key);
     IntegerInterval(const IntegerInterval& interval);
 
@@ -45,16 +46,16 @@ public:
     unsigned getWidth() const;
     bool isConstant() const;
     bool isConstant(uint64_t constant) const;
-    const llvm::APInt& from() const;
-    const llvm::APInt& to() const;
-    bool intersects(const llvm::APInt& constant) const;
+    Integer::Ptr from() const;
+    Integer::Ptr to() const;
+    Integer::Ptr signedFrom() const;
+    Integer::Ptr signedTo() const;
+    bool intersects(Integer::Ptr constant) const;
     bool intersects(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
     virtual std::string toString(const std::string prefix = "") const;
     virtual Domain* clone() const;
-    // changes sign of the domain if it's incorrect
-    virtual bool isCorrect();
 
     static bool classof(const Domain* other);
 
@@ -89,9 +90,8 @@ private:
 
     virtual void setTop();
 
-    bool signed_;
-    llvm::APInt from_;
-    llvm::APInt to_;
+    Integer::Ptr from_;
+    Integer::Ptr to_;
 };
 
 struct IntegerInterval::IDHash {
@@ -103,9 +103,8 @@ struct IntegerInterval::IDHash {
 struct IntegerInterval::IDEquals {
     bool operator()(const ID& lhv, const ID& rhv) const {
         return std::get<0>(lhv) == std::get<0>(rhv) &&
-               std::get<1>(lhv) == std::get<1>(rhv) &&
-               util::eq(std::get<2>(lhv), std::get<2>(rhv)) &&
-               util::eq(std::get<3>(lhv), std::get<3>(rhv));
+               std::get<1>(lhv)->eq(std::get<1>(rhv)) &&
+               std::get<2>(lhv)->eq(std::get<2>(rhv));
     }
 };
 

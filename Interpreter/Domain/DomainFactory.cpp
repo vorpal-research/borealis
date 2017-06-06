@@ -6,6 +6,7 @@
 #include <Type/TypeUtils.h>
 
 #include "DomainFactory.h"
+#include "Interpreter/Domain/Integer/ValInteger.h"
 #include "Interpreter/Util.h"
 #include "Util/cast.hpp"
 
@@ -81,7 +82,8 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
 Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     /// Integer
     if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
-        return getInteger(intConstant->getValue());
+        auto constInteger = Integer::Ptr{ new ValInteger(intConstant->getValue(), intConstant->getBitWidth())};
+        return getInteger(constInteger);
     /// Float
     } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
@@ -158,28 +160,36 @@ Domain::Ptr DomainFactory::cached(const FloatInterval::ID& key) {
 
 
 /* Integer */
+
+Integer::Ptr DomainFactory::getInt(uint64_t val, size_t width) {
+    return Integer::Ptr{ new ValInteger(val, width) };
+}
+
+Integer::Ptr DomainFactory::getInt(const llvm::APInt& val) {
+    return Integer::Ptr{ new ValInteger(val, val.getBitWidth()) };
+}
+
 Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
-    return getInteger(llvm::APInt(64, indx, false), false);
+    auto indxInteger = Integer::Ptr{ new ValInteger(llvm::APInt(64, indx, false), 64) };
+    return getInteger(indxInteger);
 }
 
-Domain::Ptr DomainFactory::getInteger(unsigned width, bool isSigned) {
-    return getInteger(Domain::BOTTOM, width, isSigned);
+Domain::Ptr DomainFactory::getInteger(unsigned width) {
+    return getInteger(Domain::BOTTOM, width);
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APInt& val, bool isSigned) {
-    return getInteger(val, val, isSigned);
+Domain::Ptr DomainFactory::getInteger(Integer::Ptr val) {
+    return getInteger(val, val);
 }
 
-Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width, bool isSigned) {
+Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width) {
     return cached(std::make_tuple(value,
-                                  isSigned,
-                                  llvm::APInt(width, 0, isSigned),
-                                  llvm::APInt(width, 0, isSigned)));
+                                  getInt(0, width),
+                                  getInt(0, width)));
 }
 
-Domain::Ptr DomainFactory::getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned) {
+Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to) {
     return cached(std::make_tuple(Domain::VALUE,
-                                  isSigned,
                                   from,
                                   to));
 }

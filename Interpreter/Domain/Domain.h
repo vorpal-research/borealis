@@ -192,6 +192,6 @@ struct hash<borealis::absint::Domain::Ptr> {
     }
 };
 
-}
+}   /* namespace std */
 
 #endif //BOREALIS_DOMAIN_HPP

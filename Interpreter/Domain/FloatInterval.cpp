@@ -327,31 +327,33 @@ Domain::Ptr FloatInterval::fptoui(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in fptoui");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    bool isExact = false;
+    bool isExactFrom = false, isExactTo = false;
     llvm::APSInt from(intType->getBitWidth(), true), to(intType->getBitWidth(), true);
 
-    from_.convertToInteger(from, getRoundingMode(), &isExact);
-    to_.convertToInteger(to, getRoundingMode(), &isExact);
-    return factory_->getInteger(from, to);
+    from_.convertToInteger(from, getRoundingMode(), &isExactFrom);
+    to_.convertToInteger(to, getRoundingMode(), &isExactTo);
+    return factory_->getInteger(isExactFrom ? factory_->getInt(from) : util::getMinValue(intType->getBitWidth()),
+                                isExactTo ? factory_->getInt(to) : util::getMaxValue(intType->getBitWidth()));
 }
 
 Domain::Ptr FloatInterval::fptosi(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in fptoui");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    bool isExact = false;
+    bool isExactFrom = false, isExactTo = false;
     llvm::APSInt from(intType->getBitWidth(), false), to(intType->getBitWidth(), false);
 
-    from_.convertToInteger(from, getRoundingMode(), &isExact);
-    to_.convertToInteger(to, getRoundingMode(), &isExact);
-    return factory_->getInteger(from, to, true);
+    from_.convertToInteger(from, getRoundingMode(), &isExactFrom);
+    to_.convertToInteger(to, getRoundingMode(), &isExactTo);
+    return factory_->getInteger(isExactFrom ? factory_->getInt(from) : util::getMinValue(intType->getBitWidth()),
+                                isExactTo ? factory_->getInt(to) : util::getMaxValue(intType->getBitWidth()));
 }
 
 Domain::Ptr FloatInterval::bitcast(const llvm::Type& type) const {
     if (type.isIntegerTy()) {
         auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type);
-        auto&& from = llvm::APInt(intType->getBitWidth(), *from_.bitcastToAPInt().getRawData());
-        auto&& to = llvm::APInt(intType->getBitWidth(), *to_.bitcastToAPInt().getRawData());
+        auto&& from = factory_->getInt(llvm::APInt(intType->getBitWidth(), *from_.bitcastToAPInt().getRawData()));
+        auto&& to = factory_->getInt(llvm::APInt(intType->getBitWidth(), *to_.bitcastToAPInt().getRawData()));
         return factory_->getInteger(from, to);
 
     } else if (type.isFloatingPointTy()) {
@@ -367,7 +369,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
         llvm::APSInt retval(1, true);
         if (val) retval = 1;
         else retval = 0;
-        return factory_->getInteger(retval);
+        return factory_->getInteger(factory_->getInt(retval));
     };
 
     if (this->isBottom() || other->isBottom()) {

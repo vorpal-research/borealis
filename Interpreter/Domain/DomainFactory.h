@@ -43,11 +43,14 @@ public:
     Domain::Ptr get(const llvm::Constant* constant);
     Domain::Ptr getInMemory(const llvm::Type& type);
 
+    Integer::Ptr getInt(uint64_t val, size_t width);
+    Integer::Ptr getInt(const llvm::APInt& val);
+
     Domain::Ptr getIndex(uint64_t indx);
-    Domain::Ptr getInteger(unsigned width, bool isSigned = false);
-    Domain::Ptr getInteger(Domain::Value value, unsigned width, bool isSigned = false);
-    Domain::Ptr getInteger(const llvm::APInt& val, bool isSigned = false);
-    Domain::Ptr getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned = false);
+    Domain::Ptr getInteger(unsigned width);
+    Domain::Ptr getInteger(Domain::Value value, unsigned width);
+    Domain::Ptr getInteger(Integer::Ptr val);
+    Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to);
 
     Domain::Ptr getFloat(const llvm::fltSemantics& semantics);
     Domain::Ptr getFloat(Domain::Value value, const llvm::fltSemantics& semantics);

@@ -10,26 +10,21 @@
 #include <llvm/ADT/Hashing.h>
 #include <llvm/IR/Type.h>
 
+#include "Interpreter/Domain/Integer/Integer.h"
+
 namespace borealis {
 namespace util {
-
 ///////////////////////////////////////////////////////////////
 /// APInt util
 ///////////////////////////////////////////////////////////////
 
-llvm::APInt getMaxValue(unsigned width, bool isSigned = false);
-llvm::APInt getMinValue(unsigned width, bool isSigned = false);
-bool isMaxValue(const llvm::APInt& val, bool isSigned = false);
-bool isMinValue(const llvm::APInt& val, bool isSigned = false);
+using namespace borealis::absint;
 
-llvm::APInt min(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false);
-llvm::APInt max(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false);
+absint::Integer::Ptr getMaxValue(unsigned width);
+absint::Integer::Ptr getMinValue(unsigned width);
 
-bool eq(const llvm::APInt& lhv, const llvm::APInt& rhv);
-bool lt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false);
-bool le(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false);
-bool gt(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false);
-bool ge(const llvm::APInt& lhv, const llvm::APInt& rhv, bool isSigned = false);
+absint::Integer::Ptr min(absint::Integer::Ptr lhv, absint::Integer::Ptr rhv, bool isSigned = false);
+absint::Integer::Ptr max(absint::Integer::Ptr lhv, absint::Integer::Ptr rhv, bool isSigned = false);
 
 std::string toString(const llvm::APInt& val, bool isSigned = false);
 

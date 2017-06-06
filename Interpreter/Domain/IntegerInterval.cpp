@@ -2,7 +2,6 @@
 // Created by abdullin on 2/2/17.
 //
 
-#include <llvm/Support/raw_ostream.h>
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
 #include "Util/sayonara.hpp"
@@ -12,42 +11,38 @@
 namespace borealis {
 namespace absint {
 
-IntegerInterval::IntegerInterval(DomainFactory* factory, const llvm::APInt& constant, bool isSigned) :
-        IntegerInterval(factory, constant, constant, isSigned) {}
+IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr constant) :
+        IntegerInterval(factory, constant, constant) {}
 
-IntegerInterval::IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width, bool isSigned) :
+IntegerInterval::IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width) :
         IntegerInterval(factory, std::make_tuple(value,
-                                                 isSigned,
-                                                 llvm::APInt(width, 0, false),
-                                                 llvm::APInt(width, 0, false))) {}
+                                                 factory->getInt(0, width),
+                                                 factory->getInt(0, width))) {}
 
-IntegerInterval::IntegerInterval(DomainFactory* factory, const llvm::APInt& from, const llvm::APInt& to, bool isSigned) :
+IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to) :
         IntegerInterval(factory, std::make_tuple(VALUE,
-                                                 isSigned,
                                                  from,
                                                  to)) {}
 
 IntegerInterval::IntegerInterval(const IntegerInterval &interval) :
         Domain(interval.value_, Type::INTEGER_INTERVAL, interval.factory_),
-        signed_(interval.signed_),
         from_(interval.from_),
         to_(interval.to_) {}
 
 IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::ID& key) :
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
-        signed_(std::get<1>(key)),
-        from_(std::get<2>(key)),
-        to_(std::get<3>(key)) {
-    ASSERT(from_.getBitWidth() == to_.getBitWidth(), "Different bit width of interval bounds");
-    ASSERT(isCorrect(), "Interval lower bound is greater than upper bound:" + from_.toString(10, false) + " " + to_.toString(10, false));
-    if (util::isMinValue(from_, signed_) && util::isMaxValue(to_, signed_)) value_ = TOP;
+        from_(std::get<1>(key)),
+        to_(std::get<2>(key)) {
+    ASSERT(from_->getWidth() == to_->getWidth(), "Different bit width of interval bounds");
+    ASSERT(from_->le(to_), "Lower bound is greater that upper bound");
+    if (from_->isMin() && to_->isMax()) value_ = TOP;
     else if (value_ == TOP) setTop();
 }
 
 void IntegerInterval::setTop() {
     Domain::setTop();
-    from_ = util::getMinValue(getWidth(), signed_);
-    to_ = util::getMaxValue(getWidth(), signed_);
+    from_ = util::getMinValue(getWidth());
+    to_ = util::getMaxValue(getWidth());
 }
 
 Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
@@ -60,9 +55,9 @@ Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
     } else if (this->isBottom()) {
         return interval->shared_from_this();
     } else {
-        llvm::APInt left = util::min(from_, interval->from_, signed_);
-        llvm::APInt right = util::max(to_, interval->to_, signed_);
-        return factory_->getInteger(left, right, signed_);
+        auto left = util::min(from_, interval->from_);
+        auto right = util::max(to_, interval->to_);
+        return factory_->getInteger(left, right);
     }
 }
 
@@ -76,13 +71,12 @@ Domain::Ptr IntegerInterval::meet(Domain::Ptr other) const {
     } else if (interval->isBottom()) {
         return interval->shared_from_this();
     } else {
-        using borealis::util::lt;
-        llvm::APInt left = lt(from_, interval->from_, signed_) ? interval->from_ : from_;
-        llvm::APInt right = lt(to_, interval->to_, signed_) ? to_ : interval->to_;
+        auto left = from_->lt(interval->from_) ? interval->from_ : from_;
+        auto right = to_->lt(interval->to_) ? to_ : interval->to_;
 
-        return util::gt(left, right, signed_) ?
+        return left->gt(right) ?
                shared_from_this() :
-               factory_->getInteger(left, right, signed_);
+               factory_->getInteger(left, right);
     }
 }
 
@@ -97,10 +91,10 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto left = (util::lt(interval->from_, from_, signed_)) ? util::getMinValue(getWidth(), signed_) : from_;
-    auto right = (util::lt(to_, interval->to_, signed_)) ? util::getMaxValue(getWidth(), signed_) : to_;
+    auto left = interval->from_->lt(from_) ? util::getMinValue(getWidth()) : from_;
+    auto right = to_->lt(interval->to_) ? util::getMaxValue(getWidth()) : to_;
 
-    return factory_->getInteger(left, right, signed_);
+    return factory_->getInteger(left, right);
 }
 
 Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
@@ -114,41 +108,37 @@ Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto left = (util::eq(from_, util::getMinValue(getWidth(), signed_))) ? interval->from_ : from_;
-    auto right = (util::eq(to_, util::getMaxValue(getWidth(), signed_))) ? interval->to_ : to_;
+    auto left = from_->isMin() ? interval->from_ : from_;
+    auto right = to_->isMax() ? interval->to_ : to_;
 
-    return factory_->getInteger(left, right, signed_);
+    return factory_->getInteger(left, right);
 }
 
-unsigned IntegerInterval::getWidth() const { return from_.getBitWidth(); }
-bool IntegerInterval::isConstant() const { return util::eq(from_, to_); }
-bool IntegerInterval::isConstant(uint64_t constant) const { return isConstant() && from_ == constant; }
-const llvm::APInt& IntegerInterval::from() const { return from_; }
-const llvm::APInt& IntegerInterval::to() const { return to_; }
+unsigned IntegerInterval::getWidth() const { return from_->getWidth(); }
+bool IntegerInterval::isConstant() const { return from_->eq(to_); }
+bool IntegerInterval::isConstant(uint64_t constant) const {
+    auto constInteger = factory_->getInt(constant, getWidth());
+    return isConstant() && from_->eq(constInteger);
+}
+Integer::Ptr IntegerInterval::from() const { return from_; }
+Integer::Ptr IntegerInterval::to() const { return to_; }
+Integer::Ptr IntegerInterval::signedFrom() const { return util::min(from_, to_, true); }
+Integer::Ptr IntegerInterval::signedTo() const { return util::max(from_, to_, true); }
 
 /// Assumes that both intervals have value
 bool IntegerInterval::intersects(const IntegerInterval* other) const {
     ASSERT(this->isValue() && other->isValue(), "Not value intervals");
 
-    if (util::le(from_, other->from_, signed_) && util::le(other->from_, to_, signed_)) {
+    if (from_->le(other->from_) && other->from_->le(to_)) {
         return true;
-    } else if ( util::le(other->from_, to_, signed_) &&  util::le(to_, other->to_, signed_)) {
+    } else if (other->from_->le(to_) &&  to_->le(other->to_)) {
         return true;
     }
     return false;
 }
 
-bool IntegerInterval::intersects(const llvm::APInt& constant) const {
-    return util::le(from_, constant, signed_) && util::le(to_, constant, signed_);
-}
-
-bool IntegerInterval::isCorrect() {
-    if (util::le(from_, to_, signed_)) return true;
-//    if (util::le(from_, to_, not signed_)) {
-//        signed_ = not signed_;
-//        return true;
-//    }
-    return false;
+bool IntegerInterval::intersects(Integer::Ptr constant) const {
+    return from_->le(constant) && constant->le(to_);
 }
 
 bool IntegerInterval::equals(const Domain *other) const {
@@ -165,8 +155,8 @@ bool IntegerInterval::equals(const Domain *other) const {
 
     return  this->value_ == interval->value_ &&
             this->getWidth() == interval->getWidth() &&
-            util::eq(from_, interval->from_) &&
-            util::eq(to_, interval->to_);
+            from_->eq(interval->from_) &&
+            to_->eq(interval->to_);
 }
 
 bool IntegerInterval::operator<(const Domain &other) const {
@@ -177,7 +167,7 @@ bool IntegerInterval::operator<(const Domain &other) const {
     if (this->isBottom()) return true;
     if (this->isTop()) return false;
 
-    return (util::le(interval->from_, from_, signed_) && util::le(to_, interval->to_, signed_));
+    return interval->from_->le(from_) && to_->le(interval->to_);
 }
 
 bool IntegerInterval::classof(const Domain *other) {
@@ -192,7 +182,7 @@ size_t IntegerInterval::hashCode() const {
 std::string IntegerInterval::toString(const std::string) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
-    ss << "[" << util::toString(from_, signed_) << ", " << util::toString(to_, signed_) << "]";
+    ss << "[" << from_->toString() << ", " << to_->toString() << "]";
     return ss.str();
 }
 
@@ -210,22 +200,14 @@ Domain::Ptr IntegerInterval::add(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Adding two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(getWidth(), signed_);
-    } else if (this->isTop() || interval->isTop(), signed_) {
+        return factory_->getInteger(getWidth());
+    } else if (this->isTop() || interval->isTop()) {
         return factory_->getInteger(TOP, getWidth());
     } else {
-        bool ovLeft = false, ovRight = false;
-        llvm::APInt left, right;
-        if (signed_) {
-            left = from_.sadd_ov(interval->from_, ovLeft);
-            right = to_.sadd_ov(interval->to_, ovRight);
-        } else {
-            left = from_.uadd_ov(interval->from_, ovLeft);
-            right = to_.uadd_ov(interval->to_, ovRight);
-        }
-        if (ovLeft) left = util::getMinValue( getWidth(), signed_);
-        if (ovRight) right = util::getMaxValue( getWidth(), signed_);
-        return factory_->getInteger(left, right, signed_);
+        Integer::Ptr temp;
+        auto left = (temp = from_->add(interval->from_)) ? temp : util::getMinValue(getWidth());
+        auto right = (temp = to_->add(interval->to_)) ? temp : util::getMaxValue(getWidth());
+        return factory_->getInteger(left, right);
     }
 }
 
@@ -235,22 +217,14 @@ Domain::Ptr IntegerInterval::sub(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Subtracting two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(getWidth(), signed_);
+        return factory_->getInteger(getWidth());
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getInteger(TOP, getWidth(), signed_);
+        return factory_->getInteger(TOP, getWidth());
     } else {
-        bool ovLeft = false, ovRight = false;
-        llvm::APInt left, right;
-        if (signed_) {
-            left = from_.ssub_ov(interval->to_, ovLeft);
-            right = to_.ssub_ov(interval->from_, ovRight);
-        } else {
-            left = from_.usub_ov(interval->to_, ovLeft);
-            right = to_.usub_ov(interval->from_, ovRight);
-        }
-        if (ovLeft) left = util::getMinValue( getWidth(), signed_);
-        if (ovRight) right = util::getMaxValue( getWidth(), signed_);
-        return factory_->getInteger(left, right, signed_);
+        Integer::Ptr temp;
+        auto left = (temp = from_->sub(interval->to_)) ? temp : util::getMinValue(getWidth());
+        auto right = (temp = to_->sub(interval->from_)) ? temp : util::getMaxValue(getWidth());
+        return factory_->getInteger(left, right);
     }
 }
 
@@ -260,32 +234,19 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Multiplying two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(getWidth(), signed_);
+        return factory_->getInteger(getWidth());
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getInteger(TOP, getWidth(), signed_);
+        return factory_->getInteger(TOP, getWidth());
     } else {
+        Integer::Ptr temp;
+        auto fromFrom = (temp = from_->mul(interval->from_)) ? temp : util::getMinValue(getWidth());
+        auto toFrom = (temp = to_->mul(interval->from_)) ? temp : util::getMaxValue(getWidth());
+        auto fromTo = (temp = from_->mul(interval->to_)) ? temp : util::getMinValue(getWidth());
+        auto toTo = (temp = to_->mul(interval->to_)) ? temp : util::getMaxValue(getWidth());
 
-        bool ovFF = false, ovTF = false, ovFT = false, ovTT = false;
-        llvm::APInt fromFrom, toFrom, fromTo, toTo;
-        if (signed_) {
-            fromFrom = from_.smul_ov(interval->from_, ovFF);
-            toFrom = to_.smul_ov(interval->from_, ovTF);
-            fromTo = from_.smul_ov(interval->to_, ovFT);
-            toTo = to_.smul_ov(interval->to_, ovTT);
-        } else {
-            fromFrom = from_.umul_ov(interval->from_, ovFF);
-            toFrom = to_.umul_ov(interval->from_, ovTF);
-            fromTo = from_.umul_ov(interval->to_, ovFT);
-            toTo = to_.umul_ov(interval->to_, ovTT);
-        }
-        if (ovFF) fromFrom = util::getMinValue( getWidth(), signed_);
-        if (ovTF) toFrom = util::getMaxValue( getWidth(), signed_);
-        if (ovFT) fromTo = util::getMinValue( getWidth(), signed_);
-        if (ovTT) toTo = util::getMaxValue( getWidth(), signed_);
-
-        using namespace borealis::util;
-        auto first = factory_->getInteger(min(fromFrom, toFrom, signed_), max(fromFrom, toFrom, signed_), signed_);
-        auto second = factory_->getInteger(min(fromTo, toTo, signed_), max(fromTo, toTo, signed_), signed_);
+        using namespace util;
+        auto first = factory_->getInteger(min(fromFrom, toFrom), max(fromFrom, toFrom));
+        auto second = factory_->getInteger(min(fromTo, toTo), max(fromTo, toTo));
 
         return first->join(second);
     }
@@ -295,33 +256,19 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
     auto&& interval = llvm::dyn_cast<IntegerInterval>(other.get()); \
     ASSERT(interval, "Nullptr in interval"); \
     ASSERT(this->getWidth() == interval->getWidth(), "Dividing two intervals of different format"); \
-     \
     if (isBottom() || interval->isBottom()) { \
-        return factory_->getInteger(getWidth(), signed_); \
+        return factory_->getInteger(getWidth()); \
     } else if (this->isTop() || interval->isTop()) { \
-        return factory_->getInteger(TOP, getWidth(), signed_); \
+        return factory_->getInteger(TOP, getWidth()); \
     } else { \
-        \
         if (interval->isConstant(0)) { \
-            return factory_->getInteger(TOP, getWidth(), signed_); \
+            return factory_->getInteger(TOP, getWidth()); \
         } else { \
-         \
-            using namespace borealis::util; \
-            Domain::Ptr first, second; \
-            if (interval->from_ == 0) { \
-                first = factory_->getInteger(llvm::APInt( getWidth(), 0, false), to_, false); \
-            } else { \
-                first = factory_->getInteger(min(from_.OPER(interval->from_), to_.OPER(interval->from_), signed_), \
-                                             max(from_.OPER(interval->from_), to_.OPER(interval->from_), signed_), \
-                                             signed_); \
-            } \
-            if (interval->to_ == 0) { \
-                second = factory_->getInteger(llvm::APInt( getWidth(), 0, false), to_, false); \
-            } else { \
-                second = factory_->getInteger(min(from_.OPER(interval->to_), to_.OPER(interval->to_), signed_), \
-                                              max(from_.OPER(interval->to_), to_.OPER(interval->to_), signed_), \
-                                              signed_); \
-            } \
+            using namespace util; \
+            auto first = factory_->getInteger(min(from_->OPER(interval->from_), to_->OPER(interval->from_)), \
+                                      max(from_->OPER(interval->from_), to_->OPER(interval->from_))); \
+            auto second = factory_->getInteger(min(from_->OPER(interval->to_), to_->OPER(interval->to_)), \
+                                       max(from_->OPER(interval->to_), to_->OPER(interval->to_))); \
             return first->join(second); \
         } \
     }
@@ -348,20 +295,18 @@ Domain::Ptr IntegerInterval::srem(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in shl"); \
      \
     if (isBottom() || interval->isBottom()) { \
-        return factory_->getInteger(getWidth(), signed_); \
+        return factory_->getInteger(getWidth()); \
     } else if (this->isTop() || interval->isTop()) { \
-        return factory_->getInteger(TOP, getWidth(), signed_); \
+        return factory_->getInteger(TOP, getWidth()); \
     } else { \
-        using namespace borealis::util; \
-        Domain::Ptr first = factory_->getInteger(min(from_.OPER(interval->from_), to_.OPER(interval->from_), signed_), \
-                                                 max(from_.OPER(interval->from_), to_.OPER(interval->from_), signed_), \
-                                                 signed_); \
-        Domain::Ptr second = factory_->getInteger(min(from_.OPER(interval->to_), to_.OPER(interval->to_), signed_), \
-                                                  max(from_.OPER(interval->to_), to_.OPER(interval->to_), signed_), \
-                                                  signed_); \
+        using namespace util; \
+        Domain::Ptr first = factory_->getInteger(min(from_->OPER(interval->from_), to_->OPER(interval->from_)), \
+                                                 max(from_->OPER(interval->from_), to_->OPER(interval->from_))); \
+        Domain::Ptr second = factory_->getInteger(min(from_->OPER(interval->to_), to_->OPER(interval->to_)), \
+                                                  max(from_->OPER(interval->to_), to_->OPER(interval->to_))); \
          \
         return first->join(second); \
-    } \
+    }
 
 Domain::Ptr IntegerInterval::shl(Domain::Ptr other) const {
     BIT_OPERATION(shl);
@@ -377,42 +322,32 @@ Domain::Ptr IntegerInterval::ashr(Domain::Ptr other) const {
 
 Domain::Ptr IntegerInterval::bAnd(Domain::Ptr other) const {
     if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
+        return factory_->getInteger(getWidth());
 
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    return factory_->getInteger(TOP, getWidth());
 }
 
 Domain::Ptr IntegerInterval::bOr(Domain::Ptr other) const {
     if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
+        return factory_->getInteger(getWidth());
 
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    return factory_->getInteger(TOP, getWidth());
 }
 
 Domain::Ptr IntegerInterval::bXor(Domain::Ptr other) const {
     if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth(), signed_);
+        return factory_->getInteger(getWidth());
 
-    return factory_->getInteger(TOP, getWidth(), signed_);
+    return factory_->getInteger(TOP, getWidth());
 }
 
 Domain::Ptr IntegerInterval::trunc(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth(), signed_);
-    if (isTop()) return factory_->getInteger(TOP, intType->getBitWidth(), signed_);
+    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth());
 
-    auto maxTruncVal = util::getMaxValue(intType->getBitWidth(), signed_);
-    llvm::APInt extendedTo = signed_ ? maxTruncVal.sext( getWidth()) : maxTruncVal.zext( getWidth());
-    if (util::le(to_, extendedTo)) {
-        auto&& newFrom = from_.trunc(intType->getBitWidth());
-        auto&& newTo = to_.trunc(intType->getBitWidth());
-        return factory_->getInteger(newFrom, newTo, signed_);
-
-    } else {
-        return factory_->getInteger(TOP, intType->getBitWidth(), signed_);
-    }
+    return factory_->getInteger(TOP, intType->getBitWidth());
 }
 
 Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
@@ -422,11 +357,10 @@ Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
     if (isBottom()) return factory_->getBottom(type);
     if (isTop()) return factory_->getTop(type);
 
-    auto&& newFrom = from_.zext(intType->getBitWidth());
-    auto&& newTo = to_.zext(intType->getBitWidth());
-    return factory_->getInteger(llvm::APInt(intType->getBitWidth(), 0, signed_),
-                                util::max(newFrom, newTo, signed_),
-                                signed_);
+    auto&& newFrom = from_->zext(intType->getBitWidth());
+    auto&& newTo = to_->zext(intType->getBitWidth());
+    return factory_->getInteger(factory_->getInt(llvm::APInt(intType->getBitWidth(), 0)),
+                                util::max(newFrom, newTo));
 }
 
 Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
@@ -436,9 +370,9 @@ Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
     if (isBottom()) return factory_->getBottom(type);
     if (isTop()) return factory_->getTop(type);
 
-    auto&& newFrom = from_.sext(intType->getBitWidth());
-    auto&& newTo = to_.sext(intType->getBitWidth());
-    return factory_->getInteger(newFrom, newTo, signed_);
+    auto&& newFrom = from_->sext(intType->getBitWidth());
+    auto&& newTo = to_->sext(intType->getBitWidth());
+    return factory_->getInteger(newFrom, newTo);
 }
 
 #define INT_TO_FP(OPER) \
@@ -460,15 +394,21 @@ Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
         width = 128; \
     else if (type.isX86_FP80Ty()) \
         width = 80; \
-    llvm::APInt newFrom = from_, newTo = to_; \
+    Integer::Ptr newFrom = from_, newTo = to_; \
     if (width <  getWidth()) { \
-        newFrom = from_.trunc(width); \
-        newTo = to_.trunc(width); \
+        newFrom = from_->trunc(width); \
+        newTo = to_->trunc(width); \
     } else if (width >  getWidth()) { \
-        newFrom = from_.OPER(width); \
-        newTo = to_.OPER(width); \
+        newFrom = from_->OPER(width); \
+        newTo = to_->OPER(width); \
     } \
-    llvm::APFloat from(newSemantics, util::toString(newFrom)), to(newSemantics, util::toString(newTo)); \
+    llvm::APFloat from = util::getMinValue(newSemantics), to = util::getMinValue(newSemantics); \
+    if (newFrom->isMin()) from = util::getMinValue(newSemantics); \
+    else if (newFrom->isMax()) from = util::getMaxValue(newSemantics); \
+    else from = llvm::APFloat(newSemantics, newFrom->toString()); \
+    if (newTo->isMin()) to = util::getMinValue(newSemantics); \
+    else if (newTo->isMax()) to = util::getMaxValue(newSemantics); \
+    else to = llvm::APFloat(newSemantics, newTo->toString()); \
     return factory_->getFloat(from, to);
 
 Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {
@@ -484,22 +424,7 @@ Domain::Ptr IntegerInterval::inttoptr(const llvm::Type& type) const {
 }
 
 Domain::Ptr IntegerInterval::bitcast(const llvm::Type& type) const {
-    if (type.isIntegerTy()) {
-        auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type);
-        auto&& from = (intType->getBitWidth() < getWidth()) ?
-                      from_.getHiBits(intType->getBitWidth()) :
-                      from_;
-        auto&& to = (intType->getBitWidth() < getWidth()) ?
-                    to_.getHiBits(intType->getBitWidth()) :
-                    to_;
-        return factory_->getInteger(from, to, signed_);
-    } else if (type.isFloatingPointTy()) {
-        auto&& from = llvm::APFloat(from_.bitsToDouble());
-        auto&& to = llvm::APFloat(to_.bitsToDouble());
-        return factory_->getFloat(from, to);
-    } else {
-        UNREACHABLE("Bitcast to unknown type");
-    }
+    return factory_->getTop(type);
 }
 
 Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
@@ -507,7 +432,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
         llvm::APInt retval(1, 0, false);
         if (val) retval = 1;
         else retval = 0;
-        return factory_->getInteger(retval);
+        return factory_->getInteger(factory_->getInt(retval));
     };
 
     if (this->isBottom() || other->isBottom()) {
@@ -522,7 +447,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
-            if (this->isConstant() && interval->isConstant() && from_ == interval->from_) {
+            if (this->isConstant() && interval->isConstant() && from()->eq(interval->from())) {
                 return getBool(true);
             } else if (this->intersects(interval)) {
                 return factory_->getInteger(TOP, 1);
@@ -531,7 +456,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_NE:
-            if (this->isConstant() && interval->isConstant() && from_ == interval->from_) {
+            if (this->isConstant() && interval->isConstant() && from()->eq(interval->from())) {
                 return getBool(false);
             } else if (this->intersects(interval)) {
                 return factory_->getInteger(TOP, 1);
@@ -540,72 +465,72 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_SGE:
-            if (from_.sge(interval->to_)) {
+            if (signedFrom()->sge(interval->signedTo())) {
                 return getBool(true);
-            } else if (to_.slt(interval->from_)) {
+            } else if (signedTo()->slt(interval->signedFrom())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SGT:
-            if (from_.sgt(interval->to_)) {
+            if (signedFrom()->sgt(interval->signedTo())) {
                 return getBool(true);
-            } else if (to_.sle(interval->from_)) {
+            } else if (signedTo()->sle(interval->signedFrom())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SLE:
-            if (to_.sle(interval->from_)) {
+            if (signedTo()->sle(interval->signedFrom())) {
                 return getBool(true);
-            } else if (from_.sgt(interval->to_)) {
+            } else if (signedFrom()->sgt(interval->signedTo())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SLT:
-            if (to_.slt(interval->from_)) {
+            if (signedTo()->slt(interval->signedFrom())) {
                 return getBool(true);
-            } else if (from_.sge(interval->to_)) {
+            } else if (signedFrom()->sge(interval->signedTo())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_UGE:
-            if (from_.uge(interval->to_)) {
+            if (from()->ge(interval->to())) {
                 return getBool(true);
-            } else if (to_.ult(interval->from_)) {
+            } else if (to()->lt(interval->from())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_UGT:
-            if (from_.ugt(interval->to_)) {
+            if (from()->gt(interval->to())) {
                 return getBool(true);
-            } else if (to_.ule(interval->from_)) {
+            } else if (to()->le(interval->from())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_ULE:
-            if (to_.ule(interval->from_)) {
+            if (to()->le(interval->from())) {
                 return getBool(true);
-            } else if (from_.ugt(interval->to_)) {
+            } else if (from()->gt(interval->to())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_ULT:
-            if (to_.ult(interval->from_)) {
+            if (to()->lt(interval->from())) {
                 return getBool(true);
-            } else if (from_.uge(interval->to_)) {
+            } else if (from()->ge(interval->to())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);

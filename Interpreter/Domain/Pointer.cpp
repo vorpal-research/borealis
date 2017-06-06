@@ -182,7 +182,7 @@ Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
 }
 
 Domain::Ptr Pointer::icmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
-    return factory_->getInteger(TOP, 1, false);
+    return factory_->getInteger(TOP, 1);
 }
 
 }   /* namespace absint */
