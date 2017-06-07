@@ -71,7 +71,7 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
         return getAggregateObject(type);
     /// Pointer
     } else if (type.isPointerTy()) {
-        return getInMemory(type);
+        return allocate(type);
     /// Otherwise
     } else {
         errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
@@ -122,20 +122,20 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     }
 }
 
-Domain::Ptr DomainFactory::getInMemory(const llvm::Type& type) {
+Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
     /// Void type - do nothing
     if (type.isVoidTy()) {
         return nullptr;
     /// Simple type - allocating like array
     } else if (type.isIntegerTy() || type.isFloatingPointTy()) {
         auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&type), 1);
-        return getInMemory(*arrayType);
+        return allocate(*arrayType);
     /// Struct or Array type
     } else if (type.isAggregateType()) {
         return getAggregateObject(type);
     /// Pointer
     } else if (type.isPointerTy()) {
-        auto&& location = getInMemory(*type.getPointerElementType());
+        auto&& location = allocate(*type.getPointerElementType());
         return getPointer(*type.getPointerElementType(), { {getIndex(0), location} });
     /// Otherwise
     } else {
@@ -158,14 +158,11 @@ Domain::Ptr DomainFactory::cached(const FloatInterval::ID& key) {
     return floats_[key];
 }
 
-
-/* Integer */
-
-Integer::Ptr DomainFactory::getInt(uint64_t val, size_t width) {
+Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width) {
     return Integer::Ptr{ new ValInteger(val, width) };
 }
 
-Integer::Ptr DomainFactory::getInt(const llvm::APInt& val) {
+Integer::Ptr DomainFactory::toInteger(const llvm::APInt& val) {
     return Integer::Ptr{ new ValInteger(val, val.getBitWidth()) };
 }
 
@@ -174,6 +171,7 @@ Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
     return getInteger(indxInteger);
 }
 
+/* Integer */
 Domain::Ptr DomainFactory::getInteger(unsigned width) {
     return getInteger(Domain::BOTTOM, width);
 }
@@ -184,8 +182,8 @@ Domain::Ptr DomainFactory::getInteger(Integer::Ptr val) {
 
 Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width) {
     return cached(std::make_tuple(value,
-                                  getInt(0, width),
-                                  getInt(0, width)));
+                                  toInteger(0, width),
+                                  toInteger(0, width)));
 }
 
 Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to) {

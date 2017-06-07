@@ -56,8 +56,6 @@ public:
     void visitPtrToIntInst(llvm::PtrToIntInst& i);
     void visitIntToPtrInst(llvm::IntToPtrInst& i);
     void visitSelectInst(llvm::SelectInst& i);
-    void visitExtractElementInst(llvm::ExtractElementInst& i);
-    void visitInsertElementInst(llvm::InsertElementInst& i);
     void visitExtractValueInst(llvm::ExtractValueInst& i);
     void visitInsertValueInst(llvm::InsertValueInst& i);
     void visitBinaryOperator(llvm::BinaryOperator& i);
@@ -65,6 +63,12 @@ public:
     void visitBitCastInst(llvm::BitCastInst &i);
 
 private:
+
+    struct Context {
+        Function::Ptr function; // current function
+        State::Ptr state; // current state
+        std::deque<BasicBlock*> deque; // deque of blocks to visit
+    };
 
     /// Util functions
     Domain::Ptr getVariable(const llvm::Value* value);
@@ -76,12 +80,11 @@ private:
 
     Module module_;
     FuncInfoProvider* FIP_;
-
-    /// Context
-    Function::Ptr function_;
-    State::Ptr state_;
-    std::deque<const llvm::BasicBlock*> deque_;
+    // This is not good
     std::map<const llvm::Value*, bool> stores_;
+
+    Context* context_;  // active context
+    std::stack<Context> stack_; // stack of contexts of interpreter
 };
 
 }   /* namespace absint */

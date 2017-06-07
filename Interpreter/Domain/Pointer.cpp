@@ -33,11 +33,6 @@ Pointer::Pointer(DomainFactory* factory, const llvm::Type& elementType, const Po
     }
 }
 
-Pointer::Pointer(const Pointer& other)
-        : Domain{other.value_, other.type_, other.factory_},
-          elementType_(other.elementType_),
-          locations_(other.locations_) {}
-
 bool Pointer::equals(const Domain* other) const {
     auto ptr = llvm::dyn_cast<Pointer>(other);
     if (not ptr) return false;
@@ -81,10 +76,6 @@ std::string Pointer::toString(const std::string prefix) const {
         ss << std::endl << prefix << "]";
     }
     return ss.str();
-}
-
-Domain* Pointer::clone() const {
-    return new Pointer(*this);
 }
 
 bool Pointer::classof(const Domain* other) {

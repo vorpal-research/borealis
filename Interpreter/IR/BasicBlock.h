@@ -19,6 +19,7 @@ class BasicBlock {
 public:
 
     using BlockMap = std::vector<BasicBlock*>;
+    // for GraphTraits
     using graph_iterator = BlockMap::iterator;
     using graph_const_iterator = BlockMap::const_iterator;
 

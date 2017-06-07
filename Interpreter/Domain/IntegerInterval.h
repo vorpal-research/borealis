@@ -29,7 +29,6 @@ protected:
     IntegerInterval(DomainFactory* factory, Integer::Ptr constant);
     IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to);
     IntegerInterval(DomainFactory* factory, const ID& key);
-    IntegerInterval(const IntegerInterval& interval);
 
 public:
     /// Poset
@@ -55,7 +54,6 @@ public:
 
     virtual size_t hashCode() const;
     virtual std::string toString(const std::string prefix = "") const;
-    virtual Domain* clone() const;
 
     static bool classof(const Domain* other);
 

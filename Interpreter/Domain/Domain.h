@@ -89,7 +89,6 @@ public:
     virtual std::string toString(const std::string prefix = "") const {
         return prefix + "unknown";
     }
-    virtual Domain* clone() const = 0;
 
     virtual Type getType() const {
         return type_;

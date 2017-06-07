@@ -39,14 +39,17 @@ public:
     Domain::Ptr getTop(const llvm::Type& type);
     Domain::Ptr getBottom(const llvm::Type& type);
 
+    /// simply create domain of given type
     Domain::Ptr get(const llvm::Value* val);
     Domain::Ptr get(const llvm::Constant* constant);
-    Domain::Ptr getInMemory(const llvm::Type& type);
+    /// allocates value of given type, like it's a memory object
+    Domain::Ptr allocate(const llvm::Type& type);
 
-    Integer::Ptr getInt(uint64_t val, size_t width);
-    Integer::Ptr getInt(const llvm::APInt& val);
-
+    Integer::Ptr toInteger(uint64_t val, size_t width);
+    Integer::Ptr toInteger(const llvm::APInt& val);
+    /// create IntegerDomain for given index (of array or struct)
     Domain::Ptr getIndex(uint64_t indx);
+
     Domain::Ptr getInteger(unsigned width);
     Domain::Ptr getInteger(Domain::Value value, unsigned width);
     Domain::Ptr getInteger(Integer::Ptr val);

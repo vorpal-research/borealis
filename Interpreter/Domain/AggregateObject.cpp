@@ -19,9 +19,7 @@ namespace absint {
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const AggregateObject::Types& elementTypes,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementTypes, length) {
-    if (isMaxLengthTop()) value_ = TOP;
-}
+        : AggregateObject(VALUE, factory, elementTypes, length) {}
 
 AggregateObject::AggregateObject(Domain::Value value,
                                  DomainFactory* factory,
@@ -47,9 +45,7 @@ AggregateObject::AggregateObject(DomainFactory* factory,
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const llvm::Type& elementType,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementType, length) {
-    if (isMaxLengthTop()) value_ = TOP;
-}
+        : AggregateObject(VALUE, factory, elementType, length) {}
 
 AggregateObject::AggregateObject(Domain::Value value,
                                  DomainFactory* factory,
@@ -70,15 +66,6 @@ AggregateObject::AggregateObject(DomainFactory* factory,
           elementTypes_({{0, &elementType}}),
           length_(factory_->getIndex(elements.size())),
           elements_(elements) {}
-
-/// Copy constructor
-AggregateObject::AggregateObject(const AggregateObject& other)
-        : Domain{VALUE, AGGREGATE, other.factory_},
-          aggregateType_(other.aggregateType_),
-          elementTypes_(other.elementTypes_),
-          length_(other.length_),
-          elements_(other.elements_) {}
-
 
 std::size_t AggregateObject::hashCode() const {
     return util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_.size());
@@ -101,10 +88,6 @@ std::string AggregateObject::toString(const std::string prefix) const {
     }
     ss << std::endl << prefix << "]";
     return ss.str();
-}
-
-Domain* AggregateObject::clone() const {
-    return new AggregateObject(*this);
 }
 
 const AggregateObject::Types& AggregateObject::getElementTypes() const {

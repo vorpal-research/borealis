@@ -16,18 +16,13 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr constant) 
 
 IntegerInterval::IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width) :
         IntegerInterval(factory, std::make_tuple(value,
-                                                 factory->getInt(0, width),
-                                                 factory->getInt(0, width))) {}
+                                                 factory->toInteger(0, width),
+                                                 factory->toInteger(0, width))) {}
 
 IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to) :
         IntegerInterval(factory, std::make_tuple(VALUE,
                                                  from,
                                                  to)) {}
-
-IntegerInterval::IntegerInterval(const IntegerInterval &interval) :
-        Domain(interval.value_, Type::INTEGER_INTERVAL, interval.factory_),
-        from_(interval.from_),
-        to_(interval.to_) {}
 
 IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::ID& key) :
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
@@ -117,7 +112,7 @@ Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
 unsigned IntegerInterval::getWidth() const { return from_->getWidth(); }
 bool IntegerInterval::isConstant() const { return from_->eq(to_); }
 bool IntegerInterval::isConstant(uint64_t constant) const {
-    auto constInteger = factory_->getInt(constant, getWidth());
+    auto constInteger = factory_->toInteger(constant, getWidth());
     return isConstant() && from_->eq(constInteger);
 }
 Integer::Ptr IntegerInterval::from() const { return from_; }
@@ -184,10 +179,6 @@ std::string IntegerInterval::toString(const std::string) const {
     std::ostringstream ss;
     ss << "[" << from_->toString() << ", " << to_->toString() << "]";
     return ss.str();
-}
-
-Domain *IntegerInterval::clone() const {
-    return new IntegerInterval(*this);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -359,7 +350,7 @@ Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
 
     auto&& newFrom = from_->zext(intType->getBitWidth());
     auto&& newTo = to_->zext(intType->getBitWidth());
-    return factory_->getInteger(factory_->getInt(llvm::APInt(intType->getBitWidth(), 0)),
+    return factory_->getInteger(factory_->toInteger(llvm::APInt(intType->getBitWidth(), 0)),
                                 util::max(newFrom, newTo));
 }
 
@@ -432,7 +423,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
         llvm::APInt retval(1, 0, false);
         if (val) retval = 1;
         else retval = 0;
-        return factory_->getInteger(factory_->getInt(retval));
+        return factory_->getInteger(factory_->toInteger(retval));
     };
 
     if (this->isBottom() || other->isBottom()) {

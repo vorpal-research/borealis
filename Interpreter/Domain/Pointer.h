@@ -41,7 +41,6 @@ protected:
 
     Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
     Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
-    Pointer(const Pointer& other);
 
 public:
     /// Poset
@@ -59,7 +58,6 @@ public:
     const Locations& getLocations() const;
     virtual std::size_t hashCode() const;
     virtual std::string toString(const std::string prefix = "") const;
-    virtual Domain* clone() const;
 
     static bool classof(const Domain* other);
 

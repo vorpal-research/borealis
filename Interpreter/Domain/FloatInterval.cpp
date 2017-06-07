@@ -32,11 +32,6 @@ FloatInterval::FloatInterval(DomainFactory* factory, const FloatInterval::ID& id
     else if (from_.isSmallest() && to_.isLargest()) value_ = TOP;
 }
 
-FloatInterval::FloatInterval(const FloatInterval& interval) :
-        Domain(interval.value_, Type::FLOAT_INTERVAL, interval.factory_),
-        from_(interval.from_),
-        to_(interval.to_) {}
-
 void FloatInterval::setTop() {
     value_ = TOP;
     from_ = util::getMinValue(getSemantics());
@@ -175,10 +170,6 @@ std::string FloatInterval::toString(const std::string) const {
     std::ostringstream ss;
     ss << "[" << util::toString(from_) << ", " << util::toString(to_) << "]";
     return ss.str();
-}
-
-Domain* FloatInterval::clone() const {
-    return new FloatInterval(*this);
 }
 
 bool FloatInterval::classof(const Domain* other) {
@@ -332,8 +323,8 @@ Domain::Ptr FloatInterval::fptoui(const llvm::Type& type) const {
 
     from_.convertToInteger(from, getRoundingMode(), &isExactFrom);
     to_.convertToInteger(to, getRoundingMode(), &isExactTo);
-    return factory_->getInteger(isExactFrom ? factory_->getInt(from) : util::getMinValue(intType->getBitWidth()),
-                                isExactTo ? factory_->getInt(to) : util::getMaxValue(intType->getBitWidth()));
+    return factory_->getInteger(isExactFrom ? factory_->toInteger(from) : util::getMinValue(intType->getBitWidth()),
+                                isExactTo ? factory_->toInteger(to) : util::getMaxValue(intType->getBitWidth()));
 }
 
 Domain::Ptr FloatInterval::fptosi(const llvm::Type& type) const {
@@ -345,15 +336,15 @@ Domain::Ptr FloatInterval::fptosi(const llvm::Type& type) const {
 
     from_.convertToInteger(from, getRoundingMode(), &isExactFrom);
     to_.convertToInteger(to, getRoundingMode(), &isExactTo);
-    return factory_->getInteger(isExactFrom ? factory_->getInt(from) : util::getMinValue(intType->getBitWidth()),
-                                isExactTo ? factory_->getInt(to) : util::getMaxValue(intType->getBitWidth()));
+    return factory_->getInteger(isExactFrom ? factory_->toInteger(from) : util::getMinValue(intType->getBitWidth()),
+                                isExactTo ? factory_->toInteger(to) : util::getMaxValue(intType->getBitWidth()));
 }
 
 Domain::Ptr FloatInterval::bitcast(const llvm::Type& type) const {
     if (type.isIntegerTy()) {
         auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type);
-        auto&& from = factory_->getInt(llvm::APInt(intType->getBitWidth(), *from_.bitcastToAPInt().getRawData()));
-        auto&& to = factory_->getInt(llvm::APInt(intType->getBitWidth(), *to_.bitcastToAPInt().getRawData()));
+        auto&& from = factory_->toInteger(llvm::APInt(intType->getBitWidth(), *from_.bitcastToAPInt().getRawData()));
+        auto&& to = factory_->toInteger(llvm::APInt(intType->getBitWidth(), *to_.bitcastToAPInt().getRawData()));
         return factory_->getInteger(from, to);
 
     } else if (type.isFloatingPointTy()) {
@@ -369,7 +360,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
         llvm::APSInt retval(1, true);
         if (val) retval = 1;
         else retval = 0;
-        return factory_->getInteger(factory_->getInt(retval));
+        return factory_->getInteger(factory_->toInteger(retval));
     };
 
     if (this->isBottom() || other->isBottom()) {
