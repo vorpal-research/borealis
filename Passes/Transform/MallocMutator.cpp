@@ -223,7 +223,7 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
         );
     }
 
-    return false;
+    return true;
 }
 
 void MallocMutator::print(llvm::raw_ostream&, const llvm::Module*) const {}

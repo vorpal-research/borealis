@@ -30,6 +30,7 @@
 #include "Util/type_traits.hpp"
 
 #include "Util/macros.h"
+#include "ir_writer.h"
 
 namespace borealis {
 namespace util {
@@ -52,7 +53,7 @@ struct is_using_llvm_output {
             std::is_base_of<clang::Decl, T>::value ||
             std::is_base_of<clang::QualType::StreamedQualTypeHelper, T>::value ||
             std::is_base_of<llvm::Value, T>::value ||
-            std::is_base_of<llvm::Type, T>::value ||
+            // std::is_base_of<llvm::Type, T>::value ||
             std::is_base_of<const llvm::StringRef, T>::value ||
             std::is_base_of<llvm::SmallVectorBase, T>::value ||
             std::is_base_of<llvm::Twine, T>::value ||
@@ -189,6 +190,24 @@ inline option<T> stringCast(V&& obj) {
 
 namespace streams {
 
+class std_stream_wrapper: public llvm::raw_ostream {
+    std::ostream &OS;
+    uint64_t bytesWritten;
+
+    /// write_impl - See raw_ostream::write_impl.
+    void write_impl(const char *Ptr, size_t Size) override {
+        OS.write(Ptr, Size);
+        bytesWritten += Size;
+    }
+
+    /// current_pos - Return the current position within the stream, not
+    /// counting the bytes currently in the buffer.
+    uint64_t current_pos() const override { return bytesWritten; }
+public:
+    explicit std_stream_wrapper(std::ostream& O) : OS(O), bytesWritten(0) {}
+    ~std_stream_wrapper(){ flush(); }
+};
+
 template<class T>
 struct error_printer {
     const T& val;
@@ -222,10 +241,11 @@ std::string with_llvm_stream(Func f) {
 
 template<class T>
 std::ostream& output_using_llvm(std::ostream& ost, const T& val) {
-    std::string buf;
-    llvm::raw_string_ostream ostt(buf);
-    ostt << val;
-    return ost << ostt.str();
+    {
+        std_stream_wrapper ostt(ost);
+        ostt << val;
+    }
+    return ost;
 }
 
 template<class Streamer>
@@ -424,8 +444,20 @@ std::basic_ostream<CharT, Traits>&  operator<<(std::basic_ostream<CharT, Traits>
 
 namespace llvm {
 
+
 inline raw_ostream& operator<<(raw_ostream& ost, const Pass& pass) {
     pass.print(ost, nullptr);
+    return ost;
+}
+
+template<class CharT = char> // template here only for the means of non-inline, non-linkerbreaking impl
+std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& ost, const Type& type) {
+    borealis::TypePrinting tp;
+    //std::basic_string<CharT> buf;
+    //raw_string_ostream ostr(buf);
+    borealis::util::streams::std_stream_wrapper rost(ost);
+    borealis::printType(const_cast<Type*>(&type), rost, tp);
+    //return ost << ostr.str();
     return ost;
 }
 

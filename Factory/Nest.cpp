@@ -75,27 +75,36 @@ namespace {
 template<class Pred>
 struct AllInstructionUsersChecker {
     std::unordered_set<const llvm::Value*> visited;
+    std::unordered_map<const llvm::Value*, bool>& cache;
+
+    AllInstructionUsersChecker(std::unordered_map<const llvm::Value*, bool>& cache) : cache(cache) {}
 
     bool operator() (const llvm::Value* v, Pred f) {
+        if(cache.count(v)) return cache.at(v);
         if(visited.count(v)) return false;
         visited.insert(v);
 
-        for(auto&& user : v->users()) {
+        for(auto&& user : util::viewContainer(v->users())) {
             bool interm;
             if(auto&& inst = llvm::dyn_cast<llvm::Instruction>(user)) {
                 interm = f(inst);
             } else {
                 interm = (*this)(user, f);
             }
-            if(interm) return true;
+            if(interm) {
+                if(isa<llvm::GlobalVariable>(user)) cache[user] = true;
+                if(isa<llvm::GlobalVariable>(v)) cache[v] = true;
+                return true;
+            }
         }
+        if(isa<llvm::GlobalVariable>(v)) cache[v] = false;
         return false;
     }
 };
 
 template<class Pred>
-bool visitAllInstructionUsersForPred(const llvm::Value* v, Pred f) {
-    return AllInstructionUsersChecker<Pred>{}(v, f);
+bool visitAllInstructionUsersForPred(const llvm::Value* v, std::unordered_map<const llvm::Value*, bool>& checked, Pred f) {
+    return AllInstructionUsersChecker<Pred>{checked}(v, f);
 }
 
 } /* namespace */
@@ -112,9 +121,10 @@ PredicateState::Ptr FactoryNest::getGlobalState(const llvm::Function* F) {
     // FIXME: Marker predicate
     auto&& init = Predicate->getGlobalsPredicate({});
 
+    std::unordered_map<const llvm::Value*, bool> checkedSet;
     auto&& gvPredicates = util::viewContainer(globals)
             .filter([&](auto&& gv) {
-                return visitAllInstructionUsersForPred(&gv, LAM(i, callSet.count(i->getParent()->getParent())));
+                return visitAllInstructionUsersForPred(&gv, checkedSet, LAM(i, callSet.count(i->getParent()->getParent())));
             })
             .map([&](auto&& gv) { return fromGlobalVariable(*this, gv); })
             .toVector();

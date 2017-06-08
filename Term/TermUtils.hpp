@@ -5,6 +5,7 @@
 #ifndef TERMUTILS_HPP
 #define TERMUTILS_HPP
 
+#include <State/Transformer/TermCollector.h>
 #include "Term/TermFactory.h"
 
 namespace borealis {
@@ -102,6 +103,13 @@ struct TermUtils {
             return util::just(bc->getRepresentation());
         }
         return util::nothing();
+    }
+
+    template<class Transformable>
+    static std::unordered_set<Term::Ptr, TermHash, TermEquals> getFullTermSet(Transformable tr) {
+        TermCollector TC{ FactoryNest() };
+        TC.transform(tr);
+        return TC.moveTerms();
     }
 
 };

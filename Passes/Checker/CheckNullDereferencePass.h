@@ -61,6 +61,7 @@ private:
     FunctionManager* FM;
     NameTracker* NT;
     SourceLocationTracker* SLT;
+    SlotTrackerPass* ST;
 
     FactoryNest FN;
 

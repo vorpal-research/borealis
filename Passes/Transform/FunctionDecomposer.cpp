@@ -343,9 +343,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
                         middles.push_back(onCallContract);
                     }
                 } catch(std::exception& ex) {
-                    // FIXME: this is generally fucked up
-                    auto log = llvm::isa<GlobalAnnotation>(contract)? infos() : errs();
-                    log << "Unable to materialize annotation " << *contract << ": " << ex.what() << endl;
+                    infos() << "Unable to materialize annotation " << *contract << ": " << ex.what() << endl;
                 }
             }
 
@@ -489,7 +487,7 @@ bool FunctionDecomposer::runOnModule(llvm::Module& M) {
     }
     MetaInserter::liftAllDebugIntrinsics(M);
 
-    return false;
+    return true;
 }
 
 

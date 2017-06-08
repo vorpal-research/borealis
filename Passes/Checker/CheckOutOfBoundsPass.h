@@ -55,6 +55,7 @@ private:
     DefectManager* DM;
     FunctionManager* FM;
     PredicateStateAnalysis* PSA;
+    SlotTrackerPass* ST;
 
     FactoryNest FN;
 };

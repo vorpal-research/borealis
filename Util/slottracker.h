@@ -54,6 +54,7 @@ public:
 private:
   /// TheModule - The module for which we are holding slot numbers.
   const llvm::Module* TheModule;
+  SlotTracker* Parent = nullptr;
 
   /// TheFunction - The function for which we are holding slot numbers.
   const llvm::Function* TheFunction;
@@ -64,6 +65,9 @@ private:
   SlotMap mSap;
   unsigned mNext;
 
+  ValueMap& getMMap() { return Parent? Parent->mMap : mMap; }
+  SlotMap& getMSap() { return Parent? Parent->mSap : mSap; }
+
   /// fMap - The slot map for the function level data.
   ValueMap fMap;
   SlotMap fSap;
@@ -72,7 +76,11 @@ private:
   /// mdnMap - Map for MDNodes.
   llvm::DenseMap<const llvm::MDNode*, unsigned> mdnMap;
   unsigned mdnNext;
+
+  llvm::DenseMap<const llvm::MDNode*, unsigned>& getMdnMap() { return Parent? Parent->mdnMap : mdnMap; }
+
 public:
+  SlotTracker(SlotTracker* Parent, const llvm::Function* F);
   /// Construct from a module
   explicit SlotTracker(const llvm::Module *M);
   /// Construct from a function, starting out in incorp state.

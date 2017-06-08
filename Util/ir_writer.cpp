@@ -715,26 +715,7 @@ static void WriteAsOperandInternal(raw_ostream &Out, const Value *V,
             Prefix = '@';
         } else {
             Slot = Machine->getLocalSlot(V);
-
-            // If the local value didn't succeed, then we may be referring to a value
-            // from a different function.  Translate it, as this can happen when using
-            // address of blocks.
-            if (Slot == -1)
-                if ((Machine = createSlotTracker(V))) {
-                    Slot = Machine->getLocalSlot(V);
-                    delete Machine;
-                }
         }
-    } else if ((Machine = createSlotTracker(V))) {
-        // Otherwise, create one to get the # and then destroy it.
-        if (const GlobalValue *GV = dyn_cast<GlobalValue>(V)) {
-            Slot = Machine->getGlobalSlot(GV);
-            Prefix = '@';
-        } else {
-            Slot = Machine->getLocalSlot(V);
-        }
-        delete Machine;
-        Machine = nullptr;
     } else {
         Slot = -1;
     }
@@ -748,12 +729,12 @@ static void WriteAsOperandInternal(raw_ostream &Out, const Value *V,
 void AssemblyWriter::init() {
     if (!TheModule)
         return;
-    for (const Function &F : *TheModule)
-        if (const Comdat *C = F.getComdat())
-            Comdats.insert(C);
-    for (const GlobalVariable &GV : TheModule->globals())
-        if (const Comdat *C = GV.getComdat())
-            Comdats.insert(C);
+//    for (const Function &F : *TheModule)
+//        if (const Comdat *C = F.getComdat())
+//            Comdats.insert(C);
+//    for (const GlobalVariable &GV : TheModule->globals())
+//        if (const Comdat *C = GV.getComdat())
+//            Comdats.insert(C);
 }
 
 
@@ -1797,7 +1778,7 @@ void printValue(Value* self, raw_ostream& ROS, SlotTracker& St, TypePrinting& Tp
         WriteConstantInternal(OS, C, Tp, nullptr, nullptr);
     } else if (isa<InlineAsm>(self) || isa<MDString>(self) ||
                isa<Argument>(self)) {
-        self->printAsOperand(OS);
+        printValueAsOperand(self, ROS, true, getModuleFromVal(self), St, Tp);
     } else {
         llvm_unreachable("Unknown value to print out!");
     }

@@ -11,17 +11,21 @@
 
 namespace borealis {
 
-bool SlotTrackerPass::doInitialization(llvm::Module& M) {
-    if (!globals) globals.reset(new SlotTracker(&M));
-    types.incorporateTypes(M);
+bool SlotTrackerPass::doInitialization(llvm::Module&) {
+    return false;
+}
+
+bool SlotTrackerPass::doFinalization(llvm::Module& M) {
+    globals.reset();
+    funcs.clear();
     return false;
 }
 
 bool SlotTrackerPass::runOnModule(llvm::Module& M) {
-    doInitialization(M);
-
+    globals.reset(new SlotTracker(&M));
+    types.incorporateTypes(M);
     for (auto& F : M)
-        funcs[&F] = ptr_t{ new SlotTracker(&F) };
+        funcs[&F] = ptr_t{ new SlotTracker(globals.get(), &F) };
 
     return false;
 }
@@ -76,14 +80,14 @@ std::string SlotTrackerPass::toString(const llvm::Value* v) const {
     std::string ret;
     llvm::raw_string_ostream rso(ret);
     printValue(v, rso);
-    return std::move(ret);
+    return std::move(rso.str());
 }
 
 std::string SlotTrackerPass::toString(const llvm::Type* t) const {
     std::string ret;
     llvm::raw_string_ostream rso(ret);
     printType(t, rso);
-    return std::move(ret);
+    return std::move(rso.str());
 }
 
 SlotTracker* SlotTrackerPass::getSlotTracker (const llvm::Function& func) const{

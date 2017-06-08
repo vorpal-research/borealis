@@ -158,7 +158,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
             for(auto&& F: M) if(!F.isDeclaration() && IM.getIntrinsicType(&F) == function_type::UNKNOWN){
                 auto st = GetAnalysis< SlotTrackerPass >::doit(this).getSlotTracker(F);
                 auto FN = FactoryNest{ F.getDataLayout(), st };
-                try{
+                try {
                     anno = materialize(anno, FN, VIT);
                     landOnInstructionOrFirst(anno, M, FN, F);
                 } catch(std::exception& ex) {
@@ -205,7 +205,7 @@ bool AnnotationProcessor::runOnModule(llvm::Module& M) {
         }
     }
 
-    return false;
+    return true;
 }
 
 void AnnotationProcessor::print(llvm::raw_ostream&, const llvm::Module* M) const {

@@ -5,6 +5,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 #include "Util.h"
+#include "Util/ir_writer.h"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
@@ -147,9 +148,10 @@ std::string toString(const llvm::APFloat& val) {
 }
 
 std::string toString(const llvm::Type& type) {
-    std::string str;
-    llvm::raw_string_ostream ss(str);
-    type.print(ss);
+    std::string buf;
+    llvm::raw_string_ostream ss(buf);
+    TypePrinting tp;
+    printType(const_cast<llvm::Type*>(&type), ss, tp);
     return ss.str();
 }
 

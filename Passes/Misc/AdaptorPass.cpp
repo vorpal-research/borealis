@@ -198,7 +198,7 @@ void AdaptorPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool AdaptorPass::runOnModule(llvm::Module& M) {
     CallVisitor{}.visit(M);
-    return false;
+    return true;
 }
 
 AdaptorPass::~AdaptorPass() {}

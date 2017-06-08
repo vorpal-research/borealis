@@ -286,7 +286,7 @@ bool MetaInserter::runOnModule(llvm::Module &M) {
 
     liftAllDebugIntrinsics(M);
 
-    return false;
+    return true;
 }
 
 char MetaInserter::ID;

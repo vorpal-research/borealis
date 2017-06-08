@@ -26,6 +26,7 @@ public:
     Term::Ptr transformTerm(Term::Ptr term);
 
     const std::unordered_set<Term::Ptr, TermHash, TermEquals>& getTerms() const;
+    std::unordered_set<Term::Ptr, TermHash, TermEquals> moveTerms();
 
 private:
 

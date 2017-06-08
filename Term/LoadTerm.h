@@ -87,15 +87,6 @@ struct SMTImpl<Impl, LoadTerm> {
             return Bool::forceCast(ret);
         } else return ret;
     }
-//
-//    static Dynamic<Impl> doit(
-//            const LoadTerm* t,
-//            ExprFactory<Impl>& ef,
-//            ExecutionContext<Impl>* ctx) {
-//        TRACE_FUNC;
-//        USING_SMT_IMPL(Impl);
-//        AUTO_CACHE_IMPL(t, ctx, doit_(t, ef, ctx));
-//    }
 };
 #include "Util/unmacros.h"
 
