@@ -73,7 +73,7 @@ void Interpreter::visitInstruction(llvm::Instruction& i) {
 }
 
 void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
-    if (i.getType()->isVoidTy())
+    if (not i.getReturnValue())
         return;
 
     auto&& retDomain = getVariable(i.getReturnValue());
@@ -92,7 +92,7 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
             successors.push_back(i.getSuccessor(1));
 
         } else {
-            auto&& boolean = llvm::dyn_cast<IntegerInterval>(cond.get());
+            auto boolean = llvm::dyn_cast<IntegerInterval>(cond.get());
             ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
 
             successors.push_back(boolean->isConstant(1) ?

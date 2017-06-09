@@ -89,7 +89,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
     /// Nullpointer
     } else if (auto&& ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
-        return getPointer(*constant->getType());
+        return getNullptr(*constant->getType());
     /// Constant Array
     } else if (auto&& sequential = llvm::dyn_cast<llvm::ConstantDataSequential>(constant)) {
         std::vector<Domain::Ptr> elements;
@@ -216,6 +216,10 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFlo
 
 
 /* Pointer */
+Domain::Ptr DomainFactory::getNullptr(const llvm::Type& elementType) {
+    return Domain::Ptr{ new Pointer(Domain::VALUE, this, elementType, true) };
+}
+
 Domain::Ptr DomainFactory::getPointer(Domain::Value value, const llvm::Type& elementType) {
     return Domain::Ptr{ new Pointer(value, this, elementType) };
 }

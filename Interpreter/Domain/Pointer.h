@@ -39,7 +39,7 @@ protected:
 
     friend class DomainFactory;
 
-    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
+    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType, bool isNullptr = false);
     Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
 
 public:
@@ -54,6 +54,7 @@ public:
     virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
+    bool isNullptr() const;
     const llvm::Type& getElementType() const;
     const Locations& getLocations() const;
     virtual std::size_t hashCode() const;
@@ -74,6 +75,7 @@ public:
 private:
 
     const llvm::Type& elementType_;
+    const bool nullptr_;
     mutable Locations locations_;
 };
 

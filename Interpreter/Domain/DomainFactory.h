@@ -64,6 +64,7 @@ public:
     Domain::Ptr getAggregateObject(const llvm::Type& type);
     Domain::Ptr getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements);
 
+    Domain::Ptr getNullptr(const llvm::Type& elementType);
     Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
