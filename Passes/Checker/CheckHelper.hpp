@@ -110,6 +110,10 @@ private:
         if(engineName == "boolector") return checkViolationBoolector(memoryBounds, query, state);
         if(engineName == "stp") return checkViolationSTP(memoryBounds, query, state);
         if(engineName == "portfolio") return checkViolationPortfolio(memoryBounds, query, state);
+        // Pseudo-solvers useful for perf debugging
+        if(engineName == "null") return smt::UnknownResult();
+        if(engineName == "allsat") return smt::SatResult();
+        if(engineName == "allunsat") return smt::UnsatResult();
         UNREACHABLE(tfm::format("Unknown solver specified: %s", engineName));
     }
 public:
@@ -121,6 +125,7 @@ public:
         TRACE_FUNC;
 
         auto&& FN = pass->FN;
+        auto&& ST = pass->ST;
 
         static config::BoolConfigEntry logQueries("output", "smt-query-logging");
         bool noQueryLogging = not logQueries.get(false);
@@ -129,7 +134,7 @@ public:
         dbgs() << "State size:" << TermSizeCalculator::measure(state) << endl;
 
         dbgs() << "Defect: " << di << endl;
-        dbgs() << "Checking: " << *I << endl;
+        dbgs() << "Checking: " << ST->toString(I) << endl;
         if(!noQueryLogging) dbgs() << "  Query: " << query << endl;
 
         if (not query or not state) return false;
@@ -192,10 +197,12 @@ public:
     }
 
     bool alias(llvm::Instruction* other) {
+        auto&& ST = pass->ST;
+
         auto&& otherDI = pass->DM->getDefect(defectType, other);
         auto&& di = pass->DM->getDefect(defectType, I);
         dbgs() << "Defect: " << di << endl;
-        dbgs() << "Checking: " << *I << endl;
+        dbgs() << "Checking: " << ST->toString(I) << endl;
         dbgs() << "Using explicit defect result info" << endl;
 
         if(pass->DM->hasDefect(otherDI)) {
@@ -218,8 +225,9 @@ public:
     bool isReachable(PredicateState::Ptr state, const DefectInfo& di) {
 
         if (not state) return false;
+        auto&& ST = pass->ST;
 
-        dbgs() << "Checking: " << *I << endl;
+        dbgs() << "Checking: " << ST->toString(I) << endl;
         dbgs() << "  State: " << state << endl;
 
         auto&& fMemInfo = pass->FM->getMemoryBounds(I->getParent()->getParent());

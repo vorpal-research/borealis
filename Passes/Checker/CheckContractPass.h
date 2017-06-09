@@ -57,6 +57,7 @@ private:
     FunctionManager* FM;
     VariableInfoTracker* MI;
     PredicateStateAnalysis* PSA;
+    SlotTrackerPass* ST;
 
     FactoryNest FN;
 

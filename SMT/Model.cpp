@@ -6,6 +6,8 @@
 
 #include "Term/TermUtils.hpp"
 
+#include "State/Transformer/Transformer.hpp"
+
 #include "Util/macros.h"
 
 namespace borealis {
@@ -79,6 +81,33 @@ Term::Ptr Model::query(Term::Ptr t) const {
     UNREACHABLE(tfm::format("Illegal term: %s", t));
 
 }
+
+Term::Ptr Model::adjust(Term::Ptr t) const {
+    struct Adjuster: Transformer<Adjuster> {
+        using Base = Transformer<Adjuster>;
+
+        const Model::assignments_t& assignments;
+
+        Adjuster(FactoryNest FN, const Model::assignments_t& assignments): Base(FN), assignments(assignments) {}
+
+        Term::Ptr transformBase(Term::Ptr t) {
+            if(TermUtils::isConstantTerm(t)) return t;
+
+            if(TermUtils::isNamedTerm(t)) {
+                auto it = assignments.find(t);
+                if(it != assignments.end()) {
+                    return it->first; // the key, not the value!
+                }
+                return t; // wrong term
+            }
+
+            return Base::transformBase(t);
+        }
+    };
+
+    return Adjuster(FN, assignments).transform(t);
+}
+
 
 } /* namespace smt */
 } /* namespace borealis */

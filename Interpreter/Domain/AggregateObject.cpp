@@ -74,11 +74,11 @@ std::size_t AggregateObject::hashCode() const {
 std::string AggregateObject::toString(const std::string prefix) const {
     std::stringstream ss;
 
-    if (isArray()) ss << "Array [" << getMaxLength() << " x " << util::toString(getTypeFor(0)) << "] ";
+    if (isArray()) ss << "Array [" << getMaxLength() << " x " << factory_->getSlotTracker().toString(&getTypeFor(0)) << "] ";
     else {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
-            ss << "  " << util::toString(*it.second) << ", ";
+            ss << "  " << factory_->getSlotTracker().toString(it.second) << ", ";
         }
         ss << "}";
     }

@@ -109,6 +109,8 @@ public:
 
     Term::Ptr query(Term::Ptr) const;
 
+    Term::Ptr adjust(Term::Ptr) const;
+
     friend std::ostream& operator<<(std::ostream& ost, const Model& model) {
         ost << "model: {";
         for(auto&& ass: model.assignments) {

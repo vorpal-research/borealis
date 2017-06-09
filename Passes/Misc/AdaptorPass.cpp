@@ -110,7 +110,7 @@ llvm::Value* mkBorealisNonDet(llvm::Module* M, llvm::Type* type, llvm::Instructi
     auto& intrinsic_manager = IntrinsicsManager::getInstance();
     auto* func = intrinsic_manager.createIntrinsic(
         function_type::INTRINSIC_NONDET,
-        util::toString(*type),
+        util::toString(*type), // FIXME: SlotTrackerPass->toString(type)
         llvm::FunctionType::get(type, false),
         M
     );
@@ -198,7 +198,7 @@ void AdaptorPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 bool AdaptorPass::runOnModule(llvm::Module& M) {
     CallVisitor{}.visit(M);
-    return false;
+    return true;
 }
 
 AdaptorPass::~AdaptorPass() {}

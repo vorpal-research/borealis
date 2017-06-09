@@ -33,7 +33,7 @@ CallSiteInitializer::CallSiteInitializer(
                             : toString(callerFunc);
     auto&& callerInstName = callerInst && callerInst->hasName()
                             ? callerInst->getName().str()
-                            : toString(callerInst);
+                            : tfm::format("%%%d", FN.Slot->getLocalSlot(callerInst));
 
     prefix = callerFuncName + "." + callerInstName + ".";
     if(loc) overrideLoc = loc;

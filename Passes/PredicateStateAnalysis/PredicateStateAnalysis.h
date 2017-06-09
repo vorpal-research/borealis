@@ -18,6 +18,7 @@
 #include "Passes/Manager/FunctionManager.h"
 #include "Passes/Location/LocationManager.h"
 #include "Passes/PredicateAnalysis/AbstractPredicateAnalysis.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Passes/Util/ProxyFunctionPass.h"
 #include "State/PredicateState.h"
 #include "Util/passes.hpp"
@@ -88,6 +89,7 @@ private:
 
     AbstractPredicateStateAnalysis* delegate;
 
+    SlotTrackerPass* slots;
     FactoryNest FN;
 
     void updateInlineSummary(llvm::Function& F);

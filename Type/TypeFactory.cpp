@@ -151,7 +151,7 @@ Type::Ptr TypeFactory::cast(const llvm::Type* type, const llvm::DataLayout* dl, 
     else if (type->isVectorTy())
         return getArray(cast(type->getVectorElementType(), dl), type->getVectorNumElements());
     else if (auto* str = llvm::dyn_cast<llvm::StructType>(type)) {
-        auto&& name = str->hasName() ? str->getStructName().str() : util::toString(*str);
+        auto&& name = str->hasName() ? str->getStructName().str() : util::toString(*str); // FIXME: use TypePrinting or SlotTrackerPass
         return getRecord(name, str, dl);
     } else if (type->isMetadataTy()) // we use metadata for unknown stuff
         return getUnknownType();

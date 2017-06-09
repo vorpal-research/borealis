@@ -9,11 +9,11 @@
 #include <queue>
 
 #include <llvm/IR/InstVisitor.h>
-#include <andersen/include/Andersen.h>
-#include <Passes/Misc/FuncInfoProvider.h>
 
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
+#include "Passes/Misc/FuncInfoProvider.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 
 namespace borealis {
 namespace absint {
@@ -21,7 +21,7 @@ namespace absint {
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP);
+    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st);
 
     void run();
     const Module& getModule() const;
@@ -80,6 +80,7 @@ private:
 
     Module module_;
     FuncInfoProvider* FIP_;
+    SlotTrackerPass* ST_;
     // This is not good
     std::map<const llvm::Value*, bool> stores_;
 

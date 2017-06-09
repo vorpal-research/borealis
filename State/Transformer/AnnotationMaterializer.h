@@ -65,6 +65,7 @@ public:
 
     Term::Ptr transformCmpTerm(CmpTermPtr trm);
 
+    struct aborted: std::runtime_error{ using std::runtime_error::runtime_error; };
 };
 
 Annotation::Ptr materialize(Annotation::Ptr, FactoryNest FN, VariableInfoTracker*);

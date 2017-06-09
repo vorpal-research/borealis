@@ -218,7 +218,7 @@ public:
 
                     auto callAndStore = intrinsics.createIntrinsic(
                         function_type::INTRINSIC_CALL_AND_STORE,
-                        util::toString(*func->getType()),
+                        util::toString(*func->getType()), // FIXME: use TypePrinting or SlotTrackerPass
                         type_builder.getFunction(type_builder.getVoid(), refinedArgs.map(LAM(arg, arg->getType())) ),
                         F.getParent()
                     );

@@ -73,7 +73,7 @@ std::size_t Pointer::hashCode() const {
 
 std::string Pointer::toString(const std::string prefix) const {
     std::ostringstream ss;
-    ss << "Ptr " << util::toString(elementType_) << " [";
+    ss << "Ptr " << factory_->getSlotTracker().toString(&elementType_) << " [";
     if (isNullptr()) ss << " nullptr ]";
     else if (isTop()) ss << " TOP ]";
     else if (isBottom()) ss << " BOTTOM ]";

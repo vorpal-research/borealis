@@ -185,7 +185,8 @@ bool CheckContractPass::runOnFunction(llvm::Function& F) {
     // PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
     PSA = nullptr;
 
-    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    ST = &GetAnalysis<SlotTrackerPass>::doit(this, F);
+    FN = FactoryNest(F.getDataLayout(), ST->getSlotTracker(F));
 
     CallInstVisitor civ(this);
     civ.visit(F);

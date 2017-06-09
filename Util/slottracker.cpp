@@ -55,6 +55,13 @@ SlotTracker *createSlotTracker(const Value *V) {
 
 // Module level constructor. Causes the contents of the Module (sans functions)
 // to be added to the slot table.
+SlotTracker::SlotTracker(SlotTracker* Parent, const llvm::Function* F)
+    : SlotTracker(F) {
+    this->Parent = Parent;
+}
+
+// Module level constructor. Causes the contents of the Module (sans functions)
+// to be added to the slot table.
 SlotTracker::SlotTracker(const Module *M)
 : TheModule(M), TheFunction(0), FunctionProcessed(false),
   mNext(0), fNext(0),  mdnNext(0) {
@@ -68,6 +75,11 @@ SlotTracker::SlotTracker(const Function *F)
 }
 
 inline void SlotTracker::initializeModule() {
+    if(Parent) {
+        Parent->initializeModule();
+        return;
+    }
+
     if (TheModule) {
         processModule();
         TheModule = 0; ///< Prevent re-processing next time we're called.
@@ -176,8 +188,8 @@ int SlotTracker::getGlobalSlot(const GlobalValue *V) {
     initializeModule();
 
     // Find the value in the module map
-    ValueMap::iterator MI = mMap.find(V);
-    return MI == mMap.end() ? -1 : (int)MI->second;
+    ValueMap::iterator MI = getMMap().find(V);
+    return MI == getMMap().end() ? -1 : (int)MI->second;
 }
 
 /// getMetadataSlot - Get the slot number of a MDNode.
@@ -186,8 +198,8 @@ int SlotTracker::getMetadataSlot(const MDNode *N) {
     initializeModule();
 
     // Find the MDNode in the module map
-    mdn_iterator MI = mdnMap.find(N);
-    return MI == mdnMap.end() ? -1 : (int)MI->second;
+    mdn_iterator MI = getMdnMap().find(N);
+    return MI == getMdnMap().end() ? -1 : (int)MI->second;
 }
 
 
@@ -270,6 +282,8 @@ std::string SlotTracker::getLocalName(const Value *V) {
         int slot = this->getLocalSlot(V);
         if (slot != -1) {
             return "%" + toString(slot);
+        } else if(auto arg = dyn_cast<Argument>(V)) { // argument for a different function, substitution expected
+            return "arg" + toString(arg->getArgNo()) + "(" + arg->getParent()->getName().str() + ")";
         } else {
             wtf() << "Unknown slot encountered for: " << toString(*V) << endl;
             return "NO_LOCAL_SLOT_FOR_" + toString(V);

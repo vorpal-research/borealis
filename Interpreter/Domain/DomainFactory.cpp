@@ -15,7 +15,7 @@
 namespace borealis {
 namespace absint {
 
-DomainFactory::DomainFactory() : ObjectLevelLogging("domain") {}
+DomainFactory::DomainFactory(SlotTrackerPass* st) : ObjectLevelLogging("domain"), ST_(st) {}
 
 DomainFactory::~DomainFactory() {
     auto&& info = infos();
@@ -39,7 +39,7 @@ DomainFactory::~DomainFactory() {
     } else if (type.isPointerTy()) { \
         return getPointer(VALUE, *type.getPointerElementType()); \
     } else { \
-        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl; \
+        errs() << "Creating domain of unknown type <" << ST_->toString(&type) << ">" << endl; \
         return nullptr; \
     }
 
@@ -74,7 +74,7 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
         return allocate(type);
     /// Otherwise
     } else {
-        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
+        errs() << "Creating domain of unknown type <" << ST_->toString(&type) << ">" << endl;
         return nullptr;
     }
 }
@@ -96,7 +96,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
         for (auto i = 0U; i < sequential->getNumElements(); ++i) {
             auto element = get(sequential->getElementAsConstant(i));
             if (not element) {
-                errs() << "Cannot create constant: " << util::toString(*sequential->getElementAsConstant(i)) << endl;
+                errs() << "Cannot create constant: " << ST_->toString(sequential->getElementAsConstant(i)) << endl;
                 return nullptr;
             }
             elements.push_back(element);
@@ -108,7 +108,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
         for (auto i = 0U; i < structType->getNumOperands(); ++i) {
             auto element = get(structType->getAggregateElement(i));
             if (not element) {
-                errs() << "Cannot create constant: " << util::toString(*structType->getAggregateElement(i)) << endl;
+                errs() << "Cannot create constant: " << ST_->toString(structType->getAggregateElement(i)) << endl;
                 return nullptr;
             }
             elements.push_back(element);
@@ -117,7 +117,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     /// otherwise
     } else {
         auto value = llvm::cast<llvm::Value>(constant);
-        errs() << "Unknown constant: " << util::toString(*value) << endl;
+        errs() << "Unknown constant: " << ST_->toString(value) << endl;
         return getTop(*value->getType());
     }
 }
@@ -139,7 +139,7 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
         return getPointer(*type.getPointerElementType(), { {getIndex(0), location} });
     /// Otherwise
     } else {
-        errs() << "Creating domain of unknown type <" << util::toString(type) << ">" << endl;
+        errs() << "Creating domain of unknown type <" << ST_->toString(&type) << ">" << endl;
         return nullptr;
     }
 }
@@ -251,7 +251,7 @@ Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::T
                                                types,
                                                getIndex(type.getStructNumElements()))};
     }
-    UNREACHABLE("Unknown aggregate type: " + util::toString(type));
+    UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }
 
 Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements) {
@@ -271,7 +271,7 @@ Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vecto
         }
         return Domain::Ptr { new AggregateObject(this, types, elementMap) };
     }
-    UNREACHABLE("Unknown aggregate type: " + util::toString(type));
+    UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }
 
 /* heap */

@@ -12,13 +12,14 @@
 namespace borealis {
 namespace absint {
 
-Function::Function(const llvm::Function* function, DomainFactory* factory) : instance_(function),
-                                                                             tracker_(instance_),
-                                                                             factory_(factory) {
+Function::Function(const llvm::Function* function, DomainFactory* factory, SlotTracker* st)
+        : instance_(function),
+          tracker_(st),
+          factory_(factory) {
     inputState_ = State::Ptr{ new State() };
     outputState_ = State::Ptr{ new State() };
     for (auto&& block : util::viewContainer(*instance_)) {
-        auto&& aiBlock = BasicBlock(&block, &tracker_);
+        auto&& aiBlock = BasicBlock(&block, tracker_);
         blocks_.insert( {&block, aiBlock} );
         blockVector_.push_back(&blocks_.at(&block));
     }
@@ -90,7 +91,7 @@ std::string Function::toString() const {
     if (not arguments_.empty()) {
         auto i = 0U;
         for (auto&& it : instance_->args()) {
-            ss << std::endl << tracker_.getLocalName(&it) << " = " << arguments_[i++];
+            ss << std::endl << tracker_->getLocalName(&it) << " = " << arguments_[i++];
         }
         ss << std::endl;
     }
@@ -133,7 +134,7 @@ bool Function::atFixpoint() {
 }
 
 const SlotTracker& Function::getSlotTracker() const {
-    return tracker_;
+    return *tracker_;
 }
 
 std::ostream& operator<<(std::ostream& s, const Function& f) {

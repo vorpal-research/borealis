@@ -26,8 +26,9 @@ public:
 
     virtual bool runOnModule(llvm::Module& M) override {
         auto&& fip = &GetAnalysis<FuncInfoProvider>().doit(this);
+        auto&& st = &GetAnalysis<SlotTrackerPass>().doit(this);
 
-        absint::Interpreter interpreter(&M, fip);
+        absint::Interpreter interpreter(&M, fip, st);
         interpreter.run();
         auto&& module_ = interpreter.getModule();
 
@@ -41,6 +42,7 @@ public:
         AU.setPreservesAll();
 
         AUX<FuncInfoProvider>::addRequired(AU);
+        AUX<SlotTrackerPass>::addRequired(AU);
     }
 
     virtual ~AbstractInterpreterPass() = default;

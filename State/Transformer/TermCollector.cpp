@@ -17,6 +17,10 @@ const std::unordered_set<Term::Ptr, TermHash, TermEquals>& TermCollector::getTer
     return terms;
 }
 
+std::unordered_set<Term::Ptr, TermHash, TermEquals> TermCollector::moveTerms() {
+    return std::move(terms);
+}
+
 Term::Ptr TermCollector::transformTerm(Term::Ptr term) {
     terms.insert(term);
     return Base::transformTerm(term);

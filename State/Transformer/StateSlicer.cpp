@@ -139,7 +139,7 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
         auto anti = inverse(FN, pred);
         if(currentPathDeps.count(pred) && not currentPathDeps.count(anti)) {
             for (auto&& e : util::viewContainer(pred->getOperands())) {
-                auto&& nested = Term::getFullTermSet(e);
+                auto&& nested = TermUtils::getFullTermSet(e);
                 util::viewContainer(nested)
                     .filter(isInterestingTerm)
                     .foreach(APPLY(this->addSliceTerm));
@@ -152,14 +152,14 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
 
     auto&& lhvTerms = Term::Set{};
     for (auto&& lhv : util::viewContainer(pred->getOperands()).take(1)) {
-        auto&& nested = Term::getFullTermSet(lhv);
+        auto&& nested = TermUtils::getFullTermSet(lhv);
         util::viewContainer(nested)
             .filter(isInterestingTerm)
             .foreach(APPLY(lhvTerms.insert));
     }
     auto&& rhvTerms = Term::Set{};
     for (auto&& rhv : util::viewContainer(pred->getOperands()).drop(1)) {
-        auto&& nested = Term::getFullTermSet(rhv);
+        auto&& nested = TermUtils::getFullTermSet(rhv);
         util::viewContainer(nested)
             .filter(isInterestingTerm)
             .foreach(APPLY(rhvTerms.insert));

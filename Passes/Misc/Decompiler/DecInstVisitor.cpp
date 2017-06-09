@@ -140,10 +140,7 @@ void DecInstVisitor::printType(llvm::Type* t) {
         infos_ << ">("<<t->getVectorNumElements()<<")";
         return;
     } else {
-        std::string temp = "";
-        llvm::raw_string_ostream rs(temp);
-        t->print(rs);
-        infos_ << rs.str();
+        infos_ << *t;
         return;
     }
 }

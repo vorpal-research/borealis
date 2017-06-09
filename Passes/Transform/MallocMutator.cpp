@@ -132,7 +132,7 @@ void MallocMutator::mutateMemoryInst(
 
     auto* current = intrinsics_manager.createIntrinsic(
             memoryType,
-            util::toString(*resultType),
+            util::toString(*resultType), // FIXME: use TypePrinting or SlotTrackerPass
             llvm::FunctionType::get(
                 resultType,
                 llvm::makeArrayRef<llvm::Type*>({
@@ -223,7 +223,7 @@ bool MallocMutator::runOnModule(llvm::Module& M) {
         );
     }
 
-    return false;
+    return true;
 }
 
 void MallocMutator::print(llvm::raw_ostream&, const llvm::Module*) const {}

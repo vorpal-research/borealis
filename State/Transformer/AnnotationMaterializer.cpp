@@ -53,6 +53,18 @@ struct AnnotationMaterializer::AnnotationMaterializerImpl {
     }
 
     template<class ...Args>
+    inline void abort(const char* fmt, Args&&... args) {
+        throw aborted(
+            tfm::format(
+                "Error while processing annotation: %s; scope %s: %s",
+                A->toString(),
+                nc,
+                tfm::format(fmt, std::forward<Args>(args)...)
+            )
+        );
+    }
+
+    template<class ...Args>
     inline void require(bool what, const char* fmt, Args&&... args) {
         if(!what) failWith(fmt, std::forward<Args>(args)...);
     }
@@ -218,7 +230,9 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
                     && bval != invalid()
                     && bval.bound().uge( builder(TypeUtils::getTypeSizeInElems(pointed)) );
             } else {
-                pimpl->failWith("Illegal \\is_valid_ptr access %s: called on non-pointer", trm->getName());
+                // every non-pointer is a valid pointer. Why? Because otherwise
+                // functions with polymorphic arguments will not be handled correctly
+                pimpl->abort("Illegal \\is_valid_ptr access %s: called on non-pointer", val->getName());
             }
         } else if (builtin->getVName() == "is_valid_array") {
             auto&& rhv = trm->getRhv().toVector();
@@ -242,7 +256,7 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
                     && bval != invalid()
                     && bval.bound().uge(builder(TypeUtils::getTypeSizeInElems(pointed)) * size);
             } else {
-                pimpl->failWith("Illegal \\is_valid_array access %s: called on non-pointer", trm->getName());
+                pimpl->abort("Illegal \\is_valid_array access %s: called on non-pointer", val->getName());
             }
         } else if (builtin->getVName() == "umax") {
             auto&& rhv = trm->getRhv().map(APPLY(this->transform)).toVector();

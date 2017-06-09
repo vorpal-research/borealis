@@ -6,7 +6,6 @@
 #include "Interpreter.h"
 
 #include "Util/collections.hpp"
-#include "Util/streams.hpp"
 
 #include "Util/macros.h"
 
@@ -15,8 +14,8 @@ namespace absint {
 
 static config::BoolConfigEntry printModule("absint", "print-module");
 
-Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP)
-        : ObjectLevelLogging("interpreter"), module_(module), FIP_(FIP) {}
+Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st)
+        : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st) {}
 
 void Interpreter::run() {
     auto&& main = module_.create("main");
@@ -67,7 +66,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
 /// Visitors
 /////////////////////////////////////////////////////////////////////
 void Interpreter::visitInstruction(llvm::Instruction& i) {
-    warns() << "Unsupported instruction: " << util::toString(i) << endl;
+    warns() << "Unsupported instruction: " << ST_->toString(&i) << endl;
     stub(i);
     return;
 }
@@ -397,7 +396,7 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
     } else if (value->getType()->isVoidTy()) {
         return nullptr;
     }
-    errs() << "Unknown value: " << util::toString(*value) << endl;
+    errs() << "Unknown value: " << ST_->toString(value) << endl;
     return nullptr;
 }
 
@@ -441,7 +440,7 @@ void Interpreter::stub(const llvm::Instruction& i) {
 void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
     auto&& size = getVariable(i.getArgOperand(2));
     if (not size) {
-        errs() << "Allocating unknown amount of memory: " << util::toString(i) << endl;
+        errs() << "Allocating unknown amount of memory: " << ST_->toString(&i) << endl;
         stub(i);
         return;
     }
@@ -490,7 +489,7 @@ void Interpreter::handleDeclaration(const llvm::CallInst& i) {
             context_->state->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
 
     } catch (std::out_of_range) {
-        errs() << "Unknown function: " << util::toString(i) << endl;
+        errs() << "Unknown function: " << ST_->toString(&i) << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
         for (auto j = 0U; j < i.getNumArgOperands(); ++j) {

@@ -11,6 +11,7 @@
 #include <llvm/Pass.h>
 
 #include "Util/slottracker.h"
+#include "Util/ir_writer.h"
 #include "Util/util.h"
 
 namespace borealis {
@@ -21,6 +22,7 @@ class SlotTrackerPass : public llvm::ModulePass {
 
     ptr_t globals;
     std::map<const llvm::Function*, ptr_t> funcs;
+    TypePrinting types;
 
 public:
 
@@ -29,6 +31,7 @@ public:
     SlotTrackerPass() : llvm::ModulePass(ID) {}
 
     bool doInitialization(llvm::Module& M) override;
+    bool doFinalization(llvm::Module& M) override;
     virtual bool runOnModule(llvm::Module& M) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& Info) const override;
 
@@ -37,13 +40,23 @@ public:
     SlotTracker* getSlotTracker (const llvm::BasicBlock* bb) const;
     SlotTracker* getSlotTracker (const llvm::Instruction* inst) const;
     SlotTracker* getSlotTracker (const llvm::Argument* arg) const;
+    SlotTracker* getSlotTracker (const llvm::Value* arg) const;
     SlotTracker* getSlotTracker (const llvm::Function& func) const;
     SlotTracker* getSlotTracker (const llvm::Module& _) const;
     SlotTracker* getSlotTracker (const llvm::BasicBlock& bb) const;
     SlotTracker* getSlotTracker (const llvm::Instruction& inst) const;
     SlotTracker* getSlotTracker (const llvm::Argument& arg) const;
 
+    TypePrinting* getTypePrinting() const;
+
+    void printValue(const llvm::Value*, llvm::raw_ostream&) const;
+    void printType(const llvm::Type*, llvm::raw_ostream&) const;
+    std::string toString(const llvm::Value*) const;
+    std::string toString(const llvm::Type*) const;
+
     virtual ~SlotTrackerPass() {}
+
+
 };
 
 } // namespace borealis

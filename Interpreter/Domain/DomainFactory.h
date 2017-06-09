@@ -9,11 +9,11 @@
 
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
-#include <andersen/include/Andersen.h>
 
 #include "Domain.h"
 #include "FloatInterval.h"
 #include "IntegerInterval.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Pointer.h"
 #include "AggregateObject.h"
 
@@ -33,8 +33,13 @@ public:
             FloatInterval::IDHash,
             FloatInterval::IDEquals>;
 
-    DomainFactory();
+    DomainFactory(SlotTrackerPass* st);
     ~DomainFactory();
+
+    // get slottrackers for domains
+    SlotTrackerPass& getSlotTracker() const {
+        return *ST_;
+    }
 
     Domain::Ptr getTop(const llvm::Type& type);
     Domain::Ptr getBottom(const llvm::Type& type);
@@ -77,6 +82,7 @@ private:
     Domain::Ptr cached(const IntegerInterval::ID& key);
     Domain::Ptr cached(const FloatInterval::ID& key);
 
+    SlotTrackerPass* ST_;
     IntCache ints_;
     FloatCache floats_;
 

@@ -9,6 +9,7 @@
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
+#include <Passes/Tracker/SlotTrackerPass.h>
 
 #include "Function.h"
 #include "Interpreter/Domain/DomainFactory.h"
@@ -22,7 +23,7 @@ public:
     using GlobalsMap = std::map<const llvm::Value*, Domain::Ptr>;
     using FunctionMap = std::map<const llvm::Function*, Function::Ptr>;
 
-    Module(const llvm::Module* module);
+    Module(const llvm::Module* module, SlotTrackerPass* st);
     /// Returns the function, if it already was created
     Function::Ptr get(const llvm::Function* function) const;
     /// Creates the function and saves it
@@ -44,6 +45,7 @@ private:
     void initGLobals();
 
     const llvm::Module* instance_;
+    SlotTrackerPass* ST_;
     DomainFactory factory_;
     FunctionMap functions_;
     GlobalsMap globals_;

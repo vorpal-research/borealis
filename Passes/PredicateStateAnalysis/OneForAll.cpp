@@ -55,7 +55,8 @@ bool OneForAll::runOnFunction(llvm::Function& F) {
     FM = &GetAnalysis<FunctionManager>::doit(this, F);
     SLT = &GetAnalysis<SourceLocationTracker>::doit(this, F);
 
-    FN = FactoryNest(F.getDataLayout(), GetAnalysis<SlotTrackerPass>::doit(this, F).getSlotTracker(F));
+    auto&& Slots = GetAnalysis<SlotTrackerPass>::doit(this, F);
+    FN = FactoryNest(F.getDataLayout(), Slots.getSlotTracker(F));
 
     SO = StateOptimizer{FN};
     RR = Retyper{FN};
