@@ -9,11 +9,11 @@
 
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
-#include <andersen/include/Andersen.h>
 
 #include "Domain.h"
 #include "FloatInterval.h"
 #include "IntegerInterval.h"
+#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Pointer.h"
 #include "AggregateObject.h"
 
@@ -33,21 +33,32 @@ public:
             FloatInterval::IDHash,
             FloatInterval::IDEquals>;
 
-    DomainFactory();
+    DomainFactory(SlotTrackerPass* st);
     ~DomainFactory();
+
+    // get slottrackers for domains
+    SlotTrackerPass& getSlotTracker() const {
+        return *ST_;
+    }
 
     Domain::Ptr getTop(const llvm::Type& type);
     Domain::Ptr getBottom(const llvm::Type& type);
 
+    /// simply create domain of given type
     Domain::Ptr get(const llvm::Value* val);
     Domain::Ptr get(const llvm::Constant* constant);
-    Domain::Ptr getInMemory(const llvm::Type& type);
+    /// allocates value of given type, like it's a memory object
+    Domain::Ptr allocate(const llvm::Type& type);
 
+    Integer::Ptr toInteger(uint64_t val, size_t width);
+    Integer::Ptr toInteger(const llvm::APInt& val);
+    /// create IntegerDomain for given index (of array or struct)
     Domain::Ptr getIndex(uint64_t indx);
-    Domain::Ptr getInteger(unsigned width, bool isSigned = false);
-    Domain::Ptr getInteger(Domain::Value value, unsigned width, bool isSigned = false);
-    Domain::Ptr getInteger(const llvm::APInt& val, bool isSigned = false);
-    Domain::Ptr getInteger(const llvm::APInt& from, const llvm::APInt& to, bool isSigned = false);
+
+    Domain::Ptr getInteger(unsigned width);
+    Domain::Ptr getInteger(Domain::Value value, unsigned width);
+    Domain::Ptr getInteger(Integer::Ptr val);
+    Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to);
 
     Domain::Ptr getFloat(const llvm::fltSemantics& semantics);
     Domain::Ptr getFloat(Domain::Value value, const llvm::fltSemantics& semantics);
@@ -58,6 +69,7 @@ public:
     Domain::Ptr getAggregateObject(const llvm::Type& type);
     Domain::Ptr getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements);
 
+    Domain::Ptr getNullptr(const llvm::Type& elementType);
     Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
@@ -70,6 +82,7 @@ private:
     Domain::Ptr cached(const IntegerInterval::ID& key);
     Domain::Ptr cached(const FloatInterval::ID& key);
 
+    SlotTrackerPass* ST_;
     IntCache ints_;
     FloatCache floats_;
 

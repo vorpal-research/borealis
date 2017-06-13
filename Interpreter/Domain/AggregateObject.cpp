@@ -19,9 +19,7 @@ namespace absint {
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const AggregateObject::Types& elementTypes,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementTypes, length) {
-    if (isMaxLengthTop()) value_ = TOP;
-}
+        : AggregateObject(VALUE, factory, elementTypes, length) {}
 
 AggregateObject::AggregateObject(Domain::Value value,
                                  DomainFactory* factory,
@@ -47,9 +45,7 @@ AggregateObject::AggregateObject(DomainFactory* factory,
 AggregateObject::AggregateObject(DomainFactory* factory,
                                  const llvm::Type& elementType,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementType, length) {
-    if (isMaxLengthTop()) value_ = TOP;
-}
+        : AggregateObject(VALUE, factory, elementType, length) {}
 
 AggregateObject::AggregateObject(Domain::Value value,
                                  DomainFactory* factory,
@@ -71,15 +67,6 @@ AggregateObject::AggregateObject(DomainFactory* factory,
           length_(factory_->getIndex(elements.size())),
           elements_(elements) {}
 
-/// Copy constructor
-AggregateObject::AggregateObject(const AggregateObject& other)
-        : Domain{VALUE, AGGREGATE, other.factory_},
-          aggregateType_(other.aggregateType_),
-          elementTypes_(other.elementTypes_),
-          length_(other.length_),
-          elements_(other.elements_) {}
-
-
 std::size_t AggregateObject::hashCode() const {
     return util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_.size());
 }
@@ -87,11 +74,11 @@ std::size_t AggregateObject::hashCode() const {
 std::string AggregateObject::toString(const std::string prefix) const {
     std::stringstream ss;
 
-    if (isArray()) ss << "Array [" << getMaxLength() << " x " << util::toString(getTypeFor(0)) << "] ";
+    if (isArray()) ss << "Array [" << getMaxLength() << " x " << factory_->getSlotTracker().toString(&getTypeFor(0)) << "] ";
     else {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
-            ss << "  " << util::toString(*it.second) << ", ";
+            ss << "  " << factory_->getSlotTracker().toString(it.second) << ", ";
         }
         ss << "}";
     }
@@ -101,10 +88,6 @@ std::string AggregateObject::toString(const std::string prefix) const {
     }
     ss << std::endl << prefix << "]";
     return ss.str();
-}
-
-Domain* AggregateObject::clone() const {
-    return new AggregateObject(*this);
 }
 
 const AggregateObject::Types& AggregateObject::getElementTypes() const {
@@ -121,12 +104,12 @@ Domain::Ptr AggregateObject::getLength() const {
 
 std::size_t AggregateObject::getMaxLength() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
-    return *intLength->to().getRawData();
+    return intLength->to()->getRawValue();
 }
 
 bool AggregateObject::isMaxLengthTop() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
-    return (*intLength->to().getRawData() == std::numeric_limits<uint64_t>::max());
+    return intLength->to()->isMax();
 }
 
 bool AggregateObject::equals(const Domain* other) const {
@@ -223,8 +206,8 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
         return factory_->getTop(type);
     }
 
-    auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->to().getRawData();
+    auto indexStart = indexInterval->from()->getRawValue();
+    auto indexEnd = indexInterval->to()->getRawValue();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -256,8 +239,8 @@ void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain:
     if (isBottom() || isTop())
         return;
 
-    auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->to().getRawData();
+    auto indexStart = indexInterval->from()->getRawValue();
+    auto indexEnd = indexInterval->to()->getRawValue();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;
@@ -288,8 +271,8 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     else if (isTop())
         return factory_->getTop(type);
 
-    auto indexStart = *indexInterval->from().getRawData();
-    auto indexEnd = *indexInterval->to().getRawData();
+    auto indexStart = indexInterval->from()->getRawValue();
+    auto indexEnd = indexInterval->to()->getRawValue();
 
     if (indexEnd > maxLength) {
         warns() << "Possible buffer overflow" << endl;

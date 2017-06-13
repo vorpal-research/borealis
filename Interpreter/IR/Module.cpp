@@ -13,7 +13,10 @@
 namespace borealis {
 namespace absint {
 
-Module::Module(const llvm::Module* module) : instance_(module) {
+Module::Module(const llvm::Module* module, SlotTrackerPass* st)
+        : instance_(module),
+          ST_(st),
+          factory_(ST_) {
     /// Initialize all global variables
     initGLobals();
 }
@@ -56,22 +59,22 @@ void Module::initGLobals() {
     }
 }
 
-Function::Ptr Module::createFunction(const llvm::Function* function) {
+Function::Ptr Module::create(const llvm::Function* function) {
     if (auto&& opt = util::at(functions_, function)) {
         return opt.getUnsafe();
     } else {
-        auto result = Function::Ptr{ new Function(function, &factory_) };
+        auto result = Function::Ptr{ new Function(function, &factory_, ST_->getSlotTracker(function)) };
         functions_.insert( {function, result} );
         return result;
     }
 }
 
-Function::Ptr Module::createFunction(const std::string& fname) {
+Function::Ptr Module::create(const std::string& fname) {
     auto&& function = instance_->getFunction(fname);
-    return (function) ? createFunction(function) : nullptr;
+    return (function) ? create(function) : nullptr;
 }
 
-Function::Ptr Module::contains(const llvm::Function* function) const {
+Function::Ptr Module::get(const llvm::Function* function) const {
     if (auto&& opt = util::at(functions_, function))
         return opt.getUnsafe();
     return nullptr;

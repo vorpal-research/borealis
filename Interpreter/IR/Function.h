@@ -27,7 +27,7 @@ public:
 private:
 
     const llvm::Function* instance_;
-    mutable SlotTracker tracker_;
+    mutable SlotTracker* tracker_;
     DomainFactory* factory_;
     std::vector<Domain::Ptr> arguments_;
     BlockMap blocks_;
@@ -37,7 +37,7 @@ private:
 
 protected:
     /// Assumes that llvm::Function is not a declaration
-    Function(const llvm::Function* function, DomainFactory* factory);
+    Function(const llvm::Function* function, DomainFactory* factory, SlotTracker* st);
 
     friend class Module;
 

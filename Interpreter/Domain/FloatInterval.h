@@ -28,7 +28,6 @@ protected:
     FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
     FloatInterval(DomainFactory* factory, const ID& id);
-    FloatInterval(const FloatInterval& interval);
 
 public:
     /// Poset
@@ -51,7 +50,6 @@ public:
 
     virtual size_t hashCode() const;
     virtual std::string toString(const std::string prefix) const;
-    virtual Domain* clone() const;
 
     static bool classof(const Domain* other);
 

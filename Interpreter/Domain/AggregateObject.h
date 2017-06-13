@@ -30,14 +30,17 @@ protected:
     friend class DomainFactory;
 
     /// Struct constructors
-    AggregateObject(Domain::Value value, DomainFactory* factory, const AggregateObject::Types& elementTypes, Domain::Ptr length);
+    AggregateObject(Domain::Value value, DomainFactory* factory,
+                    const AggregateObject::Types& elementTypes, Domain::Ptr length);
     AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes, Domain::Ptr length);
-    AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes, const AggregateObject::Elements& elements);
+    AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes,
+                    const AggregateObject::Elements& elements);
     /// Array constructors
-    AggregateObject(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
+    AggregateObject(Domain::Value value, DomainFactory* factory,
+                    const llvm::Type& elementType, Domain::Ptr length);
     AggregateObject(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
-    AggregateObject(DomainFactory* factory, const llvm::Type& elementType, const AggregateObject::Elements& elements);
-    AggregateObject(const AggregateObject& other);
+    AggregateObject(DomainFactory* factory, const llvm::Type& elementType,
+                    const AggregateObject::Elements& elements);
 
 public:
     /// Poset
@@ -53,7 +56,6 @@ public:
     /// Other
     virtual std::size_t hashCode() const;
     virtual std::string toString(const std::string prefix = "") const;
-    virtual Domain* clone() const;
     const Types& getElementTypes() const;
     const Elements& getElements() const;
     Domain::Ptr getLength() const;
