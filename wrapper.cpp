@@ -22,6 +22,7 @@
 static backward::SignalHandling sh{std::vector<int>{ SIGABRT, SIGSEGV, SIGILL, SIGINT, SIGTRAP }};
 
 void on_terminate(void) {
+    std::cerr << "Terminating..." << std::endl;
     try{ throw; }
     catch (const z3::exception& ex) {
         std::cerr << "z3 exception caught: " << ex.msg() << std::endl;
