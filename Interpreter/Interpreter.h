@@ -27,7 +27,7 @@ public:
     const Module& getModule() const;
 
     void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
-
+    Domain::Ptr getVariable(const llvm::Value* value);
 
     /// llvm instructions visitors
     void visitInstruction(llvm::Instruction& i);
@@ -71,10 +71,9 @@ private:
     };
 
     /// Util functions
-    Domain::Ptr getVariable(const llvm::Value* value);
     Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
     void stub(const llvm::Instruction& i);
-    void addSuccessors(const std::vector<const llvm::BasicBlock*>& successors);
+    void addSuccessors(const std::vector<BasicBlock*>& successors);
     void handleMemoryAllocation(const llvm::CallInst& i);
     void handleDeclaration(const llvm::CallInst& i);
 

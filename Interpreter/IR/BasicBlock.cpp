@@ -67,6 +67,20 @@ std::string BasicBlock::toFullString() const {
     return ss.str();
 }
 
+std::string BasicBlock::inputToString() const {
+    std::ostringstream ss;
+
+    if (instance_->hasName())
+        ss << instance_->getName().str() << ":";
+    else
+        ss << "<label>:" << tracker_->getLocalSlot(instance_);
+
+    ss << inputState_->toString(*tracker_);
+    ss << std::endl;
+    return ss.str();
+}
+
+
 bool BasicBlock::empty() const {
     return inputState_->empty() && outputState_->empty();
 }
@@ -93,7 +107,6 @@ void BasicBlock::addPredecessor(BasicBlock* pred) {
 void BasicBlock::addSuccessor(BasicBlock* succ) {
     successors_.push_back(succ);
 }
-
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
     s << b.toString();
     return s;

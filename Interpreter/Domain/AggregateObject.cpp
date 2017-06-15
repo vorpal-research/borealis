@@ -200,9 +200,7 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
-    if (isBottom()) {
-        return factory_->getBottom(type);
-    } else if (isTop()) {
+    if (not isValue()) {
         return factory_->getTop(type);
     }
 
@@ -236,7 +234,7 @@ void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain:
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
-    if (isBottom() || isTop())
+    if (not isValue())
         return;
 
     auto indexStart = indexInterval->from()->getRawValue();
@@ -266,9 +264,7 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
-    if (isBottom())
-        return factory_->getBottom(type);
-    else if (isTop())
+    if (not isValue())
         return factory_->getTop(type);
 
     auto indexStart = indexInterval->from()->getRawValue();

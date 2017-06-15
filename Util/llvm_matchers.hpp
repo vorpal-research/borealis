@@ -90,6 +90,39 @@ struct IntrinsicExtractor {
 
 static auto $Intrinsic = make_pattern(IntrinsicExtractor{});
 
+struct ICmpExtractor {
+    auto unapply(Value* v) const {
+        return fwdAsDynCast<ICmpInst>(
+                v,
+                LAM(tt, make_storage(tt->getOperand(0), tt->getOperand(1), tt->getPredicate()))
+        );
+    }
+};
+
+static auto $ICmpInst = make_pattern(ICmpExtractor{});
+
+struct FCmpExtractor {
+    auto unapply(Value* v) const {
+        return fwdAsDynCast<FCmpInst>(
+                v,
+                LAM(tt, make_storage(tt->getOperand(0), tt->getOperand(1), tt->getPredicate()))
+        );
+    }
+};
+
+static auto $FCmpInst = make_pattern(FCmpExtractor{});
+
+struct BinaryExtractor {
+    auto unapply(Value* v) const {
+        return fwdAsDynCast<BinaryOperator>(
+                v,
+                LAM(tt, make_storage(tt->getOperand(0), tt->getOperand(1), tt->getOpcode()))
+        );
+    }
+};
+
+static auto $BinaryOperator = make_pattern(BinaryExtractor{});
+
 } /* namespace llvm */
 
 #include "Util/unmacros.h"

@@ -49,8 +49,8 @@ public:
     Integer::Ptr to() const;
     Integer::Ptr signedFrom() const;
     Integer::Ptr signedTo() const;
-    bool intersects(Integer::Ptr constant) const;
-    bool intersects(const IntegerInterval* other) const;
+    bool hasIntersection(Integer::Ptr constant) const;
+    bool hasIntersection(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
     virtual std::string toString(const std::string prefix = "") const;
@@ -83,6 +83,11 @@ public:
     virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
+    /// Split operations, assume that intervals intersect
+    virtual Split splitByEq(Domain::Ptr other) const;
+    virtual Split splitByNeq(Domain::Ptr other) const;
+    virtual Split splitByLess(Domain::Ptr other) const;
+    virtual Split splitBySLess(Domain::Ptr other) const;
 
 private:
 

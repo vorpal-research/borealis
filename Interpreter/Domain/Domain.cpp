@@ -106,6 +106,22 @@ bool Domain::isSimpleType() const {
             this->type_ == Type::FLOAT_INTERVAL;
 }
 
+Split Domain::splitByEq(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented split operation");
+}
+
+Split Domain::splitByNeq(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented split operation");
+}
+
+Split Domain::splitByLess(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented split operation");
+}
+
+Split Domain::splitBySLess(Domain::Ptr) const {
+    UNREACHABLE("Unimplemented split operation");
+}
+
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {
     s << d->toString();
     return s;

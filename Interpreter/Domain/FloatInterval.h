@@ -46,7 +46,7 @@ public:
     bool isNaN() const;
     const llvm::APFloat& from() const;
     const llvm::APFloat& to() const;
-    bool intersects(const FloatInterval* other) const;
+    bool hasIntersection(const FloatInterval* other) const;
 
     virtual size_t hashCode() const;
     virtual std::string toString(const std::string prefix) const;
@@ -67,6 +67,10 @@ public:
     virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Other
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
+    /// Split operations
+    virtual Split splitByEq(Domain::Ptr other) const;
+    virtual Split splitByNeq(Domain::Ptr other) const;
+    virtual Split splitByLess(Domain::Ptr other) const;
 
 private:
 

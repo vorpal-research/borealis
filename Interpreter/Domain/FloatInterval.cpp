@@ -149,7 +149,7 @@ const llvm::APFloat& FloatInterval::to() const {
 }
 
 /// Assumes that both intervals have value
-bool FloatInterval::intersects(const FloatInterval* other) const {
+bool FloatInterval::hasIntersection(const FloatInterval* other) const {
     ASSERT(this->isValue() && other->isValue(), "Not value intervals");
 
     if (util::lt(this->from_, other->from_) && util::lt(other->from_, to_)) {
@@ -413,7 +413,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
         case llvm::CmpInst::FCMP_UEQ:   // 1 0 0 1  unordered or equal
             if (isConstant() && this->equals(interval))
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -423,7 +423,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpGreaterThan)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -433,7 +433,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpGreaterThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -443,7 +443,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpLessThan)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -453,14 +453,14 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpLessThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_ONE:   // 0 1 1 0  ordered and operands are unequal
         case llvm::CmpInst::FCMP_UNE:   // 1 1 1 0  unordered or not equal
-            if (not intersects(interval))
+            if (not hasIntersection(interval))
                 return getBool(true);
             else if (not (isConstant() && this->equals(interval)))
                 return factory_->getInteger(TOP, 1);
@@ -474,6 +474,39 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
 
 bool FloatInterval::isNaN() const {
     return isValue() && from_.isNaN() && to_.isNaN();
+}
+
+Split FloatInterval::splitByEq(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    return interval->isConstant() ?
+           Split{ interval->shared_from_this(), shared_from_this() } :
+           Split{ shared_from_this(), shared_from_this() };
+}
+
+Split FloatInterval::splitByNeq(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    return interval->isConstant() ?
+           Split{ shared_from_this(), interval->shared_from_this() } :
+           Split{ shared_from_this(), shared_from_this() };
+}
+
+Split FloatInterval::splitByLess(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    auto trueVal = factory_->getFloat(from_, interval->to_);
+    auto falseVal = factory_->getFloat(interval->to_, this->to_);
+    return {trueVal, falseVal};
 }
 
 }   /* namespace absint */
