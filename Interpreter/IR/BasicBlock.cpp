@@ -9,7 +9,6 @@
 namespace borealis {
 namespace absint {
 
-
 BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : instance_(bb),
                                                                            tracker_(tracker),
                                                                            atFixpoint_(false),
@@ -48,7 +47,7 @@ std::string BasicBlock::toString() const {
         if (not domain) continue;
         ss << std::endl << "  ";
         ss << tracker_->getLocalName(value) << " = ";
-        ss << domain->toString("  ");
+        ss << domain->toPrettyString("  ");
     }
     ss << std::endl;
     return ss.str();

@@ -165,7 +165,7 @@ size_t FloatInterval::hashCode() const {
                                          from_, to_);
 }
 
-std::string FloatInterval::toString(const std::string) const {
+std::string FloatInterval::toPrettyString(const std::string&) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
     ss << "[" << util::toString(from_) << ", " << util::toString(to_) << "]";

@@ -71,7 +71,7 @@ std::size_t Pointer::hashCode() const {
     return util::hash::simple_hash_value(value_, type_, /*elementType_.getTypeID(), */nullptr_);
 }
 
-std::string Pointer::toString(const std::string prefix) const {
+std::string Pointer::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
     ss << "Ptr " << factory_->getSlotTracker().toString(&elementType_) << " [";
     if (isNullptr()) ss << " nullptr ]";
@@ -79,7 +79,7 @@ std::string Pointer::toString(const std::string prefix) const {
     else if (isBottom()) ss << " BOTTOM ]";
     else {
         for (auto&& it : locations_) {
-            ss << std::endl << prefix << "  " << it.offset_->toString() << " " << it.location_->toString(prefix + "  ");
+            ss << std::endl << prefix << "  " << it.offset_->toString() << " " << it.location_->toPrettyString(prefix + "  ");
         }
         ss << std::endl << prefix << "]";
     }
@@ -131,8 +131,11 @@ Domain::Ptr Pointer::narrow(Domain::Ptr) const {
 }
 
 Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
-    if (not isValue())
+    if (isBottom()) {
+        return factory_->getBottom(type);
+    } else if (isTop()) {
         return factory_->getTop(type);
+    }
     if (isNullptr()) {
         errs() << "Load from nullptr" << endl;
         return factory_->getTop(type);
@@ -147,7 +150,7 @@ Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
 }
 
 void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
-    if (isBottom() || isTop()) return;
+    if (isTop()) return;
     if (isNullptr()) {
         errs() << "Store to nullptr" << endl;
         return;
@@ -156,6 +159,13 @@ void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
     if (elementType_.isPointerTy()) {
         locations_.clear();
         locations_.insert({factory_->getIndex(0), value});
+        // if pointer was BOTTOM, then we should change it's value. But we can't create
+        // new ptr domain, because there may be objects, referencing this one
+        if (isBottom()) {
+            // This is generally fucked up
+            auto val = const_cast<Value*>(&value_);
+            *val = VALUE;
+        }
     } else {
         for (auto&& it : locations_) {
             auto totalOffset = it.offset_->add(offset);
@@ -165,7 +175,9 @@ void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
 }
 
 Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
-    if (isBottom() || isTop()) {
+    if (isBottom()) {
+        return factory_->getPointer(BOTTOM, type);
+    } else if (isTop()) {
         return factory_->getPointer(TOP, type);
     }
     if (isNullptr()) {

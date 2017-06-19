@@ -38,8 +38,8 @@ const Module& Interpreter::getModule() const {
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
-    stack_.push({ function, nullptr, {function->getEntryNode()} });
     function->setArguments(args);
+    stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
     context_ = &stack_.top();
 
     while (not context_->deque.empty()) {
@@ -234,12 +234,12 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
     ASSERT(ptr && storeVal, "store args");
 
     auto index = module_.getDomainFactory()->getIndex(0);
-    if (stores_.find(&i) != stores_.end()) {
-        auto top = module_.getDomainFactory()->getTop(*i.getValueOperand()->getType());
-        ptr->store(top, index);
+    if (context_->stores.find(&i) != context_->stores.end()) {
+        auto load = ptr->load(*i.getValueOperand()->getType(), index);
+        ptr->store(load->widen(storeVal), index);
     } else {
         ptr->store(storeVal, index);
-        stores_.insert({&i, true});
+        context_->stores.insert({&i, true});
     }
 }
 
@@ -368,7 +368,7 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
         case llvm::Instruction::Or:     result = lhv->bOr(rhv); break;
         case llvm::Instruction::Xor:    result = lhv->bXor(rhv); break;
         default:
-            UNREACHABLE("Unknown binary operator:" + i .getName().str());
+            UNREACHABLE("Unknown binary operator: " + i .getName().str());
     }
 
     ASSERT(result, "binop result");
@@ -519,8 +519,10 @@ void Interpreter::handleDeclaration(const llvm::CallInst& i) {
         for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
             auto arg = i.getArgOperand(j);
             auto argType = arg->getType();
-            if (argType->isPointerTy())
+            if (argType->isPointerTy()) {
+                errs() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
                 context_->state->addVariable(arg, module_.getDomainFactory()->getTop(*argType));
+            }
         }
         if (not i.getType()->isVoidTy())
             context_->state->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));

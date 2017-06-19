@@ -87,7 +87,16 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
     }
 
     auto left = interval->from_->lt(from_) ? util::getMinValue(getWidth()) : from_;
-    auto right = to_->lt(interval->to_) ? util::getMaxValue(getWidth()) : to_;
+
+    Integer::Ptr nextRight;
+    auto ten = factory_->toInteger(10, getWidth());
+    if (to_->getValue() == 0) {
+        nextRight = ten;
+    } else {
+        auto temp = to_->mul(ten);
+        nextRight = temp ? temp : util::getMaxValue(getWidth());
+    }
+    auto right = to_->lt(interval->to_) ? nextRight : to_;
 
     return factory_->getInteger(left, right);
 }
@@ -109,7 +118,7 @@ Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
     return factory_->getInteger(left, right);
 }
 
-unsigned IntegerInterval::getWidth() const { return from_->getWidth(); }
+size_t IntegerInterval::getWidth() const { return from_->getWidth(); }
 bool IntegerInterval::isConstant() const { return from_->eq(to_); }
 bool IntegerInterval::isConstant(uint64_t constant) const {
     auto constInteger = factory_->toInteger(constant, getWidth());
@@ -174,7 +183,7 @@ size_t IntegerInterval::hashCode() const {
                                          from_, to_);
 }
 
-std::string IntegerInterval::toString(const std::string) const {
+std::string IntegerInterval::toPrettyString(const std::string&) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
     ss << "[" << from_->toString() << ", " << to_->toString() << "]";

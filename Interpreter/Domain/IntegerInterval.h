@@ -42,7 +42,7 @@ public:
     virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
-    unsigned getWidth() const;
+    size_t getWidth() const;
     bool isConstant() const;
     bool isConstant(uint64_t constant) const;
     Integer::Ptr from() const;
@@ -53,7 +53,7 @@ public:
     bool hasIntersection(const IntegerInterval* other) const;
 
     virtual size_t hashCode() const;
-    virtual std::string toString(const std::string prefix = "") const;
+    virtual std::string toPrettyString(const std::string& prefix) const;
 
     static bool classof(const Domain* other);
 

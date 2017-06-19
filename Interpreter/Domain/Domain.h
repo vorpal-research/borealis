@@ -20,6 +20,7 @@ namespace absint {
 
 struct Split;
 class DomainFactory;
+class MemoryObject;
 
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
@@ -87,8 +88,12 @@ public:
 
     /// Other
     virtual size_t hashCode() const = 0;
-    virtual std::string toString(const std::string prefix = "") const {
+
+    virtual std::string toPrettyString(const std::string& prefix) const {
         return prefix + "unknown";
+    }
+    virtual std::string toString() const {
+        return toPrettyString("");
     }
 
     virtual Type getType() const {

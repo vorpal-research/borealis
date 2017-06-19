@@ -42,6 +42,8 @@ protected:
     AggregateObject(DomainFactory* factory, const llvm::Type& elementType,
                     const AggregateObject::Elements& elements);
 
+    virtual std::string toPrettyString(const std::string& prefix) const;
+
 public:
     /// Poset
     virtual bool equals(const Domain* other) const;
@@ -55,7 +57,6 @@ public:
 
     /// Other
     virtual std::size_t hashCode() const;
-    virtual std::string toString(const std::string prefix = "") const;
     const Types& getElementTypes() const;
     const Elements& getElements() const;
     Domain::Ptr getLength() const;

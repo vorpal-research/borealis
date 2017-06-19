@@ -68,6 +68,8 @@ private:
         Function::Ptr function; // current function
         State::Ptr state; // current state
         std::deque<BasicBlock*> deque; // deque of blocks to visit
+        // This is not good
+        std::map<const llvm::Value*, bool> stores; // stores, visited in current context
     };
 
     /// Util functions
@@ -80,8 +82,6 @@ private:
     Module module_;
     FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;
-    // This is not good
-    std::map<const llvm::Value*, bool> stores_;
 
     Context* context_;  // active context
     std::stack<Context> stack_; // stack of contexts of interpreter
