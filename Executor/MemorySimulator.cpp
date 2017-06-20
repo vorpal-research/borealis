@@ -84,19 +84,19 @@ struct MemorySimulator::Impl {
         if(!grain) grain = dl.getPointerSize(0);
         if(!grain) grain = 1;
         tree.chunk_size = K.get(1) * grain;
-        tree.start = 1 << 20;
+        tree.start = SimulatedPtr(1 << 20);
         tree.end = tree.start + (1ULL << M.get(33ULL)) * tree.chunk_size;
 
         allocStart = tree.start;
-        allocEnd = (tree.end - tree.start) / 2 + tree.start;
+        allocEnd = tree.start + (tree.end - tree.start) / 2;
 
         mallocStart = allocEnd;
         mallocEnd = tree.end;
 
-        constantStart = 1 << 10;
-        constantEnd = 1 << 20;
+        constantStart = SimulatedPtr(1 << 10);
+        constantEnd = SimulatedPtr(1 << 20);
 
-        unmeaningfulPtr = 1 << 8;
+        unmeaningfulPtr = SimulatedPtr(1 << 8);
 
         currentAllocOffset = 0U;
         currentMallocOffset = 0U;
@@ -107,7 +107,7 @@ struct MemorySimulator::Impl {
         TRACE_FUNC;
         if(constants.count(v)) return ptr_cast(constants.at(v));
         else {
-            auto realPtr = currentConstantOffset + constantStart;
+            auto realPtr = constantStart+ currentConstantOffset;
             currentConstantOffset += size;
             constants[v] = realPtr;
             constantsBwd[realPtr] = v;
@@ -882,7 +882,7 @@ auto MemorySimulator::LoadBytesFromMemory(mutable_buffer_t buffer, buffer_t wher
 
         loaded += current_size;
         offset += current_size;
-        ptr += current_size;
+        ptr = ptr + current_size;
     }
 
     return ValueState::CONCRETE;
@@ -938,11 +938,12 @@ auto MemorySimulator::LoadIntFromMemory(llvm::APInt& val, buffer_t where) -> Val
     if(!pimpl_->isAPointer(realPtr)) signalIllegalLoad(realPtr);
 
     const auto chunk_size = pimpl_->tree.chunk_size;
+    auto chunk_index = LAM(ptr, uintptr_t(ptr) / chunk_size);
 
     ASSERTC(size <= chunk_size);
 
     // TODO: belyaev Think!
-    if(realPtr / chunk_size != (realPtr + size -1) / chunk_size) {
+    if(chunk_index(realPtr) != chunk_index(realPtr + size - 1)) {
         // if the piece crosses the chunk border
         TRACE_FMT("While loading from 0x%x", realPtr);
         TRACE_FMT("Chunk size = %d", chunk_size);

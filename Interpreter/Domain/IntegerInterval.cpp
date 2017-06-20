@@ -88,6 +88,7 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
 
     auto left = interval->from_->lt(from_) ? util::getMinValue(getWidth()) : from_;
 
+    // TODO: add proper widening
     Integer::Ptr nextRight;
     auto ten = factory_->toInteger(10, getWidth());
     if (to_->getValue() == 0) {

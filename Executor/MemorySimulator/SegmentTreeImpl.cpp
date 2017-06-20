@@ -35,10 +35,10 @@ struct allocTraverser: stateInvalidatingTraverser {
 
     bool handleChunk(
             SegmentTree* tree,
-            SimulatedPtrSize minbound,
-            SimulatedPtrSize maxbound,
+            SimulatedPtr minbound,
+            SimulatedPtr maxbound,
             SegmentNode::Ptr& t,
-            SimulatedPtrSize /* where */
+            SimulatedPtr /* where */
         ) {
         TRACE_FUNC;
         ASSERTC(size <= (maxbound - minbound));
@@ -55,10 +55,10 @@ struct allocTraverser: stateInvalidatingTraverser {
 
     bool handlePath(
             SegmentTree* /* tree */,
-            SimulatedPtrSize minbound,
-            SimulatedPtrSize maxbound,
+            SimulatedPtr minbound,
+            SimulatedPtr maxbound,
             SegmentNode::Ptr& t,
-            SimulatedPtrSize where) {
+            SimulatedPtr where) {
         TRACE_FUNC;
         auto available = maxbound - minbound;
         ASSERTC(size <= available);
@@ -120,10 +120,10 @@ struct storeTraverser: stateInvalidatingTraverser {
     }
 
     void handleChunk(SegmentTree* tree,
-                    SimulatedPtrSize minbound,
-                    SimulatedPtrSize /* maxbound */,
+                    SimulatedPtr minbound,
+                    SimulatedPtr /* maxbound */,
                     SegmentNode::Ptr& t,
-                    SimulatedPtrSize where) {
+                    SimulatedPtr where) {
         TRACE_FUNC;
 
         checkAllocation(t, minbound, where);
@@ -141,10 +141,10 @@ struct storeTraverser: stateInvalidatingTraverser {
     }
 
     bool handlePath(SegmentTree* tree,
-        SimulatedPtrSize minbound,
-        SimulatedPtrSize maxbound,
+        SimulatedPtr minbound,
+        SimulatedPtr maxbound,
         SegmentNode::Ptr& t,
-        SimulatedPtrSize where) {
+        SimulatedPtr where) {
         TRACE_FUNC;
 
         auto available = maxbound - minbound;
@@ -161,7 +161,7 @@ struct storeTraverser: stateInvalidatingTraverser {
 
         checkAllocation(t, minbound, where);
 
-        if(where < mid && where + size > mid) {
+        if(where < mid && mid < (where + size)) {
             auto leftChunkSize = mid - where;
             auto rightChunkSize = size - leftChunkSize;
 
@@ -181,11 +181,11 @@ struct loadTraverser: public emptyTraverser {
     std::stack<const SegmentNode*> backTrace;
 
     uint8_t* ptr = nullptr;
-    size_t dataSize = 0;
+    SimulatedPtrSize dataSize = 0;
     SegmentNode::MemoryState state = SegmentNode::MemoryState::Unknown;
     uint8_t filledWith = 0xFF;
 
-    void handleEmptyNode(SimulatedPtrSize where) {
+    void handleEmptyNode(SimulatedPtr where) {
         TRACE_FUNC;
         signalIllegalLoad(where);
     }
@@ -200,10 +200,10 @@ struct loadTraverser: public emptyTraverser {
     }
 
     void handleChunk(SegmentTree* /* tree */,
-        SimulatedPtrSize minbound,
-        SimulatedPtrSize maxbound,
+        SimulatedPtr minbound,
+        SimulatedPtr maxbound,
         SegmentNode::Ptr& t,
-        SimulatedPtrSize where) {
+        SimulatedPtr where) {
         TRACE_FUNC;
         if(!handleMemState(t)) {
             auto offset = where - minbound;
@@ -213,10 +213,10 @@ struct loadTraverser: public emptyTraverser {
     }
 
     bool handlePath(SegmentTree* /* tree */,
-        SimulatedPtrSize minbound,
-        SimulatedPtrSize maxbound,
+        SimulatedPtr minbound,
+        SimulatedPtr maxbound,
         SegmentNode::Ptr& t,
-        SimulatedPtrSize where) {
+        SimulatedPtr where) {
         TRACE_FUNC;
         backTrace.push(t.get());
 
@@ -248,10 +248,10 @@ struct freeTraverser : emptyTraverser {
     }
 
     bool handlePath(SegmentTree* /* tree */,
-            SimulatedPtrSize minbound,
-            SimulatedPtrSize /* maxbound*/,
+            SimulatedPtr minbound,
+            SimulatedPtr /* maxbound*/,
             SegmentNode::Ptr& t,
-            SimulatedPtrSize where){
+            SimulatedPtr where){
         TRACE_FUNC;
         if(minbound == where && t->status == desiredStatus) {
             t.reset();
@@ -261,10 +261,10 @@ struct freeTraverser : emptyTraverser {
     }
 
     bool handleChunk(SegmentTree* tree,
-            SimulatedPtrSize minbound,
-            SimulatedPtrSize maxbound,
+            SimulatedPtr minbound,
+            SimulatedPtr maxbound,
             SegmentNode::Ptr& t,
-            SimulatedPtrSize where) {
+            SimulatedPtr where) {
         TRACE_FUNC;
         return handlePath(tree, minbound, maxbound, t, where);
     }
@@ -278,10 +278,10 @@ struct memsetTraverser: stateInvalidatingTraverser {
         dest(dest), fill(fill), size(size) {};
 
     bool handleChunk(SegmentTree* tree,
-            SimulatedPtrSize minbound,
-            SimulatedPtrSize maxbound,
+            SimulatedPtr minbound,
+            SimulatedPtr maxbound,
             SegmentNode::Ptr& t,
-            SimulatedPtrSize where) {
+            SimulatedPtr where) {
         TRACE_FUNC;
 
         if(size == tree->chunk_size) {
@@ -292,7 +292,7 @@ struct memsetTraverser: stateInvalidatingTraverser {
             ASSERTC(where >= minbound);
 
             auto offset = where - minbound;
-            ASSERTC(offset + size < maxbound);
+            ASSERTC(where + size < maxbound);
             t->state = SegmentNode::MemoryState::Unknown;
             if(!t->chunk) t->chunk.reset(new uint8_t[tree->chunk_size]);
 
@@ -303,10 +303,10 @@ struct memsetTraverser: stateInvalidatingTraverser {
     }
 
     bool handlePath(SegmentTree* tree,
-            SimulatedPtrSize minbound,
-            SimulatedPtrSize maxbound,
+            SimulatedPtr minbound,
+            SimulatedPtr maxbound,
             SegmentNode::Ptr& t,
-            SimulatedPtrSize where) {
+            SimulatedPtr where) {
         TRACE_FUNC;
 
         TRACE_FMT("where: 0x%x", where);
@@ -326,7 +326,7 @@ struct memsetTraverser: stateInvalidatingTraverser {
             t->state = SegmentNode::MemoryState::Memset;
             t->memSetTo = fill;
             return true;
-        } else if(where < mid && where + size > mid) {
+        } else if(where < mid && mid < (where + size)) {
             auto leftChunkSize = mid - where;
             auto rightChunkSize = size - leftChunkSize;
 
@@ -407,25 +407,24 @@ SimulatedPtr SegmentTree::memchr(SimulatedPtr where, uint8_t ch, size_t limit) {
             }
         }
         // no symbol found, go next
-        where += sz;
+        where = where + sz;
         mutableLimit -= sz;
     }
 
-    return 0;
+    return SimulatedPtr::Null;
 }
 
 void SegmentTree::free(SimulatedPtr where, SegmentNode::MemoryStatus desiredStatus) {
     TRACE_FUNC;
 
-    if(where < start || where >= end) signalIllegalFree(where);
+    if(where < start || end <= where) signalIllegalFree(where);
     return traverse(where, freeTraverser{desiredStatus});
 }
 
 void SegmentTree::memset(SimulatedPtr where, uint8_t fill, SimulatedPtrSize size) {
     TRACE_FUNC;
 
-    if(where < start || where >= end) signalIllegalStore(where);
-
+    if(where < start || end <= where) signalIllegalStore(where);
     return traverse(where, memsetTraverser{ where, fill, size });
 
 }

@@ -64,6 +64,9 @@
 #include <llvm/Target/TargetMachine.h>
 
 #include <google/protobuf/stubs/common.h>
+#include <llvm/Support/LockFileManager.h>
+#include <semaphore.h>
+#include <fcntl.h>
 
 #include "Actions/GatherCommentsAction.h"
 #include "Config/config.h"
@@ -82,6 +85,28 @@
 
 namespace borealis {
 namespace driver {
+
+struct CriticalSection {
+    sem_t* semaphore = nullptr;
+
+    void destruct() {
+        if(semaphore == nullptr) return;
+        sem_post(semaphore);
+        sem_close(semaphore);
+        semaphore = nullptr;
+    }
+
+    CriticalSection() {
+        if(semaphore == nullptr) {
+            semaphore = sem_open("/borealis", O_CREAT, 0777, 1);
+            sem_wait(semaphore);
+        }
+    }
+
+    ~CriticalSection(){
+        destruct();
+    }
+};
 
 int gestalt::main(int argc, const char** argv) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -181,6 +206,7 @@ int gestalt::main(int argc, const char** argv) {
     auto annotatedModule = clang.result();
 
     if (!annotatedModule) return OK;
+
     // TODO: Distinct between cases when we fucked up and when
     //       we were supposed to fuck up
 
@@ -236,7 +262,10 @@ int gestalt::main(int argc, const char** argv) {
         llvm.add(pass.str());
     }
 
-    llvm.run();
+    {
+        CriticalSection guard;
+        llvm.run();
+    }
 
     // verify we didn't screw up the module structure
 
