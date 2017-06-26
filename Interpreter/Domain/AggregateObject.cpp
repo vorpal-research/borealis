@@ -191,10 +191,6 @@ Domain::Ptr AggregateObject::meet(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr AggregateObject::narrow(Domain::Ptr) const {
-    UNREACHABLE("Unimplemented, sorry...");
-}
-
 Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
     auto maxLength = getMaxLength();
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());

@@ -15,7 +15,7 @@ bool SlotTrackerPass::doInitialization(llvm::Module&) {
     return false;
 }
 
-bool SlotTrackerPass::doFinalization(llvm::Module& M) {
+bool SlotTrackerPass::doFinalization(llvm::Module&) {
     globals.reset();
     funcs.clear();
     return false;

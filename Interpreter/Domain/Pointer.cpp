@@ -16,31 +16,76 @@
 namespace borealis {
 namespace absint {
 
-Pointer::Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType, bool isNullptr)
+//////////////////////////////////////////////////////////
+/// Nullpointer
+//////////////////////////////////////////////////////////
+Nullptr::Nullptr(DomainFactory* factory)
+        : Domain(VALUE, NULLPTR, factory) {}
+
+bool Nullptr::equals(const Domain* other) const {
+    return llvm::isa<Nullptr>(other);
+}
+
+bool Nullptr::operator<(const Domain&) const {
+    UNREACHABLE("Unimplemented, sorry...");
+}
+
+Domain::Ptr Nullptr::join(Domain::Ptr) const {
+    return shared_from_this();
+}
+
+Domain::Ptr Nullptr::meet(Domain::Ptr) const {
+    return shared_from_this();
+}
+
+Domain::Ptr Nullptr::widen(Domain::Ptr) const {
+    return shared_from_this();
+}
+
+std::size_t Nullptr::hashCode() const {
+    return 0;
+}
+
+std::string Nullptr::toPrettyString(const std::string&) const {
+    return "nullptr";
+}
+
+void Nullptr::store(Domain::Ptr, Domain::Ptr) const {
+    errs() << "Store to nullptr" << endl;
+}
+
+Domain::Ptr Nullptr::load(const llvm::Type& type, Domain::Ptr) const {
+    errs() << "Load from nullptr" << endl;
+    return factory_->getTop(type);
+}
+
+Domain::Ptr Nullptr::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
+    errs() << "GEP to nullptr" << endl;
+    return factory_->getPointer(TOP, type);
+}
+
+bool Nullptr::classof(const Domain* other) {
+    return other->getType() == Domain::NULLPTR;
+}
+
+//////////////////////////////////////////////////////////
+/// Pointer
+//////////////////////////////////////////////////////////
+
+Pointer::Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType)
         : Domain{value, POINTER, factory},
-          elementType_(elementType),
-          nullptr_(isNullptr) {}
+          elementType_(elementType) {}
 
 Pointer::Pointer(DomainFactory* factory, const llvm::Type& elementType, const Pointer::Locations& locations)
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
-          nullptr_(false),
-          locations_(locations) {
-    for (auto&& it : locations) {
-        if (it.offset_->isTop() || it.location_->isTop()) {
-            value_ = TOP;
-            locations_.clear();
-            break;
-        }
-    }
-}
+          locations_(locations) {}
 
 bool Pointer::equals(const Domain* other) const {
     auto ptr = llvm::dyn_cast<Pointer>(other);
     if (not ptr) return false;
     if (this == ptr) return true;
 
-    if (this->isNullptr() && ptr->isNullptr()) return true;
     if (locations_.size() != ptr->locations_.size()) return false;
 
     for (auto&& it : locations_) {
@@ -55,10 +100,6 @@ bool Pointer::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-bool Pointer::isNullptr() const {
-    return nullptr_;
-}
-
 const Pointer::Locations& Pointer::getLocations() const {
     return locations_;
 }
@@ -68,14 +109,13 @@ const llvm::Type& Pointer::getElementType() const {
 }
 
 std::size_t Pointer::hashCode() const {
-    return util::hash::simple_hash_value(value_, type_, /*elementType_.getTypeID(), */nullptr_);
+    return util::hash::simple_hash_value(value_, type_, locations_.size());
 }
 
 std::string Pointer::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
     ss << "Ptr " << factory_->getSlotTracker().toString(&elementType_) << " [";
-    if (isNullptr()) ss << " nullptr ]";
-    else if (isTop()) ss << " TOP ]";
+    if (isTop()) ss << " TOP ]";
     else if (isBottom()) ss << " BOTTOM ]";
     else {
         for (auto&& it : locations_) {
@@ -95,8 +135,6 @@ Domain::Ptr Pointer::join(Domain::Ptr other) const {
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
     if (this == other.get()) return shared_from_this();
-    if (this->isNullptr() || ptr->isNullptr())
-        return factory_->getPointer(TOP, elementType_);
 
     if (other->isBottom()) {
         return shared_from_this();
@@ -136,10 +174,6 @@ Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
     } else if (isTop()) {
         return factory_->getTop(type);
     }
-    if (isNullptr()) {
-        errs() << "Load from nullptr" << endl;
-        return factory_->getTop(type);
-    }
 
     auto result = factory_->getBottom(type);
     for (auto&& it : locations_) {
@@ -151,10 +185,6 @@ Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
 
 void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
     if (isTop()) return;
-    if (isNullptr()) {
-        errs() << "Store to nullptr" << endl;
-        return;
-    }
 
     if (elementType_.isPointerTy()) {
         locations_.clear();
@@ -180,10 +210,6 @@ Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&
     } else if (isTop()) {
         return factory_->getPointer(TOP, type);
     }
-    if (isNullptr()) {
-        errs() << "GEP from nullptr" << endl;
-        return factory_->getPointer(TOP, type);
-    }
 
     auto result = factory_->getPointer(BOTTOM, type);
     std::vector<Domain::Ptr> subOffsets(indices.begin(), indices.end());
@@ -197,8 +223,6 @@ Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&
 }
 
 Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
-    auto intType = llvm::cast<llvm::IntegerType>(&type);
-    if (isNullptr()) return factory_->getInteger(factory_->toInteger(0, intType->getBitWidth()));
     return factory_->getTop(type);
 }
 
@@ -218,18 +242,38 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
-            return (ptr->isNullptr()) ?
-                   getBool(this->isNullptr()) :
+            if (not util::hasIntersection(locations_, ptr->locations_))
+                return getBool(false);
+            return this->equals(ptr) ?
+                   getBool(true) :
                    factory_->getInteger(TOP, 1);
 
         case llvm::CmpInst::ICMP_NE:
-            return (ptr->isNullptr()) ?
-                   getBool(not this->isNullptr()) :
+            if (not util::hasIntersection(locations_, ptr->locations_))
+                return getBool(true);
+            return this->equals(ptr) ?
+                   getBool(false) :
                    factory_->getInteger(TOP, 1);
 
         default:
             return factory_->getInteger(TOP, 1);
     }
+}
+
+Split Pointer::splitByEq(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    ASSERT(ptr, "Non-pointer domain in pointer join");
+
+    Locations trueLocs, falseLocs;
+    for (auto&& loc : ptr->getLocations()) {
+        if (util::contains(locations_, loc)) {
+            trueLocs.insert(loc);
+        } else {
+            falseLocs.insert(loc);
+        }
+    }
+    return {factory_->getPointer(elementType_, trueLocs),
+            factory_->getPointer(elementType_, falseLocs)};
 }
 
 }   /* namespace absint */

@@ -44,29 +44,21 @@ ConditionSplitter::ValueMap ConditionSplitter::apply() {
     values_[rhv] = rhvDomain->splitByEq(lhvDomain);
 
 #define SPLIT_NEQ(lhvDomain, rhvDomain) \
-    values_[lhv] = lhvDomain->splitByNeq(rhvDomain); \
-    values_[rhv] = rhvDomain->splitByNeq(lhvDomain);
+    values_[lhv] = lhvDomain->splitByEq(rhvDomain).swap(); \
+    values_[rhv] = rhvDomain->splitByEq(lhvDomain).swap();
 
 #define SPLIT_LESS(lhvDomain, rhvDomain) \
     values_[lhv] = lhvDomain->splitByLess(rhvDomain); \
-    temp = rhvDomain->splitByLess(lhvDomain); \
-    values_[rhv] = {temp.false_, temp.true_};
+    values_[rhv] = rhvDomain->splitByLess(lhvDomain).swap();
 
 #define SPLIT_GREATER(lhvDomain, rhvDomain) \
     values_[rhv] = rhvDomain->splitByLess(lhvDomain); \
-    temp = lhvDomain->splitByLess(rhvDomain); \
-    values_[lhv] = {temp.false_, temp.true_};
+    values_[lhv] = lhvDomain->splitByLess(rhvDomain).swap();
 
 void ConditionSplitter::handleICmp(llvm::Value* lhv, llvm::Value* rhv, const llvm::ICmpInst::Predicate& predicate) {
     auto&& lhvDomain = interpreter_->getVariable(lhv);
     auto&& rhvDomain = interpreter_->getVariable(rhv);
     ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
-
-    // TODO: support pointers splitting
-    if (llvm::isa<Pointer>(lhvDomain.get()) || llvm::isa<Pointer>(rhvDomain.get())) {
-        warns() << "Pointers in icmp splitting" << endl;
-        return;
-    }
 
     Split temp;
     switch (predicate) {
@@ -76,11 +68,15 @@ void ConditionSplitter::handleICmp(llvm::Value* lhv, llvm::Value* rhv, const llv
 
         case llvm::CmpInst::ICMP_ULT:
         case llvm::CmpInst::ICMP_ULE:
+            if (lhvDomain->isPointerType() && rhvDomain->isPointerType())
+                break;
             SPLIT_LESS(lhvDomain, rhvDomain);
             break;
 
         case llvm::CmpInst::ICMP_UGT:
         case llvm::CmpInst::ICMP_UGE:
+            if (lhvDomain->isPointerType() && rhvDomain->isPointerType())
+                break;
             SPLIT_GREATER(lhvDomain, rhvDomain);
             break;
 

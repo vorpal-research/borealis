@@ -255,10 +255,9 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
     if ( (result = context_->state->find(&i)) ) {
         for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
             auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-            /// incoming might be nullptr, if that block is not visited yet
-            auto&& incoming = getVariable(i.getIncomingValue(j));
-
-            if (predecessor->isVisited() && incoming) {
+            if (predecessor->isVisited()) {
+                auto&& incoming = getVariable(i.getIncomingValue(j));
+                ASSERT(incoming, "Unknown value in phi");
                 result = result->widen(incoming);
             }
         }
@@ -267,10 +266,10 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
         // if not found, then result is nullptr
         for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
             auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-            /// incoming might be nullptr, if that block is not visited yet
-            auto&& incoming = getVariable(i.getIncomingValue(j));
+            if (predecessor->isVisited()) {
+                auto&& incoming = getVariable(i.getIncomingValue(j));
+                ASSERT(incoming, "Unknown value in phi");
 
-            if (predecessor->isVisited() && incoming) {
                 result = result ?
                          result->join(incoming) :
                          incoming;

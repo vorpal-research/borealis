@@ -16,11 +16,6 @@ namespace absint {
 FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& constant) :
         FloatInterval(factory, constant, constant) {}
 
-FloatInterval::FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics) :
-        FloatInterval(factory, std::make_tuple(value,
-                                               llvm::APFloat(semantics),
-                                               llvm::APFloat(semantics))) {}
-
 FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to) :
         FloatInterval(factory, std::make_tuple(VALUE, from, to)) {}
 
@@ -108,22 +103,6 @@ Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
 
     auto left = (util::lt(interval->from_, from_)) ? util::getMinValue(getSemantics()) : from_;
     auto right = (util::lt(to_, interval->to_)) ? util::getMaxValue(getSemantics()) : to_;
-
-    return factory_->getFloat(left, right);
-}
-
-Domain::Ptr FloatInterval::narrow(Domain::Ptr other) const {
-    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(interval, "Nullptr in interval");
-
-    if (this->isBottom()) {
-        return shared_from_this();
-    } else if (interval->isBottom()) {
-        return interval->shared_from_this();
-    }
-
-    auto left = (util::eq(from_, util::getMinValue(getSemantics()))) ? interval->from_ : from_;
-    auto right = (util::eq(to_, util::getMaxValue(getSemantics()))) ? interval->to_ : to_;
 
     return factory_->getFloat(left, right);
 }
@@ -484,17 +463,6 @@ Split FloatInterval::splitByEq(Domain::Ptr other) const {
 
     return interval->isConstant() ?
            Split{ interval->shared_from_this(), shared_from_this() } :
-           Split{ shared_from_this(), shared_from_this() };
-}
-
-Split FloatInterval::splitByNeq(Domain::Ptr other) const {
-    auto interval = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(interval, "Not interval in split");
-
-    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
-
-    return interval->isConstant() ?
-           Split{ shared_from_this(), interval->shared_from_this() } :
            Split{ shared_from_this(), shared_from_this() };
 }
 

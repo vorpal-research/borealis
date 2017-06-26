@@ -230,6 +230,14 @@ auto max_element(Container&& c) -> decltype(*c.begin()) {
     return *std::max_element(std::forward<Container>(c).begin(), std::forward<Container>(c).end());
 }
 
+template <class Container>
+bool hasIntersection(const Container& lhv, const Container& rhv) {
+    for (auto&& it : viewContainer(lhv)) {
+        if (contains(rhv, it)) return true;
+    }
+    return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace impl_ {

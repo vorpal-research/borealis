@@ -14,11 +14,6 @@ namespace absint {
 IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr constant) :
         IntegerInterval(factory, constant, constant) {}
 
-IntegerInterval::IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width) :
-        IntegerInterval(factory, std::make_tuple(value,
-                                                 factory->toInteger(0, width),
-                                                 factory->toInteger(0, width))) {}
-
 IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to) :
         IntegerInterval(factory, std::make_tuple(VALUE,
                                                  from,
@@ -27,7 +22,8 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Inte
 IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::ID& key) :
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
         from_(std::get<1>(key)),
-        to_(std::get<2>(key)) {
+        to_(std::get<2>(key)),
+        wm_(factory_) {
     ASSERT(from_->getWidth() == to_->getWidth(), "Different bit width of interval bounds");
     ASSERT(from_->le(to_), "Lower bound is greater that upper bound");
     if (from_->isMin() && to_->isMax()) value_ = TOP;
@@ -86,35 +82,8 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto left = interval->from_->lt(from_) ? util::getMinValue(getWidth()) : from_;
-
-    // TODO: add proper widening
-    Integer::Ptr nextRight;
-    auto ten = factory_->toInteger(10, getWidth());
-    if (to_->getValue() == 0) {
-        nextRight = ten;
-    } else {
-        auto temp = to_->mul(ten);
-        nextRight = temp ? temp : util::getMaxValue(getWidth());
-    }
-    auto right = to_->lt(interval->to_) ? nextRight : to_;
-
-    return factory_->getInteger(left, right);
-}
-
-Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
-    auto&& interval = llvm::dyn_cast<IntegerInterval>(other.get());
-    ASSERT(interval, "Nullptr in interval");
-    ASSERT(this->getWidth() == interval->getWidth(), "Widening two intervals of different format");
-
-    if (this->isBottom()) {
-        return shared_from_this();
-    } else if (interval->isBottom()) {
-        return interval->shared_from_this();
-    }
-
-    auto left = from_->isMin() ? interval->from_ : from_;
-    auto right = to_->isMax() ? interval->to_ : to_;
+    auto left = interval->from_->lt(from_) ? wm_.get_prev(interval->from_) : from_;
+    auto right = to_->lt(interval->to_) ? wm_.get_next(interval->to_) : to_;
 
     return factory_->getInteger(left, right);
 }
@@ -548,17 +517,6 @@ Split IntegerInterval::splitByEq(Domain::Ptr other) const {
 
     return interval->isConstant() ?
            Split{ interval->shared_from_this(), shared_from_this() } :
-           Split{ shared_from_this(), shared_from_this() };
-}
-
-Split IntegerInterval::splitByNeq(Domain::Ptr other) const {
-    auto interval = llvm::dyn_cast<IntegerInterval>(other.get());
-    ASSERT(interval, "Not interval in split");
-
-    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
-
-    return interval->isConstant() ?
-           Split{ shared_from_this(), interval->shared_from_this() } :
            Split{ shared_from_this(), shared_from_this() };
 }
 

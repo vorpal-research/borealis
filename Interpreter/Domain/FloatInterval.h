@@ -24,7 +24,6 @@ protected:
 
     friend class DomainFactory;
 
-    FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
     FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
     FloatInterval(DomainFactory* factory, const ID& id);
@@ -38,7 +37,6 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
-    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     const llvm::fltSemantics& getSemantics() const;
     llvm::APFloat::roundingMode getRoundingMode() const;
@@ -69,7 +67,6 @@ public:
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     /// Split operations
     virtual Split splitByEq(Domain::Ptr other) const;
-    virtual Split splitByNeq(Domain::Ptr other) const;
     virtual Split splitByLess(Domain::Ptr other) const;
 
 private:

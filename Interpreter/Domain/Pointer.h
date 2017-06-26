@@ -29,6 +29,31 @@ struct PtrLocationEquals {
     }
 };
 
+class Nullptr : public Domain {
+public:
+    Nullptr(DomainFactory* factory);
+
+    /// Poset
+    virtual bool equals(const Domain* other) const;
+    virtual bool operator<(const Domain& other) const;
+
+    /// Lattice
+    virtual Domain::Ptr join(Domain::Ptr other) const;
+    virtual Domain::Ptr meet(Domain::Ptr other) const;
+    virtual Domain::Ptr widen(Domain::Ptr other) const;
+
+    /// Other
+    virtual std::size_t hashCode() const;
+    virtual std::string toPrettyString(const std::string& prefix) const;
+
+    /// Memory
+    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
+    virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+
+    static bool classof(const Domain* other);
+};
+
 /// Mutable
 class Pointer : public Domain {
 public:
@@ -39,7 +64,7 @@ protected:
 
     friend class DomainFactory;
 
-    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType, bool isNullptr = false);
+    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
     Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
 
 public:
@@ -54,7 +79,6 @@ public:
     virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
-    bool isNullptr() const;
     const llvm::Type& getElementType() const;
     const Locations& getLocations() const;
     virtual std::size_t hashCode() const;
@@ -71,11 +95,12 @@ public:
     virtual Domain::Ptr bitcast(const llvm::Type& type) const;
     /// Cmp
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
+    /// Split
+    virtual Split splitByEq(Domain::Ptr other) const;
 
 private:
 
     const llvm::Type& elementType_;
-    const bool nullptr_;
     mutable Locations locations_;
 };
 

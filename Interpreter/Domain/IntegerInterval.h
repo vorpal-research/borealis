@@ -8,6 +8,7 @@
 #include "Domain.h"
 #include "Integer/Integer.h"
 #include "Interpreter/Util.h"
+#include "Interpreter/Widening/IntervalWidening.h"
 #include "Util/hash.hpp"
 
 namespace borealis {
@@ -25,7 +26,6 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width);
     IntegerInterval(DomainFactory* factory, Integer::Ptr constant);
     IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to);
     IntegerInterval(DomainFactory* factory, const ID& key);
@@ -39,7 +39,6 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
-    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
     size_t getWidth() const;
@@ -85,7 +84,6 @@ public:
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     /// Split operations, assume that intervals intersect
     virtual Split splitByEq(Domain::Ptr other) const;
-    virtual Split splitByNeq(Domain::Ptr other) const;
     virtual Split splitByLess(Domain::Ptr other) const;
     virtual Split splitBySLess(Domain::Ptr other) const;
 
@@ -95,6 +93,7 @@ private:
 
     Integer::Ptr from_;
     Integer::Ptr to_;
+    mutable IntegerWidening wm_;
 };
 
 struct IntegerInterval::IDHash {

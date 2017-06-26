@@ -13,6 +13,7 @@
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Type.h>
 
+#include "Interpreter/Widening/WideningInterface.hpp"
 #include "Logging/logger.hpp"
 
 namespace borealis {
@@ -27,6 +28,7 @@ public:
 
     enum Type {INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
+        NULLPTR,
         POINTER,
         AGGREGATE
     };
@@ -84,7 +86,6 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const = 0;
     virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
     virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
-    virtual Domain::Ptr narrow(Domain::Ptr other) const = 0;
 
     /// Other
     virtual size_t hashCode() const = 0;
@@ -158,7 +159,6 @@ public:
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     /// Split operations
     virtual Split splitByEq(Domain::Ptr other) const;
-    virtual Split splitByNeq(Domain::Ptr other) const;
     virtual Split splitByLess(Domain::Ptr other) const;
     virtual Split splitBySLess(Domain::Ptr other) const;
 
@@ -193,6 +193,10 @@ struct DomainHash {
 struct Split {
     Domain::Ptr true_;
     Domain::Ptr false_;
+
+    Split swap() {
+        return {false_, true_};
+    }
 };
 
 }   /* namespace absint */

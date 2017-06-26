@@ -110,10 +110,6 @@ Split Domain::splitByEq(Domain::Ptr) const {
     UNREACHABLE("Unimplemented split operation");
 }
 
-Split Domain::splitByNeq(Domain::Ptr) const {
-    UNREACHABLE("Unimplemented split operation");
-}
-
 Split Domain::splitByLess(Domain::Ptr) const {
     UNREACHABLE("Unimplemented split operation");
 }
