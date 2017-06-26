@@ -164,10 +164,11 @@ public:
 
 protected:
 
-    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory) : ObjectLevelLogging("domain"),
-                                                                             value_(value),
-                                                                             type_(type),
-                                                                             factory_(factory) {}
+    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory)
+            : ObjectLevelLogging("domain"),
+              value_(value),
+              type_(type),
+              factory_(factory) {}
     virtual ~Domain() = default;
 
     Value value_;
