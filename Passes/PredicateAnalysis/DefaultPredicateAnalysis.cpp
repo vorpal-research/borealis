@@ -35,8 +35,7 @@ static Term::Ptr isValidPtr(FactoryNest FN, Term::Ptr t) {
         auto&& bval = TermBuilder{ FN.Term, t };
         auto&& bound = bval.bound();
 
-        return bval != FN.Term->getNullPtrTerm()->setType(FN.Term.get(), type)
-               && bval != FN.Term->getInvalidPtrTerm()->setType(FN.Term.get(), type)
+        return bval > FN.Term->getNullPtrTerm()->setType(FN.Term.get(), type)
                && bound.uge( FN.Term->getOpaqueConstantTerm(TypeUtils::getTypeSizeInElems(pointed), 0)->setType(FN.Term.get(), bound->getType()) );
     }
     return nullptr;
@@ -205,6 +204,13 @@ public:
             pass->FN.Term->getGepTerm(rhv, idxs, isTriviallyInboundsGEP(&I)),
             pass->SLT->getLocFor(&I),
             PredicateType::INVARIANT
+        );
+
+        pass->PostPM[&I] = pass->FN.Predicate->getEqualityPredicate(
+            isValidPtr(pass->FN, pass->FN.Term->getValueTerm(rhv)),
+            pass->FN.Term->getTrueTerm(),
+            pass->SLT->getLocFor(&I),
+            PredicateType::ASSUME
         );
     }
 

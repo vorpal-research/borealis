@@ -13,7 +13,7 @@
 namespace borealis {
 
 static std::set<Term::Ptr, TermCompare> substitutionOrdering(Annotation::Ptr anno) {
-    TermCollector CT{FactoryNest{}};
+    TermCollector<> CT{FactoryNest{}};
     CT.transform(anno);
     return util::viewContainer(CT.getTerms())
           .filter([&](Term::Ptr t){ return llvm::is_one_of<ValueTerm, ArgumentTerm, ReturnValueTerm>(t); })

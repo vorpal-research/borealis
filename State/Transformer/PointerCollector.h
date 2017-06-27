@@ -28,6 +28,10 @@ public:
         return pred;
     }
 
+    bool isDereferencedPointer(Term::Ptr ptr) const {
+        return collection.count(ptr) > 0;
+    }
+
     const std::unordered_set<Term::Ptr, TermHash, TermEquals>& getCollectedTerms() const {
         return collection;
     }

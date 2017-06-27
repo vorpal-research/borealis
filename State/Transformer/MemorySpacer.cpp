@@ -31,13 +31,13 @@ Term::Ptr MemorySpacer::transformTerm(Term::Ptr t) {
     //if(aa.isNamedTerm(t)) {
         if(auto&& ptr = llvm::dyn_cast<type::Pointer>(t->getType())) {
             auto&& space = getMemspace(t);
-            if(not (space == ptr->getMemspace() || 0 == ptr->getMemspace())) {
-                aa.viewGraph();
-            }
-            ASSERT(
-                space == ptr->getMemspace() || 0 == ptr->getMemspace(),
-                tfm::format("Illegal memory space: %d for term %s: term is already in space %d", space, t, ptr->getMemspace())
-            );
+//            if(not (space == ptr->getMemspace() || 0 == ptr->getMemspace())) {
+//                aa.viewGraph();
+//            }
+//            ASSERT(
+//                space == ptr->getMemspace() || 0 == ptr->getMemspace(),
+//                tfm::format("Illegal memory space: %d for term %s: term is already in space %d", space, t, ptr->getMemspace())
+//            );
             //dbgs() << t << " remapped to memory space " << space << endl;
             return t->setType(FN.Term.get(), FN.Type->getPointer(ptr->getPointed(), space));
         }
