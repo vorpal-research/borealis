@@ -101,7 +101,7 @@ std::string Module::toString() const {
         for (auto&& global : globals_) {
             ss << "  ";
             ss << global.first->getName().str() << " = ";
-            ss << global.second->toString("  ") << std::endl;
+            ss << global.second->toPrettyString("  ") << std::endl;
         }
     }
     ss << std::endl;

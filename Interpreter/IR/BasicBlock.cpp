@@ -9,7 +9,6 @@
 namespace borealis {
 namespace absint {
 
-
 BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : instance_(bb),
                                                                            tracker_(tracker),
                                                                            atFixpoint_(false),
@@ -48,7 +47,7 @@ std::string BasicBlock::toString() const {
         if (not domain) continue;
         ss << std::endl << "  ";
         ss << tracker_->getLocalName(value) << " = ";
-        ss << domain->toString("  ");
+        ss << domain->toPrettyString("  ");
     }
     ss << std::endl;
     return ss.str();
@@ -66,6 +65,20 @@ std::string BasicBlock::toFullString() const {
     ss << std::endl;
     return ss.str();
 }
+
+std::string BasicBlock::inputToString() const {
+    std::ostringstream ss;
+
+    if (instance_->hasName())
+        ss << instance_->getName().str() << ":";
+    else
+        ss << "<label>:" << tracker_->getLocalSlot(instance_);
+
+    ss << inputState_->toString(*tracker_);
+    ss << std::endl;
+    return ss.str();
+}
+
 
 bool BasicBlock::empty() const {
     return inputState_->empty() && outputState_->empty();
@@ -93,7 +106,6 @@ void BasicBlock::addPredecessor(BasicBlock* pred) {
 void BasicBlock::addSuccessor(BasicBlock* succ) {
     successors_.push_back(succ);
 }
-
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
     s << b.toString();
     return s;

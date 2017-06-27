@@ -20,8 +20,8 @@ namespace util {
 
 using namespace borealis::absint;
 
-absint::Integer::Ptr getMaxValue(unsigned width);
-absint::Integer::Ptr getMinValue(unsigned width);
+absint::Integer::Ptr getMaxValue(size_t width);
+absint::Integer::Ptr getMinValue(size_t width);
 
 absint::Integer::Ptr min(absint::Integer::Ptr lhv, absint::Integer::Ptr rhv, bool isSigned = false);
 absint::Integer::Ptr max(absint::Integer::Ptr lhv, absint::Integer::Ptr rhv, bool isSigned = false);

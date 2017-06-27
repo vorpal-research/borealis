@@ -14,11 +14,6 @@ namespace absint {
 IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr constant) :
         IntegerInterval(factory, constant, constant) {}
 
-IntegerInterval::IntegerInterval(Domain::Value value, DomainFactory* factory, unsigned width) :
-        IntegerInterval(factory, std::make_tuple(value,
-                                                 factory->toInteger(0, width),
-                                                 factory->toInteger(0, width))) {}
-
 IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to) :
         IntegerInterval(factory, std::make_tuple(VALUE,
                                                  from,
@@ -27,7 +22,8 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Inte
 IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::ID& key) :
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
         from_(std::get<1>(key)),
-        to_(std::get<2>(key)) {
+        to_(std::get<2>(key)),
+        wm_(factory_) {
     ASSERT(from_->getWidth() == to_->getWidth(), "Different bit width of interval bounds");
     ASSERT(from_->le(to_), "Lower bound is greater that upper bound");
     if (from_->isMin() && to_->isMax()) value_ = TOP;
@@ -86,30 +82,13 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto left = interval->from_->lt(from_) ? util::getMinValue(getWidth()) : from_;
-    auto right = to_->lt(interval->to_) ? util::getMaxValue(getWidth()) : to_;
+    auto left = interval->from_->lt(from_) ? wm_.get_prev(interval->from_) : from_;
+    auto right = to_->lt(interval->to_) ? wm_.get_next(interval->to_) : to_;
 
     return factory_->getInteger(left, right);
 }
 
-Domain::Ptr IntegerInterval::narrow(Domain::Ptr other) const {
-    auto&& interval = llvm::dyn_cast<IntegerInterval>(other.get());
-    ASSERT(interval, "Nullptr in interval");
-    ASSERT(this->getWidth() == interval->getWidth(), "Widening two intervals of different format");
-
-    if (this->isBottom()) {
-        return shared_from_this();
-    } else if (interval->isBottom()) {
-        return interval->shared_from_this();
-    }
-
-    auto left = from_->isMin() ? interval->from_ : from_;
-    auto right = to_->isMax() ? interval->to_ : to_;
-
-    return factory_->getInteger(left, right);
-}
-
-unsigned IntegerInterval::getWidth() const { return from_->getWidth(); }
+size_t IntegerInterval::getWidth() const { return from_->getWidth(); }
 bool IntegerInterval::isConstant() const { return from_->eq(to_); }
 bool IntegerInterval::isConstant(uint64_t constant) const {
     auto constInteger = factory_->toInteger(constant, getWidth());
@@ -121,7 +100,7 @@ Integer::Ptr IntegerInterval::signedFrom() const { return util::min(from_, to_, 
 Integer::Ptr IntegerInterval::signedTo() const { return util::max(from_, to_, true); }
 
 /// Assumes that both intervals have value
-bool IntegerInterval::intersects(const IntegerInterval* other) const {
+bool IntegerInterval::hasIntersection(const IntegerInterval* other) const {
     ASSERT(this->isValue() && other->isValue(), "Not value intervals");
 
     if (from_->le(other->from_) && other->from_->le(to_)) {
@@ -132,7 +111,7 @@ bool IntegerInterval::intersects(const IntegerInterval* other) const {
     return false;
 }
 
-bool IntegerInterval::intersects(Integer::Ptr constant) const {
+bool IntegerInterval::hasIntersection(Integer::Ptr constant) const {
     return from_->le(constant) && constant->le(to_);
 }
 
@@ -174,7 +153,7 @@ size_t IntegerInterval::hashCode() const {
                                          from_, to_);
 }
 
-std::string IntegerInterval::toString(const std::string) const {
+std::string IntegerInterval::toPrettyString(const std::string&) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
     ss << "[" << from_->toString() << ", " << to_->toString() << "]";
@@ -440,7 +419,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
         case llvm::CmpInst::ICMP_EQ:
             if (this->isConstant() && interval->isConstant() && from()->eq(interval->from())) {
                 return getBool(true);
-            } else if (this->intersects(interval)) {
+            } else if (this->hasIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
             } else {
                 return getBool(false);
@@ -449,7 +428,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
         case llvm::CmpInst::ICMP_NE:
             if (this->isConstant() && interval->isConstant() && from()->eq(interval->from())) {
                 return getBool(false);
-            } else if (this->intersects(interval)) {
+            } else if (this->hasIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
             } else {
                 return getBool(true);
@@ -530,6 +509,39 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
         default:
             UNREACHABLE("Unknown operation in icmp");
     }
+}
+
+Split IntegerInterval::splitByEq(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<IntegerInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    return interval->isConstant() ?
+           Split{ interval->shared_from_this(), shared_from_this() } :
+           Split{ shared_from_this(), shared_from_this() };
+}
+
+Split IntegerInterval::splitByLess(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<IntegerInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    auto trueVal = factory_->getInteger(from_, interval->to_);
+    auto falseVal = factory_->getInteger(interval->from_, this->to_);
+    return {trueVal, falseVal};
+}
+
+Split IntegerInterval::splitBySLess(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<IntegerInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    auto trueVal = factory_->getInteger(util::min(this->signedFrom(), interval->signedTo()),
+                                        util::max(this->signedFrom(), interval->signedTo()));
+    auto falseVal = factory_->getInteger(util::min(interval->signedFrom(), this->signedTo()),
+                                         util::max(interval->signedFrom(), this->signedTo()));
+    return {trueVal, falseVal};
 }
 
 }   /* namespace absint */

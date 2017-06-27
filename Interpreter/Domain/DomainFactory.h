@@ -36,7 +36,6 @@ public:
     DomainFactory(SlotTrackerPass* st);
     ~DomainFactory();
 
-    // get slottrackers for domains
     SlotTrackerPass& getSlotTracker() const {
         return *ST_;
     }
@@ -52,7 +51,7 @@ public:
 
     Integer::Ptr toInteger(uint64_t val, size_t width);
     Integer::Ptr toInteger(const llvm::APInt& val);
-    /// create IntegerDomain for given index (of array or struct)
+    /// create IntegerDomain for given index (for arrays and structs)
     Domain::Ptr getIndex(uint64_t indx);
 
     Domain::Ptr getInteger(unsigned width);
@@ -69,10 +68,10 @@ public:
     Domain::Ptr getAggregateObject(const llvm::Type& type);
     Domain::Ptr getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements);
 
-    Domain::Ptr getNullptr(const llvm::Type& elementType);
     Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
+    Domain::Ptr getNullptr(const llvm::Type& elementType);
 
     MemoryObject::Ptr getMemoryObject(const llvm::Type& type);
     MemoryObject::Ptr getMemoryObject(Domain::Ptr value);
@@ -85,6 +84,7 @@ private:
     SlotTrackerPass* ST_;
     IntCache ints_;
     FloatCache floats_;
+    Domain::Ptr nullptr_;
 
 };
 

@@ -42,6 +42,7 @@ protected:
     AggregateObject(DomainFactory* factory, const llvm::Type& elementType,
                     const AggregateObject::Elements& elements);
 
+
 public:
     /// Poset
     virtual bool equals(const Domain* other) const;
@@ -51,11 +52,10 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const;
     virtual Domain::Ptr meet(Domain::Ptr other) const;
     virtual Domain::Ptr widen(Domain::Ptr other) const;
-    virtual Domain::Ptr narrow(Domain::Ptr other) const;
 
     /// Other
     virtual std::size_t hashCode() const;
-    virtual std::string toString(const std::string prefix = "") const;
+    virtual std::string toPrettyString(const std::string& prefix) const;
     const Types& getElementTypes() const;
     const Elements& getElements() const;
     Domain::Ptr getLength() const;

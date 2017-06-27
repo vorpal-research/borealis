@@ -51,6 +51,7 @@ public:
 
     std::string getName() const;
     std::string toString() const;
+    std::string inputToString() const;
     std::string toFullString() const;
 
     bool empty() const;

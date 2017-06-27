@@ -71,7 +71,7 @@ std::size_t AggregateObject::hashCode() const {
     return util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_.size());
 }
 
-std::string AggregateObject::toString(const std::string prefix) const {
+std::string AggregateObject::toPrettyString(const std::string& prefix) const {
     std::stringstream ss;
 
     if (isArray()) ss << "Array [" << getMaxLength() << " x " << factory_->getSlotTracker().toString(&getTypeFor(0)) << "] ";
@@ -84,7 +84,7 @@ std::string AggregateObject::toString(const std::string prefix) const {
     }
     ss << ": [";
     for (auto&& it : elements_) {
-        ss << std::endl << prefix << "  " << it.first << " : " << it.second->toString(prefix + "  ");
+        ss << std::endl << prefix << "  " << it.first << " : " << it.second->toPrettyString(prefix + "  ");
     }
     ss << std::endl << prefix << "]";
     return ss.str();
@@ -191,10 +191,6 @@ Domain::Ptr AggregateObject::meet(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr AggregateObject::narrow(Domain::Ptr) const {
-    UNREACHABLE("Unimplemented, sorry...");
-}
-
 Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
     auto maxLength = getMaxLength();
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
@@ -218,9 +214,6 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
     Domain::Ptr result = factory_->getBottom(type);
     std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
     for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
-        if (indices.size() == 1)
-            ASSERT(getTypeFor(i).getTypeID() == type.getTypeID(), "Wrong types in aggregate extractValue");
-
         if (not util::at(elements_, i)) {
             elements_[i] = factory_->getMemoryObject(getTypeFor(i));
         }
@@ -236,7 +229,7 @@ void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain:
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
-    if (isBottom() || isTop())
+    if (not isValue())
         return;
 
     auto indexStart = indexInterval->from()->getRawValue();
@@ -266,10 +259,11 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
     ASSERT(indexInterval, "Unknown type of offsets");
 
-    if (isBottom())
+    if (isBottom()) {
         return factory_->getBottom(type);
-    else if (isTop())
+    } else if (isTop()) {
         return factory_->getTop(type);
+    }
 
     auto indexStart = indexInterval->from()->getRawValue();
     auto indexEnd = indexInterval->to()->getRawValue();

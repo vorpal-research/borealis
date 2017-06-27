@@ -16,11 +16,6 @@ namespace absint {
 FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& constant) :
         FloatInterval(factory, constant, constant) {}
 
-FloatInterval::FloatInterval(Domain::Value value, DomainFactory* factory, const llvm::fltSemantics& semantics) :
-        FloatInterval(factory, std::make_tuple(value,
-                                               llvm::APFloat(semantics),
-                                               llvm::APFloat(semantics))) {}
-
 FloatInterval::FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to) :
         FloatInterval(factory, std::make_tuple(VALUE, from, to)) {}
 
@@ -112,22 +107,6 @@ Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
     return factory_->getFloat(left, right);
 }
 
-Domain::Ptr FloatInterval::narrow(Domain::Ptr other) const {
-    auto&& interval = llvm::dyn_cast<FloatInterval>(other.get());
-    ASSERT(interval, "Nullptr in interval");
-
-    if (this->isBottom()) {
-        return shared_from_this();
-    } else if (interval->isBottom()) {
-        return interval->shared_from_this();
-    }
-
-    auto left = (util::eq(from_, util::getMinValue(getSemantics()))) ? interval->from_ : from_;
-    auto right = (util::eq(to_, util::getMaxValue(getSemantics()))) ? interval->to_ : to_;
-
-    return factory_->getFloat(left, right);
-}
-
 const llvm::fltSemantics& FloatInterval::getSemantics() const {
     return from_.getSemantics();
 }
@@ -149,7 +128,7 @@ const llvm::APFloat& FloatInterval::to() const {
 }
 
 /// Assumes that both intervals have value
-bool FloatInterval::intersects(const FloatInterval* other) const {
+bool FloatInterval::hasIntersection(const FloatInterval* other) const {
     ASSERT(this->isValue() && other->isValue(), "Not value intervals");
 
     if (util::lt(this->from_, other->from_) && util::lt(other->from_, to_)) {
@@ -165,7 +144,7 @@ size_t FloatInterval::hashCode() const {
                                          from_, to_);
 }
 
-std::string FloatInterval::toString(const std::string) const {
+std::string FloatInterval::toPrettyString(const std::string&) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
     ss << "[" << util::toString(from_) << ", " << util::toString(to_) << "]";
@@ -413,7 +392,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
         case llvm::CmpInst::FCMP_UEQ:   // 1 0 0 1  unordered or equal
             if (isConstant() && this->equals(interval))
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -423,7 +402,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpGreaterThan)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -433,7 +412,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpGreaterThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -443,7 +422,7 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpLessThan)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
@@ -453,14 +432,14 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
             res = from_.compare(interval->to_);
             if (res == llvm::APFloat::cmpLessThan || res == llvm::APFloat::cmpEqual)
                 return getBool(true);
-            else if (intersects(interval))
+            else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
                 return getBool(false);
 
         case llvm::CmpInst::FCMP_ONE:   // 0 1 1 0  ordered and operands are unequal
         case llvm::CmpInst::FCMP_UNE:   // 1 1 1 0  unordered or not equal
-            if (not intersects(interval))
+            if (not hasIntersection(interval))
                 return getBool(true);
             else if (not (isConstant() && this->equals(interval)))
                 return factory_->getInteger(TOP, 1);
@@ -474,6 +453,28 @@ Domain::Ptr FloatInterval::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
 
 bool FloatInterval::isNaN() const {
     return isValue() && from_.isNaN() && to_.isNaN();
+}
+
+Split FloatInterval::splitByEq(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    return interval->isConstant() ?
+           Split{ interval->shared_from_this(), shared_from_this() } :
+           Split{ shared_from_this(), shared_from_this() };
+}
+
+Split FloatInterval::splitByLess(Domain::Ptr other) const {
+    auto interval = llvm::dyn_cast<FloatInterval>(other.get());
+    ASSERT(interval, "Not interval in split");
+
+    if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+
+    auto trueVal = factory_->getFloat(from_, interval->to_);
+    auto falseVal = factory_->getFloat(interval->to_, this->to_);
+    return {trueVal, falseVal};
 }
 
 }   /* namespace absint */

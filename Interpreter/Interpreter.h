@@ -27,7 +27,7 @@ public:
     const Module& getModule() const;
 
     void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
-
+    Domain::Ptr getVariable(const llvm::Value* value);
 
     /// llvm instructions visitors
     void visitInstruction(llvm::Instruction& i);
@@ -68,21 +68,20 @@ private:
         Function::Ptr function; // current function
         State::Ptr state; // current state
         std::deque<BasicBlock*> deque; // deque of blocks to visit
+        // This is not good
+        std::map<const llvm::Value*, bool> stores; // stores, visited in current context
     };
 
     /// Util functions
-    Domain::Ptr getVariable(const llvm::Value* value);
     Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
     void stub(const llvm::Instruction& i);
-    void addSuccessors(const std::vector<const llvm::BasicBlock*>& successors);
+    void addSuccessors(const std::vector<BasicBlock*>& successors);
     void handleMemoryAllocation(const llvm::CallInst& i);
     void handleDeclaration(const llvm::CallInst& i);
 
     Module module_;
     FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;
-    // This is not good
-    std::map<const llvm::Value*, bool> stores_;
 
     Context* context_;  // active context
     std::stack<Context> stack_; // stack of contexts of interpreter

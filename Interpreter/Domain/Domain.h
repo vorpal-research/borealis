@@ -13,18 +13,22 @@
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Type.h>
 
+#include "Interpreter/Widening/WideningInterface.hpp"
 #include "Logging/logger.hpp"
 
 namespace borealis {
 namespace absint {
 
+struct Split;
 class DomainFactory;
+class MemoryObject;
 
 class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
     enum Type {INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
+        NULLPTR,
         POINTER,
         AGGREGATE
     };
@@ -82,12 +86,15 @@ public:
     virtual Domain::Ptr join(Domain::Ptr other) const = 0;
     virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
     virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
-    virtual Domain::Ptr narrow(Domain::Ptr other) const = 0;
 
     /// Other
     virtual size_t hashCode() const = 0;
-    virtual std::string toString(const std::string prefix = "") const {
+
+    virtual std::string toPrettyString(const std::string& prefix) const {
         return prefix + "unknown";
+    }
+    virtual std::string toString() const {
+        return toPrettyString("");
     }
 
     virtual Type getType() const {
@@ -150,13 +157,18 @@ public:
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
+    /// Split operations
+    virtual Split splitByEq(Domain::Ptr other) const;
+    virtual Split splitByLess(Domain::Ptr other) const;
+    virtual Split splitBySLess(Domain::Ptr other) const;
 
 protected:
 
-    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory) : ObjectLevelLogging("domain"),
-                                                                             value_(value),
-                                                                             type_(type),
-                                                                             factory_(factory) {}
+    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory)
+            : ObjectLevelLogging("domain"),
+              value_(value),
+              type_(type),
+              factory_(factory) {}
     virtual ~Domain() = default;
 
     Value value_;
@@ -176,6 +188,15 @@ struct DomainEquals {
 struct DomainHash {
     size_t operator()(Domain::Ptr lhv) const noexcept {
         return lhv->hashCode();
+    }
+};
+
+struct Split {
+    Domain::Ptr true_;
+    Domain::Ptr false_;
+
+    Split swap() {
+        return {false_, true_};
     }
 };
 

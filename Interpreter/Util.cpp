@@ -19,11 +19,11 @@ namespace util {
 /// APInt util
 ///////////////////////////////////////////////////////////////
 
-absint::Integer::Ptr getMaxValue(unsigned width) {
+absint::Integer::Ptr getMaxValue(size_t width) {
     return Integer::Ptr{ new MaxInteger(width) };
 }
 
-absint::Integer::Ptr getMinValue(unsigned width) {
+absint::Integer::Ptr getMinValue(size_t width) {
     return Integer::Ptr{ new MinInteger(width) };
 }
 

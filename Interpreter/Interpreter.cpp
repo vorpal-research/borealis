@@ -8,6 +8,7 @@
 #include "Util/collections.hpp"
 
 #include "Util/macros.h"
+#include "ConditionSplitter.h"
 
 namespace borealis {
 namespace absint {
@@ -37,8 +38,8 @@ const Module& Interpreter::getModule() const {
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
-    stack_.push({ function, nullptr, {function->getEntryNode()} });
     function->setArguments(args);
+    stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
     context_ = &stack_.top();
 
     while (not context_->deque.empty()) {
@@ -62,6 +63,23 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
     context_ = &stack_.top();
 }
 
+Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
+    if (auto&& global = module_.findGLobal(value)) {
+        return global;
+
+    } else if (auto&& local = context_->state->find(value)) {
+        return local;
+
+    } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
+        return module_.getDomainFactory()->get(constant);
+
+    } else if (value->getType()->isVoidTy()) {
+        return nullptr;
+    }
+    warns() << "Unknown value: " << ST_->toString(value) << endl;
+    return nullptr;
+}
+
 /////////////////////////////////////////////////////////////////////
 /// Visitors
 /////////////////////////////////////////////////////////////////////
@@ -81,32 +99,48 @@ void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
 }
 
 void Interpreter::visitBranchInst(llvm::BranchInst& i) {
-    std::vector<const llvm::BasicBlock*> successors;
+    std::vector<BasicBlock*> successors;
     if (i.isConditional()) {
         auto cond = getVariable(i.getCondition());
         ASSERT(cond, "condition of branch");
 
-        if (not cond->isValue()) {
-            successors.push_back(i.getSuccessor(0));
-            successors.push_back(i.getSuccessor(1));
+        auto trueSuccessor = context_->function->getBasicBlock(i.getSuccessor(0));
+        auto falseSuccessor = context_->function->getBasicBlock(i.getSuccessor(1));
+        trueSuccessor->getInputState()->merge(context_->state);
+        falseSuccessor->getInputState()->merge(context_->state);
 
-        } else {
+        if (cond->isTop()) {
+            auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
+            for (auto&& it : splitted) {
+                trueSuccessor->getInputState()->addVariable(it.first, it.second.true_);
+                falseSuccessor->getInputState()->addVariable(it.first, it.second.false_);
+            }
+            successors.push_back(trueSuccessor);
+            successors.push_back(falseSuccessor);
+
+        } else if (cond->isValue()) {
             auto boolean = llvm::dyn_cast<IntegerInterval>(cond.get());
             ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
 
-            successors.push_back(boolean->isConstant(1) ?
-                                 i.getSuccessor(0) :
-                                 i.getSuccessor(1));
+            auto successor = boolean->isConstant(1) ?
+                             trueSuccessor :
+                             falseSuccessor;
+            successors.push_back(successor);
+        } else {
+            successors.push_back(trueSuccessor);
+            successors.push_back(falseSuccessor);
         }
     } else {
-        successors.push_back(i.getSuccessor(0));
+        auto successor = context_->function->getBasicBlock(i.getSuccessor(0));
+        successor->getInputState()->merge(context_->state);
+        successors.push_back(successor);
     }
 
     addSuccessors(successors);
 }
 
 void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
-    std::vector<const llvm::BasicBlock*> successors;
+    std::vector<BasicBlock*> successors;
     auto&& cond = getVariable(i.getCondition());
 
     if (cond->isValue()) {
@@ -116,29 +150,38 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
 
         for (auto&& cs : i.cases()) {
             auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
-            if (integer->intersects(caseVal)) {
-                successors.push_back(cs.getCaseSuccessor());
+            if (integer->hasIntersection(caseVal)) {
+                auto successor = context_->function->getBasicBlock(cs.getCaseSuccessor());
+                successor->getInputState()->merge(context_->state);
+                successors.push_back(successor);
                 isDefault = false;
             }
         }
 
         if (isDefault) {
-            successors.push_back(i.getDefaultDest());
+            auto successor = context_->function->getBasicBlock(i.getDefaultDest());
+            successor->getInputState()->merge(context_->state);
+            successors.push_back(successor);
         }
 
     } else {
-        for (auto j = 0U; j < i.getNumSuccessors(); ++j)
-            successors.push_back(i.getSuccessor(j));
+        for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
+            auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
+            successor->getInputState()->merge(context_->state);
+            successors.push_back(successor);
+        }
     }
 
     addSuccessors(successors);
 }
 
 void Interpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
-    std::vector<const llvm::BasicBlock*> successors;
+    std::vector<BasicBlock*> successors;
 
     for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
-        successors.push_back(i.getSuccessor(j));
+        auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
+        successor->getInputState()->merge(context_->state);
+        successors.push_back(successor);
     }
     addSuccessors(successors);
 }
@@ -191,12 +234,12 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
     ASSERT(ptr && storeVal, "store args");
 
     auto index = module_.getDomainFactory()->getIndex(0);
-    if (stores_.find(&i) != stores_.end()) {
-        auto top = module_.getDomainFactory()->getTop(*i.getValueOperand()->getType());
-        ptr->store(top, index);
+    if (context_->stores.find(&i) != context_->stores.end()) {
+        auto load = ptr->load(*i.getValueOperand()->getType(), index);
+        ptr->store(load->widen(storeVal), index);
     } else {
         ptr->store(storeVal, index);
-        stores_.insert({&i, true});
+        context_->stores.insert({&i, true});
     }
 }
 
@@ -212,10 +255,9 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
     if ( (result = context_->state->find(&i)) ) {
         for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
             auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-            /// incoming might be nullptr, if that block is not visited yet
-            auto&& incoming = getVariable(i.getIncomingValue(j));
-
-            if (predecessor->isVisited() && incoming) {
+            if (predecessor->isVisited()) {
+                auto&& incoming = getVariable(i.getIncomingValue(j));
+                ASSERT(incoming, "Unknown value in phi");
                 result = result->widen(incoming);
             }
         }
@@ -224,10 +266,10 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
         // if not found, then result is nullptr
         for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
             auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-            /// incoming might be nullptr, if that block is not visited yet
-            auto&& incoming = getVariable(i.getIncomingValue(j));
+            if (predecessor->isVisited()) {
+                auto&& incoming = getVariable(i.getIncomingValue(j));
+                ASSERT(incoming, "Unknown value in phi");
 
-            if (predecessor->isVisited() && incoming) {
                 result = result ?
                          result->join(incoming) :
                          incoming;
@@ -325,7 +367,7 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
         case llvm::Instruction::Or:     result = lhv->bOr(rhv); break;
         case llvm::Instruction::Xor:    result = lhv->bXor(rhv); break;
         default:
-            UNREACHABLE("Unknown binary operator:" + i .getName().str());
+            UNREACHABLE("Unknown binary operator: " + i .getName().str());
     }
 
     ASSERT(result, "binop result");
@@ -383,29 +425,10 @@ void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
 ///////////////////////////////////////////////////////////////
 /// Util functions
 ///////////////////////////////////////////////////////////////
-Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
-    if (auto&& global = module_.findGLobal(value)) {
-        return global;
-
-    } else if (auto&& local = context_->state->find(value)) {
-        return local;
-
-    } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
-        return module_.getDomainFactory()->get(constant);
-
-    } else if (value->getType()->isVoidTy()) {
-        return nullptr;
-    }
-    errs() << "Unknown value: " << ST_->toString(value) << endl;
-    return nullptr;
-}
-
-void Interpreter::addSuccessors(const std::vector<const llvm::BasicBlock*>& successors) {
+void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
-        auto&& successor = context_->function->getBasicBlock(it);
-        successor->getInputState()->merge(context_->state);
-        if (not successor->atFixpoint() && not util::contains(context_->deque, successor)) {
-            context_->deque.push_back(successor);
+        if (not it->atFixpoint() && not util::contains(context_->deque, it)) {
+            context_->deque.push_back(it);
         }
     }
 }
@@ -417,10 +440,10 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
     std::vector<Domain::Ptr> offsets;
     for (auto j = gep.idx_begin(); j != gep.idx_end(); ++j) {
         auto val = llvm::cast<llvm::Value>(j);
-        if (auto indx = context_->state->find(val)) {
-            offsets.push_back(indx);
-        } else if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
+        if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
             offsets.push_back(module_.getDomainFactory()->getIndex(*intConstant->getValue().getRawData()));
+        } else if (auto indx = context_->state->find(val)) {
+            offsets.push_back(indx);
         } else {
             UNREACHABLE("Non-integer constant in gep");
         }
@@ -440,7 +463,7 @@ void Interpreter::stub(const llvm::Instruction& i) {
 void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
     auto&& size = getVariable(i.getArgOperand(2));
     if (not size) {
-        errs() << "Allocating unknown amount of memory: " << ST_->toString(&i) << endl;
+        warns() << "Allocating unknown amount of memory: " << ST_->toString(&i) << endl;
         stub(i);
         return;
     }
@@ -489,14 +512,16 @@ void Interpreter::handleDeclaration(const llvm::CallInst& i) {
             context_->state->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
 
     } catch (std::out_of_range) {
-        errs() << "Unknown function: " << ST_->toString(&i) << endl;
+        warns() << "Unknown function: " << ST_->toString(&i) << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
         for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
             auto arg = i.getArgOperand(j);
             auto argType = arg->getType();
-            if (argType->isPointerTy())
+            if (argType->isPointerTy()) {
+                errs() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
                 context_->state->addVariable(arg, module_.getDomainFactory()->getTop(*argType));
+            }
         }
         if (not i.getType()->isVoidTy())
             context_->state->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
