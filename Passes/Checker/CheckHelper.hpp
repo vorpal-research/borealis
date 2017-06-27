@@ -111,11 +111,11 @@ private:
         borealis::util::StopWatch timer;
         using namespace std::chrono_literals;
 
-        ON_SCOPE_EXIT(
-            if(timer.duration() > 2000ms && state->size() < 3000) {
-                borealis::displayAsGraph(state, "Problem state");
-            }
-        );
+//        ON_SCOPE_EXIT(
+//            if(timer.duration() > 2000ms && state->size() < 3000) {
+//                borealis::displayAsGraph(state, "Problem state");
+//            }
+//        );
 
         if(engineName == "mathsat") return checkViolationMathSAT(memoryBounds, query, state);
         if(engineName == "z3") return checkViolationZ3(memoryBounds, query, state);
