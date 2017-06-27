@@ -90,6 +90,21 @@ struct SMTImpl<Impl, LoadTerm> {
 };
 #include "Util/unmacros.h"
 
+struct LoadTermExtractor {
+
+    functional_hell::matchers::storage_t<Term::Ptr> unapply(Term::Ptr t) const {
+        if (auto&& p = llvm::dyn_cast<LoadTerm>(t)) {
+            return functional_hell::matchers::make_storage(p->getRhv());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $LoadTerm = functional_hell::matchers::make_pattern(LoadTermExtractor());
+
+
 } /* namespace borealis */
 
 #endif /* LOADTERM_H_ */

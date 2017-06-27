@@ -100,6 +100,14 @@ Type::Ptr TypeUtils::getPointerElementType(Type::Ptr type) {
     }
 }
 
+size_t TypeUtils::getPointerMemorySpace(Type::Ptr type) {
+    if (auto ptr = llvm::dyn_cast<type::Pointer>(type)) {
+        return ptr->getMemspace();
+    } else {
+        return 0;
+    }
+}
+
 unsigned long long TypeUtils::getStructOffsetInElems(Type::Ptr type, unsigned idx) {
     if (auto* structType = llvm::dyn_cast<type::Record>(type)) {
         auto&& recordBody = structType->getBody()->get();

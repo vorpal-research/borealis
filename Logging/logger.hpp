@@ -9,6 +9,7 @@
 #define LOGGER_HPP_
 
 #include <type_traits>
+#include <functional>
 #include <tinyformat/tinyformat.h>
 
 #include "Logging/log_entry.hpp"

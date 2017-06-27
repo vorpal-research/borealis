@@ -33,6 +33,10 @@ TermBuilder TermBuilder::operator*() const {
     return { TF, TF->getLoadTerm(term) };
 }
 
+TermBuilder operator>(TermBuilder TB, Term::Ptr that) {
+    return { TB.TF, TB.TF->getCmpTerm(llvm::ConditionType::GE, TB.term, that) };
+}
+
 TermBuilder TermBuilder::uge(Term::Ptr that) const {
     return { TF, TF->getCmpTerm(llvm::ConditionType::UGE, term, that) };
 }

@@ -73,9 +73,10 @@ std::string Predicate::toString() const {
    case PredicateType::ASSERT:    return "@A " + asString;
    case PredicateType::ASSUME:    return "@U " + asString;
    case PredicateType::PATH:      return "@P " + asString;
+   case PredicateType::INVARIANT: return "@I " + asString;
    case PredicateType::STATE:     return asString;
-   case PredicateType::INVARIANT: return "@I" + asString;
-   default:                       return "@?" + asString;
+
+   default:                       return "@? " + asString;
    }
 }
 

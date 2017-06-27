@@ -26,6 +26,7 @@ struct TypeUtils {
     static unsigned long long getStructOffsetInElems(Type::Ptr type, unsigned idx);
 
     static Type::Ptr getPointerElementType(Type::Ptr type);
+    static size_t getPointerMemorySpace(Type::Ptr type);
 
     static llvm::Type* tryCastBack(llvm::LLVMContext& C, Type::Ptr type);
 

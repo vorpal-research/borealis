@@ -350,6 +350,9 @@ Term::Ptr TermFactory::getLoadTerm(Term::Ptr rhv) {
 }
 
 Term::Ptr TermFactory::getReadPropertyTerm(Type::Ptr type, Term::Ptr propName, Term::Ptr rhv) {
+    if(not llvm::isa<type::Pointer>(rhv->getType())) {
+        rhv = getCastTerm(TyF->getPointer(TyF->getUnknownType()), false, rhv);
+    }
     return make_new<ReadPropertyTerm>(type, propName, rhv);
 }
 

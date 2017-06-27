@@ -1,10 +1,3 @@
-/*
- * Z3Solver.cpp
- *
- *  Created on: Oct 31, 2012
- *      Author: ice-phoenix
- */
-
 #include <fstream>
 
 #include "Config/config.h"
