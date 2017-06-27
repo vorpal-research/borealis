@@ -7,6 +7,7 @@
 
 #include "State/Transformer/StateSlicer.h"
 #include "State/Transformer/TermCollector.h"
+#include "Predicate/PredicateUtils.hpp"
 
 #include "Util/util.h"
 
@@ -57,7 +58,7 @@ static struct {
     using argument_type = Term::Ptr;
 
     bool operator()(Term::Ptr t) const {
-        return TermUtils::isNamedTerm(t);
+        return TermUtils::isNamedTerm(t) || llvm::isa<CastTerm>(t);
     }
 } isInterestingTerm;
 
@@ -68,10 +69,7 @@ void StateSlicer::init(llvm::AliasAnalysis* llvmAA) {
         AA = util::make_unique<LocalStensgaardAA>(FN);
     }
 
-    auto&& tc = TermCollector(FN);
-    tc.transform(query);
-
-    util::viewContainer(tc.getTerms())
+    util::viewContainer(TermUtils::getFullTermSet(query))
         .filter(isInterestingTerm)
         .foreach(APPLY(this->addSliceTerm));
 }
@@ -85,7 +83,7 @@ void StateSlicer::addSliceTerm(Term::Ptr term) {
 }
 
 PredicateState::Ptr StateSlicer::transform(PredicateState::Ptr ps) {
-    if(AA) AA->prepare(ps);
+    if(AA) AA->prepare(FN.State->Chain(query,ps));
     CFDT.reset();
     CFDT.transform(ps);
     currentPathDeps = CFDT.getFinalPaths();
@@ -150,14 +148,30 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
         return nullptr;
     }
 
-    auto&& lhvTerms = Term::Set{};
-    for (auto&& lhv : util::viewContainer(pred->getOperands()).take(1)) {
+//    if (PredicateType::STATE != pred->getType() && PredicateType::INVARIANT != pred->getType()){
+//        auto terms = TermUtils::getFullTermSet(pred);
+//        Predicate::Ptr res = nullptr;
+//        if (checkVars(terms, terms)) {
+//            res = pred;
+//        } else if (checkPtrs(pred, terms, terms)) {
+//            res = pred;
+//        }
+//
+//        if(res) {
+//            addControlFlowDeps(res);
+//        }
+//
+//        return res;
+//    }
+
+    auto&& lhvTerms = TermSet{};
+    if (auto&& lhv = PredicateUtils::getReceiver(pred)) {
         auto&& nested = TermUtils::getFullTermSet(lhv);
         util::viewContainer(nested)
             .filter(isInterestingTerm)
             .foreach(APPLY(lhvTerms.insert));
     }
-    auto&& rhvTerms = Term::Set{};
+    auto&& rhvTerms = TermSet{};
     for (auto&& rhv : util::viewContainer(pred->getOperands()).drop(1)) {
         auto&& nested = TermUtils::getFullTermSet(rhv);
         util::viewContainer(nested)
@@ -167,11 +181,9 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
 
     Predicate::Ptr res = nullptr;
 
-    if (checkVars(lhvTerms, rhvTerms)) {
-        res = pred;
-    } else if (checkPtrs(pred, lhvTerms, rhvTerms)) {
-        res = pred;
-    }
+    auto asVar = checkVars(lhvTerms, rhvTerms);
+    auto asPointer = checkPtrs(pred, lhvTerms, rhvTerms);
+    if(asVar || asPointer) res = pred;
 
     if(res) {
         addControlFlowDeps(res);
@@ -180,7 +192,7 @@ Predicate::Ptr StateSlicer::transformBase(Predicate::Ptr pred) {
     return res;
 }
 
-bool StateSlicer::checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
+bool StateSlicer::checkPath(Predicate::Ptr pred, const TermSet& lhv, const TermSet& rhv) {
     if (PredicateType::PATH == pred->getType() ||
         PredicateType::ASSUME == pred->getType() ||
         PredicateType::REQUIRES == pred->getType()) {
@@ -192,7 +204,7 @@ bool StateSlicer::checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Ter
     return false;
 }
 
-bool StateSlicer::checkVars(const Term::Set& lhv, const Term::Set& rhv) {
+bool StateSlicer::checkVars(const TermSet& lhv, const TermSet& rhv) {
     if (
         util::viewContainer(lhv)
             .filter(isNotPointerTerm)
@@ -205,7 +217,7 @@ bool StateSlicer::checkVars(const Term::Set& lhv, const Term::Set& rhv) {
     return false;
 }
 
-bool StateSlicer::checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv) {
+bool StateSlicer::checkPtrs(Predicate::Ptr pred, const TermSet& lhv, const TermSet& rhv) {
     if(lhv.empty()) return false;
 
     auto added = false;
@@ -235,7 +247,8 @@ bool StateSlicer::checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Ter
                 .any_of([&](auto&& a) {
                     return util::viewContainer(slicePtrs)
                         .any_of([&](auto&& b) {
-                            return AA->mayAlias(a, b);
+                            auto al = AA->mayAlias(a, b);
+                            return al;
                         });
                 })
             ) {

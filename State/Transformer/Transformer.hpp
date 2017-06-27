@@ -57,6 +57,8 @@ protected:
     TermBuilder ret(const llvm::Function* F) { return { FN.Term, FN.Term->getReturnValueTerm(F) }; }
     TermBuilder arg(const llvm::Argument* A) { return { FN.Term, FN.Term->getArgumentTerm(A) }; }
 
+    Transformer(const Transformer&) = default;
+
 public:
 
     Transformer(FactoryNest FN) : FN(FN) {};
