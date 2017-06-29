@@ -59,7 +59,7 @@ void Module::initGlobals() {
     }
 }
 
-Function::Ptr Module::create(const llvm::Function* function) {
+Function::Ptr Module::get(const llvm::Function* function) {
     if (auto&& opt = util::at(functions_, function)) {
         return opt.getUnsafe();
     } else {
@@ -69,15 +69,9 @@ Function::Ptr Module::create(const llvm::Function* function) {
     }
 }
 
-Function::Ptr Module::create(const std::string& fname) {
+Function::Ptr Module::get(const std::string& fname) {
     auto&& function = instance_->getFunction(fname);
-    return (function) ? create(function) : nullptr;
-}
-
-Function::Ptr Module::get(const llvm::Function* function) const {
-    if (auto&& opt = util::at(functions_, function))
-        return opt.getUnsafe();
-    return nullptr;
+    return (function) ? get(function) : nullptr;
 }
 
 Module::GlobalsMap& Module::getGloabls() {

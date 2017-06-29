@@ -51,8 +51,8 @@ public:
     Domain::Ptr getReturnValue() const;
 
     /// Assumes that @args[i] corresponds to i-th argument of the function
+    /// Returns true, if arguments were updated and function should be reinterpreted
     bool updateArguments(const std::vector<Domain::Ptr>& args);
-    void setArguments(const std::vector<Domain::Ptr>& args);
 
     BasicBlock* getEntryNode() const;
     BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;

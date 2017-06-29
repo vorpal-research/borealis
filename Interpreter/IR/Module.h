@@ -24,11 +24,8 @@ public:
     using FunctionMap = std::map<const llvm::Function*, Function::Ptr>;
 
     Module(const llvm::Module* module, SlotTrackerPass* st);
-    /// Returns the function, if it already was created
-    Function::Ptr get(const llvm::Function* function) const;
-    /// Creates the function and saves it
-    Function::Ptr create(const llvm::Function* function);
-    Function::Ptr create(const std::string& fname);
+    Function::Ptr get(const llvm::Function* function);
+    Function::Ptr get(const std::string& fname);
 
     GlobalsMap& getGloabls();
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);

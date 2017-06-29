@@ -18,7 +18,9 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
           factory_(factory) {
     inputState_ = State::Ptr{ new State() };
     outputState_ = State::Ptr{ new State() };
-    arguments_ = std::vector<Domain::Ptr>(instance_->getArgumentList().size(), nullptr);
+    util::viewContainer(instance_->getArgumentList()).foreach([&](const llvm::Argument& arg) {
+        arguments_.push_back(nullptr);
+    });
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(&block, tracker_);
         blocks_.insert( {&block, aiBlock} );
@@ -109,30 +111,15 @@ std::string Function::toString() const {
     return ss.str();
 }
 
-void Function::setArguments(const std::vector<Domain::Ptr>& args) {
-    ASSERT(instance_->isVarArg() || arguments_.size() == args.size(), "Wrong number of arguments");
-    arguments_.clear();
-
-    // adding function arguments to input state
-    auto&& it = instance_->getArgumentList().begin();
-    for (auto i = 0U; i < args.size(); ++i) {
-        if (args[i]) {
-            inputState_->addVariable(it, args[i]);
-            arguments_.push_back(args[i]);
-        }
-        if (++it == instance_->getArgumentList().end()) break;
-    }
-
-    // merge the front block's input state with function input state
-    getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
-}
-
 const SlotTracker& Function::getSlotTracker() const {
     return *tracker_;
 }
 
 bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
     ASSERT(instance_->isVarArg() || arguments_.size() == args.size(), "Wrong number of arguments");
+    // This is generally fucked up
+    if (arguments_.size() == 0)
+        return not getEntryNode()->isVisited();
 
     bool changed = false;
     // adding function arguments to input state
@@ -140,14 +127,17 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
     for (auto i = 0U; i < arguments_.size(); ++i, ++it) {
         ASSERT(args[i], "Nullptr in functions arguments");
 
-        Domain::Ptr arg = args[i];
+        auto arg = args[i];
         if (arguments_[i]) {
             arg = arguments_[i]->widen(arg);
-            changed |= arguments_[i]->equals(arg.get());
+            changed |= not arguments_[i]->equals(arg.get());
+        } else {
+            changed = true;
         }
-        inputState_->addVariable(it, arg);
         arguments_[i] = arg;
+        inputState_->addVariable(it, arguments_[i]);
     }
+    getEntryNode()->getInputState()->merge(inputState_);
     return changed;
 }
 
