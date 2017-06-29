@@ -11,10 +11,10 @@
 namespace borealis {
 namespace absint {
 
-class MaxInteger : public Integer {
+class IntMax : public Integer {
 public:
 
-    MaxInteger(size_t width);
+    IntMax(size_t width);
 
     static bool classof(const Integer* other);
     virtual std::string toString() const;

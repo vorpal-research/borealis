@@ -54,8 +54,8 @@ public:
     /// create IntegerDomain for given index (for arrays and structs)
     Domain::Ptr getIndex(uint64_t indx);
 
-    Domain::Ptr getInteger(unsigned width);
-    Domain::Ptr getInteger(Domain::Value value, unsigned width);
+    Domain::Ptr getInteger(size_t width);
+    Domain::Ptr getInteger(Domain::Value value, size_t width);
     Domain::Ptr getInteger(Integer::Ptr val);
     Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to);
 

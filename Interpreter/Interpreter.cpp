@@ -64,7 +64,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
 }
 
 Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
-    if (auto&& global = module_.findGLobal(value)) {
+    if (auto&& global = module_.findGlobal(value)) {
         return global;
 
     } else if (auto&& local = context_->state->find(value)) {
@@ -475,12 +475,12 @@ void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
     // Adding new level of abstraction (pointer to array to real value), because:
     // - if this is alloc, we need one more level for correct GEP handler
     // - if this is malloc, we create array of dynamically allocated objects
-    if (integer->to()->isMax()) {
+    if (integer->ub()->isMax()) {
         stub(i);
         return;
     }
 
-    auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), integer->to()->getRawValue());
+    auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), integer->ub()->getRawValue());
     auto&& ptrType = llvm::PointerType::get(arrayType, 0);
     Domain::Ptr domain = module_.getDomainFactory()->allocate(*ptrType);
 

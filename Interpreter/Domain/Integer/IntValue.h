@@ -2,18 +2,19 @@
 // Created by abdullin on 6/2/17.
 //
 
-#ifndef BOREALIS_MININTEGER_H
-#define BOREALIS_MININTEGER_H
+#ifndef BOREALIS_VALINTEGER_H
+#define BOREALIS_VALINTEGER_H
 
 #include "Integer.h"
 
 namespace borealis {
 namespace absint {
 
-class MinInteger : public Integer {
+class IntValue : public Integer {
 public:
 
-    MinInteger(size_t width);
+    IntValue(uint64_t value, size_t width);
+    IntValue(const llvm::APInt& value, size_t width);
 
     static bool classof(const Integer* other);
     virtual std::string toString() const;
@@ -40,10 +41,14 @@ public:
     virtual Integer::Ptr zext(const size_t width) const;
     virtual Integer::Ptr sext(const size_t width) const;
 
+private:
+
+    const llvm::APInt value_;
+
 };
 
 }   /* namespace absint */
 }   /* namespace borealis */
 
 
-#endif //BOREALIS_MININTEGER_H
+#endif //BOREALIS_VALINTEGER_H

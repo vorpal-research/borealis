@@ -5,8 +5,9 @@
 #ifndef BOREALIS_FLOATINTERVAL_H
 #define BOREALIS_FLOATINTERVAL_H
 
+#include <Interpreter/Widening/IntervalWidening.h>
 #include "Domain.h"
-#include "Interpreter/Util.h"
+#include "Interpreter/Util.hpp"
 #include "Util/hash.hpp"
 
 namespace borealis {
@@ -25,7 +26,7 @@ protected:
     friend class DomainFactory;
 
     FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
-    FloatInterval(DomainFactory* factory, const llvm::APFloat& from, const llvm::APFloat& to);
+    FloatInterval(DomainFactory* factory, const llvm::APFloat& lb, const llvm::APFloat& ub);
     FloatInterval(DomainFactory* factory, const ID& id);
 
 public:
@@ -42,8 +43,8 @@ public:
     llvm::APFloat::roundingMode getRoundingMode() const;
     bool isConstant() const;
     bool isNaN() const;
-    const llvm::APFloat& from() const;
-    const llvm::APFloat& to() const;
+    const llvm::APFloat& lb() const;
+    const llvm::APFloat& ub() const;
     bool hasIntersection(const FloatInterval* other) const;
 
     virtual size_t hashCode() const;
@@ -73,8 +74,9 @@ private:
 
     virtual void setTop();
 
-    llvm::APFloat from_;
-    llvm::APFloat to_;
+    llvm::APFloat lb_;
+    llvm::APFloat ub_;
+    mutable FloatWidening wm_;
 };
 
 struct FloatInterval::IDHash {

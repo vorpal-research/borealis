@@ -4,7 +4,7 @@
 
 #include <andersen/include/Andersen.h>
 
-#include "Interpreter/Util.h"
+#include "Interpreter/Util.hpp"
 #include "Module.h"
 #include "Util/collections.hpp"
 
@@ -18,10 +18,10 @@ Module::Module(const llvm::Module* module, SlotTrackerPass* st)
           ST_(st),
           factory_(ST_) {
     /// Initialize all global variables
-    initGLobals();
+    initGlobals();
 }
 
-void Module::initGLobals() {
+void Module::initGlobals() {
     for (auto&& it : instance_->getGlobalList()) {
         Domain::Ptr globalDomain;
         if (it.hasInitializer()) {
@@ -84,7 +84,7 @@ Module::GlobalsMap& Module::getGloabls() {
     return globals_;
 }
 
-Domain::Ptr Module::findGLobal(const llvm::Value* val) const {
+Domain::Ptr Module::findGlobal(const llvm::Value* val) const {
     auto&& it = globals_.find(val);
     return (it == globals_.end()) ? nullptr : it->second;
 }

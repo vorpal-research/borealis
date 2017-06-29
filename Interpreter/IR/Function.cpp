@@ -18,6 +18,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
           factory_(factory) {
     inputState_ = State::Ptr{ new State() };
     outputState_ = State::Ptr{ new State() };
+    arguments_ = std::vector<Domain::Ptr>(instance_->getArgumentList().size(), nullptr);
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(&block, tracker_);
         blocks_.insert( {&block, aiBlock} );
@@ -109,7 +110,7 @@ std::string Function::toString() const {
 }
 
 void Function::setArguments(const std::vector<Domain::Ptr>& args) {
-    ASSERT(instance_->isVarArg() || instance_->getArgumentList().size() == args.size(), "Wrong number of arguments");
+    ASSERT(instance_->isVarArg() || arguments_.size() == args.size(), "Wrong number of arguments");
     arguments_.clear();
 
     // adding function arguments to input state
@@ -126,15 +127,28 @@ void Function::setArguments(const std::vector<Domain::Ptr>& args) {
     getBasicBlock(&instance_->front())->getInputState()->merge(inputState_);
 }
 
-bool Function::atFixpoint() {
-    for (auto& block : blocks_) {
-        if (not block.second.atFixpoint()) return false;
-    }
-    return true;
-}
-
 const SlotTracker& Function::getSlotTracker() const {
     return *tracker_;
+}
+
+bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
+    ASSERT(instance_->isVarArg() || arguments_.size() == args.size(), "Wrong number of arguments");
+
+    bool changed = false;
+    // adding function arguments to input state
+    auto&& it = instance_->getArgumentList().begin();
+    for (auto i = 0U; i < arguments_.size(); ++i, ++it) {
+        ASSERT(args[i], "Nullptr in functions arguments");
+
+        Domain::Ptr arg = args[i];
+        if (arguments_[i]) {
+            arg = arguments_[i]->widen(arg);
+            changed |= arguments_[i]->equals(arg.get());
+        }
+        inputState_->addVariable(it, arg);
+        arguments_[i] = arg;
+    }
+    return changed;
 }
 
 std::ostream& operator<<(std::ostream& s, const Function& f) {

@@ -32,7 +32,7 @@ public:
 
     GlobalsMap& getGloabls();
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);
-    Domain::Ptr findGLobal(const llvm::Value* val) const;
+    Domain::Ptr findGlobal(const llvm::Value* val) const;
     const FunctionMap& getFunctions() const;
 
     DomainFactory* getDomainFactory();
@@ -42,7 +42,7 @@ public:
 
 private:
 
-    void initGLobals();
+    void initGlobals();
 
     const llvm::Module* instance_;
     SlotTrackerPass* ST_;

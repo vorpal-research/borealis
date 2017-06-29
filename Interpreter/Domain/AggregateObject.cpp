@@ -74,8 +74,9 @@ std::size_t AggregateObject::hashCode() const {
 std::string AggregateObject::toPrettyString(const std::string& prefix) const {
     std::stringstream ss;
 
-    if (isArray()) ss << "Array [" << getMaxLength() << " x " << factory_->getSlotTracker().toString(&getTypeFor(0)) << "] ";
-    else {
+    if (isArray()) {
+        ss << "Array [" << getMaxLength() << " x " << factory_->getSlotTracker().toString(&getElementType(0)) << "] ";
+    } else if (isStruct()) {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
             ss << "  " << factory_->getSlotTracker().toString(it.second) << ", ";
@@ -104,12 +105,12 @@ Domain::Ptr AggregateObject::getLength() const {
 
 std::size_t AggregateObject::getMaxLength() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
-    return intLength->to()->getRawValue();
+    return intLength->ub()->getRawValue();
 }
 
 bool AggregateObject::isMaxLengthTop() const {
     auto intLength = llvm::cast<IntegerInterval>(length_.get());
-    return intLength->to()->isMax();
+    return intLength->ub()->isMax();
 }
 
 bool AggregateObject::equals(const Domain* other) const {
@@ -192,9 +193,9 @@ Domain::Ptr AggregateObject::meet(Domain::Ptr) const {
 }
 
 Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
-    auto maxLength = getMaxLength();
-    auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
-    ASSERT(indexInterval, "Unknown type of offsets");
+    auto length = getMaxLength();
+    auto idx_interval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    ASSERT(idx_interval, "Unknown type of offsets");
 
     if (isBottom()) {
         return factory_->getBottom(type);
@@ -202,62 +203,62 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
         return factory_->getTop(type);
     }
 
-    auto indexStart = indexInterval->from()->getRawValue();
-    auto indexEnd = indexInterval->to()->getRawValue();
+    auto idx_begin = idx_interval->lb()->getRawValue();
+    auto idx_end = idx_interval->ub()->getRawValue();
 
-    if (indexEnd > maxLength) {
+    if (idx_end > length) {
         warns() << "Possible buffer overflow" << endl;
-    } else if (indexStart > maxLength) {
+    } else if (idx_begin > length) {
         warns() << "Buffer overflow" << endl;
     }
 
     Domain::Ptr result = factory_->getBottom(type);
-    std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
-    for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
+    std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
+    for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
         if (not util::at(elements_, i)) {
-            elements_[i] = factory_->getMemoryObject(getTypeFor(i));
+            elements_[i] = factory_->getMemoryObject(getElementType(i));
         }
         result = indices.size() == 1 ?
                  result->join(elements_.at(i)->load()) :
-                 result->join(elements_.at(i)->load()->extractValue(type, subIndices));
+                 result->join(elements_.at(i)->load()->extractValue(type, sub_idx));
     }
     return result;
 }
 
 void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const {
-    auto maxLength = getMaxLength();
-    auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
-    ASSERT(indexInterval, "Unknown type of offsets");
+    auto length = getMaxLength();
+    auto idx_interval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    ASSERT(idx_interval, "Unknown type of offsets");
 
     if (not isValue())
         return;
 
-    auto indexStart = indexInterval->from()->getRawValue();
-    auto indexEnd = indexInterval->to()->getRawValue();
+    auto idx_begin = idx_interval->lb()->getRawValue();
+    auto idx_end = idx_interval->ub()->getRawValue();
 
-    if (indexEnd > maxLength) {
+    if (idx_end > length) {
         warns() << "Possible buffer overflow" << endl;
-    } else if (indexStart > maxLength) {
+    } else if (idx_begin > length) {
         warns() << "Buffer overflow" << endl;
     }
 
-    std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
-    for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
+    std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
+    for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
         if (not util::at(elements_, i)) {
-            elements_[i] = factory_->getMemoryObject(getTypeFor(i));
+            elements_[i] = factory_->getMemoryObject(getElementType(i));
         }
         if (indices.size() == 1) {
             elements_[i]->store(element);
         } else {
-            elements_[i]->load()->insertValue(element, subIndices);
+            elements_[i]->load()->insertValue(element, sub_idx);
         }
     }
 }
 
 Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
-    auto maxLength = getMaxLength();
-    auto indexInterval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
-    ASSERT(indexInterval, "Unknown type of offsets");
+    auto length = getMaxLength();
+    auto idx_interval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    ASSERT(idx_interval, "Unknown type of offsets");
 
     if (isBottom()) {
         return factory_->getBottom(type);
@@ -265,29 +266,29 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
         return factory_->getTop(type);
     }
 
-    auto indexStart = indexInterval->from()->getRawValue();
-    auto indexEnd = indexInterval->to()->getRawValue();
+    auto idx_begin = idx_interval->lb()->getRawValue();
+    auto idx_end = idx_interval->ub()->getRawValue();
 
-    if (indexEnd > maxLength) {
+    if (idx_end > length) {
         warns() << "Possible buffer overflow" << endl;
-    } else if (indexStart > maxLength) {
+    } else if (idx_begin > length) {
         warns() << "Buffer overflow" << endl;
     }
 
     if (indices.size() == 1) {
-        llvm::APInt start(64, indexStart);
-        llvm::APInt end(64, indexEnd);
+        llvm::APInt start(64, idx_begin);
+        llvm::APInt end(64, idx_end);
         return factory_->getPointer(type, { {indices[0], shared_from_this()} });
 
     } else {
         Domain::Ptr result = nullptr;
 
-        std::vector<Domain::Ptr> subIndices(indices.begin() + 1, indices.end());
-        for (auto i = indexStart; i <= indexEnd && i < maxLength; ++i) {
+        std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
+        for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
             if (not util::at(elements_, i)) {
-                elements_[i] = factory_->getMemoryObject(getTypeFor(i));
+                elements_[i] = factory_->getMemoryObject(getElementType(i));
             }
-            auto subGep = elements_[i]->load()->gep(type, subIndices);
+            auto subGep = elements_[i]->load()->gep(type, sub_idx);
             result = result ?
                      result->join(subGep) :
                      subGep;
@@ -309,7 +310,7 @@ Domain::Ptr AggregateObject::load(const llvm::Type& type, Domain::Ptr offset) co
     return extractValue(type, {offset});
 }
 
-const llvm::Type& AggregateObject::getTypeFor(std::size_t index) const {
+const llvm::Type& AggregateObject::getElementType(std::size_t index) const {
     if (isArray())
         return *elementTypes_.at(0);
     else

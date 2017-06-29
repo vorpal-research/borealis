@@ -14,26 +14,26 @@ namespace absint {
 IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr constant) :
         IntegerInterval(factory, constant, constant) {}
 
-IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to) :
+IntegerInterval::IntegerInterval(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub) :
         IntegerInterval(factory, std::make_tuple(VALUE,
-                                                 from,
-                                                 to)) {}
+                                                 lb,
+                                                 ub)) {}
 
 IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::ID& key) :
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
-        from_(std::get<1>(key)),
-        to_(std::get<2>(key)),
+        lb_(std::get<1>(key)),
+        ub_(std::get<2>(key)),
         wm_(factory_) {
-    ASSERT(from_->getWidth() == to_->getWidth(), "Different bit width of interval bounds");
-    ASSERT(from_->le(to_), "Lower bound is greater that upper bound");
-    if (from_->isMin() && to_->isMax()) value_ = TOP;
+    ASSERT(lb_->getWidth() == ub_->getWidth(), "Different bit width of interval bounds");
+    ASSERT(lb_->le(ub_), "Lower bound is greater that upper bound");
+    if (lb_->isMin() && ub_->isMax()) value_ = TOP;
     else if (value_ == TOP) setTop();
 }
 
 void IntegerInterval::setTop() {
     Domain::setTop();
-    from_ = util::getMinValue(getWidth());
-    to_ = util::getMaxValue(getWidth());
+    lb_ = Integer::getMinValue(getWidth());
+    ub_ = Integer::getMaxValue(getWidth());
 }
 
 Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
@@ -46,9 +46,9 @@ Domain::Ptr IntegerInterval::join(Domain::Ptr other) const {
     } else if (this->isBottom()) {
         return interval->shared_from_this();
     } else {
-        auto left = util::min(from_, interval->from_);
-        auto right = util::max(to_, interval->to_);
-        return factory_->getInteger(left, right);
+        auto lb = util::min(lb_, interval->lb_);
+        auto ub = util::max(ub_, interval->ub_);
+        return factory_->getInteger(lb, ub);
     }
 }
 
@@ -62,12 +62,12 @@ Domain::Ptr IntegerInterval::meet(Domain::Ptr other) const {
     } else if (interval->isBottom()) {
         return interval->shared_from_this();
     } else {
-        auto left = from_->lt(interval->from_) ? interval->from_ : from_;
-        auto right = to_->lt(interval->to_) ? to_ : interval->to_;
+        auto lb = lb_->lt(interval->lb_) ? interval->lb_ : lb_;
+        auto ub = ub_->lt(interval->ub_) ? ub_ : interval->ub_;
 
-        return left->gt(right) ?
+        return lb->gt(ub) ?
                shared_from_this() :
-               factory_->getInteger(left, right);
+               factory_->getInteger(lb, ub);
     }
 }
 
@@ -82,37 +82,37 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto left = interval->from_->lt(from_) ? wm_.get_prev(interval->from_) : from_;
-    auto right = to_->lt(interval->to_) ? wm_.get_next(interval->to_) : to_;
+    auto lb = interval->lb_->lt(lb_) ? wm_.get_prev(interval->lb_) : lb_;
+    auto ub = ub_->lt(interval->ub_) ? wm_.get_next(interval->ub_) : ub_;
 
-    return factory_->getInteger(left, right);
+    return factory_->getInteger(lb, ub);
 }
 
-size_t IntegerInterval::getWidth() const { return from_->getWidth(); }
-bool IntegerInterval::isConstant() const { return from_->eq(to_); }
+size_t IntegerInterval::getWidth() const { return lb_->getWidth(); }
+bool IntegerInterval::isConstant() const { return lb_->eq(ub_); }
 bool IntegerInterval::isConstant(uint64_t constant) const {
     auto constInteger = factory_->toInteger(constant, getWidth());
-    return isConstant() && from_->eq(constInteger);
+    return isConstant() && lb_->eq(constInteger);
 }
-Integer::Ptr IntegerInterval::from() const { return from_; }
-Integer::Ptr IntegerInterval::to() const { return to_; }
-Integer::Ptr IntegerInterval::signedFrom() const { return util::min(from_, to_, true); }
-Integer::Ptr IntegerInterval::signedTo() const { return util::max(from_, to_, true); }
+Integer::Ptr IntegerInterval::lb() const { return lb_; }
+Integer::Ptr IntegerInterval::ub() const { return ub_; }
+Integer::Ptr IntegerInterval::signed_lb() const { return util::min<true>(lb_, ub_); }
+Integer::Ptr IntegerInterval::signed_ub() const { return util::max<true>(lb_, ub_); }
 
 /// Assumes that both intervals have value
 bool IntegerInterval::hasIntersection(const IntegerInterval* other) const {
     ASSERT(this->isValue() && other->isValue(), "Not value intervals");
 
-    if (from_->le(other->from_) && other->from_->le(to_)) {
+    if (lb_->le(other->lb_) && other->lb_->le(ub_)) {
         return true;
-    } else if (other->from_->le(to_) &&  to_->le(other->to_)) {
+    } else if (other->lb_->le(ub_) &&  ub_->le(other->ub_)) {
         return true;
     }
     return false;
 }
 
 bool IntegerInterval::hasIntersection(Integer::Ptr constant) const {
-    return from_->le(constant) && constant->le(to_);
+    return lb_->le(constant) && constant->le(ub_);
 }
 
 bool IntegerInterval::equals(const Domain *other) const {
@@ -129,8 +129,8 @@ bool IntegerInterval::equals(const Domain *other) const {
 
     return  this->value_ == interval->value_ &&
             this->getWidth() == interval->getWidth() &&
-            from_->eq(interval->from_) &&
-            to_->eq(interval->to_);
+            lb_->eq(interval->lb_) &&
+            ub_->eq(interval->ub_);
 }
 
 bool IntegerInterval::operator<(const Domain &other) const {
@@ -141,7 +141,7 @@ bool IntegerInterval::operator<(const Domain &other) const {
     if (this->isBottom()) return true;
     if (this->isTop()) return false;
 
-    return interval->from_->le(from_) && to_->le(interval->to_);
+    return interval->lb_->le(lb_) && ub_->le(interval->ub_);
 }
 
 bool IntegerInterval::classof(const Domain *other) {
@@ -149,14 +149,13 @@ bool IntegerInterval::classof(const Domain *other) {
 }
 
 size_t IntegerInterval::hashCode() const {
-    return util::hash::simple_hash_value(value_, getType(), getWidth(),
-                                         from_, to_);
+    return util::hash::simple_hash_value(value_, getType(), getWidth(), lb_, ub_);
 }
 
 std::string IntegerInterval::toPrettyString(const std::string&) const {
     if (isBottom()) return "[]";
     std::ostringstream ss;
-    ss << "[" << from_->toString() << ", " << to_->toString() << "]";
+    ss << "[" << lb_->toString() << ", " << ub_->toString() << "]";
     return ss.str();
 }
 
@@ -175,9 +174,9 @@ Domain::Ptr IntegerInterval::add(Domain::Ptr other) const {
         return factory_->getInteger(TOP, getWidth());
     } else {
         Integer::Ptr temp;
-        auto left = (temp = from_->add(interval->from_)) ? temp : util::getMinValue(getWidth());
-        auto right = (temp = to_->add(interval->to_)) ? temp : util::getMaxValue(getWidth());
-        return factory_->getInteger(left, right);
+        auto lb = (temp = lb_->add(interval->lb_)) ? temp : Integer::getMinValue(getWidth());
+        auto ub = (temp = ub_->add(interval->ub_)) ? temp : Integer::getMaxValue(getWidth());
+        return factory_->getInteger(lb, ub);
     }
 }
 
@@ -192,9 +191,9 @@ Domain::Ptr IntegerInterval::sub(Domain::Ptr other) const {
         return factory_->getInteger(TOP, getWidth());
     } else {
         Integer::Ptr temp;
-        auto left = (temp = from_->sub(interval->to_)) ? temp : util::getMinValue(getWidth());
-        auto right = (temp = to_->sub(interval->from_)) ? temp : util::getMaxValue(getWidth());
-        return factory_->getInteger(left, right);
+        auto lb = (temp = lb_->sub(interval->ub_)) ? temp : Integer::getMinValue(getWidth());
+        auto ub = (temp = ub_->sub(interval->lb_)) ? temp : Integer::getMaxValue(getWidth());
+        return factory_->getInteger(lb, ub);
     }
 }
 
@@ -209,16 +208,16 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
         return factory_->getInteger(TOP, getWidth());
     } else {
         Integer::Ptr temp;
-        auto fromFrom = (temp = from_->mul(interval->from_)) ? temp : util::getMinValue(getWidth());
-        auto toFrom = (temp = to_->mul(interval->from_)) ? temp : util::getMaxValue(getWidth());
-        auto fromTo = (temp = from_->mul(interval->to_)) ? temp : util::getMinValue(getWidth());
-        auto toTo = (temp = to_->mul(interval->to_)) ? temp : util::getMaxValue(getWidth());
+        auto ll = (temp = lb_->mul(interval->lb_)) ? temp : Integer::getMinValue(getWidth());
+        auto ul = (temp = ub_->mul(interval->lb_)) ? temp : Integer::getMaxValue(getWidth());
+        auto lu = (temp = lb_->mul(interval->ub_)) ? temp : Integer::getMinValue(getWidth());
+        auto uu = (temp = ub_->mul(interval->ub_)) ? temp : Integer::getMaxValue(getWidth());
 
         using namespace util;
-        auto first = factory_->getInteger(min(fromFrom, toFrom), max(fromFrom, toFrom));
-        auto second = factory_->getInteger(min(fromTo, toTo), max(fromTo, toTo));
+        auto lb = min(ll, ul, ll, ul);
+        auto ub = max(ll, ul, ll, ul);
 
-        return first->join(second);
+        return factory_->getInteger(lb, ub);
     }
 }
 
@@ -234,12 +233,14 @@ Domain::Ptr IntegerInterval::mul(Domain::Ptr other) const {
         if (interval->isConstant(0)) { \
             return factory_->getInteger(TOP, getWidth()); \
         } else { \
+            auto ll = lb_->OPER(interval->lb_); \
+            auto ul = ub_->OPER(interval->lb_); \
+            auto lu = lb_->OPER(interval->ub_); \
+            auto uu = ub_->OPER(interval->ub_); \
             using namespace util; \
-            auto first = factory_->getInteger(min(from_->OPER(interval->from_), to_->OPER(interval->from_)), \
-                                      max(from_->OPER(interval->from_), to_->OPER(interval->from_))); \
-            auto second = factory_->getInteger(min(from_->OPER(interval->to_), to_->OPER(interval->to_)), \
-                                       max(from_->OPER(interval->to_), to_->OPER(interval->to_))); \
-            return first->join(second); \
+            auto lb = min(ll, ul, lu, uu); \
+            auto ub = max(ll, ul, lu, uu); \
+            return factory_->getInteger(lb, ub); \
         } \
     }
 
@@ -269,13 +270,14 @@ Domain::Ptr IntegerInterval::srem(Domain::Ptr other) const {
     } else if (this->isTop() || interval->isTop()) { \
         return factory_->getInteger(TOP, getWidth()); \
     } else { \
+        auto ll = lb_->OPER(interval->lb_); \
+        auto ul = ub_->OPER(interval->lb_); \
+        auto lu = lb_->OPER(interval->ub_); \
+        auto uu = ub_->OPER(interval->ub_); \
         using namespace util; \
-        Domain::Ptr first = factory_->getInteger(min(from_->OPER(interval->from_), to_->OPER(interval->from_)), \
-                                                 max(from_->OPER(interval->from_), to_->OPER(interval->from_))); \
-        Domain::Ptr second = factory_->getInteger(min(from_->OPER(interval->to_), to_->OPER(interval->to_)), \
-                                                  max(from_->OPER(interval->to_), to_->OPER(interval->to_))); \
-         \
-        return first->join(second); \
+        auto lb = min(ll, ul, lu, uu); \
+        auto ub = max(ll, ul, lu, uu); \
+        return factory_->getInteger(lb, ub); \
     }
 
 Domain::Ptr IntegerInterval::shl(Domain::Ptr other) const {
@@ -327,10 +329,10 @@ Domain::Ptr IntegerInterval::zext(const llvm::Type& type) const {
     if (isBottom()) return factory_->getBottom(type);
     if (isTop()) return factory_->getTop(type);
 
-    auto&& newFrom = from_->zext(intType->getBitWidth());
-    auto&& newTo = to_->zext(intType->getBitWidth());
-    return factory_->getInteger(factory_->toInteger(llvm::APInt(intType->getBitWidth(), 0)),
-                                util::max(newFrom, newTo));
+    auto&& lb = lb_->zext(intType->getBitWidth());
+    auto&& ub = ub_->zext(intType->getBitWidth());
+    return factory_->getInteger(factory_->toInteger(0, intType->getBitWidth()),
+                                util::max(lb, ub));
 }
 
 Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
@@ -340,9 +342,9 @@ Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
     if (isBottom()) return factory_->getBottom(type);
     if (isTop()) return factory_->getTop(type);
 
-    auto&& newFrom = from_->sext(intType->getBitWidth());
-    auto&& newTo = to_->sext(intType->getBitWidth());
-    return factory_->getInteger(newFrom, newTo);
+    auto&& lb = lb_->sext(intType->getBitWidth());
+    auto&& ub = ub_->sext(intType->getBitWidth());
+    return factory_->getInteger(lb, ub);
 }
 
 #define INT_TO_FP(OPER) \
@@ -364,22 +366,22 @@ Domain::Ptr IntegerInterval::sext(const llvm::Type& type) const {
         width = 128; \
     else if (type.isX86_FP80Ty()) \
         width = 80; \
-    Integer::Ptr newFrom = from_, newTo = to_; \
-    if (width <  getWidth()) { \
-        newFrom = from_->trunc(width); \
-        newTo = to_->trunc(width); \
-    } else if (width >  getWidth()) { \
-        newFrom = from_->OPER(width); \
-        newTo = to_->OPER(width); \
+    Integer::Ptr newLB = lb_, newUB = ub_; \
+    if (width < getWidth()) { \
+        newLB = lb_->trunc(width); \
+        newUB = ub_->trunc(width); \
+    } else if (width > getWidth()) { \
+        newLB = lb_->OPER(width); \
+        newUB = ub_->OPER(width); \
     } \
-    llvm::APFloat from = util::getMinValue(newSemantics), to = util::getMinValue(newSemantics); \
-    if (newFrom->isMin()) from = util::getMinValue(newSemantics); \
-    else if (newFrom->isMax()) from = util::getMaxValue(newSemantics); \
-    else from = llvm::APFloat(newSemantics, newFrom->toString()); \
-    if (newTo->isMin()) to = util::getMinValue(newSemantics); \
-    else if (newTo->isMax()) to = util::getMaxValue(newSemantics); \
-    else to = llvm::APFloat(newSemantics, newTo->toString()); \
-    return factory_->getFloat(from, to);
+    llvm::APFloat lb = util::getMinValue(newSemantics), ub = util::getMinValue(newSemantics); \
+    if (newLB->isMin()) lb = util::getMinValue(newSemantics); \
+    else if (newLB->isMax()) lb = util::getMaxValue(newSemantics); \
+    else lb = llvm::APFloat(newSemantics, newLB->toString()); \
+    if (newUB->isMin()) ub = util::getMinValue(newSemantics); \
+    else if (newUB->isMax()) ub = util::getMaxValue(newSemantics); \
+    else ub = llvm::APFloat(newSemantics, newUB->toString()); \
+    return factory_->getFloat(lb, ub);
 
 Domain::Ptr IntegerInterval::uitofp(const llvm::Type& type) const {
     INT_TO_FP(zext)
@@ -417,7 +419,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
-            if (this->isConstant() && interval->isConstant() && from()->eq(interval->from())) {
+            if (this->isConstant() && interval->isConstant() && lb_->eq(interval->lb_)) {
                 return getBool(true);
             } else if (this->hasIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
@@ -426,7 +428,7 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_NE:
-            if (this->isConstant() && interval->isConstant() && from()->eq(interval->from())) {
+            if (this->isConstant() && interval->isConstant() && lb_->eq(interval->lb_)) {
                 return getBool(false);
             } else if (this->hasIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
@@ -435,72 +437,72 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_SGE:
-            if (signedFrom()->sge(interval->signedTo())) {
+            if (signed_lb()->sge(interval->signed_ub())) {
                 return getBool(true);
-            } else if (signedTo()->slt(interval->signedFrom())) {
+            } else if (signed_ub()->slt(interval->signed_lb())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SGT:
-            if (signedFrom()->sgt(interval->signedTo())) {
+            if (signed_lb()->sgt(interval->signed_ub())) {
                 return getBool(true);
-            } else if (signedTo()->sle(interval->signedFrom())) {
+            } else if (signed_ub()->sle(interval->signed_lb())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SLE:
-            if (signedTo()->sle(interval->signedFrom())) {
+            if (signed_ub()->sle(interval->signed_lb())) {
                 return getBool(true);
-            } else if (signedFrom()->sgt(interval->signedTo())) {
+            } else if (signed_lb()->sgt(interval->signed_ub())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SLT:
-            if (signedTo()->slt(interval->signedFrom())) {
+            if (signed_ub()->slt(interval->signed_lb())) {
                 return getBool(true);
-            } else if (signedFrom()->sge(interval->signedTo())) {
+            } else if (signed_lb()->sge(interval->signed_ub())) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_UGE:
-            if (from()->ge(interval->to())) {
+            if (lb_->ge(interval->ub_)) {
                 return getBool(true);
-            } else if (to()->lt(interval->from())) {
+            } else if (ub_->lt(interval->lb_)) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_UGT:
-            if (from()->gt(interval->to())) {
+            if (lb_->gt(interval->ub_)) {
                 return getBool(true);
-            } else if (to()->le(interval->from())) {
+            } else if (ub_->le(interval->lb_)) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_ULE:
-            if (to()->le(interval->from())) {
+            if (ub_->le(interval->lb_)) {
                 return getBool(true);
-            } else if (from()->gt(interval->to())) {
+            } else if (lb_->gt(interval->ub_)) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_ULT:
-            if (to()->lt(interval->from())) {
+            if (ub_->lt(interval->lb_)) {
                 return getBool(true);
-            } else if (from()->ge(interval->to())) {
+            } else if (lb_->ge(interval->ub_)) {
                 return getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
@@ -526,8 +528,8 @@ Split IntegerInterval::splitByLess(Domain::Ptr other) const {
 
     if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
 
-    auto trueVal = factory_->getInteger(from_, interval->to_);
-    auto falseVal = factory_->getInteger(interval->from_, this->to_);
+    auto trueVal = factory_->getInteger(lb_, interval->ub_);
+    auto falseVal = factory_->getInteger(interval->lb_, this->ub_);
     return {trueVal, falseVal};
 }
 
@@ -537,10 +539,10 @@ Split IntegerInterval::splitBySLess(Domain::Ptr other) const {
 
     if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
 
-    auto trueVal = factory_->getInteger(util::min(this->signedFrom(), interval->signedTo()),
-                                        util::max(this->signedFrom(), interval->signedTo()));
-    auto falseVal = factory_->getInteger(util::min(interval->signedFrom(), this->signedTo()),
-                                         util::max(interval->signedFrom(), this->signedTo()));
+    auto trueVal = factory_->getInteger(util::min(this->signed_lb(), interval->signed_ub()),
+                                        util::max(this->signed_lb(), interval->signed_ub()));
+    auto falseVal = factory_->getInteger(util::min(interval->signed_lb(), this->signed_ub()),
+                                         util::max(interval->signed_lb(), this->signed_ub()));
     return {trueVal, falseVal};
 }
 

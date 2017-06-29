@@ -6,8 +6,8 @@
 #include <Type/TypeUtils.h>
 
 #include "DomainFactory.h"
-#include "Interpreter/Domain/Integer/ValInteger.h"
-#include "Interpreter/Util.h"
+#include "Interpreter/Domain/Integer/IntValue.h"
+#include "Interpreter/Util.hpp"
 #include "Util/cast.hpp"
 
 #include "Util/macros.h"
@@ -84,8 +84,7 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
 Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     /// Integer
     if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
-        auto constInteger = Integer::Ptr{ new ValInteger(intConstant->getValue(), intConstant->getBitWidth())};
-        return getInteger(constInteger);
+        return getInteger(toInteger(intConstant->getValue()));
     /// Float
     } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
@@ -161,20 +160,20 @@ Domain::Ptr DomainFactory::cached(const FloatInterval::ID& key) {
 }
 
 Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width) {
-    return Integer::Ptr{ new ValInteger(val, width) };
+    return Integer::Ptr{ new IntValue(val, width) };
 }
 
 Integer::Ptr DomainFactory::toInteger(const llvm::APInt& val) {
-    return Integer::Ptr{ new ValInteger(val, val.getBitWidth()) };
+    return Integer::Ptr{ new IntValue(val, val.getBitWidth()) };
 }
 
 Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
-    auto indxInteger = Integer::Ptr{ new ValInteger(llvm::APInt(64, indx, false), 64) };
+    auto indxInteger = Integer::Ptr{ new IntValue(llvm::APInt(64, indx, false), 64) };
     return getInteger(indxInteger);
 }
 
 /* Integer */
-Domain::Ptr DomainFactory::getInteger(unsigned width) {
+Domain::Ptr DomainFactory::getInteger(size_t width) {
     return getInteger(Domain::BOTTOM, width);
 }
 
@@ -182,7 +181,7 @@ Domain::Ptr DomainFactory::getInteger(Integer::Ptr val) {
     return getInteger(val, val);
 }
 
-Domain::Ptr DomainFactory::getInteger(Domain::Value value, unsigned width) {
+Domain::Ptr DomainFactory::getInteger(Domain::Value value, size_t width) {
     return cached(std::make_tuple(value,
                                   toInteger(0, width),
                                   toInteger(0, width)));
@@ -242,17 +241,26 @@ Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type) {
 
 Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::Type& type) {
     if (type.isArrayTy()) {
-        return Domain::Ptr{new AggregateObject(value, this,
-                                               *type.getArrayElementType(),
-                                               getIndex(type.getArrayNumElements()))};
+        return Domain::Ptr{
+                new AggregateObject(value,
+                                    this,
+                                    *type.getArrayElementType(),
+                                    getIndex(type.getArrayNumElements())
+                )
+        };
+
     } else if (type.isStructTy()) {
         AggregateObject::Types types;
         for (auto i = 0U; i < type.getStructNumElements(); ++i)
             types[i] = type.getStructElementType(i);
 
-        return Domain::Ptr{new AggregateObject(value, this,
-                                               types,
-                                               getIndex(type.getStructNumElements()))};
+        return Domain::Ptr{
+                new AggregateObject(value,
+                                    this,
+                                    types,
+                                    getIndex(type.getStructNumElements())
+                )
+        };
     }
     UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }

@@ -5,51 +5,15 @@
 
 #include <llvm/Support/raw_ostream.h>
 
-#include "Interpreter/Domain/Integer/MaxInteger.h"
-#include "Interpreter/Domain/Integer/MinInteger.h"
-#include "Util.h"
+#include "Interpreter/Domain/Integer/IntMax.h"
+#include "Interpreter/Domain/Integer/IntMin.h"
+#include "Util.hpp"
 #include "Util/ir_writer.h"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
 namespace borealis {
 namespace util {
-
-///////////////////////////////////////////////////////////////
-/// APInt util
-///////////////////////////////////////////////////////////////
-
-absint::Integer::Ptr getMaxValue(size_t width) {
-    return Integer::Ptr{ new MaxInteger(width) };
-}
-
-absint::Integer::Ptr getMinValue(size_t width) {
-    return Integer::Ptr{ new MinInteger(width) };
-}
-
-absint::Integer::Ptr min(Integer::Ptr lhv, Integer::Ptr rhv, bool isSigned) {
-    if (isSigned) return lhv->slt(rhv) ? lhv : rhv;
-    else return lhv->lt(rhv) ? lhv : rhv;
-}
-
-absint::Integer::Ptr max(Integer::Ptr lhv, Integer::Ptr rhv, bool isSigned) {
-    if (isSigned) return lhv->sgt(rhv) ? lhv : rhv;
-    else return lhv->gt(rhv) ? lhv : rhv;
-}
-
-std::string toString(const llvm::APInt& val, bool isSigned) {
-    llvm::SmallVector<char, 32> valVector;
-    if (isSigned) val.toStringSigned(valVector, 10);
-    else val.toStringUnsigned(valVector, 10);
-
-    std::ostringstream ss;
-    for (auto&& it : valVector) ss << it;
-    return std::move(ss.str());
-}
-
-///////////////////////////////////////////////////////////////
-/// APFloat util
-///////////////////////////////////////////////////////////////
 
 llvm::APFloat getMaxValue(const llvm::fltSemantics& semantics) {
     return llvm::APFloat::getInf(semantics, false);
@@ -103,6 +67,16 @@ const llvm::fltSemantics& getSemantics(const llvm::Type& type) {
 std::string toString(const llvm::APFloat& val) {
     llvm::SmallVector<char, 32> valVector;
     val.toString(valVector, 8);
+
+    std::ostringstream ss;
+    for (auto&& it : valVector) ss << it;
+    return std::move(ss.str());
+}
+
+std::string toString(const llvm::APInt& val, bool isSigned) {
+    llvm::SmallVector<char, 32> valVector;
+    if (isSigned) val.toStringSigned(valVector, 10);
+    else val.toStringUnsigned(valVector, 10);
 
     std::ostringstream ss;
     for (auto&& it : valVector) ss << it;

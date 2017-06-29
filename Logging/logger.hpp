@@ -8,6 +8,7 @@
 #ifndef LOGGER_HPP_
 #define LOGGER_HPP_
 
+#include <functional>
 #include <type_traits>
 #include <tinyformat/tinyformat.h>
 

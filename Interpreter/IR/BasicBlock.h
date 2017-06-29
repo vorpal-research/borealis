@@ -34,8 +34,6 @@ private:
     bool atFixpoint_;
     bool visited_;
 
-protected:
-
     void addPredecessor(BasicBlock* pred);
     void addSuccessor(BasicBlock* succ);
 

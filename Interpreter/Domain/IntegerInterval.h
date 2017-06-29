@@ -7,7 +7,7 @@
 
 #include "Domain.h"
 #include "Integer/Integer.h"
-#include "Interpreter/Util.h"
+#include "Interpreter/Util.hpp"
 #include "Interpreter/Widening/IntervalWidening.h"
 #include "Util/hash.hpp"
 
@@ -27,7 +27,7 @@ protected:
     friend class DomainFactory;
 
     IntegerInterval(DomainFactory* factory, Integer::Ptr constant);
-    IntegerInterval(DomainFactory* factory, Integer::Ptr from, Integer::Ptr to);
+    IntegerInterval(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
     IntegerInterval(DomainFactory* factory, const ID& key);
 
 public:
@@ -44,10 +44,10 @@ public:
     size_t getWidth() const;
     bool isConstant() const;
     bool isConstant(uint64_t constant) const;
-    Integer::Ptr from() const;
-    Integer::Ptr to() const;
-    Integer::Ptr signedFrom() const;
-    Integer::Ptr signedTo() const;
+    Integer::Ptr lb() const;
+    Integer::Ptr ub() const;
+    Integer::Ptr signed_lb() const;
+    Integer::Ptr signed_ub() const;
     bool hasIntersection(Integer::Ptr constant) const;
     bool hasIntersection(const IntegerInterval* other) const;
 
@@ -91,8 +91,8 @@ private:
 
     virtual void setTop();
 
-    Integer::Ptr from_;
-    Integer::Ptr to_;
+    Integer::Ptr lb_;
+    Integer::Ptr ub_;
     mutable IntegerWidening wm_;
 };
 

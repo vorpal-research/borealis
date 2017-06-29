@@ -3,9 +3,19 @@
 //
 
 #include "Integer.h"
+#include "IntMin.h"
+#include "IntMax.h"
 
 namespace borealis {
 namespace absint {
+
+Integer::Ptr Integer::getMaxValue(size_t width) {
+    return Integer::Ptr{ new IntMax(width)};
+}
+
+Integer::Ptr Integer::getMinValue(size_t width) {
+    return Integer::Ptr{ new IntMin(width)};
+}
 
 bool Integer::neq(Integer::Ptr other) const {
     return not eq(other);

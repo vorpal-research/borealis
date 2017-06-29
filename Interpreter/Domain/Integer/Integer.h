@@ -28,6 +28,10 @@ public:
     Integer(Integer::Type type, size_t width) : type_(type), width_(width) {}
     virtual ~Integer() = default;
 
+
+    static Integer::Ptr getMaxValue(size_t width);
+    static Integer::Ptr getMinValue(size_t width);
+
     static bool classof(const Integer*) {
         return true;
     }
@@ -88,6 +92,16 @@ private:
     size_t width_;
 
 };
+
+static bool operator<(Integer::Ptr lhv, Integer::Ptr rhv) {
+    return lhv->lt(rhv);
+}
+static bool operator==(Integer::Ptr lhv, Integer::Ptr rhv) {
+    return lhv->eq(rhv);
+}
+static bool operator>(Integer::Ptr lhv, Integer::Ptr rhv) {
+    return lhv->gt(rhv);
+}
 
 }   /* namespace absint */
 }   /* namespace borealis */

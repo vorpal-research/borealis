@@ -76,7 +76,7 @@ public:
 
 private:
 
-    const llvm::Type& getTypeFor(std::size_t index) const;
+    const llvm::Type& getElementType(std::size_t index) const;
 
     AggregateType aggregateType_;
     Types elementTypes_;

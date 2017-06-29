@@ -21,6 +21,16 @@ public:
 
 };
 
+class FloatWidening : public WideningInterface<llvm::APFloat> {
+public:
+
+    FloatWidening(DomainFactory* factory);
+
+    virtual llvm::APFloat get_prev(const llvm::APFloat& value);
+    virtual llvm::APFloat get_next(const llvm::APFloat& value);
+
+};
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

@@ -5,7 +5,7 @@
 #include "DomainFactory.h"
 #include "IntegerInterval.h"
 #include "Pointer.h"
-#include "Interpreter/Util.h"
+#include "Interpreter/Util.hpp"
 #include "Util/collections.hpp"
 #include "Util/hash.hpp"
 #include "Util/streams.hpp"
@@ -71,7 +71,6 @@ bool Nullptr::classof(const Domain* other) {
 //////////////////////////////////////////////////////////
 /// Pointer
 //////////////////////////////////////////////////////////
-
 Pointer::Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType)
         : Domain{value, POINTER, factory},
           elementType_(elementType) {}
@@ -161,10 +160,6 @@ Domain::Ptr Pointer::widen(Domain::Ptr other) const {
 }
 
 Domain::Ptr Pointer::meet(Domain::Ptr) const {
-    UNREACHABLE("Unimplemented, sorry...");
-}
-
-Domain::Ptr Pointer::narrow(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
