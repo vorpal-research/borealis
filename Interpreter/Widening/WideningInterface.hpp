@@ -14,15 +14,10 @@ template <class T>
 class WideningInterface {
 public:
 
-    WideningInterface(DomainFactory* factory) : factory_(factory) {}
     virtual ~WideningInterface() = default;
 
-    virtual T get_prev(const T& value) = 0;
-    virtual T get_next(const T& value) = 0;
-
-protected:
-
-    DomainFactory* factory_;
+    virtual T get_prev(const T& value, DomainFactory* factory) const = 0;
+    virtual T get_next(const T& value, DomainFactory* factory) const = 0;
 };
 
 }   /* namespace absint */

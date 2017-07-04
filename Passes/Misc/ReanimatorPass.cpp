@@ -40,7 +40,7 @@ public:
 
             auto&& FN = FactoryNest(adi.atFunc->getDataLayout(), STP.getSlotTracker(adi.atFunc));
 
-            auto&& TC = TermCollector(FN);
+            auto&& TC = TermCollector<>(FN);
             auto&& AC = ArrayBoundsCollector(FN);
             (TC + AC).transform(ps);
 

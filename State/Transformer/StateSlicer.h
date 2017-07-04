@@ -95,6 +95,8 @@ public:
     PredicateState::Ptr transformBase(PredicateState::Ptr ps);
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr ps);
 
+    using TermSet = std::unordered_set<Term::Ptr, TermHash, TermEquals>;
+
 private:
 
     PredicateState::Ptr query;
@@ -109,9 +111,9 @@ private:
     void init(llvm::AliasAnalysis* llvmAA);
     void addSliceTerm(Term::Ptr term);
 
-    bool checkPath(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv);
-    bool checkVars(const Term::Set& lhv, const Term::Set& rhv);
-    bool checkPtrs(Predicate::Ptr pred, const Term::Set& lhv, const Term::Set& rhv);
+    bool checkPath(Predicate::Ptr pred, const TermSet& lhv, const TermSet& rhv);
+    bool checkVars(const TermSet& lhv, const TermSet& rhv);
+    bool checkPtrs(Predicate::Ptr pred, const TermSet& lhv, const TermSet& rhv);
 
     void addControlFlowDeps(Predicate::Ptr pred);
 

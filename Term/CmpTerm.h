@@ -120,6 +120,20 @@ struct SMTImpl<Impl, CmpTerm> {
 };
 #include "Util/unmacros.h"
 
+struct CmpTermExtractor {
+
+    functional_hell::matchers::storage_t<llvm::ConditionType, Term::Ptr, Term::Ptr> unapply(Term::Ptr t) const {
+        if (auto&& p = llvm::dyn_cast<CmpTerm>(t)) {
+            return functional_hell::matchers::make_storage(p->getOpcode(), p->getLhv(), p->getRhv());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $CmpTerm = functional_hell::matchers::make_pattern(CmpTermExtractor());
+
 } /* namespace borealis */
 
 #endif /* CMPTERM_H_ */

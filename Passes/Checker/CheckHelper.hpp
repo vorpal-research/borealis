@@ -19,9 +19,11 @@
 #include "SMT/Portfolio/Solver.h"
 #include "State/Transformer/GraphBuilder.h"
 #include "State/Transformer/MemorySpacer.h"
+#include "State/Transformer/PoorMem2Reg.h"
 #include "State/Transformer/StateSlicer.h"
 #include "State/Transformer/TermSizeCalculator.h"
-
+#include "State/Transformer/Normalizer.h"
+#include "Util/time.hpp"
 
 #include "Util/macros.h"
 
@@ -104,6 +106,16 @@ private:
         PredicateState::Ptr state) {
         static config::StringConfigEntry engine{ "analysis", "smt-engine" };
         auto engineName = engine.get("z3");
+
+        borealis::util::StopWatch timer;
+        using namespace std::chrono_literals;
+
+//        ON_SCOPE_EXIT(
+//            if(timer.duration() > 2000ms && state->size() < 3000) {
+//                borealis::displayAsGraph(state, "Problem state");
+//            }
+//        );
+
         if(engineName == "mathsat") return checkViolationMathSAT(memoryBounds, query, state);
         if(engineName == "z3") return checkViolationZ3(memoryBounds, query, state);
         if(engineName == "cvc4") return checkViolationCVC4(memoryBounds, query, state);
@@ -143,6 +155,19 @@ public:
 
         static config::BoolConfigEntry useLocalAA("analysis", "use-local-aa");
         static config::BoolConfigEntry doSlicing("analysis", "do-slicing");
+
+        Normalizer nl(FN);
+        state = nl.transform(state);
+        query = nl.transform(query);
+
+        MemorySpacer msp(FN, FN.State->Chain(state, query));
+        state = msp.transform(state);
+        query = msp.transform(query);
+
+        PoorMem2Reg m2r(FN);
+        state = m2r.transform(state);
+        query = m2r.transform(query);
+
         if(doSlicing.get(true)) {
             dbgs() << "Slicing started" << endl;
             auto sliced = StateSlicer(FN, query, useLocalAA.get(false)? nullptr : pass->AA).transform(state);

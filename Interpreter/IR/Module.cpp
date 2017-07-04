@@ -74,7 +74,7 @@ Function::Ptr Module::get(const std::string& fname) {
     return (function) ? get(function) : nullptr;
 }
 
-Module::GlobalsMap& Module::getGloabls() {
+const Module::GlobalsMap& Module::getGloabls() const {
     return globals_;
 }
 
@@ -89,19 +89,7 @@ void Module::setGlobal(const llvm::Value* val, Domain::Ptr domain) {
 
 std::string Module::toString() const {
     std::ostringstream ss;
-
-    if (not globals_.empty()) {
-        ss << "globals: " << std::endl;
-        for (auto&& global : globals_) {
-            ss << "  ";
-            ss << global.first->getName().str() << " = ";
-            ss << global.second->toPrettyString("  ") << std::endl;
-        }
-    }
-    ss << std::endl;
-    for (auto&& it : functions_) {
-        ss << std::endl << it.second << std::endl;
-    }
+    ss << *this;
     return ss.str();
 }
 
@@ -114,12 +102,36 @@ const Module::FunctionMap& Module::getFunctions() const {
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {
-    s << m.toString();
+    if (not m.getGloabls().empty()) {
+        s << "globals: " << std::endl;
+        for (auto&& global : m.getGloabls()) {
+            s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << std::endl;
+            s.flush();
+        }
+    }
+    s << std::endl;
+    s.flush();
+    for (auto&& it : m.getFunctions()) {
+        s << std::endl << it.second << std::endl;
+        s.flush();
+    }
     return s;
 }
 
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m) {
-    s << m.toString();
+    if (not m.getGloabls().empty()) {
+        s << "globals: " << endl;
+        for (auto&& global : m.getGloabls()) {
+            s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << endl;
+            s.flush();
+        }
+    }
+    s << endl;
+    s.flush();
+    for (auto&& it : m.getFunctions()) {
+        s << endl << it.second << endl;
+        s.flush();
+    }
     return s;
 }
 

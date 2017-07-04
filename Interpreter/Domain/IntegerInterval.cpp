@@ -23,7 +23,7 @@ IntegerInterval::IntegerInterval(DomainFactory* factory, const IntegerInterval::
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
         lb_(std::get<1>(key)),
         ub_(std::get<2>(key)),
-        wm_(factory_) {
+        wm_(IntegerWidening::getInstance()) {
     ASSERT(lb_->getWidth() == ub_->getWidth(), "Different bit width of interval bounds");
     ASSERT(lb_->le(ub_), "Lower bound is greater that upper bound");
     if (lb_->isMin() && ub_->isMax()) value_ = TOP;
@@ -82,8 +82,8 @@ Domain::Ptr IntegerInterval::widen(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto lb = interval->lb_->lt(lb_) ? wm_.get_prev(interval->lb_) : lb_;
-    auto ub = ub_->lt(interval->ub_) ? wm_.get_next(interval->ub_) : ub_;
+    auto lb = interval->lb_->lt(lb_) ? wm_->get_prev(interval->lb_, factory_) : lb_;
+    auto ub = ub_->lt(interval->ub_) ? wm_->get_next(interval->ub_, factory_) : ub_;
 
     return factory_->getInteger(lb, ub);
 }

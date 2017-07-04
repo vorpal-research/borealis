@@ -21,6 +21,10 @@ const llvm::BasicBlock* BasicBlock::getInstance() const {
     return instance_;
 }
 
+SlotTracker& BasicBlock::getSlotTracker() const {
+    return *tracker_;
+}
+
 State::Ptr BasicBlock::getInputState() const {
     return inputState_;
 }
@@ -35,21 +39,7 @@ std::string BasicBlock::getName() const {
 
 std::string BasicBlock::toString() const {
     std::ostringstream ss;
-
-    if (instance_->hasName())
-        ss << instance_->getName().str() << ":";
-    else
-        ss << "<label>:" << tracker_->getLocalSlot(instance_);
-
-    for (auto&& it : util::viewContainer(*instance_)) {
-        auto value = llvm::cast<llvm::Value>(&it);
-        auto domain = outputState_->find(value);
-        if (not domain) continue;
-        ss << std::endl << "  ";
-        ss << tracker_->getLocalName(value) << " = ";
-        ss << domain->toPrettyString("  ");
-    }
-    ss << std::endl;
+    ss << *this;
     return ss.str();
 }
 
@@ -106,13 +96,44 @@ void BasicBlock::addPredecessor(BasicBlock* pred) {
 void BasicBlock::addSuccessor(BasicBlock* succ) {
     successors_.push_back(succ);
 }
+
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
-    s << b.toString();
+    s << b.getName() << ":";
+    for (auto&& it : util::viewContainer(*b.getInstance())) {
+        auto value = llvm::cast<llvm::Value>(&it);
+        auto domain = b.getOutputState()->find(value);
+        if (not domain) continue;
+        s << std::endl << "  "
+          << b.getSlotTracker().getLocalName(value) << " = "
+          << domain->toPrettyString("  ");
+        s.flush();
+    }
+    s << std::endl;
     return s;
 }
 
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock& b) {
-    s << b.toString();
+    s << b.getName() << ":";
+    for (auto&& it : util::viewContainer(*b.getInstance())) {
+        auto value = llvm::cast<llvm::Value>(&it);
+        auto domain = b.getOutputState()->find(value);
+        if (not domain) continue;
+        s << endl << "  "
+          << b.getSlotTracker().getLocalName(value) << " = "
+          << domain->toPrettyString("  ");
+        s.flush();
+    }
+    s << endl;
+    return s;
+}
+
+std::ostream& operator<<(std::ostream& s, const BasicBlock* b) {
+    s << *b;
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock* b) {
+    s << *b;
     return s;
 }
 

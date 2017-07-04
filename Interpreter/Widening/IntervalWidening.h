@@ -12,22 +12,34 @@ namespace borealis {
 namespace absint {
 
 class IntegerWidening : public WideningInterface<Integer::Ptr> {
+protected:
+
+    IntegerWidening() = default;
 public:
 
-    IntegerWidening(DomainFactory* factory);
+    static WideningInterface* getInstance() {
+        static IntegerWidening* instance = new IntegerWidening();
+        return instance;
+    }
 
-    virtual Integer::Ptr get_prev(const Integer::Ptr& value);
-    virtual Integer::Ptr get_next(const Integer::Ptr& value);
+    virtual Integer::Ptr get_prev(const Integer::Ptr& value, DomainFactory* factory) const;
+    virtual Integer::Ptr get_next(const Integer::Ptr& value, DomainFactory* factory) const;
 
 };
 
 class FloatWidening : public WideningInterface<llvm::APFloat> {
+protected:
+
+    FloatWidening() = default;
 public:
 
-    FloatWidening(DomainFactory* factory);
+    static WideningInterface* getInstance() {
+        static FloatWidening* instance = new FloatWidening();
+        return instance;
+    }
 
-    virtual llvm::APFloat get_prev(const llvm::APFloat& value);
-    virtual llvm::APFloat get_next(const llvm::APFloat& value);
+    virtual llvm::APFloat get_prev(const llvm::APFloat& value, DomainFactory* factory) const;
+    virtual llvm::APFloat get_next(const llvm::APFloat& value, DomainFactory* factory) const;
 
 };
 

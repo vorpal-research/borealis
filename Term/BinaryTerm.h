@@ -127,6 +127,20 @@ struct SMTImpl<Impl, BinaryTerm> {
 };
 #include "Util/unmacros.h"
 
+struct BinaryTermExtractor {
+
+    functional_hell::matchers::storage_t<llvm::ArithType, Term::Ptr, Term::Ptr> unapply(Term::Ptr t) const {
+        if (auto&& p = llvm::dyn_cast<BinaryTerm>(t)) {
+            return functional_hell::matchers::make_storage(p->getOpcode(), p->getLhv(), p->getRhv());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $BinaryTerm = functional_hell::matchers::make_pattern(BinaryTermExtractor());
+
 } // namespace borealis
 
 #endif /* BINARYTERM_H_ */

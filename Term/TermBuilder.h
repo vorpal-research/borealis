@@ -42,6 +42,7 @@ public:
     friend TermBuilder operator-(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator&&(TermBuilder TB, Term::Ptr term);
     friend TermBuilder operator!=(TermBuilder TB, Term::Ptr term);
+    friend TermBuilder operator>(TermBuilder TB, Term::Ptr term);
 
     TermBuilder operator*() const;
 

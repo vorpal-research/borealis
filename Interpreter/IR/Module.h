@@ -27,7 +27,7 @@ public:
     Function::Ptr get(const llvm::Function* function);
     Function::Ptr get(const std::string& fname);
 
-    GlobalsMap& getGloabls();
+    const GlobalsMap& getGloabls() const;
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);
     Domain::Ptr findGlobal(const llvm::Value* val) const;
     const FunctionMap& getFunctions() const;

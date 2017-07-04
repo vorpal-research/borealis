@@ -16,6 +16,8 @@
 #include "State/Transformer/Transformer.hpp"
 
 #include "Util/macros.h"
+#include "PointerCollector.h"
+
 namespace borealis {
 
 class LocalAABase {
@@ -41,6 +43,7 @@ class LocalStensgaardAA: public Transformer<LocalStensgaardAA>, public LocalAABa
 
     using token = util::subset<Term::Ptr>*;
 
+    PointerCollector PC;
     util::disjoint_set<Term::Ptr> relatedPtrs;
     std::unordered_map<Term::Ptr, token, TermHash, WeirdTermEquals> view;
     std::unordered_map<token, token> pointsTo;
@@ -50,7 +53,7 @@ class LocalStensgaardAA: public Transformer<LocalStensgaardAA>, public LocalAABa
 
 public:
     LocalStensgaardAA(FactoryNest FN):
-        Transformer<LocalStensgaardAA>(FN) {}
+        Transformer<LocalStensgaardAA>(FN), PC(FN) {}
 
     static bool isNamedTerm(Term::Ptr t) {
         return TermUtils::isNamedTerm(t);
@@ -98,9 +101,16 @@ public:
                     noalias.insert(t);
                     // but loading them is, in principle, free
                     join(freeSpaces[TypeUtils::getPointerElementType(t->getType())], pointsTo[token]);
+                    return token;
                 }
-            } else if(!nonFreeTerms.count(t) && isNamedTerm(t)) {
-                // this is a free term
+            }
+
+            if(
+                nonFreeTerms.count(t) == 0
+                && isNamedTerm(t)
+                && PC.isDereferencedPointer(t)
+            ) {
+                // this is a free pointer term
                 join(freeSpaces[t->getType()], token);
             }
             return token;
@@ -166,7 +176,9 @@ public:
 
     Predicate::Ptr transformEqualityPredicate(EqualityPredicatePtr pred) {
         auto lhvt = pred->getLhv();
-        if(isNamedTerm(lhvt)) nonFreeTerms.insert(lhvt);
+        if(isNamedTerm(lhvt) &&
+            (pred->getType() == PredicateType::STATE || pred->getType() == PredicateType::INVARIANT)
+            ) nonFreeTerms.insert(lhvt);
 
         auto ls = get(lhvt);
         auto rs = get(pred->getRhv());
@@ -205,8 +217,8 @@ public:
     bool mayAlias(Term::Ptr l, Term::Ptr r) override {
         if(*l == *r) return true;
 
-        bool lno_alias = noalias.count(l);
-        bool rno_alias = noalias.count(r);
+        bool lno_alias = !!noalias.count(l);
+        bool rno_alias = !!noalias.count(r);
         if(lno_alias && rno_alias) return false;
 
         auto ls = pointsTo[get(l)];

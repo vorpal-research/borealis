@@ -56,7 +56,7 @@ public:
 
     BasicBlock* getEntryNode() const;
     BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
-    const SlotTracker& getSlotTracker() const;
+    SlotTracker& getSlotTracker() const;
 
     bool empty() const;
     std::string getName() const;

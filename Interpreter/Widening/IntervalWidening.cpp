@@ -8,14 +8,12 @@
 
 namespace borealis {
 namespace absint {
-/// Integer
-IntegerWidening::IntegerWidening(DomainFactory* factory) : WideningInterface(factory) {}
 
-Integer::Ptr IntegerWidening::get_prev(const Integer::Ptr& value) {
+Integer::Ptr IntegerWidening::get_prev(const Integer::Ptr& value, DomainFactory* factory) const {
     auto width = value->getWidth();
 
     Integer::Ptr next;
-    auto ten = factory_->toInteger(10, width);
+    auto ten = factory->toInteger(10, width);
     if (value->getValue() == 0) {
         next = Integer::getMinValue(width);
     } else {
@@ -29,11 +27,11 @@ Integer::Ptr IntegerWidening::get_prev(const Integer::Ptr& value) {
     return next;
 }
 
-Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value) {
+Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value, DomainFactory* factory) const {
     auto width = value->getWidth();
 
     Integer::Ptr next;
-    auto ten = factory_->toInteger(10, width);
+    auto ten = factory->toInteger(10, width);
     if (value->getValue() == 0) {
         next = ten;
     } else {
@@ -41,7 +39,7 @@ Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value) {
         if (not temp) {
             next = Integer::getMaxValue(width);
         } else {
-            if (temp->gt(factory_->toInteger(-1, width))) {
+            if (temp->gt(factory->toInteger(-1, width))) {
                 next = Integer::getMaxValue(width);
             } else {
                 next = temp;
@@ -51,16 +49,12 @@ Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value) {
     return next;
 }
 
-
-/// Float
-FloatWidening::FloatWidening(DomainFactory* factory) : WideningInterface(factory) {}
-
-llvm::APFloat FloatWidening::get_next(const llvm::APFloat& value) {
+llvm::APFloat FloatWidening::get_next(const llvm::APFloat& value, DomainFactory*) const {
     auto& semantics = value.getSemantics();
     return util::getMaxValue(semantics);
 }
 
-llvm::APFloat FloatWidening::get_prev(const llvm::APFloat& value) {
+llvm::APFloat FloatWidening::get_prev(const llvm::APFloat& value, DomainFactory*) const {
     auto& semantics = value.getSemantics();
     return util::getMinValue(semantics);
 }

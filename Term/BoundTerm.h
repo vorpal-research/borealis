@@ -72,6 +72,20 @@ struct SMTImpl<Impl, BoundTerm> {
 };
 #include "Util/unmacros.h"
 
+struct BoundTermExtractor {
+
+    functional_hell::matchers::storage_t<Term::Ptr> unapply(Term::Ptr t) const {
+        if (auto&& p = llvm::dyn_cast<BoundTerm>(t)) {
+            return functional_hell::matchers::make_storage(p->getRhv());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $BoundTerm = functional_hell::matchers::make_pattern(BoundTermExtractor());
+
 } /* namespace borealis */
 
 #endif /* BOUNDTERM_H_ */

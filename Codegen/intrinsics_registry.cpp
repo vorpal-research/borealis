@@ -269,10 +269,15 @@ static RegisterIntrinsic BUILTIN_BOR_SETPROP {
         llvm::Argument* ptr = it++;
         llvm::Argument* value = it++;
 
+        auto ptrt = FN.Term->getArgumentTerm(ptr);
+        if(not llvm::isa<type::Pointer>(ptrt->getType())) {
+            ptrt = FN.Term->getCastTerm(FN.Type->getPointer(FN.Type->getUnknownType()), false, ptrt);
+        }
+
         return FN.State->Basic() +
                FN.Predicate->getWritePropertyPredicate(
                    FN.Term->getStringArgumentTerm(propName),
-                   FN.Term->getArgumentTerm(ptr),
+                   ptrt,
                    FN.Term->getArgumentTerm(value)
                );
     },

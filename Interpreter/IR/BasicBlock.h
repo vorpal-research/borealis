@@ -44,6 +44,7 @@ public:
     BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker);
 
     const llvm::BasicBlock* getInstance() const;
+    SlotTracker& getSlotTracker() const;
     State::Ptr getInputState() const;
     State::Ptr getOutputState() const;
 
@@ -71,7 +72,9 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b);
+std::ostream& operator<<(std::ostream& s, const BasicBlock* b);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock& b);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock* b);
 
 }   /* namespace absint */
 }   /* namespace borealis */

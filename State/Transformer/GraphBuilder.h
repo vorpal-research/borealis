@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 #include <llvm/Support/DOTGraphTraits.h>
+#include <llvm/Support/GraphWriter.h>
 
 #include "State/Transformer/Transformer.hpp"
 
@@ -113,6 +114,12 @@ inline PSGraph buildGraphRep(PredicateState::Ptr ps) {
     return GraphBuilder::apply(ps).getGraph();
 }
 
+inline void displayAsGraph(PredicateState::Ptr ps, const std::string& name = "", bool wait = false) {
+    auto graph = buildGraphRep(ps);
+    std::string Filename = llvm::WriteGraph(&graph, name);
+    llvm::DisplayGraph(Filename, wait);
+}
+
 } /* namespace borealis */
 
 namespace llvm {
@@ -166,6 +173,8 @@ struct DOTGraphTraits<borealis::PSGraph*>: DefaultDOTGraphTraits {
         using namespace borealis;
         if(node->data == nullptr) return "@";
         if(auto basic = llvm::dyn_cast<BasicPredicateState>(node->data)) {
+            if(basic->getData().empty()) return "";
+
             auto head = util::head(basic->getData());
             auto tail = util::tail(basic->getData());
             std::ostringstream oss;

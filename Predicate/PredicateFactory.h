@@ -42,6 +42,7 @@ public:
             Term::Ptr lhv,
             Term::Ptr rhv,
             const Locus& loc = Locus()) {
+
         return Predicate::Ptr(
                 new WritePropertyPredicate(propName, lhv, rhv, loc));
     }

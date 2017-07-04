@@ -76,7 +76,7 @@ private:
 
     llvm::APFloat lb_;
     llvm::APFloat ub_;
-    mutable FloatWidening wm_;
+    WideningInterface<llvm::APFloat>* wm_;
 };
 
 struct FloatInterval::IDHash {

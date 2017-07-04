@@ -93,7 +93,7 @@ private:
 
     Integer::Ptr lb_;
     Integer::Ptr ub_;
-    mutable IntegerWidening wm_;
+    WideningInterface<Integer::Ptr>* wm_;
 };
 
 struct IntegerInterval::IDHash {

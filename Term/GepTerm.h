@@ -136,7 +136,7 @@ struct SMTImpl<Impl, GepTerm> {
 
         auto diff = ctx->getBound(base, gepBitSize, memspace) - shift;
         auto zero = ef.getIntConst(0, gepBitSize);
-        auto shifted = (base + shift).withAxiom(base >= zero);
+        auto shifted = (base + shift).withAxiom(base > zero);
 
         static config::BoolConfigEntry CraigColtonMode("analysis", "craig-colton-bounds");
 

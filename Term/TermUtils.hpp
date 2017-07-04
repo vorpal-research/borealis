@@ -52,6 +52,15 @@ struct TermUtils {
                >(t);
     }
 
+    static util::option<std::string> getStringValue(Term::Ptr t) {
+        if(not t) return util::nothing();
+
+        if(auto&& bc = llvm::dyn_cast<OpaqueStringConstantTerm>(stripCasts(t))) {
+            return util::just(bc->getValue());
+        }
+        return util::nothing();
+    }
+
     static util::option<bool> getBoolValue(Term::Ptr t) {
         if(not t) return util::nothing();
 
@@ -107,7 +116,7 @@ struct TermUtils {
 
     template<class Transformable>
     static std::unordered_set<Term::Ptr, TermHash, TermEquals> getFullTermSet(Transformable tr) {
-        TermCollector TC{ FactoryNest() };
+        TermCollector<> TC{ FactoryNest() };
         TC.transform(tr);
         return TC.moveTerms();
     }

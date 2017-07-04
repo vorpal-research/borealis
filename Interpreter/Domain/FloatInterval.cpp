@@ -23,7 +23,7 @@ FloatInterval::FloatInterval(DomainFactory* factory, const FloatInterval::ID& id
         Domain(std::get<0>(id), Type::FLOAT_INTERVAL, factory),
         lb_(std::get<1>(id)),
         ub_(std::get<2>(id)),
-        wm_(factory_) {
+        wm_(FloatWidening::getInstance()) {
     if (value_ == TOP) setTop();
     else if (lb_.isSmallest() && ub_.isLargest()) value_ = TOP;
 }
@@ -102,8 +102,8 @@ Domain::Ptr FloatInterval::widen(Domain::Ptr other) const {
         return interval->shared_from_this();
     }
 
-    auto left = (util::lt(interval->lb_, lb_)) ? wm_.get_prev(interval->lb_) : lb_;
-    auto right = (util::lt(ub_, interval->ub_)) ? wm_.get_next(interval->ub_) : ub_;
+    auto left = (util::lt(interval->lb_, lb_)) ? wm_->get_prev(interval->lb_, factory_) : lb_;
+    auto right = (util::lt(ub_, interval->ub_)) ? wm_->get_next(interval->ub_, factory_) : ub_;
 
     return factory_->getFloat(left, right);
 }

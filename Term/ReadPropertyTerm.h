@@ -78,6 +78,21 @@ struct SMTImpl<Impl, ReadPropertyTerm> {
 };
 #include "Util/unmacros.h"
 
+struct ReadPropertyTermExtractor {
+
+    functional_hell::matchers::storage_t<const std::string&, Term::Ptr> unapply(Term::Ptr t) const {
+        if (auto&& p = llvm::dyn_cast<ReadPropertyTerm>(t)) {
+            return functional_hell::matchers::make_storage(p->getPropertyName()->getName(), p->getRhv());
+        } else {
+            return {};
+        }
+    }
+
+};
+
+static auto $ReadPropertyTerm = functional_hell::matchers::make_pattern(ReadPropertyTermExtractor());
+
+
 } /* namespace borealis */
 
 #endif /* READPROPERTYTERM_H_ */

@@ -18,7 +18,7 @@
 #include "Util/typeindex.hpp"
 #include "Util/util.h"
 
-#include "functional-hell/matchers_aux.hpp"
+#include <functional-hell/matchers_aux.hpp>
 
 namespace borealis {
 
@@ -148,6 +148,21 @@ struct PredicateShallowEquals {
         return lhv.get() == rhv.get();
     }
 };
+
+struct PredicateTypeExtractor {
+    functional_hell::matchers::storage_t<PredicateType> unapply(Predicate::Ptr p) const {
+        return functional_hell::matchers::make_storage(p->getType());
+    }
+};
+
+static auto $PredicateOfType = functional_hell::matchers::make_pattern(PredicateTypeExtractor());
+static auto $StatePredicate     = $PredicateOfType(PredicateType::STATE);
+static auto $InvariantPredicate = $PredicateOfType(PredicateType::INVARIANT);
+static auto $PathPredicate      = $PredicateOfType(PredicateType::PATH);
+static auto $AssumePredicate    = $PredicateOfType(PredicateType::ASSUME);
+static auto $AssertPredicate    = $PredicateOfType(PredicateType::ASSERT);
+static auto $RequiresPredicate  = $PredicateOfType(PredicateType::REQUIRES);
+static auto $EnsuresPredicate   = $PredicateOfType(PredicateType::ENSURES);
 
 } /* namespace borealis */
 
