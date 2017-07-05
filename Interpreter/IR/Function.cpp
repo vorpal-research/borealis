@@ -156,29 +156,30 @@ std::ostream& operator<<(std::ostream& s, const Function::Ptr f) {
     return s;
 }
 
-borealis::logging::logstream& operator<<(borealis::logging::logstream& ss, const Function& f) {
-    ss << "--- Function \"" << f.getName() << "\" ---";
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function& f) {
+    s << "--- Function \"" << f.getName() << "\" ---";
 
     auto& arguments = f.getArguments();
     if (not arguments.empty()) {
         auto i = 0U;
         for (auto&& it : f.getInstance()->args()) {
-            ss << endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i++];
+            s << endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i++];
+            s.flush();
         }
-        ss << endl;
+        s << endl;
     }
 
     for (auto&& it : util::viewContainer(*f.getInstance())) {
-        ss << endl << f.getBasicBlock(&it);
-        ss.flush();
+        s << endl << f.getBasicBlock(&it);
+        s.flush();
     }
 
-    ss << endl << "Retval = ";
+    s << endl << "Retval = ";
     if (f.getOutputState()->getReturnValue())
-        ss << f.getOutputState()->getReturnValue()->toString();
-    else ss << "void";
+        s << f.getOutputState()->getReturnValue()->toString();
+    else s << "void";
 
-    return ss;
+    return s;
 }
 
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function* f) {

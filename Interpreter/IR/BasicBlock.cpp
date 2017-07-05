@@ -118,6 +118,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
         auto value = llvm::cast<llvm::Value>(&it);
         auto domain = b.getOutputState()->find(value);
         if (not domain) continue;
+
         s << endl << "  "
           << b.getSlotTracker().getLocalName(value) << " = "
           << domain->toPrettyString("  ");

@@ -103,7 +103,8 @@ const Module::FunctionMap& Module::getFunctions() const {
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {
     if (not m.getGloabls().empty()) {
-        s << "globals: " << std::endl;
+        s << "Global Variables: " << std::endl;
+        s.flush();
         for (auto&& global : m.getGloabls()) {
             s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << std::endl;
             s.flush();
@@ -112,7 +113,7 @@ std::ostream& operator<<(std::ostream& s, const Module& m) {
     s << std::endl;
     s.flush();
     for (auto&& it : m.getFunctions()) {
-        s << std::endl << it.second << std::endl;
+        s << std::endl << std::endl << it.second << std::endl << std::endl;
         s.flush();
     }
     return s;
@@ -120,7 +121,8 @@ std::ostream& operator<<(std::ostream& s, const Module& m) {
 
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m) {
     if (not m.getGloabls().empty()) {
-        s << "globals: " << endl;
+        s << "Global Variables: " << endl;
+        s.flush();
         for (auto&& global : m.getGloabls()) {
             s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << endl;
             s.flush();
@@ -129,7 +131,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     s << endl;
     s.flush();
     for (auto&& it : m.getFunctions()) {
-        s << endl << it.second << endl;
+        s << endl << endl << it.second << endl << endl;
         s.flush();
     }
     return s;

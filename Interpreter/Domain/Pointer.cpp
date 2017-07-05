@@ -147,8 +147,8 @@ Domain::Ptr Pointer::join(Domain::Ptr other) const {
         auto&& it = locations_.find(itptr);
         if (it == locations_.end()) {
             locations_.insert(itptr);
+        /// Assume that length and location are same
         } else {
-            /// Assume that length and location are same
             it->offset_ = it->offset_->join(itptr.offset_);
         }
     }

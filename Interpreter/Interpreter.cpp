@@ -5,10 +5,10 @@
 #include "Annotation/Annotation.h"
 #include "Interpreter.h"
 
+#include "ConditionSplitter.h"
 #include "Util/collections.hpp"
 
 #include "Util/macros.h"
-#include "ConditionSplitter.h"
 
 namespace borealis {
 namespace absint {
@@ -47,10 +47,10 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Do
         auto&& basicBlock = context_->deque.front();
 
         // updating output block with new information
-        auto&& inputBlock = basicBlock->getInputState();
-        auto&& outputBlock = basicBlock->getOutputState();
-        outputBlock->merge(inputBlock);
-        context_->state = outputBlock;
+        auto&& input = basicBlock->getInputState();
+        auto&& output = basicBlock->getOutputState();
+        output->merge(input);
+        context_->state = output;
         visit(const_cast<llvm::BasicBlock*>(basicBlock->getInstance()));
         basicBlock->setVisited();
 
