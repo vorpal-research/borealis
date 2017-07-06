@@ -89,6 +89,7 @@ set(INCLUDE_DIRS
         ${PROJECT_SOURCE_DIR}/lib/google-test/include
         ${PROJECT_SOURCE_DIR}/lib/yaml-cpp/include
         ${PROJECT_SOURCE_DIR}/lib/yaml-cpp/test
+        ${PROJECT_SOURCE_DIR}/lib/log4cpp/include
         ${PROJECT_SOURCE_DIR}/lib/backward-cpp
         ${PROJECT_SOURCE_DIR}/lib/leveldb-mp/include
         ${PROJECT_SOURCE_DIR}/lib/leveldb-mp/libsocket/headers)
@@ -248,6 +249,16 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/yaml-cpp)
 list(APPEND ARCHIVES yaml-cpp)
 
 ################################################################################
+# log4cpp
+################################################################################
+set(LOG_4_CPP_DIR ${PROJECT_SOURCE_DIR}/lib/log4cpp)
+
+add_subdirectory(${LOG_4_CPP_DIR})
+
+link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/log4cpp)
+list(APPEND ARCHIVES log4cpp)
+
+################################################################################
 # LevelDB-MP
 ################################################################################
 set(LEVELDB_MP_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/leveldb-mp)
@@ -295,7 +306,6 @@ set(SYSTEM_LIBS
         boolector
         lgl
         cln
-        log4cpp
         profiler
         jsoncpp
         protobuf

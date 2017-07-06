@@ -13,6 +13,9 @@
 [submodule "lib/backward-cpp"]
 	path = lib/backward-cpp
 	url = https://github.com/bombela/backward-cpp.git
+[submodule "lib/log4cpp"]
+	path = lib/log4cpp
+	url = ../log4cpp
 [submodule "lib/iterations"]
 	path = lib/iterations
 	url = ../iterations
