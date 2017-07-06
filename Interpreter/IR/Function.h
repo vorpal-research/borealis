@@ -50,6 +50,8 @@ public:
     State::Ptr getOutputState() const;
     Domain::Ptr getReturnValue() const;
 
+    Domain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
+
     /// Assumes that @args[i] corresponds to i-th argument of the function
     /// Returns true, if arguments were updated and function should be reinterpreted
     bool updateArguments(const std::vector<Domain::Ptr>& args);

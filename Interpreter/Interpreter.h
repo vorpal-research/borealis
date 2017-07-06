@@ -27,7 +27,6 @@ public:
     const Module& getModule() const;
 
     void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
-    Domain::Ptr getVariable(const llvm::Value* value);
 
     /// llvm instructions visitors
     void visitInstruction(llvm::Instruction& i);
@@ -64,6 +63,8 @@ public:
 
 private:
 
+    friend class ConditionSplitter;
+
     struct Context {
         Function::Ptr function; // current function
         State::Ptr state; // current state
@@ -75,6 +76,7 @@ private:
     /// Util functions
     Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
     void stub(const llvm::Instruction& i);
+    Domain::Ptr getVariable(const llvm::Value* value);
     void addSuccessors(const std::vector<BasicBlock*>& successors);
     void handleMemoryAllocation(const llvm::CallInst& i);
     void handleDeclaration(const llvm::CallInst& i);

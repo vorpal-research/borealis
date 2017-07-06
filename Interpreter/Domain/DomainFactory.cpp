@@ -287,7 +287,7 @@ Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vecto
 
 /* heap */
 MemoryObject::Ptr DomainFactory::getMemoryObject(const llvm::Type& type) {
-    return MemoryObject::Ptr{ new MemoryObject(getBottom(type)) };
+    return getMemoryObject(getBottom(type));
 }
 
 MemoryObject::Ptr DomainFactory::getMemoryObject(Domain::Ptr value) {

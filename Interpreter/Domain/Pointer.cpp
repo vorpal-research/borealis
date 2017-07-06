@@ -87,12 +87,9 @@ bool Pointer::equals(const Domain* other) const {
 
     if (locations_.size() != ptr->locations_.size()) return false;
 
-    for (auto&& it : locations_) {
-        auto&& itptr = ptr->locations_.find(it);
-        if (itptr == ptr->locations_.end()) return false;
-        if (not itptr->location_->equals(it.location_.get())) return false;
-    }
-    return true;
+    return util::equal_with_find(locations_, ptr->locations_,
+                                 [](auto&& a) { return a; },
+                                 [](auto&& a, auto&& b) { return a.location_->equals(b.location_.get()); });
 }
 
 bool Pointer::operator<(const Domain&) const {
@@ -235,6 +232,8 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
     auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
+    if (this->isTop() || other->isTop()) return factory_->getInteger(TOP, 1);
+
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
             if (not util::hasIntersection(locations_, ptr->locations_))
@@ -258,6 +257,9 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
 Split Pointer::splitByEq(Domain::Ptr other) const {
     auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
+
+    if (this->isTop() || other->isTop())
+        return {factory_->getPointer(TOP, elementType_), factory_->getPointer(TOP, elementType_)};
 
     Locations trueLocs, falseLocs;
     for (auto&& loc : ptr->getLocations()) {

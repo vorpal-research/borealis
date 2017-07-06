@@ -222,6 +222,7 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
         auto element = util::at(elements_, i) ?
                        elements_[i] :
                        factory_->getMemoryObject(getElementType(i));
+        if (not util::at(elements_, i)) elements_[i] = element;
         result = indices.size() == 1 ?
                  result->join(element->load()) :
                  result->join(element->load()->extractValue(type, sub_idx));
@@ -292,6 +293,7 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
             auto element = util::at(elements_, i) ?
                            elements_[i] :
                            factory_->getMemoryObject(getElementType(i));
+            if (not util::at(elements_, i)) elements_[i] = element;
             auto subGep = element->load()->gep(type, sub_idx);
             result = result ?
                      result->join(subGep) :

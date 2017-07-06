@@ -2,8 +2,6 @@
 // Created by abdullin on 3/2/17.
 //
 
-#include <andersen/include/Andersen.h>
-
 #include "Interpreter/Util.hpp"
 #include "Module.h"
 #include "Util/collections.hpp"
@@ -74,6 +72,10 @@ Function::Ptr Module::get(const std::string& fname) {
     return (function) ? get(function) : nullptr;
 }
 
+const llvm::Module* Module::getInstance() const {
+    return instance_;
+}
+
 const Module::GlobalsMap& Module::getGloabls() const {
     return globals_;
 }
@@ -97,8 +99,23 @@ DomainFactory* Module::getDomainFactory() {
     return &factory_;
 }
 
+SlotTrackerPass* Module::getSlotTracker() const {
+    return ST_;
+}
+
 const Module::FunctionMap& Module::getFunctions() const {
     return functions_;
+}
+
+Domain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location) {
+    if (llvm::isa<llvm::GlobalVariable>(value)) {
+        return findGlobal(value);
+    } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
+        return factory_.get(constant);
+    } else {
+        return get(location->getParent())->getDomainFor(value, location);
+    }
+    UNREACHABLE("Unknown type of value: " + ST_->toString(value));
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {

@@ -16,8 +16,8 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
         : instance_(function),
           tracker_(st),
           factory_(factory) {
-    inputState_ = State::Ptr{ new State() };
-    outputState_ = State::Ptr{ new State() };
+    inputState_ = State::Ptr{ new State(tracker_) };
+    outputState_ = State::Ptr{ new State(tracker_) };
     for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.push_back(nullptr);
 
     for (auto&& block : util::viewContainer(*instance_)) {
@@ -119,6 +119,10 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
     }
     getEntryNode()->getInputState()->merge(inputState_);
     return changed;
+}
+
+Domain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location) {
+    return getBasicBlock(location)->getDomainFor(value);
 }
 
 std::ostream& operator<<(std::ostream& ss, const Function& f) {

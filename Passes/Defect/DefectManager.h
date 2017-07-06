@@ -41,6 +41,7 @@ struct persistentDefectData {
     DefectData falseData;
     DefectData truePastData;
     DefectData falsePastData;
+    DefectData falseAbsIntData;
 
     using SimpleT = std::pair< DefectData, DefectData >;
 
@@ -173,6 +174,7 @@ public:
     void addDefect(const DefectInfo& info);
 
     void addNoDefect(const DefectInfo& info);
+    void addNoAbsIntDefect(const DefectInfo& info);
 
     const AdditionalDefectInfo& getAdditionalInfo(const DefectInfo&) const;
     AdditionalDefectInfo& getAdditionalInfo(const DefectInfo&);

@@ -31,7 +31,7 @@ private:
     State::Ptr outputState_;
     BlockMap predecessors_;
     BlockMap successors_;
-    bool atFixpoint_;
+    int atFixpoint_;
     bool visited_;
 
     void addPredecessor(BasicBlock* pred);
@@ -52,6 +52,8 @@ public:
     std::string toString() const;
     std::string inputToString() const;
     std::string toFullString() const;
+
+    Domain::Ptr getDomainFor(const llvm::Value* value);
 
     bool empty() const;
     bool atFixpoint();

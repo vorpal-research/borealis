@@ -225,6 +225,17 @@ bool equal(const C1& c1, const C2& c2, BinaryPred pred) {
     return c1beg == c1end && c2beg == c2end;
 }
 
+template<class C1, class C2, class Key, class BinaryPred>
+bool equal_with_find(const C1& lhv, const C2& rhv, Key getKey, BinaryPred pred) {
+    if (lhv.size() != rhv.size()) return false;
+    for (auto&& it : lhv) {
+        auto&& its = rhv.find(getKey(it));
+        if (its == rhv.end()) return false;
+        if (not pred(it, *its)) return false;
+    }
+    return true;
+}
+
 template<class Container>
 auto max_element(Container&& c) -> decltype(*c.begin()) {
     return *std::max_element(std::forward<Container>(c).begin(), std::forward<Container>(c).end());

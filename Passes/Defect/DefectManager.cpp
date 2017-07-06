@@ -36,6 +36,11 @@ void DefectManager::addNoDefect(const DefectInfo& info) {
     getStaticData().falseData.insert(info);
 }
 
+void DefectManager::addNoAbsIntDefect(const DefectInfo& info) {
+    getStaticData().falseAbsIntData.insert(info);
+    getStaticData().falseData.insert(info);
+}
+
 const AdditionalDefectInfo& DefectManager::getAdditionalInfo(const DefectInfo& di) const {
     auto&& ret = util::at(getSupplemental(), di);
     if(ret) {
@@ -72,7 +77,10 @@ bool DefectManager::hasDefect(const DefectInfo& di) const {
 }
 
 bool DefectManager::hasInfo(const DefectInfo& di) const {
-    return util::contains(getStaticData().trueData, di) || util::contains(getStaticData().truePastData, di) || util::contains(getStaticData().falsePastData, di);
+    return util::contains(getStaticData().trueData, di) ||
+            util::contains(getStaticData().truePastData, di) ||
+            util::contains(getStaticData().falsePastData, di) ||
+            util::contains(getStaticData().falseAbsIntData, di);
 }
 
 

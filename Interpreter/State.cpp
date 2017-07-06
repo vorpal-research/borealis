@@ -3,6 +3,7 @@
 //
 
 #include "State.h"
+#include "Util/collections.hpp"
 #include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
@@ -10,19 +11,10 @@
 namespace borealis {
 namespace absint {
 
-bool compare(const State::Map& lhv, const State::Map& rhv) {
-    if (lhv.size() != rhv.size()) return false;
-    for (auto&& it : lhv) {
-        auto&& its = rhv.find(it.first);
-        if (its == rhv.end()) return false;
-        if (not it.second->equals(its->second.get())) return false;
-    }
-    return true;
-}
-
-State::State() : retval_(nullptr) {}
+State::State(SlotTracker* tracker) : retval_(nullptr), tracker_(tracker) {}
 State::State(const State &other) : locals_(other.locals_),
-                                   retval_(other.retval_) {}
+                                   retval_(other.retval_),
+                                   tracker_(other.tracker_) {}
 
 void State::addVariable(const llvm::Value* val, Domain::Ptr domain) {
     locals_[val] = domain;
@@ -71,13 +63,13 @@ bool State::empty() const {
     return locals_.empty();
 }
 
-std::string State::toString(SlotTracker& tracker) const {
+std::string State::toString() const {
     std::ostringstream ss;
 
     if (not locals_.empty()) {
         for (auto&& local : locals_) {
             ss << "    ";
-            ss << tracker.getLocalName(local.first) << " = ";
+            ss << tracker_->getLocalName(local.first) << " = ";
             ss << local.second->toString() << std::endl;
         }
     }
@@ -85,8 +77,10 @@ std::string State::toString(SlotTracker& tracker) const {
 }
 
 bool State::equals(const State* other) const {
-    return compare(this->locals_, other->locals_) &&
-           this->retval_ == other->retval_;
+    return this->retval_ == other->retval_ &&
+            util::equal_with_find(this->locals_, other->locals_,
+                                  [](auto&& a) { return a.first; },
+                                  [](auto&& a, auto&& b) { return a.second->equals(b.second.get()); });
 }
 
 bool operator==(const State& lhv, const State& rhv) {

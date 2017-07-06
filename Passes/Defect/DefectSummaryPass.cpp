@@ -40,7 +40,11 @@ bool DefectSummaryPass::runOnModule(llvm::Module& M) {
 
     auto* mainFileEntry = M.getModuleIdentifier().c_str();
 
-    for (auto& defect : dm) {
+    std::vector<DefectInfo> results(dm.begin(), dm.end());
+    std::sort(results.begin(), results.end(), [](DefectInfo& a, DefectInfo& b) -> bool {
+        return a < b;
+    });
+    for (auto& defect : results) {
         Locus origin = defect.location;
 
         if (!origin) {

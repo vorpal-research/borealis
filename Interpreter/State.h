@@ -21,7 +21,7 @@ public:
     using Map = std::map<const llvm::Value*, Domain::Ptr>;
     using Ptr = std::shared_ptr<State>;
 
-    State();
+    State(SlotTracker* tracker);
     State(const State& other);
 
     bool equals(const State* other) const;
@@ -40,12 +40,13 @@ public:
     Domain::Ptr find(const llvm::Value* val) const;
 
     bool empty() const;
-    std::string toString(SlotTracker& tracker) const;
+    std::string toString() const;
 
 private:
 
     Map locals_;
     Domain::Ptr retval_;
+    SlotTracker* tracker_;
 };
 
 }   /* namespace absint */

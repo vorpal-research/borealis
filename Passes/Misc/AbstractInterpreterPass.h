@@ -26,12 +26,10 @@ public:
 
 private:
 
-    void viewAbsintCFG(const absint::Module* module);
-
-
+    void viewAbsintCFG(const absint::Module& module);
 
 };
 
-}
+}   /* namespace borealis */
 
 #endif //BOREALIS_ABSTRACTINTERPRETERPASS_H

@@ -13,8 +13,8 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : insta
                                                                            tracker_(tracker),
                                                                            atFixpoint_(false),
                                                                            visited_(false) {
-    inputState_ = State::Ptr{ new State() };
-    outputState_ = State::Ptr{ new State() };
+    inputState_ = State::Ptr{ new State(tracker_) };
+    outputState_ = State::Ptr{ new State(tracker_) };
 }
 
 const llvm::BasicBlock* BasicBlock::getInstance() const {
@@ -45,26 +45,16 @@ std::string BasicBlock::toString() const {
 
 std::string BasicBlock::toFullString() const {
     std::ostringstream ss;
-
-    if (instance_->hasName())
-        ss << instance_->getName().str() << ":";
-    else
-        ss << "<label>:" << tracker_->getLocalSlot(instance_);
-
-    ss << outputState_->toString(*tracker_);
+    ss << getName() << " output:";
+    ss << outputState_->toString();
     ss << std::endl;
     return ss.str();
 }
 
 std::string BasicBlock::inputToString() const {
     std::ostringstream ss;
-
-    if (instance_->hasName())
-        ss << instance_->getName().str() << ":";
-    else
-        ss << "<label>:" << tracker_->getLocalSlot(instance_);
-
-    ss << inputState_->toString(*tracker_);
+    ss << getName() << " input:";
+    ss << inputState_->toString();
     ss << std::endl;
     return ss.str();
 }
@@ -76,9 +66,10 @@ bool BasicBlock::empty() const {
 
 bool BasicBlock::atFixpoint() {
     if (empty()) return false;
-    if (atFixpoint_) return true;
-    atFixpoint_ = inputState_->equals(outputState_.get());
-    return atFixpoint_;
+    if (atFixpoint_ > 2) return true;
+    if (inputState_->equals(outputState_.get())) ++atFixpoint_;
+    else atFixpoint_ = 0;
+    return atFixpoint_ > 2;
 }
 
 bool BasicBlock::isVisited() const {
@@ -95,6 +86,10 @@ void BasicBlock::addPredecessor(BasicBlock* pred) {
 
 void BasicBlock::addSuccessor(BasicBlock* succ) {
     successors_.push_back(succ);
+}
+
+Domain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
+    return outputState_->find(value);
 }
 
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
