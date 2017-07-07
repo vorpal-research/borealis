@@ -11,7 +11,6 @@ namespace absint {
 
 BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : instance_(bb),
                                                                            tracker_(tracker),
-                                                                           atFixpoint_(false),
                                                                            visited_(false) {
     inputState_ = State::Ptr{ new State(tracker_) };
     outputState_ = State::Ptr{ new State(tracker_) };
@@ -66,10 +65,7 @@ bool BasicBlock::empty() const {
 
 bool BasicBlock::atFixpoint() {
     if (empty()) return false;
-    if (atFixpoint_ > 2) return true;
-    if (inputState_->equals(outputState_.get())) ++atFixpoint_;
-    else atFixpoint_ = 0;
-    return atFixpoint_ > 2;
+    return inputState_->equals(outputState_.get());
 }
 
 bool BasicBlock::isVisited() const {

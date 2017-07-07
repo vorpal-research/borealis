@@ -219,13 +219,12 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
     Domain::Ptr result = factory_->getBottom(type);
     std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
     for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
-        auto element = util::at(elements_, i) ?
-                       elements_[i] :
-                       factory_->getMemoryObject(getElementType(i));
-        if (not util::at(elements_, i)) elements_[i] = element;
+        if (not util::at(elements_, i)) {
+            elements_[i] = factory_->getMemoryObject(getElementType(i));
+        }
         result = indices.size() == 1 ?
-                 result->join(element->load()) :
-                 result->join(element->load()->extractValue(type, sub_idx));
+                 result->join(elements_.at(i)->load()) :
+                 result->join(elements_.at(i)->load()->extractValue(type, sub_idx));
     }
     return result;
 }
@@ -290,18 +289,17 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
 
         std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
         for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
-            auto element = util::at(elements_, i) ?
-                           elements_[i] :
-                           factory_->getMemoryObject(getElementType(i));
-            if (not util::at(elements_, i)) elements_[i] = element;
-            auto subGep = element->load()->gep(type, sub_idx);
+            if (not util::at(elements_, i)) {
+                elements_[i] = factory_->getMemoryObject(getElementType(i));
+            }
+            auto subGep = elements_[i]->load()->gep(type, sub_idx);
             result = result ?
                      result->join(subGep) :
                      subGep;
         }
         if (not result) {
             warns() << "Gep is out of bounds" << endl;
-            return factory_->getPointer(TOP, type);
+            return factory_->getPointer(TOP, *type.getPointerElementType());
         }
 
         return result;

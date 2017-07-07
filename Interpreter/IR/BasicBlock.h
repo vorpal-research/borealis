@@ -31,7 +31,6 @@ private:
     State::Ptr outputState_;
     BlockMap predecessors_;
     BlockMap successors_;
-    int atFixpoint_;
     bool visited_;
 
     void addPredecessor(BasicBlock* pred);

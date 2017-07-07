@@ -227,7 +227,7 @@ Domain::Ptr DomainFactory::getPointer(Domain::Value value, const llvm::Type& ele
 }
 
 Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType) {
-    return Domain::Ptr{ new Pointer(Domain::BOTTOM, this, elementType) };
+    return getPointer(Domain::BOTTOM, elementType);
 }
 
 Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType, const Pointer::Locations& locations) {
