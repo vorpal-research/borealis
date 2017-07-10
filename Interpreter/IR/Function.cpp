@@ -20,8 +20,22 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
     outputState_ = State::Ptr{ new State(tracker_) };
     for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.push_back(nullptr);
 
+    // find all global variables, that this function depends on
+    for (auto&& inst : util::viewContainer(*instance_)
+            .flatten()
+            .map([](const llvm::Instruction& i) -> llvm::Instruction& { return const_cast<llvm::Instruction&>(i); })) {
+        for (auto&& op : util::viewContainer(inst.operand_values())
+                .map([](llvm::Value* v) -> llvm::Value* {
+                    if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))
+                        return gepOp->getPointerOperand();
+                    else return v; })
+                .filter(llvm::isaer<llvm::GlobalVariable>())) {
+            globals_.insert({ op, factory_->getBottom(*op->getType()) });
+        }
+    }
+
     for (auto&& block : util::viewContainer(*instance_)) {
-        auto&& aiBlock = BasicBlock(&block, tracker_);
+        auto&& aiBlock = BasicBlock(&block, tracker_, factory_);
         blocks_.insert( {&block, aiBlock} );
         blockVector_.push_back(&blocks_.at(&block));
     }
@@ -53,14 +67,6 @@ const std::vector<Domain::Ptr>& Function::getArguments() const {
 
 const Function::BlockMap& Function::getBasicBlocks() const {
     return blocks_;
-}
-
-State::Ptr Function::getInputState() const {
-    return inputState_;
-}
-
-State::Ptr Function::getOutputState() const {
-    return outputState_;
 }
 
 Domain::Ptr Function::getReturnValue() const {
@@ -117,12 +123,35 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
         arguments_[i] = arg;
         inputState_->addVariable(it, arguments_[i]);
     }
-    getEntryNode()->getInputState()->merge(inputState_);
+    getEntryNode()->mergeToInput(inputState_);
     return changed;
 }
 
 Domain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location) {
     return getBasicBlock(location)->getDomainFor(value);
+}
+
+void Function::mergeToOutput(State::Ptr state) {
+    outputState_->merge(state);
+}
+
+std::vector<const llvm::Value*> Function::getGlobals() const {
+    return util::viewContainer(globals_)
+            .map([](auto&& a){ return a.first; })
+            .toVector();
+}
+
+bool Function::updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals) {
+    bool updated = false;
+    for (auto&& it : globals_) {
+        auto global = globals.at(it.first);
+        ASSERT(global, "No value for global in map");
+        if (not it.second->equals(global.get())) {
+            it.second = it.second->join(global);
+            updated = true;
+        }
+    }
+    return updated;
 }
 
 std::ostream& operator<<(std::ostream& ss, const Function& f) {
@@ -138,13 +167,14 @@ std::ostream& operator<<(std::ostream& ss, const Function& f) {
     }
 
     for (auto&& it : util::viewContainer(*f.getInstance())) {
+        if (not f.getBasicBlock(&it)->isVisited()) continue;
         ss << std::endl << f.getBasicBlock(&it);
         ss.flush();
     }
 
     ss << std::endl << "Retval = ";
-    if (f.getOutputState()->getReturnValue())
-        ss << f.getOutputState()->getReturnValue()->toString();
+    if (f.getReturnValue())
+        ss << f.getReturnValue()->toString();
     else ss << "void";
 
     return ss;
@@ -174,13 +204,14 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     }
 
     for (auto&& it : util::viewContainer(*f.getInstance())) {
+        if (not f.getBasicBlock(&it)->isVisited()) continue;
         s << endl << f.getBasicBlock(&it);
         s.flush();
     }
 
     s << endl << "Retval = ";
-    if (f.getOutputState()->getReturnValue())
-        s << f.getOutputState()->getReturnValue()->toString();
+    if (f.getReturnValue())
+        s << f.getReturnValue();
     else s << "void";
 
     return s;

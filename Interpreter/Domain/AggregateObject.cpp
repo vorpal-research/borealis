@@ -265,9 +265,9 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     ASSERT(idx_interval, "Unknown type of offsets");
 
     if (isBottom()) {
-        return factory_->getBottom(type);
+        return factory_->getPointer(BOTTOM, type);
     } else if (isTop()) {
-        return factory_->getTop(type);
+        return factory_->getPointer(TOP, type);
     }
 
     auto idx_begin = idx_interval->lb()->getRawValue();
@@ -299,7 +299,7 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
         }
         if (not result) {
             warns() << "Gep is out of bounds" << endl;
-            return factory_->getPointer(TOP, *type.getPointerElementType());
+            return factory_->getPointer(TOP, type);
         }
 
         return result;

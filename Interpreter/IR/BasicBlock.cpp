@@ -3,17 +3,38 @@
 //
 
 #include "BasicBlock.h"
+#include "Interpreter/Domain/DomainFactory.h"
 
 #include "Util/collections.hpp"
+#include "Util/util.hpp"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
 
-BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker) : instance_(bb),
-                                                                           tracker_(tracker),
-                                                                           visited_(false) {
+BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainFactory* factory)
+        : instance_(bb),
+          tracker_(tracker),
+          factory_(factory),
+          inputChanged_(false),
+          atFixpoint_(false),
+          visited_(false) {
     inputState_ = State::Ptr{ new State(tracker_) };
     outputState_ = State::Ptr{ new State(tracker_) };
+
+    // find all global variables, that this function depends on
+    for (auto&& inst : util::viewContainer(*instance_)
+            .map([](const llvm::Instruction& i) -> llvm::Instruction& { return const_cast<llvm::Instruction&>(i); })) {
+        for (auto&& op : util::viewContainer(inst.operand_values())
+                .map([](llvm::Value* v) -> llvm::Value* {
+                    if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))
+                        return gepOp->getPointerOperand();
+                    else return v; })
+                .filter(llvm::isaer<llvm::GlobalVariable>())) {
+            globals_.insert({ op, factory_->getBottom(*op->getType()) });
+        }
+    }
 }
 
 const llvm::BasicBlock* BasicBlock::getInstance() const {
@@ -22,10 +43,6 @@ const llvm::BasicBlock* BasicBlock::getInstance() const {
 
 SlotTracker& BasicBlock::getSlotTracker() const {
     return *tracker_;
-}
-
-State::Ptr BasicBlock::getInputState() const {
-    return inputState_;
 }
 
 State::Ptr BasicBlock::getOutputState() const {
@@ -63,9 +80,15 @@ bool BasicBlock::empty() const {
     return inputState_->empty() && outputState_->empty();
 }
 
-bool BasicBlock::atFixpoint() {
+bool BasicBlock::atFixpoint(const std::map<const llvm::Value*, Domain::Ptr>& globals) {
     if (empty()) return false;
-    return inputState_->equals(outputState_.get());
+    if (checkGlobalsChanged(globals)) return false;
+    if (not inputChanged_) return atFixpoint_;
+    else {
+        atFixpoint_ = inputState_->equals(outputState_.get());
+        inputChanged_ = false;
+        return atFixpoint_;
+    }
 }
 
 bool BasicBlock::isVisited() const {
@@ -84,8 +107,49 @@ void BasicBlock::addSuccessor(BasicBlock* succ) {
     successors_.push_back(succ);
 }
 
+void BasicBlock::mergeToInput(State::Ptr input) {
+    inputState_->merge(input);
+    inputChanged_ = true;
+}
+
+void BasicBlock::addToInput(const llvm::Value* value, Domain::Ptr domain) {
+    inputState_->addVariable(value, domain);
+    inputChanged_ = true;
+}
+
 Domain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
     return outputState_->find(value);
+}
+
+void BasicBlock::mergeOutputWithInput() {
+    outputState_->merge(inputState_);
+}
+
+std::vector<const llvm::Value*> BasicBlock::getGlobals() const {
+    return util::viewContainer(globals_)
+            .map([](auto&& a){ return a.first; })
+            .toVector();
+}
+
+void BasicBlock::updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals) {
+    for (auto&& it : globals_) {
+        auto global = globals.at(it.first);
+        ASSERT(global, "No value for global in map");
+        if (not it.second->equals(global.get())) {
+            it.second = it.second->join(global);
+        }
+    }
+}
+
+bool BasicBlock::checkGlobalsChanged(const std::map<const llvm::Value*, Domain::Ptr>& globals) const {
+    for (auto&& it : globals_) {
+        auto global = globals.at(it.first);
+        ASSERT(global, "No value for global in map");
+        if (not it.second->equals(global.get())) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
@@ -131,3 +195,5 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
 
 }   /* namespace absint */
 }   /* namespace borealis */
+
+#include "Util/unmacros.h"

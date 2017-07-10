@@ -437,6 +437,10 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_SGE:
+            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
+            if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
+                return factory_->getInteger(TOP, 1);
+
             if (signed_lb()->sge(interval->signed_ub())) {
                 return getBool(true);
             } else if (signed_ub()->slt(interval->signed_lb())) {
@@ -446,6 +450,10 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_SGT:
+            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
+            if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
+                return factory_->getInteger(TOP, 1);
+
             if (signed_lb()->sgt(interval->signed_ub())) {
                 return getBool(true);
             } else if (signed_ub()->sle(interval->signed_lb())) {
@@ -455,6 +463,10 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_SLE:
+            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
+            if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
+                return factory_->getInteger(TOP, 1);
+
             if (signed_ub()->sle(interval->signed_lb())) {
                 return getBool(true);
             } else if (signed_lb()->sgt(interval->signed_ub())) {
@@ -464,6 +476,10 @@ Domain::Ptr IntegerInterval::icmp(Domain::Ptr other, llvm::CmpInst::Predicate op
             }
 
         case llvm::CmpInst::ICMP_SLT:
+            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
+            if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
+                return factory_->getInteger(TOP, 1);
+
             if (signed_ub()->slt(interval->signed_lb())) {
                 return getBool(true);
             } else if (signed_lb()->sge(interval->signed_ub())) {

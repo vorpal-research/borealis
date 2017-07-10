@@ -49,10 +49,13 @@ void Module::initGlobals() {
             }
 
         } else {
-            factory_.getBottom(*it.getType());
+            globalDomain = factory_.getBottom(*it.getType());
         }
 
-        if (not globalDomain) continue;
+        if (not globalDomain) {
+            errs() << "Could not create domain for: " << ST_->toString(&it) << endl;
+            continue;
+        }
         globals_.insert( {&it, globalDomain} );
     }
 }
@@ -116,6 +119,18 @@ Domain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::BasicBloc
         return get(location->getParent())->getDomainFor(value, location);
     }
     UNREACHABLE("Unknown type of value: " + ST_->toString(value));
+}
+
+Module::GlobalsMap Module::getGlobalsFor(const Function::Ptr f) const {
+    return util::viewContainer(f->getGlobals())
+            .map([&](auto&& a) -> std::pair<const llvm::Value*, Domain::Ptr> { return {a, findGlobal(a)}; })
+            .toMap();
+}
+
+Module::GlobalsMap Module::getGlobalsFor(const BasicBlock* bb) const {
+    return util::viewContainer(bb->getGlobals())
+            .map([&](auto&& a) -> std::pair<const llvm::Value*, Domain::Ptr> { return {a, findGlobal(a)}; })
+            .toMap();
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {

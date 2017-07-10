@@ -138,8 +138,10 @@ public:
     virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
     /// Memory
+    /// @arg type - type of the result element
     virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
     virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
+    /// @arg type - type of the element that we want to get pointer to
     virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
     /// Cast
     virtual Domain::Ptr trunc(const llvm::Type& type) const;

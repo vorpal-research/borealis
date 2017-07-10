@@ -27,10 +27,14 @@ private:
 
     const llvm::BasicBlock* instance_;
     mutable SlotTracker* tracker_;
+    DomainFactory* factory_;
+    std::map<const llvm::Value*, Domain::Ptr> globals_;
     State::Ptr inputState_;
     State::Ptr outputState_;
     BlockMap predecessors_;
     BlockMap successors_;
+    bool inputChanged_;
+    bool atFixpoint_;
     bool visited_;
 
     void addPredecessor(BasicBlock* pred);
@@ -40,22 +44,28 @@ private:
 
 public:
 
-    BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker);
+    BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainFactory* factory);
 
     const llvm::BasicBlock* getInstance() const;
     SlotTracker& getSlotTracker() const;
-    State::Ptr getInputState() const;
     State::Ptr getOutputState() const;
+    std::vector<const llvm::Value*> getGlobals() const;
 
     std::string getName() const;
     std::string toString() const;
     std::string inputToString() const;
     std::string toFullString() const;
 
+    void updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals);
+    void mergeOutputWithInput();
+    void mergeToInput(State::Ptr input);
+    void addToInput(const llvm::Value* value, Domain::Ptr domain);
     Domain::Ptr getDomainFor(const llvm::Value* value);
 
     bool empty() const;
-    bool atFixpoint();
+    bool checkGlobalsChanged(const std::map<const llvm::Value*, Domain::Ptr>& globals) const;
+    /// Needs a vector of current globals, to check if there were changed
+    bool atFixpoint(const std::map<const llvm::Value*, Domain::Ptr>& globals);
 
     void setVisited();
     bool isVisited() const;

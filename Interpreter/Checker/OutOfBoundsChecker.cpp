@@ -22,9 +22,12 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
         errs() << "Instruction not visited" << endl;
         DM_->addNoAbsIntDefect(di);
     } else {
-        errs() << "Pointer operand: " << module_->getDomainFor(GI.getPointerOperand(), loc.getParent()) << endl;
+        auto ptr = module_->getDomainFor(GI.getPointerOperand(), loc.getParent());
+        if (not ptr) return;
+        errs() << "Pointer operand: " << ptr << endl;
         for (auto j = GI.idx_begin(); j != GI.idx_end(); ++j) {
-            errs() << "Shift: " << module_->getDomainFor(llvm::cast<llvm::Value>(j), loc.getParent()) << endl;
+            auto indx = module_->getDomainFor(llvm::cast<llvm::Value>(j), loc.getParent());
+            errs() << "Shift: " << indx << endl;
         }
     }
     errs() << endl;

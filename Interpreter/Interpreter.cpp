@@ -38,24 +38,23 @@ const Module& Interpreter::getModule() const {
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
-    // if arguments are not updated, then this function was already interpreted
-    if (not function->updateArguments(args)) return;
+    // if arguments are not updated and globals are not changed, then this function don't need to be reinterpreted
+    if (not (function->updateArguments(args) || function->updateGlobals(module_.getGlobalsFor(function)))) return;
     stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
     context_ = &stack_.top();
 
     while (not context_->deque.empty()) {
         auto&& basicBlock = context_->deque.front();
+        basicBlock->updateGlobals(module_.getGlobalsFor(basicBlock));
 
         // updating output block with new information
-        auto&& input = basicBlock->getInputState();
-        auto&& output = basicBlock->getOutputState();
-        output->merge(input);
-        context_->state = output;
+        basicBlock->mergeOutputWithInput();
+        context_->state = basicBlock->getOutputState();
         visit(const_cast<llvm::BasicBlock*>(basicBlock->getInstance()));
         basicBlock->setVisited();
 
         // update function output block
-        context_->function->getOutputState()->merge(context_->state);
+        context_->function->mergeToOutput(context_->state);
 
         context_->deque.pop_front();
     }
@@ -107,14 +106,14 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
 
         auto trueSuccessor = context_->function->getBasicBlock(i.getSuccessor(0));
         auto falseSuccessor = context_->function->getBasicBlock(i.getSuccessor(1));
-        trueSuccessor->getInputState()->merge(context_->state);
-        falseSuccessor->getInputState()->merge(context_->state);
+        trueSuccessor->mergeToInput(context_->state);
+        falseSuccessor->mergeToInput(context_->state);
 
         if (cond->isTop()) {
             auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
             for (auto&& it : splitted) {
-                trueSuccessor->getInputState()->addVariable(it.first, it.second.true_);
-                falseSuccessor->getInputState()->addVariable(it.first, it.second.false_);
+                trueSuccessor->addToInput(it.first, it.second.true_);
+                falseSuccessor->addToInput(it.first, it.second.false_);
             }
             successors.push_back(trueSuccessor);
             successors.push_back(falseSuccessor);
@@ -133,7 +132,7 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
         }
     } else {
         auto successor = context_->function->getBasicBlock(i.getSuccessor(0));
-        successor->getInputState()->merge(context_->state);
+        successor->mergeToInput(context_->state);
         successors.push_back(successor);
     }
 
@@ -153,7 +152,7 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
             auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
             if (integer->hasIntersection(caseVal)) {
                 auto successor = context_->function->getBasicBlock(cs.getCaseSuccessor());
-                successor->getInputState()->merge(context_->state);
+                successor->mergeToInput(context_->state);
                 successors.push_back(successor);
                 isDefault = false;
             }
@@ -161,14 +160,14 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
 
         if (isDefault) {
             auto successor = context_->function->getBasicBlock(i.getDefaultDest());
-            successor->getInputState()->merge(context_->state);
+            successor->mergeToInput(context_->state);
             successors.push_back(successor);
         }
 
     } else {
         for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
             auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
-            successor->getInputState()->merge(context_->state);
+            successor->mergeToInput(context_->state);
             successors.push_back(successor);
         }
     }
@@ -181,7 +180,7 @@ void Interpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
 
     for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
         auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
-        successor->getInputState()->merge(context_->state);
+        successor->mergeToInput(context_->state);
         successors.push_back(successor);
     }
     addSuccessors(successors);
@@ -413,7 +412,7 @@ void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
 ///////////////////////////////////////////////////////////////
 void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
-        if (not it->atFixpoint() && not util::contains(context_->deque, it)) {
+        if (not it->atFixpoint(module_.getGlobalsFor(it)) && not util::contains(context_->deque, it)) {
             context_->deque.push_back(it);
         }
     }

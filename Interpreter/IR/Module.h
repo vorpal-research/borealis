@@ -32,6 +32,8 @@ public:
     const GlobalsMap& getGloabls() const;
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);
     Domain::Ptr findGlobal(const llvm::Value* val) const;
+    GlobalsMap getGlobalsFor(const Function::Ptr f) const;
+    GlobalsMap getGlobalsFor(const BasicBlock* bb) const;
     const FunctionMap& getFunctions() const;
 
     SlotTrackerPass* getSlotTracker() const;
