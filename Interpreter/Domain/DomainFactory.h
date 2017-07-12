@@ -20,6 +20,8 @@
 namespace borealis {
 namespace absint {
 
+class Module;
+
 class DomainFactory: public logging::ObjectLevelLogging<DomainFactory> {
 public:
 
@@ -33,7 +35,7 @@ public:
             FloatInterval::IDHash,
             FloatInterval::IDEquals>;
 
-    DomainFactory(SlotTrackerPass* st);
+    DomainFactory(Module* module);
     ~DomainFactory();
 
     SlotTrackerPass& getSlotTracker() const {
@@ -81,6 +83,9 @@ private:
     Domain::Ptr cached(const IntegerInterval::ID& key);
     Domain::Ptr cached(const FloatInterval::ID& key);
 
+    Domain::Ptr interpretConstantExpr(const llvm::ConstantExpr* ce);
+
+    Module* module_;
     SlotTrackerPass* ST_;
     IntCache ints_;
     FloatCache floats_;

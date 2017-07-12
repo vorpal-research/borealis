@@ -11,28 +11,107 @@
 namespace borealis {
 namespace absint {
 
+namespace {
+
+std::set<const llvm::GlobalVariable*> cycled;
+
+struct Global {
+    using Edges = std::vector<const llvm::GlobalVariable*>;
+    enum Color {
+        WHITE, GREY, BLACK
+    };
+    Color color_;
+    Edges edges_;
+};
+
+void getAllGlobals(const llvm::Value* value, Global::Edges& edges) {
+    if (auto global = llvm::dyn_cast<llvm::GlobalVariable>(value)) {
+        edges.push_back(global);
+    } else if (auto constantExpr = llvm::dyn_cast<llvm::ConstantExpr>(value)) {
+        for (auto&& op : constantExpr->operands()) {
+            getAllGlobals(op, edges);
+        }
+    } else if (auto constantArray = llvm::dyn_cast<llvm::ConstantArray>(value)) {
+        std::vector<Domain::Ptr> elements;
+        for (auto i = 0U; i < constantArray->getNumOperands(); ++i) {
+            getAllGlobals(constantArray->getOperand(i), edges);
+        }
+    } else if (auto&& constantStruct = llvm::dyn_cast<llvm::ConstantStruct>(value)) {
+        std::vector<Domain::Ptr> elements;
+        for (auto i = 0U; i < constantStruct->getNumOperands(); ++i) {
+            getAllGlobals(constantStruct->getOperand(i), edges);
+        }
+    }
+}
+
+Global::Edges getEdges(const llvm::GlobalVariable* g) {
+    if (not g->hasInitializer()) return {};
+    Global::Edges edges;
+    for (auto&& op : g->getInitializer()->operands()) {
+        getAllGlobals(op, edges);
+    }
+    return std::move(edges);
+}
+
+void topologicalSort(std::map<const llvm::GlobalVariable*, Global>& globals,
+                     const llvm::GlobalVariable* current,
+                     std::vector<const llvm::GlobalVariable*>& result) {
+    if (not util::at(globals, current)) return;
+    if (globals[current].color_ == Global::BLACK) return;
+    if (globals[current].color_ == Global::GREY) {
+        cycled.insert(current);
+        return;
+    }
+    globals[current].color_ = Global::GREY;
+    for (auto&& edge : globals[current].edges_) {
+        topologicalSort(globals, edge, result);
+    }
+    globals[current].color_ = Global::BLACK;
+    result.push_back(current);
+}
+
+}
+
 Module::Module(const llvm::Module* module, SlotTrackerPass* st)
         : instance_(module),
           ST_(st),
-          factory_(ST_) {
-    /// Initialize all global variables
-    initGlobals();
+          factory_(this) {
+    // Initialize all global variables
+    std::vector<const llvm::GlobalVariable*> order; // all global variables in order how they should be declared
+    std::map<const llvm::GlobalVariable*, Global> globals; // graph of global variables
+    // build graph
+    for (auto&& it : instance_->globals()) {
+        auto&& edges = getEdges(&it);
+        if (edges.empty()) order.push_back(&it);
+        else globals.insert({&it, {Global::WHITE, edges}});
+    }
+    // do topological sorting
+    for (auto&& it : globals) {
+        if (it.second.color_ == Global::WHITE) {
+            topologicalSort(globals, it.first, order);
+        }
+    }
+    // pre-initialize cycled global variables
+    for (auto&& it : cycled) {
+        globals_[it] = factory_.getBottom(*it->getType());
+    }
+    initGlobals(order);
 }
 
-void Module::initGlobals() {
-    for (auto&& it : instance_->getGlobalList()) {
+void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
+    for (auto&& it : globals) {
         Domain::Ptr globalDomain;
-        if (it.hasInitializer()) {
+        if (it->hasInitializer()) {
             Domain::Ptr content;
-            auto& elementType = *it.getType()->getPointerElementType();
+            auto& elementType = *it->getType()->getPointerElementType();
             // If global is simple type, that we should wrap it like array of size 1
             if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
-                auto simpleConst = factory_.get(it.getInitializer());
+                auto simpleConst = factory_.get(it->getInitializer());
                 auto&& arrayType = llvm::ArrayType::get(&elementType, 1);
                 content = factory_.getAggregateObject(*arrayType, {simpleConst});
             // else just create domain
             } else {
-                content = factory_.get(it.getInitializer());
+                content = factory_.get(it->getInitializer());
             }
             ASSERT(content, "Unsupported constant");
 
@@ -40,7 +119,7 @@ void Module::initGlobals() {
             auto newDomain = factory_.getPointer(elementType, {loc});
             // we need this because GEPs for global structs and arrays contain one additional index at the start
             if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
-                auto newArray = llvm::ArrayType::get(it.getType(), 1);
+                auto newArray = llvm::ArrayType::get(it->getType(), 1);
                 auto newLevel = factory_.getAggregateObject(*newArray, {newDomain});
                 PointerLocation loc2 = {factory_.getIndex(0), newLevel};
                 globalDomain = factory_.getPointer(*newArray, {loc2});
@@ -49,14 +128,11 @@ void Module::initGlobals() {
             }
 
         } else {
-            globalDomain = factory_.getBottom(*it.getType());
+            globalDomain = factory_.getBottom(*it->getType());
         }
 
-        if (not globalDomain) {
-            errs() << "Could not create domain for: " << ST_->toString(&it) << endl;
-            continue;
-        }
-        globals_.insert( {&it, globalDomain} );
+        ASSERT(globalDomain, "Could not create domain for: " + ST_->toString(it));
+        globals_.insert( {it, globalDomain} );
     }
 }
 

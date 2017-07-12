@@ -45,7 +45,7 @@ public:
 
 private:
 
-    void initGlobals();
+    void initGlobals(std::vector<const llvm::GlobalVariable*>& globals);
 
     const llvm::Module* instance_;
     SlotTrackerPass* ST_;
