@@ -2,6 +2,7 @@ lib/iterations = ../iterations
 lib/typesig = ../typesig
 lib/functional-hell = ../functional-hell
 lib/leveldb-mp = ../leveldb-mp
+lib/log4cpp = [git]../log4cpp
 
 lib/tinyformat = [git]https://github.com/c42f/tinyformat.git
 lib/backward-cpp = [git]https://github.com/bombela/backward-cpp.git
@@ -9,3 +10,4 @@ lib/andersen = [git]../andersen
 lib/rapidjson = [git]https://github.com/miloyip/rapidjson.git
 lib/inih = [git]../inih
 lib/memorypool = [git]../memorypool
+

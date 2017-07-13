@@ -212,14 +212,12 @@ Module::GlobalsMap Module::getGlobalsFor(const BasicBlock* bb) const {
 std::ostream& operator<<(std::ostream& s, const Module& m) {
     if (not m.getGloabls().empty()) {
         s << "Global Variables: " << std::endl;
-        s.flush();
         for (auto&& global : m.getGloabls()) {
             s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << std::endl;
             s.flush();
         }
     }
     s << std::endl;
-    s.flush();
     for (auto&& it : m.getFunctions()) {
         s << std::endl << std::endl << it.second << std::endl << std::endl;
         s.flush();
@@ -230,14 +228,12 @@ std::ostream& operator<<(std::ostream& s, const Module& m) {
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m) {
     if (not m.getGloabls().empty()) {
         s << "Global Variables: " << endl;
-        s.flush();
         for (auto&& global : m.getGloabls()) {
             s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << endl;
             s.flush();
         }
     }
     s << endl;
-    s.flush();
     for (auto&& it : m.getFunctions()) {
         s << endl << endl << it.second << endl << endl;
         s.flush();

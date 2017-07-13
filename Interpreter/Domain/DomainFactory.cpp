@@ -348,6 +348,8 @@ Domain::Ptr DomainFactory::interpretConstantExpr(const llvm::ConstantExpr* ce) {
         for (auto&& it : ce->operands()) {
             errs() << ST_->toString(it) << endl;
         }
+        errs() << "Cast to type: " << ST_->toString(ce->getType()) << endl;
+        errs() << endl;
         return getTop(*ce->getType());
     } else {
         errs() << "Unimplemented ConstExpr: " << ST_->toString(ce) << endl;
