@@ -78,8 +78,12 @@ private:
     void stub(const llvm::Instruction& i);
     Domain::Ptr getVariable(const llvm::Value* value);
     void addSuccessors(const std::vector<BasicBlock*>& successors);
-    void handleMemoryAllocation(const llvm::CallInst& i);
-    void handleDeclaration(const llvm::CallInst& i);
+    Domain::Ptr handleFunctionCall(const llvm::Function* function,
+                                   const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
+    Domain::Ptr handleMemoryAllocation(const llvm::Function* function,
+                                       const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
+    Domain::Ptr handleDeclaration(const llvm::Function* function,
+                                  const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
 
     Module module_;
     FuncInfoProvider* FIP_;

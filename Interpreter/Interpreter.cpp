@@ -375,26 +375,44 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    if (i.getCalledFunction() &&
-            (i.getCalledFunction()->getName().startswith("borealis.alloc") ||
-                    i.getCalledFunction()->getName().startswith("borealis.malloc"))) {
-        handleMemoryAllocation(i);
+    std::vector<std::pair<const llvm::Value*, Domain::Ptr>> args;
+    for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
+        args.push_back({i.getArgOperand(j), getVariable(i.getArgOperand(j))});
+    }
+    auto retval = module_.getDomainFactory()->getBottom(*i.getType());
 
-    } else if (not i.getCalledFunction() || i.getCalledFunction()->isDeclaration()) {
-        handleDeclaration(i);
+    if (not i.getCalledFunction()) {
+        auto&& ptrDomain = getVariable(i.getCalledValue());
+        if (not ptrDomain) {
+            errs() << "Calling unknown value: " << ST_->toString(i.getCalledValue()) << endl;
+            stub(i);
+            return;
+        }
+
+        auto&& ptr = llvm::cast<Pointer>(ptrDomain.get());
+        if (ptr->isValue()) {
+            auto&& funcPtr = ptr->load(*i.getCalledValue()->getType()->getPointerElementType(),
+                                       {module_.getDomainFactory()->getIndex(0)});
+            auto&& funcDomain = llvm::cast<FunctionDomain>(funcPtr.get());
+
+            for (auto&& func : funcDomain->getLocations()) {
+                auto temp = handleFunctionCall(func->getInstance(), args);
+                retval = temp ? retval->join(temp) : retval;
+            }
+
+        } else {
+            // TODO: add support of TOP function pointers
+            errs() << "Could not interpret function call" << endl;
+            retval = module_.getDomainFactory()->getTop(*i.getType());
+        }
 
     } else {
-        std::vector<Domain::Ptr> args;
-        Function::Ptr function = module_.get(i.getCalledFunction());
-        for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-            args.push_back(getVariable(i.getArgOperand(j)));
-        }
-        interpretFunction(function, args);
+        retval = handleFunctionCall(i.getCalledFunction(), args);
+    }
 
-        if (not i.getType()->isVoidTy()) {
-            ASSERT(function->getReturnValue(), "extract value result");
-            context_->state->addVariable(&i, function->getReturnValue());
-        }
+    if (not i.getType()->isVoidTy()) {
+        ASSERT(retval, "extract value result");
+        context_->state->addVariable(&i, retval);
     }
 }
 
@@ -445,12 +463,25 @@ void Interpreter::stub(const llvm::Instruction& i) {
     }
 }
 
-void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
-    auto&& size = getVariable(i.getArgOperand(2));
+Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
+                                            const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
+    if (function->getName().startswith("borealis.alloc") || function->getName().startswith("borealis.malloc")) {
+        return handleMemoryAllocation(function, args);
+    } else if (function->isDeclaration()) {
+        return handleDeclaration(function, args);
+    } else {
+        auto func = module_.get(function);
+        interpretFunction(func, util::viewContainer(args).map([](auto&& a) -> Domain::Ptr { return a.second; }).toVector());
+        return func->getReturnValue();
+    }
+}
+
+Domain::Ptr Interpreter::handleMemoryAllocation(const llvm::Function* function,
+                                                const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
+    auto&& size = getVariable(args[2].first);
     if (not size) {
-        warns() << "Allocating unknown amount of memory: " << ST_->toString(&i) << endl;
-        stub(i);
-        return;
+        warns() << "Allocating unknown amount of memory: " << ST_->toString(args[2].first) << endl;
+        return module_.getDomainFactory()->getTop(*function->getReturnType());
     }
 
     auto&& integer = llvm::dyn_cast<IntegerInterval>(size.get());
@@ -461,29 +492,24 @@ void Interpreter::handleMemoryAllocation(const llvm::CallInst& i) {
     // - if this is alloc, we need one more level for correct GEP handler
     // - if this is malloc, we create array of dynamically allocated objects
     if (integer->ub()->isMax()) {
-        stub(i);
-        return;
+        return module_.getDomainFactory()->getTop(*function->getReturnType());
     }
 
-    auto&& arrayType = llvm::ArrayType::get(i.getType()->getPointerElementType(), integer->ub()->getRawValue());
+    auto&& arrayType = llvm::ArrayType::get(function->getReturnType()->getPointerElementType(), integer->ub()->getRawValue());
     auto&& ptrType = llvm::PointerType::get(arrayType, 0);
     Domain::Ptr domain = module_.getDomainFactory()->allocate(*ptrType);
 
     ASSERT(domain, "malloc result");
-    context_->state->addVariable(&i, domain);
+    return domain;
 }
 
-void Interpreter::handleDeclaration(const llvm::CallInst& i) {
-    if (not i.getCalledFunction() || i.getType()->isVoidTy()) {
-        stub(i);
-        return;
-    }
-
+Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
+                                           const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
     try {
-        auto funcData = FIP_->getInfo(i.getCalledFunction());
+        auto funcData = FIP_->getInfo(function);
         auto& argInfo = funcData.argInfo;
-        for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-            auto arg = i.getArgOperand(j);
+        for (auto j = 0U; j < args.size(); ++j) {
+            auto arg = args[j].first;
             auto argType = arg->getType();
             if (argType->isPointerTy()) {
                 if (argInfo[j].access == func_info::AccessPatternTag::Write || argInfo[j].access == func_info::AccessPatternTag::ReadWrite)
@@ -493,25 +519,20 @@ void Interpreter::handleDeclaration(const llvm::CallInst& i) {
             }
         }
 
-        if (not i.getType()->isVoidTy())
-            context_->state->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
-
     } catch (std::out_of_range) {
-        warns() << "Unknown function: " << ST_->toString(&i) << endl;
+        warns() << "Unknown function: " << function->getName() << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
-        for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-            auto arg = i.getArgOperand(j);
+        for (auto j = 0U; j < args.size(); ++j) {
+            auto arg = args[j].first;
             auto argType = arg->getType();
             if (argType->isPointerTy()) {
                 warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
                 context_->state->addVariable(arg, module_.getDomainFactory()->getTop(*argType));
             }
         }
-        if (not i.getType()->isVoidTy())
-            context_->state->addVariable(&i, module_.getDomainFactory()->getTop(*i.getType()));
-
     }
+    return module_.getDomainFactory()->getTop(*function->getReturnType());
 }
 
 }   /* namespace absint */

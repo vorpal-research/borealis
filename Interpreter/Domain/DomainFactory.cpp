@@ -40,6 +40,8 @@ DomainFactory::~DomainFactory() {
         return getFloat(VALUE, semantics); \
     } else if (type.isAggregateType()) { \
         return getAggregateObject(type); \
+    } else if (type.isFunctionTy()) { \
+        return getFunction(type); \
     } else if (type.isPointerTy()) { \
         return getPointer(VALUE, *type.getPointerElementType()); \
     } else { \
@@ -138,7 +140,9 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     // Function
     } else if (auto function = llvm::dyn_cast<llvm::Function>(constant)) {
         auto& functype = *function->getType()->getPointerElementType();
-        return getPointer(functype, {{getIndex(0), getFunction(functype, module_->get(function))}});
+        auto&& arrayType = llvm::ArrayType::get(function->getType(), 1);
+        auto&& arrayDom = getAggregateObject(*arrayType, {getFunction(functype, module_->get(function))});
+        return getPointer(functype, {{getIndex(0), arrayDom}});
     // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
         return getBottom(*constant->getType());
@@ -165,7 +169,8 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
         return getAggregateObject(type);
     // Function
     } else if (type.isFunctionTy()) {
-        return getFunction(type);
+        auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&type), 1);
+        return getAggregateObject(*arrayType, {getFunction(type)});
     // Pointer
     } else if (type.isPointerTy()) {
         auto&& location = allocate(*type.getPointerElementType());
