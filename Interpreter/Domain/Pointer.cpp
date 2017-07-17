@@ -219,6 +219,9 @@ Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
 }
 
 Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
+    if (elementType_.isFunctionTy() && type.isPointerTy() && type.getPointerElementType()->isFunctionTy()) {
+        return factory_->getPointer(*type.getPointerElementType(), locations_);
+    }
     return factory_->getTop(type);
 }
 

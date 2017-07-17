@@ -73,6 +73,9 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
     // Aggregate type (Array or Struct)
     } else if (type.isAggregateType()) {
         return getAggregateObject(type);
+    // Function
+    } else if (type.isFunctionTy()) {
+        return getFunction(type);
     // Pointer
     } else if (type.isPointerTy()) {
         return allocate(type);
@@ -85,16 +88,16 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
 
 Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     // Integer
-    if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
+    if (auto intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
         return getInteger(toInteger(intConstant->getValue()));
     // Float
-    } else if (auto&& floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
+    } else if (auto floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
     // Nullpointer
-    } else if (auto&& ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
+    } else if (auto ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
         return getNullptr(*constant->getType()->getPointerElementType());
     // Constant Data Array
-    } else if (auto&& sequential = llvm::dyn_cast<llvm::ConstantDataSequential>(constant)) {
+    } else if (auto sequential = llvm::dyn_cast<llvm::ConstantDataSequential>(constant)) {
         std::vector<Domain::Ptr> elements;
         for (auto i = 0U; i < sequential->getNumElements(); ++i) {
             auto element = get(sequential->getElementAsConstant(i));
@@ -106,7 +109,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
         }
         return getAggregateObject(*constant->getType(), elements);
     // Constant Array
-    } else if (auto&& constantArray = llvm::dyn_cast<llvm::ConstantArray>(constant)) {
+    } else if (auto constantArray = llvm::dyn_cast<llvm::ConstantArray>(constant)) {
         std::vector<Domain::Ptr> elements;
         for (auto i = 0U; i < constantArray->getNumOperands(); ++i) {
             auto element = get(constantArray->getOperand(i));
@@ -117,16 +120,11 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
             elements.push_back(element);
         }
         return getAggregateObject(*constant->getType(), elements);
-    } else if (auto&& d = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
-        errs() << "Creating constant of ConstantFP" << endl;
-        auto value = llvm::cast<llvm::Value>(constant);
-        errs() << "Unknown constant: " << ST_->toString(value) << endl;
-        return getTop(*value->getType());
     // Constant Expr
-    } else if (auto&& constExpr = llvm::dyn_cast<llvm::ConstantExpr>(constant)) {
+    } else if (auto constExpr = llvm::dyn_cast<llvm::ConstantExpr>(constant)) {
         return interpretConstantExpr(constExpr);
     // Constant Struct
-    } else if (auto&& structType = llvm::dyn_cast<llvm::ConstantStruct>(constant)) {
+    } else if (auto structType = llvm::dyn_cast<llvm::ConstantStruct>(constant)) {
         std::vector<Domain::Ptr> elements;
         for (auto i = 0U; i < structType->getNumOperands(); ++i) {
             auto element = get(structType->getAggregateElement(i));
@@ -137,8 +135,15 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
             elements.push_back(element);
         }
         return getAggregateObject(*constant->getType(), elements);
+    // Function
+    } else if (auto function = llvm::dyn_cast<llvm::Function>(constant)) {
+        auto& functype = *function->getType()->getPointerElementType();
+        return getPointer(functype, {{getIndex(0), getFunction(functype, module_->get(function))}});
     // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
+        return getBottom(*constant->getType());
+    // Undef
+    } else if (llvm::isa<llvm::UndefValue>(constant)) {
         return getBottom(*constant->getType());
     // otherwise
     } else {
@@ -158,6 +163,9 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
     // Struct or Array type
     } else if (type.isAggregateType()) {
         return getAggregateObject(type);
+    // Function
+    } else if (type.isFunctionTy()) {
+        return getFunction(type);
     // Pointer
     } else if (type.isPointerTy()) {
         auto&& location = allocate(*type.getPointerElementType());
@@ -309,6 +317,22 @@ Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vecto
     UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }
 
+/* Function */
+Domain::Ptr DomainFactory::getFunction(const llvm::Type& type) {
+    ASSERT(type.isFunctionTy(), "Trying to create function domain on non-function type");
+    return Domain::Ptr{ new FunctionDomain(this, &type) };
+}
+
+Domain::Ptr DomainFactory::getFunction(const llvm::Type& type, Function::Ptr function) {
+    ASSERT(type.isFunctionTy(), "Trying to create function domain on non-function type");
+    return Domain::Ptr{ new FunctionDomain(this, &type, function) };
+}
+
+Domain::Ptr DomainFactory::getFunction(const llvm::Type& type, const FunctionDomain::FunctionSet& functions) {
+    ASSERT(type.isFunctionTy(), "Trying to create function domain on non-function type");
+    return Domain::Ptr{ new FunctionDomain(this, &type, functions) };
+}
+
 /* heap */
 MemoryObject::Ptr DomainFactory::getMemoryObject(const llvm::Type& type) {
     return getMemoryObject(getBottom(type));
@@ -318,43 +342,86 @@ MemoryObject::Ptr DomainFactory::getMemoryObject(Domain::Ptr value) {
     return MemoryObject::Ptr{ new MemoryObject(value) };
 }
 
-Domain::Ptr DomainFactory::interpretConstantExpr(const llvm::ConstantExpr* ce) {
-    auto&& getOperandValue = [&](const llvm::Constant* val) -> Domain::Ptr {
-        if (llvm::isa<llvm::GlobalVariable>(val)) return module_->findGlobal(val);
-        else return get(val);
-    };
-    // GEP
-    if (llvm::isa<llvm::GEPOperator>(ce)) {
-        auto&& ptr = getOperandValue(ce->getOperand(0));
-        ASSERT(ptr, "gep args: " + ST_->toString(ce->getOperand(0)));
+Domain::Ptr DomainFactory::getConstOperand(const llvm::Constant* c) {
+    if (llvm::isa<llvm::GlobalVariable>(c)) return module_->findGlobal(c);
+    else return get(c);
+}
 
-        std::vector<Domain::Ptr> offsets;
-        for (auto j = 1U; j != ce->getNumOperands(); ++j) {
-            auto val = ce->getOperand(j);
-            if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
-                offsets.push_back(getIndex(*intConstant->getValue().getRawData()));
-            } else if (auto indx = getOperandValue(val)) {
-                offsets.push_back(indx);
-            } else {
-                UNREACHABLE("Non-integer constant in gep");
-            }
-        }
-        return ptr->gep(*ce->getType()->getPointerElementType(), offsets);
-    // Cast
-    } else if (ce->isCast()) {
-        errs() << "Creating constant of cast constexpr" << endl;
-        errs() << ST_->toString(ce) << endl;
-        errs() << "Cast operands:" << endl;
-        for (auto&& it : ce->operands()) {
-            errs() << ST_->toString(it) << endl;
-        }
-        errs() << "Cast to type: " << ST_->toString(ce->getType()) << endl;
-        errs() << endl;
-        return getTop(*ce->getType());
-    } else {
-        errs() << "Unimplemented ConstExpr: " << ST_->toString(ce) << endl;
-        return getTop(*ce->getType());
+
+#define HANDLE_BINOP(OPER) \
+    lhv = getConstOperand(ce->getOperand(0)); \
+    rhv = getConstOperand(ce->getOperand(1)); \
+    ASSERT(lhv && rhv, "Unknown binary constexpr operands"); \
+    return lhv->OPER(rhv);
+
+#define HANDLE_CAST(OPER) \
+    lhv = getConstOperand(ce->getOperand(0)); \
+    ASSERT(lhv, "Unknown cast constexpr operand"); \
+    return lhv->OPER(*ce->getType());
+
+Domain::Ptr DomainFactory::interpretConstantExpr(const llvm::ConstantExpr* ce) {
+    Domain::Ptr lhv, rhv;
+    switch (ce->getOpcode()) {
+        case llvm::Instruction::Add: HANDLE_BINOP(add);
+        case llvm::Instruction::FAdd: HANDLE_BINOP(fadd);
+        case llvm::Instruction::Sub: HANDLE_BINOP(sub);
+        case llvm::Instruction::FSub: HANDLE_BINOP(fsub);
+        case llvm::Instruction::Mul: HANDLE_BINOP(mul);
+        case llvm::Instruction::FMul: HANDLE_BINOP(fmul);
+        case llvm::Instruction::UDiv: HANDLE_BINOP(udiv);
+        case llvm::Instruction::SDiv: HANDLE_BINOP(sdiv);
+        case llvm::Instruction::FDiv: HANDLE_BINOP(fdiv);
+        case llvm::Instruction::URem: HANDLE_BINOP(urem);
+        case llvm::Instruction::SRem: HANDLE_BINOP(srem);
+        case llvm::Instruction::FRem: HANDLE_BINOP(frem);
+        case llvm::Instruction::And: HANDLE_BINOP(bAnd);
+        case llvm::Instruction::Or: HANDLE_BINOP(bOr);
+        case llvm::Instruction::Xor: HANDLE_BINOP(bXor);
+        case llvm::Instruction::Shl: HANDLE_BINOP(shl);
+        case llvm::Instruction::LShr: HANDLE_BINOP(lshr);
+        case llvm::Instruction::AShr: HANDLE_BINOP(ashr);
+        case llvm::Instruction::Trunc: HANDLE_CAST(trunc);
+        case llvm::Instruction::SExt: HANDLE_CAST(sext);
+        case llvm::Instruction::ZExt: HANDLE_CAST(zext);
+        case llvm::Instruction::ICmp:
+            lhv = getConstOperand(ce->getOperand(0));
+            rhv = getConstOperand(ce->getOperand(1));
+            return lhv->icmp(rhv, static_cast<llvm::ICmpInst::Predicate>(ce->getPredicate()));
+        case llvm::Instruction::FCmp:
+            lhv = getConstOperand(ce->getOperand(0));
+            rhv = getConstOperand(ce->getOperand(1));
+            return lhv->fcmp(rhv, static_cast<llvm::FCmpInst::Predicate>(ce->getPredicate()));
+        case llvm::Instruction::FPTrunc: HANDLE_CAST(fptrunc);
+        case llvm::Instruction::UIToFP: HANDLE_CAST(uitofp);
+        case llvm::Instruction::SIToFP: HANDLE_CAST(sitofp);
+        case llvm::Instruction::FPToUI: HANDLE_CAST(fptoui);
+        case llvm::Instruction::FPToSI: HANDLE_CAST(fptosi);
+        case llvm::Instruction::PtrToInt: HANDLE_CAST(ptrtoint);
+        case llvm::Instruction::IntToPtr: HANDLE_CAST(inttoptr);
+        case llvm::Instruction::BitCast: HANDLE_CAST(bitcast);
+        case llvm::Instruction::GetElementPtr:
+            return handleGEPConstantExpr(ce);
+        default:
+            UNREACHABLE("Unknown opcode of ConstExpr: " + ST_->toString(ce));
     }
+}
+
+Domain::Ptr DomainFactory::handleGEPConstantExpr(const llvm::ConstantExpr* ce) {
+    auto&& ptr = getConstOperand(ce->getOperand(0));
+    ASSERT(ptr, "gep args: " + ST_->toString(ce->getOperand(0)));
+
+    std::vector<Domain::Ptr> offsets;
+    for (auto j = 1U; j != ce->getNumOperands(); ++j) {
+        auto val = ce->getOperand(j);
+        if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
+            offsets.push_back(getIndex(*intConstant->getValue().getRawData()));
+        } else if (auto indx = getConstOperand(val)) {
+            offsets.push_back(indx);
+        } else {
+            UNREACHABLE("Non-integer constant in gep");
+        }
+    }
+    return ptr->gep(*ce->getType()->getPointerElementType(), offsets);
 }
 
 }   /* namespace absint */

@@ -30,6 +30,7 @@ public:
         FLOAT_INTERVAL,
         NULLPTR,
         POINTER,
+        FUNCTION,
         AGGREGATE
     };
 

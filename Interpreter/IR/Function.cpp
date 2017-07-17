@@ -154,6 +154,18 @@ bool Function::updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& gl
     return updated;
 }
 
+size_t Function::hashCode() const {
+    return (size_t) getInstance();
+}
+
+bool Function::equals(Function* other) const {
+    return getInstance() == other->getInstance();
+}
+
+const llvm::FunctionType* Function::getType() const {
+    return llvm::cast<llvm::FunctionType>(instance_->getType()->getPointerElementType());
+}
+
 std::ostream& operator<<(std::ostream& ss, const Function& f) {
     ss << "--- Function \"" << f.getName() << "\" ---";
 
@@ -161,7 +173,10 @@ std::ostream& operator<<(std::ostream& ss, const Function& f) {
     if (not arguments.empty()) {
         auto i = 0U;
         for (auto&& it : f.getInstance()->args()) {
-            ss << std::endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i++];
+            if (arguments[i]) {
+                ss << std::endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i];
+            }
+            ++i;
         }
         ss << std::endl;
     }
@@ -197,7 +212,10 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     if (not arguments.empty()) {
         auto i = 0U;
         for (auto&& it : f.getInstance()->args()) {
-            s << endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i++];
+            if (arguments[i]) {
+                s << endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i];
+            }
+            ++i;
             s.flush();
         }
         s << endl;

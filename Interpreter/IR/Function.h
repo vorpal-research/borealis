@@ -43,6 +43,7 @@ protected:
     friend class Module;
 
 public:
+    const llvm::FunctionType* getType() const;
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;
     std::vector<const llvm::Value*> getGlobals() const;
@@ -62,6 +63,8 @@ public:
     BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
     SlotTracker& getSlotTracker() const;
 
+    bool equals(Function* other) const;
+    size_t hashCode() const;
     bool empty() const;
     std::string getName() const;
     std::string toString() const;
@@ -75,6 +78,18 @@ public:
     auto end() QUICK_RETURN(blockVector_.end());
     auto end() QUICK_CONST_RETURN(blockVector_.end());
 
+};
+
+struct FunctionHash {
+    size_t operator()(Function::Ptr f) const noexcept {
+        return f->hashCode();
+    }
+};
+
+struct FunctionEquals {
+    bool operator()(Function::Ptr lhv, Function::Ptr rhv) const noexcept {
+        return lhv->equals(rhv.get());
+    }
 };
 
 std::ostream& operator<<(std::ostream& s, const Function& f);

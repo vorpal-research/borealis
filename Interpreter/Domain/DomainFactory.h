@@ -10,12 +10,14 @@
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
 
+#include "AggregateObject.h"
 #include "Domain.h"
 #include "FloatInterval.h"
+#include "FunctionDomain.h"
 #include "IntegerInterval.h"
+#include "Interpreter/IR/Function.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Pointer.h"
-#include "AggregateObject.h"
 
 namespace borealis {
 namespace absint {
@@ -75,6 +77,10 @@ public:
     Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
     Domain::Ptr getNullptr(const llvm::Type& elementType);
 
+    Domain::Ptr getFunction(const llvm::Type& type);
+    Domain::Ptr getFunction(const llvm::Type& type, Function::Ptr function);
+    Domain::Ptr getFunction(const llvm::Type& type, const FunctionDomain::FunctionSet& functions);
+
     MemoryObject::Ptr getMemoryObject(const llvm::Type& type);
     MemoryObject::Ptr getMemoryObject(Domain::Ptr value);
 
@@ -83,7 +89,9 @@ private:
     Domain::Ptr cached(const IntegerInterval::ID& key);
     Domain::Ptr cached(const FloatInterval::ID& key);
 
+    Domain::Ptr getConstOperand(const llvm::Constant* c);
     Domain::Ptr interpretConstantExpr(const llvm::ConstantExpr* ce);
+    Domain::Ptr handleGEPConstantExpr(const llvm::ConstantExpr* ce);
 
     Module* module_;
     SlotTrackerPass* ST_;
