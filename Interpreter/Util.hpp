@@ -90,6 +90,11 @@ Head max(const Head& h, const Tail&... t) {
            (h < tmax ? tmax : h);
 };
 
+///////////////////////////////////////////////////////////////
+/// other
+///////////////////////////////////////////////////////////////
+bool llvm_types_eq(const llvm::Type* lhv, const llvm::Type* rhv);
+
 }   /* namespace util */
 }   /* namespace borealis */
 

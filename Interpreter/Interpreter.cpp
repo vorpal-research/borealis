@@ -401,9 +401,17 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
             }
 
         } else {
-            // TODO: add support of TOP function pointers
-            errs() << "Could not interpret function call" << endl;
-            retval = module_.getDomainFactory()->getTop(*i.getType());
+            warns() << "Pointer is TOP: " << ST_->toString(&i) << ", calling all possible functions" << endl;
+            std::vector<llvm::Type*> argTypes;
+            for (auto&& it : args) argTypes.push_back(it.first->getType());
+            auto&& possibleFunctions = module_.findFunctionsByPrototype(llvm::FunctionType::get(i.getType(),
+                                                                                                llvm::ArrayRef<llvm::Type*>(
+                                                                                                        argTypes),
+                                                                                                false));
+            for (auto&& it : possibleFunctions) {
+                auto temp = handleFunctionCall(it->getInstance(), args);
+                retval = temp ? retval->join(temp) : retval;
+            }
         }
     // usual function call
     } else {
@@ -448,7 +456,7 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
         } else if (auto indx = context_->state->find(val)) {
             offsets.push_back(indx);
         } else {
-            UNREACHABLE("Non-integer constant in gep");
+            UNREACHABLE("Non-integer constant in gep " + ST_->toString(val));
         }
     }
 

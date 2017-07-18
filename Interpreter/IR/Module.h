@@ -35,6 +35,9 @@ public:
     GlobalsMap getGlobalsFor(const Function::Ptr f) const;
     GlobalsMap getGlobalsFor(const BasicBlock* bb) const;
     const FunctionMap& getFunctions() const;
+    /// Returns vector of address taken functions of a given prototype
+    /// Prototype should NOT be a VarArg function
+    std::vector<Function::Ptr> findFunctionsByPrototype(const llvm::Type* prototype) const;
 
     SlotTrackerPass* getSlotTracker() const;
     DomainFactory* getDomainFactory();

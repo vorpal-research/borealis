@@ -70,7 +70,7 @@ void topologicalSort(std::map<const llvm::GlobalVariable*, Global>& globals,
     result.push_back(current);
 }
 
-}
+} // namespace
 
 Module::Module(const llvm::Module* module, SlotTrackerPass* st)
         : instance_(module),
@@ -207,6 +207,32 @@ Module::GlobalsMap Module::getGlobalsFor(const BasicBlock* bb) const {
     return util::viewContainer(bb->getGlobals())
             .map([&](auto&& a) -> std::pair<const llvm::Value*, Domain::Ptr> { return {a, findGlobal(a)}; })
             .toMap();
+}
+
+bool function_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
+    auto* lhvf = llvm::cast<llvm::FunctionType>(lhv);
+    auto* rhvf = llvm::cast<llvm::FunctionType>(rhv);
+    ASSERT(lhvf && rhvf, "Non-function types in comparing prototypes");
+    if (not util::llvm_types_eq(lhvf->getReturnType(), rhvf->getReturnType())) return false;
+    if (lhvf->isVarArg() && lhvf->getNumParams() > rhvf->getNumParams()) return false;
+    if (not lhvf->isVarArg() && lhvf->getNumParams() != rhvf->getNumParams()) return false;
+    for (auto i = 0U; i < lhvf->getNumParams(); ++i) {
+        if (not util::llvm_types_eq(lhvf->getParamType(i), rhvf->getParamType(i))) return false;
+    }
+    return true;
+}
+
+std::vector<Function::Ptr> Module::findFunctionsByPrototype(const llvm::Type* prototype) const {
+    std::vector<Function::Ptr> result;
+    for (auto&& it : util::viewContainer(functions_)
+            .filter([](auto&& a) -> bool {
+                return a.first->hasAddressTaken();
+            })) {
+        if (function_types_eq(it.first->getType()->getPointerElementType(), prototype)) {
+            result.push_back(it.second);
+        }
+    }
+    return std::move(result);
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {

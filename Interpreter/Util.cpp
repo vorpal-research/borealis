@@ -4,10 +4,13 @@
 
 
 #include <llvm/Support/raw_ostream.h>
+#include <Logging/logger.hpp>
 
 #include "Interpreter/Domain/Integer/IntMax.h"
 #include "Interpreter/Domain/Integer/IntMin.h"
 #include "Util.hpp"
+#include "Util/streams.hpp"
+#include "Util/collections.hpp"
 #include "Util/ir_writer.h"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -81,6 +84,49 @@ std::string toString(const llvm::APInt& val, bool isSigned) {
     std::ostringstream ss;
     for (auto&& it : valVector) ss << it;
     return std::move(ss.str());
+}
+
+bool llvm_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
+    if (lhv == rhv) return true;
+    if (lhv->getTypeID() != rhv->getTypeID()) return false;
+    switch (lhv->getTypeID()) {
+        // floats - all equal if ID is equal
+        case llvm::Type::VoidTyID:
+        case llvm::Type::HalfTyID:
+        case llvm::Type::FloatTyID:
+        case llvm::Type::DoubleTyID:
+        case llvm::Type::X86_FP80TyID:
+        case llvm::Type::FP128TyID:
+        case llvm::Type::PPC_FP128TyID:
+            return true;
+        case llvm::Type::IntegerTyID:
+            return lhv->getIntegerBitWidth() == rhv->getIntegerBitWidth();
+        case llvm::Type::FunctionTyID: {
+            auto* lhvf = llvm::cast<llvm::FunctionType>(lhv);
+            auto* rhvf = llvm::cast<llvm::FunctionType>(rhv);
+            if (not llvm_types_eq(lhvf->getReturnType(), rhvf->getReturnType())) return false;
+            if (not lhvf->isVarArg() && not rhvf->isVarArg() && lhvf->getNumParams() != rhvf->getNumParams()) return false;
+            for (auto i = 0U; i < min(lhvf->getNumParams(), rhvf->getNumParams()); ++i) {
+                if (not llvm_types_eq(lhvf->getParamType(i), rhvf->getParamType(i))) return false;
+            }
+            return true;
+        }
+        case llvm::Type::StructTyID: {
+            auto* lhvs = llvm::cast<llvm::StructType>(lhv);
+            auto* rhvs = llvm::cast<llvm::StructType>(rhv);
+            return lhvs->isLayoutIdentical(const_cast<llvm::StructType*>(rhvs));
+        }
+        case llvm::Type::ArrayTyID:
+            if (lhv->getArrayNumElements() != rhv->getArrayNumElements()) return false;
+            return llvm_types_eq(lhv->getArrayElementType(), rhv->getArrayElementType());
+        case llvm::Type::PointerTyID:
+            return llvm_types_eq(lhv->getPointerElementType(), rhv->getPointerElementType());
+        case llvm::Type::VectorTyID:
+            if (lhv->getVectorNumElements() != rhv->getVectorNumElements()) return false;
+            return llvm_types_eq(lhv->getVectorElementType(), rhv->getVectorElementType());
+        default:
+            UNREACHABLE("Unknown TypeID");
+    }
 }
 
 }   /* namespace util */
