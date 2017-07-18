@@ -453,7 +453,7 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
         auto val = llvm::cast<llvm::Value>(j);
         if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
             offsets.push_back(module_.getDomainFactory()->getIndex(*intConstant->getValue().getRawData()));
-        } else if (auto indx = context_->state->find(val)) {
+        } else if (auto indx = getVariable(val)) {
             offsets.push_back(indx);
         } else {
             UNREACHABLE("Non-integer constant in gep " + ST_->toString(val));
