@@ -381,13 +381,13 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
     }
     auto retval = module_.getDomainFactory()->getBottom(*i.getType());
 
-    if (not i.getCalledFunction()) {
+    // inline assembler just return TOP
+    if (i.isInlineAsm()) {
+        retval = module_.getDomainFactory()->getTop(*i.getType());
+    // function pointer
+    } else if (not i.getCalledFunction()) {
         auto&& ptrDomain = getVariable(i.getCalledValue());
-        if (not ptrDomain) {
-            errs() << "Calling unknown value: " << ST_->toString(i.getCalledValue()) << endl;
-            stub(i);
-            return;
-        }
+        ASSERT(ptrDomain, "Unknown value in call inst: " + ST_->toString(i.getCalledValue()));
 
         auto&& ptr = llvm::cast<Pointer>(ptrDomain.get());
         if (ptr->isValue()) {
@@ -405,13 +405,13 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
             errs() << "Could not interpret function call" << endl;
             retval = module_.getDomainFactory()->getTop(*i.getType());
         }
-
+    // usual function call
     } else {
         retval = handleFunctionCall(i.getCalledFunction(), args);
     }
 
     if (not i.getType()->isVoidTy()) {
-        ASSERT(retval, "extract value result");
+        ASSERT(retval, "call inst result");
         context_->state->addVariable(&i, retval);
     }
 }
