@@ -59,9 +59,9 @@ std::string BasicBlock::toString() const {
     return ss.str();
 }
 
-std::string BasicBlock::toFullString() const {
+std::string BasicBlock::outputToString() const {
     std::ostringstream ss;
-    ss << getName() << " output:";
+    ss << getName() << " output:" << std::endl;
     ss << outputState_->toString();
     ss << std::endl;
     return ss.str();
@@ -69,7 +69,7 @@ std::string BasicBlock::toFullString() const {
 
 std::string BasicBlock::inputToString() const {
     std::ostringstream ss;
-    ss << getName() << " input:";
+    ss << getName() << " input:" << std::endl;
     ss << inputState_->toString();
     ss << std::endl;
     return ss.str();

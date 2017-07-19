@@ -54,7 +54,7 @@ public:
     std::string getName() const;
     std::string toString() const;
     std::string inputToString() const;
-    std::string toFullString() const;
+    std::string outputToString() const;
 
     void updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals);
     void mergeOutputWithInput();

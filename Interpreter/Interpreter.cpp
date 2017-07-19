@@ -536,7 +536,7 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
             auto argType = arg->getType();
             if (argType->isPointerTy()) {
                 warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
-                context_->state->addVariable(arg, module_.getDomainFactory()->getTop(*argType));
+                getVariable(arg)->moveToTop();
             }
         }
     }

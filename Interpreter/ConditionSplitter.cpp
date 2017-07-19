@@ -68,14 +68,14 @@ void ConditionSplitter::handleICmp(llvm::Value* lhv, llvm::Value* rhv, const llv
 
         case llvm::CmpInst::ICMP_ULT:
         case llvm::CmpInst::ICMP_ULE:
-            if (lhvDomain->isPointerType() && rhvDomain->isPointerType())
+            if (lhvDomain->isPointer() && rhvDomain->isPointer())
                 break;
             SPLIT_LESS(lhvDomain, rhvDomain);
             break;
 
         case llvm::CmpInst::ICMP_UGT:
         case llvm::CmpInst::ICMP_UGE:
-            if (lhvDomain->isPointerType() && rhvDomain->isPointerType())
+            if (lhvDomain->isPointer() && rhvDomain->isPointer())
                 break;
             SPLIT_GREATER(lhvDomain, rhvDomain);
             break;

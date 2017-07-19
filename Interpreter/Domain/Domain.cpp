@@ -93,17 +93,39 @@ Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
     UNREACHABLE("Unimplemented cmp operation");
 }
 
-bool Domain::isAggregateType() const {
+bool Domain::isAggregate() const {
     return this->type_ == Type::AGGREGATE;
 }
 
-bool Domain::isPointerType() const {
+bool Domain::isPointer() const {
     return this->type_ == Type::POINTER;
 }
 
-bool Domain::isSimpleType() const {
+bool Domain::isSimple() const {
     return this->type_ == Type::INTEGER_INTERVAL ||
             this->type_ == Type::FLOAT_INTERVAL;
+}
+
+bool Domain::isInteger() const {
+    return this->type_ == Type::INTEGER_INTERVAL;
+}
+
+bool Domain::isFloat() const {
+    return this->type_ == Type::FLOAT_INTERVAL;
+}
+
+bool Domain::isFunction() const {
+    return this->type_ == Type::FUNCTION;
+}
+
+bool Domain::isNullptr() const {
+    return this->type_ == Type::NULLPTR;
+}
+
+bool Domain::isMutable() const {
+    return this->type_ == Type::POINTER ||
+            this->type_ == Type::AGGREGATE ||
+            this->type_ == Type::FUNCTION;
 }
 
 Split Domain::splitByEq(Domain::Ptr) const {
@@ -116,6 +138,10 @@ Split Domain::splitByLess(Domain::Ptr) const {
 
 Split Domain::splitBySLess(Domain::Ptr) const {
     UNREACHABLE("Unimplemented split operation");
+}
+
+void Domain::moveToTop() const {
+    UNREACHABLE("Moving non-mutable domain to TOP");
 }
 
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {

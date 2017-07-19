@@ -28,6 +28,7 @@ public:
     Function::Ptr get(const llvm::Function* function);
     Function::Ptr get(const std::string& fname);
 
+    bool checkVisited(const llvm::Value* val) const;
     const llvm::Module* getInstance() const;
     const GlobalsMap& getGloabls() const;
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);

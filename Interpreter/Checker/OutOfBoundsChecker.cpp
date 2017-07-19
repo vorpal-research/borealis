@@ -15,19 +15,23 @@ OutOfBoundsChecker::OutOfBoundsChecker(Module* module, DefectManager* DM)
 }
 
 void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOperator& GI) {
+    if(visited_.count(&GI)) return;
+    visited_.insert(&GI);
+
     auto di = DM_->getDefect(DefectType::BUF_01, &loc);
     errs() << "Checking: " << ST_->toString(&loc) << endl;
+    errs() << "Gep operand: " << ST_->toString(&GI) << endl;
     errs() << "Defect: " << di << endl;
-    if (not module_->get(loc.getParent()->getParent())->getBasicBlock(loc.getParent())->isVisited()) {
+
+    if (not module_->checkVisited(&loc) || not module_->checkVisited(&GI)) {
         errs() << "Instruction not visited" << endl;
         DM_->addNoAbsIntDefect(di);
     } else {
         auto ptr = module_->getDomainFor(GI.getPointerOperand(), loc.getParent());
-        if (not ptr) return;
         errs() << "Pointer operand: " << ptr << endl;
         for (auto j = GI.idx_begin(); j != GI.idx_end(); ++j) {
             auto indx = module_->getDomainFor(llvm::cast<llvm::Value>(j), loc.getParent());
-            if (indx) errs() << "Shift: " << indx << endl;
+            errs() << "Shift: " << indx << endl;
         }
     }
     errs() << endl;

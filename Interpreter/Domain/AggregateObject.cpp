@@ -329,6 +329,16 @@ bool AggregateObject::isStruct() const {
     return aggregateType_ == STRUCT;
 }
 
+void AggregateObject::moveToTop() const {
+    auto val = const_cast<Domain::Value*>(&value_);
+    *val = TOP;
+    for (auto&& it : elements_) {
+        auto&& content = it.second->load();
+        if (content->isMutable()) content->moveToTop();
+    }
+    elements_.clear();
+}
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

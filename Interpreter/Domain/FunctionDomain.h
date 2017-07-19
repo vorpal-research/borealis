@@ -26,6 +26,7 @@ protected:
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, const FunctionSet& locations);
 
 public:
+    virtual void moveToTop() const;
     /// Poset
     virtual bool equals(const Domain* other) const;
     virtual bool operator<(const Domain& other) const;

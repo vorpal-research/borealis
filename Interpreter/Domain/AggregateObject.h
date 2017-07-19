@@ -44,6 +44,7 @@ protected:
 
 
 public:
+    virtual void moveToTop() const;
     /// Poset
     virtual bool equals(const Domain* other) const;
     virtual bool operator<(const Domain& other) const;

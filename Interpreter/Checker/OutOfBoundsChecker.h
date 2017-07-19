@@ -35,6 +35,7 @@ private:
     Module* module_;
     DefectManager* DM_;
     SlotTrackerPass* ST_;
+    std::unordered_set<llvm::Value*> visited_;
 
 };
 

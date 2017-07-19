@@ -276,6 +276,14 @@ Split Pointer::splitByEq(Domain::Ptr other) const {
             factory_->getPointer(elementType_, falseLocs)};
 }
 
+void Pointer::moveToTop() const {
+    auto val = const_cast<Domain::Value*>(&value_);
+    *val = TOP;
+    for (auto&& it : locations_)
+        it.location_->moveToTop();
+    locations_.clear();
+}
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

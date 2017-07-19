@@ -34,6 +34,7 @@ class Nullptr : public Domain {
 public:
     Nullptr(DomainFactory* factory);
 
+    virtual void moveToTop() const {};
     /// Poset
     virtual bool equals(const Domain* other) const;
     virtual bool operator<(const Domain& other) const;
@@ -69,6 +70,8 @@ protected:
     Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
 
 public:
+
+    virtual void moveToTop() const;
     /// Poset
     virtual bool equals(const Domain* other) const;
     virtual bool operator<(const Domain& other) const;

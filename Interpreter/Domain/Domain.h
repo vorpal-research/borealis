@@ -84,6 +84,9 @@ public:
         return value_ == VALUE;
     }
 
+    /// change all mutable domains value to TOP
+    virtual void moveToTop() const;
+
     virtual Domain::Ptr join(Domain::Ptr other) const = 0;
     virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
     virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
@@ -106,9 +109,22 @@ public:
         return true;
     }
 
-    virtual bool isAggregateType() const;
-    virtual bool isPointerType() const;
-    virtual bool isSimpleType() const;
+    /// type_ = AGGREGATE
+    virtual bool isAggregate() const;
+    /// type_ = POINTER || NULLPTR
+    virtual bool isPointer() const;
+    /// type_ = INTEGER || FLOAT
+    virtual bool isSimple() const;
+    /// type_ = INTEGER
+    virtual bool isInteger() const;
+    /// type_ = FLOAT
+    virtual bool isFloat() const;
+    /// type_ = FUNCTION
+    virtual bool isFunction() const;
+    /// type_ = NULLPTR
+    virtual bool isNullptr() const;
+    /// type_ = POINTER || AGGREGATE || FUNCTION
+    virtual bool isMutable() const;
 
     /// LLVM Semantics
     /// Arithmetical

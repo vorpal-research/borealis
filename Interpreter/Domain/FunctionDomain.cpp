@@ -87,5 +87,11 @@ bool FunctionDomain::classof(const Domain* other) {
     return other->getType() == Domain::FUNCTION;
 }
 
+void FunctionDomain::moveToTop() const {
+    auto val = const_cast<Domain::Value*>(&value_);
+    *val = TOP;
+    locations_.clear();
+}
+
 }   // namespace absint
 }   // namespace borealis

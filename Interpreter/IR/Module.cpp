@@ -194,7 +194,6 @@ Domain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::BasicBloc
     } else {
         return get(location->getParent())->getDomainFor(value, location);
     }
-    UNREACHABLE("Unknown type of value: " + ST_->toString(value));
 }
 
 Module::GlobalsMap Module::getGlobalsFor(const Function::Ptr f) const {
@@ -223,16 +222,28 @@ bool function_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
 }
 
 std::vector<Function::Ptr> Module::findFunctionsByPrototype(const llvm::Type* prototype) const {
-    std::vector<Function::Ptr> result;
-    for (auto&& it : util::viewContainer(functions_)
-            .filter([](auto&& a) -> bool {
-                return a.first->hasAddressTaken();
-            })) {
-        if (function_types_eq(it.first->getType()->getPointerElementType(), prototype)) {
-            result.push_back(it.second);
-        }
+    return util::viewContainer(functions_)
+            .filter([&](auto&& a) -> bool {
+                return a.first->hasAddressTaken() &&
+                        function_types_eq(a.first->getType()->getPointerElementType(), prototype);
+            })
+            .map([](auto&& a) -> Function::Ptr {
+                return a.second;
+            })
+            .toVector();
+}
+
+bool Module::checkVisited(const llvm::Value* val) const {
+    if (llvm::isa<llvm::Constant>(val)) return true;
+    else if (llvm::isa<llvm::GlobalVariable>(val)) return true;
+    else if (llvm::isa<llvm::Argument>(val)) return true;
+    else if (auto&& inst = llvm::dyn_cast<llvm::Instruction>(val)) {
+        auto bb = inst->getParent();
+        auto func = bb->getParent();
+        if (not functions_.count(func)) return false;
+        return functions_.at(func)->getBasicBlock(bb)->isVisited();
     }
-    return std::move(result);
+    UNREACHABLE("Unknown value: " + ST_->toString(val));
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {
