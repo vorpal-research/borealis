@@ -27,6 +27,14 @@ void Interpreter::run() {
         }
 
         interpretFunction(main, args);
+        for (auto&& function : module_.getAddressTakenFunctions()) {
+            if (not function.second->isVisited()) {
+                std::vector<Domain::Ptr> topargs;
+                for (auto&& arg : function.first->args())
+                    topargs.push_back(module_.getDomainFactory()->getTop(*arg.getType()));
+                interpretFunction(function.second, topargs);
+            }
+        }
         if (printModule.get(false)) infos() << endl << module_ << endl;
     } else {
         errs() << "No main function" << endl;

@@ -76,6 +76,9 @@ Module::Module(const llvm::Module* module, SlotTrackerPass* st)
         : instance_(module),
           ST_(st),
           factory_(this) {
+    // Initialize all address taken functions
+    for (auto&& it : module->getFunctionList())
+        if (it.hasAddressTaken()) addressTakenFunctions_.insert({&it, get(&it)});
     // Initialize all global variables
     std::vector<const llvm::GlobalVariable*> order; // all global variables in order how they should be declared
     std::map<const llvm::GlobalVariable*, Global> globals; // graph of global variables
@@ -222,10 +225,9 @@ bool function_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
 }
 
 std::vector<Function::Ptr> Module::findFunctionsByPrototype(const llvm::Type* prototype) const {
-    return util::viewContainer(functions_)
+    return util::viewContainer(addressTakenFunctions_)
             .filter([&](auto&& a) -> bool {
-                return a.first->hasAddressTaken() &&
-                        function_types_eq(a.first->getType()->getPointerElementType(), prototype);
+                return function_types_eq(a.first->getType()->getPointerElementType(), prototype);
             })
             .map([](auto&& a) -> Function::Ptr {
                 return a.second;
@@ -240,10 +242,16 @@ bool Module::checkVisited(const llvm::Value* val) const {
     else if (auto&& inst = llvm::dyn_cast<llvm::Instruction>(val)) {
         auto bb = inst->getParent();
         auto func = bb->getParent();
-        if (not functions_.count(func)) return false;
-        return functions_.at(func)->getBasicBlock(bb)->isVisited();
+        auto&& it = functions_.find(func);
+        if (it == functions_.end()) return false;
+        if (not it->second->isVisited()) return false;
+        return it->second->getBasicBlock(bb)->isVisited();
     }
     UNREACHABLE("Unknown value: " + ST_->toString(val));
+}
+
+const Module::FunctionMap& Module::getAddressTakenFunctions() const {
+    return addressTakenFunctions_;
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {

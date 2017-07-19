@@ -166,6 +166,10 @@ const llvm::FunctionType* Function::getType() const {
     return llvm::cast<llvm::FunctionType>(instance_->getType()->getPointerElementType());
 }
 
+bool Function::isVisited() const {
+    return getEntryNode()->isVisited();
+}
+
 std::ostream& operator<<(std::ostream& ss, const Function& f) {
     ss << "--- Function \"" << f.getName() << "\" ---";
 

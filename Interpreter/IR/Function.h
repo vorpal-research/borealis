@@ -43,6 +43,7 @@ protected:
     friend class Module;
 
 public:
+    bool isVisited() const;
     const llvm::FunctionType* getType() const;
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;
