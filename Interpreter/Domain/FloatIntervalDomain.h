@@ -13,7 +13,7 @@
 namespace borealis {
 namespace absint {
 
-class FloatInterval : public Domain {
+class FloatIntervalDomain : public Domain {
 public:
 
     /// Structure that identifies float interval
@@ -25,9 +25,9 @@ protected:
 
     friend class DomainFactory;
 
-    FloatInterval(DomainFactory* factory, const llvm::APFloat& constant);
-    FloatInterval(DomainFactory* factory, const llvm::APFloat& lb, const llvm::APFloat& ub);
-    FloatInterval(DomainFactory* factory, const ID& id);
+    FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& constant);
+    FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& lb, const llvm::APFloat& ub);
+    FloatIntervalDomain(DomainFactory* factory, const ID& id);
 
 public:
     /// Poset
@@ -45,7 +45,7 @@ public:
     bool isNaN() const;
     const llvm::APFloat& lb() const;
     const llvm::APFloat& ub() const;
-    bool hasIntersection(const FloatInterval* other) const;
+    bool hasIntersection(const FloatIntervalDomain* other) const;
 
     virtual size_t hashCode() const;
     virtual std::string toPrettyString(const std::string& prefix) const;
@@ -79,13 +79,13 @@ private:
     WideningInterface<llvm::APFloat>* wm_;
 };
 
-struct FloatInterval::IDHash {
+struct FloatIntervalDomain::IDHash {
     size_t operator()(const ID& id) const {
         return std::hash<ID>()(id);
     }
 };
 
-struct FloatInterval::IDEquals {
+struct FloatIntervalDomain::IDEquals {
     bool operator()(const ID& lhv, const ID& rhv) const {
         return std::get<0>(lhv) == std::get<0>(rhv) &&
                util::eq(std::get<1>(lhv), std::get<1>(rhv)) &&

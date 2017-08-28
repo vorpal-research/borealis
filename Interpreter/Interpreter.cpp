@@ -127,7 +127,7 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
             successors.push_back(falseSuccessor);
 
         } else if (cond->isValue()) {
-            auto boolean = llvm::dyn_cast<IntegerInterval>(cond.get());
+            auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
             ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
 
             auto successor = boolean->isConstant(1) ?
@@ -153,7 +153,7 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
 
     if (cond->isValue()) {
         bool isDefault = true;
-        auto&& integer = llvm::dyn_cast<IntegerInterval>(cond.get());
+        auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
         ASSERT(integer, "Non-integer condition in switch");
 
         for (auto&& cs : i.cases()) {
@@ -397,7 +397,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
         auto&& ptrDomain = getVariable(i.getCalledValue());
         ASSERT(ptrDomain, "Unknown value in call inst: " + ST_->toString(i.getCalledValue()));
 
-        auto&& ptr = llvm::cast<Pointer>(ptrDomain.get());
+        auto&& ptr = llvm::cast<PointerDomain>(ptrDomain.get());
         if (ptr->isValue()) {
             auto&& funcPtr = ptr->load(*i.getCalledValue()->getType()->getPointerElementType(),
                                        {module_.getDomainFactory()->getIndex(0)});
@@ -500,7 +500,7 @@ Domain::Ptr Interpreter::handleMemoryAllocation(const llvm::Function* function,
         return module_.getDomainFactory()->getTop(*function->getReturnType());
     }
 
-    auto&& integer = llvm::dyn_cast<IntegerInterval>(size.get());
+    auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(size.get());
     ASSERT(integer, "Non-integer domain in memory allocation");
 
     // Creating domain in memory

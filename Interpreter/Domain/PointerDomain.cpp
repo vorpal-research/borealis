@@ -3,8 +3,8 @@
 //
 
 #include "DomainFactory.h"
-#include "IntegerInterval.h"
-#include "Pointer.h"
+#include "IntegerIntervalDomain.h"
+#include "PointerDomain.h"
 #include "Interpreter/Util.hpp"
 #include "Util/collections.hpp"
 #include "Util/hash.hpp"
@@ -19,69 +19,69 @@ namespace absint {
 //////////////////////////////////////////////////////////
 /// Nullpointer
 //////////////////////////////////////////////////////////
-Nullptr::Nullptr(DomainFactory* factory)
+NullptrDomain::NullptrDomain(DomainFactory* factory)
         : Domain(VALUE, NULLPTR, factory) {}
 
-bool Nullptr::equals(const Domain* other) const {
-    return llvm::isa<Nullptr>(other);
+bool NullptrDomain::equals(const Domain* other) const {
+    return llvm::isa<NullptrDomain>(other);
 }
 
-bool Nullptr::operator<(const Domain&) const {
+bool NullptrDomain::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr Nullptr::join(Domain::Ptr) const {
+Domain::Ptr NullptrDomain::join(Domain::Ptr) const {
     return shared_from_this();
 }
 
-Domain::Ptr Nullptr::meet(Domain::Ptr) const {
+Domain::Ptr NullptrDomain::meet(Domain::Ptr) const {
     return shared_from_this();
 }
 
-Domain::Ptr Nullptr::widen(Domain::Ptr) const {
+Domain::Ptr NullptrDomain::widen(Domain::Ptr) const {
     return shared_from_this();
 }
 
-std::size_t Nullptr::hashCode() const {
+std::size_t NullptrDomain::hashCode() const {
     return 0;
 }
 
-std::string Nullptr::toPrettyString(const std::string&) const {
+std::string NullptrDomain::toPrettyString(const std::string&) const {
     return "nullptr";
 }
 
-void Nullptr::store(Domain::Ptr, Domain::Ptr) const {
+void NullptrDomain::store(Domain::Ptr, Domain::Ptr) const {
     errs() << "Store to nullptr" << endl;
 }
 
-Domain::Ptr Nullptr::load(const llvm::Type& type, Domain::Ptr) const {
+Domain::Ptr NullptrDomain::load(const llvm::Type& type, Domain::Ptr) const {
     errs() << "Load from nullptr" << endl;
     return factory_->getTop(type);
 }
 
-Domain::Ptr Nullptr::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr NullptrDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
     errs() << "GEP to nullptr" << endl;
     return factory_->getPointer(TOP, type);
 }
 
-bool Nullptr::classof(const Domain* other) {
+bool NullptrDomain::classof(const Domain* other) {
     return other->getType() == Domain::NULLPTR;
 }
 
 //////////////////////////////////////////////////////////
 /// Pointer
 //////////////////////////////////////////////////////////
-Pointer::Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType)
+PointerDomain::PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType)
         : Domain{value, POINTER, factory},
           elementType_(elementType) {}
 
-Pointer::Pointer(DomainFactory* factory, const llvm::Type& elementType, const Pointer::Locations& locations)
+PointerDomain::PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const PointerDomain::Locations& locations)
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
           locations_(locations) {}
 
-bool Pointer::equals(const Domain* other) const {
-    auto ptr = llvm::dyn_cast<Pointer>(other);
+bool PointerDomain::equals(const Domain* other) const {
+    auto ptr = llvm::dyn_cast<PointerDomain>(other);
     if (not ptr) return false;
     if (this == ptr) return true;
 
@@ -92,23 +92,23 @@ bool Pointer::equals(const Domain* other) const {
                                  [](auto&& a, auto&& b) { return a.location_->equals(b.location_.get()); });
 }
 
-bool Pointer::operator<(const Domain&) const {
+bool PointerDomain::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-const Pointer::Locations& Pointer::getLocations() const {
+const PointerDomain::Locations& PointerDomain::getLocations() const {
     return locations_;
 }
 
-const llvm::Type& Pointer::getElementType() const {
+const llvm::Type& PointerDomain::getElementType() const {
     return elementType_;
 }
 
-std::size_t Pointer::hashCode() const {
+std::size_t PointerDomain::hashCode() const {
     return util::hash::simple_hash_value(value_, type_, locations_.size());
 }
 
-std::string Pointer::toPrettyString(const std::string& prefix) const {
+std::string PointerDomain::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
     ss << "Ptr " << factory_->getSlotTracker().toString(&elementType_) << " [";
     if (isTop()) ss << " TOP ]";
@@ -122,12 +122,12 @@ std::string Pointer::toPrettyString(const std::string& prefix) const {
     return ss.str();
 }
 
-bool Pointer::classof(const Domain* other) {
+bool PointerDomain::classof(const Domain* other) {
     return other->getType() == Domain::POINTER;
 }
 
-Domain::Ptr Pointer::join(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+Domain::Ptr PointerDomain::join(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
     if (this == other.get()) return shared_from_this();
@@ -152,15 +152,15 @@ Domain::Ptr Pointer::join(Domain::Ptr other) const {
     return shared_from_this();
 }
 
-Domain::Ptr Pointer::widen(Domain::Ptr other) const {
+Domain::Ptr PointerDomain::widen(Domain::Ptr other) const {
     return join(other);
 }
 
-Domain::Ptr Pointer::meet(Domain::Ptr) const {
+Domain::Ptr PointerDomain::meet(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
+Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) const {
     if (isBottom()) {
         return factory_->getBottom(type);
     } else if (isTop()) {
@@ -175,7 +175,7 @@ Domain::Ptr Pointer::load(const llvm::Type& type, Domain::Ptr offset) const {
     return result;
 }
 
-void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
+void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) const {
     if (isTop()) return;
 
     if (elementType_.isPointerTy()) {
@@ -196,7 +196,7 @@ void Pointer::store(Domain::Ptr value, Domain::Ptr offset) const {
     }
 }
 
-Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
     if (isBottom()) {
         return factory_->getPointer(BOTTOM, type);
     } else if (isTop()) {
@@ -214,25 +214,25 @@ Domain::Ptr Pointer::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&
     return result;
 }
 
-Domain::Ptr Pointer::ptrtoint(const llvm::Type& type) const {
+Domain::Ptr PointerDomain::ptrtoint(const llvm::Type& type) const {
     return factory_->getTop(type);
 }
 
-Domain::Ptr Pointer::bitcast(const llvm::Type& type) const {
+Domain::Ptr PointerDomain::bitcast(const llvm::Type& type) const {
     if (elementType_.isFunctionTy() && type.isPointerTy() && type.getPointerElementType()->isFunctionTy()) {
         return factory_->getPointer(*type.getPointerElementType(), locations_);
     }
     return factory_->getTop(type);
 }
 
-Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
+Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
     auto&& getBool = [&] (bool val) -> Domain::Ptr {
         llvm::APInt retval(1, 0, false);
         if (val) retval = 1;
         else retval = 0;
         return factory_->getInteger(factory_->toInteger(retval));
     };
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+    auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
     if (this->isTop() || other->isTop()) return factory_->getInteger(TOP, 1);
@@ -257,8 +257,8 @@ Domain::Ptr Pointer::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation)
     }
 }
 
-Split Pointer::splitByEq(Domain::Ptr other) const {
-    auto&& ptr = llvm::dyn_cast<Pointer>(other.get());
+Split PointerDomain::splitByEq(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
     if (this->isTop() || other->isTop())
@@ -276,7 +276,7 @@ Split Pointer::splitByEq(Domain::Ptr other) const {
             factory_->getPointer(elementType_, falseLocs)};
 }
 
-void Pointer::moveToTop() const {
+void PointerDomain::moveToTop() const {
     auto val = const_cast<Domain::Value*>(&value_);
     *val = TOP;
     for (auto&& it : locations_)

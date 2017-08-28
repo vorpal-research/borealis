@@ -4,9 +4,9 @@
 
 #include <unordered_set>
 
-#include "AggregateObject.h"
+#include "AggregateDomain.h"
 #include "DomainFactory.h"
-#include "IntegerInterval.h"
+#include "IntegerIntervalDomain.h"
 #include "Util/collections.hpp"
 #include "Util/sayonara.hpp"
 
@@ -16,14 +16,14 @@ namespace borealis {
 namespace absint {
 
 /// Struct constructors
-AggregateObject::AggregateObject(DomainFactory* factory,
-                                 const AggregateObject::Types& elementTypes,
+AggregateDomain::AggregateDomain(DomainFactory* factory,
+                                 const AggregateDomain::Types& elementTypes,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementTypes, length) {}
+        : AggregateDomain(VALUE, factory, elementTypes, length) {}
 
-AggregateObject::AggregateObject(Domain::Value value,
+AggregateDomain::AggregateDomain(Domain::Value value,
                                  DomainFactory* factory,
-                                 const AggregateObject::Types& elementTypes,
+                                 const AggregateDomain::Types& elementTypes,
                                  Domain::Ptr length)
         : Domain{value, AGGREGATE, factory},
           aggregateType_(STRUCT),
@@ -32,9 +32,9 @@ AggregateObject::AggregateObject(Domain::Value value,
     if (isMaxLengthTop()) value_ = TOP;
 }
 
-AggregateObject::AggregateObject(DomainFactory* factory,
-                                 const AggregateObject::Types& elementTypes,
-                                 const AggregateObject::Elements& elements)
+AggregateDomain::AggregateDomain(DomainFactory* factory,
+                                 const AggregateDomain::Types& elementTypes,
+                                 const AggregateDomain::Elements& elements)
         : Domain{VALUE, AGGREGATE, factory},
           aggregateType_(STRUCT),
           elementTypes_(elementTypes),
@@ -42,12 +42,12 @@ AggregateObject::AggregateObject(DomainFactory* factory,
           elements_(elements) {}
 
 /// Array constructors
-AggregateObject::AggregateObject(DomainFactory* factory,
+AggregateDomain::AggregateDomain(DomainFactory* factory,
                                  const llvm::Type& elementType,
                                  Domain::Ptr length)
-        : AggregateObject(VALUE, factory, elementType, length) {}
+        : AggregateDomain(VALUE, factory, elementType, length) {}
 
-AggregateObject::AggregateObject(Domain::Value value,
+AggregateDomain::AggregateDomain(Domain::Value value,
                                  DomainFactory* factory,
                                  const llvm::Type& elementType,
                                  Domain::Ptr length)
@@ -58,20 +58,20 @@ AggregateObject::AggregateObject(Domain::Value value,
     if (isMaxLengthTop()) value_ = TOP;
 }
 
-AggregateObject::AggregateObject(DomainFactory* factory,
+AggregateDomain::AggregateDomain(DomainFactory* factory,
                                  const llvm::Type& elementType,
-                                 const AggregateObject::Elements& elements)
+                                 const AggregateDomain::Elements& elements)
         : Domain{VALUE, AGGREGATE, factory},
           aggregateType_(ARRAY),
           elementTypes_({{0, &elementType}}),
           length_(factory_->getIndex(elements.size())),
           elements_(elements) {}
 
-std::size_t AggregateObject::hashCode() const {
+std::size_t AggregateDomain::hashCode() const {
     return util::hash::simple_hash_value(aggregateType_, type_, length_, elementTypes_.size());
 }
 
-std::string AggregateObject::toPrettyString(const std::string& prefix) const {
+std::string AggregateDomain::toPrettyString(const std::string& prefix) const {
     std::stringstream ss;
 
     if (isArray()) {
@@ -91,30 +91,30 @@ std::string AggregateObject::toPrettyString(const std::string& prefix) const {
     return ss.str();
 }
 
-const AggregateObject::Types& AggregateObject::getElementTypes() const {
+const AggregateDomain::Types& AggregateDomain::getElementTypes() const {
     return elementTypes_;
 }
 
-const AggregateObject::Elements& AggregateObject::getElements() const {
+const AggregateDomain::Elements& AggregateDomain::getElements() const {
     return elements_;
 }
 
-Domain::Ptr AggregateObject::getLength() const {
+Domain::Ptr AggregateDomain::getLength() const {
     return length_;
 }
 
-std::size_t AggregateObject::getMaxLength() const {
-    auto intLength = llvm::cast<IntegerInterval>(length_.get());
+std::size_t AggregateDomain::getMaxLength() const {
+    auto intLength = llvm::cast<IntegerIntervalDomain>(length_.get());
     return intLength->ub()->getRawValue();
 }
 
-bool AggregateObject::isMaxLengthTop() const {
-    auto intLength = llvm::cast<IntegerInterval>(length_.get());
+bool AggregateDomain::isMaxLengthTop() const {
+    auto intLength = llvm::cast<IntegerIntervalDomain>(length_.get());
     return intLength->ub()->isMax();
 }
 
-bool AggregateObject::equals(const Domain* other) const {
-    auto aggregate = llvm::dyn_cast<AggregateObject>(other);
+bool AggregateDomain::equals(const Domain* other) const {
+    auto aggregate = llvm::dyn_cast<AggregateDomain>(other);
     if (not aggregate) return false;
     if (this == aggregate) return true;
 
@@ -141,16 +141,16 @@ bool AggregateObject::equals(const Domain* other) const {
     return true;
 }
 
-bool AggregateObject::operator<(const Domain&) const {
+bool AggregateDomain::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-bool AggregateObject::classof(const Domain* other) {
+bool AggregateDomain::classof(const Domain* other) {
     return other->getType() == Domain::AGGREGATE;
 }
 
-Domain::Ptr AggregateObject::join(Domain::Ptr other) const {
-    auto&& aggregate = llvm::dyn_cast<AggregateObject>(other.get());
+Domain::Ptr AggregateDomain::join(Domain::Ptr other) const {
+    auto&& aggregate = llvm::dyn_cast<AggregateDomain>(other.get());
     ASSERT(aggregate, "Non-aggregate int join");
 
     if (this->isBottom())
@@ -170,8 +170,8 @@ Domain::Ptr AggregateObject::join(Domain::Ptr other) const {
     return shared_from_this();
 }
 
-Domain::Ptr AggregateObject::widen(Domain::Ptr other) const {
-    auto&& aggregate = llvm::dyn_cast<AggregateObject>(other.get());
+Domain::Ptr AggregateDomain::widen(Domain::Ptr other) const {
+    auto&& aggregate = llvm::dyn_cast<AggregateDomain>(other.get());
     ASSERT(aggregate, "Widening aggregate with non-aggregate");
 
     if (this->isBottom())
@@ -192,13 +192,13 @@ Domain::Ptr AggregateObject::widen(Domain::Ptr other) const {
     return shared_from_this();
 }
 
-Domain::Ptr AggregateObject::meet(Domain::Ptr) const {
+Domain::Ptr AggregateDomain::meet(Domain::Ptr) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+Domain::Ptr AggregateDomain::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
     auto length = getMaxLength();
-    auto idx_interval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
 
     if (isBottom()) {
@@ -229,9 +229,9 @@ Domain::Ptr AggregateObject::extractValue(const llvm::Type& type, const std::vec
     return result;
 }
 
-void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const {
+void AggregateDomain::insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const {
     auto length = getMaxLength();
-    auto idx_interval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
 
     if (not isValue())
@@ -259,9 +259,9 @@ void AggregateObject::insertValue(Domain::Ptr element, const std::vector<Domain:
     }
 }
 
-Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
     auto length = getMaxLength();
-    auto idx_interval = llvm::dyn_cast<IntegerInterval>(indices.begin()->get());
+    auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
 
     if (isBottom()) {
@@ -306,30 +306,30 @@ Domain::Ptr AggregateObject::gep(const llvm::Type& type, const std::vector<Domai
     }
 }
 
-void AggregateObject::store(Domain::Ptr value, Domain::Ptr offset) const {
+void AggregateDomain::store(Domain::Ptr value, Domain::Ptr offset) const {
     return insertValue(value, {offset});
 }
 
-Domain::Ptr AggregateObject::load(const llvm::Type& type, Domain::Ptr offset) const {
+Domain::Ptr AggregateDomain::load(const llvm::Type& type, Domain::Ptr offset) const {
     return extractValue(type, {offset});
 }
 
-const llvm::Type& AggregateObject::getElementType(std::size_t index) const {
+const llvm::Type& AggregateDomain::getElementType(std::size_t index) const {
     if (isArray())
         return *elementTypes_.at(0);
     else
         return *elementTypes_.at(index);
 }
 
-bool AggregateObject::isArray() const {
+bool AggregateDomain::isArray() const {
     return aggregateType_ == ARRAY;
 }
 
-bool AggregateObject::isStruct() const {
+bool AggregateDomain::isStruct() const {
     return aggregateType_ == STRUCT;
 }
 
-void AggregateObject::moveToTop() const {
+void AggregateDomain::moveToTop() const {
     auto val = const_cast<Domain::Value*>(&value_);
     *val = TOP;
     for (auto&& it : elements_) {

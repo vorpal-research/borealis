@@ -14,7 +14,7 @@
 namespace borealis {
 namespace absint {
 
-class IntegerInterval : public Domain {
+class IntegerIntervalDomain : public Domain {
 public:
 
     /// Structure that identifies int interval
@@ -26,9 +26,9 @@ protected:
 
     friend class DomainFactory;
 
-    IntegerInterval(DomainFactory* factory, Integer::Ptr constant);
-    IntegerInterval(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
-    IntegerInterval(DomainFactory* factory, const ID& key);
+    IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr constant);
+    IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
+    IntegerIntervalDomain(DomainFactory* factory, const ID& key);
 
 public:
     /// Poset
@@ -49,7 +49,7 @@ public:
     Integer::Ptr signed_lb() const;
     Integer::Ptr signed_ub() const;
     bool hasIntersection(Integer::Ptr constant) const;
-    bool hasIntersection(const IntegerInterval* other) const;
+    bool hasIntersection(const IntegerIntervalDomain* other) const;
 
     virtual size_t hashCode() const;
     virtual std::string toPrettyString(const std::string& prefix) const;
@@ -96,13 +96,13 @@ private:
     WideningInterface<Integer::Ptr>* wm_;
 };
 
-struct IntegerInterval::IDHash {
+struct IntegerIntervalDomain::IDHash {
     size_t operator()(const ID& id) const {
         return std::hash<ID>()(id);
     }
 };
 
-struct IntegerInterval::IDEquals {
+struct IntegerIntervalDomain::IDEquals {
     bool operator()(const ID& lhv, const ID& rhv) const {
         return std::get<0>(lhv) == std::get<0>(rhv) &&
                std::get<1>(lhv)->eq(std::get<1>(rhv)) &&

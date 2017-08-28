@@ -14,7 +14,7 @@ namespace borealis {
 namespace absint {
 
 /// Mutable
-class AggregateObject : public Domain {
+class AggregateDomain : public Domain {
 public:
 
     using Types = std::map<std::size_t, const llvm::Type*>;
@@ -30,17 +30,17 @@ protected:
     friend class DomainFactory;
 
     /// Struct constructors
-    AggregateObject(Domain::Value value, DomainFactory* factory,
-                    const AggregateObject::Types& elementTypes, Domain::Ptr length);
-    AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes, Domain::Ptr length);
-    AggregateObject(DomainFactory* factory, const AggregateObject::Types& elementTypes,
-                    const AggregateObject::Elements& elements);
+    AggregateDomain(Domain::Value value, DomainFactory* factory,
+                    const AggregateDomain::Types& elementTypes, Domain::Ptr length);
+    AggregateDomain(DomainFactory* factory, const AggregateDomain::Types& elementTypes, Domain::Ptr length);
+    AggregateDomain(DomainFactory* factory, const AggregateDomain::Types& elementTypes,
+                    const AggregateDomain::Elements& elements);
     /// Array constructors
-    AggregateObject(Domain::Value value, DomainFactory* factory,
+    AggregateDomain(Domain::Value value, DomainFactory* factory,
                     const llvm::Type& elementType, Domain::Ptr length);
-    AggregateObject(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
-    AggregateObject(DomainFactory* factory, const llvm::Type& elementType,
-                    const AggregateObject::Elements& elements);
+    AggregateDomain(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
+    AggregateDomain(DomainFactory* factory, const llvm::Type& elementType,
+                    const AggregateDomain::Elements& elements);
 
 
 public:

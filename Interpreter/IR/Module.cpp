@@ -111,7 +111,7 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
             if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
                 auto simpleConst = factory_.get(it->getInitializer());
                 auto&& arrayType = llvm::ArrayType::get(&elementType, 1);
-                content = factory_.getAggregateObject(*arrayType, {simpleConst});
+                content = factory_.getAggregate(*arrayType, {simpleConst});
             // else just create domain
             } else {
                 content = factory_.get(it->getInitializer());
@@ -123,7 +123,7 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
             // we need this because GEPs for global structs and arrays contain one additional index at the start
             if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
                 auto newArray = llvm::ArrayType::get(it->getType(), 1);
-                auto newLevel = factory_.getAggregateObject(*newArray, {newDomain});
+                auto newLevel = factory_.getAggregate(*newArray, {newDomain});
                 PointerLocation loc2 = {factory_.getIndex(0), newLevel};
                 globalDomain = factory_.getPointer(*newArray, {loc2});
             } else {

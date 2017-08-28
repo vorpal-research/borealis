@@ -19,7 +19,7 @@ namespace absint {
 DomainFactory::DomainFactory(Module* module) : ObjectLevelLogging("domain"),
                                                module_(module),
                                                ST_(module_->getSlotTracker()),
-                                               nullptr_{ new Nullptr(this) } {}
+                                               nullptr_{ new NullptrDomain(this) } {}
 
 DomainFactory::~DomainFactory() {
     auto&& info = infos();
@@ -39,7 +39,7 @@ DomainFactory::~DomainFactory() {
         auto& semantics = util::getSemantics(type); \
         return getFloat(VALUE, semantics); \
     } else if (type.isAggregateType()) { \
-        return getAggregateObject(type); \
+        return getAggregate(type); \
     } else if (type.isFunctionTy()) { \
         return getFunction(type); \
     } else if (type.isPointerTy()) { \
@@ -74,11 +74,11 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
         return getFloat(semantics);
     // Aggregate type (Array or Struct)
     } else if (type.isAggregateType()) {
-        return getAggregateObject(type);
+        return getAggregate(type);
     // Function
     } else if (type.isFunctionTy()) {
         return getFunction(type);
-    // Pointer
+    // PointerDomain
     } else if (type.isPointerTy()) {
         return allocate(type);
     // Otherwise
@@ -109,7 +109,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
             }
             elements.push_back(element);
         }
-        return getAggregateObject(*constant->getType(), elements);
+        return getAggregate(*constant->getType(), elements);
     // Constant Array
     } else if (auto constantArray = llvm::dyn_cast<llvm::ConstantArray>(constant)) {
         std::vector<Domain::Ptr> elements;
@@ -121,7 +121,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
             }
             elements.push_back(element);
         }
-        return getAggregateObject(*constant->getType(), elements);
+        return getAggregate(*constant->getType(), elements);
     // Constant Expr
     } else if (auto constExpr = llvm::dyn_cast<llvm::ConstantExpr>(constant)) {
         return interpretConstantExpr(constExpr);
@@ -136,12 +136,12 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
             }
             elements.push_back(element);
         }
-        return getAggregateObject(*constant->getType(), elements);
+        return getAggregate(*constant->getType(), elements);
     // Function
     } else if (auto function = llvm::dyn_cast<llvm::Function>(constant)) {
         auto& functype = *function->getType()->getPointerElementType();
         auto&& arrayType = llvm::ArrayType::get(function->getType(), 1);
-        auto&& arrayDom = getAggregateObject(*arrayType, {getFunction(functype, module_->get(function))});
+        auto&& arrayDom = getAggregate(*arrayType, {getFunction(functype, module_->get(function))});
         return getPointer(functype, {{getIndex(0), arrayDom}});
     // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
@@ -166,12 +166,12 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
         return allocate(*arrayType);
     // Struct or Array type
     } else if (type.isAggregateType()) {
-        return getAggregateObject(type);
+        return getAggregate(type);
     // Function
     } else if (type.isFunctionTy()) {
         auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&type), 1);
-        return getAggregateObject(*arrayType, {getFunction(type)});
-    // Pointer
+        return getAggregate(*arrayType, {getFunction(type)});
+    // PointerDomain
     } else if (type.isPointerTy()) {
         auto&& location = allocate(*type.getPointerElementType());
         return getPointer(*type.getPointerElementType(), { {getIndex(0), location} });
@@ -182,16 +182,16 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
     }
 }
 
-Domain::Ptr DomainFactory::cached(const IntegerInterval::ID& key) {
+Domain::Ptr DomainFactory::cached(const IntegerIntervalDomain::ID& key) {
     if (ints_.find(key) == ints_.end()) {
-        ints_[key] = Domain::Ptr{ new IntegerInterval(this, key) };
+        ints_[key] = Domain::Ptr{ new IntegerIntervalDomain(this, key) };
     }
     return ints_[key];
 }
 
-Domain::Ptr DomainFactory::cached(const FloatInterval::ID& key) {
+Domain::Ptr DomainFactory::cached(const FloatIntervalDomain::ID& key) {
     if (floats_.find(key) == floats_.end()) {
-        floats_[key] = Domain::Ptr{ new FloatInterval(this, key) };
+        floats_[key] = Domain::Ptr{ new FloatIntervalDomain(this, key) };
     }
     return floats_[key];
 }
@@ -253,33 +253,33 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFlo
 }
 
 
-/* Pointer */
+/* PointerDomain */
 Domain::Ptr DomainFactory::getNullptr(const llvm::Type& elementType) {
     static PointerLocation nullptrLocation{ getIndex(0), nullptr_ };
-    return Domain::Ptr{ new Pointer(this, elementType, {nullptrLocation}) };
+    return Domain::Ptr{ new PointerDomain(this, elementType, {nullptrLocation}) };
 }
 
 Domain::Ptr DomainFactory::getPointer(Domain::Value value, const llvm::Type& elementType) {
-    return Domain::Ptr{ new Pointer(value, this, elementType) };
+    return Domain::Ptr{ new PointerDomain(value, this, elementType) };
 }
 
 Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType) {
     return getPointer(Domain::BOTTOM, elementType);
 }
 
-Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType, const Pointer::Locations& locations) {
-    return Domain::Ptr{ new Pointer(this, elementType, locations) };
+Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType, const PointerDomain::Locations& locations) {
+    return Domain::Ptr{ new PointerDomain(this, elementType, locations) };
 }
 
-/* AggregateObject */
-Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type) {
-    return getAggregateObject(Domain::VALUE, type);
+/* AggregateDomain */
+Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type) {
+    return getAggregate(Domain::VALUE, type);
 }
 
-Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::Type& type) {
+Domain::Ptr DomainFactory::getAggregate(Domain::Value value, const llvm::Type& type) {
     if (type.isArrayTy()) {
         return Domain::Ptr{
-                new AggregateObject(value,
+                new AggregateDomain(value,
                                     this,
                                     *type.getArrayElementType(),
                                     getIndex(type.getArrayNumElements())
@@ -287,12 +287,12 @@ Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::T
         };
 
     } else if (type.isStructTy()) {
-        AggregateObject::Types types;
+        AggregateDomain::Types types;
         for (auto i = 0U; i < type.getStructNumElements(); ++i)
             types[i] = type.getStructElementType(i);
 
         return Domain::Ptr{
-                new AggregateObject(value,
+                new AggregateDomain(value,
                                     this,
                                     types,
                                     getIndex(type.getStructNumElements())
@@ -302,22 +302,22 @@ Domain::Ptr DomainFactory::getAggregateObject(Domain::Value value, const llvm::T
     UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }
 
-Domain::Ptr DomainFactory::getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements) {
+Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type, std::vector<Domain::Ptr> elements) {
     if (type.isArrayTy()) {
-        AggregateObject::Elements elementMap;
+        AggregateDomain::Elements elementMap;
         for (auto i = 0U; i < elements.size(); ++i) {
             elementMap[i] = getMemoryObject(elements[i]);
         }
-        return Domain::Ptr { new AggregateObject(this, *type.getArrayElementType(), elementMap) };
+        return Domain::Ptr { new AggregateDomain(this, *type.getArrayElementType(), elementMap) };
 
     } else if (type.isStructTy()) {
-        AggregateObject::Types types;
-        AggregateObject::Elements elementMap;
+        AggregateDomain::Types types;
+        AggregateDomain::Elements elementMap;
         for (auto i = 0U; i < type.getStructNumElements(); ++i) {
             types[i] = type.getStructElementType(i);
             elementMap[i] = getMemoryObject(elements[i]);
         }
-        return Domain::Ptr { new AggregateObject(this, types, elementMap) };
+        return Domain::Ptr { new AggregateDomain(this, types, elementMap) };
     }
     UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }

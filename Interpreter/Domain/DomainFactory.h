@@ -10,14 +10,14 @@
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
 
-#include "AggregateObject.h"
+#include "AggregateDomain.h"
 #include "Domain.h"
-#include "FloatInterval.h"
+#include "FloatIntervalDomain.h"
 #include "FunctionDomain.h"
-#include "IntegerInterval.h"
+#include "IntegerIntervalDomain.h"
 #include "Interpreter/IR/Function.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
-#include "Pointer.h"
+#include "PointerDomain.h"
 
 namespace borealis {
 namespace absint {
@@ -27,15 +27,15 @@ class Module;
 class DomainFactory: public logging::ObjectLevelLogging<DomainFactory> {
 public:
 
-    using IntCache = std::unordered_map<IntegerInterval::ID,
+    using IntCache = std::unordered_map<IntegerIntervalDomain::ID,
             Domain::Ptr,
-            IntegerInterval::IDHash,
-            IntegerInterval::IDEquals>;
+            IntegerIntervalDomain::IDHash,
+            IntegerIntervalDomain::IDEquals>;
 
-    using FloatCache = std::unordered_map<FloatInterval::ID,
+    using FloatCache = std::unordered_map<FloatIntervalDomain::ID,
             Domain::Ptr,
-            FloatInterval::IDHash,
-            FloatInterval::IDEquals>;
+            FloatIntervalDomain::IDHash,
+            FloatIntervalDomain::IDEquals>;
 
     DomainFactory(Module* module);
     ~DomainFactory();
@@ -68,13 +68,13 @@ public:
     Domain::Ptr getFloat(const llvm::APFloat& val);
     Domain::Ptr getFloat(const llvm::APFloat& from, const llvm::APFloat& to);
 
-    Domain::Ptr getAggregateObject(Domain::Value value, const llvm::Type& type);
-    Domain::Ptr getAggregateObject(const llvm::Type& type);
-    Domain::Ptr getAggregateObject(const llvm::Type& type, std::vector<Domain::Ptr> elements);
+    Domain::Ptr getAggregate(Domain::Value value, const llvm::Type& type);
+    Domain::Ptr getAggregate(const llvm::Type& type);
+    Domain::Ptr getAggregate(const llvm::Type& type, std::vector<Domain::Ptr> elements);
 
     Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType);
-    Domain::Ptr getPointer(const llvm::Type& elementType, const Pointer::Locations& locations);
+    Domain::Ptr getPointer(const llvm::Type& elementType, const PointerDomain::Locations& locations);
     Domain::Ptr getNullptr(const llvm::Type& elementType);
 
     Domain::Ptr getFunction(const llvm::Type& type);
@@ -86,8 +86,8 @@ public:
 
 private:
 
-    Domain::Ptr cached(const IntegerInterval::ID& key);
-    Domain::Ptr cached(const FloatInterval::ID& key);
+    Domain::Ptr cached(const IntegerIntervalDomain::ID& key);
+    Domain::Ptr cached(const FloatIntervalDomain::ID& key);
 
     Domain::Ptr getConstOperand(const llvm::Constant* c);
     Domain::Ptr interpretConstantExpr(const llvm::ConstantExpr* ce);

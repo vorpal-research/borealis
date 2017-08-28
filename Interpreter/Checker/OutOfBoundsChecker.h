@@ -36,6 +36,7 @@ private:
     DefectManager* DM_;
     SlotTrackerPass* ST_;
     std::unordered_set<llvm::Value*> visited_;
+    std::unordered_map<DefectInfo, bool> defects_;
 
 };
 

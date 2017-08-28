@@ -30,9 +30,9 @@ struct PtrLocationEquals {
     }
 };
 
-class Nullptr : public Domain {
+class NullptrDomain : public Domain {
 public:
-    Nullptr(DomainFactory* factory);
+    NullptrDomain(DomainFactory* factory);
 
     virtual void moveToTop() const {};
     /// Poset
@@ -57,7 +57,7 @@ public:
 };
 
 /// Mutable
-class Pointer : public Domain {
+class PointerDomain : public Domain {
 public:
 
     using Locations = std::unordered_set<PointerLocation, PtrLocationHash, PtrLocationEquals>;
@@ -66,8 +66,8 @@ protected:
 
     friend class DomainFactory;
 
-    Pointer(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
-    Pointer(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
+    PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
+    PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
 
 public:
 
