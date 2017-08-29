@@ -6,7 +6,7 @@
 
 #include "AbstractInterpreterPass.h"
 #include "Config/config.h"
-#include "FuncInfoProvider.h"
+#include "Interpreter/Checker/NullDereferenceChecker.h"
 #include "Interpreter/Checker/OutOfBoundsChecker.h"
 #include "Interpreter/IR/GraphTraits.hpp"
 #include "Util/passes.hpp"
@@ -28,7 +28,9 @@ bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
     }
 
     if (M.getFunction("main")) {
-        absint::OutOfBoundsChecker(const_cast<absint::Module*>(&interpreter.getModule()), dm).run();
+        auto* module = const_cast<absint::Module*>(&interpreter.getModule());
+        absint::OutOfBoundsChecker(module, dm).run();
+        absint::NullDereferenceChecker(module, dm).run();
     }
     return false;
 }

@@ -3,9 +3,9 @@
 //
 
 #include "Annotation/Annotation.h"
-#include "Interpreter.h"
-
 #include "ConditionSplitter.h"
+#include "Config/config.h"
+#include "Interpreter.h"
 #include "Util/collections.hpp"
 
 #include "Util/macros.h"
@@ -28,7 +28,7 @@ void Interpreter::run() {
 
         interpretFunction(main, args);
         for (auto&& function : module_.getAddressTakenFunctions()) {
-            if (not function.second->isVisited()) {
+            if (not function.first->isDeclaration() && not function.second->isVisited()) {
                 std::vector<Domain::Ptr> topargs;
                 for (auto&& arg : function.first->args())
                     topargs.push_back(module_.getDomainFactory()->getTop(*arg.getType()));
