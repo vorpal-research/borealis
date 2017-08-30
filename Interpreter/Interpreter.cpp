@@ -94,7 +94,6 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
 void Interpreter::visitInstruction(llvm::Instruction& i) {
     warns() << "Unsupported instruction: " << ST_->toString(&i) << endl;
     stub(i);
-    return;
 }
 
 void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
@@ -539,8 +538,8 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
         warns() << "Unknown function: " << function->getName() << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
-        for (auto j = 0U; j < args.size(); ++j) {
-            auto arg = args[j].first;
+        for (auto&& it : args) {
+            auto arg = it.first;
             auto argType = arg->getType();
             if (argType->isPointerTy()) {
                 warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;

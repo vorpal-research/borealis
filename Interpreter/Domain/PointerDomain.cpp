@@ -215,6 +215,7 @@ Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain:
 }
 
 Domain::Ptr PointerDomain::ptrtoint(const llvm::Type& type) const {
+    moveToTop();
     return factory_->getTop(type);
 }
 
@@ -222,6 +223,7 @@ Domain::Ptr PointerDomain::bitcast(const llvm::Type& type) const {
     if (elementType_.isFunctionTy() && type.isPointerTy() && type.getPointerElementType()->isFunctionTy()) {
         return factory_->getPointer(*type.getPointerElementType(), locations_);
     }
+    moveToTop();
     return factory_->getTop(type);
 }
 

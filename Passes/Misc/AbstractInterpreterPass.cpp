@@ -45,12 +45,12 @@ void AbstractInterpreterPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
 
 void AbstractInterpreterPass::viewAbsintCFG(const absint::Module& module) {
     for (auto&& function : module.getFunctions()) {
-        std::string realFileName = llvm::WriteGraph<absint::Function*>(function.second.get(),
+        std::string outputFileName = llvm::WriteGraph<absint::Function*>(function.second.get(),
                                                                        "absint." + function.second->getName(),
                                                                        false);
-        if (realFileName.empty()) continue;
+        if (outputFileName.empty()) continue;
 
-        llvm::DisplayGraph(realFileName, false, llvm::GraphProgram::DOT);
+        llvm::DisplayGraph(outputFileName, false, llvm::GraphProgram::DOT);
     }
 }
 

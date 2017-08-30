@@ -84,10 +84,16 @@ std::string AggregateDomain::toPrettyString(const std::string& prefix) const {
         ss << "}";
     }
     ss << ": [";
-    for (auto&& it : elements_) {
-        ss << std::endl << prefix << "  " << it.first << " : " << it.second->toPrettyString(prefix + "  ");
+    if (isTop()) {
+        ss << " TOP ]";
+    } else if (isBottom()) {
+        ss << " BOTTOM ]";
+    } else {
+        for (auto&& it : elements_) {
+            ss << std::endl << prefix << "  " << it.first << " : " << it.second->toPrettyString(prefix + "  ");
+        }
+        ss << std::endl << prefix << "]";
     }
-    ss << std::endl << prefix << "]";
     return ss.str();
 }
 
