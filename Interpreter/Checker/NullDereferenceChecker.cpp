@@ -49,6 +49,16 @@ void NullDereferenceChecker::checkPointer(llvm::Instruction& loc, llvm::Value& p
     info << endl;
 }
 
+void NullDereferenceChecker::visitCallInst(llvm::CallInst& CI) {
+    if (CI.getCalledFunction() && CI.getCalledFunction()->isDeclaration()) {
+        auto di = DM_->getDefect(DefectType::INI_03, &CI);
+        defects_[di] = true;
+    } else {
+        auto di = DM_->getDefect(DefectType::INI_03, &CI);
+        defects_[di] = true;
+    }
+}
+
 } // namespace absint
 } // namespace borealis
 

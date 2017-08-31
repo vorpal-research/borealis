@@ -26,27 +26,27 @@ protected:
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, const FunctionSet& locations);
 
 public:
-    virtual void moveToTop() const;
+    void moveToTop() override;
     /// Poset
-    virtual bool equals(const Domain* other) const;
-    virtual bool operator<(const Domain& other) const;
+    bool equals(const Domain* other) const override;
+    bool operator<(const Domain& other) const override;
 
     /// Lattice
-    virtual Domain::Ptr join(Domain::Ptr other) const;
-    virtual Domain::Ptr meet(Domain::Ptr other) const;
-    virtual Domain::Ptr widen(Domain::Ptr other) const;
+    Domain::Ptr join(Domain::Ptr other) override;
+    Domain::Ptr meet(Domain::Ptr other) override;
+    Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
     const FunctionSet& getLocations() const;
-    virtual std::size_t hashCode() const;
-    virtual std::string toPrettyString(const std::string& prefix) const;
+    std::size_t hashCode() const override;
+    std::string toPrettyString(const std::string& prefix) const override;
 
     static bool classof(const Domain* other);
 
 private:
 
     const llvm::Type* type_;
-    mutable FunctionSet locations_;
+    FunctionSet locations_;
 
 };
 

@@ -19,7 +19,7 @@ public:
 
     using Ptr = std::shared_ptr<const MemoryObject>;
 
-    MemoryObject(Domain::Ptr content);
+    explicit MemoryObject(Domain::Ptr content);
 
     Domain::Ptr load() const;
     void store(Domain::Ptr newContent) const;

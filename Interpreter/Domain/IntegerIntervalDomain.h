@@ -32,13 +32,13 @@ protected:
 
 public:
     /// Poset
-    virtual bool equals(const Domain* other) const;
-    virtual bool operator<(const Domain& other) const;
+    bool equals(const Domain* other) const override;
+    bool operator<(const Domain& other) const override;
 
     /// Lattice
-    virtual Domain::Ptr join(Domain::Ptr other) const;
-    virtual Domain::Ptr meet(Domain::Ptr other) const;
-    virtual Domain::Ptr widen(Domain::Ptr other) const;
+    Domain::Ptr join(Domain::Ptr other) override;
+    Domain::Ptr meet(Domain::Ptr other) override;
+    Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
     size_t getWidth() const;
@@ -51,49 +51,47 @@ public:
     bool hasIntersection(Integer::Ptr constant) const;
     bool hasIntersection(const IntegerIntervalDomain* other) const;
 
-    virtual size_t hashCode() const;
-    virtual std::string toPrettyString(const std::string& prefix) const;
+    size_t hashCode() const override;
+    std::string toPrettyString(const std::string& prefix) const override;
 
     static bool classof(const Domain* other);
 
     /// Semantics
-    virtual Domain::Ptr add(Domain::Ptr other) const;
-    virtual Domain::Ptr sub(Domain::Ptr other) const;
-    virtual Domain::Ptr mul(Domain::Ptr other) const;
-    virtual Domain::Ptr udiv(Domain::Ptr other) const;
-    virtual Domain::Ptr sdiv(Domain::Ptr other) const;
-    virtual Domain::Ptr urem(Domain::Ptr other) const;
-    virtual Domain::Ptr srem(Domain::Ptr other) const;
+    Domain::Ptr add(Domain::Ptr other) const override;
+    Domain::Ptr sub(Domain::Ptr other) const override;
+    Domain::Ptr mul(Domain::Ptr other) const override;
+    Domain::Ptr udiv(Domain::Ptr other) const override;
+    Domain::Ptr sdiv(Domain::Ptr other) const override;
+    Domain::Ptr urem(Domain::Ptr other) const override;
+    Domain::Ptr srem(Domain::Ptr other) const override;
     /// Shifts
-    virtual Domain::Ptr shl(Domain::Ptr other) const;
-    virtual Domain::Ptr lshr(Domain::Ptr other) const;
-    virtual Domain::Ptr ashr(Domain::Ptr other) const;
+    Domain::Ptr shl(Domain::Ptr other) const override;
+    Domain::Ptr lshr(Domain::Ptr other) const override;
+    Domain::Ptr ashr(Domain::Ptr other) const override;
     /// Binary
-    virtual Domain::Ptr bAnd(Domain::Ptr other) const;
-    virtual Domain::Ptr bOr(Domain::Ptr other) const;
-    virtual Domain::Ptr bXor(Domain::Ptr other) const;
+    Domain::Ptr bAnd(Domain::Ptr other) const override;
+    Domain::Ptr bOr(Domain::Ptr other) const override;
+    Domain::Ptr bXor(Domain::Ptr other) const override;
     /// Cast
-    virtual Domain::Ptr trunc(const llvm::Type& type) const;
-    virtual Domain::Ptr zext(const llvm::Type& type) const;
-    virtual Domain::Ptr sext(const llvm::Type& type) const;
-    virtual Domain::Ptr uitofp(const llvm::Type& type) const;
-    virtual Domain::Ptr sitofp(const llvm::Type& type) const;
-    virtual Domain::Ptr inttoptr(const llvm::Type& type) const;
-    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
+    Domain::Ptr trunc(const llvm::Type& type) const override;
+    Domain::Ptr zext(const llvm::Type& type) const override;
+    Domain::Ptr sext(const llvm::Type& type) const override;
+    Domain::Ptr uitofp(const llvm::Type& type) const override;
+    Domain::Ptr sitofp(const llvm::Type& type) const override;
+    Domain::Ptr inttoptr(const llvm::Type& type) const override;
+    Domain::Ptr bitcast(const llvm::Type& type) override;
     /// Other
-    virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
+    Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const override;
     /// Split operations, assume that intervals intersect
-    virtual Split splitByEq(Domain::Ptr other) const;
-    virtual Split splitByLess(Domain::Ptr other) const;
-    virtual Split splitBySLess(Domain::Ptr other) const;
+    Split splitByEq(Domain::Ptr other) override;
+    Split splitByLess(Domain::Ptr other) override;
+    Split splitBySLess(Domain::Ptr other) override;
 
 private:
 
-    virtual void setTop();
-
-    Integer::Ptr lb_;
-    Integer::Ptr ub_;
-    WideningInterface<Integer::Ptr>* wm_;
+    const Integer::Ptr lb_;
+    const Integer::Ptr ub_;
+    const WideningInterface<Integer::Ptr>* wm_;
 };
 
 struct IntegerIntervalDomain::IDHash {

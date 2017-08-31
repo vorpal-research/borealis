@@ -155,7 +155,7 @@ bool AggregateDomain::classof(const Domain* other) {
     return other->getType() == Domain::AGGREGATE;
 }
 
-Domain::Ptr AggregateDomain::join(Domain::Ptr other) const {
+Domain::Ptr AggregateDomain::join(Domain::Ptr other) {
     auto&& aggregate = llvm::dyn_cast<AggregateDomain>(other.get());
     ASSERT(aggregate, "Non-aggregate int join");
 
@@ -167,7 +167,7 @@ Domain::Ptr AggregateDomain::join(Domain::Ptr other) const {
     length_ = length_->join(aggregate->length_);
     for (auto&& it : aggregate->getElements()) {
         if (util::at(getElements(), it.first)) {
-            elements_[it.first]->store(it.second->load());
+            elements_[it.first] = elements_[it.first]->join(it.second);
         } else {
             elements_[it.first] = it.second;
         }
@@ -176,7 +176,7 @@ Domain::Ptr AggregateDomain::join(Domain::Ptr other) const {
     return shared_from_this();
 }
 
-Domain::Ptr AggregateDomain::widen(Domain::Ptr other) const {
+Domain::Ptr AggregateDomain::widen(Domain::Ptr other) {
     auto&& aggregate = llvm::dyn_cast<AggregateDomain>(other.get());
     ASSERT(aggregate, "Widening aggregate with non-aggregate");
 
@@ -188,8 +188,7 @@ Domain::Ptr AggregateDomain::widen(Domain::Ptr other) const {
     length_ = length_->join(aggregate->length_);
     for (auto&& it : aggregate->getElements()) {
         if (util::at(getElements(), it.first)) {
-            auto content = elements_[it.first]->load();
-            elements_[it.first]->store(content->widen(it.second->load()));
+            elements_[it.first] = elements_[it.first]->widen(it.second);
         } else {
             elements_[it.first] = it.second;
         }
@@ -198,11 +197,11 @@ Domain::Ptr AggregateDomain::widen(Domain::Ptr other) const {
     return shared_from_this();
 }
 
-Domain::Ptr AggregateDomain::meet(Domain::Ptr) const {
+Domain::Ptr AggregateDomain::meet(Domain::Ptr) {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr AggregateDomain::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+Domain::Ptr AggregateDomain::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
     auto length = getMaxLength();
     auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
@@ -226,16 +225,16 @@ Domain::Ptr AggregateDomain::extractValue(const llvm::Type& type, const std::vec
     std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
     for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
         if (not util::at(elements_, i)) {
-            elements_[i] = factory_->getMemoryObject(getElementType(i));
+            elements_[i] = factory_->getBottom(getElementType(i));
         }
         result = indices.size() == 1 ?
-                 result->join(elements_.at(i)->load()) :
-                 result->join(elements_.at(i)->load()->extractValue(type, sub_idx));
+                 result->join(elements_.at(i)) :
+                 result->join(elements_.at(i)->extractValue(type, sub_idx));
     }
     return result;
 }
 
-void AggregateDomain::insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const {
+void AggregateDomain::insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) {
     auto length = getMaxLength();
     auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
@@ -255,17 +254,17 @@ void AggregateDomain::insertValue(Domain::Ptr element, const std::vector<Domain:
     std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
     for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
         if (not util::at(elements_, i)) {
-            elements_[i] = factory_->getMemoryObject(getElementType(i));
+            elements_[i] = factory_->getBottom(getElementType(i));
         }
         if (indices.size() == 1) {
-            elements_[i]->store(element);
+            elements_[i] = elements_[i]->join(element);
         } else {
-            elements_[i]->load()->insertValue(element, sub_idx);
+            elements_[i]->insertValue(element, sub_idx);
         }
     }
 }
 
-Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
     auto length = getMaxLength();
     auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
@@ -296,9 +295,9 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
         std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
         for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
             if (not util::at(elements_, i)) {
-                elements_[i] = factory_->getMemoryObject(getElementType(i));
+                elements_[i] = factory_->getBottom(getElementType(i));
             }
-            auto subGep = elements_[i]->load()->gep(type, sub_idx);
+            auto subGep = elements_[i]->gep(type, sub_idx);
             result = result ?
                      result->join(subGep) :
                      subGep;
@@ -312,19 +311,16 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
     }
 }
 
-void AggregateDomain::store(Domain::Ptr value, Domain::Ptr offset) const {
+void AggregateDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     return insertValue(value, {offset});
 }
 
-Domain::Ptr AggregateDomain::load(const llvm::Type& type, Domain::Ptr offset) const {
+Domain::Ptr AggregateDomain::load(const llvm::Type& type, Domain::Ptr offset) {
     return extractValue(type, {offset});
 }
 
 const llvm::Type& AggregateDomain::getElementType(std::size_t index) const {
-    if (isArray())
-        return *elementTypes_.at(0);
-    else
-        return *elementTypes_.at(index);
+    return *(isArray() ? elementTypes_.at(0) : elementTypes_.at(index));
 }
 
 bool AggregateDomain::isArray() const {
@@ -335,11 +331,10 @@ bool AggregateDomain::isStruct() const {
     return aggregateType_ == STRUCT;
 }
 
-void AggregateDomain::moveToTop() const {
-    auto val = const_cast<Domain::Value*>(&value_);
-    *val = TOP;
+void AggregateDomain::moveToTop() {
+    setTop();
     for (auto&& it : elements_) {
-        auto&& content = it.second->load();
+        auto&& content = it.second;
         if (content->isMutable()) content->moveToTop();
     }
     elements_.clear();

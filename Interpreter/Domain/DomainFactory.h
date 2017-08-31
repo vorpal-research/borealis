@@ -81,9 +81,6 @@ public:
     Domain::Ptr getFunction(const llvm::Type& type, Function::Ptr function);
     Domain::Ptr getFunction(const llvm::Type& type, const FunctionDomain::FunctionSet& functions);
 
-    MemoryObject::Ptr getMemoryObject(const llvm::Type& type);
-    MemoryObject::Ptr getMemoryObject(Domain::Ptr value);
-
 private:
 
     Domain::Ptr cached(const IntegerIntervalDomain::ID& key);

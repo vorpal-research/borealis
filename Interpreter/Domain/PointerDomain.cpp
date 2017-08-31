@@ -30,15 +30,15 @@ bool NullptrDomain::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr NullptrDomain::join(Domain::Ptr) const {
+Domain::Ptr NullptrDomain::join(Domain::Ptr) {
     return shared_from_this();
 }
 
-Domain::Ptr NullptrDomain::meet(Domain::Ptr) const {
+Domain::Ptr NullptrDomain::meet(Domain::Ptr) {
     return shared_from_this();
 }
 
-Domain::Ptr NullptrDomain::widen(Domain::Ptr) const {
+Domain::Ptr NullptrDomain::widen(Domain::Ptr) {
     return shared_from_this();
 }
 
@@ -50,16 +50,16 @@ std::string NullptrDomain::toPrettyString(const std::string&) const {
     return "nullptr";
 }
 
-void NullptrDomain::store(Domain::Ptr, Domain::Ptr) const {
+void NullptrDomain::store(Domain::Ptr, Domain::Ptr) {
     errs() << "Store to nullptr" << endl;
 }
 
-Domain::Ptr NullptrDomain::load(const llvm::Type& type, Domain::Ptr) const {
+Domain::Ptr NullptrDomain::load(const llvm::Type& type, Domain::Ptr) {
     errs() << "Load from nullptr" << endl;
     return factory_->getTop(type);
 }
 
-Domain::Ptr NullptrDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr NullptrDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) {
     errs() << "GEP to nullptr" << endl;
     return factory_->getPointer(TOP, type);
 }
@@ -126,7 +126,7 @@ bool PointerDomain::classof(const Domain* other) {
     return other->getType() == Domain::POINTER;
 }
 
-Domain::Ptr PointerDomain::join(Domain::Ptr other) const {
+Domain::Ptr PointerDomain::join(Domain::Ptr other) {
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
@@ -152,15 +152,15 @@ Domain::Ptr PointerDomain::join(Domain::Ptr other) const {
     return shared_from_this();
 }
 
-Domain::Ptr PointerDomain::widen(Domain::Ptr other) const {
+Domain::Ptr PointerDomain::widen(Domain::Ptr other) {
     return join(other);
 }
 
-Domain::Ptr PointerDomain::meet(Domain::Ptr) const {
+Domain::Ptr PointerDomain::meet(Domain::Ptr) {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) const {
+Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) {
     if (isBottom()) {
         return factory_->getBottom(type);
     } else if (isTop()) {
@@ -175,7 +175,7 @@ Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) cons
     return result;
 }
 
-void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) const {
+void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     if (isTop()) return;
 
     if (elementType_.isPointerTy()) {
@@ -183,11 +183,7 @@ void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) const {
         locations_.insert({factory_->getIndex(0), value});
         // if pointer was BOTTOM, then we should change it's value. But we can't create
         // new ptr domain, because there may be objects, referencing this one
-        if (isBottom()) {
-            // This is generally fucked up
-            auto val = const_cast<Value*>(&value_);
-            *val = VALUE;
-        }
+        if (isBottom()) setValue();
     } else {
         for (auto&& it : locations_) {
             auto totalOffset = it.offset_->add(offset);
@@ -196,7 +192,7 @@ void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) const {
     }
 }
 
-Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const {
+Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
     if (isBottom()) {
         return factory_->getPointer(BOTTOM, type);
     } else if (isTop()) {
@@ -214,12 +210,12 @@ Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain:
     return result;
 }
 
-Domain::Ptr PointerDomain::ptrtoint(const llvm::Type& type) const {
+Domain::Ptr PointerDomain::ptrtoint(const llvm::Type& type) {
     moveToTop();
     return factory_->getTop(type);
 }
 
-Domain::Ptr PointerDomain::bitcast(const llvm::Type& type) const {
+Domain::Ptr PointerDomain::bitcast(const llvm::Type& type) {
     if (elementType_.isFunctionTy() && type.isPointerTy() && type.getPointerElementType()->isFunctionTy()) {
         return factory_->getPointer(*type.getPointerElementType(), locations_);
     }
@@ -259,7 +255,7 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
     }
 }
 
-Split PointerDomain::splitByEq(Domain::Ptr other) const {
+Split PointerDomain::splitByEq(Domain::Ptr other) {
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
@@ -278,9 +274,8 @@ Split PointerDomain::splitByEq(Domain::Ptr other) const {
             factory_->getPointer(elementType_, falseLocs)};
 }
 
-void PointerDomain::moveToTop() const {
-    auto val = const_cast<Domain::Value*>(&value_);
-    *val = TOP;
+void PointerDomain::moveToTop() {
+    setTop();
     for (auto&& it : locations_)
         it.location_->moveToTop();
     locations_.clear();

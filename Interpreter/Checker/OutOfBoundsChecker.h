@@ -27,6 +27,7 @@ public:
 
     void visitInstruction(llvm::Instruction& I);
     void visitGetElementPtrInst(llvm::GetElementPtrInst& GI);
+    void visitCallInst(llvm::CallInst& CI);
 
     void visitGEPOperator(llvm::Instruction& loc, llvm::GEPOperator& GI);
 

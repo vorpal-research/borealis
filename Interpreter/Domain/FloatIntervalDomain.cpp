@@ -21,17 +21,14 @@ FloatIntervalDomain::FloatIntervalDomain(DomainFactory* factory, const llvm::APF
 
 FloatIntervalDomain::FloatIntervalDomain(DomainFactory* factory, const FloatIntervalDomain::ID& id) :
         Domain(std::get<0>(id), Type::FLOAT_INTERVAL, factory),
-        lb_(std::get<1>(id)),
-        ub_(std::get<2>(id)),
+        lb_(value_ == TOP ?
+            util::getMinValue(std::get<1>(id).getSemantics()) :
+            std::get<1>(id)),
+        ub_(value_ == TOP ?
+            util::getMaxValue(std::get<1>(id).getSemantics()) :
+            std::get<2>(id)),
         wm_(FloatWidening::getInstance()) {
-    if (value_ == TOP) setTop();
-    else if (lb_.isSmallest() && ub_.isLargest()) value_ = TOP;
-}
-
-void FloatIntervalDomain::setTop() {
-    value_ = TOP;
-    lb_ = util::getMinValue(getSemantics());
-    ub_ = util::getMaxValue(getSemantics());
+    if (lb_.isSmallest() && ub_.isLargest()) value_ = TOP;
 }
 
 bool FloatIntervalDomain::equals(const Domain* other) const {
@@ -60,7 +57,7 @@ bool FloatIntervalDomain::operator<(const Domain& other) const {
             (tocmp == llvm::APFloat::cmpLessThan || tocmp == llvm::APFloat::cmpEqual);
 }
 
-Domain::Ptr FloatIntervalDomain::join(Domain::Ptr other) const {
+Domain::Ptr FloatIntervalDomain::join(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval join");
 
@@ -75,7 +72,7 @@ Domain::Ptr FloatIntervalDomain::join(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr FloatIntervalDomain::meet(Domain::Ptr other) const {
+Domain::Ptr FloatIntervalDomain::meet(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval meet");
 
@@ -92,7 +89,7 @@ Domain::Ptr FloatIntervalDomain::meet(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr FloatIntervalDomain::widen(Domain::Ptr other) const {
+Domain::Ptr FloatIntervalDomain::widen(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval");
 
@@ -319,7 +316,7 @@ Domain::Ptr FloatIntervalDomain::fptosi(const llvm::Type& type) const {
                                 isExactUB ? factory_->toInteger(ub) : Integer::getMaxValue(intType->getBitWidth()));
 }
 
-Domain::Ptr FloatIntervalDomain::bitcast(const llvm::Type& type) const {
+Domain::Ptr FloatIntervalDomain::bitcast(const llvm::Type& type) {
     if (type.isIntegerTy()) {
         auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type);
         auto&& lb = factory_->toInteger(llvm::APInt(intType->getBitWidth(), *lb_.bitcastToAPInt().getRawData()));
@@ -455,7 +452,7 @@ bool FloatIntervalDomain::isNaN() const {
     return isValue() && lb_.isNaN() && ub_.isNaN();
 }
 
-Split FloatIntervalDomain::splitByEq(Domain::Ptr other) const {
+Split FloatIntervalDomain::splitByEq(Domain::Ptr other) {
     auto interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 
@@ -466,7 +463,7 @@ Split FloatIntervalDomain::splitByEq(Domain::Ptr other) const {
            Split{ shared_from_this(), shared_from_this() };
 }
 
-Split FloatIntervalDomain::splitByLess(Domain::Ptr other) const {
+Split FloatIntervalDomain::splitByLess(Domain::Ptr other) {
     auto interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 

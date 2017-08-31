@@ -23,7 +23,7 @@ struct Split;
 class DomainFactory;
 class MemoryObject;
 
-class Domain : public std::enable_shared_from_this<const Domain>, public logging::ObjectLevelLogging<Domain> {
+class Domain : public std::enable_shared_from_this<Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
     enum Type {INTEGER_INTERVAL = 0,
@@ -36,7 +36,7 @@ public:
 
     enum Value {TOP, VALUE, BOTTOM};
 
-    using Ptr = std::shared_ptr<const Domain>;
+    using Ptr = std::shared_ptr<Domain>;
 
     /// Poset
     virtual bool equals(const Domain *other) const = 0;
@@ -59,17 +59,9 @@ public:
 
     /// Lattice
 protected:
-    virtual void setTop() {
-        value_ = TOP;
-    }
-
-    virtual void setBottom() {
-        value_ = BOTTOM;
-    }
-
-    virtual void setValue() {
-        value_ = VALUE;
-    }
+    virtual void setTop();
+    virtual void setBottom();
+    virtual void setValue();
 
 public:
     virtual bool isTop() const {
@@ -85,11 +77,11 @@ public:
     }
 
     /// change all mutable domains value to TOP
-    virtual void moveToTop() const;
+    virtual void moveToTop();
 
-    virtual Domain::Ptr join(Domain::Ptr other) const = 0;
-    virtual Domain::Ptr meet(Domain::Ptr other) const = 0;
-    virtual Domain::Ptr widen(Domain::Ptr other) const = 0;
+    virtual Domain::Ptr join(Domain::Ptr other) = 0;
+    virtual Domain::Ptr meet(Domain::Ptr other) = 0;
+    virtual Domain::Ptr widen(Domain::Ptr other) = 0;
 
     /// Other
     virtual size_t hashCode() const = 0;
@@ -149,18 +141,19 @@ public:
     virtual Domain::Ptr bOr(Domain::Ptr other) const;
     virtual Domain::Ptr bXor(Domain::Ptr other) const;
     /// Vector
-    virtual Domain::Ptr extractElement(const std::vector<Domain::Ptr>& indices) const;
-    virtual void insertElement(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr extractElement(const std::vector<Domain::Ptr>& indices);
+    virtual void insertElement(Domain::Ptr element, const std::vector<Domain::Ptr>& indices);
     /// Aggregate
-    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
-    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices);
+    virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices);
     /// Memory
     /// @arg type - type of the result element
-    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
-    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
+    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset);
+    virtual void store(Domain::Ptr value, Domain::Ptr offset);
     /// @arg type - type of the element that we want to get pointer to
-    virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+    virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices);
     /// Cast
+    /// Simple type casts are constant, they return new domain by definition
     virtual Domain::Ptr trunc(const llvm::Type& type) const;
     virtual Domain::Ptr zext(const llvm::Type& type) const;
     virtual Domain::Ptr sext(const llvm::Type& type) const;
@@ -170,16 +163,17 @@ public:
     virtual Domain::Ptr fptosi(const llvm::Type& type) const;
     virtual Domain::Ptr uitofp(const llvm::Type& type) const;
     virtual Domain::Ptr sitofp(const llvm::Type& type) const;
-    virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
     virtual Domain::Ptr inttoptr(const llvm::Type& type) const;
-    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
+    /// Complicated casts are not constant, because they can change something inside of domain
+    virtual Domain::Ptr ptrtoint(const llvm::Type& type);
+    virtual Domain::Ptr bitcast(const llvm::Type& type);
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     /// Split operations
-    virtual Split splitByEq(Domain::Ptr other) const;
-    virtual Split splitByLess(Domain::Ptr other) const;
-    virtual Split splitBySLess(Domain::Ptr other) const;
+    virtual Split splitByEq(Domain::Ptr other);
+    virtual Split splitByLess(Domain::Ptr other);
+    virtual Split splitBySLess(Domain::Ptr other);
 
 protected:
 
@@ -191,7 +185,7 @@ protected:
     virtual ~Domain() = default;
 
     Value value_;
-    Type type_;
+    const Type type_;
     DomainFactory* factory_;
 };
 

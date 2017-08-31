@@ -34,24 +34,24 @@ class NullptrDomain : public Domain {
 public:
     NullptrDomain(DomainFactory* factory);
 
-    virtual void moveToTop() const {};
+    void moveToTop() override {};
     /// Poset
-    virtual bool equals(const Domain* other) const;
-    virtual bool operator<(const Domain& other) const;
+    bool equals(const Domain* other) const override;
+    bool operator<(const Domain& other) const override;
 
     /// Lattice
-    virtual Domain::Ptr join(Domain::Ptr other) const;
-    virtual Domain::Ptr meet(Domain::Ptr other) const;
-    virtual Domain::Ptr widen(Domain::Ptr other) const;
+    Domain::Ptr join(Domain::Ptr other) override;
+    Domain::Ptr meet(Domain::Ptr other) override;
+    Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
-    virtual std::size_t hashCode() const;
-    virtual std::string toPrettyString(const std::string& prefix) const;
+    std::size_t hashCode() const override;
+    std::string toPrettyString(const std::string& prefix) const override;
 
     /// Memory
-    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
-    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
-    virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+    void store(Domain::Ptr value, Domain::Ptr offset) override;
+    Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) override;
+    Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) override;
 
     static bool classof(const Domain* other);
 };
@@ -71,40 +71,40 @@ protected:
 
 public:
 
-    virtual void moveToTop() const;
+    void moveToTop() override;
     /// Poset
-    virtual bool equals(const Domain* other) const;
-    virtual bool operator<(const Domain& other) const;
+    bool equals(const Domain* other) const override;
+    bool operator<(const Domain& other) const override;
 
     /// Lattice
-    virtual Domain::Ptr join(Domain::Ptr other) const;
-    virtual Domain::Ptr meet(Domain::Ptr other) const;
-    virtual Domain::Ptr widen(Domain::Ptr other) const;
+    Domain::Ptr join(Domain::Ptr other) override;
+    Domain::Ptr meet(Domain::Ptr other) override;
+    Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
     const llvm::Type& getElementType() const;
     const Locations& getLocations() const;
-    virtual std::size_t hashCode() const;
-    virtual std::string toPrettyString(const std::string& prefix) const;
+    std::size_t hashCode() const override;
+    std::string toPrettyString(const std::string& prefix) const override;
 
     static bool classof(const Domain* other);
 
     /// Semantics
-    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) const;
-    virtual void store(Domain::Ptr value, Domain::Ptr offset) const;
-    virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) const;
+    Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) override;
+    void store(Domain::Ptr value, Domain::Ptr offset) override;
+    Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) override;
     /// Cast
-    virtual Domain::Ptr ptrtoint(const llvm::Type& type) const;
-    virtual Domain::Ptr bitcast(const llvm::Type& type) const;
+    Domain::Ptr ptrtoint(const llvm::Type& type) override;
+    Domain::Ptr bitcast(const llvm::Type& type) override;
     /// Cmp
-    virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
+    Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const override;
     /// Split
-    virtual Split splitByEq(Domain::Ptr other) const;
+    Split splitByEq(Domain::Ptr other) override;
 
 private:
 
     const llvm::Type& elementType_;
-    mutable Locations locations_;
+    Locations locations_;
 };
 
 }   /* namespace absint */

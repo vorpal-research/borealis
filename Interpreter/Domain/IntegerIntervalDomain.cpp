@@ -21,22 +21,19 @@ IntegerIntervalDomain::IntegerIntervalDomain(DomainFactory* factory, Integer::Pt
 
 IntegerIntervalDomain::IntegerIntervalDomain(DomainFactory* factory, const IntegerIntervalDomain::ID& key) :
         Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
-        lb_(std::get<1>(key)),
-        ub_(std::get<2>(key)),
+        lb_(value_ == TOP ?
+            Integer::getMinValue(std::get<1>(key)->getWidth()) :
+            std::get<1>(key)),
+        ub_(value_ == TOP ?
+            Integer::getMaxValue(std::get<1>(key)->getWidth()) :
+            std::get<2>(key)),
         wm_(IntegerWidening::getInstance()) {
     ASSERT(lb_->getWidth() == ub_->getWidth(), "Different bit width of interval bounds");
     ASSERT(lb_->le(ub_), "Lower bound is greater that upper bound");
     if (lb_->isMin() && ub_->isMax()) value_ = TOP;
-    else if (value_ == TOP) setTop();
 }
 
-void IntegerIntervalDomain::setTop() {
-    Domain::setTop();
-    lb_ = Integer::getMinValue(getWidth());
-    ub_ = Integer::getMaxValue(getWidth());
-}
-
-Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) const {
+Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval join");
     ASSERT(this->getWidth() == interval->getWidth(), "Joining two intervals of different format");
@@ -52,7 +49,7 @@ Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr IntegerIntervalDomain::meet(Domain::Ptr other) const {
+Domain::Ptr IntegerIntervalDomain::meet(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval meet");
     ASSERT(this->getWidth() == interval->getWidth(), "Joining two intervals of different format");
@@ -71,7 +68,7 @@ Domain::Ptr IntegerIntervalDomain::meet(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr IntegerIntervalDomain::widen(Domain::Ptr other) const {
+Domain::Ptr IntegerIntervalDomain::widen(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval");
     ASSERT(this->getWidth() == interval->getWidth(), "Widening two intervals of different format");
@@ -395,7 +392,7 @@ Domain::Ptr IntegerIntervalDomain::inttoptr(const llvm::Type& type) const {
     return factory_->getTop(type);
 }
 
-Domain::Ptr IntegerIntervalDomain::bitcast(const llvm::Type& type) const {
+Domain::Ptr IntegerIntervalDomain::bitcast(const llvm::Type& type) {
     return factory_->getTop(type);
 }
 
@@ -529,7 +526,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
     }
 }
 
-Split IntegerIntervalDomain::splitByEq(Domain::Ptr other) const {
+Split IntegerIntervalDomain::splitByEq(Domain::Ptr other) {
     auto interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 
@@ -538,7 +535,7 @@ Split IntegerIntervalDomain::splitByEq(Domain::Ptr other) const {
            Split{ shared_from_this(), shared_from_this() };
 }
 
-Split IntegerIntervalDomain::splitByLess(Domain::Ptr other) const {
+Split IntegerIntervalDomain::splitByLess(Domain::Ptr other) {
     auto interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 
@@ -549,7 +546,7 @@ Split IntegerIntervalDomain::splitByLess(Domain::Ptr other) const {
     return {trueVal, falseVal};
 }
 
-Split IntegerIntervalDomain::splitBySLess(Domain::Ptr other) const {
+Split IntegerIntervalDomain::splitBySLess(Domain::Ptr other) {
     auto interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 

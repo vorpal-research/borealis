@@ -10,6 +10,21 @@
 namespace borealis {
 namespace absint {
 
+void Domain::setTop() {
+    ASSERT(isMutable(), "changing immutable domain");
+    value_ = TOP;
+}
+
+void Domain::setBottom() {
+    ASSERT(isMutable(), "changing immutable domain");
+    value_ = BOTTOM;
+}
+
+void Domain::setValue() {
+    ASSERT(isMutable(), "changing immutable domain");
+    value_ = VALUE;
+}
+
 #define MK_BINOP_IMPL(inst) Domain::Ptr Domain::inst(Domain::Ptr) const { \
     UNREACHABLE("Unimplemented binary operation"); \
 }
@@ -36,52 +51,58 @@ MK_BINOP_IMPL(bXor);
 #undef MK_BINOP_IMPL
 
 
-Domain::Ptr Domain::extractElement(const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::extractElement(const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-void Domain::insertElement(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::insertElement(Domain::Ptr, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::extractValue(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::extractValue(const llvm::Type&, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) const {
+void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-Domain::Ptr Domain::load(const llvm::Type&, Domain::Ptr) const {
+Domain::Ptr Domain::load(const llvm::Type&, Domain::Ptr) {
     UNREACHABLE("Unimplemented memory operation");
 }
 
-void Domain::store(Domain::Ptr, Domain::Ptr) const {
+void Domain::store(Domain::Ptr, Domain::Ptr) {
     UNREACHABLE("Unimplemented memory operation");
 }
 
-Domain::Ptr Domain::gep(const llvm::Type&, const std::vector<Domain::Ptr>&) const {
+Domain::Ptr Domain::gep(const llvm::Type&, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented memory operation");
 }
 
 
-#define MK_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(const llvm::Type&) const { \
+#define MK_CONST_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(const llvm::Type&) const { \
     UNREACHABLE("Unimplemented cast operation"); \
 }
 
-MK_CAST_OP_IMPL(trunc);
-MK_CAST_OP_IMPL(zext);
-MK_CAST_OP_IMPL(sext);
-MK_CAST_OP_IMPL(fptrunc);
-MK_CAST_OP_IMPL(fpext);
-MK_CAST_OP_IMPL(fptoui);
-MK_CAST_OP_IMPL(fptosi);
-MK_CAST_OP_IMPL(uitofp);
-MK_CAST_OP_IMPL(sitofp);
+#define MK_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(const llvm::Type&) { \
+    UNREACHABLE("Unimplemented cast operation"); \
+}
+
+MK_CONST_CAST_OP_IMPL(trunc);
+MK_CONST_CAST_OP_IMPL(zext);
+MK_CONST_CAST_OP_IMPL(sext);
+MK_CONST_CAST_OP_IMPL(fptrunc);
+MK_CONST_CAST_OP_IMPL(fpext);
+MK_CONST_CAST_OP_IMPL(fptoui);
+MK_CONST_CAST_OP_IMPL(fptosi);
+MK_CONST_CAST_OP_IMPL(uitofp);
+MK_CONST_CAST_OP_IMPL(sitofp);
+MK_CONST_CAST_OP_IMPL(inttoptr);
+
 MK_CAST_OP_IMPL(ptrtoint);
-MK_CAST_OP_IMPL(inttoptr);
 MK_CAST_OP_IMPL(bitcast);
 
+#undef MK_CONST_CAST_OP_IMPL
 #undef MK_CAST_OP_IMPL
 
 
@@ -128,20 +149,20 @@ bool Domain::isMutable() const {
             this->type_ == Type::FUNCTION;
 }
 
-Split Domain::splitByEq(Domain::Ptr) const {
+Split Domain::splitByEq(Domain::Ptr) {
     UNREACHABLE("Unimplemented split operation");
 }
 
-Split Domain::splitByLess(Domain::Ptr) const {
+Split Domain::splitByLess(Domain::Ptr) {
     UNREACHABLE("Unimplemented split operation");
 }
 
-Split Domain::splitBySLess(Domain::Ptr) const {
+Split Domain::splitBySLess(Domain::Ptr) {
     UNREACHABLE("Unimplemented split operation");
 }
 
-void Domain::moveToTop() const {
-    UNREACHABLE("Moving non-mutable domain to TOP");
+void Domain::moveToTop() {
+    setTop();
 }
 
 std::ostream& operator<<(std::ostream& s, Domain::Ptr d) {

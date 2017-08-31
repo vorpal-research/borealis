@@ -86,6 +86,7 @@ bool State::equals(const State* other) const {
 bool operator==(const State& lhv, const State& rhv) {
     return lhv.equals(&rhv);
 }
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

@@ -306,7 +306,7 @@ Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type, std::vector<Doma
     if (type.isArrayTy()) {
         AggregateDomain::Elements elementMap;
         for (auto i = 0U; i < elements.size(); ++i) {
-            elementMap[i] = getMemoryObject(elements[i]);
+            elementMap[i] = elements[i];
         }
         return Domain::Ptr { new AggregateDomain(this, *type.getArrayElementType(), elementMap) };
 
@@ -315,7 +315,7 @@ Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type, std::vector<Doma
         AggregateDomain::Elements elementMap;
         for (auto i = 0U; i < type.getStructNumElements(); ++i) {
             types[i] = type.getStructElementType(i);
-            elementMap[i] = getMemoryObject(elements[i]);
+            elementMap[i] = elements[i];
         }
         return Domain::Ptr { new AggregateDomain(this, types, elementMap) };
     }
@@ -339,14 +339,6 @@ Domain::Ptr DomainFactory::getFunction(const llvm::Type& type, const FunctionDom
 }
 
 /* heap */
-MemoryObject::Ptr DomainFactory::getMemoryObject(const llvm::Type& type) {
-    return getMemoryObject(getBottom(type));
-}
-
-MemoryObject::Ptr DomainFactory::getMemoryObject(Domain::Ptr value) {
-    return MemoryObject::Ptr{ new MemoryObject(value) };
-}
-
 Domain::Ptr DomainFactory::getConstOperand(const llvm::Constant* c) {
     if (llvm::isa<llvm::GlobalVariable>(c)) return module_->findGlobal(c);
     else return get(c);

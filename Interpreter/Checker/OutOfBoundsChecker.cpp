@@ -40,7 +40,7 @@ public:
         std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
         for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
             if ((not sub_idx.empty()) && util::at(aggregate.getElements(), i) &&
-                    visit(aggregate.getElements().at(i)->load(), sub_idx)) {
+                    visit(aggregate.getElements().at(i), sub_idx)) {
                 return true;
             }
         }
@@ -120,6 +120,16 @@ void OutOfBoundsChecker::visitInstruction(llvm::Instruction& I) {
             .map(llvm::dyn_caster<llvm::GEPOperator>())
             .filter()) {
         visitGEPOperator(I, *op);
+    }
+}
+
+void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
+    if (CI.getCalledFunction() && CI.getCalledFunction()->isDeclaration()) {
+        auto di = DM_->getDefect(DefectType::BUF_01, &CI);
+        defects_[di] = true;
+    } else {
+        auto di = DM_->getDefect(DefectType::BUF_01, &CI);
+        defects_[di] = true;
     }
 }
 

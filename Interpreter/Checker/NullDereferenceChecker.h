@@ -30,6 +30,7 @@ public:
     void visitLoadInst(llvm::LoadInst& I);
     void visitStoreInst(llvm::StoreInst& I);
     void visitGetElementPtrInst(llvm::GetElementPtrInst& I);
+    void visitCallInst(llvm::CallInst& CI);
 
 private:
 

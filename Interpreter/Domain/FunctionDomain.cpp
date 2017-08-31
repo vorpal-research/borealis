@@ -45,7 +45,7 @@ bool FunctionDomain::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented function");
 }
 
-Domain::Ptr FunctionDomain::join(Domain::Ptr other) const {
+Domain::Ptr FunctionDomain::join(Domain::Ptr other) {
     auto func = llvm::dyn_cast<FunctionDomain>(other.get());
     ASSERT(func, "Non-function domain in function join");
 
@@ -61,11 +61,11 @@ const FunctionDomain::FunctionSet& FunctionDomain::getLocations() const {
     return locations_;
 }
 
-Domain::Ptr FunctionDomain::meet(Domain::Ptr) const {
+Domain::Ptr FunctionDomain::meet(Domain::Ptr) {
     UNREACHABLE("Unimplemented function");
 }
 
-Domain::Ptr FunctionDomain::widen(Domain::Ptr other) const {
+Domain::Ptr FunctionDomain::widen(Domain::Ptr other) {
     return join(other);
 }
 
@@ -87,9 +87,8 @@ bool FunctionDomain::classof(const Domain* other) {
     return other->getType() == Domain::FUNCTION;
 }
 
-void FunctionDomain::moveToTop() const {
-    auto val = const_cast<Domain::Value*>(&value_);
-    *val = TOP;
+void FunctionDomain::moveToTop() {
+    setTop();
     locations_.clear();
 }
 
