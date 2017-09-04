@@ -91,7 +91,7 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
 
     if (not module_->checkVisited(&loc) || not module_->checkVisited(&GI)) {
         info << "Instruction not visited" << endl;
-        DM_->addNoAbsIntDefect(di);
+        defects_[di] |= false;
 
     } else {
         auto ptr = module_->getDomainFor(GI.getPointerOperand(), loc.getParent());

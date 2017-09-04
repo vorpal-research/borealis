@@ -26,7 +26,7 @@ struct Global {
 
 void getAllGlobals(const llvm::Value* value, Global::Edges& edges) {
     if (auto global = llvm::dyn_cast<llvm::GlobalVariable>(value)) {
-        edges.push_back(global);
+        edges.emplace_back(global);
     } else if (auto constantExpr = llvm::dyn_cast<llvm::ConstantExpr>(value)) {
         for (auto&& op : constantExpr->operands()) {
             getAllGlobals(op, edges);
@@ -67,7 +67,7 @@ void topologicalSort(std::map<const llvm::GlobalVariable*, Global>& globals,
         topologicalSort(globals, edge, result);
     }
     globals[current].color_ = Global::BLACK;
-    result.push_back(current);
+    result.emplace_back(current);
 }
 
 } // namespace
@@ -85,7 +85,7 @@ Module::Module(const llvm::Module* module, SlotTrackerPass* st)
     // build graph
     for (auto&& it : instance_->globals()) {
         auto&& edges = getEdges(&it);
-        if (edges.empty()) order.push_back(&it);
+        if (edges.empty()) order.emplace_back(&it);
         else globals.insert({&it, {Global::WHITE, edges}});
     }
     // do topological sorting

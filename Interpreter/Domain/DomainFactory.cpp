@@ -107,7 +107,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
                 errs() << "Cannot create constant: " << ST_->toString(sequential->getElementAsConstant(i)) << endl;
                 element = getTop(*sequential->getType());
             }
-            elements.push_back(element);
+            elements.emplace_back(element);
         }
         return getAggregate(*constant->getType(), elements);
     // Constant Array
@@ -119,7 +119,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
                 errs() << "Cannot create constant: " << ST_->toString(constantArray->getOperand(i)) << endl;
                 element = getTop(*sequential->getType());
             }
-            elements.push_back(element);
+            elements.emplace_back(element);
         }
         return getAggregate(*constant->getType(), elements);
     // Constant Expr
@@ -134,7 +134,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
                 errs() << "Cannot create constant: " << ST_->toString(structType->getAggregateElement(i)) << endl;
                 element = getTop(*sequential->getType());
             }
-            elements.push_back(element);
+            elements.emplace_back(element);
         }
         return getAggregate(*constant->getType(), elements);
     // Function
@@ -255,8 +255,12 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFlo
 
 /* PointerDomain */
 Domain::Ptr DomainFactory::getNullptr(const llvm::Type& elementType) {
-    static PointerLocation nullptrLocation{ getIndex(0), nullptr_ };
+    static PointerLocation nullptrLocation{ getIndex(0), getNullptrLocation() };
     return Domain::Ptr{ new PointerDomain(this, elementType, {nullptrLocation}) };
+}
+
+Domain::Ptr DomainFactory::getNullptrLocation() {
+    return nullptr_;
 }
 
 Domain::Ptr DomainFactory::getPointer(Domain::Value value, const llvm::Type& elementType) {
@@ -411,9 +415,9 @@ Domain::Ptr DomainFactory::handleGEPConstantExpr(const llvm::ConstantExpr* ce) {
     for (auto j = 1U; j != ce->getNumOperands(); ++j) {
         auto val = ce->getOperand(j);
         if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
-            offsets.push_back(getIndex(*intConstant->getValue().getRawData()));
+            offsets.emplace_back(getIndex(*intConstant->getValue().getRawData()));
         } else if (auto indx = getConstOperand(val)) {
-            offsets.push_back(indx);
+            offsets.emplace_back(indx);
         } else {
             UNREACHABLE("Non-integer constant in gep");
         }

@@ -100,11 +100,11 @@ void BasicBlock::setVisited() {
 }
 
 void BasicBlock::addPredecessor(BasicBlock* pred) {
-    predecessors_.push_back(pred);
+    predecessors_.emplace_back(pred);
 }
 
 void BasicBlock::addSuccessor(BasicBlock* succ) {
-    successors_.push_back(succ);
+    successors_.emplace_back(succ);
 }
 
 void BasicBlock::mergeToInput(State::Ptr input) {

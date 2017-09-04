@@ -33,6 +33,16 @@ IntegerIntervalDomain::IntegerIntervalDomain(DomainFactory* factory, const Integ
     if (lb_->isMin() && ub_->isMax()) value_ = TOP;
 }
 
+IntegerIntervalDomain::IntegerIntervalDomain(const IntegerIntervalDomain& other) :
+        Domain(other.value_, other.type_, other.factory_),
+        lb_(other.lb_),
+        ub_(other.ub_),
+        wm_(other.wm_) {}
+
+Domain::Ptr IntegerIntervalDomain::clone() const {
+    return Domain::Ptr{ new IntegerIntervalDomain(*this) };
+}
+
 Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) {
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval join");

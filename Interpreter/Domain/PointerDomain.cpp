@@ -68,6 +68,10 @@ bool NullptrDomain::classof(const Domain* other) {
     return other->getType() == Domain::NULLPTR;
 }
 
+Domain::Ptr NullptrDomain::clone() const {
+    return factory_->getNullptrLocation();
+}
+
 //////////////////////////////////////////////////////////
 /// Pointer
 //////////////////////////////////////////////////////////
@@ -79,6 +83,11 @@ PointerDomain::PointerDomain(DomainFactory* factory, const llvm::Type& elementTy
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
           locations_(locations) {}
+
+PointerDomain::PointerDomain(const PointerDomain& other)
+        : Domain{other.value_, other.type_, other.factory_},
+          elementType_(other.elementType_),
+          locations_(other.locations_) {}
 
 bool PointerDomain::equals(const Domain* other) const {
     auto ptr = llvm::dyn_cast<PointerDomain>(other);
@@ -102,6 +111,10 @@ const PointerDomain::Locations& PointerDomain::getLocations() const {
 
 const llvm::Type& PointerDomain::getElementType() const {
     return elementType_;
+}
+
+Domain::Ptr PointerDomain::clone() const {
+    return Domain::Ptr{ new PointerDomain(*this) };
 }
 
 std::size_t PointerDomain::hashCode() const {
@@ -233,7 +246,7 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
-    if (this->isTop() || other->isTop()) return factory_->getInteger(TOP, 1);
+    if (not (this->isValue() && other->isValue())) return factory_->getInteger(TOP, 1);
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:

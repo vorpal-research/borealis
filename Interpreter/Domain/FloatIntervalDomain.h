@@ -28,6 +28,7 @@ protected:
     FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& constant);
     FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& lb, const llvm::APFloat& ub);
     FloatIntervalDomain(DomainFactory* factory, const ID& id);
+    FloatIntervalDomain(const FloatIntervalDomain& other);
 
 public:
     /// Poset
@@ -47,6 +48,7 @@ public:
     const llvm::APFloat& ub() const;
     bool hasIntersection(const FloatIntervalDomain* other) const;
 
+    Domain::Ptr clone() const override;
     size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
 

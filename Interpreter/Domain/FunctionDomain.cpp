@@ -14,11 +14,11 @@ namespace absint {
 
 FunctionDomain::FunctionDomain(DomainFactory* factory, const llvm::Type* type)
         : Domain(BOTTOM, FUNCTION, factory),
-          type_(type) {}
+          prototype_(type) {}
 
 FunctionDomain::FunctionDomain(DomainFactory* factory, const llvm::Type* type, Function::Ptr location)
         : Domain(VALUE, FUNCTION, factory),
-          type_(type) {
+          prototype_(type) {
     locations_.insert(location);
 }
 
@@ -26,8 +26,17 @@ FunctionDomain::FunctionDomain(DomainFactory* factory,
                                  const llvm::Type* type,
                                  const FunctionSet& locations)
         : Domain(VALUE, FUNCTION, factory),
-          type_(type),
+          prototype_(type),
           locations_(locations) {}
+
+FunctionDomain::FunctionDomain(const FunctionDomain& other)
+        : Domain(other.value_, other.type_, other.factory_),
+          prototype_(other.prototype_),
+          locations_(other.locations_) {}
+
+Domain::Ptr FunctionDomain::clone() const {
+    return Domain::Ptr{ new FunctionDomain(*this) };
+}
 
 bool FunctionDomain::equals(const Domain* other) const {
     auto func = llvm::dyn_cast<FunctionDomain>(other);
@@ -75,7 +84,7 @@ std::size_t FunctionDomain::hashCode() const {
 
 std::string FunctionDomain::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
-    ss << "Function " << factory_->getSlotTracker().toString(type_) << " : ";
+    ss << "Function " << factory_->getSlotTracker().toString(prototype_) << " : ";
     for (auto&& it : locations_) {
         ss << std::endl << prefix << "  " << it->getName();
     }

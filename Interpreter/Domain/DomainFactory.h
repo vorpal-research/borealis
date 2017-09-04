@@ -76,6 +76,7 @@ public:
     Domain::Ptr getPointer(const llvm::Type& elementType);
     Domain::Ptr getPointer(const llvm::Type& elementType, const PointerDomain::Locations& locations);
     Domain::Ptr getNullptr(const llvm::Type& elementType);
+    Domain::Ptr getNullptrLocation();
 
     Domain::Ptr getFunction(const llvm::Type& type);
     Domain::Ptr getFunction(const llvm::Type& type, Function::Ptr function);

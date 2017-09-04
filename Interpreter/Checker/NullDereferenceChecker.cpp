@@ -38,7 +38,7 @@ void NullDereferenceChecker::checkPointer(llvm::Instruction& loc, llvm::Value& p
 
     if (not module_->checkVisited(&loc) || not module_->checkVisited(&ptr)) {
         info << "Instruction not visited" << endl;
-        DM_->addNoAbsIntDefect(di);
+        defects_[di] |= false;
 
     } else {
         auto&& ptr_domain = module_->getDomainFor(&ptr, loc.getParent());

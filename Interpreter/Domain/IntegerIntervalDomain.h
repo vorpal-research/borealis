@@ -29,6 +29,7 @@ protected:
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr constant);
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
     IntegerIntervalDomain(DomainFactory* factory, const ID& key);
+    IntegerIntervalDomain(const IntegerIntervalDomain& other);
 
 public:
     /// Poset
@@ -51,6 +52,7 @@ public:
     bool hasIntersection(Integer::Ptr constant) const;
     bool hasIntersection(const IntegerIntervalDomain* other) const;
 
+    Domain::Ptr clone() const override;
     size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
 

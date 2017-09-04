@@ -16,9 +16,9 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
         : instance_(function),
           tracker_(st),
           factory_(factory) {
-    inputState_ = State::Ptr{ new State(tracker_) };
-    outputState_ = State::Ptr{ new State(tracker_) };
-    for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.push_back(nullptr);
+    inputState_ = std::make_shared<borealis::absint::State>(tracker_);
+    outputState_ = std::make_shared<borealis::absint::State>(tracker_);
+    for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.emplace_back(nullptr);
 
     // find all global variables, that this function depends on
     for (auto&& inst : util::viewContainer(*instance_)
@@ -37,7 +37,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
     for (auto&& block : util::viewContainer(*instance_)) {
         auto&& aiBlock = BasicBlock(&block, tracker_, factory_);
         blocks_.insert( {&block, aiBlock} );
-        blockVector_.push_back(&blocks_.at(&block));
+        blockVector_.emplace_back(&blocks_.at(&block));
     }
 
     for (auto&& it : blocks_) {
@@ -104,7 +104,7 @@ SlotTracker& Function::getSlotTracker() const {
 bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
     ASSERT(instance_->isVarArg() || arguments_.size() == args.size(), "Wrong number of arguments");
     // This is generally fucked up
-    if (arguments_.size() == 0)
+    if (arguments_.empty())
         return not getEntryNode()->isVisited();
 
     bool changed = false;
@@ -115,7 +115,7 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
 
         auto arg = args[i];
         if (arguments_[i]) {
-            arg = arguments_[i]->widen(arg);
+            arg = (arguments_[i]->clone())->widen(arg);
             changed |= not arguments_[i]->equals(arg.get());
         } else {
             changed = true;

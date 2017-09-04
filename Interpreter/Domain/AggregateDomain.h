@@ -41,6 +41,8 @@ protected:
     AggregateDomain(DomainFactory* factory, const llvm::Type& elementType,
                     const AggregateDomain::Elements& elements);
 
+    AggregateDomain(const AggregateDomain& other);
+
 
 public:
     void moveToTop() override;
@@ -54,6 +56,7 @@ public:
     Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
+    Domain::Ptr clone() const override;
     std::size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
     const Types& getElementTypes() const;

@@ -31,6 +31,16 @@ FloatIntervalDomain::FloatIntervalDomain(DomainFactory* factory, const FloatInte
     if (lb_.isSmallest() && ub_.isLargest()) value_ = TOP;
 }
 
+FloatIntervalDomain::FloatIntervalDomain(const FloatIntervalDomain& other) :
+        Domain(other.value_, other.type_, other.factory_),
+        lb_(other.lb_),
+        ub_(other.ub_),
+        wm_(other.wm_) {}
+
+Domain::Ptr FloatIntervalDomain::clone() const {
+    return Domain::Ptr{ new FloatIntervalDomain(*this) };
+}
+
 bool FloatIntervalDomain::equals(const Domain* other) const {
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other);
     if (not interval) return false;

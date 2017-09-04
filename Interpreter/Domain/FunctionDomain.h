@@ -24,6 +24,7 @@ protected:
     FunctionDomain(DomainFactory* factory, const llvm::Type* type);
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, Function::Ptr location);
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, const FunctionSet& locations);
+    FunctionDomain(const FunctionDomain& other);
 
 public:
     void moveToTop() override;
@@ -37,6 +38,7 @@ public:
     Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
+    Domain::Ptr clone() const override;
     const FunctionSet& getLocations() const;
     std::size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
@@ -45,7 +47,7 @@ public:
 
 private:
 
-    const llvm::Type* type_;
+    const llvm::Type* prototype_;
     FunctionSet locations_;
 
 };

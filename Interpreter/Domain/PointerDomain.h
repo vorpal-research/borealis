@@ -25,14 +25,14 @@ struct PtrLocationHash {
 
 struct PtrLocationEquals {
     bool operator() (const PointerLocation& lhv, const PointerLocation& rhv) const noexcept {
-        return lhv.location_->equals(rhv.location_.get());
-        //return lhv.location_.get() == rhv.location_.get();
+//        return lhv.location_->equals(rhv.location_.get());
+        return lhv.location_.get() == rhv.location_.get();
     }
 };
 
 class NullptrDomain : public Domain {
 public:
-    NullptrDomain(DomainFactory* factory);
+    explicit NullptrDomain(DomainFactory* factory);
 
     void moveToTop() override {};
     /// Poset
@@ -45,6 +45,7 @@ public:
     Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
+    Domain::Ptr clone() const override;
     std::size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
 
@@ -68,6 +69,7 @@ protected:
 
     PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
     PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
+    PointerDomain(const PointerDomain& other);
 
 public:
 
@@ -84,6 +86,7 @@ public:
     /// Other
     const llvm::Type& getElementType() const;
     const Locations& getLocations() const;
+    Domain::Ptr clone() const override;
     std::size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
 

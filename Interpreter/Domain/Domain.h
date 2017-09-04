@@ -84,6 +84,8 @@ public:
     virtual Domain::Ptr widen(Domain::Ptr other) = 0;
 
     /// Other
+    virtual Domain::Ptr clone() const = 0;
+
     virtual size_t hashCode() const = 0;
 
     virtual std::string toPrettyString(const std::string& prefix) const {

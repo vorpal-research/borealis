@@ -23,7 +23,7 @@ void Interpreter::run() {
     if (main) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : main->getInstance()->getArgumentList()) {
-            args.push_back(module_.getDomainFactory()->getTop(*arg.getType()));
+            args.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
         }
 
         interpretFunction(main, args);
@@ -31,7 +31,7 @@ void Interpreter::run() {
             if (not function.first->isDeclaration() && not function.second->isVisited()) {
                 std::vector<Domain::Ptr> topargs;
                 for (auto&& arg : function.first->args())
-                    topargs.push_back(module_.getDomainFactory()->getTop(*arg.getType()));
+                    topargs.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
                 interpretFunction(function.second, topargs);
             }
         }
@@ -122,8 +122,8 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
                 trueSuccessor->addToInput(it.first, it.second.true_);
                 falseSuccessor->addToInput(it.first, it.second.false_);
             }
-            successors.push_back(trueSuccessor);
-            successors.push_back(falseSuccessor);
+            successors.emplace_back(trueSuccessor);
+            successors.emplace_back(falseSuccessor);
 
         } else if (cond->isValue()) {
             auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
@@ -132,15 +132,15 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
             auto successor = boolean->isConstant(1) ?
                              trueSuccessor :
                              falseSuccessor;
-            successors.push_back(successor);
+            successors.emplace_back(successor);
         } else {
-            successors.push_back(trueSuccessor);
-            successors.push_back(falseSuccessor);
+            successors.emplace_back(trueSuccessor);
+            successors.emplace_back(falseSuccessor);
         }
     } else {
         auto successor = context_->function->getBasicBlock(i.getSuccessor(0));
         successor->mergeToInput(context_->state);
-        successors.push_back(successor);
+        successors.emplace_back(successor);
     }
 
     addSuccessors(successors);
@@ -160,7 +160,7 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
             if (integer->hasIntersection(caseVal)) {
                 auto successor = context_->function->getBasicBlock(cs.getCaseSuccessor());
                 successor->mergeToInput(context_->state);
-                successors.push_back(successor);
+                successors.emplace_back(successor);
                 isDefault = false;
             }
         }
@@ -168,14 +168,14 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
         if (isDefault) {
             auto successor = context_->function->getBasicBlock(i.getDefaultDest());
             successor->mergeToInput(context_->state);
-            successors.push_back(successor);
+            successors.emplace_back(successor);
         }
 
     } else {
         for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
             auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
             successor->mergeToInput(context_->state);
-            successors.push_back(successor);
+            successors.emplace_back(successor);
         }
     }
 
@@ -188,7 +188,7 @@ void Interpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
     for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
         auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
         successor->mergeToInput(context_->state);
-        successors.push_back(successor);
+        successors.emplace_back(successor);
     }
     addSuccessors(successors);
 }
@@ -326,7 +326,7 @@ void Interpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
 
     std::vector<Domain::Ptr> indices;
     for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
-        indices.push_back(module_.getDomainFactory()->getIndex(*j));
+        indices.emplace_back(module_.getDomainFactory()->getIndex(*j));
     }
 
     auto result = aggregate->extractValue(*i.getType(), indices);
@@ -341,7 +341,7 @@ void Interpreter::visitInsertValueInst(llvm::InsertValueInst& i) {
 
     std::vector<Domain::Ptr> indices;
     for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
-        indices.push_back(module_.getDomainFactory()->getIndex(*j));
+        indices.emplace_back(module_.getDomainFactory()->getIndex(*j));
     }
 
     aggregate->insertValue(value, indices);
@@ -384,7 +384,7 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 void Interpreter::visitCallInst(llvm::CallInst& i) {
     std::vector<std::pair<const llvm::Value*, Domain::Ptr>> args;
     for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-        args.push_back({i.getArgOperand(j), getVariable(i.getArgOperand(j))});
+        args.emplace_back(i.getArgOperand(j), getVariable(i.getArgOperand(j)));
     }
     auto retval = module_.getDomainFactory()->getBottom(*i.getType());
 
@@ -410,11 +410,11 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
         } else {
             warns() << "Pointer is TOP: " << ST_->toString(&i) << ", calling all possible functions" << endl;
             std::vector<llvm::Type*> argTypes;
-            for (auto&& it : args) argTypes.push_back(it.first->getType());
-            auto&& possibleFunctions = module_.findFunctionsByPrototype(llvm::FunctionType::get(i.getType(),
-                                                                                                llvm::ArrayRef<llvm::Type*>(
-                                                                                                        argTypes),
-                                                                                                false));
+            for (auto&& it : args) argTypes.emplace_back(it.first->getType());
+            auto&& prototype = llvm::FunctionType::get(i.getType(),
+                                                       llvm::ArrayRef<llvm::Type*>(argTypes),
+                                                       false);
+            auto&& possibleFunctions = module_.findFunctionsByPrototype(prototype);
             for (auto&& it : possibleFunctions) {
                 auto temp = handleFunctionCall(it->getInstance(), args);
                 retval = temp ? retval->join(temp) : retval;
@@ -446,7 +446,7 @@ void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
 void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
         if (not it->atFixpoint(module_.getGlobalsFor(it)) && not util::contains(context_->deque, it)) {
-            context_->deque.push_back(it);
+            context_->deque.emplace_back(it);
         }
     }
 }
@@ -459,9 +459,9 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
     for (auto j = gep.idx_begin(); j != gep.idx_end(); ++j) {
         auto val = llvm::cast<llvm::Value>(j);
         if (auto&& intConstant = llvm::dyn_cast<llvm::ConstantInt>(val)) {
-            offsets.push_back(module_.getDomainFactory()->getIndex(*intConstant->getValue().getRawData()));
+            offsets.emplace_back(module_.getDomainFactory()->getIndex(*intConstant->getValue().getRawData()));
         } else if (auto indx = getVariable(val)) {
-            offsets.push_back(indx);
+            offsets.emplace_back(indx);
         } else {
             UNREACHABLE("Non-integer constant in gep " + ST_->toString(val));
         }
@@ -527,14 +527,15 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
             auto arg = args[j].first;
             auto argType = arg->getType();
             if (argType->isPointerTy()) {
-                if (argInfo[j].access == func_info::AccessPatternTag::Write || argInfo[j].access == func_info::AccessPatternTag::ReadWrite)
+                if (argInfo[j].access == func_info::AccessPatternTag::Write ||
+                        argInfo[j].access == func_info::AccessPatternTag::ReadWrite)
                     context_->state->addVariable(arg, module_.getDomainFactory()->getTop(*argType));
                 else if (argInfo[j].access == func_info::AccessPatternTag::Delete)
                     context_->state->addVariable(arg, module_.getDomainFactory()->getBottom(*argType));
             }
         }
 
-    } catch (std::out_of_range) {
+    } catch (std::out_of_range&) {
         warns() << "Unknown function: " << function->getName() << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
