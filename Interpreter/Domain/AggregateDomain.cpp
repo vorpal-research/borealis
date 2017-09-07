@@ -92,7 +92,7 @@ std::string AggregateDomain::toPrettyString(const std::string& prefix) const {
         for (auto&& it : elementTypes_) {
             ss << "  " << factory_->getSlotTracker().toString(it.second) << ", ";
         }
-        ss << "}";
+        ss << "} ";
     }
     ss << ": [";
     if (isTop()) {

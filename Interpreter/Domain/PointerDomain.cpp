@@ -149,8 +149,11 @@ Domain::Ptr PointerDomain::join(Domain::Ptr other) {
         return shared_from_this();
     } else if (this->isBottom()) {
         return other->shared_from_this();
-    } else if (other->isTop() || this->isTop()) {
-        return factory_->getPointer(TOP, elementType_);
+    } else if (this->isTop()) {
+        return shared_from_this();
+    } else if (other->isTop()) {
+        moveToTop();
+        return shared_from_this();
     }
 
     for (auto&& itptr : ptr->locations_) {
@@ -159,7 +162,16 @@ Domain::Ptr PointerDomain::join(Domain::Ptr other) {
             locations_.insert(itptr);
         /// Assume that length and location are same
         } else {
-            it->offset_ = it->offset_->join(itptr.offset_);
+            if (itptr.location_->isAggregate()) {
+                auto aggregate = llvm::cast<AggregateDomain>(itptr.location_.get());
+                if (aggregate->isArray()) {
+                    it->offset_ = it->offset_->join(itptr.offset_);
+                } else {
+                    locations_.insert(itptr);
+                }
+            } else {
+                it->offset_ = it->offset_->join(itptr.offset_);
+            }
         }
     }
     return shared_from_this();
@@ -193,7 +205,13 @@ void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
 
     if (elementType_.isPointerTy()) {
         locations_.clear();
-        locations_.insert({factory_->getIndex(0), value});
+        if (value->isAggregate()) {
+            locations_.insert({factory_->getIndex(0), value});
+        } else {
+            auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&elementType_), 1);
+            auto&& arrayDom = factory_->getAggregate(*arrayType, {value});
+            locations_.insert({factory_->getIndex(0), arrayDom});
+        }
         // if pointer was BOTTOM, then we should change it's value. But we can't create
         // new ptr domain, because there may be objects, referencing this one
         if (isBottom()) setValue();
