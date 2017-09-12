@@ -290,8 +290,12 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
-    if (this->isTop() || other->isTop())
+    if (this->isTop())
         return {factory_->getPointer(TOP, elementType_), factory_->getPointer(TOP, elementType_)};
+    if (this->isBottom())
+        return {factory_->getPointer(BOTTOM, elementType_), factory_->getPointer(BOTTOM, elementType_)};
+    if (not other->isValue())
+        return {shared_from_this(), shared_from_this()};
 
     Locations trueLocs, falseLocs;
     for (auto&& loc : ptr->getLocations()) {

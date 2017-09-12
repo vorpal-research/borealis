@@ -78,7 +78,7 @@ Module::Module(const llvm::Module* module, SlotTrackerPass* st)
           factory_(this) {
     // Initialize all address taken functions
     for (auto&& it : module->getFunctionList())
-        if (it.hasAddressTaken()) addressTakenFunctions_.insert({&it, get(&it)});
+        if (llvm::hasAddressTaken(it)) addressTakenFunctions_.insert({&it, get(&it)});
     // Initialize all global variables
     std::vector<const llvm::GlobalVariable*> order; // all global variables in order how they should be declared
     std::map<const llvm::GlobalVariable*, Global> globals; // graph of global variables

@@ -9,6 +9,8 @@
 namespace borealis {
 namespace absint {
 
+static config::BoolConfigEntry enableLog("absint", "log-checker");
+
 // Returns true, if there might be OOB
 class OutOfBoundVisitor {
 public:
@@ -71,10 +73,11 @@ public:
 
 
 
-OutOfBoundsChecker::OutOfBoundsChecker(Module* module, DefectManager* DM)
+OutOfBoundsChecker::OutOfBoundsChecker(Module* module, DefectManager* DM, FuncInfoProvider* FIP)
         : ObjectLevelLogging("interpreter"),
           module_(module),
-          DM_(DM) {
+          DM_(DM),
+          FIP_(FIP) {
     ST_ = module_->getSlotTracker();
 }
 
@@ -85,17 +88,18 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
     auto&& info = infos();
 
     auto di = DM_->getDefect(DefectType::BUF_01, &loc);
-    info << "Checking: " << ST_->toString(&loc) << endl;
-    info << "Gep operand: " << ST_->toString(&GI) << endl;
-    info << "Defect: " << di << endl;
+    if (enableLog.get(true)) {
+        info << "Checking: " << ST_->toString(&loc) << endl;
+        info << "Gep operand: " << ST_->toString(&GI) << endl;
+        info << "Defect: " << di << endl;
+    }
 
     if (not module_->checkVisited(&loc) || not module_->checkVisited(&GI)) {
-        info << "Instruction not visited" << endl;
+        if (enableLog.get(true)) info << "Instruction not visited" << endl;
         defects_[di] |= false;
 
     } else {
         auto ptr = module_->getDomainFor(GI.getPointerOperand(), loc.getParent());
-        info << "Pointer operand: " << ptr << endl;
 
         std::vector<Domain::Ptr> offsets;
         for (auto j = GI.idx_begin(); j != GI.idx_end(); ++j) {
@@ -104,15 +108,18 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
                                module_->getDomainFactory()->getIndex(*intConstant->getValue().getRawData()) :
                                module_->getDomainFor(llvm::cast<llvm::Value>(j), loc.getParent());
 
-            info << "Shift: " << indx << endl;
             offsets.emplace_back(indx);
         }
-
         auto bug = OutOfBoundVisitor().visit(ptr, offsets);
-        info << "Result: " << bug << endl;
         defects_[di] |= bug;
+
+        if (enableLog.get(true)) {
+            info << "Pointer operand: " << ptr << endl;
+            for (auto&& indx : offsets)
+                info << "Shift: " << indx << endl;
+            info << "Result: " << bug << endl;
+        }
     }
-    info << endl;
 }
 
 void OutOfBoundsChecker::visitInstruction(llvm::Instruction& I) {
@@ -124,11 +131,59 @@ void OutOfBoundsChecker::visitInstruction(llvm::Instruction& I) {
 }
 
 void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
-    if (CI.getCalledFunction() && CI.getCalledFunction()->isDeclaration()) {
-        auto di = DM_->getDefect(DefectType::BUF_01, &CI);
+    visitInstruction(CI);
+
+    auto&& info = infos();
+    auto di = DM_->getDefect(DefectType::BUF_01, &CI);
+
+    if (enableLog.get(true)) {
+        info << "Checking: " << ST_->toString(&CI) << endl;
+        info << "Defect: " << di << endl;
+    }
+
+    if (not module_->checkVisited(&CI)) {
+        if (enableLog.get(true)) info << "Instruction not visited" << endl;
+        defects_[di] |= false;
+        return;
+    }
+
+    if (CI.isInlineAsm() || (not CI.getCalledFunction())) {
+        if (enableLog.get(true)) info << "Unknown function" << endl;
         defects_[di] = true;
-    } else {
-        auto di = DM_->getDefect(DefectType::BUF_01, &CI);
+        return;
+    }
+
+    try {
+        auto i = 0U;
+        auto funcData = FIP_->getInfo(CI.getCalledFunction());
+        for (auto&& argInfo : funcData.argInfo) {
+            if (argInfo.isArray == func_info::ArrayTag::IsArray) {
+                if (not argInfo.sizeArgument) {
+                    defects_[di] = true;
+
+                } else {
+                    auto&& size = argInfo.sizeArgument.getUnsafe();
+                    auto&& ptr = module_->getDomainFor(CI.getArgOperand(i), CI.getParent());
+
+                    std::vector<Domain::Ptr> offsets = {module_->getDomainFactory()->getIndex(0),
+                                                        module_->getDomainFor(CI.getArgOperand(size), CI.getParent())};
+
+                    auto bug = OutOfBoundVisitor().visit(ptr, offsets);
+                    defects_[di] |= bug;
+
+                    if (enableLog.get(true)) {
+                        info << "Pointer operand: " << ptr << endl;
+                        for (auto&& indx : offsets)
+                            info << "Shift: " << indx << endl;
+                        info << "Result: " << bug << endl;
+                    }
+                }
+            }
+            ++i;
+        }
+
+    } catch (std::out_of_range&) {
+        if (enableLog.get(true)) info << "Unknown function" << endl;
         defects_[di] = true;
     }
 }

@@ -25,7 +25,7 @@ bool CallGraphChopper::runOnModule(llvm::Module& M) {
     auto allFuncs = util::viewContainer(M).map(ops::take_pointer).filter().toVector();
 
     for(llvm::Function* F : allFuncs) {
-        if(not slice.count(F) && not F->hasAddressTaken() && not F->isDeclaration()) {
+        if(not slice.count(F) && not llvm::hasAddressTaken(*F) && not F->isDeclaration()) {
             F->deleteBody();
             if(not F->hasNUsesOrMore(1)) F->eraseFromParent();
         }

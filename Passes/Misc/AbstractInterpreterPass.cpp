@@ -14,7 +14,7 @@
 namespace borealis {
 
 static config::BoolConfigEntry printCFG("absint", "print-cfg");
-static config::BoolConfigEntry enableAnalysis("absint", "enable-ai-analysis");
+static config::BoolConfigEntry enableAnalysis("absint", "ai-analysis");
 
 bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
     auto&& fip = &GetAnalysis<FuncInfoProvider>().doit(this);
@@ -30,7 +30,7 @@ bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
 
     if (M.getFunction("main") && enableAnalysis.get(false)) {
         auto* module = const_cast<absint::Module*>(&interpreter.getModule());
-        absint::OutOfBoundsChecker(module, dm).run();
+        absint::OutOfBoundsChecker(module, dm, fip).run();
         absint::NullDereferenceChecker(module, dm).run();
     }
     return false;

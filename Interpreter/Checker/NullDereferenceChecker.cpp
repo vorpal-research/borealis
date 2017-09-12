@@ -9,6 +9,8 @@
 namespace borealis {
 namespace absint {
 
+static config::BoolConfigEntry enableLog("absint", "log-checker");
+
 NullDereferenceChecker::NullDereferenceChecker(Module* module, DefectManager* DM)
         : ObjectLevelLogging("interpreter"),
           module_(module),
@@ -32,29 +34,27 @@ void NullDereferenceChecker::checkPointer(llvm::Instruction& loc, llvm::Value& p
     auto&& info = infos();
 
     auto di = DM_->getDefect(DefectType::INI_03, &loc);
-    info << "Checking: " << ST_->toString(&loc) << endl;
-    info << "Pointer operand: " << ST_->toString(&ptr) << endl;
-    info << "Defect: " << di << endl;
+    if (enableLog.get(true)) {
+        info << "Checking: " << ST_->toString(&loc) << endl;
+        info << "Pointer operand: " << ST_->toString(&ptr) << endl;
+        info << "Defect: " << di << endl;
+    }
 
     if (not module_->checkVisited(&loc) || not module_->checkVisited(&ptr)) {
-        info << "Instruction not visited" << endl;
+        if (enableLog.get(true)) info << "Instruction not visited" << endl;
         defects_[di] |= false;
 
     } else {
         auto&& ptr_domain = module_->getDomainFor(&ptr, loc.getParent());
         auto bug = not ptr_domain->isValue() || ptr_domain->isNullptr();
-        info << "Result: " << bug << endl;
+        if (enableLog.get(true)) info << "Result: " << bug << endl;
         defects_[di] |= bug;
     }
-    info << endl;
 }
 
 void NullDereferenceChecker::visitCallInst(llvm::CallInst& CI) {
+    auto di = DM_->getDefect(DefectType::INI_03, &CI);
     if (CI.getCalledFunction() && CI.getCalledFunction()->isDeclaration()) {
-        auto di = DM_->getDefect(DefectType::INI_03, &CI);
-        defects_[di] = true;
-    } else {
-        auto di = DM_->getDefect(DefectType::INI_03, &CI);
         defects_[di] = true;
     }
 }

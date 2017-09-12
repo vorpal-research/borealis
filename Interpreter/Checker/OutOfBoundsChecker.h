@@ -11,6 +11,7 @@
 #include "Interpreter/IR/Module.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager.h"
+#include "Passes/Misc/FuncInfoProvider.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 
 namespace borealis {
@@ -21,7 +22,7 @@ class OutOfBoundsChecker : public llvm::InstVisitor<OutOfBoundsChecker>,
 
 public:
 
-    OutOfBoundsChecker(Module* module, DefectManager* DM);
+    OutOfBoundsChecker(Module* module, DefectManager* DM, FuncInfoProvider* FIP);
 
     void run();
 
@@ -35,6 +36,7 @@ private:
 
     Module* module_;
     DefectManager* DM_;
+    FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;
     std::unordered_set<llvm::Value*> visited_;
     std::unordered_map<DefectInfo, bool> defects_;

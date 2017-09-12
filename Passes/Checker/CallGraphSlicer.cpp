@@ -27,7 +27,7 @@ bool CallGraphSlicer::runOnModule(llvm::Module& M) {
     }
 
     for(auto&& F : M) {
-        if(F.hasAddressTaken()) que.push(&F);
+        if(llvm::hasAddressTaken(F)) que.push(&F);
     }
 
     while(!que.empty()) {

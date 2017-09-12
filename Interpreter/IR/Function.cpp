@@ -170,6 +170,10 @@ bool Function::isVisited() const {
     return getEntryNode()->isVisited();
 }
 
+bool Function::hasAddressTaken() const {
+    return llvm::hasAddressTaken(*instance_);
+}
+
 std::ostream& operator<<(std::ostream& ss, const Function& f) {
     ss << "--- Function \"" << f.getName() << "\" ---";
 

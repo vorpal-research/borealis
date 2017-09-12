@@ -44,6 +44,7 @@ protected:
 
 public:
     bool isVisited() const;
+    bool hasAddressTaken() const;
     const llvm::FunctionType* getType() const;
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;

@@ -203,7 +203,7 @@ inline bool isMain(const Function& f) {
     return (f.getName() == "main")  || (f.getName() == "__main");
 }
 
-
+bool hasAddressTaken(const llvm::Function& F);
 llvm::Function* getCalledFunction(const llvm::Value* v);
 inline llvm::Function* getCalledFunction(const llvm::Value& v) {
     return getCalledFunction(&v);
