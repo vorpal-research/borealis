@@ -9,6 +9,7 @@
 #define BACKWARD_HAS_DW 0
 #define BACKWARD_HAS_BFD 0
 #define BACKWARD_HAS_BACKTRACE_SYMBOL 1
+#define SIGUNUSED SIGSYS
 #include <backward.hpp>
 
 static backward::SignalHandling sh{std::vector<int>{ SIGABRT, SIGSEGV, SIGILL, SIGINT, SIGTRAP }};

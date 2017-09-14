@@ -25,7 +25,7 @@ bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
     interpreter.run();
 
     if (printCFG.get(false)) {
-        viewAbsintCFG(interpreter.getModule());
+        viewCFG(interpreter.getModule());
     }
 
     if (M.getFunction("main") && enableAnalysis.get(false)) {
@@ -44,11 +44,11 @@ void AbstractInterpreterPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<DefectManager>::addRequired(AU);
 }
 
-void AbstractInterpreterPass::viewAbsintCFG(const absint::Module& module) {
+void AbstractInterpreterPass::viewCFG(const absint::Module& module) {
     for (auto&& function : module.getFunctions()) {
         std::string outputFileName = llvm::WriteGraph<absint::Function*>(function.second.get(),
-                                                                       "absint." + function.second->getName(),
-                                                                       false);
+                                                                         "absint." + function.second->getName(),
+                                                                         false);
         if (outputFileName.empty()) continue;
 
         llvm::DisplayGraph(outputFileName, false, llvm::GraphProgram::DOT);

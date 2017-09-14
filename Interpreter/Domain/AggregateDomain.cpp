@@ -136,21 +136,19 @@ bool AggregateDomain::equals(const Domain* other) const {
     if (this == aggregate) return true;
 
     if (aggregateType_ != aggregate->aggregateType_) return false;
+    if (elementTypes_.size() != aggregate->elementTypes_.size()) return false;
+    if (not getLength()->equals(aggregate->getLength().get())) return false;
 
     for (auto&& it : elementTypes_) {
-        if (auto&& opt = util::at(aggregate->elementTypes_, it.first)) {
-            if (not (it.second->getTypeID() == opt.getUnsafe()->getTypeID()))
-                return false;
+        auto&& opt = util::at(aggregate->elementTypes_, it.first);
+        if ((not opt) || (it.second->getTypeID() != opt.getUnsafe()->getTypeID())) {
+            return false;
         }
     }
 
-    if (not getLength()->equals(aggregate->getLength().get())) return false;
-
     for (auto&& it : elements_) {
-        if (auto&& opt = util::at(aggregate->elements_, it.first)) {
-            if (not it.second->equals(opt.getUnsafe().get()))
-                return false;
-        } else {
+        auto&& opt = util::at(aggregate->elements_, it.first);
+        if ((not opt) || (not it.second->equals(opt.getUnsafe().get()))) {
             return false;
         }
     }

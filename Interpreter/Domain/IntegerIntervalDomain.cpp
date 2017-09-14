@@ -101,6 +101,7 @@ bool IntegerIntervalDomain::isConstant(uint64_t constant) const {
     auto constInteger = factory_->toInteger(constant, getWidth());
     return isConstant() && lb_->eq(constInteger);
 }
+
 Integer::Ptr IntegerIntervalDomain::lb() const { return lb_; }
 Integer::Ptr IntegerIntervalDomain::ub() const { return ub_; }
 Integer::Ptr IntegerIntervalDomain::signed_lb() const { return util::min<true>(lb_, ub_); }
@@ -457,7 +458,6 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             }
 
         case llvm::CmpInst::ICMP_SGT:
-            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
             if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
                 return factory_->getInteger(TOP, 1);
 
@@ -470,7 +470,6 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             }
 
         case llvm::CmpInst::ICMP_SLE:
-            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
             if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
                 return factory_->getInteger(TOP, 1);
 
@@ -483,7 +482,6 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             }
 
         case llvm::CmpInst::ICMP_SLT:
-            // if we don't know exact bounds of interval, we can't say anything abound signed comparsion
             if (not (lb_->isValue() || ub_->isValue() || interval->lb_->isValue() || interval->ub_->isValue()))
                 return factory_->getInteger(TOP, 1);
 

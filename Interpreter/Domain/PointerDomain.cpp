@@ -162,8 +162,7 @@ Domain::Ptr PointerDomain::join(Domain::Ptr other) {
             locations_.insert(itptr);
         /// Assume that length and location are same
         } else {
-            if (itptr.location_->isAggregate()) {
-                auto aggregate = llvm::cast<AggregateDomain>(itptr.location_.get());
+            if (auto&& aggregate = llvm::dyn_cast<AggregateDomain>(itptr.location_.get())) {
                 if (aggregate->isArray()) {
                     it->offset_ = it->offset_->join(itptr.offset_);
                 } else {

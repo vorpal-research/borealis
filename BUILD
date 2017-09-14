@@ -14,7 +14,7 @@ Dependencies
 Build
 =====
 
- Run `make` =)
+ Run `cmake . && make` =)
 
 Test
 ====

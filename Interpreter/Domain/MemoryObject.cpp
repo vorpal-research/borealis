@@ -27,7 +27,7 @@ std::string MemoryObject::toString() const {
     return ss.str();
 }
 
-std::string MemoryObject::toPrettyString(const std::string prefix) const {
+std::string MemoryObject::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
     ss << "@MO: " << content_->toPrettyString(prefix);
     return ss.str();

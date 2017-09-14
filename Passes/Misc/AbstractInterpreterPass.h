@@ -26,7 +26,7 @@ public:
 
 private:
 
-    void viewAbsintCFG(const absint::Module& module);
+    void viewCFG(const absint::Module& module);
 
 };
 

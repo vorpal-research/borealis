@@ -40,11 +40,9 @@ void State::merge(State::Ptr other) {
 
 void State::mergeVariables(State::Ptr other) {
     for (auto&& it : other->locals_) {
-        if (find(it.first)) {
-            locals_[it.first] = locals_[it.first]->join(it.second);
-        } else {
-            locals_[it.first] = it.second;
-        }
+        locals_[it.first] = find(it.first) ?
+                            locals_[it.first]->join(it.second) :
+                            it.second;
     }
 }
 

@@ -12,6 +12,7 @@
 #define BACKWARD_HAS_DW 0
 #define BACKWARD_HAS_BFD 0
 #define BACKWARD_HAS_BACKTRACE_SYMBOL 1
+#define SIGUNUSED SIGSYS
 #include <backward.hpp>
 
 #include <z3/z3++.h>
