@@ -23,6 +23,10 @@ std::string IntMax::toString() const {
     return "MAX";
 }
 
+std::string IntMax::toSignedString() const {
+    return toString();
+}
+
 #define MAX_INT_IMPL(func) Integer::Ptr IntMax::func(Integer::Ptr) const { return shared_from_this(); }
 
 MAX_INT_IMPL(add);

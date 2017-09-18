@@ -37,7 +37,7 @@ public:
             FloatIntervalDomain::IDHash,
             FloatIntervalDomain::IDEquals>;
 
-    DomainFactory(Module* module);
+    explicit DomainFactory(Module* module);
     ~DomainFactory();
 
     SlotTrackerPass& getSlotTracker() const {
@@ -53,7 +53,7 @@ public:
     /// allocates value of given type, like it's a memory object
     Domain::Ptr allocate(const llvm::Type& type);
 
-    Integer::Ptr toInteger(uint64_t val, size_t width);
+    Integer::Ptr toInteger(uint64_t val, size_t width, bool isSigned = false);
     Integer::Ptr toInteger(const llvm::APInt& val);
     /// create IntegerDomain for given index (for arrays and structs)
     Domain::Ptr getIndex(uint64_t indx);
@@ -62,6 +62,7 @@ public:
     Domain::Ptr getInteger(Domain::Value value, size_t width);
     Domain::Ptr getInteger(Integer::Ptr val);
     Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to);
+    Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to, Integer::Ptr sfrom, Integer::Ptr sto);
 
     Domain::Ptr getFloat(const llvm::fltSemantics& semantics);
     Domain::Ptr getFloat(Domain::Value value, const llvm::fltSemantics& semantics);

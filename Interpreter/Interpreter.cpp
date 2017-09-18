@@ -46,7 +46,7 @@ const Module& Interpreter::getModule() const {
 }
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
-    // if arguments are not updated and globals are not changed, then this function don't need to be reinterpreted
+    // if arguments and globals are not changed, then this function don't need to be reinterpreted
     if (not (function->updateArguments(args) || function->updateGlobals(module_.getGlobalsFor(function)))) return;
     stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
     context_ = &stack_.top();
@@ -93,7 +93,11 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
 /////////////////////////////////////////////////////////////////////
 void Interpreter::visitInstruction(llvm::Instruction& i) {
     warns() << "Unsupported instruction: " << ST_->toString(&i) << endl;
-    stub(i);
+    if (not i.getType()->isVoidTy()) {
+        auto&& val = module_.getDomainFactory()->getTop(*i.getType());
+        ASSERT(val, "stub result");
+        context_->state->addVariable(&i, val);
+    }
 }
 
 void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
@@ -468,14 +472,6 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
     }
 
     return ptr->gep(*gep.getType()->getPointerElementType(), offsets);
-}
-
-void Interpreter::stub(const llvm::Instruction& i) {
-    if (not i.getType()->isVoidTy()) {
-        auto&& val = module_.getDomainFactory()->getTop(*i.getType());
-        ASSERT(val, "stub result");
-        context_->state->addVariable(&i, val);
-    }
 }
 
 Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,

@@ -76,7 +76,7 @@ private:
 
     const llvm::APFloat lb_;
     const llvm::APFloat ub_;
-    const WideningInterface<llvm::APFloat>* wm_;
+    const FloatWidening* wm_;
 };
 
 struct FloatIntervalDomain::IDHash {

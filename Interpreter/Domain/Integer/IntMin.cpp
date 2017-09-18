@@ -23,6 +23,10 @@ std::string IntMin::toString() const {
     return "MIN";
 }
 
+std::string IntMin::toSignedString() const {
+    return toString();
+}
+
 #define MAX_INT_IMPL(func) Integer::Ptr IntMin::func(Integer::Ptr) const { return shared_from_this(); }
 
 MAX_INT_IMPL(add);

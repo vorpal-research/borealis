@@ -17,13 +17,15 @@ protected:
     IntegerWidening() = default;
 public:
 
-    static WideningInterface* getInstance() {
+    static IntegerWidening* getInstance() {
         static IntegerWidening* instance = new IntegerWidening();
         return instance;
     }
 
-    virtual Integer::Ptr get_prev(const Integer::Ptr& value, DomainFactory* factory) const;
-    virtual Integer::Ptr get_next(const Integer::Ptr& value, DomainFactory* factory) const;
+    Integer::Ptr get_prev(const Integer::Ptr& value, DomainFactory* factory) const override;
+    Integer::Ptr get_next(const Integer::Ptr& value, DomainFactory* factory) const override;
+    Integer::Ptr get_signed_prev(const Integer::Ptr& value, DomainFactory* factory) const;
+    Integer::Ptr get_signed_next(const Integer::Ptr& value, DomainFactory* factory) const;
 
 };
 
@@ -33,13 +35,17 @@ protected:
     FloatWidening() = default;
 public:
 
-    static WideningInterface* getInstance() {
+    static FloatWidening* getInstance() {
         static FloatWidening* instance = new FloatWidening();
         return instance;
     }
 
-    virtual llvm::APFloat get_prev(const llvm::APFloat& value, DomainFactory* factory) const;
-    virtual llvm::APFloat get_next(const llvm::APFloat& value, DomainFactory* factory) const;
+    llvm::APFloat::roundingMode getRoundingMode() const {
+        return llvm::APFloat::rmNearestTiesToEven;
+    }
+
+    llvm::APFloat get_prev(const llvm::APFloat& value, DomainFactory* factory) const override;
+    llvm::APFloat get_next(const llvm::APFloat& value, DomainFactory* factory) const override;
 
 };
 

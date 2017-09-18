@@ -34,6 +34,10 @@ std::string IntValue::toString() const {
     return util::toString(value_);
 }
 
+std::string IntValue::toSignedString() const {
+    return util::toString(value_, true);
+}
+
 const llvm::APInt& IntValue::getValue() const {
     return value_;
 }

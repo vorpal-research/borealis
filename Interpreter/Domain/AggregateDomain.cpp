@@ -294,8 +294,6 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
     }
 
     if (indices.size() == 1) {
-        llvm::APInt start(64, idx_begin);
-        llvm::APInt end(64, idx_end);
         return factory_->getPointer(type, { {indices[0], shared_from_this()} });
 
     } else {

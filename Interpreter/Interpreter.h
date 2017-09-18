@@ -75,7 +75,6 @@ private:
 
     /// Util functions
     Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
-    void stub(const llvm::Instruction& i);
     Domain::Ptr getVariable(const llvm::Value* value);
     void addSuccessors(const std::vector<BasicBlock*>& successors);
     Domain::Ptr handleFunctionCall(const llvm::Function* function,

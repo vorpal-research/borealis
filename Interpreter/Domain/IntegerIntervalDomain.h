@@ -18,7 +18,7 @@ class IntegerIntervalDomain : public Domain {
 public:
 
     /// Structure that identifies int interval
-    using ID = std::tuple<Domain::Value, Integer::Ptr, Integer::Ptr>;
+    using ID = std::tuple<Domain::Value, Integer::Ptr, Integer::Ptr, Integer::Ptr, Integer::Ptr>;
     struct IDHash;
     struct IDEquals;
 
@@ -28,6 +28,7 @@ protected:
 
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr constant);
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
+    IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub, Integer::Ptr slb, Integer::Ptr sub);
     IntegerIntervalDomain(DomainFactory* factory, const ID& key);
     IntegerIntervalDomain(const IntegerIntervalDomain& other);
 
@@ -50,7 +51,9 @@ public:
     Integer::Ptr signed_lb() const;
     Integer::Ptr signed_ub() const;
     bool hasIntersection(Integer::Ptr constant) const;
+    bool hasSignedIntersection(Integer::Ptr constant) const;
     bool hasIntersection(const IntegerIntervalDomain* other) const;
+    bool hasSignedIntersection(const IntegerIntervalDomain* other) const;
 
     Domain::Ptr clone() const override;
     size_t hashCode() const override;
@@ -93,7 +96,9 @@ private:
 
     const Integer::Ptr lb_;
     const Integer::Ptr ub_;
-    const WideningInterface<Integer::Ptr>* wm_;
+    const Integer::Ptr signed_lb_;
+    const Integer::Ptr signed_ub_;
+    const IntegerWidening* wm_;
 };
 
 struct IntegerIntervalDomain::IDHash {
@@ -106,7 +111,9 @@ struct IntegerIntervalDomain::IDEquals {
     bool operator()(const ID& lhv, const ID& rhv) const {
         return std::get<0>(lhv) == std::get<0>(rhv) &&
                std::get<1>(lhv)->eq(std::get<1>(rhv)) &&
-               std::get<2>(lhv)->eq(std::get<2>(rhv));
+               std::get<2>(lhv)->eq(std::get<2>(rhv)) &&
+               std::get<3>(lhv)->eq(std::get<3>(rhv)) &&
+               std::get<4>(lhv)->eq(std::get<4>(rhv));
     }
 };
 

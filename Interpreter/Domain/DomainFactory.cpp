@@ -95,8 +95,8 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     // Float
     } else if (auto floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return getFloat(llvm::APFloat(floatConstant->getValueAPF()));
-    // Nullpointer
-    } else if (auto ptrConstant = llvm::dyn_cast<llvm::ConstantPointerNull>(constant)) {
+    // Null pointer
+    } else if (llvm::isa<llvm::ConstantPointerNull>(constant)) {
         return getNullptr(*constant->getType()->getPointerElementType());
     // Constant Data Array
     } else if (auto sequential = llvm::dyn_cast<llvm::ConstantDataSequential>(constant)) {
@@ -196,8 +196,8 @@ Domain::Ptr DomainFactory::cached(const FloatIntervalDomain::ID& key) {
     return floats_[key];
 }
 
-Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width) {
-    return Integer::Ptr{ new IntValue(val, width) };
+Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width, bool isSigned) {
+    return Integer::Ptr{ new IntValue(llvm::APInt(width, val, isSigned), width) };
 }
 
 Integer::Ptr DomainFactory::toInteger(const llvm::APInt& val) {
@@ -221,15 +221,20 @@ Domain::Ptr DomainFactory::getInteger(Integer::Ptr val) {
 Domain::Ptr DomainFactory::getInteger(Domain::Value value, size_t width) {
     return cached(std::make_tuple(value,
                                   toInteger(0, width),
+                                  toInteger(0, width),
+                                  toInteger(0, width),
                                   toInteger(0, width)));
 }
 
 Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to) {
-    return cached(std::make_tuple(Domain::VALUE,
-                                  from,
-                                  to));
+    return getInteger(from, to, from, to);
 }
 
+Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to, Integer::Ptr sfrom, Integer::Ptr sto) {
+    return cached(std::make_tuple(Domain::VALUE,
+                                  from, to,
+                                  sfrom, sto));
+}
 
 /* Float */
 Domain::Ptr DomainFactory::getFloat(const llvm::fltSemantics& semantics) {

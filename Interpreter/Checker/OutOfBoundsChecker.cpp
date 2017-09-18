@@ -99,7 +99,8 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
         defects_[di] |= false;
 
     } else {
-        auto ptr = module_->getDomainFor(GI.getPointerOperand(), loc.getParent());
+        auto ptrOperand = GI.getPointerOperand();
+        auto ptr = module_->getDomainFor(ptrOperand, loc.getParent());
 
         std::vector<Domain::Ptr> offsets;
         for (auto j = GI.idx_begin(); j != GI.idx_end(); ++j) {
@@ -154,32 +155,31 @@ void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
     }
 
     try {
-        auto i = 0U;
         auto funcData = FIP_->getInfo(CI.getCalledFunction());
-        for (auto&& argInfo : funcData.argInfo) {
-            if (argInfo.isArray == func_info::ArrayTag::IsArray) {
-                if (not argInfo.sizeArgument) {
-                    defects_[di] = true;
+        for (auto i = 0U; i < funcData.argInfo.size(); ++i) {
+            auto&& argInfo = funcData.argInfo[i];
+            if (argInfo.isArray != func_info::ArrayTag::IsArray) continue;
 
-                } else {
-                    auto&& size = argInfo.sizeArgument.getUnsafe();
-                    auto&& ptr = module_->getDomainFor(CI.getArgOperand(i), CI.getParent());
+            if (not argInfo.sizeArgument) {
+                defects_[di] = true;
 
-                    std::vector<Domain::Ptr> offsets = {module_->getDomainFactory()->getIndex(0),
-                                                        module_->getDomainFor(CI.getArgOperand(size), CI.getParent())};
+            } else {
+                auto&& size = argInfo.sizeArgument.getUnsafe();
+                auto&& ptr = module_->getDomainFor(CI.getArgOperand(i), CI.getParent());
 
-                    auto bug = OutOfBoundVisitor().visit(ptr, offsets);
-                    defects_[di] |= bug;
+                std::vector<Domain::Ptr> offsets = {module_->getDomainFactory()->getIndex(0),
+                                                    module_->getDomainFor(CI.getArgOperand(size), CI.getParent())};
 
-                    if (enableLog.get(true)) {
-                        info << "Pointer operand: " << ptr << endl;
-                        for (auto&& indx : offsets)
-                            info << "Shift: " << indx << endl;
-                        info << "Result: " << bug << endl;
-                    }
+                auto bug = OutOfBoundVisitor().visit(ptr, offsets);
+                defects_[di] |= bug;
+
+                if (enableLog.get(true)) {
+                    info << "Pointer operand: " << ptr << endl;
+                    for (auto&& indx : offsets)
+                        info << "Shift: " << indx << endl;
+                    info << "Result: " << bug << endl;
                 }
             }
-            ++i;
         }
 
     } catch (std::out_of_range&) {

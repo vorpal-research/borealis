@@ -53,6 +53,7 @@ public:
     }
 
     virtual std::string toString() const = 0;
+    virtual std::string toSignedString() const = 0;
     virtual size_t hashCode() const = 0;
     virtual const llvm::APInt& getValue() const = 0;
     virtual uint64_t getRawValue() const {

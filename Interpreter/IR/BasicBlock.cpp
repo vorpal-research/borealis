@@ -20,10 +20,10 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
           inputChanged_(false),
           atFixpoint_(false),
           visited_(false) {
-    inputState_ = State::Ptr{ new State(tracker_) };
-    outputState_ = State::Ptr{ new State(tracker_) };
+    inputState_ = std::make_shared<borealis::absint::State>(tracker_);
+    outputState_ = std::make_shared<borealis::absint::State>(tracker_);
 
-    // find all global variables, that this function depends on
+    // find all global variables, that this basic block depends on
     for (auto&& inst : util::viewContainer(*instance_)
             .map([](const llvm::Instruction& i) -> llvm::Instruction& { return const_cast<llvm::Instruction&>(i); })) {
         for (auto&& op : util::viewContainer(inst.operand_values())
