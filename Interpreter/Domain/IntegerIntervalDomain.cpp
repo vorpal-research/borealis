@@ -203,7 +203,7 @@ Domain::Ptr IntegerIntervalDomain::add(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Adding two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(getWidth());
+        return factory_->getInteger(TOP, getWidth());
     } else if (this->isTop() || interval->isTop()) {
         return factory_->getInteger(TOP, getWidth());
     } else {
@@ -222,7 +222,7 @@ Domain::Ptr IntegerIntervalDomain::sub(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Subtracting two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(getWidth());
+        return factory_->getInteger(TOP, getWidth());
     } else if (this->isTop() || interval->isTop()) {
         return factory_->getInteger(TOP, getWidth());
     } else {
@@ -241,7 +241,7 @@ Domain::Ptr IntegerIntervalDomain::mul(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Multiplying two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(getWidth());
+        return factory_->getInteger(TOP, getWidth());
     } else if (this->isTop() || interval->isTop()) {
         return factory_->getInteger(TOP, getWidth());
     } else {
@@ -270,7 +270,7 @@ Domain::Ptr IntegerIntervalDomain::mul(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval"); \
     ASSERT(this->getWidth() == interval->getWidth(), "Dividing two intervals of different format"); \
     if (isBottom() || interval->isBottom()) { \
-        return factory_->getInteger(getWidth()); \
+        return factory_->getInteger(TOP, getWidth()); \
     } else if (this->isTop() || interval->isTop()) { \
         return factory_->getInteger(TOP, getWidth()); \
     } else { \
@@ -316,7 +316,7 @@ Domain::Ptr IntegerIntervalDomain::srem(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in shl"); \
      \
     if (isBottom() || interval->isBottom()) { \
-        return factory_->getInteger(getWidth()); \
+        return factory_->getInteger(TOP, getWidth()); \
     } else if (this->isTop() || interval->isTop()) { \
         return factory_->getInteger(TOP, getWidth()); \
     } else { \
@@ -348,32 +348,21 @@ Domain::Ptr IntegerIntervalDomain::ashr(Domain::Ptr other) const {
     BIT_OPERATION(ashr);
 }
 
-Domain::Ptr IntegerIntervalDomain::bAnd(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth());
-
+Domain::Ptr IntegerIntervalDomain::bAnd(Domain::Ptr) const {
     return factory_->getInteger(TOP, getWidth());
 }
 
-Domain::Ptr IntegerIntervalDomain::bOr(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth());
-
+Domain::Ptr IntegerIntervalDomain::bOr(Domain::Ptr) const {
     return factory_->getInteger(TOP, getWidth());
 }
 
-Domain::Ptr IntegerIntervalDomain::bXor(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getInteger(getWidth());
-
+Domain::Ptr IntegerIntervalDomain::bXor(Domain::Ptr) const {
     return factory_->getInteger(TOP, getWidth());
 }
 
 Domain::Ptr IntegerIntervalDomain::trunc(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
-
-    if (isBottom()) return factory_->getInteger(BOTTOM, intType->getBitWidth());
 
     return factory_->getInteger(TOP, intType->getBitWidth());
 }
@@ -382,8 +371,7 @@ Domain::Ptr IntegerIntervalDomain::zext(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in zext");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isBottom()) return factory_->getBottom(type);
-    if (isTop()) return factory_->getTop(type);
+    if (not isValue()) return factory_->getTop(type);
 
     auto&& lb = lb_->zext(intType->getBitWidth());
     auto&& ub = ub_->zext(intType->getBitWidth());
@@ -398,8 +386,7 @@ Domain::Ptr IntegerIntervalDomain::sext(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in sext");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
 
-    if (isBottom()) return factory_->getBottom(type);
-    if (isTop()) return factory_->getTop(type);
+    if (not isValue()) return factory_->getTop(type);
 
     auto&& lb = lb_->sext(intType->getBitWidth());
     auto&& ub = ub_->sext(intType->getBitWidth());
@@ -412,8 +399,7 @@ Domain::Ptr IntegerIntervalDomain::sext(const llvm::Type& type) const {
 Domain::Ptr IntegerIntervalDomain::uitofp(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp");
     auto& newSemantics = util::getSemantics(type);
-    if (isBottom()) return factory_->getFloat(BOTTOM, newSemantics);
-    if (isTop()) return factory_->getFloat(TOP, newSemantics);
+    if (not isValue()) return factory_->getFloat(TOP, newSemantics);
 
     unsigned width = 32;
     if (type.isHalfTy())
@@ -449,8 +435,7 @@ Domain::Ptr IntegerIntervalDomain::uitofp(const llvm::Type& type) const {
 Domain::Ptr IntegerIntervalDomain::sitofp(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp");
     auto& newSemantics = util::getSemantics(type);
-    if (isBottom()) return factory_->getFloat(BOTTOM, newSemantics);
-    if (isTop()) return factory_->getFloat(TOP, newSemantics);
+    if (not isValue()) return factory_->getFloat(TOP, newSemantics);
 
     unsigned width = 32;
     if (type.isHalfTy())
@@ -500,7 +485,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
     };
 
     if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(1);
+        return factory_->getInteger(TOP, 1);
     } else if (this->isTop() || other->isTop()) {
         return factory_->getInteger(TOP, 1);
     }
@@ -610,6 +595,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
 }
 
 Split IntegerIntervalDomain::splitByEq(Domain::Ptr other) {
+    if (this->isBottom() || other->isBottom()) return {shared_from_this(), shared_from_this()};
     auto interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 
@@ -619,6 +605,7 @@ Split IntegerIntervalDomain::splitByEq(Domain::Ptr other) {
 }
 
 Split IntegerIntervalDomain::splitByLess(Domain::Ptr other) {
+    if (this->isBottom() || other->isBottom()) return {shared_from_this(), shared_from_this()};
     auto interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 
@@ -630,6 +617,7 @@ Split IntegerIntervalDomain::splitByLess(Domain::Ptr other) {
 }
 
 Split IntegerIntervalDomain::splitBySLess(Domain::Ptr other) {
+    if (this->isBottom() || other->isBottom()) return {shared_from_this(), shared_from_this()};
     auto interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 

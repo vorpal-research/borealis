@@ -175,7 +175,7 @@ Domain::Ptr FloatIntervalDomain::fadd(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(getSemantics());
+        return factory_->getFloat(TOP, getSemantics());
     } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
@@ -209,7 +209,7 @@ Domain::Ptr FloatIntervalDomain::fmul(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(getSemantics());
+        return factory_->getFloat(TOP, getSemantics());
     } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
@@ -233,7 +233,7 @@ Domain::Ptr FloatIntervalDomain::fdiv(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(getSemantics());
+        return factory_->getFloat(TOP, getSemantics());
     } else if (this->isTop() || interval->isTop()) {
         return factory_->getFloat(TOP, getSemantics());
     } else {
@@ -273,7 +273,7 @@ Domain::Ptr FloatIntervalDomain::fdiv(Domain::Ptr other) const {
 
 Domain::Ptr FloatIntervalDomain::frem(Domain::Ptr other) const {
     if (this->isBottom() || other->isBottom())
-        return factory_->getFloat(getSemantics());
+        return factory_->getFloat(TOP, getSemantics());
 
     return factory_->getFloat(TOP, getSemantics());
 }
@@ -281,6 +281,7 @@ Domain::Ptr FloatIntervalDomain::frem(Domain::Ptr other) const {
 Domain::Ptr FloatIntervalDomain::fptrunc(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
     auto& newSemantics = util::getSemantics(type);
+    if (not isValue()) return factory_->getTop(type);
 
     bool isExact = false;
     auto lb = lb_, ub = ub_;
@@ -292,6 +293,7 @@ Domain::Ptr FloatIntervalDomain::fptrunc(const llvm::Type& type) const {
 Domain::Ptr FloatIntervalDomain::fpext(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
     auto& newSemantics = util::getSemantics(type);
+    if (not isValue()) return factory_->getTop(type);
 
     bool isExact = false;
     auto lb = lb_, ub = ub_;
@@ -303,6 +305,7 @@ Domain::Ptr FloatIntervalDomain::fpext(const llvm::Type& type) const {
 Domain::Ptr FloatIntervalDomain::fptoui(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in fptoui");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+    if (not isValue()) return factory_->getTop(type);
 
     bool isExactLB = false, isExactUB = false;
     llvm::APSInt lb(intType->getBitWidth(), true), ub(intType->getBitWidth(), true);
@@ -316,6 +319,7 @@ Domain::Ptr FloatIntervalDomain::fptoui(const llvm::Type& type) const {
 Domain::Ptr FloatIntervalDomain::fptosi(const llvm::Type& type) const {
     ASSERT(type.isIntegerTy(), "Non-integer type in fptoui");
     auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+    if (not isValue()) return factory_->getTop(type);
 
     bool isExactLB = false, isExactUB = false;
     llvm::APSInt lb(intType->getBitWidth(), false), ub(intType->getBitWidth(), false);
@@ -350,7 +354,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
     };
 
     if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(1);
+        return factory_->getInteger(TOP, 1);
     } else if (this->isTop() || other->isTop()) {
         return factory_->getInteger(TOP, 1);
     }
@@ -463,6 +467,7 @@ bool FloatIntervalDomain::isNaN() const {
 }
 
 Split FloatIntervalDomain::splitByEq(Domain::Ptr other) {
+    if (this->isBottom() || other->isBottom()) return {shared_from_this(), shared_from_this()};
     auto interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 
@@ -474,6 +479,7 @@ Split FloatIntervalDomain::splitByEq(Domain::Ptr other) {
 }
 
 Split FloatIntervalDomain::splitByLess(Domain::Ptr other) {
+    if (this->isBottom() || other->isBottom()) return {shared_from_this(), shared_from_this()};
     auto interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Not interval in split");
 

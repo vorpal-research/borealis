@@ -125,7 +125,7 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
             changed = true;
         }
         arguments_[i] = arg;
-        inputState_->addVariable(it, arguments_[i]);
+        inputState_->addVariable(it, arguments_[i]->clone());
     }
     getEntryNode()->mergeToInput(inputState_);
     return changed;
