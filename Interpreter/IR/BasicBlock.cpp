@@ -31,7 +31,11 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
                     if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))
                         return gepOp->getPointerOperand();
                     else return v; })
-                .filter(llvm::isaer<llvm::GlobalVariable>())) {
+                .filter([](llvm::Value* v) -> bool {
+                    if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(v)) {
+                        return not global->isConstant();
+                    } else return false;
+                })) {
             globals_.insert({ op, factory_->getBottom(*op->getType()) });
         }
     }

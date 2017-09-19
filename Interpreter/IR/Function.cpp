@@ -29,7 +29,11 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
                     if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))
                         return gepOp->getPointerOperand();
                     else return v; })
-                .filter(llvm::isaer<llvm::GlobalVariable>())) {
+                .filter([](llvm::Value* v) -> bool {
+                    if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(v)) {
+                        return not global->isConstant();
+                    } else return false;
+                })) {
             globals_.insert({ op, factory_->getBottom(*op->getType()) });
         }
     }

@@ -32,17 +32,17 @@ Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value, DomainFactory*
     } else {
         next = value->mul(ten);
     }
-    return next ? next : Integer::getMinValue(width);
+    return next ? next : Integer::getMaxValue(width);
 }
 
 Integer::Ptr IntegerWidening::get_signed_prev(const Integer::Ptr& value, DomainFactory* factory) const {
+    if (not value->isValue()) return value;
     auto width = value->getWidth();
-    errs() << "Widening -1: " << factory->toInteger(-1, width, true)->toSignedString() << endl;
 
     Integer::Ptr next;
     auto ten = factory->toInteger(10, width);
     auto zero = factory->toInteger(0, width);
-    if (value->getValue() == llvm::APInt::getSignedMinValue(10)) {
+    if (value->getValue() == llvm::APInt::getSignedMinValue(width)) {
         next = Integer::getMinValue(width);
     } else {
         if (value->sgt(ten)) {
@@ -57,14 +57,14 @@ Integer::Ptr IntegerWidening::get_signed_prev(const Integer::Ptr& value, DomainF
 }
 
 Integer::Ptr IntegerWidening::get_signed_next(const Integer::Ptr& value, DomainFactory* factory) const {
+    if (not value->isValue()) return value;
     auto width = value->getWidth();
-    errs() << "Widening -1: " << factory->toInteger(-1, width, true)->toSignedString() << endl;
 
     Integer::Ptr next;
     auto mten = factory->toInteger(-10, width, true);
     auto ten = factory->toInteger(10, width);
     auto zero = factory->toInteger(0, width);
-    if (value->getValue() == llvm::APInt::getSignedMaxValue(10)) {
+    if (value->getValue() == llvm::APInt::getSignedMaxValue(width)) {
         next = Integer::getMaxValue(width);
     } else {
         if (value->slt(mten)) {
