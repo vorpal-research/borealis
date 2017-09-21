@@ -47,7 +47,10 @@ void NullDereferenceChecker::checkPointer(llvm::Instruction& loc, llvm::Value& p
     } else {
         auto&& ptr_domain = module_->getDomainFor(&ptr, loc.getParent());
         auto bug = not ptr_domain->isValue() || ptr_domain->isNullptr();
-        if (enableLog.get(true)) info << "Result: " << bug << endl;
+        if (enableLog.get(true)) {
+            info << "Pointer domain: " << ptr_domain << endl;
+            info << "Result: " << bug << endl;
+        }
         defects_[di] |= bug;
     }
 }

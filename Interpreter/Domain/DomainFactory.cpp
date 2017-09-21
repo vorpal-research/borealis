@@ -198,8 +198,7 @@ Domain::Ptr DomainFactory::getBool(bool value) {
 }
 
 Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
-    auto indxInteger = Integer::Ptr{ new IntValue(llvm::APInt(64, indx, false), 64) };
-    return getInteger(indxInteger);
+    return getInteger(toInteger(indx, 64));
 }
 
 /* Integer */

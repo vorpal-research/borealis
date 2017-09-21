@@ -117,10 +117,10 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
 
         auto trueSuccessor = context_->function->getBasicBlock(i.getSuccessor(0));
         auto falseSuccessor = context_->function->getBasicBlock(i.getSuccessor(1));
+        trueSuccessor->mergeToInput(context_->state);
+        falseSuccessor->mergeToInput(context_->state);
 
         if (cond->isTop()) {
-            trueSuccessor->mergeToInput(context_->state);
-            falseSuccessor->mergeToInput(context_->state);
             auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
             for (auto&& it : splitted) {
                 trueSuccessor->addToInput(it.first, it.second.true_);
@@ -137,17 +137,12 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
                 auto successor = boolean->isConstant(1) ?
                                  trueSuccessor :
                                  falseSuccessor;
-                successor->mergeToInput(context_->state);
                 successors.emplace_back(successor);
             } else {
-                trueSuccessor->mergeToInput(context_->state);
-                falseSuccessor->mergeToInput(context_->state);
                 successors.emplace_back(trueSuccessor);
                 successors.emplace_back(falseSuccessor);
             }
         } else {
-            trueSuccessor->mergeToInput(context_->state);
-            falseSuccessor->mergeToInput(context_->state);
             successors.emplace_back(trueSuccessor);
             successors.emplace_back(falseSuccessor);
         }
@@ -164,6 +159,12 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
     std::vector<BasicBlock*> successors;
     auto&& cond = getVariable(i.getCondition());
 
+    auto&& handleCaseSuccessor = [&](const llvm::BasicBlock* bb) -> void {
+        auto successor = context_->function->getBasicBlock(bb);
+        successor->mergeToInput(context_->state);
+        successors.emplace_back(successor);
+    };
+
     if (cond->isValue()) {
         bool isDefault = true;
         auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
@@ -171,25 +172,17 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
 
         for (auto&& cs : i.cases()) {
             auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
-            if (integer->hasIntersection(caseVal)) {
-                auto successor = context_->function->getBasicBlock(cs.getCaseSuccessor());
-                successor->mergeToInput(context_->state);
-                successors.emplace_back(successor);
+            if (integer->hasIntersection(caseVal) || integer->hasSignedIntersection(caseVal)) {
+                handleCaseSuccessor(cs.getCaseSuccessor());
                 isDefault = false;
             }
         }
 
-        if (isDefault) {
-            auto successor = context_->function->getBasicBlock(i.getDefaultDest());
-            successor->mergeToInput(context_->state);
-            successors.emplace_back(successor);
-        }
+        if (isDefault) handleCaseSuccessor(i.getDefaultDest());
 
     } else {
         for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
-            auto successor = context_->function->getBasicBlock(i.getSuccessor(j));
-            successor->mergeToInput(context_->state);
-            successors.emplace_back(successor);
+            handleCaseSuccessor(i.getSuccessor(j));
         }
     }
 
@@ -496,9 +489,10 @@ Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
         // if this is a recursive function, getOutputArguments() might be called before
         // the function is fully interpreted; In that case input arguments of the function
         // are reached fixpoint, so we don't need to change them
-        util::viewContainer(func->getOutputArguments())
-                .filter(LAM(a, a.second != nullptr))
-                .foreach([&](auto&& a) -> void { context_->state->addVariable(args[a.first].first, a.second); });
+        if (not func->getBasicBlock(&function->back())->isVisited()) {
+            util::viewContainer(func->getOutputArguments())
+                    .foreach([&](auto&& a) -> void { context_->state->addVariable(args[a.first].first, a.second); });
+        }
         return func->getReturnValue();
     }
 }
