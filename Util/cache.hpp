@@ -44,6 +44,7 @@ public:
 
     Value& operator[](const Key& key) { return at(key); }
     const Value& operator[](const Key& key) const { return at(key); }
+    size_t size() const { return container.size(); }
 
 };
 

@@ -76,9 +76,8 @@ std::string State::toString() const {
 
 bool State::equals(const State* other) const {
     return this->retval_ == other->retval_ &&
-            util::equal_with_find(this->locals_, other->locals_,
-                                  [](auto&& a) { return a.first; },
-                                  [](auto&& a, auto&& b) { return a.second->equals(b.second.get()); });
+            util::equal_with_find(this->locals_, other->locals_, LAM(a, a.first),
+                                  LAM2(a, b, a.second->equals(b.second.get())));
 }
 
 bool operator==(const State& lhv, const State& rhv) {

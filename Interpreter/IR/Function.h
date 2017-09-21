@@ -48,6 +48,7 @@ public:
     const llvm::FunctionType* getType() const;
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;
+    std::vector<std::pair<unsigned, Domain::Ptr>> getOutputArguments() const;
     std::vector<const llvm::Value*> getGlobals() const;
     const BlockMap& getBasicBlocks() const;
     Domain::Ptr getReturnValue() const;

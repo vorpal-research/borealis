@@ -477,13 +477,6 @@ Domain::Ptr IntegerIntervalDomain::bitcast(const llvm::Type& type) {
 }
 
 Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
-    auto&& getBool = [&] (bool val) -> Domain::Ptr {
-        llvm::APInt retval(1, 0, false);
-        if (val) retval = 1;
-        else retval = 0;
-        return factory_->getInteger(factory_->toInteger(retval));
-    };
-
     if (this->isBottom() || other->isBottom()) {
         return factory_->getInteger(TOP, 1);
     } else if (this->isTop() || other->isTop()) {
@@ -497,94 +490,94 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
             if (this->isConstant() && interval->isConstant() && lb_->eq(interval->lb_)) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (this->hasIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
             }  else if (this->hasSignedIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
             } else {
-                return getBool(false);
+                return factory_->getBool(false);
             }
 
         case llvm::CmpInst::ICMP_NE:
             if (this->isConstant() && interval->isConstant() && lb_->eq(interval->lb_)) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else if (this->hasIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
             } else if (this->hasSignedIntersection(interval)) {
                 return factory_->getInteger(TOP, 1);
             } else {
-                return getBool(true);
+                return factory_->getBool(true);
             }
 
         case llvm::CmpInst::ICMP_SGE:
             if (signed_lb()->sge(interval->signed_ub())) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (signed_ub()->slt(interval->signed_lb())) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SGT:
             if (signed_lb()->sgt(interval->signed_ub())) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (signed_ub()->sle(interval->signed_lb())) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SLE:
             if (signed_ub()->sle(interval->signed_lb())) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (signed_lb()->sgt(interval->signed_ub())) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_SLT:
             if (signed_ub()->slt(interval->signed_lb())) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (signed_lb()->sge(interval->signed_ub())) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_UGE:
             if (lb_->ge(interval->ub_)) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (ub_->lt(interval->lb_)) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_UGT:
             if (lb_->gt(interval->ub_)) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (ub_->le(interval->lb_)) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_ULE:
             if (ub_->le(interval->lb_)) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (lb_->gt(interval->ub_)) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }
 
         case llvm::CmpInst::ICMP_ULT:
             if (ub_->lt(interval->lb_)) {
-                return getBool(true);
+                return factory_->getBool(true);
             } else if (lb_->ge(interval->ub_)) {
-                return getBool(false);
+                return factory_->getBool(false);
             } else {
                 return factory_->getInteger(TOP, 1);
             }

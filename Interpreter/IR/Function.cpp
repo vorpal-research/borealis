@@ -23,7 +23,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
     // find all global variables, that this function depends on
     for (auto&& inst : util::viewContainer(*instance_)
             .flatten()
-            .map([](const llvm::Instruction& i) -> llvm::Instruction& { return const_cast<llvm::Instruction&>(i); })) {
+            .map(LAM(i, const_cast<llvm::Instruction&>(i)))) {
         for (auto&& op : util::viewContainer(inst.operand_values())
                 .map([](llvm::Value* v) -> llvm::Value* {
                     if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))
@@ -113,8 +113,8 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
 
     bool changed = false;
     // adding function arguments to input state
-    auto&& it = instance_->getArgumentList().begin();
-    for (auto i = 0U; i < arguments_.size(); ++i, ++it) {
+    auto i = 0U;
+    for (auto&& it : instance_->args()) {
         ASSERT(args[i], "Nullptr in functions arguments");
 
         auto arg = args[i];
@@ -125,8 +125,13 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
             changed = true;
         }
         arguments_[i] = arg;
-        inputState_->addVariable(it, arguments_[i]->clone());
+        inputState_->addVariable(&it, arguments_[i]->clone());
+        ++i;
     }
+    util::viewContainer(args)
+            .reverse()
+            .take(args.size() - i)
+            .foreach([](auto&& a) -> void { if (a->isMutable()) a->moveToTop(); });
     getEntryNode()->mergeToInput(inputState_);
     return changed;
 }
@@ -141,7 +146,7 @@ void Function::mergeToOutput(State::Ptr state) {
 
 std::vector<const llvm::Value*> Function::getGlobals() const {
     return util::viewContainer(globals_)
-            .map([](auto&& a){ return a.first; })
+            .map(LAM(a, a.first))
             .toVector();
 }
 
@@ -176,6 +181,12 @@ bool Function::isVisited() const {
 
 bool Function::hasAddressTaken() const {
     return llvm::hasAddressTaken(*instance_);
+}
+
+std::vector<std::pair<unsigned, Domain::Ptr>> Function::getOutputArguments() const {
+    return util::viewContainer(instance_->args())
+            .map(LAM(a, std::make_pair(a.getArgNo(), outputState_->find(&a))))
+            .toVector();
 }
 
 std::ostream& operator<<(std::ostream& ss, const Function& f) {

@@ -9,6 +9,7 @@
 
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
+#include <Util/cache.hpp>
 
 #include "AggregateDomain.h"
 #include "Domain.h"
@@ -27,15 +28,10 @@ class Module;
 class DomainFactory: public logging::ObjectLevelLogging<DomainFactory> {
 public:
 
-    using IntCache = std::unordered_map<IntegerIntervalDomain::ID,
-            Domain::Ptr,
-            IntegerIntervalDomain::IDHash,
-            IntegerIntervalDomain::IDEquals>;
-
-    using FloatCache = std::unordered_map<FloatIntervalDomain::ID,
-            Domain::Ptr,
-            FloatIntervalDomain::IDHash,
-            FloatIntervalDomain::IDEquals>;
+    template <class Key, class Value>
+    using IntCacheImpl = std::unordered_map<Key, Value, IntegerIntervalDomain::IDHash, IntegerIntervalDomain::IDEquals>;
+    template <class Key, class Value>
+    using FloatCacheImpl = std::unordered_map<Key, Value, FloatIntervalDomain::IDHash, FloatIntervalDomain::IDEquals>;
 
     explicit DomainFactory(Module* module);
     ~DomainFactory();
@@ -58,6 +54,7 @@ public:
     /// create IntegerDomain for given index (for arrays and structs)
     Domain::Ptr getIndex(uint64_t indx);
 
+    Domain::Ptr getBool(bool value);
     Domain::Ptr getInteger(size_t width);
     Domain::Ptr getInteger(Domain::Value value, size_t width);
     Domain::Ptr getInteger(Integer::Ptr val);
@@ -85,17 +82,14 @@ public:
 
 private:
 
-    Domain::Ptr cached(const IntegerIntervalDomain::ID& key);
-    Domain::Ptr cached(const FloatIntervalDomain::ID& key);
-
     Domain::Ptr getConstOperand(const llvm::Constant* c);
     Domain::Ptr interpretConstantExpr(const llvm::ConstantExpr* ce);
     Domain::Ptr handleGEPConstantExpr(const llvm::ConstantExpr* ce);
 
     Module* module_;
     SlotTrackerPass* ST_;
-    IntCache ints_;
-    FloatCache floats_;
+    util::cache<IntegerIntervalDomain::ID, Domain::Ptr, IntCacheImpl> int_cache_;
+    util::cache<FloatIntervalDomain::ID, Domain::Ptr, FloatCacheImpl> float_cache_;
     Domain::Ptr nullptr_;
 
 };

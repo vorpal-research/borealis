@@ -19,13 +19,15 @@ namespace absint {
 DomainFactory::DomainFactory(Module* module) : ObjectLevelLogging("domain"),
                                                module_(module),
                                                ST_(module_->getSlotTracker()),
+                                               int_cache_(LAM(a, Domain::Ptr{ new IntegerIntervalDomain(this, a) })),
+                                               float_cache_(LAM(a, Domain::Ptr{ new FloatIntervalDomain(this, a) })),
                                                nullptr_{ new NullptrDomain(this) } {}
 
 DomainFactory::~DomainFactory() {
     auto&& info = infos();
     info << "DomainFactory statistics:" << endl;
-    info << "Integers: " << ints_.size() << endl;
-    info << "Floats: " << floats_.size() << endl;
+    info << "Integers: " << int_cache_.size() << endl;
+    info << "Floats: " << float_cache_.size() << endl;
     info << endl;
 }
 
@@ -182,26 +184,17 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
     }
 }
 
-Domain::Ptr DomainFactory::cached(const IntegerIntervalDomain::ID& key) {
-    if (ints_.find(key) == ints_.end()) {
-        ints_[key] = Domain::Ptr{ new IntegerIntervalDomain(this, key) };
-    }
-    return ints_[key];
-}
-
-Domain::Ptr DomainFactory::cached(const FloatIntervalDomain::ID& key) {
-    if (floats_.find(key) == floats_.end()) {
-        floats_[key] = Domain::Ptr{ new FloatIntervalDomain(this, key) };
-    }
-    return floats_[key];
-}
-
 Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width, bool isSigned) {
     return Integer::Ptr{ new IntValue(llvm::APInt(width, val, isSigned), width) };
 }
 
 Integer::Ptr DomainFactory::toInteger(const llvm::APInt& val) {
     return Integer::Ptr{ new IntValue(val, val.getBitWidth()) };
+}
+
+Domain::Ptr DomainFactory::getBool(bool value) {
+    auto&& retval = value ? toInteger(1, 1) : toInteger(0, 1);
+    return getInteger(retval);
 }
 
 Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
@@ -219,11 +212,11 @@ Domain::Ptr DomainFactory::getInteger(Integer::Ptr val) {
 }
 
 Domain::Ptr DomainFactory::getInteger(Domain::Value value, size_t width) {
-    return cached(std::make_tuple(value,
-                                  toInteger(0, width),
-                                  toInteger(0, width),
-                                  toInteger(0, width),
-                                  toInteger(0, width)));
+    return int_cache_[std::make_tuple(value,
+                                      toInteger(0, width),
+                                      toInteger(0, width),
+                                      toInteger(0, width),
+                                      toInteger(0, width))];
 }
 
 Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to) {
@@ -231,9 +224,9 @@ Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to) {
 }
 
 Domain::Ptr DomainFactory::getInteger(Integer::Ptr from, Integer::Ptr to, Integer::Ptr sfrom, Integer::Ptr sto) {
-    return cached(std::make_tuple(Domain::VALUE,
-                                  from, to,
-                                  sfrom, sto));
+    return int_cache_[std::make_tuple(Domain::VALUE,
+                                      from, to,
+                                      sfrom, sto)];
 }
 
 /* Float */
@@ -246,15 +239,15 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& val) {
 }
 
 Domain::Ptr DomainFactory::getFloat(Domain::Value value, const llvm::fltSemantics& semantics) {
-    return cached(std::make_tuple(value,
-                                  llvm::APFloat(semantics),
-                                  llvm::APFloat(semantics)));
+    return float_cache_[std::make_tuple(value,
+                                        llvm::APFloat(semantics),
+                                        llvm::APFloat(semantics))];
 }
 
 Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFloat& to) {
-    return cached(std::make_tuple(Domain::VALUE,
-                                  llvm::APFloat(from),
-                                  llvm::APFloat(to)));
+    return float_cache_[std::make_tuple(Domain::VALUE,
+                                        llvm::APFloat(from),
+                                        llvm::APFloat(to))];
 }
 
 

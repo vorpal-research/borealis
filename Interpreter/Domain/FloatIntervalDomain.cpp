@@ -346,13 +346,6 @@ Domain::Ptr FloatIntervalDomain::bitcast(const llvm::Type& type) {
 }
 
 Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
-    auto&& getBool = [&] (bool val) -> Domain::Ptr {
-        llvm::APSInt retval(1, true);
-        if (val) retval = 1;
-        else retval = 0;
-        return factory_->getInteger(factory_->toInteger(retval));
-    };
-
     if (this->isBottom() || other->isBottom()) {
         return factory_->getInteger(TOP, 1);
     } else if (this->isTop() || other->isTop()) {
@@ -366,7 +359,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
     {
         //   Opcode                        U L G E  Intuitive operation
         case llvm::CmpInst::FCMP_FALSE: // 0 0 0 0  always false (always folded)
-            return getBool(false);
+            return factory_->getBool(false);
         case llvm::CmpInst::FCMP_OEQ:   // 0 0 0 1  ordered and equal
         case llvm::CmpInst::FCMP_OGT:   // 0 0 1 0  ordered and greater than
         case llvm::CmpInst::FCMP_OGE:   // 0 0 1 1  ordered and greater than or equal
@@ -374,13 +367,13 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
         case llvm::CmpInst::FCMP_OLE:   // 0 1 0 1  ordered and less than or equal
         case llvm::CmpInst::FCMP_ONE:   // 0 1 1 0  ordered and operands are unequal
             if (this->isNaN() || interval->isNaN())
-                return getBool(false); // Is unordered
+                return factory_->getBool(false); // Is unordered
 
             break;
         case llvm::CmpInst::FCMP_ORD:   // 0 1 1 1  ordered (no nans)
-            return getBool( not (this->isNaN() || interval->isNaN()) );
+            return factory_->getBool( not (this->isNaN() || interval->isNaN()) );
         case llvm::CmpInst::FCMP_UNO:   // 1 0 0 0  unordered: isnan(X) | isnan(Y)
-            return getBool( (this->isNaN() || interval->isNaN()) );
+            return factory_->getBool( (this->isNaN() || interval->isNaN()) );
         case llvm::CmpInst::FCMP_UEQ:   // 1 0 0 1  unordered or equal
         case llvm::CmpInst::FCMP_UGT:   // 1 0 1 0  unordered or greater than
         case llvm::CmpInst::FCMP_UGE:   // 1 0 1 1  unordered, greater than, or equal
@@ -388,11 +381,11 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
         case llvm::CmpInst::FCMP_ULE:   // 1 1 0 1  unordered, less than, or equal
         case llvm::CmpInst::FCMP_UNE:   // 1 1 1 0  unordered or not equal
             if (this->isNaN() || interval->isNaN())
-                return getBool(true); // Is unordered
+                return factory_->getBool(true); // Is unordered
 
             break;
         case llvm::CmpInst::FCMP_TRUE:  // 1 1 1 1  always true (always folded)
-            return getBool(true);
+            return factory_->getBool(true);
         default:
             UNREACHABLE("Unknown operation in fcmp");
     }
@@ -402,60 +395,60 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
         case llvm::CmpInst::FCMP_OEQ:   // 0 0 0 1  ordered and equal
         case llvm::CmpInst::FCMP_UEQ:   // 1 0 0 1  unordered or equal
             if (isConstant() && this->equals(interval))
-                return getBool(true);
+                return factory_->getBool(true);
             else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
-                return getBool(false);
+                return factory_->getBool(false);
 
         case llvm::CmpInst::FCMP_OGT:   // 0 0 1 0  ordered and greater than
         case llvm::CmpInst::FCMP_UGT:   // 1 0 1 0  unordered or greater than
             res = lb_.compare(interval->ub_);
             if (res == llvm::APFloat::cmpGreaterThan)
-                return getBool(true);
+                return factory_->getBool(true);
             else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
-                return getBool(false);
+                return factory_->getBool(false);
 
         case llvm::CmpInst::FCMP_OGE:   // 0 0 1 1  ordered and greater than or equal
         case llvm::CmpInst::FCMP_UGE:   // 1 0 1 1  unordered, greater than, or equal
             res = lb_.compare(interval->ub_);
             if (res == llvm::APFloat::cmpGreaterThan || res == llvm::APFloat::cmpEqual)
-                return getBool(true);
+                return factory_->getBool(true);
             else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
-                return getBool(false);
+                return factory_->getBool(false);
 
         case llvm::CmpInst::FCMP_OLT:   // 0 1 0 0  ordered and less than
         case llvm::CmpInst::FCMP_ULT:   // 1 1 0 0  unordered or less than
             res = lb_.compare(interval->ub_);
             if (res == llvm::APFloat::cmpLessThan)
-                return getBool(true);
+                return factory_->getBool(true);
             else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
-                return getBool(false);
+                return factory_->getBool(false);
 
         case llvm::CmpInst::FCMP_OLE:   // 0 1 0 1  ordered and less than or equal
         case llvm::CmpInst::FCMP_ULE:   // 1 1 0 1  unordered, less than, or equal
             res = lb_.compare(interval->ub_);
             if (res == llvm::APFloat::cmpLessThan || res == llvm::APFloat::cmpEqual)
-                return getBool(true);
+                return factory_->getBool(true);
             else if (hasIntersection(interval))
                 return factory_->getInteger(TOP, 1);
             else
-                return getBool(false);
+                return factory_->getBool(false);
 
         case llvm::CmpInst::FCMP_ONE:   // 0 1 1 0  ordered and operands are unequal
         case llvm::CmpInst::FCMP_UNE:   // 1 1 1 0  unordered or not equal
             if (not hasIntersection(interval))
-                return getBool(true);
+                return factory_->getBool(true);
             else if (not (isConstant() && this->equals(interval)))
                 return factory_->getInteger(TOP, 1);
             else
-                return getBool(false);
+                return factory_->getBool(false);
 
         default:
             UNREACHABLE("Unknown operation in fcmp");

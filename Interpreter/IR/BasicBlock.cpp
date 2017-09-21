@@ -25,7 +25,7 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
 
     // find all global variables, that this basic block depends on
     for (auto&& inst : util::viewContainer(*instance_)
-            .map([](const llvm::Instruction& i) -> llvm::Instruction& { return const_cast<llvm::Instruction&>(i); })) {
+            .map(LAM(i, const_cast<llvm::Instruction&>(i)))) {
         for (auto&& op : util::viewContainer(inst.operand_values())
                 .map([](llvm::Value* v) -> llvm::Value* {
                     if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))

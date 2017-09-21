@@ -226,12 +226,8 @@ bool function_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
 
 std::vector<Function::Ptr> Module::findFunctionsByPrototype(const llvm::Type* prototype) const {
     return util::viewContainer(addressTakenFunctions_)
-            .filter([&](auto&& a) -> bool {
-                return function_types_eq(a.first->getType()->getPointerElementType(), prototype);
-            })
-            .map([](auto&& a) -> Function::Ptr {
-                return a.second;
-            })
+            .filter(LAM(a, function_types_eq(a.first->getType()->getPointerElementType(), prototype)))
+            .map(LAM(a, a.second))
             .toVector();
 }
 

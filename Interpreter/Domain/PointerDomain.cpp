@@ -23,7 +23,7 @@ NullptrDomain::NullptrDomain(DomainFactory* factory)
         : Domain(VALUE, NULLPTR, factory) {}
 
 bool NullptrDomain::equals(const Domain* other) const {
-    return llvm::isa<NullptrDomain>(other);
+    return other->isNullptr();
 }
 
 bool NullptrDomain::operator<(const Domain&) const {
@@ -96,9 +96,8 @@ bool PointerDomain::equals(const Domain* other) const {
 
     if (locations_.size() != ptr->locations_.size()) return false;
 
-    return util::equal_with_find(locations_, ptr->locations_,
-                                 [](auto&& a) { return a; },
-                                 [](auto&& a, auto&& b) { return a.location_->equals(b.location_.get()); });
+    return util::equal_with_find(locations_, ptr->locations_, LAM(a, a),
+                                 LAM2(a, b, a.location_->equals(b.location_.get())));
 }
 
 bool PointerDomain::operator<(const Domain&) const {
@@ -254,12 +253,6 @@ Domain::Ptr PointerDomain::bitcast(const llvm::Type& type) {
 }
 
 Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
-    auto&& getBool = [&] (bool val) -> Domain::Ptr {
-        llvm::APInt retval(1, 0, false);
-        if (val) retval = 1;
-        else retval = 0;
-        return factory_->getInteger(factory_->toInteger(retval));
-    };
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
@@ -268,16 +261,16 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
             if (not util::hasIntersection(locations_, ptr->locations_))
-                return getBool(false);
+                return factory_->getBool(false);
             return this->equals(ptr) ?
-                   getBool(true) :
+                   factory_->getBool(true) :
                    factory_->getInteger(TOP, 1);
 
         case llvm::CmpInst::ICMP_NE:
             if (not util::hasIntersection(locations_, ptr->locations_))
-                return getBool(true);
+                return factory_->getBool(true);
             return this->equals(ptr) ?
-                   getBool(false) :
+                   factory_->getBool(false) :
                    factory_->getInteger(TOP, 1);
 
         default:

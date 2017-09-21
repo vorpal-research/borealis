@@ -81,7 +81,7 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
     } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
         return module_.getDomainFactory()->get(constant);
 
-    } else if (value->getType()->isVoidTy()) {
+    } else if (value->getType()->isVoidTy() || value->getType()->isMetadataTy()) {
         return nullptr;
     }
     warns() << "Unknown value: " << ST_->toString(value) << endl;
@@ -117,10 +117,10 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
 
         auto trueSuccessor = context_->function->getBasicBlock(i.getSuccessor(0));
         auto falseSuccessor = context_->function->getBasicBlock(i.getSuccessor(1));
-        trueSuccessor->mergeToInput(context_->state);
-        falseSuccessor->mergeToInput(context_->state);
 
         if (cond->isTop()) {
+            trueSuccessor->mergeToInput(context_->state);
+            falseSuccessor->mergeToInput(context_->state);
             auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
             for (auto&& it : splitted) {
                 trueSuccessor->addToInput(it.first, it.second.true_);
@@ -133,11 +133,21 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
             auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
             ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
 
-            auto successor = boolean->isConstant(1) ?
-                             trueSuccessor :
-                             falseSuccessor;
-            successors.emplace_back(successor);
+            if (boolean->isConstant()) {
+                auto successor = boolean->isConstant(1) ?
+                                 trueSuccessor :
+                                 falseSuccessor;
+                successor->mergeToInput(context_->state);
+                successors.emplace_back(successor);
+            } else {
+                trueSuccessor->mergeToInput(context_->state);
+                falseSuccessor->mergeToInput(context_->state);
+                successors.emplace_back(trueSuccessor);
+                successors.emplace_back(falseSuccessor);
+            }
         } else {
+            trueSuccessor->mergeToInput(context_->state);
+            falseSuccessor->mergeToInput(context_->state);
             successors.emplace_back(trueSuccessor);
             successors.emplace_back(falseSuccessor);
         }
@@ -482,7 +492,13 @@ Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
         return handleDeclaration(function, args);
     } else {
         auto func = module_.get(function);
-        interpretFunction(func, util::viewContainer(args).map([](auto&& a) -> Domain::Ptr { return a.second; }).toVector());
+        interpretFunction(func, util::viewContainer(args).map(LAM(a, a.second)).toVector());
+        // if this is a recursive function, getOutputArguments() might be called before
+        // the function is fully interpreted; In that case input arguments of the function
+        // are reached fixpoint, so we don't need to change them
+        util::viewContainer(func->getOutputArguments())
+                .filter(LAM(a, a.second != nullptr))
+                .foreach([&](auto&& a) -> void { context_->state->addVariable(args[a.first].first, a.second); });
         return func->getReturnValue();
     }
 }
@@ -532,6 +548,9 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
         }
 
     } catch (std::out_of_range&) {
+        // just skip llvm debug function, to prevent excess printing to log
+        if (function->getName().equals("llvm.dbg.value")) return nullptr;
+
         warns() << "Unknown function: " << function->getName() << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
