@@ -107,9 +107,6 @@ SlotTracker& Function::getSlotTracker() const {
 
 bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
     ASSERT(instance_->isVarArg() || arguments_.size() == args.size(), "Wrong number of arguments");
-    // This is generally fucked up
-    if (arguments_.empty())
-        return not getEntryNode()->isVisited();
 
     bool changed = false;
     // adding function arguments to input state
@@ -117,15 +114,19 @@ bool Function::updateArguments(const std::vector<Domain::Ptr>& args) {
     for (auto&& it : instance_->args()) {
         ASSERT(args[i], "Nullptr in functions arguments");
 
-        auto arg = args[i];
-        if (arguments_[i]) {
-            arg = (arguments_[i]->clone())->widen(arg);
-            changed |= not arguments_[i]->equals(arg.get());
-        } else {
+        if (not arguments_[i]) {
+            arguments_[i] = args[i]->clone();
             changed = true;
+            inputState_->addVariable(&it, args[i]);
+        } else {
+            // This is generally fucked up
+            Domain::Ptr arg = args[i]->isTop() ?
+                              args[i]->clone() :
+                              (arguments_[i]->clone())->widen(args[i]);
+            changed |= not arguments_[i]->equals(arg.get());
+            inputState_->addVariable(&it, args[i]->widen(arguments_[i]));
+            arguments_[i] = arg;
         }
-        arguments_[i] = arg;
-        inputState_->addVariable(&it, arguments_[i]->clone());
         ++i;
     }
     util::viewContainer(args)
@@ -153,7 +154,7 @@ std::vector<const llvm::Value*> Function::getGlobals() const {
 bool Function::updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals) {
     bool updated = false;
     for (auto&& it : globals_) {
-        auto global = globals.at(it.first);
+        auto& global = globals.at(it.first);
         ASSERT(global, "No value for global in map");
         if (not it.second->equals(global.get())) {
             it.second = it.second->join(global);
@@ -181,12 +182,6 @@ bool Function::isVisited() const {
 
 bool Function::hasAddressTaken() const {
     return llvm::hasAddressTaken(*instance_);
-}
-
-std::vector<std::pair<unsigned, Domain::Ptr>> Function::getOutputArguments() const {
-    return util::viewContainer(instance_->args())
-            .map(LAM(a, std::make_pair(a.getArgNo(), outputState_->find(&a))))
-            .toVector();
 }
 
 std::ostream& operator<<(std::ostream& ss, const Function& f) {

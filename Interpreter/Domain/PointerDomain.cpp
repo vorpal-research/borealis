@@ -61,7 +61,8 @@ Domain::Ptr NullptrDomain::load(const llvm::Type& type, Domain::Ptr) {
 
 Domain::Ptr NullptrDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) {
     errs() << "GEP to nullptr" << endl;
-    return factory_->getPointer(TOP, type);
+    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&type), 0);
+    return factory_->getTop(*ptrType);
 }
 
 bool NullptrDomain::classof(const Domain* other) {
@@ -93,6 +94,7 @@ bool PointerDomain::equals(const Domain* other) const {
     auto ptr = llvm::dyn_cast<PointerDomain>(other);
     if (not ptr) return false;
     if (this == ptr) return true;
+    if (this->value_ != ptr->value_) return false;
 
     if (locations_.size() != ptr->locations_.size()) return false;
 
@@ -222,13 +224,14 @@ void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
 }
 
 Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
+    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&type), 0);
     if (isBottom()) {
-        return factory_->getPointer(BOTTOM, type);
+        return factory_->getBottom(*ptrType);
     } else if (isTop()) {
-        return factory_->getPointer(TOP, type);
+        return factory_->getTop(*ptrType);
     }
 
-    auto result = factory_->getPointer(BOTTOM, type);
+    auto result = factory_->getBottom(*ptrType);
     std::vector<Domain::Ptr> subOffsets(indices.begin(), indices.end());
     auto zeroElement = subOffsets[0];
 
@@ -282,10 +285,11 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
+    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&elementType_), 0);
     if (this->isTop())
-        return {factory_->getPointer(TOP, elementType_), factory_->getPointer(TOP, elementType_)};
+        return {factory_->getTop(*ptrType), factory_->getTop(*ptrType)};
     if (this->isBottom())
-        return {factory_->getPointer(BOTTOM, elementType_), factory_->getPointer(BOTTOM, elementType_)};
+        return {factory_->getBottom(*ptrType), factory_->getBottom(*ptrType)};
     if (not other->isValue())
         return {shared_from_this(), shared_from_this()};
 

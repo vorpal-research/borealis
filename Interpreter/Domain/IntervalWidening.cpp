@@ -4,7 +4,7 @@
 
 #include "Interpreter/Domain/DomainFactory.h"
 #include "Interpreter/Util.hpp"
-#include "IntervalWidening.h"
+#include "Interpreter/Domain/IntervalWidening.hpp"
 
 namespace borealis {
 namespace absint {

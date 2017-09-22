@@ -5,8 +5,8 @@
 #ifndef BOREALIS_FLOATINTERVAL_H
 #define BOREALIS_FLOATINTERVAL_H
 
-#include <Interpreter/Widening/IntervalWidening.h>
 #include "Domain.h"
+#include "Interpreter/Domain/IntervalWidening.hpp"
 #include "Interpreter/Util.hpp"
 #include "Util/hash.hpp"
 

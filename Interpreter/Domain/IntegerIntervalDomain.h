@@ -7,8 +7,8 @@
 
 #include "Domain.h"
 #include "Integer/Integer.h"
+#include "IntervalWidening.hpp"
 #include "Interpreter/Util.hpp"
-#include "Interpreter/Widening/IntervalWidening.h"
 #include "Util/hash.hpp"
 
 namespace borealis {

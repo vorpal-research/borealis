@@ -6,10 +6,21 @@
 #define BOREALIS_INTERVALWIDENING_H
 
 #include "Interpreter/Domain/Integer/Integer.h"
-#include "WideningInterface.hpp"
 
 namespace borealis {
 namespace absint {
+
+class DomainFactory;
+
+template <class T>
+class WideningInterface {
+public:
+
+    virtual ~WideningInterface() = default;
+
+    virtual T get_prev(const T& value, DomainFactory* factory) const = 0;
+    virtual T get_next(const T& value, DomainFactory* factory) const = 0;
+};
 
 class IntegerWidening : public WideningInterface<Integer::Ptr> {
 protected:
@@ -18,7 +29,7 @@ protected:
 public:
 
     static IntegerWidening* getInstance() {
-        static IntegerWidening* instance = new IntegerWidening();
+        static auto instance = new IntegerWidening();
         return instance;
     }
 
@@ -36,7 +47,7 @@ protected:
 public:
 
     static FloatWidening* getInstance() {
-        static FloatWidening* instance = new FloatWidening();
+        static auto instance = new FloatWidening();
         return instance;
     }
 

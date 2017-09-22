@@ -278,10 +278,11 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
     auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
 
+    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&type), 0);
     if (isBottom()) {
-        return factory_->getPointer(BOTTOM, type);
+        return factory_->getBottom(*ptrType);
     } else if (isTop()) {
-        return factory_->getPointer(TOP, type);
+        return factory_->getTop(*ptrType);
     }
 
     auto idx_begin = idx_interval->lb()->getRawValue();
@@ -311,7 +312,7 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
         }
         if (not result) {
             warns() << "Gep is out of bounds" << endl;
-            return factory_->getPointer(TOP, type);
+            return factory_->getTop(*ptrType);
         }
 
         return result;

@@ -4,6 +4,7 @@
 
 #include "DomainFactory.h"
 #include "IntegerIntervalDomain.h"
+#include "Util/algorithm.hpp"
 #include "Util/sayonara.hpp"
 
 #include "Util/macros.h"
@@ -74,10 +75,10 @@ Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) {
     } else if (this->isBottom()) {
         return interval->shared_from_this();
     } else {
-        auto lb = util::min(lb_, interval->lb_);
-        auto ub = util::max(ub_, interval->ub_);
-        auto slb = util::min<true>(signed_lb_, interval->signed_lb_);
-        auto sub = util::max<true>(signed_ub_, interval->signed_ub_);
+        auto lb = std::min(lb_, interval->lb_);
+        auto ub = std::max(ub_, interval->ub_);
+        auto slb = util::signed_min(signed_lb_, interval->signed_lb_);
+        auto sub = util::signed_max(signed_ub_, interval->signed_ub_);
         return factory_->getInteger(lb, ub, slb, sub);
     }
 }
@@ -258,8 +259,8 @@ Domain::Ptr IntegerIntervalDomain::mul(Domain::Ptr other) const {
         using namespace util;
         auto lb = min(ll, ul, lu, uu);
         auto ub = max(ll, ul, lu, uu);
-        auto slb = min(sll, sul, slu, suu);
-        auto sub = max(sll, sul, slu, suu);
+        auto slb = signed_min(sll, sul, slu, suu);
+        auto sub = signed_max(sll, sul, slu, suu);
 
         return factory_->getInteger(lb, ub, slb, sub);
     }
@@ -288,8 +289,8 @@ Domain::Ptr IntegerIntervalDomain::mul(Domain::Ptr other) const {
             using namespace util; \
             auto lb = min(ll, ul, lu, uu); \
             auto ub = max(ll, ul, lu, uu); \
-            auto slb = min(sll, sul, slu, suu); \
-            auto sub = max(sll, sul, slu, suu); \
+            auto slb = signed_min(sll, sul, slu, suu); \
+            auto sub = signed_max(sll, sul, slu, suu); \
             return factory_->getInteger(lb, ub, slb, sub); \
         } \
     }
@@ -331,8 +332,8 @@ Domain::Ptr IntegerIntervalDomain::srem(Domain::Ptr other) const {
         using namespace util; \
         auto lb = min(ll, ul, lu, uu); \
         auto ub = max(ll, ul, lu, uu); \
-        auto slb = min(sll, sul, slu, suu); \
-        auto sub = max(sll, sul, slu, suu); \
+        auto slb = signed_min(sll, sul, slu, suu); \
+        auto sub = signed_max(sll, sul, slu, suu); \
         return factory_->getInteger(lb, ub, slb, sub); \
     }
 
@@ -378,8 +379,6 @@ Domain::Ptr IntegerIntervalDomain::zext(const llvm::Type& type) const {
     auto&& slb = signed_lb_->zext(intType->getBitWidth());
     auto&& sub = signed_ub_->zext(intType->getBitWidth());
     return factory_->getInteger(lb, ub, slb, sub);
-//    return factory_->getInteger(factory_->toInteger(0, intType->getBitWidth()),
-//                                util::max(lb, ub));
 }
 
 Domain::Ptr IntegerIntervalDomain::sext(const llvm::Type& type) const {
@@ -393,13 +392,12 @@ Domain::Ptr IntegerIntervalDomain::sext(const llvm::Type& type) const {
     auto&& slb = signed_lb_->sext(intType->getBitWidth());
     auto&& sub = signed_ub_->sext(intType->getBitWidth());
     return factory_->getInteger(lb, ub, slb, sub);
-//    return factory_->getInteger(lb, ub);
 }
 
 Domain::Ptr IntegerIntervalDomain::uitofp(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp");
+    if (not isValue()) return factory_->getTop(type);
     auto& newSemantics = util::getSemantics(type);
-    if (not isValue()) return factory_->getFloat(TOP, newSemantics);
 
     unsigned width = 32;
     if (type.isHalfTy())
@@ -434,8 +432,8 @@ Domain::Ptr IntegerIntervalDomain::uitofp(const llvm::Type& type) const {
 
 Domain::Ptr IntegerIntervalDomain::sitofp(const llvm::Type& type) const {
     ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp");
+    if (not isValue()) return factory_->getTop(type);
     auto& newSemantics = util::getSemantics(type);
-    if (not isValue()) return factory_->getFloat(TOP, newSemantics);
 
     unsigned width = 32;
     if (type.isHalfTy())
@@ -618,11 +616,11 @@ Split IntegerIntervalDomain::splitBySLess(Domain::Ptr other) {
         return {shared_from_this(), shared_from_this()};
 
     auto trueVal = factory_->getInteger(lb_, ub_,
-                                        util::min<true>(this->signed_lb(), interval->signed_ub()),
-                                        util::max<true>(this->signed_lb(), interval->signed_ub()));
+                                        util::signed_min(this->signed_lb(), interval->signed_ub()),
+                                        util::signed_max(this->signed_lb(), interval->signed_ub()));
     auto falseVal = factory_->getInteger(lb_, ub_,
-                                         util::min<true>(interval->signed_lb(), this->signed_ub()),
-                                         util::max<true>(interval->signed_lb(), this->signed_ub()));
+                                         util::signed_min(interval->signed_lb(), this->signed_ub()),
+                                         util::signed_max(interval->signed_lb(), this->signed_ub()));
     return {trueVal, falseVal};
 }
 

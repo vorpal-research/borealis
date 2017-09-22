@@ -52,6 +52,28 @@ void for_each(const C& c, F f) {
 
 #undef BE
 
+template <typename T>
+T min(const T& t) {
+    return t;
+}
+
+template <typename Head, typename ...Tail>
+Head min(const Head& h, const Tail&... t) {
+    auto tmin = min<Tail...>(t...);
+    return h < tmin ? h : tmin;
+};
+
+template <typename T>
+T max(const T& t) {
+    return t;
+}
+
+template <typename Head, typename ...Tail>
+Head max(const Head& h, const Tail&... t) {
+    auto tmax = max<Tail...>(t...);
+    return h < tmax ? tmax : h;
+};
+
 } /* namespace util */
 } /* namespace borealis */
 

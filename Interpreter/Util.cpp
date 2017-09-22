@@ -9,10 +9,11 @@
 #include "Interpreter/Domain/Integer/IntMax.h"
 #include "Interpreter/Domain/Integer/IntMin.h"
 #include "Util.hpp"
-#include "Util/streams.hpp"
+#include "Util/algorithm.hpp"
 #include "Util/collections.hpp"
 #include "Util/ir_writer.h"
 #include "Util/sayonara.hpp"
+#include "Util/streams.hpp"
 #include "Util/macros.h"
 
 namespace borealis {
@@ -24,14 +25,6 @@ llvm::APFloat getMaxValue(const llvm::fltSemantics& semantics) {
 
 llvm::APFloat getMinValue(const llvm::fltSemantics& semantics) {
     return llvm::APFloat::getInf(semantics, true);
-}
-
-llvm::APFloat min(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
-    return lt(lhv, rhv) ? lhv : rhv;
-}
-
-llvm::APFloat max(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
-    return lt(lhv, rhv) ? rhv : lhv;
 }
 
 bool lt(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
@@ -106,7 +99,7 @@ bool llvm_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
             auto* rhvf = llvm::cast<llvm::FunctionType>(rhv);
             if (not llvm_types_eq(lhvf->getReturnType(), rhvf->getReturnType())) return false;
             if (not lhvf->isVarArg() && not rhvf->isVarArg() && lhvf->getNumParams() != rhvf->getNumParams()) return false;
-            for (auto i = 0U; i < min(lhvf->getNumParams(), rhvf->getNumParams()); ++i) {
+            for (auto i = 0U; i < util::min(lhvf->getNumParams(), rhvf->getNumParams()); ++i) {
                 if (not llvm_types_eq(lhvf->getParamType(i), rhvf->getParamType(i))) return false;
             }
             return true;

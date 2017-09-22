@@ -43,51 +43,25 @@ std::string toString(const llvm::APInt& val, bool isSigned = false);
 /// templates
 ///////////////////////////////////////////////////////////////
 template <typename T>
-T min(const T& t) {
-    return t;
-}
-
-template <bool isSigned, typename T>
-T min(const T& t) {
+T signed_min(const T& t) {
     return t;
 }
 
 template <typename Head, typename ...Tail>
-Head min(const Head& h, const Tail&... t) {
-    auto tmin = min<Tail...>(t...);
-    return h < tmin ? h : tmin;
-};
-
-template <bool isSigned, typename Head, typename ...Tail>
-Head min(const Head& h, const Tail&... t) {
-    auto tmin = min<isSigned, Tail...>(t...);
-    return isSigned ?
-           (h->slt(tmin) ? h : tmin) :
-           (h < tmin ? h : tmin);
+Head signed_min(const Head& h, const Tail&... t) {
+    auto tmin = signed_min<Tail...>(t...);
+    return h->slt(tmin) ? h : tmin;
 };
 
 template <typename T>
-T max(const T& t) {
-    return t;
-}
-
-template <bool isSigned, typename T>
-T max(const T& t) {
+T signed_max(const T& t) {
     return t;
 }
 
 template <typename Head, typename ...Tail>
-Head max(const Head& h, const Tail&... t) {
-    auto tmax = max<Tail...>(t...);
-    return h < tmax ? tmax : h;
-};
-
-template <bool isSigned, typename Head, typename ...Tail>
-Head max(const Head& h, const Tail&... t) {
-    auto tmax = max<isSigned, Tail...>(t...);
-    return isSigned ?
-           (h->slt(tmax) ? tmax : h) :
-           (h < tmax ? tmax : h);
+Head signed_max(const Head& h, const Tail&... t) {
+    auto tmax = signed_max<Tail...>(t...);
+    return h->slt(tmax) ? tmax : h;
 };
 
 ///////////////////////////////////////////////////////////////

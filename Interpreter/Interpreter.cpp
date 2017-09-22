@@ -47,7 +47,12 @@ const Module& Interpreter::getModule() const {
 
 void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
     // if arguments and globals are not changed, then this function don't need to be reinterpreted
-    if (not (function->updateArguments(args) || function->updateGlobals(module_.getGlobalsFor(function)))) return;
+    // if function's argument list is empty, then check if it's visited at all
+    auto updArgs = function->getArguments().empty() ?
+                   (not function->getEntryNode()->isVisited()) :
+                   function->updateArguments(args);
+    auto updGlobals = function->updateGlobals(module_.getGlobalsFor(function));
+    if (not (updArgs || updGlobals)) return;
     stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
     context_ = &stack_.top();
 
@@ -486,13 +491,6 @@ Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
     } else {
         auto func = module_.get(function);
         interpretFunction(func, util::viewContainer(args).map(LAM(a, a.second)).toVector());
-        // if this is a recursive function, getOutputArguments() might be called before
-        // the function is fully interpreted; In that case input arguments of the function
-        // are reached fixpoint, so we don't need to change them
-        if (not func->getBasicBlock(&function->back())->isVisited()) {
-            util::viewContainer(func->getOutputArguments())
-                    .foreach([&](auto&& a) -> void { context_->state->addVariable(args[a.first].first, a.second); });
-        }
         return func->getReturnValue();
     }
 }

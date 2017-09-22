@@ -13,7 +13,6 @@
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Type.h>
 
-#include "Interpreter/Widening/WideningInterface.hpp"
 #include "Logging/logger.hpp"
 
 namespace borealis {
