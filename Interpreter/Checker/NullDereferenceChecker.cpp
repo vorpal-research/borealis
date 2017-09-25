@@ -9,7 +9,7 @@
 namespace borealis {
 namespace absint {
 
-static config::BoolConfigEntry enableLog("absint", "log-checker");
+static config::BoolConfigEntry enableLogging("absint", "checker-logging");
 
 NullDereferenceChecker::NullDereferenceChecker(Module* module, DefectManager* DM)
         : ObjectLevelLogging("interpreter"),
@@ -22,7 +22,7 @@ void NullDereferenceChecker::run() {
     visit(const_cast<llvm::Module*>(module_->getInstance()));
 
     util::viewContainer(defects_)
-            .filter([&](auto&& it) -> bool { return not it.second; })
+            .filter(LAM(a, not a.second))
             .foreach([&](auto&& it) -> void { DM_->addNoAbsIntDefect(it.first); });
 }
 
@@ -34,20 +34,20 @@ void NullDereferenceChecker::checkPointer(llvm::Instruction& loc, llvm::Value& p
     auto&& info = infos();
 
     auto di = DM_->getDefect(DefectType::INI_03, &loc);
-    if (enableLog.get(true)) {
+    if (enableLogging.get(true)) {
         info << "Checking: " << ST_->toString(&loc) << endl;
         info << "Pointer operand: " << ST_->toString(&ptr) << endl;
         info << "Defect: " << di << endl;
     }
 
     if (not module_->checkVisited(&loc) || not module_->checkVisited(&ptr)) {
-        if (enableLog.get(true)) info << "Instruction not visited" << endl;
+        if (enableLogging.get(true)) info << "Instruction not visited" << endl;
         defects_[di] |= false;
 
     } else {
         auto&& ptr_domain = module_->getDomainFor(&ptr, loc.getParent());
         auto bug = not ptr_domain->isValue() || ptr_domain->isNullptr();
-        if (enableLog.get(true)) {
+        if (enableLogging.get(true)) {
             info << "Pointer domain: " << ptr_domain << endl;
             info << "Result: " << bug << endl;
         }

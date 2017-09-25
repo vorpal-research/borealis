@@ -25,7 +25,8 @@ class MemoryObject;
 class Domain : public std::enable_shared_from_this<Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
-    enum Type {INTEGER_INTERVAL = 0,
+    enum Type {
+        INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
         NULLPTR,
         POINTER,

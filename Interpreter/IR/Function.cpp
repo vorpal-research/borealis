@@ -218,7 +218,7 @@ std::ostream& operator<<(std::ostream& s, const Function* f) {
     return s;
 }
 
-std::ostream& operator<<(std::ostream& s, const Function::Ptr f) {
+std::ostream& operator<<(std::ostream& s, Function::Ptr f) {
     s << f.get();
     return s;
 }
@@ -258,7 +258,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     return s;
 }
 
-borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function::Ptr f) {
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Function::Ptr f) {
     s << f.get();
     return s;
 }

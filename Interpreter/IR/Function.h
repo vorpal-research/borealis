@@ -96,10 +96,10 @@ struct FunctionEquals {
 
 std::ostream& operator<<(std::ostream& s, const Function& f);
 std::ostream& operator<<(std::ostream& s, const Function* f);
-std::ostream& operator<<(std::ostream& s, const Function::Ptr f);
+std::ostream& operator<<(std::ostream& s, Function::Ptr f);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function& f);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function* f);
-borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function::Ptr f);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Function::Ptr f);
 
 }   /* namespace absint */
 }   /* namespace borealis */

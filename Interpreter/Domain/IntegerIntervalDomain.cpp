@@ -75,8 +75,8 @@ Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) {
     } else if (this->isBottom()) {
         return interval->shared_from_this();
     } else {
-        auto lb = std::min(lb_, interval->lb_);
-        auto ub = std::max(ub_, interval->ub_);
+        auto lb = util::min(lb_, interval->lb_);
+        auto ub = util::max(ub_, interval->ub_);
         auto slb = util::signed_min(signed_lb_, interval->signed_lb_);
         auto sub = util::signed_max(signed_ub_, interval->signed_ub_);
         return factory_->getInteger(lb, ub, slb, sub);

@@ -69,7 +69,7 @@ private:
         Function::Ptr function; // current function
         State::Ptr state; // current state
         std::deque<BasicBlock*> deque; // deque of blocks to visit
-        // This is not good
+        // This is generally fucked up
         std::map<const llvm::Value*, bool> stores; // stores, visited in current context
     };
 

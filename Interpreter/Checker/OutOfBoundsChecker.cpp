@@ -9,7 +9,7 @@
 namespace borealis {
 namespace absint {
 
-static config::BoolConfigEntry enableLog("absint", "log-checker");
+static config::BoolConfigEntry enableLogging("absint", "checker-logging");
 
 // Returns true, if there might be OOB
 class OutOfBoundVisitor {
@@ -88,14 +88,14 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
     auto&& info = infos();
 
     auto di = DM_->getDefect(DefectType::BUF_01, &loc);
-    if (enableLog.get(true)) {
+    if (enableLogging.get(true)) {
         info << "Checking: " << ST_->toString(&loc) << endl;
         info << "Gep operand: " << ST_->toString(&GI) << endl;
         info << "Defect: " << di << endl;
     }
 
     if (not module_->checkVisited(&loc) || not module_->checkVisited(&GI)) {
-        if (enableLog.get(true)) info << "Instruction not visited" << endl;
+        if (enableLogging.get(true)) info << "Instruction not visited" << endl;
         defects_[di] |= false;
 
     } else {
@@ -114,7 +114,7 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
         auto bug = OutOfBoundVisitor().visit(ptr, offsets);
         defects_[di] |= bug;
 
-        if (enableLog.get(true)) {
+        if (enableLogging.get(true)) {
             info << "Pointer operand: " << ptr << endl;
             for (auto&& indx : offsets)
                 info << "Shift: " << indx << endl;
@@ -137,19 +137,19 @@ void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
     auto&& info = infos();
     auto di = DM_->getDefect(DefectType::BUF_01, &CI);
 
-    if (enableLog.get(true)) {
+    if (enableLogging.get(true)) {
         info << "Checking: " << ST_->toString(&CI) << endl;
         info << "Defect: " << di << endl;
     }
 
     if (not module_->checkVisited(&CI)) {
-        if (enableLog.get(true)) info << "Instruction not visited" << endl;
+        if (enableLogging.get(true)) info << "Instruction not visited" << endl;
         defects_[di] |= false;
         return;
     }
 
     if (CI.isInlineAsm() || (not CI.getCalledFunction())) {
-        if (enableLog.get(true)) info << "Unknown function" << endl;
+        if (enableLogging.get(true)) info << "Unknown function" << endl;
         defects_[di] = true;
         return;
     }
@@ -173,7 +173,7 @@ void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
                 auto bug = OutOfBoundVisitor().visit(ptr, offsets);
                 defects_[di] |= bug;
 
-                if (enableLog.get(true)) {
+                if (enableLogging.get(true)) {
                     info << "Pointer operand: " << ptr << endl;
                     for (auto&& indx : offsets)
                         info << "Shift: " << indx << endl;
@@ -183,7 +183,7 @@ void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
         }
 
     } catch (std::out_of_range&) {
-        if (enableLog.get(true)) info << "Unknown function" << endl;
+        if (enableLogging.get(true)) info << "Unknown function" << endl;
         defects_[di] = true;
     }
 }
@@ -196,7 +196,7 @@ void OutOfBoundsChecker::run() {
     visit(const_cast<llvm::Module*>(module_->getInstance()));
 
     util::viewContainer(defects_)
-            .filter([&](auto&& it) -> bool { return not it.second; })
+            .filter(LAM(a, not a.second))
             .foreach([&](auto&& it) -> void { DM_->addNoAbsIntDefect(it.first); });
 }
 

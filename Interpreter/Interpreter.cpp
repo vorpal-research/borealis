@@ -106,8 +106,7 @@ void Interpreter::visitInstruction(llvm::Instruction& i) {
 }
 
 void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
-    if (not i.getReturnValue())
-        return;
+    if (not i.getReturnValue()) return;
 
     auto&& retDomain = getVariable(i.getReturnValue());
     ASSERT(retDomain, "ret domain");
@@ -164,9 +163,10 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
     std::vector<BasicBlock*> successors;
     auto&& cond = getVariable(i.getCondition());
 
-    auto&& handleCaseSuccessor = [&](const llvm::BasicBlock* bb) -> void {
+    auto&& handleCaseSuccessor = [&](const llvm::BasicBlock* bb, Domain::Ptr caseValue) -> void {
         auto successor = context_->function->getBasicBlock(bb);
         successor->mergeToInput(context_->state);
+        successor->addToInput(i.getCondition(), caseValue);
         successors.emplace_back(successor);
     };
 
@@ -178,17 +178,19 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
         for (auto&& cs : i.cases()) {
             auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
             if (integer->hasIntersection(caseVal) || integer->hasSignedIntersection(caseVal)) {
-                handleCaseSuccessor(cs.getCaseSuccessor());
+                handleCaseSuccessor(cs.getCaseSuccessor(), module_.getDomainFactory()->getInteger(caseVal));
                 isDefault = false;
             }
         }
 
-        if (isDefault) handleCaseSuccessor(i.getDefaultDest());
+        if (isDefault) handleCaseSuccessor(i.getDefaultDest(), cond);
 
     } else {
-        for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
-            handleCaseSuccessor(i.getSuccessor(j));
+        for (auto&& cs : i.cases()) {
+            auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
+            handleCaseSuccessor(cs.getCaseSuccessor(), module_.getDomainFactory()->getInteger(caseVal));
         }
+        handleCaseSuccessor(i.getDefaultDest(), cond);
     }
 
     addSuccessors(successors);
@@ -233,13 +235,10 @@ void Interpreter::visitAllocaInst(llvm::AllocaInst&) {
 }
 
 void Interpreter::visitLoadInst(llvm::LoadInst& i) {
-    Domain::Ptr ptr;
     auto gepOper = llvm::dyn_cast<llvm::GEPOperator>(i.getPointerOperand());
-    if (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper)) {
-        ptr = gepOperator(*gepOper);
-    } else {
-        ptr = getVariable(i.getPointerOperand());
-    }
+    auto ptr = (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper)) ?
+               gepOperator(*gepOper) :
+               getVariable(i.getPointerOperand());
     ASSERT(ptr, "load inst");
 
     auto&& result = ptr->load(*i.getType(), module_.getDomainFactory()->getIndex(0));
@@ -400,7 +399,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
     }
     auto retval = module_.getDomainFactory()->getBottom(*i.getType());
 
-    // inline assembler just return TOP
+    // inline assembler, just return TOP
     if (i.isInlineAsm()) {
         retval = module_.getDomainFactory()->getTop(*i.getType());
     // function pointer
@@ -548,8 +547,7 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
         // so we set all of them as TOP
         for (auto&& it : args) {
             auto arg = it.first;
-            auto argType = arg->getType();
-            if (argType->isPointerTy()) {
+            if (arg->getType()->isPointerTy()) {
                 warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
                 getVariable(arg)->moveToTop();
             }
