@@ -23,11 +23,6 @@ public:
     virtual bool runOnModule(llvm::Module& M) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 
-
-private:
-
-    void viewCFG(const absint::Module& module);
-
 };
 
 }   /* namespace borealis */

@@ -75,7 +75,7 @@ AggregateDomain::AggregateDomain(const AggregateDomain& other)
           elements_(other.elements_) {}
 
 Domain::Ptr AggregateDomain::clone() const {
-    return Domain::Ptr{ new AggregateDomain(*this) };
+    return std::make_shared<AggregateDomain>(*this);
 }
 
 std::size_t AggregateDomain::hashCode() const {
@@ -138,13 +138,7 @@ bool AggregateDomain::equals(const Domain* other) const {
     if (aggregateType_ != aggregate->aggregateType_) return false;
     if (elementTypes_.size() != aggregate->elementTypes_.size()) return false;
     if (not getLength()->equals(aggregate->getLength().get())) return false;
-
-    for (auto&& it : elementTypes_) {
-        auto&& opt = util::at(aggregate->elementTypes_, it.first);
-        if ((not opt) || (it.second->getTypeID() != opt.getUnsafe()->getTypeID())) {
-            return false;
-        }
-    }
+    if (elementTypes_ != aggregate->elementTypes_) return false;
 
     for (auto&& it : elements_) {
         auto&& opt = util::at(aggregate->elements_, it.first);
@@ -165,6 +159,7 @@ bool AggregateDomain::classof(const Domain* other) {
 }
 
 Domain::Ptr AggregateDomain::join(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
     auto&& aggregate = llvm::dyn_cast<AggregateDomain>(other.get());
     ASSERT(aggregate, "Non-aggregate int join");
 
@@ -295,7 +290,7 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
     }
 
     if (indices.size() == 1) {
-        return factory_->getPointer(type, { {indices[0], shared_from_this()} });
+        return factory_->getPointer(type, { { {indices[0]}, shared_from_this()} });
 
     } else {
         Domain::Ptr result = nullptr;

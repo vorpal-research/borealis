@@ -98,8 +98,14 @@ bool PointerDomain::equals(const Domain* other) const {
 
     if (locations_.size() != ptr->locations_.size()) return false;
 
-    return util::equal_with_find(locations_, ptr->locations_, LAM(a, a),
-                                 LAM2(a, b, a.location_->equals(b.location_.get())));
+    for (auto&& it : ptr->locations_) {
+        auto&& its = locations_.find(it);
+        if (its == locations_.end()) return false;
+        if (not it.location_->equals(its->location_.get())) return false;
+        if (not util::equal_with_find(it.offsets_, its->offsets_, LAM(a, a), LAM2(a, b, a->equals(b.get()))))
+            return false;
+    }
+    return true;
 }
 
 bool PointerDomain::operator<(const Domain&) const {
@@ -115,7 +121,7 @@ const llvm::Type& PointerDomain::getElementType() const {
 }
 
 Domain::Ptr PointerDomain::clone() const {
-    return Domain::Ptr{ new PointerDomain(*this) };
+    return std::make_shared<PointerDomain>(*this);
 }
 
 std::size_t PointerDomain::hashCode() const {
@@ -129,7 +135,9 @@ std::string PointerDomain::toPrettyString(const std::string& prefix) const {
     else if (isBottom()) ss << " BOTTOM ]";
     else {
         for (auto&& it : locations_) {
-            ss << std::endl << prefix << "  " << it.offset_->toString() << " " << it.location_->toPrettyString(prefix + "  ");
+            for (auto&& offset : it.offsets_) {
+                ss << std::endl << prefix << "  " << offset->toString() << " " << it.location_->toPrettyString(prefix + "  ");
+            }
         }
         ss << std::endl << prefix << "]";
     }
@@ -141,6 +149,7 @@ bool PointerDomain::classof(const Domain* other) {
 }
 
 Domain::Ptr PointerDomain::join(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
@@ -165,12 +174,18 @@ Domain::Ptr PointerDomain::join(Domain::Ptr other) {
         } else {
             if (auto&& aggregate = llvm::dyn_cast<AggregateDomain>(itptr.location_.get())) {
                 if (aggregate->isArray()) {
-                    it->offset_ = it->offset_->join(itptr.offset_);
+                    ASSERT(it->offsets_.size() == 1 && itptr.offsets_.size() == 1, "unexpected")
+                    Domain::Ptr curOffset = *it->offsets_.begin();
+                    Domain::Ptr incOffset = *itptr.offsets_.begin();
+                    it->offsets_ = {curOffset->join(incOffset)};
                 } else {
-                    locations_.insert(itptr);
+                    for (auto&& offset : itptr.offsets_) it->offsets_.insert(offset);
                 }
             } else {
-                it->offset_ = it->offset_->join(itptr.offset_);
+                ASSERT(it->offsets_.size() == 1 && itptr.offsets_.size() == 1, "unexpected")
+                Domain::Ptr curOffset = *it->offsets_.begin();
+                Domain::Ptr incOffset = *itptr.offsets_.begin();
+                it->offsets_ = {curOffset->join(incOffset)};
             }
         }
     }
@@ -194,8 +209,10 @@ Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) {
 
     auto result = factory_->getBottom(type);
     for (auto&& it : locations_) {
-        auto totalOffset = it.offset_->add(offset);
-        result = result->join(it.location_->load(type, totalOffset));
+        for (auto&& cur_offset : it.offsets_) {
+            auto totalOffset = cur_offset->add(offset);
+            result = result->join(it.location_->load(type, totalOffset));
+        }
     }
     return result;
 }
@@ -206,19 +223,21 @@ void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     if (elementType_.isPointerTy()) {
         locations_.clear();
         if (value->isAggregate()) {
-            locations_.insert({factory_->getIndex(0), value});
+            locations_.insert({ {factory_->getIndex(0)}, value});
         } else {
             auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&elementType_), 1);
             auto&& arrayDom = factory_->getAggregate(*arrayType, {value});
-            locations_.insert({factory_->getIndex(0), arrayDom});
+            locations_.insert({ {factory_->getIndex(0)}, arrayDom});
         }
         // if pointer was BOTTOM, then we should change it's value. But we can't create
         // new ptr domain, because there may be objects, referencing this one
         if (isBottom()) setValue();
     } else {
         for (auto&& it : locations_) {
-            auto totalOffset = it.offset_->add(offset);
-            it.location_->store(value, {totalOffset});
+            for (auto&& cur_offset : it.offsets_) {
+                auto totalOffset = cur_offset->add(offset);
+                it.location_->store(value, {totalOffset});
+            }
         }
     }
 }
@@ -236,8 +255,10 @@ Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain:
     auto zeroElement = subOffsets[0];
 
     for (auto&& it : locations_) {
-        subOffsets[0] = zeroElement->add(it.offset_);
-        result = result->join(it.location_->gep(type, subOffsets));
+        for (auto&& cur_offset : it.offsets_) {
+            subOffsets[0] = zeroElement->add(cur_offset);
+            result = result->join(it.location_->gep(type, subOffsets));
+        }
     }
     return result;
 }

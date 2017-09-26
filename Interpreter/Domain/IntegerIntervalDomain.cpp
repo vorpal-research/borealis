@@ -62,10 +62,11 @@ IntegerIntervalDomain::IntegerIntervalDomain(const IntegerIntervalDomain& other)
         wm_(other.wm_) {}
 
 Domain::Ptr IntegerIntervalDomain::clone() const {
-    return Domain::Ptr{ new IntegerIntervalDomain(*this) };
+    return std::make_shared<IntegerIntervalDomain>(*this);
 }
 
 Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval join");
     ASSERT(this->getWidth() == interval->getWidth(), "Joining two intervals of different format");

@@ -13,7 +13,7 @@ namespace borealis {
 namespace absint {
 
 struct PointerLocation {
-    mutable Domain::Ptr offset_;
+    mutable std::unordered_set<Domain::Ptr, DomainHash, DomainEquals> offsets_;
     Domain::Ptr location_;
 };
 
@@ -69,9 +69,9 @@ protected:
 
     PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
     PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
-    PointerDomain(const PointerDomain& other);
 
 public:
+    PointerDomain(const PointerDomain& other);
 
     void moveToTop() override;
     /// Poset

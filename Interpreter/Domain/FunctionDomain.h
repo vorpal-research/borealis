@@ -24,9 +24,9 @@ protected:
     FunctionDomain(DomainFactory* factory, const llvm::Type* type);
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, Function::Ptr location);
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, const FunctionSet& locations);
-    FunctionDomain(const FunctionDomain& other);
 
 public:
+    FunctionDomain(const FunctionDomain& other);
     void moveToTop() override;
     /// Poset
     bool equals(const Domain* other) const override;

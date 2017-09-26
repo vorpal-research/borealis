@@ -57,8 +57,10 @@ public:
         auto zeroElement = subOffsets[0];
 
         for (auto&& it : ptr.getLocations()) {
-            subOffsets[0] = zeroElement->add(it.offset_);
-            if (visit(it.location_, subOffsets)) return true;
+            for (auto&& cur_offset : it.offsets_) {
+                subOffsets[0] = zeroElement->add(cur_offset);
+                if (visit(it.location_, subOffsets)) return true;
+            }
         }
 
         return false;

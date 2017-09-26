@@ -30,9 +30,9 @@ protected:
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub, Integer::Ptr slb, Integer::Ptr sub);
     IntegerIntervalDomain(DomainFactory* factory, const ID& key);
-    IntegerIntervalDomain(const IntegerIntervalDomain& other);
 
 public:
+    IntegerIntervalDomain(const IntegerIntervalDomain& other);
     /// Poset
     bool equals(const Domain* other) const override;
     bool operator<(const Domain& other) const override;

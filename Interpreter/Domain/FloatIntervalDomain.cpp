@@ -39,7 +39,7 @@ FloatIntervalDomain::FloatIntervalDomain(const FloatIntervalDomain& other) :
         wm_(other.wm_) {}
 
 Domain::Ptr FloatIntervalDomain::clone() const {
-    return Domain::Ptr{ new FloatIntervalDomain(*this) };
+    return std::make_shared<FloatIntervalDomain>(*this);
 }
 
 bool FloatIntervalDomain::equals(const Domain* other) const {
@@ -50,6 +50,7 @@ bool FloatIntervalDomain::equals(const Domain* other) const {
     if (this->isBottom() && interval->isBottom()) return true;
     if (this->isTop() && interval->isTop()) return true;
 
+    // XXX: check if this works with inf's/other weird float values
     return util::eq(this->lb_, interval->lb_) &&
             util::eq(this->ub_, interval->ub_);
 }
@@ -62,13 +63,11 @@ bool FloatIntervalDomain::operator<(const Domain& other) const {
     if (this->isBottom()) return true;
     if (this->isTop()) return false;
 
-    auto fromcmp = interval->lb_.compare(this->lb_);
-    auto tocmp = this->ub_.compare(interval->ub_);
-    return (fromcmp == llvm::APFloat::cmpLessThan || fromcmp == llvm::APFloat::cmpEqual) &&
-            (tocmp == llvm::APFloat::cmpLessThan || tocmp == llvm::APFloat::cmpEqual);
+    return util::le(interval->lb_, this->lb_) && util::le(this->ub_, interval->ub_);
 }
 
 Domain::Ptr FloatIntervalDomain::join(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval join");
 

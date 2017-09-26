@@ -283,6 +283,7 @@ bool hasAddressTaken(const llvm::Function& F) {
 
     for(auto&& user : F.users()) {
         if (llvm::isa<llvm::CallInst>(user)) continue;
+        // FIXME: invokes?
 
         if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(user)) {
             if (ce->getOpcode() != llvm::Instruction::BitCast) return true;

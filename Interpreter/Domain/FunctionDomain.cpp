@@ -35,7 +35,7 @@ FunctionDomain::FunctionDomain(const FunctionDomain& other)
           locations_(other.locations_) {}
 
 Domain::Ptr FunctionDomain::clone() const {
-    return Domain::Ptr{ new FunctionDomain(*this) };
+    return std::make_shared<FunctionDomain>(*this);
 }
 
 bool FunctionDomain::equals(const Domain* other) const {
@@ -55,6 +55,7 @@ bool FunctionDomain::operator<(const Domain&) const {
 }
 
 Domain::Ptr FunctionDomain::join(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
     auto func = llvm::dyn_cast<FunctionDomain>(other.get());
     ASSERT(func, "Non-function domain in function join");
 

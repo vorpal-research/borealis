@@ -144,7 +144,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
         auto& functype = *function->getType()->getPointerElementType();
         auto&& arrayType = llvm::ArrayType::get(function->getType(), 1);
         auto&& arrayDom = getAggregate(*arrayType, {getFunction(functype, module_->get(function))});
-        return getPointer(functype, {{getIndex(0), arrayDom}});
+        return getPointer(functype, {{{getIndex(0)}, arrayDom}});
     // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
         return getBottom(*constant->getType());
@@ -176,7 +176,7 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
     // PointerDomain
     } else if (type.isPointerTy()) {
         auto&& location = allocate(*type.getPointerElementType());
-        return getPointer(*type.getPointerElementType(), { {getIndex(0), location} });
+        return getPointer(*type.getPointerElementType(), { {{getIndex(0)}, location} });
     // Otherwise
     } else {
         errs() << "Creating domain of unknown type <" << ST_->toString(&type) << ">" << endl;
@@ -185,11 +185,11 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
 }
 
 Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width, bool isSigned) {
-    return Integer::Ptr{ new IntValue(llvm::APInt(width, val, isSigned), width) };
+    return std::make_shared<IntValue>(llvm::APInt(width, val, isSigned), width);
 }
 
 Integer::Ptr DomainFactory::toInteger(const llvm::APInt& val) {
-    return Integer::Ptr{ new IntValue(val, val.getBitWidth()) };
+    return std::make_shared<IntValue>(val, val.getBitWidth());
 }
 
 Domain::Ptr DomainFactory::getBool(bool value) {
@@ -252,7 +252,7 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFlo
 
 /* PointerDomain */
 Domain::Ptr DomainFactory::getNullptr(const llvm::Type& elementType) {
-    static PointerLocation nullptrLocation{ getIndex(0), getNullptrLocation() };
+    static PointerLocation nullptrLocation{ {getIndex(0)}, getNullptrLocation() };
     return Domain::Ptr{ new PointerDomain(this, elementType, {nullptrLocation}) };
 }
 

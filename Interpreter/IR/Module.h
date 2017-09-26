@@ -5,13 +5,15 @@
 #ifndef BOREALIS_MODULE_H
 #define BOREALIS_MODULE_H
 
+#include <map>
 #include <string>
+#include <unordered_map>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 #include <Passes/Tracker/SlotTrackerPass.h>
 
-#include "Function.h"
+#include "Interpreter/IR/Function.h"
 #include "Interpreter/Domain/DomainFactory.h"
 
 namespace borealis {
@@ -21,7 +23,7 @@ class Module {
 public:
 
     using GlobalsMap = std::map<const llvm::Value*, Domain::Ptr>;
-    using FunctionMap = std::map<const llvm::Function*, Function::Ptr>;
+    using FunctionMap = std::unordered_map<const llvm::Function*, Function::Ptr>;
 
     Module(const llvm::Module* module, SlotTrackerPass* st);
 
@@ -33,7 +35,7 @@ public:
     const GlobalsMap& getGloabls() const;
     void setGlobal(const llvm::Value* val, Domain::Ptr domain);
     Domain::Ptr findGlobal(const llvm::Value* val) const;
-    GlobalsMap getGlobalsFor(const Function::Ptr f) const;
+    GlobalsMap getGlobalsFor(Function::Ptr f) const;
     GlobalsMap getGlobalsFor(const BasicBlock* bb) const;
     const FunctionMap& getFunctions() const;
     const FunctionMap& getAddressTakenFunctions() const;

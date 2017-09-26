@@ -5,6 +5,9 @@
 #ifndef BOREALIS_FUNCTION_H
 #define BOREALIS_FUNCTION_H
 
+#include <map>
+#include <unordered_map>
+
 #include "BasicBlock.h"
 #include "Interpreter/State.h"
 #include "Util/slottracker.h"
@@ -19,10 +22,6 @@ public:
 
     using Ptr = std::shared_ptr<Function>;
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, BasicBlock>;
-    using BlockVector = std::vector<BasicBlock*>;
-    using CallMap = std::unordered_map<const llvm::Value*, Function::Ptr>;
-    using iterator = BlockMap::iterator;
-    using const_iterator = BlockMap::const_iterator;
 
 private:
 
@@ -32,7 +31,6 @@ private:
     std::vector<Domain::Ptr> arguments_;
     std::map<const llvm::Value*, Domain::Ptr> globals_;
     BlockMap blocks_;
-    BlockVector blockVector_;
     State::Ptr inputState_;
     State::Ptr outputState_;
 
@@ -70,15 +68,6 @@ public:
     bool empty() const;
     std::string getName() const;
     std::string toString() const;
-
-    BlockVector& getVector() {
-        return blockVector_;
-    }
-
-    auto begin() QUICK_RETURN(blockVector_.begin());
-    auto begin() QUICK_CONST_RETURN(blockVector_.begin());
-    auto end() QUICK_RETURN(blockVector_.end());
-    auto end() QUICK_CONST_RETURN(blockVector_.end());
 
 };
 

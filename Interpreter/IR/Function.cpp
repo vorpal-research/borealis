@@ -39,18 +39,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
     }
 
     for (auto&& block : util::viewContainer(*instance_)) {
-        auto&& aiBlock = BasicBlock(&block, tracker_, factory_);
-        blocks_.insert( {&block, aiBlock} );
-        blockVector_.emplace_back(&blocks_.at(&block));
-    }
-
-    for (auto&& it : blocks_) {
-        for (auto bb = pred_begin(it.first), et = pred_end(it.first); bb != et; ++bb) {
-            it.second.addPredecessor(getBasicBlock(*bb));
-        }
-        for (auto bb = succ_begin(it.first), et = succ_end(it.first); bb != et; ++bb) {
-            it.second.addSuccessor(getBasicBlock(*bb));
-        }
+        blocks_.insert( {&block, std::move(BasicBlock{&block, tracker_, factory_}) });
     }
 
     // adding return value

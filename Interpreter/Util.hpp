@@ -20,7 +20,9 @@ llvm::APFloat getMinValue(const llvm::fltSemantics& semantics);
 
 bool lt(const llvm::APFloat& lhv, const llvm::APFloat& rhv);
 bool eq(const llvm::APFloat& lhv, const llvm::APFloat& rhv);
+bool le(const llvm::APFloat& lhv, const llvm::APFloat& rhv);
 bool gt(const llvm::APFloat& lhv, const llvm::APFloat& rhv);
+bool ge(const llvm::APFloat& lhv, const llvm::APFloat& rhv);
 
 static bool operator<(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     return lt(lhv, rhv);

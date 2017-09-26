@@ -118,13 +118,13 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
             }
             ASSERT(content, "Unsupported constant");
 
-            PointerLocation loc = {factory_.getIndex(0), content};
+            PointerLocation loc = {{factory_.getIndex(0)}, content};
             auto newDomain = factory_.getPointer(elementType, {loc});
             // we need this because GEPs for global structs and arrays contain one additional index at the start
             if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
                 auto newArray = llvm::ArrayType::get(it->getType(), 1);
                 auto newLevel = factory_.getAggregate(*newArray, {newDomain});
-                PointerLocation loc2 = {factory_.getIndex(0), newLevel};
+                PointerLocation loc2 = {{factory_.getIndex(0)}, newLevel};
                 globalDomain = factory_.getPointer(*newArray, {loc2});
             } else {
                 globalDomain = newDomain;
@@ -199,7 +199,7 @@ Domain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::BasicBloc
     }
 }
 
-Module::GlobalsMap Module::getGlobalsFor(const Function::Ptr f) const {
+Module::GlobalsMap Module::getGlobalsFor(Function::Ptr f) const {
     return util::viewContainer(f->getGlobals())
             .map([&](auto&& a) -> std::pair<const llvm::Value*, Domain::Ptr> { return {a, findGlobal(a)}; })
             .toMap();

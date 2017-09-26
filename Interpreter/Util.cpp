@@ -37,9 +37,21 @@ bool eq(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     return lhv.compare(rhv) == llvm::APFloat::cmpEqual;
 }
 
+bool le(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
+    if (lhv.isNaN() && rhv.isNaN()) return true;
+    auto cmp = lhv.compare(rhv);
+    return cmp == llvm::APFloat::cmpEqual || cmp == llvm::APFloat::cmpLessThan;
+}
+
 bool gt(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     if (lhv.isNaN() && rhv.isNaN()) return false;
     return lhv.compare(rhv) == llvm::APFloat::cmpGreaterThan;
+}
+
+bool ge(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
+    if (lhv.isNaN() && rhv.isNaN()) return true;
+    auto cmp = lhv.compare(rhv);
+    return cmp == llvm::APFloat::cmpEqual || cmp == llvm::APFloat::cmpGreaterThan;
 }
 
 const llvm::fltSemantics& getSemantics(const llvm::Type& type) {

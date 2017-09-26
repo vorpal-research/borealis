@@ -24,10 +24,6 @@ bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
     auto interpreter = absint::Interpreter(&M, fip, st);
     interpreter.run();
 
-    if (printCFG.get(false)) {
-        viewCFG(interpreter.getModule());
-    }
-
     if (M.getFunction("main") && enableAnalysis.get(false)) {
         auto* module = const_cast<absint::Module*>(&interpreter.getModule());
         absint::OutOfBoundsChecker(module, dm, fip).run();
@@ -42,17 +38,6 @@ void AbstractInterpreterPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<FuncInfoProvider>::addRequired(AU);
     AUX<SlotTrackerPass>::addRequired(AU);
     AUX<DefectManager>::addRequired(AU);
-}
-
-void AbstractInterpreterPass::viewCFG(const absint::Module& module) {
-    for (auto&& function : module.getFunctions()) {
-        std::string outputFileName = llvm::WriteGraph<absint::Function*>(function.second.get(),
-                                                                         "absint." + function.second->getName(),
-                                                                         false);
-        if (outputFileName.empty()) continue;
-
-        llvm::DisplayGraph(outputFileName, false, llvm::GraphProgram::DOT);
-    }
 }
 
 char AbstractInterpreterPass::ID;

@@ -5,7 +5,7 @@
 #ifndef BOREALIS_ARRAY_H
 #define BOREALIS_ARRAY_H
 
-#include <map>
+#include <unordered_map>
 
 #include "Domain.h"
 
@@ -16,8 +16,8 @@ namespace absint {
 class AggregateDomain : public Domain {
 public:
 
-    using Types = std::map<std::size_t, const llvm::Type*>;
-    using Elements = std::map<std::size_t, Domain::Ptr>;
+    using Types = std::unordered_map<std::size_t, const llvm::Type*>;
+    using Elements = std::unordered_map<std::size_t, Domain::Ptr>;
 
 protected:
 
@@ -41,10 +41,10 @@ protected:
     AggregateDomain(DomainFactory* factory, const llvm::Type& elementType,
                     const AggregateDomain::Elements& elements);
 
+public:
+
     AggregateDomain(const AggregateDomain& other);
 
-
-public:
     void moveToTop() override;
     /// Poset
     bool equals(const Domain* other) const override;

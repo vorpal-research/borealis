@@ -103,14 +103,6 @@ void BasicBlock::setVisited() {
     visited_ = true;
 }
 
-void BasicBlock::addPredecessor(BasicBlock* pred) {
-    predecessors_.emplace_back(pred);
-}
-
-void BasicBlock::addSuccessor(BasicBlock* succ) {
-    successors_.emplace_back(succ);
-}
-
 void BasicBlock::mergeToInput(State::Ptr input) {
     inputState_->merge(input);
     inputChanged_ = true;
