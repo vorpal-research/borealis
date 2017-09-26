@@ -37,9 +37,9 @@ public:
     Integer::Ptr lshr(Integer::Ptr shift) const override;
     Integer::Ptr ashr(Integer::Ptr shift) const override;
     /// Cast
-    Integer::Ptr trunc(const size_t width) const override;
-    Integer::Ptr zext(const size_t width) const override;
-    Integer::Ptr sext(const size_t width) const override;
+    Integer::Ptr trunc(size_t width) const override;
+    Integer::Ptr zext(size_t width) const override;
+    Integer::Ptr sext(size_t width) const override;
 
 };
 

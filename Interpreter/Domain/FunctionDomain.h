@@ -7,7 +7,7 @@
 
 #include <unordered_set>
 
-#include "Domain.h"
+#include "Interpreter/Domain/Domain.h"
 #include "Interpreter/IR/Function.h"
 
 namespace borealis {
@@ -18,15 +18,11 @@ public:
 
     using FunctionSet = std::unordered_set<Function::Ptr, FunctionHash, FunctionEquals>;
 
-protected:
-
-    friend class DomainFactory;
     FunctionDomain(DomainFactory* factory, const llvm::Type* type);
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, Function::Ptr location);
     FunctionDomain(DomainFactory* factory, const llvm::Type* type, const FunctionSet& locations);
-
-public:
     FunctionDomain(const FunctionDomain& other);
+
     void moveToTop() override;
     /// Poset
     bool equals(const Domain* other) const override;

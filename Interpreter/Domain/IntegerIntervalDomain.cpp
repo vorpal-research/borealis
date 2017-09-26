@@ -2,7 +2,7 @@
 // Created by abdullin on 2/2/17.
 //
 
-#include "DomainFactory.h"
+#include "Interpreter/Domain/DomainFactory.h"
 #include "IntegerIntervalDomain.h"
 #include "Util/algorithm.hpp"
 #include "Util/sayonara.hpp"

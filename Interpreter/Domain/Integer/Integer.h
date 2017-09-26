@@ -7,11 +7,27 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <llvm/IR/Type.h>
+#include <Util/cache.hpp>
+
+#include "Interpreter/Util.hpp"
 
 namespace borealis {
 namespace absint {
+
+struct APIntHash {
+    size_t operator()(const llvm::APInt& a) const noexcept {
+        return llvm::hash_value(a);
+    }
+};
+
+struct APIntEquals {
+    bool operator()(const llvm::APInt& lhv, const llvm::APInt& rhv) const noexcept {
+        return lhv.getBitWidth() == rhv.getBitWidth() && lhv == rhv;
+    }
+};
 
 class Integer : public std::enable_shared_from_this<const Integer> {
 protected:
@@ -24,13 +40,16 @@ protected:
 public:
 
     using Ptr = std::shared_ptr<const Integer>;
+    template <typename Key, typename Value>
+    using CacheImpl = std::unordered_map<Key, Value, APIntHash, APIntEquals>;
 
     Integer(Integer::Type type, size_t width) : type_(type), width_(width) {}
     virtual ~Integer() = default;
 
-
     static Integer::Ptr getMaxValue(size_t width);
     static Integer::Ptr getMinValue(size_t width);
+    static Integer::Ptr getValue(uint64_t value, size_t width);
+    static Integer::Ptr getValue(const llvm::APInt& value);
 
     static bool classof(const Integer*) {
         return true;
@@ -84,14 +103,29 @@ public:
     virtual Integer::Ptr lshr(Integer::Ptr shift) const = 0;
     virtual Integer::Ptr ashr(Integer::Ptr shift) const = 0;
     /// Cast
-    virtual Integer::Ptr trunc(const size_t width) const = 0;
-    virtual Integer::Ptr zext(const size_t width) const = 0;
-    virtual Integer::Ptr sext(const size_t width) const = 0;
+    virtual Integer::Ptr trunc(size_t width) const = 0;
+    virtual Integer::Ptr zext(size_t width) const = 0;
+    virtual Integer::Ptr sext(size_t width) const = 0;
 
 private:
+    static util::cache<size_t, Integer::Ptr> max_cache_;
+    static util::cache<size_t, Integer::Ptr> min_cache_;
+    static util::cache<llvm::APInt, Integer::Ptr, CacheImpl> val_cache_;
+
     Type type_;
     size_t width_;
+};
 
+struct IntegerHash {
+    size_t operator()(Integer::Ptr i) const noexcept {
+        return i->hashCode();
+    }
+};
+
+struct IntegerEquals {
+    bool operator()(Integer::Ptr lhv, Integer::Ptr rhv) const noexcept {
+        return lhv->eq(rhv);
+    }
 };
 
 static bool operator<(Integer::Ptr lhv, Integer::Ptr rhv) {

@@ -12,9 +12,7 @@ namespace absint {
 
 class IntValue : public Integer {
 public:
-
-    IntValue(uint64_t value, size_t width);
-    IntValue(const llvm::APInt& value, size_t width);
+    explicit IntValue(const llvm::APInt& value);
 
     static bool classof(const Integer* other);
     std::string toString() const override;
@@ -38,14 +36,13 @@ public:
     Integer::Ptr lshr(Integer::Ptr shift) const override;
     Integer::Ptr ashr(Integer::Ptr shift) const override;
     /// Cast
-    Integer::Ptr trunc(const size_t width) const override;
-    Integer::Ptr zext(const size_t width) const override;
-    Integer::Ptr sext(const size_t width) const override;
+    Integer::Ptr trunc(size_t width) const override;
+    Integer::Ptr zext(size_t width) const override;
+    Integer::Ptr sext(size_t width) const override;
 
 private:
 
     const llvm::APInt value_;
-
 };
 
 }   /* namespace absint */

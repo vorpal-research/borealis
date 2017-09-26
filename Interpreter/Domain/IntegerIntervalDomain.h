@@ -5,9 +5,9 @@
 #ifndef BOREALIS_INTERVALDOMAIN_H
 #define BOREALIS_INTERVALDOMAIN_H
 
-#include "Domain.h"
-#include "Integer/Integer.h"
-#include "IntervalWidening.hpp"
+#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/Integer/Integer.h"
+#include "Interpreter/Domain/IntervalWidening.hpp"
 #include "Interpreter/Util.hpp"
 #include "Util/hash.hpp"
 
@@ -22,17 +22,12 @@ public:
     struct IDHash;
     struct IDEquals;
 
-protected:
-
-    friend class DomainFactory;
-
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr constant);
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub);
     IntegerIntervalDomain(DomainFactory* factory, Integer::Ptr lb, Integer::Ptr ub, Integer::Ptr slb, Integer::Ptr sub);
     IntegerIntervalDomain(DomainFactory* factory, const ID& key);
-
-public:
     IntegerIntervalDomain(const IntegerIntervalDomain& other);
+
     /// Poset
     bool equals(const Domain* other) const override;
     bool operator<(const Domain& other) const override;

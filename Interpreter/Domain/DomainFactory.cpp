@@ -6,6 +6,7 @@
 #include <Type/TypeUtils.h>
 
 #include "DomainFactory.h"
+#include "Interpreter/Domain/AggregateDomain.h"
 #include "Interpreter/Domain/Integer/IntValue.h"
 #include "Interpreter/IR/Module.h"
 #include "Interpreter/Util.hpp"
@@ -19,9 +20,9 @@ namespace absint {
 DomainFactory::DomainFactory(Module* module) : ObjectLevelLogging("domain"),
                                                module_(module),
                                                ST_(module_->getSlotTracker()),
-                                               int_cache_(LAM(a, Domain::Ptr{ new IntegerIntervalDomain(this, a) })),
-                                               float_cache_(LAM(a, Domain::Ptr{ new FloatIntervalDomain(this, a) })),
-                                               nullptr_{ new NullptrDomain(this) } {}
+                                               int_cache_(LAM(a, std::make_shared<IntegerIntervalDomain>(this, a))),
+                                               float_cache_(LAM(a, std::make_shared<FloatIntervalDomain>(this, a))),
+                                               nullptr_{ std::make_shared<NullptrDomain>(this) } {}
 
 DomainFactory::~DomainFactory() {
     auto&& info = infos();
@@ -185,11 +186,11 @@ Domain::Ptr DomainFactory::allocate(const llvm::Type& type) {
 }
 
 Integer::Ptr DomainFactory::toInteger(uint64_t val, size_t width, bool isSigned) {
-    return std::make_shared<IntValue>(llvm::APInt(width, val, isSigned), width);
+    return toInteger(llvm::APInt(width, val, isSigned));
 }
 
 Integer::Ptr DomainFactory::toInteger(const llvm::APInt& val) {
-    return std::make_shared<IntValue>(val, val.getBitWidth());
+    return Integer::getValue(val);
 }
 
 Domain::Ptr DomainFactory::getBool(bool value) {
@@ -253,7 +254,7 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFlo
 /* PointerDomain */
 Domain::Ptr DomainFactory::getNullptr(const llvm::Type& elementType) {
     static PointerLocation nullptrLocation{ {getIndex(0)}, getNullptrLocation() };
-    return Domain::Ptr{ new PointerDomain(this, elementType, {nullptrLocation}) };
+    return std::make_shared<PointerDomain>(this, elementType, PointerDomain::Locations{nullptrLocation});
 }
 
 Domain::Ptr DomainFactory::getNullptrLocation() {
@@ -261,7 +262,7 @@ Domain::Ptr DomainFactory::getNullptrLocation() {
 }
 
 Domain::Ptr DomainFactory::getPointer(Domain::Value value, const llvm::Type& elementType) {
-    return Domain::Ptr{ new PointerDomain(value, this, elementType) };
+    return std::make_shared<PointerDomain>(value, this, elementType);
 }
 
 Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType) {
@@ -269,7 +270,7 @@ Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType) {
 }
 
 Domain::Ptr DomainFactory::getPointer(const llvm::Type& elementType, const PointerDomain::Locations& locations) {
-    return Domain::Ptr{ new PointerDomain(this, elementType, locations) };
+    return std::make_shared<PointerDomain>(this, elementType, locations);
 }
 
 /* AggregateDomain */
@@ -279,26 +280,16 @@ Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type) {
 
 Domain::Ptr DomainFactory::getAggregate(Domain::Value value, const llvm::Type& type) {
     if (type.isArrayTy()) {
-        return Domain::Ptr{
-                new AggregateDomain(value,
-                                    this,
-                                    *type.getArrayElementType(),
-                                    getIndex(type.getArrayNumElements())
-                )
-        };
+        return std::make_shared<AggregateDomain>(value, this,
+                                                 *type.getArrayElementType(),
+                                                 getIndex(type.getArrayNumElements()));
 
     } else if (type.isStructTy()) {
         AggregateDomain::Types types;
         for (auto i = 0U; i < type.getStructNumElements(); ++i)
-            types[i] = type.getStructElementType(i);
+            types.emplace_back(type.getStructElementType(i));
 
-        return Domain::Ptr{
-                new AggregateDomain(value,
-                                    this,
-                                    types,
-                                    getIndex(type.getStructNumElements())
-                )
-        };
+        return std::make_shared<AggregateDomain>(value, this, types, getIndex(type.getStructNumElements()));
     }
     UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }
@@ -309,16 +300,16 @@ Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type, std::vector<Doma
         for (auto i = 0U; i < elements.size(); ++i) {
             elementMap[i] = elements[i];
         }
-        return Domain::Ptr { new AggregateDomain(this, *type.getArrayElementType(), elementMap) };
+        return std::make_shared<AggregateDomain>(this, *type.getArrayElementType(), elementMap);
 
     } else if (type.isStructTy()) {
         AggregateDomain::Types types;
         AggregateDomain::Elements elementMap;
         for (auto i = 0U; i < type.getStructNumElements(); ++i) {
-            types[i] = type.getStructElementType(i);
+            types.emplace_back(type.getStructElementType(i));
             elementMap[i] = elements[i];
         }
-        return Domain::Ptr { new AggregateDomain(this, types, elementMap) };
+        return std::make_shared<AggregateDomain>(this, types, elementMap);
     }
     UNREACHABLE("Unknown aggregate type: " + ST_->toString(&type));
 }
@@ -326,17 +317,17 @@ Domain::Ptr DomainFactory::getAggregate(const llvm::Type& type, std::vector<Doma
 /* Function */
 Domain::Ptr DomainFactory::getFunction(const llvm::Type& type) {
     ASSERT(type.isFunctionTy(), "Trying to create function domain on non-function type");
-    return Domain::Ptr{ new FunctionDomain(this, &type) };
+    return std::make_shared<FunctionDomain>(this, &type);
 }
 
 Domain::Ptr DomainFactory::getFunction(const llvm::Type& type, Function::Ptr function) {
     ASSERT(type.isFunctionTy(), "Trying to create function domain on non-function type");
-    return Domain::Ptr{ new FunctionDomain(this, &type, function) };
+    return std::make_shared<FunctionDomain>(this, &type, function);
 }
 
 Domain::Ptr DomainFactory::getFunction(const llvm::Type& type, const FunctionDomain::FunctionSet& functions) {
     ASSERT(type.isFunctionTy(), "Trying to create function domain on non-function type");
-    return Domain::Ptr{ new FunctionDomain(this, &type, functions) };
+    return std::make_shared<FunctionDomain>(this, &type, functions);
 }
 
 /* heap */

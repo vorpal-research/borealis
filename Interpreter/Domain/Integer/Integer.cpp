@@ -5,16 +5,27 @@
 #include "Integer.h"
 #include "IntMin.h"
 #include "IntMax.h"
+#include "IntValue.h"
+
+#include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
 
 Integer::Ptr Integer::getMaxValue(size_t width) {
-    return Integer::Ptr{ new IntMax(width)};
+    return max_cache_[width];
 }
 
 Integer::Ptr Integer::getMinValue(size_t width) {
-    return Integer::Ptr{ new IntMin(width)};
+    return min_cache_[width];
+}
+
+Integer::Ptr Integer::getValue(uint64_t value, size_t width) {
+    return getValue(llvm::APInt(width, value));
+}
+
+Integer::Ptr Integer::getValue(const llvm::APInt& value) {
+    return val_cache_[value];
 }
 
 bool Integer::neq(Integer::Ptr other) const {
@@ -45,5 +56,13 @@ bool Integer::sge(Integer::Ptr other) const {
     return sgt(other) || eq(other);
 }
 
+util::cache<size_t, Integer::Ptr> Integer::max_cache_([](auto&& X) -> decltype(auto) { return std::make_shared<IntMax>(X); });
+util::cache<size_t, Integer::Ptr> Integer::min_cache_([](auto&& X) -> decltype(auto) { return std::make_shared<IntMin>(X); });
+util::cache<llvm::APInt, Integer::Ptr, Integer::CacheImpl> Integer::val_cache_([](auto&& X) -> decltype(auto) {
+    return std::make_shared<IntValue>(X);
+});
+
 }   /* namespace absint */
 }   /* namespace borealis */
+
+#include "Util/unmacros.h"

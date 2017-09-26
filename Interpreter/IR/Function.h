@@ -8,7 +8,7 @@
 #include <map>
 #include <unordered_map>
 
-#include "BasicBlock.h"
+#include "Interpreter/IR/BasicBlock.h"
 #include "Interpreter/State.h"
 #include "Util/slottracker.h"
 
@@ -34,13 +34,10 @@ private:
     State::Ptr inputState_;
     State::Ptr outputState_;
 
-protected:
+public:
     /// Assumes that llvm::Function is not a declaration
     Function(const llvm::Function* function, DomainFactory* factory, SlotTracker* st);
 
-    friend class Module;
-
-public:
     bool isVisited() const;
     bool hasAddressTaken() const;
     const llvm::FunctionType* getType() const;

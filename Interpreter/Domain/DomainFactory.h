@@ -11,14 +11,13 @@
 #include <llvm/IR/Value.h>
 #include <Util/cache.hpp>
 
-#include "AggregateDomain.h"
-#include "Domain.h"
-#include "FloatIntervalDomain.h"
-#include "FunctionDomain.h"
-#include "IntegerIntervalDomain.h"
+#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/FloatIntervalDomain.h"
+#include "Interpreter/Domain/FunctionDomain.h"
+#include "Interpreter/Domain/IntegerIntervalDomain.h"
+#include "Interpreter/Domain/PointerDomain.h"
 #include "Interpreter/IR/Function.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
-#include "PointerDomain.h"
 
 namespace borealis {
 namespace absint {

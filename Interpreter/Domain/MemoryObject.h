@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "Domain.h"
+#include "Interpreter/Domain/Domain.h"
 
 namespace borealis {
 namespace absint {

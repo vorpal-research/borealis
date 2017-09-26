@@ -143,7 +143,7 @@ Function::Ptr Module::get(const llvm::Function* function) {
     if (auto&& opt = util::at(functions_, function)) {
         return opt.getUnsafe();
     } else {
-        auto result = Function::Ptr{ new Function(function, &factory_, ST_->getSlotTracker(function)) };
+        auto result = std::make_shared<Function>(function, &factory_, ST_->getSlotTracker(function));
         functions_.insert( {function, result} );
         return result;
     }

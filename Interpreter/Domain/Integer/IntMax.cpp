@@ -45,17 +45,17 @@ Integer::Ptr IntMax::shl(Integer::Ptr) const { return shared_from_this(); }
 Integer::Ptr IntMax::lshr(Integer::Ptr) const { return shared_from_this(); }
 Integer::Ptr IntMax::ashr(Integer::Ptr) const { return shared_from_this(); }
 
-Integer::Ptr IntMax::trunc(const size_t width) const {
+Integer::Ptr IntMax::trunc(size_t width) const {
     ASSERT(width <= getWidth(), "Trunc to bigger width");
     return Integer::getMaxValue(width);
 }
 
-Integer::Ptr IntMax::zext(const size_t width) const {
+Integer::Ptr IntMax::zext(size_t width) const {
     ASSERT(width >= getWidth(), "Ext to smaller width");
     return Integer::getMaxValue(width);
 }
 
-Integer::Ptr IntMax::sext(const size_t width) const {
+Integer::Ptr IntMax::sext(size_t width) const {
     ASSERT(width >= getWidth(), "Ext to smaller width");
     return Integer::getMaxValue(width);
 }

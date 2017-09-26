@@ -70,7 +70,7 @@ private:
         State::Ptr state; // current state
         std::deque<BasicBlock*> deque; // deque of blocks to visit
         // This is generally fucked up
-        std::map<const llvm::Value*, bool> stores; // stores, visited in current context
+        std::unordered_set<const llvm::Value*> stores; // stores, visited in current context
     };
 
     /// Util functions

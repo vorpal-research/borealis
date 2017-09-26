@@ -2,7 +2,7 @@
 // Created by abdullin on 2/17/17.
 //
 
-#include "DomainFactory.h"
+#include "Interpreter/Domain/DomainFactory.h"
 #include "FloatIntervalDomain.h"
 #include "Interpreter/Util.hpp"
 #include "Util/algorithm.hpp"
@@ -28,9 +28,7 @@ FloatIntervalDomain::FloatIntervalDomain(DomainFactory* factory, const FloatInte
         ub_(value_ == TOP ?
             util::getMaxValue(std::get<1>(id).getSemantics()) :
             std::get<2>(id)),
-        wm_(FloatWidening::getInstance()) {
-    if (lb_.isSmallest() && ub_.isLargest()) value_ = TOP;
-}
+        wm_(FloatWidening::getInstance()) {}
 
 FloatIntervalDomain::FloatIntervalDomain(const FloatIntervalDomain& other) :
         Domain(other.value_, other.type_, other.factory_),

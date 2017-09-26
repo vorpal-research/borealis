@@ -16,15 +16,9 @@
 namespace borealis {
 namespace absint {
 
-IntValue::IntValue(uint64_t val, size_t width) :
-        Integer(VALUE, width),
-        value_(width, val) {}
-
-IntValue::IntValue(const llvm::APInt& value, size_t width) :
-        Integer(VALUE, width),
-        value_(value) {
-    ASSERT(getWidth() == value.getBitWidth(), "Different width in IntValue args");
-}
+IntValue::IntValue(const llvm::APInt& value) :
+        Integer(VALUE, value.getBitWidth()),
+        value_(value) {}
 
 bool IntValue::classof(const Integer* other) {
     return other->isValue();
@@ -49,7 +43,7 @@ Integer::Ptr IntValue::add(Integer::Ptr other) const {
     auto newVal = value_.uadd_ov(other->getValue(), isOverflow);
     return isOverflow ?
            nullptr :
-           Integer::Ptr{ new IntValue(newVal, getWidth()) };
+           Integer::getValue(newVal);
 }
 
 Integer::Ptr IntValue::sub(Integer::Ptr other) const {
@@ -60,7 +54,7 @@ Integer::Ptr IntValue::sub(Integer::Ptr other) const {
     auto newVal = value_.usub_ov(other->getValue(), isOverflow);
     return isOverflow ?
            nullptr :
-           Integer::Ptr{ new IntValue(newVal, getWidth()) };
+           Integer::getValue(newVal);
 }
 
 Integer::Ptr IntValue::mul(Integer::Ptr other) const {
@@ -70,7 +64,7 @@ Integer::Ptr IntValue::mul(Integer::Ptr other) const {
     auto newVal = value_.umul_ov(other->getValue(), isOverflow);
     return isOverflow ?
            nullptr :
-           Integer::Ptr{ new IntValue(newVal, getWidth()) };
+           Integer::getValue(newVal);
 }
 
 Integer::Ptr IntValue::udiv(Integer::Ptr other) const {
@@ -78,7 +72,7 @@ Integer::Ptr IntValue::udiv(Integer::Ptr other) const {
     if (other->isMax()) return Integer::getMinValue(getWidth());
     if (other->getValue() == 0) return Integer::getMaxValue(getWidth());
 
-    return Integer::Ptr{ new IntValue(value_.udiv(other->getValue()), getWidth()) };
+    return Integer::getValue(value_.udiv(other->getValue()));
 }
 
 Integer::Ptr IntValue::sdiv(Integer::Ptr other) const {
@@ -86,21 +80,21 @@ Integer::Ptr IntValue::sdiv(Integer::Ptr other) const {
     if (other->isMax()) return Integer::getMinValue(getWidth());
     if (other->getValue() == 0) return Integer::getMaxValue(getWidth());
 
-    return Integer::Ptr{ new IntValue(value_.sdiv(other->getValue()), getWidth()) };
+    return Integer::getValue(value_.sdiv(other->getValue()));
 }
 
 Integer::Ptr IntValue::urem(Integer::Ptr other) const {
     if (not other->isValue()) return other;
     if (other->getValue() == 0) return Integer::getMaxValue(getWidth());
 
-    return Integer::Ptr{ new IntValue(value_.urem(other->getValue()), getWidth()) };
+    return Integer::getValue(value_.urem(other->getValue()));
 }
 
 Integer::Ptr IntValue::srem(Integer::Ptr other) const {
     if (not other->isValue()) return other;
     if (other->getValue() == 0) return Integer::getMaxValue(getWidth());
 
-    return Integer::Ptr{ new IntValue(value_.srem(other->getValue()), getWidth()) };
+    return Integer::getValue(value_.srem(other->getValue()));
 }
 
 bool IntValue::eq(Integer::Ptr other) const {
@@ -127,34 +121,34 @@ bool IntValue::slt(Integer::Ptr other) const {
 Integer::Ptr IntValue::shl(Integer::Ptr shift) const {
     if (not shift->isValue()) return shift;
     auto shiftVal = shift->getValue();
-    return Integer::Ptr{ new IntValue(value_.shl(shiftVal), getWidth()) };
+    return Integer::getValue(value_.shl(shiftVal));
 }
 
 Integer::Ptr IntValue::lshr(Integer::Ptr shift) const {
     if (not shift->isValue()) return shift;
     auto shiftVal = shift->getValue();
-    return Integer::Ptr{ new IntValue(value_.lshr(shiftVal), getWidth()) };
+    return Integer::getValue(value_.lshr(shiftVal));
 }
 
 Integer::Ptr IntValue::ashr(Integer::Ptr shift) const {
     if (not shift->isValue()) return shift;
     auto shiftVal = shift->getValue();
-    return Integer::Ptr{ new IntValue(value_.ashr(shiftVal), getWidth()) };
+    return Integer::getValue(value_.ashr(shiftVal));
 }
 
-Integer::Ptr IntValue::trunc(const size_t width) const {
+Integer::Ptr IntValue::trunc(size_t width) const {
     ASSERT(width <= getWidth(), "Trunc to bigger width");
-    return Integer::Ptr{ new IntValue(value_.trunc(width), width) };
+    return Integer::getValue(value_.trunc(width));
 }
 
-Integer::Ptr IntValue::zext(const size_t width) const {
+Integer::Ptr IntValue::zext(size_t width) const {
     ASSERT(width >= getWidth(), "Ext to smaller width");
-    return Integer::Ptr{ new IntValue(value_.zext(width), width) };
+    return Integer::getValue(value_.zext(width));
 }
 
-Integer::Ptr IntValue::sext(const size_t width) const {
+Integer::Ptr IntValue::sext(size_t width) const {
     ASSERT(width >= getWidth(), "Ext to smaller width");
-    return Integer::Ptr{ new IntValue(value_.sext(width), width) };
+    return Integer::getValue(value_.sext(width));
 }
 
 size_t IntValue::hashCode() const {

@@ -45,19 +45,19 @@ Integer::Ptr IntMin::shl(Integer::Ptr) const { return shared_from_this(); }
 Integer::Ptr IntMin::lshr(Integer::Ptr) const { return shared_from_this(); }
 Integer::Ptr IntMin::ashr(Integer::Ptr) const { return shared_from_this(); }
 
-Integer::Ptr IntMin::trunc(const size_t width) const {
+Integer::Ptr IntMin::trunc(size_t width) const {
     ASSERT(width <= getWidth(), "Trunc to bigger width");
-    return Integer::Ptr{ new IntMin(width) };
+    return Integer::getMinValue(width);
 }
 
-Integer::Ptr IntMin::zext(const size_t width) const {
+Integer::Ptr IntMin::zext(size_t width) const {
     ASSERT(width >= getWidth(), "Ext to smaller width");
-    return Integer::Ptr{ new IntMin(width) };
+    return Integer::getMinValue(width);
 }
 
-Integer::Ptr IntMin::sext(const size_t width) const {
+Integer::Ptr IntMin::sext(size_t width) const {
     ASSERT(width >= getWidth(), "Ext to smaller width");
-    return Integer::Ptr{ new IntMin(width) };
+    return Integer::getMinValue(width);
 }
 
 size_t IntMin::hashCode() const {

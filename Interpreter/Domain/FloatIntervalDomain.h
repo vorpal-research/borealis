@@ -5,7 +5,7 @@
 #ifndef BOREALIS_FLOATINTERVAL_H
 #define BOREALIS_FLOATINTERVAL_H
 
-#include "Domain.h"
+#include "Interpreter/Domain/Domain.h"
 #include "Interpreter/Domain/IntervalWidening.hpp"
 #include "Interpreter/Util.hpp"
 #include "Util/hash.hpp"
@@ -21,16 +21,13 @@ public:
     struct IDHash;
     struct IDEquals;
 
-protected:
-
-    friend class DomainFactory;
+public:
 
     FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& constant);
     FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& lb, const llvm::APFloat& ub);
     FloatIntervalDomain(DomainFactory* factory, const ID& id);
-
-public:
     FloatIntervalDomain(const FloatIntervalDomain& other);
+
     /// Poset
     bool equals(const Domain* other) const override;
     bool operator<(const Domain& other) const override;

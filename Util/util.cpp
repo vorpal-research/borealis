@@ -12,9 +12,11 @@
 
 #include <cstdlib>
 #include <unordered_set>
+#include <llvm/IR/CallSite.h>
 
-#include "Util/util.h"
+#include "Util/cast.hpp"
 #include "Util/functional.hpp"
+#include "Util/util.h"
 
 #include "Util/macros.h"
 
@@ -282,8 +284,7 @@ bool hasAddressTaken(const llvm::Function& F) {
     if (not F.hasAddressTaken()) return false;
 
     for(auto&& user : F.users()) {
-        if (llvm::isa<llvm::CallInst>(user)) continue;
-        // FIXME: invokes?
+        if (llvm::is_one_of<llvm::CallInst, llvm::InvokeInst>(user)) continue;
 
         if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(user)) {
             if (ce->getOpcode() != llvm::Instruction::BitCast) return true;

@@ -7,7 +7,7 @@
 
 #include <unordered_set>
 
-#include "Domain.h"
+#include "Interpreter/Domain/Domain.h"
 
 namespace borealis {
 namespace absint {
@@ -63,14 +63,8 @@ public:
 
     using Locations = std::unordered_set<PointerLocation, PtrLocationHash, PtrLocationEquals>;
 
-protected:
-
-    friend class DomainFactory;
-
     PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
     PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
-
-public:
     PointerDomain(const PointerDomain& other);
 
     void moveToTop() override;

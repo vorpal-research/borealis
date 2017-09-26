@@ -4,6 +4,12 @@
 
 #include "OutOfBoundsChecker.h"
 
+#include "Interpreter/Domain/AggregateDomain.h"
+#include "Interpreter/Domain/FloatIntervalDomain.h"
+#include "Interpreter/Domain/FunctionDomain.h"
+#include "Interpreter/Domain/IntegerIntervalDomain.h"
+#include "Interpreter/Domain/PointerDomain.h"
+
 #include "Util/macros.h"
 
 namespace borealis {

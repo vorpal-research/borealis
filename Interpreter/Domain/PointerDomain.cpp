@@ -2,8 +2,9 @@
 // Created by abdullin on 4/7/17.
 //
 
-#include "DomainFactory.h"
-#include "IntegerIntervalDomain.h"
+#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/AggregateDomain.h"
+#include "Interpreter/Domain/IntegerIntervalDomain.h"
 #include "PointerDomain.h"
 #include "Interpreter/Util.hpp"
 #include "Util/collections.hpp"

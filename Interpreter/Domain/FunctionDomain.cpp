@@ -2,7 +2,7 @@
 // Created by abdullin on 7/14/17.
 //
 
-#include "DomainFactory.h"
+#include "Interpreter/Domain/DomainFactory.h"
 #include "FunctionDomain.h"
 #include "Util/collections.hpp"
 

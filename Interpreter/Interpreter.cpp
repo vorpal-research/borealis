@@ -14,12 +14,13 @@ namespace borealis {
 namespace absint {
 
 static config::BoolConfigEntry printModule("absint", "print-module");
+static config::StringConfigEntry rootFunction("analysis", "root-function");
 
 Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st)
         : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st) {}
 
 void Interpreter::run() {
-    auto&& main = module_.get("main");
+    auto&& main = module_.get(*rootFunction.get().get());
     if (main) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : main->getInstance()->getArgumentList()) {
@@ -37,7 +38,7 @@ void Interpreter::run() {
         }
         if (printModule.get(false)) infos() << endl << module_ << endl;
     } else {
-        errs() << "No main function" << endl;
+        errs() << "No root function" << endl;
     }
 }
 
@@ -252,12 +253,12 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
     ASSERT(ptr && storeVal, "store args");
 
     auto index = module_.getDomainFactory()->getIndex(0);
-    if (context_->stores.find(&i) != context_->stores.end()) {
+    if (util::contains(context_->stores, &i)) {
         auto load = ptr->load(*i.getValueOperand()->getType(), index);
         ptr->store(load->widen(storeVal), index);
     } else {
         ptr->store(storeVal, index);
-        context_->stores.insert({&i, true});
+        context_->stores.insert(&i);
     }
 }
 

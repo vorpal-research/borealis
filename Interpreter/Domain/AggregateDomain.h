@@ -7,7 +7,7 @@
 
 #include <unordered_map>
 
-#include "Domain.h"
+#include "Interpreter/Domain/Domain.h"
 
 namespace borealis {
 namespace absint {
@@ -16,17 +16,15 @@ namespace absint {
 class AggregateDomain : public Domain {
 public:
 
-    using Types = std::unordered_map<std::size_t, const llvm::Type*>;
+    using Types = std::vector<const llvm::Type*>;
     using Elements = std::unordered_map<std::size_t, Domain::Ptr>;
 
-protected:
+public:
 
     enum AggregateType {
         ARRAY = 0,
         STRUCT
     };
-
-    friend class DomainFactory;
 
     /// Struct constructors
     AggregateDomain(Domain::Value value, DomainFactory* factory,
@@ -40,8 +38,6 @@ protected:
     AggregateDomain(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
     AggregateDomain(DomainFactory* factory, const llvm::Type& elementType,
                     const AggregateDomain::Elements& elements);
-
-public:
 
     AggregateDomain(const AggregateDomain& other);
 

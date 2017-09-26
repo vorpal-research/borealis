@@ -5,8 +5,8 @@
 #include <unordered_set>
 
 #include "AggregateDomain.h"
-#include "DomainFactory.h"
-#include "IntegerIntervalDomain.h"
+#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/IntegerIntervalDomain.h"
 #include "Util/collections.hpp"
 #include "Util/sayonara.hpp"
 
@@ -53,7 +53,7 @@ AggregateDomain::AggregateDomain(Domain::Value value,
                                  Domain::Ptr length)
         : Domain{value, AGGREGATE, factory},
           aggregateType_(ARRAY),
-          elementTypes_({{0, &elementType}}),
+          elementTypes_({&elementType}),
           length_(length) {
     if (isMaxLengthTop()) value_ = TOP;
 }
@@ -63,7 +63,7 @@ AggregateDomain::AggregateDomain(DomainFactory* factory,
                                  const AggregateDomain::Elements& elements)
         : Domain{VALUE, AGGREGATE, factory},
           aggregateType_(ARRAY),
-          elementTypes_({{0, &elementType}}),
+          elementTypes_({&elementType}),
           length_(factory_->getIndex(elements.size())),
           elements_(elements) {}
 
@@ -90,7 +90,7 @@ std::string AggregateDomain::toPrettyString(const std::string& prefix) const {
     } else if (isStruct()) {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
-            ss << "  " << factory_->getSlotTracker().toString(it.second) << ", ";
+            ss << "  " << factory_->getSlotTracker().toString(it) << ", ";
         }
         ss << "} ";
     }
