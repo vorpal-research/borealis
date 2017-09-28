@@ -4,12 +4,9 @@
 
 #include "Interpreter/Domain/DomainFactory.h"
 #include "Interpreter/Domain/AggregateDomain.h"
-#include "Interpreter/Domain/IntegerIntervalDomain.h"
 #include "PointerDomain.h"
-#include "Interpreter/Util.hpp"
 #include "Util/collections.hpp"
 #include "Util/hash.hpp"
-#include "Util/streams.hpp"
 #include "Util/sayonara.hpp"
 
 #include "Util/macros.h"

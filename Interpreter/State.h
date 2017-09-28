@@ -18,7 +18,7 @@ namespace absint {
 class State : public std::enable_shared_from_this<State> {
 public:
 
-    using Map = std::map<const llvm::Value*, Domain::Ptr>;
+    using Map = std::unordered_map<const llvm::Value*, Domain::Ptr>;
     using Ptr = std::shared_ptr<State>;
 
     State(SlotTracker* tracker);

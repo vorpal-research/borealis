@@ -26,17 +26,15 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
     // find all global variables, that this basic block depends on
     for (auto&& inst : util::viewContainer(*instance_)
             .map(LAM(i, const_cast<llvm::Instruction&>(i)))) {
-        for (auto&& op : util::viewContainer(inst.operand_values())
-                .map([](llvm::Value* v) -> llvm::Value* {
-                    if (auto&& gepOp = llvm::dyn_cast<llvm::GEPOperator>(v))
-                        return gepOp->getPointerOperand();
-                    else return v; })
-                .filter([](llvm::Value* v) -> bool {
-                    if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(v)) {
-                        return not global->isConstant();
-                    } else return false;
-                })) {
-            globals_.insert({ op, factory_->getBottom(*op->getType()) });
+        std::deque<llvm::Value*> operands(inst.op_begin(), inst.op_end());
+        while (not operands.empty()) {
+            auto&& op = operands.front();
+            if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(op)) {
+                if (not global->isConstant()) globals_.insert({ op, factory_->getBottom(*op->getType()) });
+            } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(op)) {
+                for (auto&& it : util::viewContainer(ce->operand_values())) operands.push_back(it);
+            }
+            operands.pop_front();
         }
     }
 }
