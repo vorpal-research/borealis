@@ -111,6 +111,11 @@ void BasicBlock::addToInput(const llvm::Value* value, Domain::Ptr domain) {
     inputChanged_ = true;
 }
 
+void BasicBlock::addToInput(const llvm::Instruction* inst, Domain::Ptr domain) {
+    inputState_->addVariable(inst, domain);
+    inputChanged_ = true;
+}
+
 Domain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
     return outputState_->find(value);
 }

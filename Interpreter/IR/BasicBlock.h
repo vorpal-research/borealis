@@ -52,6 +52,7 @@ public:
     void mergeOutputWithInput();
     void mergeToInput(State::Ptr input);
     void addToInput(const llvm::Value* value, Domain::Ptr domain);
+    void addToInput(const llvm::Instruction* inst, Domain::Ptr domain);
     Domain::Ptr getDomainFor(const llvm::Value* value);
 
     bool empty() const;
