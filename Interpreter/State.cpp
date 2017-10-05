@@ -35,12 +35,13 @@ void State::addVariable(const llvm::Value* val, Domain::Ptr domain) {
     if (inst) {
         addVariable(inst, domain);
     } else {
-        other_locals_[val] = domain;
+        arguments_[val] = domain;
     }
 }
 
 void State::addVariable(const llvm::Instruction* inst, Domain::Ptr domain) {
     auto bb = inst->getParent();
+    
     locals_[bb][inst] = domain;
 }
 
@@ -63,7 +64,7 @@ void State::merge(State::Ptr other) {
 }
 
 void State::mergeVariables(State::Ptr other) {
-    mergeMaps(other_locals_, other->other_locals_);
+    mergeMaps(arguments_, other->arguments_);
     for (auto&& it : other->locals_) {
         if (auto&& its = util::at(locals_, it.first)) {
             mergeMaps(its.getUnsafe(), it.second);
@@ -82,13 +83,14 @@ void State::mergeReturnValue(State::Ptr other) {
 Domain::Ptr State::find(const llvm::Value *val) const {
     auto inst = llvm::dyn_cast<llvm::Instruction>(val);
     if (inst) {
-        if (auto&& bbMap = util::at(locals_, inst->getParent())) {
-            auto&& it = bbMap.getUnsafe().find(val);
-            return (it == bbMap.getUnsafe().end()) ? nullptr : it->second;
+        if (auto&& opt = util::at(locals_, inst->getParent())) {
+            auto&& bbMap = opt.getUnsafe();
+            auto&& it = bbMap.find(val);
+            return (it == bbMap.end()) ? nullptr : it->second;
         }
     } else {
-        auto&& it = other_locals_.find(val);
-        return (it == other_locals_.end()) ? nullptr : it->second;
+        auto&& it = arguments_.find(val);
+        return (it == arguments_.end()) ? nullptr : it->second;
     }
     return nullptr;
 }
@@ -127,7 +129,7 @@ bool State::equals(const State* other) const {
         return false;
     }
 
-    if (not equal(other_locals_, other->other_locals_)) {
+    if (not equal(arguments_, other->arguments_)) {
         return false;
     }
 

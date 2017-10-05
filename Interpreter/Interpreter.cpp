@@ -14,13 +14,12 @@ namespace borealis {
 namespace absint {
 
 static config::BoolConfigEntry printModule("absint", "print-module");
-static config::StringConfigEntry rootFunction("analysis", "root-function");
 
 Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st)
         : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st) {}
 
 void Interpreter::run() {
-    auto&& main = module_.get(*rootFunction.get().get());
+    auto&& main = module_.getRootFunction();
     if (main) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : main->getInstance()->getArgumentList()) {
@@ -42,7 +41,7 @@ void Interpreter::run() {
     }
 }
 
-const Module& Interpreter::getModule() const {
+Module& Interpreter::getModule() {
     return module_;
 }
 

@@ -38,8 +38,6 @@ public:
     Domain::Ptr getReturnValue() const;
 
     void merge(State::Ptr other);
-    void mergeVariables(State::Ptr other);
-    void mergeReturnValue(State::Ptr other);
     Domain::Ptr find(const llvm::Value* val) const;
 
     bool empty() const;
@@ -47,7 +45,10 @@ public:
 
 private:
 
-    VariableMap other_locals_;
+    void mergeVariables(State::Ptr other);
+    void mergeReturnValue(State::Ptr other);
+
+    VariableMap arguments_;
     BlockMap locals_;
     Domain::Ptr retval_;
     SlotTracker* tracker_;

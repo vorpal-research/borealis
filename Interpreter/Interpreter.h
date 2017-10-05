@@ -24,7 +24,7 @@ public:
     Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st);
 
     void run();
-    const Module& getModule() const;
+    Module& getModule();
 
     void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
 

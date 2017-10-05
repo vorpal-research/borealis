@@ -2,6 +2,7 @@
 // Created by abdullin on 3/2/17.
 //
 
+#include "Config/config.h"
 #include "Interpreter/Util.hpp"
 #include "Module.h"
 #include "Util/collections.hpp"
@@ -72,6 +73,8 @@ void topologicalSort(std::map<const llvm::GlobalVariable*, Global>& globals,
 
 } // namespace
 
+static config::StringConfigEntry rootFunction("analysis", "root-function");
+
 Module::Module(const llvm::Module* module, SlotTrackerPass* st)
         : instance_(module),
           ST_(st),
@@ -137,6 +140,10 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
         ASSERT(globalDomain, "Could not create domain for: " + ST_->toString(it));
         globals_.insert( {it, globalDomain} );
     }
+}
+
+Function::Ptr Module::getRootFunction() {
+    return get(*rootFunction.get().get());
 }
 
 Function::Ptr Module::get(const llvm::Function* function) {

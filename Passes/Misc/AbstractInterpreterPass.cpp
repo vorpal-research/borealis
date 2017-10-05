@@ -24,8 +24,8 @@ bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
     auto interpreter = absint::Interpreter(&M, fip, st);
     interpreter.run();
 
-    if (M.getFunction("main") && enableAnalysis.get(false)) {
-        auto* module = const_cast<absint::Module*>(&interpreter.getModule());
+    if (interpreter.getModule().getRootFunction() && enableAnalysis.get(false)) {
+        auto* module = &interpreter.getModule();
         absint::OutOfBoundsChecker(module, dm, fip).run();
         absint::NullDereferenceChecker(module, dm).run();
     }

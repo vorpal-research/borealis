@@ -27,6 +27,7 @@ public:
 
     Module(const llvm::Module* module, SlotTrackerPass* st);
 
+    Function::Ptr getRootFunction();
     Function::Ptr get(const llvm::Function* function);
     Function::Ptr get(const std::string& fname);
 

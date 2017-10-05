@@ -49,7 +49,7 @@ public:
     template <class InputIt>
     cow_map(InputIt begin, InputIt end): shared_(mkMap(begin, end)) {}
 
-    size_t count(const Key& key) const {
+    size_t count( const Key& key ) const {
         return shared_->count(key);
     }
 
@@ -73,11 +73,11 @@ public:
         return shared_->end();
     }
 
-    iterator find(const Key& key) const {
+    iterator find( const Key& key ) const {
         return shared_->find(key);
     }
 
-    bool sameAs(const cow_map& other) const {
+    bool sameAs( const cow_map& other ) const {
         return shared_ == other.shared_;
     }
 
@@ -102,7 +102,7 @@ public:
         return split()->insert(value);
     }
 
-    std::pair<iterator,bool> insert(value_type&& value ) {
+    std::pair<iterator,bool> insert( value_type&& value ) {
         return split()->insert(std::move(value));
     }
 
