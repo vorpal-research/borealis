@@ -17,9 +17,12 @@ void mergeMaps(State::VariableMap& lhv, State::VariableMap& rhv) {
     auto&& lhv_end = lhv.end();
     for (auto&& it : rhv) {
         auto&& lhv_it = lhv.find(it.first);
-        lhv[it.first] = (lhv_it == lhv_end) ?
-                        it.second :
-                        lhv_it->second->join(it.second);
+        if (lhv_it != lhv_end) {
+            if (lhv_it->second->equals(it.second.get())) continue;
+            lhv[it.first] = lhv_it->second->join(it.second);
+        } else {
+            lhv[it.first] = it.second;
+        }
     }
 }
 
@@ -41,8 +44,9 @@ void State::addVariable(const llvm::Value* val, Domain::Ptr domain) {
 
 void State::addVariable(const llvm::Instruction* inst, Domain::Ptr domain) {
     auto bb = inst->getParent();
-    
-    locals_[bb][inst] = domain;
+    auto&& opt = util::at(locals_[bb], inst);
+    if (opt && opt.getUnsafe()->equals(domain.get())) return;
+    else locals_[bb][inst] = domain;
 }
 
 void State::setReturnValue(Domain::Ptr domain) {
