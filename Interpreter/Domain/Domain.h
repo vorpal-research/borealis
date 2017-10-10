@@ -20,7 +20,6 @@ namespace absint {
 
 struct Split;
 class DomainFactory;
-class MemoryObject;
 
 class Domain : public std::enable_shared_from_this<Domain>, public logging::ObjectLevelLogging<Domain> {
 public:

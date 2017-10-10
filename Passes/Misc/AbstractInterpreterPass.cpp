@@ -8,7 +8,6 @@
 #include "Config/config.h"
 #include "Interpreter/Checker/NullDereferenceChecker.h"
 #include "Interpreter/Checker/OutOfBoundsChecker.h"
-#include "Interpreter/IR/GraphTraits.hpp"
 #include "Util/passes.hpp"
 
 namespace borealis {

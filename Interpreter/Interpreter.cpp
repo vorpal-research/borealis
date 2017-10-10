@@ -19,14 +19,14 @@ Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, Slot
         : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st) {}
 
 void Interpreter::run() {
-    auto&& main = module_.getRootFunction();
-    if (main) {
+    auto&& root = module_.getRootFunction();
+    if (root) {
         std::vector<Domain::Ptr> args;
-        for (auto&& arg : main->getInstance()->getArgumentList()) {
+        for (auto&& arg : root->getInstance()->getArgumentList()) {
             args.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
         }
 
-        interpretFunction(main, args);
+        interpretFunction(root, args);
         for (auto&& function : module_.getAddressTakenFunctions()) {
             if (not function.first->isDeclaration() && not function.second->isVisited()) {
                 std::vector<Domain::Ptr> topargs;
