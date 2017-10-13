@@ -24,8 +24,7 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
     outputState_ = std::make_shared<borealis::absint::State>(tracker_);
 
     // find all global variables, that this basic block depends on
-    for (auto&& inst : util::viewContainer(*instance_)
-            .map(LAM(i, const_cast<llvm::Instruction&>(i)))) {
+    for (auto&& inst : util::viewContainer(*instance_)) {
         std::deque<llvm::Value*> operands(inst.op_begin(), inst.op_end());
         while (not operands.empty()) {
             auto&& op = operands.front();

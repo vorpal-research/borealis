@@ -14,6 +14,7 @@ class CallGraphSlicer:
     public logging::ClassLevelLogging<CallGraphSlicer> {
 
     std::unordered_set<const llvm::Function*> slice;
+    std::unordered_set<const llvm::Function*> addressTakenFunctions;
 
 public:
 
@@ -27,6 +28,7 @@ public:
     CallGraphSlicer();
 
     const std::unordered_set<const llvm::Function*>& getSlice() const { return slice; }
+    const std::unordered_set<const llvm::Function*>& getAddressTakenFunctions() const { return addressTakenFunctions; }
     bool doSlicing() const { return !slice.empty(); }
 
     virtual bool runOnModule(llvm::Module& M) override;

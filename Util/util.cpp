@@ -284,9 +284,11 @@ bool hasAddressTaken(const llvm::Function& F) {
     if (not F.hasAddressTaken()) return false;
 
     for(auto&& user : F.users()) {
-        if (llvm::is_one_of<llvm::CallInst, llvm::InvokeInst>(user)) continue;
+        if (llvm::is_one_of<llvm::CallInst, llvm::InvokeInst>(user)) {
+            if (llvm::ImmutableCallSite(user).getCalledFunction() == &F) continue;
+            else return true;
 
-        if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(user)) {
+        } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(user)) {
             if (ce->getOpcode() != llvm::Instruction::BitCast) return true;
 
             for (auto&& castuser : user->users()) {

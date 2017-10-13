@@ -22,8 +22,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
 
     // find all global variables, that this function depends on
     for (auto&& inst : util::viewContainer(*instance_)
-            .flatten()
-            .map(LAM(i, const_cast<llvm::Instruction&>(i)))) {
+            .flatten()) {
         std::deque<llvm::Value*> operands(inst.op_begin(), inst.op_end());
         while (not operands.empty()) {
             auto&& op = operands.front();

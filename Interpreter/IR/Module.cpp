@@ -73,7 +73,7 @@ void topologicalSort(std::map<const llvm::GlobalVariable*, Global>& globals,
 
 } // namespace
 
-static config::StringConfigEntry rootFunction("analysis", "root-function");
+static config::MultiConfigEntry roots("analysis", "root-function");
 
 Module::Module(const llvm::Module* module, SlotTrackerPass* st)
         : instance_(module),
@@ -142,8 +142,11 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
     }
 }
 
-Function::Ptr Module::getRootFunction() {
-    return get(*rootFunction.get().get());
+std::vector<Function::Ptr> Module::getRootFunctions() {
+    return util::viewContainer(roots)
+            .map(LAM(name, get(name)))
+            .filter()
+            .toVector();
 }
 
 Function::Ptr Module::get(const llvm::Function* function) {

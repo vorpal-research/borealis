@@ -15,29 +15,37 @@ namespace absint {
 
 static config::BoolConfigEntry printModule("absint", "print-module");
 
-Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st)
-        : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st) {}
+Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs)
+        : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st), CGS_(cgs) {}
 
 void Interpreter::run() {
-    auto&& root = module_.getRootFunction();
-    if (root) {
+    auto&& roots = module_.getRootFunctions();
+    if (roots.empty()) {
+        errs() << "No root function" << endl;
+        return;
+    }
+
+    for (auto&& root : roots) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : root->getInstance()->getArgumentList()) {
             args.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
         }
 
         interpretFunction(root, args);
-        for (auto&& function : module_.getAddressTakenFunctions()) {
-            if (not function.first->isDeclaration() && not function.second->isVisited()) {
-                std::vector<Domain::Ptr> topargs;
-                for (auto&& arg : function.first->args())
-                    topargs.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
-                interpretFunction(function.second, topargs);
-            }
+    }
+
+    for (auto&& function : CGS_->getAddressTakenFunctions()) {
+        auto&& ai_function = module_.get(function);
+        if (not function->isDeclaration() && not ai_function->isVisited()) {
+            std::vector<Domain::Ptr> topargs;
+            for (auto&& arg : function->args())
+                topargs.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
+            interpretFunction(ai_function, topargs);
         }
-        if (printModule.get(false)) infos() << endl << module_ << endl;
-    } else {
-        errs() << "No root function" << endl;
+    }
+
+    if (printModule.get(false)) {
+        infos() << endl << module_ << endl;
     }
 }
 

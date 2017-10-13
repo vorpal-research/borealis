@@ -9,6 +9,7 @@
 #include <queue>
 
 #include <llvm/IR/InstVisitor.h>
+#include <Passes/Checker/CallGraphSlicer.h>
 
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
@@ -21,7 +22,7 @@ namespace absint {
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st);
+    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs);
 
     void run();
     Module& getModule();
@@ -87,6 +88,7 @@ private:
     Module module_;
     FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;
+    CallGraphSlicer* CGS_;
 
     Context* context_;  // active context
     std::stack<Context> stack_; // stack of contexts of interpreter
