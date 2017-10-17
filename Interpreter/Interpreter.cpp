@@ -491,6 +491,7 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
 
 Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
                                             const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
+    ASSERT(function, "nullptr in handle function call");
     if (function->getName().startswith("borealis.alloc") || function->getName().startswith("borealis.malloc")) {
         return handleMemoryAllocation(function, args);
     } else if (function->isDeclaration()) {
