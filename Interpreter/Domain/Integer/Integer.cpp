@@ -2,6 +2,7 @@
 // Created by abdullin on 6/2/17.
 //
 
+#include <Type/Integer.h>
 #include "Integer.h"
 #include "IntMin.h"
 #include "IntMax.h"
@@ -11,6 +12,24 @@
 
 namespace borealis {
 namespace absint {
+
+Integer::Ptr Integer::getMaxValue(Type::Ptr type) {
+    auto intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in Integer");
+    return getMaxValue(intType->getBitsize());
+}
+
+Integer::Ptr Integer::getMinValue(Type::Ptr type) {
+    auto intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in Integer");
+    return getMinValue(intType->getBitsize());
+}
+
+Integer::Ptr Integer::getValue(uint64_t value, Type::Ptr type) {
+    auto intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in Integer");
+    return getValue(value, intType->getBitsize());
+}
 
 Integer::Ptr Integer::getMaxValue(size_t width) {
     return max_cache_[width];

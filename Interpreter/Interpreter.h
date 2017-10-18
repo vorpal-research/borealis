@@ -75,6 +75,7 @@ private:
     };
 
     /// Util functions
+    Type::Ptr cast(const llvm::Type* type);
     Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
     Domain::Ptr getVariable(const llvm::Value* value);
     void addSuccessors(const std::vector<BasicBlock*>& successors);
@@ -86,6 +87,7 @@ private:
                                   const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
 
     Module module_;
+    TypeFactory::Ptr TF_;
     FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;
     CallGraphSlicer* CGS_;

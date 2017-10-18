@@ -43,27 +43,27 @@ AggregateDomain::AggregateDomain(DomainFactory* factory,
 
 /// Array constructors
 AggregateDomain::AggregateDomain(DomainFactory* factory,
-                                 const llvm::Type& elementType,
+                                 Type::Ptr elementType,
                                  Domain::Ptr length)
         : AggregateDomain(VALUE, factory, elementType, length) {}
 
 AggregateDomain::AggregateDomain(Domain::Value value,
                                  DomainFactory* factory,
-                                 const llvm::Type& elementType,
+                                 Type::Ptr elementType,
                                  Domain::Ptr length)
         : Domain{value, AGGREGATE, factory},
           aggregateType_(ARRAY),
-          elementTypes_({&elementType}),
+          elementTypes_({elementType}),
           length_(length) {
     if (isMaxLengthTop()) value_ = TOP;
 }
 
 AggregateDomain::AggregateDomain(DomainFactory* factory,
-                                 const llvm::Type& elementType,
+                                 Type::Ptr elementType,
                                  const AggregateDomain::Elements& elements)
         : Domain{VALUE, AGGREGATE, factory},
           aggregateType_(ARRAY),
-          elementTypes_({&elementType}),
+          elementTypes_({elementType}),
           length_(factory_->getIndex(elements.size())),
           elements_(elements) {}
 
@@ -86,11 +86,11 @@ std::string AggregateDomain::toPrettyString(const std::string& prefix) const {
     std::stringstream ss;
 
     if (isArray()) {
-        ss << "Array [" << getMaxLength() << " x " << factory_->getSlotTracker().toString(&getElementType(0)) << "] ";
+        ss << "Array [" << getMaxLength() << " x " << TypeUtils::toString(*getElementType(0).get()) << "] ";
     } else if (isStruct()) {
         ss << "Struct {";
         for (auto&& it : elementTypes_) {
-            ss << "  " << factory_->getSlotTracker().toString(it) << ", ";
+            ss << "  " << TypeUtils::toString(*it.get()) << ", ";
         }
         ss << "} ";
     }
@@ -205,7 +205,7 @@ Domain::Ptr AggregateDomain::meet(Domain::Ptr) {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr AggregateDomain::extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
+Domain::Ptr AggregateDomain::extractValue(Type::Ptr type, const std::vector<Domain::Ptr>& indices) {
     auto length = getMaxLength();
     auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
@@ -268,16 +268,16 @@ void AggregateDomain::insertValue(Domain::Ptr element, const std::vector<Domain:
     }
 }
 
-Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
+Domain::Ptr AggregateDomain::gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices) {
     auto length = getMaxLength();
     auto idx_interval = llvm::dyn_cast<IntegerIntervalDomain>(indices.begin()->get());
     ASSERT(idx_interval, "Unknown type of offsets");
 
-    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&type), 0);
+    auto ptrType = factory_->getTypeFactory()->getPointer(type);
     if (isBottom()) {
-        return factory_->getBottom(*ptrType);
+        return factory_->getBottom(ptrType);
     } else if (isTop()) {
-        return factory_->getTop(*ptrType);
+        return factory_->getTop(ptrType);
     }
 
     auto idx_begin = idx_interval->lb()->getRawValue();
@@ -307,7 +307,7 @@ Domain::Ptr AggregateDomain::gep(const llvm::Type& type, const std::vector<Domai
         }
         if (not result) {
             warns() << "Gep is out of bounds" << endl;
-            return factory_->getTop(*ptrType);
+            return factory_->getTop(ptrType);
         }
 
         return result;
@@ -318,12 +318,12 @@ void AggregateDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     return insertValue(value, {offset});
 }
 
-Domain::Ptr AggregateDomain::load(const llvm::Type& type, Domain::Ptr offset) {
+Domain::Ptr AggregateDomain::load(Type::Ptr type, Domain::Ptr offset) {
     return extractValue(type, {offset});
 }
 
-const llvm::Type& AggregateDomain::getElementType(std::size_t index) const {
-    return *(isArray() ? elementTypes_.at(0) : elementTypes_.at(index));
+Type::Ptr AggregateDomain::getElementType(std::size_t index) const {
+    return isArray() ? elementTypes_.at(0) : elementTypes_.at(index);
 }
 
 bool AggregateDomain::isArray() const {

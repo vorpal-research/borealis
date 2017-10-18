@@ -26,7 +26,7 @@ IntegerIntervalDomain::IntegerIntervalDomain(DomainFactory* factory,
                                                        slb, sub)) {}
 
 IntegerIntervalDomain::IntegerIntervalDomain(DomainFactory* factory, const IntegerIntervalDomain::ID& key) :
-        Domain(std::get<0>(key), Type::INTEGER_INTERVAL, factory),
+        Domain(std::get<0>(key), DomainType::INTEGER_INTERVAL, factory),
         lb_(value_ == TOP ?
             Integer::getMinValue(std::get<1>(key)->getWidth()) :
             std::get<1>(key)),
@@ -39,7 +39,8 @@ IntegerIntervalDomain::IntegerIntervalDomain(DomainFactory* factory, const Integ
         signed_ub_(value_ == TOP ?
             Integer::getMaxValue(std::get<1>(key)->getWidth()) :
             std::get<4>(key)),
-        wm_(IntegerWidening::getInstance()) {
+        wm_(IntegerWidening::getInstance()),
+        intType_(factory_->getTypeFactory()->getInteger(getWidth())) {
     ASSERT(lb_->getWidth() == ub_->getWidth(), "Different bit width of interval bounds");
     ASSERT(signed_lb_->getWidth() == signed_ub_->getWidth(), "Different bit width of interval bounds");
     ASSERT(lb_->getWidth() == signed_lb_->getWidth(), "Different bit width of interval bounds");
@@ -180,7 +181,7 @@ bool IntegerIntervalDomain::operator<(const Domain &other) const {
 }
 
 bool IntegerIntervalDomain::classof(const Domain *other) {
-    return other->getType() == Type::INTEGER_INTERVAL;
+    return other->getType() == DomainType::INTEGER_INTERVAL;
 }
 
 size_t IntegerIntervalDomain::hashCode() const {
@@ -205,9 +206,9 @@ Domain::Ptr IntegerIntervalDomain::add(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Adding two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(TOP, getWidth());
+        return factory_->getTop(intType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getInteger(TOP, getWidth());
+        return factory_->getTop(intType_);
     } else {
         Integer::Ptr temp;
         auto lb = (temp = lb_->add(interval->lb_)) ? temp : Integer::getMinValue(getWidth());
@@ -224,9 +225,9 @@ Domain::Ptr IntegerIntervalDomain::sub(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Subtracting two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(TOP, getWidth());
+        return factory_->getTop(intType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getInteger(TOP, getWidth());
+        return factory_->getTop(intType_);
     } else {
         Integer::Ptr temp;
         auto lb = (temp = lb_->sub(interval->ub_)) ? temp : Integer::getMinValue(getWidth());
@@ -243,9 +244,9 @@ Domain::Ptr IntegerIntervalDomain::mul(Domain::Ptr other) const {
     ASSERT(this->getWidth() == interval->getWidth(), "Multiplying two intervals of different format");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getInteger(TOP, getWidth());
+        return factory_->getTop(intType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getInteger(TOP, getWidth());
+        return factory_->getTop(intType_);
     } else {
         Integer::Ptr temp;
         auto ll = (temp = lb_->mul(interval->lb_)) ? temp : Integer::getMinValue(getWidth());
@@ -272,12 +273,12 @@ Domain::Ptr IntegerIntervalDomain::mul(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval"); \
     ASSERT(this->getWidth() == interval->getWidth(), "Dividing two intervals of different format"); \
     if (isBottom() || interval->isBottom()) { \
-        return factory_->getInteger(TOP, getWidth()); \
+        return factory_->getTop(intType_); \
     } else if (this->isTop() || interval->isTop()) { \
-        return factory_->getInteger(TOP, getWidth()); \
+        return factory_->getTop(intType_); \
     } else { \
         if (interval->isConstant(0)) { \
-            return factory_->getInteger(TOP, getWidth()); \
+            return factory_->getTop(intType_); \
         } else { \
             auto ll = lb_->OPER(interval->lb_); \
             auto ul = ub_->OPER(interval->lb_); \
@@ -318,9 +319,9 @@ Domain::Ptr IntegerIntervalDomain::srem(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in shl"); \
      \
     if (isBottom() || interval->isBottom()) { \
-        return factory_->getInteger(TOP, getWidth()); \
+        return factory_->getTop(intType_); \
     } else if (this->isTop() || interval->isTop()) { \
-        return factory_->getInteger(TOP, getWidth()); \
+        return factory_->getTop(intType_); \
     } else { \
         auto ll = lb_->OPER(interval->lb_); \
         auto ul = ub_->OPER(interval->lb_); \
@@ -351,68 +352,57 @@ Domain::Ptr IntegerIntervalDomain::ashr(Domain::Ptr other) const {
 }
 
 Domain::Ptr IntegerIntervalDomain::bAnd(Domain::Ptr) const {
-    return factory_->getInteger(TOP, getWidth());
+    return factory_->getTop(intType_);
 }
 
 Domain::Ptr IntegerIntervalDomain::bOr(Domain::Ptr) const {
-    return factory_->getInteger(TOP, getWidth());
+    return factory_->getTop(intType_);
 }
 
 Domain::Ptr IntegerIntervalDomain::bXor(Domain::Ptr) const {
-    return factory_->getInteger(TOP, getWidth());
+    return factory_->getTop(intType_);
 }
 
-Domain::Ptr IntegerIntervalDomain::trunc(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in trunc");
-    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+Domain::Ptr IntegerIntervalDomain::trunc(Type::Ptr type) const {
+    auto&& intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in trunc");
 
-    return factory_->getInteger(TOP, intType->getBitWidth());
+    return factory_->getTop(type);
 }
 
-Domain::Ptr IntegerIntervalDomain::zext(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in zext");
-    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+Domain::Ptr IntegerIntervalDomain::zext(Type::Ptr type) const {
+    auto&& intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in zext");
 
     if (not isValue()) return factory_->getTop(type);
 
-    auto&& lb = lb_->zext(intType->getBitWidth());
-    auto&& ub = ub_->zext(intType->getBitWidth());
-    auto&& slb = signed_lb_->zext(intType->getBitWidth());
-    auto&& sub = signed_ub_->zext(intType->getBitWidth());
+    auto&& lb = lb_->zext(intType->getBitsize());
+    auto&& ub = ub_->zext(intType->getBitsize());
+    auto&& slb = signed_lb_->zext(intType->getBitsize());
+    auto&& sub = signed_ub_->zext(intType->getBitsize());
     return factory_->getInteger(lb, ub, slb, sub);
 }
 
-Domain::Ptr IntegerIntervalDomain::sext(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in sext");
-    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+Domain::Ptr IntegerIntervalDomain::sext(Type::Ptr type) const {
+    auto&& intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in sext");
 
     if (not isValue()) return factory_->getTop(type);
 
-    auto&& lb = lb_->sext(intType->getBitWidth());
-    auto&& ub = ub_->sext(intType->getBitWidth());
-    auto&& slb = signed_lb_->sext(intType->getBitWidth());
-    auto&& sub = signed_ub_->sext(intType->getBitWidth());
+    auto&& lb = lb_->sext(intType->getBitsize());
+    auto&& ub = ub_->sext(intType->getBitsize());
+    auto&& slb = signed_lb_->sext(intType->getBitsize());
+    auto&& sub = signed_ub_->sext(intType->getBitsize());
     return factory_->getInteger(lb, ub, slb, sub);
 }
 
-Domain::Ptr IntegerIntervalDomain::uitofp(const llvm::Type& type) const {
-    ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp");
+Domain::Ptr IntegerIntervalDomain::uitofp(Type::Ptr type) const {
+    auto&& floatType = llvm::dyn_cast<type::Float>(type.get());
+    ASSERT(floatType, "Non-FP type in uitofp");
     if (not isValue()) return factory_->getTop(type);
-    auto& newSemantics = util::getSemantics(type);
+    auto& newSemantics = util::getSemantics();
 
-    unsigned width = 32;
-    if (type.isHalfTy())
-        width = 16;
-    else if (type.isFloatTy())
-        width = 32;
-    else if (type.isDoubleTy())
-        width = 64;
-    else if (type.isFP128Ty())
-        width = 128;
-    else if (type.isPPC_FP128Ty())
-        width = 128;
-    else if (type.isX86_FP80Ty())
-        width = 80;
+    unsigned width = 64;
     Integer::Ptr newLB = lb_, newUB = ub_;
     if (width < getWidth()) {
         newLB = lb_->trunc(width);
@@ -431,24 +421,13 @@ Domain::Ptr IntegerIntervalDomain::uitofp(const llvm::Type& type) const {
     return factory_->getFloat(lb, ub);
 }
 
-Domain::Ptr IntegerIntervalDomain::sitofp(const llvm::Type& type) const {
-    ASSERT(type.isFloatingPointTy(), "Non-FP type in inttofp");
+Domain::Ptr IntegerIntervalDomain::sitofp(Type::Ptr type) const {
+    auto&& floatType = llvm::dyn_cast<type::Float>(type.get());
+    ASSERT(floatType, "Non-FP type in sitofp");
     if (not isValue()) return factory_->getTop(type);
-    auto& newSemantics = util::getSemantics(type);
+    auto& newSemantics = util::getSemantics();
 
-    unsigned width = 32;
-    if (type.isHalfTy())
-        width = 16;
-    else if (type.isFloatTy())
-        width = 32;
-    else if (type.isDoubleTy())
-        width = 64;
-    else if (type.isFP128Ty())
-        width = 128;
-    else if (type.isPPC_FP128Ty())
-        width = 128;
-    else if (type.isX86_FP80Ty())
-        width = 80;
+    unsigned width = 64;
     Integer::Ptr newLB = signed_lb_, newUB = signed_ub_;
     if (width < getWidth()) {
         newLB = signed_lb_->trunc(width);
@@ -467,19 +446,20 @@ Domain::Ptr IntegerIntervalDomain::sitofp(const llvm::Type& type) const {
     return factory_->getFloat(lb, ub);
 }
 
-Domain::Ptr IntegerIntervalDomain::inttoptr(const llvm::Type& type) const {
+Domain::Ptr IntegerIntervalDomain::inttoptr(Type::Ptr type) const {
     return factory_->getTop(type);
 }
 
-Domain::Ptr IntegerIntervalDomain::bitcast(const llvm::Type& type) {
+Domain::Ptr IntegerIntervalDomain::bitcast(Type::Ptr type) {
     return factory_->getTop(type);
 }
 
 Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
+    auto boolTy = factory_->getTypeFactory()->getBool();
     if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(TOP, 1);
+        return factory_->getTop(boolTy);
     } else if (this->isTop() || other->isTop()) {
-        return factory_->getInteger(TOP, 1);
+        return factory_->getTop(boolTy);
     }
 
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
@@ -491,9 +471,9 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             if (this->isConstant() && interval->isConstant() && lb_->eq(interval->lb_)) {
                 return factory_->getBool(true);
             } else if (this->hasIntersection(interval)) {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }  else if (this->hasSignedIntersection(interval)) {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             } else {
                 return factory_->getBool(false);
             }
@@ -502,9 +482,9 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             if (this->isConstant() && interval->isConstant() && lb_->eq(interval->lb_)) {
                 return factory_->getBool(false);
             } else if (this->hasIntersection(interval)) {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             } else if (this->hasSignedIntersection(interval)) {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             } else {
                 return factory_->getBool(true);
             }
@@ -515,7 +495,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (signed_ub()->slt(interval->signed_lb())) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_SGT:
@@ -524,7 +504,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (signed_ub()->sle(interval->signed_lb())) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_SLE:
@@ -533,7 +513,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (signed_lb()->sgt(interval->signed_ub())) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_SLT:
@@ -542,7 +522,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (signed_lb()->sge(interval->signed_ub())) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_UGE:
@@ -551,7 +531,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (ub_->lt(interval->lb_)) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_UGT:
@@ -560,7 +540,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (ub_->le(interval->lb_)) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_ULE:
@@ -569,7 +549,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (lb_->gt(interval->ub_)) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         case llvm::CmpInst::ICMP_ULT:
@@ -578,7 +558,7 @@ Domain::Ptr IntegerIntervalDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predic
             } else if (lb_->ge(interval->ub_)) {
                 return factory_->getBool(false);
             } else {
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             }
 
         default:

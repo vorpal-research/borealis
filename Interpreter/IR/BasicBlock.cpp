@@ -29,7 +29,7 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
         while (not operands.empty()) {
             auto&& op = operands.front();
             if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(op)) {
-                if (not global->isConstant()) globals_.insert({ op, factory_->getBottom(*op->getType()) });
+                if (not global->isConstant()) globals_.insert({ op, factory_->getBottom(factory_->cast(op->getType())) });
             } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(op)) {
                 for (auto&& it : util::viewContainer(ce->operand_values())) operands.push_back(it);
             }

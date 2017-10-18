@@ -59,7 +59,7 @@ void Domain::insertElement(Domain::Ptr, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented vector operation");
 }
 
-Domain::Ptr Domain::extractValue(const llvm::Type&, const std::vector<Domain::Ptr>&) {
+Domain::Ptr Domain::extractValue(Type::Ptr, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
@@ -67,7 +67,7 @@ void Domain::insertValue(Domain::Ptr, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented aggregate operation");
 }
 
-Domain::Ptr Domain::load(const llvm::Type&, Domain::Ptr) {
+Domain::Ptr Domain::load(Type::Ptr, Domain::Ptr) {
     UNREACHABLE("Unimplemented memory operation");
 }
 
@@ -75,16 +75,16 @@ void Domain::store(Domain::Ptr, Domain::Ptr) {
     UNREACHABLE("Unimplemented memory operation");
 }
 
-Domain::Ptr Domain::gep(const llvm::Type&, const std::vector<Domain::Ptr>&) {
+Domain::Ptr Domain::gep(Type::Ptr, const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented memory operation");
 }
 
 
-#define MK_CONST_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(const llvm::Type&) const { \
+#define MK_CONST_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(Type::Ptr) const { \
     UNREACHABLE("Unimplemented cast operation"); \
 }
 
-#define MK_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(const llvm::Type&) { \
+#define MK_CAST_OP_IMPL(inst) Domain::Ptr Domain::inst(Type::Ptr) { \
     UNREACHABLE("Unimplemented cast operation"); \
 }
 
@@ -115,38 +115,38 @@ Domain::Ptr Domain::fcmp(Domain::Ptr, llvm::CmpInst::Predicate) const {
 }
 
 bool Domain::isAggregate() const {
-    return this->type_ == Type::AGGREGATE;
+    return this->type_ == DomainType::AGGREGATE;
 }
 
 bool Domain::isPointer() const {
-    return this->type_ == Type::POINTER;
+    return this->type_ == DomainType::POINTER;
 }
 
 bool Domain::isSimple() const {
-    return this->type_ == Type::INTEGER_INTERVAL ||
-            this->type_ == Type::FLOAT_INTERVAL;
+    return this->type_ == DomainType::INTEGER_INTERVAL ||
+            this->type_ == DomainType::FLOAT_INTERVAL;
 }
 
 bool Domain::isInteger() const {
-    return this->type_ == Type::INTEGER_INTERVAL;
+    return this->type_ == DomainType::INTEGER_INTERVAL;
 }
 
 bool Domain::isFloat() const {
-    return this->type_ == Type::FLOAT_INTERVAL;
+    return this->type_ == DomainType::FLOAT_INTERVAL;
 }
 
 bool Domain::isFunction() const {
-    return this->type_ == Type::FUNCTION;
+    return this->type_ == DomainType::FUNCTION;
 }
 
 bool Domain::isNullptr() const {
-    return this->type_ == Type::NULLPTR;
+    return this->type_ == DomainType::NULLPTR;
 }
 
 bool Domain::isMutable() const {
-    return this->type_ == Type::POINTER ||
-            this->type_ == Type::AGGREGATE ||
-            this->type_ == Type::FUNCTION;
+    return this->type_ == DomainType::POINTER ||
+            this->type_ == DomainType::AGGREGATE ||
+            this->type_ == DomainType::FUNCTION;
 }
 
 Split Domain::splitByEq(Domain::Ptr) {

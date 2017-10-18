@@ -12,19 +12,17 @@ namespace borealis {
 namespace absint {
 
 
-FunctionDomain::FunctionDomain(DomainFactory* factory, const llvm::Type* type)
+FunctionDomain::FunctionDomain(DomainFactory* factory, Type::Ptr type)
         : Domain(BOTTOM, FUNCTION, factory),
           prototype_(type) {}
 
-FunctionDomain::FunctionDomain(DomainFactory* factory, const llvm::Type* type, Function::Ptr location)
+FunctionDomain::FunctionDomain(DomainFactory* factory, Type::Ptr type, Function::Ptr location)
         : Domain(VALUE, FUNCTION, factory),
           prototype_(type) {
     locations_.insert(location);
 }
 
-FunctionDomain::FunctionDomain(DomainFactory* factory,
-                                 const llvm::Type* type,
-                                 const FunctionSet& locations)
+FunctionDomain::FunctionDomain(DomainFactory* factory, Type::Ptr type, const FunctionSet& locations)
         : Domain(VALUE, FUNCTION, factory),
           prototype_(type),
           locations_(locations) {}
@@ -85,7 +83,7 @@ std::size_t FunctionDomain::hashCode() const {
 
 std::string FunctionDomain::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
-    ss << "Function " << factory_->getSlotTracker().toString(prototype_) << " : ";
+    ss << "Function " << TypeUtils::toString(*prototype_.get()) << " : ";
     for (auto&& it : locations_) {
         ss << std::endl << prefix << "  " << it->getName();
     }

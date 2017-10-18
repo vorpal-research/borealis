@@ -13,6 +13,7 @@
 #include <Util/cache.hpp>
 
 #include "Interpreter/Util.hpp"
+#include "Type/Type.h"
 
 namespace borealis {
 namespace absint {
@@ -31,7 +32,7 @@ struct APIntEquals {
 
 class Integer : public std::enable_shared_from_this<const Integer> {
 protected:
-    enum Type {
+    enum IntType {
         MIN,
         VALUE,
         MAX
@@ -43,9 +44,12 @@ public:
     template <typename Key, typename Value>
     using CacheImpl = std::unordered_map<Key, Value, APIntHash, APIntEquals>;
 
-    Integer(Integer::Type type, size_t width) : type_(type), width_(width) {}
+    Integer(Integer::IntType type, size_t width) : type_(type), width_(width) {}
     virtual ~Integer() = default;
 
+    static Integer::Ptr getMaxValue(Type::Ptr type);
+    static Integer::Ptr getMinValue(Type::Ptr type);
+    static Integer::Ptr getValue(uint64_t value, Type::Ptr type);
     static Integer::Ptr getMaxValue(size_t width);
     static Integer::Ptr getMinValue(size_t width);
     static Integer::Ptr getValue(uint64_t value, size_t width);
@@ -112,7 +116,7 @@ private:
     static util::cache<size_t, Integer::Ptr> min_cache_;
     static util::cache<llvm::APInt, Integer::Ptr, CacheImpl> val_cache_;
 
-    Type type_;
+    IntType type_;
     size_t width_;
 };
 

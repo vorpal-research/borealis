@@ -18,9 +18,9 @@ public:
 
     using FunctionSet = std::unordered_set<Function::Ptr, FunctionHash, FunctionEquals>;
 
-    FunctionDomain(DomainFactory* factory, const llvm::Type* type);
-    FunctionDomain(DomainFactory* factory, const llvm::Type* type, Function::Ptr location);
-    FunctionDomain(DomainFactory* factory, const llvm::Type* type, const FunctionSet& locations);
+    FunctionDomain(DomainFactory* factory, Type::Ptr type);
+    FunctionDomain(DomainFactory* factory, Type::Ptr type, Function::Ptr location);
+    FunctionDomain(DomainFactory* factory, Type::Ptr type, const FunctionSet& locations);
     FunctionDomain(const FunctionDomain& other);
 
     void moveToTop() override;
@@ -43,7 +43,7 @@ public:
 
 private:
 
-    const llvm::Type* prototype_;
+    Type::Ptr prototype_;
     FunctionSet locations_;
 
 };

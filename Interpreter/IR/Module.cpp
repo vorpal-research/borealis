@@ -99,12 +99,13 @@ Module::Module(const llvm::Module* module, SlotTrackerPass* st)
     }
     // pre-initialize cycled global variables
     for (auto&& it : cycled) {
-        globals_[it] = factory_.getBottom(*it->getType());
+        globals_[it] = factory_.getBottom(factory_.cast(it->getType()));
     }
     initGlobals(order);
 }
 
 void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
+    TypeFactory::Ptr tf = TypeFactory::get();
     for (auto&& it : globals) {
         Domain::Ptr globalDomain;
         if (it->hasInitializer()) {
@@ -113,8 +114,8 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
             // If global is simple type, that we should wrap it like array of size 1
             if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
                 auto simpleConst = factory_.get(it->getInitializer());
-                auto&& arrayType = llvm::ArrayType::get(&elementType, 1);
-                content = factory_.getAggregate(*arrayType, {simpleConst});
+                auto&& arrayType = tf->getArray(factory_.cast(&elementType), 1);
+                content = factory_.getAggregate(arrayType, {simpleConst});
             // else just create domain
             } else {
                 content = factory_.get(it->getInitializer());
@@ -122,19 +123,19 @@ void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
             ASSERT(content, "Unsupported constant");
 
             PointerLocation loc = {{factory_.getIndex(0)}, content};
-            auto newDomain = factory_.getPointer(elementType, {loc});
+            auto newDomain = factory_.getPointer(factory_.cast(&elementType), {loc});
             // we need this because GEPs for global structs and arrays contain one additional index at the start
             if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
-                auto newArray = llvm::ArrayType::get(it->getType(), 1);
-                auto newLevel = factory_.getAggregate(*newArray, {newDomain});
+                auto newArray = tf->getArray(factory_.cast(it->getType()), 1);
+                auto newLevel = factory_.getAggregate(newArray, {newDomain});
                 PointerLocation loc2 = {{factory_.getIndex(0)}, newLevel};
-                globalDomain = factory_.getPointer(*newArray, {loc2});
+                globalDomain = factory_.getPointer(newArray, {loc2});
             } else {
                 globalDomain = newDomain;
             }
 
         } else {
-            globalDomain = factory_.getBottom(*it->getType());
+            globalDomain = factory_.getBottom(factory_.cast(it->getType()));
         }
 
         ASSERT(globalDomain, "Could not create domain for: " + ST_->toString(it));

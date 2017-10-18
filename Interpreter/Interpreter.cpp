@@ -16,7 +16,7 @@ namespace absint {
 static config::BoolConfigEntry printModule("absint", "print-module");
 
 Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs)
-        : ObjectLevelLogging("interpreter"), module_(module, st), FIP_(FIP), ST_(st), CGS_(cgs) {}
+        : ObjectLevelLogging("interpreter"), module_(module, st), TF_(TypeFactory::get()), FIP_(FIP), ST_(st), CGS_(cgs) {}
 
 void Interpreter::run() {
     auto&& roots = module_.getRootFunctions();
@@ -28,7 +28,7 @@ void Interpreter::run() {
     for (auto&& root : roots) {
         std::vector<Domain::Ptr> args;
         for (auto&& arg : root->getInstance()->getArgumentList()) {
-            args.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
+            args.emplace_back(module_.getDomainFactory()->getTop(cast(arg.getType())));
         }
 
         interpretFunction(root, args);
@@ -39,7 +39,7 @@ void Interpreter::run() {
         if (not function->isDeclaration() && not ai_function->isVisited()) {
             std::vector<Domain::Ptr> topargs;
             for (auto&& arg : function->args())
-                topargs.emplace_back(module_.getDomainFactory()->getTop(*arg.getType()));
+                topargs.emplace_back(module_.getDomainFactory()->getTop(cast(arg.getType())));
             interpretFunction(ai_function, topargs);
         }
     }
@@ -107,7 +107,7 @@ Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
 void Interpreter::visitInstruction(llvm::Instruction& i) {
     warns() << "Unsupported instruction: " << ST_->toString(&i) << endl;
     if (not i.getType()->isVoidTy()) {
-        auto&& val = module_.getDomainFactory()->getTop(*i.getType());
+        auto&& val = module_.getDomainFactory()->getTop(cast(i.getType()));
         ASSERT(val, "stub result");
         context_->state->addVariable(&i, val);
     }
@@ -249,7 +249,7 @@ void Interpreter::visitLoadInst(llvm::LoadInst& i) {
                getVariable(i.getPointerOperand());
     ASSERT(ptr, "load inst");
 
-    auto&& result = ptr->load(*i.getType(), module_.getDomainFactory()->getIndex(0));
+    auto&& result = ptr->load(cast(i.getType()), module_.getDomainFactory()->getIndex(0));
     ASSERT(result, "load result");
     context_->state->addVariable(&i, result);
 }
@@ -261,7 +261,7 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
 
     auto index = module_.getDomainFactory()->getIndex(0);
     if (util::contains(context_->stores, &i)) {
-        auto load = ptr->load(*i.getValueOperand()->getType(), index);
+        auto load = ptr->load(cast(i.getValueOperand()->getType()), index);
         ptr->store(load->widen(storeVal), index);
     } else {
         ptr->store(storeVal, index);
@@ -310,7 +310,7 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
 #define CAST_INST(CAST) \
     auto&& value = getVariable(i.getOperand(0)); \
     ASSERT(value, "cast arg"); \
-    auto&& result = value->CAST(*i.getDestTy()); \
+    auto&& result = value->CAST(cast(i.getDestTy())); \
     ASSERT(result, "cast result"); \
     context_->state->addVariable(&i, result);
 
@@ -335,7 +335,7 @@ void Interpreter::visitSelectInst(llvm::SelectInst& i) {
 
     Domain::Ptr result = cond->equals(trueVal.get()) ? trueVal :
                          cond->equals(falseVal.get()) ? falseVal :
-                         module_.getDomainFactory()->getTop(*i.getType());
+                         module_.getDomainFactory()->getTop(cast(i.getType()));
     context_->state->addVariable(&i, result);
 }
 
@@ -348,7 +348,7 @@ void Interpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
         indices.emplace_back(module_.getDomainFactory()->getIndex(*j));
     }
 
-    auto result = aggregate->extractValue(*i.getType(), indices);
+    auto result = aggregate->extractValue(cast(i.getType()), indices);
     ASSERT(result, "extract value result");
     context_->state->addVariable(&i, result);
 }
@@ -405,11 +405,11 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
     for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
         args.emplace_back(i.getArgOperand(j), getVariable(i.getArgOperand(j)));
     }
-    auto retval = module_.getDomainFactory()->getBottom(*i.getType());
+    auto retval = module_.getDomainFactory()->getBottom(cast(i.getType()));
 
     // inline assembler, just return TOP
     if (i.isInlineAsm()) {
-        retval = module_.getDomainFactory()->getTop(*i.getType());
+        retval = module_.getDomainFactory()->getTop(cast(i.getType()));
     // function pointer
     } else if (not i.getCalledFunction()) {
         auto&& ptrDomain = getVariable(i.getCalledValue());
@@ -417,7 +417,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
 
         auto&& ptr = llvm::cast<PointerDomain>(ptrDomain.get());
         if (ptr->isValue()) {
-            auto&& funcPtr = ptr->load(*i.getCalledValue()->getType()->getPointerElementType(),
+            auto&& funcPtr = ptr->load(cast(i.getCalledValue()->getType()->getPointerElementType()),
                                        {module_.getDomainFactory()->getIndex(0)});
             auto&& funcDomain = llvm::cast<FunctionDomain>(funcPtr.get());
 
@@ -454,7 +454,7 @@ void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
     auto&& op = getVariable(i.getOperand(0));
     ASSERT(op, "bitcast arg");
 
-    auto&& result = op->bitcast(*i.getDestTy());
+    auto&& result = op->bitcast(cast(i.getDestTy()));
     ASSERT(result, "bitcast result");
     context_->state->addVariable(&i, result);
 }
@@ -462,6 +462,10 @@ void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
 ///////////////////////////////////////////////////////////////
 /// Util functions
 ///////////////////////////////////////////////////////////////
+Type::Ptr Interpreter::cast(const llvm::Type* type) {
+    return module_.getDomainFactory()->cast(type);
+}
+
 void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
         if (not it->atFixpoint(module_.getGlobalsFor(it)) && not util::contains(context_->deque, it)) {
@@ -486,7 +490,7 @@ Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
         }
     }
 
-    return ptr->gep(*gep.getType()->getPointerElementType(), offsets);
+    return ptr->gep(cast(gep.getType()->getPointerElementType()), offsets);
 }
 
 Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
@@ -508,7 +512,7 @@ Domain::Ptr Interpreter::handleMemoryAllocation(const llvm::Function* function,
     auto&& size = getVariable(args[2].first);
     if (not size) {
         warns() << "Allocating unknown amount of memory: " << ST_->toString(args[2].first) << endl;
-        return module_.getDomainFactory()->getTop(*function->getReturnType());
+        return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
     }
 
     auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(size.get());
@@ -519,12 +523,12 @@ Domain::Ptr Interpreter::handleMemoryAllocation(const llvm::Function* function,
     // - if this is alloc, we need one more level for correct GEP handler
     // - if this is malloc, we create array of dynamically allocated objects
     if (integer->ub()->isMax()) {
-        return module_.getDomainFactory()->getTop(*function->getReturnType());
+        return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
     }
 
-    auto&& arrayType = llvm::ArrayType::get(function->getReturnType()->getPointerElementType(), integer->ub()->getRawValue());
-    auto&& ptrType = llvm::PointerType::get(arrayType, 0);
-    Domain::Ptr domain = module_.getDomainFactory()->allocate(*ptrType);
+    auto&& arrayType = TF_->getArray(cast(function->getReturnType()->getPointerElementType()), integer->ub()->getRawValue());
+    auto&& ptrType = TF_->getPointer(arrayType, 0);
+    Domain::Ptr domain = module_.getDomainFactory()->allocate(ptrType);
 
     ASSERT(domain, "malloc result");
     return domain;
@@ -541,9 +545,9 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
             if (argType->isPointerTy()) {
                 if (argInfo[j].access == func_info::AccessPatternTag::Write ||
                         argInfo[j].access == func_info::AccessPatternTag::ReadWrite)
-                    context_->state->addVariable(arg, module_.getDomainFactory()->getTop(*argType));
+                    context_->state->addVariable(arg, module_.getDomainFactory()->getTop(cast(argType)));
                 else if (argInfo[j].access == func_info::AccessPatternTag::Delete)
-                    context_->state->addVariable(arg, module_.getDomainFactory()->getBottom(*argType));
+                    context_->state->addVariable(arg, module_.getDomainFactory()->getBottom(cast(argType)));
             }
         }
 
@@ -562,7 +566,7 @@ Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
             }
         }
     }
-    return module_.getDomainFactory()->getTop(*function->getReturnType());
+    return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
 }
 
 }   /* namespace absint */

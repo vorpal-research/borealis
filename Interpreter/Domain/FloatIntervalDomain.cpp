@@ -21,14 +21,15 @@ FloatIntervalDomain::FloatIntervalDomain(DomainFactory* factory, const llvm::APF
         FloatIntervalDomain(factory, std::make_tuple(VALUE, lb, ub)) {}
 
 FloatIntervalDomain::FloatIntervalDomain(DomainFactory* factory, const FloatIntervalDomain::ID& id) :
-        Domain(std::get<0>(id), Type::FLOAT_INTERVAL, factory),
+        Domain(std::get<0>(id), DomainType::FLOAT_INTERVAL, factory),
         lb_(value_ == TOP ?
             util::getMinValue(std::get<1>(id).getSemantics()) :
             std::get<1>(id)),
         ub_(value_ == TOP ?
             util::getMaxValue(std::get<1>(id).getSemantics()) :
             std::get<2>(id)),
-        wm_(FloatWidening::getInstance()) {}
+        wm_(FloatWidening::getInstance()),
+        floatType_(factory_->getTypeFactory()->getFloat()) {}
 
 FloatIntervalDomain::FloatIntervalDomain(const FloatIntervalDomain& other) :
         Domain(other.value_, other.type_, other.factory_),
@@ -113,14 +114,6 @@ Domain::Ptr FloatIntervalDomain::widen(Domain::Ptr other) {
     return factory_->getFloat(left, right);
 }
 
-const llvm::fltSemantics& FloatIntervalDomain::getSemantics() const {
-    return lb_.getSemantics();
-}
-
-llvm::APFloat::roundingMode FloatIntervalDomain::getRoundingMode() const {
-    return llvm::APFloat::rmNearestTiesToEven;
-}
-
 bool FloatIntervalDomain::isConstant() const {
     return util::eq(lb_, ub_);
 }
@@ -157,7 +150,7 @@ std::string FloatIntervalDomain::toPrettyString(const std::string&) const {
 }
 
 bool FloatIntervalDomain::classof(const Domain* other) {
-    return other->getType() == Type::FLOAT_INTERVAL;
+    return other->getType() == DomainType::FLOAT_INTERVAL;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -166,16 +159,16 @@ bool FloatIntervalDomain::classof(const Domain* other) {
 
 #define CHECKED_OP(op) \
 if (op != llvm::APFloat::opOK) \
-    return factory_->getFloat(TOP, getSemantics());
+    return factory_->getTop(floatType_);
 
 Domain::Ptr FloatIntervalDomain::fadd(Domain::Ptr other) const {
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else {
         auto left = lb_;
         auto right = ub_;
@@ -190,9 +183,9 @@ Domain::Ptr FloatIntervalDomain::fsub(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(getSemantics());
+        return factory_->getBottom(floatType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else {
         auto left = lb_;
         auto right = ub_;
@@ -207,9 +200,9 @@ Domain::Ptr FloatIntervalDomain::fmul(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else {
 
         using namespace borealis::util;
@@ -231,15 +224,15 @@ Domain::Ptr FloatIntervalDomain::fdiv(Domain::Ptr other) const {
     ASSERT(interval, "Nullptr in interval");
 
     if (this->isBottom() || interval->isBottom()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else if (this->isTop() || interval->isTop()) {
-        return factory_->getFloat(TOP, getSemantics());
+        return factory_->getTop(floatType_);
     } else {
 
         using namespace borealis::util;
 
         if (interval->isConstant() && interval->lb_.isZero()) {
-            return factory_->getFloat(TOP, getSemantics());
+            return factory_->getTop(floatType_);
         }
 
         auto ll(lb_), ul(ub_), lu(lb_), uu(ub_);
@@ -269,16 +262,14 @@ Domain::Ptr FloatIntervalDomain::fdiv(Domain::Ptr other) const {
     }
 }
 
-Domain::Ptr FloatIntervalDomain::frem(Domain::Ptr other) const {
-    if (this->isBottom() || other->isBottom())
-        return factory_->getFloat(TOP, getSemantics());
-
-    return factory_->getFloat(TOP, getSemantics());
+Domain::Ptr FloatIntervalDomain::frem(Domain::Ptr) const {
+    return factory_->getTop(floatType_);
 }
 
-Domain::Ptr FloatIntervalDomain::fptrunc(const llvm::Type& type) const {
-    ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
-    auto& newSemantics = util::getSemantics(type);
+Domain::Ptr FloatIntervalDomain::fptrunc(Type::Ptr type) const {
+    auto&& floatType = llvm::dyn_cast<type::Float>(type.get());
+    ASSERT(floatType, "Non-FP type in fptrunc");
+    auto& newSemantics = util::getSemantics();
     if (not isValue()) return factory_->getTop(type);
 
     bool isExact = false;
@@ -288,9 +279,10 @@ Domain::Ptr FloatIntervalDomain::fptrunc(const llvm::Type& type) const {
     return factory_->getFloat(lb, ub);
 }
 
-Domain::Ptr FloatIntervalDomain::fpext(const llvm::Type& type) const {
-    ASSERT(type.isFloatingPointTy(), "Non-FP type in fptrunc");
-    auto& newSemantics = util::getSemantics(type);
+Domain::Ptr FloatIntervalDomain::fpext(Type::Ptr type) const {
+    auto&& floatType = llvm::dyn_cast<type::Float>(type.get());
+    ASSERT(floatType, "Non-FP type in fpext");
+    auto& newSemantics = util::getSemantics();
     if (not isValue()) return factory_->getTop(type);
 
     bool isExact = false;
@@ -300,42 +292,41 @@ Domain::Ptr FloatIntervalDomain::fpext(const llvm::Type& type) const {
     return factory_->getFloat(lb, ub);
 }
 
-Domain::Ptr FloatIntervalDomain::fptoui(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in fptoui");
-    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+Domain::Ptr FloatIntervalDomain::fptoui(Type::Ptr type) const {
+    auto&& intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in fptoui");
     if (not isValue()) return factory_->getTop(type);
 
     bool isExactLB = false, isExactUB = false;
-    llvm::APSInt lb(intType->getBitWidth(), true), ub(intType->getBitWidth(), true);
+    llvm::APSInt lb(intType->getBitsize(), true), ub(intType->getBitsize(), true);
 
     lb_.convertToInteger(lb, getRoundingMode(), &isExactLB);
     ub_.convertToInteger(ub, getRoundingMode(), &isExactUB);
-    return factory_->getInteger(isExactLB ? factory_->toInteger(lb) : Integer::getMinValue(intType->getBitWidth()),
-                                isExactUB ? factory_->toInteger(ub) : Integer::getMaxValue(intType->getBitWidth()));
+    return factory_->getInteger(isExactLB ? factory_->toInteger(lb) : Integer::getMinValue(type),
+                                isExactUB ? factory_->toInteger(ub) : Integer::getMaxValue(type));
 }
 
-Domain::Ptr FloatIntervalDomain::fptosi(const llvm::Type& type) const {
-    ASSERT(type.isIntegerTy(), "Non-integer type in fptoui");
-    auto&& intType = llvm::cast<llvm::IntegerType>(&type);
+Domain::Ptr FloatIntervalDomain::fptosi(Type::Ptr type) const {
+    auto&& intType = llvm::dyn_cast<type::Integer>(type.get());
+    ASSERT(intType, "Non-integer type in fptosi");
     if (not isValue()) return factory_->getTop(type);
 
     bool isExactLB = false, isExactUB = false;
-    llvm::APSInt lb(intType->getBitWidth(), false), ub(intType->getBitWidth(), false);
+    llvm::APSInt lb(intType->getBitsize(), false), ub(intType->getBitsize(), false);
 
     lb_.convertToInteger(lb, getRoundingMode(), &isExactLB);
     ub_.convertToInteger(ub, getRoundingMode(), &isExactUB);
-    return factory_->getInteger(isExactLB ? factory_->toInteger(lb) : Integer::getMinValue(intType->getBitWidth()),
-                                isExactUB ? factory_->toInteger(ub) : Integer::getMaxValue(intType->getBitWidth()));
+    return factory_->getInteger(isExactLB ? factory_->toInteger(lb) : Integer::getMinValue(type),
+                                isExactUB ? factory_->toInteger(ub) : Integer::getMaxValue(type));
 }
 
-Domain::Ptr FloatIntervalDomain::bitcast(const llvm::Type& type) {
-    if (type.isIntegerTy()) {
-        auto&& intType = llvm::dyn_cast<llvm::IntegerType>(&type);
-        auto&& lb = factory_->toInteger(llvm::APInt(intType->getBitWidth(), *lb_.bitcastToAPInt().getRawData()));
-        auto&& ub = factory_->toInteger(llvm::APInt(intType->getBitWidth(), *ub_.bitcastToAPInt().getRawData()));
+Domain::Ptr FloatIntervalDomain::bitcast(Type::Ptr type) {
+    if (auto intType = llvm::dyn_cast<type::Integer>(type.get())) {
+        auto&& lb = factory_->toInteger(llvm::APInt(intType->getBitsize(), *lb_.bitcastToAPInt().getRawData()));
+        auto&& ub = factory_->toInteger(llvm::APInt(intType->getBitsize(), *ub_.bitcastToAPInt().getRawData()));
         return factory_->getInteger(lb, ub);
 
-    } else if (type.isFloatingPointTy()) {
+    } else if (llvm::isa<type::Float>(type.get())) {
         return shared_from_this();
         
     } else {
@@ -344,10 +335,11 @@ Domain::Ptr FloatIntervalDomain::bitcast(const llvm::Type& type) {
 }
 
 Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const {
+    auto boolTy = factory_->getTypeFactory()->getBool();
     if (this->isBottom() || other->isBottom()) {
-        return factory_->getInteger(TOP, 1);
+        return factory_->getTop(boolTy);
     } else if (this->isTop() || other->isTop()) {
-        return factory_->getInteger(TOP, 1);
+        return factory_->getTop(boolTy);
     }
 
     auto&& interval = llvm::dyn_cast<FloatIntervalDomain>(other.get());
@@ -395,7 +387,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
             if (isConstant() && this->equals(interval))
                 return factory_->getBool(true);
             else if (hasIntersection(interval))
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             else
                 return factory_->getBool(false);
 
@@ -405,7 +397,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
             if (res == llvm::APFloat::cmpGreaterThan)
                 return factory_->getBool(true);
             else if (hasIntersection(interval))
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             else
                 return factory_->getBool(false);
 
@@ -415,7 +407,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
             if (res == llvm::APFloat::cmpGreaterThan || res == llvm::APFloat::cmpEqual)
                 return factory_->getBool(true);
             else if (hasIntersection(interval))
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             else
                 return factory_->getBool(false);
 
@@ -425,7 +417,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
             if (res == llvm::APFloat::cmpLessThan)
                 return factory_->getBool(true);
             else if (hasIntersection(interval))
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             else
                 return factory_->getBool(false);
 
@@ -435,7 +427,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
             if (res == llvm::APFloat::cmpLessThan || res == llvm::APFloat::cmpEqual)
                 return factory_->getBool(true);
             else if (hasIntersection(interval))
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             else
                 return factory_->getBool(false);
 
@@ -444,7 +436,7 @@ Domain::Ptr FloatIntervalDomain::fcmp(Domain::Ptr other, llvm::CmpInst::Predicat
             if (not hasIntersection(interval))
                 return factory_->getBool(true);
             else if (not (isConstant() && this->equals(interval)))
-                return factory_->getInteger(TOP, 1);
+                return factory_->getTop(boolTy);
             else
                 return factory_->getBool(false);
 

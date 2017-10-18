@@ -16,7 +16,7 @@ namespace absint {
 class AggregateDomain : public Domain {
 public:
 
-    using Types = std::vector<const llvm::Type*>;
+    using Types = std::vector<Type::Ptr>;
     using Elements = std::unordered_map<std::size_t, Domain::Ptr>;
 
 public:
@@ -34,9 +34,9 @@ public:
                     const AggregateDomain::Elements& elements);
     /// Array constructors
     AggregateDomain(Domain::Value value, DomainFactory* factory,
-                    const llvm::Type& elementType, Domain::Ptr length);
-    AggregateDomain(DomainFactory* factory, const llvm::Type& elementType, Domain::Ptr length);
-    AggregateDomain(DomainFactory* factory, const llvm::Type& elementType,
+                    Type::Ptr elementType, Domain::Ptr length);
+    AggregateDomain(DomainFactory* factory, Type::Ptr elementType, Domain::Ptr length);
+    AggregateDomain(DomainFactory* factory, Type::Ptr elementType,
                     const AggregateDomain::Elements& elements);
 
     AggregateDomain(const AggregateDomain& other);
@@ -64,18 +64,18 @@ public:
     bool isStruct() const;
 
     /// Aggregate
-    Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) override;
+    Domain::Ptr extractValue(Type::Ptr type, const std::vector<Domain::Ptr>& indices) override;
     void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices) override;
     /// Memory
     void store(Domain::Ptr value, Domain::Ptr offset) override;
-    Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) override;
-    Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) override;
+    Domain::Ptr load(Type::Ptr type, Domain::Ptr offset) override;
+    Domain::Ptr gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices) override;
 
     static bool classof(const Domain* other);
 
 private:
 
-    const llvm::Type& getElementType(std::size_t index) const;
+    Type::Ptr getElementType(std::size_t index) const;
 
     const AggregateType aggregateType_;
     const Types elementTypes_;

@@ -4,7 +4,7 @@
 
 #include <llvm/Support/GraphWriter.h>
 
-#include "AbstractInterpreterPass.h"
+#include "LLVM_IR_Interpreter.h"
 #include "Config/config.h"
 #include "Interpreter/Checker/NullDereferenceChecker.h"
 #include "Interpreter/Checker/OutOfBoundsChecker.h"
@@ -15,7 +15,7 @@ namespace borealis {
 static config::BoolConfigEntry printCFG("absint", "print-cfg");
 static config::BoolConfigEntry enableAnalysis("absint", "ai-analysis");
 
-bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
+bool LLVM_IR_Interpreter::runOnModule(llvm::Module& M) {
     auto&& fip = &GetAnalysis<FuncInfoProvider>().doit(this);
     auto&& st = &GetAnalysis<SlotTrackerPass>().doit(this);
     auto&& dm = &GetAnalysis<DefectManager>().doit(this);
@@ -33,7 +33,7 @@ bool AbstractInterpreterPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
-void AbstractInterpreterPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
+void LLVM_IR_Interpreter::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AU.setPreservesAll();
 
     AUX<FuncInfoProvider>::addRequired(AU);
@@ -42,9 +42,9 @@ void AbstractInterpreterPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const {
     AUX<CallGraphSlicer>::addRequired(AU);
 }
 
-char AbstractInterpreterPass::ID;
-static RegisterPass<AbstractInterpreterPass>
-X("abs-interpreter", "Pass that performs abstract interpretation on a module");
+char LLVM_IR_Interpreter::ID;
+static RegisterPass<LLVM_IR_Interpreter>
+X("ir-interpreter", "Pass that performs abstract interpretation on a LLVM IR Module");
 
 } // namespace borealis
 

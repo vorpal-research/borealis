@@ -40,7 +40,7 @@ public:
 
     bool isVisited() const;
     bool hasAddressTaken() const;
-    const llvm::FunctionType* getType() const;
+    Type::Ptr getType() const;
     const llvm::Function* getInstance() const;
     const std::vector<Domain::Ptr>& getArguments() const;
     std::vector<const llvm::Value*> getGlobals() const;

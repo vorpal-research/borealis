@@ -73,13 +73,13 @@ public:
     Domain::Ptr bOr(Domain::Ptr other) const override;
     Domain::Ptr bXor(Domain::Ptr other) const override;
     /// Cast
-    Domain::Ptr trunc(const llvm::Type& type) const override;
-    Domain::Ptr zext(const llvm::Type& type) const override;
-    Domain::Ptr sext(const llvm::Type& type) const override;
-    Domain::Ptr uitofp(const llvm::Type& type) const override;
-    Domain::Ptr sitofp(const llvm::Type& type) const override;
-    Domain::Ptr inttoptr(const llvm::Type& type) const override;
-    Domain::Ptr bitcast(const llvm::Type& type) override;
+    Domain::Ptr trunc(Type::Ptr type) const override;
+    Domain::Ptr zext(Type::Ptr type) const override;
+    Domain::Ptr sext(Type::Ptr type) const override;
+    Domain::Ptr uitofp(Type::Ptr type) const override;
+    Domain::Ptr sitofp(Type::Ptr type) const override;
+    Domain::Ptr inttoptr(Type::Ptr type) const override;
+    Domain::Ptr bitcast(Type::Ptr type) override;
     /// Other
     Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const override;
     /// Split operations, assume that intervals intersect
@@ -94,6 +94,7 @@ private:
     const Integer::Ptr signed_lb_;
     const Integer::Ptr signed_ub_;
     const IntegerWidening* wm_;
+    Type::Ptr intType_;
 };
 
 struct IntegerIntervalDomain::IDHash {

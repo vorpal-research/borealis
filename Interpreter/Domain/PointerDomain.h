@@ -51,8 +51,8 @@ public:
 
     /// Memory
     void store(Domain::Ptr value, Domain::Ptr offset) override;
-    Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) override;
-    Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) override;
+    Domain::Ptr load(Type::Ptr type, Domain::Ptr offset) override;
+    Domain::Ptr gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices) override;
 
     static bool classof(const Domain* other);
 };
@@ -63,8 +63,8 @@ public:
 
     using Locations = std::unordered_set<PointerLocation, PtrLocationHash, PtrLocationEquals>;
 
-    PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType);
-    PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const Locations& locations);
+    PointerDomain(Domain::Value value, DomainFactory* factory, Type::Ptr elementType);
+    PointerDomain(DomainFactory* factory, Type::Ptr elementType, const Locations& locations);
     PointerDomain(const PointerDomain& other);
 
     void moveToTop() override;
@@ -78,7 +78,7 @@ public:
     Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
-    const llvm::Type& getElementType() const;
+    Type::Ptr getElementType() const;
     const Locations& getLocations() const;
     Domain::Ptr clone() const override;
     std::size_t hashCode() const override;
@@ -87,12 +87,12 @@ public:
     static bool classof(const Domain* other);
 
     /// Semantics
-    Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset) override;
+    Domain::Ptr load(Type::Ptr type, Domain::Ptr offset) override;
     void store(Domain::Ptr value, Domain::Ptr offset) override;
-    Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) override;
+    Domain::Ptr gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices) override;
     /// Cast
-    Domain::Ptr ptrtoint(const llvm::Type& type) override;
-    Domain::Ptr bitcast(const llvm::Type& type) override;
+    Domain::Ptr ptrtoint(Type::Ptr type) override;
+    Domain::Ptr bitcast(Type::Ptr type) override;
     /// Cmp
     Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const override;
     /// Split
@@ -100,7 +100,7 @@ public:
 
 private:
 
-    const llvm::Type& elementType_;
+    Type::Ptr elementType_;
     Locations locations_;
 };
 

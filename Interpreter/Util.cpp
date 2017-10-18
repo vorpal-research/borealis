@@ -54,6 +54,10 @@ bool ge(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     return cmp == llvm::APFloat::cmpEqual || cmp == llvm::APFloat::cmpGreaterThan;
 }
 
+const llvm::fltSemantics& getSemantics() {
+    return llvm::APFloat::IEEEdouble;
+}
+
 const llvm::fltSemantics& getSemantics(const llvm::Type& type) {
     ASSERTC(type.isFloatingPointTy());
     if (type.isHalfTy())

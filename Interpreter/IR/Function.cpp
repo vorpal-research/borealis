@@ -27,7 +27,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
         while (not operands.empty()) {
             auto&& op = operands.front();
             if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(op)) {
-                if (not global->isConstant()) globals_.insert({ op, factory_->getBottom(*op->getType()) });
+                if (not global->isConstant()) globals_.insert({ op, factory_->getBottom(factory_->cast(op->getType())) });
             } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(op)) {
                 for (auto&& it : util::viewContainer(ce->operand_values())) operands.push_back(it);
             }
@@ -42,7 +42,7 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
     // adding return value
     auto&& returnType = instance_->getReturnType();
     if (not returnType->isVoidTy()) {
-        auto&& retDomain = factory_->getBottom(*returnType);
+        auto&& retDomain = factory_->getBottom(factory_->cast(returnType));
         if (retDomain) outputState_->setReturnValue(retDomain);
     }
 }
@@ -158,8 +158,8 @@ bool Function::equals(Function* other) const {
     return getInstance() == other->getInstance();
 }
 
-const llvm::FunctionType* Function::getType() const {
-    return llvm::cast<llvm::FunctionType>(instance_->getType()->getPointerElementType());
+Type::Ptr Function::getType() const {
+    return factory_->cast(instance_->getType()->getPointerElementType());
 }
 
 bool Function::isVisited() const {

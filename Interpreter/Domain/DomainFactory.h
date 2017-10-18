@@ -18,6 +18,7 @@
 #include "Interpreter/Domain/PointerDomain.h"
 #include "Interpreter/IR/Function.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
+#include "Type/TypeFactory.h"
 
 namespace borealis {
 namespace absint {
@@ -39,14 +40,20 @@ public:
         return *ST_;
     }
 
-    Domain::Ptr getTop(const llvm::Type& type);
-    Domain::Ptr getBottom(const llvm::Type& type);
+    TypeFactory::Ptr getTypeFactory() const {
+        return typeFactory_;
+    }
+
+    Type::Ptr cast(const llvm::Type* type);
+
+    Domain::Ptr getTop(Type::Ptr type);
+    Domain::Ptr getBottom(Type::Ptr type);
 
     /// simply create domain of given type
     Domain::Ptr get(const llvm::Value* val);
     Domain::Ptr get(const llvm::Constant* constant);
     /// allocates value of given type, like it's a memory object
-    Domain::Ptr allocate(const llvm::Type& type);
+    Domain::Ptr allocate(Type::Ptr type);
 
     Integer::Ptr toInteger(uint64_t val, size_t width, bool isSigned = false);
     Integer::Ptr toInteger(const llvm::APInt& val);
@@ -54,30 +61,30 @@ public:
     Domain::Ptr getIndex(uint64_t indx);
 
     Domain::Ptr getBool(bool value);
-    Domain::Ptr getInteger(size_t width);
-    Domain::Ptr getInteger(Domain::Value value, size_t width);
+    Domain::Ptr getInteger(Type::Ptr type);
+    Domain::Ptr getInteger(Domain::Value value, Type::Ptr type);
     Domain::Ptr getInteger(Integer::Ptr val);
     Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to);
     Domain::Ptr getInteger(Integer::Ptr from, Integer::Ptr to, Integer::Ptr sfrom, Integer::Ptr sto);
 
-    Domain::Ptr getFloat(const llvm::fltSemantics& semantics);
-    Domain::Ptr getFloat(Domain::Value value, const llvm::fltSemantics& semantics);
+    Domain::Ptr getFloat();
+    Domain::Ptr getFloat(Domain::Value value);
     Domain::Ptr getFloat(const llvm::APFloat& val);
     Domain::Ptr getFloat(const llvm::APFloat& from, const llvm::APFloat& to);
 
-    Domain::Ptr getAggregate(Domain::Value value, const llvm::Type& type);
-    Domain::Ptr getAggregate(const llvm::Type& type);
-    Domain::Ptr getAggregate(const llvm::Type& type, std::vector<Domain::Ptr> elements);
+    Domain::Ptr getAggregate(Domain::Value value, Type::Ptr type);
+    Domain::Ptr getAggregate(Type::Ptr type);
+    Domain::Ptr getAggregate(Type::Ptr type, std::vector<Domain::Ptr> elements);
 
-    Domain::Ptr getPointer(Domain::Value value, const llvm::Type& elementType);
-    Domain::Ptr getPointer(const llvm::Type& elementType);
-    Domain::Ptr getPointer(const llvm::Type& elementType, const PointerDomain::Locations& locations);
-    Domain::Ptr getNullptr(const llvm::Type& elementType);
+    Domain::Ptr getPointer(Domain::Value value, Type::Ptr elementType);
+    Domain::Ptr getPointer(Type::Ptr elementType);
+    Domain::Ptr getPointer(Type::Ptr elementType, const PointerDomain::Locations& locations);
+    Domain::Ptr getNullptr(Type::Ptr elementType);
     Domain::Ptr getNullptrLocation();
 
-    Domain::Ptr getFunction(const llvm::Type& type);
-    Domain::Ptr getFunction(const llvm::Type& type, Function::Ptr function);
-    Domain::Ptr getFunction(const llvm::Type& type, const FunctionDomain::FunctionSet& functions);
+    Domain::Ptr getFunction(Type::Ptr type);
+    Domain::Ptr getFunction(Type::Ptr type, Function::Ptr function);
+    Domain::Ptr getFunction(Type::Ptr type, const FunctionDomain::FunctionSet& functions);
 
 private:
 
@@ -87,6 +94,7 @@ private:
 
     Module* module_;
     SlotTrackerPass* ST_;
+    TypeFactory::Ptr typeFactory_;
     util::cache<IntegerIntervalDomain::ID, Domain::Ptr, IntCacheImpl> int_cache_;
     util::cache<FloatIntervalDomain::ID, Domain::Ptr, FloatCacheImpl> float_cache_;
     Domain::Ptr nullptr_;

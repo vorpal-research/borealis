@@ -52,15 +52,15 @@ void NullptrDomain::store(Domain::Ptr, Domain::Ptr) {
     errs() << "Store to nullptr" << endl;
 }
 
-Domain::Ptr NullptrDomain::load(const llvm::Type& type, Domain::Ptr) {
+Domain::Ptr NullptrDomain::load(Type::Ptr type, Domain::Ptr) {
     errs() << "Load from nullptr" << endl;
     return factory_->getTop(type);
 }
 
-Domain::Ptr NullptrDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>&) {
+Domain::Ptr NullptrDomain::gep(Type::Ptr type, const std::vector<Domain::Ptr>&) {
     errs() << "GEP to nullptr" << endl;
-    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&type), 0);
-    return factory_->getTop(*ptrType);
+    auto ptrType = factory_->getTypeFactory()->getPointer(type, 0);
+    return factory_->getTop(ptrType);
 }
 
 bool NullptrDomain::classof(const Domain* other) {
@@ -74,11 +74,11 @@ Domain::Ptr NullptrDomain::clone() const {
 //////////////////////////////////////////////////////////
 /// Pointer
 //////////////////////////////////////////////////////////
-PointerDomain::PointerDomain(Domain::Value value, DomainFactory* factory, const llvm::Type& elementType)
+PointerDomain::PointerDomain(Domain::Value value, DomainFactory* factory, Type::Ptr elementType)
         : Domain{value, POINTER, factory},
           elementType_(elementType) {}
 
-PointerDomain::PointerDomain(DomainFactory* factory, const llvm::Type& elementType, const PointerDomain::Locations& locations)
+PointerDomain::PointerDomain(DomainFactory* factory, Type::Ptr elementType, const PointerDomain::Locations& locations)
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
           locations_(locations) {}
@@ -114,7 +114,7 @@ const PointerDomain::Locations& PointerDomain::getLocations() const {
     return locations_;
 }
 
-const llvm::Type& PointerDomain::getElementType() const {
+Type::Ptr PointerDomain::getElementType() const {
     return elementType_;
 }
 
@@ -128,7 +128,7 @@ std::size_t PointerDomain::hashCode() const {
 
 std::string PointerDomain::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
-    ss << "Ptr " << factory_->getSlotTracker().toString(&elementType_) << " [";
+    ss << "Ptr " << TypeUtils::toString(*elementType_.get()) << " [";
     if (isTop()) ss << " TOP ]";
     else if (isBottom()) ss << " BOTTOM ]";
     else {
@@ -198,7 +198,7 @@ Domain::Ptr PointerDomain::meet(Domain::Ptr) {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
-Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) {
+Domain::Ptr PointerDomain::load(Type::Ptr type, Domain::Ptr offset) {
     if (isBottom()) {
         return factory_->getBottom(type);
     } else if (isTop()) {
@@ -218,13 +218,13 @@ Domain::Ptr PointerDomain::load(const llvm::Type& type, Domain::Ptr offset) {
 void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     if (isTop()) return;
 
-    if (elementType_.isPointerTy()) {
+    if (llvm::isa<type::Pointer>(elementType_.get())) {
         locations_.clear();
         if (value->isAggregate()) {
             locations_.insert({ {factory_->getIndex(0)}, value});
         } else {
-            auto&& arrayType = llvm::ArrayType::get(const_cast<llvm::Type*>(&elementType_), 1);
-            auto&& arrayDom = factory_->getAggregate(*arrayType, {value});
+            auto arrayTy = factory_->getTypeFactory()->getArray(elementType_, 1);
+            auto&& arrayDom = factory_->getAggregate(arrayTy, {value});
             locations_.insert({ {factory_->getIndex(0)}, arrayDom});
         }
         // if pointer was BOTTOM, then we should change it's value. But we can't create
@@ -240,15 +240,15 @@ void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     }
 }
 
-Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices) {
-    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&type), 0);
+Domain::Ptr PointerDomain::gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices) {
+    auto ptrType = factory_->getTypeFactory()->getPointer(type, 0);
     if (isBottom()) {
-        return factory_->getBottom(*ptrType);
+        return factory_->getBottom(ptrType);
     } else if (isTop()) {
-        return factory_->getTop(*ptrType);
+        return factory_->getTop(ptrType);
     }
 
-    auto result = factory_->getBottom(*ptrType);
+    auto result = factory_->getBottom(ptrType);
     std::vector<Domain::Ptr> subOffsets(indices.begin(), indices.end());
     auto zeroElement = subOffsets[0];
 
@@ -261,15 +261,12 @@ Domain::Ptr PointerDomain::gep(const llvm::Type& type, const std::vector<Domain:
     return result;
 }
 
-Domain::Ptr PointerDomain::ptrtoint(const llvm::Type& type) {
+Domain::Ptr PointerDomain::ptrtoint(Type::Ptr type) {
     moveToTop();
     return factory_->getTop(type);
 }
 
-Domain::Ptr PointerDomain::bitcast(const llvm::Type& type) {
-    if (elementType_.isFunctionTy() && type.isPointerTy() && type.getPointerElementType()->isFunctionTy()) {
-        return factory_->getPointer(*type.getPointerElementType(), locations_);
-    }
+Domain::Ptr PointerDomain::bitcast(Type::Ptr type) {
     moveToTop();
     return factory_->getTop(type);
 }
@@ -278,7 +275,9 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
-    if (not (this->isValue() && other->isValue())) return factory_->getInteger(TOP, 1);
+    auto boolTy = factory_->getTypeFactory()->getBool();
+    if (not (this->isValue() && other->isValue()))
+        return factory_->getTop(boolTy);
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
@@ -286,17 +285,17 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
                 return factory_->getBool(false);
             return this->equals(ptr) ?
                    factory_->getBool(true) :
-                   factory_->getInteger(TOP, 1);
+                   factory_->getTop(boolTy);
 
         case llvm::CmpInst::ICMP_NE:
             if (not util::hasIntersection(locations_, ptr->locations_))
                 return factory_->getBool(true);
             return this->equals(ptr) ?
                    factory_->getBool(false) :
-                   factory_->getInteger(TOP, 1);
+                   factory_->getTop(boolTy);
 
         default:
-            return factory_->getInteger(TOP, 1);
+            return factory_->getTop(boolTy);
     }
 }
 
@@ -304,11 +303,11 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
     auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
-    auto ptrType = llvm::PointerType::get(const_cast<llvm::Type*>(&elementType_), 0);
+    auto ptrType = factory_->getTypeFactory()->getPointer(elementType_, 0);
     if (this->isTop())
-        return {factory_->getTop(*ptrType), factory_->getTop(*ptrType)};
+        return {factory_->getTop(ptrType), factory_->getTop(ptrType)};
     if (this->isBottom())
-        return {factory_->getBottom(*ptrType), factory_->getBottom(*ptrType)};
+        return {factory_->getBottom(ptrType), factory_->getBottom(ptrType)};
     if (not other->isValue())
         return {shared_from_this(), shared_from_this()};
 

@@ -11,9 +11,9 @@
 #include <vector>
 
 #include <llvm/IR/InstrTypes.h>
-#include <llvm/IR/Type.h>
 
 #include "Logging/logger.hpp"
+#include "Type/Type.h"
 
 namespace borealis {
 namespace absint {
@@ -24,7 +24,7 @@ class DomainFactory;
 class Domain : public std::enable_shared_from_this<Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
 
-    enum Type {
+    enum DomainType {
         INTEGER_INTERVAL = 0,
         FLOAT_INTERVAL,
         NULLPTR,
@@ -94,7 +94,7 @@ public:
         return toPrettyString("");
     }
 
-    virtual Type getType() const {
+    virtual DomainType getType() const {
         return type_;
     }
 
@@ -145,29 +145,29 @@ public:
     virtual Domain::Ptr extractElement(const std::vector<Domain::Ptr>& indices);
     virtual void insertElement(Domain::Ptr element, const std::vector<Domain::Ptr>& indices);
     /// Aggregate
-    virtual Domain::Ptr extractValue(const llvm::Type& type, const std::vector<Domain::Ptr>& indices);
+    virtual Domain::Ptr extractValue(Type::Ptr type, const std::vector<Domain::Ptr>& indices);
     virtual void insertValue(Domain::Ptr element, const std::vector<Domain::Ptr>& indices);
     /// Memory
     /// @arg type - type of the result element
-    virtual Domain::Ptr load(const llvm::Type& type, Domain::Ptr offset);
+    virtual Domain::Ptr load(Type::Ptr type, Domain::Ptr offset);
     virtual void store(Domain::Ptr value, Domain::Ptr offset);
     /// @arg type - type of the element that we want to get pointer to
-    virtual Domain::Ptr gep(const llvm::Type& type, const std::vector<Domain::Ptr>& indices);
+    virtual Domain::Ptr gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices);
     /// Cast
     /// Simple type casts are constant, they return new domain by definition
-    virtual Domain::Ptr trunc(const llvm::Type& type) const;
-    virtual Domain::Ptr zext(const llvm::Type& type) const;
-    virtual Domain::Ptr sext(const llvm::Type& type) const;
-    virtual Domain::Ptr fptrunc(const llvm::Type& type) const;
-    virtual Domain::Ptr fpext(const llvm::Type& type) const;
-    virtual Domain::Ptr fptoui(const llvm::Type& type) const;
-    virtual Domain::Ptr fptosi(const llvm::Type& type) const;
-    virtual Domain::Ptr uitofp(const llvm::Type& type) const;
-    virtual Domain::Ptr sitofp(const llvm::Type& type) const;
-    virtual Domain::Ptr inttoptr(const llvm::Type& type) const;
+    virtual Domain::Ptr trunc(Type::Ptr type) const;
+    virtual Domain::Ptr zext(Type::Ptr type) const;
+    virtual Domain::Ptr sext(Type::Ptr type) const;
+    virtual Domain::Ptr fptrunc(Type::Ptr type) const;
+    virtual Domain::Ptr fpext(Type::Ptr type) const;
+    virtual Domain::Ptr fptoui(Type::Ptr type) const;
+    virtual Domain::Ptr fptosi(Type::Ptr type) const;
+    virtual Domain::Ptr uitofp(Type::Ptr type) const;
+    virtual Domain::Ptr sitofp(Type::Ptr type) const;
+    virtual Domain::Ptr inttoptr(Type::Ptr type) const;
     /// Complicated casts are not constant, because they can change something inside of domain
-    virtual Domain::Ptr ptrtoint(const llvm::Type& type);
-    virtual Domain::Ptr bitcast(const llvm::Type& type);
+    virtual Domain::Ptr ptrtoint(Type::Ptr type);
+    virtual Domain::Ptr bitcast(Type::Ptr type);
     /// Other
     virtual Domain::Ptr icmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
     virtual Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const;
@@ -178,7 +178,7 @@ public:
 
 protected:
 
-    Domain(Domain::Value value, Domain::Type type, DomainFactory* factory)
+    Domain(Domain::Value value, Domain::DomainType type, DomainFactory* factory)
             : ObjectLevelLogging("domain"),
               value_(value),
               type_(type),
@@ -186,7 +186,7 @@ protected:
     virtual ~Domain() = default;
 
     Value value_;
-    const Type type_;
+    const DomainType type_;
     DomainFactory* factory_;
 };
 

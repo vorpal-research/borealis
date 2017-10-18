@@ -36,6 +36,7 @@ static bool operator>(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
     return gt(lhv, rhv);
 }
 
+const llvm::fltSemantics& getSemantics();
 const llvm::fltSemantics& getSemantics(const llvm::Type& type);
 
 std::string toString(const llvm::APFloat& val);

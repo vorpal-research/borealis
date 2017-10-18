@@ -22,6 +22,13 @@ public:
     struct IDEquals;
 
 public:
+    static const llvm::fltSemantics& getSemantics() {
+        return util::getSemantics();
+    }
+
+    static llvm::APFloat::roundingMode getRoundingMode() {
+        return llvm::APFloat::rmNearestTiesToEven;
+    }
 
     FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& constant);
     FloatIntervalDomain(DomainFactory* factory, const llvm::APFloat& lb, const llvm::APFloat& ub);
@@ -37,8 +44,6 @@ public:
     Domain::Ptr meet(Domain::Ptr other) override;
     Domain::Ptr widen(Domain::Ptr other) override;
 
-    const llvm::fltSemantics& getSemantics() const;
-    llvm::APFloat::roundingMode getRoundingMode() const;
     bool isConstant() const;
     bool isNaN() const;
     const llvm::APFloat& lb() const;
@@ -58,11 +63,11 @@ public:
     Domain::Ptr fdiv(Domain::Ptr other) const override;
     Domain::Ptr frem(Domain::Ptr other) const override;
     /// Cast
-    Domain::Ptr fptrunc(const llvm::Type& type) const override;
-    Domain::Ptr fpext(const llvm::Type& type) const override;
-    Domain::Ptr fptoui(const llvm::Type& type) const override;
-    Domain::Ptr fptosi(const llvm::Type& type) const override;
-    Domain::Ptr bitcast(const llvm::Type& type) override;
+    Domain::Ptr fptrunc(Type::Ptr type) const override;
+    Domain::Ptr fpext(Type::Ptr type) const override;
+    Domain::Ptr fptoui(Type::Ptr type) const override;
+    Domain::Ptr fptosi(Type::Ptr type) const override;
+    Domain::Ptr bitcast(Type::Ptr type) override;
     /// Other
     Domain::Ptr fcmp(Domain::Ptr other, llvm::CmpInst::Predicate operation) const override;
     /// Split operations
@@ -74,6 +79,7 @@ private:
     const llvm::APFloat lb_;
     const llvm::APFloat ub_;
     const FloatWidening* wm_;
+    Type::Ptr floatType_;
 };
 
 struct FloatIntervalDomain::IDHash {
