@@ -16,8 +16,8 @@ Function::Function(const llvm::Function* function, DomainFactory* factory, SlotT
         : instance_(function),
           tracker_(st),
           factory_(factory) {
-    inputState_ = std::make_shared<borealis::absint::State>(tracker_);
-    outputState_ = std::make_shared<borealis::absint::State>(tracker_);
+    inputState_ = std::make_shared<borealis::absint::IRState>(tracker_);
+    outputState_ = std::make_shared<borealis::absint::IRState>(tracker_);
     for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.emplace_back(nullptr);
 
     // find all global variables, that this function depends on
@@ -127,7 +127,7 @@ Domain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm::BasicBl
     return getBasicBlock(location)->getDomainFor(value);
 }
 
-void Function::mergeToOutput(State::Ptr state) {
+void Function::mergeToOutput(IRState::Ptr state) {
     outputState_->merge(state);
 }
 

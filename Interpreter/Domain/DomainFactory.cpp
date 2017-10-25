@@ -241,6 +241,10 @@ Domain::Ptr DomainFactory::getFloat() {
     return getFloat(Domain::BOTTOM);
 }
 
+Domain::Ptr DomainFactory::getFloat(double val) {
+    return getFloat(llvm::APFloat(val));
+}
+
 Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& val) {
     return getFloat(val, val);
 }
@@ -298,6 +302,8 @@ Domain::Ptr DomainFactory::getAggregate(Type::Ptr type) {
 }
 
 Domain::Ptr DomainFactory::getAggregate(Domain::Value value, Type::Ptr type) {
+    // we can't create BOTTOM aggregate, just aggregate with BOTTOM elements
+    if (value == Domain::BOTTOM) value = Domain::VALUE;
     if (auto array = llvm::dyn_cast<type::Array>(type.get())) {
         auto size = array->getSize() ?
                       array->getSize().getUnsafe() :
@@ -314,7 +320,7 @@ Domain::Ptr DomainFactory::getAggregate(Domain::Value value, Type::Ptr type) {
 
         return std::make_shared<AggregateDomain>(value, this, types, getIndex(body.getNumFields()));
     }
-    UNREACHABLE("Unknown aggregate type");
+    UNREACHABLE("Unknown aggregate type: " + TypeUtils::toString(*type.get()));
 }
 
 Domain::Ptr DomainFactory::getAggregate(Type::Ptr type, std::vector<Domain::Ptr> elements) {
@@ -335,7 +341,7 @@ Domain::Ptr DomainFactory::getAggregate(Type::Ptr type, std::vector<Domain::Ptr>
         }
         return std::make_shared<AggregateDomain>(this, types, elementMap);
     }
-    UNREACHABLE("Unknown aggregate type");
+    UNREACHABLE("Unknown aggregate type: " + TypeUtils::toString(*type.get()));
 }
 
 /* Function */

@@ -9,7 +9,7 @@
 
 #include <llvm/IR/BasicBlock.h>
 
-#include "Interpreter/State.h"
+#include "IRState.h"
 #include "Util/slottracker.h"
 
 #include "Util/macros.h"
@@ -24,8 +24,8 @@ private:
     mutable SlotTracker* tracker_;
     DomainFactory* factory_;
     std::map<const llvm::Value*, Domain::Ptr> globals_;
-    State::Ptr inputState_;
-    State::Ptr outputState_;
+    IRState::Ptr inputState_;
+    IRState::Ptr outputState_;
     bool inputChanged_;
     bool atFixpoint_;
     bool visited_;
@@ -40,7 +40,7 @@ public:
 
     const llvm::BasicBlock* getInstance() const;
     SlotTracker& getSlotTracker() const;
-    State::Ptr getOutputState() const;
+    IRState::Ptr getOutputState() const;
     std::vector<const llvm::Value*> getGlobals() const;
 
     std::string getName() const;
@@ -50,7 +50,7 @@ public:
 
     void updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals);
     void mergeOutputWithInput();
-    void mergeToInput(State::Ptr input);
+    void mergeToInput(IRState::Ptr input);
     void addToInput(const llvm::Value* value, Domain::Ptr domain);
     void addToInput(const llvm::Instruction* inst, Domain::Ptr domain);
     Domain::Ptr getDomainFor(const llvm::Value* value);

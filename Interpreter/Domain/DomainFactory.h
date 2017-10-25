@@ -69,6 +69,7 @@ public:
 
     Domain::Ptr getFloat();
     Domain::Ptr getFloat(Domain::Value value);
+    Domain::Ptr getFloat(double val);
     Domain::Ptr getFloat(const llvm::APFloat& val);
     Domain::Ptr getFloat(const llvm::APFloat& from, const llvm::APFloat& to);
 

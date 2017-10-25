@@ -82,6 +82,9 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
         auto resolvedSize = it++;
         auto origElemSize = it++;
         auto origNumElems = it++;
+        auto origElemSizeTerm = FN.Term->getArgumentTerm(origElemSize);
+        auto origNumElemsTerm = FN.Term->getArgumentTerm(origNumElems);
+        auto newNumElems = FN.Term->getCastTerm(origElemSizeTerm->getType(), false, origNumElemsTerm);
 
         return FN.State->Basic() +
                FN.Predicate->getMallocPredicate(
@@ -89,8 +92,8 @@ static RegisterIntrinsic INTRINSIC_MALLOC {
                    FN.Term->getArgumentTerm(resolvedSize),
                    FN.Term->getBinaryTerm(
                        llvm::ArithType::MUL,
-                       FN.Term->getArgumentTerm(origElemSize),
-                       FN.Term->getArgumentTerm(origNumElems)
+                       origElemSizeTerm,
+                       newNumElems
                    )
                );
     }
@@ -109,6 +112,9 @@ static RegisterIntrinsic INTRINSIC_ALLOC {
         auto resolvedSize = it++;
         auto origElemSize = it++;
         auto origNumElems = it++;
+        auto origElemSizeTerm = FN.Term->getArgumentTerm(origElemSize);
+        auto origNumElemsTerm = FN.Term->getArgumentTerm(origNumElems);
+        auto newNumElems = FN.Term->getCastTerm(origElemSizeTerm->getType(), false, origNumElemsTerm);
 
         return FN.State->Basic() +
                FN.Predicate->getAllocaPredicate(
@@ -116,8 +122,8 @@ static RegisterIntrinsic INTRINSIC_ALLOC {
                    FN.Term->getArgumentTerm(resolvedSize),
                    FN.Term->getBinaryTerm(
                        llvm::ArithType::MUL,
-                       FN.Term->getArgumentTerm(origElemSize),
-                       FN.Term->getArgumentTerm(origNumElems)
+                       origElemSizeTerm,
+                       newNumElems
                    )
                );
     }

@@ -82,7 +82,7 @@ public:
 
 
 OutOfBoundsChecker::OutOfBoundsChecker(Module* module, DefectManager* DM, FuncInfoProvider* FIP)
-        : ObjectLevelLogging("interpreter"),
+        : ObjectLevelLogging("ir-interpreter"),
           module_(module),
           DM_(DM),
           FIP_(FIP) {

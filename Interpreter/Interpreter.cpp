@@ -3,9 +3,9 @@
 //
 
 #include "Annotation/Annotation.h"
-#include "ConditionSplitter.h"
 #include "Config/config.h"
 #include "Interpreter.h"
+#include "Interpreter/Domain/ConditionSplitter.h"
 #include "Util/collections.hpp"
 
 #include "Util/macros.h"
@@ -16,7 +16,7 @@ namespace absint {
 static config::BoolConfigEntry printModule("absint", "print-module");
 
 Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs)
-        : ObjectLevelLogging("interpreter"), module_(module, st), TF_(TypeFactory::get()), FIP_(FIP), ST_(st), CGS_(cgs) {}
+        : ObjectLevelLogging("ir-interpreter"), module_(module, st), TF_(TypeFactory::get()), FIP_(FIP), ST_(st), CGS_(cgs) {}
 
 void Interpreter::run() {
     auto&& roots = module_.getRootFunctions();
@@ -333,8 +333,8 @@ void Interpreter::visitSelectInst(llvm::SelectInst& i) {
     auto falseVal = getVariable(i.getFalseValue());
     ASSERT(cond && trueVal && falseVal, "select args");
 
-    Domain::Ptr result = cond->equals(trueVal.get()) ? trueVal :
-                         cond->equals(falseVal.get()) ? falseVal :
+    Domain::Ptr result = cond->equals(module_.getDomainFactory()->getBool(true).get()) ? trueVal :
+                         cond->equals(module_.getDomainFactory()->getBool(false).get()) ? falseVal :
                          module_.getDomainFactory()->getTop(cast(i.getType()));
     context_->state->addVariable(&i, result);
 }

@@ -12,7 +12,7 @@ namespace absint {
 static config::BoolConfigEntry enableLogging("absint", "checker-logging");
 
 NullDereferenceChecker::NullDereferenceChecker(Module* module, DefectManager* DM)
-        : ObjectLevelLogging("interpreter"),
+        : ObjectLevelLogging("ir-interpreter"),
           module_(module),
           DM_(DM) {
     ST_ = module_->getSlotTracker();

@@ -16,28 +16,28 @@
 namespace borealis {
 namespace absint {
 
-class State : public std::enable_shared_from_this<State> {
+class IRState : public std::enable_shared_from_this<IRState> {
 public:
 
     using VariableMap = util::cow_map<const llvm::Value*, Domain::Ptr>;
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, VariableMap>;
-    using Ptr = std::shared_ptr<State>;
+    using Ptr = std::shared_ptr<IRState>;
 
-    explicit State(SlotTracker* tracker);
-    State(const State& other);
+    explicit IRState(SlotTracker* tracker);
+    IRState(const IRState& other);
 
-    bool equals(const State* other) const;
-    friend bool operator==(const State& lhv, const State& rhv);
+    bool equals(const IRState* other) const;
+    friend bool operator==(const IRState& lhv, const IRState& rhv);
 
     void addVariable(const llvm::Value* val, Domain::Ptr domain);
     void addVariable(const llvm::Instruction* inst, Domain::Ptr domain);
     void setReturnValue(Domain::Ptr domain);
     void mergeToReturnValue(Domain::Ptr domain);
 
-    const State::BlockMap& getLocals() const;
+    const IRState::BlockMap& getLocals() const;
     Domain::Ptr getReturnValue() const;
 
-    void merge(State::Ptr other);
+    void merge(IRState::Ptr other);
     Domain::Ptr find(const llvm::Value* val) const;
 
     bool empty() const;
@@ -45,8 +45,8 @@ public:
 
 private:
 
-    void mergeVariables(State::Ptr other);
-    void mergeReturnValue(State::Ptr other);
+    void mergeVariables(IRState::Ptr other);
+    void mergeReturnValue(IRState::Ptr other);
 
     VariableMap arguments_;
     BlockMap locals_;

@@ -68,7 +68,7 @@ private:
 
     struct Context {
         Function::Ptr function; // current function
-        State::Ptr state; // current state
+        IRState::Ptr state; // current state
         std::deque<BasicBlock*> deque; // deque of blocks to visit
         // This is generally fucked up
         std::unordered_set<const llvm::Value*> stores; // stores, visited in current context

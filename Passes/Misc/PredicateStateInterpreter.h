@@ -7,21 +7,17 @@
 
 #include <llvm/Pass.h>
 
-#include "Passes/Util/ProxyFunctionPass.h"
-#include "Util/passes.hpp"
-
 namespace borealis {
 
-class PredicateStateInterpreter: public ProxyFunctionPass, public ShouldBeModularized {
+class PredicateStateInterpreter: public llvm::ModulePass {
 public:
 
     static char ID;
     PredicateStateInterpreter();
-    PredicateStateInterpreter(llvm::Pass*);
     virtual ~PredicateStateInterpreter() = default;
 
-    virtual bool runOnFunction(llvm::Function& F) override;
-    virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
+    bool runOnModule(llvm::Module& M) override;
+    void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 };
 
 }   // namespace borealis

@@ -8,10 +8,10 @@
 #include <map>
 
 #include "Annotation/Annotation.h"
-#include "Interpreter.h"
+#include "Interpreter/Interpreter.h"
 #include "Interpreter/Domain/Domain.h"
 #include "Logging/logger.hpp"
-#include "State.h"
+#include "Interpreter/IR/IRState.h"
 
 namespace borealis {
 namespace absint {
@@ -22,7 +22,7 @@ class ConditionSplitter : public logging::ObjectLevelLogging<ConditionSplitter> 
 
 public:
 
-    ConditionSplitter(llvm::Value* target, Interpreter* interpreter, State::Ptr state);
+    ConditionSplitter(llvm::Value* target, Interpreter* interpreter, IRState::Ptr state);
 
     ValueMap apply();
 
@@ -34,7 +34,7 @@ private:
 
     llvm::Value* target_;
     Interpreter* interpreter_;
-    State::Ptr state_;
+    IRState::Ptr state_;
     ValueMap values_;
 
 };

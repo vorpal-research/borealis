@@ -2,7 +2,7 @@
 // Created by abdullin on 2/7/17.
 //
 
-#include "State.h"
+#include "IRState.h"
 #include "Util/collections.hpp"
 #include "Util/sayonara.hpp"
 
@@ -11,7 +11,7 @@
 namespace borealis {
 namespace absint {
 
-void mergeMaps(State::VariableMap& lhv, State::VariableMap& rhv) {
+void mergeMaps(IRState::VariableMap& lhv, IRState::VariableMap& rhv) {
     if (lhv.sameAs(rhv)) return;
 
     auto&& lhv_end = lhv.end();
@@ -26,14 +26,14 @@ void mergeMaps(State::VariableMap& lhv, State::VariableMap& rhv) {
     }
 }
 
-State::State(SlotTracker* tracker) :
+IRState::IRState(SlotTracker* tracker) :
         retval_(nullptr),
         tracker_(tracker) {}
-State::State(const State &other) : locals_(other.locals_),
+IRState::IRState(const IRState &other) : locals_(other.locals_),
                                    retval_(other.retval_),
                                    tracker_(other.tracker_) {}
 
-void State::addVariable(const llvm::Value* val, Domain::Ptr domain) {
+void IRState::addVariable(const llvm::Value* val, Domain::Ptr domain) {
     auto inst = llvm::dyn_cast<llvm::Instruction>(val);
     if (inst) {
         addVariable(inst, domain);
@@ -42,32 +42,32 @@ void State::addVariable(const llvm::Value* val, Domain::Ptr domain) {
     }
 }
 
-void State::addVariable(const llvm::Instruction* inst, Domain::Ptr domain) {
+void IRState::addVariable(const llvm::Instruction* inst, Domain::Ptr domain) {
     auto bb = inst->getParent();
     auto&& opt = util::at(locals_[bb], inst);
     if (opt && opt.getUnsafe()->equals(domain.get())) return;
     else locals_[bb][inst] = domain;
 }
 
-void State::setReturnValue(Domain::Ptr domain) {
+void IRState::setReturnValue(Domain::Ptr domain) {
     ASSERT(not retval_, "Reassigning retval in state");
     retval_ = domain;
 }
 
-void State::mergeToReturnValue(Domain::Ptr domain) {
+void IRState::mergeToReturnValue(Domain::Ptr domain) {
     retval_ = (not retval_) ? domain : retval_->join(domain);
 }
 
-const State::BlockMap& State::getLocals() const { return locals_; }
-Domain::Ptr State::getReturnValue() const { return retval_; }
+const IRState::BlockMap& IRState::getLocals() const { return locals_; }
+Domain::Ptr IRState::getReturnValue() const { return retval_; }
 
 
-void State::merge(State::Ptr other) {
+void IRState::merge(IRState::Ptr other) {
     mergeVariables(other);
     mergeReturnValue(other);
 }
 
-void State::mergeVariables(State::Ptr other) {
+void IRState::mergeVariables(IRState::Ptr other) {
     mergeMaps(arguments_, other->arguments_);
     for (auto&& it : other->locals_) {
         if (auto&& its = util::at(locals_, it.first)) {
@@ -78,13 +78,13 @@ void State::mergeVariables(State::Ptr other) {
     }
 }
 
-void State::mergeReturnValue(State::Ptr other) {
+void IRState::mergeReturnValue(IRState::Ptr other) {
     if (not other->retval_) return;
     if (not retval_) retval_ = other->retval_;
     else retval_ = retval_->join(other->retval_);
 }
 
-Domain::Ptr State::find(const llvm::Value *val) const {
+Domain::Ptr IRState::find(const llvm::Value *val) const {
     auto inst = llvm::dyn_cast<llvm::Instruction>(val);
     if (inst) {
         if (auto&& opt = util::at(locals_, inst->getParent())) {
@@ -99,11 +99,11 @@ Domain::Ptr State::find(const llvm::Value *val) const {
     return nullptr;
 }
 
-bool State::empty() const {
+bool IRState::empty() const {
     return locals_.empty();
 }
 
-std::string State::toString() const {
+std::string IRState::toString() const {
     std::ostringstream ss;
 
     if (not locals_.empty()) {
@@ -119,8 +119,8 @@ std::string State::toString() const {
     return ss.str();
 }
 
-bool State::equals(const State* other) const {
-    auto&& equal = [](const State::VariableMap& lhv, const State::VariableMap& rhv) {
+bool IRState::equals(const IRState* other) const {
+    auto&& equal = [](const IRState::VariableMap& lhv, const IRState::VariableMap& rhv) {
         if (lhv.sameAs(rhv)) return true;
         return util::equal_with_find(lhv, rhv, LAM(a, a.first), LAM2(a, b, a.second->equals(b.second.get())));
     };
@@ -151,7 +151,7 @@ bool State::equals(const State* other) const {
     return true;
 }
 
-bool operator==(const State& lhv, const State& rhv) {
+bool operator==(const IRState& lhv, const IRState& rhv) {
     return lhv.equals(&rhv);
 }
 

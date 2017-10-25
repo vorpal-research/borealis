@@ -269,27 +269,13 @@ Domain::Ptr FloatIntervalDomain::frem(Domain::Ptr) const {
 Domain::Ptr FloatIntervalDomain::fptrunc(Type::Ptr type) const {
     auto&& floatType = llvm::dyn_cast<type::Float>(type.get());
     ASSERT(floatType, "Non-FP type in fptrunc");
-    auto& newSemantics = util::getSemantics();
-    if (not isValue()) return factory_->getTop(type);
-
-    bool isExact = false;
-    auto lb = lb_, ub = ub_;
-    lb.convert(newSemantics, getRoundingMode(), &isExact);
-    ub.convert(newSemantics, getRoundingMode(), &isExact);
-    return factory_->getFloat(lb, ub);
+    return factory_->getFloat(lb_, ub_);
 }
 
 Domain::Ptr FloatIntervalDomain::fpext(Type::Ptr type) const {
     auto&& floatType = llvm::dyn_cast<type::Float>(type.get());
-    ASSERT(floatType, "Non-FP type in fpext");
-    auto& newSemantics = util::getSemantics();
-    if (not isValue()) return factory_->getTop(type);
-
-    bool isExact = false;
-    auto lb = lb_, ub = ub_;
-    lb.convert(newSemantics, getRoundingMode(), &isExact);
-    ub.convert(newSemantics, getRoundingMode(), &isExact);
-    return factory_->getFloat(lb, ub);
+    ASSERT(floatType, "Non-FP type in fptrunc");
+    return factory_->getFloat(lb_, ub_);
 }
 
 Domain::Ptr FloatIntervalDomain::fptoui(Type::Ptr type) const {
