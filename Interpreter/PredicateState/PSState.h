@@ -37,6 +37,7 @@ public:
 
     std::string toString() const;
     const TermMap& getVariables();
+    const TermMap& getConstants();
     void addTerm(Term::Ptr term, Domain::Ptr domain);
     void addConstant(Term::Ptr term, Domain::Ptr domain);
     Domain::Ptr find(Term::Ptr term) const;
@@ -44,6 +45,10 @@ public:
     void merge(PSState::Ptr other);
 
 private:
+
+    void mergeConstants(PSState::Ptr other);
+    void mergeTerms(PSState::Ptr other);
+
     TermMap terms_;
     TermMap constants_;
 };

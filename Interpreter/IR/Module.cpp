@@ -97,16 +97,20 @@ Module::Module(const llvm::Module* module, SlotTrackerPass* st)
             topologicalSort(globals, it.first, order);
         }
     }
-    // pre-initialize cycled global variables
-    for (auto&& it : cycled) {
-        globals_[it] = factory_.getBottom(factory_.cast(it->getType()));
-    }
-    initGlobals(order);
+    order_ = std::move(order);
+    cycled_ = std::move(cycled);
+    reinitGlobals();
 }
 
-void Module::initGlobals(std::vector<const llvm::GlobalVariable*>& globals) {
+void Module::reinitGlobals() {
+    globals_.clear();
+    // pre-initialize cycled global variables
+    for (auto&& it : cycled_) {
+        globals_[it] = factory_.getBottom(factory_.cast(it->getType()));
+    }
+    // init all other globals
     TypeFactory::Ptr tf = TypeFactory::get();
-    for (auto&& it : globals) {
+    for (auto&& it : order_) {
         Domain::Ptr globalDomain;
         if (it->hasInitializer()) {
             Domain::Ptr content;

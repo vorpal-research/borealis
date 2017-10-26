@@ -34,7 +34,7 @@ public:
     using FloatCacheImpl = std::unordered_map<Key, Value, FloatIntervalDomain::IDHash, FloatIntervalDomain::IDEquals>;
 
     explicit DomainFactory(Module* module);
-    ~DomainFactory();
+    ~DomainFactory() = default;
 
     SlotTrackerPass& getSlotTracker() const {
         return *ST_;
@@ -99,6 +99,7 @@ private:
     util::cache<IntegerIntervalDomain::ID, Domain::Ptr, IntCacheImpl> int_cache_;
     util::cache<FloatIntervalDomain::ID, Domain::Ptr, FloatCacheImpl> float_cache_;
     Domain::Ptr nullptr_;
+    PointerLocation nullptrLocation_;
 
 };
 

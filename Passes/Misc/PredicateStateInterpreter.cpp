@@ -6,7 +6,7 @@
 #include "Interpreter/IR/Module.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "PredicateStateInterpreter.h"
-#include "State/Transformer/Interpreter.h"
+#include "State/Transformer/PSInterpreter.h"
 
 #include "Util/macros.h"
 
@@ -21,13 +21,20 @@ bool PredicateStateInterpreter::runOnModule(llvm::Module& M) {
     for (auto&& F : util::viewContainer(M)
                     .filter(LAM(f, not f.isDeclaration()))) {
         auto PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+        module.reinitGlobals();
 
         auto ps = FilterContractPredicates(FactoryNest()).transform(PSA->getInstructionState(&F.back().back()));
-        auto interpreter = absint::Interpreter(FactoryNest(), module.getDomainFactory());
+
+        absint::PSInterpreter::Globals globals;
+        for (auto&& it : module.getGloabls()) {
+            globals[it.first->getName().str()] = it.second;
+        }
+        for (auto&& f : module.getAddressTakenFunctions()) {
+            globals[f.second->getName()] = module.getDomainFactory()->get(llvm::cast<llvm::Constant>(f.first));
+        }
+        auto interpreter = absint::PSInterpreter(FactoryNest(), module.getDomainFactory(), globals);
         if (F.getName() == "borealis.globals") continue;
-        errs() << F.getName().str() << endl << ps << endl;
         interpreter.transform(ps);
-        errs() << "State: " << interpreter.getState() << endl;
     }
     return false;
 }

@@ -19,10 +19,10 @@
 namespace borealis {
 namespace absint {
 
-class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
+class IRInterpreter : public llvm::InstVisitor<IRInterpreter>, public logging::ObjectLevelLogging<IRInterpreter> {
 public:
 
-    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs);
+    IRInterpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs);
 
     void run();
     Module& getModule();

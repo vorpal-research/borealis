@@ -51,15 +51,17 @@ public:
 
     Domain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
 
-private:
+    void reinitGlobals();
 
-    void initGlobals(std::vector<const llvm::GlobalVariable*>& globals);
+private:
 
     const llvm::Module* instance_;
     SlotTrackerPass* ST_;
     DomainFactory factory_;
     FunctionMap functions_;
     FunctionMap addressTakenFunctions_;
+    std::vector<const llvm::GlobalVariable*> order_;
+    std::set<const llvm::GlobalVariable*> cycled_;
     GlobalsMap globals_;
 
 };

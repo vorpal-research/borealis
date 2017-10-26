@@ -11,11 +11,12 @@
 namespace borealis {
 namespace absint {
 
-class Interpreter : public Transformer<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
+class PSInterpreter : public Transformer<PSInterpreter>, public logging::ObjectLevelLogging<PSInterpreter> {
 public:
-    using Base = Transformer<Interpreter>;
+    using Base = Transformer<PSInterpreter>;
+    using Globals = std::unordered_map<std::string, Domain::Ptr>;
 
-    Interpreter(FactoryNest FN, DomainFactory* DF, PSState::Ptr state = std::make_shared<PSState>());
+    PSInterpreter(FactoryNest FN, DomainFactory* DF, const Globals& globals, PSState::Ptr state = std::make_shared<PSState>());
 
     PSState::Ptr getState() const;
 
@@ -30,11 +31,7 @@ public:
     Predicate::Ptr transformInequalityPredicate(InequalityPredicatePtr pred);
     Predicate::Ptr transformMallocPredicate(MallocPredicatePtr pred);
     Predicate::Ptr transformMarkPredicate(MarkPredicatePtr pred);
-    Predicate::Ptr transformSeqDataPredicate(SeqDataPredicatePtr pred);
-    Predicate::Ptr transformSeqDataZeroPredicate(SeqDataZeroPredicatePtr pred);
     Predicate::Ptr transformStorePredicate(StorePredicatePtr pred);
-    Predicate::Ptr transformWriteBoundPredicate(WriteBoundPredicatePtr pred);
-    Predicate::Ptr transformWritePropertyPredicate(WritePropertyPredicatePtr pred);
     /// terms
     Term::Ptr transformArgumentCountTerm(ArgumentCountTermPtr term);
     Term::Ptr transformArgumentTerm(ArgumentTermPtr term);
@@ -73,6 +70,7 @@ private:
 
     FactoryNest FN_;
     DomainFactory* DF_;
+    Globals globals_;
     PSState::Ptr state_;
 };
 

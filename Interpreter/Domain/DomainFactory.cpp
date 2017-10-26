@@ -23,15 +23,8 @@ DomainFactory::DomainFactory(Module* module) : ObjectLevelLogging("domain"),
                                                typeFactory_(TypeFactory::get()),
                                                int_cache_(LAM(a, std::make_shared<IntegerIntervalDomain>(this, a))),
                                                float_cache_(LAM(a, std::make_shared<FloatIntervalDomain>(this, a))),
-                                               nullptr_{ std::make_shared<NullptrDomain>(this) } {}
-
-DomainFactory::~DomainFactory() {
-    auto&& info = infos();
-    info << "DomainFactory statistics:" << endl;
-    info << "Integers: " << int_cache_.size() << endl;
-    info << "Floats: " << float_cache_.size() << endl;
-    info << endl;
-}
+                                               nullptr_{ std::make_shared<NullptrDomain>(this) },
+                                               nullptrLocation_{ {getIndex(0)}, nullptr_ } {}
 
 Type::Ptr DomainFactory::cast(const llvm::Type* type) {
     auto res = typeFactory_->cast(type, module_->getInstance()->getDataLayout());
@@ -276,8 +269,7 @@ Domain::Ptr DomainFactory::getFloat(const llvm::APFloat& from, const llvm::APFlo
 
 /* PointerDomain */
 Domain::Ptr DomainFactory::getNullptr(Type::Ptr elementType) {
-    static PointerLocation nullptrLocation{ {getIndex(0)}, getNullptrLocation() };
-    return std::make_shared<PointerDomain>(this, elementType, PointerDomain::Locations{nullptrLocation});
+    return std::make_shared<PointerDomain>(this, elementType, PointerDomain::Locations{nullptrLocation_});
 }
 
 Domain::Ptr DomainFactory::getNullptrLocation() {

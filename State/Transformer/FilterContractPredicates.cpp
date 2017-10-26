@@ -21,6 +21,7 @@ Predicate::Ptr FilterContractPredicates::transformPredicate(Predicate::Ptr pred)
             pred->getType() == PredicateType::ENSURES ||
             pred->getType() == PredicateType::REQUIRES)
         return nullptr;
+    else if (llvm::isa<WritePropertyPredicate>(pred.get())) return nullptr;
     else return pred;
 }
 

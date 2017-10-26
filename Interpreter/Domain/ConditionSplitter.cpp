@@ -12,7 +12,7 @@
 namespace borealis {
 namespace absint {
 
-ConditionSplitter::ConditionSplitter(llvm::Value* target, Interpreter* interpreter, IRState::Ptr state)
+ConditionSplitter::ConditionSplitter(llvm::Value* target, IRInterpreter* interpreter, IRState::Ptr state)
         : ObjectLevelLogging("interpreter"),
           target_(target),
           interpreter_(interpreter),

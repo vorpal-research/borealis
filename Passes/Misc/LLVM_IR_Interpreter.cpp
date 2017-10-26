@@ -22,7 +22,7 @@ bool LLVM_IR_Interpreter::runOnModule(llvm::Module& M) {
     auto&& cgs = &getAnalysis<CallGraphSlicer>();
 
     using namespace absint;
-    auto interpreter = Interpreter(&M, fip, st, cgs);
+    auto interpreter = IRInterpreter(&M, fip, st, cgs);
     interpreter.run();
     auto& module = interpreter.getModule();
 

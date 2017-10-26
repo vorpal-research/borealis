@@ -4,6 +4,8 @@
 
 #include "PSState.h"
 
+#include "Util/macros.h"
+
 namespace borealis {
 namespace absint {
 
@@ -35,6 +37,30 @@ Domain::Ptr PSState::find(Term::Ptr term) const {
 }
 
 void PSState::merge(PSState::Ptr other) {
+    mergeConstants(other);
+    mergeTerms(other);
+}
+
+const PSState::TermMap& PSState::getVariables() {
+    return terms_;
+}
+
+const PSState::TermMap& PSState::getConstants() {
+    return constants_;
+}
+
+void PSState::mergeConstants(PSState::Ptr other) {
+    for (auto&& it : other->getConstants()) {
+        auto itl = constants_.find(it.first);
+        if (itl == constants_.end()) {
+            constants_.insert(it);
+        } else {
+            ASSERT(itl->second->equals(it.second.get()), "constant domain changed");
+        }
+    }
+}
+
+void PSState::mergeTerms(PSState::Ptr other) {
     for (auto&& it : other->getVariables()) {
         auto itl = terms_.find(it.first);
         if (itl == terms_.end()) {
@@ -43,10 +69,6 @@ void PSState::merge(PSState::Ptr other) {
             terms_[it.first] = itl->second->join(it.second);
         }
     }
-}
-
-const PSState::TermMap& PSState::getVariables() {
-    return terms_;
 }
 
 std::ostream& operator<<(std::ostream& s, PSState::Ptr state) {
@@ -61,3 +83,5 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, PSStat
 
 }   /* namespace absint */
 }   /* namespace borealis */
+
+#include "Util/unmacros.h"

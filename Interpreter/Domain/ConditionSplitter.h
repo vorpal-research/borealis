@@ -8,7 +8,7 @@
 #include <map>
 
 #include "Annotation/Annotation.h"
-#include "Interpreter/Interpreter.h"
+#include "Interpreter/IRInterpreter.h"
 #include "Interpreter/Domain/Domain.h"
 #include "Logging/logger.hpp"
 #include "Interpreter/IR/IRState.h"
@@ -22,7 +22,7 @@ class ConditionSplitter : public logging::ObjectLevelLogging<ConditionSplitter> 
 
 public:
 
-    ConditionSplitter(llvm::Value* target, Interpreter* interpreter, IRState::Ptr state);
+    ConditionSplitter(llvm::Value* target, IRInterpreter* interpreter, IRState::Ptr state);
 
     ValueMap apply();
 
@@ -33,7 +33,7 @@ private:
     void handleBinary(llvm::Value* lhv, llvm::Value* rhv, const llvm::BinaryOperator::BinaryOps);
 
     llvm::Value* target_;
-    Interpreter* interpreter_;
+    IRInterpreter* interpreter_;
     IRState::Ptr state_;
     ValueMap values_;
 
