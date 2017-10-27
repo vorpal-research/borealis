@@ -81,7 +81,16 @@ PointerDomain::PointerDomain(Domain::Value value, DomainFactory* factory, Type::
 PointerDomain::PointerDomain(DomainFactory* factory, Type::Ptr elementType, const PointerDomain::Locations& locations)
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
-          locations_(locations) {}
+          locations_(locations) {
+    for (auto&& it : locations_) {
+        if (auto&& st = llvm::dyn_cast<AggregateDomain>(it.location_.get())) {
+            if (st->isStruct() && it.offsets_.begin()->get()->isTop()) {
+                moveToTop();
+                break;
+            }
+        }
+    }
+}
 
 PointerDomain::PointerDomain(const PointerDomain& other)
         : Domain{other.value_, other.type_, other.factory_},
@@ -124,6 +133,18 @@ Domain::Ptr PointerDomain::clone() const {
 
 std::size_t PointerDomain::hashCode() const {
     return util::hash::simple_hash_value(value_, type_, locations_.size());
+}
+
+Domain::Ptr PointerDomain::getBound() const {
+    auto type = factory_->getTypeFactory()->getInteger(64);
+    if (isTop()) return factory_->getTop(type);
+    Domain::Ptr result = factory_->getBottom(type);
+    for (auto&& it : locations_) {
+        for (auto&& offset : it.offsets_) {
+            result = result->join(offset);
+        }
+    }
+    return result;
 }
 
 std::string PointerDomain::toPrettyString(const std::string& prefix) const {

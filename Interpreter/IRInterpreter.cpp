@@ -16,7 +16,11 @@ namespace absint {
 static config::BoolConfigEntry printModule("absint", "print-module");
 
 IRInterpreter::IRInterpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs)
-        : ObjectLevelLogging("ir-interpreter"), module_(module, st), TF_(TypeFactory::get()), FIP_(FIP), ST_(st), CGS_(cgs) {}
+        : ObjectLevelLogging("ir-interpreter"), module_(module, st), TF_(TypeFactory::get()), FIP_(FIP), ST_(st), CGS_(cgs) {
+    std::unordered_set<const llvm::Value*> globals;
+    for (auto&& it : module->globals()) globals.insert(&it);
+    module_.initGlobals(globals);
+}
 
 void IRInterpreter::run() {
     auto&& roots = module_.getRootFunctions();

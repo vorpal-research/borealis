@@ -83,6 +83,7 @@ public:
     Domain::Ptr clone() const override;
     std::size_t hashCode() const override;
     std::string toPrettyString(const std::string& prefix) const override;
+    Domain::Ptr getBound() const;
 
     static bool classof(const Domain* other);
 

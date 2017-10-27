@@ -17,18 +17,20 @@
 namespace borealis {
 namespace absint {
 
-DomainFactory::DomainFactory(Module* module) : ObjectLevelLogging("domain"),
-                                               module_(module),
-                                               ST_(module_->getSlotTracker()),
-                                               typeFactory_(TypeFactory::get()),
-                                               int_cache_(LAM(a, std::make_shared<IntegerIntervalDomain>(this, a))),
-                                               float_cache_(LAM(a, std::make_shared<FloatIntervalDomain>(this, a))),
-                                               nullptr_{ std::make_shared<NullptrDomain>(this) },
-                                               nullptrLocation_{ {getIndex(0)}, nullptr_ } {}
+DomainFactory::DomainFactory(SlotTrackerPass* ST, GlobalVariableManager* GM, const llvm::DataLayout* DL)
+        : ObjectLevelLogging("domain"),
+          ST_(ST),
+          GVM_(GM),
+          DL_(DL),
+          TF_(TypeFactory::get()),
+          int_cache_(LAM(a, std::make_shared<IntegerIntervalDomain>(this, a))),
+          float_cache_(LAM(a, std::make_shared<FloatIntervalDomain>(this, a))),
+          nullptr_{ std::make_shared<NullptrDomain>(this) },
+          nullptrLocation_{ {getIndex(0)}, nullptr_ } {}
 
 Type::Ptr DomainFactory::cast(const llvm::Type* type) {
-    auto res = typeFactory_->cast(type, module_->getInstance()->getDataLayout());
-    if (llvm::isa<type::Bool>(res)) return typeFactory_->getInteger(1);
+    auto res = TF_->cast(type, DL_);
+    if (llvm::isa<type::Bool>(res)) return TF_->getInteger(1);
     else return res;
 }
 
@@ -36,7 +38,7 @@ Type::Ptr DomainFactory::cast(const llvm::Type* type) {
     if (llvm::isa<type::UnknownType>(type.get())) { \
         return nullptr; \
     } else if (llvm::isa<type::Bool>(type.get())) { \
-        return getInteger(VALUE, typeFactory_->getInteger(1)); \
+        return getInteger(VALUE, TF_->getInteger(1)); \
     } else if (llvm::isa<type::Integer>(type.get())) { \
         return getInteger(VALUE, type); \
     } else if (llvm::isa<type::Float>(type.get())) { \
@@ -69,7 +71,7 @@ Domain::Ptr DomainFactory::get(const llvm::Value* val) {
     if (llvm::isa<type::UnknownType>(type.get())) {
         return nullptr;
     } else if (llvm::isa<type::Bool>(type.get())) {
-        return getInteger(typeFactory_->getInteger(1));
+        return getInteger(TF_->getInteger(1));
     } else if (llvm::isa<type::Integer>(type.get())) {
         return getInteger(type);
     } else if (llvm::isa<type::Float>(type.get())) {
@@ -140,8 +142,8 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     // Function
     } else if (auto function = llvm::dyn_cast<llvm::Function>(constant)) {
         auto&& functype = cast(function->getType()->getPointerElementType());
-        auto&& arrayType = typeFactory_->getArray(cast(function->getType()), 1);
-        auto&& arrayDom = getAggregate(arrayType, {getFunction(functype, module_->get(function))});
+        auto&& arrayType = TF_->getArray(cast(function->getType()), 1);
+        auto&& arrayDom = getAggregate(arrayType, {getFunction(functype, GVM_->get(function))});
         return getPointer(functype, {{{getIndex(0)}, arrayDom}});
     // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
@@ -156,22 +158,58 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
     }
 }
 
+Domain::Ptr DomainFactory::get(const llvm::GlobalVariable* global) {
+    Domain::Ptr globalDomain;
+    if (global->hasInitializer()) {
+        Domain::Ptr content;
+        auto& elementType = *global->getType()->getPointerElementType();
+        // If global is simple type, that we should wrap it like array of size 1
+        if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
+            auto simpleConst = get(global->getInitializer());
+            auto&& arrayType = TF_->getArray(cast(&elementType), 1);
+            content = getAggregate(arrayType, {simpleConst});
+            // else just create domain
+        } else {
+            content = get(global->getInitializer());
+        }
+        ASSERT(content, "Unsupported constant");
+
+        PointerLocation loc = {{getIndex(0)}, content};
+        auto newDomain = getPointer(cast(&elementType), {loc});
+        // we need this because GEPs for global structs and arrays contain one additional index at the start
+        if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
+            auto newArray = TF_->getArray(cast(global->getType()), 1);
+            auto newLevel = getAggregate(newArray, {newDomain});
+            PointerLocation loc2 = {{getIndex(0)}, newLevel};
+            globalDomain = getPointer(newArray, {loc2});
+        } else {
+            globalDomain = newDomain;
+        }
+
+    } else {
+        globalDomain = getBottom(cast(global->getType()));
+    }
+
+    ASSERT(globalDomain, "Could not create domain for: " + ST_->toString(global));
+    return globalDomain;
+}
+
 Domain::Ptr DomainFactory::allocate(Type::Ptr type) {
     if (llvm::isa<type::UnknownType>(type.get())) {
         return nullptr;
     } else if (llvm::isa<type::Bool>(type.get())) {
-        auto intTy = typeFactory_->getInteger(1);
-        auto arrayTy = typeFactory_->getArray(intTy, 1);
+        auto intTy = TF_->getInteger(1);
+        auto arrayTy = TF_->getArray(intTy, 1);
         return allocate(arrayTy);
     } else if (llvm::is_one_of<type::Integer, type::Float>(type.get())) {
-        auto arrayTy = typeFactory_->getArray(type, 1);
+        auto arrayTy = TF_->getArray(type, 1);
         return allocate(arrayTy);
     } else if (llvm::isa<type::Array>(type.get())) {
         return getAggregate(type);
     } else if (llvm::isa<type::Record>(type.get())) {
         return getAggregate(type);
     } else if (llvm::isa<type::Function>(type.get())) {
-        auto arrayTy = typeFactory_->getArray(type, 1);
+        auto arrayTy = TF_->getArray(type, 1);
         return getAggregate(arrayTy, {getFunction(type)});
     } else if (auto ptr = llvm::dyn_cast<type::Pointer>(type.get())) {
         auto location = allocate(ptr->getPointed());
@@ -354,7 +392,7 @@ Domain::Ptr DomainFactory::getFunction(Type::Ptr type, const FunctionDomain::Fun
 
 /* heap */
 Domain::Ptr DomainFactory::getConstOperand(const llvm::Constant* c) {
-    if (llvm::isa<llvm::GlobalVariable>(c)) return module_->findGlobal(c);
+    if (llvm::isa<llvm::GlobalVariable>(c)) return GVM_->findGlobal(c);
     else return get(c);
 }
 

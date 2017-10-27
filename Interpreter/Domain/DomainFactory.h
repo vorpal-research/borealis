@@ -16,6 +16,7 @@
 #include "Interpreter/Domain/FunctionDomain.h"
 #include "Interpreter/Domain/IntegerIntervalDomain.h"
 #include "Interpreter/Domain/PointerDomain.h"
+#include "Interpreter/IR/GlobalVariableManager.h"
 #include "Interpreter/IR/Function.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 #include "Type/TypeFactory.h"
@@ -23,7 +24,7 @@
 namespace borealis {
 namespace absint {
 
-class Module;
+class GlobalVariableManager;
 
 class DomainFactory: public logging::ObjectLevelLogging<DomainFactory> {
 public:
@@ -33,7 +34,7 @@ public:
     template <class Key, class Value>
     using FloatCacheImpl = std::unordered_map<Key, Value, FloatIntervalDomain::IDHash, FloatIntervalDomain::IDEquals>;
 
-    explicit DomainFactory(Module* module);
+    DomainFactory(SlotTrackerPass* ST, GlobalVariableManager* GM, const llvm::DataLayout* DL);
     ~DomainFactory() = default;
 
     SlotTrackerPass& getSlotTracker() const {
@@ -41,7 +42,11 @@ public:
     }
 
     TypeFactory::Ptr getTypeFactory() const {
-        return typeFactory_;
+        return TF_;
+    }
+
+    GlobalVariableManager* getGlobalVariableManager() const {
+        return GVM_;
     }
 
     Type::Ptr cast(const llvm::Type* type);
@@ -52,6 +57,7 @@ public:
     /// simply create domain of given type
     Domain::Ptr get(const llvm::Value* val);
     Domain::Ptr get(const llvm::Constant* constant);
+    Domain::Ptr get(const llvm::GlobalVariable* global);
     /// allocates value of given type, like it's a memory object
     Domain::Ptr allocate(Type::Ptr type);
 
@@ -93,9 +99,10 @@ private:
     Domain::Ptr interpretConstantExpr(const llvm::ConstantExpr* ce);
     Domain::Ptr handleGEPConstantExpr(const llvm::ConstantExpr* ce);
 
-    Module* module_;
     SlotTrackerPass* ST_;
-    TypeFactory::Ptr typeFactory_;
+    GlobalVariableManager* GVM_;
+    const llvm::DataLayout* DL_;
+    TypeFactory::Ptr TF_;
     util::cache<IntegerIntervalDomain::ID, Domain::Ptr, IntCacheImpl> int_cache_;
     util::cache<FloatIntervalDomain::ID, Domain::Ptr, FloatCacheImpl> float_cache_;
     Domain::Ptr nullptr_;

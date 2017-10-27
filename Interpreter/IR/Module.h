@@ -33,9 +33,9 @@ public:
 
     bool checkVisited(const llvm::Value* val) const;
     const llvm::Module* getInstance() const;
-    const GlobalsMap& getGloabls() const;
-    void setGlobal(const llvm::Value* val, Domain::Ptr domain);
-    Domain::Ptr findGlobal(const llvm::Value* val) const;
+    GlobalVariableManager* getGlobalVariableManager();
+    const GlobalVariableManager* getGlobalVariableManager() const;
+    Domain::Ptr findGlobal(const llvm::Value* value) const;
     GlobalsMap getGlobalsFor(Function::Ptr f) const;
     GlobalsMap getGlobalsFor(const BasicBlock* bb) const;
     const FunctionMap& getFunctions() const;
@@ -51,18 +51,16 @@ public:
 
     Domain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
 
-    void reinitGlobals();
+    void initGlobals(const std::unordered_set<const llvm::Value*>& globals);
 
 private:
 
     const llvm::Module* instance_;
     SlotTrackerPass* ST_;
+    GlobalVariableManager GVM_;
     DomainFactory factory_;
     FunctionMap functions_;
     FunctionMap addressTakenFunctions_;
-    std::vector<const llvm::GlobalVariable*> order_;
-    std::set<const llvm::GlobalVariable*> cycled_;
-    GlobalsMap globals_;
 
 };
 

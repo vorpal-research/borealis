@@ -16,7 +16,7 @@ public:
     using Base = Transformer<PSInterpreter>;
     using Globals = std::unordered_map<std::string, Domain::Ptr>;
 
-    PSInterpreter(FactoryNest FN, DomainFactory* DF, const Globals& globals, PSState::Ptr state = std::make_shared<PSState>());
+    PSInterpreter(FactoryNest FN, DomainFactory* DF, PSState::Ptr state = std::make_shared<PSState>());
 
     PSState::Ptr getState() const;
 
@@ -70,7 +70,6 @@ private:
 
     FactoryNest FN_;
     DomainFactory* DF_;
-    Globals globals_;
     PSState::Ptr state_;
 };
 

@@ -10,12 +10,11 @@
 namespace borealis {
 namespace absint {
 
-PSInterpreter::PSInterpreter(FactoryNest FN, DomainFactory* DF, const PSInterpreter::Globals& globals, PSState::Ptr state)
+PSInterpreter::PSInterpreter(FactoryNest FN, DomainFactory* DF, PSState::Ptr state)
         : Transformer(FN),
           ObjectLevelLogging("ps-interpreter"),
           FN_(FN),
           DF_(DF),
-          globals_(globals),
           state_(state) {}
 
 PSState::Ptr PSInterpreter::getState() const {
@@ -36,7 +35,7 @@ PredicateState::Ptr PSInterpreter::transformChain(PredicateStateChainPtr chain) 
 }
 
 void PSInterpreter::interpretState(PredicateState::Ptr ps) {
-    auto interpreter = PSInterpreter(FN_, DF_, globals_, state_);
+    auto interpreter = PSInterpreter(FN_, DF_, state_);
     interpreter.transform(ps);
     state_->merge(interpreter.getState());
 }
@@ -187,8 +186,12 @@ Term::Ptr PSInterpreter::transformBinaryTerm(BinaryTermPtr term) {
         case llvm::ArithType::SHL:    result = lhv->shl(rhv); break;
         case llvm::ArithType::LSHR:   result = lhv->lshr(rhv); break;
         case llvm::ArithType::ASHR:   result = lhv->ashr(rhv); break;
-        case llvm::ArithType::BAND:    result = lhv->bAnd(rhv); break;
-        case llvm::ArithType::BOR:     result = lhv->bOr(rhv); break;
+        case llvm::ArithType::LAND:
+        case llvm::ArithType::BAND:
+            result = lhv->bAnd(rhv); break;
+        case llvm::ArithType::LOR:
+        case llvm::ArithType::BOR:
+            result = lhv->bOr(rhv); break;
         case llvm::ArithType::XOR:    result = lhv->bXor(rhv); break;
         default:
             UNREACHABLE("Unknown binary operator: " + term->getName());
@@ -200,7 +203,11 @@ Term::Ptr PSInterpreter::transformBinaryTerm(BinaryTermPtr term) {
 }
 
 Term::Ptr PSInterpreter::transformBoundTerm(BoundTermPtr term) {
-    errs() << "Unknown BoundTerm: " << term->getName() << endl;
+    auto ptr = state_->find(term->getRhv());
+    ASSERT(ptr, "bound term arg: " + term->getName());
+    auto ptrDom = llvm::dyn_cast<PointerDomain>(ptr.get());
+    ASSERT(ptrDom, "bound term arg is not a pointer" + ptr->toString());
+    state_->addTerm(term, ptrDom->getBound());
     return term;
 }
 
@@ -414,7 +421,8 @@ Term::Ptr PSInterpreter::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr
 }
 
 Term::Ptr PSInterpreter::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
-    errs() << "Unknown OpaqueInvalidPtrTerm: " << term->getName() << endl;
+    if (state_->find(term)) return term;
+    state_->addTerm(term, DF_->getNullptr(term->getType()));
     return term;
 }
 
@@ -492,9 +500,9 @@ Term::Ptr PSInterpreter::transformUnaryTerm(UnaryTermPtr term) {
 Term::Ptr PSInterpreter::transformValueTerm(Transformer::ValueTermPtr term) {
     if (state_->find(term)) return term;
     if (term->isGlobal()) {
-        auto opt = util::at(globals_, term->getVName());
-        ASSERT(opt, "Unknown global variable: " + term->getName());
-        state_->addTerm(term, opt.getUnsafe());
+        auto domain = DF_->getGlobalVariableManager()->get(term->getVName());
+        ASSERT(domain, "Unknown global variable: " + term->getName());
+        state_->addTerm(term, domain);
 
     } else {
         state_->addTerm(term, DF_->getTop(term->getType()));

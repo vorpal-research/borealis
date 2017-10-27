@@ -2,40 +2,44 @@
 // Created by abdullin on 10/17/17.
 //
 
-#include <State/Transformer/FilterContractPredicates.h>
+#include "Codegen/intrinsics_manager.h"
 #include "Interpreter/IR/Module.h"
+#include "Passes/Checker/CallGraphSlicer.h"
 #include "Passes/PredicateStateAnalysis/PredicateStateAnalysis.h"
 #include "PredicateStateInterpreter.h"
+#include "State/Transformer/ContractPredicatesFilterer.h"
+#include "State/Transformer/GlobalVariableFinder.h"
 #include "State/Transformer/PSInterpreter.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 
-PredicateStateInterpreter::PredicateStateInterpreter() : llvm::ModulePass(ID) {}
+PredicateStateInterpreter::PredicateStateInterpreter() : ProxyFunctionPass(ID) {}
 
-bool PredicateStateInterpreter::runOnModule(llvm::Module& M) {
-    auto ST = &GetAnalysis<SlotTrackerPass>().doit(this);
-    auto module = absint::Module(&M, ST);
+PredicateStateInterpreter::PredicateStateInterpreter(llvm::Pass* pass) : ProxyFunctionPass(ID, pass) {}
 
-    for (auto&& F : util::viewContainer(M)
-                    .filter(LAM(f, not f.isDeclaration()))) {
-        auto PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
-        module.reinitGlobals();
+bool PredicateStateInterpreter::runOnFunction(llvm::Function& F) {
+    auto&& cgs = GetAnalysis<CallGraphSlicer>::doit(this);
+    if(cgs.doSlicing() && !cgs.getSlice().count(&F)) return false;
+    IntrinsicsManager& im = IntrinsicsManager::getInstance();
+    if (function_type::UNKNOWN != im.getIntrinsicType(&F)) return false;
 
-        auto ps = FilterContractPredicates(FactoryNest()).transform(PSA->getInstructionState(&F.back().back()));
+    auto ST = &GetAnalysis<SlotTrackerPass>().doit(this, F);
 
-        absint::PSInterpreter::Globals globals;
-        for (auto&& it : module.getGloabls()) {
-            globals[it.first->getName().str()] = it.second;
-        }
-        for (auto&& f : module.getAddressTakenFunctions()) {
-            globals[f.second->getName()] = module.getDomainFactory()->get(llvm::cast<llvm::Constant>(f.first));
-        }
-        auto interpreter = absint::PSInterpreter(FactoryNest(), module.getDomainFactory(), globals);
-        if (F.getName() == "borealis.globals") continue;
-        interpreter.transform(ps);
-    }
+    auto PSA = &GetAnalysis<PredicateStateAnalysis>::doit(this, F);
+    auto module = absint::Module(F.getParent(), ST);
+
+    auto FN = FactoryNest(F.getParent()->getDataLayout(), ST->getSlotTracker(F));
+    auto initState = PSA->getInstructionState(&F.back().back());
+
+    auto globFinder = GlobalVariableFinder(FN);
+    auto searched = globFinder.transform(initState);
+    auto filtered = ContractPredicatesFilterer(FN).transform(searched);
+    module.initGlobals(globFinder.getGlobals());
+
+    auto interpreter = absint::PSInterpreter(FN, module.getDomainFactory());
+    interpreter.transform(filtered);
     return false;
 }
 
@@ -44,6 +48,7 @@ void PredicateStateInterpreter::getAnalysisUsage(llvm::AnalysisUsage& AU) const 
 
     AUX<SlotTrackerPass>::addRequired(AU);
     AUX<PredicateStateAnalysis>::addRequiredTransitive(AU);
+    AUX<CallGraphSlicer>::addRequired(AU);
 }
 
 char PredicateStateInterpreter::ID;
