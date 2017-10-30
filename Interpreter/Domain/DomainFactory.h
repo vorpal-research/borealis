@@ -29,6 +29,8 @@ class GlobalVariableManager;
 class DomainFactory: public logging::ObjectLevelLogging<DomainFactory> {
 public:
 
+    static const size_t defaultSize = 64;
+
     template <class Key, class Value>
     using IntCacheImpl = std::unordered_map<Key, Value, IntegerIntervalDomain::IDHash, IntegerIntervalDomain::IDEquals>;
     template <class Key, class Value>

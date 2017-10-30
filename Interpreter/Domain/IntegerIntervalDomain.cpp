@@ -426,7 +426,7 @@ Domain::Ptr IntegerIntervalDomain::uitofp(Type::Ptr type) const {
     if (not isValue()) return factory_->getTop(type);
     auto& newSemantics = util::getSemantics();
 
-    unsigned width = 64;
+    unsigned width = DomainFactory::defaultSize;
     Integer::Ptr newLB = lb_, newUB = ub_;
     if (width < getWidth()) {
         newLB = lb_->trunc(width);
@@ -451,7 +451,7 @@ Domain::Ptr IntegerIntervalDomain::sitofp(Type::Ptr type) const {
     if (not isValue()) return factory_->getTop(type);
     auto& newSemantics = util::getSemantics();
 
-    unsigned width = 64;
+    unsigned width = DomainFactory::defaultSize;
     Integer::Ptr newLB = signed_lb_, newUB = signed_ub_;
     if (width < getWidth()) {
         newLB = signed_lb_->trunc(width);

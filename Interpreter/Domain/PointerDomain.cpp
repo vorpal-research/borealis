@@ -136,7 +136,7 @@ std::size_t PointerDomain::hashCode() const {
 }
 
 Domain::Ptr PointerDomain::getBound() const {
-    auto type = factory_->getTypeFactory()->getInteger(64);
+    auto type = factory_->getTypeFactory()->getInteger(DomainFactory::defaultSize);
     if (isTop()) return factory_->getTop(type);
     Domain::Ptr result = factory_->getBottom(type);
     for (auto&& it : locations_) {

@@ -234,7 +234,7 @@ Domain::Ptr DomainFactory::getBool(bool value) {
 }
 
 Domain::Ptr DomainFactory::getIndex(uint64_t indx) {
-    return getInteger(toInteger(indx, 64));
+    return getInteger(toInteger(indx, DomainFactory::defaultSize));
 }
 
 /* Integer */

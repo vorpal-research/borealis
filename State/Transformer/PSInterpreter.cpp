@@ -336,6 +336,7 @@ Term::Ptr PSInterpreter::transformConstTerm(ConstTermPtr term) {
 
 Term::Ptr PSInterpreter::transformFreeVarTerm(FreeVarTermPtr term) {
     errs() << "Unknown FreeVarTerm: " << term->getName() << endl;
+    state_->addTerm(term, DF_->getTop(term->getType()));
     return term;
 }
 
@@ -351,10 +352,10 @@ Term::Ptr PSInterpreter::transformGepTerm(GepTermPtr term) {
         auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(shift.get());
         ASSERT(integer, "Non-integer domain in gep shift");
 
-        if (integer->getWidth() < 64) {
-            shifts.emplace_back(shift->zext(FN.Type->getInteger(64)));
-        } else if (integer->getWidth() > 64) {
-            shifts.emplace_back(shift->trunc(FN.Type->getInteger(64)));
+        if (integer->getWidth() < DF_->defaultSize) {
+            shifts.emplace_back(shift->zext(FN.Type->getInteger(DF_->defaultSize)));
+        } else if (integer->getWidth() > DF_->defaultSize) {
+            shifts.emplace_back(shift->trunc(FN.Type->getInteger(DF_->defaultSize)));
         } else {
             shifts.emplace_back(shift);
         }
@@ -415,9 +416,20 @@ Term::Ptr PSInterpreter::transformOpaqueIndexingTerm(OpaqueIndexingTermPtr term)
 
 Term::Ptr PSInterpreter::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
     if (state_->find(term)) return term;
-    auto intTy = llvm::cast<type::Integer>(term->getType().get());
-    auto integer = DF_->toInteger(llvm::APInt(intTy->getBitsize(), term->getValue(), intTy->getSignedness() == llvm::Signedness::Signed));
-    state_->addConstant(term, DF_->getInteger(integer));
+    Integer::Ptr integer;
+    if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
+        auto apInt = llvm::APInt(intTy->getBitsize(), term->getValue(), intTy->getSignedness() == llvm::Signedness::Signed);
+        integer = DF_->toInteger(apInt);
+        state_->addConstant(term, DF_->getInteger(integer));
+
+    } else if (llvm::isa<type::Pointer>(term->getType().get())) {
+        state_->addConstant(term, (term->getValue() == 0) ?
+                                  DF_->getNullptr(term->getType()) :
+                                  DF_->getTop(term->getType()));
+    } else {
+        warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
+        state_->addConstant(term, DF_->getIndex(term->getValue()));
+    };
     return term;
 }
 
