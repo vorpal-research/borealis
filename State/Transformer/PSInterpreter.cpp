@@ -194,7 +194,9 @@ Term::Ptr PSInterpreter::transformBinaryTerm(BinaryTermPtr term) {
             result = lhv->bOr(rhv); break;
         case llvm::ArithType::XOR:    result = lhv->bXor(rhv); break;
         default:
-            UNREACHABLE("Unknown binary operator: " + term->getName());
+            errs() << "Unknown binary operator: " << term->getName() << endl;
+            result = DF_->getTop(term->getType());
+//            UNREACHABLE("Unknown binary operator: " + term->getName());
     }
 
     ASSERT(result, "binop result " + term->getName());

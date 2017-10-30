@@ -9,6 +9,7 @@
 #define CHECKVISITOR_HPP_
 
 
+#include "Interpreter/PSInterpreterManager.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
@@ -49,7 +50,11 @@ public:
     bool skip(const DefectInfo& di) {
         if (pass->CM->shouldSkipInstruction(I)) return true;
         if (pass->DM->hasInfo(di)) return true;
-        return false;
+
+        auto function = I->getParent()->getParent();
+        auto PSM = absint::PSInterpreterManager(function, pass->DM, pass->ST,
+                                                LAM(I, pass->getInstructionState(I)));
+        return PSM.hasInfo(di);
     }
 
 private:

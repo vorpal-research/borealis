@@ -32,10 +32,10 @@ public:
 
         CheckHelper<CheckOutOfBoundsPass> h(pass, &loc, DefectType::BUF_01);
 
-        if (h.skip()) return;
-
         if (isTriviallyInboundsGEP(&GI)) return;
         if (GI.isDereferenceablePointer(loc.getDataLayout())) return;
+
+        if (h.skip()) return;
 
         auto shift = (
             pass->FN.Term *

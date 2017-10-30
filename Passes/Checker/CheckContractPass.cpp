@@ -80,10 +80,9 @@ public:
 
         CheckHelper<CheckContractPass> h(pass, &CI, DefectType::REQ_01);
 
-        if (h.skip()) return;
-
         auto contract = pass->FM->getReq(CI, pass->FN);
         if(contract->isEmpty()) return;
+        if (h.skip()) return;
 
         auto t = CallSiteInitializer(&CI, pass->FN);
         auto q = contract->map(
@@ -139,10 +138,9 @@ public:
 
         CheckHelper<CheckContractPass> h(pass, &RI, DefectType::ENS_01);
 
-        if (h.skip()) return;
-
         auto q = pass->FM->getEns(RI.getParent()->getParent());
         if(q->isEmpty()) return;
+        if (h.skip()) return;
 
         auto ps = pass->getInstructionState(&RI);
 

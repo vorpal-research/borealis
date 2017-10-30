@@ -12,13 +12,13 @@
 
 namespace borealis {
 
-class LLVM_IR_Interpreter : public llvm::ModulePass {
+class IRInterpreterPass : public llvm::ModulePass {
 public:
 
     static char ID;
 
-    LLVM_IR_Interpreter() : llvm::ModulePass(ID) {}
-    virtual ~LLVM_IR_Interpreter() = default;
+    IRInterpreterPass() : llvm::ModulePass(ID) {}
+    virtual ~IRInterpreterPass() = default;
 
     virtual bool runOnModule(llvm::Module& M) override;
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
