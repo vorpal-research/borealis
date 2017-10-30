@@ -316,11 +316,9 @@ Domain::Ptr IntegerIntervalDomain::srem(Domain::Ptr other) const {
 
 #define BIT_OPERATION(OPER) \
     auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get()); \
-    ASSERT(interval, "Nullptr in shl"); \
+    ASSERT(interval, "Nullptr in bit operation"); \
      \
-    if (isBottom() || interval->isBottom()) { \
-        return factory_->getTop(intType_); \
-    } else if (this->isTop() || interval->isTop()) { \
+    if (not (this->isValue() && interval->isValue())) { \
         return factory_->getTop(intType_); \
     } else { \
         auto ll = lb_->OPER(interval->lb_); \
@@ -360,6 +358,32 @@ Domain::Ptr IntegerIntervalDomain::bOr(Domain::Ptr) const {
 }
 
 Domain::Ptr IntegerIntervalDomain::bXor(Domain::Ptr) const {
+    return factory_->getTop(intType_);
+}
+
+Domain::Ptr IntegerIntervalDomain::implies(Domain::Ptr other) const {
+    auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
+    ASSERT(interval, "Nullptr in bit operation");
+
+    if (not (this->isValue() && interval->isValue())) {
+        return factory_->getTop(intType_);
+    } else if (this->getWidth() != 1) {
+        return factory_->getTop(intType_);
+    } else {
+        if (this->isConstant(1)) return other;
+        else return factory_->getBool(true);
+    }
+}
+
+Domain::Ptr IntegerIntervalDomain::neg() const {
+    return factory_->getTop(intType_);
+}
+
+Domain::Ptr IntegerIntervalDomain::bNot() const {
+    if (getWidth() == 1) {
+        if (not isValue()) return factory_->getTop(intType_);
+        return factory_->getBool(not isConstant(1));
+    }
     return factory_->getTop(intType_);
 }
 

@@ -193,10 +193,9 @@ Term::Ptr PSInterpreter::transformBinaryTerm(BinaryTermPtr term) {
         case llvm::ArithType::BOR:
             result = lhv->bOr(rhv); break;
         case llvm::ArithType::XOR:    result = lhv->bXor(rhv); break;
+        case llvm::ArithType::IMPLIES: result = lhv->implies(rhv); break;
         default:
-            errs() << "Unknown binary operator: " << term->getName() << endl;
-            result = DF_->getTop(term->getType());
-//            UNREACHABLE("Unknown binary operator: " + term->getName());
+            UNREACHABLE("Unknown binary operator: " + term->getName());
     }
 
     ASSERT(result, "binop result " + term->getName());
@@ -494,8 +493,15 @@ Term::Ptr PSInterpreter::transformUnaryTerm(UnaryTermPtr term) {
     auto rhv = state_->find(term->getRhv());
     ASSERT(rhv, "unary term arg " + term->getName());
 
-    errs() << "Unknown term: " << term->getName() << endl;
-    state_->addTerm(term, DF_->getTop(term->getType()));
+    Domain::Ptr result;
+    switch (term->getOpcode()) {
+        case llvm::UnaryArithType::NEG: result = rhv->neg(); break;
+        case llvm::UnaryArithType::NOT: result = rhv->neg(); break;
+        case llvm::UnaryArithType::BNOT: result = rhv->neg(); break;
+        default:
+            UNREACHABLE("Unknown unary operator: " + term->getName());
+    }
+    state_->addTerm(term, result);
     return term;
 }
 

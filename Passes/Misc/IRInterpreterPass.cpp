@@ -12,10 +12,11 @@
 
 namespace borealis {
 
-static config::BoolConfigEntry printCFG("absint", "print-cfg");
-static config::BoolConfigEntry enableAnalysis("absint", "ai-analysis");
+static config::BoolConfigEntry enableAnalysis("absint", "enable-ir-interpreter");
 
 bool IRInterpreterPass::runOnModule(llvm::Module& M) {
+    if (not enableAnalysis.get(false)) return false;
+
     auto&& fip = &GetAnalysis<FuncInfoProvider>().doit(this);
     auto&& st = &GetAnalysis<SlotTrackerPass>().doit(this);
     auto&& dm = &GetAnalysis<DefectManager>().doit(this);
@@ -26,7 +27,7 @@ bool IRInterpreterPass::runOnModule(llvm::Module& M) {
     interpreter.run();
     auto& module = interpreter.getModule();
 
-    if (not module.getRootFunctions().empty() && enableAnalysis.get(false)) {
+    if (not module.getRootFunctions().empty()) {
         OutOfBoundsChecker(&module, dm, fip).run();
         NullDereferenceChecker(&module, dm).run();
     }

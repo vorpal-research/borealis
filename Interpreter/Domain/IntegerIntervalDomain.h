@@ -72,6 +72,10 @@ public:
     Domain::Ptr bAnd(Domain::Ptr other) const override;
     Domain::Ptr bOr(Domain::Ptr other) const override;
     Domain::Ptr bXor(Domain::Ptr other) const override;
+    Domain::Ptr implies(Domain::Ptr other) const override;
+    /// Unary
+    Domain::Ptr neg() const override;
+    Domain::Ptr bNot() const override;
     /// Cast
     Domain::Ptr trunc(Type::Ptr type) const override;
     Domain::Ptr zext(Type::Ptr type) const override;

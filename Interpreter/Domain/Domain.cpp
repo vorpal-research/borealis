@@ -47,9 +47,17 @@ MK_BINOP_IMPL(ashr);
 MK_BINOP_IMPL(bAnd);
 MK_BINOP_IMPL(bOr);
 MK_BINOP_IMPL(bXor);
+MK_BINOP_IMPL(implies);
 
 #undef MK_BINOP_IMPL
 
+Domain::Ptr Domain::neg() const {
+    UNREACHABLE("Unimplemented unary operation");
+}
+
+Domain::Ptr Domain::bNot() const {
+    UNREACHABLE("Unimplemented unary operation");
+}
 
 Domain::Ptr Domain::extractElement(const std::vector<Domain::Ptr>&) {
     UNREACHABLE("Unimplemented vector operation");

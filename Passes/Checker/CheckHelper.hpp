@@ -30,6 +30,7 @@
 
 namespace borealis {
 
+static config::BoolConfigEntry enableInterpreter("absint", "enable-ps-interpreter");
 
 template<class Pass>
 class CheckHelper {
@@ -51,10 +52,14 @@ public:
         if (pass->CM->shouldSkipInstruction(I)) return true;
         if (pass->DM->hasInfo(di)) return true;
 
-        auto function = I->getParent()->getParent();
-        auto PSM = absint::PSInterpreterManager(function, pass->DM, pass->ST,
-                                                LAM(I, pass->getInstructionState(I)));
-        return PSM.hasInfo(di);
+        if (enableInterpreter.get(false)) {
+            auto function = I->getParent()->getParent();
+            auto PSM = absint::PSInterpreterManager(function, pass->DM, pass->ST,
+                                                    LAM(I, pass->getInstructionState(I)));
+            return PSM.hasInfo(di);
+        } else {
+            return false;
+        }
     }
 
 private:

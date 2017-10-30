@@ -141,6 +141,10 @@ public:
     virtual Domain::Ptr bAnd(Domain::Ptr other) const;
     virtual Domain::Ptr bOr(Domain::Ptr other) const;
     virtual Domain::Ptr bXor(Domain::Ptr other) const;
+    virtual Domain::Ptr implies(Domain::Ptr other) const;
+    /// Unary
+    virtual Domain::Ptr neg() const;
+    virtual Domain::Ptr bNot() const;
     /// Vector
     virtual Domain::Ptr extractElement(const std::vector<Domain::Ptr>& indices);
     virtual void insertElement(Domain::Ptr element, const std::vector<Domain::Ptr>& indices);

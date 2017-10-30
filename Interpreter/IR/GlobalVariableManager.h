@@ -16,7 +16,7 @@
 namespace borealis {
 namespace absint {
 
-class GlobalVar: std::enable_shared_from_this<GlobalVar> {
+class GlobalVar: public std::enable_shared_from_this<GlobalVar> {
 public:
     enum Color {
         WHITE, GREY, BLACK
