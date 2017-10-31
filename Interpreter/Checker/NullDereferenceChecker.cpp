@@ -11,7 +11,7 @@ namespace absint {
 
 static config::BoolConfigEntry enableLogging("absint", "checker-logging");
 
-NullDereferenceChecker::NullDereferenceChecker(Module* module, DefectManager* DM)
+NullDereferenceChecker::NullDereferenceChecker(ir::Module* module, DefectManager* DM)
         : ObjectLevelLogging("ir-interpreter"),
           module_(module),
           DM_(DM) {

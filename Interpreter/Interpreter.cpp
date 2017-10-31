@@ -4,25 +4,26 @@
 
 #include "Annotation/Annotation.h"
 #include "Config/config.h"
-#include "IRInterpreter.h"
-#include "Interpreter/Domain/ConditionSplitter.h"
+#include "Interpreter.h"
+#include "Interpreter/IR/ConditionSplitter.h"
 #include "Util/collections.hpp"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 static config::BoolConfigEntry printModule("absint", "print-module");
 
-IRInterpreter::IRInterpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs)
+Interpreter::Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs)
         : ObjectLevelLogging("ir-interpreter"), module_(module, st), TF_(TypeFactory::get()), FIP_(FIP), ST_(st), CGS_(cgs) {
     std::unordered_set<const llvm::Value*> globals;
     for (auto&& it : module->globals()) globals.insert(&it);
     module_.initGlobals(globals);
 }
 
-void IRInterpreter::run() {
+void Interpreter::run() {
     auto&& roots = module_.getRootFunctions();
     if (roots.empty()) {
         errs() << "No root function" << endl;
@@ -52,14 +53,14 @@ void IRInterpreter::run() {
         infos() << endl << module_ << endl;
     }
     ASSERT(stack_.empty(), "Stack is not empty after interpretation");
-    ASSERT(not context_, "Context is not nullptr");
+    ASSERT(not context_, "Context is not empty after interpretation");
 }
 
-Module& IRInterpreter::getModule() {
+Module& Interpreter::getModule() {
     return module_;
 }
 
-void IRInterpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
+void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args) {
     // if arguments and globals are not changed, then this function don't need to be reinterpreted
     // if function's argument list is empty, then check if it's visited at all
     auto updArgs = function->getArguments().empty() ?
@@ -92,7 +93,7 @@ void IRInterpreter::interpretFunction(Function::Ptr function, const std::vector<
                &stack_.top();
 }
 
-Domain::Ptr IRInterpreter::getVariable(const llvm::Value* value) {
+Domain::Ptr Interpreter::getVariable(const llvm::Value* value) {
     if (auto&& global = module_.findGlobal(value)) {
         return global;
 
@@ -112,7 +113,7 @@ Domain::Ptr IRInterpreter::getVariable(const llvm::Value* value) {
 /////////////////////////////////////////////////////////////////////
 /// Visitors
 /////////////////////////////////////////////////////////////////////
-void IRInterpreter::visitInstruction(llvm::Instruction& i) {
+void Interpreter::visitInstruction(llvm::Instruction& i) {
     warns() << "Unsupported instruction: " << ST_->toString(&i) << endl;
     if (not i.getType()->isVoidTy()) {
         auto&& val = module_.getDomainFactory()->getTop(cast(i.getType()));
@@ -121,7 +122,7 @@ void IRInterpreter::visitInstruction(llvm::Instruction& i) {
     }
 }
 
-void IRInterpreter::visitReturnInst(llvm::ReturnInst& i) {
+void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
     if (not i.getReturnValue()) return;
 
     auto&& retDomain = getVariable(i.getReturnValue());
@@ -129,7 +130,7 @@ void IRInterpreter::visitReturnInst(llvm::ReturnInst& i) {
     context_->state->mergeToReturnValue(retDomain);
 }
 
-void IRInterpreter::visitBranchInst(llvm::BranchInst& i) {
+void Interpreter::visitBranchInst(llvm::BranchInst& i) {
     std::vector<BasicBlock*> successors;
     if (i.isConditional()) {
         auto cond = getVariable(i.getCondition());
@@ -175,7 +176,7 @@ void IRInterpreter::visitBranchInst(llvm::BranchInst& i) {
     addSuccessors(successors);
 }
 
-void IRInterpreter::visitSwitchInst(llvm::SwitchInst& i) {
+void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
     std::vector<BasicBlock*> successors;
     auto&& cond = getVariable(i.getCondition());
 
@@ -212,7 +213,7 @@ void IRInterpreter::visitSwitchInst(llvm::SwitchInst& i) {
     addSuccessors(successors);
 }
 
-void IRInterpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
+void Interpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
     std::vector<BasicBlock*> successors;
 
     for (auto j = 0U; j < i.getNumSuccessors(); ++j) {
@@ -223,10 +224,10 @@ void IRInterpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
     addSuccessors(successors);
 }
 
-void IRInterpreter::visitResumeInst(llvm::ResumeInst&)             { /* ignore this */ }
-void IRInterpreter::visitUnreachableInst(llvm::UnreachableInst&)   { /* ignore this */ }
+void Interpreter::visitResumeInst(llvm::ResumeInst&)             { /* ignore this */ }
+void Interpreter::visitUnreachableInst(llvm::UnreachableInst&)   { /* ignore this */ }
 
-void IRInterpreter::visitICmpInst(llvm::ICmpInst& i) {
+void Interpreter::visitICmpInst(llvm::ICmpInst& i) {
     auto&& lhv = getVariable(i.getOperand(0));
     auto&& rhv = getVariable(i.getOperand(1));
     ASSERT(lhv && rhv, "cmp args");
@@ -236,7 +237,7 @@ void IRInterpreter::visitICmpInst(llvm::ICmpInst& i) {
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitFCmpInst(llvm::FCmpInst& i) {
+void Interpreter::visitFCmpInst(llvm::FCmpInst& i) {
     auto&& lhv = getVariable(i.getOperand(0));
     auto&& rhv = getVariable(i.getOperand(1));
     ASSERT(lhv && rhv, "fcmp args");
@@ -246,11 +247,11 @@ void IRInterpreter::visitFCmpInst(llvm::FCmpInst& i) {
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitAllocaInst(llvm::AllocaInst&) {
+void Interpreter::visitAllocaInst(llvm::AllocaInst&) {
     UNREACHABLE("Alloca instructions replaced with borealis.alloca");
 }
 
-void IRInterpreter::visitLoadInst(llvm::LoadInst& i) {
+void Interpreter::visitLoadInst(llvm::LoadInst& i) {
     auto gepOper = llvm::dyn_cast<llvm::GEPOperator>(i.getPointerOperand());
     auto ptr = (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper)) ?
                gepOperator(*gepOper) :
@@ -262,7 +263,7 @@ void IRInterpreter::visitLoadInst(llvm::LoadInst& i) {
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitStoreInst(llvm::StoreInst& i) {
+void Interpreter::visitStoreInst(llvm::StoreInst& i) {
     auto&& ptr = getVariable(i.getPointerOperand());
     auto&& storeVal = getVariable(i.getValueOperand());
     ASSERT(ptr && storeVal, "store args");
@@ -277,13 +278,13 @@ void IRInterpreter::visitStoreInst(llvm::StoreInst& i) {
     }
 }
 
-void IRInterpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
+void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
     auto&& result = gepOperator(llvm::cast<llvm::GEPOperator>(i));
     ASSERT(result, "gep result");
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitPHINode(llvm::PHINode& i) {
+void Interpreter::visitPHINode(llvm::PHINode& i) {
     Domain::Ptr result = nullptr;
 
     if ( (result = context_->state->find(&i)) ) {
@@ -322,20 +323,20 @@ void IRInterpreter::visitPHINode(llvm::PHINode& i) {
     ASSERT(result, "cast result"); \
     context_->state->addVariable(&i, result);
 
-void IRInterpreter::visitTruncInst(llvm::TruncInst& i)        { CAST_INST(trunc);     }
-void IRInterpreter::visitZExtInst(llvm::ZExtInst& i)          { CAST_INST(zext);      }
-void IRInterpreter::visitSExtInst(llvm::SExtInst& i)          { CAST_INST(sext);      }
-void IRInterpreter::visitFPTruncInst(llvm::FPTruncInst& i)    { CAST_INST(fptrunc);   }
-void IRInterpreter::visitFPExtInst(llvm::FPExtInst& i)        { CAST_INST(fpext);     }
-void IRInterpreter::visitFPToUIInst(llvm::FPToUIInst& i)      { CAST_INST(fptoui);    }
-void IRInterpreter::visitFPToSIInst(llvm::FPToSIInst& i)      { CAST_INST(fptosi);    }
-void IRInterpreter::visitUIToFPInst(llvm::UIToFPInst& i)      { CAST_INST(uitofp);    }
-void IRInterpreter::visitSIToFPInst(llvm::SIToFPInst& i)      { CAST_INST(sitofp);    }
-void IRInterpreter::visitPtrToIntInst(llvm::PtrToIntInst& i)  { CAST_INST(ptrtoint);  }
-void IRInterpreter::visitIntToPtrInst(llvm::IntToPtrInst& i)  { CAST_INST(inttoptr);  }
+void Interpreter::visitTruncInst(llvm::TruncInst& i)        { CAST_INST(trunc);     }
+void Interpreter::visitZExtInst(llvm::ZExtInst& i)          { CAST_INST(zext);      }
+void Interpreter::visitSExtInst(llvm::SExtInst& i)          { CAST_INST(sext);      }
+void Interpreter::visitFPTruncInst(llvm::FPTruncInst& i)    { CAST_INST(fptrunc);   }
+void Interpreter::visitFPExtInst(llvm::FPExtInst& i)        { CAST_INST(fpext);     }
+void Interpreter::visitFPToUIInst(llvm::FPToUIInst& i)      { CAST_INST(fptoui);    }
+void Interpreter::visitFPToSIInst(llvm::FPToSIInst& i)      { CAST_INST(fptosi);    }
+void Interpreter::visitUIToFPInst(llvm::UIToFPInst& i)      { CAST_INST(uitofp);    }
+void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i)      { CAST_INST(sitofp);    }
+void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i)  { CAST_INST(ptrtoint);  }
+void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i)  { CAST_INST(inttoptr);  }
 
 
-void IRInterpreter::visitSelectInst(llvm::SelectInst& i) {
+void Interpreter::visitSelectInst(llvm::SelectInst& i) {
     auto cond = getVariable(i.getCondition());
     auto trueVal = getVariable(i.getTrueValue());
     auto falseVal = getVariable(i.getFalseValue());
@@ -347,7 +348,7 @@ void IRInterpreter::visitSelectInst(llvm::SelectInst& i) {
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
+void Interpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
     auto aggregate = getVariable(i.getAggregateOperand());
     ASSERT(aggregate, "extract value arg");
 
@@ -361,7 +362,7 @@ void IRInterpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitInsertValueInst(llvm::InsertValueInst& i) {
+void Interpreter::visitInsertValueInst(llvm::InsertValueInst& i) {
     auto aggregate = getVariable(i.getAggregateOperand());
     auto value = getVariable(i.getInsertedValueOperand());
     ASSERT(aggregate && value, "insert value arg");
@@ -374,7 +375,7 @@ void IRInterpreter::visitInsertValueInst(llvm::InsertValueInst& i) {
     aggregate->insertValue(value, indices);
 }
 
-void IRInterpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
+void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
     auto&& lhv = getVariable(i.getOperand(0));
     auto&& rhv = getVariable(i.getOperand(1));
     ASSERT(lhv && rhv, "binop args");
@@ -408,7 +409,7 @@ void IRInterpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
     context_->state->addVariable(&i, result);
 }
 
-void IRInterpreter::visitCallInst(llvm::CallInst& i) {
+void Interpreter::visitCallInst(llvm::CallInst& i) {
     std::vector<std::pair<const llvm::Value*, Domain::Ptr>> args;
     for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
         args.emplace_back(i.getArgOperand(j), getVariable(i.getArgOperand(j)));
@@ -458,7 +459,7 @@ void IRInterpreter::visitCallInst(llvm::CallInst& i) {
     }
 }
 
-void IRInterpreter::visitBitCastInst(llvm::BitCastInst& i) {
+void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
     auto&& op = getVariable(i.getOperand(0));
     ASSERT(op, "bitcast arg");
 
@@ -470,11 +471,11 @@ void IRInterpreter::visitBitCastInst(llvm::BitCastInst& i) {
 ///////////////////////////////////////////////////////////////
 /// Util functions
 ///////////////////////////////////////////////////////////////
-Type::Ptr IRInterpreter::cast(const llvm::Type* type) {
+Type::Ptr Interpreter::cast(const llvm::Type* type) {
     return module_.getDomainFactory()->cast(type);
 }
 
-void IRInterpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
+void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
         if (not it->atFixpoint(module_.getGlobalsFor(it)) && not util::contains(context_->deque, it)) {
             context_->deque.emplace_back(it);
@@ -482,7 +483,7 @@ void IRInterpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     }
 }
 
-Domain::Ptr IRInterpreter::gepOperator(const llvm::GEPOperator& gep) {
+Domain::Ptr Interpreter::gepOperator(const llvm::GEPOperator& gep) {
     auto&& ptr = getVariable(gep.getPointerOperand());
     ASSERT(ptr, "gep args");
 
@@ -501,7 +502,7 @@ Domain::Ptr IRInterpreter::gepOperator(const llvm::GEPOperator& gep) {
     return ptr->gep(cast(gep.getType()->getPointerElementType()), offsets);
 }
 
-Domain::Ptr IRInterpreter::handleFunctionCall(const llvm::Function* function,
+Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
                                             const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
     ASSERT(function, "nullptr in handle function call");
     if (function->getName().startswith("borealis.alloc") || function->getName().startswith("borealis.malloc")) {
@@ -515,7 +516,7 @@ Domain::Ptr IRInterpreter::handleFunctionCall(const llvm::Function* function,
     }
 }
 
-Domain::Ptr IRInterpreter::handleMemoryAllocation(const llvm::Function* function,
+Domain::Ptr Interpreter::handleMemoryAllocation(const llvm::Function* function,
                                                 const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
     auto&& size = getVariable(args[2].first);
     if (not size) {
@@ -542,7 +543,7 @@ Domain::Ptr IRInterpreter::handleMemoryAllocation(const llvm::Function* function
     return domain;
 }
 
-Domain::Ptr IRInterpreter::handleDeclaration(const llvm::Function* function,
+Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
                                            const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
     try {
         auto funcData = FIP_->getInfo(function);
@@ -577,6 +578,7 @@ Domain::Ptr IRInterpreter::handleDeclaration(const llvm::Function* function,
     return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
 }
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

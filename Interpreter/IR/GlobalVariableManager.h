@@ -15,6 +15,7 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 class GlobalVar: public std::enable_shared_from_this<GlobalVar> {
 public:
@@ -73,6 +74,7 @@ private:
 
 };
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

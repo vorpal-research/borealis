@@ -9,13 +9,14 @@
 
 #include <llvm/IR/BasicBlock.h>
 
-#include "IRState.h"
+#include "State.h"
 #include "Util/slottracker.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 class BasicBlock {
 private:
@@ -24,8 +25,8 @@ private:
     mutable SlotTracker* tracker_;
     DomainFactory* factory_;
     std::map<const llvm::Value*, Domain::Ptr> globals_;
-    IRState::Ptr inputState_;
-    IRState::Ptr outputState_;
+    State::Ptr inputState_;
+    State::Ptr outputState_;
     bool inputChanged_;
     bool atFixpoint_;
     bool visited_;
@@ -40,7 +41,7 @@ public:
 
     const llvm::BasicBlock* getInstance() const;
     SlotTracker& getSlotTracker() const;
-    IRState::Ptr getOutputState() const;
+    State::Ptr getOutputState() const;
     std::vector<const llvm::Value*> getGlobals() const;
 
     std::string getName() const;
@@ -50,7 +51,7 @@ public:
 
     void updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals);
     void mergeOutputWithInput();
-    void mergeToInput(IRState::Ptr input);
+    void mergeToInput(State::Ptr input);
     void addToInput(const llvm::Value* value, Domain::Ptr domain);
     void addToInput(const llvm::Instruction* inst, Domain::Ptr domain);
     Domain::Ptr getDomainFor(const llvm::Value* value);
@@ -70,6 +71,7 @@ std::ostream& operator<<(std::ostream& s, const BasicBlock* b);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock& b);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const BasicBlock* b);
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

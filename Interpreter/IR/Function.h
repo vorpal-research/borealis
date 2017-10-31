@@ -9,13 +9,14 @@
 #include <unordered_map>
 
 #include "Interpreter/IR/BasicBlock.h"
-#include "IRState.h"
+#include "State.h"
 #include "Util/slottracker.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 class Function: public std::enable_shared_from_this<Function> {
 public:
@@ -31,8 +32,8 @@ private:
     std::vector<Domain::Ptr> arguments_;
     std::map<const llvm::Value*, Domain::Ptr> globals_;
     BlockMap blocks_;
-    IRState::Ptr inputState_;
-    IRState::Ptr outputState_;
+    State::Ptr inputState_;
+    State::Ptr outputState_;
 
 public:
     /// Assumes that llvm::Function is not a declaration
@@ -54,7 +55,7 @@ public:
     bool updateArguments(const std::vector<Domain::Ptr>& args);
     /// Returns true, if globals were updated and function should be reinterpreted
     bool updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals);
-    void mergeToOutput(IRState::Ptr state);
+    void mergeToOutput(State::Ptr state);
 
     BasicBlock* getEntryNode() const;
     BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;
@@ -87,6 +88,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Function* f);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Function::Ptr f);
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

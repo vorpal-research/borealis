@@ -5,20 +5,23 @@
 #ifndef BOREALIS_INTERPRETER_H
 #define BOREALIS_INTERPRETER_H
 
-#include "Interpreter/PredicateState/PSState.h"
+#include "Interpreter/PredicateState/State.h"
 #include "Transformer.hpp"
 
 namespace borealis {
 namespace absint {
+namespace ps {
 
-class PSInterpreter : public Transformer<PSInterpreter>, public logging::ObjectLevelLogging<PSInterpreter> {
+class Interpreter : public Transformer<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
-    using Base = Transformer<PSInterpreter>;
+    using Base = Transformer<Interpreter>;
     using Globals = std::unordered_map<std::string, Domain::Ptr>;
+    using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
 
-    PSInterpreter(FactoryNest FN, DomainFactory* DF, PSState::Ptr state = std::make_shared<PSState>());
+    Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr state = std::make_shared<State>(),
+                  const TermMap& equalities = TermMap());
 
-    PSState::Ptr getState() const;
+    State::Ptr getState() const;
 
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr choice);
     PredicateState::Ptr transformChain(PredicateStateChainPtr chain);
@@ -70,9 +73,11 @@ private:
 
     FactoryNest FN_;
     DomainFactory* DF_;
-    PSState::Ptr state_;
+    State::Ptr state_;
+    TermMap equalities_;
 };
 
+}   // namespace ps
 }   // namespace absint
 }   // namespace borealis
 

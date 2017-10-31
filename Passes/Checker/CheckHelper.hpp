@@ -9,7 +9,7 @@
 #define CHECKVISITOR_HPP_
 
 
-#include "Interpreter/PSInterpreterManager.h"
+#include "Interpreter/PSInterpreter.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
@@ -54,7 +54,7 @@ public:
 
         if (enableInterpreter.get(false)) {
             auto function = I->getParent()->getParent();
-            auto PSM = absint::PSInterpreterManager(function, pass->DM, pass->ST,
+            auto PSM = absint::PSInterpreter(function, pass->DM, pass->ST,
                                                     LAM(I, pass->getInstructionState(I)));
             return PSM.hasInfo(di);
         } else {

@@ -16,7 +16,7 @@ FunctionDomain::FunctionDomain(DomainFactory* factory, Type::Ptr type)
         : Domain(BOTTOM, FUNCTION, factory),
           prototype_(type) {}
 
-FunctionDomain::FunctionDomain(DomainFactory* factory, Type::Ptr type, Function::Ptr location)
+FunctionDomain::FunctionDomain(DomainFactory* factory, Type::Ptr type, ir::Function::Ptr location)
         : Domain(VALUE, FUNCTION, factory),
           prototype_(type) {
     locations_.insert(location);

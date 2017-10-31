@@ -12,12 +12,12 @@
 namespace borealis {
 namespace absint {
 
-class PSInterpreterManager: public logging::ObjectLevelLogging<PSInterpreterManager> {
+class PSInterpreter: public logging::ObjectLevelLogging<PSInterpreter> {
 public:
 
     using Statifier = std::function<PredicateState::Ptr(llvm::Instruction*)>;
 
-    PSInterpreterManager(llvm::Function* F, DefectManager* DM, SlotTrackerPass* ST, Statifier statify);
+    PSInterpreter(llvm::Function* F, DefectManager* DM, SlotTrackerPass* ST, Statifier statify);
 
     void interpret();
     bool hasInfo(const DefectInfo& info);

@@ -22,7 +22,7 @@ class OutOfBoundsChecker : public llvm::InstVisitor<OutOfBoundsChecker>,
 
 public:
 
-    OutOfBoundsChecker(Module* module, DefectManager* DM, FuncInfoProvider* FIP);
+    OutOfBoundsChecker(ir::Module* module, DefectManager* DM, FuncInfoProvider* FIP);
 
     void run();
 
@@ -34,7 +34,7 @@ public:
 
 private:
 
-    Module* module_;
+    ir::Module* module_;
     DefectManager* DM_;
     FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;

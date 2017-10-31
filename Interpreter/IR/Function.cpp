@@ -11,13 +11,14 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 Function::Function(const llvm::Function* function, DomainFactory* factory, SlotTracker* st)
         : instance_(function),
           tracker_(st),
           factory_(factory) {
-    inputState_ = std::make_shared<borealis::absint::IRState>(tracker_);
-    outputState_ = std::make_shared<borealis::absint::IRState>(tracker_);
+    inputState_ = std::make_shared<State>(tracker_);
+    outputState_ = std::make_shared<State>(tracker_);
     for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.emplace_back(nullptr);
 
     // find all global variables, that this function depends on
@@ -127,7 +128,7 @@ Domain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm::BasicBl
     return getBasicBlock(location)->getDomainFor(value);
 }
 
-void Function::mergeToOutput(IRState::Ptr state) {
+void Function::mergeToOutput(State::Ptr state) {
     outputState_->merge(state);
 }
 
@@ -249,6 +250,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, Functi
     return s;
 }
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

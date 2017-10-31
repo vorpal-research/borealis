@@ -18,6 +18,7 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 class Module {
 public:
@@ -67,6 +68,7 @@ private:
 std::ostream& operator<<(std::ostream& s, const Module& m);
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m);
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

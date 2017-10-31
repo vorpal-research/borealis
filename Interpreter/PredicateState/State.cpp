@@ -2,14 +2,15 @@
 // Created by abdullin on 10/18/17.
 //
 
-#include "PSState.h"
+#include "State.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
+namespace ps {
 
-std::string PSState::toString() const {
+std::string State::toString() const {
     std::ostringstream ss;
     if (not terms_.empty()) {
         auto&& head = util::head(terms_);
@@ -21,35 +22,35 @@ std::string PSState::toString() const {
     return ss.str();
 }
 
-void PSState::addTerm(Term::Ptr term, Domain::Ptr domain) {
+void State::addVariable(Term::Ptr term, Domain::Ptr domain) {
     terms_[term] = domain;
 }
 
-void PSState::addConstant(Term::Ptr term, Domain::Ptr domain) {
+void State::addConstant(Term::Ptr term, Domain::Ptr domain) {
     constants_[term] = domain;
 }
 
-Domain::Ptr PSState::find(Term::Ptr term) const {
+Domain::Ptr State::find(Term::Ptr term) const {
     auto it = terms_.find(term);
     if (it != terms_.end()) return it->second;
     auto it2 = constants_.find(term);
     return it2 == constants_.end() ? nullptr : it2->second;
 }
 
-void PSState::merge(PSState::Ptr other) {
+void State::merge(State::Ptr other) {
     mergeConstants(other);
     mergeTerms(other);
 }
 
-const PSState::TermMap& PSState::getVariables() {
+const State::TermMap& State::getVariables() {
     return terms_;
 }
 
-const PSState::TermMap& PSState::getConstants() {
+const State::TermMap& State::getConstants() {
     return constants_;
 }
 
-void PSState::mergeConstants(PSState::Ptr other) {
+void State::mergeConstants(State::Ptr other) {
     for (auto&& it : other->getConstants()) {
         auto itl = constants_.find(it.first);
         if (itl == constants_.end()) {
@@ -60,7 +61,7 @@ void PSState::mergeConstants(PSState::Ptr other) {
     }
 }
 
-void PSState::mergeTerms(PSState::Ptr other) {
+void State::mergeTerms(State::Ptr other) {
     for (auto&& it : other->getVariables()) {
         auto itl = terms_.find(it.first);
         if (itl == terms_.end()) {
@@ -71,16 +72,17 @@ void PSState::mergeTerms(PSState::Ptr other) {
     }
 }
 
-std::ostream& operator<<(std::ostream& s, PSState::Ptr state) {
+std::ostream& operator<<(std::ostream& s, State::Ptr state) {
     s << state->toString();
     return s;
 }
 
-borealis::logging::logstream& operator<<(borealis::logging::logstream& s, PSState::Ptr state) {
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, State::Ptr state) {
     s << state->toString();
     return s;
 }
 
+}   /* namespace ps */
 }   /* namespace absint */
 }   /* namespace borealis */
 

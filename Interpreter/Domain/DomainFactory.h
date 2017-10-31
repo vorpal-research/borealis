@@ -24,7 +24,9 @@
 namespace borealis {
 namespace absint {
 
+namespace ir {
 class GlobalVariableManager;
+}   // namespace ir
 
 class DomainFactory: public logging::ObjectLevelLogging<DomainFactory> {
 public:
@@ -36,7 +38,7 @@ public:
     template <class Key, class Value>
     using FloatCacheImpl = std::unordered_map<Key, Value, FloatIntervalDomain::IDHash, FloatIntervalDomain::IDEquals>;
 
-    DomainFactory(SlotTrackerPass* ST, GlobalVariableManager* GM, const llvm::DataLayout* DL);
+    DomainFactory(SlotTrackerPass* ST, ir::GlobalVariableManager* GM, const llvm::DataLayout* DL);
     ~DomainFactory() = default;
 
     SlotTrackerPass& getSlotTracker() const {
@@ -47,7 +49,7 @@ public:
         return TF_;
     }
 
-    GlobalVariableManager* getGlobalVariableManager() const {
+    ir::GlobalVariableManager* getGlobalVariableManager() const {
         return GVM_;
     }
 
@@ -92,7 +94,7 @@ public:
     Domain::Ptr getNullptrLocation();
 
     Domain::Ptr getFunction(Type::Ptr type);
-    Domain::Ptr getFunction(Type::Ptr type, Function::Ptr function);
+    Domain::Ptr getFunction(Type::Ptr type, ir::Function::Ptr function);
     Domain::Ptr getFunction(Type::Ptr type, const FunctionDomain::FunctionSet& functions);
 
 private:
@@ -102,7 +104,7 @@ private:
     Domain::Ptr handleGEPConstantExpr(const llvm::ConstantExpr* ce);
 
     SlotTrackerPass* ST_;
-    GlobalVariableManager* GVM_;
+    ir::GlobalVariableManager* GVM_;
     const llvm::DataLayout* DL_;
     TypeFactory::Ptr TF_;
     util::cache<IntegerIntervalDomain::ID, Domain::Ptr, IntCacheImpl> int_cache_;

@@ -21,7 +21,7 @@ class NullDereferenceChecker : public llvm::InstVisitor<NullDereferenceChecker>,
 
 public:
 
-    NullDereferenceChecker(Module* module, DefectManager* DM);
+    NullDereferenceChecker(ir::Module* module, DefectManager* DM);
 
     void run();
 
@@ -34,7 +34,7 @@ public:
 
 private:
 
-    Module* module_;
+    ir::Module* module_;
     DefectManager* DM_;
     SlotTrackerPass* ST_;
     std::unordered_map<DefectInfo, bool> defects_;

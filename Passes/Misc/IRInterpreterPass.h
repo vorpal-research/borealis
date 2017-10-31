@@ -8,7 +8,7 @@
 #include <llvm/Pass.h>
 
 #include "Annotation/Annotation.h"
-#include "Interpreter/IRInterpreter.h"
+#include "Interpreter/Interpreter.h"
 
 namespace borealis {
 

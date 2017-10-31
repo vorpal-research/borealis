@@ -17,7 +17,7 @@
 namespace borealis {
 namespace absint {
 
-DomainFactory::DomainFactory(SlotTrackerPass* ST, GlobalVariableManager* GM, const llvm::DataLayout* DL)
+DomainFactory::DomainFactory(SlotTrackerPass* ST, ir::GlobalVariableManager* GM, const llvm::DataLayout* DL)
         : ObjectLevelLogging("domain"),
           ST_(ST),
           GVM_(GM),
@@ -380,7 +380,7 @@ Domain::Ptr DomainFactory::getFunction(Type::Ptr type) {
     return std::make_shared<FunctionDomain>(this, type);
 }
 
-Domain::Ptr DomainFactory::getFunction(Type::Ptr type, Function::Ptr function) {
+Domain::Ptr DomainFactory::getFunction(Type::Ptr type, ir::Function::Ptr function) {
     ASSERT(llvm::isa<type::Function>(type.get()), "Trying to create function domain on non-function type");
     return std::make_shared<FunctionDomain>(this, type, function);
 }

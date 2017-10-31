@@ -14,6 +14,7 @@
 
 namespace borealis {
 namespace absint {
+namespace ps {
 
 struct TermHashWType {
     size_t operator()(Term::Ptr term) const noexcept {
@@ -26,36 +27,37 @@ struct TermEqualsWType {
         return lhv->equals(rhv.get()) && lhv->getType() == rhv->getType();
     }
 };
-class PSState: public std::enable_shared_from_this<PSState> {
+
+class State: public std::enable_shared_from_this<State> {
 public:
 
-    using Ptr = std::shared_ptr<PSState>;
+    using Ptr = std::shared_ptr<State>;
     using TermMap = std::unordered_map<Term::Ptr, Domain::Ptr, TermHashWType, TermEqualsWType>;
 
-    PSState() = default;
-
+    State() = default;
 
     std::string toString() const;
     const TermMap& getVariables();
     const TermMap& getConstants();
-    void addTerm(Term::Ptr term, Domain::Ptr domain);
+    void addVariable(Term::Ptr term, Domain::Ptr domain);
     void addConstant(Term::Ptr term, Domain::Ptr domain);
     Domain::Ptr find(Term::Ptr term) const;
 
-    void merge(PSState::Ptr other);
+    void merge(State::Ptr other);
 
 private:
 
-    void mergeConstants(PSState::Ptr other);
-    void mergeTerms(PSState::Ptr other);
+    void mergeConstants(State::Ptr other);
+    void mergeTerms(State::Ptr other);
 
     TermMap terms_;
     TermMap constants_;
 };
 
-std::ostream& operator<<(std::ostream& s, PSState::Ptr state);
-borealis::logging::logstream& operator<<(borealis::logging::logstream& s, PSState::Ptr state);
+std::ostream& operator<<(std::ostream& s, State::Ptr state);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, State::Ptr state);
 
+}   /* namespace ps */
 }   /* namespace absint */
 }   /* namespace borealis */
 

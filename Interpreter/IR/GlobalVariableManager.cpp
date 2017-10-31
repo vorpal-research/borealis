@@ -14,6 +14,7 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 GlobalVar::GlobalVar(const llvm::GlobalVariable* value)
         : value_(value), color_(WHITE) {
@@ -139,6 +140,7 @@ const GlobalVariableManager::DomainMap& GlobalVariableManager::getGlobals() cons
     return globals_;
 }
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

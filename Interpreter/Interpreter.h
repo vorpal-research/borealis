@@ -18,11 +18,12 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
-class IRInterpreter : public llvm::InstVisitor<IRInterpreter>, public logging::ObjectLevelLogging<IRInterpreter> {
+class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
 
-    IRInterpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs);
+    Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs);
 
     void run();
     Module& getModule();
@@ -60,7 +61,7 @@ public:
     void visitInsertValueInst(llvm::InsertValueInst& i);
     void visitBinaryOperator(llvm::BinaryOperator& i);
     void visitCallInst(llvm::CallInst& i);
-    void visitBitCastInst(llvm::BitCastInst &i);
+    void visitBitCastInst(llvm::BitCastInst& i);
 
 private:
 
@@ -68,9 +69,8 @@ private:
 
     struct Context {
         Function::Ptr function; // current function
-        IRState::Ptr state; // current state
+        State::Ptr state; // current state
         std::deque<BasicBlock*> deque; // deque of blocks to visit
-        // This is generally fucked up
         std::unordered_set<const llvm::Value*> stores; // stores, visited in current context
     };
 
@@ -96,6 +96,7 @@ private:
     std::stack<Context> stack_; // stack of contexts of interpreter
 };
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

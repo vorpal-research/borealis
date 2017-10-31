@@ -12,6 +12,7 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainFactory* factory)
         : instance_(bb),
@@ -20,8 +21,8 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
           inputChanged_(false),
           atFixpoint_(false),
           visited_(false) {
-    inputState_ = std::make_shared<borealis::absint::IRState>(tracker_);
-    outputState_ = std::make_shared<borealis::absint::IRState>(tracker_);
+    inputState_ = std::make_shared<State>(tracker_);
+    outputState_ = std::make_shared<State>(tracker_);
 
     // find all global variables, that this basic block depends on
     for (auto&& inst : util::viewContainer(*instance_)) {
@@ -46,7 +47,7 @@ SlotTracker& BasicBlock::getSlotTracker() const {
     return *tracker_;
 }
 
-IRState::Ptr BasicBlock::getOutputState() const {
+State::Ptr BasicBlock::getOutputState() const {
     return outputState_;
 }
 
@@ -100,7 +101,7 @@ void BasicBlock::setVisited() {
     visited_ = true;
 }
 
-void BasicBlock::mergeToInput(IRState::Ptr input) {
+void BasicBlock::mergeToInput(State::Ptr input) {
     inputState_->merge(input);
     inputChanged_ = true;
 }
@@ -191,6 +192,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     return s;
 }
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 

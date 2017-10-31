@@ -16,10 +16,10 @@ namespace absint {
 class FunctionDomain : public Domain {
 public:
 
-    using FunctionSet = std::unordered_set<Function::Ptr, FunctionHash, FunctionEquals>;
+    using FunctionSet = std::unordered_set<ir::Function::Ptr, ir::FunctionHash, ir::FunctionEquals>;
 
     FunctionDomain(DomainFactory* factory, Type::Ptr type);
-    FunctionDomain(DomainFactory* factory, Type::Ptr type, Function::Ptr location);
+    FunctionDomain(DomainFactory* factory, Type::Ptr type, ir::Function::Ptr location);
     FunctionDomain(DomainFactory* factory, Type::Ptr type, const FunctionSet& locations);
     FunctionDomain(const FunctionDomain& other);
 

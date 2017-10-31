@@ -11,6 +11,7 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 static config::MultiConfigEntry roots("analysis", "root-function");
 
@@ -177,6 +178,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     return s;
 }
 
+}   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */
 
