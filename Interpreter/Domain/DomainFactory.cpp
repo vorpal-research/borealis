@@ -314,16 +314,16 @@ Domain::Ptr DomainFactory::getNullptrLocation() {
     return nullptr_;
 }
 
-Domain::Ptr DomainFactory::getPointer(Domain::Value value, Type::Ptr elementType) {
-    return std::make_shared<PointerDomain>(value, this, elementType);
+Domain::Ptr DomainFactory::getPointer(Domain::Value value, Type::Ptr elementType, bool isGep) {
+    return std::make_shared<PointerDomain>(value, this, elementType, isGep);
 }
 
-Domain::Ptr DomainFactory::getPointer(Type::Ptr elementType) {
-    return getPointer(Domain::BOTTOM, elementType);
+Domain::Ptr DomainFactory::getPointer(Type::Ptr elementType, bool isGep) {
+    return getPointer(Domain::BOTTOM, elementType, isGep);
 }
 
-Domain::Ptr DomainFactory::getPointer(Type::Ptr elementType, const PointerDomain::Locations& locations) {
-    return std::make_shared<PointerDomain>(this, elementType, locations);
+Domain::Ptr DomainFactory::getPointer(Type::Ptr elementType, const PointerDomain::Locations& locations, bool isGep) {
+    return std::make_shared<PointerDomain>(this, elementType, locations, isGep);
 }
 
 /* AggregateDomain */

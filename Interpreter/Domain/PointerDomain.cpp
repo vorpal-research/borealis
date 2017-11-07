@@ -74,14 +74,16 @@ Domain::Ptr NullptrDomain::clone() const {
 //////////////////////////////////////////////////////////
 /// Pointer
 //////////////////////////////////////////////////////////
-PointerDomain::PointerDomain(Domain::Value value, DomainFactory* factory, Type::Ptr elementType)
+PointerDomain::PointerDomain(Domain::Value value, DomainFactory* factory, Type::Ptr elementType, bool isGep)
         : Domain{value, POINTER, factory},
-          elementType_(elementType) {}
+          elementType_(elementType),
+          isGep_(isGep) {}
 
-PointerDomain::PointerDomain(DomainFactory* factory, Type::Ptr elementType, const PointerDomain::Locations& locations)
+PointerDomain::PointerDomain(DomainFactory* factory, Type::Ptr elementType, const PointerDomain::Locations& locations, bool isGep)
         : Domain{VALUE, POINTER, factory},
           elementType_(elementType),
-          locations_(locations) {
+          locations_(locations),
+          isGep_(isGep) {
     for (auto&& it : locations_) {
         if (auto&& st = llvm::dyn_cast<AggregateDomain>(it.location_.get())) {
             if (st->isStruct() && it.offsets_.begin()->get()->isTop()) {
@@ -149,7 +151,7 @@ Domain::Ptr PointerDomain::getBound() const {
 
 std::string PointerDomain::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
-    ss << "Ptr " << this << " " << TypeUtils::toString(*elementType_.get()) << " [";
+    ss << "Ptr " << TypeUtils::toString(*elementType_.get()) << " [";
     if (isTop()) ss << " TOP ]";
     else if (isBottom()) ss << " BOTTOM ]";
     else {
@@ -239,7 +241,7 @@ Domain::Ptr PointerDomain::load(Type::Ptr type, Domain::Ptr offset) {
 void PointerDomain::store(Domain::Ptr value, Domain::Ptr offset) {
     if (isTop()) return;
 
-    if (llvm::isa<type::Pointer>(elementType_.get())) {
+    if ((not isGep_) && llvm::isa<type::Pointer>(elementType_.get())) {
         locations_.clear();
         if (value->isAggregate()) {
             locations_.insert({ {factory_->getIndex(0)}, value});
@@ -345,6 +347,7 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
 }
 
 void PointerDomain::moveToTop() {
+    if (isTop()) return;
     setTop();
     for (auto&& it : locations_)
         it.location_->moveToTop();

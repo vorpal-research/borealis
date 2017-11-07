@@ -290,7 +290,7 @@ Domain::Ptr AggregateDomain::gep(Type::Ptr type, const std::vector<Domain::Ptr>&
     }
 
     if (indices.size() == 1) {
-        return factory_->getPointer(type, { { {indices[0]}, shared_from_this()} });
+        return factory_->getPointer(type, { { {indices[0]}, shared_from_this()} }, true);
 
     } else {
         Domain::Ptr result = nullptr;
@@ -335,6 +335,7 @@ bool AggregateDomain::isStruct() const {
 }
 
 void AggregateDomain::moveToTop() {
+    if (isTop()) return;
     setTop();
     for (auto&& it : elements_) {
         auto&& content = it.second;

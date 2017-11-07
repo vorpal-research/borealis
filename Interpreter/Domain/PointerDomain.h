@@ -63,8 +63,8 @@ public:
 
     using Locations = std::unordered_set<PointerLocation, PtrLocationHash, PtrLocationEquals>;
 
-    PointerDomain(Domain::Value value, DomainFactory* factory, Type::Ptr elementType);
-    PointerDomain(DomainFactory* factory, Type::Ptr elementType, const Locations& locations);
+    PointerDomain(Domain::Value value, DomainFactory* factory, Type::Ptr elementType, bool isGep = false);
+    PointerDomain(DomainFactory* factory, Type::Ptr elementType, const Locations& locations, bool isGep = false);
     PointerDomain(const PointerDomain& other);
 
     void moveToTop() override;
@@ -103,6 +103,7 @@ private:
 
     Type::Ptr elementType_;
     Locations locations_;
+    bool isGep_;
 };
 
 }   /* namespace absint */

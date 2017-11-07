@@ -87,9 +87,9 @@ public:
     Domain::Ptr getAggregate(Type::Ptr type);
     Domain::Ptr getAggregate(Type::Ptr type, std::vector<Domain::Ptr> elements);
 
-    Domain::Ptr getPointer(Domain::Value value, Type::Ptr elementType);
-    Domain::Ptr getPointer(Type::Ptr elementType);
-    Domain::Ptr getPointer(Type::Ptr elementType, const PointerDomain::Locations& locations);
+    Domain::Ptr getPointer(Domain::Value value, Type::Ptr elementType, bool isGep = false);
+    Domain::Ptr getPointer(Type::Ptr elementType, bool isGep = false);
+    Domain::Ptr getPointer(Type::Ptr elementType, const PointerDomain::Locations& locations, bool isGep = false);
     Domain::Ptr getNullptr(Type::Ptr elementType);
     Domain::Ptr getNullptrLocation();
 
