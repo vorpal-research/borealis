@@ -15,13 +15,14 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 class NullDereferenceChecker : public llvm::InstVisitor<NullDereferenceChecker>,
                                public logging::ObjectLevelLogging<NullDereferenceChecker> {
 
 public:
 
-    NullDereferenceChecker(ir::Module* module, DefectManager* DM);
+    NullDereferenceChecker(Module* module, DefectManager* DM);
 
     void run();
 
@@ -34,13 +35,14 @@ public:
 
 private:
 
-    ir::Module* module_;
+    Module* module_;
     DefectManager* DM_;
     SlotTrackerPass* ST_;
     std::unordered_map<DefectInfo, bool> defects_;
 
 };
 
+} // namespace ir
 } // namespace absint
 } // namespace borealis
 

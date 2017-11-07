@@ -3,85 +3,17 @@
 //
 
 #include "OutOfBoundsChecker.h"
-
-#include "Interpreter/Domain/AggregateDomain.h"
-#include "Interpreter/Domain/FloatIntervalDomain.h"
-#include "Interpreter/Domain/FunctionDomain.h"
-#include "Interpreter/Domain/IntegerIntervalDomain.h"
-#include "Interpreter/Domain/PointerDomain.h"
+#include "OutOfBoundsVisitor.h"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 static config::BoolConfigEntry enableLogging("absint", "checker-logging");
 
-// Returns true, if there might be OOB
-class OutOfBoundVisitor {
-public:
-
-    using RetTy = bool;
-
-    RetTy visit(Domain::Ptr domain, const std::vector<Domain::Ptr>& indices) {
-        if (false) { }
-#define HANDLE_DOMAIN(NAME, CLASS) \
-        else if (auto&& resolved = llvm::dyn_cast<CLASS>(domain.get())) { \
-            return visit##NAME(*resolved, indices); \
-        }
-#include "Interpreter/Domain/Domain.def"
-        BYE_BYE(RetTy , "Unknown type in OutOfBoundVisitor");
-    }
-
-    RetTy visitAggregate(const AggregateDomain& aggregate, const std::vector<Domain::Ptr>& indices) {
-        if (not aggregate.isValue()) return true;
-
-        auto length = aggregate.getMaxLength();
-        auto idx_interval = llvm::cast<IntegerIntervalDomain>(indices.begin()->get());
-        auto idx_begin = idx_interval->lb()->getRawValue();
-        auto idx_end = idx_interval->ub()->getRawValue();
-
-        if (idx_end > length || idx_begin > length) {
-            return true;
-        }
-
-        std::vector<Domain::Ptr> sub_idx(indices.begin() + 1, indices.end());
-        for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
-            if ((not sub_idx.empty()) && util::at(aggregate.getElements(), i) &&
-                    visit(aggregate.getElements().at(i), sub_idx)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    RetTy visitPointer(const PointerDomain& ptr, const std::vector<Domain::Ptr>& indices) {
-        if (not ptr.isValue()) return true;
-
-        std::vector<Domain::Ptr> subOffsets(indices.begin(), indices.end());
-        auto zeroElement = subOffsets[0];
-
-        for (auto&& it : ptr.getLocations()) {
-            for (auto&& cur_offset : it.offsets_) {
-                subOffsets[0] = zeroElement->add(cur_offset);
-                if (visit(it.location_, subOffsets)) return true;
-            }
-        }
-
-        return false;
-    }
-
-    RetTy visitNullptr(const NullptrDomain&, const std::vector<Domain::Ptr>&) { return true; }
-
-    RetTy visitFloat(const FloatIntervalDomain&, const std::vector<Domain::Ptr>&) { return false; }
-    RetTy visitFunction(const FunctionDomain&, const std::vector<Domain::Ptr>&) { return false; }
-    RetTy visitInteger(const IntegerIntervalDomain&, const std::vector<Domain::Ptr>&) { return false; }
-};
-
-
-
-OutOfBoundsChecker::OutOfBoundsChecker(ir::Module* module, DefectManager* DM, FuncInfoProvider* FIP)
+OutOfBoundsChecker::OutOfBoundsChecker(Module* module, DefectManager* DM, FuncInfoProvider* FIP)
         : ObjectLevelLogging("ir-interpreter"),
           module_(module),
           DM_(DM),
@@ -119,7 +51,7 @@ void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOpera
 
             offsets.emplace_back(indx);
         }
-        auto bug = OutOfBoundVisitor().visit(ptr, offsets);
+        auto bug = OutOfBoundsVisitor().visit(ptr, offsets);
         defects_[di] |= bug;
 
         if (enableLogging.get(true)) {
@@ -178,7 +110,7 @@ void OutOfBoundsChecker::visitCallInst(llvm::CallInst& CI) {
                 std::vector<Domain::Ptr> offsets = {module_->getDomainFactory()->getIndex(0),
                                                     module_->getDomainFor(CI.getArgOperand(size), CI.getParent())};
 
-                auto bug = OutOfBoundVisitor().visit(ptr, offsets);
+                auto bug = OutOfBoundsVisitor().visit(ptr, offsets);
                 defects_[di] |= bug;
 
                 if (enableLogging.get(true)) {
@@ -208,6 +140,7 @@ void OutOfBoundsChecker::run() {
             .foreach([&](auto&& it) -> void { DM_->addNoAbsIntDefect(it.first); });
 }
 
+} // namespace ir
 } // namespace absint
 } // namespace borealis
 

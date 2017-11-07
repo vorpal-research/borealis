@@ -2,6 +2,7 @@
 // Created by abdullin on 10/27/17.
 //
 
+#include <State/Transformer/OutOfBoundsChecker.h>
 #include "Interpreter/IR/Module.h"
 #include "State/Transformer/GlobalVariableFinder.h"
 #include "State/Transformer/ContractPredicatesFilterer.h"
@@ -30,6 +31,9 @@ void PSInterpreter::interpret() {
 
     auto interpreter = absint::ps::Interpreter(FN_, module.getDomainFactory());
     interpreter.transform(filtered);
+    auto&& checker = ps::OutOfBoundsChecker(FN_, DM_, module.getDomainFactory(), &interpreter);
+    checker.transform(filtered);
+    checker.apply();
     // TODO: add defects to DM_
 }
 

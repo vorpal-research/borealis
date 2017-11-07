@@ -19,7 +19,7 @@ namespace ir {
 
 class ConditionSplitter : public logging::ObjectLevelLogging<ConditionSplitter> {
 
-    using ValueMap = std::map<const llvm::Value*, Split>;
+    using ValueMap = std::unordered_map<const llvm::Value*, Split>;
 
 public:
 

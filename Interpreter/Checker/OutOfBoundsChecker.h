@@ -16,13 +16,14 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 class OutOfBoundsChecker : public llvm::InstVisitor<OutOfBoundsChecker>,
                            public logging::ObjectLevelLogging<OutOfBoundsChecker> {
 
 public:
 
-    OutOfBoundsChecker(ir::Module* module, DefectManager* DM, FuncInfoProvider* FIP);
+    OutOfBoundsChecker(Module* module, DefectManager* DM, FuncInfoProvider* FIP);
 
     void run();
 
@@ -34,7 +35,7 @@ public:
 
 private:
 
-    ir::Module* module_;
+    Module* module_;
     DefectManager* DM_;
     FuncInfoProvider* FIP_;
     SlotTrackerPass* ST_;
@@ -43,6 +44,7 @@ private:
 
 };
 
+} // namespace ir
 } // namespace absint
 } // namespace borealis
 

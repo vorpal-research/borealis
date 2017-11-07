@@ -8,10 +8,11 @@
 
 namespace borealis {
 namespace absint {
+namespace ir {
 
 static config::BoolConfigEntry enableLogging("absint", "checker-logging");
 
-NullDereferenceChecker::NullDereferenceChecker(ir::Module* module, DefectManager* DM)
+NullDereferenceChecker::NullDereferenceChecker(Module* module, DefectManager* DM)
         : ObjectLevelLogging("ir-interpreter"),
           module_(module),
           DM_(DM) {
@@ -62,6 +63,7 @@ void NullDereferenceChecker::visitCallInst(llvm::CallInst& CI) {
     }
 }
 
+} // namespace ir
 } // namespace absint
 } // namespace borealis
 

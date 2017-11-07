@@ -10,12 +10,15 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
+State::State(const State::TermMap& variables, const State::TermMap& constants)
+        : variables_(variables), constants_(constants) {}
+
 std::string State::toString() const {
     std::ostringstream ss;
-    if (not terms_.empty()) {
-        auto&& head = util::head(terms_);
+    if (not variables_.empty()) {
+        auto&& head = util::head(variables_);
         ss << "  " << head.first->getName() << " = " << head.second->toPrettyString("  ");
-        for (auto&& it : util::tail(terms_)) {
+        for (auto&& it : util::tail(variables_)) {
             ss << std::endl << "  " << it.first->getName() << " = " << it.second->toPrettyString("  ");
         }
     }
@@ -23,7 +26,7 @@ std::string State::toString() const {
 }
 
 void State::addVariable(Term::Ptr term, Domain::Ptr domain) {
-    terms_[term] = domain;
+    variables_[term] = domain;
 }
 
 void State::addConstant(Term::Ptr term, Domain::Ptr domain) {
@@ -31,8 +34,8 @@ void State::addConstant(Term::Ptr term, Domain::Ptr domain) {
 }
 
 Domain::Ptr State::find(Term::Ptr term) const {
-    auto it = terms_.find(term);
-    if (it != terms_.end()) return it->second;
+    auto it = variables_.find(term);
+    if (it != variables_.end()) return it->second;
     auto it2 = constants_.find(term);
     return it2 == constants_.end() ? nullptr : it2->second;
 }
@@ -43,7 +46,7 @@ void State::merge(State::Ptr other) {
 }
 
 const State::TermMap& State::getVariables() {
-    return terms_;
+    return variables_;
 }
 
 const State::TermMap& State::getConstants() {
@@ -63,11 +66,11 @@ void State::mergeConstants(State::Ptr other) {
 
 void State::mergeTerms(State::Ptr other) {
     for (auto&& it : other->getVariables()) {
-        auto itl = terms_.find(it.first);
-        if (itl == terms_.end()) {
-            terms_.insert(it);
+        auto itl = variables_.find(it.first);
+        if (itl == variables_.end()) {
+            variables_.insert(it);
         } else {
-            terms_[it.first] = itl->second->join(it.second);
+            variables_[it.first] = itl->second->join(it.second);
         }
     }
 }

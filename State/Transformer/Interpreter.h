@@ -17,12 +17,17 @@ public:
     using Base = Transformer<Interpreter>;
     using Globals = std::unordered_map<std::string, Domain::Ptr>;
     using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
+    using StateMap = std::map<PredicateState::Ptr, State::Ptr>;
 
-    Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr state = std::make_shared<State>(),
-                  const TermMap& equalities = TermMap());
+    Interpreter(FactoryNest FN, DomainFactory* DF,
+                State::Ptr state = std::make_shared<State>(),
+                const TermMap& equalities = TermMap());
 
     State::Ptr getState() const;
+    const TermMap& getEqualities() const;
+    const StateMap& getStateMap() const;
 
+    PredicateState::Ptr transformBasic(BasicPredicateStatePtr basic);
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr choice);
     PredicateState::Ptr transformChain(PredicateStateChainPtr chain);
 
@@ -70,11 +75,12 @@ public:
 private:
 
     void interpretState(PredicateState::Ptr ps);
+    bool isConditionSatisfied(Predicate::Ptr pred, State::Ptr state);
 
-    FactoryNest FN_;
     DomainFactory* DF_;
     State::Ptr state_;
     TermMap equalities_;
+    StateMap states_;
 };
 
 }   // namespace ps

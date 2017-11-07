@@ -35,6 +35,7 @@ public:
     using TermMap = std::unordered_map<Term::Ptr, Domain::Ptr, TermHashWType, TermEqualsWType>;
 
     State() = default;
+    State(const TermMap& variables, const TermMap& constants);
 
     std::string toString() const;
     const TermMap& getVariables();
@@ -50,7 +51,7 @@ private:
     void mergeConstants(State::Ptr other);
     void mergeTerms(State::Ptr other);
 
-    TermMap terms_;
+    TermMap variables_;
     TermMap constants_;
 };
 

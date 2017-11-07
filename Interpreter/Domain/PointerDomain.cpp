@@ -149,7 +149,7 @@ Domain::Ptr PointerDomain::getBound() const {
 
 std::string PointerDomain::toPrettyString(const std::string& prefix) const {
     std::ostringstream ss;
-    ss << "Ptr " << TypeUtils::toString(*elementType_.get()) << " [";
+    ss << "Ptr " << this << " " << TypeUtils::toString(*elementType_.get()) << " [";
     if (isTop()) ss << " TOP ]";
     else if (isBottom()) ss << " BOTTOM ]";
     else {

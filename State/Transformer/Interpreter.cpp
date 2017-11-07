@@ -4,8 +4,10 @@
 
 #include "Interpreter.h"
 #include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/PredicateState/ConditionSplitter.h"
 
 #include "Util/macros.h"
+#include "ConditionExtractor.h"
 
 namespace borealis {
 namespace absint {
@@ -14,18 +16,73 @@ namespace ps {
 Interpreter::Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr state, const TermMap& equalities)
         : Transformer(FN),
           ObjectLevelLogging("ps-interpreter"),
-          FN_(FN),
           DF_(DF),
-          state_(state),
+          state_(std::make_shared<State>(state->getVariables(), state->getConstants())),
           equalities_(equalities) {}
 
 State::Ptr Interpreter::getState() const {
     return state_;
 }
 
+const Interpreter::TermMap& Interpreter::getEqualities() const {
+    return equalities_;
+}
+
+const Interpreter::StateMap& Interpreter::getStateMap() const {
+    return states_;
+}
+
+bool Interpreter::isConditionSatisfied(Predicate::Ptr pred, State::Ptr state) {
+    if (auto&& eq = llvm::dyn_cast<EqualityPredicate>(pred.get())) {
+        auto condition = state->find(eq->getLhv());
+        ASSERT(condition, "Unknown condition in PATH predicate: " + pred->toString());
+        if (not condition->isValue()) return true;
+
+        // true cond
+        if (eq->getRhv()->equals(FN.Term->getTrueTerm().get())) {
+            auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(condition.get());
+            ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in choice condition");
+            return boolean->isConstant(1);
+        // false cond
+        } else if (eq->getRhv()->equals(FN.Term->getFalseTerm().get())) {
+            auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(condition.get());
+            ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in choice condition");
+            return boolean->isConstant(0);
+        // switch case
+        } else if (auto intConst = llvm::dyn_cast<OpaqueIntConstantTerm>(eq->getRhv().get())) {
+            auto integer = llvm::dyn_cast<IntegerIntervalDomain>(condition.get());
+            ASSERT(integer, "Non-integer in choice condition");
+            return integer->hasIntersection(DF_->toInteger(intConst->getValue(), integer->getWidth()));
+        } else {
+            warns() << "Unexpected rhv in path predicate: " << pred->toString() << endl;
+        }
+    } else if (llvm::isa<DefaultSwitchCasePredicate>(pred.get())) {
+        return true;
+    } else {
+        UNREACHABLE("Unknown path predicate: " + pred->toString())
+    }
+    return true;
+}
+
+PredicateState::Ptr Interpreter::transformBasic(BasicPredicateStatePtr basic) {
+    auto result = Base::transformBasic(basic);
+    states_[basic] = state_;
+    return result;
+}
+
 PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice) {
     for (auto&& ch : choice->getChoices()) {
-        interpretState(ch);
+        ConditionExtractor exteactor(FN);
+        exteactor.transform(ch);
+        ASSERT(exteactor.getConditions().size() > 0, "Empty vector of conditions");
+
+        // we need this to add terms from this predicate to state
+        auto interpreter = Interpreter(FN, DF_, state_, equalities_);
+        interpreter.transform(FN.State->Basic({exteactor.getConditions()[0]}));
+
+        if (isConditionSatisfied(exteactor.getConditions()[0], interpreter.getState())) {
+            interpretState(ch);
+        }
     }
     return choice;
 }
@@ -37,9 +94,16 @@ PredicateState::Ptr Interpreter::transformChain(PredicateStateChainPtr chain) {
 }
 
 void Interpreter::interpretState(PredicateState::Ptr ps) {
-    auto interpreter = Interpreter(FN_, DF_, state_);
+    auto interpreter = Interpreter(FN, DF_, state_, equalities_);
     interpreter.transform(ps);
+    for (auto&& it : interpreter.getEqualities()) {
+        equalities_[it.first] = it.second;
+    }
     state_->merge(interpreter.getState());
+    for (auto&& it : interpreter.getStateMap()) {
+        ASSERT(states_.find(it.first) == states_.end(), "found new states map");
+        states_.insert(it);
+    }
 }
 
 Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
@@ -65,9 +129,12 @@ Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
 }
 
 Predicate::Ptr Interpreter::transformDefaultSwitchCasePredicate(DefaultSwitchCasePredicatePtr pred) {
-    auto result = DF_->getBottom(pred->getCond()->getType());
+    auto condType = pred->getCond()->getType();
+    auto result = DF_->getBottom(condType);
     for (auto&& cs : pred->getCases()) result = result->join(state_->find(cs));
-    state_->addVariable(pred->getCond(), result);
+    // pred->getCond() != all cases, so add to state true branch of split TOP by neq with result
+    // which is the same ass false branch of split TOP by eq with result
+    state_->addVariable(pred->getCond(), DF_->getTop(condType)->splitByEq(result).false_);
     return pred;
 }
 
@@ -75,9 +142,22 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
     auto rhv = state_->find(pred->getRhv());
     ASSERT(rhv, "Equality rhv: " + pred->toString());
     state_->addVariable(pred->getLhv(), rhv);
-    equalities_[pred->getLhv()] = pred->getRhv();
     if (pred->getType() == PredicateType::PATH) {
-
+        if (not rhv->isValue()) {
+            if (pred->getRhv()->equals(FN.Term->getTrueTerm().get())) {
+                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], state_).apply()) {
+                    state_->addVariable(it.first, it.second.true_);
+                }
+            } else if (pred->getRhv()->equals(FN.Term->getFalseTerm().get())) {
+                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], state_).apply()) {
+                    state_->addVariable(it.first, it.second.false_);
+                }
+            } else {
+                warns() << "Unknown path predicate: " << pred->toString() << endl;
+            }
+        }
+    } else {
+        equalities_[pred->getLhv()] = pred->getRhv();
     }
     return pred;
 }
@@ -226,7 +306,6 @@ Term::Ptr Interpreter::transformCastTerm(CastTermPtr term) {
     auto toTy = term->getType();
 
     Domain::Ptr result;
-
     if (auto m = util::match_tuple<type::Integer, type::Integer>::doit(fromTy, toTy)) {
         auto fromBitsize = m->get<0>()->getBitsize();
         auto toBitsize = m->get<1>()->getBitsize();
