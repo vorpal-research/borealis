@@ -2,19 +2,20 @@
 // Created by abdullin on 10/27/17.
 //
 
-#include <State/Transformer/OutOfBoundsChecker.h>
 #include "Interpreter/IR/Module.h"
 #include "State/Transformer/GlobalVariableFinder.h"
 #include "State/Transformer/ContractPredicatesFilterer.h"
 #include "State/Transformer/Interpreter.h"
+#include "State/Transformer/NullDereferenceChecker.h"
+#include "State/Transformer/OutOfBoundsChecker.h"
 #include "PSInterpreter.h"
 
 namespace borealis {
 namespace absint {
 
 PSInterpreter::PSInterpreter(llvm::Function* F, DefectManager* DM,
-                                           SlotTrackerPass* ST, Statifier statify)
-        : ObjectLevelLogging("ps-interpreter"), F_(F), DM_(DM), ST_(ST), statify_(statify) {
+                             SlotTrackerPass* ST, FunctionManager* FM, Statifier statify)
+        : ObjectLevelLogging("ps-interpreter"), F_(F), DM_(DM), ST_(ST), FM_(FM), statify_(statify) {
     FN_ = FactoryNest(F_->getParent()->getDataLayout(), ST_->getSlotTracker(F_));
 }
 
@@ -31,10 +32,13 @@ void PSInterpreter::interpret() {
 
     auto interpreter = absint::ps::Interpreter(FN_, module.getDomainFactory());
     interpreter.transform(filtered);
-    auto&& checker = ps::OutOfBoundsChecker(FN_, DM_, module.getDomainFactory(), &interpreter);
-    checker.transform(filtered);
-    checker.apply();
-    // TODO: add defects to DM_
+    auto&& oob_checker = ps::OutOfBoundsChecker(FN_, DM_, module.getDomainFactory(), &interpreter);
+    oob_checker.transform(filtered);
+    oob_checker.apply();
+
+    auto&& nd_checker = ps::NullDereferenceChecker(FN_, DM_, &interpreter);
+    nd_checker.transform(filtered);
+    nd_checker.apply();
 }
 
 bool PSInterpreter::hasInfo(const DefectInfo& info) {

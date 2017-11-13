@@ -54,7 +54,7 @@ public:
 
         if (enableInterpreter.get(false)) {
             auto function = I->getParent()->getParent();
-            auto PSM = absint::PSInterpreter(function, pass->DM, pass->ST,
+            auto PSM = absint::PSInterpreter(function, pass->DM, pass->ST, pass->FM,
                                                     LAM(I, pass->getInstructionState(I)));
             return PSM.hasInfo(di);
         } else {

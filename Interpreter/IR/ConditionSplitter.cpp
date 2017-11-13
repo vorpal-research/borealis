@@ -167,7 +167,7 @@ void ConditionSplitter::handleBinary(llvm::Value* lhv, llvm::Value* rhv, const l
                 values_[value] = orImpl(lhvSplit, rhvSplit);
                 break;
             case llvm::Instruction::Xor:
-                // (!lhv AND rhv) OR (lhv AND !rhv)
+                // XOR = (!lhv AND rhv) OR (lhv AND !rhv)
                 temp1 = andImpl({lhvSplit.false_, lhvSplit.true_}, rhvSplit);
                 temp2 = andImpl(lhvSplit, {rhvSplit.false_, rhvSplit.true_});
                 values_[value] = orImpl(temp1, temp2);

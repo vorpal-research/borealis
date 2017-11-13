@@ -217,8 +217,53 @@ Domain::Ptr PointerDomain::widen(Domain::Ptr other) {
     return join(other);
 }
 
-Domain::Ptr PointerDomain::meet(Domain::Ptr) {
-    UNREACHABLE("Unimplemented, sorry...");
+Domain::Ptr PointerDomain::meet(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
+    auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
+    ASSERT(ptr, "Non-pointer domain in pointer meet");
+
+    if (this == other.get()) return shared_from_this();
+
+    if (other->isBottom()) {
+        return other;
+    } else if (this->isBottom()) {
+        return shared_from_this();
+    } else if (this->isTop()) {
+        return shared_from_this();
+    } else if (other->isTop()) {
+        moveToTop();
+        return shared_from_this();
+    }
+
+    for (auto&& it : locations_) {
+        if (not util::contains(ptr->locations_, it)) {
+            locations_.erase(it);
+        }
+    }
+
+    for (auto&& itptr : ptr->locations_) {
+        auto&& it = locations_.find(itptr);
+        if (it == locations_.end()) {
+            // take only similar locations
+        } else {
+            if (auto&& aggregate = llvm::dyn_cast<AggregateDomain>(itptr.location_.get())) {
+                if (aggregate->isArray()) {
+                    ASSERT(it->offsets_.size() == 1 && itptr.offsets_.size() == 1, "unexpected")
+                    Domain::Ptr curOffset = *it->offsets_.begin();
+                    Domain::Ptr incOffset = *itptr.offsets_.begin();
+                    it->offsets_ = {curOffset->join(incOffset)};
+                } else {
+                    for (auto&& offset : itptr.offsets_) it->offsets_.insert(offset);
+                }
+            } else {
+                ASSERT(it->offsets_.size() == 1 && itptr.offsets_.size() == 1, "unexpected")
+                Domain::Ptr curOffset = *it->offsets_.begin();
+                Domain::Ptr incOffset = *itptr.offsets_.begin();
+                it->offsets_ = {curOffset->join(incOffset)};
+            }
+        }
+    }
+    return shared_from_this();
 }
 
 Domain::Ptr PointerDomain::load(Type::Ptr type, Domain::Ptr offset) {

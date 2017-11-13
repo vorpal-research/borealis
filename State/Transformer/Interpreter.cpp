@@ -142,19 +142,38 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
     auto rhv = state_->find(pred->getRhv());
     ASSERT(rhv, "Equality rhv: " + pred->toString());
     state_->addVariable(pred->getLhv(), rhv);
+
+    auto trueTerm = FN.Term->getTrueTerm();
+    auto falseTerm = FN.Term->getFalseTerm();
     if (pred->getType() == PredicateType::PATH) {
         if (not rhv->isValue()) {
-            if (pred->getRhv()->equals(FN.Term->getTrueTerm().get())) {
+            if (pred->getRhv()->equals(trueTerm.get())) {
                 for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], state_).apply()) {
                     state_->addVariable(it.first, it.second.true_);
                 }
-            } else if (pred->getRhv()->equals(FN.Term->getFalseTerm().get())) {
+            } else if (pred->getRhv()->equals(falseTerm.get())) {
                 for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], state_).apply()) {
                     state_->addVariable(it.first, it.second.false_);
                 }
             } else {
                 warns() << "Unknown path predicate: " << pred->toString() << endl;
             }
+        }
+    } else if (pred->getType() == PredicateType::ASSUME) {
+        auto&& lhv = equalities_[pred->getLhv()];
+        auto&& actualLhv = lhv ? lhv : pred->getLhv();
+        if (actualLhv->equals(trueTerm.get()) || actualLhv->equals(falseTerm.get())) {
+            // do nothing if we have smth like (true = true)
+        } else if (pred->getRhv()->equals(trueTerm.get())) {
+            for (auto&& it : ConditionSplitter(actualLhv, state_).apply()) {
+                state_->addVariable(it.first, it.second.true_);
+            }
+        } else if (pred->getRhv()->equals(falseTerm.get())) {
+            for (auto&& it : ConditionSplitter(actualLhv, state_).apply()) {
+                state_->addVariable(it.first, it.second.false_);
+            }
+        } else {
+            warns() << "Unknown assume predicate: " << pred->toString() << endl;
         }
     } else {
         equalities_[pred->getLhv()] = pred->getRhv();

@@ -11,11 +11,13 @@ namespace absint {
 namespace ps {
 
 ConditionSplitter::ConditionSplitter(Term::Ptr condition, State::Ptr state)
-        : condition_(condition), state_(state) {}
+        : ObjectLevelLogging("ps-interpreter"), condition_(condition), state_(state) {}
 
 ConditionSplitter::TermMap ConditionSplitter::apply() {
     if (auto&& cmp = llvm::dyn_cast<CmpTerm>(condition_.get())) {
         visitCmpTerm(cmp);
+    } else if (auto&& bin = llvm::dyn_cast<BinaryTerm>(condition_.get())) {
+        visitBinaryTerm(bin);
     } else {
         errs() << "Unknown term in splitter: " << condition_ << endl;
     }
@@ -94,6 +96,56 @@ void ConditionSplitter::visitCmpTerm(const CmpTerm* term) {
             break;
         default:
             UNREACHABLE("Unknown cast: " + term->getName());
+    }
+}
+
+void ConditionSplitter::visitBinaryTerm(const BinaryTerm* term) {
+    auto lhv = term->getLhv();
+    auto rhv = term->getRhv();
+    auto lhvDomain = state_->find(lhv);
+    auto rhvDomain = state_->find(rhv);
+    ASSERT(lhv && rhv, "cmp args of " + term->getName());
+
+    auto&& andImpl = [] (Split lhv, Split rhv) -> Split {
+        return {lhv.true_->meet(rhv.true_), lhv.false_->join(rhv.false_)};
+    };
+    auto&& orImpl = [] (Split lhv, Split rhv) -> Split {
+        return {lhv.true_->join(rhv.true_), lhv.false_->join(rhv.false_)};
+    };
+
+    auto lhvValues = ConditionSplitter(lhv, state_).apply();
+    auto rhvValues = ConditionSplitter(rhv, state_).apply();
+
+    for (auto&& it : lhvValues) {
+        auto value = it.first;
+        auto lhvSplit = it.second;
+        auto&& rhvit = util::at(rhvValues, value);
+        if (not rhvit) continue;
+        auto rhvSplit = rhvit.getUnsafe();
+
+        Split temp1, temp2;
+        switch (term->getOpcode()) {
+            case llvm::ArithType::LAND:
+            case llvm::ArithType::BAND:
+                result_[value] = andImpl(lhvSplit, rhvSplit);
+                break;
+            case llvm::ArithType::LOR:
+            case llvm::ArithType::BOR:
+                result_[value] = orImpl(lhvSplit, rhvSplit);
+                break;
+            case llvm::ArithType::XOR:
+                // XOR = (!lhv AND rhv) OR (lhv AND !rhv)
+                temp1 = andImpl({lhvSplit.false_, lhvSplit.true_}, rhvSplit);
+                temp2 = andImpl(lhvSplit, {rhvSplit.false_, rhvSplit.true_});
+                result_[value] = orImpl(temp1, temp2);
+                break;
+            case llvm::ArithType::IMPLIES:
+                // IMPL = (!lhv) OR (rhv)
+                result_[value] = orImpl(lhvSplit.swap(), rhvSplit);
+                break;
+            default:
+                UNREACHABLE("Unexpected binary term in splitter: " + term->getName());
+        }
     }
 }
 

@@ -17,7 +17,7 @@ public:
 
     using Statifier = std::function<PredicateState::Ptr(llvm::Instruction*)>;
 
-    PSInterpreter(llvm::Function* F, DefectManager* DM, SlotTrackerPass* ST, Statifier statify);
+    PSInterpreter(llvm::Function* F, DefectManager* DM, SlotTrackerPass* ST, FunctionManager* FM, Statifier statify);
 
     void interpret();
     bool hasInfo(const DefectInfo& info);
@@ -29,6 +29,7 @@ private:
     llvm::Function* F_;
     DefectManager* DM_;
     SlotTrackerPass* ST_;
+    FunctionManager* FM_;
     Statifier statify_;
     FactoryNest FN_;
 };

@@ -160,6 +160,11 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
                                  falseSuccessor;
                 successors.emplace_back(successor);
             } else {
+                auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
+                for (auto&& it : splitted) {
+                    trueSuccessor->addToInput(it.first, it.second.true_);
+                    falseSuccessor->addToInput(it.first, it.second.false_);
+                }
                 successors.emplace_back(trueSuccessor);
                 successors.emplace_back(falseSuccessor);
             }

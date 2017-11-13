@@ -53,11 +53,6 @@ Term::Ptr OutOfBoundsChecker::transformGepTerm(GepTermPtr term) {
 }
 
 void OutOfBoundsChecker::apply() {
-    for (auto&& it : defects_) {
-        if (not it.second) {
-            errs() << "Skipped defect: " << it.first << endl;
-        }
-    }
     util::viewContainer(defects_)
             .filter(LAM(a, not a.second))
             .foreach([&](auto&& it) -> void { DM_->addNoAbsIntDefect(it.first); });

@@ -6,13 +6,14 @@
 #define BOREALIS_CONDITIONSPLITTER_H
 
 #include "Interpreter/PredicateState/State.h"
+#include "Term/BinaryTerm.h"
 #include "Term/CmpTerm.h"
 
 namespace borealis {
 namespace absint {
 namespace ps {
 
-class ConditionSplitter {
+class ConditionSplitter: public logging::ObjectLevelLogging<ConditionSplitter> {
 public:
     using TermMap = std::unordered_map<Term::Ptr, Split, TermHashWType, TermEqualsWType>;
 
@@ -23,6 +24,7 @@ public:
 private:
 
     void visitCmpTerm(const CmpTerm* term);
+    void visitBinaryTerm(const BinaryTerm* term);
 
     Term::Ptr condition_;
     State::Ptr state_;
