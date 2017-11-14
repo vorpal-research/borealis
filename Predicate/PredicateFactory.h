@@ -37,6 +37,14 @@ public:
                 new StorePredicate(lhv, rhv, loc, type));
     }
 
+    Predicate::Ptr getCallPredicate(
+            Term::Ptr lhv,
+            Term::Ptr function,
+            const std::vector<Term::Ptr>& args,
+            const Locus& loc = Locus()) {
+        return Predicate::Ptr(new CallPredicate(lhv, function, args, loc));
+    }
+
     Predicate::Ptr getWritePropertyPredicate(
             Term::Ptr propName,
             Term::Ptr lhv,

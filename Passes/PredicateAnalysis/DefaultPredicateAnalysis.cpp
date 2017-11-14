@@ -11,6 +11,7 @@
 #include <Term/TermBuilder.h>
 
 #include "Codegen/llvm.h"
+#include "Codegen/intrinsics_manager.h"
 #include "Passes/PredicateAnalysis/DefaultPredicateAnalysis.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 
@@ -90,6 +91,31 @@ public:
             PredicateType::ASSUME
         );
     }
+
+    void visitCallInst(llvm::CallInst& I) {
+        using llvm::Value;
+
+        Term::Ptr lhv = I.getType()->isVoidTy() ?
+                        nullptr :
+                        pass->FN.Term->getValueTerm(&I);
+        auto&& args = util::viewContainer(I.arg_operands()).map(APPLY(pass->FN.Term->getValueTerm)).toVector();
+        auto&& loc = pass->SLT->getLocFor(&I);
+
+        auto&& F = I.getCalledFunction();
+        if (F != nullptr) {
+            if (IntrinsicsManager::getInstance().getIntrinsicType(F) != function_type::UNKNOWN) return;
+
+            Term::Ptr function = pass->FN.Term->getValueTerm(F);
+            pass->PM[&I] = pass->FN.Predicate->getCallPredicate(lhv, function, args, loc);
+
+        } else if (I.getCalledValue()) {
+            pass->PM[&I] = pass->FN.Predicate->getCallPredicate(
+                    lhv, pass->FN.Term->getValueTerm(I.getCalledValue()), args, loc
+            );
+
+        } else return;
+    }
+
 
     void visitCmpInst(llvm::CmpInst& I) {
         using llvm::ConditionType;

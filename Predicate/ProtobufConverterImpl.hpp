@@ -13,6 +13,7 @@
 #include "Protobuf/Gen/Predicate/Predicate.pb.h"
 
 #include "Protobuf/Gen/Predicate/AllocaPredicate.pb.h"
+#include "Protobuf/Gen/Predicate/CallPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/DefaultSwitchCasePredicate.pb.h"
 #include "Protobuf/Gen/Predicate/EqualityPredicate.pb.h"
 #include "Protobuf/Gen/Predicate/GlobalsPredicate.pb.h"
@@ -73,6 +74,46 @@ struct protobuf_traits_impl<AllocaPredicate> {
         auto origNumElems = TermConverter::fromProtobuf(fn, p.orignumelements());
         return Predicate::Ptr{
             new AllocaPredicate(lhv, numElems, origNumElems, base->getLocation(), base->getType())
+        };
+    }
+};
+
+template<>
+struct protobuf_traits_impl<CallPredicate> {
+
+    typedef protobuf_traits<Term> TermConverter;
+
+    static std::unique_ptr<proto::CallPredicate> toProtobuf(const CallPredicate& p) {
+        auto res = util::uniq(new proto::CallPredicate());
+        res->set_allocated_function(
+                TermConverter::toProtobuf(*p.getFunctionName()).release()
+        );
+        res->set_allocated_lhv(
+                TermConverter::toProtobuf(*p.getLhv()).release()
+        );
+        for (const auto& d : p.getArgs()) {
+            res->mutable_args()->AddAllocated(
+                    TermConverter::toProtobuf(*d).release()
+            );
+        }
+        return std::move(res);
+    }
+
+    static Predicate::Ptr fromProtobuf(
+            const FactoryNest& fn,
+            Predicate::Ptr base,
+            const proto::CallPredicate& p) {
+        auto funName = TermConverter::fromProtobuf(fn, p.function());
+        auto result = TermConverter::fromProtobuf(fn, p.lhv());
+        std::vector<Term::Ptr> data;
+        data.reserve(p.args_size());
+        for (const auto& d : p.args()) {
+            data.push_back(
+                    TermConverter::fromProtobuf(fn, d)
+            );
+        }
+        return Predicate::Ptr{
+                new CallPredicate(funName, result, data, base->getLocation(), base->getType())
         };
     }
 };

@@ -33,6 +33,7 @@ public:
 
     /// predicates
     Predicate::Ptr transformAllocaPredicate(AllocaPredicatePtr pred);
+    Predicate::Ptr transformCallPredicate(CallPredicatePtr pred);
     Predicate::Ptr transformDefaultSwitchCasePredicate(DefaultSwitchCasePredicatePtr pred);
     Predicate::Ptr transformEqualityPredicate(EqualityPredicatePtr pred);
     Predicate::Ptr transformGlobalsPredicate(GlobalsPredicatePtr pred);

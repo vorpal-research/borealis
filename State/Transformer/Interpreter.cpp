@@ -128,6 +128,13 @@ Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
     return pred;
 }
 
+Predicate::Ptr Interpreter::transformCallPredicate(Transformer::CallPredicatePtr pred) {
+    if (pred->hasLhv()) {
+        state_->addVariable(pred->getLhv(), DF_->getTop(pred->getLhv()->getType()));
+    }
+    return pred;
+}
+
 Predicate::Ptr Interpreter::transformDefaultSwitchCasePredicate(DefaultSwitchCasePredicatePtr pred) {
     auto condType = pred->getCond()->getType();
     auto result = DF_->getBottom(condType);
