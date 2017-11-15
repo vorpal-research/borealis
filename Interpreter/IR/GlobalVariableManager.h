@@ -56,6 +56,7 @@ public:
     void init(const std::vector<const llvm::GlobalVariable*>& globs);
     Domain::Ptr findGlobal(const llvm::Value* val) const;
     Domain::Ptr get(const std::string& name);
+    Function::Ptr getFunctionByName(const std::string& name);
     Function::Ptr get(const llvm::Function* function);
 
     const DomainMap& getGlobals() const;

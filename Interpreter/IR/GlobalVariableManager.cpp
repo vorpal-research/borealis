@@ -140,6 +140,10 @@ const GlobalVariableManager::DomainMap& GlobalVariableManager::getGlobals() cons
     return globals_;
 }
 
+Function::Ptr GlobalVariableManager::getFunctionByName(const std::string& name) {
+    return module_->get(name);
+}
+
 }   /* namespace ir */
 }   /* namespace absint */
 }   /* namespace borealis */

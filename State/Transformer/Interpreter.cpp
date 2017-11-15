@@ -166,7 +166,7 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
                 warns() << "Unknown path predicate: " << pred->toString() << endl;
             }
         }
-    } else if (pred->getType() == PredicateType::ASSUME) {
+    } else if (pred->getType() == PredicateType::ASSUME || pred->getType() == PredicateType::REQUIRES) {
         auto&& lhv = equalities_[pred->getLhv()];
         auto&& actualLhv = lhv ? lhv : pred->getLhv();
         if (actualLhv->equals(trueTerm.get()) || actualLhv->equals(falseTerm.get())) {

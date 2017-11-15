@@ -24,6 +24,7 @@ Predicate::Ptr NullDereferenceChecker::transformPredicate(Predicate::Ptr pred) {
 }
 
 Predicate::Ptr NullDereferenceChecker::transformStorePredicate(Transformer::StorePredicatePtr pred) {
+    currentLocus_ = &pred->getLocation();
     checkPtr(pred->getLhv());
     return pred;
 }

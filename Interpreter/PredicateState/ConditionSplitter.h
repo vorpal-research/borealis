@@ -15,7 +15,7 @@ namespace ps {
 
 class ConditionSplitter: public logging::ObjectLevelLogging<ConditionSplitter> {
 public:
-    using TermMap = std::unordered_map<Term::Ptr, Split, TermHashWType, TermEqualsWType>;
+    using TermMap = std::unordered_map<Term::Ptr, Split, TermHash, TermEqualsWType>;
 
     ConditionSplitter(Term::Ptr condition, State::Ptr state);
 

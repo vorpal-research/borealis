@@ -9,11 +9,11 @@
 
 namespace borealis {
 
-class ContractPredicatesFilterer : public Transformer<ContractPredicatesFilterer> {
+class PropertyPredicateFilterer : public Transformer<PropertyPredicateFilterer> {
 public:
-    using Base = Transformer<ContractPredicatesFilterer>;
+    using Base = Transformer<PropertyPredicateFilterer>;
 
-    ContractPredicatesFilterer(FactoryNest FN);
+    PropertyPredicateFilterer(FactoryNest FN);
     PredicateState::Ptr transform(PredicateState::Ptr ps);
     Predicate::Ptr transformPredicate(Predicate::Ptr pred);
 };

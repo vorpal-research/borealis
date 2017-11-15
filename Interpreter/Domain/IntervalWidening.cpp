@@ -9,7 +9,7 @@
 namespace borealis {
 namespace absint {
 
-Integer::Ptr IntegerWidening::get_prev(const Integer::Ptr& value, DomainFactory* factory) const {
+Integer::Ptr IntegerWidening::get_prev(const Integer::Ptr& value, DomainFactory*) const {
     auto width = value->getWidth();
     return Integer::getMinValue(width);
 //
@@ -23,7 +23,7 @@ Integer::Ptr IntegerWidening::get_prev(const Integer::Ptr& value, DomainFactory*
 //    return next ? next : Integer::getMinValue(width);
 }
 
-Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value, DomainFactory* factory) const {
+Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value, DomainFactory*) const {
     auto width = value->getWidth();
     return Integer::getMaxValue(width);
 //
@@ -37,7 +37,7 @@ Integer::Ptr IntegerWidening::get_next(const Integer::Ptr& value, DomainFactory*
 //    return next ? next : Integer::getMaxValue(width);
 }
 
-Integer::Ptr IntegerWidening::get_signed_prev(const Integer::Ptr& value, DomainFactory* factory) const {
+Integer::Ptr IntegerWidening::get_signed_prev(const Integer::Ptr& value, DomainFactory*) const {
     if (not value->isValue()) return value;
     auto width = value->getWidth();
     return Integer::getMinValue(width);
@@ -59,7 +59,7 @@ Integer::Ptr IntegerWidening::get_signed_prev(const Integer::Ptr& value, DomainF
 //    return next ? next : Integer::getMinValue(width);
 }
 
-Integer::Ptr IntegerWidening::get_signed_next(const Integer::Ptr& value, DomainFactory* factory) const {
+Integer::Ptr IntegerWidening::get_signed_next(const Integer::Ptr& value, DomainFactory*) const {
     if (not value->isValue()) return value;
     auto width = value->getWidth();
     return Integer::getMaxValue(width);

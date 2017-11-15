@@ -16,15 +16,17 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
-struct TermHashWType {
-    size_t operator()(Term::Ptr term) const noexcept {
-        return util::hash::defaultHasher()(term, term->getType());
-    }
-};
-
 struct TermEqualsWType {
     bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
-        return lhv->equals(rhv.get()) && lhv->getType() == rhv->getType();
+        // This is generally fucked up
+        if (lhv->equals(rhv.get())) {
+            if (lhv->getType() == rhv->getType()) return true;
+            auto&& t1 = llvm::dyn_cast<type::Integer>(lhv->getType().get());
+            auto&& t2 = llvm::dyn_cast<type::Integer>(rhv->getType().get());
+            if (t1 && t2) return t1->getBitsize() == t2->getBitsize();
+            else return false;
+        }
+        return false;
     }
 };
 
@@ -32,7 +34,7 @@ class State: public std::enable_shared_from_this<State> {
 public:
 
     using Ptr = std::shared_ptr<State>;
-    using TermMap = std::unordered_map<Term::Ptr, Domain::Ptr, TermHashWType, TermEqualsWType>;
+    using TermMap = std::unordered_map<Term::Ptr, Domain::Ptr, TermHash, TermEqualsWType>;
 
     State() = default;
     State(const TermMap& variables, const TermMap& constants);

@@ -85,8 +85,25 @@ Domain::Ptr IntegerIntervalDomain::join(Domain::Ptr other) {
     }
 }
 
-Domain::Ptr IntegerIntervalDomain::meet(Domain::Ptr) {
-    UNREACHABLE("Unimplemented, sorry...");
+Domain::Ptr IntegerIntervalDomain::meet(Domain::Ptr other) {
+    if (this == other.get()) return shared_from_this();
+    auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
+    ASSERT(interval, "Nullptr in interval join");
+    ASSERT(this->getWidth() == interval->getWidth(), "Joining two intervals of different format");
+
+    if (interval->isBottom()) {
+        return other;
+    } else if (this->isBottom()) {
+        return shared_from_this();
+    } else {
+        errs() << "Meet: " << toString() << " and " << other << endl;
+        auto lb = util::max(lb_, interval->lb_);
+        auto ub = util::min(ub_, interval->ub_);
+        auto slb = util::signed_max(signed_lb_, interval->signed_lb_);
+        auto sub = util::signed_min(signed_ub_, interval->signed_ub_);
+        errs() << "Result: " << factory_->getInteger(lb, ub, slb, sub) << endl;
+        return factory_->getInteger(lb, ub, slb, sub);
+    }
 }
 
 Domain::Ptr IntegerIntervalDomain::widen(Domain::Ptr other) {
@@ -349,16 +366,47 @@ Domain::Ptr IntegerIntervalDomain::ashr(Domain::Ptr other) const {
     BIT_OPERATION(ashr);
 }
 
-Domain::Ptr IntegerIntervalDomain::bAnd(Domain::Ptr) const {
-    return factory_->getTop(intType_);
+Domain::Ptr IntegerIntervalDomain::bAnd(Domain::Ptr other) const {
+    auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
+    ASSERT(interval, "Nullptr in bAnd operation");
+
+    if (not (this->isValue() && interval->isValue())) {
+        return factory_->getTop(intType_);
+    } else if (this->getWidth() != 1) {
+        return factory_->getTop(intType_);
+    } else if (not (this->isConstant() && interval->isConstant())) {
+        return factory_->getTop(intType_);
+    } else {
+        return factory_->getBool(this->isConstant(1) && interval->isConstant(1));
+    }
 }
 
-Domain::Ptr IntegerIntervalDomain::bOr(Domain::Ptr) const {
-    return factory_->getTop(intType_);
+Domain::Ptr IntegerIntervalDomain::bOr(Domain::Ptr other) const {
+    auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
+    ASSERT(interval, "Nullptr in bOr operation");
+
+    if (not (this->isValue() && interval->isValue())) {
+        return factory_->getTop(intType_);
+    } else if (this->getWidth() != 1) {
+        return factory_->getTop(intType_);
+    } else if (not (this->isConstant() && interval->isConstant())) {
+        return factory_->getTop(intType_);
+    } else {
+        return factory_->getBool(!(this->isConstant(0) && interval->isConstant(0)));
+    }
 }
 
-Domain::Ptr IntegerIntervalDomain::bXor(Domain::Ptr) const {
-    return factory_->getTop(intType_);
+Domain::Ptr IntegerIntervalDomain::bXor(Domain::Ptr other) const {
+    auto&& interval = llvm::dyn_cast<IntegerIntervalDomain>(other.get());
+    ASSERT(interval, "Nullptr in bXor operation");
+
+    if (not (this->isValue() && interval->isValue())) {
+        return factory_->getTop(intType_);
+    } else if (this->getWidth() != 1) {
+        return factory_->getTop(intType_);
+    } else {
+        return factory_->getBool((this->isConstant(interval->lb_->getRawValue())));
+    }
 }
 
 Domain::Ptr IntegerIntervalDomain::implies(Domain::Ptr other) const {
@@ -368,6 +416,8 @@ Domain::Ptr IntegerIntervalDomain::implies(Domain::Ptr other) const {
     if (not (this->isValue() && interval->isValue())) {
         return factory_->getTop(intType_);
     } else if (this->getWidth() != 1) {
+        return factory_->getTop(intType_);
+    } else if (not (this->isConstant() && interval->isConstant())) {
         return factory_->getTop(intType_);
     } else {
         if (this->isConstant(1)) return other;

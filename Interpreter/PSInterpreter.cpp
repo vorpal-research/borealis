@@ -3,8 +3,9 @@
 //
 
 #include "Interpreter/IR/Module.h"
+#include "State/Transformer/ContractChecker.h"
 #include "State/Transformer/GlobalVariableFinder.h"
-#include "State/Transformer/ContractPredicatesFilterer.h"
+#include "State/Transformer/PropertyPredicateFilterer.h"
 #include "State/Transformer/Interpreter.h"
 #include "State/Transformer/NullDereferenceChecker.h"
 #include "State/Transformer/OutOfBoundsChecker.h"
@@ -27,7 +28,7 @@ void PSInterpreter::interpret() {
 
     auto globFinder = GlobalVariableFinder(FN_);
     auto searched = globFinder.transform(statify_(&F_->back().back()));
-    auto filtered = ContractPredicatesFilterer(FN_).transform(searched);
+    auto filtered = PropertyPredicateFilterer(FN_).transform(searched);
     module.initGlobals(globFinder.getGlobals());
 
     auto interpreter = absint::ps::Interpreter(FN_, module.getDomainFactory());
@@ -39,6 +40,10 @@ void PSInterpreter::interpret() {
     auto&& nd_checker = ps::NullDereferenceChecker(FN_, DM_, &interpreter);
     nd_checker.transform(filtered);
     nd_checker.apply();
+
+    auto&& contract_checker = ps::ContractChecker(FN_, F_, DM_, FM_, module.getDomainFactory(), &interpreter);
+    contract_checker.transform(filtered);
+    contract_checker.apply();
 }
 
 bool PSInterpreter::hasInfo(const DefectInfo& info) {
