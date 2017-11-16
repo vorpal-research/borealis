@@ -6,6 +6,7 @@
 
 #include "IRInterpreterPass.h"
 #include "Config/config.h"
+#include "Interpreter/Checker/ContractChecker.h"
 #include "Interpreter/Checker/NullDereferenceChecker.h"
 #include "Interpreter/Checker/OutOfBoundsChecker.h"
 #include "Util/passes.hpp"

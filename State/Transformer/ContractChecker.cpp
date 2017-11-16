@@ -14,244 +14,232 @@ namespace ps {
 
 namespace impl_ {
 
-class Checker : public Transformer<Checker> {
-public:
-    using Base = Transformer<Checker>;
-    using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
+Checker::Checker(FactoryNest FN, DomainFactory* DF, State::Ptr state, std::vector<Domain::Ptr> args)
+        : Transformer(FN),
+          satisfied_(true),
+          DF_(DF),
+          state_(std::make_shared<State>(state->getVariables(), state->getConstants())),
+          args_(std::move(args)) {}
 
-    Checker(FactoryNest FN, DomainFactory* DF, State::Ptr state, std::vector<Term::Ptr> args)
-            : Transformer(FN),
-              satisfied_(true),
-              DF_(DF),
-              state_(std::make_shared<State>(state->getVariables(), state->getConstants())),
-              args_(std::move(args)) {}
+Predicate::Ptr Checker::transformEqualityPredicate(EqualityPredicatePtr pred) {
+    if (pred->getType() == PredicateType::REQUIRES || pred->getType() == PredicateType::ENSURES) {
+        auto trueTerm = FN.Term->getTrueTerm();
+        auto falseTerm = FN.Term->getFalseTerm();
+        auto cond = state_->find(pred->getLhv());
+        ASSERT(cond, "Unknown lhv in requires");
 
-    Predicate::Ptr transformEqualityPredicate(EqualityPredicatePtr pred) {
-        if (pred->getType() == PredicateType::REQUIRES || pred->getType() == PredicateType::ENSURES) {
-            auto trueTerm = FN.Term->getTrueTerm();
-            auto falseTerm = FN.Term->getFalseTerm();
-            auto cond = state_->find(pred->getLhv());
-            ASSERT(cond, "Unknown lhv in requires");
+        if (pred->getRhv()->equals(trueTerm.get())) {
+            auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
+            ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
+            satisfied_ &= boolean->isConstant(1);
 
-            if (pred->getRhv()->equals(trueTerm.get())) {
-                auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
-                ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
-                satisfied_ &= boolean->isConstant(1);
+        } else if (pred->getRhv()->equals(falseTerm.get())) {
+            auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
+            ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
+            satisfied_ &= boolean->isConstant(0);
 
-            } else if (pred->getRhv()->equals(falseTerm.get())) {
-                auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
-                ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
-                satisfied_ &= boolean->isConstant(0);
-
-            } else {
-                warns() << "Unknown req predicate: " << pred->toString() << endl;
-            }
-
-        }
-        return pred;
-    }
-
-    Term::Ptr transformArgumentTerm(ArgumentTermPtr term) {
-        state_->addVariable(term, state_->find(args_.at(term->getIdx())));
-        return term;
-    }
-
-    Term::Ptr transformBinaryTerm(BinaryTermPtr term) {
-        if (state_->find(term)) return term;
-        auto lhv = state_->find(term->getLhv());
-        auto rhv = state_->find(term->getRhv());
-        ASSERT(lhv && rhv, "binop args of " + term->getName());
-
-        Domain::Ptr result = nullptr;
-        switch (term->getOpcode()) {
-            case llvm::ArithType::SHL:
-                result = lhv->shl(rhv);
-                break;
-            case llvm::ArithType::LSHR:
-                result = lhv->lshr(rhv);
-                break;
-            case llvm::ArithType::ASHR:
-                result = lhv->ashr(rhv);
-                break;
-            case llvm::ArithType::LAND:
-            case llvm::ArithType::BAND:
-                result = lhv->bAnd(rhv);
-                break;
-            case llvm::ArithType::LOR:
-            case llvm::ArithType::BOR:
-                result = lhv->bOr(rhv);
-                break;
-            case llvm::ArithType::XOR:
-                result = lhv->bXor(rhv);
-                break;
-            case llvm::ArithType::IMPLIES:
-                result = lhv->implies(rhv);
-                break;
-            default:
-                UNREACHABLE("Unknown binary operator in req: " + term->getName());
+        } else {
+            warns() << "Unknown req predicate: " << pred->toString() << endl;
         }
 
-        ASSERT(result, "binop result " + term->getName());
-        state_->addVariable(term, result);
-        return term;
+    }
+    return pred;
+}
+
+Term::Ptr Checker::transformArgumentTerm(ArgumentTermPtr term) {
+    state_->addVariable(term, args_.at(term->getIdx()));
+    return term;
+}
+
+Term::Ptr Checker::transformBinaryTerm(BinaryTermPtr term) {
+    if (state_->find(term)) return term;
+    auto lhv = state_->find(term->getLhv());
+    auto rhv = state_->find(term->getRhv());
+    ASSERT(lhv && rhv, "binop args of " + term->getName());
+
+    Domain::Ptr result = nullptr;
+    switch (term->getOpcode()) {
+        case llvm::ArithType::SHL:
+            result = lhv->shl(rhv);
+            break;
+        case llvm::ArithType::LSHR:
+            result = lhv->lshr(rhv);
+            break;
+        case llvm::ArithType::ASHR:
+            result = lhv->ashr(rhv);
+            break;
+        case llvm::ArithType::LAND:
+        case llvm::ArithType::BAND:
+            result = lhv->bAnd(rhv);
+            break;
+        case llvm::ArithType::LOR:
+        case llvm::ArithType::BOR:
+            result = lhv->bOr(rhv);
+            break;
+        case llvm::ArithType::XOR:
+            result = lhv->bXor(rhv);
+            break;
+        case llvm::ArithType::IMPLIES:
+            result = lhv->implies(rhv);
+            break;
+        default:
+            UNREACHABLE("Unknown binary operator in req: " + term->getName());
     }
 
-    Term::Ptr transformCmpTerm(CmpTermPtr term) {
-        if (state_->find(term)) return term;
-        auto lhv = state_->find(term->getLhv());
-        auto rhv = state_->find(term->getRhv());
-        ASSERT(lhv && rhv, "cmp args of " + term->getName());
+    ASSERT(result, "binop result " + term->getName());
+    state_->addVariable(term, result);
+    return term;
+}
 
-        bool isFloat = llvm::isa<type::Float>(term->getLhv()->getType().get());
-        Domain::Ptr result;
-        switch (term->getOpcode()) {
-            case llvm::ConditionType::EQ:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_UEQ) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_EQ);
-                break;
-            case llvm::ConditionType::NEQ:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_UNE) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_NE);
-                break;
-            case llvm::ConditionType::GT:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGT) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_SGT);
-                break;
-            case llvm::ConditionType::GE:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGE) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_SGE);
-                break;
-            case llvm::ConditionType::LT:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULT) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_SLT);
-                break;
-            case llvm::ConditionType::LE:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULE) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_SLE);
-                break;
-            case llvm::ConditionType::UGT:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGT) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_UGT);
-                break;
-            case llvm::ConditionType::UGE:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGE) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_UGE);
-                break;
-            case llvm::ConditionType::ULT:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULT) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_ULT);
-                break;
-            case llvm::ConditionType::ULE:
-                result = isFloat ?
-                         lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULE) :
-                         lhv->icmp(rhv, llvm::CmpInst::ICMP_ULE);
-                break;
-            case llvm::ConditionType::TRUE:
-                result = DF_->getBool(true);
-                break;
-            case llvm::ConditionType::FALSE:
-                result = DF_->getBool(false);
-                break;
-            default:
-                UNREACHABLE("Unknown cast: " + term->getName());
-        }
+Term::Ptr Checker::transformCmpTerm(CmpTermPtr term) {
+    if (state_->find(term)) return term;
+    auto lhv = state_->find(term->getLhv());
+    auto rhv = state_->find(term->getRhv());
+    ASSERT(lhv && rhv, "cmp args of " + term->getName());
 
-        ASSERT(result, "cmp result " + term->getName());
-        state_->addVariable(term, result);
-        return term;
+    bool isFloat = llvm::isa<type::Float>(term->getLhv()->getType().get());
+    Domain::Ptr result;
+    switch (term->getOpcode()) {
+        case llvm::ConditionType::EQ:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_UEQ) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_EQ);
+            break;
+        case llvm::ConditionType::NEQ:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_UNE) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_NE);
+            break;
+        case llvm::ConditionType::GT:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGT) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_SGT);
+            break;
+        case llvm::ConditionType::GE:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGE) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_SGE);
+            break;
+        case llvm::ConditionType::LT:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULT) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_SLT);
+            break;
+        case llvm::ConditionType::LE:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULE) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_SLE);
+            break;
+        case llvm::ConditionType::UGT:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGT) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_UGT);
+            break;
+        case llvm::ConditionType::UGE:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_UGE) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_UGE);
+            break;
+        case llvm::ConditionType::ULT:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULT) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_ULT);
+            break;
+        case llvm::ConditionType::ULE:
+            result = isFloat ?
+                     lhv->fcmp(rhv, llvm::CmpInst::FCMP_ULE) :
+                     lhv->icmp(rhv, llvm::CmpInst::ICMP_ULE);
+            break;
+        case llvm::ConditionType::TRUE:
+            result = DF_->getBool(true);
+            break;
+        case llvm::ConditionType::FALSE:
+            result = DF_->getBool(false);
+            break;
+        default:
+            UNREACHABLE("Unknown cast: " + term->getName());
     }
 
-    Term::Ptr transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
-        if (state_->find(term)) return term;
-        auto intTy = llvm::cast<type::Integer>(term->getType().get());
-        auto integer = DF_->toInteger(llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10));
+    ASSERT(result, "cmp result " + term->getName());
+    state_->addVariable(term, result);
+    return term;
+}
+
+Term::Ptr Checker::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
+    if (state_->find(term)) return term;
+    auto intTy = llvm::cast<type::Integer>(term->getType().get());
+    auto integer = DF_->toInteger(llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10));
+    state_->addConstant(term, DF_->getInteger(integer));
+    return term;
+}
+
+Term::Ptr Checker::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
+    if (state_->find(term)) return term;
+    state_->addConstant(term, DF_->getBool(term->getValue()));
+    return term;
+}
+
+Term::Ptr Checker::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
+    if (state_->find(term)) return term;
+    state_->addConstant(term, DF_->getFloat(term->getValue()));
+    return term;
+}
+
+Term::Ptr Checker::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
+    if (state_->find(term)) return term;
+    Integer::Ptr integer;
+    if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
+        auto apInt = llvm::APInt(intTy->getBitsize(), term->getValue(),
+                                 intTy->getSignedness() == llvm::Signedness::Signed);
+        integer = DF_->toInteger(apInt);
         state_->addConstant(term, DF_->getInteger(integer));
-        return term;
-    }
 
-    Term::Ptr transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
-        if (state_->find(term)) return term;
-        state_->addConstant(term, DF_->getBool(term->getValue()));
-        return term;
-    }
+    } else if (llvm::isa<type::Pointer>(term->getType().get())) {
+        state_->addConstant(term, (term->getValue() == 0) ?
+                                  DF_->getNullptr(term->getType()) :
+                                  DF_->getTop(term->getType()));
+    } else {
+        warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
+        state_->addConstant(term, DF_->getIndex(term->getValue()));
+    };
+    return term;
+}
 
-    Term::Ptr transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
-        if (state_->find(term)) return term;
-        state_->addConstant(term, DF_->getFloat(term->getValue()));
-        return term;
-    }
+Term::Ptr Checker::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
+    if (state_->find(term)) return term;
+    state_->addVariable(term, DF_->getNullptr(term->getType()));
+    return term;
+}
 
-    Term::Ptr transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
-        if (state_->find(term)) return term;
-        Integer::Ptr integer;
-        if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
-            auto apInt = llvm::APInt(intTy->getBitsize(), term->getValue(),
-                                     intTy->getSignedness() == llvm::Signedness::Signed);
-            integer = DF_->toInteger(apInt);
-            state_->addConstant(term, DF_->getInteger(integer));
+Term::Ptr Checker::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
+    if (state_->find(term)) return term;
+    state_->addVariable(term, DF_->getNullptr(term->getType()));
+    return term;
+}
 
-        } else if (llvm::isa<type::Pointer>(term->getType().get())) {
-            state_->addConstant(term, (term->getValue() == 0) ?
-                                      DF_->getNullptr(term->getType()) :
-                                      DF_->getTop(term->getType()));
-        } else {
-            warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
-            state_->addConstant(term, DF_->getIndex(term->getValue()));
-        };
-        return term;
-    }
-
-    Term::Ptr transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
-        if (state_->find(term)) return term;
-        state_->addVariable(term, DF_->getNullptr(term->getType()));
-        return term;
-    }
-
-    Term::Ptr transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
-        if (state_->find(term)) return term;
-        state_->addVariable(term, DF_->getNullptr(term->getType()));
-        return term;
-    }
-
-    Term::Ptr transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
-        if (state_->find(term)) return term;
-        if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
-            std::vector<Domain::Ptr> elements;
-            for (auto&& it : term->getValue()) {
-                auto ch2i = DF_->toInteger(it, 8);
-                elements.push_back(DF_->getInteger(ch2i));
-            }
-            state_->addConstant(term, DF_->getAggregate(array->getElement(), elements));
-        } else {
-            state_->addVariable(term, DF_->getTop(term->getType()));
+Term::Ptr Checker::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
+    if (state_->find(term)) return term;
+    if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
+        std::vector<Domain::Ptr> elements;
+        for (auto&& it : term->getValue()) {
+            auto ch2i = DF_->toInteger(it, 8);
+            elements.push_back(DF_->getInteger(ch2i));
         }
-        return term;
-    }
-
-    Term::Ptr transformOpaqueUndefTerm(OpaqueUndefTermPtr term) {
+        state_->addConstant(term, DF_->getAggregate(array->getElement(), elements));
+    } else {
         state_->addVariable(term, DF_->getTop(term->getType()));
-        return term;
     }
+    return term;
+}
 
-    bool satisfied() const {
-        return satisfied_;
-    }
+Term::Ptr Checker::transformOpaqueUndefTerm(OpaqueUndefTermPtr term) {
+    state_->addVariable(term, DF_->getTop(term->getType()));
+    return term;
+}
 
-private:
-    bool satisfied_;
-    DomainFactory* DF_;
-    State::Ptr state_;
-    std::vector<Term::Ptr> args_;
-};
+bool Checker::satisfied() const {
+    return satisfied_;
+}
 
 } // namespace impl_
 
@@ -291,9 +279,9 @@ Predicate::Ptr ContractChecker::transformCallPredicate(Transformer::CallPredicat
         auto req = FM_->getReq(function->getInstance());
 
         if (not req->isEmpty()) {
-            auto checker = impl_::Checker(FN, DF_,
-                                          interpreter_->getStateMap().at(currentBasic_),
-                                          pred->getArgs().toVector());
+            auto state = interpreter_->getStateMap().at(currentBasic_);
+            auto checker = impl_::Checker(FN, DF_, state,
+                                          pred->getArgs().map(LAM(a, state->find(a))).toVector());
             checker.transform(req);
             auto satisfied = checker.satisfied();
             defects_[di] |= (not satisfied);
@@ -307,9 +295,11 @@ void ContractChecker::checkEns() {
     auto ens = FM_->getEns(F_);
 
     if (not ens->isEmpty()) {
-        auto checker = impl_::Checker(FN, DF_,
-                                      interpreter_->getStateMap().at(currentBasic_),
-                                      {});
+        auto state = interpreter_->getStateMap().at(currentBasic_);
+        std::vector<Domain::Ptr> args;
+        for (auto&& arg : F_->args()) args.push_back(state->find(FN.Term->getArgumentTerm(&arg)));
+
+        auto checker = impl_::Checker(FN, DF_, state, args);
         checker.transform(ens);
         auto satisfied = checker.satisfied();
         defects_[di] |= (not satisfied);

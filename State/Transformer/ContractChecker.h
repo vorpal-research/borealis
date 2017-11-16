@@ -14,6 +14,40 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
+namespace impl_ {
+
+class Checker : public Transformer<Checker> {
+public:
+    using Base = Transformer<Checker>;
+    using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
+
+    Checker(FactoryNest FN, DomainFactory* DF, State::Ptr state, std::vector<Domain::Ptr> args);
+
+    Predicate::Ptr transformEqualityPredicate(EqualityPredicatePtr pred);
+
+    Term::Ptr transformArgumentTerm(ArgumentTermPtr term);
+    Term::Ptr transformBinaryTerm(BinaryTermPtr term);
+    Term::Ptr transformCmpTerm(CmpTermPtr term);
+    Term::Ptr transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term);
+    Term::Ptr transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term);
+    Term::Ptr transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term);
+    Term::Ptr transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term);
+    Term::Ptr transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term);
+    Term::Ptr transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term);
+    Term::Ptr transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term);
+    Term::Ptr transformOpaqueUndefTerm(OpaqueUndefTermPtr term);
+
+    bool satisfied() const;
+
+private:
+    bool satisfied_;
+    DomainFactory* DF_;
+    State::Ptr state_;
+    std::vector<Domain::Ptr> args_;
+};
+
+} // namespace impl_
+
 class ContractChecker : public Transformer<ContractChecker>,
                         public logging::ObjectLevelLogging<ContractChecker> {
 public:
