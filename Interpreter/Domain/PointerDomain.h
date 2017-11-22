@@ -78,6 +78,7 @@ public:
     Domain::Ptr widen(Domain::Ptr other) override;
 
     /// Other
+    bool isNullptr() const override;
     Type::Ptr getElementType() const;
     const Locations& getLocations() const;
     Domain::Ptr clone() const override;

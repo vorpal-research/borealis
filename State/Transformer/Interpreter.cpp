@@ -244,7 +244,6 @@ Term::Ptr Interpreter::transformArgumentCountTerm(ArgumentCountTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformArgumentTerm(ArgumentTermPtr term) {
-    if (state_->find(term)) return term;
     state_->addVariable(term, DF_->getTop(term->getType()));
     return term;
 }
@@ -255,7 +254,6 @@ Term::Ptr Interpreter::transformAxiomTerm(AxiomTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformBinaryTerm(BinaryTermPtr term) {
-    if (state_->find(term)) return term;
     auto lhv = state_->find(term->getLhv());
     auto rhv = state_->find(term->getRhv());
     ASSERT(lhv && rhv, "binop args of " + term->getName());
@@ -325,7 +323,6 @@ Term::Ptr Interpreter::transformBoundTerm(BoundTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformCastTerm(CastTermPtr term) {
-    if (state_->find(term)) return term;
     auto cast = state_->find(term->getRhv());
     ASSERT(cast, "cast arg of " + term->getName());
     auto fromTy = term->getRhv()->getType();
@@ -367,7 +364,6 @@ Term::Ptr Interpreter::transformCastTerm(CastTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformCmpTerm(CmpTermPtr term) {
-    if (state_->find(term)) return term;
     auto lhv = state_->find(term->getLhv());
     auto rhv = state_->find(term->getRhv());
     ASSERT(lhv && rhv, "cmp args of " + term->getName());
@@ -451,7 +447,6 @@ Term::Ptr Interpreter::transformFreeVarTerm(FreeVarTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformGepTerm(GepTermPtr term) {
-    if (state_->find(term)) return term;
     auto ptr = state_->find(term->getBase());
     ASSERT(ptr, "gep pointer of " + term->getName());
 
@@ -479,7 +474,6 @@ Term::Ptr Interpreter::transformGepTerm(GepTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformLoadTerm(LoadTermPtr term) {
-    if (state_->find(term)) return term;
     auto ptr = state_->find(term->getRhv());
     ASSERT(ptr, "load pointer of " + term->getName());
 
@@ -596,7 +590,6 @@ Term::Ptr Interpreter::transformSignTerm(SignTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformTernaryTerm(TernaryTermPtr term) {
-    if (state_->find(term)) return term;
     auto cond = state_->find(term->getCnd());
     auto trueVal = state_->find(term->getTru());
     auto falseVal = state_->find(term->getFls());
@@ -611,7 +604,6 @@ Term::Ptr Interpreter::transformTernaryTerm(TernaryTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformUnaryTerm(UnaryTermPtr term) {
-    if (state_->find(term)) return term;
     auto rhv = state_->find(term->getRhv());
     ASSERT(rhv, "unary term arg " + term->getName());
 

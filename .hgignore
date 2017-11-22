@@ -25,6 +25,7 @@ leveldb_daemon
 
 Protobuf/Gen/*
 *.proto
+persistentDefectData.json
 
 *.xml
 *.tmp

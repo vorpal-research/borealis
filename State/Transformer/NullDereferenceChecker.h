@@ -2,8 +2,8 @@
 // Created by abdullin on 11/7/17.
 //
 
-#ifndef BOREALIS_NULLDEREFERENCECHECKER_H
-#define BOREALIS_NULLDEREFERENCECHECKER_H
+#ifndef BOREALIS_PS_NULLDEREFERENCECHECKER_H
+#define BOREALIS_PS_NULLDEREFERENCECHECKER_H
 
 #include "Interpreter.h"
 #include "Passes/Defect/DefectManager.h"
@@ -30,7 +30,7 @@ public:
 
 private:
 
-    void checkPtr(Term::Ptr ptr);
+    void checkPtr(Term::Ptr memoryTerm, Term::Ptr ptr);
 
     PredicateState::Ptr currentBasic_;
     const Locus* currentLocus_;
@@ -44,4 +44,4 @@ private:
 }   // namespace borealis
 
 
-#endif //BOREALIS_NULLDEREFERENCECHECKER_H
+#endif //BOREALIS_PS_NULLDEREFERENCECHECKER_H

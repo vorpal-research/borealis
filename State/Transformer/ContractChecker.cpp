@@ -12,6 +12,8 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
+static config::BoolConfigEntry enableLogging("absint", "checker-logging");
+
 namespace impl_ {
 
 Checker::Checker(FactoryNest FN, DomainFactory* DF, State::Ptr state, std::vector<Domain::Ptr> args)
@@ -22,6 +24,7 @@ Checker::Checker(FactoryNest FN, DomainFactory* DF, State::Ptr state, std::vecto
           args_(std::move(args)) {}
 
 Predicate::Ptr Checker::transformEqualityPredicate(EqualityPredicatePtr pred) {
+    if (not satisfied()) return pred;
     if (pred->getType() == PredicateType::REQUIRES || pred->getType() == PredicateType::ENSURES) {
         auto trueTerm = FN.Term->getTrueTerm();
         auto falseTerm = FN.Term->getFalseTerm();
@@ -47,11 +50,13 @@ Predicate::Ptr Checker::transformEqualityPredicate(EqualityPredicatePtr pred) {
 }
 
 Term::Ptr Checker::transformArgumentTerm(ArgumentTermPtr term) {
+    if (not satisfied()) return term;
     state_->addVariable(term, args_.at(term->getIdx()));
     return term;
 }
 
 Term::Ptr Checker::transformBinaryTerm(BinaryTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     auto lhv = state_->find(term->getLhv());
     auto rhv = state_->find(term->getRhv());
@@ -92,6 +97,7 @@ Term::Ptr Checker::transformBinaryTerm(BinaryTermPtr term) {
 }
 
 Term::Ptr Checker::transformCmpTerm(CmpTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     auto lhv = state_->find(term->getLhv());
     auto rhv = state_->find(term->getRhv());
@@ -166,6 +172,7 @@ Term::Ptr Checker::transformCmpTerm(CmpTermPtr term) {
 }
 
 Term::Ptr Checker::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     auto intTy = llvm::cast<type::Integer>(term->getType().get());
     auto integer = DF_->toInteger(llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10));
@@ -174,18 +181,21 @@ Term::Ptr Checker::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr
 }
 
 Term::Ptr Checker::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     state_->addConstant(term, DF_->getBool(term->getValue()));
     return term;
 }
 
 Term::Ptr Checker::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     state_->addConstant(term, DF_->getFloat(term->getValue()));
     return term;
 }
 
 Term::Ptr Checker::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     Integer::Ptr integer;
     if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
@@ -206,18 +216,21 @@ Term::Ptr Checker::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term)
 }
 
 Term::Ptr Checker::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     state_->addVariable(term, DF_->getNullptr(term->getType()));
     return term;
 }
 
 Term::Ptr Checker::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     state_->addVariable(term, DF_->getNullptr(term->getType()));
     return term;
 }
 
 Term::Ptr Checker::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
+    if (not satisfied()) return term;
     if (state_->find(term)) return term;
     if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
         std::vector<Domain::Ptr> elements;
@@ -233,6 +246,7 @@ Term::Ptr Checker::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr
 }
 
 Term::Ptr Checker::transformOpaqueUndefTerm(OpaqueUndefTermPtr term) {
+    if (not satisfied()) return term;
     state_->addVariable(term, DF_->getTop(term->getType()));
     return term;
 }
@@ -280,11 +294,26 @@ Predicate::Ptr ContractChecker::transformCallPredicate(Transformer::CallPredicat
 
         if (not req->isEmpty()) {
             auto state = interpreter_->getStateMap().at(currentBasic_);
-            auto checker = impl_::Checker(FN, DF_, state,
-                                          pred->getArgs().map(LAM(a, state->find(a))).toVector());
+            auto args = pred->getArgs().map(LAM(a, state->find(a))).toVector();
+            auto checker = impl_::Checker(FN, DF_, state, args);
             checker.transform(req);
             auto satisfied = checker.satisfied();
             defects_[di] |= (not satisfied);
+
+            if (enableLogging.get(false)) {
+                auto&& info = infos();
+                info << "Checking: " << pred->toString() << endl;
+                info << "Defect: " << di << endl;
+                info << "Req: " << req << endl;
+                info << "Args: " << endl;
+                auto i = 0U;
+                for (auto&& arg : function->getInstance()->args()) {
+                    info << arg.getName().str() << " = " << args[i++] << endl;
+                }
+                info << "Satisfied: " << satisfied << endl;
+                info << "Bug: " << (not satisfied) << endl;
+                info << endl;
+            }
         }
     }
     return pred;
@@ -303,11 +332,30 @@ void ContractChecker::checkEns() {
         checker.transform(ens);
         auto satisfied = checker.satisfied();
         defects_[di] |= (not satisfied);
+
+        if (enableLogging.get(false)) {
+            auto&& info = infos();
+            info << "Checking: " << F_->getName().str() << " ensures" << endl;
+            info << "Defect: " << di << endl;
+            info << "Ens: " << ens << endl;
+            info << "Args: " << endl;
+            auto i = 0U;
+            for (auto&& arg : F_->args()) {
+                info << arg.getName().str() << " = " << args[i++] << endl;
+            }
+            auto retval = F_->getReturnType()->isPointerTy() ?
+                          FN.Term->getReturnPtrTerm(F_) :
+                          FN.Term->getReturnValueTerm(F_);
+            info << retval << " = " << state->find(retval) << endl;
+            info << "Satisfied: " << satisfied << endl;
+            info << "Bug: " << (not satisfied) << endl;
+            info << endl;
+        }
     }
 }
 
 } // namespace ps
 } // namespace absint
-} // namespace checker
+} // namespace borealis
 
 #include "Util/unmacros.h"

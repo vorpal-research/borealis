@@ -2,8 +2,8 @@
 // Created by abdullin on 11/15/17.
 //
 
-#ifndef BOREALIS_CONTRACTCHECKER_H
-#define BOREALIS_CONTRACTCHECKER_H
+#ifndef BOREALIS_PS_CONTRACTCHECKER_H
+#define BOREALIS_PS_CONTRACTCHECKER_H
 
 #include "Interpreter.h"
 #include "Passes/Defect/DefectManager.h"
@@ -79,4 +79,4 @@ private:
 } // namespace borealis
 
 
-#endif //BOREALIS_CONTRACTCHECKER_H
+#endif //BOREALIS_PS_CONTRACTCHECKER_H

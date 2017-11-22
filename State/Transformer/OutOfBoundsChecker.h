@@ -2,11 +2,12 @@
 // Created by abdullin on 11/1/17.
 //
 
-#ifndef BOREALIS_OUTOFBOUNDSCHECKER_H
-#define BOREALIS_OUTOFBOUNDSCHECKER_H
+#ifndef BOREALIS_PS_OUTOFBOUNDSCHECKER_H
+#define BOREALIS_PS_OUTOFBOUNDSCHECKER_H
 
 #include "Interpreter.h"
 #include "Passes/Defect/DefectManager.h"
+#include "Passes/Misc/FuncInfoProvider.h"
 #include "Transformer.hpp"
 
 namespace borealis {
@@ -24,6 +25,7 @@ public:
 
     PredicateState::Ptr transformBasic(BasicPredicateStatePtr basic);
     Predicate::Ptr transformPredicate(Predicate::Ptr pred);
+    Predicate::Ptr transformCallPredicate(CallPredicatePtr pred);
     Term::Ptr transformGepTerm(GepTermPtr term);
 
 private:
@@ -40,4 +42,4 @@ private:
 }   // namespace borealis
 
 
-#endif //BOREALIS_OUTOFBOUNDSCHECKER_H
+#endif //BOREALIS_PS_OUTOFBOUNDSCHECKER_H

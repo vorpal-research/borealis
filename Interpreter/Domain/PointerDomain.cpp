@@ -121,6 +121,12 @@ bool PointerDomain::operator<(const Domain&) const {
     UNREACHABLE("Unimplemented, sorry...");
 }
 
+bool PointerDomain::isNullptr() const {
+    for (auto&& it : locations_)
+        if (it.location_->isNullptr()) return true;
+    return false;
+}
+
 const PointerDomain::Locations& PointerDomain::getLocations() const {
     return locations_;
 }

@@ -12,6 +12,8 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
+static config::BoolConfigEntry enableLogging("absint", "checker-logging");
+
 OutOfBoundsChecker::OutOfBoundsChecker(FactoryNest FN, DefectManager* DM, DomainFactory* DF, Interpreter* interpreter)
         : Transformer(FN), ObjectLevelLogging("ps-interpreter"), DM_(DM), DF_(DF), interpreter_(interpreter) {}
 
@@ -23,6 +25,13 @@ PredicateState::Ptr OutOfBoundsChecker::transformBasic(BasicPredicateStatePtr ba
 Predicate::Ptr OutOfBoundsChecker::transformPredicate(Predicate::Ptr pred) {
     currentLocus_ = &pred->getLocation();
     return Base::transformPredicate(pred);
+}
+
+Predicate::Ptr OutOfBoundsChecker::transformCallPredicate(Transformer::CallPredicatePtr pred) {
+    currentLocus_ = &pred->getLocation();
+    auto di = DefectInfo{DefectTypes.at(DefectType::BUF_01).type, *currentLocus_};
+    defects_[di] |= true;
+    return Base::transformCallPredicate(pred);
 }
 
 Term::Ptr OutOfBoundsChecker::transformGepTerm(GepTermPtr term) {
@@ -49,6 +58,19 @@ Term::Ptr OutOfBoundsChecker::transformGepTerm(GepTermPtr term) {
     }
     auto bug = OutOfBoundsVisitor().visit(ptr, shifts);
     defects_[di] |= bug;
+
+    if (enableLogging.get(false)) {
+        auto&& info = infos();
+        info << "Checking: " << term->getName() << endl;
+        info << "Defect: " << di << endl;
+        info << "Ptr: " << ptr << endl;
+        for (auto&& it : shifts) {
+            info << it << endl;
+        }
+        info << "Result: " << bug << endl;
+        info << endl;
+    }
+
     return term;
 }
 
