@@ -89,6 +89,7 @@ public:
     static bool classof(const Domain* other);
 
     /// Semantics
+    Domain::Ptr sub(Domain::Ptr other) const override;
     Domain::Ptr load(Type::Ptr type, Domain::Ptr offset) override;
     void store(Domain::Ptr value, Domain::Ptr offset) override;
     Domain::Ptr gep(Type::Ptr type, const std::vector<Domain::Ptr>& indices) override;

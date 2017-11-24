@@ -146,10 +146,12 @@ std::size_t PointerDomain::hashCode() const {
 Domain::Ptr PointerDomain::getBound() const {
     auto type = factory_->getTypeFactory()->getInteger(DomainFactory::defaultSize);
     if (isTop()) return factory_->getTop(type);
+
     Domain::Ptr result = factory_->getBottom(type);
     for (auto&& it : locations_) {
-        for (auto&& offset : it.offsets_) {
-            result = result->join(offset);
+        if (auto&& aggregate = llvm::dyn_cast<AggregateDomain>(it.location_.get())) {
+            auto it_off = util::viewContainer(it.offsets_).reduce(factory_->getBottom(type), LAM2(acc, e, acc->join(e)));
+            result = result->join(aggregate->getLength()->sub(it_off));
         }
     }
     return result;
@@ -270,6 +272,33 @@ Domain::Ptr PointerDomain::meet(Domain::Ptr other) {
         }
     }
     return shared_from_this();
+}
+
+Domain::Ptr PointerDomain::sub(Domain::Ptr other) const {
+    auto&& ptr = llvm::dyn_cast<PointerDomain>(other.get());
+    ASSERT(ptr, "Non-pointer domain in pointer sub");
+
+    auto intTy = factory_->getTypeFactory()->getInteger(factory_->defaultSize);
+
+    if (not (isValue() && other->isValue())) {
+        return factory_->getTop(intTy);
+    }
+
+    if (locations_.size() != ptr->locations_.size()) factory_->getTop(intTy);
+
+    auto result = factory_->getBottom(intTy);
+    auto&& loc_end = locations_.end();
+    for (auto&& it_ptr : ptr->locations_) {
+        auto&& it = locations_.find(it_ptr);
+        if (it == loc_end) return factory_->getTop(intTy);
+        else {
+            auto it_off = util::viewContainer(it->offsets_).reduce(factory_->getBottom(intTy), LAM2(acc, e, acc->join(e)));
+            auto itptr_off = util::viewContainer(it_ptr.offsets_).reduce(factory_->getBottom(intTy), LAM2(acc, e, acc->join(e)));
+            result = result->join(it_off->sub(itptr_off));
+        }
+    }
+
+    return result;
 }
 
 Domain::Ptr PointerDomain::load(Type::Ptr type, Domain::Ptr offset) {

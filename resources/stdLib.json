@@ -1812,7 +1812,7 @@
       "signature": "int sprintf(char *str, const char *format, ...)",
       "name": "sprintf",
       "args": [
-            { "access" : "Write", "array" : true, "size" : 1 },
+            { "access" : "Write", "array" : true },
             { "access" : "Read", "array" : true },
             {}
       ]

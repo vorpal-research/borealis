@@ -3,24 +3,24 @@
 //
 
 #include "Interpreter/IR/Module.h"
+#include "OneForAllInterpreter.h"
 #include "State/Transformer/ContractChecker.h"
 #include "State/Transformer/GlobalVariableFinder.h"
 #include "State/Transformer/PropertyPredicateFilterer.h"
 #include "State/Transformer/Interpreter.h"
 #include "State/Transformer/NullDereferenceChecker.h"
 #include "State/Transformer/OutOfBoundsChecker.h"
-#include "PSInterpreter.h"
 
 namespace borealis {
 namespace absint {
 
-PSInterpreter::PSInterpreter(llvm::Function* F, DefectManager* DM,
+OneForAllInterpreter::OneForAllInterpreter(llvm::Function* F, DefectManager* DM,
                              SlotTrackerPass* ST, FunctionManager* FM, Statifier statify)
         : ObjectLevelLogging("ps-interpreter"), F_(F), DM_(DM), ST_(ST), FM_(FM), statify_(statify) {
     FN_ = FactoryNest(F_->getParent()->getDataLayout(), ST_->getSlotTracker(F_));
 }
 
-void PSInterpreter::interpret() {
+void OneForAllInterpreter::interpret() {
     if (interpreted_.count(F_)) return;
     interpreted_.insert(F_);
 
@@ -46,12 +46,12 @@ void PSInterpreter::interpret() {
     contract_checker.apply();
 }
 
-bool PSInterpreter::hasInfo(const DefectInfo& info) {
+bool OneForAllInterpreter::hasInfo(const DefectInfo& info) {
     interpret();
     return DM_->hasInfo(info);
 }
 
-std::unordered_set<llvm::Function*> PSInterpreter::interpreted_;
+std::unordered_set<llvm::Function*> OneForAllInterpreter::interpreted_;
 
 }   // namespace absint
 }   // namespace borealis

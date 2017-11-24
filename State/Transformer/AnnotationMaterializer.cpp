@@ -251,10 +251,11 @@ Term::Ptr AnnotationMaterializer::transformOpaqueCall(OpaqueCallTermPtr trm) {
                 auto&& pointed = ptrType->getPointed();
 
                 auto&& bval = builder(val);
+                auto&& bound = bval.bound();
 
                 return bval != null()
                     && bval != invalid()
-                    && bval.bound().uge(builder(TypeUtils::getTypeSizeInElems(pointed)) * size);
+                    && bound.uge(builder(TypeUtils::getTypeSizeInElems(pointed)) * builder(size).cast(bound->getType()));
             } else {
                 pimpl->abort("Illegal \\is_valid_array access %s: called on non-pointer", val->getName());
             }

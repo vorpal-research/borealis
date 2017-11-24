@@ -44,26 +44,24 @@ void GlobalVar::addEdge(const llvm::GlobalVariable* edge) {
 void GlobalVar::initEdges() {
     if (not value_->hasInitializer()) return;
     for (auto&& op : value_->getInitializer()->operands()) {
-        getAllGlobals(op);
+        getAllGlobals(edges_, op);
     }
 }
 
-void GlobalVar::getAllGlobals(const llvm::Value* value) {
+void GlobalVar::getAllGlobals(std::unordered_set<const llvm::GlobalVariable*>& globals, const llvm::Value* value) {
     if (auto global = llvm::dyn_cast<llvm::GlobalVariable>(value)) {
-        addEdge(global);
+        globals.insert(global);
     } else if (auto constantExpr = llvm::dyn_cast<llvm::ConstantExpr>(value)) {
         for (auto&& op : constantExpr->operands()) {
-            getAllGlobals(op);
+            getAllGlobals(globals, op);
         }
     } else if (auto constantArray = llvm::dyn_cast<llvm::ConstantArray>(value)) {
-        std::vector<Domain::Ptr> elements;
         for (auto i = 0U; i < constantArray->getNumOperands(); ++i) {
-            getAllGlobals(constantArray->getOperand(i));
+            getAllGlobals(globals, constantArray->getOperand(i));
         }
     } else if (auto&& constantStruct = llvm::dyn_cast<llvm::ConstantStruct>(value)) {
-        std::vector<Domain::Ptr> elements;
         for (auto i = 0U; i < constantStruct->getNumOperands(); ++i) {
-            getAllGlobals(constantStruct->getOperand(i));
+            getAllGlobals(globals, constantStruct->getOperand(i));
         }
     }
 }
@@ -71,17 +69,25 @@ void GlobalVar::getAllGlobals(const llvm::Value* value) {
 GlobalVariableManager::GlobalVariableManager(Module* module) : module_(module), DF_(module_->getDomainFactory()) {}
 
 void GlobalVariableManager::init(const std::vector<const llvm::GlobalVariable*>& globs) {
+    // find all global variables
+    std::unordered_set<const llvm::GlobalVariable*> all_globals;
+    for (auto&& it : globs) {
+        all_globals.insert(it);
+        if (it->hasInitializer()) GlobalVar::getAllGlobals(all_globals, it->getInitializer());
+    }
+
+    // do topological sort of all global variables, find the right ordering for their initialization
     std::vector<const llvm::GlobalVariable*> ordered;
     std::unordered_set<const llvm::GlobalVariable*> cycled;
-    std::unordered_map<const llvm::GlobalVariable*, GlobalVar::Ptr> globals;
-    for (auto&& it : globs) {
+    std::unordered_map<const llvm::GlobalVariable*, GlobalVar::Ptr> globalsMap;
+    for (auto&& it : all_globals) {
         auto global = std::make_shared<GlobalVar>(it);
         if (global->getEdges().empty()) ordered.emplace_back(it);
-        else globals[it] = global;
+        else globalsMap[it] = global;
     }
-    for (auto&& it : globals) {
+    for (auto&& it : globalsMap) {
         if (it.second->getColor() == GlobalVar::WHITE) {
-            topologicalSort(it.first, globals, ordered, cycled);
+            topologicalSort(it.first, globalsMap, ordered, cycled);
         }
     }
     // preinit cycled globals

@@ -35,9 +35,10 @@ public:
     Color getColor() const;
     void setColor(Color color);
 
+    static void getAllGlobals(std::unordered_set<const llvm::GlobalVariable*>& globals, const llvm::Value* value);
+
 private:
     void initEdges();
-    void getAllGlobals(const llvm::Value* value);
 
     const llvm::GlobalVariable* value_;
     Edges edges_;

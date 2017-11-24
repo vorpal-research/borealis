@@ -74,13 +74,17 @@ PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice)
     for (auto&& ch : choice->getChoices()) {
         ConditionExtractor exteactor(FN);
         exteactor.transform(ch);
-        ASSERT(exteactor.getConditions().size() > 0, "Empty vector of conditions");
 
-        // we need this to add terms from this predicate to state
-        auto interpreter = Interpreter(FN, DF_, state_, equalities_);
-        interpreter.transform(FN.State->Basic({exteactor.getConditions()[0]}));
+        if (exteactor.getConditions().size() > 0) {
+            // we need this to add terms from this predicate to state
+            auto interpreter = Interpreter(FN, DF_, state_, equalities_);
+            interpreter.transform(FN.State->Basic({exteactor.getConditions()[0]}));
 
-        if (isConditionSatisfied(exteactor.getConditions()[0], interpreter.getState())) {
+            if (isConditionSatisfied(exteactor.getConditions()[0], interpreter.getState())) {
+                interpretState(ch);
+            }
+
+        } else {
             interpretState(ch);
         }
     }
