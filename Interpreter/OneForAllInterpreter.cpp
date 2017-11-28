@@ -24,7 +24,7 @@ void OneForAllInterpreter::interpret() {
     if (interpreted_.count(F_)) return;
     interpreted_.insert(F_);
 
-    auto module = absint::ir::Module(F_->getParent(), ST_);
+    auto module = absint::ir::Module(F_->getParent(), ST_, false);
 
     auto globFinder = GlobalVariableFinder(FN_);
     auto searched = globFinder.transform(statify_(&F_->back().back()));

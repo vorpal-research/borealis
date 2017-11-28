@@ -26,7 +26,7 @@ public:
     using GlobalsMap = std::map<const llvm::Value*, Domain::Ptr>;
     using FunctionMap = std::unordered_map<const llvm::Function*, Function::Ptr>;
 
-    Module(const llvm::Module* module, SlotTrackerPass* st);
+    Module(const llvm::Module* module, SlotTrackerPass* st, bool initAddrTakenFuncs = true);
 
     std::vector<Function::Ptr> getRootFunctions();
     Function::Ptr get(const llvm::Function* function);
@@ -52,6 +52,7 @@ public:
 
     Domain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
 
+    void initAddressTakenFunctions();
     void initGlobals(const std::unordered_set<const llvm::Value*>& globals);
 
 private:

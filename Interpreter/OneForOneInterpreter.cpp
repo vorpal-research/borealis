@@ -19,7 +19,7 @@ OneForOneInterpreter::OneForOneInterpreter(const llvm::Instruction* I, SlotTrack
 
 bool OneForOneInterpreter::check(PredicateState::Ptr state, PredicateState::Ptr query, const DefectInfo& di) {
     auto&& info = infos();
-    auto module = absint::ir::Module(I_->getParent()->getParent()->getParent(), ST_);
+    auto module = absint::ir::Module(I_->getParent()->getParent()->getParent(), ST_, false);
 
     auto globFinder = GlobalVariableFinder(FN_);
     auto searched = globFinder.transform(state);

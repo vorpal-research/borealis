@@ -15,13 +15,18 @@ namespace ir {
 
 static config::MultiConfigEntry roots("analysis", "root-function");
 
-Module::Module(const llvm::Module* module, SlotTrackerPass* st)
+Module::Module(const llvm::Module* module, SlotTrackerPass* st, bool initAddrTakenFuncs)
         : instance_(module),
           ST_(st),
           GVM_(this),
           factory_(ST_, &GVM_, instance_->getDataLayout()) {
-    // Initialize all address taken functions
-    for (auto&& it : module->getFunctionList())
+    if (initAddrTakenFuncs) {
+        initAddressTakenFunctions();
+    }
+}
+
+void Module::initAddressTakenFunctions() {
+    for (auto&& it : instance_->getFunctionList())
         if (llvm::hasAddressTaken(it)) addressTakenFunctions_.insert({&it, get(&it)});
 }
 
