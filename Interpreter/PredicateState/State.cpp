@@ -34,10 +34,8 @@ void State::addConstant(Term::Ptr term, Domain::Ptr domain) {
 }
 
 Domain::Ptr State::find(Term::Ptr term) const {
-    auto it = variables_.find(term);
-    if (it != variables_.end()) return it->second;
-    auto it2 = constants_.find(term);
-    return it2 == constants_.end() ? nullptr : it2->second;
+    auto var_find = findVariable(term);
+    return var_find ? var_find : findConstant(term);
 }
 
 void State::merge(State::Ptr other) {
@@ -73,6 +71,16 @@ void State::mergeTerms(State::Ptr other) {
             variables_[it.first] = itl->second->join(it.second);
         }
     }
+}
+
+Domain::Ptr State::findConstant(Term::Ptr term) const {
+    auto it = constants_.find(term);
+    return it == constants_.end() ? nullptr : it->second;
+}
+
+Domain::Ptr State::findVariable(Term::Ptr term) const {
+    auto it = variables_.find(term);
+    return it == variables_.end() ? nullptr : it->second;
 }
 
 std::ostream& operator<<(std::ostream& s, State::Ptr state) {

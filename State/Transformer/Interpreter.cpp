@@ -28,10 +28,6 @@ const Interpreter::TermMap& Interpreter::getEqualities() const {
     return equalities_;
 }
 
-const Interpreter::StateMap& Interpreter::getStateMap() const {
-    return states_;
-}
-
 bool Interpreter::isConditionSatisfied(Predicate::Ptr pred, State::Ptr state) {
     if (auto&& eq = llvm::dyn_cast<EqualityPredicate>(pred.get())) {
         auto condition = state->find(eq->getLhv());
@@ -64,18 +60,12 @@ bool Interpreter::isConditionSatisfied(Predicate::Ptr pred, State::Ptr state) {
     return true;
 }
 
-PredicateState::Ptr Interpreter::transformBasic(BasicPredicateStatePtr basic) {
-    auto result = Base::transformBasic(basic);
-    states_[basic] = state_;
-    return result;
-}
-
 PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice) {
     for (auto&& ch : choice->getChoices()) {
         ConditionExtractor exteactor(FN);
         exteactor.transform(ch);
 
-        if (exteactor.getConditions().size() > 0) {
+        if (not exteactor.getConditions().empty()) {
             // we need this to add terms from this predicate to state
             auto interpreter = Interpreter(FN, DF_, state_, equalities_);
             interpreter.transform(FN.State->Basic({exteactor.getConditions()[0]}));
@@ -104,10 +94,6 @@ void Interpreter::interpretState(PredicateState::Ptr ps) {
         equalities_[it.first] = it.second;
     }
     state_->merge(interpreter.getState());
-    for (auto&& it : interpreter.getStateMap()) {
-        ASSERT(states_.find(it.first) == states_.end(), "found new states map");
-        states_.insert(it);
-    }
 }
 
 Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
@@ -196,12 +182,6 @@ Predicate::Ptr Interpreter::transformGlobalsPredicate(GlobalsPredicatePtr pred) 
     for (auto&& it : pred->getGlobals()) {
         state_->addVariable(it, DF_->getTop(it->getType()));
     }
-    return pred;
-}
-
-Predicate::Ptr Interpreter::transformInequalityPredicate(InequalityPredicatePtr pred) {
-    errs() << "Inequality pred: " << pred->toString() << endl;
-    state_->addVariable(pred->getLhv(), DF_->getTop(pred->getLhv()->getType()));
     return pred;
 }
 
@@ -488,7 +468,7 @@ Term::Ptr Interpreter::transformLoadTerm(LoadTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
-    if (state_->find(term)) return term;
+    if (state_->findConstant(term)) return term;
     auto intTy = llvm::cast<type::Integer>(term->getType().get());
     auto integer = DF_->toInteger(llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10));
     state_->addConstant(term, DF_->getInteger(integer));
@@ -496,7 +476,7 @@ Term::Ptr Interpreter::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTer
 }
 
 Term::Ptr Interpreter::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
-    if (state_->find(term)) return term;
+    if (state_->findConstant(term)) return term;
     state_->addConstant(term, DF_->getBool(term->getValue()));
     return term;
 }
@@ -512,7 +492,7 @@ Term::Ptr Interpreter::transformOpaqueCallTerm(OpaqueCallTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
-    if (state_->find(term)) return term;
+    if (state_->findConstant(term)) return term;
     state_->addConstant(term, DF_->getFloat(term->getValue()));
     return term;
 }
@@ -523,7 +503,7 @@ Term::Ptr Interpreter::transformOpaqueIndexingTerm(OpaqueIndexingTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
-    if (state_->find(term)) return term;
+    if (state_->findConstant(term)) return term;
     Integer::Ptr integer;
     if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
         auto apInt = llvm::APInt(intTy->getBitsize(), term->getValue(), intTy->getSignedness() == llvm::Signedness::Signed);
@@ -542,7 +522,6 @@ Term::Ptr Interpreter::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr t
 }
 
 Term::Ptr Interpreter::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
-    if (state_->find(term)) return term;
     state_->addVariable(term, DF_->getNullptr(term->getType()));
     return term;
 }
@@ -558,13 +537,12 @@ Term::Ptr Interpreter::transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermP
 }
 
 Term::Ptr Interpreter::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
-    if (state_->find(term)) return term;
     state_->addVariable(term, DF_->getNullptr(term->getType()));
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
-    if (state_->find(term)) return term;
+    if (state_->findConstant(term)) return term;
     if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
         std::vector<Domain::Ptr> elements;
         for (auto&& it : term->getValue()) {

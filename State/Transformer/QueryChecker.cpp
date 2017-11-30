@@ -17,7 +17,7 @@ QueryChecker::QueryChecker(FactoryNest FN, DomainFactory* DF, State::Ptr state)
           ObjectLevelLogging("ps-interpreter"),
           satisfied_(true),
           DF_(DF),
-          state_(std::make_shared<State>(state->getVariables(), state->getConstants())) {}
+          state_(state) {}
 
 bool QueryChecker::satisfied() const {
     return satisfied_;

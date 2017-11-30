@@ -17,7 +17,6 @@ public:
     using Base = Transformer<Interpreter>;
     using Globals = std::unordered_map<std::string, Domain::Ptr>;
     using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
-    using StateMap = std::map<PredicateState::Ptr, State::Ptr>;
 
     Interpreter(FactoryNest FN, DomainFactory* DF,
                 State::Ptr state = std::make_shared<State>(),
@@ -25,9 +24,7 @@ public:
 
     State::Ptr getState() const;
     const TermMap& getEqualities() const;
-    const StateMap& getStateMap() const;
 
-    PredicateState::Ptr transformBasic(BasicPredicateStatePtr basic);
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr choice);
     PredicateState::Ptr transformChain(PredicateStateChainPtr chain);
 
@@ -37,7 +34,6 @@ public:
     Predicate::Ptr transformDefaultSwitchCasePredicate(DefaultSwitchCasePredicatePtr pred);
     Predicate::Ptr transformEqualityPredicate(EqualityPredicatePtr pred);
     Predicate::Ptr transformGlobalsPredicate(GlobalsPredicatePtr pred);
-    Predicate::Ptr transformInequalityPredicate(InequalityPredicatePtr pred);
     Predicate::Ptr transformMallocPredicate(MallocPredicatePtr pred);
     Predicate::Ptr transformMarkPredicate(MarkPredicatePtr pred);
     Predicate::Ptr transformStorePredicate(StorePredicatePtr pred);
@@ -81,7 +77,6 @@ private:
     DomainFactory* DF_;
     State::Ptr state_;
     TermMap equalities_;
-    StateMap states_;
 };
 
 }   // namespace ps

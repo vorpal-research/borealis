@@ -45,6 +45,8 @@ public:
     void addVariable(Term::Ptr term, Domain::Ptr domain);
     void addConstant(Term::Ptr term, Domain::Ptr domain);
     Domain::Ptr find(Term::Ptr term) const;
+    Domain::Ptr findConstant(Term::Ptr term) const;
+    Domain::Ptr findVariable(Term::Ptr term) const;
 
     void merge(State::Ptr other);
 

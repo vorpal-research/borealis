@@ -9,8 +9,7 @@
 #define CHECKVISITOR_HPP_
 
 
-#include <Interpreter/OneForOneInterpreter.h>
-#include "Interpreter/OneForAllInterpreter.h"
+#include "Interpreter/OneForOneInterpreter.h"
 #include "Logging/logger.hpp"
 #include "Passes/Defect/DefectManager/DefectInfo.h"
 #include "SMT/MathSAT/Solver.h"
@@ -32,8 +31,6 @@
 namespace borealis {
 
 static config::BoolConfigEntry enableInterpreter("absint", "enable-ps-interpreter");
-static config::BoolConfigEntry enableOneForAll("absint", "use-one-for-all");
-static config::BoolConfigEntry enableOneForOne("absint", "use-one-for-one");
 
 template<class Pass>
 class CheckHelper {
@@ -54,15 +51,7 @@ public:
     bool skip(const DefectInfo& di) {
         if (pass->CM->shouldSkipInstruction(I)) return true;
         if (pass->DM->hasInfo(di)) return true;
-
-        if (enableInterpreter.get(false) && enableOneForAll.get(false)) {
-            auto function = I->getParent()->getParent();
-            auto PSM = absint::OneForAllInterpreter(function, pass->DM, pass->ST, pass->FM,
-                                                    LAM(I, pass->getInstructionState(I)));
-            return PSM.hasInfo(di);
-        } else {
-            return false;
-        }
+        return false;
     }
 
 private:
@@ -196,7 +185,7 @@ public:
             dbgs() << "Slicing disabled" << endl;
         }
 
-        if (enableInterpreter.get(false) && enableOneForOne.get(false)) {
+        if (enableInterpreter.get(false)) {
             dbgs() << "Interpreting started" << endl;
             auto&& interpreter = absint::OneForOneInterpreter(I, ST, FN);
             if (not interpreter.check(state, query, di)) {
