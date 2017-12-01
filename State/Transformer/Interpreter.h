@@ -19,15 +19,13 @@ public:
     using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
 
     Interpreter(FactoryNest FN, DomainFactory* DF,
-                State::Ptr state = std::make_shared<State>(),
+                State::Ptr input = std::make_shared<State>(),
                 const TermMap& equalities = TermMap());
 
     State::Ptr getState() const;
     const TermMap& getEqualities() const;
 
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr choice);
-    PredicateState::Ptr transformChain(PredicateStateChainPtr chain);
-
     /// predicates
     Predicate::Ptr transformAllocaPredicate(AllocaPredicatePtr pred);
     Predicate::Ptr transformCallPredicate(CallPredicatePtr pred);
@@ -71,11 +69,15 @@ public:
 
 private:
 
+    Domain::Ptr getDomain(Term::Ptr term) const;
+    Domain::Ptr getConstantDomain(Term::Ptr term) const;
+
     void interpretState(PredicateState::Ptr ps);
     bool isConditionSatisfied(Predicate::Ptr pred, State::Ptr state);
 
     DomainFactory* DF_;
-    State::Ptr state_;
+    State::Ptr input_;
+    State::Ptr output_;
     TermMap equalities_;
 };
 

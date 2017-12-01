@@ -40,6 +40,7 @@ public:
     State(const TermMap& variables, const TermMap& constants);
 
     std::string toString() const;
+    bool empty() const;
     const TermMap& getVariables();
     const TermMap& getConstants();
     void addVariable(Term::Ptr term, Domain::Ptr domain);

@@ -16,8 +16,9 @@ namespace ps {
 class ConditionSplitter: public logging::ObjectLevelLogging<ConditionSplitter> {
 public:
     using TermMap = std::unordered_map<Term::Ptr, Split, TermHash, TermEqualsWType>;
+    using Domenaizer = std::function<Domain::Ptr(Term::Ptr)>;
 
-    ConditionSplitter(Term::Ptr condition, State::Ptr state);
+    ConditionSplitter(Term::Ptr condition, Domenaizer domenize);
 
     TermMap apply();
 
@@ -27,7 +28,7 @@ private:
     void visitBinaryTerm(const BinaryTerm* term);
 
     Term::Ptr condition_;
-    State::Ptr state_;
+    Domenaizer domenize_;
     TermMap result_;
 
 };

@@ -10,8 +10,8 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
-ConditionSplitter::ConditionSplitter(Term::Ptr condition, State::Ptr state)
-        : ObjectLevelLogging("ps-interpreter"), condition_(condition), state_(state) {}
+ConditionSplitter::ConditionSplitter(Term::Ptr condition, Domenaizer domenize)
+        : ObjectLevelLogging("ps-interpreter"), condition_(condition), domenize_(domenize) {}
 
 ConditionSplitter::TermMap ConditionSplitter::apply() {
     if (auto&& cmp = llvm::dyn_cast<CmpTerm>(condition_.get())) {
@@ -53,8 +53,8 @@ ConditionSplitter::TermMap ConditionSplitter::apply() {
 void ConditionSplitter::visitCmpTerm(const CmpTerm* term) {
     auto lhv = term->getLhv();
     auto rhv = term->getRhv();
-    auto lhvDomain = state_->find(lhv);
-    auto rhvDomain = state_->find(rhv);
+    auto lhvDomain = domenize_(lhv);
+    auto rhvDomain = domenize_(rhv);
     ASSERT(lhv && rhv, "cmp args of " + term->getName());
 
     bool isPtr = llvm::isa<type::Pointer>(lhv->getType().get()) || llvm::isa<type::Pointer>(rhv->getType().get());
@@ -102,8 +102,8 @@ void ConditionSplitter::visitCmpTerm(const CmpTerm* term) {
 void ConditionSplitter::visitBinaryTerm(const BinaryTerm* term) {
     auto lhv = term->getLhv();
     auto rhv = term->getRhv();
-    auto lhvDomain = state_->find(lhv);
-    auto rhvDomain = state_->find(rhv);
+    auto lhvDomain = domenize_(lhv);
+    auto rhvDomain = domenize_(rhv);
     ASSERT(lhv && rhv, "cmp args of " + term->getName());
 
     auto&& andImpl = [] (Split lhv, Split rhv) -> Split {
@@ -113,8 +113,8 @@ void ConditionSplitter::visitBinaryTerm(const BinaryTerm* term) {
         return {lhv.true_->join(rhv.true_), lhv.false_->join(rhv.false_)};
     };
 
-    auto lhvValues = ConditionSplitter(lhv, state_).apply();
-    auto rhvValues = ConditionSplitter(rhv, state_).apply();
+    auto lhvValues = ConditionSplitter(lhv, domenize_).apply();
+    auto rhvValues = ConditionSplitter(rhv, domenize_).apply();
 
     for (auto&& it : lhvValues) {
         auto value = it.first;

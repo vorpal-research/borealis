@@ -189,11 +189,11 @@ public:
             dbgs() << "Interpreting started" << endl;
             auto&& interpreter = absint::OneForOneInterpreter(I, ST, FN);
             if (not interpreter.check(state, query, di)) {
-                dbgs() << "Interpreter result: UNSAT" << endl;
+                dbgs() << "Interpreter result: {Unsat}" << endl;
                 pass->DM->addNoDefect(di);
                 return false;
             } else {
-                dbgs() << "Interpreter result: SAT" << endl;
+                dbgs() << "Interpreter result: {Sat}" << endl;
             }
         } else {
             dbgs() << "Interpreting disabled" << endl;

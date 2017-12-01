@@ -13,19 +13,30 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
-Interpreter::Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr state, const TermMap& equalities)
+Interpreter::Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr input, const TermMap& equalities)
         : Transformer(FN),
           ObjectLevelLogging("ps-interpreter"),
           DF_(DF),
-          state_(std::make_shared<State>(state->getVariables(), state->getConstants())),
+          input_(input),
+          output_(std::make_shared<State>()),
           equalities_(equalities) {}
 
 State::Ptr Interpreter::getState() const {
-    return state_;
+    return output_;
 }
 
 const Interpreter::TermMap& Interpreter::getEqualities() const {
     return equalities_;
+}
+
+Domain::Ptr Interpreter::getDomain(Term::Ptr term) const {
+    auto temp = input_->find(term);
+    return temp ? temp : output_->find(term);
+}
+
+Domain::Ptr Interpreter::getConstantDomain(Term::Ptr term) const {
+    auto temp = input_->findConstant(term);
+    return temp ? temp : output_->findConstant(term);
 }
 
 bool Interpreter::isConditionSatisfied(Predicate::Ptr pred, State::Ptr state) {
@@ -67,7 +78,7 @@ PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice)
 
         if (not exteactor.getConditions().empty()) {
             // we need this to add terms from this predicate to state
-            auto interpreter = Interpreter(FN, DF_, state_, equalities_);
+            auto interpreter = Interpreter(FN, DF_, input_, equalities_);
             interpreter.transform(FN.State->Basic({exteactor.getConditions()[0]}));
 
             if (isConditionSatisfied(exteactor.getConditions()[0], interpreter.getState())) {
@@ -81,23 +92,18 @@ PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice)
     return choice;
 }
 
-PredicateState::Ptr Interpreter::transformChain(PredicateStateChainPtr chain) {
-    interpretState(chain->getBase());
-    interpretState(chain->getCurr());
-    return chain;
-}
-
 void Interpreter::interpretState(PredicateState::Ptr ps) {
-    auto interpreter = Interpreter(FN, DF_, state_, equalities_);
+    auto interpreter = Interpreter(FN, DF_, input_, equalities_);
     interpreter.transform(ps);
     for (auto&& it : interpreter.getEqualities()) {
         equalities_[it.first] = it.second;
     }
-    state_->merge(interpreter.getState());
+    if (output_->empty()) output_ = interpreter.getState();
+    else output_->merge(interpreter.getState());
 }
 
 Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
-    auto size = state_->find(llvm::cast<BinaryTerm>(pred->getOrigNumElems().get())->getRhv());
+    auto size = getDomain(llvm::cast<BinaryTerm>(pred->getOrigNumElems().get())->getRhv());
     auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(size.get());
     ASSERT(integer, "Non-integer domain in memory allocation");
 
@@ -114,13 +120,13 @@ Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
     }
 
     ASSERT(domain, "alloca result");
-    state_->addVariable(pred->getLhv(), domain);
+    output_->addVariable(pred->getLhv(), domain);
     return pred;
 }
 
-Predicate::Ptr Interpreter::transformCallPredicate(Transformer::CallPredicatePtr pred) {
+Predicate::Ptr Interpreter::transformCallPredicate(CallPredicatePtr pred) {
     if (pred->hasLhv()) {
-        state_->addVariable(pred->getLhv(), DF_->getTop(pred->getLhv()->getType()));
+        output_->addVariable(pred->getLhv(), DF_->getTop(pred->getLhv()->getType()));
     }
     return pred;
 }
@@ -128,29 +134,29 @@ Predicate::Ptr Interpreter::transformCallPredicate(Transformer::CallPredicatePtr
 Predicate::Ptr Interpreter::transformDefaultSwitchCasePredicate(DefaultSwitchCasePredicatePtr pred) {
     auto condType = pred->getCond()->getType();
     auto result = DF_->getBottom(condType);
-    for (auto&& cs : pred->getCases()) result = result->join(state_->find(cs));
+    for (auto&& cs : pred->getCases()) result = result->join(getDomain(cs));
     // pred->getCond() != all cases, so add to state true branch of split TOP by neq with result
     // which is the same ass false branch of split TOP by eq with result
-    state_->addVariable(pred->getCond(), DF_->getTop(condType)->splitByEq(result).false_);
+    output_->addVariable(pred->getCond(), DF_->getTop(condType)->splitByEq(result).false_);
     return pred;
 }
 
 Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred) {
-    auto rhv = state_->find(pred->getRhv());
+    auto rhv = getDomain(pred->getRhv());
     ASSERT(rhv, "Equality rhv: " + pred->toString());
-    state_->addVariable(pred->getLhv(), rhv);
+    output_->addVariable(pred->getLhv(), rhv);
 
     auto trueTerm = FN.Term->getTrueTerm();
     auto falseTerm = FN.Term->getFalseTerm();
     if (pred->getType() == PredicateType::PATH) {
         if (not rhv->isValue()) {
             if (pred->getRhv()->equals(trueTerm.get())) {
-                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], state_).apply()) {
-                    state_->addVariable(it.first, it.second.true_);
+                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], LAM(a, getDomain(a))).apply()) {
+                    output_->addVariable(it.first, it.second.true_);
                 }
             } else if (pred->getRhv()->equals(falseTerm.get())) {
-                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], state_).apply()) {
-                    state_->addVariable(it.first, it.second.false_);
+                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], LAM(a, getDomain(a))).apply()) {
+                    output_->addVariable(it.first, it.second.false_);
                 }
             } else {
                 warns() << "Unknown path predicate: " << pred->toString() << endl;
@@ -162,12 +168,12 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
         if (actualLhv->equals(trueTerm.get()) || actualLhv->equals(falseTerm.get())) {
             // do nothing if we have smth like (true = true)
         } else if (pred->getRhv()->equals(trueTerm.get())) {
-            for (auto&& it : ConditionSplitter(actualLhv, state_).apply()) {
-                state_->addVariable(it.first, it.second.true_);
+            for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
+                output_->addVariable(it.first, it.second.true_);
             }
         } else if (pred->getRhv()->equals(falseTerm.get())) {
-            for (auto&& it : ConditionSplitter(actualLhv, state_).apply()) {
-                state_->addVariable(it.first, it.second.false_);
+            for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
+                output_->addVariable(it.first, it.second.false_);
             }
         } else {
             warns() << "Unknown assume predicate: " << pred->toString() << endl;
@@ -180,13 +186,13 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
 
 Predicate::Ptr Interpreter::transformGlobalsPredicate(GlobalsPredicatePtr pred) {
     for (auto&& it : pred->getGlobals()) {
-        state_->addVariable(it, DF_->getTop(it->getType()));
+        output_->addVariable(it, DF_->getTop(it->getType()));
     }
     return pred;
 }
 
 Predicate::Ptr Interpreter::transformMallocPredicate(MallocPredicatePtr pred) {
-    auto size = state_->find(llvm::cast<BinaryTerm>(pred->getOrigNumElems().get())->getRhv());
+    auto size = getDomain(llvm::cast<BinaryTerm>(pred->getOrigNumElems().get())->getRhv());
     auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(size.get());
     ASSERT(integer, "Non-integer domain in memory allocation");
 
@@ -203,19 +209,19 @@ Predicate::Ptr Interpreter::transformMallocPredicate(MallocPredicatePtr pred) {
     }
 
     ASSERT(domain, "malloc result");
-    state_->addVariable(pred->getLhv(), domain);
+    output_->addVariable(pred->getLhv(), domain);
     return pred;
 }
 
 Predicate::Ptr Interpreter::transformMarkPredicate(MarkPredicatePtr pred) {
     errs() << "Mark pred: " << pred->toString() << endl;
-    state_->addVariable(pred->getId(), DF_->getTop(pred->getId()->getType()));
+    output_->addVariable(pred->getId(), DF_->getTop(pred->getId()->getType()));
     return pred;
 }
 
 Predicate::Ptr Interpreter::transformStorePredicate(StorePredicatePtr pred) {
-    auto ptr = state_->find(pred->getLhv());
-    auto storeVal = state_->find(pred->getRhv());
+    auto ptr = getDomain(pred->getLhv());
+    auto storeVal = getDomain(pred->getRhv());
     ASSERT(ptr && storeVal, "store args of " + pred->toString());
 
     ptr->store(storeVal, DF_->getIndex(0));
@@ -228,7 +234,7 @@ Term::Ptr Interpreter::transformArgumentCountTerm(ArgumentCountTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformArgumentTerm(ArgumentTermPtr term) {
-    state_->addVariable(term, DF_->getTop(term->getType()));
+    output_->addVariable(term, DF_->getTop(term->getType()));
     return term;
 }
 
@@ -238,8 +244,8 @@ Term::Ptr Interpreter::transformAxiomTerm(AxiomTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformBinaryTerm(BinaryTermPtr term) {
-    auto lhv = state_->find(term->getLhv());
-    auto rhv = state_->find(term->getRhv());
+    auto lhv = getDomain(term->getLhv());
+    auto rhv = getDomain(term->getRhv());
     ASSERT(lhv && rhv, "binop args of " + term->getName());
 
     auto isFloat = llvm::isa<type::Float>(term->getType().get());
@@ -293,21 +299,21 @@ Term::Ptr Interpreter::transformBinaryTerm(BinaryTermPtr term) {
     }
 
     ASSERT(result, "binop result " + term->getName());
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
 Term::Ptr Interpreter::transformBoundTerm(BoundTermPtr term) {
-    auto ptr = state_->find(term->getRhv());
+    auto ptr = getDomain(term->getRhv());
     ASSERT(ptr, "bound term arg: " + term->getName());
     auto ptrDom = llvm::dyn_cast<PointerDomain>(ptr.get());
     ASSERT(ptrDom, "bound term arg is not a pointer" + ptr->toString());
-    state_->addVariable(term, ptrDom->getBound());
+    output_->addVariable(term, ptrDom->getBound());
     return term;
 }
 
 Term::Ptr Interpreter::transformCastTerm(CastTermPtr term) {
-    auto cast = state_->find(term->getRhv());
+    auto cast = getDomain(term->getRhv());
     ASSERT(cast, "cast arg of " + term->getName());
     auto fromTy = term->getRhv()->getType();
     auto toTy = term->getType();
@@ -343,13 +349,13 @@ Term::Ptr Interpreter::transformCastTerm(CastTermPtr term) {
     }
 
     ASSERT(result, "cast result " + term->getName());
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
 Term::Ptr Interpreter::transformCmpTerm(CmpTermPtr term) {
-    auto lhv = state_->find(term->getLhv());
-    auto rhv = state_->find(term->getRhv());
+    auto lhv = getDomain(term->getLhv());
+    auto rhv = getDomain(term->getRhv());
     ASSERT(lhv && rhv, "cmp args of " + term->getName());
 
     bool isFloat = llvm::isa<type::Float>(term->getLhv()->getType().get());
@@ -416,7 +422,7 @@ Term::Ptr Interpreter::transformCmpTerm(CmpTermPtr term) {
     }
 
     ASSERT(result, "cmp result " + term->getName());
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
@@ -426,17 +432,17 @@ Term::Ptr Interpreter::transformConstTerm(ConstTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformFreeVarTerm(FreeVarTermPtr term) {
-    state_->addVariable(term, DF_->getTop(term->getType()));
+    output_->addVariable(term, DF_->getTop(term->getType()));
     return term;
 }
 
 Term::Ptr Interpreter::transformGepTerm(GepTermPtr term) {
-    auto ptr = state_->find(term->getBase());
+    auto ptr = getDomain(term->getBase());
     ASSERT(ptr, "gep pointer of " + term->getName());
 
     std::vector<Domain::Ptr> shifts;
     for (auto&& it : term->getShifts()) {
-        auto shift = state_->find(it);
+        auto shift = getDomain(it);
 
         auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(shift.get());
         ASSERT(integer, "Non-integer domain in gep shift");
@@ -453,31 +459,30 @@ Term::Ptr Interpreter::transformGepTerm(GepTermPtr term) {
     auto result = ptr->gep(elementType, shifts);
 
     ASSERT(result, "gep result " + term->getName());
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
 Term::Ptr Interpreter::transformLoadTerm(LoadTermPtr term) {
-    auto ptr = state_->find(term->getRhv());
+    auto ptr = getDomain(term->getRhv());
     ASSERT(ptr, "load pointer of " + term->getName());
 
     auto result = ptr->load(term->getType(), DF_->getIndex(0));
     ASSERT(result, "load result " + term->getName());
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
-    if (state_->findConstant(term)) return term;
+    if (getConstantDomain(term)) return term;
     auto intTy = llvm::cast<type::Integer>(term->getType().get());
     auto integer = DF_->toInteger(llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10));
-    state_->addConstant(term, DF_->getInteger(integer));
+    output_->addConstant(term, DF_->getInteger(integer));
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
-    if (state_->findConstant(term)) return term;
-    state_->addConstant(term, DF_->getBool(term->getValue()));
+    output_->addConstant(term, DF_->getBool(term->getValue()));
     return term;
 }
 
@@ -492,8 +497,8 @@ Term::Ptr Interpreter::transformOpaqueCallTerm(OpaqueCallTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
-    if (state_->findConstant(term)) return term;
-    state_->addConstant(term, DF_->getFloat(term->getValue()));
+    if (getConstantDomain(term)) return term;
+    output_->addConstant(term, DF_->getFloat(term->getValue()));
     return term;
 }
 
@@ -503,26 +508,26 @@ Term::Ptr Interpreter::transformOpaqueIndexingTerm(OpaqueIndexingTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
-    if (state_->findConstant(term)) return term;
+    if (getConstantDomain(term)) return term;
     Integer::Ptr integer;
     if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
         auto apInt = llvm::APInt(intTy->getBitsize(), term->getValue(), intTy->getSignedness() == llvm::Signedness::Signed);
         integer = DF_->toInteger(apInt);
-        state_->addConstant(term, DF_->getInteger(integer));
+        output_->addConstant(term, DF_->getInteger(integer));
 
     } else if (llvm::isa<type::Pointer>(term->getType().get())) {
-        state_->addConstant(term, (term->getValue() == 0) ?
+        output_->addConstant(term, (term->getValue() == 0) ?
                                   DF_->getNullptr(term->getType()) :
                                   DF_->getTop(term->getType()));
     } else {
         warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
-        state_->addConstant(term, DF_->getIndex(term->getValue()));
+        output_->addConstant(term, DF_->getIndex(term->getValue()));
     };
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
-    state_->addVariable(term, DF_->getNullptr(term->getType()));
+    output_->addVariable(term, DF_->getNullptr(term->getType()));
     return term;
 }
 
@@ -537,27 +542,27 @@ Term::Ptr Interpreter::transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermP
 }
 
 Term::Ptr Interpreter::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
-    state_->addVariable(term, DF_->getNullptr(term->getType()));
+    output_->addVariable(term, DF_->getNullptr(term->getType()));
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
-    if (state_->findConstant(term)) return term;
+    if (getConstantDomain(term)) return term;
     if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
         std::vector<Domain::Ptr> elements;
         for (auto&& it : term->getValue()) {
             auto ch2i = DF_->toInteger(it, 8);
             elements.push_back(DF_->getInteger(ch2i));
         }
-        state_->addConstant(term, DF_->getAggregate(array->getElement(), elements));
+        output_->addConstant(term, DF_->getAggregate(array->getElement(), elements));
     } else {
-        state_->addVariable(term, DF_->getTop(term->getType()));
+        output_->addVariable(term, DF_->getTop(term->getType()));
     }
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueUndefTerm(OpaqueUndefTermPtr term) {
-    state_->addVariable(term, DF_->getTop(term->getType()));
+    output_->addVariable(term, DF_->getTop(term->getType()));
     return term;
 }
 
@@ -572,21 +577,21 @@ Term::Ptr Interpreter::transformSignTerm(SignTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformTernaryTerm(TernaryTermPtr term) {
-    auto cond = state_->find(term->getCnd());
-    auto trueVal = state_->find(term->getTru());
-    auto falseVal = state_->find(term->getFls());
+    auto cond = getDomain(term->getCnd());
+    auto trueVal = getDomain(term->getTru());
+    auto falseVal = getDomain(term->getFls());
     ASSERT(cond && trueVal && falseVal, "ternary term args" + term->getName());
 
     Domain::Ptr result = cond->equals(DF_->getBool(true).get()) ? trueVal :
                          cond->equals(DF_->getBool(false).get()) ? falseVal :
                          DF_->getTop(term->getType());
     ASSERT(result, "ternary term result " + term->getName());
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
 Term::Ptr Interpreter::transformUnaryTerm(UnaryTermPtr term) {
-    auto rhv = state_->find(term->getRhv());
+    auto rhv = getDomain(term->getRhv());
     ASSERT(rhv, "unary term arg " + term->getName());
 
     Domain::Ptr result;
@@ -597,19 +602,19 @@ Term::Ptr Interpreter::transformUnaryTerm(UnaryTermPtr term) {
         default:
             UNREACHABLE("Unknown unary operator: " + term->getName());
     }
-    state_->addVariable(term, result);
+    output_->addVariable(term, result);
     return term;
 }
 
 Term::Ptr Interpreter::transformValueTerm(Transformer::ValueTermPtr term) {
-    if (state_->find(term)) return term;
+    if (getDomain(term)) return term;
     if (term->isGlobal()) {
         auto domain = DF_->getGlobalVariableManager()->get(term->getVName());
         ASSERT(domain, "Unknown global variable: " + term->getName());
-        state_->addVariable(term, domain);
+        output_->addVariable(term, domain);
 
     } else {
-        state_->addVariable(term, DF_->getTop(term->getType()));
+        output_->addVariable(term, DF_->getTop(term->getType()));
     }
     return term;
 }

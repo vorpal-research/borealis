@@ -83,6 +83,10 @@ Domain::Ptr State::findVariable(Term::Ptr term) const {
     return it == variables_.end() ? nullptr : it->second;
 }
 
+bool State::empty() const {
+    return variables_.empty() and constants_.empty();
+}
+
 std::ostream& operator<<(std::ostream& s, State::Ptr state) {
     s << state->toString();
     return s;
