@@ -92,6 +92,24 @@ PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice)
     return choice;
 }
 
+PredicateState::Ptr Interpreter::transformChain(PredicateStateChainPtr chain) {
+    auto baseInterpreter = Interpreter(FN, DF_, input_, equalities_);
+    baseInterpreter.transform(chain->getBase());
+    for (auto&& it : baseInterpreter.getEqualities()) {
+        equalities_[it.first] = it.second;
+    }
+    input_->merge(baseInterpreter.getState());
+
+    auto currInterpreter = Interpreter(FN, DF_, input_, equalities_);
+    currInterpreter.transform(chain->getCurr());
+    for (auto&& it : currInterpreter.getEqualities()) {
+        equalities_[it.first] = it.second;
+    }
+    if (output_->empty()) output_ = currInterpreter.getState();
+    else output_->merge(currInterpreter.getState());
+    return chain;
+}
+
 void Interpreter::interpretState(PredicateState::Ptr ps) {
     auto interpreter = Interpreter(FN, DF_, input_, equalities_);
     interpreter.transform(ps);
@@ -148,23 +166,27 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
 
     auto trueTerm = FN.Term->getTrueTerm();
     auto falseTerm = FN.Term->getFalseTerm();
+
+    auto opt = util::at(equalities_, pred->getLhv());
+    auto actualLhv = opt ? opt.getUnsafe() : pred->getLhv();
     if (pred->getType() == PredicateType::PATH) {
-        if (not rhv->isValue()) {
+        if (not getDomain(actualLhv)->isValue()) {
             if (pred->getRhv()->equals(trueTerm.get())) {
-                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], LAM(a, getDomain(a))).apply()) {
+                for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
                     output_->addVariable(it.first, it.second.true_);
                 }
             } else if (pred->getRhv()->equals(falseTerm.get())) {
-                for (auto&& it : ConditionSplitter(equalities_[pred->getLhv()], LAM(a, getDomain(a))).apply()) {
+                for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
                     output_->addVariable(it.first, it.second.false_);
                 }
             } else {
-                warns() << "Unknown path predicate: " << pred->toString() << endl;
+                auto&& cmp = FN.Term->getCmpTerm(llvm::ConditionType::EQ, pred->getLhv(), pred->getRhv());
+                for (auto&& it : ConditionSplitter(cmp, LAM(a, getDomain(a))).apply()) {
+                    output_->addVariable(it.first, it.second.true_);
+                }
             }
         }
     } else if (pred->getType() == PredicateType::ASSUME || pred->getType() == PredicateType::REQUIRES) {
-        auto&& lhv = equalities_[pred->getLhv()];
-        auto&& actualLhv = lhv ? lhv : pred->getLhv();
         if (actualLhv->equals(trueTerm.get()) || actualLhv->equals(falseTerm.get())) {
             // do nothing if we have smth like (true = true)
         } else if (pred->getRhv()->equals(trueTerm.get())) {

@@ -127,6 +127,10 @@ bool PointerDomain::isNullptr() const {
     return false;
 }
 
+bool PointerDomain::onlyNullptr() const {
+    return isNullptr() && locations_.size() == 1;
+}
+
 const PointerDomain::Locations& PointerDomain::getLocations() const {
     return locations_;
 }
@@ -407,6 +411,14 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
     ASSERT(ptr, "Non-pointer domain in pointer join");
 
     auto ptrType = factory_->getTypeFactory()->getPointer(elementType_, 0);
+    if (this->onlyNullptr())
+        return {shared_from_this(), shared_from_this()};
+    if (this->isTop() && ptr->onlyNullptr()) {
+        auto intTy = factory_->getTypeFactory()->getInteger(factory_->defaultSize);
+        auto arrayTy = factory_->getTypeFactory()->getArray(elementType_);
+        return {factory_->getNullptr(elementType_),
+                factory_->getPointer(elementType_, {{{factory_->getTop(intTy)}, factory_->getTop(arrayTy)}})};
+    }
     if (this->isTop())
         return {factory_->getTop(ptrType), factory_->getTop(ptrType)};
     if (this->isBottom())
@@ -428,6 +440,7 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
 
 void PointerDomain::moveToTop() {
     if (isTop()) return;
+    if (onlyNullptr()) return;
     setTop();
     for (auto&& it : locations_)
         it.location_->moveToTop();

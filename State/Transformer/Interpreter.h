@@ -26,6 +26,7 @@ public:
     const TermMap& getEqualities() const;
 
     PredicateState::Ptr transformChoice(PredicateStateChoicePtr choice);
+    PredicateState::Ptr transformChain(PredicateStateChainPtr chain);
     /// predicates
     Predicate::Ptr transformAllocaPredicate(AllocaPredicatePtr pred);
     Predicate::Ptr transformCallPredicate(CallPredicatePtr pred);

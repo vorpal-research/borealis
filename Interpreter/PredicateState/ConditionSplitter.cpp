@@ -18,6 +18,9 @@ ConditionSplitter::TermMap ConditionSplitter::apply() {
         visitCmpTerm(cmp);
     } else if (auto&& bin = llvm::dyn_cast<BinaryTerm>(condition_.get())) {
         visitBinaryTerm(bin);
+    } else if (llvm::isa<type::Bool>(condition_->getType().get())) {
+        auto condDomain = domenize_(condition_);
+        result_[condition_] = {condDomain, condDomain};
     } else {
         errs() << "Unknown term in splitter: " << condition_ << endl;
     }

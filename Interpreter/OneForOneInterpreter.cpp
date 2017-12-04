@@ -27,11 +27,14 @@ bool OneForOneInterpreter::check(PredicateState::Ptr state, PredicateState::Ptr 
     module.initGlobals(globFinder.getGlobals());
 
     if (enableLogging.get(false)) {
+        // This is generally fucked up
+        auto state_str = state->toString();
+        auto query_str = query->toString();
         info << "Function: " << I_->getParent()->getParent()->getName().str() << endl;
         info << "Instruction: " << ST_->toString(I_) << endl;
         info << "Defect: " << di << endl;
-        info << "State: " << state << endl;
-        info << "Query: " << query << endl;
+        info << "State: " << state_str << endl;
+        info << "Query: " << query_str << endl;
         info << endl;
     }
 

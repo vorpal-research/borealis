@@ -656,6 +656,8 @@ Split IntegerIntervalDomain::splitByLess(Domain::Ptr other) {
     ASSERT(interval, "Not interval in split");
 
     if (this->operator<(*other.get())) return {shared_from_this(), shared_from_this()};
+    if (this->ub()->lt(interval->lb())) return {shared_from_this(), shared_from_this()};
+    if (interval->ub()->lt(this->lb())) return {shared_from_this(), shared_from_this()};
 
     auto trueVal = factory_->getInteger(lb_, interval->ub_);
     auto falseVal = factory_->getInteger(interval->lb_, this->ub_);
@@ -669,6 +671,8 @@ Split IntegerIntervalDomain::splitBySLess(Domain::Ptr other) {
 
     if (interval->signed_lb_->sle(signed_lb_) && signed_ub_->sle(interval->signed_ub_))
         return {shared_from_this(), shared_from_this()};
+    if (this->signed_ub()->slt(interval->signed_lb())) return {shared_from_this(), shared_from_this()};
+    if (interval->signed_ub()->slt(this->signed_lb())) return {shared_from_this(), shared_from_this()};
 
     auto trueVal = factory_->getInteger(lb_, ub_,
                                         util::signed_min(this->signed_lb(), interval->signed_ub()),
