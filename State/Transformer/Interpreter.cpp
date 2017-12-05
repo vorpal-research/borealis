@@ -2,18 +2,18 @@
 // Created by abdullin on 10/20/17.
 //
 
+#include "ConditionExtractor.h"
 #include "Interpreter.h"
 #include "Interpreter/Domain/DomainFactory.h"
 #include "Interpreter/PredicateState/ConditionSplitter.h"
 
 #include "Util/macros.h"
-#include "ConditionExtractor.h"
 
 namespace borealis {
 namespace absint {
 namespace ps {
 
-Interpreter::Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr input, const TermMap& equalities)
+Interpreter::Interpreter(FactoryNest FN, DomainFactory* DF, State::Ptr input, TermMapPtr equalities)
         : Transformer(FN),
           ObjectLevelLogging("ps-interpreter"),
           DF_(DF),
@@ -26,7 +26,7 @@ State::Ptr Interpreter::getState() const {
 }
 
 const Interpreter::TermMap& Interpreter::getEqualities() const {
-    return equalities_;
+    return *equalities_.get();
 }
 
 Domain::Ptr Interpreter::getDomain(Term::Ptr term) const {
@@ -73,21 +73,7 @@ bool Interpreter::isConditionSatisfied(Predicate::Ptr pred, State::Ptr state) {
 
 PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice) {
     for (auto&& ch : choice->getChoices()) {
-        ConditionExtractor exteactor(FN);
-        exteactor.transform(ch);
-
-        if (not exteactor.getConditions().empty()) {
-            // we need this to add terms from this predicate to state
-            auto interpreter = Interpreter(FN, DF_, input_, equalities_);
-            interpreter.transform(FN.State->Basic({exteactor.getConditions()[0]}));
-
-            if (isConditionSatisfied(exteactor.getConditions()[0], interpreter.getState())) {
-                interpretState(ch);
-            }
-
-        } else {
-            interpretState(ch);
-        }
+        interpretState(ch);
     }
     return choice;
 }
@@ -95,16 +81,10 @@ PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice)
 PredicateState::Ptr Interpreter::transformChain(PredicateStateChainPtr chain) {
     auto baseInterpreter = Interpreter(FN, DF_, input_, equalities_);
     baseInterpreter.transform(chain->getBase());
-    for (auto&& it : baseInterpreter.getEqualities()) {
-        equalities_[it.first] = it.second;
-    }
     input_->merge(baseInterpreter.getState());
 
     auto currInterpreter = Interpreter(FN, DF_, input_, equalities_);
     currInterpreter.transform(chain->getCurr());
-    for (auto&& it : currInterpreter.getEqualities()) {
-        equalities_[it.first] = it.second;
-    }
     if (output_->empty()) output_ = currInterpreter.getState();
     else output_->merge(currInterpreter.getState());
     return chain;
@@ -113,9 +93,6 @@ PredicateState::Ptr Interpreter::transformChain(PredicateStateChainPtr chain) {
 void Interpreter::interpretState(PredicateState::Ptr ps) {
     auto interpreter = Interpreter(FN, DF_, input_, equalities_);
     interpreter.transform(ps);
-    for (auto&& it : interpreter.getEqualities()) {
-        equalities_[it.first] = it.second;
-    }
     if (output_->empty()) output_ = interpreter.getState();
     else output_->merge(interpreter.getState());
 }
@@ -167,7 +144,7 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
     auto trueTerm = FN.Term->getTrueTerm();
     auto falseTerm = FN.Term->getFalseTerm();
 
-    auto opt = util::at(equalities_, pred->getLhv());
+    auto opt = util::at(*equalities_.get(), pred->getLhv());
     auto actualLhv = opt ? opt.getUnsafe() : pred->getLhv();
     if (pred->getType() == PredicateType::PATH) {
         if (not getDomain(actualLhv)->isValue()) {
@@ -201,7 +178,7 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
             warns() << "Unknown assume predicate: " << pred->toString() << endl;
         }
     } else {
-        equalities_[pred->getLhv()] = pred->getRhv();
+        equalities_->operator[](pred->getLhv()) = pred->getRhv();
     }
     return pred;
 }

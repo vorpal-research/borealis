@@ -17,10 +17,11 @@ public:
     using Base = Transformer<Interpreter>;
     using Globals = std::unordered_map<std::string, Domain::Ptr>;
     using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
+    using TermMapPtr = std::shared_ptr<TermMap>;
 
     Interpreter(FactoryNest FN, DomainFactory* DF,
                 State::Ptr input = std::make_shared<State>(),
-                const TermMap& equalities = TermMap());
+                TermMapPtr equalities = std::make_shared<TermMap>());
 
     State::Ptr getState() const;
     const TermMap& getEqualities() const;
@@ -79,7 +80,7 @@ private:
     DomainFactory* DF_;
     State::Ptr input_;
     State::Ptr output_;
-    TermMap equalities_;
+    TermMapPtr equalities_;
 };
 
 }   // namespace ps
