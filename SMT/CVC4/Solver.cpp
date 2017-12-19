@@ -120,8 +120,8 @@ Solver::check_result Solver::check(
         for(auto&& tl : force_timeout.get())
             if((end - start) > (10 * std::chrono::milliseconds(tl))) {
                 errs() << "State timeout with:" << endl;
-                for(auto&& ax : s->getAssertions()) errs() << ::CVC4::Expr::dag(true) << ax;
-                errs() << ::CVC4::Expr::dag(true) << pred_e;
+                for(auto&& ax : s->getAssertions()) errs() << ax;
+                errs() << pred_e;
                 throw 0;
             }
 
