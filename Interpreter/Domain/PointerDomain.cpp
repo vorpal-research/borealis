@@ -388,6 +388,8 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
 
     switch (operation) {
         case llvm::CmpInst::ICMP_EQ:
+            if (this->onlyNullptr() && ptr->onlyNullptr())
+                return factory_->getBool(true);
             if (not util::hasIntersection(locations_, ptr->locations_))
                 return factory_->getBool(false);
             return this->equals(ptr) ?
@@ -395,6 +397,8 @@ Domain::Ptr PointerDomain::icmp(Domain::Ptr other, llvm::CmpInst::Predicate oper
                    factory_->getTop(boolTy);
 
         case llvm::CmpInst::ICMP_NE:
+            if (this->onlyNullptr() && ptr->onlyNullptr())
+                return factory_->getBool(false);
             if (not util::hasIntersection(locations_, ptr->locations_))
                 return factory_->getBool(true);
             return this->equals(ptr) ?
@@ -440,7 +444,6 @@ Split PointerDomain::splitByEq(Domain::Ptr other) {
 
 void PointerDomain::moveToTop() {
     if (isTop()) return;
-    if (onlyNullptr()) return;
     setTop();
     for (auto&& it : locations_)
         it.location_->moveToTop();

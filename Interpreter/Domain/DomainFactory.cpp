@@ -147,7 +147,7 @@ Domain::Ptr DomainFactory::get(const llvm::Constant* constant) {
         return getPointer(functype, {{{getIndex(0)}, arrayDom}});
     // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
-        return getBottom(cast(constant->getType()));
+       return getTop(cast(constant->getType()));
     // Undef
     } else if (llvm::isa<llvm::UndefValue>(constant)) {
         return getBottom(cast(constant->getType()));
@@ -166,11 +166,13 @@ Domain::Ptr DomainFactory::get(const llvm::GlobalVariable* global) {
         // If global is simple type, that we should wrap it like array of size 1
         if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
             auto simpleConst = get(global->getInitializer());
+			if (simpleConst->isTop()) return getTop(cast(global->getType()));
             auto&& arrayType = TF_->getArray(cast(&elementType), 1);
             content = getAggregate(arrayType, {simpleConst});
             // else just create domain
         } else {
             content = get(global->getInitializer());
+			if (content->isTop()) return getTop(cast(global->getType()));
         }
         ASSERT(content, "Unsupported constant");
 

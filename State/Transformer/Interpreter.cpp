@@ -2,7 +2,6 @@
 // Created by abdullin on 10/20/17.
 //
 
-#include "ConditionExtractor.h"
 #include "Interpreter.h"
 #include "Interpreter/Domain/DomainFactory.h"
 #include "Interpreter/PredicateState/ConditionSplitter.h"

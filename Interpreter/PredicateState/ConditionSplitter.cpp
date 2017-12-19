@@ -58,7 +58,7 @@ void ConditionSplitter::visitCmpTerm(const CmpTerm* term) {
     auto rhv = term->getRhv();
     auto lhvDomain = domenize_(lhv);
     auto rhvDomain = domenize_(rhv);
-    ASSERT(lhv && rhv, "cmp args of " + term->getName());
+    ASSERT(lhvDomain && rhvDomain, "cmp args of " + term->getName());
 
     bool isPtr = llvm::isa<type::Pointer>(lhv->getType().get()) || llvm::isa<type::Pointer>(rhv->getType().get());
     bool isFloat = llvm::isa<type::Float>(lhv->getType().get());
