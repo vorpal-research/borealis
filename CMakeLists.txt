@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
 
 project(borealis)
 
@@ -72,11 +69,7 @@ set(COMPILER_FLAGS
         -fno-rtti
         ${COMPILER_WARNINGS})
 
-if (CMAKE_BUILD_TYPE MATCHES "Debug")
-    list(APPEND COMPILER_FLAGS -O0 -g3)
-else ()
-    list(APPEND COMPILER_FLAGS -O2 -g)
-endif ()
+list(APPEND COMPILER_FLAGS -O2 -g)
 
 set(PROTO_COMPILER_FLAGS
         ${CMAKE_CXX_FLAGS}
@@ -259,11 +252,7 @@ list(APPEND ARCHIVES yaml-cpp)
 # log4cpp
 ################################################################################
 set(LOG_4_CPP_DIR ${PROJECT_SOURCE_DIR}/lib/log4cpp)
-if (CMAKE_BUILD_TYPE MATCHES "Debug")
-    set(LOG4CPP_LIBRARY_NAME "log4cppD")
-else ()
-    set(LOG4CPP_LIBRARY_NAME "log4cpp")
-endif ()
+set(LOG4CPP_LIBRARY_NAME "log4cpp")
 
 
 add_subdirectory(${LOG_4_CPP_DIR})
