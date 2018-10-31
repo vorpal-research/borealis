@@ -3,6 +3,7 @@ Dependencies
 
  * clang-debug
  * z3-unstable-git
+ * boolector
  * mathsat-5
  * jsoncpp
  * tinyxml2-git
