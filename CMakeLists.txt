@@ -31,7 +31,8 @@ set(WARNINGS_ON all extra cast-qual float-equal switch
         strict-prototypes strict-overflow=5 write-strings
         aggregate-return super-class-method-mismatch)
 
-set(WARNINGS_OFF unused-function redundant-decls unused-local-typedef pessimizing-move)
+set(WARNINGS_OFF unused-function redundant-decls unused-local-typedef
+        pessimizing-move return-std-move)
 
 set(WARNINGS_TAE overloaded-virtual return-stack-address
         implicit-function-declaration address-of-temporary

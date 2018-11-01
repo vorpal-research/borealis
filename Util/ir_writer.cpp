@@ -381,10 +381,13 @@ static void WriteConstantInternal(raw_ostream &Out, const Constant *CV,
                     ((StrVal[0] == '-' || StrVal[0] == '+') &&
                      (StrVal[1] >= '0' && StrVal[1] <= '9'))) {
                     // Reparse stringized version!
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wfloat-equal"
                     if (APFloat(APFloat::IEEEdouble, StrVal).convertToDouble() == Val) {
                         Out << StrVal.str();
                         return;
                     }
+#pragma clang diagnostic pop
                 }
             }
             // Otherwise we could not reparse it to exactly the same value, so we must
