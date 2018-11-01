@@ -5,6 +5,8 @@ Dependencies
  * z3-unstable-git
  * boolector
  * mathsat-5
+ * stp
+ * cvc4
  * jsoncpp
  * tinyxml2-git
  * protobuf
