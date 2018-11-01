@@ -36,7 +36,7 @@ Term::Ptr undoBool(Term::Ptr /* witness */, const z3::expr& expr, const FactoryN
 }
 
 Term::Ptr undoReal(Term::Ptr witness, const z3::expr& expr, const FactoryNest& FN) {
-    long long n, d;
+    int64_t n, d;
     auto res = Z3_get_numeral_rational_int64(expr.ctx(), expr, &n, &d);
     if (res != 0) {
         double dn = n;
