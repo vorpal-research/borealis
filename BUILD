@@ -10,6 +10,7 @@ Dependencies
  * protobuf
  * log4cpp
  * gperftools
+ * leveldb
  * valgrind (optional)
 
 Build
