@@ -485,7 +485,7 @@ Domain::Ptr IntegerIntervalDomain::uitofp(Type::Ptr type) const {
         newLB = lb_->zext(width);
         newUB = ub_->zext(width);
     }
-    llvm::APFloat lb = util::getMinValue(newSemantics), ub = util::getMinValue(newSemantics);
+    llvm::APFloat lb = util::getMinValue(newSemantics), ub = util::getMaxValue(newSemantics);
     if (newLB->isMin()) lb = util::getMinValue(newSemantics);
     else if (newLB->isMax()) lb = util::getMaxValue(newSemantics);
     else lb = llvm::APFloat(newSemantics, newLB->toString());
@@ -510,7 +510,7 @@ Domain::Ptr IntegerIntervalDomain::sitofp(Type::Ptr type) const {
         newLB = signed_lb_->sext(width);
         newUB = signed_ub_->sext(width);
     }
-    llvm::APFloat lb = util::getMinValue(newSemantics), ub = util::getMinValue(newSemantics);
+    llvm::APFloat lb = util::getMinValue(newSemantics), ub = util::getMaxValue(newSemantics);
     if (newLB->isMin()) lb = util::getMinValue(newSemantics);
     else if (newLB->isMax()) lb = util::getMaxValue(newSemantics);
     else lb = llvm::APFloat(newSemantics, newLB->toSignedString());

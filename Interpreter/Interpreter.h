@@ -16,6 +16,10 @@
 #include "Passes/Misc/FuncInfoProvider.h"
 #include "Passes/Tracker/SlotTrackerPass.h"
 
+#include "Interpreter/Domain/Numerical/Interval.hpp"
+#include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
+#include "Interpreter/Domain/Numerical/Number.hpp"
+
 namespace borealis {
 namespace absint {
 namespace ir {
