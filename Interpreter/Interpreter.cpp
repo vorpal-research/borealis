@@ -8,6 +8,11 @@
 #include "Interpreter/IR/ConditionSplitter.h"
 #include "Util/collections.hpp"
 
+#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/Numerical/Interval.hpp"
+#include "Interpreter/Domain/Numerical/SeparateDomain.hpp"
+#include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
+
 #include "Util/macros.h"
 
 namespace borealis {

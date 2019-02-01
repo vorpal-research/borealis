@@ -56,8 +56,11 @@ enum CastOperator {
 };
 
 template <typename Derived>
-class AbstractDomain {
+class AbstractDomain : std::enable_shared_from_this<AbstractDomain<Derived>> {
 public:
+    using Ptr = std::shared_ptr<Derived>;
+    using ConstPtr = std::shared_ptr<const Derived>;
+
     AbstractDomain() = default;
     AbstractDomain(const AbstractDomain&) noexcept = default;
     AbstractDomain(AbstractDomain&&) noexcept = default;
@@ -71,32 +74,32 @@ public:
     virtual void setTop() = 0;
     virtual void setBottom() = 0;
 
-    virtual bool leq(const Derived& other) const = 0;
-    virtual bool equals(const Derived& other) const = 0;
+    virtual bool leq(ConstPtr other) const = 0;
+    virtual bool equals(ConstPtr other) const = 0;
 
-    bool operator==(const Derived& other) const { return this->equals(other); }
-    bool operator!=(const Derived& other) const { return not this->equals(other); }
+    bool operator==(ConstPtr other) const { return this->equals(other); }
+    bool operator!=(ConstPtr other) const { return not this->equals(other); }
 
-    virtual void joinWith(const Derived& other) = 0;
-    virtual void meetWith(const Derived& other) = 0;
-    virtual void widenWith(const Derived& other) = 0;
+    virtual void joinWith(ConstPtr other) = 0;
+    virtual void meetWith(ConstPtr other) = 0;
+    virtual void widenWith(ConstPtr other) = 0;
 
-    virtual Derived join(const Derived& other) const {
+    virtual Ptr join(ConstPtr other) const {
         Derived next(static_cast< const Derived& >(*this));
         next.joinWith(other);
-        return next;
+        return next.shared_from_this();
     }
 
-    virtual Derived meet(const Derived& other) const {
+    virtual Ptr meet(ConstPtr other) const {
         Derived next(static_cast< const Derived& >(*this));
         next.meetWith(other);
-        return next;
+        return next.shared_from_this();
     }
 
-    virtual Derived widen(const Derived& other) const {
+    virtual Ptr widen(ConstPtr other) const {
         Derived next(static_cast< const Derived& >(*this));
         next.widenWith(other);
-        return next;
+        return next.shared_from_this();
     }
 
     virtual size_t hashCode() const = 0;

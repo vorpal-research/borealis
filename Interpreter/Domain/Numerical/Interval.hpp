@@ -19,40 +19,34 @@ template <typename Number>
 class Interval : public AbstractDomain<Interval<Number>> {
 public:
 
+    using Ptr = std::shared_ptr<Interval<Number>>;
+    using ConstPtr = std::shared_ptr<const Interval<Number>>;
+
     using BoundT = Bound<Number>;
 
 private:
     struct TopTag {};
     struct BottomTag {};
 
-    explicit Interval(TopTag) : lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
-
-    explicit Interval(BottomTag) : lb_(1), ub_(0) {}
-
 public:
     Interval() : Interval(TopTag{}) {}
-
+    explicit Interval(TopTag) : lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
+    explicit Interval(BottomTag) : lb_(1), ub_(0) {}
     explicit Interval(int n) : lb_(n), ub_(n) {}
-
     explicit Interval(const Number& n) : lb_(n), ub_(n) {}
-
     explicit Interval(const BoundT& b) : lb_(b), ub_(b) {
         UNREACHABLE(!b.is_infinite());
     }
 
     Interval(const Interval&) = default;
-
     Interval(Interval&&) = default;
-
     Interval& operator=(const Interval&) = default;
-
     Interval& operator=(Interval&&) = default;
-
     ~Interval() override = default;
 
-    static Interval top() { return Interval(TopTag{}); }
-
-    static Interval bottom() { return Interval(BottomTag{}); }
+    static Ptr top() { return std::make_shared(TopTag{}); }
+    static Ptr bottom() { return std::make_shared(BottomTag{}); }
+    static Ptr constant(int constant) { return std::make_shared<Interval<Number>>(constant); }
 
     bool isTop() const override {
         return lb_ == BoundT::minusInfinity() and ub_ == BoundT::plusInfinity();
@@ -97,8 +91,8 @@ public:
         return lb_ <= bnd and bnd <= ub_;
     }
 
-    bool intersects(const Interval& other) {
-        return this->ub_ <= other.lb_ || other.ub_ <= this->lb_;
+    bool intersects(ConstPtr other) {
+        return this->ub_ <= other->lb_ || other->ub_ <= this->lb_;
     }
 
     bool isZero() const { return isConstant(0); }
@@ -107,66 +101,66 @@ public:
 
     const BoundT& ub() const { return ub_; }
 
-    bool leq(const Interval& other) const override {
+    bool leq(ConstPtr other) const override {
         if (this->isBottom()) {
             return true;
-        } else if (other.isBottom()) {
+        } else if (other->isBottom()) {
             return false;
         } else {
-            return other.lb_ <= this->lb_ && this->ub_ <= other.ub_;
+            return other->lb_ <= this->lb_ && this->ub_ <= other->ub_;
         }
     }
 
-    bool equals(const Interval& other) const override {
+    bool equals(ConstPtr other) const override {
         if (this->isBottom()) {
-            return other.isBottom();
-        } else if (other.isBottom()) {
+            return other->isBottom();
+        } else if (other->isBottom()) {
             return false;
         } else {
-            return this->lb_ == other.lb_ && this->ub_ == other.ub_;
+            return this->lb_ == other->lb_ && this->ub_ == other->ub_;
         }
     }
 
-    Interval join(const Interval& other) const override {
+    Ptr join(ConstPtr other) const override {
         if (this->isBottom()) {
             return other;
-        } else if (other.isBottom()) {
+        } else if (other->isBottom()) {
             return *this;
         } else {
-            return Interval(util::min(this->lb_, other.lb_), util::max(this->ub_, other.ub_));
+            return std::make_shared(util::min(this->lb_, other->lb_), util::max(this->ub_, other->ub_));
         }
     }
 
-    void joinWith(const Interval& other) override {
+    void joinWith(ConstPtr other) override {
         this->operator=(std::move(join(other)));
     }
 
-    Interval meet(const Interval& other) const override {
+    Ptr meet(ConstPtr other) const override {
         if (this->isBottom() || other.isBottom()) {
             return bottom();
         } else {
-            return Interval(util::max(this->lb_, other.lb_), util::min(this->ub_, other.ub_));
+            return std::make_shared(util::max(this->lb_, other->lb_), util::min(this->ub_, other->ub_));
         }
     }
 
-    void meetWith(const Interval& other) override {
+    void meetWith(ConstPtr other) override {
         this->operator=(std::move(meet(other)));
     }
 
-    Interval widen(const Interval& other) const override {
+    Ptr widen(ConstPtr other) const override {
         if (this->isBottom()) {
             return other;
-        } else if (other.isBottom()) {
+        } else if (other->isBottom()) {
             return *this;
         } else {
-            return Interval(
+            return std::make_shared(
                     other.lb_ < this->lb_ ? BoundT::minusInfinity() : lb_,
                     other.ub_ > this->ub_ ? BoundT::plusInfinity() : ub_
             );
         }
     }
 
-    void widenWith(const Interval& other) override {
+    void widenWith(ConstPtr other) override {
         this->operator=(std::move(widen(other)));
     }
 
@@ -180,7 +174,7 @@ public:
         return ss.str();
     }
 
-    Interval apply(BinaryOperator opcode, const Interval& other) {
+    Ptr apply(BinaryOperator opcode, ConstPtr other) {
         switch (opcode) {
             case ADD: return *this + other;
             case SUB: return *this - other;
@@ -198,40 +192,40 @@ public:
         }
     }
 
-    Interval operator-() const {
-        if (this->is_bottom()) {
+    Ptr operator-() const {
+        if (this->isBottom()) {
             return bottom();
         } else {
-            return Interval(-this->_ub, -this->_lb);
+            return std::make_shared(-this->_ub, -this->_lb);
         }
     }
 
-    void operator+=(const Interval& other) {
+    void operator+=(ConstPtr other) {
         if (this->isBottom()) {
             return;
-        } else if (other.isBottom()) {
+        } else if (other->isBottom()) {
             this->setBottom();
         } else {
-            this->lb_ += other.lb_;
-            this->ub_ += other.ub_;
+            this->lb_ += other->lb_;
+            this->ub_ += other->ub_;
         }
     }
 
-    void operator-=(const Interval& other) {
+    void operator-=(ConstPtr other) {
         if (this->isBottom()) {
             return;
-        } else if (other.isBottom()) {
+        } else if (other->isBottom()) {
             this->setBottom();
         } else {
-            this->lb_ -= other.ub_;
-            this->ub_ -= other.lb_;
+            this->lb_ -= other->ub_;
+            this->ub_ -= other->lb_;
         }
     }
 
-    void operator*=(const Interval& other) {
+    void operator*=(ConstPtr other) {
         if (this->isBottom()) {
             return;
-        } else if (other.isBottom()) {
+        } else if (other->isBottom()) {
             this->setBottom();
         } else {
             auto ll = this->lb_ * other.lb_;
@@ -251,203 +245,210 @@ private:
 };
 
 template <typename Number>
-Interval<Number> operator+(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+using IntervalPtr = typename Interval<Number>::Ptr;
+
+template <typename Number>
+using IntervalConstPtr = typename Interval<Number>::ConstPtr;
+
+template <typename Number>
+IntervalPtr<Number> operator+(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        return IntervalT(lhv.lb() + rhv.lb(), lhv.ub() + rhv.ub());
+        return std::make_shared(lhv->lb() + rhv->lb(), lhv->ub() + rhv->ub());
     }
 }
 
 template <typename Number>
-Interval<Number> operator-(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator-(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        return IntervalT(lhv.lb() - rhv.ub(), lhv.ub() - rhv.lb());
+        return std::make_shared(lhv->lb() - rhv->ub(), lhv->ub() - rhv->lb());
     }
 }
 
 template <typename Number>
-Interval<Number> operator*(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator*(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        auto ll = lhv.lb() * rhv.lb();
-        auto ul = lhv.ub() * rhv.lb();
-        auto lu = lhv.lb() * rhv.ub();
-        auto uu = lhv.ub() * rhv.ub();
-        return IntervalT(util::min(ll, ul, lu, uu), util::max(ll, ul, lu, uu));
+        auto ll = lhv->lb() * rhv->lb();
+        auto ul = lhv->ub() * rhv->lb();
+        auto lu = lhv->lb() * rhv->ub();
+        auto uu = lhv->ub() * rhv->ub();
+        return std::make_shared(util::min(ll, ul, lu, uu), util::max(ll, ul, lu, uu));
     }
 }
 
 template <typename Number>
-Interval<Number> operator/(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator/(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        if (rhv.contains(0)) {
-            IntervalT l(rhv.lb(), BoundT(-1));
-            IntervalT r(BoundT(1), rhv.ub());
-            return (lhv / l).join(lhv / r);
-        } else if (lhv.contains(0)) {
-            IntervalT l(lhv.lb(), BoundT(-1));
-            IntervalT r(BoundT(1), lhv.ub());
-            return (l / rhv).join(r / rhv).join(IntervalT(0));
+        if (rhv->contains(0)) {
+            IntervalPtr<Number> l = std::make_shared(rhv->lb(), BoundT(-1));
+            IntervalPtr<Number> r = std::make_shared(BoundT(1), rhv->ub());
+            return (lhv / l)->join(lhv / r);
+        } else if (lhv->contains(0)) {
+            IntervalPtr<Number> l = std::make_shared(lhv->lb(), BoundT(-1));
+            IntervalPtr<Number> r = std::make_shared(BoundT(1), lhv->ub());
+            return (l / rhv)->join(r / rhv)->join(IntervalT::contains(0));
         } else {
-            auto ll = lhv.lb() / rhv.lb();
-            auto ul = lhv.ub() / rhv.lb();
-            auto lu = lhv.lb() / rhv.ub();
-            auto uu = lhv.ub() / rhv.ub();
-            return IntervalT(util::min(ll, ul, lu, uu), util::max(ll, ul, lu, uu));
+            auto ll = lhv->lb() / rhv->lb();
+            auto ul = lhv->ub() / rhv->lb();
+            auto lu = lhv->lb() / rhv->ub();
+            auto uu = lhv->ub() / rhv->ub();
+            return std::make_shared(util::min(ll, ul, lu, uu), util::max(ll, ul, lu, uu));
         }
     }
 }
 
 template <typename Number>
-Interval<Number> operator%(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator%(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        if (rhv.isConstant(0)) {
+        if (rhv->isConstant(0)) {
             return IntervalT::bottom();
-        } else if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() % rhv.asConstant());
+        } else if (lhv->isConstant() && rhv->isConstant()) {
+            return std::make_shared(lhv->asConstant() % rhv->asConstant());
         } else {
             BoundT zero(0);
-            BoundT n_ub = max(abs(lhv.lb()), abs(lhv.ub()));
-            BoundT d_ub = max(abs(rhv.lb()), abs(rhv.ub())) - BoundT(1);
+            BoundT n_ub = max(abs(lhv->lb()), abs(lhv->ub()));
+            BoundT d_ub = max(abs(rhv->lb()), abs(rhv->ub())) - BoundT(1);
             BoundT ub = min(n_ub, d_ub);
 
-            if (lhv.lb() < zero) {
-                if (lhv.ub() > zero) {
-                    return IntervalT(-ub, ub);
+            if (lhv->lb() < zero) {
+                if (lhv->ub() > zero) {
+                    return std::make_shared(-ub, ub);
                 } else {
-                    return IntervalT(-ub, zero);
+                    return std::make_shared(-ub, zero);
                 }
             } else {
-                return IntervalT(zero, ub);
+                return std::make_shared(zero, ub);
             }
         }
     }
 }
 
 template <typename Number>
-Interval<Number> operator<<(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator<<(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        IntervalT shift = rhv.meet(IntervalT(BoundT(0), BoundT::plus_infinity()));
+        auto&& shift = rhv->meet(std::make_shared(BoundT(0), BoundT::plus_infinity()));
 
-        if (shift.isBottom()) {
+        if (shift->isBottom()) {
             return IntervalT::bottom();
         }
 
-        IntervalT coeff(BoundT(1 << *shift.lb().number()),
-                        shift.ub().is_finite() ? BoundT(1 << *shift.ub().number())
-                                               : BoundT::plus_infinity());
+        IntervalPtr<Number> coeff = std::make_shared(
+                BoundT(1 << *shift->lb()->number()),
+                shift->ub()->is_finite() ? BoundT(1 << *shift->ub()->number()) : BoundT::plus_infinity()
+        );
         return lhv * coeff;
     }
 }
 
 template <typename Number>
-Interval<Number> operator>>(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator>>(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        IntervalT shift = rhv.meet(IntervalT(BoundT(0), BoundT::plus_infinity()));
+        auto&& shift = rhv->meet(std::make_shared(BoundT(0), BoundT::plus_infinity()));
 
-        if (shift.is_bottom()) {
+        if (shift->is_bottom()) {
             return IntervalT::bottom();
         }
 
-        if (lhv.contains(0)) {
-            IntervalT l(lhv.lb(), BoundT(-1));
-            IntervalT u(BoundT(1), lhv.ub());
-            return (l >> rhv).join(u >> rhv).join(IntervalT(0));
+        if (lhv->contains(0)) {
+            IntervalPtr<Number> l = std::make_shared(lhv->lb(), BoundT(-1));
+            IntervalPtr<Number> u = std::make_shared(BoundT(1), lhv->ub());
+            return (l >> rhv)->join(u >> rhv)->join(IntervalT::constant(0));
         } else {
-            auto ll = lhv.lb() >> shift.lb();
-            auto lu = lhv.lb() >> shift.ub();
-            auto ul = lhv.ub() >> shift.lb();
-            auto uu = lhv.ub() >> shift.ub();
-            return IntervalT(min(ll, lu, ul, uu), max(ll, lu, ul, uu));
+            auto ll = lhv->lb() >> shift->lb();
+            auto lu = lhv->lb() >> shift->ub();
+            auto ul = lhv->ub() >> shift->lb();
+            auto uu = lhv->ub() >> shift->ub();
+            return std::make_shared(min(ll, lu, ul, uu), max(ll, lu, ul, uu));
         }
     }
 }
 
 template <typename Number>
-Interval<Number> lshr(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> lshr(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
-        IntervalT shift = rhv.meet(IntervalT(BoundT(0), BoundT::plus_infinity()));
+        auto&& shift = rhv->meet(std::make_shared(BoundT(0), BoundT::plus_infinity()));
 
-        if (shift.is_bottom()) {
+        if (shift->is_bottom()) {
             return IntervalT::bottom();
         }
 
-        if (lhv.contains(0)) {
-            IntervalT l(lhv.lb(), BoundT(-1));
-            IntervalT u(BoundT(1), lhv.ub());
-            return lshr(l, rhv).join(lshr(u, rhv)).join(IntervalT(0));
+        if (lhv->contains(0)) {
+            IntervalPtr<Number> l = std::make_shared(lhv->lb(), BoundT(-1));
+            IntervalPtr<Number> u = std::make_shared(BoundT(1), lhv->ub());
+            return lshr(l, rhv)->join(lshr(u, rhv))->join(IntervalT::constant(0));
         } else {
-            BoundT ll = lshr(lhv.lb(), shift.lb());
-            BoundT lu = lshr(lhv.lb(), shift.ub());
-            BoundT ul = lshr(lhv.ub(), shift.lb());
-            BoundT uu = lshr(lhv.ub(), shift.ub());
-            return IntervalT(min(ll, lu, ul, uu), max(ll, lu, ul, uu));
+            BoundT ll = lshr(lhv->lb(), shift->lb());
+            BoundT lu = lshr(lhv->lb(), shift->ub());
+            BoundT ul = lshr(lhv->ub(), shift->lb());
+            BoundT uu = lshr(lhv->ub(), shift->ub());
+            return std::make_shared(min(ll, lu, ul, uu), max(ll, lu, ul, uu));
         }
     }
 }
 
 template <typename Number>
-Interval<Number> operator&(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator&(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
 
-        if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() & rhv.asConstant());
-        } else if (lhv.isConstant(0) || rhv.isConstant(0)) {
-            return IntervalT(0);
-        } else if (lhv.isConstant(-1)) {
+        if (lhv->isConstant() && rhv->isConstant()) {
+            return std::make_shared(lhv->asConstant() & rhv->asConstant());
+        } else if (lhv->isConstant(0) || rhv->isConstant(0)) {
+            return IntervalT::constant(0);
+        } else if (lhv->isConstant(-1)) {
             return rhv;
-        } else if (rhv.isConstant(-1)) {
+        } else if (rhv->isConstant(-1)) {
             return lhv;
         } else {
-            if (lhv.lb() >= BoundT(0) && rhv.lb() >= BoundT(0)) {
-                return IntervalT(BoundT(0), min(lhv.ub(), rhv.ub()));
-            } else if (lhv.lb() >= BoundT(0)) {
-                return IntervalT(BoundT(0), lhv.ub());
-            } else if (lhv.lb() >= BoundT(0)) {
-                return IntervalT(BoundT(0), rhv.ub());
+            if (lhv->lb() >= BoundT(0) && rhv->lb() >= BoundT(0)) {
+                return std::make_shared(BoundT(0), min(lhv->ub(), rhv->ub()));
+            } else if (lhv->lb() >= BoundT(0)) {
+                return std::make_shared(BoundT(0), lhv->ub());
+            } else if (lhv->lb() >= BoundT(0)) {
+                return std::make_shared(BoundT(0), rhv->ub());
             } else {
                 return IntervalT::top();
             }
@@ -456,21 +457,21 @@ Interval<Number> operator&(const Interval<Number>& lhv, const Interval<Number>& 
 }
 
 template <typename Number>
-Interval<Number> operator|(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator|(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
 
-        if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() | rhv.asConstant());
-        } else if (lhv.isConstant(-1) || rhv.isConstant(-1)) {
-            return IntervalT(-1);
-        } else if (rhv.isConstant(0)) {
+        if (lhv->isConstant() && rhv->isConstant()) {
+            return std::make_shared(lhv->asConstant() | rhv->asConstant());
+        } else if (lhv->isConstant(-1) || rhv->isConstant(-1)) {
+            return IntervalT::constant(-1);
+        } else if (rhv->isConstant(0)) {
             return lhv;
-        } else if (lhv.isConstant(0)) {
+        } else if (lhv->isConstant(0)) {
             return rhv;
         } else {
             return IntervalT::top();
@@ -479,19 +480,19 @@ Interval<Number> operator|(const Interval<Number>& lhv, const Interval<Number>& 
 }
 
 template <typename Number>
-Interval<Number> operator^(const Interval<Number>& lhv, const Interval<Number>& rhv) {
+IntervalPtr<Number> operator^(IntervalConstPtr<Number> lhv, IntervalConstPtr<Number> rhv) {
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
 
-    if (lhv.isBottom() || rhv.isBottom()) {
+    if (lhv->isBottom() || rhv->isBottom()) {
         return IntervalT::bottom();
     } else {
 
-        if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() ^ rhv.asConstant());
-        } else if (rhv.isConstant(0)) {
+        if (lhv->isConstant() && rhv->isConstant()) {
+            return std::make_shared(lhv->asConstant() ^ rhv->asConstant());
+        } else if (rhv->isConstant(0)) {
             return lhv;
-        } else if (lhv.isConstant(0)) {
+        } else if (lhv->isConstant(0)) {
             return rhv;
         } else {
             return IntervalT::top();

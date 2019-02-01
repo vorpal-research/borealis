@@ -5,7 +5,9 @@
 #ifndef BOREALIS_NUMERICALDOMAIN_HPP
 #define BOREALIS_NUMERICALDOMAIN_HPP
 
+#include "Interpreter/Domain/Domain.h"
 #include "Number.hpp"
+#include "Interval.hpp"
 
 namespace borealis {
 namespace absint {
@@ -13,8 +15,8 @@ namespace absint {
 template <typename Number, typename Variable, typename Derived>
 class NumericalDomain : public AbstractDomain<Derived> {
 public:
-    using BoolT = Interval<IntNumber<1, false>>;
-    using IntervalT = Interval<Number>;
+    using BoolT = typename Interval<IntNumber<1, false>>::Ptr;
+    using IntervalT = typename Interval<Number>::Ptr;
 
     virtual IntervalT toInterval(Variable x) const = 0;
 
