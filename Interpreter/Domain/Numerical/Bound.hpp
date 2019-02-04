@@ -73,6 +73,11 @@ public:
 
     bool isNegative() const { return this->value_ < 0; }
 
+    Bound& operator++() {
+        this->operator+=(Bound(1));
+        return *this;
+    }
+
     Bound operator-() const { return Bound(this->isInfinite, -this->value_); }
 
     void operator+=(const Bound& other) {

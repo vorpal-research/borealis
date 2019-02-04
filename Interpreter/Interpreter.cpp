@@ -12,6 +12,8 @@
 #include "Interpreter/Domain/Numerical/Interval.hpp"
 #include "Interpreter/Domain/Numerical/SeparateDomain.hpp"
 #include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
+#include "Interpreter/Domain/Memory/ArrayDomain.hpp"
+#include "Interpreter/Domain/Memory/StructDomain.hpp"
 
 #include "Util/macros.h"
 
