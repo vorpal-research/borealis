@@ -15,15 +15,14 @@
 namespace borealis {
 namespace absint {
 
-template <typename ...Element>
-class StructDomain : public AbstractDomain<StructDomain<Element...>> {
+template <typename MachineInt, typename ...Element>
+class StructDomain : public AbstractDomain<StructDomain<MachineInt, Element...>> {
 public:
 
-    using Ptr = std::shared_ptr<StructDomain<Element...>>;
-    using ConstPtr = std::shared_ptr<const StructDomain<Element...>>;
+    using Ptr = std::shared_ptr<StructDomain<MachineInt, Element...>>;
+    using ConstPtr = std::shared_ptr<const StructDomain<MachineInt, Element...>>;
 
-    using MachineIntT = IntNumber<64, false>;
-    using IntervalT = Interval<MachineIntT>;
+    using IntervalT = Interval<MachineInt>;
     using IntervalPtr = typename IntervalT::Ptr;
     using ElementsT = std::tuple<std::shared_ptr<Element>...>;
 

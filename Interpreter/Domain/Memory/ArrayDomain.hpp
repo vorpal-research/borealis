@@ -15,15 +15,14 @@
 namespace borealis {
 namespace absint {
 
-template <typename ElementT>
-class ArrayDomain : public AbstractDomain<ArrayDomain<ElementT>> {
+template <typename MachineInt, typename ElementT>
+class ArrayDomain : public AbstractDomain<ArrayDomain<MachineInt, ElementT>> {
 public:
 
-    using Ptr = std::shared_ptr<ArrayDomain<ElementT>>;
-    using ConstPtr = std::shared_ptr<const ArrayDomain<ElementT>>;
+    using Ptr = std::shared_ptr<ArrayDomain<MachineInt, ElementT>>;
+    using ConstPtr = std::shared_ptr<const ArrayDomain<MachineInt, ElementT>>;
 
-    using MachineIntT = IntNumber<64, false>;
-    using IntervalT = Interval<MachineIntT>;
+    using IntervalT = Interval<MachineInt>;
     using IntervalPtr = typename IntervalT::Ptr;
     using ElementPtr = typename ElementT::Ptr;
     using ElementMapT = std::unordered_map<size_t, ElementPtr>;
@@ -247,6 +246,17 @@ public:
 
 } // namespace absint
 } // namespace borealis
+
+namespace std {
+
+template <typename Derived>
+struct hash<std::shared_ptr<borealis::absint::AbstractDomain<Derived>>> {
+    size_t operator()(const std::shared_ptr<borealis::absint::AbstractDomain<Derived>>& dom) const noexcept {
+        return dom->hashCode();
+    }
+};
+
+} // namespace std
 
 #include "Util/unmacros.h"
 
