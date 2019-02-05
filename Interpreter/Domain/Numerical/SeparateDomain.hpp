@@ -15,11 +15,10 @@ namespace borealis {
 namespace absint {
 
 template <typename Number, typename Variable, typename Inner>
-class SeparateDomain : public AbstractDomain<SeparateDomain<Number, Variable, Inner>> {
+class SeparateDomain : public AbstractDomain {
 public:
-    using Ptr = std::shared_ptr<SeparateDomain<Number, Variable, Inner>>;
-    using ConstPtr = std::shared_ptr<const SeparateDomain<Number, Variable, Inner>>;
 
+    using Self = SeparateDomain<Number, Variable, Inner>;
     using ValueMap = util::cow_map<Variable, typename Inner::Ptr>;
     using Iterator = typename ValueMap::iterator;
 
@@ -32,19 +31,41 @@ private:
     struct TopTag {};
     struct BottomTag {};
 
+    explicit SeparateDomain(TopTag) : AbstractDomain(class_tag(*this)), isBottom_(false) {}
+    explicit SeparateDomain(BottomTag) : AbstractDomain(class_tag(*this)), isBottom_(true) {}
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
 public:
 
     SeparateDomain() : SeparateDomain(TopTag{}) {}
-    explicit SeparateDomain(TopTag) : isBottom_(false) {}
-    explicit SeparateDomain(BottomTag) : isBottom_(true) {}
     SeparateDomain(const SeparateDomain&) = default;
     SeparateDomain(SeparateDomain&&) noexcept = default;
     SeparateDomain& operator=(const SeparateDomain&) = default;
     SeparateDomain& operator=(SeparateDomain&&) noexcept = default;
     ~SeparateDomain() override = default;
 
-    static Ptr top() { return SeparateDomain(TopTag{}); }
+    static bool classof (const Self*) {
+        return true;
+    }
 
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    static Ptr top() { return SeparateDomain(TopTag{}); }
     static Ptr bottom() { return SeparateDomain(BottomTag{}); }
 
     bool isTop() const override { return !this->isBottom() && this->values_.empty(); }
@@ -61,34 +82,40 @@ public:
     }
 
     bool leq(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return true;
-        } else if (other->isBottom()) {
+        } else if (otherRaw->isBottom()) {
             return false;
         } else {
-            return util::equal_with_find(this->values_, other->values_,
+            return util::equal_with_find(this->values_, otherRaw->values_,
                     LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
         }
     }
 
     bool equals(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            return other->isBottom();
-        } else if (other->isBottom()) {
+            return otherRaw->isBottom();
+        } else if (otherRaw->isBottom()) {
             return false;
         } else {
-            return util::equal_with_find(this->values_, other->values_,
+            return util::equal_with_find(this->values_, otherRaw->values_,
                                          LAM(a, a.first), LAM2(a, b, a.second->equals(b.second)));
         }
     }
 
     void joinWith(ConstPtr other) override {
-        if (other->isBottom()) {
+        auto* otherRaw = unwrap(other);
+
+        if (otherRaw->isBottom()) {
             return;
         } else if (this->isBottom()) {
-            return this->operator=(*other.get());
+            return this->operator=(*otherRaw);
         } else {
-            for (auto&& it : other->values_) {
+            for (auto&& it : otherRaw->values_) {
                 auto&& cur = values_.find(it.first);
                 if (cur == values_.end()) values_[it.first] = it.second;
                 else values_[it.first] = cur->join(it.second);
@@ -98,12 +125,14 @@ public:
     }
 
     void meetWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return;
-        } else if (other->isBottom()) {
+        } else if (otherRaw->isBottom()) {
             this->setBottom();
         } else {
-            for (auto&& it : other->values_) {
+            for (auto&& it : otherRaw->values_) {
                 auto&& cur = values_.find(it.first);
                 if (cur == values_.end()) values_[it.first] = it.second;
                 else values_[it.first] = cur->meet(it.second);
@@ -113,12 +142,14 @@ public:
     }
 
     void widenWith(ConstPtr other) override {
-        if (other->isBottom()) {
+        auto* otherRaw = unwrap(other);
+
+        if (otherRaw->isBottom()) {
             return;
         } else if (this->isBottom()) {
-            return this->operator=(*other.get());
+            return this->operator=(*otherRaw);
         } else {
-            for (auto&& it : other->values_) {
+            for (auto&& it : otherRaw->values_) {
                 auto&& cur = values_.find(it.first);
                 if (cur == values_.end()) values_[it.first] = it.second;
                 else values_[it.first] = cur->widen(it.second);

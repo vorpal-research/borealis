@@ -55,13 +55,12 @@ enum CastOperator {
     PTRTOI
 };
 
-template <typename Derived>
-class AbstractDomain : std::enable_shared_from_this<AbstractDomain<Derived>> {
+class AbstractDomain : public ClassTag, public std::enable_shared_from_this<AbstractDomain> {
 public:
-    using Ptr = std::shared_ptr<Derived>;
-    using ConstPtr = std::shared_ptr<const Derived>;
+    using Ptr = std::shared_ptr<AbstractDomain>;
+    using ConstPtr = std::shared_ptr<const AbstractDomain>;
 
-    AbstractDomain() = default;
+    explicit AbstractDomain(id_t id) : ClassTag(id) {}
     AbstractDomain(const AbstractDomain&) noexcept = default;
     AbstractDomain(AbstractDomain&&) noexcept = default;
     AbstractDomain& operator=(const AbstractDomain&) noexcept = default;
@@ -84,26 +83,16 @@ public:
     virtual void meetWith(ConstPtr other) = 0;
     virtual void widenWith(ConstPtr other) = 0;
 
-    virtual Ptr join(ConstPtr other) const {
-        Derived next(static_cast< const Derived& >(*this));
-        next.joinWith(other);
-        return next.shared_from_this();
-    }
-
-    virtual Ptr meet(ConstPtr other) const {
-        Derived next(static_cast< const Derived& >(*this));
-        next.meetWith(other);
-        return next.shared_from_this();
-    }
-
-    virtual Ptr widen(ConstPtr other) const {
-        Derived next(static_cast< const Derived& >(*this));
-        next.widenWith(other);
-        return next.shared_from_this();
-    }
+    virtual Ptr join(ConstPtr other) const = 0;
+    virtual Ptr meet(ConstPtr other) const = 0;
+    virtual Ptr widen(ConstPtr other) const = 0;
 
     virtual size_t hashCode() const = 0;
     virtual std::string toString() const = 0;
+
+    static bool classof(const AbstractDomain*) {
+        return true;
+    }
 };
 
 class Domain : public std::enable_shared_from_this<Domain>, public logging::ObjectLevelLogging<Domain> {
@@ -367,6 +356,13 @@ struct Split {
 }   /* namespace borealis*/
 
 namespace std {
+
+template <>
+struct hash<std::shared_ptr<borealis::absint::AbstractDomain>> {
+    size_t operator()(const std::shared_ptr<borealis::absint::AbstractDomain>& dom) const noexcept {
+        return dom->hashCode();
+    }
+};
 
 template <>
 struct hash<borealis::absint::Domain::Ptr> {

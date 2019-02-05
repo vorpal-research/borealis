@@ -24,6 +24,34 @@
 namespace borealis {
 namespace absint {
 
+class AbstractFactory {
+private:
+
+    AbstractFactory() = default;
+
+public:
+
+    AbstractFactory(const AbstractFactory&) = delete;
+    AbstractFactory(AbstractFactory&&) = delete;
+    AbstractFactory& operator=(const AbstractFactory&) = delete;
+    AbstractFactory& operator=(AbstractFactory&&) = delete;
+
+    static AbstractFactory* get() {
+        static AbstractFactory* instance = new AbstractFactory();
+        return instance;
+    }
+
+    AbstractDomain::Ptr top(Type::Ptr) const {
+        return nullptr;
+    }
+
+    AbstractDomain::Ptr bottom(Type::Ptr) const {
+        return nullptr;
+    }
+
+};
+
+
 namespace ir {
 class GlobalVariableManager;
 }   // namespace ir

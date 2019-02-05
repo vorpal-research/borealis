@@ -16,22 +16,35 @@ namespace borealis {
 namespace absint {
 
 template <typename Number>
-class Interval : public AbstractDomain<Interval<Number>> {
+class Interval : public AbstractDomain {
 public:
 
-    using Ptr = std::shared_ptr<Interval<Number>>;
-    using ConstPtr = std::shared_ptr<const Interval<Number>>;
-
+    using Self = Interval<Number>;
     using BoundT = Bound<Number>;
 
 private:
     struct TopTag {};
     struct BottomTag {};
 
+    explicit Interval(TopTag) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
+    explicit Interval(BottomTag) : AbstractDomain(class_tag(*this)), lb_(1), ub_(0) {}
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
 public:
     Interval() : Interval(TopTag{}) {}
-    explicit Interval(TopTag) : lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
-    explicit Interval(BottomTag) : lb_(1), ub_(0) {}
     explicit Interval(int n) : lb_(n), ub_(n) {}
     explicit Interval(const Number& n) : lb_(n), ub_(n) {}
     explicit Interval(const BoundT& b) : lb_(b), ub_(b) {
@@ -47,6 +60,14 @@ public:
     static Ptr top() { return std::make_shared(TopTag{}); }
     static Ptr bottom() { return std::make_shared(BottomTag{}); }
     static Ptr constant(int constant) { return std::make_shared<Interval<Number>>(constant); }
+
+    static bool classof(const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
 
     bool isTop() const override {
         return lb_ == BoundT::minusInfinity() and ub_ == BoundT::plusInfinity();
@@ -92,7 +113,10 @@ public:
     }
 
     bool intersects(ConstPtr other) {
-        return this->ub_ <= other->lb_ || other->ub_ <= this->lb_;
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return this->ub_ <= otherRaw->lb_ || otherRaw->ub_ <= this->lb_;
     }
 
     bool isZero() const { return isConstant(0); }
@@ -102,32 +126,38 @@ public:
     const BoundT& ub() const { return ub_; }
 
     bool leq(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return true;
         } else if (other->isBottom()) {
             return false;
         } else {
-            return other->lb_ <= this->lb_ && this->ub_ <= other->ub_;
+            return otherRaw->lb_ <= this->lb_ && this->ub_ <= otherRaw->ub_;
         }
     }
 
     bool equals(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return other->isBottom();
         } else if (other->isBottom()) {
             return false;
         } else {
-            return this->lb_ == other->lb_ && this->ub_ == other->ub_;
+            return this->lb_ == otherRaw->lb_ && this->ub_ == otherRaw->ub_;
         }
     }
 
     Ptr join(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            return other;
+            return otherRaw->shared_from_this();
         } else if (other->isBottom()) {
             return *this;
         } else {
-            return std::make_shared(util::min(this->lb_, other->lb_), util::max(this->ub_, other->ub_));
+            return std::make_shared(util::min(this->lb_, otherRaw->lb_), util::max(this->ub_, otherRaw->ub_));
         }
     }
 
@@ -136,10 +166,12 @@ public:
     }
 
     Ptr meet(ConstPtr other) const override {
-        if (this->isBottom() || other.isBottom()) {
+        auto* otherRaw = unwrap(other);
+
+        if (this->isBottom() || otherRaw->isBottom()) {
             return bottom();
         } else {
-            return std::make_shared(util::max(this->lb_, other->lb_), util::min(this->ub_, other->ub_));
+            return std::make_shared(util::max(this->lb_, otherRaw->lb_), util::min(this->ub_, otherRaw->ub_));
         }
     }
 
@@ -148,14 +180,16 @@ public:
     }
 
     Ptr widen(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            return other;
+            return otherRaw->shared_from_this();
         } else if (other->isBottom()) {
             return *this;
         } else {
             return std::make_shared(
-                    other.lb_ < this->lb_ ? BoundT::minusInfinity() : lb_,
-                    other.ub_ > this->ub_ ? BoundT::plusInfinity() : ub_
+                    otherRaw->lb_ < this->lb_ ? BoundT::minusInfinity() : lb_,
+                    otherRaw->ub_ > this->ub_ ? BoundT::plusInfinity() : ub_
             );
         }
     }
@@ -201,37 +235,43 @@ public:
     }
 
     void operator+=(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return;
         } else if (other->isBottom()) {
             this->setBottom();
         } else {
-            this->lb_ += other->lb_;
-            this->ub_ += other->ub_;
+            this->lb_ += otherRaw->lb_;
+            this->ub_ += otherRaw->ub_;
         }
     }
 
     void operator-=(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return;
         } else if (other->isBottom()) {
             this->setBottom();
         } else {
-            this->lb_ -= other->ub_;
-            this->ub_ -= other->lb_;
+            this->lb_ -= otherRaw->ub_;
+            this->ub_ -= otherRaw->lb_;
         }
     }
 
     void operator*=(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return;
         } else if (other->isBottom()) {
             this->setBottom();
         } else {
-            auto ll = this->lb_ * other.lb_;
-            auto ul = this->ub_ * other.lb_;
-            auto lu = this->lb_ * other.ub_;
-            auto uu = this->ub_ * other.ub_;
+            auto ll = this->lb_ * otherRaw->lb_;
+            auto ul = this->ub_ * otherRaw->lb_;
+            auto lu = this->lb_ * otherRaw->ub_;
+            auto uu = this->ub_ * otherRaw->ub_;
             this->lb_ = util::min(ll, ul, lu, uu);
             this->ub_ = util::max(ll, ul, lu, uu);
         }

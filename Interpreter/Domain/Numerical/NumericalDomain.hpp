@@ -12,8 +12,8 @@
 namespace borealis {
 namespace absint {
 
-template <typename Number, typename Variable, typename Derived>
-class NumericalDomain : public AbstractDomain<Derived> {
+template <typename Number, typename Variable>
+class NumericalDomain : public AbstractDomain {
 public:
     using BoolT = typename Interval<IntNumber<1, false>>::Ptr;
     using IntervalT = typename Interval<Number>::Ptr;

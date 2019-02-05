@@ -15,71 +15,101 @@
 namespace borealis {
 namespace absint {
 
-template <typename MachineInt, typename ...Element>
-class StructDomain : public AbstractDomain<StructDomain<MachineInt, Element...>> {
+template <typename MachineInt>
+class StructDomain : public Aggregate<MachineInt> {
 public:
 
-    using Ptr = std::shared_ptr<StructDomain<MachineInt, Element...>>;
-    using ConstPtr = std::shared_ptr<const StructDomain<MachineInt, Element...>>;
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
 
+    using Self = StructDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using IntervalPtr = typename IntervalT::Ptr;
-    using ElementsT = std::tuple<std::shared_ptr<Element>...>;
+    using Types = std::vector<Type::Ptr>;
+    using Elements = std::vector<Ptr>;
 
 private:
 
-    size_t length_;
-    ElementsT elements_;
+    Types types_;
+    AbstractFactory* factory_;
+    Elements elements_;
 
 private:
     struct TopTag{};
     struct BottomTag{};
 
-    explicit StructDomain(TopTag) : length_(sizeof...(Element)) {
-        this->elements_ = std::make_tuple(Element::top()...);
+    explicit StructDomain(TopTag, const Types& types) :
+            types_(types), factory_(AbstractFactory::get()) {
+        for (auto i = 0U; i < types_.size(); ++i) {
+            elements_.push_back(factory_->top(types[i]));
+        }
     }
 
-    explicit StructDomain(BottomTag) : length_(sizeof...(Element)) {
-        this->elements_ = std::make_tuple(Element::bottom()...);
+    explicit StructDomain(BottomTag, const Types& types) :
+            types_(types), factory_(AbstractFactory::get()) {
+        for (auto i = 0U; i < types_.size(); ++i) {
+            elements_.push_back(factory_->bottom(types[i]));
+        }
+    }
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
     }
 
 public:
 
-    StructDomain(Element... elems) : length_(sizeof...(Element)) {
-        this->elements_ = std::forward_as_tuple(elems...);
-    }
-
+    explicit StructDomain(const Types& types) : StructDomain(TopTag{}, types) {}
+    StructDomain(const Types& types, const Elements& elements) : AbstractDomain(class_tag(*this)), types_(types), elements_(elements) {}
     StructDomain(const StructDomain&) = default;
     StructDomain(StructDomain&&) = default;
     StructDomain& operator=(const StructDomain&) = default;
     StructDomain& operator=(StructDomain&&) = default;
 
-    static Ptr top() { return std::make_shared<StructDomain>(TopTag{}); }
+    static Ptr top(const Types& types) { return std::make_shared<StructDomain>(TopTag{}, types); }
+    static Ptr bottom(const Types& types) { return std::make_shared<StructDomain>(BottomTag{}, types); }
 
-    static Ptr bottom() { return std::make_shared<StructDomain>(BottomTag{}); }
+    const Types& types() const { return types_; }
+
+    size_t size() const {
+        return elements_.size();
+    }
 
     bool isTop() const override {
         bool top = true;
-        for (auto i = 0U; i < length_; ++i) {
-            top &= std::get<i>(elements_)->isTop();
+        for (auto i = 0U; i < size(); ++i) {
+            top &= elements_[i]->isTop();
         }
         return top;
     }
 
     bool isBottom() const override {
         bool top = true;
-        for (auto i = 0U; i < length_; ++i) {
-            top &= std::get<i>(elements_)->isBottom();
+        for (auto i = 0U; i < size(); ++i) {
+            top &= elements_[i]->isBottom();
         }
         return top;
     }
 
     void setTop() override {
-        this->elements_ = std::make_tuple(Element::top()...);
+        for (auto i = 0U; i < size(); ++i) {
+            elements_[i]->setTop();
+        }
     }
 
     void setBottom() override {
-        this->elements_ = std::make_tuple(Element::bottom()...);
+        for (auto i = 0U; i < size(); ++i) {
+            elements_[i]->setBottom();
+        }
     }
 
     bool leq(ConstPtr other) const override {
@@ -93,6 +123,8 @@ public:
     }
 
     bool equals(ConstPtr other) const  override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return other->isBottom();
         } else if (this->isTop()) {
@@ -101,10 +133,10 @@ public:
             return false;
         } else {
 
-            if (this->length_ != other->length_) return false;
+            if (this->size() != otherRaw->size()) return false;
 
             for (auto i = 0U; i < this->length_; ++i) {
-                if (std::get<i>(this->elements_) != std::get<i>(other->elements_)) {
+                if (this->elements_[i] != otherRaw->elements_[i]) {
                     return false;
                 }
             }
@@ -114,58 +146,64 @@ public:
     }
 
     void joinWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            this->operator=(*other.get());
+            this->operator=(*otherRaw);
         } else if (this->isTop()) {
             return;
         } else if (other->isBottom()) {
             return;
-        } else if (other.isTop()) {
-            this->operator=(*other.get());
+        } else if (other->isTop()) {
+            this->operator=(*otherRaw);
         } else {
 
-            ASSERT(this->length_ == other->length_, "trying to join different length structs");
+            ASSERT(this->size() == otherRaw->size(), "trying to join different length structs");
 
             for (auto i = 0U; i < this->length_; ++i) {
-                std::get<i>(this->elements_)->joinWith(std::get<i>(other->elements_));
+                this->elements_[i]->joinWith(otherRaw->elements_[i]);
             }
         }
     }
 
     void meetWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return;
         } else if (this->isTop()) {
-            this->operator=(other);
+            this->operator=(*otherRaw);
         } else if (other->isBottom()) {
-            this->operator=(other);
-        } else if (other.isTop()) {
+            this->operator=(*otherRaw);
+        } else if (other->isTop()) {
             return;
         } else {
 
-            ASSERT(this->length_ == other->length_, "trying to meet different length structs");
+            ASSERT(this->size() == otherRaw->size(), "trying to meet different length structs");
 
             for (auto i = 0U; i < this->length_; ++i) {
-                std::get<i>(this->elements_)->meetWith(std::get<i>(other->elements_));
+                this->elements_[i]->meetWith(otherRaw->elements_[i]);
             }
         }
     }
 
     void widenWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            this->operator=(*other.get());
+            this->operator=(*otherRaw);
         } else if (this->isTop()) {
             return;
         } else if (other->isBottom()) {
             return;
-        } else if (other.isTop()) {
-            this->operator=(*other.get());
+        } else if (other->isTop()) {
+            this->operator=(*otherRaw);
         } else {
 
-            ASSERT(this->length_ == other->length_, "trying to widen different length structs");
+            ASSERT(this->size() == otherRaw->size(), "trying to widen different length structs");
 
             for (auto i = 0U; i < this->length_; ++i) {
-                std::get<i>(this->elements_)->widenWith(std::get<i>(other->elements_));
+                this->elements_[i]->widenWith(otherRaw->elements_[i]);
             }
         }
     }
@@ -176,11 +214,12 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        auto&& elemNames = std::make_tuple(Element::name()...);
         ss << "Struct [";
-        ss << std::get<0>(elemNames);
+        if (not types_.empty()) {
+            ss << TypeUtils::toString(*types_[0].get());
+        }
         for (auto i = 1U; i < this->length_; ++i) {
-            ss << ", " << std::get<i>(elemNames);
+            ss << ", " << TypeUtils::toString(*types_[i].get());
         }
         ss << "] ";
         ss << ": {";
@@ -190,60 +229,41 @@ public:
             ss << " BOTTOM }";
         } else {
             for (auto i = 0U; i < this->length_; ++i) {
-                ss << std::endl << "  " << std::get<i>(this->elements_)->toString();
+                ss << std::endl << "  " << this->elements_[i]->toString();
             }
             ss << std::endl << "}";
         }
         return ss.str();
     }
 
-    template <typename Elem>
-    typename Elem::Ptr load(IntervalPtr interval) const {
+    Ptr load(Ptr interval) const override {
+        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
+        ASSERTC(intervalRaw);
+        ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
+
+        auto index = intervalRaw->asConstant();
+        auto type = types_[index];
+
         if (this->isTop()) {
-            return Elem::top();
+            return factory_->top(type);
         } else if (this->isBottom()) {
-            return Elem::bottom();
+            return factory_->bottom(type);
         } else {
-            auto lb = interval->lb();
-
-            auto result = Elem::bottom();
-            auto ub = interval->ub();
-
-            if (ub >= this->length_) {
-                warns() << "Possible buffer overflow" << endl;
-            } else if (lb >= this->length_) {
-                warns() << "Buffer overflow" << endl;
-                return Elem::top();
-            }
-
-            for (auto i = lb; i < ub and i < this->length_; ++i) {
-                result.joinWith(std::get<i>(this->elements_));
-            }
-
-            return result;
+            ASSERTC(index <= size());
+            return elements_[index];
         }
     }
 
-    template <typename Elem>
-    void store(IntervalPtr interval, typename Elem::Ptr value) {
+    void store(IntervalPtr interval, Ptr value) override {
+        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
+        ASSERTC(intervalRaw);
+        ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
+        auto index = intervalRaw->asConstant();
+
         if (this->isTop()) {
             return;
-        } else if (this->isBottom()) {
-            return;
         } else {
-            auto lb = interval->lb();
-            auto ub = interval->ub();
-
-            if (ub >= this->length_) {
-                warns() << "Possible buffer overflow" << endl;
-            } else if (lb >= this->length_) {
-                warns() << "Buffer overflow" << endl;
-                return Elem::top();
-            }
-
-            for (auto i = lb; i < ub and i < this->length_; ++i) {
-                std::get<i>(this->elements_)->joinWith(value);
-            }
+            elements_[index]->joinWith(value);
         }
     }
 

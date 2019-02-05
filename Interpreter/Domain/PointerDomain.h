@@ -26,7 +26,7 @@ struct PtrLocationHash {
 struct PtrLocationEquals {
     bool operator() (const PointerLocation& lhv, const PointerLocation& rhv) const noexcept {
         return lhv.location_->equals(rhv.location_.get());
-//        return lhv.location_.get() == rhv.location_.get();
+//        return lhv.base_.get() == rhv.base_.get();
     }
 };
 

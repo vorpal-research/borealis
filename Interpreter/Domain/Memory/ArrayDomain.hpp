@@ -7,7 +7,7 @@
 
 #include <unordered_map>
 
-#include "Interpreter/Domain/Domain.h"
+#include "Aggregate.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -15,43 +15,80 @@
 namespace borealis {
 namespace absint {
 
-template <typename MachineInt, typename ElementT>
-class ArrayDomain : public AbstractDomain<ArrayDomain<MachineInt, ElementT>> {
+class AbstractFactory;
+
+template <typename MachineInt>
+class ArrayDomain : public Aggregate<MachineInt> {
 public:
 
-    using Ptr = std::shared_ptr<ArrayDomain<MachineInt, ElementT>>;
-    using ConstPtr = std::shared_ptr<const ArrayDomain<MachineInt, ElementT>>;
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
 
+    using Self = ArrayDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using IntervalPtr = typename IntervalT::Ptr;
-    using ElementPtr = typename ElementT::Ptr;
-    using ElementMapT = std::unordered_map<size_t, ElementPtr>;
+    using ElementMapT = std::unordered_map<int, AbstractDomain::Ptr>;
 
 private:
 
-    IntervalPtr length_;
+    Ptr length_;
+    Type::Ptr elementType_;
+    AbstractFactory* factory_;
     ElementMapT elements_;
 
 private:
     struct TopTag {};
     struct BottomTag {};
 
-    explicit ArrayDomain(TopTag) : length_(IntervalT::top()) {}
-    explicit ArrayDomain(BottomTag) : length_(IntervalT::bottom()) {}
+    ArrayDomain(TopTag, Type::Ptr elementType) :
+            AbstractDomain(class_tag(*this)), length_(IntervalT::top()), elementType_(elementType), factory_(AbstractFactory::get()) {}
+
+    ArrayDomain(BottomTag, Type::Ptr elementType) :
+            AbstractDomain(class_tag(*this)), length_(IntervalT::bottom()), elementType_(elementType), factory_(AbstractFactory::get()) {}
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
 
 public:
 
-    ArrayDomain() : ArrayDomain(TopTag{}) {}
+    explicit ArrayDomain(Type::Ptr elementType) : ArrayDomain(TopTag{}, elementType) {}
+    ArrayDomain(Type::Ptr elementType, const std::vector<AbstractDomain::Ptr>& elements) :
+            AbstractDomain(class_tag(*this)), elementType_(elementType) {
+        for (auto i = 0U; i < elements.size(); ++i) {
+            elements_[i] = elements[i];
+        }
+    }
+
     ArrayDomain(const ArrayDomain&) = default;
     ArrayDomain(ArrayDomain&&) = default;
     ArrayDomain& operator=(const ArrayDomain&) = default;
     ArrayDomain& operator=(ArrayDomain&&) = default;
 
-    static Ptr top() { return std::make_shared<ArrayDomain>(TopTag{}); }
-    static Ptr bottom() { return std::make_shared<ArrayDomain>(BottomTag{}); }
+    static bool classof(const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    static Ptr top(Type::Ptr elementType) { return std::make_shared<ArrayDomain>(TopTag{}, elementType); }
+    static Ptr bottom(Type::Ptr elementType) { return std::make_shared<ArrayDomain>(BottomTag{}, elementType); }
+
+    Type::Ptr elementType() const { return elementType_; }
 
     bool isTop() const override { return length_->isTop() and elements_.empty(); }
-    bool isBottom() const { return length_->isBottom() and elements_.empty(); }
+    bool isBottom() const override { return length_->isBottom() and elements_.empty(); }
 
     void setTop() override {
         length_->setTop();
@@ -64,17 +101,21 @@ public:
     }
 
     bool leq(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return true;
         } else if (other->isBottom()) {
             return false;
         } else {
-            return this->length_ < other->length_ and
-            util::equal_with_find(this->elements_, other->elements_, LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
+            return this->length_ < otherRaw->length_ and
+            util::equal_with_find(this->elements_, otherRaw->elements_, LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
         }
     }
 
     bool equals(ConstPtr other) const  override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return other->isBottom();
         } else if (this->isTop()) {
@@ -83,10 +124,10 @@ public:
             return false;
         } else {
 
-            if (this->length_ != other->length_) return false;
+            if (this->length_ != otherRaw->length_) return false;
 
             for (auto&& it : this->elements_) {
-                auto&& opt = util::at(other->elements_, it.first);
+                auto&& opt = util::at(otherRaw->elements_, it.first);
                 if ((not opt) || (not it.second->equals(opt.getUnsafe().get()))) {
                     return false;
                 }
@@ -97,18 +138,20 @@ public:
     }
 
     void joinWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            this->operator=(*other.get());
+            this->operator=(*otherRaw);
         } else if (this->isTop()) {
             return;
         } else if (other->isBottom()) {
             return;
-        } else if (other.isTop()) {
-            this->operator=(*other.get());
+        } else if (other->isTop()) {
+            this->operator=(*otherRaw);
         } else {
 
-            this->length_->joinWith(other->length_);
-            for (auto&& it : other->elements_) {
+            this->length_->joinWith(otherRaw->length_);
+            for (auto&& it : otherRaw->elements_) {
                 auto&& opt = util::at(this->elements_, it.first);
                 if (not opt) {
                     this->elements_[it.first] = it.second;
@@ -120,18 +163,20 @@ public:
     }
 
     void meetWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
             return;
         } else if (this->isTop()) {
-            this->operator=(other);
+            this->operator=(*otherRaw);
         } else if (other->isBottom()) {
-            this->operator=(other);
-        } else if (other.isTop()) {
+            this->operator=(*otherRaw);
+        } else if (other->isTop()) {
             return;
         } else {
 
-            this->length_->meetWith(other->length_);
-            for (auto&& it : other->elements_) {
+            this->length_->meetWith(otherRaw->length_);
+            for (auto&& it : otherRaw->elements_) {
                 auto&& opt = util::at(this->elements_, it.first);
                 if (not opt) {
                     this->elements_[it.first] = it.second;
@@ -143,18 +188,20 @@ public:
     }
 
     void widenWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+
         if (this->isBottom()) {
-            this->operator=(*other.get());
+            this->operator=(*otherRaw);
         } else if (this->isTop()) {
             return;
         } else if (other->isBottom()) {
             return;
-        } else if (other.isTop()) {
-            this->operator=(*other.get());
+        } else if (other->isTop()) {
+            this->operator=(*otherRaw);
         } else {
 
-            this->length_->widenWith(other->length_);
-            for (auto&& it : other->elements_) {
+            this->length_->widenWith(otherRaw->length_);
+            for (auto&& it : otherRaw->elements_) {
                 auto&& opt = util::at(this->elements_, it.first);
                 if (not opt) {
                     this->elements_[it.first] = it.second;
@@ -171,7 +218,7 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        ss << "Array [" << this->length_->ub() << " x " << ElementT::name() << "] ";
+        ss << "Array [" << this->length_->ub() << " x " << TypeUtils::toString(*elementType_.get()) << "] ";
         ss << ": [";
         if (this->isTop()) {
             ss << " TOP ]";
@@ -186,49 +233,55 @@ public:
         return ss.str();
     }
 
-    ElementPtr load(IntervalPtr interval) const {
+    Ptr load(Ptr interval) const override {
+        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
+        ASSERTC(intervalRaw);
+
         if (this->isTop()) {
-            return ElementT::top();
+            return factory_->top(elementType_);
         } else if (this->isBottom()) {
-            return ElementT::bottom();
+            return factory_->bottom(elementType_);
         } else {
-            auto result = ElementT::bottom();
+            auto result = factory_->bottom(elementType_);
 
             auto lengthUb = this->length_->ub();
-            auto lb = interval->lb();
-            auto ub = interval->ub();
+            auto lb = intervalRaw->lb();
+            auto ub = intervalRaw->ub();
 
             if (ub >= lengthUb) {
                 warns() << "Possible buffer overflow" << endl;
             } else if (lb >= lengthUb) {
                 warns() << "Buffer overflow" << endl;
-                return ElementT::top();
+                return factory_->top(elementType_);
             }
 
             for (auto i = lb; i < ub and i < lengthUb; ++i) {
                 auto&& opt = util::at(this->elements_, i);
-                result.joinWith((not opt) ? ElementT::bottom() : opt.getUnsafe());
+                result.joinWith((not opt) ? factory_->bottom(elementType_) : opt.getUnsafe());
             }
 
             return result;
         }
     }
 
-    void store(IntervalPtr interval, ElementPtr value) {
+    void store(Ptr interval, Ptr value) override {
+        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
+        ASSERTC(intervalRaw);
+
         if (this->isTop()) {
             return;
         } else if (this->isBottom()) {
             return;
         } else {
             auto lengthUb = this->length_->ub();
-            auto lb = interval->lb();
-            auto ub = interval->ub();
+            auto lb = intervalRaw->lb();
+            auto ub = intervalRaw->ub();
 
             if (ub >= lengthUb) {
                 warns() << "Possible buffer overflow" << endl;
             } else if (lb >= lengthUb) {
                 warns() << "Buffer overflow" << endl;
-                return ElementT::top();
+                return factory_->top(elementType_);
             }
 
             for (auto i = lb; i < ub and i < lengthUb; ++i) {
@@ -246,17 +299,6 @@ public:
 
 } // namespace absint
 } // namespace borealis
-
-namespace std {
-
-template <typename Derived>
-struct hash<std::shared_ptr<borealis::absint::AbstractDomain<Derived>>> {
-    size_t operator()(const std::shared_ptr<borealis::absint::AbstractDomain<Derived>>& dom) const noexcept {
-        return dom->hashCode();
-    }
-};
-
-} // namespace std
 
 #include "Util/unmacros.h"
 

@@ -14,108 +14,57 @@ namespace absint {
 template <typename MachineInt>
 class NullLocation;
 
-template <typename MachineInt, typename Element>
+template <typename MachineInt>
 class ArrayLocation;
 
-template <typename MachineInt, typename ...Element>
+template <typename MachineInt>
 class StructLocation;
 
 template <typename MachineInt>
-class MemoryLocation : public AbstractDomain<MemoryLocation<MachineInt>> {
-public:
-    enum Kind {
-        ARRAY,
-        STRUCT,
-        NULL_
-    };
-
-private:
-
-    Kind kind_;
-
+class MemoryLocation : public AbstractDomain {
 public:
 
-    using Ptr = std::shared_ptr<MemoryLocation<MachineInt>>;
-    using ConstPtr = std::shared_ptr<const MemoryLocation<MachineInt>>;
-
+    using Ptr = AbstractDomain::Ptr;
     using IntervalT = Interval<MachineInt>;
-    using IntervalPtr = typename IntervalT::Ptr;
 
-public:
 
-    MemoryLocation() : kind_(ARRAY) {}
-    explicit MemoryLocation(Kind kind) : kind_(kind) {}
-    ~MemoryLocation() override = default;
+    virtual std::unordered_set<Ptr> offsets() const = 0;
 
-    template <typename MInt>
-    static std::shared_ptr<MemoryLocation<MInt>> makeNull() {
-        return NullLocation<MInt>::instance();
-    }
-
-    template <typename MInt, typename Element>
-    static std::shared_ptr<MemoryLocation<MInt>> makeArray(
-            typename ArrayLocation<MInt, Element>::LocPtr ptr,
-            typename ArrayLocation<MInt, Element>::IntervalPtr offset) {
-        return std::make_shared<ArrayLocation<MInt, Element>>(ptr, offset);
-    }
-
-    template <typename MInt, typename ...Element>
-    static std::shared_ptr<MemoryLocation<MInt>> makeStruct(
-            typename StructLocation<MInt, Element...>::LocPtr ptr,
-            typename StructLocation<MInt, Element...>::IntervalPtr offset) {
-        return std::make_shared<StructLocation<MInt, Element...>>(ptr, offset);
-    }
-
-    template <typename MInt, typename ...Element>
-    static std::shared_ptr<MemoryLocation<MInt>> makeStruct(
-            typename StructLocation<MInt, Element...>::LocPtr ptr,
-            const typename StructLocation<MInt, Element...>::Offsets& offsets) {
-        return std::make_shared<StructLocation<MInt, Element...>>(ptr, offsets);
-    }
-
-    bool kind() const { return this->kind_; }
-    virtual const std::unordered_set<IntervalPtr>& offsets() const = 0;
-
-    bool isArray() const { return this->kind_ == ARRAY; }
-    bool isStruct() const { return this->kind_ == STRUCT; }
-    bool isNull() const { return this->kind_ == NULL_; }
-
-    static bool classof(const MemoryLocation*) {
-        return true;
-    }
-
-    template <typename Elem>
-    typename Elem::Ptr load(IntervalPtr interval) const {
-        if (this->isArray()) {
-            return llvm::dyn_cast<ArrayLocation<MachineInt, Elem>>(this)->load(interval);
-        } else if (this->isStruct()) {
-            return nullptr;
-        } else if (this->isNull()) {
-            return llvm::dyn_cast<NullLocation<MachineInt>>(this)->load(interval);
-        } else {
-            UNREACHABLE("Unknown location type");
-        }
-    }
-
-    template <typename Elem>
-    void store(IntervalPtr, typename Elem::Ptr) {}
-
+    virtual Ptr load(Ptr, Type::Ptr) const = 0;
+    virtual void store(Ptr, Ptr) = 0;
 };
 
 template <typename MachineInt>
 class NullLocation : public MemoryLocation<MachineInt> {
 public:
 
-    using Base = MemoryLocation<MachineInt>;
-    using BasePtr = typename Base::Ptr;
-    using BaseConstPtr = typename Base::ConstPtr;
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
 
+    using Self = NullLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using IntervalPtr = typename IntervalT::Ptr;
 
 private:
 
-    NullLocation() = default;
+    AbstractFactory* factory_;
+
+private:
+
+    NullLocation() : AbstractDomain(class_tag(*this)), factory_(AbstractFactory::get()) {}
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
 
 public:
 
@@ -124,16 +73,20 @@ public:
     NullLocation& operator=(const NullLocation&) = delete;
     NullLocation& operator=(NullLocation&&) = delete;
 
-    static BasePtr instance() {
-        static BasePtr instance_ = std::make_shared<NullLocation>();
+    static Ptr instance() {
+        static Ptr instance_ = std::make_shared<NullLocation>();
         return instance_;
     }
 
-    static bool classof(const Base* other) {
-        return other->kind() == Base::NULL_;
+    static bool classof(const Self*) {
+        return true;
     }
 
-    const std::unordered_set<IntervalPtr>& offsets() const override {
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    std::unordered_set<Ptr> offsets() const override {
         return {};
     }
 
@@ -143,222 +96,260 @@ public:
     void setTop() override {}
     void setBottom() override {}
 
-    bool leq(BaseConstPtr) const override {
+    bool leq(ConstPtr) const override {
         UNREACHABLE("Unimplemented");
     }
 
-    bool equals(BaseConstPtr other) const override {
-        return other->isNull();
+    bool equals(ConstPtr other) const override {
+        return llvm::isa<Self>(other.get());
     }
 
-    void joinWith(BaseConstPtr other) override {
-        ASSERTC(other->isNull());
+    void joinWith(ConstPtr other) override {
+        ASSERTC(llvm::isa<Self>(other.get()));
     }
 
-    void meetWith(BaseConstPtr other) override {
-        ASSERTC(other->isNull());
+    void meetWith(ConstPtr other) override {
+        ASSERTC(llvm::isa<Self>(other.get()));
     }
 
-    void widenWith(BaseConstPtr other) override {
+    void widenWith(ConstPtr other) override {
         joinWith(other);
     }
 
     size_t hashCode() const override { return 42; }
     std::string toString() const override { return "null"; }
 
-    template <typename Elem>
-    typename Elem::Ptr load(IntervalPtr) const {
-        return Elem::top();
+    Ptr load(Ptr, Type::Ptr type) const override {
+        return factory_->top(type);
     }
 
-    template <typename Elem>
-    void store(IntervalPtr, typename Elem::Ptr) {}
+    void store(Ptr, Ptr) override {}
 };
 
-template <typename MachineInt, typename Element>
+template <typename MachineInt>
 class ArrayLocation : public MemoryLocation<MachineInt> {
 public:
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
 
-    using Base = MemoryLocation<MachineInt>;
-    using BasePtr = typename Base::Ptr;
-    using BaseConstPtr = typename Base::ConstPtr;
+    using Self = ArrayLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using IntervalPtr = typename IntervalT::Ptr;
-    using LocPtr = typename ArrayDomain<MachineInt, Element>::Ptr;
 
 private:
 
-    LocPtr location_;
-    IntervalPtr offset_;
+    Ptr base_;
+    Ptr offset_;
+    AbstractFactory* factory_;
+
+private:
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
 
 public:
 
-    ArrayLocation(LocPtr location, IntervalPtr offset) : Base(Base::ARRAY), location_(location), offset_(offset) {}
+    ArrayLocation(Ptr location, Ptr offset) :
+            AbstractDomain(class_tag(*this)), base_(location), offset_(offset), factory_(AbstractFactory::get()) {
+        static_assert(llvm::isa<ArrayDomain<MachineInt>>(base_.get()), "Trying to create array location with non-array base");
+    }
+
     ArrayLocation(const ArrayLocation&) = default;
     ArrayLocation(ArrayLocation&&) = default;
     ArrayLocation& operator=(const ArrayLocation&) = default;
     ArrayLocation& operator=(ArrayLocation&&) = default;
     ~ArrayLocation() override = default;
 
-    static bool classof(const Base* other) {
-        return other->kind() == Base::ARRAY;
+    static bool classof(const Self*) {
+        return true;
     }
 
-    const std::unordered_set<IntervalPtr>& offsets() const override {
-        return {this->offset_};
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
     }
 
-    bool isTop() const override { return this->location_->isTop(); }
-    bool isBottom() const override { return this->location_->isBottom(); }
+    bool isTop() const override { return this->base_->isTop(); }
+    bool isBottom() const override { return this->base_->isBottom(); }
 
     void setTop() override {
-        this->location_->setTop();
+        this->base_->setTop();
     }
 
     void setBottom() override {
-        this->location_->setBottom();
+        this->base_->setBottom();
     }
 
-    bool leq(BaseConstPtr) const override {
+    bool leq(ConstPtr) const override {
         UNREACHABLE("Unimplemented");
     }
 
-    bool equals(BaseConstPtr other) const override {
-        if (not other->isArray()) return false;
+    bool equals(ConstPtr other) const override {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        if (not otherRaw) return false;
 
-        auto&& otherRaw = llvm::dyn_cast<ArrayLocation>(other.get());
-        return this->location_ == otherRaw->location_;
+        return this->base_ == otherRaw->base_;
     }
 
-    void joinWith(BaseConstPtr other) override {
-        ASSERTC(other->isArray());
-        auto&& otherRaw = llvm::dyn_cast<ArrayLocation>(other.get());
+    void joinWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->location_ == otherRaw->location_);
+        ASSERTC(this->base_ == otherRaw->base_);
         this->offset_->joinWith(otherRaw->offset_);
     }
 
-    void meetWith(BaseConstPtr other) override {
-        ASSERTC(other->isArray());
-        auto&& otherRaw = llvm::dyn_cast<ArrayLocation>(other.get());
+    void meetWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->location_ == otherRaw->location_);
+        ASSERTC(this->base_ == otherRaw->base_);
         this->offset_->meetWith(otherRaw->offset_);
     }
 
-    void widenWith(BaseConstPtr other) override {
+    void widenWith(ConstPtr other) override {
         joinWith(other);
     }
 
-    size_t hashCode() const override { return this->location_->hashCode(); }
-    std::string toString() const override { return this->location_->toString(); }
+    size_t hashCode() const override { return this->base_->hashCode(); }
+    std::string toString() const override { return this->base_->toString(); }
 
-    template <typename Elem>
-    typename Elem::Ptr load(IntervalPtr interval) const {
-        return this->location_->load(interval + this->offset_);
+    Ptr load(Ptr interval, Type::Ptr type) const override {
+        auto* baseRaw = llvm::dyn_cast<ArrayDomain<MachineInt>>(base_.get());
+        ASSERTC(baseRaw);
+        ASSERT(baseRaw->elementType()->equals(type.get()), "Trying to load different type than the actual location");
+        return this->base_->load(interval + this->offset_);
     }
 
-    template <typename Elem>
-    void store(IntervalPtr interval, typename Elem::Ptr value) {
-        return this->location_->store(interval + this->offset_, value);
+    void store(Ptr interval, Ptr value) {
+        return this->base_->store(interval + this->offset_, value);
     }
 };
 
-template <typename MachineInt, typename ...Element>
+template <typename MachineInt>
 class StructLocation : public MemoryLocation<MachineInt> {
 public:
 
-    using Base = MemoryLocation<MachineInt>;
-    using BasePtr = typename Base::Ptr;
-    using BaseConstPtr = typename Base::ConstPtr;
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
+
+    using Self = StructLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using IntervalPtr = typename IntervalT::Ptr;
-    using Offsets = std::unordered_set<IntervalPtr>;
-    using LocPtr = typename StructDomain<MachineInt, Element...>::Ptr;
+    using Offsets = std::unordered_set<Ptr>;
 
 private:
 
-    LocPtr location_;
+    Ptr base_;
     Offsets offsets_;
+    AbstractFactory* factory_;
+
+private:
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
 
 public:
 
-    StructLocation(LocPtr location, IntervalPtr offset)
-            : location_(location), offsets_({offset}) {}
+    StructLocation(Ptr base, Ptr offset)
+            : base_(base), offsets_({offset}), factory_(AbstractFactory::get()) {
+        static_assert(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
+    }
 
-    StructLocation(LocPtr location, Offsets offsets)
-            : location_(location), offsets_(offsets) {}
+    StructLocation(Ptr base, Offsets offsets)
+            : base_(base), offsets_(offsets), factory_(AbstractFactory::get()) {
+        static_assert(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
+    }
+
     StructLocation(const StructLocation&) = default;
     StructLocation(StructLocation&&) = default;
     StructLocation& operator=(const StructLocation&) = default;
     StructLocation& operator=(StructLocation&&) = default;
     ~StructLocation() override = default;
 
-    static bool classof(const Base* other) {
-        return other->kind() == Base::STRUCT;
+    static bool classof(const Self*) {
+        return true;
     }
 
-    const std::unordered_set<IntervalPtr>& offsets() const override {
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    const Offsets& offsets() const override {
         return this->offsets_;
     }
 
-    bool isTop() const override { return this->location_->isTop(); }
-    bool isBottom() const override { return this->location_->isBottom(); }
+    bool isTop() const override { return this->base_->isTop(); }
+    bool isBottom() const override { return this->base_->isBottom(); }
 
     void setTop() override {
-        this->location_->setTop();
+        this->base_->setTop();
     }
 
     void setBottom() override {
-        this->location_->setBottom();
+        this->base_->setBottom();
     }
 
-    bool leq(BaseConstPtr) const override {
+    bool leq(ConstPtr) const override {
         UNREACHABLE("Unimplemented");
     }
 
-    bool equals(BaseConstPtr other) const override {
-        if (not other->isStruct()) return false;
+    bool equals(ConstPtr other) const override {
+        auto* otherRaw = llvm::dyn_cast<StructLocation>(other.get());
+        if (not otherRaw) return false;
 
-        auto&& otherRaw = llvm::dyn_cast<StructLocation>(other.get());
-        return this->location_ == otherRaw->location_;
+        return this->base_ == otherRaw->location_;
     }
 
-    void joinWith(BaseConstPtr other) override {
-        ASSERTC(other->isStruct());
-        auto&& otherRaw = llvm::dyn_cast<StructLocation>(other.get());
+    void joinWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->location_ == otherRaw->location_);
+        ASSERTC(this->base_ == otherRaw->location_);
         for (auto&& offset : otherRaw->offsets_) {
             this->offsets_.insert(offset);
         }
     }
 
-    void meetWith(BaseConstPtr other) override {
-        ASSERTC(other->isStruct());
-        auto&& otherRaw = llvm::dyn_cast<StructLocation>(other.get());
+    void meetWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->location_ == otherRaw->location_);
+        ASSERTC(this->base_ == otherRaw->location_);
         for (auto&& offset : otherRaw->offsets_) {
             this->offsets_.insert(offset);
         }
     }
 
-    void widenWith(BaseConstPtr other) override {
+    void widenWith(ConstPtr other) override {
         joinWith(other);
     }
 
-    size_t hashCode() const override { return this->location_->hashCode(); }
-    std::string toString() const override { return this->location_->toString(); }
+    size_t hashCode() const override { return this->base_->hashCode(); }
+    std::string toString() const override { return this->base_->toString(); }
 
-    template <typename Elem>
-    typename Elem::Ptr load(IntervalPtr interval) const {
-        return this->location_->load(interval + this->offset_);
+    Ptr load(Ptr interval, Type::Ptr) const override {
+        // TODO: type checking
+        return this->base_->load(interval + this->offset_);
     }
 
-    template <typename Elem>
-    void store(IntervalPtr interval, typename Elem::Ptr value) {
-        return this->location_->store(interval + this->offset_, value);
+    void store(Ptr interval, Ptr value) {
+        return this->base_->store(interval + this->offset_, value);
     }
 };
 

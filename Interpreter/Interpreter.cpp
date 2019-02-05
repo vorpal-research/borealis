@@ -14,7 +14,7 @@
 #include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
 #include "Interpreter/Domain/Memory/ArrayDomain.hpp"
 #include "Interpreter/Domain/Memory/StructDomain.hpp"
-#include "Interpreter/Domain/Memory/Pointer.hpp"
+#include "Interpreter/Domain/Memory/MemoryLocation.hpp"
 
 #include "Util/macros.h"
 

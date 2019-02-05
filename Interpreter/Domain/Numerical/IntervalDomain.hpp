@@ -15,13 +15,13 @@ namespace borealis {
 namespace absint {
 
 template <typename Number, typename Variable>
-class IntervalDomain : public NumericalDomain<Number, Variable, Interval<Number>> {
+class IntervalDomain : public NumericalDomain<Number, Variable> {
 public:
-    using Ptr = std::shared_ptr<IntervalDomain<Number, Variable>>;
-    using ConstPtr = std::shared_ptr<const IntervalDomain<Number, Variable>>;
+    using Self = IntervalDomain<Number, Variable>;
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
 
     using BoolT = Interval<IntNumber<1, false>>;
-    using BoolPtr = typename BoolT::Ptr;
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
     using IntervalPtr = typename IntervalT::Ptr;
@@ -33,7 +33,21 @@ private:
 
 private:
 
-    explicit IntervalDomain(EnvT env) : env_(std::move(env)) {}
+    explicit IntervalDomain(EnvT env) : AbstractDomain(class_tag(*this)), env_(std::move(env)) {}
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
 
 public:
 
@@ -44,6 +58,14 @@ public:
     IntervalDomain& operator=(IntervalDomain&&) noexcept = default;
     ~IntervalDomain() override = default;
 
+    static bool classof (const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
     static Ptr top() { return std::make_shared(EnvT::top()); }
     static Ptr bottom() { return std::make_shared(EnvT::bottom()); }
 
@@ -52,12 +74,12 @@ public:
     void setTop() override { this->env_->setTop(); }
     void setBottom() override { this->env_->setBottom(); }
 
-    bool leq(ConstPtr other) const override { return this->env_->leq(other->env_); }
-    bool equals(ConstPtr other) const override { return this->env_->equals(other->env_); }
+    bool leq(ConstPtr other) const override { return this->env_->leq(unwrap(other)->env_); }
+    bool equals(ConstPtr other) const override { return this->env_->equals(unwrap(other)->env_); }
 
-    void joinWith(ConstPtr other) override { this->env_->joinWith(other->env_); }
-    void meetWith(ConstPtr other) override { this->env_->meetWith(other->env_); }
-    void widenWith(ConstPtr other) override { this->env_->widenWith(other->env_); }
+    void joinWith(ConstPtr other) override { this->env_->joinWith(unwrap(other)->env_); }
+    void meetWith(ConstPtr other) override { this->env_->meetWith(unwrap(other)->env_); }
+    void widenWith(ConstPtr other) override { this->env_->widenWith(unwrap(other)->env_); }
 
     IntervalPtr get(Variable x) const { return this->env_->get(x); }
     void set(Variable x, IntervalPtr value) { return this->env_->set(x, value); }
@@ -72,7 +94,7 @@ public:
 
     void apply(BinaryOperator op, Variable x, Variable y, Variable z) override { return this->env_->apply(op, x, y, z); }
 
-    BoolPtr apply(CmpOperator op, Variable x, Variable y) override {
+    Ptr apply(CmpOperator op, Variable x, Variable y) override {
         auto&& makeBool = [](bool b) { return std::make_shared<BoolT>((int) b); };
 
         auto& lhv = this->get(x);
