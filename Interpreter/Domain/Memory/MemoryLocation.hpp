@@ -12,26 +12,18 @@ namespace borealis {
 namespace absint {
 
 template <typename MachineInt>
-class NullLocation;
-
-template <typename MachineInt>
-class ArrayLocation;
-
-template <typename MachineInt>
-class StructLocation;
-
-template <typename MachineInt>
 class MemoryLocation : public AbstractDomain {
 public:
 
     using Ptr = AbstractDomain::Ptr;
     using IntervalT = Interval<MachineInt>;
 
-
     virtual std::unordered_set<Ptr> offsets() const = 0;
 
+    virtual bool isNull() const { return false; }
     virtual Ptr load(Ptr, Type::Ptr) const = 0;
     virtual void store(Ptr, Ptr) = 0;
+    virtual Ptr gep(Ptr, Type::Ptr) const = 0;
 };
 
 template <typename MachineInt>
@@ -119,11 +111,17 @@ public:
     size_t hashCode() const override { return 42; }
     std::string toString() const override { return "null"; }
 
+    bool isNull() const override { return true; }
+
     Ptr load(Ptr, Type::Ptr type) const override {
         return factory_->top(type);
     }
 
     void store(Ptr, Ptr) override {}
+
+    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>&) const override {
+        return factory_->top(type);
+    }
 };
 
 template <typename MachineInt>
@@ -134,6 +132,7 @@ public:
 
     using Self = ArrayLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
+    using PointerT = Pointer<MachineInt>;
 
 private:
 
@@ -230,6 +229,17 @@ public:
 
     void store(Ptr interval, Ptr value) {
         return this->base_->store(interval + this->offset_, value);
+    }
+
+    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+        if (this->isTop()) {
+            return factory_->top(type);
+        } else if (this->isBottom()) {
+            return factory_->bottom(type);
+        } else {
+            offsets[0] = offsets[0] + offset_;
+            return base_->gep(type, offsets);
+        }
     }
 };
 
@@ -344,12 +354,29 @@ public:
     std::string toString() const override { return this->base_->toString(); }
 
     Ptr load(Ptr interval, Type::Ptr) const override {
-        // TODO: type checking
         return this->base_->load(interval + this->offset_);
     }
 
     void store(Ptr interval, Ptr value) {
         return this->base_->store(interval + this->offset_, value);
+    }
+
+    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+        if (this->isTop()) {
+            return factory_->top(type);
+        } else if (this->isBottom()) {
+            return factory_->bottom(type);
+        } else {
+            auto result = factory_->bottom(type);
+            std::vector<ConstPtr> offsetCopy(offsets.begin(), offsets.end());
+            auto zero = offsets[0];
+
+            for (auto&& it : offsets_) {
+                offsetCopy[0] = zero + it;
+                result->joinWith(base_->gep(type, offsetCopy));
+            }
+            return result;
+        }
     }
 };
 

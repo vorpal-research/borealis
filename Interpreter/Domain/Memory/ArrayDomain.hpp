@@ -7,8 +7,6 @@
 
 #include <unordered_map>
 
-#include "Aggregate.hpp"
-
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
@@ -18,7 +16,10 @@ namespace absint {
 class AbstractFactory;
 
 template <typename MachineInt>
-class ArrayDomain : public Aggregate<MachineInt> {
+class ArrayLocation;
+
+template <typename MachineInt>
+class ArrayDomain : public AbstractDomain {
 public:
 
     using Ptr = AbstractDomain::Ptr;
@@ -26,6 +27,8 @@ public:
 
     using Self = ArrayDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
+    using PointerT = Pointer<MachineInt>;
+    using MemLocationT = ArrayLocation<MachineInt>;
     using ElementMapT = std::unordered_map<int, AbstractDomain::Ptr>;
 
 private:
@@ -63,7 +66,7 @@ public:
 
     explicit ArrayDomain(Type::Ptr elementType) : ArrayDomain(TopTag{}, elementType) {}
     ArrayDomain(Type::Ptr elementType, const std::vector<AbstractDomain::Ptr>& elements) :
-            AbstractDomain(class_tag(*this)), elementType_(elementType) {
+            AbstractDomain(class_tag(*this)), length_(IntervalT::constant(elements.size())), elementType_(elementType), factory_(AbstractFactory::get()) {
         for (auto i = 0U; i < elements.size(); ++i) {
             elements_[i] = elements[i];
         }
@@ -233,7 +236,7 @@ public:
         return ss.str();
     }
 
-    Ptr load(Ptr interval) const override {
+    Ptr load(Type::Ptr, Ptr interval) const override {
         auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
         ASSERTC(intervalRaw);
 
@@ -264,7 +267,7 @@ public:
         }
     }
 
-    void store(Ptr interval, Ptr value) override {
+    void store(Ptr value, Ptr interval) override {
         auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
         ASSERTC(intervalRaw);
 
@@ -295,6 +298,50 @@ public:
         }
     }
 
+    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+        if (this->isTop()) {
+            return PointerT::top(type);
+        } else if (this->isBottom()) {
+            return PointerT::bottom(type);
+        }
+
+        auto* intervalRaw = llvm::dyn_cast<IntervalT>(offsets[0]);
+        ASSERTC(intervalRaw);
+
+        auto length = this->length_->ub();
+        auto idx_begin = intervalRaw->lb();
+        auto idx_end = intervalRaw->ub();
+
+        if (idx_end > length) {
+            warns() << "Possible buffer overflow" << endl;
+        } else if (idx_begin > length) {
+            warns() << "Buffer overflow" << endl;
+        }
+
+        if (offsets.size() == 1) {
+            return PointerT(type, std::make_shared<MemLocationT>(shared_from_this(), offsets[0]));
+
+        } else {
+            Ptr result = nullptr;
+
+            std::vector<Domain::Ptr> sub_idx(offsets.begin() + 1, offsets.end());
+            for (auto i = idx_begin; i <= idx_end && i < length; ++i) {
+                if (not util::at(elements_, i)) {
+                    elements_[i] = factory_->bottom(elementType_);
+                }
+                auto subGep = elements_[i]->gep(type, sub_idx);
+                result = result ?
+                         result->joinWith(subGep) :
+                         subGep;
+            }
+            if (not result) {
+                warns() << "Gep is out of bounds" << endl;
+                return factory_->top(type);
+            }
+
+            return result;
+        }
+    }
 };
 
 } // namespace absint

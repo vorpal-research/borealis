@@ -16,7 +16,10 @@ namespace borealis {
 namespace absint {
 
 template <typename MachineInt>
-class StructDomain : public Aggregate<MachineInt> {
+class StructLocation;
+
+template <typename MachineInt>
+class StructDomain : public AbstractDomain {
 public:
 
     using Ptr = AbstractDomain::Ptr;
@@ -24,7 +27,8 @@ public:
 
     using Self = StructDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using IntervalPtr = typename IntervalT::Ptr;
+    using MemLocationT = StructLocation<MachineInt>;
+    using PointerT = Pointer<MachineInt>;
     using Types = std::vector<Type::Ptr>;
     using Elements = std::vector<Ptr>;
 
@@ -236,7 +240,7 @@ public:
         return ss.str();
     }
 
-    Ptr load(Ptr interval) const override {
+    Ptr load(Type::Ptr, Ptr interval) const override {
         auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
         ASSERTC(intervalRaw);
         ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
@@ -254,7 +258,7 @@ public:
         }
     }
 
-    void store(IntervalPtr interval, Ptr value) override {
+    void store(Ptr value, Ptr interval) override {
         auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
         ASSERTC(intervalRaw);
         ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
@@ -267,6 +271,24 @@ public:
         }
     }
 
+    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+        if (this->isTop()) {
+            return PointerT::top(type);
+        } else if (this->isBottom()) {
+            return PointerT::bottom(type);
+        }
+
+        auto* intervalRaw = llvm::dyn_cast<IntervalT>(offsets[0].get());
+        ASSERTC(intervalRaw);
+        ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
+        auto index = intervalRaw->asConstant();
+
+        if (offsets.size() == 1) {
+            return PointerT(type, std::make_shared<MemLocationT>(shared_from_this(), offsets[0]));
+        } else {
+            return elements_[index]->gep(type, std::vector<ConstPtr>(offsets.begin() + 1, offsets.end()));
+        }
+    }
 };
 
 } // namespace absint

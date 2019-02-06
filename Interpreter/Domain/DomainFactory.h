@@ -42,10 +42,12 @@ public:
     }
 
     AbstractDomain::Ptr top(Type::Ptr) const {
+        // TODO: implement
         return nullptr;
     }
 
     AbstractDomain::Ptr bottom(Type::Ptr) const {
+        // TODO: implement
         return nullptr;
     }
 

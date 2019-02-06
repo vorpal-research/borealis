@@ -93,7 +93,65 @@ public:
     static bool classof(const AbstractDomain*) {
         return true;
     }
+
+    ///////////////////////////////////////
+    virtual Ptr apply(BinaryOperator op, ConstPtr other) const;
+    virtual Ptr apply(CmpOperator op, ConstPtr other) const;
+
+    virtual Ptr load(Type::Ptr type, Ptr offset) const;
+    virtual void store(Ptr value, Ptr offset);
+    virtual Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline AbstractDomain::Ptr operator+(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::ADD, rhv);
+}
+
+inline AbstractDomain::Ptr operator-(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::SUB, rhv);
+}
+
+inline AbstractDomain::Ptr operator*(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::MUL, rhv);
+}
+
+inline AbstractDomain::Ptr operator/(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::DIV, rhv);
+}
+
+inline AbstractDomain::Ptr operator%(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::MOD, rhv);
+}
+
+inline AbstractDomain::Ptr operator<<(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::SHL, rhv);
+}
+
+inline AbstractDomain::Ptr operator>>(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::SHR, rhv);
+}
+
+inline AbstractDomain::Ptr lshr(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::LSHR, rhv);
+}
+
+inline AbstractDomain::Ptr operator&(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::AND, rhv);
+}
+
+inline AbstractDomain::Ptr operator|(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::OR, rhv);
+}
+
+inline AbstractDomain::Ptr operator^(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
+    return lhv->apply(BinaryOperator::XOR, rhv);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class Domain : public std::enable_shared_from_this<Domain>, public logging::ObjectLevelLogging<Domain> {
 public:
