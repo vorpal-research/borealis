@@ -24,10 +24,56 @@
 namespace borealis {
 namespace absint {
 
+template <unsigned int width, bool sign>
+class Int;
+
+template <typename Number>
+class Interval;
+
+template <typename MachineInt>
+class ArrayDomain;
+
+template <typename MachineInt>
+class ArrayLocation;
+
+template <typename MachineInt>
+class StructDomain;
+
+template <typename MachineInt>
+class StructLocation;
+
+template <typename MachineInt>
+class Pointer;
+
+template <typename MachineInt>
+class NullLocation;
+
 class AbstractFactory {
+public:
+
+    static const size_t defaultSize = 64;
+
+    using BoolT = Interval<Int<1U, false>>;
+    using MachineIntT = Interval<Int<defaultSize, false>>;
+    using ArrayT = ArrayDomain<MachineIntT>;
+    using ArrayLocationT = ArrayLocation<MachineIntT>;
+    using StructT = StructDomain<MachineIntT>;
+    using StructLocationT = StructLocation<MachineIntT>;
+    using PointerT = Pointer<MachineIntT>;
+    using NullLocationT = NullLocation<MachineIntT>;
+
+    enum Kind {
+        TOP,
+        BOTTOM
+    };
+
 private:
 
-    AbstractFactory() = default;
+    TypeFactory::Ptr TF_;
+
+private:
+
+    AbstractFactory() : TF_(TypeFactory::get()) {}
 
 public:
 
@@ -41,16 +87,44 @@ public:
         return instance;
     }
 
-    AbstractDomain::Ptr top(Type::Ptr) const {
-        // TODO: implement
-        return nullptr;
-    }
+    AbstractDomain::Ptr top(Type::Ptr) const;
+    AbstractDomain::Ptr bottom(Type::Ptr) const;
 
-    AbstractDomain::Ptr bottom(Type::Ptr) const {
-        // TODO: implement
-        return nullptr;
-    }
+    AbstractDomain::Ptr getBool(Kind kind) const;
+    AbstractDomain::Ptr getBool(bool value) const;
 
+    AbstractDomain::Ptr getInteger(Type::Ptr, Kind kind, bool sign = false) const;
+    AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width, bool sign = false) const;
+
+    AbstractDomain::Ptr getInt(Kind kind, bool sign = false) const;
+    AbstractDomain::Ptr getInt(int n, bool sign = false) const;
+
+    AbstractDomain::Ptr getLong(Kind kind, bool sign = false) const;
+    AbstractDomain::Ptr getLong(long n, bool sign = false) const;
+//
+//    template <size_t width, bool sign = true>
+//    AbstractDomain::Ptr getInt(const Int<width, sign>& n) const {
+//        return Interval<Int<width, sign>>::constant(n);
+//    }
+//
+//    AbstractDomain::Ptr getFloat(Type::Ptr, Kind kind) const;
+//    AbstractDomain::Ptr getFloat(double n) const;
+//    AbstractDomain::Ptr getFloat(const Float<>& n) const;
+//
+//    AbstractDomain::Ptr getArray(Type::Ptr, Kind kind) const;
+//    AbstractDomain::Ptr getArray(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;
+//
+//    AbstractDomain::Ptr getStruct(Type::Ptr, Kind kind) const;
+//    AbstractDomain::Ptr getStruct(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;
+//
+//    AbstractDomain::Ptr getPointer(Type::Ptr, Kind kind) const;
+//    AbstractDomain::Ptr getPointer(Type::Ptr, const PointerT::PointsToSet& locations) const;
+//
+//    AbstractDomain::Ptr getNullptr(Type::Ptr) const;
+//
+//    AbstractDomain::Ptr getNullLocation() const;
+//    AbstractDomain::Ptr makeLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
+//    AbstractDomain::Ptr makeLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
 };
 
 

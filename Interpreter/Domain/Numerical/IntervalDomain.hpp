@@ -5,6 +5,8 @@
 #ifndef BOREALIS_INTERVALDOMAIN_HPP
 #define BOREALIS_INTERVALDOMAIN_HPP
 
+#include "Interpreter/Domain/DomainFactory.h"
+
 #include "NumericalDomain.hpp"
 #include "SeparateDomain.hpp"
 
@@ -14,6 +16,8 @@
 namespace borealis {
 namespace absint {
 
+class AbstractFactory;
+
 template <typename Number, typename Variable>
 class IntervalDomain : public NumericalDomain<Number, Variable> {
 public:
@@ -21,7 +25,6 @@ public:
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using BoolT = Interval<IntNumber<1, false>>;
     using BoundT = Bound<Number>;
     using IntervalT = Interval<Number>;
     using IntervalPtr = typename IntervalT::Ptr;
@@ -95,6 +98,7 @@ public:
     void apply(BinaryOperator op, Variable x, Variable y, Variable z) override { return this->env_->apply(op, x, y, z); }
 
     Ptr apply(CmpOperator op, Variable x, Variable y) override {
+        using BoolT = typename AbstractFactory::BoolT;
         auto&& makeBool = [](bool b) { return std::make_shared<BoolT>((int) b); };
 
         auto& lhv = this->get(x);

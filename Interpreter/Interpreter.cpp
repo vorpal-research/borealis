@@ -66,8 +66,8 @@ void Interpreter::run() {
 }
 
 Module& Interpreter::getModule() {
-    IntNumber<32, true> izero(0);
-    FloatNumber<> fzero(0.0);
+    Int<32, true> izero(0);
+    Float<> fzero(0.0);
     return module_;
 }
 

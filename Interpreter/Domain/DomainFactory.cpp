@@ -6,6 +6,10 @@
 #include <Type/TypeUtils.h>
 
 #include "DomainFactory.h"
+
+#include "Numerical/Interval.hpp"
+#include "Numerical/Number.hpp"
+
 #include "Interpreter/Domain/AggregateDomain.h"
 #include "Interpreter/Domain/Integer/IntValue.h"
 #include "Interpreter/IR/Module.h"
@@ -16,6 +20,162 @@
 
 namespace borealis {
 namespace absint {
+
+
+AbstractDomain::Ptr AbstractFactory::top(Type::Ptr type) const {
+    return nullptr;
+//    if (llvm::isa<type::UnknownType>(type.get())) {
+//        return nullptr;
+//    } else if (llvm::isa<type::Bool>(type.get())) {
+//        return getBool(TOP);
+//    } else if (llvm::isa<type::Integer>(type.get())) {
+//        return getInt(type, TOP);
+//    } else if (llvm::isa<type::Float>(type.get())) {
+//        return getFloat(type, TOP);
+//    } else if (llvm::isa<type::Array>(type.get())) {
+//        return getArray(type, TOP);
+//    } else if (llvm::isa<type::Record>(type.get())) {
+//        return getStruct(type, TOP);
+//    } else if (llvm::isa<type::Function>(type.get())) {
+//        // TODO
+//        return nullptr;
+//    } else if (llvm::isa<type::Pointer>(type.get())) {
+//        return getPointer(type, TOP);
+//    } else {
+//        errs() << "Creating domain of unknown type <" << type << ">" << endl;
+//        return nullptr;
+//    }
+}
+
+AbstractDomain::Ptr AbstractFactory::bottom(Type::Ptr type) const {
+    return nullptr;
+//    if (llvm::isa<type::UnknownType>(type.get())) {
+//        return nullptr;
+//    } else if (llvm::isa<type::Bool>(type.get())) {
+//        return getBool(BOTTOM);
+//    } else if (llvm::isa<type::Integer>(type.get())) {
+//        return getInt(type, BOTTOM);
+//    } else if (llvm::isa<type::Float>(type.get())) {
+//        return getFloat(type, BOTTOM);
+//    } else if (llvm::isa<type::Array>(type.get())) {
+//        return getArray(type, BOTTOM);
+//    } else if (llvm::isa<type::Record>(type.get())) {
+//        return getStruct(type, BOTTOM);
+//    } else if (llvm::isa<type::Function>(type.get())) {
+//        // TODO
+//        return nullptr;
+//    } else if (llvm::isa<type::Pointer>(type.get())) {
+//        return getPointer(type, BOTTOM);
+//    } else {
+//        errs() << "Creating domain of unknown type <" << type << ">" << endl;
+//        return nullptr;
+//    }
+}
+
+
+AbstractDomain::Ptr AbstractFactory::getBool(AbstractFactory::Kind kind) const {
+    if (kind == TOP) {
+        return BoolT::top();
+    } else if (kind == BOTTOM) {
+        return BoolT::bottom();
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getBool(bool value) const {
+    return BoolT::constant((int) value);
+}
+
+AbstractDomain::Ptr AbstractFactory::getInteger(Type::Ptr type, AbstractFactory::Kind kind, bool sign) const {
+    auto* integer = llvm::dyn_cast<type::Integer>(type.get());
+    if (integer->getBitsize() == 32) return getInt(kind, sign);
+    else if (integer->getBitsize() == 64) return getLong(kind, sign);
+    else {
+        if (kind == TOP) {
+            if (sign) {
+                return Interval<BitInt<true>>::top();
+            } else {
+                return Interval<BitInt<false>>::top();
+            }
+        } else if (kind == BOTTOM) {
+            if (sign) {
+                return Interval<BitInt<true>>::bottom();
+            } else {
+                return Interval<BitInt<false>>::bottom();
+            }
+        } else {
+            UNREACHABLE("Unknown kind");
+        }
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getInteger(unsigned long long n, unsigned width, bool sign) const {
+    if (width == 32) return getInt(n, sign);
+    else if (width == 64) return getLong(n, sign);
+    else {
+        if (sign) {
+            return Interval<BitInt<true>>::constant(BitInt<true>(width, n));
+        } else {
+            return Interval<BitInt<false>>::constant(BitInt<false>(width, n));
+        }
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getInt(AbstractFactory::Kind kind, bool sign) const {
+    if (kind == TOP) {
+        if (sign) {
+            return Interval<Int<32U, true>>::top();
+        } else {
+            return Interval<Int<32U, false>>::top();
+        }
+    } else if (kind == BOTTOM) {
+        if (sign) {
+            return Interval<Int<32U, true>>::bottom();
+        } else {
+            return Interval<Int<32U, false>>::bottom();
+        }
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getInt(int n, bool sign) const {
+    if (sign) {
+        return Interval<Int<32U, true>>::constant(n);
+    } else {
+        return Interval<Int<32U, false>>::constant(n);
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getLong(AbstractFactory::Kind kind, bool sign) const {
+    if (kind == TOP) {
+        if (sign) {
+            return Interval<Int<64U, true>>::top();
+        } else {
+            return Interval<Int<64U, false>>::top();
+        }
+    } else if (kind == BOTTOM) {
+        if (sign) {
+            return Interval<Int<64U, true>>::bottom();
+        } else {
+            return Interval<Int<64U, false>>::bottom();
+        }
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getLong(long n, bool sign) const {
+    if (sign) {
+        return Interval<Int<64U, true>>::constant(n);
+    } else {
+        return Interval<Int<64U, false>>::constant(n);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 
 DomainFactory::DomainFactory(SlotTrackerPass* ST, ir::GlobalVariableManager* GM, const llvm::DataLayout* DL)
         : ObjectLevelLogging("domain"),

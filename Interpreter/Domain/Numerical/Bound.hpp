@@ -5,6 +5,8 @@
 #ifndef BOREALIS_BOUND_HPP
 #define BOREALIS_BOUND_HPP
 
+#include "Number.hpp"
+
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
@@ -29,8 +31,8 @@ private:
     }
 
 public:
+    Bound() : isInfinite_(false), value_(0) {}
     explicit Bound(int n) : isInfinite_(false), value_(n) {}
-
     explicit Bound(Number value) : isInfinite_(false), value_(std::move(value)) {}
 
     static Bound plusInfinity() { return Bound(true, 1); }
@@ -38,8 +40,9 @@ public:
     static Bound minusInfinity() { return Bound(true, -1); }
 
     Bound(const Bound&) = default;
-
     Bound(Bound&&) = default;
+    Bound& operator=(const Bound&) = default;
+    Bound& operator=(Bound&&) = default;
 
     Bound& operator=(int n) {
         this->isInfinite_ = false;
@@ -52,10 +55,6 @@ public:
         this->value_ = std::move(n);
         return *this;
     }
-
-    Bound& operator=(const Bound&) = default;
-
-    Bound& operator=(Bound&&) = default;
 
     bool isInfinite() const { return isInfinite_; }
 
@@ -78,7 +77,7 @@ public:
         return *this;
     }
 
-    Bound operator-() const { return Bound(this->isInfinite, -this->value_); }
+    Bound operator-() const { return Bound(this->isInfinite_, -this->value_); }
 
     void operator+=(const Bound& other) {
         if (this->isFinite() && other.isFinite()) {
@@ -109,50 +108,52 @@ public:
     }
 
     void operator*=(const Bound& other) {
-        if (this->is_zero()) {
+        if (this->isZero()) {
             return;
-        } else if (other.is_zero()) {
+        } else if (other.isZero()) {
             this->operator=(other);
         } else {
             this->value_ *= other.value_;
-            this->isInfinite = (this->isInfinite || other.isInfinite);
+            this->isInfinite_ = (this->isInfinite_ || other.isInfinite_);
             this->normalize();
         }
     }
 
     void operator/=(const Bound& other) {
-        if (other.is_zero()) {
+        if (other.isZero()) {
             UNREACHABLE("division by zero");
         } else if (this->isFinite() && other.isFinite()) {
-            return Bound<Number>(false, this->value_ / other.value_);
+            this->value_ /= other.value_;
         } else if (this->isFinite() && other.isInfinite()) {
-            return Bound<Number>(0);
+            this->operator=(Bound<Number>(0));
         } else if (this->isInfinite() && other.isFinite()) {
             if (other.value_ >= 0) {
-                return *this;
+                return;
             } else {
-                return this->operator-();
+                this->operator=(this->operator-());
             }
         } else {
-            return BoundT(true, this->value_ * other.value_);
+            this->isInfinite_ = true;
+            this->value_ *= other.value_;
+            this->normalize();
         }
     }
 
     void operator%=(const Bound& other) {
-        if (this->is_zero()) {
+        if (this->isZero()) {
             this->operator=(other);
-        } else if (other.is_zero()) {
+        } else if (other.isZero()) {
             UNREACHABLE("division by zero");
         } else {
             this->value_ %= other.value_;
-            this->isInfinite = (this->isInfinite || other.isInfinite);
+            this->isInfinite_ = (this->isInfinite_ || other.isInfinite_);
             this->normalize();
         }
     }
 
     bool leq(const Bound& other) const {
-        if (this->isInfinite xor other.isInfinite) {
-            if (this->isInfinite) {
+        if (this->isInfinite_ xor other.isInfinite_) {
+            if (this->isInfinite_) {
                 return this->value_ == -1;
             } else {
                 return other.value_ == 1;
@@ -162,8 +163,8 @@ public:
     }
 
     bool geq(const Bound& other) const {
-        if (this->isInfinite xor other.isInfinite) {
-            if (this->isInfinite) {
+        if (this->isInfinite_ xor other.isInfinite_) {
+            if (this->isInfinite_) {
                 return this->value_ == 1;
             } else {
                 return other.value_ == -1;
@@ -173,7 +174,23 @@ public:
     }
 
     bool equals(const Bound& other) const {
-        return this->isInfinite == other.isInfinite && this->value_ == other.value_;
+        return this->isInfinite_ == other.isInfinite_ && this->value_ == other.value_;
+    }
+
+    size_t hashCode() const {
+        return util::hash::defaultHasher()(isInfinite_, value_);
+    }
+
+    std::string toString() const {
+        std::stringstream out;
+        if (isFinite()) {
+            out << number();
+        } else {
+            if (isPositive()) out << "+";
+            else out << "-";
+            out << "inf";
+        }
+        return out.str();
     }
 
 private:
@@ -263,7 +280,7 @@ Bound<Number> operator<<(const Bound<Number>& lhv, const Bound<Number>& rhv) {
     } else if (lhv.isInfinite()) {
         return lhv;
     } else if (rhv.isInfinite()) {
-        return BoundT(true, lhv.number());
+        return (lhv.isPositive() ? BoundT::plusInfinity() : BoundT::minusInfinity());
     } else {
         return BoundT(lhv.number() << rhv.number());
     }
@@ -315,6 +332,17 @@ std::ostream& operator<<(std::ostream& out, const Bound<T>& bound) {
 
 } // namespace absint
 } // namespace borealis
+
+namespace std {
+
+template <typename Number>
+struct hash<borealis::absint::Bound<Number>> {
+    size_t operator()(const borealis::absint::Bound<Number>& num) {
+        return num.hashCode();
+    }
+};
+
+} // namespace std
 
 #include "Util/unmacros.h"
 
