@@ -5,8 +5,7 @@
 #ifndef BOREALIS_POINTER_HPP
 #define BOREALIS_POINTER_HPP
 
-#include "Interpreter/Domain/Domain.h"
-#include "MemoryLocation.hpp"
+#include "Interpreter/Domain/DomainFactory.h"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"

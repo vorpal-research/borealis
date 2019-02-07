@@ -7,16 +7,13 @@
 
 #include <unordered_map>
 
+#include "Interpreter/Domain/DomainFactory.h"
+
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
-
-class AbstractFactory;
-
-template <typename MachineInt>
-class ArrayLocation;
 
 template <typename MachineInt>
 class ArrayDomain : public AbstractDomain {

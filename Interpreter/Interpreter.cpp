@@ -9,13 +9,6 @@
 #include "Util/collections.hpp"
 
 #include "Interpreter/Domain/Domain.h"
-#include "Interpreter/Domain/Numerical/Interval.hpp"
-#include "Interpreter/Domain/Numerical/SeparateDomain.hpp"
-#include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
-#include "Interpreter/Domain/Memory/ArrayDomain.hpp"
-#include "Interpreter/Domain/Memory/StructDomain.hpp"
-#include "Interpreter/Domain/Memory/MemoryLocation.hpp"
-#include "Interpreter/Domain/Memory/Pointer.hpp"
 
 #include "Util/macros.h"
 
@@ -67,7 +60,7 @@ void Interpreter::run() {
 
 Module& Interpreter::getModule() {
     Int<32, true> izero(0);
-    Float<> fzero(0.0);
+    Float fzero(0.0);
     return module_;
 }
 

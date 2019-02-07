@@ -8,6 +8,9 @@
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APFloat.h>
 
+#include "Interpreter/Util.hpp"
+
+#include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
@@ -19,16 +22,6 @@ class BitInt;
 
 template <unsigned int width, bool sign>
 class Int;
-
-enum FloatSemantics {
-    HALF,
-    SINGLE,
-    DOUBLE,
-    QUAD
-};
-
-template <FloatSemantics semantics>
-class Float;
 
 template <bool sign>
 class BitInt {
@@ -130,12 +123,6 @@ public:
 
     size_t hashCode() const {
         return util::hash::defaultHasher()(inner_);
-    }
-
-    template <FloatSemantics semantics>
-    Float<semantics> toFp() const {
-        auto newValue = llvm::APFloat(Float<semantics>::getLlvmSemantics(), this->toString());
-        return Float<semantics>(newValue);
     }
 
     template <unsigned int newWidth, bool newSign>
@@ -270,7 +257,6 @@ private:
 
     using Self = Int<width, sign>;
 
-    template <FloatSemantics semantics>
     friend class Float;
 
 public:
@@ -348,12 +334,6 @@ public:
 
     size_t hashCode() const {
         return util::hash::defaultHasher()(inner_);
-    }
-
-    template <FloatSemantics semantics>
-    Float<semantics> toFp() const {
-        auto newValue = llvm::APFloat(Float<semantics>::getLlvmSemantics(), this->toString());
-        return Float<semantics>(newValue);
     }
 
     template <unsigned int newWidth, bool newSign>
@@ -479,27 +459,18 @@ std::ostream& operator<<(std::ostream& out, const Int<width, sign>& num) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <FloatSemantics semantics = DOUBLE>
 class Float {
 private:
 
-    using Self = Float<semantics>;
+    using Self = Float;
 
     static const llvm::fltSemantics& getLlvmSemantics() {
-        switch (semantics) {
-            case HALF: return llvm::APFloat::IEEEhalf;
-            case SINGLE: return llvm::APFloat::IEEEsingle;
-            case DOUBLE: return llvm::APFloat::IEEEdouble;
-            case QUAD: return llvm::APFloat::IEEEquad;
-            default:
-                UNREACHABLE("Unknown float semantics");
-        }
+        return llvm::APFloat::IEEEdouble;
     }
 
     static llvm::APFloat::roundingMode getRoundingMode() {
         return llvm::APFloat::rmNearestTiesToEven;
     }
-
 
     template <unsigned int width, bool sign>
     friend class Int;
@@ -508,6 +479,7 @@ public:
     explicit Float(llvm::APFloat value) : inner_(std::move(value)) {}
 
     Float() : inner_(getLlvmSemantics(), 0.0) {}
+    explicit Float(int n) : inner_(getLlvmSemantics(), n) {}
     explicit Float(double n) : inner_(getLlvmSemantics(), n) {}
     Float(const Float&) = default;
     Float(Float&&) = default;
@@ -519,42 +491,58 @@ public:
         return *this;
     }
 
-    Float operator-() const { return Self(-inner_); }
+    Float operator-() const {
+        auto neg = llvm::APFloat(inner_);
+        neg.changeSign();
+        return Self(neg);
+    }
 
     void operator+=(const Self& other) {
-        inner_ += other.inner_;
+        inner_.add(other.inner_, getRoundingMode());
     }
 
     void operator-=(const Self& other) {
-        inner_ -= other.inner_;
+        inner_.subtract(other.inner_, getRoundingMode());
     }
 
     void operator*=(const Self& other) {
-        inner_ *= other.inner_;
+        inner_.multiply(other.inner_, getRoundingMode());
     }
 
     void operator/=(const Self& other) {
-        inner_ /= other.inner_;
+        inner_.divide(other.inner_, getRoundingMode());
     }
 
-    void operator%=(const Self& other) {
-        inner_ %= other.inner_;
+    void operator%=(const Self&) {
+        UNREACHABLE("UNSUPPORTED OPERATION");
     }
 
-    Self operator&(const Self& rhv) {
-        return Self(this->inner_ & rhv.inner_);
+    Self operator&(const Self&) {
+        UNREACHABLE("UNSUPPORTED OPERATION");
     }
 
-    Self operator|(const Self& rhv) {
-        return Self(this->inner_ | rhv.inner_);
+    Self operator|(const Self&) {
+        UNREACHABLE("UNSUPPORTED OPERATION");
     }
 
-    Self operator^(const Self& rhv) {
-        return Self(this->inner_ ^ rhv.inner_);
+    Self operator^(const Self&) {
+        UNREACHABLE("UNSUPPORTED OPERATION");
+    }
+
+    Self operator<<(const Self&) {
+        UNREACHABLE("UNSUPPORTED OPERATION");
+    }
+
+    Self operator>>(const Self&) {
+        UNREACHABLE("UNSUPPORTED OPERATION");
+    }
+
+    Self lshr(const Self&) const {
+        UNREACHABLE("UNSUPPORTED OPERATION");
     }
 
     bool equals(const Self& other) const {
-        return this->inner_ == other.inner_;
+        return util::eq(this->inner_, other.inner_);
     }
 
     bool leq(const Float& other) const {
@@ -577,15 +565,8 @@ public:
     Int<width, sign> toInt() const {
         llvm::APSInt value(width, sign);
         bool isExact;
-        inner_.convertToInteger(&value, getRoundingMode(), &isExact);
+        inner_.convertToInteger(value, getRoundingMode(), &isExact);
         return Int<width, sign>(value);
-    }
-
-    template <FloatSemantics newSemantics>
-    Float<newSemantics> convert() const {
-        using NewFloatT = Float<newSemantics>;
-        bool isExact;
-        return NewFloatT(inner_.convert(NewFloatT::getLlvmSemantics(), NewFloatT::getRoundingMode()), &isExact);
     }
 
 private:
@@ -595,83 +576,109 @@ private:
 };
 
 
-template <FloatSemantics semantics>
-Float<semantics> operator+(const Float<semantics>& lhv, const Float<semantics>& rhv) {
-    Float<semantics> result(lhv);
+inline Float operator+(const Float& lhv, const Float& rhv) {
+    Float result(lhv);
     result += rhv;
     return result;
 }
 
-template <FloatSemantics semantics>
-Float<semantics> operator-(const Float<semantics>& lhv, const Float<semantics>& rhv) {
-    Float<semantics> result(lhv);
+inline Float operator-(const Float& lhv, const Float& rhv) {
+    Float result(lhv);
     result -= rhv;
     return result;
 }
 
-template <FloatSemantics semantics>
-Float<semantics> operator*(const Float<semantics>& lhv, const Float<semantics>& rhv) {
-    Float<semantics> result(lhv);
+inline Float operator*(const Float& lhv, const Float& rhv) {
+    Float result(lhv);
     result *= rhv;
     return result;
 }
 
-template <FloatSemantics semantics>
-Float<semantics> operator/(const Float<semantics>& lhv, const Float<semantics>& rhv) {
-    Float<semantics> result(lhv);
+inline Float operator/(const Float& lhv, const Float& rhv) {
+    Float result(lhv);
     result /= rhv;
     return result;
 }
 
-template <FloatSemantics semantics>
-Float<semantics> operator%(const Float<semantics>& lhv, const Float<semantics>& rhv) {
-    Float<semantics> result(lhv);
+inline Float operator%(const Float& lhv, const Float& rhv) {
+    Float result(lhv);
     result %= rhv;
     return result;
 }
 
-template <FloatSemantics semantics>
-inline bool operator<=(const Float<semantics>& lhs, const Float<semantics>& rhs) {
+inline bool operator<=(const Float& lhs, const Float& rhs) {
     return lhs.leq(rhs);
 }
 
-template <FloatSemantics semantics>
-inline bool operator>=(const Float<semantics>& lhs, const Float<semantics>& rhs) {
+inline bool operator<=(const Float& lhs, int rhs) {
+    return lhs.leq(Float(rhs));
+}
+
+inline bool operator<=(const Float& lhs, double rhs) {
+    return lhs.leq(Float(rhs));
+}
+
+inline bool operator>=(const Float& lhs, const Float& rhs) {
     return lhs.geq(rhs);
 }
 
-template <FloatSemantics semantics>
-inline bool operator<(const Float<semantics>& lhs, const Float<semantics>& rhs) {
+inline bool operator>=(const Float& lhs, int rhs) {
+    return lhs.geq(Float(rhs));
+}
+
+inline bool operator>=(const Float& lhs, double rhs) {
+    return lhs.geq(Float(rhs));
+}
+
+inline bool operator<(const Float& lhs, const Float& rhs) {
     return !lhs.geq(rhs);
 }
 
-template <FloatSemantics semantics>
-inline bool operator>(const Float<semantics>& lhs, const Float<semantics>& rhs) {
+inline bool operator<(const Float& lhs, int rhs) {
+    return !lhs.geq(Float(rhs));
+}
+
+inline bool operator<(const Float& lhs, double rhs) {
+    return !lhs.geq(Float(rhs));
+}
+
+inline bool operator>(const Float& lhs, const Float& rhs) {
     return !lhs.leq(rhs);
 }
 
-template <FloatSemantics semantics>
-inline bool operator==(const Float<semantics>& lhs, const Float<semantics>& rhs) {
+inline bool operator>(const Float& lhs, int rhs) {
+    return !lhs.leq(Float(rhs));
+}
+
+inline bool operator>(const Float& lhs, double rhs) {
+    return !lhs.leq(Float(rhs));
+}
+
+inline bool operator==(const Float& lhs, const Float& rhs) {
     return lhs.equals(rhs);
 }
 
-template <FloatSemantics semantics>
-inline bool operator!=(const Float<semantics>& lhs, const Float<semantics>& rhs) {
+inline bool operator==(const Float& lhs, int rhs) {
+    return lhs.equals(Float(rhs));
+}
+
+inline bool operator==(const Float& lhs, double rhs) {
+    return lhs.equals(Float(rhs));
+}
+
+inline bool operator!=(const Float& lhs, const Float& rhs) {
     return !lhs.equals(rhs);
 }
 
-template <FloatSemantics semantics>
-inline Float<semantics> abs(const Float<semantics>& b) {
-    return (b >= Float<semantics>(0.0)) ? b : -b;
+inline Float abs(const Float& b) {
+    return (b >= Float(0.0)) ? b : -b;
 }
 
-template <FloatSemantics semantics>
-Float<semantics> lshr(const Float<semantics>& lhv, const Float<semantics>& rhv) {
+inline Float lshr(const Float& lhv, const Float& rhv) {
     return lhv.lshr(rhv);
 }
 
-template <FloatSemantics semantics>
-std::ostream& operator<<(std::ostream& out, const Float<semantics>& num) {
+inline std::ostream& operator<<(std::ostream& out, const Float& num) {
     out << num.toString();
     return out;
 }
@@ -696,9 +703,9 @@ struct hash<borealis::absint::Int<width, sign>> {
     }
 };
 
-template <borealis::absint::FloatSemantics sem>
-struct hash<borealis::absint::Float<sem>> {
-    size_t operator()(const borealis::absint::Float<sem>& num) {
+template <>
+struct hash<borealis::absint::Float> {
+    size_t operator()(const borealis::absint::Float& num) {
         return num.hashCode();
     }
 };

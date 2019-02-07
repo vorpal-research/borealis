@@ -11,6 +11,8 @@
 #include <llvm/IR/Value.h>
 #include <Util/cache.hpp>
 
+#include "Numerical/Number.hpp"
+
 #include "Interpreter/Domain/Domain.h"
 #include "Interpreter/Domain/FloatIntervalDomain.h"
 #include "Interpreter/Domain/FunctionDomain.h"
@@ -23,9 +25,6 @@
 
 namespace borealis {
 namespace absint {
-
-template <unsigned int width, bool sign>
-class Int;
 
 template <typename Number>
 class Interval;
@@ -54,6 +53,7 @@ public:
     static const size_t defaultSize = 64;
 
     using BoolT = Interval<Int<1U, false>>;
+    using FloatT = Interval<Float>;
     using MachineIntT = Interval<Int<defaultSize, false>>;
     using ArrayT = ArrayDomain<MachineIntT>;
     using ArrayLocationT = ArrayLocation<MachineIntT>;
@@ -101,15 +101,9 @@ public:
 
     AbstractDomain::Ptr getLong(Kind kind, bool sign = false) const;
     AbstractDomain::Ptr getLong(long n, bool sign = false) const;
-//
-//    template <size_t width, bool sign = true>
-//    AbstractDomain::Ptr getInt(const Int<width, sign>& n) const {
-//        return Interval<Int<width, sign>>::constant(n);
-//    }
-//
-//    AbstractDomain::Ptr getFloat(Type::Ptr, Kind kind) const;
-//    AbstractDomain::Ptr getFloat(double n) const;
-//    AbstractDomain::Ptr getFloat(const Float<>& n) const;
+
+    AbstractDomain::Ptr getFloat(Kind kind) const;
+    AbstractDomain::Ptr getFloat(double n) const;
 //
 //    AbstractDomain::Ptr getArray(Type::Ptr, Kind kind) const;
 //    AbstractDomain::Ptr getArray(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;

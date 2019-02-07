@@ -6,8 +6,6 @@
 #define BOREALIS_NUMERICALDOMAIN_HPP
 
 #include "Interpreter/Domain/Domain.h"
-#include "Number.hpp"
-#include "Interval.hpp"
 
 namespace borealis {
 namespace absint {

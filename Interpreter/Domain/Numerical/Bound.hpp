@@ -5,8 +5,6 @@
 #ifndef BOREALIS_BOUND_HPP
 #define BOREALIS_BOUND_HPP
 
-#include "Number.hpp"
-
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 

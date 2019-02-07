@@ -8,7 +8,6 @@
 #include "DomainFactory.h"
 
 #include "Numerical/Interval.hpp"
-#include "Numerical/Number.hpp"
 
 #include "Interpreter/Domain/AggregateDomain.h"
 #include "Interpreter/Domain/Integer/IntValue.h"
@@ -172,6 +171,20 @@ AbstractDomain::Ptr AbstractFactory::getLong(long n, bool sign) const {
     } else {
         return Interval<Int<64U, false>>::constant(n);
     }
+}
+
+AbstractDomain::Ptr AbstractFactory::getFloat(AbstractFactory::Kind kind) const {
+    if (kind == TOP) {
+        return FloatT::top();
+    } else if (kind == BOTTOM) {
+        return FloatT::bottom();
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getFloat(double n) const {
+    return FloatT::constant(n);
 }
 
 //////////////////////////////////////////////////////////////////////////////////

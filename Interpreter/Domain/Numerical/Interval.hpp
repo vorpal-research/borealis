@@ -6,7 +6,8 @@
 #define BOREALIS_INTERVAL_HPP
 
 #include "Bound.hpp"
-#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/DomainFactory.h"
+
 #include "Util/algorithm.hpp"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
@@ -74,6 +75,7 @@ public:
     static Ptr bottom() { return std::make_shared<Self>(BottomTag{}); }
     static Ptr constant(int constant) { return std::make_shared<Self>(constant); }
     static Ptr constant(long constant) { return std::make_shared<Self>(constant); }
+    static Ptr constant(double constant) { return std::make_shared<Self>(Number(constant)); }
     static Ptr constant(const Number& n) { return std::make_shared<Self>(n); }
 
     static Self getTop() { return Self(TopTag{}); }

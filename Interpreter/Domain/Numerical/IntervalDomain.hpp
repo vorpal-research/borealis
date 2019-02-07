@@ -7,6 +7,7 @@
 
 #include "Interpreter/Domain/DomainFactory.h"
 
+#include "Bound.hpp"
 #include "NumericalDomain.hpp"
 #include "SeparateDomain.hpp"
 

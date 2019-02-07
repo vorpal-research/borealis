@@ -7,7 +7,7 @@
 
 #include <unordered_map>
 
-#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/DomainFactory.h"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"

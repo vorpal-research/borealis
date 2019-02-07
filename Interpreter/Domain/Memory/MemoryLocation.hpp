@@ -5,6 +5,8 @@
 #ifndef BOREALIS_MEMORYLOCATION_HPP
 #define BOREALIS_MEMORYLOCATION_HPP
 
+#include "Interpreter/Domain/DomainFactory.h"
+
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
