@@ -76,6 +76,7 @@ public:
     static Ptr constant(int constant) { return std::make_shared<Self>(constant); }
     static Ptr constant(long constant) { return std::make_shared<Self>(constant); }
     static Ptr constant(double constant) { return std::make_shared<Self>(Number(constant)); }
+    static Ptr constant(size_t constant) { return std::make_shared<Self>(Number(constant)); }
     static Ptr constant(const Number& n) { return std::make_shared<Self>(n); }
 
     static Self getTop() { return Self(TopTag{}); }

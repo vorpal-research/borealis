@@ -76,6 +76,9 @@ public:
         }
     }
 
+    ArrayDomain(Type::Ptr elementType, Ptr length) :
+            AbstractDomain(class_tag(*this)), length_(length), elementType_(elementType), factory_(AbstractFactory::get()) {}
+
     ArrayDomain(const ArrayDomain&) = default;
     ArrayDomain(ArrayDomain&&) = default;
     ArrayDomain& operator=(ArrayDomain&&) = default;
@@ -99,6 +102,7 @@ public:
 
     static Ptr top(Type::Ptr elementType) { return std::make_shared<ArrayDomain>(TopTag{}, elementType); }
     static Ptr bottom(Type::Ptr elementType) { return std::make_shared<ArrayDomain>(BottomTag{}, elementType); }
+    static Ptr value(Type::Ptr elementType, Ptr length) { return std::make_shared<ArrayDomain>(elementType, length); }
     static Ptr constant(Type::Ptr elementType, const std::vector<AbstractDomain::Ptr>& elements) {
         return std::make_shared<ArrayDomain>(elementType, elements);
     }

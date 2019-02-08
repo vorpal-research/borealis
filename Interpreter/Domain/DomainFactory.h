@@ -97,9 +97,13 @@ public:
 
     AbstractDomain::Ptr top(Type::Ptr type) const;
     AbstractDomain::Ptr bottom(Type::Ptr type) const;
+    AbstractDomain::Ptr allocate(Type::Ptr type) const;
 
     AbstractDomain::Ptr getBool(Kind kind) const;
     AbstractDomain::Ptr getBool(bool value) const;
+
+    AbstractDomain::Ptr getMachineInt(Kind kind) const;
+    AbstractDomain::Ptr getMachineInt(size_t value) const;
 
     AbstractDomain::Ptr getInteger(Type::Ptr type, Kind kind, bool sign = false) const;
     AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width, bool sign = false) const;
@@ -114,15 +118,19 @@ public:
     AbstractDomain::Ptr getFloat(double n) const;
 
     AbstractDomain::Ptr getArray(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getArray(Type::Ptr type) const;
     AbstractDomain::Ptr getArray(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const;
 
     AbstractDomain::Ptr getStruct(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getStruct(Type::Ptr type) const;
     AbstractDomain::Ptr getStruct(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const;
 
     AbstractDomain::Ptr getFunction(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getFunction(Type::Ptr type) const;
     AbstractDomain::Ptr getFunction(ir::Function::Ptr function) const;
 
     AbstractDomain::Ptr getPointer(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getPointer(Type::Ptr type) const;
     AbstractDomain::Ptr getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
 
     AbstractDomain::Ptr getNullptr(Type::Ptr type) const;
