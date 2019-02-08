@@ -100,7 +100,7 @@ public:
 
     virtual Ptr load(Type::Ptr type, Ptr offset) const;
     virtual void store(Ptr value, Ptr offset);
-    virtual Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const;
+    virtual Ptr gep(Type::Ptr type, const std::vector<Ptr>& offsets);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

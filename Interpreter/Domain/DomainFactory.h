@@ -54,13 +54,13 @@ public:
 
     using BoolT = Interval<Int<1U, false>>;
     using FloatT = Interval<Float>;
-    using MachineIntT = Interval<Int<defaultSize, false>>;
-    using ArrayT = ArrayDomain<MachineIntT>;
-    using ArrayLocationT = ArrayLocation<MachineIntT>;
-    using StructT = StructDomain<MachineIntT>;
-    using StructLocationT = StructLocation<MachineIntT>;
-    using PointerT = Pointer<MachineIntT>;
-    using NullLocationT = NullLocation<MachineIntT>;
+    using MachineInt = Int<defaultSize, false>;
+    using ArrayT = ArrayDomain<MachineInt>;
+    using ArrayLocationT = ArrayLocation<MachineInt>;
+    using StructT = StructDomain<MachineInt>;
+    using StructLocationT = StructLocation<MachineInt>;
+    using PointerT = Pointer<MachineInt>;
+    using NullLocationT = NullLocation<MachineInt>;
 
     enum Kind {
         TOP,
@@ -87,13 +87,17 @@ public:
         return instance;
     }
 
-    AbstractDomain::Ptr top(Type::Ptr) const;
-    AbstractDomain::Ptr bottom(Type::Ptr) const;
+    Type::Ptr makePointer(Type::Ptr type) const {
+        return TF_->getPointer(type, defaultSize);
+    }
+
+    AbstractDomain::Ptr top(Type::Ptr type) const;
+    AbstractDomain::Ptr bottom(Type::Ptr type) const;
 
     AbstractDomain::Ptr getBool(Kind kind) const;
     AbstractDomain::Ptr getBool(bool value) const;
 
-    AbstractDomain::Ptr getInteger(Type::Ptr, Kind kind, bool sign = false) const;
+    AbstractDomain::Ptr getInteger(Type::Ptr type, Kind kind, bool sign = false) const;
     AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width, bool sign = false) const;
 
     AbstractDomain::Ptr getInt(Kind kind, bool sign = false) const;
@@ -104,21 +108,21 @@ public:
 
     AbstractDomain::Ptr getFloat(Kind kind) const;
     AbstractDomain::Ptr getFloat(double n) const;
-//
-//    AbstractDomain::Ptr getArray(Type::Ptr, Kind kind) const;
-//    AbstractDomain::Ptr getArray(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;
-//
-//    AbstractDomain::Ptr getStruct(Type::Ptr, Kind kind) const;
-//    AbstractDomain::Ptr getStruct(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;
-//
-//    AbstractDomain::Ptr getPointer(Type::Ptr, Kind kind) const;
-//    AbstractDomain::Ptr getPointer(Type::Ptr, const PointerT::PointsToSet& locations) const;
-//
-//    AbstractDomain::Ptr getNullptr(Type::Ptr) const;
-//
-//    AbstractDomain::Ptr getNullLocation() const;
-//    AbstractDomain::Ptr makeLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
-//    AbstractDomain::Ptr makeLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
+
+    AbstractDomain::Ptr getArray(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getArray(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const;
+
+    AbstractDomain::Ptr getStruct(Type::Ptr, Kind kind) const;
+    AbstractDomain::Ptr getStruct(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;
+
+    AbstractDomain::Ptr getPointer(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
+
+    AbstractDomain::Ptr getNullptr(Type::Ptr type) const;
+
+    AbstractDomain::Ptr makeNullLocation() const;
+    AbstractDomain::Ptr makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
+    AbstractDomain::Ptr makeStructLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
 };
 
 

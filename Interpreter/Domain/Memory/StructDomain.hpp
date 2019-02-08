@@ -42,20 +42,6 @@ private:
     struct TopTag{};
     struct BottomTag{};
 
-    explicit StructDomain(TopTag, const Types& types) :
-            types_(types), factory_(AbstractFactory::get()) {
-        for (auto i = 0U; i < types_.size(); ++i) {
-            elements_.push_back(factory_->top(types[i]));
-        }
-    }
-
-    explicit StructDomain(BottomTag, const Types& types) :
-            types_(types), factory_(AbstractFactory::get()) {
-        for (auto i = 0U; i < types_.size(); ++i) {
-            elements_.push_back(factory_->bottom(types[i]));
-        }
-    }
-
     static Self* unwrap(Ptr other) {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
         ASSERTC(otherRaw);
@@ -71,16 +57,37 @@ private:
     }
 
 public:
+    StructDomain(TopTag, const Types& types) :
+            AbstractDomain(class_tag(*this)), types_(types), factory_(AbstractFactory::get()) {
+        for (auto i = 0U; i < types_.size(); ++i) {
+            elements_.push_back(factory_->top(types[i]));
+        }
+    }
+
+    StructDomain(BottomTag, const Types& types) :
+            AbstractDomain(class_tag(*this)), types_(types), factory_(AbstractFactory::get()) {
+        for (auto i = 0U; i < types_.size(); ++i) {
+            elements_.push_back(factory_->bottom(types[i]));
+        }
+    }
 
     explicit StructDomain(const Types& types) : StructDomain(TopTag{}, types) {}
     StructDomain(const Types& types, const Elements& elements) : AbstractDomain(class_tag(*this)), types_(types), elements_(elements) {}
     StructDomain(const StructDomain&) = default;
     StructDomain(StructDomain&&) = default;
-    StructDomain& operator=(const StructDomain&) = default;
     StructDomain& operator=(StructDomain&&) = default;
+    StructDomain& operator=(const StructDomain& other) {
+        if (this != &other) {
+            this->types_ = other.types_;
+            this->factory_ = other.factory_;
+            this->elements_ = other.elements_;
+        }
+        return *this;
+    }
 
     static Ptr top(const Types& types) { return std::make_shared<StructDomain>(TopTag{}, types); }
     static Ptr bottom(const Types& types) { return std::make_shared<StructDomain>(BottomTag{}, types); }
+    static Ptr constant(const Types& types, const Elements& elements) { return std::make_shared<StructDomain>(types, elements); }
 
     const Types& types() const { return types_; }
 
@@ -139,7 +146,7 @@ public:
 
             if (this->size() != otherRaw->size()) return false;
 
-            for (auto i = 0U; i < this->length_; ++i) {
+            for (auto i = 0U; i < this->size(); ++i) {
                 if (this->elements_[i] != otherRaw->elements_[i]) {
                     return false;
                 }
@@ -164,10 +171,16 @@ public:
 
             ASSERT(this->size() == otherRaw->size(), "trying to join different length structs");
 
-            for (auto i = 0U; i < this->length_; ++i) {
+            for (auto i = 0U; i < this->size(); ++i) {
                 this->elements_[i]->joinWith(otherRaw->elements_[i]);
             }
         }
+    }
+
+    Ptr join(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->joinWith(other);
+        return next;
     }
 
     void meetWith(ConstPtr other) override {
@@ -185,10 +198,16 @@ public:
 
             ASSERT(this->size() == otherRaw->size(), "trying to meet different length structs");
 
-            for (auto i = 0U; i < this->length_; ++i) {
+            for (auto i = 0U; i < this->size(); ++i) {
                 this->elements_[i]->meetWith(otherRaw->elements_[i]);
             }
         }
+    }
+
+    Ptr meet(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->meetWith(other);
+        return next;
     }
 
     void widenWith(ConstPtr other) override {
@@ -206,14 +225,20 @@ public:
 
             ASSERT(this->size() == otherRaw->size(), "trying to widen different length structs");
 
-            for (auto i = 0U; i < this->length_; ++i) {
+            for (auto i = 0U; i < this->size(); ++i) {
                 this->elements_[i]->widenWith(otherRaw->elements_[i]);
             }
         }
     }
 
+    Ptr widen(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->widenWith(other);
+        return next;
+    }
+
     size_t hashCode() const override {
-        return util::hash::defaultHasher()(this->length_, this->elements_);
+        return util::hash::defaultHasher()(this->size(), this->elements_);
     }
 
     std::string toString() const override {
@@ -222,7 +247,7 @@ public:
         if (not types_.empty()) {
             ss << TypeUtils::toString(*types_[0].get());
         }
-        for (auto i = 1U; i < this->length_; ++i) {
+        for (auto i = 1U; i < this->size(); ++i) {
             ss << ", " << TypeUtils::toString(*types_[i].get());
         }
         ss << "] ";
@@ -232,7 +257,7 @@ public:
         } else if (this->isBottom()) {
             ss << " BOTTOM }";
         } else {
-            for (auto i = 0U; i < this->length_; ++i) {
+            for (auto i = 0U; i < this->size(); ++i) {
                 ss << std::endl << "  " << this->elements_[i]->toString();
             }
             ss << std::endl << "}";
@@ -245,7 +270,7 @@ public:
         ASSERTC(intervalRaw);
         ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
 
-        auto index = intervalRaw->asConstant();
+        auto index = (size_t) intervalRaw->asConstant();
         auto type = types_[index];
 
         if (this->isTop()) {
@@ -262,7 +287,7 @@ public:
         auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
         ASSERTC(intervalRaw);
         ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
-        auto index = intervalRaw->asConstant();
+        auto index = (size_t) intervalRaw->asConstant();
 
         if (this->isTop()) {
             return;
@@ -271,22 +296,22 @@ public:
         }
     }
 
-    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+    Ptr gep(Type::Ptr type, const std::vector<Ptr>& offsets) override {
         if (this->isTop()) {
-            return PointerT::top(type);
+            return factory_->top(type);
         } else if (this->isBottom()) {
-            return PointerT::bottom(type);
+            return factory_->bottom(type);
         }
 
         auto* intervalRaw = llvm::dyn_cast<IntervalT>(offsets[0].get());
         ASSERTC(intervalRaw);
         ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
-        auto index = intervalRaw->asConstant();
+        auto index = (size_t) intervalRaw->asConstant();
 
         if (offsets.size() == 1) {
-            return PointerT(type, std::make_shared<MemLocationT>(shared_from_this(), offsets[0]));
+            return factory_->getPointer(type, shared_from_this(), offsets[0]);
         } else {
-            return elements_[index]->gep(type, std::vector<ConstPtr>(offsets.begin() + 1, offsets.end()));
+            return elements_[index]->gep(type, std::vector<Ptr>(offsets.begin() + 1, offsets.end()));
         }
     }
 };

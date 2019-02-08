@@ -28,7 +28,7 @@ void AbstractDomain::store(Ptr, Ptr) {
     UNREACHABLE("Unsupported operation");
 }
 
-AbstractDomain::Ptr AbstractDomain::gep(Type::Ptr, const std::vector<AbstractDomain::ConstPtr>&) const {
+AbstractDomain::Ptr AbstractDomain::gep(Type::Ptr, const std::vector<AbstractDomain::Ptr>&) {
     UNREACHABLE("Unsupported operation");
 }
 

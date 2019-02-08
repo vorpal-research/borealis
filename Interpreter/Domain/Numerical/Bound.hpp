@@ -70,6 +70,10 @@ public:
 
     bool isNegative() const { return this->value_ < 0; }
 
+    explicit operator size_t() const {
+        return ((size_t) number());
+    }
+
     Bound& operator++() {
         this->operator+=(Bound(1));
         return *this;

@@ -17,15 +17,14 @@ template <typename MachineInt>
 class MemoryLocation : public AbstractDomain {
 public:
 
+    explicit MemoryLocation(id_t id) : AbstractDomain(id) {}
+
     using Ptr = AbstractDomain::Ptr;
     using IntervalT = Interval<MachineInt>;
 
     virtual std::unordered_set<Ptr> offsets() const = 0;
 
     virtual bool isNull() const { return false; }
-    virtual Ptr load(Ptr, Type::Ptr) const = 0;
-    virtual void store(Ptr, Ptr) = 0;
-    virtual Ptr gep(Ptr, Type::Ptr) const = 0;
 };
 
 template <typename MachineInt>
@@ -44,8 +43,6 @@ private:
 
 private:
 
-    NullLocation() : AbstractDomain(class_tag(*this)), factory_(AbstractFactory::get()) {}
-
     static Self* unwrap(Ptr other) {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
         ASSERTC(otherRaw);
@@ -62,12 +59,13 @@ private:
 
 public:
 
-    NullLocation(const NullLocation&) = delete;
-    NullLocation(NullLocation&&) = delete;
-    NullLocation& operator=(const NullLocation&) = delete;
-    NullLocation& operator=(NullLocation&&) = delete;
+    NullLocation() : MemoryLocation<MachineInt>(class_tag(*this)), factory_(AbstractFactory::get()) {}
+    NullLocation(const NullLocation&) = default;
+    NullLocation(NullLocation&&) = default;
+    NullLocation& operator=(const NullLocation&) = default;
+    NullLocation& operator=(NullLocation&&) = default;
 
-    static Ptr instance() {
+    static Ptr get() {
         static Ptr instance_ = std::make_shared<NullLocation>();
         return instance_;
     }
@@ -102,12 +100,30 @@ public:
         ASSERTC(llvm::isa<Self>(other.get()));
     }
 
+    Ptr join(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->joinWith(other);
+        return next;
+    }
+
     void meetWith(ConstPtr other) override {
         ASSERTC(llvm::isa<Self>(other.get()));
     }
 
+    Ptr meet(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->meetWith(other);
+        return next;
+    }
+
     void widenWith(ConstPtr other) override {
         joinWith(other);
+    }
+
+    Ptr widen(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->widenWith(other);
+        return next;
     }
 
     size_t hashCode() const override { return 42; }
@@ -115,13 +131,13 @@ public:
 
     bool isNull() const override { return true; }
 
-    Ptr load(Ptr, Type::Ptr type) const override {
+    Ptr load(Type::Ptr type, Ptr) const override {
         return factory_->top(type);
     }
 
     void store(Ptr, Ptr) override {}
 
-    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>&) const override {
+    Ptr gep(Type::Ptr type, const std::vector<Ptr>&) override {
         return factory_->top(type);
     }
 };
@@ -161,8 +177,8 @@ private:
 public:
 
     ArrayLocation(Ptr location, Ptr offset) :
-            AbstractDomain(class_tag(*this)), base_(location), offset_(offset), factory_(AbstractFactory::get()) {
-        static_assert(llvm::isa<ArrayDomain<MachineInt>>(base_.get()), "Trying to create array location with non-array base");
+            MemoryLocation<MachineInt>(class_tag(*this)), base_(location), offset_(offset), factory_(AbstractFactory::get()) {
+        ASSERT(llvm::isa<ArrayDomain<MachineInt>>(base_.get()), "Trying to create array location with non-array base");
     }
 
     ArrayLocation(const ArrayLocation&) = default;
@@ -177,6 +193,10 @@ public:
 
     static bool classof(const AbstractDomain* other) {
         return other->getClassTag() == class_tag<Self>();
+    }
+
+    std::unordered_set<Ptr> offsets() const override {
+        return { this->offset_ };
     }
 
     bool isTop() const override { return this->base_->isTop(); }
@@ -208,6 +228,12 @@ public:
         this->offset_->joinWith(otherRaw->offset_);
     }
 
+    Ptr join(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->joinWith(other);
+        return next;
+    }
+
     void meetWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
@@ -215,32 +241,44 @@ public:
         this->offset_->meetWith(otherRaw->offset_);
     }
 
+    Ptr meet(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->meetWith(other);
+        return next;
+    }
+
     void widenWith(ConstPtr other) override {
         joinWith(other);
+    }
+
+    Ptr widen(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->widenWith(other);
+        return next;
     }
 
     size_t hashCode() const override { return this->base_->hashCode(); }
     std::string toString() const override { return this->base_->toString(); }
 
-    Ptr load(Ptr interval, Type::Ptr type) const override {
+    Ptr load(Type::Ptr type, Ptr interval) const override {
         auto* baseRaw = llvm::dyn_cast<ArrayDomain<MachineInt>>(base_.get());
         ASSERTC(baseRaw);
-        ASSERT(baseRaw->elementType()->equals(type.get()), "Trying to load different type than the actual location");
-        return this->base_->load(interval + this->offset_);
+        return this->base_->load(type, interval + this->offset_);
     }
 
-    void store(Ptr interval, Ptr value) {
-        return this->base_->store(interval + this->offset_, value);
+    void store(Ptr value, Ptr offset) override {
+        return this->base_->store(offset + this->offset_, value);
     }
 
-    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+    Ptr gep(Type::Ptr type, const std::vector<Ptr>& offsets) override {
         if (this->isTop()) {
             return factory_->top(type);
         } else if (this->isBottom()) {
             return factory_->bottom(type);
         } else {
-            offsets[0] = offsets[0] + offset_;
-            return base_->gep(type, offsets);
+            std::vector<Ptr> off(offsets.begin(), offsets.end());
+            off[0] = off[0] + offset_;
+            return base_->gep(type, off);
         }
     }
 };
@@ -281,13 +319,13 @@ private:
 public:
 
     StructLocation(Ptr base, Ptr offset)
-            : base_(base), offsets_({offset}), factory_(AbstractFactory::get()) {
-        static_assert(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
+            : MemoryLocation<MachineInt>(class_tag(*this)), base_(base), offsets_({offset}), factory_(AbstractFactory::get()) {
+        ASSERT(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
     }
 
     StructLocation(Ptr base, Offsets offsets)
-            : base_(base), offsets_(offsets), factory_(AbstractFactory::get()) {
-        static_assert(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
+            : MemoryLocation<MachineInt>(class_tag(*this)), base_(base), offsets_(offsets), factory_(AbstractFactory::get()) {
+        ASSERT(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
     }
 
     StructLocation(const StructLocation&) = default;
@@ -304,7 +342,7 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    const Offsets& offsets() const override {
+    Offsets offsets() const override {
         return this->offsets_;
     }
 
@@ -327,50 +365,75 @@ public:
         auto* otherRaw = llvm::dyn_cast<StructLocation>(other.get());
         if (not otherRaw) return false;
 
-        return this->base_ == otherRaw->location_;
+        return this->base_ == otherRaw->base_;
     }
 
     void joinWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->base_ == otherRaw->location_);
+        ASSERTC(this->base_ == otherRaw->base_);
         for (auto&& offset : otherRaw->offsets_) {
             this->offsets_.insert(offset);
         }
     }
 
+    Ptr join(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->joinWith(other);
+        return next;
+    }
+
     void meetWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->base_ == otherRaw->location_);
+        ASSERTC(this->base_ == otherRaw->base_);
         for (auto&& offset : otherRaw->offsets_) {
             this->offsets_.insert(offset);
         }
+    }
+
+    Ptr meet(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->meetWith(other);
+        return next;
     }
 
     void widenWith(ConstPtr other) override {
         joinWith(other);
     }
 
+    Ptr widen(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->widenWith(other);
+        return next;
+    }
+
     size_t hashCode() const override { return this->base_->hashCode(); }
     std::string toString() const override { return this->base_->toString(); }
 
-    Ptr load(Ptr interval, Type::Ptr) const override {
-        return this->base_->load(interval + this->offset_);
+    Ptr load(Type::Ptr type, Ptr interval) const override {
+        Ptr result = factory_->bottom(type);
+        for (auto&& offset : this->offsets_) {
+            auto&& load = this->base_->load(type, interval + offset);
+            result->joinWith(load);
+        }
+        return result;
     }
 
-    void store(Ptr interval, Ptr value) {
-        return this->base_->store(interval + this->offset_, value);
+    void store(Ptr value, Ptr interval) override {
+        for (auto&& offset : this->offsets_) {
+            this->base_->store(value, offset + interval);
+        }
     }
 
-    Ptr gep(Type::Ptr type, const std::vector<ConstPtr>& offsets) const override {
+    Ptr gep(Type::Ptr type, const std::vector<Ptr>& offsets) override {
         if (this->isTop()) {
             return factory_->top(type);
         } else if (this->isBottom()) {
             return factory_->bottom(type);
         } else {
             auto result = factory_->bottom(type);
-            std::vector<ConstPtr> offsetCopy(offsets.begin(), offsets.end());
+            std::vector<Ptr> offsetCopy(offsets.begin(), offsets.end());
             auto zero = offsets[0];
 
             for (auto&& it : offsets_) {

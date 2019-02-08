@@ -8,6 +8,10 @@
 #include "DomainFactory.h"
 
 #include "Numerical/Interval.hpp"
+#include "Memory/Pointer.hpp"
+#include "Memory/ArrayDomain.hpp"
+#include "Memory/StructDomain.hpp"
+#include "Memory/MemoryLocation.hpp"
 
 #include "Interpreter/Domain/AggregateDomain.h"
 #include "Interpreter/Domain/Integer/IntValue.h"
@@ -22,53 +26,51 @@ namespace absint {
 
 
 AbstractDomain::Ptr AbstractFactory::top(Type::Ptr type) const {
-    return nullptr;
-//    if (llvm::isa<type::UnknownType>(type.get())) {
-//        return nullptr;
-//    } else if (llvm::isa<type::Bool>(type.get())) {
-//        return getBool(TOP);
-//    } else if (llvm::isa<type::Integer>(type.get())) {
-//        return getInt(type, TOP);
-//    } else if (llvm::isa<type::Float>(type.get())) {
-//        return getFloat(type, TOP);
-//    } else if (llvm::isa<type::Array>(type.get())) {
-//        return getArray(type, TOP);
-//    } else if (llvm::isa<type::Record>(type.get())) {
-//        return getStruct(type, TOP);
-//    } else if (llvm::isa<type::Function>(type.get())) {
-//        // TODO
-//        return nullptr;
-//    } else if (llvm::isa<type::Pointer>(type.get())) {
-//        return getPointer(type, TOP);
-//    } else {
-//        errs() << "Creating domain of unknown type <" << type << ">" << endl;
-//        return nullptr;
-//    }
+    if (llvm::isa<type::UnknownType>(type.get())) {
+        return nullptr;
+    } else if (llvm::isa<type::Bool>(type.get())) {
+        return getBool(TOP);
+    } else if (llvm::isa<type::Integer>(type.get())) {
+        return getInteger(type, TOP);
+    } else if (llvm::isa<type::Float>(type.get())) {
+        return getFloat(TOP);
+    } else if (llvm::isa<type::Array>(type.get())) {
+        return getArray(type, TOP);
+    } else if (llvm::isa<type::Record>(type.get())) {
+        return getStruct(type, TOP);
+    } else if (llvm::isa<type::Function>(type.get())) {
+        // TODO
+        return nullptr;
+    } else if (llvm::isa<type::Pointer>(type.get())) {
+        return getPointer(type, TOP);
+    } else {
+        errs() << "Creating domain of unknown type <" << type << ">" << endl;
+        return nullptr;
+    }
 }
 
 AbstractDomain::Ptr AbstractFactory::bottom(Type::Ptr type) const {
-    return nullptr;
-//    if (llvm::isa<type::UnknownType>(type.get())) {
-//        return nullptr;
-//    } else if (llvm::isa<type::Bool>(type.get())) {
-//        return getBool(BOTTOM);
-//    } else if (llvm::isa<type::Integer>(type.get())) {
-//        return getInt(type, BOTTOM);
-//    } else if (llvm::isa<type::Float>(type.get())) {
-//        return getFloat(type, BOTTOM);
-//    } else if (llvm::isa<type::Array>(type.get())) {
-//        return getArray(type, BOTTOM);
-//    } else if (llvm::isa<type::Record>(type.get())) {
-//        return getStruct(type, BOTTOM);
-//    } else if (llvm::isa<type::Function>(type.get())) {
-//        // TODO
-//        return nullptr;
-//    } else if (llvm::isa<type::Pointer>(type.get())) {
-//        return getPointer(type, BOTTOM);
-//    } else {
-//        errs() << "Creating domain of unknown type <" << type << ">" << endl;
-//        return nullptr;
-//    }
+    if (llvm::isa<type::UnknownType>(type.get())) {
+        return nullptr;
+    } else if (llvm::isa<type::Bool>(type.get())) {
+        return getBool(BOTTOM);
+    } else if (llvm::isa<type::Integer>(type.get())) {
+        return getInteger(type, BOTTOM);
+    } else if (llvm::isa<type::Float>(type.get())) {
+        return getFloat(BOTTOM);
+    } else if (llvm::isa<type::Array>(type.get())) {
+        return getArray(type, BOTTOM);
+    } else if (llvm::isa<type::Record>(type.get())) {
+        return getStruct(type, BOTTOM);
+    } else if (llvm::isa<type::Function>(type.get())) {
+        // TODO
+        return nullptr;
+    } else if (llvm::isa<type::Pointer>(type.get())) {
+        return getPointer(type, BOTTOM);
+    } else {
+        errs() << "Creating domain of unknown type <" << type << ">" << endl;
+        return nullptr;
+    }
 }
 
 
@@ -185,6 +187,102 @@ AbstractDomain::Ptr AbstractFactory::getFloat(AbstractFactory::Kind kind) const 
 
 AbstractDomain::Ptr AbstractFactory::getFloat(double n) const {
     return FloatT::constant(n);
+}
+
+AbstractDomain::Ptr AbstractFactory::getArray(Type::Ptr type, AbstractFactory::Kind kind) const {
+    auto* array = llvm::dyn_cast<type::Array>(type.get());
+    ASSERTC(array);
+
+    if (kind == TOP) {
+        return ArrayT::top(array->getElement());
+    } else if (kind == BOTTOM) {
+        return ArrayT::bottom(array->getElement());
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getArray(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const {
+    auto* array = llvm::dyn_cast<type::Array>(type.get());
+    ASSERTC(array);
+
+    return ArrayT::constant(type, elements);
+}
+
+AbstractDomain::Ptr AbstractFactory::getStruct(Type::Ptr type, AbstractFactory::Kind kind) const {
+    auto* record = llvm::dyn_cast<type::Record>(type.get());
+    ASSERTC(record);
+
+    auto& body = record->getBody()->get();
+    StructT::Types types;
+    for (auto i = 0U; i < body.getNumFields(); ++i)
+        types.emplace_back(body.at(i).getType());
+
+    if (kind == TOP) {
+        return StructT::top(types);
+    } else if (kind == BOTTOM) {
+        return StructT::bottom(types);
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getStruct(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const {
+    auto* record = llvm::dyn_cast<type::Record>(type.get());
+    ASSERTC(record);
+
+    auto& body = record->getBody()->get();
+    StructT::Types types;
+    for (auto i = 0U; i < body.getNumFields(); ++i)
+        types.emplace_back(body.at(i).getType());
+
+    return StructT::constant(types, elements);
+}
+
+AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractFactory::Kind kind) const {
+    auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
+    ASSERTC(ptr);
+
+    if (kind == TOP) {
+        return PointerT::top(ptr->getPointed());
+    } else if (kind == BOTTOM) {
+        return PointerT::bottom(ptr->getPointed());
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const {
+    auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
+    ASSERTC(ptr);
+
+    if (auto* array = llvm::dyn_cast<ArrayT>(base.get())) {
+        return std::make_shared<PointerT>(ptr->getPointed(), makeArrayLocation(base, offset));
+    } else if (auto* strct = llvm::dyn_cast<StructT>(base.get())) {
+        return std::make_shared<PointerT>(ptr->getPointed(), makeStructLocation(base, { offset }));
+    } else {
+        UNREACHABLE("Unknown base");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getNullptr(Type::Ptr type) const {
+    auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
+    ASSERTC(ptr);
+
+    return std::make_shared<PointerT>(ptr->getPointed(), makeNullLocation());
+}
+
+AbstractDomain::Ptr AbstractFactory::makeNullLocation() const {
+    return NullLocationT::get();
+}
+
+AbstractDomain::Ptr AbstractFactory::makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const {
+    return std::make_shared<ArrayLocationT>(base, offset);
+}
+
+AbstractDomain::Ptr AbstractFactory::makeStructLocation(AbstractDomain::Ptr base,
+                                                        const std::unordered_set<AbstractDomain::Ptr>& offsets) const {
+    return std::make_shared<StructLocationT>(base, offsets);
 }
 
 //////////////////////////////////////////////////////////////////////////////////

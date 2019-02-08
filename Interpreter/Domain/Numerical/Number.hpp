@@ -59,6 +59,10 @@ public:
         return *this;
     }
 
+    explicit operator size_t() const {
+        return ((size_t) *inner_.getRawData());
+    }
+
     Self operator-() const { return Self(-inner_); }
 
     void operator+=(const Self& other) {
@@ -272,6 +276,10 @@ public:
     Int& operator=(int n) {
         inner_ = llvm::APInt(width, n);
         return *this;
+    }
+
+    explicit operator size_t() const {
+        return ((size_t) *inner_.getRawData());
     }
 
     Int operator-() const { return Self(-inner_); }
@@ -489,6 +497,10 @@ public:
     Float& operator=(double n) {
         inner_ = llvm::APFloat(getLlvmSemantics(), n);
         return *this;
+    }
+
+    explicit operator size_t() const {
+        UNREACHABLE("Unsupported");
     }
 
     Float operator-() const {
