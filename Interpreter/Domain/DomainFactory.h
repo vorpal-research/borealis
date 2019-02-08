@@ -38,6 +38,9 @@ class ArrayLocation;
 template <typename MachineInt>
 class StructDomain;
 
+template <typename FunctionT, typename FHash, typename FEquals>
+class Function;
+
 template <typename MachineInt>
 class StructLocation;
 
@@ -46,6 +49,9 @@ class Pointer;
 
 template <typename MachineInt>
 class NullLocation;
+
+template <typename MachineInt, typename FunctionT>
+class FunctionLocation;
 
 class AbstractFactory {
 public:
@@ -59,8 +65,10 @@ public:
     using ArrayLocationT = ArrayLocation<MachineInt>;
     using StructT = StructDomain<MachineInt>;
     using StructLocationT = StructLocation<MachineInt>;
-    using PointerT = Pointer<MachineInt>;
+    using FunctionT = Function<ir::Function::Ptr, ir::FunctionHash, ir::FunctionEquals>;
+    using FunctionLocationT = FunctionLocation<MachineInt, FunctionT>;
     using NullLocationT = NullLocation<MachineInt>;
+    using PointerT = Pointer<MachineInt>;
 
     enum Kind {
         TOP,
@@ -87,10 +95,6 @@ public:
         return instance;
     }
 
-    Type::Ptr makePointer(Type::Ptr type) const {
-        return TF_->getPointer(type, defaultSize);
-    }
-
     AbstractDomain::Ptr top(Type::Ptr type) const;
     AbstractDomain::Ptr bottom(Type::Ptr type) const;
 
@@ -112,8 +116,11 @@ public:
     AbstractDomain::Ptr getArray(Type::Ptr type, Kind kind) const;
     AbstractDomain::Ptr getArray(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const;
 
-    AbstractDomain::Ptr getStruct(Type::Ptr, Kind kind) const;
-    AbstractDomain::Ptr getStruct(Type::Ptr, const std::vector<AbstractDomain::Ptr>& elements) const;
+    AbstractDomain::Ptr getStruct(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getStruct(Type::Ptr type, const std::vector<AbstractDomain::Ptr>& elements) const;
+
+    AbstractDomain::Ptr getFunction(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getFunction(ir::Function::Ptr function) const;
 
     AbstractDomain::Ptr getPointer(Type::Ptr type, Kind kind) const;
     AbstractDomain::Ptr getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
@@ -121,6 +128,7 @@ public:
     AbstractDomain::Ptr getNullptr(Type::Ptr type) const;
 
     AbstractDomain::Ptr makeNullLocation() const;
+    AbstractDomain::Ptr makeFunctionLocation(AbstractDomain::Ptr base) const;
     AbstractDomain::Ptr makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
     AbstractDomain::Ptr makeStructLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
 };

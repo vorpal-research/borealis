@@ -11,6 +11,7 @@
 #include "Memory/Pointer.hpp"
 #include "Memory/ArrayDomain.hpp"
 #include "Memory/StructDomain.hpp"
+#include "Memory/Function.hpp"
 #include "Memory/MemoryLocation.hpp"
 
 #include "Interpreter/Domain/AggregateDomain.h"
@@ -39,8 +40,7 @@ AbstractDomain::Ptr AbstractFactory::top(Type::Ptr type) const {
     } else if (llvm::isa<type::Record>(type.get())) {
         return getStruct(type, TOP);
     } else if (llvm::isa<type::Function>(type.get())) {
-        // TODO
-        return nullptr;
+        return getFunction(type, TOP);
     } else if (llvm::isa<type::Pointer>(type.get())) {
         return getPointer(type, TOP);
     } else {
@@ -63,8 +63,7 @@ AbstractDomain::Ptr AbstractFactory::bottom(Type::Ptr type) const {
     } else if (llvm::isa<type::Record>(type.get())) {
         return getStruct(type, BOTTOM);
     } else if (llvm::isa<type::Function>(type.get())) {
-        // TODO
-        return nullptr;
+        return getFunction(type, BOTTOM);
     } else if (llvm::isa<type::Pointer>(type.get())) {
         return getPointer(type, BOTTOM);
     } else {
@@ -239,6 +238,22 @@ AbstractDomain::Ptr AbstractFactory::getStruct(Type::Ptr type, const std::vector
     return StructT::constant(types, elements);
 }
 
+AbstractDomain::Ptr AbstractFactory::getFunction(Type::Ptr type, AbstractFactory::Kind kind) const {
+    ASSERTC(llvm::isa<type::Function>(type.get()));
+
+    if (kind == TOP) {
+        return FunctionT::top(type);
+    } else if (kind == BOTTOM) {
+        return FunctionT::bottom(type);
+    } else {
+        UNREACHABLE("Unknown kind");
+    }
+}
+
+AbstractDomain::Ptr AbstractFactory::getFunction(ir::Function::Ptr function) const {
+    return FunctionT::constant(function);
+}
+
 AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractFactory::Kind kind) const {
     auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
     ASSERTC(ptr);
@@ -260,6 +275,8 @@ AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractDomain::
         return std::make_shared<PointerT>(ptr->getPointed(), makeArrayLocation(base, offset));
     } else if (auto* strct = llvm::dyn_cast<StructT>(base.get())) {
         return std::make_shared<PointerT>(ptr->getPointed(), makeStructLocation(base, { offset }));
+    } else if (auto* func = llvm::dyn_cast<FunctionT>(base.get())) {
+        return std::make_shared<PointerT>(ptr->getPointed(), makeFunctionLocation(base));
     } else {
         UNREACHABLE("Unknown base");
     }
@@ -274,6 +291,10 @@ AbstractDomain::Ptr AbstractFactory::getNullptr(Type::Ptr type) const {
 
 AbstractDomain::Ptr AbstractFactory::makeNullLocation() const {
     return NullLocationT::get();
+}
+
+AbstractDomain::Ptr AbstractFactory::makeFunctionLocation(AbstractDomain::Ptr base) const {
+    return std::make_shared<FunctionLocationT>(base);
 }
 
 AbstractDomain::Ptr AbstractFactory::makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const {

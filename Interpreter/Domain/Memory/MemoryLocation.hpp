@@ -27,6 +27,125 @@ public:
     virtual bool isNull() const { return false; }
 };
 
+template <typename MachineInt, typename FunctionT>
+class FunctionLocation : public MemoryLocation<MachineInt> {
+public:
+
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
+
+    using Self = FunctionLocation<MachineInt, FunctionT>;
+    using IntervalT = Interval<MachineInt>;
+
+private:
+
+    Ptr base_;
+
+private:
+    struct TopTag{};
+    struct BottomTag{};
+
+    static Self* unwrap(Ptr other) {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    static const Self* unwrap(ConstPtr other) {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+public:
+
+    FunctionLocation(Ptr function) : MemoryLocation<MachineInt>(class_tag(*this)), base_(function) {
+        ASSERT(llvm::isa<FunctionT>(base_.get()), "Trying to create function location with non-function base");
+    }
+
+    FunctionLocation(const FunctionLocation&) = default;
+    FunctionLocation(FunctionLocation&&) = default;
+    FunctionLocation& operator=(const FunctionLocation&) = default;
+    FunctionLocation& operator=(FunctionLocation&&) = default;
+
+    static bool classof(const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    std::unordered_set<Ptr> offsets() const override {
+        return {};
+    }
+
+    bool isTop() const override { return base_->isTop(); }
+    bool isBottom() const override { return base_->isBottom(); }
+
+    void setTop() override {
+        base_->setTop();
+    }
+
+    void setBottom() override {
+        base_->setBottom();
+    }
+
+    bool leq(ConstPtr) const override {
+        UNREACHABLE("Unimplemented");
+    }
+
+    bool equals(ConstPtr other) const override {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        if (not otherRaw) return false;
+
+        return this->base_ == otherRaw->base_;
+    }
+
+    void joinWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+        this->base_->joinWith(otherRaw->base_);
+    }
+
+    Ptr join(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->joinWith(other);
+        return next;
+    }
+
+    void meetWith(ConstPtr other) override {
+        auto* otherRaw = unwrap(other);
+        this->base_->meetWith(otherRaw->base_);
+    }
+
+    Ptr meet(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->meetWith(other);
+        return next;
+    }
+
+    void widenWith(ConstPtr other) override {
+        joinWith(other);
+    }
+
+    Ptr widen(ConstPtr other) const override {
+        auto next = std::make_shared<Self>(*this);
+        next->widenWith(other);
+        return next;
+    }
+
+    size_t hashCode() const override { return this->base_->hashCode(); }
+    std::string toString() const override { return this->base_->toString(); }
+
+    Ptr load(Type::Ptr, Ptr) const override {
+        auto* baseRaw = llvm::dyn_cast<ArrayDomain<MachineInt>>(base_.get());
+        ASSERTC(baseRaw);
+        return this->base_;
+    }
+};
+
 template <typename MachineInt>
 class NullLocation : public MemoryLocation<MachineInt> {
 public:
