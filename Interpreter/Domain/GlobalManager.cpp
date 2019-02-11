@@ -1,20 +1,20 @@
 //
-// Created by abdullin on 10/26/17.
+// Created by abdullin on 2/11/19.
 //
 
 #include <llvm/IR/Constants.h>
 
-#include "GlobalVariableManager.h"
-#include "Interpreter/Domain/Domain.h"
-#include "Interpreter/Domain/DomainFactory.h"
+#include "GlobalManager.hpp"
 #include "Interpreter/IR/Module.h"
+#include "VariableFactory.hpp"
 #include "Util/collections.hpp"
 
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
-namespace ir {
+
+namespace impl_ {
 
 GlobalVar::GlobalVar(const llvm::GlobalVariable* value)
         : value_(value), color_(WHITE) {
@@ -66,90 +66,102 @@ void GlobalVar::getAllGlobals(std::unordered_set<const llvm::GlobalVariable*>& g
     }
 }
 
-GlobalVariableManager::GlobalVariableManager(Module* module) : module_(module), DF_(module_->getDomainFactory()) {}
+} // namespace impl_
 
-void GlobalVariableManager::init(const std::vector<const llvm::GlobalVariable*>& globs) {
+GlobalManager::GlobalManager(ir::Module* module) : module_(module) {}
+
+void GlobalManager::init(const std::vector<const llvm::GlobalVariable*>& globs) {
     // find all global variables
     std::unordered_set<const llvm::GlobalVariable*> all_globals;
     for (auto&& it : globs) {
         all_globals.insert(it);
-        if (it->hasInitializer()) GlobalVar::getAllGlobals(all_globals, it->getInitializer());
+        if (it->hasInitializer()) impl_::GlobalVar::getAllGlobals(all_globals, it->getInitializer());
     }
 
     // do topological sort of all global variables, find the right ordering for their initialization
     std::vector<const llvm::GlobalVariable*> ordered;
     std::unordered_set<const llvm::GlobalVariable*> cycled;
-    std::unordered_map<const llvm::GlobalVariable*, GlobalVar::Ptr> globalsMap;
+    std::unordered_map<const llvm::GlobalVariable*, impl_::GlobalVar::Ptr> globalsMap;
     for (auto&& it : all_globals) {
-        auto global = std::make_shared<GlobalVar>(it);
+        auto global = std::make_shared<impl_::GlobalVar>(it);
         if (global->getEdges().empty()) ordered.emplace_back(it);
         else globalsMap[it] = global;
     }
     for (auto&& it : globalsMap) {
-        if (it.second->getColor() == GlobalVar::WHITE) {
+        if (it.second->getColor() == impl_::GlobalVar::WHITE) {
             topologicalSort(it.first, globalsMap, ordered, cycled);
         }
     }
     // preinit cycled globals
     for (auto&& it : cycled) {
-        globals_[it] = DF_->getBottom(DF_->cast(it->getType()));
+        globals_[it] = module_->getVariableFactory()->bottom(it->getType());
     }
     // init all other globals
     for (auto&& it : ordered) {
-        globals_.insert( {it, DF_->get(it)} );
+        globals_.insert( {it, allocate(it)} );
         names_.insert({it->getName().str(), it});
     }
 }
 
-void GlobalVariableManager::topologicalSort(const llvm::GlobalVariable* current,
-                                     std::unordered_map<const llvm::GlobalVariable*, GlobalVar::Ptr>& globals,
-                                     std::vector<const llvm::GlobalVariable*>& ordered,
-                                     std::unordered_set<const llvm::GlobalVariable*>& cycled) {
+void GlobalManager::topologicalSort(const llvm::GlobalVariable* current,
+                                    std::unordered_map<const llvm::GlobalVariable*, impl_::GlobalVar::Ptr>& globals,
+                                    std::vector<const llvm::GlobalVariable*>& ordered,
+                                    std::unordered_set<const llvm::GlobalVariable*>& cycled) {
     if (not util::at(globals, current)) return;
-    if (globals[current]->getColor() == GlobalVar::BLACK) return;
-    if (globals[current]->getColor() == GlobalVar::GREY) {
+    if (globals[current]->getColor() == impl_::GlobalVar::BLACK) return;
+    if (globals[current]->getColor() == impl_::GlobalVar::GREY) {
         cycled.insert(current);
         return;
     }
-    globals[current]->setColor(GlobalVar::GREY);
+    globals[current]->setColor(impl_::GlobalVar::GREY);
     for (auto&& edge : globals[current]->getEdges()) {
         topologicalSort(edge, globals, ordered, cycled);
     }
-    globals[current]->setColor(GlobalVar::BLACK);
+    globals[current]->setColor(impl_::GlobalVar::BLACK);
     ordered.emplace_back(current);
 }
 
-Domain::Ptr GlobalVariableManager::findGlobal(const llvm::Value* val) const {
+AbstractDomain::Ptr GlobalManager::findGlobal(const llvm::Value* val) const {
     auto&& it = globals_.find(val);
     return (it == globals_.end()) ? nullptr : it->second;
 }
 
-Domain::Ptr GlobalVariableManager::get(const std::string& name) {
+AbstractDomain::Ptr GlobalManager::get(const std::string& name) {
     if (auto&& opt = util::at(names_, name)) {
         auto domain = findGlobal(opt.getUnsafe());
         return domain;
 
     } else if (auto func = module_->get(name)) {
-        auto funcDomain = DF_->get(llvm::cast<llvm::Constant>(func->getInstance()));
+        AbstractDomain::Ptr funcDomain = allocate(func->getInstance());
         globals_[func->getInstance()] = funcDomain;
         return funcDomain;
     }
     UNREACHABLE("Unknown global: " + name);
 }
 
-Function::Ptr GlobalVariableManager::get(const llvm::Function* function) {
+ir::Function::Ptr GlobalManager::get(const llvm::Function* function) {
     return module_->get(function);
 }
 
-const GlobalVariableManager::DomainMap& GlobalVariableManager::getGlobals() const {
+const GlobalManager::DomainMap& GlobalManager::getGlobals() const {
     return globals_;
 }
 
-Function::Ptr GlobalVariableManager::getFunctionByName(const std::string& name) {
+ir::Function::Ptr GlobalManager::getFunctionByName(const std::string& name) {
     return module_->get(name);
 }
 
-}   /* namespace ir */
+AbstractDomain::Ptr GlobalManager::allocate(const llvm::GlobalObject* object) const {
+    auto vf_ = module_->getVariableFactory();
+    if (auto* function = llvm::dyn_cast<const llvm::Function>(object)) {
+        return vf_->get(llvm::cast<llvm::Function>(function));
+    } else if (auto* global = llvm::dyn_cast<const llvm::GlobalVariable>(object)) {
+        return vf_->get(global);
+    } else {
+        UNREACHABLE("Unknown global: " + object->getName().str());
+    }
+}
+
 }   /* namespace absint */
 }   /* namespace borealis */
 

@@ -15,6 +15,8 @@
 
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/GlobalManager.hpp"
+#include "Interpreter/Domain/VariableFactory.hpp"
 
 namespace borealis {
 namespace absint {
@@ -47,6 +49,7 @@ public:
 
     SlotTrackerPass* getSlotTracker() const;
     DomainFactory* getDomainFactory();
+    VariableFactory* getVariableFactory();
 
     std::string toString() const;
 
@@ -59,6 +62,8 @@ private:
 
     const llvm::Module* instance_;
     SlotTrackerPass* ST_;
+    GlobalManager gm_;
+    VariableFactory vf_;
     GlobalVariableManager GVM_;
     DomainFactory factory_;
     FunctionMap functions_;

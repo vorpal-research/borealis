@@ -18,6 +18,8 @@ static config::MultiConfigEntry roots("analysis", "root-function");
 Module::Module(const llvm::Module* module, SlotTrackerPass* st, bool initAddrTakenFuncs)
         : instance_(module),
           ST_(st),
+          gm_(this),
+          vf_(instance_->getDataLayout(), &gm_),
           GVM_(this),
           factory_(ST_, &GVM_, instance_->getDataLayout()) {
     if (initAddrTakenFuncs) {
@@ -68,6 +70,10 @@ std::string Module::toString() const {
 
 DomainFactory* Module::getDomainFactory() {
     return &factory_;
+}
+
+VariableFactory* Module::getVariableFactory() {
+    return &vf_;
 }
 
 SlotTrackerPass* Module::getSlotTracker() const {

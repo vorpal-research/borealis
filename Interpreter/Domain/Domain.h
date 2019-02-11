@@ -42,7 +42,11 @@ enum CmpOperator {
     LT,
     LE,
     GT,
-    GE
+    GE,
+    FALSE,
+    TRUE,
+    BOTTOM,
+    TOP
 };
 
 enum CastOperator {
