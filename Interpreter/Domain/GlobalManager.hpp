@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Domain.h"
+#include "AbstractDomain.hpp"
 
 
 namespace borealis {

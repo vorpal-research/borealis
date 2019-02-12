@@ -6,7 +6,8 @@
 #define BOREALIS_INTERVAL_HPP
 
 #include "Bound.hpp"
-#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Util/algorithm.hpp"
 #include "Util/hash.hpp"

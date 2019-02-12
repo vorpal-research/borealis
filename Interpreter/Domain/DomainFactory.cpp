@@ -10,7 +10,7 @@
 #include "Interpreter/Domain/AggregateDomain.h"
 #include "Interpreter/Domain/Integer/IntValue.h"
 #include "Interpreter/IR/Module.h"
-#include "Interpreter/Util.hpp"
+#include "Interpreter/Domain/util/Util.hpp"
 #include "Util/cast.hpp"
 
 #include "Util/macros.h"

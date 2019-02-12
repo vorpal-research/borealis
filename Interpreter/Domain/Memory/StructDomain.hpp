@@ -7,7 +7,9 @@
 
 #include <unordered_map>
 
-#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
+#include "Type/TypeUtils.h"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"

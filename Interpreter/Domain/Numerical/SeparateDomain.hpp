@@ -5,7 +5,8 @@
 #ifndef BOREALIS_SEPARATE_DOMAIN_HPP
 #define BOREALIS_SEPARATE_DOMAIN_HPP
 
-#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Util/collections.hpp"
 #include "Util/cow_map.hpp"

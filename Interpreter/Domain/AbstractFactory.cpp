@@ -4,14 +4,13 @@
 
 #include "AbstractFactory.hpp"
 
-#include "AbstractFactory.hpp"
-
 #include "Numerical/Interval.hpp"
 #include "Memory/Pointer.hpp"
 #include "Memory/ArrayDomain.hpp"
 #include "Memory/StructDomain.hpp"
 #include "Memory/Function.hpp"
 #include "Memory/MemoryLocation.hpp"
+#include "util/casts.hpp"
 
 #include "Util/macros.h"
 
@@ -71,11 +70,11 @@ AbstractDomain::Ptr AbstractFactory::allocate(Type::Ptr type) const {
     if (llvm::isa<type::UnknownType>(type.get())) {
         return nullptr;
     } else if (llvm::isa<type::Bool>(type.get())) {
-        auto intTy = TF_->getInteger(1);
-        auto arrayTy = TF_->getArray(intTy, 1);
+        auto intTy = tf_->getInteger(1);
+        auto arrayTy = tf_->getArray(intTy, 1);
         return allocate(arrayTy);
     } else if (llvm::is_one_of<type::Integer, type::Float>(type.get())) {
-        auto arrayTy = TF_->getArray(type, 1);
+        auto arrayTy = tf_->getArray(type, 1);
         return allocate(arrayTy);
     } else if (llvm::isa<type::Array>(type.get())) {
         return getArray(type);
@@ -104,7 +103,7 @@ AbstractDomain::Ptr AbstractFactory::getBool(AbstractFactory::Kind kind) const {
 }
 
 AbstractDomain::Ptr AbstractFactory::getBool(bool value) const {
-    return BoolT::constant((int) value);
+    return BoolT::constant(BitInt<false>(1, (int) value));
 }
 
 AbstractDomain::Ptr AbstractFactory::getMachineInt(Kind kind) const {
@@ -118,41 +117,35 @@ AbstractDomain::Ptr AbstractFactory::getMachineInt(Kind kind) const {
 }
 
 AbstractDomain::Ptr AbstractFactory::getMachineInt(size_t value) const {
-    return Interval<MachineInt>::constant(value);
+    return Interval<MachineInt>::constant(BitInt<false>(defaultSize, value));
 }
 
 AbstractDomain::Ptr AbstractFactory::getInteger(Type::Ptr type, AbstractFactory::Kind kind, bool sign) const {
     auto* integer = llvm::dyn_cast<type::Integer>(type.get());
-    if (integer->getBitsize() == 32) return getInt(kind, sign);
-    else if (integer->getBitsize() == 64) return getLong(kind, sign);
-    else {
-        if (kind == TOP) {
-            if (sign) {
-                return Interval<BitInt<true>>::top();
-            } else {
-                return Interval<BitInt<false>>::top();
-            }
-        } else if (kind == BOTTOM) {
-            if (sign) {
-                return Interval<BitInt<true>>::bottom();
-            } else {
-                return Interval<BitInt<false>>::bottom();
-            }
+    ASSERTC(integer);
+
+    if (kind == TOP) {
+        if (sign) {
+            return Interval<BitInt<true>>::top();
         } else {
-            UNREACHABLE("Unknown kind");
+            return Interval<BitInt<false>>::top();
         }
+    } else if (kind == BOTTOM) {
+        if (sign) {
+            return Interval<BitInt<true>>::bottom();
+        } else {
+            return Interval<BitInt<false>>::bottom();
+        }
+    } else {
+        UNREACHABLE("Unknown kind");
     }
 }
 
 AbstractDomain::Ptr AbstractFactory::getInteger(unsigned long long n, unsigned width, bool sign) const {
-    if (width == 32) return getInt(n, sign);
-    else if (width == 64) return getLong(n, sign);
-    else {
-        if (sign) {
-            return Interval<BitInt<true>>::constant(BitInt<true>(width, n));
-        } else {
-            return Interval<BitInt<false>>::constant(BitInt<false>(width, n));
-        }
+    if (sign) {
+        return Interval<BitInt<true>>::constant(BitInt<true>(width, n));
+    } else {
+        return Interval<BitInt<false>>::constant(BitInt<false>(width, n));
     }
 }
 
@@ -324,8 +317,7 @@ AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type) const {
     return getPointer(type, allocate(ptr->getPointed()), getMachineInt(0));
 }
 
-AbstractDomain::Ptr
-AbstractFactory::getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const {
+AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const {
     auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
     ASSERTC(ptr);
 
@@ -364,5 +356,95 @@ AbstractDomain::Ptr AbstractFactory::makeStructLocation(AbstractDomain::Ptr base
     return std::make_shared<StructLocationT>(base, offsets);
 }
 
+AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, AbstractDomain::Ptr domain) const {
+    auto* integer = llvm::dyn_cast<type::Integer>(target.get());
+
+    using SInt = Interval<BitInt<true>>;
+    using UInt = Interval<BitInt<false>>;
+
+    switch (op) {
+        case SIGN:
+            {
+                ASSERTC(integer);
+                bool targetSigned = false;
+                if (integer->getSignedness() == llvm::Signedness::Signed)
+                    targetSigned = true;
+
+                if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
+                    if (targetSigned) {
+                        return std::make_shared<SInt>(*sint);
+                    } else {
+                        return util::cast<SInt, UInt>()(*sint).shared_from_this();
+                    }
+                } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
+                    if (targetSigned) {
+                        return util::cast<UInt, SInt>()(*uint).shared_from_this();
+                    } else {
+                        return std::make_shared<UInt>(*uint);
+                    }
+                } else {
+                    UNREACHABLE("Unknown interval");
+                }
+            }
+        case TRUNC:
+        case EXT:
+            ASSERTC(integer);
+
+            if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
+                return util::convert<SInt>()(*sint, integer->getBitsize()).shared_from_this();
+            } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
+                return util::convert<UInt>()(*uint, integer->getBitsize()).shared_from_this();
+            } else {
+                UNREACHABLE("Unknown interval");
+            }
+        case SEXT:
+            ASSERTC(integer);
+
+            if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
+                return util::convert<SInt>()(*sint, integer->getBitsize()).shared_from_this();
+            } else if (llvm::isa<UInt>(domain.get())) {
+                auto* signd = llvm::cast<SInt>(cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Signed), domain).get());
+                return util::convert<SInt>()(*signd, integer->getBitsize()).shared_from_this();
+            } else {
+                UNREACHABLE("Unknown interval");
+            }
+        case FPTOI:
+            {
+                ASSERTC(integer);
+                bool targetSigned = false;
+                if (integer->getSignedness() == llvm::Signedness::Signed)
+                    targetSigned = true;
+
+                if (auto* fp = llvm::dyn_cast<FloatT>(domain.get())) {
+                    if (targetSigned) {
+                        auto&& sint = util::cast<FloatT, SInt>()(*fp).shared_from_this();
+                        return cast(SEXT, target, sint);
+                    } else {
+                        auto&& uint = util::cast<FloatT, UInt>()(*fp).shared_from_this();
+                        return cast(EXT, target, uint);
+                    }
+                } else {
+                    UNREACHABLE("Unknown interval");
+                }
+            }
+        case ITOFP:
+            if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
+                return util::cast<SInt, FloatT>()(*sint).shared_from_this();
+            } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
+                return util::cast<UInt, FloatT>()(*uint).shared_from_this();
+            } else {
+                UNREACHABLE("Unknown interval");
+            }
+        case ITOPTR:
+            return PointerT::top(target);
+        case PTRTOI:
+            domain->setTop();
+            return Interval<MachineInt>::top();
+    }
+    UNREACHABLE("Unknown cast operator");
+}
+
 } // namespace absint
 } // namespace borealis
+
+#include "Util/unmacros.h"

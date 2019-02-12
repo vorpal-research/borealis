@@ -8,7 +8,7 @@
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APFloat.h>
 
-#include "Interpreter/Util.hpp"
+#include "Interpreter/Domain/util/Util.hpp"
 
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
@@ -27,8 +27,7 @@ template <bool sign>
 class BitInt {
 public:
 
-    static const size_t defaultSise = 32;
-    static const size_t longSize = 64;
+    static const size_t defaultSize = 64;
 
 private:
 
@@ -38,9 +37,9 @@ private:
 public:
 
     explicit BitInt(llvm::APInt value) : inner_(std::move(value)) {}
-    BitInt() : inner_(defaultSise, 0) {}
-    explicit BitInt(int n) : inner_(defaultSise, n) {}
-    explicit BitInt(long n) : inner_(longSize, n) {}
+    BitInt() : inner_(defaultSize, 0) {}
+    explicit BitInt(int n) : inner_(defaultSize, n) {}
+    explicit BitInt(long n) : inner_(defaultSize, n) {}
     BitInt(size_t width, unsigned long long n) : inner_(width, n) {}
     BitInt(const BitInt&) = default;
     BitInt(BitInt&&) = default;
@@ -50,12 +49,12 @@ public:
     size_t width() const { return inner_.getBitWidth(); }
 
     BitInt& operator=(int n) {
-        inner_ = llvm::APInt(defaultSise, n);
+        inner_ = llvm::APInt(defaultSize, n);
         return *this;
     }
 
     BitInt& operator=(long n) {
-        inner_ = llvm::APInt(longSize, n);
+        inner_ = llvm::APInt(defaultSize, n);
         return *this;
     }
 
@@ -119,6 +118,10 @@ public:
 
     bool geq(const Self& other) const {
         return other.leq(*this);
+    }
+
+    BitInt<not sign> changeSignedness() const {
+        return BitInt<not sign>(this->inner_);
     }
 
     std::string toString() const {
@@ -334,6 +337,10 @@ public:
 
     bool geq(const Int& other) const {
         return other.leq(*this);
+    }
+
+    Int<width, not sign> changeSignedness() const {
+        return Int<width, not sign>(this->inner_);
     }
 
     std::string toString() const {
@@ -579,6 +586,14 @@ public:
         bool isExact;
         inner_.convertToInteger(value, getRoundingMode(), &isExact);
         return Int<width, sign>(value);
+    }
+
+    template <bool sign>
+    BitInt<sign> toBitInt() const {
+        llvm::APSInt value(BitInt<sign>::defaultSize, sign);
+        bool isExact;
+        inner_.convertToInteger(value, getRoundingMode(), &isExact);
+        return BitInt<sign>(value);
     }
 
 private:

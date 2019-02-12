@@ -10,31 +10,6 @@
 namespace borealis {
 namespace absint {
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-AbstractDomain::Ptr AbstractDomain::apply(BinaryOperator, AbstractDomain::ConstPtr) const {
-    UNREACHABLE("Unsupported operation");
-}
-
-AbstractDomain::Ptr AbstractDomain::apply(CmpOperator, AbstractDomain::ConstPtr) const {
-    UNREACHABLE("Unsupported operation");
-}
-
-AbstractDomain::Ptr AbstractDomain::load(Type::Ptr, Ptr) const {
-    UNREACHABLE("Unsupported operation");
-}
-void AbstractDomain::store(Ptr, Ptr) {
-    UNREACHABLE("Unsupported operation");
-}
-
-AbstractDomain::Ptr AbstractDomain::gep(Type::Ptr, const std::vector<AbstractDomain::Ptr>&) {
-    UNREACHABLE("Unsupported operation");
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void Domain::setTop() {
     ASSERT(isMutable(), "changing immutable domain");
     value_ = TOP;

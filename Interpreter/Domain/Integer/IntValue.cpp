@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <Logging/logger.hpp>
 
-#include "Interpreter/Util.hpp"
+#include "Interpreter/Domain/util/Util.hpp"
 #include "IntMax.h"
 #include "IntMin.h"
 #include "IntValue.h"

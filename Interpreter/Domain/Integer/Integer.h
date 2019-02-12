@@ -12,7 +12,7 @@
 #include <llvm/IR/Type.h>
 #include <Util/cache.hpp>
 
-#include "Interpreter/Util.hpp"
+#include "Interpreter/Domain/util/Util.hpp"
 #include "Type/Type.h"
 
 namespace borealis {

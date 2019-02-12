@@ -5,7 +5,8 @@
 #ifndef BOREALIS_NUMERICALDOMAIN_HPP
 #define BOREALIS_NUMERICALDOMAIN_HPP
 
-#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 
 namespace borealis {
 namespace absint {

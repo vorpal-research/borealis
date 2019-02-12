@@ -5,7 +5,8 @@
 #ifndef BOREALIS_INTERVALDOMAIN_HPP
 #define BOREALIS_INTERVALDOMAIN_HPP
 
-#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Bound.hpp"
 #include "NumericalDomain.hpp"

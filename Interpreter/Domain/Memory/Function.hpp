@@ -5,7 +5,8 @@
 #ifndef BOREALIS_FUNCTIONDOMAIN_HPP
 #define BOREALIS_FUNCTIONDOMAIN_HPP
 
-#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"

@@ -4,7 +4,7 @@
 
 #include "Interpreter/Domain/DomainFactory.h"
 #include "FloatIntervalDomain.h"
-#include "Interpreter/Util.hpp"
+#include "Interpreter/Domain/util/Util.hpp"
 #include "Util/algorithm.hpp"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"

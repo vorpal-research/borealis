@@ -9,18 +9,10 @@
 
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
-#include <Util/cache.hpp>
 
+#include "AbstractDomain.hpp"
 #include "Numerical/Number.hpp"
-
-#include "Interpreter/Domain/Domain.h"
-#include "Interpreter/Domain/FloatIntervalDomain.h"
-#include "Interpreter/Domain/FunctionDomain.h"
-#include "Interpreter/Domain/IntegerIntervalDomain.h"
-#include "Interpreter/Domain/PointerDomain.h"
-#include "Interpreter/IR/GlobalVariableManager.h"
 #include "Interpreter/IR/Function.h"
-#include "Passes/Tracker/SlotTrackerPass.h"
 #include "Type/TypeFactory.h"
 
 namespace borealis {
@@ -53,14 +45,25 @@ class NullLocation;
 template <typename MachineInt, typename FunctionT>
 class FunctionLocation;
 
+enum CastOperator {
+    SIGN,
+    TRUNC,
+    EXT,
+    SEXT,
+    FPTOI,
+    ITOFP,
+    ITOPTR,
+    PTRTOI
+};
+
 class AbstractFactory {
 public:
 
     static const size_t defaultSize = 64;
 
-    using BoolT = Interval<Int<1U, false>>;
+    using BoolT = Interval<BitInt<false>>;
     using FloatT = Interval<Float>;
-    using MachineInt = Int<defaultSize, false>;
+    using MachineInt = BitInt<false>;
     using ArrayT = ArrayDomain<MachineInt>;
     using ArrayLocationT = ArrayLocation<MachineInt>;
     using StructT = StructDomain<MachineInt>;
@@ -77,11 +80,11 @@ public:
 
 private:
 
-    TypeFactory::Ptr TF_;
+    TypeFactory::Ptr tf_;
 
 private:
 
-    AbstractFactory() : TF_(TypeFactory::get()) {}
+    AbstractFactory() : tf_(TypeFactory::get()) {}
 
 public:
 
@@ -95,7 +98,7 @@ public:
         return instance;
     }
 
-    TypeFactory::Ptr tf() const { return TF_; }
+    TypeFactory::Ptr tf() const { return tf_; }
 
     AbstractDomain::Ptr top(Type::Ptr type) const;
     AbstractDomain::Ptr bottom(Type::Ptr type) const;
@@ -141,6 +144,8 @@ public:
     AbstractDomain::Ptr makeFunctionLocation(AbstractDomain::Ptr base) const;
     AbstractDomain::Ptr makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
     AbstractDomain::Ptr makeStructLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
+
+    AbstractDomain::Ptr cast(CastOperator op, Type::Ptr target, AbstractDomain::Ptr domain) const;
 };
 
 }   /* namespace absint */
