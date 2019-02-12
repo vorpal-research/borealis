@@ -440,6 +440,8 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
         case PTRTOI:
             domain->setTop();
             return Interval<MachineInt>::top();
+        case BITCAST:
+            return top(target);
     }
     UNREACHABLE("Unknown cast operator");
 }

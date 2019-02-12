@@ -53,7 +53,8 @@ enum CastOperator {
     FPTOI,
     ITOFP,
     ITOPTR,
-    PTRTOI
+    PTRTOI,
+    BITCAST
 };
 
 class AbstractFactory {

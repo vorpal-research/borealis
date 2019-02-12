@@ -87,8 +87,7 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
         return af_->getArray(cast(constant->getType()), elements);
         // Constant Expr
     } else if (auto constExpr = llvm::dyn_cast<llvm::ConstantExpr>(constant)) {
-//        return interpretConstantExpr(constExpr);
-        return af_->top(cast(constExpr->getType()));
+        return interpretConstantExpr(constExpr);
         // Constant Struct
     } else if (auto structType = llvm::dyn_cast<llvm::ConstantStruct>(constant)) {
         std::vector<AbstractDomain::Ptr> elements;
@@ -127,7 +126,7 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::GlobalVariable* global) con
             if (simpleConst->isTop()) return af_->top(cast(global->getType()));
             auto&& arrayType = af_->tf()->getArray(cast(&elementType), 1);
             content = af_->getArray(arrayType, { simpleConst });
-            ptrType = af_->tf()->getPointer(arrayType, af_->defaultSize);
+            ptrType = af_->tf()->getPointer(arrayType, AbstractFactory::defaultSize);
             // else just create domain
         } else {
             content = get(global->getInitializer());
@@ -170,7 +169,7 @@ AbstractDomain::Ptr VariableFactory::getConstOperand(const llvm::Constant* c) co
 #define HANDLE_CAST(OPER) \
     lhv = getConstOperand(ce->getOperand(0)); \
     ASSERT(lhv, "Unknown cast constexpr operand"); \
-    return af_->top(cast(ce->getType()));
+    return af_->cast((OPER), cast(ce->getType()), lhv);
 
 CmpOperator toCmp(llvm::CmpInst::Predicate p) {
     switch (p) {
@@ -228,17 +227,17 @@ AbstractDomain::Ptr VariableFactory::interpretConstantExpr(const llvm::ConstantE
         case llvm::Instruction::AShr: HANDLE_BINOP((lhv >> rhv));
         case llvm::Instruction::ICmp: HANDLE_BINOP((lhv->apply(toCmp(static_cast<llvm::CmpInst::Predicate>(ce->getPredicate())), rhv)));
         case llvm::Instruction::FCmp: HANDLE_BINOP((lhv->apply(toCmp(static_cast<llvm::CmpInst::Predicate>(ce->getPredicate())), rhv)));
-        case llvm::Instruction::Trunc: HANDLE_CAST(trunc);
-        case llvm::Instruction::SExt: HANDLE_CAST(sext);
-        case llvm::Instruction::ZExt: HANDLE_CAST(zext);
-        case llvm::Instruction::FPTrunc: HANDLE_CAST(fptrunc);
-        case llvm::Instruction::UIToFP: HANDLE_CAST(uitofp);
-        case llvm::Instruction::SIToFP: HANDLE_CAST(sitofp);
-        case llvm::Instruction::FPToUI: HANDLE_CAST(fptoui);
-        case llvm::Instruction::FPToSI: HANDLE_CAST(fptosi);
-        case llvm::Instruction::PtrToInt: HANDLE_CAST(ptrtoint);
-        case llvm::Instruction::IntToPtr: HANDLE_CAST(inttoptr);
-        case llvm::Instruction::BitCast: HANDLE_CAST(bitcast);
+        case llvm::Instruction::Trunc: HANDLE_CAST(CastOperator::TRUNC);
+        case llvm::Instruction::SExt: HANDLE_CAST(CastOperator::SEXT);
+        case llvm::Instruction::ZExt: HANDLE_CAST(CastOperator::EXT);
+        case llvm::Instruction::FPTrunc: HANDLE_CAST(CastOperator::TRUNC);
+        case llvm::Instruction::UIToFP: HANDLE_CAST(CastOperator::ITOFP);
+        case llvm::Instruction::SIToFP: HANDLE_CAST(CastOperator::ITOFP);
+        case llvm::Instruction::FPToUI: HANDLE_CAST(CastOperator::FPTOI);
+        case llvm::Instruction::FPToSI: HANDLE_CAST(CastOperator::FPTOI);
+        case llvm::Instruction::PtrToInt: HANDLE_CAST(CastOperator::PTRTOI);
+        case llvm::Instruction::IntToPtr: HANDLE_CAST(CastOperator::ITOPTR);
+        case llvm::Instruction::BitCast: HANDLE_CAST(CastOperator::BITCAST);
         case llvm::Instruction::GetElementPtr:
             return handleGEPConstantExpr(ce);
         default:
