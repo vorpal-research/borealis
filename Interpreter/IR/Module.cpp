@@ -13,15 +13,13 @@ namespace borealis {
 namespace absint {
 namespace ir {
 
-static config::MultiConfigEntry roots("analysis", "root-function");
+static config::MultiConfigEntry rootsFunctions("analysis", "root-function");
 
 Module::Module(const llvm::Module* module, SlotTrackerPass* st, bool initAddrTakenFuncs)
         : instance_(module),
           ST_(st),
           gm_(this),
-          vf_(instance_->getDataLayout(), &gm_),
-          GVM_(this),
-          factory_(ST_, &GVM_, instance_->getDataLayout()) {
+          vf_(instance_->getDataLayout(), &gm_) {
     if (initAddrTakenFuncs) {
         initAddressTakenFunctions();
     }
@@ -33,11 +31,11 @@ void Module::initAddressTakenFunctions() {
 }
 
 void Module::initGlobals(const std::unordered_set<const llvm::Value*>& globals) {
-    GVM_.init(util::viewContainer(globals).map(llvm::dyn_caster<llvm::GlobalVariable>()).toVector());
+    gm_.init(util::viewContainer(globals).map(llvm::dyn_caster<llvm::GlobalVariable>()).toVector());
 }
 
-std::vector<Function::Ptr> Module::getRootFunctions() {
-    return util::viewContainer(roots)
+std::vector<Function::Ptr> Module::roots() {
+    return util::viewContainer(rootsFunctions)
             .map(LAM(name, get(name)))
             .filter()
             .toVector();
@@ -47,7 +45,7 @@ Function::Ptr Module::get(const llvm::Function* function) {
     if (auto&& opt = util::at(functions_, function)) {
         return opt.getUnsafe();
     } else {
-        auto result = std::make_shared<Function>(function, &factory_, ST_->getSlotTracker(function));
+        auto result = std::make_shared<Function>(function, &vf_, ST_->getSlotTracker(function));
         functions_.insert( {function, result} );
         return result;
     }
@@ -58,7 +56,7 @@ Function::Ptr Module::get(const std::string& fname) {
     return (function) ? get(function) : nullptr;
 }
 
-const llvm::Module* Module::getInstance() const {
+const llvm::Module* Module::instance() const {
     return instance_;
 }
 
@@ -68,41 +66,37 @@ std::string Module::toString() const {
     return ss.str();
 }
 
-DomainFactory* Module::getDomainFactory() {
-    return &factory_;
-}
-
-VariableFactory* Module::getVariableFactory() {
+VariableFactory* Module::variableFactory() const {
     return &vf_;
 }
 
-SlotTrackerPass* Module::getSlotTracker() const {
+SlotTrackerPass* Module::slotTracker() const {
     return ST_;
 }
 
-const Module::FunctionMap& Module::getFunctions() const {
+const Module::FunctionMap& Module::functions() const {
     return functions_;
 }
 
-Domain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location) {
+AbstractDomain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location) {
     if (llvm::isa<llvm::GlobalVariable>(value)) {
-        return GVM_.findGlobal(value);
+        return gm_.global(value);
     } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
-        return factory_.get(constant);
+        return vf_.get(constant);
     } else {
         return get(location->getParent())->getDomainFor(value, location);
     }
 }
 
-Module::GlobalsMap Module::getGlobalsFor(Function::Ptr f) const {
+Module::GlobalsMap Module::globalsFor(Function::Ptr f) const {
     return util::viewContainer(f->getGlobals())
-            .map([&](auto&& a) -> std::pair<const llvm::Value*, Domain::Ptr> { return {a, GVM_.findGlobal(a)}; })
+            .map(LAM(a, {a, gm_.global(a)}))
             .toMap();
 }
 
-Module::GlobalsMap Module::getGlobalsFor(const BasicBlock* bb) const {
+Module::GlobalsMap Module::globalsFor(const BasicBlock* bb) const {
     return util::viewContainer(bb->getGlobals())
-            .map([&](auto&& a) -> std::pair<const llvm::Value*, Domain::Ptr> { return {a, GVM_.findGlobal(a)}; })
+            .map(LAM(a, {a, gm_.global(a)}))
             .toMap();
 }
 
@@ -119,7 +113,7 @@ bool function_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
     return true;
 }
 
-std::vector<Function::Ptr> Module::findFunctionsByPrototype(const llvm::Type* prototype) const {
+std::vector<Function::Ptr> Module::findByPrototype(const llvm::Type* prototype) const {
     return util::viewContainer(addressTakenFunctions_)
             .filter(LAM(a, function_types_eq(a.first->getType()->getPointerElementType(), prototype)))
             .map(LAM(a, a.second))
@@ -141,32 +135,32 @@ bool Module::checkVisited(const llvm::Value* val) const {
     UNREACHABLE("Unknown value: " + ST_->toString(val));
 }
 
-const Module::FunctionMap& Module::getAddressTakenFunctions() const {
+const Module::FunctionMap& Module::addressTakenFunctions() const {
     return addressTakenFunctions_;
 }
 
-Domain::Ptr Module::findGlobal(const llvm::Value* value) const {
-    return GVM_.findGlobal(value);
+AbstractDomain::Ptr Module::global(const llvm::Value* value) const {
+    return gm_.global(value);
 }
 
-GlobalVariableManager* Module::getGlobalVariableManager() {
-    return &GVM_;
+GlobalManager* Module::globalManager() {
+    return &gm_;
 }
 
-const GlobalVariableManager* Module::getGlobalVariableManager() const {
-    return &GVM_;
+const GlobalManager* Module::globalManager() const {
+    return &gm_;
 }
 
 std::ostream& operator<<(std::ostream& s, const Module& m) {
-    if (not m.getGlobalVariableManager()->getGlobals().empty()) {
+    if (not m.globalManager()->globals().empty()) {
         s << "Global Variables: " << std::endl;
-        for (auto&& global : m.getGlobalVariableManager()->getGlobals()) {
-            s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << std::endl;
+        for (auto&& global : m.globalManager()->globals()) {
+            s << "  " << global.first->getName().str() << " = " << global.second->toString() << std::endl;
             s.flush();
         }
     }
     s << std::endl;
-    for (auto&& it : m.getFunctions()) {
+    for (auto&& it : m.functions()) {
         s << std::endl << std::endl << it.second << std::endl << std::endl;
         s.flush();
     }
@@ -174,15 +168,15 @@ std::ostream& operator<<(std::ostream& s, const Module& m) {
 }
 
 borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const Module& m) {
-    if (not m.getGlobalVariableManager()->getGlobals().empty()) {
+    if (not m.globalManager()->globals().empty()) {
         s << "Global Variables: " << endl;
-        for (auto&& global : m.getGlobalVariableManager()->getGlobals()) {
-            s << "  " << global.first->getName().str() << " = " << global.second->toPrettyString("  ") << endl;
+        for (auto&& global : m.globalManager()->globals()) {
+            s << "  " << global.first->getName().str() << " = " << global.second->toString() << endl;
             s.flush();
         }
     }
     s << endl;
-    for (auto&& it : m.getFunctions()) {
+    for (auto&& it : m.functions()) {
         s << endl << endl << it.second << endl << endl;
         s.flush();
     }

@@ -25,35 +25,34 @@ namespace ir {
 class Module {
 public:
 
-    using GlobalsMap = std::map<const llvm::Value*, Domain::Ptr>;
+    using GlobalsMap = std::map<const llvm::Value*, AbstractDomain::Ptr>;
     using FunctionMap = std::unordered_map<const llvm::Function*, Function::Ptr>;
 
     Module(const llvm::Module* module, SlotTrackerPass* st, bool initAddrTakenFuncs = true);
 
-    std::vector<Function::Ptr> getRootFunctions();
+    std::vector<Function::Ptr> roots();
     Function::Ptr get(const llvm::Function* function);
     Function::Ptr get(const std::string& fname);
 
     bool checkVisited(const llvm::Value* val) const;
-    const llvm::Module* getInstance() const;
-    GlobalVariableManager* getGlobalVariableManager();
-    const GlobalVariableManager* getGlobalVariableManager() const;
-    Domain::Ptr findGlobal(const llvm::Value* value) const;
-    GlobalsMap getGlobalsFor(Function::Ptr f) const;
-    GlobalsMap getGlobalsFor(const BasicBlock* bb) const;
-    const FunctionMap& getFunctions() const;
-    const FunctionMap& getAddressTakenFunctions() const;
+    const llvm::Module* instance() const;
+    GlobalManager* globalManager();
+    const GlobalManager* globalManager() const;
+    AbstractDomain::Ptr global(const llvm::Value* value) const;
+    GlobalsMap globalsFor(Function::Ptr f) const;
+    GlobalsMap globalsFor(const BasicBlock* bb) const;
+    const FunctionMap& functions() const;
+    const FunctionMap& addressTakenFunctions() const;
     /// Returns vector of address taken functions of a given prototype
     /// Prototype should NOT be a VarArg function
-    std::vector<Function::Ptr> findFunctionsByPrototype(const llvm::Type* prototype) const;
+    std::vector<Function::Ptr> findByPrototype(const llvm::Type* prototype) const;
 
-    SlotTrackerPass* getSlotTracker() const;
-    DomainFactory* getDomainFactory();
-    VariableFactory* getVariableFactory();
+    SlotTrackerPass* slotTracker() const;
+    VariableFactory* variableFactory() const;
 
     std::string toString() const;
 
-    Domain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
+    AbstractDomain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
 
     void initAddressTakenFunctions();
     void initGlobals(const std::unordered_set<const llvm::Value*>& globals);
@@ -64,8 +63,6 @@ private:
     SlotTrackerPass* ST_;
     GlobalManager gm_;
     VariableFactory vf_;
-    GlobalVariableManager GVM_;
-    DomainFactory factory_;
     FunctionMap functions_;
     FunctionMap addressTakenFunctions_;
 

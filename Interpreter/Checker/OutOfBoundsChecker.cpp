@@ -18,7 +18,7 @@ OutOfBoundsChecker::OutOfBoundsChecker(Module* module, DefectManager* DM, FuncIn
           module_(module),
           DM_(DM),
           FIP_(FIP) {
-    ST_ = module_->getSlotTracker();
+    ST_ = module_->slotTracker();
 }
 
 void OutOfBoundsChecker::visitGEPOperator(llvm::Instruction& loc, llvm::GEPOperator& GI) {

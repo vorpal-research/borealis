@@ -81,6 +81,10 @@ public:
         return *this;
     }
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     ~Pointer() override = default;
 
     static bool classof(const Self*) {

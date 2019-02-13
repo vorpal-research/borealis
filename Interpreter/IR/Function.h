@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 
+#include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/IR/BasicBlock.h"
 #include "State.h"
 #include "Util/slottracker.h"
@@ -16,6 +17,9 @@
 
 namespace borealis {
 namespace absint {
+
+class VariableFactory;
+
 namespace ir {
 
 class Function: public std::enable_shared_from_this<Function> {
@@ -28,34 +32,34 @@ private:
 
     const llvm::Function* instance_;
     mutable SlotTracker* tracker_;
-    DomainFactory* factory_;
-    std::vector<Domain::Ptr> arguments_;
-    std::map<const llvm::Value*, Domain::Ptr> globals_;
+    VariableFactory* factory_;
+    std::vector<AbstractDomain::Ptr> arguments_;
+    std::map<const llvm::Value*, AbstractDomain::Ptr> globals_;
     BlockMap blocks_;
     State::Ptr inputState_;
     State::Ptr outputState_;
 
 public:
     /// Assumes that llvm::Function is not a declaration
-    Function(const llvm::Function* function, DomainFactory* factory, SlotTracker* st);
+    Function(const llvm::Function* function, VariableFactory* factory, SlotTracker* st);
 
     bool isVisited() const;
     bool hasAddressTaken() const;
     Type::Ptr getType() const;
     const llvm::Function* getInstance() const;
-    const std::vector<Domain::Ptr>& getArguments() const;
+    const std::vector<AbstractDomain::Ptr>& getArguments() const;
     std::vector<const llvm::Value*> getGlobals() const;
     const BlockMap& getBasicBlocks() const;
-    Domain::Ptr getReturnValue() const;
+    AbstractDomain::Ptr getReturnValue() const;
 
-    Domain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
+    AbstractDomain::Ptr getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location);
 
     /// Assumes that @args[i] corresponds to i-th argument of the function
     /// Returns true, if arguments were updated and function should be reinterpreted
-    bool updateArguments(const std::vector<Domain::Ptr>& args);
+    bool updateArguments(const std::vector<AbstractDomain::Ptr>& args);
     /// Returns true, if globals were updated and function should be reinterpreted
-    bool updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals);
-    void mergeToOutput(State::Ptr state);
+    bool updateGlobals(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals);
+    void merge(State::Ptr state);
 
     BasicBlock* getEntryNode() const;
     BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;

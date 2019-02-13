@@ -63,6 +63,10 @@ public:
     IntervalDomain& operator=(IntervalDomain&&) noexcept = default;
     ~IntervalDomain() override = default;
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static bool classof (const Self*) {
         return true;
     }
@@ -86,7 +90,7 @@ public:
     void meetWith(ConstPtr other) override { this->env_->meetWith(unwrap(other)->env_); }
     void widenWith(ConstPtr other) override { this->env_->widenWith(unwrap(other)->env_); }
 
-    IntervalPtr get(Variable x) const { return this->env_->get(x); }
+    IntervalPtr get(Variable x) const override { return this->env_->get(x); }
     void set(Variable x, IntervalPtr value) { return this->env_->set(x, value); }
     void forget(Variable x) { return this->env_->forget(x); }
 
@@ -97,59 +101,65 @@ public:
     void assign(Variable x, Variable y) override { this->set(x, this->get(y)); }
     void assign(Variable x, IntervalPtr i) override { this->set(x, i); }
 
-    void apply(BinaryOperator op, Variable x, Variable y, Variable z) override { return this->env_->apply(op, x, y, z); }
+    void apply(llvm::ArithType op, Variable x, Variable y, Variable z) override { return this->env_->apply(op, x, y, z); }
 
-    Ptr apply(CmpOperator op, Variable x, Variable y) override {
-        using BoolT = typename AbstractFactory::BoolT;
-        auto&& makeBool = [](bool b) { return std::make_shared<BoolT>((int) b); };
+    Ptr apply(llvm::ConditionType op, Variable x, Variable y) override {
+        auto&& makeTop = []() { return AbstractFactory::get()->getBool(AbstractFactory::TOP); };
+        auto&& makeBool = [](bool b) { return AbstractFactory::get()->getBool(b); };
 
         auto& lhv = this->get(x);
         auto& rhv = this->get(y);
 
         if (lhv->isTop() || rhv->isTop()) {
-            return BoolT::top();
+            return makeTop();
         } else if (lhv.isBottom() || rhv.isBottom()) {
-            return BoolT::bottom();
+            return AbstractFactory::get()->getBool(AbstractFactory::BOTTOM);
         }
 
         switch (op) {
-            case EQ:
+            case llvm::ConditionType::TRUE:
+                return makeBool(true);
+            case llvm::ConditionType::FALSE:
+                return makeBool(false);
+            case llvm::ConditionType::UNKNOWN:
+                return makeTop();
+            case llvm::ConditionType::EQ:
                 if (lhv->isConstant() && rhv->isConstant()) {
                     return makeBool(lhv->asConstant() == rhv->asConstant());
                 } else if (lhv->intersects(rhv)) {
-                    return BoolT::top();
+                    return makeTop();
                 } else {
                     return makeBool(false);
                 }
-            case NEQ:
+            case llvm::ConditionType::NEQ:
                 if (lhv->isConstant() && rhv->isConstant()) {
                     return makeBool(lhv->asConstant() != rhv->asConstant());
                 } else if (lhv->intersects(rhv)) {
-                    return BoolT::top();
+                    return makeTop();
                 } else {
                     return makeBool(true);
                 }
-            case LT:
+            case llvm::ConditionType::LT:
                 if (lhv->intersects(rhv)) {
-                    return BoolT::top();
+                    return makeTop();
                 } else {
                     return makeBool(lhv->ub() < rhv->lb());
                 }
-            case LE:
+            case llvm::ConditionType::LE:
                 if (lhv->intersects(rhv)) {
-                    return BoolT::top();
+                    return makeTop();
                 } else {
                     return makeBool(lhv->ub() <= rhv->lb());
                 }
-            case GT:
+            case llvm::ConditionType::GT:
                 if (lhv->intersects(rhv)) {
-                    return BoolT::top();
+                    return makeTop();
                 } else {
                     return makeBool(rhv->ub() < lhv->lb());
                 }
-            case GE:
+            case llvm::ConditionType::GE:
                 if (lhv->intersects(rhv)) {
-                    return BoolT::top();
+                    return makeTop();
                 } else {
                     return makeBool(rhv->ub() <= lhv->lb());
                 }

@@ -58,6 +58,10 @@ public:
     SeparateDomain& operator=(SeparateDomain&&) noexcept = default;
     ~SeparateDomain() override = default;
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static bool classof (const Self*) {
         return true;
     }
@@ -188,7 +192,7 @@ public:
         this->values_.erase(x);
     }
 
-    void apply(BinaryOperator op, Variable x, Variable y, Variable z) {
+    void apply(llvm::ArithType op, Variable x, Variable y, Variable z) {
         this->set(x, this->get(y)->apply(op, this->get(z)));
     }
 };

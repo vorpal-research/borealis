@@ -75,6 +75,10 @@ public:
         return *this;
     }
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static Ptr top(Type::Ptr type) { return std::make_shared<Self>(TopTag{}, type); }
     static Ptr bottom(Type::Ptr type) { return std::make_shared<Self>(BottomTag{}, type); }
     static Ptr constant(FunctionT function) { return std::make_shared<Self>(function); }

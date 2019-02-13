@@ -7,6 +7,7 @@
 
 #include "Logging/logger.hpp"
 #include "Type/Type.h"
+#include "Util/util.h"
 
 namespace borealis {
 namespace absint {
@@ -14,20 +15,6 @@ namespace absint {
 struct Split;
 
 class DomainFactory;
-
-enum BinaryOperator {
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    MOD,
-    SHL,
-    SHR,
-    LSHR,
-    AND,
-    OR,
-    XOR
-};
 
 enum CmpOperator {
     EQ,
@@ -58,6 +45,8 @@ public:
     AbstractDomain& operator=(AbstractDomain&&) noexcept = default;
 
     virtual ~AbstractDomain() = default;
+
+    virtual Ptr clone() const = 0;
 
     virtual bool isTop() const = 0;
 
@@ -96,9 +85,9 @@ public:
     }
 
     ///////////////////////////////////////
-    virtual Ptr apply(BinaryOperator op, ConstPtr other) const;
+    virtual Ptr apply(llvm::ArithType op, ConstPtr other) const;
 
-    virtual Ptr apply(CmpOperator op, ConstPtr other) const;
+    virtual Ptr apply(llvm::ConditionType op, ConstPtr other) const;
 
     virtual Ptr load(Type::Ptr type, Ptr offset) const;
 
@@ -111,47 +100,47 @@ public:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 inline AbstractDomain::Ptr operator+(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::ADD, rhv);
+    return lhv->apply(llvm::ArithType::ADD, rhv);
 }
 
 inline AbstractDomain::Ptr operator-(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::SUB, rhv);
+    return lhv->apply(llvm::ArithType::SUB, rhv);
 }
 
 inline AbstractDomain::Ptr operator*(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::MUL, rhv);
+    return lhv->apply(llvm::ArithType::MUL, rhv);
 }
 
 inline AbstractDomain::Ptr operator/(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::DIV, rhv);
+    return lhv->apply(llvm::ArithType::DIV, rhv);
 }
 
 inline AbstractDomain::Ptr operator%(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::MOD, rhv);
+    return lhv->apply(llvm::ArithType::REM, rhv);
 }
 
 inline AbstractDomain::Ptr operator<<(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::SHL, rhv);
+    return lhv->apply(llvm::ArithType::SHL, rhv);
 }
 
 inline AbstractDomain::Ptr operator>>(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::SHR, rhv);
+    return lhv->apply(llvm::ArithType::ASHR, rhv);
 }
 
 inline AbstractDomain::Ptr lshr(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::LSHR, rhv);
+    return lhv->apply(llvm::ArithType::LSHR, rhv);
 }
 
 inline AbstractDomain::Ptr operator&(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::AND, rhv);
+    return lhv->apply(llvm::ArithType::BAND, rhv);
 }
 
 inline AbstractDomain::Ptr operator|(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::OR, rhv);
+    return lhv->apply(llvm::ArithType::BOR, rhv);
 }
 
 inline AbstractDomain::Ptr operator^(AbstractDomain::ConstPtr lhv, AbstractDomain::ConstPtr rhv) {
-    return lhv->apply(BinaryOperator::XOR, rhv);
+    return lhv->apply(llvm::ArithType::XOR, rhv);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -93,6 +93,10 @@ public:
         return *this;
     }
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static bool classof(const Self*) {
         return true;
     }

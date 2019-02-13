@@ -94,7 +94,7 @@ void GlobalManager::init(const std::vector<const llvm::GlobalVariable*>& globs) 
     }
     // preinit cycled globals
     for (auto&& it : cycled) {
-        globals_[it] = module_->getVariableFactory()->bottom(it->getType());
+        globals_[it] = module_->variableFactory()->bottom(it->getType());
     }
     // init all other globals
     for (auto&& it : ordered) {
@@ -121,7 +121,7 @@ void GlobalManager::topologicalSort(const llvm::GlobalVariable* current,
     ordered.emplace_back(current);
 }
 
-AbstractDomain::Ptr GlobalManager::findGlobal(const llvm::Value* val) const {
+AbstractDomain::Ptr GlobalManager::global(const llvm::Value* val) const {
     auto&& it = globals_.find(val);
     return (it == globals_.end()) ? nullptr : it->second;
 }
@@ -143,7 +143,7 @@ ir::Function::Ptr GlobalManager::get(const llvm::Function* function) {
     return module_->get(function);
 }
 
-const GlobalManager::DomainMap& GlobalManager::getGlobals() const {
+const GlobalManager::DomainMap& GlobalManager::globals() const {
     return globals_;
 }
 
@@ -152,7 +152,7 @@ ir::Function::Ptr GlobalManager::getFunctionByName(const std::string& name) {
 }
 
 AbstractDomain::Ptr GlobalManager::allocate(const llvm::GlobalObject* object) const {
-    auto vf_ = module_->getVariableFactory();
+    auto vf_ = module_->variableFactory();
     if (auto* function = llvm::dyn_cast<const llvm::Function>(object)) {
         return vf_->get(llvm::cast<llvm::Function>(function));
     } else if (auto* global = llvm::dyn_cast<const llvm::GlobalVariable>(object)) {

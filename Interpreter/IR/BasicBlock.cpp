@@ -3,7 +3,7 @@
 //
 
 #include "BasicBlock.h"
-#include "Interpreter/Domain/DomainFactory.h"
+#include "Interpreter/Domain/VariableFactory.hpp"
 
 #include "Util/collections.hpp"
 #include "Util/util.hpp"
@@ -14,7 +14,7 @@ namespace borealis {
 namespace absint {
 namespace ir {
 
-BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainFactory* factory)
+BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, VariableFactory* factory)
         : instance_(bb),
           tracker_(tracker),
           factory_(factory),
@@ -30,7 +30,7 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, DomainF
         while (not operands.empty()) {
             auto&& op = operands.front();
             if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(op)) {
-                if (not global->isConstant()) globals_.insert({ op, factory_->getBottom(factory_->cast(op->getType())) });
+                if (not global->isConstant()) globals_.insert({ op, factory_->bottom(op->getType()) });
             } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(op)) {
                 for (auto&& it : util::viewContainer(ce->operand_values())) operands.push_back(it);
             }
@@ -82,7 +82,7 @@ bool BasicBlock::empty() const {
     return inputState_->empty() && outputState_->empty();
 }
 
-bool BasicBlock::atFixpoint(const std::map<const llvm::Value*, Domain::Ptr>& globals) {
+bool BasicBlock::atFixpoint(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) {
     if (empty()) return false;
     if (checkGlobalsChanged(globals)) return false;
     if (not inputChanged_) return atFixpoint_;
@@ -106,17 +106,17 @@ void BasicBlock::mergeToInput(State::Ptr input) {
     inputChanged_ = true;
 }
 
-void BasicBlock::addToInput(const llvm::Value* value, Domain::Ptr domain) {
+void BasicBlock::addToInput(const llvm::Value* value, AbstractDomain::Ptr domain) {
     inputState_->addVariable(value, domain);
     inputChanged_ = true;
 }
 
-void BasicBlock::addToInput(const llvm::Instruction* inst, Domain::Ptr domain) {
+void BasicBlock::addToInput(const llvm::Instruction* inst, AbstractDomain::Ptr domain) {
     inputState_->addVariable(inst, domain);
     inputChanged_ = true;
 }
 
-Domain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
+AbstractDomain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
     return outputState_->find(value);
 }
 
@@ -130,21 +130,21 @@ std::vector<const llvm::Value*> BasicBlock::getGlobals() const {
             .toVector();
 }
 
-void BasicBlock::updateGlobals(const std::map<const llvm::Value*, Domain::Ptr>& globals) {
+void BasicBlock::updateGlobals(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) {
     for (auto&& it : globals_) {
         auto global = globals.at(it.first);
         ASSERT(global, "No value for global in map");
-        if (not it.second->equals(global.get())) {
+        if (not it.second->equals(global)) {
             it.second = it.second->join(global);
         }
     }
 }
 
-bool BasicBlock::checkGlobalsChanged(const std::map<const llvm::Value*, Domain::Ptr>& globals) const {
+bool BasicBlock::checkGlobalsChanged(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) const {
     for (auto&& it : globals_) {
         auto global = globals.at(it.first);
         ASSERT(global, "No value for global in map");
-        if (not it.second->equals(global.get())) {
+        if (not it.second->equals(global)) {
             return true;
         }
     }
@@ -159,7 +159,7 @@ std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
         if (not domain) continue;
         s << std::endl << "  "
           << b.getSlotTracker().getLocalName(value) << " = "
-          << domain->toPrettyString("  ");
+                                                    << domain->toString();
         s.flush();
     }
     s << std::endl;
@@ -175,7 +175,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
 
         s << endl << "  "
           << b.getSlotTracker().getLocalName(value) << " = "
-          << domain->toPrettyString("  ");
+          << domain->toString();
         s.flush();
     }
     s << endl;

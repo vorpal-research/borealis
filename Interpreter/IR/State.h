@@ -9,7 +9,8 @@
 
 #include <llvm/IR/Value.h>
 
-#include "Interpreter/Domain/Domain.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/DomainStorage.hpp"
 #include "Util/cow_map.hpp"
 #include "Util/slottracker.h"
 
@@ -20,7 +21,7 @@ namespace ir {
 class State : public std::enable_shared_from_this<State> {
 public:
 
-    using VariableMap = util::cow_map<const llvm::Value*, Domain::Ptr>;
+    using VariableMap = util::cow_map<const llvm::Value*, AbstractDomain::Ptr>;
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, VariableMap>;
     using Ptr = std::shared_ptr<State>;
 
@@ -30,16 +31,16 @@ public:
     bool equals(const State* other) const;
     friend bool operator==(const State& lhv, const State& rhv);
 
-    void addVariable(const llvm::Value* val, Domain::Ptr domain);
-    void addVariable(const llvm::Instruction* inst, Domain::Ptr domain);
-    void setReturnValue(Domain::Ptr domain);
-    void mergeToReturnValue(Domain::Ptr domain);
+    void addVariable(const llvm::Value* val, AbstractDomain::Ptr domain);
+    void addVariable(const llvm::Instruction* inst, AbstractDomain::Ptr domain);
+    void setReturnValue(AbstractDomain::Ptr domain);
+    void mergeToReturnValue(AbstractDomain::Ptr domain);
 
     const State::BlockMap& getLocals() const;
-    Domain::Ptr getReturnValue() const;
+    AbstractDomain::Ptr getReturnValue() const;
 
     void merge(State::Ptr other);
-    Domain::Ptr find(const llvm::Value* val) const;
+    AbstractDomain::Ptr find(const llvm::Value* val) const;
 
     bool empty() const;
     std::string toString() const;
@@ -51,7 +52,7 @@ private:
 
     VariableMap arguments_;
     BlockMap locals_;
-    Domain::Ptr retval_;
+    AbstractDomain::Ptr retval_;
     SlotTracker* tracker_;
 };
 

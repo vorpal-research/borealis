@@ -66,12 +66,12 @@ public:
     GlobalManager(ir::Module* module);
 
     void init(const std::vector<const llvm::GlobalVariable*>& globs);
-    AbstractDomain::Ptr findGlobal(const llvm::Value* val) const;
+    AbstractDomain::Ptr global(const llvm::Value* val) const;
     AbstractDomain::Ptr get(const std::string& name);
     std::shared_ptr<ir::Function> getFunctionByName(const std::string& name);
     std::shared_ptr<ir::Function> get(const llvm::Function* function);
 
-    const DomainMap& getGlobals() const;
+    const DomainMap& globals() const;
 
 private:
 

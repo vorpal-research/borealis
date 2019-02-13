@@ -72,6 +72,10 @@ public:
     FunctionLocation& operator=(const FunctionLocation&) = default;
     FunctionLocation& operator=(FunctionLocation&&) = default;
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static bool classof(const Self*) {
         return true;
     }
@@ -185,6 +189,10 @@ public:
     NullLocation(NullLocation&&) = default;
     NullLocation& operator=(const NullLocation&) = default;
     NullLocation& operator=(NullLocation&&) = default;
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
 
     static Ptr get() {
         static Ptr instance_ = std::make_shared<NullLocation>();
@@ -307,6 +315,10 @@ public:
     ArrayLocation& operator=(const ArrayLocation&) = default;
     ArrayLocation& operator=(ArrayLocation&&) = default;
     ~ArrayLocation() override = default;
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
 
     static bool classof(const Self*) {
         return true;
@@ -454,6 +466,10 @@ public:
     StructLocation& operator=(const StructLocation&) = default;
     StructLocation& operator=(StructLocation&&) = default;
     ~StructLocation() override = default;
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
 
     static bool classof(const Self*) {
         return true;

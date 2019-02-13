@@ -42,6 +42,10 @@ public:
     AbstractDomain::Ptr get(const llvm::Constant* constant) const;
     AbstractDomain::Ptr get(const llvm::GlobalVariable* global) const;
 
+    AbstractDomain::Ptr findGlobal(const llvm::Value* val) const {
+        return gm_->global(val);
+    }
+
 private:
 
     AbstractDomain::Ptr getConstOperand(const llvm::Constant* c) const;

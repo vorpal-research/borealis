@@ -16,7 +16,7 @@ NullDereferenceChecker::NullDereferenceChecker(Module* module, DefectManager* DM
         : ObjectLevelLogging("ir-interpreter"),
           module_(module),
           DM_(DM) {
-    ST_ = module_->getSlotTracker();
+    ST_ = module_->slotTracker();
 }
 
 void NullDereferenceChecker::run() {

@@ -83,6 +83,10 @@ public:
     static Self getTop() { return Self(TopTag{}); }
     static Self getBottom() { return Self(BottomTag{}); }
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static bool classof(const Self*) {
         return true;
     }
@@ -230,21 +234,21 @@ public:
         return ss.str();
     }
 
-    Ptr apply(BinaryOperator opcode, ConstPtr other) const override {
+    Ptr apply(llvm::ArithType opcode, ConstPtr other) const override {
         auto* otherRaw = unwrap(other);
 
         switch (opcode) {
-            case ADD: return (*this + *otherRaw).shared_from_this();
-            case SUB: return (*this - *otherRaw).shared_from_this();
-            case MUL: return (*this * *otherRaw).shared_from_this();
-            case DIV: return (*this / *otherRaw).shared_from_this();
-            case MOD: return (*this % *otherRaw).shared_from_this();
-            case SHL: return (*this << *otherRaw).shared_from_this();
-            case SHR: return (*this >> *otherRaw).shared_from_this();
-            case LSHR: return lshr(*this, *otherRaw).shared_from_this();
-            case AND: return (*this & *otherRaw).shared_from_this();
-            case OR: return (*this | *otherRaw).shared_from_this();
-            case XOR: return (*this ^ *otherRaw).shared_from_this();
+            case llvm::ArithType::ADD: return (*this + *otherRaw).shared_from_this();
+            case llvm::ArithType::SUB: return (*this - *otherRaw).shared_from_this();
+            case llvm::ArithType::MUL: return (*this * *otherRaw).shared_from_this();
+            case llvm::ArithType::DIV: return (*this / *otherRaw).shared_from_this();
+            case llvm::ArithType::REM: return (*this % *otherRaw).shared_from_this();
+            case llvm::ArithType::SHL: return (*this << *otherRaw).shared_from_this();
+            case llvm::ArithType::ASHR: return (*this >> *otherRaw).shared_from_this();
+            case llvm::ArithType::LSHR: return lshr(*this, *otherRaw).shared_from_this();
+            case llvm::ArithType::BAND: return (*this & *otherRaw).shared_from_this();
+            case llvm::ArithType::BOR: return (*this | *otherRaw).shared_from_this();
+            case llvm::ArithType::XOR: return (*this ^ *otherRaw).shared_from_this();
             default:
                 UNREACHABLE("Unknown binary operator");
         }

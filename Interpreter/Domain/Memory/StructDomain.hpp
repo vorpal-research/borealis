@@ -87,6 +87,10 @@ public:
         return *this;
     }
 
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
     static Ptr top(const Types& types) { return std::make_shared<StructDomain>(TopTag{}, types); }
     static Ptr bottom(const Types& types) { return std::make_shared<StructDomain>(BottomTag{}, types); }
     static Ptr constant(const Types& types, const Elements& elements) { return std::make_shared<StructDomain>(types, elements); }
