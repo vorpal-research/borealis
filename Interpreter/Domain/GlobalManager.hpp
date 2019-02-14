@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "AbstractDomain.hpp"
+#include "Interpreter/IR/Function.h"
 
 
 namespace borealis {
@@ -53,7 +54,6 @@ private:
 namespace ir {
 
 class Module;
-class Function;
 
 } // namespace ir
 

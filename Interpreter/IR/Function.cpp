@@ -17,8 +17,8 @@ Function::Function(const llvm::Function* function, VariableFactory* factory, Slo
         : instance_(function),
           tracker_(st),
           factory_(factory) {
-    inputState_ = std::make_shared<State>(tracker_);
-    outputState_ = std::make_shared<State>(tracker_);
+    inputState_ = std::make_shared<State>(tracker_, factory_);
+    outputState_ = std::make_shared<State>(tracker_, factory_);
     for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.emplace_back(nullptr);
 
     // find all global variables, that this function depends on
@@ -40,12 +40,12 @@ Function::Function(const llvm::Function* function, VariableFactory* factory, Slo
         blocks_.insert( {&block, std::move(BasicBlock{&block, tracker_, factory_}) });
     }
 
-    // adding return value
-    auto&& returnType = instance_->getReturnType();
-    if (not returnType->isVoidTy()) {
-        auto&& retDomain = factory_->bottom(returnType);
-        if (retDomain) outputState_->setReturnValue(retDomain);
-    }
+//    // adding return value
+//    auto&& returnType = instance_->getReturnType();
+//    if (not returnType->isVoidTy()) {
+//        auto&& retDomain = factory_->bottom(returnType);
+//        if (retDomain) outputState_->setReturnValue(retDomain);
+//    }
 }
 
 const llvm::Function* Function::getInstance() const {
@@ -60,8 +60,9 @@ const Function::BlockMap& Function::getBasicBlocks() const {
     return blocks_;
 }
 
-Domain::Ptr Function::getReturnValue() const {
-    return outputState_->getReturnValue();
+AbstractDomain::Ptr Function::getReturnValue() const {
+    auto* retval = llvm::dyn_cast<llvm::ReturnInst>(&instance_->back().back());
+    return (retval != nullptr) ? outputState_->get(retval) : nullptr;
 }
 
 BasicBlock* Function::getEntryNode() const {
@@ -104,35 +105,35 @@ bool Function::updateArguments(const std::vector<AbstractDomain::Ptr>& args) {
         if (not arguments_[i]) {
             arguments_[i] = args[i]->clone();
             changed = true;
-            inputState_->addVariable(&it, args[i]);
+            inputState_->assign(&it, args[i]);
         } else {
             // This is generally fucked up
             AbstractDomain::Ptr arg = args[i]->isTop() ?
                               args[i]->clone() :
                               (arguments_[i]->clone())->widen(args[i]);
             changed |= not arguments_[i]->equals(arg);
-            inputState_->addVariable(&it, args[i]->widen(arguments_[i]));
+            inputState_->assign(&it, args[i]->widen(arguments_[i]));
             arguments_[i] = arg;
         }
         ++i;
     }
-    util::viewContainer(args)
-            .reverse()
-            .take(args.size() - i)
-            .foreach([](auto&& a) -> void { if (a->isMutable()) a->moveToTop(); });
+//    util::viewContainer(args)
+//            .reverse()
+//            .take(args.size() - i)
+//            .foreach([](auto&& a) -> void { if (a->isMutable()) a->moveToTop(); });
     getEntryNode()->mergeToInput(inputState_);
     return changed;
 }
 
 AbstractDomain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm::BasicBlock* location) {
-    return basicBlock(location)->getDomainFor(value);
+    return getBasicBlock(location)->getDomainFor(value);
 }
 
 void Function::merge(State::Ptr state) {
     outputState_->merge(state);
 }
 
-std::vector<const llvm::Value*> Function::globals() const {
+std::vector<const llvm::Value*> Function::getGlobals() const {
     return util::viewContainer(globals_)
             .map(LAM(a, a.first))
             .toVector();

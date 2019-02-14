@@ -302,9 +302,9 @@ AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractFactory:
     ASSERTC(ptr);
 
     if (kind == TOP) {
-        return PointerT::top(ptr->getPointed());
+        return PointerT::top();
     } else if (kind == BOTTOM) {
-        return PointerT::bottom(ptr->getPointed());
+        return PointerT::bottom();
     } else {
         UNREACHABLE("Unknown kind");
     }
@@ -322,21 +322,19 @@ AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractDomain::
     ASSERTC(ptr);
 
     if (auto* array = llvm::dyn_cast<ArrayT>(base.get())) {
-        return std::make_shared<PointerT>(ptr->getPointed(), makeArrayLocation(base, offset));
+        return std::make_shared<PointerT>(makeArrayLocation(base, offset));
     } else if (auto* strct = llvm::dyn_cast<StructT>(base.get())) {
-        return std::make_shared<PointerT>(ptr->getPointed(), makeStructLocation(base, {offset}));
+        return std::make_shared<PointerT>(makeStructLocation(base, {offset}));
     } else if (auto* func = llvm::dyn_cast<FunctionT>(base.get())) {
-        return std::make_shared<PointerT>(ptr->getPointed(), makeFunctionLocation(base));
+        return std::make_shared<PointerT>(makeFunctionLocation(base));
     } else {
         UNREACHABLE("Unknown base");
     }
 }
 
-AbstractDomain::Ptr AbstractFactory::getNullptr(Type::Ptr type) const {
-    auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
-    ASSERTC(ptr);
-
-    return std::make_shared<PointerT>(ptr->getPointed(), makeNullLocation());
+AbstractDomain::Ptr AbstractFactory::getNullptr() const {
+    static auto&& nullptrDomain = std::make_shared<PointerT>(makeNullLocation());
+    return nullptrDomain;
 }
 
 AbstractDomain::Ptr AbstractFactory::makeNullLocation() const {
@@ -436,7 +434,7 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                 UNREACHABLE("Unknown interval");
             }
         case ITOPTR:
-            return PointerT::top(target);
+            return PointerT::top();
         case PTRTOI:
             domain->setTop();
             return Interval<MachineInt>::top();

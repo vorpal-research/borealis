@@ -7,21 +7,19 @@
 
 #include <unordered_map>
 
-#include "AbstractFactory.hpp"
-#include "Domain.h"
+#include "AbstractDomain.hpp"
 #include "Type/TypeFactory.h"
 
 namespace borealis {
 namespace absint {
 
 class GlobalManager;
+class AbstractFactory;
 
 class VariableFactory {
 public:
 
-    VariableFactory(const llvm::DataLayout* dl, GlobalManager* gm) :
-            af_(AbstractFactory::get()), dl_(dl), gm_(gm) {}
-
+    VariableFactory(const llvm::DataLayout* dl, GlobalManager* gm);
     VariableFactory(const VariableFactory&) = default;
     VariableFactory(VariableFactory&&) = default;
     VariableFactory& operator=(const VariableFactory&) = default;
@@ -42,9 +40,7 @@ public:
     AbstractDomain::Ptr get(const llvm::Constant* constant) const;
     AbstractDomain::Ptr get(const llvm::GlobalVariable* global) const;
 
-    AbstractDomain::Ptr findGlobal(const llvm::Value* val) const {
-        return gm_->global(val);
-    }
+    AbstractDomain::Ptr findGlobal(const llvm::Value* val) const;
 
 private:
 

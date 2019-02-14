@@ -15,14 +15,14 @@ namespace borealis {
 namespace absint {
 
 template <typename FunctionT, typename FHash, typename FEquals>
-class Function : public AbstractDomain {
+class FunctionDom : public AbstractDomain {
 public:
 
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
     using FunctionSet = std::unordered_set<FunctionT, FHash, FEquals>;
 
-    using Self = Function<FunctionT, FHash, FEquals>;
+    using Self = FunctionDom<FunctionT, FHash, FEquals>;
 
 private:
 
@@ -51,21 +51,21 @@ private:
 
 public:
 
-    explicit Function(TopTag, Type::Ptr type) :
+    explicit FunctionDom(TopTag, Type::Ptr type) :
             AbstractDomain(class_tag(*this)), isBottom_(false), prototype_(type), factory_(AbstractFactory::get()) {}
 
-    explicit Function(BottomTag, Type::Ptr type) :
+    explicit FunctionDom(BottomTag, Type::Ptr type) :
             AbstractDomain(class_tag(*this)), isBottom_(true), prototype_(type), factory_(AbstractFactory::get()) {}
 
-    explicit Function(Type::Ptr type) : Function(TopTag{}, type) {}
-    explicit Function(FunctionT function) :
+    explicit FunctionDom(Type::Ptr type) : FunctionDom(TopTag{}, type) {}
+    explicit FunctionDom(FunctionT function) :
             AbstractDomain(class_tag(*this)), isBottom_(false), prototype_(function->getType()),
             factory_(AbstractFactory::get()), functions_({ function }) {}
 
-    Function(const Function&) = default;
-    Function(Function&&) = default;
-    Function& operator=(Function&&) = default;
-    Function& operator=(const Function& other) {
+    FunctionDom(const FunctionDom&) = default;
+    FunctionDom(FunctionDom&&) = default;
+    FunctionDom& operator=(FunctionDom&&) = default;
+    FunctionDom& operator=(const FunctionDom& other) {
         if (this != &other) {
             this->isBottom_ = other.isBottom_;
             this->prototype_ = other.prototype_;

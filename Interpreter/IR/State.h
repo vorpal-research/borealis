@@ -21,39 +21,32 @@ namespace ir {
 class State : public std::enable_shared_from_this<State> {
 public:
 
-    using VariableMap = util::cow_map<const llvm::Value*, AbstractDomain::Ptr>;
-    using BlockMap = std::unordered_map<const llvm::BasicBlock*, VariableMap>;
     using Ptr = std::shared_ptr<State>;
 
-    explicit State(SlotTracker* tracker);
+    explicit State(SlotTracker* tracker, VariableFactory* vf);
     State(const State& other);
 
     bool equals(const State* other) const;
     friend bool operator==(const State& lhv, const State& rhv);
 
-    void addVariable(const llvm::Value* val, AbstractDomain::Ptr domain);
-    void addVariable(const llvm::Instruction* inst, AbstractDomain::Ptr domain);
-    void setReturnValue(AbstractDomain::Ptr domain);
-    void mergeToReturnValue(AbstractDomain::Ptr domain);
-
-    const State::BlockMap& getLocals() const;
-    AbstractDomain::Ptr getReturnValue() const;
+    AbstractDomain::Ptr get(const llvm::Value* x) const;
+    void assign(const llvm::Value* x, const llvm::Value* y);
+    void assign(const llvm::Value* v, AbstractDomain::Ptr domain);
+    void apply(llvm::BinaryOperator::BinaryOps op, const llvm::Value* x, const llvm::Value* y, const llvm::Value* z);
+    void apply(llvm::CmpInst::Predicate op, const llvm::Value* x, const llvm::Value* y, const llvm::Value* z);
+    void load(const llvm::Value* x, const llvm::Value* ptr);
+    void store(const llvm::Value* ptr, const llvm::Value* x);
+    void gep(const llvm::Value* x, const llvm::Value* ptr, const std::vector<const llvm::Value*>& shifts);
 
     void merge(State::Ptr other);
-    AbstractDomain::Ptr find(const llvm::Value* val) const;
 
     bool empty() const;
     std::string toString() const;
 
 private:
 
-    void mergeVariables(State::Ptr other);
-    void mergeReturnValue(State::Ptr other);
-
-    VariableMap arguments_;
-    BlockMap locals_;
-    AbstractDomain::Ptr retval_;
     SlotTracker* tracker_;
+    DomainStorage::Ptr storage_;
 };
 
 }   /* namespace ir */

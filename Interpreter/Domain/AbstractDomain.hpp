@@ -12,23 +12,6 @@
 namespace borealis {
 namespace absint {
 
-struct Split;
-
-class DomainFactory;
-
-enum CmpOperator {
-    EQ,
-    NEQ,
-    LT,
-    LE,
-    GT,
-    GE,
-    FALSE,
-    TRUE,
-    BOTTOM,
-    TOP
-};
-
 class AbstractDomain : public ClassTag, public std::enable_shared_from_this<AbstractDomain> {
 public:
     using Ptr = std::shared_ptr<AbstractDomain>;

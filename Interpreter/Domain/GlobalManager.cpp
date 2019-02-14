@@ -128,7 +128,7 @@ AbstractDomain::Ptr GlobalManager::global(const llvm::Value* val) const {
 
 AbstractDomain::Ptr GlobalManager::get(const std::string& name) {
     if (auto&& opt = util::at(names_, name)) {
-        auto domain = findGlobal(opt.getUnsafe());
+        auto domain = global(opt.getUnsafe());
         return domain;
 
     } else if (auto func = module_->get(name)) {

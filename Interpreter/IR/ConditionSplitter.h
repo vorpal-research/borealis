@@ -16,29 +16,29 @@
 namespace borealis {
 namespace absint {
 namespace ir {
-
-class ConditionSplitter : public logging::ObjectLevelLogging<ConditionSplitter> {
-
-    using ValueMap = std::unordered_map<const llvm::Value*, Split>;
-
-public:
-
-    ConditionSplitter(llvm::Value* target, Interpreter* interpreter, State::Ptr state);
-
-    ValueMap apply();
-
-private:
-
-    void handleICmp(llvm::Value* lhv, llvm::Value* rhv, const llvm::ICmpInst::Predicate& predicate);
-    void handleFCmp(llvm::Value* lhv, llvm::Value* rhv, const llvm::FCmpInst::Predicate& predicate);
-    void handleBinary(llvm::Value* lhv, llvm::Value* rhv, const llvm::BinaryOperator::BinaryOps);
-
-    llvm::Value* target_;
-    Interpreter* interpreter_;
-    State::Ptr state_;
-    ValueMap values_;
-
-};
+//
+//class ConditionSplitter : public logging::ObjectLevelLogging<ConditionSplitter> {
+//
+//    using ValueMap = std::unordered_map<const llvm::Value*, Split>;
+//
+//public:
+//
+//    ConditionSplitter(llvm::Value* target, Interpreter* interpreter, State::Ptr state);
+//
+//    ValueMap apply();
+//
+//private:
+//
+//    void handleICmp(llvm::Value* lhv, llvm::Value* rhv, const llvm::ICmpInst::Predicate& predicate);
+//    void handleFCmp(llvm::Value* lhv, llvm::Value* rhv, const llvm::FCmpInst::Predicate& predicate);
+//    void handleBinary(llvm::Value* lhv, llvm::Value* rhv, const llvm::BinaryOperator::BinaryOps);
+//
+//    llvm::Value* target_;
+//    Interpreter* interpreter_;
+//    State::Ptr state_;
+//    ValueMap values_;
+//
+//};
 
 }   /* namespace ir */
 }   /* namespace absint */

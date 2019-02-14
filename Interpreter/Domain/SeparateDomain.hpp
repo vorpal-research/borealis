@@ -15,11 +15,11 @@
 namespace borealis {
 namespace absint {
 
-template <typename Number, typename Variable, typename Inner>
+template <typename Variable, typename Inner>
 class SeparateDomain : public AbstractDomain {
 public:
 
-    using Self = SeparateDomain<Number, Variable, Inner>;
+    using Self = SeparateDomain<Variable, Inner>;
     using ValueMap = util::cow_map<Variable, typename Inner::Ptr>;
     using Iterator = typename ValueMap::iterator;
 
@@ -31,9 +31,6 @@ private:
 private:
     struct TopTag {};
     struct BottomTag {};
-
-    explicit SeparateDomain(TopTag) : AbstractDomain(class_tag(*this)), isBottom_(false) {}
-    explicit SeparateDomain(BottomTag) : AbstractDomain(class_tag(*this)), isBottom_(true) {}
 
     static Self* unwrap(Ptr other) {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
@@ -51,11 +48,21 @@ private:
 
 public:
 
+    explicit SeparateDomain(TopTag) : AbstractDomain(class_tag(*this)), isBottom_(false) {}
+    explicit SeparateDomain(BottomTag) : AbstractDomain(class_tag(*this)), isBottom_(true) {}
+
     SeparateDomain() : SeparateDomain(TopTag{}) {}
     SeparateDomain(const SeparateDomain&) = default;
     SeparateDomain(SeparateDomain&&) noexcept = default;
-    SeparateDomain& operator=(const SeparateDomain&) = default;
     SeparateDomain& operator=(SeparateDomain&&) noexcept = default;
+    SeparateDomain& operator=(const SeparateDomain& other) {
+        if (this != &other) {
+            this->values_ = other.values_;
+            this->isBottom_ = other.isBottom_;
+        }
+        return *this;
+    }
+
     ~SeparateDomain() override = default;
 
     Ptr clone() const override {
@@ -70,8 +77,8 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    static Ptr top() { return SeparateDomain(TopTag{}); }
-    static Ptr bottom() { return SeparateDomain(BottomTag{}); }
+    static Ptr top() { return std::make_shared<Self>(TopTag{}); }
+    static Ptr bottom() { return std::make_shared<Self>(BottomTag{}); }
 
     bool isTop() const override { return !this->isBottom() && this->values_.empty(); }
     bool isBottom() const override { return this->isBottom_; }
@@ -118,12 +125,12 @@ public:
         if (otherRaw->isBottom()) {
             return;
         } else if (this->isBottom()) {
-            return this->operator=(*otherRaw);
+            this->operator=(*otherRaw);
         } else {
             for (auto&& it : otherRaw->values_) {
                 auto&& cur = values_.find(it.first);
                 if (cur == values_.end()) values_[it.first] = it.second;
-                else values_[it.first] = cur->join(it.second);
+                else values_[it.first] = cur->second->join(it.second);
             }
             return;
         }
@@ -140,7 +147,7 @@ public:
             for (auto&& it : otherRaw->values_) {
                 auto&& cur = values_.find(it.first);
                 if (cur == values_.end()) values_[it.first] = it.second;
-                else values_[it.first] = cur->meet(it.second);
+                else values_[it.first] = cur->second->meet(it.second);
             }
             return;
         }
@@ -152,15 +159,33 @@ public:
         if (otherRaw->isBottom()) {
             return;
         } else if (this->isBottom()) {
-            return this->operator=(*otherRaw);
+            this->operator=(*otherRaw);
         } else {
             for (auto&& it : otherRaw->values_) {
                 auto&& cur = values_.find(it.first);
                 if (cur == values_.end()) values_[it.first] = it.second;
-                else values_[it.first] = cur->widen(it.second);
+                else values_[it.first] = cur->second->widen(it.second);
             }
             return;
         }
+    }
+
+    Ptr join(ConstPtr other) const override {
+        auto&& result = clone();
+        result->joinWith(other);
+        return result;
+    }
+
+    Ptr meet(ConstPtr other) const override {
+        auto&& result = clone();
+        result->meetWith(other);
+        return result;
+    }
+
+    Ptr widen(ConstPtr other) const override {
+        auto&& result = clone();
+        result->widenWith(other);
+        return result;
     }
 
     typename Inner::Ptr get(Variable x) const {
@@ -173,7 +198,7 @@ public:
         }
     }
 
-    void set(Variable x, typename Inner::ConstPtr value) {
+    void set(Variable x, typename Inner::Ptr value) {
         if (this->isBottom()) {
             return;
         } else if (value->isBottom()) {
@@ -192,9 +217,14 @@ public:
         this->values_.erase(x);
     }
 
-    void apply(llvm::ArithType op, Variable x, Variable y, Variable z) {
-        this->set(x, this->get(y)->apply(op, this->get(z)));
+    size_t hashCode() const override {
+        return util::hash::defaultHasher()(isBottom_);
     }
+
+    std::string toString() const override {
+        return "";
+    }
+
 };
 
 } // namespace absint

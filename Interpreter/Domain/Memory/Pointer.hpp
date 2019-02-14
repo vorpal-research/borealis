@@ -27,7 +27,6 @@ public:
 
 private:
 
-    Type::Ptr pointedType_;
     bool isBottom_;
     AbstractFactory* factory_;
     PointsToSet ptsTo_;
@@ -57,23 +56,22 @@ private:
     }
 
 public:
-    Pointer(TopTag, Type::Ptr type) :
-            AbstractDomain(class_tag(*this)), pointedType_(type), isBottom_(false), factory_(AbstractFactory::get()) {}
-    Pointer(BottomTag, Type::Ptr type) :
-            AbstractDomain(class_tag(*this)), pointedType_(type), isBottom_(true), factory_(AbstractFactory::get()) {}
+    explicit Pointer(TopTag) :
+            AbstractDomain(class_tag(*this)), isBottom_(false), factory_(AbstractFactory::get()) {}
+    explicit Pointer(BottomTag) :
+            AbstractDomain(class_tag(*this)), isBottom_(true), factory_(AbstractFactory::get()) {}
 
 
-    explicit Pointer(Type::Ptr type) : Pointer(TopTag{}, type) {}
-    Pointer(Type::Ptr type, Ptr ptsTo) :
-            AbstractDomain(class_tag(*this)), pointedType_(type), isBottom_(false), factory_(AbstractFactory::get()), ptsTo_({ ptsTo }) {}
-    Pointer(Type::Ptr type, const PointsToSet& ptsTo) :
-            AbstractDomain(class_tag(*this)), pointedType_(type), isBottom_(false), factory_(AbstractFactory::get()), ptsTo_(ptsTo) {}
+    Pointer() : Pointer(TopTag{}) {}
+    explicit Pointer(Ptr ptsTo) :
+            AbstractDomain(class_tag(*this)), isBottom_(false), factory_(AbstractFactory::get()), ptsTo_({ ptsTo }) {}
+    explicit Pointer(const PointsToSet& ptsTo) :
+            AbstractDomain(class_tag(*this)), isBottom_(false), factory_(AbstractFactory::get()), ptsTo_(ptsTo) {}
     Pointer(const Pointer&) = default;
     Pointer(Pointer&&) = default;
     Pointer& operator=(Pointer&&) = default;
     Pointer& operator=(const Pointer& other) {
         if (this != &other) {
-            this->pointedType_ = other.pointedType_;
             this->isBottom_ = other.isBottom_;
             this->factory_ = other.factory_;
             this->ptsTo_ = other.ptsTo_;
@@ -95,8 +93,8 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    static Ptr top(Type::Ptr type) { return std::make_shared<Self>(TopTag{}, type); }
-    static Ptr bottom(Type::Ptr type) { return std::make_shared<Self>(BottomTag{}, type); }
+    static Ptr top() { return std::make_shared<Self>(TopTag{}); }
+    static Ptr bottom() { return std::make_shared<Self>(BottomTag{}); }
 
     bool isTop() const override { return (not this->isBottom_) and this->ptsTo_.empty(); }
     bool isBottom() const override { return this->isBottom_ and this->ptsTo_.empty(); }
@@ -242,15 +240,15 @@ public:
         return ss.str();
     }
 
-    Ptr load(Type::Ptr, Ptr offset) const override {
+    Ptr load(Type::Ptr type, Ptr offset) const override {
         if (this->isTop()) {
-            return factory_->top(pointedType_);
+            return factory_->top(type);
         } else if (this->isBottom()) {
-            return factory_->bottom(pointedType_);
+            return factory_->bottom(type);
         } else {
-            auto&& result = factory_->bottom(pointedType_);
+            auto&& result = factory_->bottom(type);
             for (auto&& loc : this->ptsTo_) {
-                result->joinWith(loc->load(pointedType_, offset));
+                result->joinWith(loc->load(type, offset));
             }
             return result;
         }
@@ -270,9 +268,9 @@ public:
 
     Ptr gep(Type::Ptr targetType, const std::vector<Ptr>& offsets) override {
         if (this->isTop()) {
-            return Self::top(targetType);
+            return Self::top();
         } else if (this->isBottom()) {
-            return Self::bottom(targetType);
+            return Self::bottom();
         } else {
             auto result = factory_->bottom(targetType);
             for (auto&& it : ptsTo_) {

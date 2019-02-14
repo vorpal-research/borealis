@@ -13,11 +13,11 @@ namespace absint {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AbstractDomain::Ptr AbstractDomain::apply(BinaryOperator, AbstractDomain::ConstPtr) const {
+AbstractDomain::Ptr AbstractDomain::apply(llvm::ArithType, AbstractDomain::ConstPtr) const {
     UNREACHABLE("Unsupported operation");
 }
 
-AbstractDomain::Ptr AbstractDomain::apply(CmpOperator, AbstractDomain::ConstPtr) const {
+AbstractDomain::Ptr AbstractDomain::apply(llvm::ConditionType, AbstractDomain::ConstPtr) const {
     UNREACHABLE("Unsupported operation");
 }
 

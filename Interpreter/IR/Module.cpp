@@ -66,7 +66,7 @@ std::string Module::toString() const {
     return ss.str();
 }
 
-VariableFactory* Module::variableFactory() const {
+const VariableFactory* Module::variableFactory() const {
     return &vf_;
 }
 
@@ -90,13 +90,13 @@ AbstractDomain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::B
 
 Module::GlobalsMap Module::globalsFor(Function::Ptr f) const {
     return util::viewContainer(f->getGlobals())
-            .map(LAM(a, {a, gm_.global(a)}))
+            .map(LAM(a, std::make_pair(a, gm_.global(a))))
             .toMap();
 }
 
 Module::GlobalsMap Module::globalsFor(const BasicBlock* bb) const {
     return util::viewContainer(bb->getGlobals())
-            .map(LAM(a, {a, gm_.global(a)}))
+            .map(LAM(a, std::make_pair(a, gm_.global(a))))
             .toMap();
 }
 

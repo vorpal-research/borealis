@@ -31,7 +31,7 @@ template <typename MachineInt>
 class StructDomain;
 
 template <typename FunctionT, typename FHash, typename FEquals>
-class Function;
+class FunctionDom;
 
 template <typename MachineInt>
 class StructLocation;
@@ -69,7 +69,7 @@ public:
     using ArrayLocationT = ArrayLocation<MachineInt>;
     using StructT = StructDomain<MachineInt>;
     using StructLocationT = StructLocation<MachineInt>;
-    using FunctionT = Function<ir::Function::Ptr, ir::FunctionHash, ir::FunctionEquals>;
+    using FunctionT = FunctionDom<ir::Function::Ptr, ir::FunctionHash, ir::FunctionEquals>;
     using FunctionLocationT = FunctionLocation<MachineInt, FunctionT>;
     using NullLocationT = NullLocation<MachineInt>;
     using PointerT = Pointer<MachineInt>;
@@ -139,8 +139,7 @@ public:
     AbstractDomain::Ptr getPointer(Type::Ptr type) const;
     AbstractDomain::Ptr getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
 
-    AbstractDomain::Ptr getNullptr(Type::Ptr type) const;
-
+    AbstractDomain::Ptr getNullptr() const;
     AbstractDomain::Ptr makeNullLocation() const;
     AbstractDomain::Ptr makeFunctionLocation(AbstractDomain::Ptr base) const;
     AbstractDomain::Ptr makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;

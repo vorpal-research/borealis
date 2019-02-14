@@ -48,7 +48,7 @@ public:
     std::vector<Function::Ptr> findByPrototype(const llvm::Type* prototype) const;
 
     SlotTrackerPass* slotTracker() const;
-    VariableFactory* variableFactory() const;
+    const VariableFactory* variableFactory() const;
 
     std::string toString() const;
 

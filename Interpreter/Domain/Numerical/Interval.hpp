@@ -6,7 +6,6 @@
 #define BOREALIS_INTERVAL_HPP
 
 #include "Bound.hpp"
-#include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Util/algorithm.hpp"
@@ -44,10 +43,8 @@ public:
     struct TopTag {};
     struct BottomTag {};
 
-    explicit Interval(TopTag&) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
-    explicit Interval(BottomTag&) : AbstractDomain(class_tag(*this)), lb_(1), ub_(0) {}
-    explicit Interval(TopTag&&) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
-    explicit Interval(BottomTag&&) : AbstractDomain(class_tag(*this)), lb_(1), ub_(0) {}
+    explicit Interval(TopTag) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
+    explicit Interval(BottomTag) : AbstractDomain(class_tag(*this)), lb_(1), ub_(0) {}
 
     Interval() : Interval(TopTag{}) {}
     explicit Interval(int n) : AbstractDomain(class_tag(*this)), lb_(n), ub_(n) {}
@@ -230,7 +227,7 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        ss << "[" << lb_ << ", " << ub_ << std::endl;
+        ss << "[" << lb_ << ", " << ub_ << "]" << std::endl;
         return ss.str();
     }
 
@@ -296,6 +293,72 @@ public:
             auto uu = this->ub_ * other.ub_;
             this->lb_ = util::min(ll, ul, lu, uu);
             this->ub_ = util::max(ll, ul, lu, uu);
+        }
+    }
+
+    Ptr apply(llvm::ConditionType op, ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
+        auto* af = AbstractFactory::get();
+
+        auto&& makeTop = [&]() { return af->getBool(AbstractFactory::TOP); };
+        auto&& makeBool = [&](bool b) { return af->getBool(b); };
+
+        if (this->isTop() || otherRaw->isTop()) {
+            return makeTop();
+        } else if (this->isBottom() || otherRaw->isBottom()) {
+            return af->getBool(AbstractFactory::BOTTOM);
+        }
+
+        switch (op) {
+            case llvm::ConditionType::TRUE:
+                return makeBool(true);
+            case llvm::ConditionType::FALSE:
+                return makeBool(false);
+            case llvm::ConditionType::UNKNOWN:
+                return makeTop();
+            case llvm::ConditionType::EQ:
+                if (this->isConstant() && otherRaw->isConstant()) {
+                    return makeBool(this->asConstant() == otherRaw->asConstant());
+                } else if (this->intersects(other)) {
+                    return makeTop();
+                } else {
+                    return makeBool(false);
+                }
+            case llvm::ConditionType::NEQ:
+                if (this->isConstant() && otherRaw->isConstant()) {
+                    return makeBool(this->asConstant() != otherRaw->asConstant());
+                } else if (this->intersects(other)) {
+                    return makeTop();
+                } else {
+                    return makeBool(true);
+                }
+            case llvm::ConditionType::LT:
+                if (this->intersects(other)) {
+                    return makeTop();
+                } else {
+                    return makeBool(this->ub() < otherRaw->lb());
+                }
+            case llvm::ConditionType::LE:
+                if (this->intersects(other)) {
+                    return makeTop();
+                } else {
+                    return makeBool(this->ub() <= otherRaw->lb());
+                }
+            case llvm::ConditionType::GT:
+                if (this->intersects(other)) {
+                    return makeTop();
+                } else {
+                    return makeBool(otherRaw->ub() < this->lb());
+                }
+            case llvm::ConditionType::GE:
+                if (this->intersects(other)) {
+                    return makeTop();
+                } else {
+                    return makeBool(otherRaw->ub() <= this->lb());
+                }
+            default:
+                UNREACHABLE("Unknown cmp operation");
         }
     }
 

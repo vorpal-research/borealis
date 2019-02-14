@@ -8,6 +8,7 @@
 #include "Config/config.h"
 #include "Interpreter/Checker/NullDereferenceChecker.h"
 #include "Interpreter/Checker/OutOfBoundsChecker.h"
+#include "Passes/Defect/DefectManager.h"
 #include "Util/passes.hpp"
 
 namespace borealis {
@@ -27,10 +28,10 @@ bool IRInterpreterPass::runOnModule(llvm::Module& M) {
     interpreter.run();
     auto& module = interpreter.getModule();
 
-    if (not module.getRootFunctions().empty()) {
-        ir::OutOfBoundsChecker(&module, dm, fip).run();
-        ir::NullDereferenceChecker(&module, dm).run();
-    }
+//    if (not module.getRootFunctions().empty()) {
+//        ir::OutOfBoundsChecker(&module, dm, fip).run();
+//        ir::NullDereferenceChecker(&module, dm).run();
+//    }
     return false;
 }
 

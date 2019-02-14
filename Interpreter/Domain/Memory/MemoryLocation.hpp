@@ -7,6 +7,9 @@
 
 #include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/Domain/AbstractFactory.hpp"
+#include "ArrayDomain.hpp"
+#include "Pointer.hpp"
+#include "StructDomain.hpp"
 #include "Type/TypeUtils.h"
 
 #include "Util/sayonara.hpp"

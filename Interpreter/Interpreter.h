@@ -28,7 +28,7 @@ public:
     void run();
     Module& getModule();
 
-    void interpretFunction(Function::Ptr function, const std::vector<Domain::Ptr>& args);
+    void interpretFunction(Function::Ptr function, const std::vector<AbstractDomain::Ptr>& args);
 
     /// llvm instructions visitors
     void visitInstruction(llvm::Instruction& i);
@@ -75,16 +75,14 @@ private:
     };
 
     /// Util functions
-    Type::Ptr cast(const llvm::Type* type);
-    Domain::Ptr gepOperator(const llvm::GEPOperator& gep);
-    Domain::Ptr getVariable(const llvm::Value* value);
+    void gepOperator(const llvm::GEPOperator& gep);
     void addSuccessors(const std::vector<BasicBlock*>& successors);
-    Domain::Ptr handleFunctionCall(const llvm::Function* function,
-                                   const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
-    Domain::Ptr handleMemoryAllocation(const llvm::Function* function,
-                                       const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
-    Domain::Ptr handleDeclaration(const llvm::Function* function,
-                                  const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
+//    void handleFunctionCall(const llvm::Function* function,
+//                                   const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
+//    void handleMemoryAllocation(const llvm::Function* function,
+//                                       const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
+//    void handleDeclaration(const llvm::Function* function,
+//                                  const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
 
     Module module_;
     TypeFactory::Ptr TF_;

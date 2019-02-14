@@ -1,16 +1,14 @@
 //
-// Created by abdullin on 1/28/19.
+// Created by abdullin on 2/13/19.
 //
 
-#ifndef BOREALIS_INTERVALDOMAIN_HPP
-#define BOREALIS_INTERVALDOMAIN_HPP
+#ifndef BOREALIS_POINTSTODOMAIN_HPP
+#define BOREALIS_POINTSTODOMAIN_HPP
 
+#include <Interpreter/Domain/AbstractFactory.hpp>
 #include "Interpreter/Domain/AbstractFactory.hpp"
 
-#include "Bound.hpp"
-#include "Interval.hpp"
-#include "NumericalDomain.hpp"
-#include "Interpreter/Domain/SeparateDomain.hpp"
+#include "Pointer.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -18,23 +16,25 @@
 namespace borealis {
 namespace absint {
 
-template <typename IntervalT, typename Variable>
-class IntervalDomain : public NumericalDomain<Variable> {
+template <typename MachineInt, typename Variable>
+class PointsToDomain : public MemoryDomain<MachineInt, Variable> {
 public:
-    using Self = IntervalDomain<IntervalT, Variable>;
+    using Self = PointsToDomain<MachineInt, Variable>;
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using EnvT = SeparateDomain<Variable, IntervalT>;
+    using EnvT = SeparateDomain<Variable, Pointer<MachineInt>>;
     using EnvPtr = typename EnvT::Ptr;
 
 protected:
 
+    AbstractFactory* af_;
     EnvPtr env_;
 
 private:
 
-    explicit IntervalDomain(EnvPtr env) : NumericalDomain<Variable>(class_tag(*this)), env_(env) {}
+    explicit PointsToDomain(EnvPtr env) :
+            MemoryDomain<MachineInt, Variable>(class_tag(*this)), af_(AbstractFactory::get()), env_(std::move(env)) {}
 
     static Self* unwrap(Ptr other) {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
@@ -61,12 +61,12 @@ protected:
 
 public:
 
-    IntervalDomain() : IntervalDomain(EnvT::top()) {}
-    IntervalDomain(const IntervalDomain&) = default;
-    IntervalDomain(IntervalDomain&&) noexcept = default;
-    IntervalDomain& operator=(const IntervalDomain&) = default;
-    IntervalDomain& operator=(IntervalDomain&&) noexcept = default;
-    virtual ~IntervalDomain() = default;
+    PointsToDomain() : PointsToDomain(EnvT::top()) {}
+    PointsToDomain(const PointsToDomain&) = default;
+    PointsToDomain(PointsToDomain&&) noexcept = default;
+    PointsToDomain& operator=(const PointsToDomain&) = default;
+    PointsToDomain& operator=(PointsToDomain&&) noexcept = default;
+    virtual ~PointsToDomain() = default;
 
     static bool classof (const Self*) {
         return true;
@@ -109,18 +109,27 @@ public:
     void set(Variable x, Ptr value) { return unwrapEnv()->set(x, value); }
     void forget(Variable x) { return unwrapEnv()->forget(x); }
 
-    Ptr toInterval(Variable x) const override { return this->get(x); }
-
-    void assign(Variable x, int n) override { this->set(x, std::make_shared<IntervalT>(n)); }
-    void assign(Variable x, Variable y) override { this->set(x, this->get(y)); }
     void assign(Variable x, Ptr i) override { this->set(x, i); }
 
-    void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
-        unwrapEnv()->set(x, this->get(y)->apply(op, this->get(z)));
+    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) const override {
+        auto&& makeTop = [&]() { return af_->getBool(AbstractFactory::TOP); };
+        return makeTop();
     }
 
-    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
-        return this->get(x)->apply(op, this->get(y));
+    Ptr loadFrom(Type::Ptr type, Variable ptr) const override {
+        auto&& ptrDom = this->get(ptr);
+        return ptrDom->load(type, af_->getMachineInt(0));
+    }
+
+    void storeTo(Variable ptr, Ptr x) override {
+        auto&& ptrDom = this->get(ptr);
+        ptrDom->store(x, af_->getMachineInt(0));
+    }
+
+    void gepFrom(Variable x, Type::Ptr type, Variable ptr, const std::vector<Ptr>& shifts) override {
+        auto&& ptrDom = this->get(ptr);
+        auto&& xDom = ptrDom->gep(type, shifts);
+        assign(x, xDom);
     }
 
     size_t hashCode() const override {
@@ -130,7 +139,6 @@ public:
     std::string toString() const override {
         return "";
     }
-
 };
 
 } // namespace absint
@@ -138,4 +146,4 @@ public:
 
 #include "Util/unmacros.h"
 
-#endif //BOREALIS_INTERVALDOMAIN_HPP
+#endif //BOREALIS_POINTSTODOMAIN_HPP

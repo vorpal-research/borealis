@@ -5,6 +5,7 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <Type/TypeUtils.h>
 
+#include "AbstractFactory.hpp"
 #include "GlobalManager.hpp"
 #include "VariableFactory.hpp"
 
@@ -13,6 +14,10 @@
 
 namespace borealis {
 namespace absint {
+
+
+VariableFactory::VariableFactory(const llvm::DataLayout* dl, GlobalManager* gm) :
+        af_(AbstractFactory::get()), dl_(dl), gm_(gm) {}
 
 Type::Ptr VariableFactory::cast(const llvm::Type* type) const {
     auto res = af_->tf()->cast(type, dl_);
@@ -62,7 +67,7 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
         return af_->getFloat(floatConstant->getValueAPF().convertToDouble());
         // Null pointer
     } else if (llvm::isa<llvm::ConstantPointerNull>(constant)) {
-        return af_->getNullptr(cast(constant->getType()));
+        return af_->getNullptr();
         // Constant Data Array
     } else if (auto sequential = llvm::dyn_cast<llvm::ConstantDataSequential>(constant)) {
         std::vector<AbstractDomain::Ptr> elements;
@@ -155,7 +160,7 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::GlobalVariable* global) con
 
 
 AbstractDomain::Ptr VariableFactory::getConstOperand(const llvm::Constant* c) const {
-    if (llvm::isa<llvm::GlobalVariable>(c)) return gm_->findGlobal(c);
+    if (llvm::isa<llvm::GlobalVariable>(c)) return gm_->global(c);
     else return get(c);
 }
 
@@ -170,39 +175,6 @@ AbstractDomain::Ptr VariableFactory::getConstOperand(const llvm::Constant* c) co
     lhv = getConstOperand(ce->getOperand(0)); \
     ASSERT(lhv, "Unknown cast constexpr operand"); \
     return af_->cast((OPER), cast(ce->getType()), lhv);
-
-CmpOperator toCmp(llvm::CmpInst::Predicate p) {
-    switch (p) {
-        case llvm::CmpInst::FCMP_FALSE: return CmpOperator::FALSE;
-        case llvm::CmpInst::FCMP_OEQ: return CmpOperator::EQ;
-        case llvm::CmpInst::FCMP_OGT: return CmpOperator::GT;
-        case llvm::CmpInst::FCMP_OGE: return CmpOperator::GE;
-        case llvm::CmpInst::FCMP_OLT: return CmpOperator::LT;
-        case llvm::CmpInst::FCMP_OLE: return CmpOperator::LE;
-        case llvm::CmpInst::FCMP_ONE: return CmpOperator::NEQ;
-        case llvm::CmpInst::FCMP_ORD: return CmpOperator::TOP;
-        case llvm::CmpInst::FCMP_UNO: return CmpOperator::TOP;
-        case llvm::CmpInst::FCMP_UEQ: return CmpOperator::EQ;
-        case llvm::CmpInst::FCMP_UGT: return CmpOperator::GT;
-        case llvm::CmpInst::FCMP_UGE: return CmpOperator::GE;
-        case llvm::CmpInst::FCMP_ULT: return CmpOperator::LT;
-        case llvm::CmpInst::FCMP_ULE: return CmpOperator::LE;
-        case llvm::CmpInst::FCMP_UNE: return CmpOperator::NEQ;
-        case llvm::CmpInst::FCMP_TRUE: return CmpOperator::TRUE;
-        case llvm::CmpInst::ICMP_EQ: return CmpOperator::EQ;
-        case llvm::CmpInst::ICMP_NE: return CmpOperator::NEQ;
-        case llvm::CmpInst::ICMP_UGT: return CmpOperator::GT;
-        case llvm::CmpInst::ICMP_UGE: return CmpOperator::GE;
-        case llvm::CmpInst::ICMP_ULT: return CmpOperator::LT;
-        case llvm::CmpInst::ICMP_ULE: return CmpOperator::LE;
-        case llvm::CmpInst::ICMP_SGT: return CmpOperator::GT;
-        case llvm::CmpInst::ICMP_SGE: return CmpOperator::GE;
-        case llvm::CmpInst::ICMP_SLT: return CmpOperator::LT;
-        case llvm::CmpInst::ICMP_SLE: return CmpOperator::LE;
-        default:
-            UNREACHABLE("Unknown predicete");
-    }
-}
 
 AbstractDomain::Ptr VariableFactory::interpretConstantExpr(const llvm::ConstantExpr* ce) const {
     AbstractDomain::Ptr lhv, rhv;
@@ -225,8 +197,8 @@ AbstractDomain::Ptr VariableFactory::interpretConstantExpr(const llvm::ConstantE
         case llvm::Instruction::Shl: HANDLE_BINOP((lhv << rhv));
         case llvm::Instruction::LShr: HANDLE_BINOP((lshr(lhv, rhv)));
         case llvm::Instruction::AShr: HANDLE_BINOP((lhv >> rhv));
-        case llvm::Instruction::ICmp: HANDLE_BINOP((lhv->apply(toCmp(static_cast<llvm::CmpInst::Predicate>(ce->getPredicate())), rhv)));
-        case llvm::Instruction::FCmp: HANDLE_BINOP((lhv->apply(toCmp(static_cast<llvm::CmpInst::Predicate>(ce->getPredicate())), rhv)));
+        case llvm::Instruction::ICmp: HANDLE_BINOP((lhv->apply(llvm::conditionType(ce->getPredicate()), rhv)));
+        case llvm::Instruction::FCmp: HANDLE_BINOP((lhv->apply(llvm::conditionType(ce->getPredicate()), rhv)));
         case llvm::Instruction::Trunc: HANDLE_CAST(CastOperator::TRUNC);
         case llvm::Instruction::SExt: HANDLE_CAST(CastOperator::SEXT);
         case llvm::Instruction::ZExt: HANDLE_CAST(CastOperator::EXT);
@@ -264,6 +236,10 @@ AbstractDomain::Ptr VariableFactory::handleGEPConstantExpr(const llvm::ConstantE
         }
     }
     return ptr->gep(cast(ce->getType()), offsets);
+}
+
+AbstractDomain::Ptr VariableFactory::findGlobal(const llvm::Value* val) const {
+    return gm_->global(val);
 }
 
 } // namespace absint

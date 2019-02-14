@@ -21,8 +21,8 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, Variabl
           inputChanged_(false),
           atFixpoint_(false),
           visited_(false) {
-    inputState_ = std::make_shared<State>(tracker_);
-    outputState_ = std::make_shared<State>(tracker_);
+    inputState_ = std::make_shared<State>(tracker_, factory_);
+    outputState_ = std::make_shared<State>(tracker_, factory_);
 
     // find all global variables, that this basic block depends on
     for (auto&& inst : util::viewContainer(*instance_)) {
@@ -107,17 +107,17 @@ void BasicBlock::mergeToInput(State::Ptr input) {
 }
 
 void BasicBlock::addToInput(const llvm::Value* value, AbstractDomain::Ptr domain) {
-    inputState_->addVariable(value, domain);
+    inputState_->assign(value, domain);
     inputChanged_ = true;
 }
 
 void BasicBlock::addToInput(const llvm::Instruction* inst, AbstractDomain::Ptr domain) {
-    inputState_->addVariable(inst, domain);
+    inputState_->assign(inst, domain);
     inputChanged_ = true;
 }
 
 AbstractDomain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
-    return outputState_->find(value);
+    return outputState_->get(value);
 }
 
 void BasicBlock::mergeOutputWithInput() {
@@ -155,7 +155,7 @@ std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {
     s << b.getName() << ":";
     for (auto&& it : util::viewContainer(*b.getInstance())) {
         auto value = llvm::cast<llvm::Value>(&it);
-        auto domain = b.getOutputState()->find(value);
+        auto domain = b.getOutputState()->get(value);
         if (not domain) continue;
         s << std::endl << "  "
           << b.getSlotTracker().getLocalName(value) << " = "
@@ -170,7 +170,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
     s << b.getName() << ":";
     for (auto&& it : util::viewContainer(*b.getInstance())) {
         auto value = llvm::cast<llvm::Value>(&it);
-        auto domain = b.getOutputState()->find(value);
+        auto domain = b.getOutputState()->get(value);
         if (not domain) continue;
 
         s << endl << "  "
