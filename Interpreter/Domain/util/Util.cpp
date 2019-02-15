@@ -6,8 +6,6 @@
 #include <llvm/Support/raw_ostream.h>
 #include <Logging/logger.hpp>
 
-#include "Interpreter/Domain/Integer/IntMax.h"
-#include "Interpreter/Domain/Integer/IntMin.h"
 #include "Util.hpp"
 #include "Util/algorithm.hpp"
 #include "Util/collections.hpp"

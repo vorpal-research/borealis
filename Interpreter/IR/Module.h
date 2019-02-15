@@ -14,7 +14,6 @@
 #include <Passes/Tracker/SlotTrackerPass.h>
 
 #include "Interpreter/IR/Function.h"
-#include "Interpreter/Domain/DomainFactory.h"
 #include "Interpreter/Domain/GlobalManager.hpp"
 #include "Interpreter/Domain/VariableFactory.hpp"
 

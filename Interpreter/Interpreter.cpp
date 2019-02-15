@@ -9,8 +9,6 @@
 #include "Interpreter/Domain/Memory/FunctionDomain.hpp"
 #include "Util/collections.hpp"
 
-#include "Interpreter/Domain/Domain.h"
-
 #include "Util/macros.h"
 
 namespace borealis {

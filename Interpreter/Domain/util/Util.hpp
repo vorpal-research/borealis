@@ -11,8 +11,6 @@
 #include <llvm/ADT/Hashing.h>
 #include <llvm/IR/Type.h>
 
-#include "Interpreter/Domain/Integer/Integer.h"
-
 namespace borealis {
 namespace util {
 

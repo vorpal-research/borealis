@@ -180,7 +180,7 @@ AbstractDomain::Ptr DomainStorage::get(Variable x) const {
     else if (llvm::isa<type::Pointer>(type.get()))
         return unwrapMemory()->get(x);
     else {
-        errs() << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << endl;
+        warns() << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << endl;
         return nullptr;
     }
 }
