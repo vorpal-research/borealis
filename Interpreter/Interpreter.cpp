@@ -5,7 +5,8 @@
 #include "Annotation/Annotation.h"
 #include "Config/config.h"
 #include "Interpreter.h"
-#include "Interpreter/IR/ConditionSplitter.h"
+#include "Interpreter/Domain/Numerical/DoubleInterval.hpp"
+#include "Interpreter/Domain/Memory/FunctionDomain.hpp"
 #include "Util/collections.hpp"
 
 #include "Interpreter/Domain/Domain.h"
@@ -105,13 +106,6 @@ void Interpreter::visitInstruction(llvm::Instruction& i) {
     }
 }
 
-void Interpreter::visitReturnInst(llvm::ReturnInst& i) {
-    if (not i.getReturnValue()) return;
-
-//    auto&& retDomain = getVariable(i.getReturnValue());
-//    ASSERT(retDomain, "ret domain");
-//    context_->state->mergeToReturnValue(retDomain);
-}
 
 void Interpreter::visitBranchInst(llvm::BranchInst& i) {
     std::vector<BasicBlock*> successors;
@@ -166,40 +160,40 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
 
 void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
     // TODO
-//    std::vector<BasicBlock*> successors;
-//    auto&& cond = getVariable(i.getCondition());
-//
-//    auto&& handleCaseSuccessor = [&](const llvm::BasicBlock* bb, Domain::Ptr caseValue) -> void {
-//        auto successor = context_->function->getBasicBlock(bb);
-//        successor->mergeToInput(context_->state);
-//        successor->addToInput(i.getCondition(), caseValue);
-//        successors.emplace_back(successor);
-//    };
-//
-//    if (cond->isValue()) {
-//        bool isDefault = true;
-//        auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
-//        ASSERT(integer, "Non-integer condition in switch");
-//
-//        for (auto&& cs : i.cases()) {
-//            auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
-//            if (integer->hasIntersection(caseVal) || integer->hasSignedIntersection(caseVal)) {
-//                handleCaseSuccessor(cs.getCaseSuccessor(), module_.getDomainFactory()->getInteger(caseVal));
-//                isDefault = false;
-//            }
-//        }
-//
-//        if (isDefault) handleCaseSuccessor(i.getDefaultDest(), cond);
-//
-//    } else {
-//        for (auto&& cs : i.cases()) {
-//            auto caseVal = module_.getDomainFactory()->toInteger(cs.getCaseValue()->getValue());
-//            handleCaseSuccessor(cs.getCaseSuccessor(), module_.getDomainFactory()->getInteger(caseVal));
-//        }
-//        handleCaseSuccessor(i.getDefaultDest(), cond);
-//    }
-//
-//    addSuccessors(successors);
+    std::vector<BasicBlock*> successors;
+    auto&& cond = context_->state->get(i.getCondition());
+
+    auto&& handleCaseSuccessor = [&](const llvm::BasicBlock* bb, AbstractDomain::Ptr caseValue) -> void {
+        auto successor = context_->function->getBasicBlock(bb);
+        successor->mergeToInput(context_->state);
+        successor->addToInput(i.getCondition(), caseValue);
+        successors.emplace_back(successor);
+    };
+
+    if (!cond->isTop() && !cond->isBottom()) {
+        bool isDefault = true;
+        auto&& integer = llvm::dyn_cast<AbstractFactory::IntT>(cond.get());
+        ASSERT(integer, "Non-integer condition in switch");
+
+        for (auto&& cs : i.cases()) {
+            auto caseVal = module_.variableFactory()->af()->getInteger(*cs.getCaseValue()->getValue().getRawData(), cs.getCaseValue()->getBitWidth());
+            if (integer->intersects(caseVal)) {
+                handleCaseSuccessor(cs.getCaseSuccessor(), caseVal);
+                isDefault = false;
+            }
+        }
+
+        if (isDefault) handleCaseSuccessor(i.getDefaultDest(), cond);
+
+    } else {
+        for (auto&& cs : i.cases()) {
+            auto caseVal = module_.variableFactory()->af()->getInteger(*cs.getCaseValue()->getValue().getRawData(), cs.getCaseValue()->getBitWidth());
+            handleCaseSuccessor(cs.getCaseSuccessor(), caseVal);
+        }
+        handleCaseSuccessor(i.getDefaultDest(), cond);
+    }
+
+    addSuccessors(successors);
 }
 
 void Interpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
@@ -215,6 +209,7 @@ void Interpreter::visitIndirectBrInst(llvm::IndirectBrInst& i) {
 
 void Interpreter::visitResumeInst(llvm::ResumeInst&)             { /* ignore this */ }
 void Interpreter::visitUnreachableInst(llvm::UnreachableInst&)   { /* ignore this */ }
+void Interpreter::visitReturnInst(llvm::ReturnInst&)           { /* ignore this */ }
 
 void Interpreter::visitICmpInst(llvm::ICmpInst& i) {
     context_->state->apply(i.getPredicate(), &i, i.getOperand(0), i.getOperand(1));
@@ -238,19 +233,6 @@ void Interpreter::visitLoadInst(llvm::LoadInst& i) {
 }
 
 void Interpreter::visitStoreInst(llvm::StoreInst& i) {
-//    auto&& ptr = getVariable(i.getPointerOperand());
-//    auto&& storeVal = getVariable(i.getValueOperand());
-//    ASSERT(ptr && storeVal, "store args");
-//
-//    auto index = module_.getDomainFactory()->getIndex(0);
-//    if (util::contains(context_->stores, &i)) {
-//        auto load = ptr->load(cast(i.getValueOperand()->getType()), index);
-//        ptr->store(load->widen(storeVal), index);
-//    } else {
-//        ptr->store(storeVal, index);
-//        context_->stores.insert(&i);
-//    }
-    // TODO
     context_->state->store(i.getPointerOperand(), i.getValueOperand());
 }
 
@@ -259,99 +241,49 @@ void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
 }
 
 void Interpreter::visitPHINode(llvm::PHINode& i) {
-    // TODO
-//    Domain::Ptr result = nullptr;
-//
-//    if ( (result = context_->state->find(&i)) ) {
-//        for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
-//            auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-//            if (predecessor->isVisited()) {
-//                auto&& incoming = getVariable(i.getIncomingValue(j));
-//                ASSERT(incoming, "Unknown value in phi");
-//                result = result->widen(incoming);
-//            }
-//        }
-//
-//    } else {
-//        // if not found, then result is nullptr
-//        for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
-//            auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-//            if (predecessor->isVisited()) {
-//                auto&& incoming = getVariable(i.getIncomingValue(j));
-//                ASSERT(incoming, "Unknown value in phi");
-//
-//                result = result ?
-//                         result->join(incoming) :
-//                         incoming;
-//            }
-//        }
-//    }
-//
-//    ASSERT(result, "phi result");
-//    context_->state->addVariable(&i, result);
+    AbstractDomain::Ptr result = module_.variableFactory()->bottom(i.getType());
+
+    for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
+        auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
+        if (predecessor->isVisited()) {
+            auto&& incoming = context_->state->get(i.getIncomingValue(j));
+            ASSERT(incoming, "Unknown value in phi");
+
+            result->joinWith(incoming);
+        }
+    }
+
+    ASSERT(result, "phi result");
+    context_->state->assign(&i, result);
 }
 
 #define CAST_INST(CAST) \
-    // TODO
-//    auto&& value = getVariable(i.getOperand(0)); \
-//    ASSERT(value, "cast arg"); \
-//    auto&& result = value->CAST(cast(i.getDestTy())); \
-//    ASSERT(result, "cast result"); \
-//    context_->state->addVariable(&i, result);
+    context_->state->apply((CAST), &i, i.getOperand(0));
 
-void Interpreter::visitTruncInst(llvm::TruncInst& i)        { CAST_INST(trunc);     }
-void Interpreter::visitZExtInst(llvm::ZExtInst& i)          { CAST_INST(zext);      }
-void Interpreter::visitSExtInst(llvm::SExtInst& i)          { CAST_INST(sext);      }
-void Interpreter::visitFPTruncInst(llvm::FPTruncInst& i)    { CAST_INST(fptrunc);   }
-void Interpreter::visitFPExtInst(llvm::FPExtInst& i)        { CAST_INST(fpext);     }
-void Interpreter::visitFPToUIInst(llvm::FPToUIInst& i)      { CAST_INST(fptoui);    }
-void Interpreter::visitFPToSIInst(llvm::FPToSIInst& i)      { CAST_INST(fptosi);    }
-void Interpreter::visitUIToFPInst(llvm::UIToFPInst& i)      { CAST_INST(uitofp);    }
-void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i)      { CAST_INST(sitofp);    }
-void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i)  { CAST_INST(ptrtoint);  }
-void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i)  { CAST_INST(inttoptr);  }
+void Interpreter::visitTruncInst(llvm::TruncInst& i)        { CAST_INST(CastOperator::TRUNC);   }
+void Interpreter::visitZExtInst(llvm::ZExtInst& i)          { CAST_INST(CastOperator::EXT);     }
+void Interpreter::visitSExtInst(llvm::SExtInst& i)          { CAST_INST(CastOperator::SEXT);    }
+void Interpreter::visitFPTruncInst(llvm::FPTruncInst& i)    { CAST_INST(CastOperator::TRUNC);   }
+void Interpreter::visitFPExtInst(llvm::FPExtInst& i)        { CAST_INST(CastOperator::EXT);     }
+void Interpreter::visitFPToUIInst(llvm::FPToUIInst& i)      { CAST_INST(CastOperator::FPTOI);   }
+void Interpreter::visitFPToSIInst(llvm::FPToSIInst& i)      { CAST_INST(CastOperator::FPTOI);   }
+void Interpreter::visitUIToFPInst(llvm::UIToFPInst& i)      { CAST_INST(CastOperator::ITOFP);   }
+void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i)      { CAST_INST(CastOperator::ITOPTR);  }
+void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i)  { CAST_INST(CastOperator::PTRTOI);  }
+void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i)  { CAST_INST(CastOperator::ITOPTR);  }
+void Interpreter::visitBitCastInst(llvm::BitCastInst& i)    { CAST_INST(CastOperator::BITCAST); }
 
 
 void Interpreter::visitSelectInst(llvm::SelectInst& i) {
-    // TODO
-//    auto cond = getVariable(i.getCondition());
-//    auto trueVal = getVariable(i.getTrueValue());
-//    auto falseVal = getVariable(i.getFalseValue());
-//    ASSERT(cond && trueVal && falseVal, "select args");
-//
-//    Domain::Ptr result = cond->equals(module_.getDomainFactory()->getBool(true).get()) ? trueVal :
-//                         cond->equals(module_.getDomainFactory()->getBool(false).get()) ? falseVal :
-//                         module_.getDomainFactory()->getTop(cast(i.getType()));
-//    context_->state->addVariable(&i, result);
-}
+    auto cond = context_->state->get(i.getCondition());
+    auto trueVal = context_->state->get(i.getTrueValue());
+    auto falseVal = context_->state->get(i.getFalseValue());
+    ASSERT(cond && trueVal && falseVal, "select args");
 
-void Interpreter::visitExtractValueInst(llvm::ExtractValueInst& i) {
-    // TODO
-//    auto aggregate = getVariable(i.getAggregateOperand());
-//    ASSERT(aggregate, "extract value arg");
-//
-//    std::vector<Domain::Ptr> indices;
-//    for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
-//        indices.emplace_back(module_.getDomainFactory()->getIndex(*j));
-//    }
-//
-//    auto result = aggregate->extractValue(cast(i.getType()), indices);
-//    ASSERT(result, "extract value result");
-//    context_->state->addVariable(&i, result);
-}
-
-void Interpreter::visitInsertValueInst(llvm::InsertValueInst& i) {
-    // TODO
-//    auto aggregate = getVariable(i.getAggregateOperand());
-//    auto value = getVariable(i.getInsertedValueOperand());
-//    ASSERT(aggregate && value, "insert value arg");
-//
-//    std::vector<Domain::Ptr> indices;
-//    for (auto j = i.idx_begin(); j != i.idx_end(); ++j) {
-//        indices.emplace_back(module_.getDomainFactory()->getIndex(*j));
-//    }
-//
-//    aggregate->insertValue(value, indices);
+    auto&& result = cond->equals(module_.variableFactory()->af()->getBool(true)) ? trueVal :
+                         cond->equals(module_.variableFactory()->af()->getBool(false)) ? falseVal :
+                         module_.variableFactory()->top(i.getType());
+    context_->state->assign(&i, result);
 }
 
 void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
@@ -359,64 +291,51 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    // TODO
-//    std::vector<std::pair<const llvm::Value*, Domain::Ptr>> args;
-//    for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-//        args.emplace_back(i.getArgOperand(j), getVariable(i.getArgOperand(j)));
-//    }
-//    auto retval = module_.getDomainFactory()->getBottom(cast(i.getType()));
-//
-//    // inline assembler, just return TOP
-//    if (i.isInlineAsm()) {
-//        retval = module_.getDomainFactory()->getTop(cast(i.getType()));
-//    // function pointer
-//    } else if (not i.getCalledFunction()) {
-//        auto&& ptrDomain = getVariable(i.getCalledValue());
-//        ASSERT(ptrDomain, "Unknown value in call inst: " + ST_->toString(i.getCalledValue()));
-//
-//        auto&& ptr = llvm::cast<PointerDomain>(ptrDomain.get());
-//        if (ptr->isValue()) {
-//            auto&& funcPtr = ptr->load(cast(i.getCalledValue()->getType()->getPointerElementType()),
-//                                       {module_.getDomainFactory()->getIndex(0)});
-//            auto&& funcDomain = llvm::cast<FunctionDomain>(funcPtr.get());
-//
-//            for (auto&& func : funcDomain->getLocations()) {
-//                auto temp = handleFunctionCall(func->getInstance(), args);
-//                retval = temp ? retval->join(temp) : retval;
-//            }
-//
-//        } else {
-//            warns() << "Pointer is TOP: " << ST_->toString(&i) << ", calling all possible functions" << endl;
-//            std::vector<llvm::Type*> argTypes;
-//            for (auto&& it : args) argTypes.emplace_back(it.first->getType());
-//            auto&& prototype = llvm::FunctionType::get(i.getType(),
-//                                                       llvm::ArrayRef<llvm::Type*>(argTypes),
-//                                                       false);
-//            auto&& possibleFunctions = module_.findFunctionsByPrototype(prototype);
-//            for (auto&& it : possibleFunctions) {
-//                auto temp = handleFunctionCall(it->getInstance(), args);
-//                retval = temp ? retval->join(temp) : retval;
-//            }
-//        }
-//    // usual function call
-//    } else {
-//        retval = handleFunctionCall(i.getCalledFunction(), args);
-//    }
-//
-//    if (not i.getType()->isVoidTy()) {
-//        ASSERT(retval, "call inst result");
-//        context_->state->addVariable(&i, retval);
-//    }
-}
+    std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>> args;
+    for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
+        args.emplace_back(i.getArgOperand(j), context_->state->get(i.getArgOperand(j)));
+    }
 
-void Interpreter::visitBitCastInst(llvm::BitCastInst& i) {
-    // TODO
-//    auto&& op = getVariable(i.getOperand(0));
-//    ASSERT(op, "bitcast arg");
-//
-//    auto&& result = op->bitcast(cast(i.getDestTy()));
-//    ASSERT(result, "bitcast result");
-//    context_->state->addVariable(&i, result);
+    // inline assembler, just return TOP
+    if (i.isInlineAsm()) {
+        context_->state->assign(&i, module_.variableFactory()->top(i.getType()));
+    // function pointer
+    } else if (not i.getCalledFunction()) {
+        auto&& ptrDomain = context_->state->get(i.getCalledValue());
+        ASSERT(ptrDomain, "Unknown value in call inst: " + ST_->toString(i.getCalledValue()));
+
+        auto&& functionType = module_.variableFactory()->cast(i.getCalledValue()->getType()->getPointerElementType());
+        auto&& funcDomain = ptrDomain->load(functionType, module_.variableFactory()->af()->getMachineInt(0));
+        auto&& function = llvm::cast<FunctionDomain<Function::Ptr, FunctionHash, FunctionEquals>>(funcDomain.get());
+
+        auto retval = module_.variableFactory()->bottom(i.getType());
+        if (function->isTop() || function->isBottom()) {
+            warns() << "Pointer is TOP: " << ST_->toString(&i) << ", calling all possible functions" << endl;
+            std::vector<llvm::Type*> argTypes;
+            for (auto&& it : args) argTypes.emplace_back(it.first->getType());
+            auto&& prototype = llvm::FunctionType::get(i.getType(),
+                                                       llvm::ArrayRef<llvm::Type*>(argTypes),
+                                                       false);
+            auto&& possibleFunctions = module_.findByPrototype(prototype);
+            for (auto&& it : possibleFunctions) {
+                auto temp = handleFunctionCall(it->getInstance(), &i, args);
+                retval = temp ? retval->join(temp) : retval;
+            }
+
+        } else {
+            for (auto&& func : function->functions()) {
+                auto temp = handleFunctionCall(func->getInstance(), &i, args);
+                retval = temp ? retval->join(temp) : retval;
+            }
+
+        }
+
+        context_->state->assign(&i, retval);
+    // usual function call
+    } else {
+        auto retval = handleFunctionCall(i.getCalledFunction(), &i, args);
+        context_->state->assign(&i, retval);
+    }
 }
 
 ///////////////////////////////////////////////////////////////
@@ -439,84 +358,59 @@ void Interpreter::gepOperator(const llvm::GEPOperator& gep) {
     context_->state->gep(&gep, gep.getPointerOperand(), shifts);
 }
 
-//Domain::Ptr Interpreter::handleFunctionCall(const llvm::Function* function,
-//                                            const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
-//    // TODO
-////    ASSERT(function, "nullptr in handle function call");
-////    if (function->getName().startswith("borealis.alloc") || function->getName().startswith("borealis.malloc")) {
-////        return handleMemoryAllocation(function, args);
-////    } else if (function->isDeclaration()) {
-////        return handleDeclaration(function, args);
-////    } else {
-////        auto func = module_.get(function);
-////        interpretFunction(func, util::viewContainer(args).map(LAM(a, a.second)).toVector());
-////        return func->getReturnValue();
-////    }
-//}
-//
-//Domain::Ptr Interpreter::handleMemoryAllocation(const llvm::Function* function,
-//                                                const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
-//    // TODO
-////    auto&& size = getVariable(args[2].first);
-////    if (not size) {
-////        warns() << "Allocating unknown amount of memory: " << ST_->toString(args[2].first) << endl;
-////        return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
-////    }
-////
-////    auto&& integer = llvm::dyn_cast<IntegerIntervalDomain>(size.get());
-////    ASSERT(integer, "Non-integer domain in memory allocation");
-////
-////    // Creating domain in memory
-////    // Adding new level of abstraction (pointer to array to real value), because:
-////    // - if this is alloc, we need one more level for correct GEP handler
-////    // - if this is malloc, we create array of dynamically allocated objects
-////    if (integer->ub()->isMax()) {
-////        return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
-////    }
-////
-////    auto&& arrayType = TF_->getArray(cast(function->getReturnType()->getPointerElementType()), integer->ub()->getRawValue());
-////    auto&& ptrType = TF_->getPointer(arrayType, 0);
-////    Domain::Ptr domain = module_.getDomainFactory()->allocate(ptrType);
-////
-////    ASSERT(domain, "malloc result");
-////    return domain;
-//}
-//
-//Domain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
-//                                           const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args) {
-//    // TODO
-////    try {
-////        auto funcData = FIP_->getInfo(function);
-////        auto& argInfo = funcData.argInfo;
-////        for (auto j = 0U; j < args.size(); ++j) {
-////            auto arg = args[j].first;
-////            auto argType = arg->getType();
-////            if (argType->isPointerTy()) {
-////                if (argInfo[j].access == func_info::AccessPatternTag::Write ||
-////                        argInfo[j].access == func_info::AccessPatternTag::ReadWrite)
-////                    context_->state->addVariable(arg, module_.getDomainFactory()->getTop(cast(argType)));
-////                else if (argInfo[j].access == func_info::AccessPatternTag::Delete)
-////                    context_->state->addVariable(arg, module_.getDomainFactory()->getBottom(cast(argType)));
-////            }
-////        }
-////
-////    } catch (std::out_of_range&) {
-////        // just skip llvm debug function, to prevent excess printing to log
-////        if (function->getName().equals("llvm.dbg.value")) return nullptr;
-////
-////        warns() << "Unknown function: " << function->getName() << endl;
-////        // Unknown function possibly can do anything with pointer arguments
-////        // so we set all of them as TOP
-////        for (auto&& it : args) {
-////            auto arg = it.first;
-////            if (arg->getType()->isPointerTy()) {
-////                warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
-////                getVariable(arg)->moveToTop();
-////            }
-////        }
-////    }
-////    return module_.getDomainFactory()->getTop(cast(function->getReturnType()));
-//}
+AbstractDomain::Ptr Interpreter::handleFunctionCall(
+        const llvm::Function* function,
+        const llvm::Value* result,
+        const std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>>& args) {
+    ASSERT(function, "Nullptr in function call");
+
+    if (function->getName().startswith("borealis.alloc") || function->getName().startswith("borealis.malloc")) {
+        context_->state->allocate(result, args[2].first);
+        return context_->state->get(result);
+    } else if (function->isDeclaration()) {
+        return handleDeclaration(function, result, args);
+    } else {
+        auto func = module_.get(function);
+        interpretFunction(func, util::viewContainer(args).map(LAM(a, a.second)).toVector());
+        return func->getReturnValue();
+    }
+}
+
+AbstractDomain::Ptr Interpreter::handleDeclaration(const llvm::Function* function,
+                                           const llvm::Value*,
+                                           const std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>>& args) {
+    try {
+        auto funcData = FIP_->getInfo(function);
+        auto& argInfo = funcData.argInfo;
+        for (auto j = 0U; j < args.size(); ++j) {
+            auto arg = args[j].first;
+            auto argType = arg->getType();
+            if (argType->isPointerTy()) {
+                if (argInfo[j].access == func_info::AccessPatternTag::Write ||
+                        argInfo[j].access == func_info::AccessPatternTag::ReadWrite)
+                    context_->state->assign(arg, module_.variableFactory()->top(argType));
+                else if (argInfo[j].access == func_info::AccessPatternTag::Delete)
+                    context_->state->assign(arg, module_.variableFactory()->bottom(argType));
+            }
+        }
+
+    } catch (std::out_of_range&) {
+        // just skip llvm debug function, to prevent excess printing to log
+        if (function->getName().equals("llvm.dbg.value")) return nullptr;
+
+        warns() << "Unknown function: " << function->getName() << endl;
+        // Unknown function possibly can do anything with pointer arguments
+        // so we set all of them as TOP
+        for (auto&& it : args) {
+            auto arg = it.first;
+            if (arg->getType()->isPointerTy()) {
+                warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
+                context_->state->get(arg)->setTop();
+            }
+        }
+    }
+    return module_.variableFactory()->top(function->getReturnType());
+}
 
 }   /* namespace ir */
 }   /* namespace absint */

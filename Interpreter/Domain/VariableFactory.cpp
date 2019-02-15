@@ -25,6 +25,10 @@ Type::Ptr VariableFactory::cast(const llvm::Type* type) const {
     else return res;
 }
 
+TypeFactory::Ptr VariableFactory::tf() const {
+    return af()->tf();
+}
+
 AbstractDomain::Ptr VariableFactory::top(Type::Ptr type) const {
     return af_->top(type);
 }

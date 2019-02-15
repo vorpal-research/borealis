@@ -30,7 +30,7 @@ public:
     using Self = StructDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using MemLocationT = StructLocation<MachineInt>;
-    using PointerT = Pointer<MachineInt>;
+    using PointerT = PointerDomain<MachineInt>;
     using Types = std::vector<Type::Ptr>;
     using Elements = std::vector<Ptr>;
 

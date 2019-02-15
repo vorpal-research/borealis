@@ -8,7 +8,7 @@
 #include <Interpreter/Domain/AbstractFactory.hpp>
 #include "Interpreter/Domain/AbstractFactory.hpp"
 
-#include "Pointer.hpp"
+#include "PointerDomain.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -23,7 +23,7 @@ public:
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using EnvT = SeparateDomain<Variable, Pointer<MachineInt>>;
+    using EnvT = SeparateDomain<Variable, PointerDomain<MachineInt>>;
     using EnvPtr = typename EnvT::Ptr;
 
 protected:
@@ -111,7 +111,7 @@ public:
 
     void assign(Variable x, Ptr i) override { this->set(x, i); }
 
-    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) const override {
+    Ptr applyTo(llvm::ConditionType, Variable, Variable) const override {
         auto&& makeTop = [&]() { return af_->getBool(AbstractFactory::TOP); };
         return makeTop();
     }

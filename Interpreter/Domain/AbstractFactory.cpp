@@ -5,10 +5,11 @@
 #include "AbstractFactory.hpp"
 
 #include "Numerical/Interval.hpp"
-#include "Memory/Pointer.hpp"
+#include "Numerical/DoubleInterval.hpp"
+#include "Interpreter/Domain/Memory/PointerDomain.hpp"
 #include "Memory/ArrayDomain.hpp"
 #include "Memory/StructDomain.hpp"
-#include "Memory/Function.hpp"
+#include "Interpreter/Domain/Memory/FunctionDomain.hpp"
 #include "Memory/MemoryLocation.hpp"
 #include "util/casts.hpp"
 
@@ -120,85 +121,49 @@ AbstractDomain::Ptr AbstractFactory::getMachineInt(size_t value) const {
     return Interval<MachineInt>::constant(BitInt<false>(defaultSize, value));
 }
 
-AbstractDomain::Ptr AbstractFactory::getInteger(Type::Ptr type, AbstractFactory::Kind kind, bool sign) const {
+AbstractDomain::Ptr AbstractFactory::getInteger(Type::Ptr type, AbstractFactory::Kind kind) const {
     auto* integer = llvm::dyn_cast<type::Integer>(type.get());
     ASSERTC(integer);
 
     if (kind == TOP) {
-        if (sign) {
-            return Interval<BitInt<true>>::top();
-        } else {
-            return Interval<BitInt<false>>::top();
-        }
+        return IntT::top();
     } else if (kind == BOTTOM) {
-        if (sign) {
-            return Interval<BitInt<true>>::bottom();
-        } else {
-            return Interval<BitInt<false>>::bottom();
-        }
+        return IntT::bottom();
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
-AbstractDomain::Ptr AbstractFactory::getInteger(unsigned long long n, unsigned width, bool sign) const {
-    if (sign) {
-        return Interval<BitInt<true>>::constant(BitInt<true>(width, n));
-    } else {
-        return Interval<BitInt<false>>::constant(BitInt<false>(width, n));
-    }
+AbstractDomain::Ptr AbstractFactory::getInteger(unsigned long long n, unsigned width) const {
+    return IntT::constant(BitInt<true>(width, n), BitInt<false>(width, n));
 }
 
-AbstractDomain::Ptr AbstractFactory::getInt(AbstractFactory::Kind kind, bool sign) const {
+AbstractDomain::Ptr AbstractFactory::getInt(AbstractFactory::Kind kind) const {
     if (kind == TOP) {
-        if (sign) {
-            return Interval<Int<32U, true>>::top();
-        } else {
-            return Interval<Int<32U, false>>::top();
-        }
+        return DoubleInterval<Int<32U, true>, Int<32U, false>>::top();
     } else if (kind == BOTTOM) {
-        if (sign) {
-            return Interval<Int<32U, true>>::bottom();
-        } else {
-            return Interval<Int<32U, false>>::bottom();
-        }
+        return DoubleInterval<Int<32U, true>, Int<32U, false>>::bottom();
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
-AbstractDomain::Ptr AbstractFactory::getInt(int n, bool sign) const {
-    if (sign) {
-        return Interval<Int<32U, true>>::constant(n);
-    } else {
-        return Interval<Int<32U, false>>::constant(n);
-    }
+AbstractDomain::Ptr AbstractFactory::getInt(int n) const {
+    return DoubleInterval<Int<32U, true>, Int<32U, false>>::constant(n);
 }
 
-AbstractDomain::Ptr AbstractFactory::getLong(AbstractFactory::Kind kind, bool sign) const {
+AbstractDomain::Ptr AbstractFactory::getLong(AbstractFactory::Kind kind) const {
     if (kind == TOP) {
-        if (sign) {
-            return Interval<Int<64U, true>>::top();
-        } else {
-            return Interval<Int<64U, false>>::top();
-        }
+        return DoubleInterval<Int<64U, true>, Int<64U, false>>::top();
     } else if (kind == BOTTOM) {
-        if (sign) {
-            return Interval<Int<64U, true>>::bottom();
-        } else {
-            return Interval<Int<64U, false>>::bottom();
-        }
+        return DoubleInterval<Int<64U, true>, Int<64U, false>>::bottom();
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
-AbstractDomain::Ptr AbstractFactory::getLong(long n, bool sign) const {
-    if (sign) {
-        return Interval<Int<64U, true>>::constant(n);
-    } else {
-        return Interval<Int<64U, false>>::constant(n);
-    }
+AbstractDomain::Ptr AbstractFactory::getLong(long n) const {
+    return DoubleInterval<Int<64U, true>, Int<64U, false>>::constant(n);
 }
 
 AbstractDomain::Ptr AbstractFactory::getFloat(AbstractFactory::Kind kind) const {
@@ -442,6 +407,25 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
             return top(target);
     }
     UNREACHABLE("Unknown cast operator");
+}
+
+std::pair<Bound<size_t>, Bound<size_t>> AbstractFactory::unsignedBounds(AbstractDomain::Ptr domain) const {
+    if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
+        using UBound = Bound<size_t>;
+
+        auto* unsignedInterval = llvm::dyn_cast<Interval<UInt>>(dint->second().get());
+        ASSERTC(unsignedInterval);
+
+        auto lb = unsignedInterval->lb();
+        auto ub = unsignedInterval->ub();
+
+        auto first = (lb.isFinite()) ? UBound((size_t) lb) : UBound(0);
+        auto second = (ub.isFinite()) ? UBound((size_t) lb) : UBound::plusInfinity();
+
+        return std::make_pair(first, second);
+    } else {
+        UNREACHABLE("Unknown numerical domain");
+    }
 }
 
 } // namespace absint

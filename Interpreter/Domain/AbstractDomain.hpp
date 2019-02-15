@@ -12,6 +12,18 @@
 namespace borealis {
 namespace absint {
 
+enum CastOperator {
+    SIGN,
+    TRUNC,
+    EXT,
+    SEXT,
+    FPTOI,
+    ITOFP,
+    ITOPTR,
+    PTRTOI,
+    BITCAST
+};
+
 class AbstractDomain : public ClassTag, public std::enable_shared_from_this<AbstractDomain> {
 public:
     using Ptr = std::shared_ptr<AbstractDomain>;

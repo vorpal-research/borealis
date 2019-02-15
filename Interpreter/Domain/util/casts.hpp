@@ -8,7 +8,7 @@
 #include "Interpreter/Domain/Numerical/Bound.hpp"
 #include "Interpreter/Domain/Numerical/Interval.hpp"
 #include "Interpreter/Domain/Numerical/Number.hpp"
-#include "Interpreter/Domain/Memory/Pointer.hpp"
+#include "Interpreter/Domain/Memory/PointerDomain.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"

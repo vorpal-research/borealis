@@ -3,6 +3,7 @@
 //
 
 #include "State.h"
+#include "Interpreter/Domain/DomainStorage.hpp"
 #include "Util/collections.hpp"
 #include "Util/sayonara.hpp"
 
@@ -42,6 +43,10 @@ void State::apply(llvm::CmpInst::Predicate op, const llvm::Value* x, const llvm:
     storage_->apply(op, x, y, z);
 }
 
+void State::apply(CastOperator op, const llvm::Value* x, const llvm::Value* y) {
+    storage_->apply(op, x, y);
+}
+
 void State::load(const llvm::Value* x, const llvm::Value* ptr) {
     storage_->load(x, ptr);
 }
@@ -52,6 +57,10 @@ void State::store(const llvm::Value* ptr, const llvm::Value* x) {
 
 void State::gep(const llvm::Value* x, const llvm::Value* ptr, const std::vector<const llvm::Value*>& shifts) {
     storage_->gep(x, ptr, shifts);
+}
+
+void State::allocate(const llvm::Value* x, const llvm::Value* size) {
+    storage_->allocate(x, size);
 }
 
 void State::merge(State::Ptr other) {

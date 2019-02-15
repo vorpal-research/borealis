@@ -11,6 +11,7 @@
 #include <llvm/IR/Value.h>
 
 #include "AbstractDomain.hpp"
+#include "Numerical/Bound.hpp"
 #include "Numerical/Number.hpp"
 #include "Interpreter/IR/Function.h"
 #include "Type/TypeFactory.h"
@@ -20,6 +21,9 @@ namespace absint {
 
 template <typename Number>
 class Interval;
+
+template <typename N1, typename N2>
+class DoubleInterval;
 
 template <typename MachineInt>
 class ArrayDomain;
@@ -31,13 +35,13 @@ template <typename MachineInt>
 class StructDomain;
 
 template <typename FunctionT, typename FHash, typename FEquals>
-class FunctionDom;
+class FunctionDomain;
 
 template <typename MachineInt>
 class StructLocation;
 
 template <typename MachineInt>
-class Pointer;
+class PointerDomain;
 
 template <typename MachineInt>
 class NullLocation;
@@ -45,34 +49,28 @@ class NullLocation;
 template <typename MachineInt, typename FunctionT>
 class FunctionLocation;
 
-enum CastOperator {
-    SIGN,
-    TRUNC,
-    EXT,
-    SEXT,
-    FPTOI,
-    ITOFP,
-    ITOPTR,
-    PTRTOI,
-    BITCAST
-};
-
 class AbstractFactory {
 public:
 
     static const size_t defaultSize = 64;
 
-    using BoolT = Interval<BitInt<false>>;
+    using SInt = BitInt<true>;
+    using UInt = BitInt<false>;
+
+    using BoolT = Interval<UInt>;
+    using UnsignedInterval = Interval<UInt>;
+    using IntT = DoubleInterval<SInt, UInt>;
     using FloatT = Interval<Float>;
-    using MachineInt = BitInt<false>;
+
+    using MachineInt = UInt;
     using ArrayT = ArrayDomain<MachineInt>;
     using ArrayLocationT = ArrayLocation<MachineInt>;
     using StructT = StructDomain<MachineInt>;
     using StructLocationT = StructLocation<MachineInt>;
-    using FunctionT = FunctionDom<ir::Function::Ptr, ir::FunctionHash, ir::FunctionEquals>;
+    using FunctionT = FunctionDomain<ir::Function::Ptr, ir::FunctionHash, ir::FunctionEquals>;
     using FunctionLocationT = FunctionLocation<MachineInt, FunctionT>;
     using NullLocationT = NullLocation<MachineInt>;
-    using PointerT = Pointer<MachineInt>;
+    using PointerT = PointerDomain<MachineInt>;
 
     enum Kind {
         TOP,
@@ -111,14 +109,14 @@ public:
     AbstractDomain::Ptr getMachineInt(Kind kind) const;
     AbstractDomain::Ptr getMachineInt(size_t value) const;
 
-    AbstractDomain::Ptr getInteger(Type::Ptr type, Kind kind, bool sign = false) const;
-    AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width, bool sign = false) const;
+    AbstractDomain::Ptr getInteger(Type::Ptr type, Kind kind) const;
+    AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width) const;
 
-    AbstractDomain::Ptr getInt(Kind kind, bool sign = false) const;
-    AbstractDomain::Ptr getInt(int n, bool sign = false) const;
+    AbstractDomain::Ptr getInt(Kind kind) const;
+    AbstractDomain::Ptr getInt(int n) const;
 
-    AbstractDomain::Ptr getLong(Kind kind, bool sign = false) const;
-    AbstractDomain::Ptr getLong(long n, bool sign = false) const;
+    AbstractDomain::Ptr getLong(Kind kind) const;
+    AbstractDomain::Ptr getLong(long n) const;
 
     AbstractDomain::Ptr getFloat(Kind kind) const;
     AbstractDomain::Ptr getFloat(double n) const;
@@ -146,6 +144,8 @@ public:
     AbstractDomain::Ptr makeStructLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
 
     AbstractDomain::Ptr cast(CastOperator op, Type::Ptr target, AbstractDomain::Ptr domain) const;
+
+    std::pair<Bound<size_t>, Bound<size_t>> unsignedBounds(AbstractDomain::Ptr domain) const;
 };
 
 }   /* namespace absint */

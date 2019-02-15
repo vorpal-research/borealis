@@ -15,14 +15,14 @@ namespace borealis {
 namespace absint {
 
 template <typename FunctionT, typename FHash, typename FEquals>
-class FunctionDom : public AbstractDomain {
+class FunctionDomain : public AbstractDomain {
 public:
 
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
     using FunctionSet = std::unordered_set<FunctionT, FHash, FEquals>;
 
-    using Self = FunctionDom<FunctionT, FHash, FEquals>;
+    using Self = FunctionDomain<FunctionT, FHash, FEquals>;
 
 private:
 
@@ -51,21 +51,21 @@ private:
 
 public:
 
-    explicit FunctionDom(TopTag, Type::Ptr type) :
+    explicit FunctionDomain(TopTag, Type::Ptr type) :
             AbstractDomain(class_tag(*this)), isBottom_(false), prototype_(type), factory_(AbstractFactory::get()) {}
 
-    explicit FunctionDom(BottomTag, Type::Ptr type) :
+    explicit FunctionDomain(BottomTag, Type::Ptr type) :
             AbstractDomain(class_tag(*this)), isBottom_(true), prototype_(type), factory_(AbstractFactory::get()) {}
 
-    explicit FunctionDom(Type::Ptr type) : FunctionDom(TopTag{}, type) {}
-    explicit FunctionDom(FunctionT function) :
+    explicit FunctionDomain(Type::Ptr type) : FunctionDomain(TopTag{}, type) {}
+    explicit FunctionDomain(FunctionT function) :
             AbstractDomain(class_tag(*this)), isBottom_(false), prototype_(function->getType()),
             factory_(AbstractFactory::get()), functions_({ function }) {}
 
-    FunctionDom(const FunctionDom&) = default;
-    FunctionDom(FunctionDom&&) = default;
-    FunctionDom& operator=(FunctionDom&&) = default;
-    FunctionDom& operator=(const FunctionDom& other) {
+    FunctionDomain(const FunctionDomain&) = default;
+    FunctionDomain(FunctionDomain&&) = default;
+    FunctionDomain& operator=(FunctionDomain&&) = default;
+    FunctionDomain& operator=(const FunctionDomain& other) {
         if (this != &other) {
             this->isBottom_ = other.isBottom_;
             this->prototype_ = other.prototype_;
@@ -77,6 +77,10 @@ public:
 
     Ptr clone() const override {
         return std::make_shared<Self>(*this);
+    }
+
+    const FunctionSet& functions() const {
+        return this->functions_;
     }
 
     static Ptr top(Type::Ptr type) { return std::make_shared<Self>(TopTag{}, type); }

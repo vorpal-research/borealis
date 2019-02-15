@@ -10,12 +10,15 @@
 #include <llvm/IR/Value.h>
 
 #include "Interpreter/Domain/AbstractDomain.hpp"
-#include "Interpreter/Domain/DomainStorage.hpp"
 #include "Util/cow_map.hpp"
 #include "Util/slottracker.h"
 
 namespace borealis {
 namespace absint {
+
+class VariableFactory;
+class DomainStorage;
+
 namespace ir {
 
 class State : public std::enable_shared_from_this<State> {
@@ -34,9 +37,12 @@ public:
     void assign(const llvm::Value* v, AbstractDomain::Ptr domain);
     void apply(llvm::BinaryOperator::BinaryOps op, const llvm::Value* x, const llvm::Value* y, const llvm::Value* z);
     void apply(llvm::CmpInst::Predicate op, const llvm::Value* x, const llvm::Value* y, const llvm::Value* z);
+    void apply(CastOperator op, const llvm::Value* x, const llvm::Value* y);
     void load(const llvm::Value* x, const llvm::Value* ptr);
     void store(const llvm::Value* ptr, const llvm::Value* x);
     void gep(const llvm::Value* x, const llvm::Value* ptr, const std::vector<const llvm::Value*>& shifts);
+
+    void allocate(const llvm::Value* x, const llvm::Value* size);
 
     void merge(State::Ptr other);
 
@@ -46,7 +52,7 @@ public:
 private:
 
     SlotTracker* tracker_;
-    DomainStorage::Ptr storage_;
+    std::shared_ptr<DomainStorage> storage_;
 };
 
 }   /* namespace ir */

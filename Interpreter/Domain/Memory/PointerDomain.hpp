@@ -17,10 +17,10 @@ namespace borealis {
 namespace absint {
 
 template <typename MachineInt>
-class Pointer : public AbstractDomain {
+class PointerDomain : public AbstractDomain {
 public:
 
-    using Self = Pointer<MachineInt>;
+    using Self = PointerDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using MemoryLocationT = MemoryLocation<MachineInt>;
     using PointsToSet = std::unordered_set<Ptr>;
@@ -56,21 +56,21 @@ private:
     }
 
 public:
-    explicit Pointer(TopTag) :
+    explicit PointerDomain(TopTag) :
             AbstractDomain(class_tag(*this)), isBottom_(false), factory_(AbstractFactory::get()) {}
-    explicit Pointer(BottomTag) :
+    explicit PointerDomain(BottomTag) :
             AbstractDomain(class_tag(*this)), isBottom_(true), factory_(AbstractFactory::get()) {}
 
 
-    Pointer() : Pointer(TopTag{}) {}
-    explicit Pointer(Ptr ptsTo) :
+    PointerDomain() : PointerDomain(TopTag{}) {}
+    explicit PointerDomain(Ptr ptsTo) :
             AbstractDomain(class_tag(*this)), isBottom_(false), factory_(AbstractFactory::get()), ptsTo_({ ptsTo }) {}
-    explicit Pointer(const PointsToSet& ptsTo) :
+    explicit PointerDomain(const PointsToSet& ptsTo) :
             AbstractDomain(class_tag(*this)), isBottom_(false), factory_(AbstractFactory::get()), ptsTo_(ptsTo) {}
-    Pointer(const Pointer&) = default;
-    Pointer(Pointer&&) = default;
-    Pointer& operator=(Pointer&&) = default;
-    Pointer& operator=(const Pointer& other) {
+    PointerDomain(const PointerDomain&) = default;
+    PointerDomain(PointerDomain&&) = default;
+    PointerDomain& operator=(PointerDomain&&) = default;
+    PointerDomain& operator=(const PointerDomain& other) {
         if (this != &other) {
             this->isBottom_ = other.isBottom_;
             this->factory_ = other.factory_;
@@ -83,7 +83,7 @@ public:
         return std::make_shared<Self>(*this);
     }
 
-    ~Pointer() override = default;
+    ~PointerDomain() override = default;
 
     static bool classof(const Self*) {
         return true;

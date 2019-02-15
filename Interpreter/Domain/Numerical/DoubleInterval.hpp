@@ -47,6 +47,14 @@ private:
         else if (first_->isBottom() || second_->isBottom()) setBottom();
     }
 
+    template <typename N>
+    const Interval<N>* unwrapInterval(Ptr domain) const {
+        auto* raw = llvm::dyn_cast<Interval<N>>(domain.get());
+        ASSERTC(raw);
+
+        return raw;
+    }
+
 public:
     struct TopTag {};
     struct BottomTag {};
@@ -62,20 +70,6 @@ public:
         normalize();
     }
 
-    explicit DoubleInterval(const N1& n) :
-            AbstractDomain(class_tag(*this)),
-            first_(Interval1::constant(n)),
-            second_(Interval2::constant(n)) {
-        normalize();
-    }
-
-    explicit DoubleInterval(const N2& n) :
-            AbstractDomain(class_tag(*this)),
-            first_(Interval1::constant(n)),
-            second_(Interval2::constant(n)) {
-        normalize();
-    }
-
     DoubleInterval(int from, int to) :
         AbstractDomain(class_tag(*this)),
         first_(std::make_shared<Interval1>(from, to)),
@@ -83,17 +77,10 @@ public:
         normalize();
     }
 
-    DoubleInterval(const N1& from, const N1& to) :
+    DoubleInterval(const N1& n1, const N2 n2) :
             AbstractDomain(class_tag(*this)),
-            first_(std::make_shared<Interval1>(from, to)),
-            second_(std::make_shared<Interval2>(from, to)) {
-        normalize();
-    }
-
-    DoubleInterval(const N2& from, const N2& to) :
-            AbstractDomain(class_tag(*this)),
-            first_(std::make_shared<Interval1>(from, to)),
-            second_(std::make_shared<Interval2>(from, to)) {
+            first_(std::make_shared<Interval1>(n1)),
+            second_(std::make_shared<Interval2>(n2)) {
         normalize();
     }
 
@@ -120,9 +107,9 @@ public:
     static Ptr bottom() { return std::make_shared<Self>(BottomTag{}); }
     static Ptr constant(int constant) { return std::make_shared<Self>(constant); }
     static Ptr constant(long constant) { return std::make_shared<Self>(constant); }
-    static Ptr constant(double constant) { return std::make_shared<Self>(N1(constant)); }
-    static Ptr constant(size_t constant) { return std::make_shared<Self>(N1(constant)); }
-    static Ptr constant(const N1& n) { return std::make_shared<Self>(n); }
+    static Ptr constant(double constant) { return constant(N1(constant), N2(constant)); }
+    static Ptr constant(size_t constant) { return constant(N1(constant), N2(constant)); }
+    static Ptr constant(const N1& n1, const N2& n2) { return std::make_shared<Self>(n1, n2); }
 
     static Self getTop() { return Self(TopTag{}); }
     static Self getBottom() { return Self(BottomTag{}); }
@@ -160,6 +147,15 @@ public:
     Ptr first() const { return first_; }
 
     Ptr second() const { return second_; }
+
+    bool intersects(ConstPtr other) const {
+        auto* otherRaw = unwrap(other);
+
+        auto* tf = unwrapInterval<N1>(this->first_);
+        auto* ts = unwrapInterval<N2>(this->second_);
+
+        return tf->intersects(otherRaw->first_) || ts->intersects(otherRaw->second_);
+    }
 
     bool leq(ConstPtr other) const override {
         auto* otherRaw = unwrap(other);

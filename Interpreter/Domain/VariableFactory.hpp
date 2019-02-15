@@ -25,6 +25,12 @@ public:
     VariableFactory& operator=(const VariableFactory&) = default;
     VariableFactory& operator=(VariableFactory&&) = default;
 
+    const AbstractFactory* af() const {
+        return af_;
+    }
+
+    TypeFactory::Ptr tf() const;
+
     Type::Ptr cast(const llvm::Type* type) const;
     AbstractDomain::Ptr top(Type::Ptr type) const;
     AbstractDomain::Ptr bottom(Type::Ptr type) const;

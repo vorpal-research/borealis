@@ -6,6 +6,7 @@
 #define BOREALIS_DOMAINSTORAGE_HPP
 
 #include "AbstractDomain.hpp"
+#include "AbstractFactory.hpp"
 #include "Numerical/Number.hpp"
 
 namespace borealis {
@@ -27,9 +28,9 @@ public:
 
 private:
 
-    using SIntT = BitInt<true>;
-    using UIntT = BitInt<false>;
-    using MachineIntT = BitInt<false>;
+    using SIntT = AbstractFactory::SInt;
+    using UIntT = AbstractFactory::UInt;
+    using MachineIntT = AbstractFactory::MachineInt;
 
     using NumericalDomainT = NumericalDomain<Variable>;
     using MemoryDomainT = MemoryDomain<MachineIntT, Variable>;
@@ -66,6 +67,9 @@ public:
     /// x = y op z
     void apply(llvm::CmpInst::Predicate op, Variable x, Variable y, Variable z);
 
+    /// x = cast(op, y)
+    void apply(CastOperator op, Variable x, Variable y);
+
     /// x = *ptr
     void load(Variable x, Variable ptr);
 
@@ -74,6 +78,9 @@ public:
 
     /// x = gep(ptr, shifts)
     void gep(Variable x, Variable ptr, const std::vector<Variable>& shifts);
+
+    /// x = allocate<decltype(x)>(size);
+    void allocate(Variable x, Variable size);
 
 private:
 

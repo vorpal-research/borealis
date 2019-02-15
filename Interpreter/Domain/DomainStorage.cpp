@@ -2,6 +2,7 @@
 // Created by abdullin on 2/14/19.
 //
 
+#include "AbstractFactory.hpp"
 #include "DomainStorage.hpp"
 #include "VariableFactory.hpp"
 #include "Numerical/DoubleInterval.hpp"
@@ -178,8 +179,11 @@ AbstractDomain::Ptr DomainStorage::get(Variable x) const {
         return unwrapFloat()->get(x);
     else if (llvm::isa<type::Pointer>(type.get()))
         return unwrapMemory()->get(x);
-    else
-        UNREACHABLE("Variable of unknown type");
+    else {
+        std::stringstream ss;
+        ss << "Variable of unknown type: " << TypeUtils::toString(*type.get());
+        UNREACHABLE(ss.str());
+    }
 }
 
 void DomainStorage::assign(Variable x, Variable y) const {
@@ -195,8 +199,11 @@ void DomainStorage::assign(Variable x, AbstractDomain::Ptr domain) const {
         unwrapFloat()->assign(x, domain);
     else if (llvm::isa<type::Pointer>(type.get()))
         unwrapMemory()->assign(x, domain);
-    else
-        UNREACHABLE("Variable of unknown type");
+    else {
+        std::stringstream ss;
+        ss << "Variable of unknown type: " << TypeUtils::toString(*type.get());
+        UNREACHABLE(ss.str());
+    }
 }
 
 /// x = y op z
@@ -260,6 +267,13 @@ void DomainStorage::apply(llvm::CmpInst::Predicate op, Variable x, Variable y, V
     }
 }
 
+void DomainStorage::apply(CastOperator op, Variable x, Variable y) {
+    auto&& yDom = get(y);
+    auto&& targetType = vf_->cast(x->getType());
+
+    assign(x, vf_->af()->cast(op, targetType, yDom));
+}
+
 /// x = *ptr
 void DomainStorage::load(Variable x, Variable ptr) {
     auto&& xDom = unwrapMemory()->loadFrom(vf_->cast(x->getType()), ptr);
@@ -274,6 +288,21 @@ void DomainStorage::store(Variable ptr, Variable x) {
 /// x = gep(ptr, shifts)
 void DomainStorage::gep(Variable x, Variable ptr, const std::vector<Variable>& shifts) {
     unwrapMemory()->gepFrom(x, vf_->cast(x->getType()), ptr, util::viewContainer(shifts).map(LAM(a, get(a))).toVector());
+}
+
+void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable size) {
+    auto&& sizeDomain = get(size);
+
+    auto&& bounds = vf_->af()->unsignedBounds(sizeDomain);
+
+    if (bounds.second.isInfinite()) {
+        assign(x, vf_->top(x->getType()));
+    } else {
+        auto&& tf = vf_->tf();
+        auto&& arrayType = tf->getArray(vf_->cast(x->getType()->getPointerElementType()), bounds.second.number());
+        auto&& ptrType = tf->getPointer(arrayType, 0);
+        assign(x, vf_->af()->allocate(ptrType));
+    }
 }
 
 } // namespace absint

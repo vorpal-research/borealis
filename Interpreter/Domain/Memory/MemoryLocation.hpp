@@ -8,7 +8,7 @@
 #include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/Domain/AbstractFactory.hpp"
 #include "ArrayDomain.hpp"
-#include "Pointer.hpp"
+#include "PointerDomain.hpp"
 #include "StructDomain.hpp"
 #include "Type/TypeUtils.h"
 
@@ -282,7 +282,7 @@ public:
 
     using Self = ArrayLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using PointerT = Pointer<MachineInt>;
+    using PointerT = PointerDomain<MachineInt>;
 
 private:
 

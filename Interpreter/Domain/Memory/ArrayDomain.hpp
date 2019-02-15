@@ -9,7 +9,7 @@
 
 #include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/Domain/AbstractFactory.hpp"
-#include "Pointer.hpp"
+#include "PointerDomain.hpp"
 
 #include "Util/collections.hpp"
 #include "Util/sayonara.hpp"

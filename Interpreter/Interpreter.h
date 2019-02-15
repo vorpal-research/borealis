@@ -57,8 +57,6 @@ public:
     void visitPtrToIntInst(llvm::PtrToIntInst& i);
     void visitIntToPtrInst(llvm::IntToPtrInst& i);
     void visitSelectInst(llvm::SelectInst& i);
-    void visitExtractValueInst(llvm::ExtractValueInst& i);
-    void visitInsertValueInst(llvm::InsertValueInst& i);
     void visitBinaryOperator(llvm::BinaryOperator& i);
     void visitCallInst(llvm::CallInst& i);
     void visitBitCastInst(llvm::BitCastInst& i);
@@ -77,12 +75,12 @@ private:
     /// Util functions
     void gepOperator(const llvm::GEPOperator& gep);
     void addSuccessors(const std::vector<BasicBlock*>& successors);
-//    void handleFunctionCall(const llvm::Function* function,
-//                                   const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
-//    void handleMemoryAllocation(const llvm::Function* function,
-//                                       const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
-//    void handleDeclaration(const llvm::Function* function,
-//                                  const std::vector<std::pair<const llvm::Value*, Domain::Ptr>>& args);
+    AbstractDomain::Ptr handleFunctionCall(const llvm::Function* function,
+            const llvm::Value* result,
+            const std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>>& args);
+    AbstractDomain::Ptr handleDeclaration(const llvm::Function* function,
+            const llvm::Value* result,
+            const std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>>& args);
 
     Module module_;
     TypeFactory::Ptr TF_;
