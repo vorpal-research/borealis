@@ -39,7 +39,6 @@ public:
     explicit BitInt(llvm::APInt value) : inner_(std::move(value)) {}
     BitInt() : inner_(defaultSize, 0) {}
     explicit BitInt(int n) : inner_(defaultSize, n) {}
-    explicit BitInt(long n) : inner_(defaultSize, n) {}
     BitInt(size_t width, unsigned long long n) : inner_(width, n) {}
     BitInt(const BitInt&) = default;
     BitInt(BitInt&&) = default;
@@ -116,8 +115,16 @@ public:
         return (sign ? this->inner_.sle(other.inner_) : this->inner_.ule(other.inner_));
     }
 
+    bool sleq(const Self& other) const {
+        return this->inner_.sle(other.inner_);
+    }
+
     bool geq(const Self& other) const {
         return other.leq(*this);
+    }
+
+    bool sgeq(const Self& other) const {
+        return other.sleq(*this);
     }
 
     BitInt<not sign> changeSignedness() const {
@@ -142,9 +149,14 @@ public:
 
     template <bool newSign>
     BitInt<newSign> convert(unsigned int newWidth) const {
-        llvm::APInt newInner = width() < newWidth ?
-                               newSign ? inner_.sext(newWidth) : inner_.zext(newWidth)
-                                                  : inner_.trunc(width());
+        llvm::APInt newInner;
+        if (width() == newWidth) {
+            newInner = inner_;
+        } else if (width() < newWidth) {
+            newInner = newSign ? inner_.sext(newWidth) : inner_.zext(newWidth);
+        } else {
+            newInner = inner_.trunc(width());
+        }
         return BitInt<newSign>(newInner);
     }
 
@@ -201,7 +213,7 @@ inline bool operator>=(const BitInt<sign>& lhs, const BitInt<sign>& rhs) {
 
 template <bool sign>
 inline bool operator>=(const BitInt<sign>& lhs, int rhs) {
-    return lhs.geq((BitInt<sign>(rhs)));
+    return lhs.sgeq((BitInt<sign>(rhs)));
 }
 
 template <bool sign>
@@ -211,7 +223,7 @@ inline bool operator<(const BitInt<sign>& lhs, const BitInt<sign>& rhs) {
 
 template <bool sign>
 inline bool operator<(const BitInt<sign>& lhs, int rhs) {
-    return !lhs.geq(BitInt<sign>(lhs.width(), rhs));
+    return !lhs.sgeq(BitInt<sign>(lhs.width(), rhs));
 }
 
 template <bool sign>
@@ -221,7 +233,7 @@ inline bool operator>(const BitInt<sign>& lhs, const BitInt<sign>& rhs) {
 
 template <bool sign>
 inline bool operator>(const BitInt<sign>& lhs, int rhs) {
-    return !lhs.leq(BitInt<sign>(lhs.width(), rhs));
+    return !lhs.sleq(BitInt<sign>(lhs.width(), rhs));
 }
 
 template <bool sign>

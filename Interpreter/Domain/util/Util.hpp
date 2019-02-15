@@ -6,6 +6,7 @@
 #define BOREALIS_UTILS_HPP
 
 #include <llvm/ADT/APInt.h>
+#include <llvm/ADT/APSInt.h>
 #include <llvm/ADT/APFloat.h>
 #include <llvm/ADT/Hashing.h>
 #include <llvm/IR/Type.h>
@@ -92,6 +93,13 @@ template <>
 struct hash<llvm::APInt> {
     size_t operator() (const llvm::APInt& apInt) const noexcept {
         return llvm::hash_value(apInt);
+    }
+};
+
+template <>
+struct hash<llvm::APSInt> {
+    size_t operator() (const llvm::APSInt& apsInt) const noexcept {
+        return std::hash<llvm::APInt>()(static_cast<const llvm::APInt&>(apsInt));
     }
 };
 

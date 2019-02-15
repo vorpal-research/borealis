@@ -35,9 +35,9 @@ public:
 
     explicit IntervalDomainImpl(VariableFactory* vf) : IntervalDomain<IntervalT, const llvm::Value*>(), vf_(vf) {}
     IntervalDomainImpl(const IntervalDomainImpl&) = default;
-    IntervalDomainImpl(IntervalDomainImpl&&) noexcept = default;
+    IntervalDomainImpl(IntervalDomainImpl&&) = default;
     IntervalDomainImpl& operator=(const IntervalDomainImpl&) = default;
-    IntervalDomainImpl& operator=(IntervalDomainImpl&&) noexcept = default;
+    IntervalDomainImpl& operator=(IntervalDomainImpl&&) = default;
     ~IntervalDomainImpl() override = default;
 
     static Ptr top() { return std::make_shared<Self>(EnvT::top()); }
@@ -85,9 +85,9 @@ public:
 
     explicit PointsToDomainImpl(VariableFactory* vf) : PointsToDomain<MachineInt, const llvm::Value*>(), vf_(vf) {}
     PointsToDomainImpl(const PointsToDomainImpl&) = default;
-    PointsToDomainImpl(PointsToDomainImpl&&) noexcept = default;
+    PointsToDomainImpl(PointsToDomainImpl&&) = default;
     PointsToDomainImpl& operator=(const PointsToDomainImpl&) = default;
-    PointsToDomainImpl& operator=(PointsToDomainImpl&&) noexcept = default;
+    PointsToDomainImpl& operator=(PointsToDomainImpl&&) = default;
     ~PointsToDomainImpl() override = default;
 
     Ptr clone() const override {
@@ -180,9 +180,8 @@ AbstractDomain::Ptr DomainStorage::get(Variable x) const {
     else if (llvm::isa<type::Pointer>(type.get()))
         return unwrapMemory()->get(x);
     else {
-        std::stringstream ss;
-        ss << "Variable of unknown type: " << TypeUtils::toString(*type.get());
-        UNREACHABLE(ss.str());
+        errs() << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << endl;
+        return nullptr;
     }
 }
 
@@ -201,8 +200,8 @@ void DomainStorage::assign(Variable x, AbstractDomain::Ptr domain) const {
         unwrapMemory()->assign(x, domain);
     else {
         std::stringstream ss;
-        ss << "Variable of unknown type: " << TypeUtils::toString(*type.get());
-        UNREACHABLE(ss.str());
+        ss << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << std::endl;
+        UNREACHABLE(ss.str())
     }
 }
 
@@ -271,7 +270,8 @@ void DomainStorage::apply(CastOperator op, Variable x, Variable y) {
     auto&& yDom = get(y);
     auto&& targetType = vf_->cast(x->getType());
 
-    assign(x, vf_->af()->cast(op, targetType, yDom));
+    auto&& xDom = vf_->af()->cast(op, targetType, yDom);
+    assign(x, xDom);
 }
 
 /// x = *ptr
@@ -287,7 +287,11 @@ void DomainStorage::store(Variable ptr, Variable x) {
 
 /// x = gep(ptr, shifts)
 void DomainStorage::gep(Variable x, Variable ptr, const std::vector<Variable>& shifts) {
-    unwrapMemory()->gepFrom(x, vf_->cast(x->getType()), ptr, util::viewContainer(shifts).map(LAM(a, get(a))).toVector());
+    std::vector<AbstractDomain::Ptr> normalizedShifts;
+    for (auto&& it : shifts) {
+        normalizedShifts.emplace_back(vf_->af()->machineIntInterval(get(it)));
+    }
+    unwrapMemory()->gepFrom(x, vf_->cast(x->getType()), ptr, normalizedShifts);
 }
 
 void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable size) {

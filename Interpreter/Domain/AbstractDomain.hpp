@@ -24,18 +24,19 @@ enum CastOperator {
     BITCAST
 };
 
-class AbstractDomain : public ClassTag, public std::enable_shared_from_this<AbstractDomain> {
+class AbstractDomain : public ClassTag, public logging::ObjectLevelLogging<AbstractDomain>,
+        public std::enable_shared_from_this<AbstractDomain> {
 public:
     using Ptr = std::shared_ptr<AbstractDomain>;
     using ConstPtr = std::shared_ptr<const AbstractDomain>;
 
-    explicit AbstractDomain(id_t id) : ClassTag(id) {}
+    explicit AbstractDomain(id_t id) : ClassTag(id), ObjectLevelLogging("domain") {}
 
-    AbstractDomain(const AbstractDomain&) noexcept = default;
+    AbstractDomain(const AbstractDomain&) = default;
 
     AbstractDomain(AbstractDomain&&) noexcept = default;
 
-    AbstractDomain& operator=(const AbstractDomain&) noexcept = default;
+    AbstractDomain& operator=(const AbstractDomain&) = default;
 
     AbstractDomain& operator=(AbstractDomain&&) noexcept = default;
 

@@ -63,9 +63,9 @@ public:
 
     IntervalDomain() : IntervalDomain(EnvT::top()) {}
     IntervalDomain(const IntervalDomain&) = default;
-    IntervalDomain(IntervalDomain&&) noexcept = default;
+    IntervalDomain(IntervalDomain&&) = default;
     IntervalDomain& operator=(const IntervalDomain&) = default;
-    IntervalDomain& operator=(IntervalDomain&&) noexcept = default;
+    IntervalDomain& operator=(IntervalDomain&&) = default;
     virtual ~IntervalDomain() = default;
 
     static bool classof (const Self*) {

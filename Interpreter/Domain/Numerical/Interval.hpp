@@ -227,7 +227,7 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        ss << "[" << lb_ << ", " << ub_ << "]" << std::endl;
+        ss << "[" << lb_ << ", " << ub_ << "]";
         return ss.str();
     }
 
@@ -235,17 +235,17 @@ public:
         auto* otherRaw = unwrap(other);
 
         switch (opcode) {
-            case llvm::ArithType::ADD: return (*this + *otherRaw).shared_from_this();
-            case llvm::ArithType::SUB: return (*this - *otherRaw).shared_from_this();
-            case llvm::ArithType::MUL: return (*this * *otherRaw).shared_from_this();
-            case llvm::ArithType::DIV: return (*this / *otherRaw).shared_from_this();
-            case llvm::ArithType::REM: return (*this % *otherRaw).shared_from_this();
-            case llvm::ArithType::SHL: return (*this << *otherRaw).shared_from_this();
-            case llvm::ArithType::ASHR: return (*this >> *otherRaw).shared_from_this();
-            case llvm::ArithType::LSHR: return lshr(*this, *otherRaw).shared_from_this();
-            case llvm::ArithType::BAND: return (*this & *otherRaw).shared_from_this();
-            case llvm::ArithType::BOR: return (*this | *otherRaw).shared_from_this();
-            case llvm::ArithType::XOR: return (*this ^ *otherRaw).shared_from_this();
+            case llvm::ArithType::ADD: return std::make_shared<Self>(*this + *otherRaw);
+            case llvm::ArithType::SUB: return std::make_shared<Self>(*this - *otherRaw);
+            case llvm::ArithType::MUL: return std::make_shared<Self>(*this * *otherRaw);
+            case llvm::ArithType::DIV: return std::make_shared<Self>(*this / *otherRaw);
+            case llvm::ArithType::REM: return std::make_shared<Self>(*this % *otherRaw);
+            case llvm::ArithType::SHL: return std::make_shared<Self>(*this << *otherRaw);
+            case llvm::ArithType::ASHR: return std::make_shared<Self>(*this >> *otherRaw);
+            case llvm::ArithType::LSHR: return std::make_shared<Self>(lshr(*this, *otherRaw));
+            case llvm::ArithType::BAND: return std::make_shared<Self>(*this & *otherRaw);
+            case llvm::ArithType::BOR: return std::make_shared<Self>(*this | *otherRaw);
+            case llvm::ArithType::XOR: return std::make_shared<Self>(*this ^ *otherRaw);
             default:
                 UNREACHABLE("Unknown binary operator");
         }
@@ -425,11 +425,11 @@ Interval<Number> operator/(const Interval<Number>& lhv, const Interval<Number>& 
         if (rhv.contains(0)) {
             auto l = IntervalT(rhv.lb(), BoundT(-1));
             auto r = IntervalT(BoundT(1), rhv.ub());
-            return *llvm::cast<IntervalT>((lhv / l).join((lhv / r).shared_from_this()));
+            return *llvm::cast<IntervalT>((lhv / l).join(std::make_shared<IntervalT>(lhv / r)));
         } else if (lhv.contains(0)) {
             auto l = IntervalT(lhv.lb(), BoundT(-1));
             auto r = IntervalT(BoundT(1), lhv.ub());
-            return unwrapInterval<Number>((l / rhv).join((r / rhv).shared_from_this())->join(IntervalT::constant(0)));
+            return unwrapInterval<Number>((l / rhv).join(std::make_shared<IntervalT>(r / rhv))->join(IntervalT::constant(0)));
         } else {
             auto ll = lhv.lb() / rhv.lb();
             auto ul = lhv.ub() / rhv.lb();
@@ -542,7 +542,7 @@ Interval<Number> lshr(const Interval<Number>& lhv, const Interval<Number>& rhv) 
         if (lhv.contains(0)) {
             auto l = IntervalT(lhv.lb(), BoundT(-1));
             auto u = IntervalT(BoundT(1), lhv.ub());
-            return unwrapInterval<Number>(lshr(l, rhv).join(lshr(u, rhv).shared_from_this())->join(IntervalT::constant(0)));
+            return unwrapInterval<Number>(lshr(l, rhv).join(std::make_shared<IntervalT>(lshr(u, rhv)))->join(IntervalT::constant(0)));
         } else {
             BoundT ll = lshr(lhv.lb(), shiftRaw->lb());
             BoundT lu = lshr(lhv.lb(), shiftRaw->ub());

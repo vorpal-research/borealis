@@ -145,6 +145,7 @@ public:
 
     AbstractDomain::Ptr cast(CastOperator op, Type::Ptr target, AbstractDomain::Ptr domain) const;
 
+    AbstractDomain::Ptr machineIntInterval(AbstractDomain::Ptr domain) const;
     std::pair<Bound<size_t>, Bound<size_t>> unsignedBounds(AbstractDomain::Ptr domain) const;
 };
 

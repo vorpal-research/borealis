@@ -97,7 +97,9 @@ struct convert<Bound<N>> {
 template <typename N>
 struct convert<Interval<N>> {
     Interval<N> operator()(const Interval<N>& interval, unsigned int to) {
-        return Interval<N>(convert<Bound<N>>()(interval.lb(), to), convert<Bound<N>>()(interval.ub(), to));
+        auto&& lb = util::convert<Bound<N>>()(interval.lb(), to);
+        auto&& ub = util::convert<Bound<N>>()(interval.ub(), to);
+        return Interval<N>(lb, ub);
     }
 };
 

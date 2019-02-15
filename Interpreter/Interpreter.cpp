@@ -237,6 +237,7 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
 }
 
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
+    errs() << util::toString(i) << endl;
     gepOperator(llvm::cast<llvm::GEPOperator>(i));
 }
 
@@ -291,16 +292,18 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>> args;
-    for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
-        args.emplace_back(i.getArgOperand(j), context_->state->get(i.getArgOperand(j)));
-    }
+    errs() << util::toString(i) << endl;
 
     // inline assembler, just return TOP
     if (i.isInlineAsm()) {
         context_->state->assign(&i, module_.variableFactory()->top(i.getType()));
     // function pointer
     } else if (not i.getCalledFunction()) {
+        std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>> args;
+        for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
+            args.emplace_back(i.getArgOperand(j), context_->state->get(i.getArgOperand(j)));
+        }
+
         auto&& ptrDomain = context_->state->get(i.getCalledValue());
         ASSERT(ptrDomain, "Unknown value in call inst: " + ST_->toString(i.getCalledValue()));
 
@@ -333,6 +336,13 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
         context_->state->assign(&i, retval);
     // usual function call
     } else {
+        if (i.getCalledFunction()->getName().startswith("llvm.dbg")) return;
+
+        std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>> args;
+        for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
+            args.emplace_back(i.getArgOperand(j), context_->state->get(i.getArgOperand(j)));
+        }
+
         auto retval = handleFunctionCall(i.getCalledFunction(), &i, args);
         context_->state->assign(&i, retval);
     }

@@ -53,8 +53,8 @@ public:
 
     SeparateDomain() : SeparateDomain(TopTag{}) {}
     SeparateDomain(const SeparateDomain&) = default;
-    SeparateDomain(SeparateDomain&&) noexcept = default;
-    SeparateDomain& operator=(SeparateDomain&&) noexcept = default;
+    SeparateDomain(SeparateDomain&&) = default;
+    SeparateDomain& operator=(SeparateDomain&&) = default;
     SeparateDomain& operator=(const SeparateDomain& other) {
         if (this != &other) {
             this->values_ = other.values_;

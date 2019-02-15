@@ -63,9 +63,9 @@ public:
 
     PointsToDomain() : PointsToDomain(EnvT::top()) {}
     PointsToDomain(const PointsToDomain&) = default;
-    PointsToDomain(PointsToDomain&&) noexcept = default;
+    PointsToDomain(PointsToDomain&&) = default;
     PointsToDomain& operator=(const PointsToDomain&) = default;
-    PointsToDomain& operator=(PointsToDomain&&) noexcept = default;
+    PointsToDomain& operator=(PointsToDomain&&) = default;
     virtual ~PointsToDomain() = default;
 
     static bool classof (const Self*) {
