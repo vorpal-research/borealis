@@ -20,7 +20,7 @@ class NumericalDomain;
 template <typename MachineInt, typename Variable>
 class MemoryDomain;
 
-class DomainStorage : public std::enable_shared_from_this<DomainStorage> {
+class DomainStorage : public logging::ObjectLevelLogging<DomainStorage>, public std::enable_shared_from_this<DomainStorage> {
 public:
 
     using Ptr = std::shared_ptr<DomainStorage>;

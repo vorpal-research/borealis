@@ -148,8 +148,9 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::GlobalVariable* global) con
         // we need this because GEPs for global structs and arrays contain one additional index at the start
         if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
             auto newArray = af_->tf()->getArray(cast(global->getType()), 1);
+            auto newPtr = af_->tf()->getPointer(newArray, AbstractFactory::defaultSize);
             auto newLevel = af_->getArray(newArray, { ptr });
-            globalDomain = af_->getPointer(newArray, newLevel, af_->getMachineInt(0));
+            globalDomain = af_->getPointer(newPtr, newLevel, af_->getMachineInt(0));
         } else {
             globalDomain = ptr;
         }

@@ -272,11 +272,10 @@ public:
     }
 
     Ptr load(Type::Ptr, Ptr interval) const override {
-        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
-        ASSERTC(intervalRaw);
-        ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
+        auto&& bounds = factory_->unsignedBounds(interval);
+        ASSERT(bounds.first == bounds.second, "trying to load from nondetermined index of struct");
 
-        auto index = (size_t) intervalRaw->asConstant();
+        auto index = (size_t) bounds.first;
         auto type = types_[index];
 
         if (this->isTop()) {
@@ -290,10 +289,10 @@ public:
     }
 
     void store(Ptr value, Ptr interval) override {
-        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
-        ASSERTC(intervalRaw);
-        ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
-        auto index = (size_t) intervalRaw->asConstant();
+        auto&& bounds = factory_->unsignedBounds(interval);
+        ASSERT(bounds.first == bounds.second, "trying to load from nondetermined index of struct");
+
+        auto index = (size_t) bounds.first;
 
         if (this->isTop()) {
             return;
@@ -309,10 +308,9 @@ public:
             return factory_->bottom(type);
         }
 
-        auto* intervalRaw = llvm::dyn_cast<IntervalT>(offsets[0].get());
-        ASSERTC(intervalRaw);
-        ASSERT(intervalRaw->isConstant(), "trying to load from nondetermined index of struct");
-        auto index = (size_t) intervalRaw->asConstant();
+        auto&& bounds = factory_->unsignedBounds(offsets[0]);
+        ASSERT(bounds.first == bounds.second, "trying to load from nondetermined index of struct");
+        auto index = (size_t) bounds.first;
 
         if (offsets.size() == 1) {
             return factory_->getPointer(type, shared_from_this(), offsets[0]);

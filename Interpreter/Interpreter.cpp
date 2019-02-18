@@ -222,6 +222,7 @@ void Interpreter::visitAllocaInst(llvm::AllocaInst&) {
 }
 
 void Interpreter::visitLoadInst(llvm::LoadInst& i) {
+    errs() << util::toString(i) << endl;
     auto gepOper = llvm::dyn_cast<llvm::GEPOperator>(i.getPointerOperand());
 
     if (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper))
@@ -331,10 +332,11 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
 
         }
 
-        context_->state->assign(&i, retval);
+        if (retval)
+            context_->state->assign(&i, retval);
     // usual function call
     } else {
-        if (i.getCalledFunction()->getName().startswith("llvm.dbg")) return;
+        if (i.getCalledFunction()->getName().startswith("llvm.")) return;
 
         std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>> args;
         for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
@@ -342,7 +344,8 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
         }
 
         auto retval = handleFunctionCall(i.getCalledFunction(), &i, args);
-        context_->state->assign(&i, retval);
+        if (retval)
+            context_->state->assign(&i, retval);
     }
 }
 
@@ -363,7 +366,12 @@ void Interpreter::gepOperator(const llvm::GEPOperator& gep) {
         auto val = llvm::cast<llvm::Value>(j);
         shifts.push_back(val);
     }
-    context_->state->gep(&gep, gep.getPointerOperand(), shifts);
+
+    auto* ptr = gep.getPointerOperand();
+    if (llvm::isa<llvm::GEPOperator>(ptr) && not llvm::isa<llvm::GetElementPtrInst>(ptr))
+        gepOperator(*llvm::cast<llvm::GEPOperator>(ptr));
+
+    context_->state->gep(&gep, ptr, shifts);
 }
 
 AbstractDomain::Ptr Interpreter::handleFunctionCall(

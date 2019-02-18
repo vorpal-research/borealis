@@ -141,6 +141,7 @@ DomainStorage::MemoryDomainT* DomainStorage::unwrapMemory() const {
 }
 
 DomainStorage::DomainStorage(VariableFactory* vf) :
+        ObjectLevelLogging("domain"),
         vf_(vf),
         ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_)),
         floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_)),

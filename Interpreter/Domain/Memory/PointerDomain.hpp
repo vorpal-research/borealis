@@ -247,8 +247,10 @@ public:
             return factory_->bottom(type);
         } else {
             auto&& result = factory_->bottom(type);
+
             for (auto&& loc : this->ptsTo_) {
-                result->joinWith(loc->load(type, offset));
+                auto&& locationLoad = loc->load(type, offset);
+                result->joinWith(locationLoad);
             }
             return result;
         }
@@ -261,7 +263,7 @@ public:
             return;
         } else {
             for (auto&& loc : this->ptsTo_) {
-                loc->store(offset, value);
+                loc->store(value, offset);
             }
         }
     }

@@ -403,7 +403,7 @@ public:
     }
 
     void store(Ptr value, Ptr offset) override {
-        return this->base_->store(offset + this->offset_, value);
+        return this->base_->store(value, offset + this->offset_);
     }
 
     Ptr gep(Type::Ptr type, const std::vector<Ptr>& offsets) override {

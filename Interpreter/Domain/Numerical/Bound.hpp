@@ -156,7 +156,7 @@ public:
     bool leq(const Bound& other) const {
         if (this->isInfinite_ xor other.isInfinite_) {
             if (this->isInfinite_) {
-                return this->value_ == -1;
+                return this->value_ == (Number) -1;
             } else {
                 return other.value_ == 1;
             }
@@ -169,7 +169,7 @@ public:
             if (this->isInfinite_) {
                 return this->value_ == 1;
             } else {
-                return other.value_ == -1;
+                return other.value_ == (Number) -1;
             }
         }
         return this->value_ >= other.value_;

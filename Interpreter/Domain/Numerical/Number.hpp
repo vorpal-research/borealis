@@ -155,7 +155,7 @@ public:
         } else if (width() < newWidth) {
             newInner = newSign ? inner_.sext(newWidth) : inner_.zext(newWidth);
         } else {
-            newInner = inner_.trunc(width());
+            newInner = inner_.trunc(newWidth);
         }
         return BitInt<newSign>(newInner);
     }

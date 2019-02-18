@@ -52,10 +52,8 @@ private:
         return otherRaw;
     }
 
-    IntervalT* length() const {
-        auto* len = llvm::dyn_cast<IntervalT>(length_.get());
-        ASSERTC(len);
-        return len;
+    Bound<size_t> length() const {
+        return factory_->unsignedBounds(length_).second;
     }
 
 public:
@@ -263,7 +261,7 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        ss << "Array [" << this->length()->ub() << " x " << TypeUtils::toString(*elementType_.get()) << "] ";
+        ss << "Array [" << this->length() << " x " << TypeUtils::toString(*elementType_.get()) << "] ";
         ss << ": [";
         if (this->isTop()) {
             ss << " TOP ]";
@@ -279,8 +277,7 @@ public:
     }
 
     Ptr load(Type::Ptr, Ptr interval) const override {
-        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
-        ASSERTC(intervalRaw);
+        auto&& bounds = factory_->unsignedBounds(interval);
 
         if (this->isTop()) {
             return factory_->top(elementType_);
@@ -289,18 +286,18 @@ public:
         } else {
             auto result = factory_->bottom(elementType_);
 
-            auto lengthUb = this->length()->ub();
-            auto lb = intervalRaw->lb();
-            auto ub = intervalRaw->ub();
+            auto&& length = this->length();
+            auto&& lb = bounds.first;
+            auto&& ub = bounds.second;
 
-            if (ub >= lengthUb) {
+            if (ub >= length) {
                 warns() << "Possible buffer overflow" << endl;
-            } else if (lb >= lengthUb) {
+            } else if (lb >= length) {
                 warns() << "Buffer overflow" << endl;
                 return factory_->top(elementType_);
             }
 
-            for (auto i = lb; i < ub and i < lengthUb; ++i) {
+            for (auto i = lb; i < ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);
                 result->joinWith((not opt) ? factory_->bottom(elementType_) : opt.getUnsafe());
             }
@@ -310,25 +307,24 @@ public:
     }
 
     void store(Ptr value, Ptr interval) override {
-        auto* intervalRaw = llvm::dyn_cast<IntervalT>(interval.get());
-        ASSERTC(intervalRaw);
+        auto&& bounds = factory_->unsignedBounds(interval);
 
         if (this->isTop()) {
             return;
         } else if (this->isBottom()) {
             return;
         } else {
-            auto lengthUb = this->length()->ub();
-            auto lb = intervalRaw->lb();
-            auto ub = intervalRaw->ub();
+            auto&& length = this->length();
+            auto&& lb = bounds.first;
+            auto&& ub = bounds.second;
 
-            if (ub >= lengthUb) {
+            if (ub >= length) {
                 warns() << "Possible buffer overflow" << endl;
-            } else if (lb >= lengthUb) {
+            } else if (lb >= length) {
                 warns() << "Buffer overflow" << endl;
             }
 
-            for (auto i = lb; i < ub and i < lengthUb; ++i) {
+            for (auto i = lb; i < ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);
                 if (not opt) {
                     this->elements_[(size_t) i] = value;
@@ -346,12 +342,10 @@ public:
             return factory_->top(type);
         }
 
-        auto* intervalRaw = llvm::dyn_cast<IntervalT>(offsets[0]);
-        ASSERTC(intervalRaw);
-
-        auto& length = this->length()->ub();
-        auto& idx_begin = intervalRaw->lb();
-        auto& idx_end = intervalRaw->ub();
+        auto&& bounds = factory_->unsignedBounds(offsets[0]);
+        auto&& length = this->length();
+        auto&& idx_begin = bounds.first;
+        auto&& idx_end = bounds.second;
 
         if (idx_end > length) {
             warns() << "Possible buffer overflow" << endl;

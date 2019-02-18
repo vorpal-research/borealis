@@ -205,7 +205,7 @@ AbstractDomain::Ptr AbstractFactory::getArray(Type::Ptr type, const std::vector<
     auto* array = llvm::dyn_cast<type::Array>(type.get());
     ASSERTC(array);
 
-    return ArrayT::constant(type, elements);
+    return ArrayT::constant(array->getElement(), elements);
 }
 
 AbstractDomain::Ptr AbstractFactory::getStruct(Type::Ptr type, AbstractFactory::Kind kind) const {
@@ -351,16 +351,21 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
             }
         case TRUNC:
         case EXT:
-            ASSERTC(integer);
 
             if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
+                ASSERTC(integer);
                 return std::make_shared<SInt>(util::convert<SInt>()(*sint, integer->getBitsize()));
             } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
+                ASSERTC(integer);
                 return std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
             } else if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
+                ASSERTC(integer);
                 auto&& first = cast(op, target, dint->first());
                 auto&& second = cast(op, target, dint->second());
                 return std::make_shared<IntT>(first, second);
+            } else if (llvm::isa<FloatT>(domain.get())) {
+                warns() << "Trying to cast float types, not supported" << endl;
+                return domain->clone();
             } else {
                 UNREACHABLE("Unknown interval");
             }
@@ -428,22 +433,27 @@ AbstractDomain::Ptr AbstractFactory::machineIntInterval(AbstractDomain::Ptr doma
 }
 
 std::pair<Bound<size_t>, Bound<size_t>> AbstractFactory::unsignedBounds(AbstractDomain::Ptr domain) const {
+    using UBound = Bound<size_t>;
+
+    UnsignedInterval* unsignedInterval = nullptr;
     if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
-        using UBound = Bound<size_t>;
 
-        auto* unsignedInterval = llvm::dyn_cast<Interval<UInt>>(dint->second().get());
-        ASSERTC(unsignedInterval);
+        unsignedInterval = llvm::dyn_cast<UnsignedInterval>(dint->second().get());
 
-        auto lb = unsignedInterval->lb();
-        auto ub = unsignedInterval->ub();
-
-        auto first = (lb.isFinite()) ? UBound((size_t) lb) : UBound(0);
-        auto second = (ub.isFinite()) ? UBound((size_t) lb) : UBound::plusInfinity();
-
-        return std::make_pair(first, second);
+    } else if (auto* uint = llvm::dyn_cast<UnsignedInterval>(domain.get())) {
+        unsignedInterval = uint;
     } else {
         UNREACHABLE("Unknown numerical domain");
     }
+
+    ASSERTC(unsignedInterval);
+    auto lb = unsignedInterval->lb();
+    auto ub = unsignedInterval->ub();
+
+    auto first = (lb.isFinite()) ? UBound((size_t) lb) : UBound(0);
+    auto second = (ub.isFinite()) ? UBound((size_t) lb) : UBound::plusInfinity();
+
+    return std::make_pair(first, second);
 }
 
 } // namespace absint
