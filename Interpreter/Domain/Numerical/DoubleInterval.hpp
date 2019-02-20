@@ -21,6 +21,9 @@ public:
     using Interval1 = Interval<N1>;
     using Interval2 = Interval<N2>;
 
+    using Caster1 = typename Interval1::CasterT;
+    using Caster2 = typename Interval2::CasterT;
+
 private:
 
     Ptr first_;
@@ -59,28 +62,30 @@ public:
     struct TopTag {};
     struct BottomTag {};
 
-    explicit DoubleInterval(TopTag) : AbstractDomain(class_tag(*this)), first_(Interval1::top()), second_(Interval2::top()) {}
-    explicit DoubleInterval(BottomTag) : AbstractDomain(class_tag(*this)), first_(Interval1::bottom()), second_(Interval2::bottom()) {}
+    DoubleInterval(TopTag, const Caster1* c1, const Caster2* c2) :
+            AbstractDomain(class_tag(*this)), first_(Interval1::top(c1)), second_(Interval2::top(c2)) {}
+    DoubleInterval(BottomTag, const Caster1* c1, const Caster2* c2) :
+            AbstractDomain(class_tag(*this)), first_(Interval1::bottom(c1)), second_(Interval2::bottom(c2)) {}
 
     DoubleInterval() : DoubleInterval(TopTag{}) {}
-    explicit DoubleInterval(int n) :
+    DoubleInterval(int n, const Caster1* c1, const Caster2* c2) :
             AbstractDomain(class_tag(*this)),
-            first_(Interval1::constant(n)),
-            second_(Interval2::constant(n)) {
+            first_(Interval1::constant(n, c1)),
+            second_(Interval2::constant(n, c2)) {
         normalize();
     }
 
-    DoubleInterval(int from, int to) :
+    DoubleInterval(int from, int to, const Caster1* c1, const Caster2* c2) :
         AbstractDomain(class_tag(*this)),
-        first_(std::make_shared<Interval1>(from, to)),
-        second_(std::make_shared<Interval2>(from, to)) {
+        first_(std::make_shared<Interval1>(from, to, c1)),
+        second_(std::make_shared<Interval2>(from, to, c2)) {
         normalize();
     }
 
-    DoubleInterval(const N1& n1, const N2 n2) :
+    DoubleInterval(const N1& n1, const N2 n2, const Caster1* c1, const Caster2* c2) :
             AbstractDomain(class_tag(*this)),
-            first_(std::make_shared<Interval1>(n1)),
-            second_(std::make_shared<Interval2>(n2)) {
+            first_(std::make_shared<Interval1>(n1, c1)),
+            second_(std::make_shared<Interval2>(n2, c2)) {
         normalize();
     }
 
@@ -103,16 +108,13 @@ public:
     DoubleInterval& operator=(DoubleInterval&&) = default;
     ~DoubleInterval() override = default;
 
-    static Ptr top() { return std::make_shared<Self>(TopTag{}); }
-    static Ptr bottom() { return std::make_shared<Self>(BottomTag{}); }
-    static Ptr constant(int constant) { return std::make_shared<Self>(constant); }
-    static Ptr constant(long constant) { return std::make_shared<Self>(constant); }
-    static Ptr constant(double constant) { return constant(N1(constant), N2(constant)); }
-    static Ptr constant(size_t constant) { return constant(N1(constant), N2(constant)); }
-    static Ptr constant(const N1& n1, const N2& n2) { return std::make_shared<Self>(n1, n2); }
-
-    static Self getTop() { return Self(TopTag{}); }
-    static Self getBottom() { return Self(BottomTag{}); }
+    static Ptr top(const Caster1* c1, const Caster2* c2) { return std::make_shared<Self>(TopTag{}, c1, c2); }
+    static Ptr bottom(const Caster1* c1, const Caster2* c2) { return std::make_shared<Self>(BottomTag{}, c1, c2); }
+    static Ptr constant(int constant, const Caster1* c1, const Caster2* c2) { return std::make_shared<Self>(constant, c1, c2); }
+    static Ptr constant(long constant, const Caster1* c1, const Caster2* c2) { return std::make_shared<Self>(constant, c1, c2); }
+    static Ptr constant(double constant, const Caster1* c1, const Caster2* c2) { return constant((*c1)(constant), (*c2)(constant), c1, c2); }
+    static Ptr constant(size_t constant, const Caster1* c1, const Caster2* c2) { return constant((*c1)(constant), (*c2)(constant), c1, c2); }
+    static Ptr constant(const N1& n1, const N2& n2, const Caster1* c1, const Caster2* c2) { return std::make_shared<Self>(n1, n2, c1, c2); }
 
     Ptr clone() const override {
         return std::make_shared<Self>(*this);
@@ -201,7 +203,10 @@ public:
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom() || otherRaw->isBottom()) {
-            return bottom();
+            auto* tf = unwrapInterval<N1>(this->first_);
+            auto* ts = unwrapInterval<N2>(this->second_);
+
+            return bottom(tf->caster(), ts->caster());
         } else {
             return std::make_shared<Self>(this->first_->meet(otherRaw->first_), this->second_->meet(otherRaw->second_));
         }
@@ -233,7 +238,7 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        ss << "[" << first_->toString() << ", " << second_->toString() << "]" << std::endl;
+        ss << "[" << first_->toString() << ", " << second_->toString() << "]";
         return ss.str();
     }
 

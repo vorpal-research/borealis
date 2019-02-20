@@ -188,12 +188,14 @@ public:
         return result;
     }
 
-    typename Inner::Ptr get(Variable x) const {
+    typename Inner::Ptr get(Variable x,
+            const std::function<typename Inner::Ptr()>& getBottom,
+            const std::function<typename Inner::Ptr()>& getTop) const {
         if (this->isBottom()) {
-            return Inner::bottom();
+            return getBottom();
         } else {
             auto&& opt = util::at(this->values_, x);
-            if (opt.empty()) return Inner::top();
+            if (opt.empty()) return getTop();
             else return opt.getUnsafe();
         }
     }

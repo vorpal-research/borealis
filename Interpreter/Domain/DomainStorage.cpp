@@ -60,7 +60,11 @@ public:
         if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
             return vf_->get(constant);
 
-        } else if (auto&& local = this->unwrapEnv()->get(x)) {
+        } else if (auto&& local = this->unwrapEnv()->get(x,
+                [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
+                [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
+                )) {
+
             return local;
 
         }
@@ -112,7 +116,10 @@ public:
         } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
             return vf_->get(constant);
 
-        } else if (auto&& local = this->unwrapEnv()->get(x)) {
+        } else if (auto&& local = this->unwrapEnv()->get(x,
+                [&]() -> AbstractDomain::Ptr { return PointerDomain<MachineInt>::bottom(); },
+                [&]() -> AbstractDomain::Ptr { return PointerDomain<MachineInt>::top(); }
+                )) {
             return local;
 
         }
@@ -251,20 +258,26 @@ void DomainStorage::apply(llvm::CmpInst::Predicate op, Variable x, Variable y, V
     typedef llvm::ConditionType CT;
 
     auto cop = llvm::conditionType(op);
+    auto* ints = unwrapInt();
 
+    AbstractDomain::Ptr xd;
     if (P::FIRST_ICMP_PREDICATE <= op && op <= P::LAST_ICMP_PREDICATE) {
-        auto* ints = unwrapInt();
+        if (y->getType()->isPointerTy() && z->getType()->isPointerTy()) {
+            auto* memory = unwrapMemory();
 
-        auto xd = ints->applyTo(cop, y, z);
-        ints->assign(x, xd);
+            xd = memory->applyTo(cop, y, z);
+        } else {
+            xd = ints->applyTo(cop, y, z);
+        }
+
     } else if (P::FIRST_FCMP_PREDICATE <= op && op <= P::LAST_FCMP_PREDICATE) {
-        auto* ints = unwrapInt();
+        xd = ints->applyTo(cop, y, z);
 
-        auto xd = ints->applyTo(cop, y, z);
-        ints->assign(x, xd);
     } else {
         UNREACHABLE("Unreachable!");
     }
+
+    ints->assign(x, xd);
 }
 
 void DomainStorage::apply(CastOperator op, Variable x, Variable y) {

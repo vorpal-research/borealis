@@ -31,9 +31,9 @@ public:
 
 private:
 
+    AbstractFactory* factory_;
     Ptr length_;
     Type::Ptr elementType_;
-    AbstractFactory* factory_;
     ElementMapT elements_;
 
 private:
@@ -61,22 +61,31 @@ public:
     struct BottomTag {};
 
     ArrayDomain(TopTag, Type::Ptr elementType) :
-            AbstractDomain(class_tag(*this)), length_(IntervalT::top()), elementType_(elementType), factory_(AbstractFactory::get()) {}
+            AbstractDomain(class_tag(*this)),
+            factory_(AbstractFactory::get()),
+            length_(factory_->getMachineInt(AbstractFactory::TOP)),
+            elementType_(elementType) {}
 
     ArrayDomain(BottomTag, Type::Ptr elementType) :
-            AbstractDomain(class_tag(*this)), length_(IntervalT::bottom()), elementType_(elementType), factory_(AbstractFactory::get()) {}
+            AbstractDomain(class_tag(*this)),
+            factory_(AbstractFactory::get()),
+            length_(factory_->getMachineInt(AbstractFactory::BOTTOM)),
+            elementType_(elementType) {}
 
 
     explicit ArrayDomain(Type::Ptr elementType) : ArrayDomain(TopTag{}, elementType) {}
     ArrayDomain(Type::Ptr elementType, const std::vector<AbstractDomain::Ptr>& elements) :
-            AbstractDomain(class_tag(*this)), length_(IntervalT::constant((int) elements.size())), elementType_(elementType), factory_(AbstractFactory::get()) {
+            AbstractDomain(class_tag(*this)),
+            factory_(AbstractFactory::get()),
+            length_(factory_->getMachineInt(elements.size())),
+            elementType_(elementType) {
         for (auto i = 0U; i < elements.size(); ++i) {
             elements_[i] = elements[i];
         }
     }
 
     ArrayDomain(Type::Ptr elementType, Ptr length) :
-            AbstractDomain(class_tag(*this)), length_(length), elementType_(elementType), factory_(AbstractFactory::get()) {}
+            AbstractDomain(class_tag(*this)), factory_(AbstractFactory::get()), length_(length), elementType_(elementType) {}
 
     ArrayDomain(const ArrayDomain&) = default;
     ArrayDomain(ArrayDomain&&) = default;

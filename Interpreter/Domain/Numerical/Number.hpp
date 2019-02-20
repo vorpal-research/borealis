@@ -262,6 +262,11 @@ BitInt<sign> lshr(const BitInt<sign>& lhv, const BitInt<sign>& rhv) {
 }
 
 template <bool sign>
+inline bool sgeq(const BitInt<sign>& lhv, const BitInt<sign>& rhv) {
+    return lhv.sgeq(rhv);
+}
+
+template <bool sign>
 std::ostream& operator<<(std::ostream& out, const BitInt<sign>& num) {
     out << num.toString();
     return out;
@@ -715,6 +720,14 @@ inline Float abs(const Float& b) {
 
 inline Float lshr(const Float& lhv, const Float& rhv) {
     return lhv.lshr(rhv);
+}
+
+inline bool sgeq(const Float& lhv, const Float& rhv) {
+    return lhv >= rhv;
+}
+
+inline bool sgeq(size_t lhv, size_t rhv) {
+    return lhv >= rhv;
 }
 
 inline std::ostream& operator<<(std::ostream& out, const Float& num) {

@@ -22,6 +22,7 @@ public:
 
     using Self = Interval<Number>;
     using BoundT = Bound<Number>;
+    using CasterT = typename BoundT::CasterT;
 
 private:
 
@@ -43,18 +44,18 @@ public:
     struct TopTag {};
     struct BottomTag {};
 
-    explicit Interval(TopTag) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity()), ub_(BoundT::plusInfinity()) {}
-    explicit Interval(BottomTag) : AbstractDomain(class_tag(*this)), lb_(1), ub_(0) {}
+    Interval(TopTag, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity(caster)), ub_(BoundT::plusInfinity(caster)) {}
+    Interval(BottomTag, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, 1), ub_(caster, 0) {}
 
-    Interval() : Interval(TopTag{}) {}
-    explicit Interval(int n) : AbstractDomain(class_tag(*this)), lb_(n), ub_(n) {}
-    explicit Interval(const Number& n) : AbstractDomain(class_tag(*this)), lb_(n), ub_(n) {}
-    explicit Interval(const BoundT& b) : AbstractDomain(class_tag(*this)), lb_(b), ub_(b) {
+    explicit Interval(const CasterT* caster) : Interval(TopTag{}, caster) {}
+    Interval(int n, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, n), ub_(caster, n) {}
+    Interval(const Number& n, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, n), ub_(caster, n) {}
+    Interval(const BoundT& b) : AbstractDomain(class_tag(*this)), lb_(b), ub_(b) {
         UNREACHABLE(!b.is_infinite());
     }
 
-    Interval(int from, int to) : AbstractDomain(class_tag(*this)), lb_(from), ub_(to) {}
-    Interval(const Number& from, const Number& to) : AbstractDomain(class_tag(*this)), lb_(from), ub_(to) {}
+    Interval(int from, int to, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, from), ub_(caster, to) {}
+    Interval(const Number& from, const Number& to, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, from), ub_(caster, to) {}
     Interval(const BoundT& from, const BoundT& to) : AbstractDomain(class_tag(*this)), lb_(from), ub_(to) {}
 
     Interval(const Interval&) = default;
@@ -69,16 +70,16 @@ public:
     Interval& operator=(Interval&&) = default;
     ~Interval() override = default;
 
-    static Ptr top() { return std::make_shared<Self>(TopTag{}); }
-    static Ptr bottom() { return std::make_shared<Self>(BottomTag{}); }
-    static Ptr constant(int constant) { return std::make_shared<Self>(constant); }
-    static Ptr constant(long constant) { return std::make_shared<Self>(constant); }
-    static Ptr constant(double constant) { return std::make_shared<Self>(Number(constant)); }
-    static Ptr constant(size_t constant) { return std::make_shared<Self>(Number(constant)); }
-    static Ptr constant(const Number& n) { return std::make_shared<Self>(n); }
+    static Ptr top(const CasterT* caster) { return std::make_shared<Self>(TopTag{}, caster); }
+    static Ptr bottom(const CasterT* caster) { return std::make_shared<Self>(BottomTag{}, caster); }
+    static Ptr constant(int constant, const CasterT* caster) { return std::make_shared<Self>(constant, caster); }
+    static Ptr constant(long constant, const CasterT* caster) { return std::make_shared<Self>(constant, caster); }
+    static Ptr constant(double constant, const CasterT* caster) { return std::make_shared<Self>((*caster)(constant), caster); }
+    static Ptr constant(size_t constant, const CasterT* caster) { return std::make_shared<Self>((*caster)(constant), caster); }
+    static Ptr constant(const Number& n, const CasterT* caster) { return std::make_shared<Self>(n, caster); }
 
-    static Self getTop() { return Self(TopTag{}); }
-    static Self getBottom() { return Self(BottomTag{}); }
+    static Self getTop(const CasterT* caster) { return Self(TopTag{}, caster); }
+    static Self getBottom(const CasterT* caster) { return Self(BottomTag{}, caster); }
 
     Ptr clone() const override {
         return std::make_shared<Self>(*this);
@@ -93,7 +94,7 @@ public:
     }
 
     bool isTop() const override {
-        return lb_ == BoundT::minusInfinity() and ub_ == BoundT::plusInfinity();
+        return lb_ == BoundT::minusInfinity(lb_.caster()) and ub_ == BoundT::plusInfinity(ub_.caster());
     }
 
     bool isBottom() const override {
@@ -101,8 +102,8 @@ public:
     }
 
     void setTop() override {
-        this->lb_ = BoundT::minusInfinity();
-        this->ub_ = BoundT::plusInfinity();
+        this->lb_ = BoundT::minusInfinity(lb_.caster());
+        this->ub_ = BoundT::plusInfinity(ub_.caster());
     }
 
     void setBottom() override {
@@ -115,20 +116,22 @@ public:
         return lb_.number();
     }
 
+    const CasterT* caster() const { return lb_.caster(); }
+
     bool isConstant() const { return lb_ == ub_; }
 
-    bool isConstant(int n) const { return isConstant(BoundT(n)); }
+    bool isConstant(int n) const { return isConstant(BoundT(caster(), n)); }
 
-    bool isConstant(const Number& n) const { return isConstant(BoundT(n)); }
+    bool isConstant(const Number& n) const { return isConstant(BoundT(caster(), n)); }
 
     bool isConstant(const BoundT& bnd) const {
         ASSERT(bnd.isFinite(), "")
         return lb_ == bnd and ub_ == bnd;
     }
 
-    bool contains(int n) const { return contains(Number(n)); }
+    bool contains(int n) const { return contains(BoundT(caster(), n)); }
 
-    bool contains(const Number& n) const { return contains(BoundT(n)); }
+    bool contains(const Number& n) const { return contains(BoundT(caster(), n)); }
 
     bool contains(const BoundT& bnd) const {
         ASSERT(bnd.isFinite(), "")
@@ -192,7 +195,7 @@ public:
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom() || otherRaw->isBottom()) {
-            return bottom();
+            return bottom(caster());
         } else {
             return std::make_shared<Self>(util::max(this->lb_, otherRaw->lb_), util::min(this->ub_, otherRaw->ub_));
         }
@@ -211,8 +214,8 @@ public:
             return std::make_shared<Self>(*this);
         } else {
             return std::make_shared<Self>(
-                    otherRaw->lb_ < this->lb_ ? BoundT::minusInfinity() : lb_,
-                    otherRaw->ub_ > this->ub_ ? BoundT::plusInfinity() : ub_
+                    otherRaw->lb_ < this->lb_ ? BoundT::minusInfinity(caster()) : lb_,
+                    otherRaw->ub_ > this->ub_ ? BoundT::plusInfinity(caster()) : ub_
             );
         }
     }
@@ -227,7 +230,10 @@ public:
 
     std::string toString() const override {
         std::ostringstream ss;
-        ss << "[" << lb_ << ", " << ub_ << "]";
+        ss << "[";
+        if (this->isBottom()) ss << " BOTTOM ";
+        else ss << lb_ << ", " << ub_;
+        ss << "]";
         return ss.str();
     }
 
@@ -255,7 +261,7 @@ public:
         if (this->isBottom()) {
             return bottom();
         } else {
-            return std::make_shared<Self>(-this->_ub, -this->_lb);
+            return std::make_shared<Self>(-this->_ub, -this->_lb, caster());
         }
     }
 
@@ -380,7 +386,7 @@ Interval<Number> operator+(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
         return IntervalT(lhv.lb() + rhv.lb(), lhv.ub() + rhv.ub());
     }
@@ -392,7 +398,7 @@ Interval<Number> operator-(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
         return IntervalT(lhv.lb() - rhv.ub(), lhv.ub() - rhv.lb());
     }
@@ -404,7 +410,7 @@ Interval<Number> operator*(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
         auto ll = lhv.lb() * rhv.lb();
         auto ul = lhv.ub() * rhv.lb();
@@ -420,16 +426,16 @@ Interval<Number> operator/(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
         if (rhv.contains(0)) {
-            auto l = IntervalT(rhv.lb(), BoundT(-1));
-            auto r = IntervalT(BoundT(1), rhv.ub());
+            auto l = IntervalT(rhv.lb(), BoundT(lhv.caster(), -1));
+            auto r = IntervalT(BoundT(lhv.caster(), 1), rhv.ub());
             return *llvm::cast<IntervalT>((lhv / l).join(std::make_shared<IntervalT>(lhv / r)));
         } else if (lhv.contains(0)) {
-            auto l = IntervalT(lhv.lb(), BoundT(-1));
-            auto r = IntervalT(BoundT(1), lhv.ub());
-            return unwrapInterval<Number>((l / rhv).join(std::make_shared<IntervalT>(r / rhv))->join(IntervalT::constant(0)));
+            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
+            auto r = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
+            return unwrapInterval<Number>((l / rhv).join(std::make_shared<IntervalT>(r / rhv))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             auto ll = lhv.lb() / rhv.lb();
             auto ul = lhv.ub() / rhv.lb();
@@ -446,16 +452,16 @@ Interval<Number> operator%(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
-        if (rhv.isConstant(0)) {
-            return IntervalT::getBottom();
+        if (rhv.isZero()) {
+            return IntervalT::getBottom(lhv.caster());
         } else if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() % rhv.asConstant());
+            return IntervalT(lhv.asConstant() % rhv.asConstant(), lhv.caster());
         } else {
-            BoundT zero(0);
+            BoundT zero(lhv.caster(), 0);
             BoundT n_ub = util::max(abs(lhv.lb()), abs(lhv.ub()));
-            BoundT d_ub = util::max(abs(rhv.lb()), abs(rhv.ub())) - BoundT(1);
+            BoundT d_ub = util::max(abs(rhv.lb()), abs(rhv.ub())) - BoundT(lhv.caster(), 1);
             BoundT ub = util::min(n_ub, d_ub);
 
             if (lhv.lb() < zero) {
@@ -477,19 +483,19 @@ Interval<Number> operator<<(const Interval<Number>& lhv, const Interval<Number>&
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
-        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(0), BoundT::plusInfinity()));
+        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
 
         if (shift->isBottom()) {
-            return IntervalT::getBottom();
+            return IntervalT::getBottom(lhv.caster());
         }
 
         auto* shiftRaw = llvm::cast<IntervalT>(shift.get());
 
         auto coeff = IntervalT(
-                BoundT(1) << shiftRaw->lb(),
-                shiftRaw->ub().isFinite() ? (BoundT(1) << shiftRaw->ub()) : BoundT::plusInfinity()
+                BoundT(lhv.caster(), 1) << shiftRaw->lb(),
+                shiftRaw->ub().isFinite() ? (BoundT(lhv.caster(), 1) << shiftRaw->ub()) : BoundT::plusInfinity(lhv.caster())
         );
         return lhv * coeff;
     }
@@ -501,19 +507,19 @@ Interval<Number> operator>>(const Interval<Number>& lhv, const Interval<Number>&
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
-        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(0), BoundT::plusInfinity()));
+        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
         auto* shiftRaw = llvm::cast<IntervalT>(shift.get());
 
         if (shift->isBottom()) {
-            return IntervalT::getBottom();
+            return IntervalT::getBottom(lhv.caster());
         }
 
         if (lhv.contains(0)) {
-            auto l = IntervalT(lhv.lb(), BoundT(-1));
-            auto u = IntervalT(BoundT(1), lhv.ub());
-            return unwrapInterval<Number>((l >> rhv).join((u >> rhv).shared_from_this())->join(IntervalT::constant(0)));
+            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
+            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
+            return unwrapInterval<Number>((l >> rhv).join((u >> rhv).shared_from_this())->join(IntervalT::constant(0, lhv.caster())));
         } else {
             auto ll = lhv.lb() >> shiftRaw->lb();
             auto lu = lhv.lb() >> shiftRaw->ub();
@@ -530,19 +536,19 @@ Interval<Number> lshr(const Interval<Number>& lhv, const Interval<Number>& rhv) 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
-        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(0), BoundT::plusInfinity()));
+        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
         auto* shiftRaw = llvm::cast<IntervalT>(shift.get());
 
         if (shift->isBottom()) {
-            return IntervalT::getBottom();
+            return IntervalT::getBottom(lhv.caster());
         }
 
         if (lhv.contains(0)) {
-            auto l = IntervalT(lhv.lb(), BoundT(-1));
-            auto u = IntervalT(BoundT(1), lhv.ub());
-            return unwrapInterval<Number>(lshr(l, rhv).join(std::make_shared<IntervalT>(lshr(u, rhv)))->join(IntervalT::constant(0)));
+            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
+            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
+            return unwrapInterval<Number>(lshr(l, rhv).join(std::make_shared<IntervalT>(lshr(u, rhv)))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             BoundT ll = lshr(lhv.lb(), shiftRaw->lb());
             BoundT lu = lshr(lhv.lb(), shiftRaw->ub());
@@ -559,26 +565,27 @@ Interval<Number> operator&(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
 
         if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() & rhv.asConstant());
-        } else if (lhv.isConstant(0) || rhv.isConstant(0)) {
-            return IntervalT(0);
+            return IntervalT(lhv.asConstant() & rhv.asConstant(), lhv.caster());
+        } else if (lhv.isZero() || rhv.isZero()) {
+            return IntervalT(0, lhv.caster());
         } else if (lhv.isConstant(-1)) {
             return rhv;
         } else if (rhv.isConstant(-1)) {
             return lhv;
         } else {
-            if (lhv.lb() >= BoundT(0) && rhv.lb() >= BoundT(0)) {
-                return IntervalT(BoundT(0), util::min(lhv.ub(), rhv.ub()));
-            } else if (lhv.lb() >= BoundT(0)) {
-                return IntervalT(BoundT(0), lhv.ub());
-            } else if (lhv.lb() >= BoundT(0)) {
-                return IntervalT(BoundT(0), rhv.ub());
+            auto&& zero = BoundT(lhv.caster(), 0);
+            if (lhv.lb() >= zero && rhv.lb() >= zero) {
+                return IntervalT(zero, util::min(lhv.ub(), rhv.ub()));
+            } else if (lhv.lb() >= zero) {
+                return IntervalT(zero, lhv.ub());
+            } else if (lhv.lb() >= zero) {
+                return IntervalT(zero, rhv.ub());
             } else {
-                return IntervalT::getTop();
+                return IntervalT::getTop(lhv.caster());
             }
         }
     }
@@ -590,19 +597,19 @@ Interval<Number> operator|(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
 
         if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() | rhv.asConstant());
+            return IntervalT(lhv.asConstant() | rhv.asConstant(), lhv.caster());
         } else if (lhv.isConstant(-1) || rhv.isConstant(-1)) {
-            return IntervalT(-1);
-        } else if (rhv.isConstant(0)) {
+            return IntervalT(-1, lhv.caster());
+        } else if (rhv.isZero()) {
             return lhv;
-        } else if (lhv.isConstant(0)) {
+        } else if (lhv.isZero()) {
             return rhv;
         } else {
-            return IntervalT::getTop();
+            return IntervalT::getTop(lhv.caster());
         }
     }
 }
@@ -613,17 +620,17 @@ Interval<Number> operator^(const Interval<Number>& lhv, const Interval<Number>& 
     using IntervalT = Interval<Number>;
 
     if (lhv.isBottom() || rhv.isBottom()) {
-        return IntervalT::getBottom();
+        return IntervalT::getBottom(lhv.caster());
     } else {
 
         if (lhv.isConstant() && rhv.isConstant()) {
-            return IntervalT(lhv.asConstant() ^ rhv.asConstant());
-        } else if (rhv.isConstant(0)) {
+            return IntervalT(lhv.asConstant() ^ rhv.asConstant(), lhv.caster());
+        } else if (rhv.isZero()) {
             return lhv;
-        } else if (lhv.isConstant(0)) {
+        } else if (lhv.isZero()) {
             return rhv;
         } else {
-            return IntervalT::getTop();
+            return IntervalT::getTop(lhv.caster());
         }
     }
 }

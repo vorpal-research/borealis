@@ -46,15 +46,44 @@ struct cast<BitInt<sign>, Float> {
     }
 };
 
-template <typename N1, typename N2>
-struct cast<Bound<N1>, Bound<N2>> {
-    Bound<N2> operator()(const Bound<N1>& bound) {
+template <bool s1, bool s2>
+struct cast<Bound<BitInt<s1>>, Bound<BitInt<s2>>> {
+    Bound<BitInt<s2>> operator()(const Bound<BitInt<s1>>& bound) {
+        auto* adapter = util::Adapter<BitInt<s2>>::get(bound.caster()->width());
         if (bound.isPlusInfinity()) {
-            return Bound<N2>::plusInfinity();
+            return Bound<BitInt<s2>>::plusInfinity(adapter);
         } else if (bound.isMinusInfinity()) {
-            return Bound<N2>::minusInfinity();
+            return Bound<BitInt<s2>>::minusInfinity(adapter);
         } else {
-            return Bound<N2>(cast<N1, N2>()(bound.number()));
+            return Bound<BitInt<s2>>(adapter, cast<BitInt<s1>, BitInt<s2>>()(bound.number()));
+        }
+    }
+};
+
+template <bool s1>
+struct cast<Bound<BitInt<s1>>, Bound<Float>> {
+    Bound<Float> operator()(const Bound<BitInt<s1>>& bound) {
+        auto* adapter = util::Adapter<Float>::get();
+        if (bound.isPlusInfinity()) {
+            return Bound<Float>::plusInfinity(adapter);
+        } else if (bound.isMinusInfinity()) {
+            return Bound<Float>::minusInfinity(adapter);
+        } else {
+            return Bound<Float>(adapter, cast<BitInt<s1>, Float>()(bound.number()));
+        }
+    }
+};
+
+template <bool s2>
+struct cast<Bound<Float>, Bound<BitInt<s2>>> {
+    Bound<BitInt<s2>> operator()(const Bound<Float>& bound) {
+        auto* adapter = util::Adapter<BitInt<s2>>::get(AbstractFactory::defaultSize);
+        if (bound.isPlusInfinity()) {
+            return Bound<BitInt<s2>>::plusInfinity(adapter);
+        } else if (bound.isMinusInfinity()) {
+            return Bound<BitInt<s2>>::minusInfinity(adapter);
+        } else {
+            return Bound<BitInt<s2>>(adapter, cast<Float, BitInt<s2>>()(bound.number()));
         }
     }
 };
@@ -81,15 +110,16 @@ struct convert<BitInt<sign>> {
     }
 };
 
-template <typename N>
-struct convert<Bound<N>> {
-    Bound<N> operator()(const Bound<N>& bound, unsigned int to) {
+template <bool sign>
+struct convert<Bound<BitInt<sign>>> {
+    Bound<BitInt<sign>> operator()(const Bound<BitInt<sign>>& bound, unsigned int to) {
+        auto* adapter = util::Adapter<BitInt<sign>>::get(to);
         if (bound.isPlusInfinity()) {
-            return Bound<N>::plusInfinity();
+            return Bound<BitInt<sign>>::plusInfinity(adapter);
         } else if (bound.isMinusInfinity()) {
-            return Bound<N>::minusInfinity();
+            return Bound<BitInt<sign>>::minusInfinity(adapter);
         } else {
-            return Bound<N>(convert<N>()(bound.number(), to));
+            return Bound<BitInt<sign>>(adapter, convert<BitInt<sign>>()(bound.number(), to));
         }
     }
 };

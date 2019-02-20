@@ -68,7 +68,7 @@ public:
     IntervalDomain& operator=(IntervalDomain&&) = default;
     virtual ~IntervalDomain() = default;
 
-    static bool classof (const Self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -111,7 +111,6 @@ public:
 
     Ptr toInterval(Variable x) const override { return this->get(x); }
 
-    void assign(Variable x, int n) override { this->set(x, std::make_shared<IntervalT>(n)); }
     void assign(Variable x, Variable y) override { this->set(x, this->get(y)); }
     void assign(Variable x, Ptr i) override { this->set(x, i); }
 

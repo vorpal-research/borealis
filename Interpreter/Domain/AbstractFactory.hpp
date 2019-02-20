@@ -5,8 +5,6 @@
 #ifndef BOREALIS_ABSTRACTFACTORY_HPP
 #define BOREALIS_ABSTRACTFACTORY_HPP
 
-#include <unordered_map>
-
 #include <llvm/ADT/APSInt.h>
 #include <llvm/IR/Value.h>
 
@@ -112,11 +110,11 @@ public:
     AbstractDomain::Ptr getInteger(Type::Ptr type, Kind kind) const;
     AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width) const;
 
-    AbstractDomain::Ptr getInt(Kind kind) const;
-    AbstractDomain::Ptr getInt(int n) const;
-
-    AbstractDomain::Ptr getLong(Kind kind) const;
-    AbstractDomain::Ptr getLong(long n) const;
+//    AbstractDomain::Ptr getInt(Kind kind) const;
+//    AbstractDomain::Ptr getInt(int n) const;
+//
+//    AbstractDomain::Ptr getLong(Kind kind) const;
+//    AbstractDomain::Ptr getLong(long n) const;
 
     AbstractDomain::Ptr getFloat(Kind kind) const;
     AbstractDomain::Ptr getFloat(double n) const;

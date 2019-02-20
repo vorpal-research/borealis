@@ -18,6 +18,22 @@
 namespace borealis {
 namespace absint {
 
+util::Adapter<AbstractFactory::UInt>* uintAdapter(size_t width) {
+    return util::Adapter<AbstractFactory::UInt>::get(width);
+}
+
+util::Adapter<AbstractFactory::SInt>* sintAdapter(size_t width) {
+    return util::Adapter<AbstractFactory::SInt>::get(width);
+}
+
+util::Adapter<Float>* floatAdapter() {
+    return util::Adapter<Float>::get();
+}
+
+util::Adapter<size_t>* sizetAdapter() {
+    return util::Adapter<size_t>::get();
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -95,30 +111,30 @@ AbstractDomain::Ptr AbstractFactory::allocate(Type::Ptr type) const {
 
 AbstractDomain::Ptr AbstractFactory::getBool(AbstractFactory::Kind kind) const {
     if (kind == TOP) {
-        return BoolT::top();
+        return BoolT::top(uintAdapter(1));
     } else if (kind == BOTTOM) {
-        return BoolT::bottom();
+        return BoolT::bottom(uintAdapter(1));
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
 AbstractDomain::Ptr AbstractFactory::getBool(bool value) const {
-    return BoolT::constant(BitInt<false>(1, (int) value));
+    return BoolT::constant(BitInt<false>(1, (int) value), uintAdapter(1));
 }
 
 AbstractDomain::Ptr AbstractFactory::getMachineInt(Kind kind) const {
     if (kind == TOP) {
-        return Interval<MachineInt>::top();
+        return Interval<MachineInt>::top(uintAdapter(defaultSize));
     } else if (kind == BOTTOM) {
-        return Interval<MachineInt>::bottom();
+        return Interval<MachineInt>::bottom(uintAdapter(defaultSize));
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
 AbstractDomain::Ptr AbstractFactory::getMachineInt(size_t value) const {
-    return Interval<MachineInt>::constant(BitInt<false>(defaultSize, value));
+    return Interval<MachineInt>::constant(BitInt<false>(defaultSize, value), uintAdapter(defaultSize));
 }
 
 AbstractDomain::Ptr AbstractFactory::getInteger(Type::Ptr type, AbstractFactory::Kind kind) const {
@@ -126,58 +142,58 @@ AbstractDomain::Ptr AbstractFactory::getInteger(Type::Ptr type, AbstractFactory:
     ASSERTC(integer);
 
     if (kind == TOP) {
-        return IntT::top();
+        return IntT::top(sintAdapter(integer->getBitsize()), uintAdapter(integer->getBitsize()));
     } else if (kind == BOTTOM) {
-        return IntT::bottom();
+        return IntT::bottom(sintAdapter(integer->getBitsize()), uintAdapter(integer->getBitsize()));
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
 AbstractDomain::Ptr AbstractFactory::getInteger(unsigned long long n, unsigned width) const {
-    return IntT::constant(BitInt<true>(width, n), BitInt<false>(width, n));
+    return IntT::constant(BitInt<true>(width, n), BitInt<false>(width, n), sintAdapter(width), uintAdapter(width));
 }
 
-AbstractDomain::Ptr AbstractFactory::getInt(AbstractFactory::Kind kind) const {
-    if (kind == TOP) {
-        return DoubleInterval<Int<32U, true>, Int<32U, false>>::top();
-    } else if (kind == BOTTOM) {
-        return DoubleInterval<Int<32U, true>, Int<32U, false>>::bottom();
-    } else {
-        UNREACHABLE("Unknown kind");
-    }
-}
-
-AbstractDomain::Ptr AbstractFactory::getInt(int n) const {
-    return DoubleInterval<Int<32U, true>, Int<32U, false>>::constant(n);
-}
-
-AbstractDomain::Ptr AbstractFactory::getLong(AbstractFactory::Kind kind) const {
-    if (kind == TOP) {
-        return DoubleInterval<Int<64U, true>, Int<64U, false>>::top();
-    } else if (kind == BOTTOM) {
-        return DoubleInterval<Int<64U, true>, Int<64U, false>>::bottom();
-    } else {
-        UNREACHABLE("Unknown kind");
-    }
-}
-
-AbstractDomain::Ptr AbstractFactory::getLong(long n) const {
-    return DoubleInterval<Int<64U, true>, Int<64U, false>>::constant(n);
-}
+//AbstractDomain::Ptr AbstractFactory::getInt(AbstractFactory::Kind kind) const {
+//    if (kind == TOP) {
+//        return DoubleInterval<Int<32U, true>, Int<32U, false>>::top();
+//    } else if (kind == BOTTOM) {
+//        return DoubleInterval<Int<32U, true>, Int<32U, false>>::bottom();
+//    } else {
+//        UNREACHABLE("Unknown kind");
+//    }
+//}
+//
+//AbstractDomain::Ptr AbstractFactory::getInt(int n) const {
+//    return DoubleInterval<Int<32U, true>, Int<32U, false>>::constant(n);
+//}
+//
+//AbstractDomain::Ptr AbstractFactory::getLong(AbstractFactory::Kind kind) const {
+//    if (kind == TOP) {
+//        return DoubleInterval<Int<64U, true>, Int<64U, false>>::top();
+//    } else if (kind == BOTTOM) {
+//        return DoubleInterval<Int<64U, true>, Int<64U, false>>::bottom();
+//    } else {
+//        UNREACHABLE("Unknown kind");
+//    }
+//}
+//
+//AbstractDomain::Ptr AbstractFactory::getLong(long n) const {
+//    return DoubleInterval<Int<64U, true>, Int<64U, false>>::constant(n);
+//}
 
 AbstractDomain::Ptr AbstractFactory::getFloat(AbstractFactory::Kind kind) const {
     if (kind == TOP) {
-        return FloatT::top();
+        return FloatT::top(floatAdapter());
     } else if (kind == BOTTOM) {
-        return FloatT::bottom();
+        return FloatT::bottom(floatAdapter());
     } else {
         UNREACHABLE("Unknown kind");
     }
 }
 
 AbstractDomain::Ptr AbstractFactory::getFloat(double n) const {
-    return FloatT::constant(n);
+    return FloatT::constant(n, floatAdapter());
 }
 
 AbstractDomain::Ptr AbstractFactory::getArray(Type::Ptr type, AbstractFactory::Kind kind) const {
@@ -417,7 +433,7 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
             return PointerT::top();
         case PTRTOI:
             domain->setTop();
-            return IntT::top();
+            return IntT::top(sintAdapter(integer->getBitsize()), uintAdapter(integer->getBitsize()));
         case BITCAST:
             return top(target);
     }
@@ -450,8 +466,8 @@ std::pair<Bound<size_t>, Bound<size_t>> AbstractFactory::unsignedBounds(Abstract
     auto lb = unsignedInterval->lb();
     auto ub = unsignedInterval->ub();
 
-    auto first = (lb.isFinite()) ? UBound((size_t) lb) : UBound(0);
-    auto second = (ub.isFinite()) ? UBound((size_t) lb) : UBound::plusInfinity();
+    auto first = (lb.isFinite()) ? UBound(sizetAdapter(), (size_t) lb) : UBound(sizetAdapter(), 0);
+    auto second = (ub.isFinite()) ? UBound(sizetAdapter(), (size_t) lb) : UBound::plusInfinity(sizetAdapter());
 
     return std::make_pair(first, second);
 }
