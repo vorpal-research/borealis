@@ -28,28 +28,26 @@ public:
     using CasterT = util::Adapter<Number>;
 
 private:
-    Bound(const CasterT* caster, bool isInfinite, int n) : caster_(caster), isInfinite_(isInfinite), value_((*caster_)(n)) {
-        this->normalize();
-    }
-
-    Bound(const CasterT* caster, bool isInfinite, Number n) : caster_(caster), isInfinite_(isInfinite), value_(std::move(n)) {
+    Bound(const CasterT* caster, bool isPInfinite, bool isNInfinite)
+        : caster_(caster), isPlusInfinity_(isPInfinite), isMinusInfinity_(isNInfinite), value_((*caster_)(0)) {
         this->normalize();
     }
 
     void normalize() {
-        if (this->isInfinite_) {
-            value_ = (sgeq(value_, (*caster_)(0))) ? (*caster_)(1) : (*caster_)(-1);
+        ASSERTC(not (isPlusInfinity_ && isMinusInfinity_))
+        if (isInfinite()) {
+            value_ = (*caster_)(0);
         }
     }
 
 public:
-    explicit Bound(const CasterT* caster) : caster_(caster), isInfinite_(false), value_(caster_->operator()(0)) {}
-    Bound(const CasterT* caster, int n) : caster_(caster), isInfinite_(false), value_(n) {}
-    Bound(const CasterT* caster, Number value) : caster_(caster), isInfinite_(false), value_(std::move(value)) {}
+    explicit Bound(const CasterT* caster) : Bound(caster, false, false) {}
+    Bound(const CasterT* caster, int n) : caster_(caster), isPlusInfinity_(false), isMinusInfinity_(false), value_((*caster_)(n)) {}
+    Bound(const CasterT* caster, Number value) : caster_(caster), isPlusInfinity_(false), isMinusInfinity_(false), value_(std::move(value)) {}
 
-    static Bound plusInfinity(const CasterT* caster) { return Bound(caster, true, 1); }
+    static Bound plusInfinity(const CasterT* caster) { return Bound(caster, true, false); }
 
-    static Bound minusInfinity(const CasterT* caster) { return Bound(caster, true, -1); }
+    static Bound minusInfinity(const CasterT* caster) { return Bound(caster, false, true); }
 
     Bound(const Bound&) = default;
     Bound(Bound&&) = default;
@@ -57,34 +55,36 @@ public:
     Bound& operator=(Bound&&) = default;
 
     Bound& operator=(int n) {
-        this->isInfinite_ = false;
+        this->isPlusInfinity_ = false;
+        this->isMinusInfinity_ = false;
         this->value_ = (*caster_)(n);
         return *this;
     }
 
     Bound& operator=(Number n) {
-        this->isInfinite_ = false;
+        this->isPlusInfinity_ = false;
+        this->isMinusInfinity_ = false;
         this->value_ = std::move(n);
         return *this;
     }
 
     const CasterT* caster() const { return caster_; }
 
-    bool isInfinite() const { return isInfinite_; }
+    bool isInfinite() const { return isPlusInfinity_ || isMinusInfinity_; }
 
     Number number() const { return value_; }
 
     bool isFinite() const { return not isInfinite(); }
 
-    bool isPlusInfinity() const { return isInfinite() and this->value_ == (*caster_)(1); }
+    bool isPlusInfinity() const { return isPlusInfinity_; }
 
-    bool isMinusInfinity() const { return isInfinite() and this->value_ == (*caster_)(-1); }
+    bool isMinusInfinity() const { return isMinusInfinity_; }
 
-    bool isZero() const { return this->value_ == caster_->operator()(0); }
+    bool isZero() const { return isFinite() && value_ == caster_->operator()(0); }
 
-    bool isPositive() const { return this->value_ > caster_->operator()(0); }
+    bool isPositive() const { return value_ > caster_->operator()(0) || isPlusInfinity_; }
 
-    bool isNegative() const { return this->value_ < caster_->operator()(0); }
+    bool isNegative() const { return value_ < caster_->operator()(0) || isMinusInfinity_; }
 
     explicit operator size_t() const {
         return ((size_t) number());
@@ -95,7 +95,11 @@ public:
         return *this;
     }
 
-    Bound operator-() const { return Bound(caster_, this->isInfinite_, -this->value_); }
+    Bound operator-() const {
+        if (isPlusInfinity()) return minusInfinity(caster_);
+        else if (isMinusInfinity()) return plusInfinity(caster_);
+        else return Bound(caster_, -value_);
+    }
 
     void operator+=(const Bound& other) {
         if (this->isFinite() && other.isFinite()) {
@@ -104,7 +108,7 @@ public:
             this->operator=(other);
         } else if (this->isInfinite() && other.isFinite()) {
             return;
-        } else if (this->value_ == other.value_) {
+        } else if (this->equals(other)) {
             return;
         } else {
             UNREACHABLE("undefined operation +oo + -oo");
@@ -115,10 +119,10 @@ public:
         if (this->isFinite() && other.isFinite()) {
             this->value_ -= other.value_;
         } else if (this->isFinite() && other.isInfinite()) {
-            this->operator=(Bound(caster(), true, -other.value_));
+            this->operator=(-other);
         } else if (this->isInfinite() && other.isFinite()) {
             return;
-        } else if (this->value_ != other.value_) {
+        } else if (not this->equals(other)) {
             return;
         } else {
             UNREACHABLE("undefined operation +oo - +oo");
@@ -126,14 +130,16 @@ public:
     }
 
     void operator*=(const Bound& other) {
-        if (this->isZero()) {
-            return;
-        } else if (other.isZero()) {
-            this->operator=(other);
-        } else {
+        if (this->isFinite() && other.isFinite()) {
             this->value_ *= other.value_;
-            this->isInfinite_ = (this->isInfinite_ || other.isInfinite_);
-            this->normalize();
+        } else if (this->isFinite() && other.isInfinite()) {
+            this->operator=(other);
+        } else if (this->isInfinite() && other.isFinite()) {
+            return;
+        } else if (this->equals(other)) {
+            return;
+        } else {
+            UNREACHABLE("undefined operation +oo * -oo");
         }
     }
 
@@ -151,52 +157,58 @@ public:
                 this->operator=(this->operator-());
             }
         } else {
-            this->isInfinite_ = true;
-            this->value_ *= other.value_;
-            this->normalize();
+            UNREACHABLE("undefined operation +oo / -oo");
         }
     }
 
     void operator%=(const Bound& other) {
-        if (this->isZero()) {
-            this->operator=(other);
-        } else if (other.isZero()) {
+        if (other.isZero()) {
             UNREACHABLE("division by zero");
-        } else {
+        } else if (this->isFinite() && other.isFinite()) {
             this->value_ %= other.value_;
-            this->isInfinite_ = (this->isInfinite_ || other.isInfinite_);
-            this->normalize();
+        } else if (this->isFinite() && other.isInfinite()) {
+            return;
+        } else if (this->isInfinite() && other.isFinite()) {
+            return;
+        } else {
+            UNREACHABLE("undefined operation +oo % -oo");
         }
     }
 
     bool leq(const Bound& other) const {
-        if (this->isInfinite_ xor other.isInfinite_) {
-            if (this->isInfinite_) {
-                return this->value_ == (*caster_)(-1);
-            } else {
-                return other.value_ == (*caster_)(1);
-            }
+        if (other.isPlusInfinity()) {
+            return true;
+        } else if (this->isPlusInfinity()) {
+            return other.isPlusInfinity();
+        } else if (other.isMinusInfinity()) {
+            return this->isMinusInfinity();
+        } else if (this->isMinusInfinity()) {
+            return true;
+        } else {
+            return this->value_ <= other.value_;
         }
-        return this->value_ <= other.value_;
     }
 
     bool geq(const Bound& other) const {
-        if (this->isInfinite_ xor other.isInfinite_) {
-            if (this->isInfinite_) {
-                return this->value_ == (*caster_)(1);
-            } else {
-                return other.value_ == (*caster_)(-1);
-            }
+        if (other.isPlusInfinity()) {
+            return this->isPlusInfinity();
+        } else if (this->isPlusInfinity()) {
+            return true;
+        } else if (other.isMinusInfinity()) {
+            return true;
+        } else if (this->isMinusInfinity()) {
+            return other.isMinusInfinity();
+        } else {
+            return this->value_ >= other.value_;
         }
-        return this->value_ >= other.value_;
     }
 
     bool equals(const Bound& other) const {
-        return this->isInfinite_ == other.isInfinite_ && this->value_ == other.value_;
+        return this->isPlusInfinity_ == other.isPlusInfinity_ && this->isMinusInfinity_ == other.isMinusInfinity_ && this->value_ == other.value_;
     }
 
     size_t hashCode() const {
-        return util::hash::defaultHasher()(isInfinite_, value_);
+        return util::hash::defaultHasher()(isPlusInfinity_, isMinusInfinity_, value_);
     }
 
     std::string toString() const {
@@ -214,7 +226,8 @@ public:
 private:
 
     const CasterT* caster_;
-    bool isInfinite_;
+    bool isPlusInfinity_;
+    bool isMinusInfinity_;
     Number value_;
 
 };
@@ -461,7 +474,6 @@ struct Adapter<size_t> {
 };
 
 } // namespace util
-
 } // namespace borealis
 
 namespace std {

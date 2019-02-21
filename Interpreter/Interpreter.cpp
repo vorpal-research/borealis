@@ -222,7 +222,6 @@ void Interpreter::visitAllocaInst(llvm::AllocaInst&) {
 }
 
 void Interpreter::visitLoadInst(llvm::LoadInst& i) {
-    errs() << util::toString(i) << endl;
     auto gepOper = llvm::dyn_cast<llvm::GEPOperator>(i.getPointerOperand());
 
     if (gepOper && not llvm::isa<llvm::GetElementPtrInst>(gepOper))
@@ -236,20 +235,32 @@ void Interpreter::visitStoreInst(llvm::StoreInst& i) {
 }
 
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
-    errs() << util::toString(i) << endl;
     gepOperator(llvm::cast<llvm::GEPOperator>(i));
 }
 
 void Interpreter::visitPHINode(llvm::PHINode& i) {
     AbstractDomain::Ptr result = module_.variableFactory()->bottom(i.getType());
 
-    for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
-        auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
-        if (predecessor->isVisited()) {
-            auto&& incoming = context_->state->get(i.getIncomingValue(j));
-            ASSERT(incoming, "Unknown value in phi");
+    if (not context_->state->get(&i)) {
+        for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
+            auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
+            if (predecessor->isVisited()) {
+                auto&& incoming = context_->state->get(i.getIncomingValue(j));
+                ASSERT(incoming, "Unknown value in phi");
 
-            result->joinWith(incoming);
+                result->joinWith(incoming);
+            }
+        }
+
+    } else {
+        for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
+            auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
+            if (predecessor->isVisited()) {
+                auto&& incoming = context_->state->get(i.getIncomingValue(j));
+                ASSERT(incoming, "Unknown value in phi");
+
+                result->widenWith(incoming);
+            }
         }
     }
 
@@ -291,8 +302,6 @@ void Interpreter::visitBinaryOperator(llvm::BinaryOperator& i) {
 }
 
 void Interpreter::visitCallInst(llvm::CallInst& i) {
-    errs() << util::toString(i) << endl;
-
     // inline assembler, just return TOP
     if (i.isInlineAsm()) {
         context_->state->assign(&i, module_.variableFactory()->top(i.getType()));

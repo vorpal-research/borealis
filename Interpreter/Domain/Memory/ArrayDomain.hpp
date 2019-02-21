@@ -134,17 +134,8 @@ public:
         elements_.clear();
     }
 
-    bool leq(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
-
-        if (this->isBottom()) {
-            return true;
-        } else if (other->isBottom()) {
-            return false;
-        } else {
-            return this->length_ < otherRaw->length_ and
-            util::equal_with_find(this->elements_, otherRaw->elements_, LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
-        }
+    bool leq(ConstPtr) const override {
+        UNREACHABLE("Unimplemented");
     }
 
     bool equals(ConstPtr other) const  override {
@@ -158,7 +149,7 @@ public:
             return false;
         } else {
 
-            if (this->length_ != otherRaw->length_) return false;
+            if (!this->length_->equals(otherRaw->length_)) return false;
 
             for (auto&& it : this->elements_) {
                 auto&& opt = util::at(otherRaw->elements_, (size_t) it.first);

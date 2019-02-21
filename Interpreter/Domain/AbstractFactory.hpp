@@ -139,7 +139,8 @@ public:
     AbstractDomain::Ptr makeNullLocation() const;
     AbstractDomain::Ptr makeFunctionLocation(AbstractDomain::Ptr base) const;
     AbstractDomain::Ptr makeArrayLocation(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
-    AbstractDomain::Ptr makeStructLocation(AbstractDomain::Ptr base, const std::unordered_set<AbstractDomain::Ptr>& offsets) const;
+    AbstractDomain::Ptr makeStructLocation(AbstractDomain::Ptr base,
+            const std::unordered_set<AbstractDomain::Ptr, AbstrachDomainHash, AbstractDomainEquals>& offsets) const;
 
     AbstractDomain::Ptr cast(CastOperator op, Type::Ptr target, AbstractDomain::Ptr domain) const;
 

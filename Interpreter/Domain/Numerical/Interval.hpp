@@ -142,7 +142,8 @@ public:
         auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
         ASSERTC(otherRaw);
 
-        return this->ub_ <= otherRaw->lb_ || otherRaw->ub_ <= this->lb_;
+        return (this->lb_ <= otherRaw->lb_ && otherRaw->lb_ <= this->ub_) ||
+                (otherRaw->lb_ <= this->lb_ && this->lb_ <= otherRaw->ub_);
     }
 
     bool isZero() const { return isConstant(0); }
@@ -428,21 +429,21 @@ Interval<Number> operator/(const Interval<Number>& lhv, const Interval<Number>& 
     if (lhv.isBottom() || rhv.isBottom()) {
         return IntervalT::getBottom(lhv.caster());
     } else {
-        if (rhv.contains(0)) {
-            auto l = IntervalT(rhv.lb(), BoundT(lhv.caster(), -1));
-            auto r = IntervalT(BoundT(lhv.caster(), 1), rhv.ub());
-            return *llvm::cast<IntervalT>((lhv / l).join(std::make_shared<IntervalT>(lhv / r)));
-        } else if (lhv.contains(0)) {
-            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
-            auto r = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
-            return unwrapInterval<Number>((l / rhv).join(std::make_shared<IntervalT>(r / rhv))->join(IntervalT::constant(0, lhv.caster())));
-        } else {
+//        if (rhv.contains(0)) {
+//            auto l = IntervalT(rhv.lb(), BoundT(lhv.caster(), -1));
+//            auto r = IntervalT(BoundT(lhv.caster(), 1), rhv.ub());
+//            return *llvm::cast<IntervalT>((lhv / l).join(std::make_shared<IntervalT>(lhv / r)));
+//        } else if (lhv.contains(0)) {
+//            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
+//            auto r = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
+//            return unwrapInterval<Number>((l / rhv).join(std::make_shared<IntervalT>(r / rhv))->join(IntervalT::constant(0, lhv.caster())));
+//        } else {
             auto ll = lhv.lb() / rhv.lb();
             auto ul = lhv.ub() / rhv.lb();
             auto lu = lhv.lb() / rhv.ub();
             auto uu = lhv.ub() / rhv.ub();
             return IntervalT(util::min(ll, ul, lu, uu), util::max(ll, ul, lu, uu));
-        }
+//        }
     }
 }
 

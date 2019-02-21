@@ -101,8 +101,14 @@ public:
         } else if (otherRaw->isBottom()) {
             return false;
         } else {
-            return util::equal_with_find(this->values_, otherRaw->values_,
-                    LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
+            for (auto&& it : this->values_) {
+                auto&& otherIt = otherRaw->values_.find(it.first);
+                if (otherIt == otherRaw->values_.end()) return false;
+                else if (not it.second->equals((*otherIt).second)) return false;
+            }
+            return true;
+//            return util::equal_with_find(this->values_, otherRaw->values_,
+//                    LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
         }
     }
 
@@ -114,8 +120,16 @@ public:
         } else if (otherRaw->isBottom()) {
             return false;
         } else {
-            return util::equal_with_find(this->values_, otherRaw->values_,
-                                         LAM(a, a.first), LAM2(a, b, a.second->equals(b.second)));
+            if (this->values_.size() != otherRaw->values_.size()) return false;
+
+            for (auto&& it : this->values_) {
+                auto&& otherIt = otherRaw->values_.find(it.first);
+                if (otherIt == otherRaw->values_.end()) return false;
+                else if (not it.second->equals((*otherIt).second)) return false;
+            }
+            return true;
+//            return util::equal_with_find(this->values_, otherRaw->values_,
+//                                         LAM(a, a.first), LAM2(a, b, a.second->equals(b.second)));
         }
     }
 
@@ -190,26 +204,26 @@ public:
 
     typename Inner::Ptr get(Variable x,
             const std::function<typename Inner::Ptr()>& getBottom,
-            const std::function<typename Inner::Ptr()>& getTop) const {
+            const std::function<typename Inner::Ptr()>&) const {
         if (this->isBottom()) {
             return getBottom();
         } else {
             auto&& opt = util::at(this->values_, x);
-            if (opt.empty()) return getTop();
+            if (opt.empty()) return nullptr;//getTop();
             else return opt.getUnsafe();
         }
     }
 
     void set(Variable x, typename Inner::Ptr value) {
-        if (this->isBottom()) {
-            return;
-        } else if (value->isBottom()) {
-            this->setBottom();
-        } else if (value->isTop()) {
-            this->values_.erase(x);
-        } else {
+//        if (this->isBottom()) {
+//            return;
+//        } else if (value->isBottom()) {
+//            this->setBottom();
+//        } else if (value->isTop()) {
+//            this->values_.erase(x);
+//        } else {
             this->values_[x] = value;
-        }
+//        }
     }
 
     void forget(Variable x) {
@@ -224,7 +238,14 @@ public:
     }
 
     std::string toString() const override {
-        return "";
+        std::stringstream ss;
+        ss << "{" << std::endl;
+        if (this->isBottom()) ss << " BOTTOM ";
+        for (auto&& it : values_) {
+            ss << util::toString(*it.first) << " = " << it.second->toString() << std::endl;
+        }
+        ss << "}";
+        return ss.str();
     }
 
 };

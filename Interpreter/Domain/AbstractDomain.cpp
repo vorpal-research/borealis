@@ -33,6 +33,16 @@ AbstractDomain::Ptr AbstractDomain::gep(Type::Ptr, const std::vector<AbstractDom
     UNREACHABLE("Unsupported operation");
 }
 
+std::ostream& operator<<(std::ostream& s, AbstractDomain::Ptr domain) {
+    s << domain->toString();
+    return s;
+}
+
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, AbstractDomain::Ptr domain) {
+    s << domain->toString();
+    return s;
+}
+
 } // namespace absint
 } // namespace borealis
 

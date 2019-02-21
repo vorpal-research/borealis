@@ -26,8 +26,9 @@ public:
 
     using Ptr = AbstractDomain::Ptr;
     using IntervalT = Interval<MachineInt>;
+    using OffsetSet = std::unordered_set<Ptr, AbstrachDomainHash, AbstractDomainEquals>;
 
-    virtual std::unordered_set<Ptr> offsets() const = 0;
+    virtual OffsetSet offsets() const = 0;
 
     virtual bool isNull() const { return false; }
 };
@@ -41,6 +42,7 @@ public:
 
     using Self = FunctionLocation<MachineInt, FunctionT>;
     using IntervalT = Interval<MachineInt>;
+    using OffsetSet = typename MemoryLocation<MachineInt>::OffsetSet;
 
 private:
 
@@ -87,7 +89,7 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    std::unordered_set<Ptr> offsets() const override {
+    OffsetSet offsets() const override {
         return {};
     }
 
@@ -110,7 +112,7 @@ public:
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
         if (not otherRaw) return false;
 
-        return this->base_ == otherRaw->base_;
+        return this->base_->equals(otherRaw->base_);
     }
 
     void joinWith(ConstPtr other) override {
@@ -164,6 +166,7 @@ public:
 
     using Self = NullLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
+    using OffsetSet = typename MemoryLocation<MachineInt>::OffsetSet;
 
 private:
 
@@ -210,7 +213,7 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    std::unordered_set<Ptr> offsets() const override {
+    OffsetSet offsets() const override {
         return {};
     }
 
@@ -283,6 +286,7 @@ public:
     using Self = ArrayLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using PointerT = PointerDomain<MachineInt>;
+    using OffsetSet = typename MemoryLocation<MachineInt>::OffsetSet;
 
 private:
 
@@ -331,7 +335,7 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    std::unordered_set<Ptr> offsets() const override {
+    OffsetSet offsets() const override {
         return { this->offset_ };
     }
 
@@ -354,13 +358,13 @@ public:
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
         if (not otherRaw) return false;
 
-        return this->base_ == otherRaw->base_;
+        return this->base_->equals(otherRaw->base_);
     }
 
     void joinWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->base_ == otherRaw->base_);
+        ASSERTC(this->base_->equals(otherRaw->base_));
         this->offset_->joinWith(otherRaw->offset_);
     }
 
@@ -373,7 +377,7 @@ public:
     void meetWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->base_ == otherRaw->base_);
+        ASSERTC(this->base_->equals(otherRaw->base_));
         this->offset_->meetWith(otherRaw->offset_);
     }
 
@@ -428,12 +432,12 @@ public:
 
     using Self = StructLocation<MachineInt>;
     using IntervalT = Interval<MachineInt>;
-    using Offsets = std::unordered_set<Ptr>;
+    using OffsetSet = typename MemoryLocation<MachineInt>::OffsetSet;
 
 private:
 
     Ptr base_;
-    Offsets offsets_;
+    OffsetSet offsets_;
     AbstractFactory* factory_;
 
 private:
@@ -459,7 +463,7 @@ public:
         ASSERT(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
     }
 
-    StructLocation(Ptr base, Offsets offsets)
+    StructLocation(Ptr base, OffsetSet offsets)
             : MemoryLocation<MachineInt>(class_tag(*this)), base_(base), offsets_(offsets), factory_(AbstractFactory::get()) {
         ASSERT(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
     }
@@ -482,7 +486,7 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
-    Offsets offsets() const override {
+    OffsetSet offsets() const override {
         return this->offsets_;
     }
 
@@ -505,13 +509,13 @@ public:
         auto* otherRaw = llvm::dyn_cast<StructLocation>(other.get());
         if (not otherRaw) return false;
 
-        return this->base_ == otherRaw->base_;
+        return this->base_->equals(otherRaw->base_);
     }
 
     void joinWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->base_ == otherRaw->base_);
+        ASSERTC(this->base_->equals(otherRaw->base_));
         for (auto&& offset : otherRaw->offsets_) {
             this->offsets_.insert(offset);
         }
@@ -526,7 +530,7 @@ public:
     void meetWith(ConstPtr other) override {
         auto* otherRaw = unwrap(other);
 
-        ASSERTC(this->base_ == otherRaw->base_);
+        ASSERTC(this->base_->equals(otherRaw->base_));
         for (auto&& offset : otherRaw->offsets_) {
             this->offsets_.insert(offset);
         }

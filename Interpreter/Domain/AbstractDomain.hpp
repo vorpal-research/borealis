@@ -142,6 +142,21 @@ inline AbstractDomain::Ptr operator^(AbstractDomain::ConstPtr lhv, AbstractDomai
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+std::ostream& operator<<(std::ostream& s, AbstractDomain::Ptr domain);
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, AbstractDomain::Ptr domain);
+
+struct AbstrachDomainHash {
+    size_t operator()(AbstractDomain::Ptr d) const noexcept {
+        return d->hashCode();
+    }
+};
+
+struct AbstractDomainEquals {
+    bool operator()(AbstractDomain::Ptr lhv, AbstractDomain::Ptr rhv) const noexcept {
+        return lhv->equals(rhv);
+    }
+};
+
 } // namespace absint
 } // namespace borealis
 

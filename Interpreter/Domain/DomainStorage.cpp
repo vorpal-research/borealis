@@ -68,7 +68,7 @@ public:
             return local;
 
         }
-        UNREACHABLE("Trying to create domain for unknown value type");
+        return nullptr;
     }
 };
 
@@ -321,6 +321,18 @@ void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable 
         auto&& ptrType = tf->getPointer(arrayType, 0);
         assign(x, vf_->af()->allocate(ptrType));
     }
+}
+
+size_t DomainStorage::hashCode() const {
+    return util::hash::defaultHasher()(ints_, floats_, memory_);
+}
+
+std::string DomainStorage::toString() const {
+    std::stringstream ss;
+    ss << "Ints:" << std::endl << ints_->toString() << std::endl;
+    ss << "Floats:" << std::endl << floats_->toString() << std::endl;
+    ss << "Memory:" << std::endl << memory_->toString() << std::endl;
+    return ss.str();
 }
 
 } // namespace absint

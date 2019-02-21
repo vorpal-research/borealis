@@ -331,7 +331,7 @@ AbstractDomain::Ptr AbstractFactory::makeArrayLocation(AbstractDomain::Ptr base,
 }
 
 AbstractDomain::Ptr AbstractFactory::makeStructLocation(AbstractDomain::Ptr base,
-                                                        const std::unordered_set<AbstractDomain::Ptr>& offsets) const {
+                                                        const StructLocationT::OffsetSet& offsets) const {
     return std::make_shared<StructLocationT>(base, offsets);
 }
 

@@ -219,7 +219,7 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
         auto i = 0U;
         for (auto&& it : f.getInstance()->args()) {
             if (arguments[i]) {
-                s << endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i];
+                s << endl << f.getSlotTracker().getLocalName(&it) << " = " << arguments[i]->toString();
             }
             ++i;
             s.flush();

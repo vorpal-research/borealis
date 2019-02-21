@@ -72,7 +72,7 @@ bool State::empty() const {
 }
 
 std::string State::toString() const {
-    return "";
+    return storage_->toString();
 }
 
 bool operator==(const State& lhv, const State& rhv) {

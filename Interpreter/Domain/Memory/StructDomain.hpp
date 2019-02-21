@@ -153,7 +153,7 @@ public:
             if (this->size() != otherRaw->size()) return false;
 
             for (auto i = 0U; i < this->size(); ++i) {
-                if (this->elements_[i] != otherRaw->elements_[i]) {
+                if (!this->elements_[i]->equals(otherRaw->elements_[i])) {
                     return false;
                 }
             }

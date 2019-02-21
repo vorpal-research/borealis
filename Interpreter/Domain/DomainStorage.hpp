@@ -82,6 +82,9 @@ public:
     /// x = allocate<decltype(x)>(size);
     void allocate(Variable x, Variable size);
 
+    size_t hashCode() const;
+    std::string toString() const;
+
 private:
 
     VariableFactory* vf_;

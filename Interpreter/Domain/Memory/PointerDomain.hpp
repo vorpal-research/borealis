@@ -5,7 +5,6 @@
 #ifndef BOREALIS_POINTER_HPP
 #define BOREALIS_POINTER_HPP
 
-#include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/Domain/AbstractFactory.hpp"
 #include "MemoryLocation.hpp"
 #include "Type/TypeUtils.h"
@@ -23,7 +22,7 @@ public:
     using Self = PointerDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using MemoryLocationT = MemoryLocation<MachineInt>;
-    using PointsToSet = std::unordered_set<Ptr>;
+    using PointsToSet = std::unordered_set<Ptr, AbstrachDomainHash, AbstractDomainEquals>;
 
 private:
 
@@ -143,8 +142,18 @@ public:
                 auto* thisLoc = unwrapLocation(its.operator*());
                 auto* otherLoc = unwrapLocation(it);
 
-                if (not util::equal_with_find(otherLoc->offsets(), thisLoc->offsets(), LAM(a, a), LAM2(a, b, a->equals(b))))
-                    return false;
+                auto&& thisOffsets = thisLoc->offsets();
+                auto&& otherOffsets = otherLoc->offsets();
+
+                if (thisOffsets.size() != otherOffsets.size()) return false;
+                for (auto&& it : thisOffsets) {
+                    auto&& otherIt = otherOffsets.find(it);
+                    if (otherIt == otherOffsets.end()) return false;
+                    else if (not it->equals(*otherIt)) return false;
+                }
+
+//                if (not util::equal_with_find(otherLoc->offsets(), thisLoc->offsets(), LAM(a, a), LAM2(a, b, a->equals(b))))
+//                    return false;
             }
             return true;
         }
@@ -163,14 +172,25 @@ public:
             this->setTop();
         } else {
 
+            errs() << "Join " << endl;
+            errs() << toString() << endl;
+            errs() << " with " << endl;
+            errs() << other->toString() << endl;
             for (auto&& it : otherRaw->ptsTo_) {
                 auto&& its = this->ptsTo_.find(it);
                 if (its == this->ptsTo_.end()) {
+                    errs() << "not found, inserting new" << endl;
+                    auto&& thisF = util::head(this->ptsTo_);
+                    auto&& otherF = util::head(otherRaw->ptsTo_);
+                    errs() << "Eq: " << thisF->equals(otherF) << endl;
                     this->ptsTo_.insert(it);
                 } else {
                     (*its)->joinWith(it);
                 }
             }
+            errs() << "Result: " << endl;
+            errs() << toString() << endl;
+            errs() << endl;
         }
     }
 

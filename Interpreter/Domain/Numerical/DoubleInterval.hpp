@@ -179,7 +179,7 @@ public:
         } else if (other->isBottom()) {
             return false;
         } else {
-            return this->first_ == otherRaw->first_ && this->second_ == otherRaw->second_;
+            return this->first_->equals(otherRaw->first_) && this->second_->equals(otherRaw->second_);
         }
     }
 
