@@ -62,7 +62,9 @@ const Function::BlockMap& Function::getBasicBlocks() const {
 
 AbstractDomain::Ptr Function::getReturnValue() const {
     auto* retval = llvm::dyn_cast<llvm::ReturnInst>(&instance_->back().back());
-    return (retval != nullptr) ? outputState_->get(retval) : nullptr;
+    return (retval != nullptr) ?
+           (retval->getReturnValue() != nullptr) ? outputState_->get(retval->getReturnValue()) : nullptr
+           : nullptr;
 }
 
 BasicBlock* Function::getEntryNode() const {

@@ -91,6 +91,14 @@ public:
         return std::make_shared<Self>(*this);
     }
 
+    static bool classof(const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
     static Ptr top(const Types& types) { return std::make_shared<StructDomain>(TopTag{}, types); }
     static Ptr bottom(const Types& types) { return std::make_shared<StructDomain>(BottomTag{}, types); }
     static Ptr constant(const Types& types, const Elements& elements) { return std::make_shared<StructDomain>(types, elements); }

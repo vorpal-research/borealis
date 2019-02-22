@@ -151,7 +151,7 @@ public:
     std::string toString() const override { return this->base_->toString(); }
 
     Ptr load(Type::Ptr, Ptr) const override {
-        auto* baseRaw = llvm::dyn_cast<ArrayDomain<MachineInt>>(base_.get());
+        auto* baseRaw = llvm::dyn_cast<FunctionT>(base_.get());
         ASSERTC(baseRaw);
         return this->base_;
     }

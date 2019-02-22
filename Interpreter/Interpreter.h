@@ -90,6 +90,7 @@ private:
 
     Context* context_;  // active context
     std::stack<Context> stack_; // stack of contexts of interpreter
+    std::unordered_set<Function::Ptr, FunctionHash, FunctionEquals> callStack_;
 };
 
 }   /* namespace ir */

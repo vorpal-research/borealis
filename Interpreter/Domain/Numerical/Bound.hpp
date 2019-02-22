@@ -111,7 +111,8 @@ public:
         } else if (this->equals(other)) {
             return;
         } else {
-            UNREACHABLE("undefined operation +oo + -oo");
+            return;
+            //UNREACHABLE("undefined operation +oo + -oo");
         }
     }
 
@@ -125,7 +126,8 @@ public:
         } else if (not this->equals(other)) {
             return;
         } else {
-            UNREACHABLE("undefined operation +oo - +oo");
+            return;
+//            UNREACHABLE("undefined operation +oo - +oo");
         }
     }
 
@@ -139,7 +141,8 @@ public:
         } else if (this->equals(other)) {
             return;
         } else {
-            UNREACHABLE("undefined operation +oo * -oo");
+            return;
+//            UNREACHABLE("undefined operation +oo * -oo");
         }
     }
 
@@ -157,7 +160,8 @@ public:
                 this->operator=(this->operator-());
             }
         } else {
-            UNREACHABLE("undefined operation +oo / -oo");
+            return;
+//            UNREACHABLE("undefined operation +oo / -oo");
         }
     }
 
@@ -171,7 +175,8 @@ public:
         } else if (this->isInfinite() && other.isFinite()) {
             return;
         } else {
-            UNREACHABLE("undefined operation +oo % -oo");
+            return;
+//            UNREACHABLE("undefined operation +oo % -oo");
         }
     }
 

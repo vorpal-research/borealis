@@ -37,8 +37,9 @@ private:
 
 protected:
 
-    NumericalDomainT* unwrapFloat() const;
+    NumericalDomainT* unwrapBool() const;
     NumericalDomainT* unwrapInt() const;
+    NumericalDomainT* unwrapFloat() const;
     MemoryDomainT* unwrapMemory() const;
 
 public:
@@ -88,6 +89,7 @@ public:
 private:
 
     VariableFactory* vf_;
+    AbstractDomain::Ptr bools_;
     AbstractDomain::Ptr ints_;
     AbstractDomain::Ptr floats_;
     AbstractDomain::Ptr memory_;

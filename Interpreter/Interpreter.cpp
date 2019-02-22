@@ -70,6 +70,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Ab
     auto updGlobals = function->updateGlobals(module_.globalsFor(function));
     if (not (updArgs || updGlobals)) return;
     stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
+    callStack_.insert(function);
     context_ = &stack_.top();
 
     while (not context_->deque.empty()) {
@@ -89,6 +90,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Ab
     }
     // restore old context
     stack_.pop();
+    callStack_.erase(function);
     context_ = stack_.empty() ?
                nullptr :
                &stack_.top();
@@ -396,6 +398,8 @@ AbstractDomain::Ptr Interpreter::handleFunctionCall(
         return handleDeclaration(function, result, args);
     } else {
         auto func = module_.get(function);
+        if (callStack_.count(func))
+            return module_.variableFactory()->top(func->getInstance()->getReturnType());
         interpretFunction(func, util::viewContainer(args).map(LAM(a, a.second)).toVector());
         return func->getReturnValue();
     }

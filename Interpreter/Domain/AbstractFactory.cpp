@@ -120,7 +120,7 @@ AbstractDomain::Ptr AbstractFactory::getBool(AbstractFactory::Kind kind) const {
 }
 
 AbstractDomain::Ptr AbstractFactory::getBool(bool value) const {
-    return BoolT::constant(BitInt<false>(1, (int) value), uintAdapter(1));
+    return BoolT::constant(UInt(1, (int) value), uintAdapter(1));
 }
 
 AbstractDomain::Ptr AbstractFactory::getMachineInt(Kind kind) const {
@@ -373,12 +373,27 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                 return std::make_shared<SInt>(util::convert<SInt>()(*sint, integer->getBitsize()));
             } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
                 ASSERTC(integer);
-                return std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
+                // if we are trying to extend boolean, we need to return IntT
+                if (uint->lb().caster()->width() == 1) {
+                    if (uint->isTop())
+                        return getInteger(target, TOP);
+                    else if (uint->isBottom())
+                        return getInteger(target, BOTTOM);
+                    else
+                        return getInteger((size_t) uint->asConstant(), integer->getBitsize());
+                } else {
+                    return std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
+                }
             } else if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
                 ASSERTC(integer);
                 auto&& first = cast(op, target, dint->first());
                 auto&& second = cast(op, target, dint->second());
-                return std::make_shared<IntT>(first, second);
+                // if we are trying to trunc integer to boolean, we just need to return uint part
+                if (integer->getBitsize() == 1) {
+                    return second;
+                } else {
+                    return std::make_shared<IntT>(first, second);
+                }
             } else if (llvm::isa<FloatT>(domain.get())) {
                 warns() << "Trying to cast float types, not supported" << endl;
                 return domain->clone();
@@ -392,7 +407,8 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                 return std::make_shared<SInt>(util::convert<SInt>()(*sint, integer->getBitsize()));
             } else if (llvm::isa<UInt>(domain.get())) {
                 auto* signd = llvm::cast<SInt>(cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Signed), domain).get());
-                return std::make_shared<SInt>(util::convert<SInt>()(*signd, integer->getBitsize()));
+                auto&& sres = std::make_shared<SInt>(util::convert<SInt>()(*signd, integer->getBitsize()));
+                return cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Unsigned), sres);
             } else if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
                 auto&& first = cast(op, target, dint->first());
                 auto&& second = cast(op, target, dint->second());

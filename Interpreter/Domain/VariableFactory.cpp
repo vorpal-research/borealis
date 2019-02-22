@@ -20,9 +20,7 @@ VariableFactory::VariableFactory(const llvm::DataLayout* dl, GlobalManager* gm) 
         af_(AbstractFactory::get()), dl_(dl), gm_(gm) {}
 
 Type::Ptr VariableFactory::cast(const llvm::Type* type) const {
-    auto res = af_->tf()->cast(type, dl_);
-    if (llvm::isa<type::Bool>(res)) return af_->tf()->getInteger(1);
-    else return res;
+    return af_->tf()->cast(type, dl_);
 }
 
 TypeFactory::Ptr VariableFactory::tf() const {
@@ -65,7 +63,8 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Value* val) const {
 AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
     // Integer
     if (auto intConstant = llvm::dyn_cast<llvm::ConstantInt>(constant)) {
-        return af_->getInteger(*intConstant->getValue().getRawData(), intConstant->getBitWidth());
+        return intConstant->getBitWidth() == 1 ? af_->getBool((bool) *intConstant->getValue().getRawData())
+                                               : af_->getInteger(*intConstant->getValue().getRawData(), intConstant->getBitWidth());
         // Float
     } else if (auto floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
         return af_->getFloat(floatConstant->getValueAPF().convertToDouble());
@@ -143,6 +142,10 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::GlobalVariable* global) con
         }
         ASSERT(content, "Unsupported constant");
 
+        if (global->getInitializer()->getType()->isPointerTy()) {
+            auto&& newArray = af_->tf()->getArray(cast(global->getInitializer()->getType()), 1);
+            content = af_->getArray(newArray, { content });
+        }
         auto ptr = af_->getPointer(ptrType, content, af_->getMachineInt(0));
 
         // we need this because GEPs for global structs and arrays contain one additional index at the start

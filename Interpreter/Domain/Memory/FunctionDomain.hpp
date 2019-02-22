@@ -51,10 +51,10 @@ private:
 
 public:
 
-    explicit FunctionDomain(TopTag, Type::Ptr type) :
+    FunctionDomain(TopTag, Type::Ptr type) :
             AbstractDomain(class_tag(*this)), isBottom_(false), prototype_(type), factory_(AbstractFactory::get()) {}
 
-    explicit FunctionDomain(BottomTag, Type::Ptr type) :
+    FunctionDomain(BottomTag, Type::Ptr type) :
             AbstractDomain(class_tag(*this)), isBottom_(true), prototype_(type), factory_(AbstractFactory::get()) {}
 
     explicit FunctionDomain(Type::Ptr type) : FunctionDomain(TopTag{}, type) {}

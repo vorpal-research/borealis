@@ -123,22 +123,28 @@ public:
             return local;
 
         }
-        UNREACHABLE("Trying to create domain for unknown value type");
+        return nullptr;
     }
 };
 
 } // namespace impl_
 
-DomainStorage::NumericalDomainT* DomainStorage::unwrapFloat() const {
-    auto* floats = llvm::dyn_cast<NumericalDomainT>(floats_.get());
-    ASSERTC(floats);
-    return floats;
+DomainStorage::NumericalDomainT* DomainStorage::unwrapBool() const {
+    auto* bools = llvm::dyn_cast<NumericalDomainT>(bools_.get());
+    ASSERTC(bools);
+    return bools;
 }
 
 DomainStorage::NumericalDomainT* DomainStorage::unwrapInt() const {
     auto* ints = llvm::dyn_cast<NumericalDomainT>(ints_.get());
     ASSERTC(ints);
     return ints;
+}
+
+DomainStorage::NumericalDomainT* DomainStorage::unwrapFloat() const {
+    auto* floats = llvm::dyn_cast<NumericalDomainT>(floats_.get());
+    ASSERTC(floats);
+    return floats;
 }
 
 DomainStorage::MemoryDomainT* DomainStorage::unwrapMemory() const {
@@ -150,6 +156,7 @@ DomainStorage::MemoryDomainT* DomainStorage::unwrapMemory() const {
 DomainStorage::DomainStorage(VariableFactory* vf) :
         ObjectLevelLogging("domain"),
         vf_(vf),
+        bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_)),
         ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_)),
         floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_)),
         memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_)) {}
@@ -159,10 +166,14 @@ DomainStorage::Ptr DomainStorage::clone() const {
 }
 
 bool DomainStorage::equals(DomainStorage::Ptr other) const {
-    return this->ints_->equals(other->ints_) && this->floats_->equals(other->floats_) && this->memory_->equals(other->memory_);
+    return this->bools_->equals(other->bools_) &&
+            this->ints_->equals(other->ints_) &&
+            this->floats_->equals(other->floats_) &&
+            this->memory_->equals(other->memory_);
 }
 
 void DomainStorage::joinWith(DomainStorage::Ptr other) {
+    this->bools_->joinWith(other->bools_);
     this->ints_->joinWith(other->ints_);
     this->floats_->joinWith(other->floats_);
     this->memory_->joinWith(other->memory_);
@@ -175,14 +186,17 @@ DomainStorage::Ptr DomainStorage::join(DomainStorage::Ptr other) {
 }
 
 bool DomainStorage::empty() const {
-    return ints_->isBottom() && floats_->isBottom() && memory_->isBottom();
+    return bools_->isBottom() && ints_->isBottom() && floats_->isBottom() && memory_->isBottom();
 }
 
 AbstractDomain::Ptr DomainStorage::get(Variable x) const {
     auto&& type = vf_->cast(x->getType());
 
-    if (llvm::isa<type::Integer>(type.get()))
-        return unwrapInt()->get(x);
+    if (llvm::isa<type::Bool>(type.get()))
+        return unwrapBool()->get(x);
+    else if (auto* integer = llvm::dyn_cast<type::Integer>(type.get()))
+        if (integer->getBitsize() == 1) return unwrapBool()->get(x);
+        else return unwrapInt()->get(x);
     else if (llvm::isa<type::Float>(type.get()))
         return unwrapFloat()->get(x);
     else if (llvm::isa<type::Pointer>(type.get()))
@@ -200,8 +214,11 @@ void DomainStorage::assign(Variable x, Variable y) const {
 void DomainStorage::assign(Variable x, AbstractDomain::Ptr domain) const {
     auto&& type = vf_->cast(x->getType());
 
-    if (llvm::isa<type::Integer>(type.get()))
-        unwrapInt()->assign(x, domain);
+    if (llvm::isa<type::Bool>(type.get()))
+        unwrapBool()->assign(x, domain);
+    else if (auto* integer = llvm::dyn_cast<type::Integer>(type.get()))
+        if (integer->getBitsize() == 1) unwrapBool()->assign(x, domain);
+        else unwrapInt()->assign(x, domain);
     else if (llvm::isa<type::Float>(type.get()))
         unwrapFloat()->assign(x, domain);
     else if (llvm::isa<type::Pointer>(type.get()))
@@ -232,8 +249,14 @@ void DomainStorage::apply(llvm::BinaryOperator::BinaryOps op, Variable x, Variab
         case ops::URem:
         case ops::SDiv:
         case ops::SRem: {
-            auto* ints = unwrapInt();
-            ints->applyTo(aop, x, y, z);
+            if (y->getType()->getIntegerBitWidth() == 1) {
+                auto* bools = unwrapBool();
+                bools->applyTo(aop, x, y, z);
+
+            } else {
+                auto* ints = unwrapInt();
+                ints->applyTo(aop, x, y, z);
+            }
             break;
         }
 
@@ -258,7 +281,7 @@ void DomainStorage::apply(llvm::CmpInst::Predicate op, Variable x, Variable y, V
     typedef llvm::ConditionType CT;
 
     auto cop = llvm::conditionType(op);
-    auto* ints = unwrapInt();
+    auto* bools = unwrapBool();
 
     AbstractDomain::Ptr xd;
     if (P::FIRST_ICMP_PREDICATE <= op && op <= P::LAST_ICMP_PREDICATE) {
@@ -267,17 +290,21 @@ void DomainStorage::apply(llvm::CmpInst::Predicate op, Variable x, Variable y, V
 
             xd = memory->applyTo(cop, y, z);
         } else {
+            auto* ints = unwrapInt();
+
             xd = ints->applyTo(cop, y, z);
         }
 
     } else if (P::FIRST_FCMP_PREDICATE <= op && op <= P::LAST_FCMP_PREDICATE) {
-        xd = ints->applyTo(cop, y, z);
+        auto* floats = unwrapFloat();
+
+        xd = floats->applyTo(cop, y, z);
 
     } else {
         UNREACHABLE("Unreachable!");
     }
 
-    ints->assign(x, xd);
+    bools->assign(x, xd);
 }
 
 void DomainStorage::apply(CastOperator op, Variable x, Variable y) {
@@ -324,11 +351,12 @@ void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable 
 }
 
 size_t DomainStorage::hashCode() const {
-    return util::hash::defaultHasher()(ints_, floats_, memory_);
+    return util::hash::defaultHasher()(bools_, ints_, floats_, memory_);
 }
 
 std::string DomainStorage::toString() const {
     std::stringstream ss;
+    ss << "Bools:" << std::endl << bools_->toString() << std::endl;
     ss << "Ints:" << std::endl << ints_->toString() << std::endl;
     ss << "Floats:" << std::endl << floats_->toString() << std::endl;
     ss << "Memory:" << std::endl << memory_->toString() << std::endl;
