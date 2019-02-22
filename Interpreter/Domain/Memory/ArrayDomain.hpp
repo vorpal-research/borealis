@@ -52,10 +52,6 @@ private:
         return otherRaw;
     }
 
-    Bound<size_t> length() const {
-        return factory_->unsignedBounds(length_).second;
-    }
-
 public:
     struct TopTag {};
     struct BottomTag {};
@@ -117,6 +113,14 @@ public:
     static Ptr value(Type::Ptr elementType, Ptr length) { return std::make_shared<ArrayDomain>(elementType, length); }
     static Ptr constant(Type::Ptr elementType, const std::vector<AbstractDomain::Ptr>& elements) {
         return std::make_shared<ArrayDomain>(elementType, elements);
+    }
+
+    const ElementMapT& elements() const {
+        return elements_;
+    }
+
+    Bound<size_t> length() const {
+        return factory_->unsignedBounds(length_).second;
     }
 
     Type::Ptr elementType() const { return elementType_; }

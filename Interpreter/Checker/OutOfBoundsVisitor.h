@@ -1,37 +1,46 @@
-////
-//// Created by abdullin on 11/1/17.
-////
 //
-//#ifndef BOREALIS_OUTOFBOUNDSVISITOR_H
-//#define BOREALIS_OUTOFBOUNDSVISITOR_H
+// Created by abdullin on 11/1/17.
 //
-//#include "Interpreter/Domain/Domain.h"
-//#include "Interpreter/Domain/AggregateDomain.h"
-//#include "Interpreter/Domain/FloatIntervalDomain.h"
-//#include "Interpreter/Domain/FunctionDomain.h"
-//#include "Interpreter/Domain/IntegerIntervalDomain.h"
-//#include "Interpreter/Domain/PointerDomain.h"
-//
-//namespace borealis {
-//namespace absint {
-//
-//class OutOfBoundsVisitor {
-//public:
-//
-//    using RetTy = bool;
-//
-//    RetTy visit(Domain::Ptr domain, const std::vector<Domain::Ptr>& indices);
-//
-//    RetTy visitAggregate(const AggregateDomain& aggregate, const std::vector<Domain::Ptr>& indices);
-//    RetTy visitPointer(const PointerDomain& ptr, const std::vector<Domain::Ptr>& indices);
-//    RetTy visitNullptr(const NullptrDomain&, const std::vector<Domain::Ptr>&);
-//    RetTy visitFloat(const FloatIntervalDomain&, const std::vector<Domain::Ptr>&);
-//    RetTy visitFunction(const FunctionDomain&, const std::vector<Domain::Ptr>&);
-//    RetTy visitInteger(const IntegerIntervalDomain&, const std::vector<Domain::Ptr>&);
-//};
-//
-//} // namespace absint
-//} // namespace borealis
-//
-//
-//#endif //BOREALIS_OUTOFBOUNDSVISITOR_H
+
+#ifndef BOREALIS_OUTOFBOUNDSVISITOR_H
+#define BOREALIS_OUTOFBOUNDSVISITOR_H
+
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/Memory/ArrayDomain.hpp"
+
+#include "Util/sayonara.hpp"
+#include "Util/macros.h"
+
+namespace borealis {
+namespace absint {
+
+class OutOfBoundsVisitor {
+private:
+
+    AbstractFactory* af_;
+
+public:
+
+    OutOfBoundsVisitor() : af_(AbstractFactory::get()) {}
+
+    using RetTy = bool;
+
+    RetTy visit(AbstractDomain::Ptr domain, const std::vector<AbstractDomain::Ptr>& indices);
+
+    RetTy visitArray(const AbstractFactory::ArrayT& array, const std::vector<AbstractDomain::Ptr>& indices);
+    RetTy visitFunction(const AbstractFactory::FunctionT&, const std::vector<AbstractDomain::Ptr>&);
+    RetTy visitPointer(const AbstractFactory::PointerT& ptr, const std::vector<AbstractDomain::Ptr>& indices);
+    RetTy visitStruct(const AbstractFactory::StructT& structure, const std::vector<AbstractDomain::Ptr>& indices);
+    RetTy visitArrayLocation(const AbstractFactory::ArrayLocationT& arrayLoc, const std::vector<AbstractDomain::Ptr>& indices);
+    RetTy visitStructLocation(const AbstractFactory::StructLocationT& structLoc, const std::vector<AbstractDomain::Ptr>& indices);
+    RetTy visitFunctionLocation(const AbstractFactory::FunctionLocationT&, const std::vector<AbstractDomain::Ptr>&);
+    RetTy visitNullLocation(const AbstractFactory::NullLocationT&, const std::vector<AbstractDomain::Ptr>&);
+
+};
+
+} // namespace absint
+} // namespace borealis
+
+#include "Util/unmacros.h"
+
+#endif //BOREALIS_OUTOFBOUNDSVISITOR_H

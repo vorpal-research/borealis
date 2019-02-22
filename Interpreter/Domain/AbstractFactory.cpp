@@ -459,6 +459,8 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
 AbstractDomain::Ptr AbstractFactory::machineIntInterval(AbstractDomain::Ptr domain) const {
     if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
         return cast(EXT, tf_->getInteger(defaultSize, llvm::Signedness::Unsigned), dint->second());
+    } else if (llvm::isa<Interval<MachineInt>>(domain.get())) {
+        return domain;
     } else {
         UNREACHABLE("Unknown numerical domain");
     }

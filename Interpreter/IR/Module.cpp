@@ -3,6 +3,7 @@
 //
 
 #include "Config/config.h"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 #include "Interpreter/Domain/util/Util.hpp"
 #include "Module.h"
 #include "Util/collections.hpp"
@@ -83,6 +84,17 @@ AbstractDomain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::B
         return gm_.global(value);
     } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(value)) {
         return vf_.get(constant);
+    } else if (llvm::isa<llvm::GEPOperator>(value) && !llvm::isa<llvm::GetElementPtrInst>(value)) {
+        auto gep = llvm::cast<llvm::GEPOperator>(value);
+
+        std::vector<AbstractDomain::Ptr> shifts;
+        for (auto j = gep->idx_begin(); j != gep->idx_end(); ++j) {
+            auto val = llvm::cast<llvm::Value>(j);
+            shifts.push_back(vf_.af()->machineIntInterval(getDomainFor(val, location)));
+        }
+
+        auto&& ptr = getDomainFor(gep->getPointerOperand(), location);
+        return ptr->gep(vf_.cast(value->getType()), shifts);
     } else {
         return get(location->getParent())->getDomainFor(value, location);
     }

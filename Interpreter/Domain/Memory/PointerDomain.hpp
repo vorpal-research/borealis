@@ -98,6 +98,10 @@ public:
     bool isTop() const override { return (not this->isBottom_) and this->ptsTo_.empty(); }
     bool isBottom() const override { return this->isBottom_ and this->ptsTo_.empty(); }
 
+    const PointsToSet& locations() const {
+        return ptsTo_;
+    }
+
     bool isNull() const { return this->ptsTo_.size() == 1 and unwrapLocation(util::head(this->ptsTo_))->isNull(); }
     bool pointsToNull() const {
         for (auto&& it : this->ptsTo_) {
@@ -172,25 +176,14 @@ public:
             this->setTop();
         } else {
 
-            errs() << "Join " << endl;
-            errs() << toString() << endl;
-            errs() << " with " << endl;
-            errs() << other->toString() << endl;
             for (auto&& it : otherRaw->ptsTo_) {
                 auto&& its = this->ptsTo_.find(it);
                 if (its == this->ptsTo_.end()) {
-                    errs() << "not found, inserting new" << endl;
-                    auto&& thisF = util::head(this->ptsTo_);
-                    auto&& otherF = util::head(otherRaw->ptsTo_);
-                    errs() << "Eq: " << thisF->equals(otherF) << endl;
                     this->ptsTo_.insert(it);
                 } else {
                     (*its)->joinWith(it);
                 }
             }
-            errs() << "Result: " << endl;
-            errs() << toString() << endl;
-            errs() << endl;
         }
     }
 

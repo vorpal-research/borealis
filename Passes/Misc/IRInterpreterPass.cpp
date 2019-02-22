@@ -28,10 +28,10 @@ bool IRInterpreterPass::runOnModule(llvm::Module& M) {
     interpreter.run();
     auto& module = interpreter.getModule();
 
-//    if (not module.getRootFunctions().empty()) {
-//        ir::OutOfBoundsChecker(&module, dm, fip).run();
+    if (not module.roots().empty()) {
+        ir::OutOfBoundsChecker(&module, dm, fip).run();
 //        ir::NullDereferenceChecker(&module, dm).run();
-//    }
+    }
     return false;
 }
 

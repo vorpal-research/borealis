@@ -109,7 +109,8 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
         return af_->getStruct(cast(constant->getType()), elements);
         // Function
     } else if (auto function = llvm::dyn_cast<llvm::Function>(constant)) {
-        return af_->getPointer(cast(function->getType()));
+        auto&& functionDomain = af_->getFunction(gm_->get(function));
+        return af_->getPointer(cast(function->getType()), functionDomain, af_->getMachineInt(0));
         // Zero initializer
     } else if (llvm::isa<llvm::ConstantAggregateZero>(constant)) {
         return af_->top(cast(constant->getType()));

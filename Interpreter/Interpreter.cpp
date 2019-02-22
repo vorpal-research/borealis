@@ -433,7 +433,6 @@ AbstractDomain::Ptr Interpreter::handleDeclaration(const llvm::Function* functio
         for (auto&& it : args) {
             auto arg = it.first;
             if (arg->getType()->isPointerTy()) {
-                warns() << "Moving pointer to TOP: " << ST_->toString(arg) << endl;
                 context_->state->get(arg)->setTop();
             }
         }

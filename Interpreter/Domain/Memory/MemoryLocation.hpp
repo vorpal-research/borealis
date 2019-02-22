@@ -335,6 +335,10 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
+    Ptr base() const {
+        return base_;
+    }
+
     OffsetSet offsets() const override {
         return { this->offset_ };
     }
@@ -484,6 +488,10 @@ public:
 
     static bool classof(const AbstractDomain* other) {
         return other->getClassTag() == class_tag<Self>();
+    }
+
+    Ptr base() const {
+        return base_;
     }
 
     OffsetSet offsets() const override {

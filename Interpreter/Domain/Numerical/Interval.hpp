@@ -520,7 +520,7 @@ Interval<Number> operator>>(const Interval<Number>& lhv, const Interval<Number>&
         if (lhv.contains(0)) {
             auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
             auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
-            return unwrapInterval<Number>((l >> rhv).join((u >> rhv).shared_from_this())->join(IntervalT::constant(0, lhv.caster())));
+            return unwrapInterval<Number>((l >> rhv).join(std::make_shared<IntervalT>(u >> rhv))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             auto ll = lhv.lb() >> shiftRaw->lb();
             auto lu = lhv.lb() >> shiftRaw->ub();

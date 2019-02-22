@@ -103,6 +103,7 @@ public:
     static Ptr bottom(const Types& types) { return std::make_shared<StructDomain>(BottomTag{}, types); }
     static Ptr constant(const Types& types, const Elements& elements) { return std::make_shared<StructDomain>(types, elements); }
 
+    const Elements& elements() const { return elements_; }
     const Types& types() const { return types_; }
 
     size_t size() const {
