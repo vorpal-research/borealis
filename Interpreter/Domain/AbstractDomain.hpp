@@ -24,6 +24,8 @@ enum CastOperator {
     BITCAST
 };
 
+struct Split;
+
 class AbstractDomain : public ClassTag, public logging::ObjectLevelLogging<AbstractDomain>,
         public std::enable_shared_from_this<AbstractDomain> {
 public:
@@ -90,6 +92,19 @@ public:
     virtual void store(Ptr value, Ptr offset);
 
     virtual Ptr gep(Type::Ptr type, const std::vector <Ptr>& offsets);
+
+    ///////////////////////////////////////
+    virtual Split splitByEq(ConstPtr other) const;
+    virtual Split splitByLess(ConstPtr other) const;
+};
+
+struct Split {
+    AbstractDomain::Ptr true_;
+    AbstractDomain::Ptr false_;
+
+    Split swap() const {
+        return { false_, true_ };
+    }
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

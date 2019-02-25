@@ -369,6 +369,28 @@ public:
         }
     }
 
+    Split splitByEq(ConstPtr other) const override {
+        if (this->isBottom() || other->isBottom()) return { clone(), clone() };
+        auto* otherRaw = unwrap(other);
+
+        return otherRaw->isConstant() ?
+               Split{ other->clone(), clone() } :
+               Split{ clone(), clone() };
+    }
+
+    Split splitByLess(ConstPtr other) const override {
+        if (this->isBottom() || other->isBottom()) return { clone(), clone() };
+        auto* otherRaw = unwrap(other);
+
+        if (this->leq(other)) return { clone(), clone() };
+        if (this->ub() < otherRaw->lb()) return { clone(), clone() };
+        if (otherRaw->ub() < this->lb()) return { clone(), clone() };
+
+        auto trueVal = std::make_shared<Self>(lb_, otherRaw->ub_);
+        auto falseVal = std::make_shared<Self>(otherRaw->lb_, this->ub_);
+        return { trueVal, falseVal };
+    }
+
 private:
 
     BoundT lb_;

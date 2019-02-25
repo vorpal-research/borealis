@@ -33,6 +33,14 @@ AbstractDomain::Ptr AbstractDomain::gep(Type::Ptr, const std::vector<AbstractDom
     UNREACHABLE("Unsupported operation");
 }
 
+Split AbstractDomain::splitByEq(ConstPtr other) const {
+    UNREACHABLE("Unsupported operation");
+}
+
+Split AbstractDomain::splitByLess(ConstPtr other) const {
+    UNREACHABLE("Unsupported operation");
+}
+
 std::ostream& operator<<(std::ostream& s, AbstractDomain::Ptr domain) {
     s << domain->toString();
     return s;

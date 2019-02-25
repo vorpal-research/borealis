@@ -302,11 +302,15 @@ AbstractDomain::Ptr AbstractFactory::getPointer(Type::Ptr type, AbstractDomain::
     auto* ptr = llvm::dyn_cast<type::Pointer>(type.get());
     ASSERTC(ptr);
 
-    if (auto* array = llvm::dyn_cast<ArrayT>(base.get())) {
+    return getPointer(base, offset);
+}
+
+AbstractDomain::Ptr AbstractFactory::getPointer(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const {
+    if (llvm::isa<ArrayT>(base.get())) {
         return std::make_shared<PointerT>(makeArrayLocation(base, offset));
-    } else if (auto* strct = llvm::dyn_cast<StructT>(base.get())) {
+    } else if (llvm::isa<StructT>(base.get())) {
         return std::make_shared<PointerT>(makeStructLocation(base, {offset}));
-    } else if (auto* func = llvm::dyn_cast<FunctionT>(base.get())) {
+    } else if (llvm::isa<FunctionT>(base.get())) {
         return std::make_shared<PointerT>(makeFunctionLocation(base));
     } else {
         UNREACHABLE("Unknown base");

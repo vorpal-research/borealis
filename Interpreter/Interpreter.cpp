@@ -115,40 +115,24 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
 
         auto trueSuccessor = context_->function->getBasicBlock(i.getSuccessor(0));
         auto falseSuccessor = context_->function->getBasicBlock(i.getSuccessor(1));
-        trueSuccessor->mergeToInput(context_->state);
-        falseSuccessor->mergeToInput(context_->state);
 
-//        if (cond->isTop()) {
-//            auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
-//            for (auto&& it : splitted) {
-//                trueSuccessor->addToInput(it.first, it.second.true_);
-//                falseSuccessor->addToInput(it.first, it.second.false_);
-//            }
-//            successors.emplace_back(trueSuccessor);
-//            successors.emplace_back(falseSuccessor);
-//
-//        } else if (!cond->isBottom()) {
-//            auto boolean = llvm::dyn_cast<IntegerIntervalDomain>(cond.get());
-//            ASSERT(boolean && boolean->getWidth() == 1, "Non-bool in branch condition");
-//
-//            if (boolean->isConstant()) {
-//                auto successor = boolean->isConstant(1) ?
-//                                 trueSuccessor :
-//                                 falseSuccessor;
-//                successors.emplace_back(successor);
-//            } else {
-//                auto splitted = ConditionSplitter(i.getCondition(), this, context_->state).apply();
-//                for (auto&& it : splitted) {
-//                    trueSuccessor->addToInput(it.first, it.second.true_);
-//                    falseSuccessor->addToInput(it.first, it.second.false_);
-//                }
-//                successors.emplace_back(trueSuccessor);
-//                successors.emplace_back(falseSuccessor);
-//            }
-//        } else {
+        auto&& split = context_->state->split(i.getCondition());
+        if (cond->isTop() || cond->isBottom()) {
+            trueSuccessor->mergeToInput(split.first);
+            falseSuccessor->mergeToInput(split.second);
+
             successors.emplace_back(trueSuccessor);
             successors.emplace_back(falseSuccessor);
-//        }
+
+        } else {
+            auto boolean = llvm::dyn_cast<AbstractFactory::BoolT>(cond.get());
+            ASSERTC(boolean->isConstant());
+
+            auto successor = boolean->isConstant(1) ? trueSuccessor : falseSuccessor;
+            successor->mergeToInput(boolean->isConstant(1) ? split.first : split.second);
+            successors.emplace_back(successor);
+        }
+
     } else {
         auto successor = context_->function->getBasicBlock(i.getSuccessor(0));
         successor->mergeToInput(context_->state);

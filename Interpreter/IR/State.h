@@ -26,7 +26,8 @@ public:
 
     using Ptr = std::shared_ptr<State>;
 
-    explicit State(SlotTracker* tracker, VariableFactory* vf);
+    State(SlotTracker* tracker, VariableFactory* vf);
+    State(SlotTracker* tracker, std::shared_ptr<DomainStorage> storage);
     State(const State& other);
 
     bool equals(const State* other) const;
@@ -48,6 +49,8 @@ public:
 
     bool empty() const;
     std::string toString() const;
+
+    std::pair<State::Ptr, State::Ptr> split(const llvm::Value* condition) const;
 
 private:
 

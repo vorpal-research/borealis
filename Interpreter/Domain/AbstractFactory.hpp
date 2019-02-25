@@ -134,6 +134,7 @@ public:
     AbstractDomain::Ptr getPointer(Type::Ptr type, Kind kind) const;
     AbstractDomain::Ptr getPointer(Type::Ptr type) const;
     AbstractDomain::Ptr getPointer(Type::Ptr type, AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
+    AbstractDomain::Ptr getPointer(AbstractDomain::Ptr base, AbstractDomain::Ptr offset) const;
 
     AbstractDomain::Ptr getNullptr() const;
     AbstractDomain::Ptr makeNullLocation() const;

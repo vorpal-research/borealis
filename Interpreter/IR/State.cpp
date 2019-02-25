@@ -16,6 +16,9 @@ namespace ir {
 State::State(borealis::SlotTracker* tracker, VariableFactory* vf) :
         tracker_(tracker), storage_(std::make_shared<DomainStorage>(vf)) {}
 
+State::State(SlotTracker* tracker, std::shared_ptr<DomainStorage> storage) :
+        tracker_(tracker), storage_(storage) {}
+
 State::State(const State& other) :
         tracker_(other.tracker_), storage_(other.storage_->clone()) {}
 
@@ -77,6 +80,11 @@ std::string State::toString() const {
 
 bool operator==(const State& lhv, const State& rhv) {
     return lhv.equals(&rhv);
+}
+
+std::pair<State::Ptr, State::Ptr> State::split(const llvm::Value* condition) const {
+    auto&& split = storage_->split(condition);
+    return std::make_pair(std::make_shared<State>(tracker_, split.first), std::make_shared<State>(tracker_, split.second));
 }
 
 }   /* namespace ir */

@@ -98,7 +98,7 @@ RetTy OutOfBoundsVisitor::visitStruct(const AbstractFactory::StructT& structure,
 RetTy OutOfBoundsVisitor::visitArrayLocation(const AbstractFactory::ArrayLocationT& arrayLoc, const std::vector<AbstractDomain::Ptr>& indices) {
     if (arrayLoc.isTop() || arrayLoc.isBottom()) return true;
 
-    auto&& offset = util::head(arrayLoc.offsets());
+    AbstractDomain::Ptr offset = *arrayLoc.offsets().begin();
     auto&& newIndices = std::vector<AbstractDomain::Ptr>(indices.begin(), indices.end());
     newIndices[0] = newIndices[0] + offset;
 

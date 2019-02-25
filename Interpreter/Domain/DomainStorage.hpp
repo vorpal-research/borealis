@@ -71,6 +71,8 @@ public:
     /// x = cast(op, y)
     void apply(CastOperator op, Variable x, Variable y);
 
+    std::pair<DomainStorage::Ptr, DomainStorage::Ptr> split(Variable condition) const;
+
     /// x = *ptr
     void load(Variable x, Variable ptr);
 
@@ -85,6 +87,13 @@ public:
 
     size_t hashCode() const;
     std::string toString() const;
+
+private:
+
+    std::unordered_map<Variable, Split> handleInst(const llvm::Instruction* target) const;
+    std::unordered_map<Variable, Split> handleIcmp(const llvm::ICmpInst* target) const;
+    std::unordered_map<Variable, Split> handleFcmp(const llvm::FCmpInst* target) const;
+    std::unordered_map<Variable, Split> handleBinary(const llvm::BinaryOperator* target) const;
 
 private:
 

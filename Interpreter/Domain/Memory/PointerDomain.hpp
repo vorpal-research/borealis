@@ -294,6 +294,32 @@ public:
             return result;
         }
     }
+
+    Split splitByEq(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
+        if (this->isNull() || this->isTop() || this->isBottom() || other->isTop() || other->isBottom())
+            return { clone(), clone() };
+        else if (this->isTop() && otherRaw->isNull()) {
+            // This is generally fucked up
+            auto&& arrayType = factory_->tf()->getArray(factory_->tf()->getBool(), 1);
+            return {
+                factory_->getNullptr(),
+                factory_->getPointer(factory_->getArray(arrayType, AbstractFactory::TOP), factory_->getMachineInt(AbstractFactory::TOP))
+            };
+        }
+
+        PointsToSet trueLocs, falseLocs;
+        for (auto&& loc : otherRaw->ptsTo_) {
+            if (util::contains(this->ptsTo_, loc)) {
+                trueLocs.insert(loc);
+            } else {
+                falseLocs.insert(loc);
+            }
+        }
+        return { std::make_shared<Self>(trueLocs), std::make_shared<Self>(falseLocs) };
+    }
+
 };
 
 } // namespace absint

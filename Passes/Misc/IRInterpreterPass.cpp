@@ -30,7 +30,7 @@ bool IRInterpreterPass::runOnModule(llvm::Module& M) {
 
     if (not module.roots().empty()) {
         ir::OutOfBoundsChecker(&module, dm, fip).run();
-//        ir::NullDereferenceChecker(&module, dm).run();
+        ir::NullDereferenceChecker(&module, dm).run();
     }
     return false;
 }

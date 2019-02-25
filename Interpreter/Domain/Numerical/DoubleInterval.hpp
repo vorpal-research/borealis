@@ -254,6 +254,24 @@ public:
         return first_->apply(opcode, otherRaw->first_)->join(second_->apply(opcode, otherRaw->second_));
     }
 
+    Split splitByEq(ConstPtr other) const override {
+        if (this->isBottom() || other->isBottom()) return { clone(), clone() };
+        auto* otherRaw = unwrap(other);
+
+        auto&& fsplit = this->first_->splitByEq(otherRaw->first_);
+        auto&& ssplit = this->second_->splitByEq(otherRaw->second_);
+        return { std::make_shared<Self>(fsplit.true_, ssplit.true_), std::make_shared<Self>(fsplit.false_, ssplit.false_) };
+    }
+
+    Split splitByLess(ConstPtr other) const override {
+        if (this->isBottom() || other->isBottom()) return { clone(), clone() };
+        auto* otherRaw = unwrap(other);
+
+        auto&& fsplit = this->first_->splitByLess(otherRaw->first_);
+        auto&& ssplit = this->second_->splitByLess(otherRaw->second_);
+        return { std::make_shared<Self>(fsplit.true_, ssplit.true_), std::make_shared<Self>(fsplit.false_, ssplit.false_) };
+    }
+
 };
 
 } // namespace absint
