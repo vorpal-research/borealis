@@ -429,21 +429,23 @@ Interval<Number> operator/(const Interval<Number>& lhv, const Interval<Number>& 
     if (lhv.isBottom() || rhv.isBottom()) {
         return IntervalT::getBottom(lhv.caster());
     } else {
-//        if (rhv.contains(0)) {
+        if (rhv.contains(0)) {
+            return IntervalT::getTop(lhv.caster());
 //            auto l = IntervalT(rhv.lb(), BoundT(lhv.caster(), -1));
 //            auto r = IntervalT(BoundT(lhv.caster(), 1), rhv.ub());
 //            return *llvm::cast<IntervalT>((lhv / l).join(std::make_shared<IntervalT>(lhv / r)));
-//        } else if (lhv.contains(0)) {
+        } else if (lhv.contains(0)) {
+            return IntervalT::getTop(lhv.caster());
 //            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
 //            auto r = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
 //            return unwrapInterval<Number>((l / rhv).join(std::make_shared<IntervalT>(r / rhv))->join(IntervalT::constant(0, lhv.caster())));
-//        } else {
+        } else {
             auto ll = lhv.lb() / rhv.lb();
             auto ul = lhv.ub() / rhv.lb();
             auto lu = lhv.lb() / rhv.ub();
             auto uu = lhv.ub() / rhv.ub();
             return IntervalT(util::min(ll, ul, lu, uu), util::max(ll, ul, lu, uu));
-//        }
+        }
     }
 }
 
@@ -518,9 +520,10 @@ Interval<Number> operator>>(const Interval<Number>& lhv, const Interval<Number>&
         }
 
         if (lhv.contains(0)) {
-            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
-            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
-            return unwrapInterval<Number>((l >> rhv).join(std::make_shared<IntervalT>(u >> rhv))->join(IntervalT::constant(0, lhv.caster())));
+            return IntervalT::getTop(lhv.caster());
+//            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
+//            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
+//            return unwrapInterval<Number>((l >> rhv).join(std::make_shared<IntervalT>(u >> rhv))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             auto ll = lhv.lb() >> shiftRaw->lb();
             auto lu = lhv.lb() >> shiftRaw->ub();
@@ -547,9 +550,10 @@ Interval<Number> lshr(const Interval<Number>& lhv, const Interval<Number>& rhv) 
         }
 
         if (lhv.contains(0)) {
-            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
-            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
-            return unwrapInterval<Number>(lshr(l, rhv).join(std::make_shared<IntervalT>(lshr(u, rhv)))->join(IntervalT::constant(0, lhv.caster())));
+            return IntervalT::getTop(lhv.caster());
+//            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
+//            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
+//            return unwrapInterval<Number>(lshr(l, rhv).join(std::make_shared<IntervalT>(lshr(u, rhv)))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             BoundT ll = lshr(lhv.lb(), shiftRaw->lb());
             BoundT lu = lshr(lhv.lb(), shiftRaw->ub());
