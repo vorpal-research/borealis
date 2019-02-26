@@ -338,7 +338,7 @@ Bound<Number> operator>>(const Bound<Number>& lhv, const Bound<Number>& rhv) {
     } else if (lhv.isInfinite()) {
         return lhv;
     } else if (rhv.isInfinite()) {
-        return BoundT(lhv.caster(), lhv.number() >= 0 ? 0 : -1);
+        return lhv.isPositive() ? BoundT::plusInfinity(lhv.caster()) : BoundT::minusInfinity(lhv.caster());
     } else {
         return BoundT(lhv.caster(), lhv.number() >> rhv.number());
     }

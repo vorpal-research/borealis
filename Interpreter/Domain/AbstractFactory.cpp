@@ -341,6 +341,8 @@ AbstractDomain::Ptr AbstractFactory::makeStructLocation(AbstractDomain::Ptr base
 
 AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, AbstractDomain::Ptr domain) const {
     auto* integer = llvm::dyn_cast<type::Integer>(target.get());
+    if (not integer && llvm::isa<type::Bool>(target.get()))
+        integer = llvm::cast<type::Integer>(tf_->getInteger(1, llvm::Signedness::Unsigned).get());
 
     using SInt = Interval<BitInt<true>>;
     using UInt = Interval<BitInt<false>>;

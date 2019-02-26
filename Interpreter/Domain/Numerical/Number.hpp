@@ -210,11 +210,11 @@ template <bool sign>
 inline bool operator>=(const BitInt<sign>& lhs, const BitInt<sign>& rhs) {
     return lhs.geq(rhs);
 }
-
-template <bool sign>
-inline bool operator>=(const BitInt<sign>& lhs, int rhs) {
-    return lhs.sgeq((BitInt<sign>(rhs)));
-}
+//
+//template <bool sign>
+//inline bool operator>=(const BitInt<sign>& lhs, int rhs) {
+//    return lhs.sgeq((BitInt<sign>(rhs)));
+//}
 
 template <bool sign>
 inline bool operator<(const BitInt<sign>& lhs, const BitInt<sign>& rhs) {

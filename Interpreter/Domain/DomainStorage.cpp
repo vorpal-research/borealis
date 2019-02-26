@@ -602,8 +602,12 @@ std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleBinary(c
         return {lhv.true_->join(rhv.true_), lhv.false_->join(rhv.false_)};
     };
 
-    auto lhvValues = std::move(handleInst(llvm::cast<llvm::Instruction>(lhv)));
-    auto rhvValues = std::move(handleInst(llvm::cast<llvm::Instruction>(rhv)));
+    auto* lhvInst = llvm::dyn_cast<llvm::Instruction>(lhv);
+    auto* rhvInst = llvm::dyn_cast<llvm::Instruction>(rhv);
+    if (not lhvInst || not rhvInst) return {};
+
+    auto lhvValues = std::move(handleInst(lhvInst));
+    auto rhvValues = std::move(handleInst(rhvInst));
 
     for (auto&& it : lhvValues) {
         auto value = it.first;
