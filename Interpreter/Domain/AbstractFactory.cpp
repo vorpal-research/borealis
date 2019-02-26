@@ -383,8 +383,13 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                         return getInteger(target, TOP);
                     else if (uint->isBottom())
                         return getInteger(target, BOTTOM);
-                    else
+                    else if (uint->isConstant())
                         return getInteger((size_t) uint->asConstant(), integer->getBitsize());
+                    else {
+                        auto&& casted = std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
+                        auto&& scasted = cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Signed), casted);
+                        return std::make_shared<IntT>(scasted, casted);
+                    }
                 } else {
                     return std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
                 }

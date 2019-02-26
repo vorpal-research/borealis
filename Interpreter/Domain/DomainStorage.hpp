@@ -20,6 +20,9 @@ class NumericalDomain;
 template <typename MachineInt, typename Variable>
 class MemoryDomain;
 
+template <typename Variable>
+class Aggregate;
+
 class DomainStorage : public logging::ObjectLevelLogging<DomainStorage>, public std::enable_shared_from_this<DomainStorage> {
 public:
 
@@ -34,6 +37,7 @@ private:
 
     using NumericalDomainT = NumericalDomain<Variable>;
     using MemoryDomainT = MemoryDomain<MachineIntT, Variable>;
+    using AggregateDomainT = Aggregate<Variable>;
 
 protected:
 
@@ -41,6 +45,7 @@ protected:
     NumericalDomainT* unwrapInt() const;
     NumericalDomainT* unwrapFloat() const;
     MemoryDomainT* unwrapMemory() const;
+    AggregateDomainT* unwrapStruct() const;
 
 public:
 
@@ -82,6 +87,12 @@ public:
     /// x = gep(ptr, shifts)
     void gep(Variable x, Variable ptr, const std::vector<Variable>& shifts);
 
+    /// x = extract(struct, index)
+    void extract(Variable x, Variable structure, Variable index);
+
+    /// insert(struct, x, index)
+    void insert(Variable structure, Variable x, Variable index);
+
     /// x = allocate<decltype(x)>(size);
     void allocate(Variable x, Variable size);
 
@@ -102,6 +113,7 @@ private:
     AbstractDomain::Ptr ints_;
     AbstractDomain::Ptr floats_;
     AbstractDomain::Ptr memory_;
+    AbstractDomain::Ptr structs_;
 
 };
 

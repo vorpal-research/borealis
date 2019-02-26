@@ -8,6 +8,7 @@
 #include "Numerical/DoubleInterval.hpp"
 #include "Numerical/IntervalDomain.hpp"
 #include "Numerical/NumericalDomain.hpp"
+#include "Memory/AggregateDomain.hpp"
 #include "Memory/MemoryDomain.hpp"
 #include "Memory/PointsToDomain.hpp"
 #include "Util/sayonara.hpp"
@@ -127,6 +128,61 @@ public:
     }
 };
 
+template <typename AggregateT>
+class AggregateDomainImpl : public AggregateDomain<AggregateT, const llvm::Value*> {
+public:
+
+    using Ptr = AbstractDomain::Ptr;
+    using Variable = const llvm::Value*;
+    using Self = AggregateDomainImpl<AggregateT>;
+    using EnvT = typename AggregateDomain<AggregateT, const llvm::Value*>::EnvT;
+
+protected:
+
+    VariableFactory* vf_;
+
+public:
+
+    explicit AggregateDomainImpl(VariableFactory* vf) : AggregateDomain<AggregateT, const llvm::Value*>(), vf_(vf) {}
+    AggregateDomainImpl(const AggregateDomainImpl&) = default;
+    AggregateDomainImpl(AggregateDomainImpl&&) = default;
+    AggregateDomainImpl& operator=(const AggregateDomainImpl&) = default;
+    AggregateDomainImpl& operator=(AggregateDomainImpl&&) = default;
+    ~AggregateDomainImpl() override = default;
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
+    static Ptr top() { return std::make_shared(EnvT::top()); }
+    static Ptr bottom() { return std::make_shared(EnvT::bottom()); }
+
+    static bool classof (const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    Ptr get(Variable x) const override {
+        if (auto&& global = vf_->findGlobal(x)) {
+            return global;
+
+        } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
+            return vf_->get(constant);
+
+        } else if (auto&& local = this->unwrapEnv()->get(x,
+                [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
+                [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
+        )) {
+            return local;
+
+        }
+        return nullptr;
+    }
+};
+
 } // namespace impl_
 
 DomainStorage::NumericalDomainT* DomainStorage::unwrapBool() const {
@@ -153,13 +209,20 @@ DomainStorage::MemoryDomainT* DomainStorage::unwrapMemory() const {
     return mem;
 }
 
+DomainStorage::AggregateDomainT* DomainStorage::unwrapStruct() const {
+    auto* structure = llvm::dyn_cast<AggregateDomainT>(structs_.get());
+    ASSERTC(structure);
+    return structure;
+}
+
 DomainStorage::DomainStorage(VariableFactory* vf) :
         ObjectLevelLogging("domain"),
         vf_(vf),
         bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_)),
         ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_)),
         floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_)),
-        memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_)) {}
+        memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_)),
+        structs_(std::make_shared<impl_::AggregateDomainImpl<StructDomain<MachineIntT>>>(vf_)) {}
 
 DomainStorage::Ptr DomainStorage::clone() const {
     return std::make_shared<DomainStorage>(*this);
@@ -169,7 +232,8 @@ bool DomainStorage::equals(DomainStorage::Ptr other) const {
     return this->bools_->equals(other->bools_) &&
             this->ints_->equals(other->ints_) &&
             this->floats_->equals(other->floats_) &&
-            this->memory_->equals(other->memory_);
+            this->memory_->equals(other->memory_) &&
+            this->structs_->equals(other->structs_);
 }
 
 void DomainStorage::joinWith(DomainStorage::Ptr other) {
@@ -177,6 +241,7 @@ void DomainStorage::joinWith(DomainStorage::Ptr other) {
     this->ints_->joinWith(other->ints_);
     this->floats_->joinWith(other->floats_);
     this->memory_->joinWith(other->memory_);
+    this->structs_->joinWith(other->structs_);
 }
 
 DomainStorage::Ptr DomainStorage::join(DomainStorage::Ptr other) {
@@ -186,7 +251,7 @@ DomainStorage::Ptr DomainStorage::join(DomainStorage::Ptr other) {
 }
 
 bool DomainStorage::empty() const {
-    return bools_->isBottom() && ints_->isBottom() && floats_->isBottom() && memory_->isBottom();
+    return bools_->isBottom() && ints_->isBottom() && floats_->isBottom() && memory_->isBottom() && structs_->isBottom();
 }
 
 AbstractDomain::Ptr DomainStorage::get(Variable x) const {
@@ -201,6 +266,8 @@ AbstractDomain::Ptr DomainStorage::get(Variable x) const {
         return unwrapFloat()->get(x);
     else if (llvm::isa<type::Pointer>(type.get()))
         return unwrapMemory()->get(x);
+    else if (llvm::isa<type::Record>(type.get()))
+        return unwrapStruct()->get(x);
     else {
         warns() << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << endl;
         return nullptr;
@@ -223,6 +290,8 @@ void DomainStorage::assign(Variable x, AbstractDomain::Ptr domain) const {
         unwrapFloat()->assign(x, domain);
     else if (llvm::isa<type::Pointer>(type.get()))
         unwrapMemory()->assign(x, domain);
+    else if (llvm::isa<type::Record>(type.get()))
+        unwrapStruct()->assign(x, domain);
     else {
         std::stringstream ss;
         ss << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << std::endl;
@@ -335,6 +404,19 @@ void DomainStorage::gep(Variable x, Variable ptr, const std::vector<Variable>& s
     unwrapMemory()->gepFrom(x, vf_->cast(x->getType()), ptr, normalizedShifts);
 }
 
+/// x = extract(struct, index)
+void DomainStorage::extract(Variable x, Variable structure, Variable index) {
+    auto&& normalizedIndex = vf_->af()->machineIntInterval(get(index));
+    auto&& xDom = unwrapStruct()->extractFrom(vf_->cast(x->getType()), structure, normalizedIndex);
+    assign(x, xDom);
+}
+
+/// insert(struct, x, index)
+void DomainStorage::insert(Variable structure, Variable x, Variable index) {
+    auto&& normalizedIndex = vf_->af()->machineIntInterval(get(index));
+    unwrapStruct()->insertTo(structure, get(x), normalizedIndex);
+}
+
 void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable size) {
     auto&& sizeDomain = get(size);
 
@@ -371,7 +453,10 @@ std::pair<DomainStorage::Ptr, DomainStorage::Ptr> DomainStorage::split(Variable 
     if (condDomain->isTop() || condDomain->isBottom())
         return std::make_pair(true_, false_);
 
-    auto&& splitted = std::move(handleInst(llvm::cast<llvm::Instruction>(condition)));
+    auto* inst = llvm::dyn_cast<llvm::Instruction>(condition);
+    if (not inst) return std::make_pair(true_, false_);
+
+    auto&& splitted = std::move(handleInst(inst));
     for (auto&& it : splitted) {
         true_->assign(it.first, it.second.true_);
         false_->assign(it.first, it.second.false_);

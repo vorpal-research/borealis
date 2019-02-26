@@ -117,7 +117,9 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
         auto falseSuccessor = context_->function->getBasicBlock(i.getSuccessor(1));
 
         auto&& split = context_->state->split(i.getCondition());
-        if (cond->isTop() || cond->isBottom()) {
+        auto boolean = llvm::dyn_cast<AbstractFactory::BoolT>(cond.get());
+
+        if (boolean->isTop() || boolean->isBottom() || not boolean->isConstant()) {
             trueSuccessor->mergeToInput(split.first);
             falseSuccessor->mergeToInput(split.second);
 
@@ -125,9 +127,6 @@ void Interpreter::visitBranchInst(llvm::BranchInst& i) {
             successors.emplace_back(falseSuccessor);
 
         } else {
-            auto boolean = llvm::dyn_cast<AbstractFactory::BoolT>(cond.get());
-            ASSERTC(boolean->isConstant());
-
             auto successor = boolean->isConstant(1) ? trueSuccessor : falseSuccessor;
             successor->mergeToInput(boolean->isConstant(1) ? split.first : split.second);
             successors.emplace_back(successor);
@@ -265,7 +264,7 @@ void Interpreter::visitFPExtInst(llvm::FPExtInst& i)        { CAST_INST(CastOper
 void Interpreter::visitFPToUIInst(llvm::FPToUIInst& i)      { CAST_INST(CastOperator::FPTOI);   }
 void Interpreter::visitFPToSIInst(llvm::FPToSIInst& i)      { CAST_INST(CastOperator::FPTOI);   }
 void Interpreter::visitUIToFPInst(llvm::UIToFPInst& i)      { CAST_INST(CastOperator::ITOFP);   }
-void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i)      { CAST_INST(CastOperator::ITOPTR);  }
+void Interpreter::visitSIToFPInst(llvm::SIToFPInst& i)      { CAST_INST(CastOperator::ITOFP);  }
 void Interpreter::visitPtrToIntInst(llvm::PtrToIntInst& i)  { CAST_INST(CastOperator::PTRTOI);  }
 void Interpreter::visitIntToPtrInst(llvm::IntToPtrInst& i)  { CAST_INST(CastOperator::ITOPTR);  }
 void Interpreter::visitBitCastInst(llvm::BitCastInst& i)    { CAST_INST(CastOperator::BITCAST); }

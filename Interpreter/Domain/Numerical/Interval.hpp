@@ -340,24 +340,28 @@ public:
                 } else {
                     return makeBool(true);
                 }
+            case llvm::ConditionType::ULT:
             case llvm::ConditionType::LT:
                 if (this->intersects(other)) {
                     return makeTop();
                 } else {
                     return makeBool(this->ub() < otherRaw->lb());
                 }
+            case llvm::ConditionType::ULE:
             case llvm::ConditionType::LE:
                 if (this->intersects(other)) {
                     return makeTop();
                 } else {
                     return makeBool(this->ub() <= otherRaw->lb());
                 }
+            case llvm::ConditionType::UGT:
             case llvm::ConditionType::GT:
                 if (this->intersects(other)) {
                     return makeTop();
                 } else {
                     return makeBool(otherRaw->ub() < this->lb());
                 }
+            case llvm::ConditionType::UGE:
             case llvm::ConditionType::GE:
                 if (this->intersects(other)) {
                     return makeTop();

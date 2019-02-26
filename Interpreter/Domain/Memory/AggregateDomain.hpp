@@ -1,13 +1,13 @@
 //
-// Created by abdullin on 2/13/19.
+// Created by abdullin on 2/26/19.
 //
 
-#ifndef BOREALIS_POINTSTODOMAIN_HPP
-#define BOREALIS_POINTSTODOMAIN_HPP
+#ifndef BOREALIS_AGGREGATEDOMAIN_HPP
+#define BOREALIS_AGGREGATEDOMAIN_HPP
 
 #include "Interpreter/Domain/AbstractFactory.hpp"
 
-#include "PointerDomain.hpp"
+#include "Aggregate.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -15,14 +15,14 @@
 namespace borealis {
 namespace absint {
 
-template <typename MachineInt, typename Variable>
-class PointsToDomain : public MemoryDomain<MachineInt, Variable> {
+template <typename Inner, typename Variable>
+class AggregateDomain : public Aggregate<Variable> {
 public:
-    using Self = PointsToDomain<MachineInt, Variable>;
+    using Self = AggregateDomain<Inner, Variable>;
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using EnvT = SeparateDomain<Variable, PointerDomain<MachineInt>>;
+    using EnvT = SeparateDomain<Variable, Inner>;
     using EnvPtr = typename EnvT::Ptr;
 
 protected:
@@ -32,8 +32,8 @@ protected:
 
 private:
 
-    explicit PointsToDomain(EnvPtr env) :
-            MemoryDomain<MachineInt, Variable>(class_tag(*this)), af_(AbstractFactory::get()), env_(std::move(env)) {}
+    explicit AggregateDomain(EnvPtr env) :
+        Aggregate<Variable>(class_tag(*this)), af_(AbstractFactory::get()), env_(std::move(env)) {}
 
     static Self* unwrap(Ptr other) {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
@@ -60,12 +60,12 @@ protected:
 
 public:
 
-    PointsToDomain() : PointsToDomain(EnvT::top()) {}
-    PointsToDomain(const PointsToDomain&) = default;
-    PointsToDomain(PointsToDomain&&) = default;
-    PointsToDomain& operator=(const PointsToDomain&) = default;
-    PointsToDomain& operator=(PointsToDomain&&) = default;
-    virtual ~PointsToDomain() = default;
+    AggregateDomain() : AggregateDomain(EnvT::top()) {}
+    AggregateDomain(const AggregateDomain&) = default;
+    AggregateDomain(AggregateDomain&&) = default;
+    AggregateDomain& operator=(const AggregateDomain&) = default;
+    AggregateDomain& operator=(AggregateDomain&&) = default;
+    virtual ~AggregateDomain() = default;
 
     static bool classof (const Self*) {
         return true;
@@ -110,25 +110,12 @@ public:
 
     void assign(Variable x, Ptr i) override { this->set(x, i); }
 
-    Ptr applyTo(llvm::ConditionType, Variable, Variable) const override {
-        auto&& makeTop = [&]() { return af_->getBool(AbstractFactory::TOP); };
-        return makeTop();
+    Ptr extractFrom(Type::Ptr type, Variable ptr, Ptr index) const override {
+        return this->get(ptr)->load(type, index);
     }
 
-    Ptr loadFrom(Type::Ptr type, Variable ptr) const override {
-        auto&& ptrDom = this->get(ptr);
-        return ptrDom->load(type, af_->getMachineInt(0));
-    }
-
-    void storeTo(Variable ptr, Ptr x) override {
-        auto&& ptrDom = this->get(ptr);
-        ptrDom->store(x, af_->getMachineInt(0));
-    }
-
-    void gepFrom(Variable x, Type::Ptr type, Variable ptr, const std::vector<Ptr>& shifts) override {
-        auto&& ptrDom = this->get(ptr);
-        auto&& xDom = ptrDom->gep(type, shifts);
-        assign(x, xDom);
+    void insertTo(Variable ptr, Ptr value, Ptr index) override {
+        this->get(ptr)->store(value, index);
     }
 
     size_t hashCode() const override {
@@ -145,4 +132,4 @@ public:
 
 #include "Util/unmacros.h"
 
-#endif //BOREALIS_POINTSTODOMAIN_HPP
+#endif //BOREALIS_AGGREGATEDOMAIN_HPP
