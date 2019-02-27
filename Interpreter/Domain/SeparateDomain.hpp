@@ -107,13 +107,12 @@ public:
                 else if (not it.second->equals((*otherIt).second)) return false;
             }
             return true;
-//            return util::equal_with_find(this->values_, otherRaw->values_,
-//                    LAM(a, a.first), LAM2(a, b, a.second->leq(b.second)));
         }
     }
 
     bool equals(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        if (not otherRaw) return false;
 
         if (this->isBottom()) {
             return otherRaw->isBottom();
@@ -128,8 +127,6 @@ public:
                 else if (not it.second->equals((*otherIt).second)) return false;
             }
             return true;
-//            return util::equal_with_find(this->values_, otherRaw->values_,
-//                                         LAM(a, a.first), LAM2(a, b, a.second->equals(b.second)));
         }
     }
 

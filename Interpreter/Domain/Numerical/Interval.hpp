@@ -165,7 +165,8 @@ public:
     }
 
     bool equals(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        if (not otherRaw) return false;
 
         if (this->isBottom()) {
             return other->isBottom();

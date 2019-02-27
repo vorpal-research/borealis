@@ -31,6 +31,7 @@ public:
 private:
 
     const llvm::Function* instance_;
+    const llvm::Value* returnValue_;
     mutable SlotTracker* tracker_;
     VariableFactory* factory_;
     std::vector<AbstractDomain::Ptr> arguments_;

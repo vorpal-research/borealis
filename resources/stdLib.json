@@ -2019,7 +2019,7 @@
       "name": "strndup",
       "result" : { "special": "Malloc", "size" : 2 },
       "args": [
-            { "access" : "Read", "array" : true, "size": 2 }
+            { "access" : "Read", "array" : true, "size": 1 }
       ]
 },
 {

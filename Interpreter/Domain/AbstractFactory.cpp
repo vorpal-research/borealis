@@ -430,18 +430,13 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
         case FPTOI:
             {
                 ASSERTC(integer);
-                bool targetSigned = false;
-                if (integer->getSignedness() == llvm::Signedness::Signed)
-                    targetSigned = true;
 
                 if (auto* fp = llvm::dyn_cast<FloatT>(domain.get())) {
-                    if (targetSigned) {
-                        auto&& sint = std::make_shared<SInt>(util::cast<FloatT, SInt>()(*fp));
-                        return cast(SEXT, target, sint);
-                    } else {
-                        auto&& uint = std::make_shared<UInt>(util::cast<FloatT, UInt>()(*fp));
-                        return cast(EXT, target, uint);
-                    }
+                    auto&& sint = std::make_shared<SInt>(util::cast<FloatT, SInt>()(*fp));
+                    auto&& first = cast(SEXT, target, sint);
+                    auto&& uint = std::make_shared<UInt>(util::cast<FloatT, UInt>()(*fp));
+                    auto&& second = cast(EXT, target, uint);
+                    return std::make_shared<IntT>(first, second);
                 } else {
                     UNREACHABLE("Unknown interval");
                 }

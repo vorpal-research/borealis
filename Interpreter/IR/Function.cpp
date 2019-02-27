@@ -34,18 +34,15 @@ Function::Function(const llvm::Function* function, VariableFactory* factory, Slo
             }
             operands.pop_front();
         }
+        if (auto* ret = llvm::dyn_cast<llvm::ReturnInst>(&inst)) {
+            returnValue_ = ret->getReturnValue();
+        }
     }
 
     for (auto&& block : util::viewContainer(*instance_)) {
         blocks_.insert( {&block, std::move(BasicBlock{&block, tracker_, factory_}) });
     }
 
-//    // adding return value
-//    auto&& returnType = instance_->getReturnType();
-//    if (not returnType->isVoidTy()) {
-//        auto&& retDomain = factory_->bottom(returnType);
-//        if (retDomain) outputState_->setReturnValue(retDomain);
-//    }
 }
 
 const llvm::Function* Function::getInstance() const {
@@ -61,10 +58,7 @@ const Function::BlockMap& Function::getBasicBlocks() const {
 }
 
 AbstractDomain::Ptr Function::getReturnValue() const {
-    auto* retval = llvm::dyn_cast<llvm::ReturnInst>(&instance_->back().back());
-    return (retval != nullptr) ?
-           (retval->getReturnValue() != nullptr) ? outputState_->get(retval->getReturnValue()) : nullptr
-           : nullptr;
+    return (returnValue_ != nullptr) ? outputState_->get(returnValue_) : nullptr;
 }
 
 BasicBlock* Function::getEntryNode() const {
