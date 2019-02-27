@@ -83,7 +83,7 @@ bool BasicBlock::empty() const {
 }
 
 bool BasicBlock::atFixpoint(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) {
-    if (empty()) return false;
+    if (empty() && not visited_) return false;
     if (checkGlobalsChanged(globals)) return false;
     if (not inputChanged_) return atFixpoint_;
     else {

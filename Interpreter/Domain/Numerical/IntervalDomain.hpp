@@ -61,7 +61,7 @@ protected:
 
 public:
 
-    IntervalDomain() : IntervalDomain(EnvT::top()) {}
+    IntervalDomain() : IntervalDomain(EnvT::bottom()) {}
     IntervalDomain(const IntervalDomain&) = default;
     IntervalDomain(IntervalDomain&&) = default;
     IntervalDomain& operator=(const IntervalDomain&) = default;

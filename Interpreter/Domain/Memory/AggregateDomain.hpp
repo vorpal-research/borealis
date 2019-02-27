@@ -60,7 +60,7 @@ protected:
 
 public:
 
-    AggregateDomain() : AggregateDomain(EnvT::top()) {}
+    AggregateDomain() : AggregateDomain(EnvT::bottom()) {}
     AggregateDomain(const AggregateDomain&) = default;
     AggregateDomain(AggregateDomain&&) = default;
     AggregateDomain& operator=(const AggregateDomain&) = default;

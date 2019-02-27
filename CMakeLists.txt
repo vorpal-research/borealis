@@ -70,7 +70,7 @@ set(COMPILER_FLAGS
         -fno-rtti
         ${COMPILER_WARNINGS})
 
-list(APPEND COMPILER_FLAGS -O2 -g)
+list(APPEND COMPILER_FLAGS -O0 -g3)
 
 set(PROTO_COMPILER_FLAGS
         ${CMAKE_CXX_FLAGS}

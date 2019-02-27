@@ -348,7 +348,9 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
 ///////////////////////////////////////////////////////////////
 void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
-        if (not it->atFixpoint(module_.globalsFor(it)) && not util::contains(context_->deque, it)) {
+        auto&& atFixpoint = it->atFixpoint(module_.globalsFor(it));
+        auto&& inQueue = util::contains(context_->deque, it);
+        if (not atFixpoint && not inQueue) {
             context_->deque.emplace_back(it);
         }
     }

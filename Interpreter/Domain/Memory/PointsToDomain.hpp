@@ -60,7 +60,7 @@ protected:
 
 public:
 
-    PointsToDomain() : PointsToDomain(EnvT::top()) {}
+    PointsToDomain() : PointsToDomain(EnvT::bottom()) {}
     PointsToDomain(const PointsToDomain&) = default;
     PointsToDomain(PointsToDomain&&) = default;
     PointsToDomain& operator=(const PointsToDomain&) = default;
