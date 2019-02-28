@@ -111,6 +111,7 @@ bool VariableInfoTracker::runOnModule(llvm::Module& M) {
     // we should find a way to deal with multiple symbols with same name
     for(auto&& extv : ext_vars.vars) if(extv.kind != VariableKind::Local) extVarByName.emplace(extv.name, extv);
 
+    // FIXME: we need to store function and global info separately
     for(auto&& V : M.getFunctionList()) {
         auto&& vext = util::at(extVarByName, V.getName());
         if(vext) vars.put(&V, vext.getUnsafe());

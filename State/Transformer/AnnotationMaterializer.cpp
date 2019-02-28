@@ -526,7 +526,10 @@ Term::Ptr AnnotationMaterializer::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPt
                 warns() << "Cannot materialize function " <<  ctx.func->getName() << ", trying to deduce type from llvm" << endl;
             }
 
-            auto ctype = descs.empty()? pimpl->ctypeInfer.tryCastLLVMTypeToCType(ctx.func->getType()->getPointerElementType()) : descs.front().type;
+            auto&& filteredDescs = util::viewContainer(descs).filter(LAM(a, llvm::isa<CFunction>(a.type))).toVector();
+            auto ctype = filteredDescs.empty() ?
+                    pimpl->ctypeInfer.tryCastLLVMTypeToCType(ctx.func->getType()->getPointerElementType()) :
+                    filteredDescs.front().type;
             auto&& funcCType = llvm::dyn_cast<CFunction>(ctype);
 
             auto&& argCType = funcCType->getArgumentTypes()[val];
