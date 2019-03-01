@@ -492,7 +492,7 @@ std::ostream& operator<<(std::ostream& out, const Int<width, sign>& num) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 class Float {
-private:
+public:
 
     using Self = Float;
 

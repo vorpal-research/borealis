@@ -6,6 +6,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <Logging/logger.hpp>
 
+#include "Interpreter/Domain/Numerical/Number.hpp"
 #include "Util.hpp"
 #include "Util/algorithm.hpp"
 #include "Util/collections.hpp"
@@ -53,7 +54,7 @@ bool ge(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
 }
 
 const llvm::fltSemantics& getSemantics() {
-    return llvm::APFloat::IEEEdouble;
+    return absint::Float::getLlvmSemantics();
 }
 
 const llvm::fltSemantics& getSemantics(const llvm::Type& type) {
@@ -134,6 +135,13 @@ bool llvm_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
         default:
             UNREACHABLE("Unknown TypeID");
     }
+}
+
+llvm::APFloat normalizeFloat(const llvm::APFloat& n) {
+    llvm::APFloat result(n);
+    bool b;
+    result.convert(getSemantics(), absint::Float::getRoundingMode(), &b);
+    return std::move(result);
 }
 
 }   /* namespace util */

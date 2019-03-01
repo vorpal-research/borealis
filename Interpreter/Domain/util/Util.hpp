@@ -38,6 +38,8 @@ static bool operator>(const llvm::APFloat& lhv, const llvm::APFloat& rhv) {
 const llvm::fltSemantics& getSemantics();
 const llvm::fltSemantics& getSemantics(const llvm::Type& type);
 
+llvm::APFloat normalizeFloat(const llvm::APFloat& n);
+
 std::string toString(const llvm::APFloat& val);
 std::string toString(const llvm::APInt& val, bool isSigned = false);
 

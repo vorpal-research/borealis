@@ -67,7 +67,9 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
                                                : af_->getInteger(*intConstant->getValue().getRawData(), intConstant->getBitWidth());
         // Float
     } else if (auto floatConstant = llvm::dyn_cast<llvm::ConstantFP>(constant)) {
-        return af_->getFloat(floatConstant->getValueAPF().convertToDouble());
+        auto&& apFloat = floatConstant->getValueAPF();
+        auto&& apDouble = util::normalizeFloat(apFloat);
+        return af_->getFloat(apDouble.convertToDouble());
         // Null pointer
     } else if (llvm::isa<llvm::ConstantPointerNull>(constant)) {
         return af_->getNullptr();
