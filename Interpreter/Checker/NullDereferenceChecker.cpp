@@ -50,7 +50,7 @@ void NullDereferenceChecker::checkPointer(llvm::Instruction& loc, llvm::Value& p
     } else {
         auto&& ptrDomain = module_->getDomainFor(&ptr, loc.getParent());
         auto&& ptr = llvm::dyn_cast<AbstractFactory::PointerT>(ptrDomain.get());
-        auto bug = ptr->isTop() || ptr->isTop() || ptr->pointsToNull();
+        auto bug = ptr->isTop() || ptr->isBottom() || ptr->pointsToNull();
         if (enableLogging.get(true)) {
             info << "Pointer domain: " << ptrDomain << endl;
             info << "Result: " << bug << endl;

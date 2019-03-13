@@ -194,7 +194,7 @@ public:
         return next;
     }
 
-    size_t hashCode() const override { return functions_.size(); }
+    size_t hashCode() const override { return class_tag(*this); } //return util::hash::defaultHasher()(isBottom_); }
     std::string toString() const override {
         std::ostringstream ss;
         ss << "Function " << TypeUtils::toString(*prototype_.get()) << " : ";

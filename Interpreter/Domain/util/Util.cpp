@@ -144,6 +144,12 @@ llvm::APFloat normalizeFloat(const llvm::APFloat& n) {
     return std::move(result);
 }
 
+bool isFunctionPtr(const llvm::Type* type) {
+    if (type->isFunctionTy()) return true;
+    else if (type->isPointerTy()) return isFunctionPtr(type->getPointerElementType());
+    else return false;
+}
+
 }   /* namespace util */
 }   /* namespace borealis */
 

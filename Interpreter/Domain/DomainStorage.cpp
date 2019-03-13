@@ -269,7 +269,6 @@ AbstractDomain::Ptr DomainStorage::get(Variable x) const {
     else if (llvm::isa<type::Record>(type.get()))
         return unwrapStruct()->get(x);
     else {
-        warns() << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << endl;
         return nullptr;
     }
 }
@@ -395,6 +394,12 @@ void DomainStorage::store(Variable ptr, Variable x) {
     unwrapMemory()->storeTo(ptr, get(x));
 }
 
+void DomainStorage::storeWithWidening(DomainStorage::Variable ptr, DomainStorage::Variable x) {
+    auto&& ptrDom = unwrapMemory()->loadFrom(vf_->cast(x->getType()), ptr);
+    auto&& xDom = get(x);
+    unwrapMemory()->storeTo(ptr, ptrDom->widen(xDom));
+}
+
 /// x = gep(ptr, shifts)
 void DomainStorage::gep(Variable x, Variable ptr, const std::vector<Variable>& shifts) {
     std::vector<AbstractDomain::Ptr> normalizedShifts;
@@ -442,6 +447,7 @@ std::string DomainStorage::toString() const {
     ss << "Ints:" << std::endl << ints_->toString() << std::endl;
     ss << "Floats:" << std::endl << floats_->toString() << std::endl;
     ss << "Memory:" << std::endl << memory_->toString() << std::endl;
+    ss << "Structs:" << std::endl << structs_->toString() << std::endl;
     return ss.str();
 }
 

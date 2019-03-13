@@ -58,6 +58,10 @@ void State::store(const llvm::Value* ptr, const llvm::Value* x) {
     storage_->store(ptr, x);
 }
 
+void State::storeWithWidening(const llvm::Value* ptr, const llvm::Value* x) {
+    storage_->storeWithWidening(ptr, x);
+}
+
 void State::gep(const llvm::Value* x, const llvm::Value* ptr, const std::vector<const llvm::Value*>& shifts) {
     storage_->gep(x, ptr, shifts);
 }

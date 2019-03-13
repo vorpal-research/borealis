@@ -26,7 +26,7 @@ public:
 
     using Ptr = AbstractDomain::Ptr;
     using IntervalT = Interval<MachineInt>;
-    using OffsetSet = std::unordered_set<Ptr, AbstrachDomainHash, AbstractDomainEquals>;
+    using OffsetSet = std::unordered_set<Ptr, AbstractDomainHash, AbstractDomainEquals>;
 
     virtual OffsetSet offsets() const = 0;
 

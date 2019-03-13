@@ -31,22 +31,32 @@ void Interpreter::run() {
         return;
     }
 
-    for (auto&& root : roots) {
-        std::vector<AbstractDomain::Ptr> args;
-        for (auto&& arg : root->getInstance()->getArgumentList()) {
-            args.emplace_back(module_.variableFactory()->top(arg.getType()));
+    if (not roots.empty()) {
+        std::vector<Function::Ptr> order = util::viewContainer(CGS_->getAddressTakenFunctions()).map(LAM(a, module_.get(a))).toVector();
+        for (auto&& root : roots) {
+            order.emplace_back(root);
         }
 
-        interpretFunction(root, args);
-    }
+        for (auto&& root : order) {
+            std::vector<AbstractDomain::Ptr> args;
+            for (auto&& arg : root->getInstance()->getArgumentList()) {
+                args.emplace_back(module_.variableFactory()->top(arg.getType()));
+            }
 
-    for (auto&& function : CGS_->getAddressTakenFunctions()) {
-        auto&& ai_function = module_.get(function);
-        if (not function->isDeclaration() && not ai_function->isVisited()) {
-            std::vector<AbstractDomain::Ptr> topargs;
-            for (auto&& arg : function->args())
-                topargs.emplace_back(module_.variableFactory()->top(arg.getType()));
-            interpretFunction(ai_function, topargs);
+            interpretFunction(root, args);
+        }
+
+    } else {
+        // TODO: add topological sorting of functions to increase effitiency
+        for (auto&& f : module_.instance()->getFunctionList()) {
+            auto&& function = module_.get(&f);
+
+            std::vector<AbstractDomain::Ptr> args;
+            for (auto&& arg : function->getInstance()->getArgumentList()) {
+                args.emplace_back(module_.variableFactory()->top(arg.getType()));
+            }
+
+            interpretFunction(function, args);
         }
     }
 
@@ -69,7 +79,8 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Ab
                    function->updateArguments(args);
     auto updGlobals = function->updateGlobals(module_.globalsFor(function));
     if (not (updArgs || updGlobals)) return;
-    stack_.push({ function, nullptr, {function->getEntryNode()}, {} });
+    auto&& entry = function->getEntryNode();
+    stack_.push({ function, nullptr, { entry }, {} });
     callStack_.insert(function);
     context_ = &stack_.top();
 
@@ -216,7 +227,12 @@ void Interpreter::visitLoadInst(llvm::LoadInst& i) {
 }
 
 void Interpreter::visitStoreInst(llvm::StoreInst& i) {
-    context_->state->store(i.getPointerOperand(), i.getValueOperand());
+    if (context_->stores.count(&i)) {
+        context_->state->storeWithWidening(i.getPointerOperand(), i.getValueOperand());
+    } else {
+        context_->state->store(i.getPointerOperand(), i.getValueOperand());
+        context_->stores.insert(&i);
+    }
 }
 
 void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
@@ -226,14 +242,16 @@ void Interpreter::visitGetElementPtrInst(llvm::GetElementPtrInst& i) {
 void Interpreter::visitPHINode(llvm::PHINode& i) {
     AbstractDomain::Ptr result = module_.variableFactory()->bottom(i.getType());
 
+    bool changed = false;
     if (not context_->state->get(&i)) {
         for (auto j = 0U; j < i.getNumIncomingValues(); ++j) {
             auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
             if (predecessor->isVisited()) {
                 auto&& incoming = context_->state->get(i.getIncomingValue(j));
-                ASSERT(incoming, "Unknown value in phi");
+                if (not incoming) continue;
 
                 result->joinWith(incoming);
+                changed = true;
             }
         }
 
@@ -242,14 +260,16 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
             auto&& predecessor = context_->function->getBasicBlock(i.getIncomingBlock(j));
             if (predecessor->isVisited()) {
                 auto&& incoming = context_->state->get(i.getIncomingValue(j));
-                ASSERT(incoming, "Unknown value in phi");
+                if (not incoming) continue;
 
                 result->widenWith(incoming);
+                changed = true;
             }
         }
     }
 
     ASSERT(result, "phi result");
+    ASSERTC(changed);
     context_->state->assign(&i, result);
 }
 
@@ -330,7 +350,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
             context_->state->assign(&i, retval);
     // usual function call
     } else {
-        if (i.getCalledFunction()->getName().startswith("llvm.")) return;
+//        if (i.getCalledFunction()->getName().startswith("llvm.")) return;
 
         std::vector<std::pair<const llvm::Value*, AbstractDomain::Ptr>> args;
         for (auto j = 0U; j < i.getNumArgOperands(); ++j) {
@@ -410,7 +430,7 @@ AbstractDomain::Ptr Interpreter::handleDeclaration(const llvm::Function* functio
 
     } catch (std::out_of_range&) {
         // just skip llvm debug function, to prevent excess printing to log
-        if (function->getName().equals("llvm.dbg.value")) return nullptr;
+        if (function->getName().startswith("llvm.dbg.")) return nullptr;
 
         warns() << "Unknown function: " << function->getName() << endl;
         // Unknown function possibly can do anything with pointer arguments

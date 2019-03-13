@@ -229,7 +229,7 @@ public:
     }
 
     size_t hashCode() const override {
-        return util::hash::defaultHasher()(lb_, ub_);
+        return class_tag(*this); //return util::hash::defaultHasher()(lb_, ub_);
     }
 
     std::string toString() const override {
@@ -317,7 +317,7 @@ public:
         if (this->isTop() || otherRaw->isTop()) {
             return makeTop();
         } else if (this->isBottom() || otherRaw->isBottom()) {
-            return af->getBool(AbstractFactory::BOTTOM);
+            return makeTop();//af->getBool(AbstractFactory::BOTTOM);
         }
 
         switch (op) {

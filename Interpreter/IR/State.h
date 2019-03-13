@@ -41,6 +41,7 @@ public:
     void apply(CastOperator op, const llvm::Value* x, const llvm::Value* y);
     void load(const llvm::Value* x, const llvm::Value* ptr);
     void store(const llvm::Value* ptr, const llvm::Value* x);
+    void storeWithWidening(const llvm::Value* ptr, const llvm::Value* x);
     void gep(const llvm::Value* x, const llvm::Value* ptr, const std::vector<const llvm::Value*>& shifts);
 
     void allocate(const llvm::Value* x, const llvm::Value* size);

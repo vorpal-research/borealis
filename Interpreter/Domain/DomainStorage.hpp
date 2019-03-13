@@ -84,6 +84,9 @@ public:
     /// *ptr = x
     void store(Variable ptr, Variable x);
 
+    /// *ptr = (x->widen(*ptr))
+    void storeWithWidening(Variable ptr, Variable x);
+
     /// x = gep(ptr, shifts)
     void gep(Variable x, Variable ptr, const std::vector<Variable>& shifts);
 

@@ -73,6 +73,8 @@ Head signed_max(const Head& h, const Tail&... t) {
 ///////////////////////////////////////////////////////////////
 bool llvm_types_eq(const llvm::Type* lhv, const llvm::Type* rhv);
 
+bool isFunctionPtr(const llvm::Type* type);
+
 }   /* namespace util */
 }   /* namespace borealis */
 

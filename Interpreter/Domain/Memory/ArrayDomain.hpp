@@ -156,10 +156,17 @@ public:
             return false;
         } else {
 
-            if (!this->length_->equals(otherRaw->length_)) return false;
+            if (not this->length_->equals(otherRaw->length_)) return false;
 
             for (auto&& it : this->elements_) {
                 auto&& opt = util::at(otherRaw->elements_, (size_t) it.first);
+                if ((not opt) || (not it.second->equals(opt.getUnsafe()))) {
+                    return false;
+                }
+            }
+
+            for (auto&& it : otherRaw->elements_) {
+                auto&& opt = util::at(this->elements_, (size_t) it.first);
                 if ((not opt) || (not it.second->equals(opt.getUnsafe()))) {
                     return false;
                 }
@@ -263,7 +270,7 @@ public:
     }
 
     size_t hashCode() const override {
-        return util::hash::defaultHasher()(this->length_, this->elements_.size());
+        return class_tag(*this); //return util::hash::defaultHasher()(this->length_);
     }
 
     std::string toString() const override {
@@ -304,7 +311,7 @@ public:
                 return factory_->top(elementType_);
             }
 
-            for (auto i = lb; i < ub and i < length; ++i) {
+            for (auto i = lb; i <= ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);
                 result->joinWith((not opt) ? factory_->bottom(elementType_) : opt.getUnsafe());
             }
@@ -331,7 +338,7 @@ public:
                 warns() << "Buffer overflow" << endl;
             }
 
-            for (auto i = lb; i < ub and i < length; ++i) {
+            for (auto i = lb; i <= ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);
                 if (not opt) {
                     this->elements_[(size_t) i] = value;

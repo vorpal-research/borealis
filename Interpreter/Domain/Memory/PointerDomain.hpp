@@ -22,7 +22,7 @@ public:
     using Self = PointerDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using MemoryLocationT = MemoryLocation<MachineInt>;
-    using PointsToSet = std::unordered_set<Ptr, AbstrachDomainHash, AbstractDomainEquals>;
+    using PointsToSet = std::unordered_set<Ptr, AbstractDomainHash, AbstractDomainEquals>;
 
 private:
 
@@ -153,14 +153,13 @@ public:
                 auto&& otherOffsets = otherLoc->offsets();
 
                 if (thisOffsets.size() != otherOffsets.size()) return false;
-                for (auto&& it : thisOffsets) {
-                    auto&& otherIt = otherOffsets.find(it);
-                    if (otherIt == otherOffsets.end()) return false;
-                    else if (not it->equals(*otherIt)) return false;
+
+                for (auto&& offset : thisOffsets) {
+                    auto&& otherOffset = otherOffsets.find(offset);
+                    if (otherOffset == otherOffsets.end()) return false;
+                    else if (not offset->equals(*otherOffset)) return false;
                 }
 
-//                if (not util::equal_with_find(otherLoc->offsets(), thisLoc->offsets(), LAM(a, a), LAM2(a, b, a->equals(b))))
-//                    return false;
             }
             return true;
         }
@@ -239,7 +238,7 @@ public:
     }
 
     size_t hashCode() const override {
-        return util::hash::defaultHasher()(this->isBottom_, this->ptsTo_.size());
+        return class_tag(*this); //return util::hash::defaultHasher()(this->isBottom_);
     }
 
     std::string toString() const override {

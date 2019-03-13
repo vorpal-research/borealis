@@ -200,27 +200,16 @@ public:
     }
 
     typename Inner::Ptr get(Variable x,
-            const std::function<typename Inner::Ptr()>& getBottom,
+            const std::function<typename Inner::Ptr()>&,
             const std::function<typename Inner::Ptr()>&) const {
-        if (this->isBottom()) {
-            return getBottom();
-        } else {
-            auto&& opt = util::at(this->values_, x);
-            if (opt.empty()) return nullptr;//getTop();
-            else return opt.getUnsafe();
-        }
+        auto&& opt = util::at(this->values_, x);
+        if (opt.empty()) return nullptr;
+        else return opt.getUnsafe();
     }
 
     void set(Variable x, typename Inner::Ptr value) {
-//        if (this->isBottom()) {
-//            return;
-//        } else if (value->isBottom()) {
-//            this->setBottom();
-//        } else if (value->isTop()) {
-//            this->values_.erase(x);
-//        } else {
-            this->values_[x] = value;
-//        }
+        this->values_[x] = value;
+        this->isBottom_ = false;
     }
 
     void forget(Variable x) {

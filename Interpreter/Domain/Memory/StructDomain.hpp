@@ -256,7 +256,7 @@ public:
     }
 
     size_t hashCode() const override {
-        return util::hash::defaultHasher()(this->size(), this->elements_);
+        return class_tag(*this); //return util::hash::defaultHasher()(this->size(), this->elements_);
     }
 
     std::string toString() const override {
