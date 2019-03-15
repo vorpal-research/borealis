@@ -129,7 +129,7 @@ public:
     bool isBottom() const override { return length_->isBottom() and elements_.empty(); }
 
     void setTop() override {
-        length_->setTop();
+        length_ = factory_->getMachineInt(AbstractFactory::TOP);
         elements_.clear();
     }
 
@@ -176,7 +176,8 @@ public:
         }
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -189,7 +190,7 @@ public:
             this->operator=(*otherRaw);
         } else {
 
-            this->length_->joinWith(otherRaw->length_);
+            this->length_ = this->length_->join(otherRaw->length_);
             for (auto&& it : otherRaw->elements_) {
                 auto&& opt = util::at(this->elements_, (size_t) it.first);
                 if (not opt) {
@@ -207,7 +208,7 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -220,7 +221,7 @@ public:
             return;
         } else {
 
-            this->length_->meetWith(otherRaw->length_);
+            this->length_ = this->length_->meet(otherRaw->length_);
             for (auto&& it : otherRaw->elements_) {
                 auto&& opt = util::at(this->elements_, (size_t) it.first);
                 if (not opt) {
@@ -238,7 +239,7 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -251,7 +252,7 @@ public:
             this->operator=(*otherRaw);
         } else {
 
-            this->length_->widenWith(otherRaw->length_);
+            this->length_ = this->length_->widen(otherRaw->length_);
             for (auto&& it : otherRaw->elements_) {
                 auto&& opt = util::at(this->elements_, (size_t) it.first);
                 if (not opt) {
@@ -313,7 +314,7 @@ public:
 
             for (auto i = lb; i <= ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);
-                result->joinWith((not opt) ? factory_->bottom(elementType_) : opt.getUnsafe());
+                result = result->join((not opt) ? factory_->bottom(elementType_) : opt.getUnsafe());
             }
 
             return result;
@@ -340,11 +341,8 @@ public:
 
             for (auto i = lb; i <= ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);
-                if (not opt) {
-                    this->elements_[(size_t) i] = value;
-                } else {
-                    opt.getUnsafe()->joinWith(value);
-                }
+                Ptr storage = not opt ? value : opt.getUnsafe()->join(value);
+                this->elements_[(size_t) i] = storage;
             }
         }
     }
@@ -379,7 +377,7 @@ public:
                     elements_[(size_t) i] = factory_->bottom(elementType_);
                 }
                 auto subGep = elements_[(size_t) i]->gep(type, sub_idx);
-                result->joinWith(subGep);
+                result = result->join(subGep);
             }
             if (not result) {
                 warns() << "Gep is out of bounds" << endl;

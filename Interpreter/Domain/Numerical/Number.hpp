@@ -108,6 +108,7 @@ public:
     }
 
     bool equals(const Self& other) const {
+        if (this->width() != other.width()) return false;
         return this->inner_ == other.inner_;
     }
 

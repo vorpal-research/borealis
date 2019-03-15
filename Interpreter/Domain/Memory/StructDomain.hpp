@@ -174,7 +174,8 @@ public:
         }
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -190,7 +191,7 @@ public:
             ASSERT(this->size() == otherRaw->size(), "trying to join different length structs");
 
             for (auto i = 0U; i < this->size(); ++i) {
-                this->elements_[i]->joinWith(otherRaw->elements_[i]);
+                this->elements_[i] = this->elements_[i]->join(otherRaw->elements_[i]);
             }
         }
     }
@@ -201,7 +202,7 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -217,7 +218,7 @@ public:
             ASSERT(this->size() == otherRaw->size(), "trying to meet different length structs");
 
             for (auto i = 0U; i < this->size(); ++i) {
-                this->elements_[i]->meetWith(otherRaw->elements_[i]);
+                this->elements_[i] = this->elements_[i]->meet(otherRaw->elements_[i]);
             }
         }
     }
@@ -228,7 +229,7 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -244,7 +245,7 @@ public:
             ASSERT(this->size() == otherRaw->size(), "trying to widen different length structs");
 
             for (auto i = 0U; i < this->size(); ++i) {
-                this->elements_[i]->widenWith(otherRaw->elements_[i]);
+                this->elements_[i] = this->elements_[i]->widen(otherRaw->elements_[i]);
             }
         }
     }
@@ -309,7 +310,7 @@ public:
         if (this->isTop()) {
             return;
         } else {
-            elements_[index]->joinWith(value);
+            elements_[index] = elements_[index]->join(value);
         }
     }
 

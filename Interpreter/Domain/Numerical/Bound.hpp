@@ -445,6 +445,8 @@ struct Adapter<absint::Float> {
         return instance;
     }
 
+    size_t width() const { return 64; }
+
     absint::Float operator()(int n) const {
         return absint::Float(n);
     }

@@ -154,34 +154,6 @@ AbstractDomain::Ptr AbstractFactory::getInteger(unsigned long long n, unsigned w
     return IntT::constant(BitInt<true>(width, n), BitInt<false>(width, n), sintAdapter(width), uintAdapter(width));
 }
 
-//AbstractDomain::Ptr AbstractFactory::getInt(AbstractFactory::Kind kind) const {
-//    if (kind == TOP) {
-//        return DoubleInterval<Int<32U, true>, Int<32U, false>>::top();
-//    } else if (kind == BOTTOM) {
-//        return DoubleInterval<Int<32U, true>, Int<32U, false>>::bottom();
-//    } else {
-//        UNREACHABLE("Unknown kind");
-//    }
-//}
-//
-//AbstractDomain::Ptr AbstractFactory::getInt(int n) const {
-//    return DoubleInterval<Int<32U, true>, Int<32U, false>>::constant(n);
-//}
-//
-//AbstractDomain::Ptr AbstractFactory::getLong(AbstractFactory::Kind kind) const {
-//    if (kind == TOP) {
-//        return DoubleInterval<Int<64U, true>, Int<64U, false>>::top();
-//    } else if (kind == BOTTOM) {
-//        return DoubleInterval<Int<64U, true>, Int<64U, false>>::bottom();
-//    } else {
-//        UNREACHABLE("Unknown kind");
-//    }
-//}
-//
-//AbstractDomain::Ptr AbstractFactory::getLong(long n) const {
-//    return DoubleInterval<Int<64U, true>, Int<64U, false>>::constant(n);
-//}
-
 AbstractDomain::Ptr AbstractFactory::getFloat(AbstractFactory::Kind kind) const {
     if (kind == TOP) {
         return FloatT::top(floatAdapter());
@@ -357,15 +329,17 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
 
                 if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
                     if (targetSigned) {
-                        return std::make_shared<SInt>(*sint);
+                        return sint->clone();
                     } else {
-                        return std::make_shared<UInt>(util::cast<SInt, UInt>()(*sint));
+                        auto&& casted = util::cast<SInt, UInt>()(*sint);
+                        return UInt::interval(casted.lb(), casted.ub());
                     }
                 } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
                     if (targetSigned) {
-                        return std::make_shared<SInt>(util::cast<UInt, SInt>()(*uint));
+                        auto&& casted = util::cast<UInt, SInt>()(*uint);
+                        return SInt::interval(casted.lb(), casted.ub());
                     } else {
-                        return std::make_shared<UInt>(*uint);
+                        return uint->clone();
                     }
                 } else {
                     UNREACHABLE("Unknown interval");
@@ -376,7 +350,8 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
 
             if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
                 ASSERTC(integer);
-                return std::make_shared<SInt>(util::convert<SInt>()(*sint, integer->getBitsize()));
+                auto&& converted = util::convert<SInt>()(*sint, integer->getBitsize());
+                return SInt::interval(converted.lb(), converted.ub());
             } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
                 ASSERTC(integer);
                 // if we are trying to extend boolean, we need to return IntT
@@ -388,12 +363,14 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                     else if (uint->isConstant())
                         return getInteger((size_t) uint->asConstant(), integer->getBitsize());
                     else {
-                        auto&& casted = std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
+                        auto&& converted = util::convert<UInt>()(*uint, integer->getBitsize());
+                        auto&& casted = UInt::interval(converted.lb(), converted.ub());
                         auto&& scasted = cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Signed), casted);
-                        return std::make_shared<IntT>(scasted, casted);
+                        return IntT::interval(scasted, casted);
                     }
                 } else {
-                    return std::make_shared<UInt>(util::convert<UInt>()(*uint, integer->getBitsize()));
+                    auto&& converted = util::convert<UInt>()(*uint, integer->getBitsize());
+                    return UInt::interval(converted.lb(), converted.ub());
                 }
             } else if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
                 ASSERTC(integer);
@@ -403,7 +380,7 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                 if (integer->getBitsize() == 1) {
                     return second;
                 } else {
-                    return std::make_shared<IntT>(first, second);
+                    return IntT::interval(first, second);
                 }
             } else if (llvm::isa<FloatT>(domain.get())) {
                 warns() << "Trying to cast float types, not supported" << endl;
@@ -415,15 +392,17 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
             ASSERTC(integer);
 
             if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
-                return std::make_shared<SInt>(util::convert<SInt>()(*sint, integer->getBitsize()));
+                auto&& converted = util::convert<SInt>()(*sint, integer->getBitsize());
+                return SInt::interval(converted.lb(), converted.ub());
             } else if (llvm::isa<UInt>(domain.get())) {
                 auto* signd = llvm::cast<SInt>(cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Signed), domain).get());
-                auto&& sres = std::make_shared<SInt>(util::convert<SInt>()(*signd, integer->getBitsize()));
+                auto&& converted = util::convert<SInt>()(*signd, integer->getBitsize());
+                auto&& sres = SInt::interval(converted.lb(), converted.ub());
                 return cast(SIGN, tf_->getInteger(integer->getBitsize(), llvm::Signedness::Unsigned), sres);
             } else if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
                 auto&& first = cast(op, target, dint->first());
                 auto&& second = cast(op, target, dint->second());
-                return std::make_shared<IntT>(first, second);
+                return IntT::interval(first, second);
             } else {
                 UNREACHABLE("Unknown interval");
             }
@@ -432,20 +411,24 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
                 ASSERTC(integer);
 
                 if (auto* fp = llvm::dyn_cast<FloatT>(domain.get())) {
-                    auto&& sint = std::make_shared<SInt>(util::cast<FloatT, SInt>()(*fp));
+                    auto&& casted = util::cast<FloatT, SInt>()(*fp);
+                    auto&& sint = SInt::interval(casted.lb(), casted.ub());
                     auto&& first = cast(SEXT, target, sint);
-                    auto&& uint = std::make_shared<UInt>(util::cast<FloatT, UInt>()(*fp));
+                    auto&& castedU = util::cast<FloatT, UInt>()(*fp);
+                    auto&& uint = UInt::interval(castedU.lb(), castedU.ub());
                     auto&& second = cast(EXT, target, uint);
-                    return std::make_shared<IntT>(first, second);
+                    return IntT::interval(first, second);
                 } else {
                     UNREACHABLE("Unknown interval");
                 }
             }
         case ITOFP:
             if (auto* sint = llvm::dyn_cast<SInt>(domain.get())) {
-                return std::make_shared<FloatT>(util::cast<SInt, FloatT>()(*sint));
+                auto&& casted = util::cast<SInt, FloatT>()(*sint);
+                return FloatT::interval(casted.lb(), casted.ub());
             } else if (auto* uint = llvm::dyn_cast<UInt>(domain.get())) {
-                return std::make_shared<FloatT>(util::cast<UInt, FloatT>()(*uint));
+                auto&& casted = util::cast<UInt, FloatT>()(*uint);
+                return FloatT::interval(casted.lb(), casted.ub());
             } else if (auto* dint = llvm::dyn_cast<IntT>(domain.get())) {
                 return cast(op, target, dint->first());
             } else {

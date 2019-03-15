@@ -62,11 +62,11 @@ public:
 
     bool operator!=(ConstPtr other) const { return not this->equals(other); }
 
-    virtual void joinWith(ConstPtr other) = 0;
-
-    virtual void meetWith(ConstPtr other) = 0;
-
-    virtual void widenWith(ConstPtr other) = 0;
+//    virtual void joinWith(ConstPtr other) = 0;
+//
+//    virtual void meetWith(ConstPtr other) = 0;
+//
+//    virtual void widenWith(ConstPtr other) = 0;
 
     virtual Ptr join(ConstPtr other) const = 0;
 

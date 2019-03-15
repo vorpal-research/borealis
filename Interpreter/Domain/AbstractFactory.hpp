@@ -110,12 +110,6 @@ public:
     AbstractDomain::Ptr getInteger(Type::Ptr type, Kind kind) const;
     AbstractDomain::Ptr getInteger(unsigned long long n, unsigned width) const;
 
-//    AbstractDomain::Ptr getInt(Kind kind) const;
-//    AbstractDomain::Ptr getInt(int n) const;
-//
-//    AbstractDomain::Ptr getLong(Kind kind) const;
-//    AbstractDomain::Ptr getLong(long n) const;
-
     AbstractDomain::Ptr getFloat(Kind kind) const;
     AbstractDomain::Ptr getFloat(double n) const;
 

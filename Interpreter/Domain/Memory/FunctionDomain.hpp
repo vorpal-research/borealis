@@ -132,7 +132,8 @@ public:
         }
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -157,7 +158,7 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -184,7 +185,7 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         joinWith(other);
     }
 

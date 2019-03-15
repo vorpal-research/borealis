@@ -9,6 +9,7 @@
 #include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Util/algorithm.hpp"
+#include "Util/cache.hpp"
 #include "Util/hash.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -16,8 +17,38 @@
 namespace borealis {
 namespace absint {
 
+namespace impl_ {
+template <typename Num>
+using IntervalID = std::pair<Bound<Num>, Bound<Num>>;
+
+template <typename N>
+struct IntervalIDHash {
+    std::size_t operator()(const IntervalID<N>& id) const {
+        return util::hash::defaultHasher()(id.first, id.second);
+    }
+};
+
+template <typename N>
+struct IntervalIDEquals {
+    bool operator()(const IntervalID<N>& lhv, const IntervalID<N>& rhv) const {
+        if (lhv.first.caster()->width() != rhv.first.caster()->width()) return false;
+        return lhv.first == rhv.first && lhv.second == rhv.second;
+    }
+};
+
+} // namespace impl_
+
 template <typename Number>
 class Interval : public AbstractDomain {
+private:
+
+    using IntervalCacheImpl =
+            std::unordered_map<impl_::IntervalID<Number>, Ptr, impl_::IntervalIDHash<Number>, impl_::IntervalIDEquals<Number>>;
+
+private:
+
+    static util::cacheWImpl<impl_::IntervalID<Number>, Ptr, IntervalCacheImpl> cache_;
+
 public:
 
     using Self = Interval<Number>;
@@ -40,49 +71,55 @@ private:
         return otherRaw;
     }
 
+    static Ptr clone(const Interval<Number>& i) {
+        return interval(i.lb(), i.ub());
+    }
+
+private:
+
+    const BoundT lb_;
+    const BoundT ub_;
+    const bool isBottom_;
+    const bool isTop_;
+
 public:
     struct TopTag {};
     struct BottomTag {};
 
-    Interval(TopTag, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity(caster)), ub_(BoundT::plusInfinity(caster)) {}
-    Interval(BottomTag, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, 1), ub_(caster, 0) {}
+    Interval(TopTag, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(BoundT::minusInfinity(caster)), ub_(BoundT::plusInfinity(caster)), isBottom_(false), isTop_(true) {}
+    Interval(BottomTag, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, 1), ub_(caster, 0), isBottom_(true), isTop_(false) {}
 
     explicit Interval(const CasterT* caster) : Interval(TopTag{}, caster) {}
-    Interval(int n, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, n), ub_(caster, n) {}
-    Interval(const Number& n, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, n), ub_(caster, n) {}
-    Interval(const BoundT& b) : AbstractDomain(class_tag(*this)), lb_(b), ub_(b) {
+    Interval(int n, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, n), ub_(caster, n), isBottom_(false), isTop_(false) {}
+    Interval(const Number& n, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, n), ub_(caster, n), isBottom_(false), isTop_(false) {}
+    Interval(const BoundT& b) : AbstractDomain(class_tag(*this)), lb_(b), ub_(b), isBottom_(false), isTop_(false) {
         UNREACHABLE(!b.is_infinite());
     }
 
     Interval(int from, int to, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, from), ub_(caster, to) {}
-    Interval(const Number& from, const Number& to, const CasterT* caster) : AbstractDomain(class_tag(*this)), lb_(caster, from), ub_(caster, to) {}
-    Interval(const BoundT& from, const BoundT& to) : AbstractDomain(class_tag(*this)), lb_(from), ub_(to) {}
+    Interval(const Number& from, const Number& to, const CasterT* caster)
+        : AbstractDomain(class_tag(*this)), lb_(caster, from), ub_(caster, to), isBottom_(lb_ > ub_), isTop_(false) {}
+    Interval(const BoundT& from, const BoundT& to) : AbstractDomain(class_tag(*this)), lb_(from), ub_(to),
+        isBottom_(lb_ > ub_), isTop_(lb_ == BoundT::minusInfinity(lb_.caster()) and ub_ == BoundT::plusInfinity(ub_.caster())) {}
 
     Interval(const Interval&) = default;
     Interval(Interval&&) = default;
-    Interval& operator=(const Interval& other) {
-        if (this != &other) {
-            this->lb_ = other.lb_;
-            this->ub_ = other.ub_;
-        }
-        return *this;
-    }
-    Interval& operator=(Interval&&) = default;
     ~Interval() override = default;
 
-    static Ptr top(const CasterT* caster) { return std::make_shared<Self>(TopTag{}, caster); }
-    static Ptr bottom(const CasterT* caster) { return std::make_shared<Self>(BottomTag{}, caster); }
-    static Ptr constant(int constant, const CasterT* caster) { return std::make_shared<Self>(constant, caster); }
-    static Ptr constant(long constant, const CasterT* caster) { return std::make_shared<Self>(constant, caster); }
-    static Ptr constant(double constant, const CasterT* caster) { return std::make_shared<Self>((*caster)(constant), caster); }
-    static Ptr constant(size_t constant, const CasterT* caster) { return std::make_shared<Self>((*caster)(constant), caster); }
-    static Ptr constant(const Number& n, const CasterT* caster) { return std::make_shared<Self>(n, caster); }
+    static Ptr top(const CasterT* caster) { return cache_[std::make_pair(BoundT::minusInfinity(caster), BoundT::plusInfinity(caster))]; }
+    static Ptr bottom(const CasterT* caster) { return cache_[std::make_pair(BoundT(caster, 1), BoundT(caster, 0))]; }
+    static Ptr constant(int constant, const CasterT* caster) { return cache_[std::make_pair(BoundT(caster, constant), BoundT(caster, constant))]; }
+    static Ptr constant(long constant, const CasterT* caster) { return cache_[std::make_pair(BoundT(caster, constant), BoundT(caster, constant))]; }
+    static Ptr constant(double constant, const CasterT* caster) { return cache_[std::make_pair(BoundT(caster, constant), BoundT(caster, constant))]; }
+    static Ptr constant(size_t constant, const CasterT* caster) { return cache_[std::make_pair(BoundT(caster, constant), BoundT(caster, constant))]; }
+    static Ptr constant(const Number& n, const CasterT* caster) { return cache_[std::make_pair(BoundT(caster, n), BoundT(caster, n))]; }
+    static Ptr interval(const BoundT& from, const BoundT& to) { return cache_[std::make_pair(from, to)]; }
 
     static Self getTop(const CasterT* caster) { return Self(TopTag{}, caster); }
     static Self getBottom(const CasterT* caster) { return Self(BottomTag{}, caster); }
 
     Ptr clone() const override {
-        return std::make_shared<Self>(*this);
+        return interval(lb(), ub());
     }
 
     static bool classof(const Self*) {
@@ -94,21 +131,19 @@ public:
     }
 
     bool isTop() const override {
-        return lb_ == BoundT::minusInfinity(lb_.caster()) and ub_ == BoundT::plusInfinity(ub_.caster());
+        return isTop_;
     }
 
     bool isBottom() const override {
-        return lb_ > ub_;
+        return isBottom_;
     }
 
     void setTop() override {
-        this->lb_ = BoundT::minusInfinity(lb_.caster());
-        this->ub_ = BoundT::plusInfinity(ub_.caster());
+        UNREACHABLE("Should not change interval domains");
     }
 
     void setBottom() override {
-        this->lb_ = 1;
-        this->ub_ = 0;
+        UNREACHABLE("Should not change interval domains");
     }
 
     Number asConstant() const {
@@ -180,56 +215,50 @@ public:
     }
 
     Ptr join(ConstPtr other) const override {
+        if (this == other.get())
+            return const_cast<Interval<Number>*>(this)->shared_from_this();
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
-            return std::make_shared<Self>(*otherRaw);
+            return other->clone();
         } else if (other->isBottom()) {
-            return std::make_shared<Self>(*this);
+            return const_cast<Interval<Number>*>(this)->shared_from_this();
         } else {
-            return std::make_shared<Self>(util::min(this->lb_, otherRaw->lb_), util::max(this->ub_, otherRaw->ub_));
+            return interval(util::min(this->lb_, otherRaw->lb_), util::max(this->ub_, otherRaw->ub_));
         }
     }
 
-    void joinWith(ConstPtr other) override {
-        this->operator=(*unwrap(join(other)));
-    }
-
     Ptr meet(ConstPtr other) const override {
+        if (this == other.get())
+            return const_cast<Interval<Number>*>(this)->shared_from_this();
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom() || otherRaw->isBottom()) {
             return bottom(caster());
         } else {
-            return std::make_shared<Self>(util::max(this->lb_, otherRaw->lb_), util::min(this->ub_, otherRaw->ub_));
+            return interval(util::max(this->lb_, otherRaw->lb_), util::min(this->ub_, otherRaw->ub_));
         }
     }
 
-    void meetWith(ConstPtr other) override {
-        this->operator=(*unwrap(meet(other)));
-    }
-
     Ptr widen(ConstPtr other) const override {
+        if (this == other.get())
+            return const_cast<Interval<Number>*>(this)->shared_from_this();
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
-            return std::make_shared<Self>(*otherRaw);
+            return other->clone();
         } else if (other->isBottom()) {
-            return std::make_shared<Self>(*this);
+            return const_cast<Interval<Number>*>(this)->shared_from_this();
         } else {
-            return std::make_shared<Self>(
+            return interval(
                     otherRaw->lb_ < this->lb_ ? BoundT::minusInfinity(caster()) : lb_,
                     otherRaw->ub_ > this->ub_ ? BoundT::plusInfinity(caster()) : ub_
             );
         }
     }
 
-    void widenWith(AbstractDomain::ConstPtr other) override {
-        this->operator=(*unwrap(widen(other)));
-    }
-
     size_t hashCode() const override {
-        return class_tag(*this); //return util::hash::defaultHasher()(lb_, ub_);
+        return util::hash::defaultHasher()(lb_, ub_);
     }
 
     std::string toString() const override {
@@ -245,17 +274,17 @@ public:
         auto* otherRaw = unwrap(other);
 
         switch (opcode) {
-            case llvm::ArithType::ADD: return std::make_shared<Self>(*this + *otherRaw);
-            case llvm::ArithType::SUB: return std::make_shared<Self>(*this - *otherRaw);
-            case llvm::ArithType::MUL: return std::make_shared<Self>(*this * *otherRaw);
-            case llvm::ArithType::DIV: return std::make_shared<Self>(*this / *otherRaw);
-            case llvm::ArithType::REM: return std::make_shared<Self>(*this % *otherRaw);
-            case llvm::ArithType::SHL: return std::make_shared<Self>(*this << *otherRaw);
-            case llvm::ArithType::ASHR: return std::make_shared<Self>(*this >> *otherRaw);
-            case llvm::ArithType::LSHR: return std::make_shared<Self>(lshr(*this, *otherRaw));
-            case llvm::ArithType::BAND: return std::make_shared<Self>(*this & *otherRaw);
-            case llvm::ArithType::BOR: return std::make_shared<Self>(*this | *otherRaw);
-            case llvm::ArithType::XOR: return std::make_shared<Self>(*this ^ *otherRaw);
+            case llvm::ArithType::ADD: return clone(*this + *otherRaw);
+            case llvm::ArithType::SUB: return clone(*this - *otherRaw);
+            case llvm::ArithType::MUL: return clone(*this * *otherRaw);
+            case llvm::ArithType::DIV: return clone(*this / *otherRaw);
+            case llvm::ArithType::REM: return clone(*this % *otherRaw);
+            case llvm::ArithType::SHL: return clone(*this << *otherRaw);
+            case llvm::ArithType::ASHR: return clone(*this >> *otherRaw);
+            case llvm::ArithType::LSHR: return clone(lshr(*this, *otherRaw));
+            case llvm::ArithType::BAND: return clone(*this & *otherRaw);
+            case llvm::ArithType::BOR: return clone(*this | *otherRaw);
+            case llvm::ArithType::XOR: return clone(*this ^ *otherRaw);
             default:
                 UNREACHABLE("Unknown binary operator");
         }
@@ -265,7 +294,7 @@ public:
         if (this->isBottom()) {
             return bottom();
         } else {
-            return std::make_shared<Self>(-this->_ub, -this->_lb, caster());
+            return interval(-this->_ub, -this->_lb);
         }
     }
 
@@ -393,22 +422,18 @@ public:
         if (this->ub() < otherRaw->lb()) return { clone(), clone() };
         if (otherRaw->ub() < this->lb()) return { clone(), clone() };
 
-        auto trueVal = std::make_shared<Self>(lb_, otherRaw->ub_);
-        auto falseVal = std::make_shared<Self>(otherRaw->lb_, this->ub_);
+        auto trueVal = interval(lb_, otherRaw->ub_);
+        auto falseVal = interval(otherRaw->lb_, this->ub_);
         return { trueVal, falseVal };
     }
-
-private:
-
-    BoundT lb_;
-    BoundT ub_;
 
 };
 
 template <typename Number>
-Interval<Number> unwrapInterval(AbstractDomain::Ptr interval) {
-    return std::move(*llvm::cast<Interval<Number>>(interval.get()));
-}
+util::cacheWImpl<impl_::IntervalID<Number>, AbstractDomain::Ptr, typename Interval<Number>::IntervalCacheImpl>
+        Interval<Number>::cache_([] (const impl_::IntervalID<Number>& a) -> AbstractDomain::Ptr {
+            return std::make_shared<Interval<Number>>(a.first, a.second);
+        });
 
 template <typename Number>
 Interval<Number> operator+(const Interval<Number>& lhv, const Interval<Number>& rhv) {
@@ -517,7 +542,7 @@ Interval<Number> operator<<(const Interval<Number>& lhv, const Interval<Number>&
     if (lhv.isBottom() || rhv.isBottom()) {
         return IntervalT::getBottom(lhv.caster());
     } else {
-        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
+        auto&& shift = rhv.meet(IntervalT::interval(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
 
         if (shift->isBottom()) {
             return IntervalT::getBottom(lhv.caster());
@@ -541,7 +566,7 @@ Interval<Number> operator>>(const Interval<Number>& lhv, const Interval<Number>&
     if (lhv.isBottom() || rhv.isBottom()) {
         return IntervalT::getBottom(lhv.caster());
     } else {
-        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
+        auto&& shift = rhv.meet(IntervalT::interval(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
         auto* shiftRaw = llvm::cast<IntervalT>(shift.get());
 
         if (shift->isBottom()) {
@@ -550,9 +575,6 @@ Interval<Number> operator>>(const Interval<Number>& lhv, const Interval<Number>&
 
         if (lhv.contains(0)) {
             return IntervalT::getTop(lhv.caster());
-//            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
-//            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
-//            return unwrapInterval<Number>((l >> rhv).join(std::make_shared<IntervalT>(u >> rhv))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             auto ll = lhv.lb() >> shiftRaw->lb();
             auto lu = lhv.lb() >> shiftRaw->ub();
@@ -571,7 +593,7 @@ Interval<Number> lshr(const Interval<Number>& lhv, const Interval<Number>& rhv) 
     if (lhv.isBottom() || rhv.isBottom()) {
         return IntervalT::getBottom(lhv.caster());
     } else {
-        auto&& shift = rhv.meet(std::make_shared<IntervalT>(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
+        auto&& shift = rhv.meet(IntervalT::interval(BoundT(lhv.caster(), 0), BoundT::plusInfinity(lhv.caster())));
         auto* shiftRaw = llvm::cast<IntervalT>(shift.get());
 
         if (shift->isBottom()) {
@@ -580,9 +602,6 @@ Interval<Number> lshr(const Interval<Number>& lhv, const Interval<Number>& rhv) 
 
         if (lhv.contains(0)) {
             return IntervalT::getTop(lhv.caster());
-//            auto l = IntervalT(lhv.lb(), BoundT(lhv.caster(), -1));
-//            auto u = IntervalT(BoundT(lhv.caster(), 1), lhv.ub());
-//            return unwrapInterval<Number>(lshr(l, rhv).join(std::make_shared<IntervalT>(lshr(u, rhv)))->join(IntervalT::constant(0, lhv.caster())));
         } else {
             BoundT ll = lshr(lhv.lb(), shiftRaw->lb());
             BoundT lu = lshr(lhv.lb(), shiftRaw->ub());

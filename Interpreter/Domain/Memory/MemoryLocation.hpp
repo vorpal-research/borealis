@@ -49,8 +49,6 @@ private:
     Ptr base_;
 
 private:
-    struct TopTag{};
-    struct BottomTag{};
 
     static Self* unwrap(Ptr other) {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
@@ -115,9 +113,10 @@ public:
         return this->base_->equals(otherRaw->base_);
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
         auto* otherRaw = unwrap(other);
-        this->base_->joinWith(otherRaw->base_);
+        this->base_ = this->base_->join(otherRaw->base_);
     }
 
     Ptr join(ConstPtr other) const override {
@@ -126,9 +125,9 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
-        this->base_->meetWith(otherRaw->base_);
+        this->base_ = this->base_->meet(otherRaw->base_);
     }
 
     Ptr meet(ConstPtr other) const override {
@@ -137,7 +136,7 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         joinWith(other);
     }
 
@@ -231,7 +230,7 @@ public:
         return llvm::isa<Self>(other.get());
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
         ASSERTC(llvm::isa<Self>(other.get()));
     }
 
@@ -241,7 +240,7 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         ASSERTC(llvm::isa<Self>(other.get()));
     }
 
@@ -251,7 +250,7 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         joinWith(other);
     }
 
@@ -365,11 +364,12 @@ public:
         return this->base_->equals(otherRaw->base_);
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
         auto* otherRaw = unwrap(other);
 
         ASSERTC(this->base_->equals(otherRaw->base_));
-        this->offset_->joinWith(otherRaw->offset_);
+        this->offset_ = this->offset_->join(otherRaw->offset_);
     }
 
     Ptr join(ConstPtr other) const override {
@@ -378,11 +378,11 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         ASSERTC(this->base_->equals(otherRaw->base_));
-        this->offset_->meetWith(otherRaw->offset_);
+        this->offset_ = this->offset_->meet(otherRaw->offset_);
     }
 
     Ptr meet(ConstPtr other) const override {
@@ -391,8 +391,12 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
-        joinWith(other);
+    void widenWith(ConstPtr other) {
+        if (this == other.get()) return;
+        auto* otherRaw = unwrap(other);
+
+        ASSERTC(this->base_->equals(otherRaw->base_));
+        this->offset_ = this->offset_->widen(otherRaw->offset_);
     }
 
     Ptr widen(ConstPtr other) const override {
@@ -402,7 +406,11 @@ public:
     }
 
     size_t hashCode() const override { return this->base_->hashCode(); }
-    std::string toString() const override { return this->base_->toString(); }
+    std::string toString() const override {
+        std::stringstream ss;
+        ss << "{ " << offset_->toString() << " }" << base_->toString();
+        return ss.str();
+    }
 
     Ptr load(Type::Ptr type, Ptr interval) const override {
         auto* baseRaw = llvm::dyn_cast<ArrayDomain<MachineInt>>(base_.get());
@@ -520,7 +528,8 @@ public:
         return this->base_->equals(otherRaw->base_);
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
         auto* otherRaw = unwrap(other);
 
         ASSERTC(this->base_->equals(otherRaw->base_));
@@ -535,7 +544,7 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         ASSERTC(this->base_->equals(otherRaw->base_));
@@ -550,7 +559,7 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         joinWith(other);
     }
 
@@ -561,13 +570,21 @@ public:
     }
 
     size_t hashCode() const override { return this->base_->hashCode(); }
-    std::string toString() const override { return this->base_->toString(); }
+    std::string toString() const override {
+        std::stringstream ss;
+        ss << "{" << util::head(offsets_)->toString();
+        for (auto&& it : util::viewContainer(offsets_).drop(1)) {
+            ss << ", " << it->toString();
+        }
+        ss << "} " << base_->toString();
+        return ss.str();
+    }
 
     Ptr load(Type::Ptr type, Ptr interval) const override {
         Ptr result = factory_->bottom(type);
         for (auto&& offset : this->offsets_) {
             auto&& load = this->base_->load(type, interval + offset);
-            result->joinWith(load);
+            result = result->join(load);
         }
         return result;
     }
@@ -590,7 +607,7 @@ public:
 
             for (auto&& it : offsets_) {
                 offsetCopy[0] = zero + it;
-                result->joinWith(base_->gep(type, offsetCopy));
+                result = result->join(base_->gep(type, offsetCopy));
             }
             return result;
         }

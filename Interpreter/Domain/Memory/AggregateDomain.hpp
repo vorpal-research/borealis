@@ -83,25 +83,28 @@ public:
     bool leq(ConstPtr other) const override { return this->env_->leq(unwrap(other)->env_); }
     bool equals(ConstPtr other) const override { return this->env_->equals(unwrap(other)->env_); }
 
-    void joinWith(ConstPtr other) override { this->env_->joinWith(unwrap(other)->env_); }
-    void meetWith(ConstPtr other) override { this->env_->meetWith(unwrap(other)->env_); }
-    void widenWith(ConstPtr other) override { this->env_->widenWith(unwrap(other)->env_); }
+    void joinWith(ConstPtr other) { this->env_ = this->env_->join(unwrap(other)->env_); }
+    void meetWith(ConstPtr other) { this->env_ = this->env_->meet(unwrap(other)->env_); }
+    void widenWith(ConstPtr other) { this->env_ = this->env_->widen(unwrap(other)->env_); }
 
     Ptr join(ConstPtr other) const override {
         auto&& result = this->clone();
-        result->joinWith(other);
+        auto* resultRaw = unwrap(result);
+        resultRaw->joinWith(other);
         return result;
     }
 
     Ptr meet(ConstPtr other) const override {
         auto&& result = this->clone();
-        result->meetWith(other);
+        auto* resultRaw = unwrap(result);
+        resultRaw->meetWith(other);
         return result;
     }
 
     Ptr widen(ConstPtr other) const override {
         auto&& result = this->clone();
-        result->widenWith(other);
+        auto* resultRaw = unwrap(result);
+        resultRaw->widenWith(other);
         return result;
     }
 

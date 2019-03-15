@@ -165,7 +165,9 @@ public:
         }
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
+        if (this == other.get()) return;
+
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -183,7 +185,9 @@ public:
                 if (its == this->ptsTo_.end()) {
                     this->ptsTo_.insert(it);
                 } else {
-                    (*its)->joinWith(it);
+                    auto&& result = (*its)->join(it);
+                    this->ptsTo_.erase(its);
+                    this->ptsTo_.insert(result);
                 }
             }
         }
@@ -195,7 +199,33 @@ public:
         return next;
     }
 
-    void widenWith(ConstPtr other) override { joinWith(other); }
+    void widenWith(ConstPtr other) {
+        if (this == other.get()) return;
+
+        auto* otherRaw = unwrap(other);
+
+        if (this->isBottom()) {
+            this->operator=(*otherRaw);
+        } else if (this->isTop()) {
+            return;
+        } else if (other->isBottom()) {
+            return;
+        } else if (other->isTop()) {
+            this->setTop();
+        } else {
+
+            for (auto&& it : otherRaw->ptsTo_) {
+                auto&& its = this->ptsTo_.find(it);
+                if (its == this->ptsTo_.end()) {
+                    this->ptsTo_.insert(it);
+                } else {
+                    auto&& result = (*its)->widen(it);
+                    this->ptsTo_.erase(its);
+                    this->ptsTo_.insert(result);
+                }
+            }
+        }
+    }
 
     Ptr widen(ConstPtr other) const override {
         auto next = std::make_shared<Self>(*this);
@@ -203,7 +233,7 @@ public:
         return next;
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -225,7 +255,9 @@ public:
             for (auto&& it : otherRaw->ptsTo_) {
                 auto&& its = this->ptsTo_.find(it);
                 if (its != this->ptsTo_.end()) {
-                    (*its)->meetWith(it);
+                    auto&& result = (*its)->meet(it);
+                    this->ptsTo_.erase(its);
+                    this->ptsTo_.insert(result);
                 }
             }
         }
@@ -265,7 +297,7 @@ public:
 
             for (auto&& loc : this->ptsTo_) {
                 auto&& locationLoad = loc->load(type, offset);
-                result->joinWith(locationLoad);
+                result = result->join(locationLoad);
             }
             return result;
         }
@@ -291,7 +323,7 @@ public:
         } else {
             auto result = factory_->bottom(targetType);
             for (auto&& it : ptsTo_) {
-                result->joinWith(it->gep(targetType, offsets));
+                result = result->join(it->gep(targetType, offsets));
             }
             return result;
         }

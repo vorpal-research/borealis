@@ -37,7 +37,11 @@ void Interpreter::run() {
             order.emplace_back(root);
         }
 
+        auto&& total = order.size();
+        int progress = 0;
         for (auto&& root : order) {
+            infos() << "Progress: " << (++progress) << " / " << total << endl;
+
             std::vector<AbstractDomain::Ptr> args;
             for (auto&& arg : root->getInstance()->getArgumentList()) {
                 args.emplace_back(module_.variableFactory()->top(arg.getType()));
@@ -48,8 +52,13 @@ void Interpreter::run() {
 
     } else {
         // TODO: add topological sorting of functions to increase effitiency
+
+        auto&& total = module_.instance()->getFunctionList().size();
+        int progress = 0;
         for (auto&& f : module_.instance()->getFunctionList()) {
             auto&& function = module_.get(&f);
+
+            infos() << "Progress: " << (++progress) << " / " << total << endl;
 
             std::vector<AbstractDomain::Ptr> args;
             for (auto&& arg : function->getInstance()->getArgumentList()) {
@@ -250,7 +259,7 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
                 auto&& incoming = context_->state->get(i.getIncomingValue(j));
                 if (not incoming) continue;
 
-                result->joinWith(incoming);
+                result = result->join(incoming);
                 changed = true;
             }
         }
@@ -262,7 +271,7 @@ void Interpreter::visitPHINode(llvm::PHINode& i) {
                 auto&& incoming = context_->state->get(i.getIncomingValue(j));
                 if (not incoming) continue;
 
-                result->widenWith(incoming);
+                result = result->widen(incoming);
                 changed = true;
             }
         }

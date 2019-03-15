@@ -237,11 +237,11 @@ bool DomainStorage::equals(DomainStorage::Ptr other) const {
 }
 
 void DomainStorage::joinWith(DomainStorage::Ptr other) {
-    this->bools_->joinWith(other->bools_);
-    this->ints_->joinWith(other->ints_);
-    this->floats_->joinWith(other->floats_);
-    this->memory_->joinWith(other->memory_);
-    this->structs_->joinWith(other->structs_);
+    this->bools_ = this->bools_->join(other->bools_);
+    this->ints_ = this->ints_->join(other->ints_);
+    this->floats_ = this->floats_->join(other->floats_);
+    this->memory_ = this->memory_->join(other->memory_);
+    this->structs_ = this->structs_->join(other->structs_);
 }
 
 DomainStorage::Ptr DomainStorage::join(DomainStorage::Ptr other) {

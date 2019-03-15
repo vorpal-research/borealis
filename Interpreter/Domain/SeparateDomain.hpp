@@ -130,7 +130,7 @@ public:
         }
     }
 
-    void joinWith(ConstPtr other) override {
+    void joinWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (otherRaw->isBottom()) {
@@ -147,7 +147,7 @@ public:
         }
     }
 
-    void meetWith(ConstPtr other) override {
+    void meetWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (this->isBottom()) {
@@ -164,7 +164,7 @@ public:
         }
     }
 
-    void widenWith(ConstPtr other) override {
+    void widenWith(ConstPtr other) {
         auto* otherRaw = unwrap(other);
 
         if (otherRaw->isBottom()) {
@@ -182,19 +182,19 @@ public:
     }
 
     Ptr join(ConstPtr other) const override {
-        auto&& result = clone();
+        auto&& result = std::make_shared<Self>(*this);
         result->joinWith(other);
         return result;
     }
 
     Ptr meet(ConstPtr other) const override {
-        auto&& result = clone();
+        auto&& result = std::make_shared<Self>(*this);
         result->meetWith(other);
         return result;
     }
 
     Ptr widen(ConstPtr other) const override {
-        auto&& result = clone();
+        auto&& result = std::make_shared<Self>(*this);
         result->widenWith(other);
         return result;
     }
