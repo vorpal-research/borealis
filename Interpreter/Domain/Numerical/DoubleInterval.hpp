@@ -186,6 +186,10 @@ public:
         return first_->isBottom() and second_->isBottom();
     }
 
+    bool isConstant() const {
+        return unwrapInterval<N1>(first_)->isConstant() and unwrapInterval<N2>(second_)->isConstant();
+    }
+
     void setTop() override {
         UNREACHABLE("Should not change interval domains");
     }

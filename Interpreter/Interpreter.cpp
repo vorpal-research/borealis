@@ -182,7 +182,7 @@ void Interpreter::visitSwitchInst(llvm::SwitchInst& i) {
             auto caseVal = module_.variableFactory()->af()->getInteger(*cs.getCaseValue()->getValue().getRawData(), cs.getCaseValue()->getBitWidth());
             if (integer->intersects(caseVal)) {
                 handleCaseSuccessor(cs.getCaseSuccessor(), caseVal);
-                isDefault = false;
+                if (integer->isConstant()) isDefault = false;
             }
         }
 

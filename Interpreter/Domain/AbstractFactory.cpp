@@ -440,6 +440,7 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
             domain->setTop();
             return IntT::top(sintAdapter(integer->getBitsize()), uintAdapter(integer->getBitsize()));
         case BITCAST:
+            domain->setTop();
             return top(target);
     }
     UNREACHABLE("Unknown cast operator");
