@@ -17,8 +17,8 @@ Function::Function(const llvm::Function* function, VariableFactory* factory, Slo
         : instance_(function),
           tracker_(st),
           factory_(factory) {
-    inputState_ = std::make_shared<State>(tracker_, factory_);
-    outputState_ = std::make_shared<State>(tracker_, factory_);
+    inputState_ = std::make_shared<State>(factory_);
+    outputState_ = std::make_shared<State>(factory_);
     for (auto i = 0U; i < instance_->getArgumentList().size(); ++i) arguments_.emplace_back(nullptr);
 
     // find all global variables, that this function depends on

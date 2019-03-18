@@ -15,14 +15,14 @@
 namespace borealis {
 namespace absint {
 
-template <typename MachineInt, typename Variable>
+template <typename MachineInt, typename Variable, typename VarHash, typename VarEquals>
 class PointsToDomain : public MemoryDomain<MachineInt, Variable> {
 public:
-    using Self = PointsToDomain<MachineInt, Variable>;
+    using Self = PointsToDomain<MachineInt, Variable, VarHash, VarEquals>;
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using EnvT = SeparateDomain<Variable, PointerDomain<MachineInt>>;
+    using EnvT = SeparateDomain<Variable, VarHash, VarEquals, PointerDomain<MachineInt>>;
     using EnvPtr = typename EnvT::Ptr;
 
 protected:

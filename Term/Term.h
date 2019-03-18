@@ -147,6 +147,18 @@ struct TermCompare {
     }
 };
 
+// need for util::toString() to work
+namespace util {
+
+template <>
+struct Stringifier<borealis::Term> {
+    static std::string toString(const Term& t) {
+        return t.getName();
+    }
+};
+
+} // namespace util
+
 } /* namespace borealis */
 
 namespace std {

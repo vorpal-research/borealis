@@ -253,6 +253,10 @@ AbstractDomain::Ptr VariableFactory::findGlobal(const llvm::Value* val) const {
     return gm_->global(val);
 }
 
+AbstractDomain::Ptr VariableFactory::findGlobal(const std::string& name) const {
+    return gm_->get(name);
+}
+
 } // namespace absint
 } // namespace borealis
 

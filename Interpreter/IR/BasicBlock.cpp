@@ -21,8 +21,8 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, Variabl
           inputChanged_(false),
           atFixpoint_(false),
           visited_(false) {
-    inputState_ = std::make_shared<State>(tracker_, factory_);
-    outputState_ = std::make_shared<State>(tracker_, factory_);
+    inputState_ = std::make_shared<State>(factory_);
+    outputState_ = std::make_shared<State>(factory_);
 
     // find all global variables, that this basic block depends on
     for (auto&& inst : util::viewContainer(*instance_)) {

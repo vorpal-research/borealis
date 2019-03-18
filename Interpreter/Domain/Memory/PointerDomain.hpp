@@ -287,6 +287,18 @@ public:
         return ss.str();
     }
 
+    Ptr bound() const {
+        if (isTop()) return factory_->getMachineInt(AbstractFactory::TOP);
+
+        auto result = factory_->getMachineInt(AbstractFactory::BOTTOM);
+        for (auto&& it : ptsTo_) {
+            auto* loc = unwrapLocation(it);
+            auto it_off = util::viewContainer(loc->offsets()).reduce(factory_->getMachineInt(AbstractFactory::BOTTOM), LAM2(acc, e, acc->join(e)));
+            result = result->join(loc->length() - it_off);
+        }
+        return result;
+    }
+
     Ptr load(Type::Ptr type, Ptr offset) const override {
         if (this->isTop()) {
             return factory_->top(type);

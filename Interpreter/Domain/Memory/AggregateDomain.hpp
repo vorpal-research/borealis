@@ -15,14 +15,14 @@
 namespace borealis {
 namespace absint {
 
-template <typename Inner, typename Variable>
+template <typename Inner, typename Variable, typename VarHash, typename VarEquals>
 class AggregateDomain : public Aggregate<Variable> {
 public:
-    using Self = AggregateDomain<Inner, Variable>;
+    using Self = AggregateDomain<Inner, Variable, VarHash, VarEquals>;
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using EnvT = SeparateDomain<Variable, Inner>;
+    using EnvT = SeparateDomain<Variable, VarHash, VarEquals, Inner>;
     using EnvPtr = typename EnvT::Ptr;
 
 protected:

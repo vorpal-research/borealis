@@ -2,39 +2,40 @@
 // Created by abdullin on 2/14/19.
 //
 
-#include "AbstractFactory.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 #include "DomainStorage.hpp"
-#include "VariableFactory.hpp"
-#include "Numerical/DoubleInterval.hpp"
-#include "Numerical/IntervalDomain.hpp"
-#include "Numerical/NumericalDomain.hpp"
-#include "Memory/AggregateDomain.hpp"
-#include "Memory/MemoryDomain.hpp"
-#include "Memory/PointsToDomain.hpp"
+#include "Interpreter/Domain/VariableFactory.hpp"
+#include "Interpreter/Domain/Numerical/DoubleInterval.hpp"
+#include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
+#include "Interpreter/Domain/Numerical/NumericalDomain.hpp"
+#include "Interpreter/Domain/Memory/AggregateDomain.hpp"
+#include "Interpreter/Domain/Memory/MemoryDomain.hpp"
+#include "Interpreter/Domain/Memory/PointsToDomain.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
 namespace borealis {
 namespace absint {
+namespace ps {
 
 namespace impl_ {
 
 template <typename IntervalT>
-class IntervalDomainImpl : public IntervalDomain<IntervalT, const llvm::Value*> {
+class IntervalDomainImpl : public IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType> {
 public:
 
     using Ptr = AbstractDomain::Ptr;
-    using Variable = const llvm::Value*;
+    using Variable = Term::Ptr;
     using Self = IntervalDomainImpl<IntervalT>;
-    using EnvT = typename IntervalDomain<IntervalT, const llvm::Value*>::EnvT;
+    using EnvT = typename IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType>::EnvT;
 
 protected:
 
-    VariableFactory* vf_;
+    const VariableFactory* vf_;
 
 public:
 
-    explicit IntervalDomainImpl(VariableFactory* vf) : IntervalDomain<IntervalT, const llvm::Value*>(), vf_(vf) {}
+    explicit IntervalDomainImpl(const VariableFactory* vf) : IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf) {}
     IntervalDomainImpl(const IntervalDomainImpl&) = default;
     IntervalDomainImpl(IntervalDomainImpl&&) = default;
     IntervalDomainImpl& operator=(const IntervalDomainImpl&) = default;
@@ -44,7 +45,7 @@ public:
     static Ptr top() { return std::make_shared<Self>(EnvT::top()); }
     static Ptr bottom() { return std::make_shared<Self>(EnvT::bottom()); }
 
-    static bool classof (const Self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -57,11 +58,7 @@ public:
     }
 
     Ptr get(Variable x) const override {
-        // integer variable can't be global, so it's either constant or local
-        if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
-            return vf_->get(constant);
-
-        } else if (auto&& local = this->unwrapEnv()->get(x,
+        if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
                 [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
                 )) {
@@ -74,21 +71,21 @@ public:
 };
 
 template <typename MachineInt>
-class PointsToDomainImpl : public PointsToDomain<MachineInt, const llvm::Value*> {
+class PointsToDomainImpl : public PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType> {
 public:
 
     using Ptr = AbstractDomain::Ptr;
-    using Variable = const llvm::Value*;
+    using Variable = Term::Ptr;
     using Self = PointsToDomainImpl<MachineInt>;
-    using EnvT = typename PointsToDomain<MachineInt, const llvm::Value*>::EnvT;
+    using EnvT = typename PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType>::EnvT;
 
 protected:
 
-    VariableFactory* vf_;
+    const VariableFactory* vf_;
 
 public:
 
-    explicit PointsToDomainImpl(VariableFactory* vf) : PointsToDomain<MachineInt, const llvm::Value*>(), vf_(vf) {}
+    explicit PointsToDomainImpl(const VariableFactory* vf) : PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf) {}
     PointsToDomainImpl(const PointsToDomainImpl&) = default;
     PointsToDomainImpl(PointsToDomainImpl&&) = default;
     PointsToDomainImpl& operator=(const PointsToDomainImpl&) = default;
@@ -102,7 +99,7 @@ public:
     static Ptr top() { return std::make_shared(EnvT::top()); }
     static Ptr bottom() { return std::make_shared(EnvT::bottom()); }
 
-    static bool classof (const Self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -111,16 +108,10 @@ public:
     }
 
     Ptr get(Variable x) const override {
-        if (auto&& global = vf_->findGlobal(x)) {
-            return global;
-
-        } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
-            return vf_->get(constant);
-
-        } else if (auto&& local = this->unwrapEnv()->get(x,
+        if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return PointerDomain<MachineInt>::bottom(); },
                 [&]() -> AbstractDomain::Ptr { return PointerDomain<MachineInt>::top(); }
-                )) {
+        )) {
             return local;
 
         }
@@ -129,21 +120,21 @@ public:
 };
 
 template <typename AggregateT>
-class AggregateDomainImpl : public AggregateDomain<AggregateT, const llvm::Value*> {
+class AggregateDomainImpl : public AggregateDomain<AggregateT, Term::Ptr, TermHash, TermEqualsWType> {
 public:
 
     using Ptr = AbstractDomain::Ptr;
-    using Variable = const llvm::Value*;
+    using Variable = Term::Ptr;
     using Self = AggregateDomainImpl<AggregateT>;
-    using EnvT = typename AggregateDomain<AggregateT, const llvm::Value*>::EnvT;
+    using EnvT = typename AggregateDomain<AggregateT, Term::Ptr, TermHash, TermEqualsWType>::EnvT;
 
 protected:
 
-    VariableFactory* vf_;
+    const VariableFactory* vf_;
 
 public:
 
-    explicit AggregateDomainImpl(VariableFactory* vf) : AggregateDomain<AggregateT, const llvm::Value*>(), vf_(vf) {}
+    explicit AggregateDomainImpl(const VariableFactory* vf) : AggregateDomain<AggregateT, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf) {}
     AggregateDomainImpl(const AggregateDomainImpl&) = default;
     AggregateDomainImpl(AggregateDomainImpl&&) = default;
     AggregateDomainImpl& operator=(const AggregateDomainImpl&) = default;
@@ -157,7 +148,7 @@ public:
     static Ptr top() { return std::make_shared(EnvT::top()); }
     static Ptr bottom() { return std::make_shared(EnvT::bottom()); }
 
-    static bool classof (const Self*) {
+    static bool classof(const Self*) {
         return true;
     }
 
@@ -166,13 +157,7 @@ public:
     }
 
     Ptr get(Variable x) const override {
-        if (auto&& global = vf_->findGlobal(x)) {
-            return global;
-
-        } else if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
-            return vf_->get(constant);
-
-        } else if (auto&& local = this->unwrapEnv()->get(x,
+        if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
                 [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
         )) {
@@ -215,7 +200,7 @@ DomainStorage::AggregateDomainT* DomainStorage::unwrapStruct() const {
     return structure;
 }
 
-DomainStorage::DomainStorage(VariableFactory* vf) :
+DomainStorage::DomainStorage(const VariableFactory* vf) :
         ObjectLevelLogging("domain"),
         vf_(vf),
         bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_)),
@@ -230,10 +215,10 @@ DomainStorage::Ptr DomainStorage::clone() const {
 
 bool DomainStorage::equals(DomainStorage::Ptr other) const {
     return this->bools_->equals(other->bools_) &&
-            this->ints_->equals(other->ints_) &&
-            this->floats_->equals(other->floats_) &&
-            this->memory_->equals(other->memory_) &&
-            this->structs_->equals(other->structs_);
+           this->ints_->equals(other->ints_) &&
+           this->floats_->equals(other->floats_) &&
+           this->memory_->equals(other->memory_) &&
+           this->structs_->equals(other->structs_);
 }
 
 void DomainStorage::joinWith(DomainStorage::Ptr other) {
@@ -251,11 +236,12 @@ DomainStorage::Ptr DomainStorage::join(DomainStorage::Ptr other) {
 }
 
 bool DomainStorage::empty() const {
-    return bools_->isBottom() && ints_->isBottom() && floats_->isBottom() && memory_->isBottom() && structs_->isBottom();
+    return bools_->isBottom() && ints_->isBottom() && floats_->isBottom() && memory_->isBottom() &&
+           structs_->isBottom();
 }
 
 AbstractDomain::Ptr DomainStorage::get(Variable x) const {
-    auto&& type = vf_->cast(x->getType());
+    auto&& type = x->getType();
 
     if (llvm::isa<type::Bool>(type.get()))
         return unwrapBool()->get(x);
@@ -278,7 +264,7 @@ void DomainStorage::assign(Variable x, Variable y) const {
 }
 
 void DomainStorage::assign(Variable x, AbstractDomain::Ptr domain) const {
-    auto&& type = vf_->cast(x->getType());
+    auto&& type = x->getType();
 
     if (llvm::isa<type::Bool>(type.get()))
         unwrapBool()->assign(x, domain);
@@ -293,80 +279,46 @@ void DomainStorage::assign(Variable x, AbstractDomain::Ptr domain) const {
         unwrapStruct()->assign(x, domain);
     else {
         std::stringstream ss;
-        ss << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get()) << std::endl;
+        ss << "Variable '" << util::toString(*x) << "' of unknown type: " << TypeUtils::toString(*type.get())
+           << std::endl;
         UNREACHABLE(ss.str())
     }
 }
 
 /// x = y op z
-void DomainStorage::apply(llvm::BinaryOperator::BinaryOps op, Variable x, Variable y, Variable z) {
-    typedef llvm::BinaryOperator::BinaryOps ops;
-    auto aop = llvm::arithType(op);
+void DomainStorage::apply(llvm::ArithType op, Variable x, Variable y, Variable z) {
+    auto&& type = y->getType();
+    if (llvm::isa<type::Bool>(type.get())) {
+        auto* bools = unwrapBool();
+        bools->applyTo(op, x, y, z);
 
-    switch(op) {
-        case ops::Add:
-        case ops::Sub:
-        case ops::Mul:
-        case ops::Shl:
-        case ops::LShr:
-        case ops::AShr:
-        case ops::And:
-        case ops::Or:
-        case ops::Xor:
-        case ops::UDiv:
-        case ops::URem:
-        case ops::SDiv:
-        case ops::SRem: {
-            if (y->getType()->getIntegerBitWidth() == 1) {
-                auto* bools = unwrapBool();
-                bools->applyTo(aop, x, y, z);
-
-            } else {
-                auto* ints = unwrapInt();
-                ints->applyTo(aop, x, y, z);
-            }
-            break;
-        }
-
-            // float operations
-        case ops::FAdd:
-        case ops::FSub:
-        case ops::FMul:
-        case ops::FDiv:
-        case ops::FRem: {
-            auto* fts = unwrapFloat();
-            fts->applyTo(aop, x, y, z);
-            break;
-        }
-
-        default: UNREACHABLE("Unreachable!");
+    } else if (llvm::isa<type::Integer>(type.get())){
+        auto* ints = unwrapInt();
+        ints->applyTo(op, x, y, z);
+    } else if (llvm::isa<type::Float>(type.get())) {
+        auto* fts = unwrapFloat();
+        fts->applyTo(op, x, y, z);
+    } else {
+        UNREACHABLE("Binary operation on unknown variable types")
     }
 }
 
 /// x = y op z
-void DomainStorage::apply(llvm::CmpInst::Predicate op, Variable x, Variable y, Variable z) {
-    typedef llvm::CmpInst::Predicate P;
-    typedef llvm::ConditionType CT;
-
-    auto cop = llvm::conditionType(op);
+void DomainStorage::apply(llvm::ConditionType op, Variable x, Variable y, Variable z) {
     auto* bools = unwrapBool();
 
     AbstractDomain::Ptr xd;
-    if (P::FIRST_ICMP_PREDICATE <= op && op <= P::LAST_ICMP_PREDICATE) {
-        if (y->getType()->isPointerTy() && z->getType()->isPointerTy()) {
-            auto* memory = unwrapMemory();
+    if (llvm::isa<type::Pointer>(y->getType().get()) && llvm::isa<type::Pointer>(z->getType().get())) {
+        auto* memory = unwrapMemory();
+        xd = memory->applyTo(op, y, z);
 
-            xd = memory->applyTo(cop, y, z);
-        } else {
-            auto* ints = unwrapInt();
+    } else if (llvm::isa<type::Integer>(y->getType().get()) && llvm::isa<type::Integer>(z->getType().get())) {
+        auto* ints = unwrapInt();
+        xd = ints->applyTo(op, y, z);
 
-            xd = ints->applyTo(cop, y, z);
-        }
-
-    } else if (P::FIRST_FCMP_PREDICATE <= op && op <= P::LAST_FCMP_PREDICATE) {
+    } else if (llvm::isa<type::Float>(y->getType().get()) && llvm::isa<type::Float>(z->getType().get())) {
         auto* floats = unwrapFloat();
-
-        xd = floats->applyTo(cop, y, z);
+        xd = floats->applyTo(op, y, z);
 
     } else {
         UNREACHABLE("Unreachable!");
@@ -377,7 +329,7 @@ void DomainStorage::apply(llvm::CmpInst::Predicate op, Variable x, Variable y, V
 
 void DomainStorage::apply(CastOperator op, Variable x, Variable y) {
     auto&& yDom = get(y);
-    auto&& targetType = vf_->cast(x->getType());
+    auto&& targetType = x->getType();
 
     auto&& xDom = vf_->af()->cast(op, targetType, yDom);
     assign(x, xDom);
@@ -385,7 +337,7 @@ void DomainStorage::apply(CastOperator op, Variable x, Variable y) {
 
 /// x = *ptr
 void DomainStorage::load(Variable x, Variable ptr) {
-    auto&& xDom = unwrapMemory()->loadFrom(vf_->cast(x->getType()), ptr);
+    auto&& xDom = unwrapMemory()->loadFrom(x->getType(), ptr);
     assign(x, xDom);
 }
 
@@ -395,7 +347,7 @@ void DomainStorage::store(Variable ptr, Variable x) {
 }
 
 void DomainStorage::storeWithWidening(DomainStorage::Variable ptr, DomainStorage::Variable x) {
-    auto&& ptrDom = unwrapMemory()->loadFrom(vf_->cast(x->getType()), ptr);
+    auto&& ptrDom = unwrapMemory()->loadFrom(x->getType(), ptr);
     auto&& xDom = get(x);
     unwrapMemory()->storeTo(ptr, ptrDom->widen(xDom));
 }
@@ -406,13 +358,13 @@ void DomainStorage::gep(Variable x, Variable ptr, const std::vector<Variable>& s
     for (auto&& it : shifts) {
         normalizedShifts.emplace_back(vf_->af()->machineIntInterval(get(it)));
     }
-    unwrapMemory()->gepFrom(x, vf_->cast(x->getType()), ptr, normalizedShifts);
+    unwrapMemory()->gepFrom(x, x->getType(), ptr, normalizedShifts);
 }
 
 /// x = extract(struct, index)
 void DomainStorage::extract(Variable x, Variable structure, Variable index) {
     auto&& normalizedIndex = vf_->af()->machineIntInterval(get(index));
-    auto&& xDom = unwrapStruct()->extractFrom(vf_->cast(x->getType()), structure, normalizedIndex);
+    auto&& xDom = unwrapStruct()->extractFrom(x->getType(), structure, normalizedIndex);
     assign(x, xDom);
 }
 
@@ -431,7 +383,7 @@ void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable 
         assign(x, vf_->top(x->getType()));
     } else {
         auto&& tf = vf_->tf();
-        auto&& arrayType = tf->getArray(vf_->cast(x->getType()->getPointerElementType()), bounds.second.number());
+        auto&& arrayType = tf->getArray(llvm::cast<type::Pointer>(x->getType().get())->getPointed(), bounds.second.number());
         auto&& ptrType = tf->getPointer(arrayType, 0);
         assign(x, vf_->af()->allocate(ptrType));
     }
@@ -459,10 +411,7 @@ std::pair<DomainStorage::Ptr, DomainStorage::Ptr> DomainStorage::split(Variable 
     if (condDomain->isTop() || condDomain->isBottom())
         return std::make_pair(true_, false_);
 
-    auto* inst = llvm::dyn_cast<llvm::Instruction>(condition);
-    if (not inst) return std::make_pair(true_, false_);
-
-    auto&& splitted = std::move(handleInst(inst));
+    auto&& splitted = std::move(handleTerm(condition.get()));
     for (auto&& it : splitted) {
         true_->assign(it.first, it.second.true_);
         false_->assign(it.first, it.second.false_);
@@ -470,15 +419,16 @@ std::pair<DomainStorage::Ptr, DomainStorage::Ptr> DomainStorage::split(Variable 
     return std::make_pair(true_, false_);
 }
 
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleInst(const llvm::Instruction* target) const {
-    if (auto* icmp = llvm::dyn_cast<llvm::ICmpInst>(target))
-        return std::move(handleIcmp(icmp));
-    else if (auto* fcmp = llvm::dyn_cast<llvm::FCmpInst>(target))
-        return std::move(handleFcmp(fcmp));
-    else if (auto* binary = llvm::dyn_cast<llvm::BinaryOperator>(target))
-        return std::move(handleBinary(binary));
-    else {
-        warns() << "Unexpected instruction in split: " << util::toString(*target) << endl;
+DomainStorage::SplitMap DomainStorage::handleTerm(const Term* term) const {
+    if (auto&& cmp = llvm::dyn_cast<CmpTerm>(term)) {
+        return std::move(handleCmp(cmp));
+    } else if (auto&& bin = llvm::dyn_cast<BinaryTerm>(term)) {
+        return std::move(handleBinary(bin));
+//    } else if (llvm::isa<type::Bool>(term->getType().get())) {
+//        auto condDomain = get(term->shared_from_this());
+//        return ;
+    } else {
+        errs() << "Unknown term in splitter: " << term->getName() << endl;
         return {};
     }
 }
@@ -499,121 +449,69 @@ std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleInst(con
     values[rhv] = rhvDomain->splitByLess(lhvDomain); \
     values[lhv] = lhvDomain->splitByLess(rhvDomain).swap();
 
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleIcmp(const llvm::ICmpInst* target) const {
-    auto* lhv = target->getOperand(0);
-    auto* rhv = target->getOperand(1);
+DomainStorage::SplitMap DomainStorage::handleCmp(const CmpTerm* target) const {
+    auto&& lhv = target->getLhv();
+    auto&& rhv = target->getRhv();
 
     auto&& lhvDomain = get(lhv);
     auto&& rhvDomain = get(rhv);
     ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
 
-    std::unordered_map<Variable, Split> values;
+    SplitMap values;
 
-    auto&& predicate = target->getPredicate();
-    switch (predicate) {
-        case llvm::CmpInst::ICMP_EQ: SPLIT_EQ(lhvDomain, rhvDomain); break;
+    bool isPtr = llvm::isa<type::Pointer>(lhv->getType().get()) || llvm::isa<type::Pointer>(rhv->getType().get());
 
-        case llvm::CmpInst::ICMP_NE: SPLIT_NEQ(lhvDomain, rhvDomain); break;
-
-        case llvm::CmpInst::ICMP_ULT:
-        case llvm::CmpInst::ICMP_ULE:
-            if (lhv->getType()->isPointerTy() && rhv->getType()->isPointerTy())
-                break;
-            SPLIT_LESS(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::ICMP_UGT:
-        case llvm::CmpInst::ICMP_UGE:
-            if (lhv->getType()->isPointerTy() && rhv->getType()->isPointerTy())
-                break;
+    switch (target->getOpcode()) {
+        case llvm::ConditionType::EQ: SPLIT_EQ(lhvDomain, rhvDomain); break;
+        case llvm::ConditionType::NEQ: SPLIT_NEQ(lhvDomain, rhvDomain); break;
+        case llvm::ConditionType::GT:
+        case llvm::ConditionType::GE:
+            if (isPtr) break;
             SPLIT_GREATER(lhvDomain, rhvDomain);
             break;
-
-        case llvm::CmpInst::ICMP_SLT:
-        case llvm::CmpInst::ICMP_SLE:
-            values[lhv] = lhvDomain->splitByLess(rhvDomain);
-            values[rhv] = rhvDomain->splitByLess(lhvDomain).swap();
+        case llvm::ConditionType::LT:
+        case llvm::ConditionType::LE:
+            if (isPtr) break;
+            SPLIT_LESS(lhvDomain, rhvDomain);
             break;
-
-        case llvm::CmpInst::ICMP_SGT:
-        case llvm::CmpInst::ICMP_SGE:
-            values[rhv] = rhvDomain->splitByLess(lhvDomain);
-            values[lhv] = lhvDomain->splitByLess(rhvDomain).swap();
+        case llvm::ConditionType::UGT:
+        case llvm::ConditionType::UGE:
+            if (isPtr) break;
+            SPLIT_GREATER(lhvDomain, rhvDomain);
             break;
-
+        case llvm::ConditionType::ULT:
+        case llvm::ConditionType::ULE:
+            if (isPtr) break;
+            SPLIT_LESS(lhvDomain, rhvDomain);
+            break;
+        case llvm::ConditionType::TRUE:
+        case llvm::ConditionType::FALSE:
+            break;
         default:
-            UNREACHABLE("Unknown operation in icmp");
+            UNREACHABLE("Unknown operation in cmp term");
     }
 
     return std::move(values);
 }
 
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleFcmp(const llvm::FCmpInst* target) const {
-    auto* lhv = target->getOperand(0);
-    auto* rhv = target->getOperand(1);
+DomainStorage::SplitMap DomainStorage::handleBinary(const BinaryTerm* target) const {
+    auto&& lhv = target->getLhv();
+    auto&& rhv = target->getRhv();
 
     auto&& lhvDomain = get(lhv);
     auto&& rhvDomain = get(rhv);
     ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
 
-    std::unordered_map<Variable, Split> values;
-
-    auto&& predicate = target->getPredicate();
-    switch (predicate) {
-        case llvm::CmpInst::FCMP_OEQ:
-        case llvm::CmpInst::FCMP_UEQ:
-        SPLIT_EQ(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::FCMP_ONE:
-        case llvm::CmpInst::FCMP_UNE:
-        SPLIT_NEQ(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::FCMP_OGT:
-        case llvm::CmpInst::FCMP_UGT:
-        case llvm::CmpInst::FCMP_OGE:
-        case llvm::CmpInst::FCMP_UGE:
-        SPLIT_LESS(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::FCMP_OLT:
-        case llvm::CmpInst::FCMP_ULT:
-        case llvm::CmpInst::FCMP_OLE:
-        case llvm::CmpInst::FCMP_ULE:
-        SPLIT_GREATER(lhvDomain, rhvDomain);
-            break;
-
-        default:
-            UNREACHABLE("Unknown operation in fcmp");
-    }
-
-    return std::move(values);
-}
-
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleBinary(const llvm::BinaryOperator* target) const {
-    auto* lhv = target->getOperand(0);
-    auto* rhv = target->getOperand(1);
-
-    auto&& lhvDomain = get(lhv);
-    auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
-
-    std::unordered_map<Variable, Split> values;
-
-    auto&& andImpl = [] (Split lhv, Split rhv) -> Split {
+    SplitMap values;
+    auto&& andImpl = [](Split lhv, Split rhv) -> Split {
         return {lhv.true_->meet(rhv.true_), lhv.false_->join(rhv.false_)};
     };
-    auto&& orImpl = [] (Split lhv, Split rhv) -> Split {
+    auto&& orImpl = [](Split lhv, Split rhv) -> Split {
         return {lhv.true_->join(rhv.true_), lhv.false_->join(rhv.false_)};
     };
 
-    auto* lhvInst = llvm::dyn_cast<llvm::Instruction>(lhv);
-    auto* rhvInst = llvm::dyn_cast<llvm::Instruction>(rhv);
-    if (not lhvInst || not rhvInst) return {};
-
-    auto lhvValues = std::move(handleInst(lhvInst));
-    auto rhvValues = std::move(handleInst(rhvInst));
+    auto lhvValues = std::move(handleTerm(lhv.get()));
+    auto rhvValues = std::move(handleTerm(rhv.get()));
 
     for (auto&& it : lhvValues) {
         auto value = it.first;
@@ -622,29 +520,35 @@ std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleBinary(c
         if (not rhvit) continue;
         auto rhvSplit = rhvit.getUnsafe();
 
-        auto&& opcode = target->getOpcode();
-        switch (opcode) {
-            case llvm::Instruction::And:
+        switch (target->getOpcode()) {
+            case llvm::ArithType::LAND:
+            case llvm::ArithType::BAND:
                 values[value] = andImpl(lhvSplit, rhvSplit);
                 break;
-            case llvm::Instruction::Or:
+            case llvm::ArithType::LOR:
+            case llvm::ArithType::BOR:
                 values[value] = orImpl(lhvSplit, rhvSplit);
                 break;
-            case llvm::Instruction::Xor: {
+            case llvm::ArithType::XOR: {
                 // XOR = (!lhv AND rhv) OR (lhv AND !rhv)
-                auto temp1 = andImpl({lhvSplit.false_, lhvSplit.true_}, rhvSplit);
-                auto temp2 = andImpl(lhvSplit, {rhvSplit.false_, rhvSplit.true_});
+                auto&& temp1 = andImpl({lhvSplit.false_, lhvSplit.true_}, rhvSplit);
+                auto&& temp2 = andImpl(lhvSplit, {rhvSplit.false_, rhvSplit.true_});
                 values[value] = orImpl(temp1, temp2);
                 break;
             }
+            case llvm::ArithType::IMPLIES:
+                // IMPL = (!lhv) OR (rhv)
+                values[value] = orImpl(lhvSplit.swap(), rhvSplit);
+                break;
             default:
-                UNREACHABLE("Unknown binary operator");
+                UNREACHABLE("Unexpected binary term in splitter");
         }
     }
 
     return std::move(values);
 }
 
+} // namespace ir
 } // namespace absint
 } // namespace borealis
 

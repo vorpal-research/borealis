@@ -17,17 +17,18 @@ namespace borealis {
 namespace absint {
 
 class VariableFactory;
-class DomainStorage;
 
 namespace ir {
+
+class DomainStorage;
 
 class State : public std::enable_shared_from_this<State> {
 public:
 
     using Ptr = std::shared_ptr<State>;
 
-    State(SlotTracker* tracker, VariableFactory* vf);
-    State(SlotTracker* tracker, std::shared_ptr<DomainStorage> storage);
+    State(VariableFactory* vf);
+    State(std::shared_ptr<DomainStorage> storage);
     State(const State& other);
 
     bool equals(const State* other) const;
@@ -55,8 +56,8 @@ public:
 
 private:
 
-    SlotTracker* tracker_;
     std::shared_ptr<DomainStorage> storage_;
+
 };
 
 }   /* namespace ir */

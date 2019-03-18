@@ -5,9 +5,9 @@
 #ifndef BOREALIS_DOMAINSTORAGE_HPP
 #define BOREALIS_DOMAINSTORAGE_HPP
 
-#include "AbstractDomain.hpp"
-#include "AbstractFactory.hpp"
-#include "Numerical/Number.hpp"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
+#include "Interpreter/Domain/Numerical/Number.hpp"
 
 namespace borealis {
 namespace absint {
@@ -23,7 +23,10 @@ class MemoryDomain;
 template <typename Variable>
 class Aggregate;
 
-class DomainStorage : public logging::ObjectLevelLogging<DomainStorage>, public std::enable_shared_from_this<DomainStorage> {
+namespace ir {
+
+class DomainStorage
+        : public logging::ObjectLevelLogging<DomainStorage>, public std::enable_shared_from_this<DomainStorage> {
 public:
 
     using Ptr = std::shared_ptr<DomainStorage>;
@@ -120,6 +123,7 @@ private:
 
 };
 
+} // namespace ir
 } // namespace absint
 } // namespace borealis
 

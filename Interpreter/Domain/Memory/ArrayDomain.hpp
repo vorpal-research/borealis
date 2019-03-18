@@ -123,6 +123,10 @@ public:
         return factory_->unsignedBounds(length_).second;
     }
 
+    Ptr lengthDomain() const {
+        return length_;
+    }
+
     Type::Ptr elementType() const { return elementType_; }
 
     bool isTop() const override { return length_->isTop() and elements_.empty(); }

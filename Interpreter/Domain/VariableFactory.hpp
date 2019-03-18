@@ -47,6 +47,7 @@ public:
     AbstractDomain::Ptr get(const llvm::GlobalVariable* global) const;
 
     AbstractDomain::Ptr findGlobal(const llvm::Value* val) const;
+    AbstractDomain::Ptr findGlobal(const std::string& name) const;
 
 private:
 

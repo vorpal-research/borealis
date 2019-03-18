@@ -3,7 +3,7 @@
 //
 
 #include "State.h"
-#include "Interpreter/Domain/DomainStorage.hpp"
+#include "DomainStorage.hpp"
 #include "Util/collections.hpp"
 #include "Util/sayonara.hpp"
 
@@ -13,14 +13,14 @@ namespace borealis {
 namespace absint {
 namespace ir {
 
-State::State(borealis::SlotTracker* tracker, VariableFactory* vf) :
-        tracker_(tracker), storage_(std::make_shared<DomainStorage>(vf)) {}
+State::State(VariableFactory* vf) :
+        storage_(std::make_shared<DomainStorage>(vf)) {}
 
-State::State(SlotTracker* tracker, std::shared_ptr<DomainStorage> storage) :
-        tracker_(tracker), storage_(storage) {}
+State::State(std::shared_ptr<DomainStorage> storage) :
+        storage_(storage) {}
 
 State::State(const State& other) :
-        tracker_(other.tracker_), storage_(other.storage_->clone()) {}
+        storage_(other.storage_->clone()) {}
 
 bool State::equals(const State* other) const {
     return this->storage_->equals(other->storage_);
@@ -88,7 +88,7 @@ bool operator==(const State& lhv, const State& rhv) {
 
 std::pair<State::Ptr, State::Ptr> State::split(const llvm::Value* condition) const {
     auto&& split = storage_->split(condition);
-    return std::make_pair(std::make_shared<State>(tracker_, split.first), std::make_shared<State>(tracker_, split.second));
+    return std::make_pair(std::make_shared<State>(split.first), std::make_shared<State>(split.second));
 }
 
 }   /* namespace ir */

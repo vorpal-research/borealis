@@ -18,14 +18,14 @@
 namespace borealis {
 namespace absint {
 
-template <typename IntervalT, typename Variable>
+template <typename IntervalT, typename Variable, typename VarHash, typename VarEquals>
 class IntervalDomain : public NumericalDomain<Variable> {
 public:
-    using Self = IntervalDomain<IntervalT, Variable>;
+    using Self = IntervalDomain<IntervalT, Variable, VarHash, VarEquals>;
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
 
-    using EnvT = SeparateDomain<Variable, IntervalT>;
+    using EnvT = SeparateDomain<Variable, VarHash, VarEquals, IntervalT>;
     using EnvPtr = typename EnvT::Ptr;
 
 protected:

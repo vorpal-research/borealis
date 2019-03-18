@@ -15,12 +15,15 @@
 namespace borealis {
 namespace absint {
 
-template <typename Variable, typename Inner>
+template <typename Variable, typename VarHash, typename VarEquals, typename Inner>
 class SeparateDomain : public AbstractDomain {
 public:
 
-    using Self = SeparateDomain<Variable, Inner>;
-    using ValueMap = util::cow_map<Variable, typename Inner::Ptr>;
+    template <typename Key, typename Value>
+    using VariableMapImpl = std::unordered_map<Key, Value, VarHash, VarEquals>;
+
+    using Self = SeparateDomain<Variable, VarHash, VarEquals, Inner>;
+    using ValueMap = util::cow_map<Variable, typename Inner::Ptr, VariableMapImpl>;
     using Iterator = typename ValueMap::iterator;
 
 private:

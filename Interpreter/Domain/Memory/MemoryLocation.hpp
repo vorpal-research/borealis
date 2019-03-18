@@ -28,6 +28,7 @@ public:
     using IntervalT = Interval<MachineInt>;
     using OffsetSet = std::unordered_set<Ptr, AbstractDomainHash, AbstractDomainEquals>;
 
+    virtual Ptr length() const = 0;
     virtual OffsetSet offsets() const = 0;
 
     virtual bool isNull() const { return false; }
@@ -85,6 +86,10 @@ public:
 
     static bool classof(const AbstractDomain* other) {
         return other->getClassTag() == class_tag<Self>();
+    }
+
+    Ptr length() const override {
+        return AbstractFactory::get()->getMachineInt(AbstractFactory::TOP);
     }
 
     OffsetSet offsets() const override {
@@ -212,6 +217,10 @@ public:
         return other->getClassTag() == class_tag<Self>();
     }
 
+    Ptr length() const override {
+        return AbstractFactory::get()->getMachineInt(AbstractFactory::TOP);
+    }
+
     OffsetSet offsets() const override {
         return {};
     }
@@ -283,6 +292,7 @@ public:
     using ConstPtr = AbstractDomain::ConstPtr;
 
     using Self = ArrayLocation<MachineInt>;
+    using BaseT = ArrayDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using PointerT = PointerDomain<MachineInt>;
     using OffsetSet = typename MemoryLocation<MachineInt>::OffsetSet;
@@ -309,11 +319,17 @@ private:
         return otherRaw;
     }
 
+    const BaseT* unwrapBase() const {
+        auto* baseRaw = llvm::dyn_cast<const BaseT>(base_.get());
+        ASSERTC(baseRaw);
+        return baseRaw;
+    }
+
 public:
 
     ArrayLocation(Ptr location, Ptr offset) :
             MemoryLocation<MachineInt>(class_tag(*this)), base_(location), offset_(offset), factory_(AbstractFactory::get()) {
-        ASSERT(llvm::isa<ArrayDomain<MachineInt>>(base_.get()), "Trying to create array location with non-array base");
+        ASSERT(llvm::isa<BaseT>(base_.get()), "Trying to create array location with non-array base");
     }
 
     ArrayLocation(const ArrayLocation&) = default;
@@ -336,6 +352,10 @@ public:
 
     Ptr base() const {
         return base_;
+    }
+
+    Ptr length() const override {
+        return unwrapBase()->lengthDomain();
     }
 
     OffsetSet offsets() const override {
@@ -443,6 +463,7 @@ public:
     using ConstPtr = AbstractDomain::ConstPtr;
 
     using Self = StructLocation<MachineInt>;
+    using BaseT = StructDomain<MachineInt>;
     using IntervalT = Interval<MachineInt>;
     using OffsetSet = typename MemoryLocation<MachineInt>::OffsetSet;
 
@@ -468,11 +489,17 @@ private:
         return otherRaw;
     }
 
+    const BaseT* unwrapBase() const {
+        auto* baseRaw = llvm::dyn_cast<const BaseT>(base_.get());
+        ASSERTC(baseRaw);
+        return baseRaw;
+    }
+
 public:
 
     StructLocation(Ptr base, Ptr offset)
             : MemoryLocation<MachineInt>(class_tag(*this)), base_(base), offsets_({offset}), factory_(AbstractFactory::get()) {
-        ASSERT(llvm::isa<StructDomain<MachineInt>>(base_.get()), "Trying to create struct base with non-struct base");
+        ASSERT(llvm::isa<BaseT>(base_.get()), "Trying to create struct base with non-struct base");
     }
 
     StructLocation(Ptr base, OffsetSet offsets)
@@ -500,6 +527,10 @@ public:
 
     Ptr base() const {
         return base_;
+    }
+
+    Ptr length() const override {
+        return factory_->getMachineInt(unwrapBase()->size());
     }
 
     OffsetSet offsets() const override {
