@@ -61,9 +61,7 @@ public:
     AbstractDomain::Ptr getDomainFor(const llvm::Value* value);
 
     bool empty() const;
-    bool checkGlobalsChanged(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) const;
-    /// Needs a vector of current globals, to check if there were changed
-    bool atFixpoint(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals);
+    bool atFixpoint();
 
     void setVisited();
     bool isVisited() const;

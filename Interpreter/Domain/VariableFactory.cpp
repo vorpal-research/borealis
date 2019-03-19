@@ -126,46 +126,46 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
 }
 
 AbstractDomain::Ptr VariableFactory::get(const llvm::GlobalVariable* global) const {
-    AbstractDomain::Ptr globalDomain = top(global->getType());
-//    if (global->hasInitializer()) {
-//        AbstractDomain::Ptr content;
-//        auto& elementType = *global->getType()->getPointerElementType();
-//        // If global is simple type, that we should wrap it like array of size 1
-//        auto ptrType = cast(global->getType());
-//        if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
-//            auto simpleConst = get(global->getInitializer());
-//            if (simpleConst->isTop()) return af_->top(cast(global->getType()));
-//            auto&& arrayType = af_->tf()->getArray(cast(&elementType), 1);
-//            content = af_->getArray(arrayType, { simpleConst });
-//            ptrType = af_->tf()->getPointer(arrayType, AbstractFactory::defaultSize);
-//            // else just create domain
-//        } else {
-//            content = get(global->getInitializer());
-//            if (content->isTop()) return af_->top(cast(global->getType()));
-//        }
-//        ASSERT(content, "Unsupported constant");
-//
-//        if (global->getInitializer()->getType()->isPointerTy()) {
-//            auto&& newArray = af_->tf()->getArray(cast(global->getInitializer()->getType()), 1);
-//            content = af_->getArray(newArray, { content });
-//        }
-//        auto ptr = af_->getPointer(ptrType, content, af_->getMachineInt(0));
-//
-//        // we need this because GEPs for global structs and arrays contain one additional index at the start
-//        if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
-//            auto newArray = af_->tf()->getArray(cast(global->getType()), 1);
-//            auto newPtr = af_->tf()->getPointer(newArray, AbstractFactory::defaultSize);
-//            auto newLevel = af_->getArray(newArray, { ptr });
-//            globalDomain = af_->getPointer(newPtr, newLevel, af_->getMachineInt(0));
-//        } else {
-//            globalDomain = ptr;
-//        }
-//
-//    } else {
-//        globalDomain = af_->bottom(cast(global->getType()));
-//    }
-//
-//    ASSERTC(globalDomain);
+    AbstractDomain::Ptr globalDomain;
+    if (global->hasInitializer() && global->isConstant()) {
+        AbstractDomain::Ptr content;
+        auto& elementType = *global->getType()->getPointerElementType();
+        // If global is simple type, that we should wrap it like array of size 1
+        auto ptrType = cast(global->getType());
+        if (elementType.isIntegerTy() || elementType.isFloatingPointTy()) {
+            auto simpleConst = get(global->getInitializer());
+            if (simpleConst->isTop()) return af_->top(cast(global->getType()));
+            auto&& arrayType = af_->tf()->getArray(cast(&elementType), 1);
+            content = af_->getArray(arrayType, { simpleConst });
+            ptrType = af_->tf()->getPointer(arrayType, AbstractFactory::defaultSize);
+            // else just create domain
+        } else {
+            content = get(global->getInitializer());
+            if (content->isTop()) return af_->top(cast(global->getType()));
+        }
+        ASSERT(content, "Unsupported constant");
+
+        if (global->getInitializer()->getType()->isPointerTy()) {
+            auto&& newArray = af_->tf()->getArray(cast(global->getInitializer()->getType()), 1);
+            content = af_->getArray(newArray, { content });
+        }
+        auto ptr = af_->getPointer(ptrType, content, af_->getMachineInt(0));
+
+        // we need this because GEPs for global structs and arrays contain one additional index at the start
+        if (not (elementType.isIntegerTy() || elementType.isFloatingPointTy())) {
+            auto newArray = af_->tf()->getArray(cast(global->getType()), 1);
+            auto newPtr = af_->tf()->getPointer(newArray, AbstractFactory::defaultSize);
+            auto newLevel = af_->getArray(newArray, { ptr });
+            globalDomain = af_->getPointer(newPtr, newLevel, af_->getMachineInt(0));
+        } else {
+            globalDomain = ptr;
+        }
+
+    } else {
+        globalDomain = top(global->getType());
+    }
+
+    ASSERTC(globalDomain);
     return globalDomain;
 }
 

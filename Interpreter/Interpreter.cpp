@@ -86,8 +86,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Ab
     auto updArgs = function->getArguments().empty() ?
                    (not function->getEntryNode()->isVisited()) :
                    function->updateArguments(args);
-    auto updGlobals = function->updateGlobals(module_.globalsFor(function));
-    if (not (updArgs || updGlobals)) return;
+    if (not updArgs) return;
     auto&& entry = function->getEntryNode();
     stack_.push({ function, nullptr, { entry }, {} });
     callStack_.insert(function);
@@ -95,7 +94,6 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Ab
 
     while (not context_->deque.empty()) {
         auto&& basicBlock = context_->deque.front();
-        basicBlock->updateGlobals(module_.globalsFor(basicBlock));
 
         // updating output block with new information
         basicBlock->mergeOutputWithInput();
@@ -377,7 +375,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
 ///////////////////////////////////////////////////////////////
 void Interpreter::addSuccessors(const std::vector<BasicBlock*>& successors) {
     for (auto&& it : successors) {
-        auto&& atFixpoint = it->atFixpoint(module_.globalsFor(it));
+        auto&& atFixpoint = it->atFixpoint();
         auto&& inQueue = util::contains(context_->deque, it);
         if (not atFixpoint && not inQueue) {
             context_->deque.emplace_back(it);

@@ -23,20 +23,6 @@ BasicBlock::BasicBlock(const llvm::BasicBlock* bb, SlotTracker* tracker, Variabl
           visited_(false) {
     inputState_ = std::make_shared<State>(factory_);
     outputState_ = std::make_shared<State>(factory_);
-
-    // find all global variables, that this basic block depends on
-    for (auto&& inst : util::viewContainer(*instance_)) {
-        std::deque<llvm::Value*> operands(inst.op_begin(), inst.op_end());
-        while (not operands.empty()) {
-            auto&& op = operands.front();
-            if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(op)) {
-                if (not global->isConstant()) globals_.insert({ op, factory_->bottom(op->getType()) });
-            } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(op)) {
-                for (auto&& it : util::viewContainer(ce->operand_values())) operands.push_back(it);
-            }
-            operands.pop_front();
-        }
-    }
 }
 
 const llvm::BasicBlock* BasicBlock::getInstance() const {
@@ -82,10 +68,9 @@ bool BasicBlock::empty() const {
     return inputState_->empty() && outputState_->empty();
 }
 
-bool BasicBlock::atFixpoint(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) {
+bool BasicBlock::atFixpoint() {
     if (empty() && not visited_) return false;
-    if (checkGlobalsChanged(globals)) return false;
-    if (not inputChanged_) return atFixpoint_;
+    else if (not inputChanged_) return atFixpoint_;
     else {
         atFixpoint_ = inputState_->equals(outputState_.get());
         inputChanged_ = false;
@@ -138,17 +123,6 @@ void BasicBlock::updateGlobals(const std::map<const llvm::Value*, AbstractDomain
             it.second = it.second->join(global);
         }
     }
-}
-
-bool BasicBlock::checkGlobalsChanged(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) const {
-    for (auto&& it : globals_) {
-        auto global = globals.at(it.first);
-        ASSERT(global, "No value for global in map");
-        if (not it.second->equals(global)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 std::ostream& operator<<(std::ostream& s, const BasicBlock& b) {

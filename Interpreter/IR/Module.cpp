@@ -100,18 +100,6 @@ AbstractDomain::Ptr Module::getDomainFor(const llvm::Value* value, const llvm::B
     }
 }
 
-Module::GlobalsMap Module::globalsFor(Function::Ptr f) const {
-    return util::viewContainer(f->getGlobals())
-            .map(LAM(a, std::make_pair(a, gm_.global(a))))
-            .toMap();
-}
-
-Module::GlobalsMap Module::globalsFor(const BasicBlock* bb) const {
-    return util::viewContainer(bb->getGlobals())
-            .map(LAM(a, std::make_pair(a, gm_.global(a))))
-            .toMap();
-}
-
 bool function_types_eq(const llvm::Type* lhv, const llvm::Type* rhv) {
     auto* lhvf = llvm::cast<llvm::FunctionType>(lhv);
     auto* rhvf = llvm::cast<llvm::FunctionType>(rhv);

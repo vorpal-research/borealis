@@ -23,20 +23,11 @@ Function::Function(const llvm::Function* function, VariableFactory* factory, Slo
 
     // find all global variables, that this function depends on
     for (auto&& inst : util::viewContainer(*instance_)
-            .flatten()) {
-        std::deque<llvm::Value*> operands(inst.op_begin(), inst.op_end());
-        while (not operands.empty()) {
-            auto&& op = operands.front();
-            if (auto&& global = llvm::dyn_cast<llvm::GlobalVariable>(op)) {
-                if (not global->isConstant()) globals_.insert({ op, factory_->bottom(op->getType()) });
-            } else if (auto&& ce = llvm::dyn_cast<llvm::ConstantExpr>(op)) {
-                for (auto&& it : util::viewContainer(ce->operand_values())) operands.push_back(it);
-            }
-            operands.pop_front();
-        }
-        if (auto* ret = llvm::dyn_cast<llvm::ReturnInst>(&inst)) {
-            returnValue_ = ret->getReturnValue();
-        }
+            .flatten()
+            .map(ops::take_pointer)
+            .map(llvm::dyn_caster<llvm::ReturnInst>())
+            .filter()) {
+        returnValue_ = inst->getReturnValue();
     }
 
     for (auto&& block : util::viewContainer(*instance_)) {
@@ -127,25 +118,6 @@ AbstractDomain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm:
 
 void Function::merge(State::Ptr state) {
     outputState_->merge(state);
-}
-
-std::vector<const llvm::Value*> Function::getGlobals() const {
-    return util::viewContainer(globals_)
-            .map(LAM(a, a.first))
-            .toVector();
-}
-
-bool Function::updateGlobals(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals) {
-    bool updated = false;
-    for (auto&& it : globals_) {
-        auto& global = globals.at(it.first);
-        ASSERT(global, "No value for global in map");
-        if (not it.second->equals(global)) {
-            it.second = it.second->join(global);
-            updated = true;
-        }
-    }
-    return updated;
 }
 
 size_t Function::hashCode() const {

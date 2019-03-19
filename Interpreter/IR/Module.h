@@ -38,8 +38,6 @@ public:
     GlobalManager* globalManager();
     const GlobalManager* globalManager() const;
     AbstractDomain::Ptr global(const llvm::Value* value) const;
-    GlobalsMap globalsFor(Function::Ptr f) const;
-    GlobalsMap globalsFor(const BasicBlock* bb) const;
     const FunctionMap& functions() const;
     const FunctionMap& addressTakenFunctions() const;
     /// Returns vector of address taken functions of a given prototype

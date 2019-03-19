@@ -35,7 +35,6 @@ private:
     mutable SlotTracker* tracker_;
     VariableFactory* factory_;
     std::vector<AbstractDomain::Ptr> arguments_;
-    std::map<const llvm::Value*, AbstractDomain::Ptr> globals_;
     BlockMap blocks_;
     State::Ptr inputState_;
     State::Ptr outputState_;
@@ -49,7 +48,6 @@ public:
     Type::Ptr getType() const;
     const llvm::Function* getInstance() const;
     const std::vector<AbstractDomain::Ptr>& getArguments() const;
-    std::vector<const llvm::Value*> getGlobals() const;
     const BlockMap& getBasicBlocks() const;
     AbstractDomain::Ptr getReturnValue() const;
 
@@ -58,8 +56,6 @@ public:
     /// Assumes that @args[i] corresponds to i-th argument of the function
     /// Returns true, if arguments were updated and function should be reinterpreted
     bool updateArguments(const std::vector<AbstractDomain::Ptr>& args);
-    /// Returns true, if globals were updated and function should be reinterpreted
-    bool updateGlobals(const std::map<const llvm::Value*, AbstractDomain::Ptr>& globals);
     void merge(State::Ptr state);
 
     BasicBlock* getEntryNode() const;
