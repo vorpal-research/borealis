@@ -45,11 +45,6 @@ AbstractDomain::Ptr Interpreter::getDomain(Term::Ptr term) const {
     return temp ? temp : output_->get(term);
 }
 
-AbstractDomain::Ptr Interpreter::getConstantDomain(Term::Ptr term) const {
-    auto temp = input_->constant(term);
-    return temp ? temp : output_->constant(term);
-}
-
 bool Interpreter::isConditionSatisfied(Predicate::Ptr pred, State::Ptr state) {
     if (auto&& eq = llvm::dyn_cast<EqualityPredicate>(pred.get())) {
         auto condition = state->get(eq->getLhv());
@@ -291,100 +286,62 @@ Term::Ptr Interpreter::transformLoadTerm(LoadTermPtr term) {
 }
 
 Term::Ptr Interpreter::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
-    if (getConstantDomain(term)) return term;
-    auto intTy = llvm::cast<type::Integer>(term->getType().get());
-    auto apint = llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10);
-    auto integer = vf_->af()->getInteger(*apint.getRawData(), apint.getBitWidth());
-    output_->addConstant(term, integer);
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
-    output_->addConstant(term, vf_->af()->getBool(term->getValue()));
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueBuiltinTerm(OpaqueBuiltinTermPtr term) {
-    errs() << "Unknown OpaqueBuiltinTerm: " << term->getName() << endl;
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueCallTerm(OpaqueCallTermPtr term) {
-    errs() << "Unknown OpaqueCallTerm: " << term->getName() << endl;
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
-    if (getConstantDomain(term)) return term;
-    output_->addConstant(term, vf_->af()->getFloat(term->getValue()));
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueIndexingTerm(OpaqueIndexingTermPtr term) {
-    errs() << "Unknown OpaqueIndexingTerm: " << term->getName() << endl;
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
-    if (getConstantDomain(term)) return term;
-    if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
-        output_->addConstant(term, vf_->af()->getInteger(term->getValue(), intTy->getBitsize()));
-
-    } else if (llvm::isa<type::Pointer>(term->getType().get())) {
-        output_->addConstant(term, (term->getValue() == 0) ? vf_->af()->getNullptr() : vf_->top(term->getType()));
-    } else {
-        warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
-        output_->addConstant(term, vf_->af()->getMachineInt(term->getValue()));
-    };
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
-    output_->assign(term, vf_->af()->getNullptr());
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueMemberAccessTerm(OpaqueMemberAccessTermPtr term) {
-    errs() << "Unknown OpaqueMemberAccessTerm: " << term->getName() << endl;
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueNamedConstantTerm(OpaqueNamedConstantTermPtr term) {
-    errs() << "Unknown OpaqueNamedConstantTerm: " << term->getName() << endl;
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
-    output_->assign(term, vf_->af()->getNullptr());
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
-    if (getConstantDomain(term)) return term;
-    if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
-        std::vector<AbstractDomain::Ptr> elements;
-        for (auto&& it : term->getValue()) {
-            elements.push_back(vf_->af()->getInteger(it, 8));
-        }
-        output_->addConstant(term, vf_->af()->getArray(array->getElement(), elements));
-    } else {
-        output_->assign(term, vf_->top(term->getType()));
-    }
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueUndefTerm(OpaqueUndefTermPtr term) {
-    output_->assign(term, vf_->top(term->getType()));
     return term;
 }
 
 Term::Ptr Interpreter::transformOpaqueVarTerm(OpaqueVarTermPtr term) {
-    errs() << "Unknown OpaqueVarTerm: " << term->getName() << endl;
     return term;
 }
 
 Term::Ptr Interpreter::transformSignTerm(SignTermPtr term) {
-    errs() << "Unknown SignTerm: " << term->getName() << endl;
     return term;
 }
 

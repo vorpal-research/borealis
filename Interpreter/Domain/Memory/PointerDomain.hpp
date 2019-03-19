@@ -341,6 +341,44 @@ public:
         }
     }
 
+    Ptr apply(llvm::ConditionType op, ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
+        auto* af = AbstractFactory::get();
+
+        auto&& makeTop = [&]() { return af->getBool(AbstractFactory::TOP); };
+        auto&& makeBool = [&](bool b) { return af->getBool(b); };
+
+        if (this->isTop() || otherRaw->isTop()) {
+            return makeTop();
+        } else if (this->isBottom() || otherRaw->isBottom()) {
+            return makeTop();//af->getBool(AbstractFactory::BOTTOM);
+        }
+
+        switch (op) {
+            case llvm::ConditionType::TRUE:
+                return makeBool(true);
+            case llvm::ConditionType::FALSE:
+                return makeBool(false);
+            case llvm::ConditionType::UNKNOWN:
+                return makeTop();
+            case llvm::ConditionType::EQ:
+                if (this->isNull() && otherRaw->isNull())
+                    return makeBool(true);
+                else if (not util::hasIntersection(this->ptsTo_, otherRaw->ptsTo_))
+                    return makeBool(false);
+                else return this->equals(other) ? makeBool(true) : makeTop();
+            case llvm::ConditionType::NEQ:
+                if (this->isNull() && otherRaw->isNull())
+                    return makeBool(false);
+                else if (not util::hasIntersection(this->ptsTo_, otherRaw->ptsTo_))
+                    return makeBool(true);
+                else return this->equals(other) ? makeBool(false) : makeTop();
+            default:
+                return makeTop();
+        }
+    }
+
     Split splitByEq(ConstPtr other) const override {
         auto* otherRaw = unwrap(other);
 

@@ -43,15 +43,12 @@ public:
 
     State(const VariableFactory* vf);
     State(std::shared_ptr<DomainStorage> storage);
-    State(std::shared_ptr<DomainStorage> storage, TermMap constants);
     State(const State& other);
 
     bool equals(const State* other) const;
     friend bool operator==(const State& lhv, const State& rhv);
 
     AbstractDomain::Ptr get(Term::Ptr x) const;
-    AbstractDomain::Ptr constant(Term::Ptr x) const;
-    void addConstant(Term::Ptr constant, AbstractDomain::Ptr value);
     void assign(Term::Ptr x, Term::Ptr y);
     void assign(Term::Ptr v, AbstractDomain::Ptr domain);
     void apply(llvm::ArithType op, Term::Ptr x, Term::Ptr y, Term::Ptr z);
@@ -74,7 +71,6 @@ public:
 private:
 
     std::shared_ptr<DomainStorage> storage_;
-    TermMap constants_;
 };
 
 std::ostream& operator<<(std::ostream& s, State::Ptr state);

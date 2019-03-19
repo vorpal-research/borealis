@@ -150,69 +150,30 @@ Term::Ptr QueryChecker::transformCmpTerm(CmpTermPtr term) {
 }
 
 Term::Ptr QueryChecker::transformOpaqueBigIntConstantTerm(OpaqueBigIntConstantTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    auto intTy = llvm::cast<type::Integer>(term->getType().get());
-    auto apint = llvm::APInt(intTy->getBitsize(), term->getRepresentation(), 10);
-    state_->addConstant(term, vf_->af()->getInteger(*apint.getRawData(), apint.getBitWidth()));
     return term;
 }
 
 Term::Ptr QueryChecker::transformOpaqueBoolConstantTerm(OpaqueBoolConstantTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    state_->addConstant(term, vf_->af()->getBool(term->getValue()));
     return term;
 }
 
 Term::Ptr QueryChecker::transformOpaqueFloatingConstantTerm(OpaqueFloatingConstantTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    state_->addConstant(term, vf_->af()->getFloat(term->getValue()));
     return term;
 }
 
 Term::Ptr QueryChecker::transformOpaqueIntConstantTerm(OpaqueIntConstantTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
-        state_->addConstant(term, vf_->af()->getInteger(term->getValue(), intTy->getBitsize()));
-
-    } else if (llvm::isa<type::Pointer>(term->getType().get())) {
-        state_->addConstant(term, (term->getValue() == 0) ? vf_->af()->getNullptr() : vf_->top(term->getType()));
-    } else {
-        warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
-        state_->addConstant(term, vf_->af()->getMachineInt(term->getValue()));
-    };
     return term;
 }
 
 Term::Ptr QueryChecker::transformOpaqueInvalidPtrTerm(OpaqueInvalidPtrTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    state_->assign(term, vf_->af()->getNullptr());
     return term;
 }
 
 Term::Ptr QueryChecker::transformOpaqueNullPtrTerm(OpaqueNullPtrTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    state_->assign(term, vf_->af()->getNullptr());
     return term;
 }
 
 Term::Ptr QueryChecker::transformOpaqueStringConstantTerm(OpaqueStringConstantTermPtr term) {
-    if (not satisfied()) return term;
-    if (state_->get(term)) return term;
-    if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
-        std::vector<AbstractDomain::Ptr> elements;
-        for (auto&& it : term->getValue()) {
-            elements.push_back(vf_->af()->getInteger(it, 8));
-        }
-        state_->addConstant(term, vf_->af()->getArray(array->getElement(), elements));
-    } else {
-        state_->assign(term, vf_->top(term->getType()));
-    }
     return term;
 }
 

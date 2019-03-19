@@ -71,7 +71,6 @@ public:
 private:
 
     AbstractDomain::Ptr getDomain(Term::Ptr term) const;
-    AbstractDomain::Ptr getConstantDomain(Term::Ptr term) const;
 
     void interpretState(PredicateState::Ptr ps);
     bool isConditionSatisfied(Predicate::Ptr pred, State::Ptr state);

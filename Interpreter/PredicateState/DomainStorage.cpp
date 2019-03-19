@@ -11,6 +11,16 @@
 #include "Interpreter/Domain/Memory/AggregateDomain.hpp"
 #include "Interpreter/Domain/Memory/MemoryDomain.hpp"
 #include "Interpreter/Domain/Memory/PointsToDomain.hpp"
+
+#include "Term/OpaqueBoolConstantTerm.h"
+#include "Term/OpaqueBigIntConstantTerm.h"
+#include "Term/OpaqueFloatingConstantTerm.h"
+#include "Term/OpaqueIntConstantTerm.h"
+#include "Term/OpaqueInvalidPtrTerm.h"
+#include "Term/OpaqueNullPtrTerm.h"
+#include "Term/OpaqueStringConstantTerm.h"
+#include "Term/OpaqueUndefTerm.h"
+
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
@@ -19,6 +29,56 @@ namespace absint {
 namespace ps {
 
 namespace impl_ {
+
+AbstractDomain::Ptr getConstant(const VariableFactory* vf, Term::Ptr term) {
+    if (auto* obic = llvm::dyn_cast<OpaqueBigIntConstantTerm>(term.get())) {
+        auto intTy = llvm::cast<type::Integer>(term->getType().get());
+        auto apint = llvm::APInt(intTy->getBitsize(), obic->getRepresentation(), 10);
+        return vf->af()->getInteger(*apint.getRawData(), apint.getBitWidth());
+
+    } else if (auto* obc = llvm::dyn_cast<OpaqueBoolConstantTerm>(term.get())) {
+        return vf->af()->getBool(obc->getValue());
+
+    } else if (auto* ofc = llvm::dyn_cast<OpaqueFloatingConstantTerm>(term.get())) {
+        return vf->af()->getFloat(ofc->getValue());
+
+    } else if (auto* oic = llvm::dyn_cast<OpaqueIntConstantTerm>(term.get())) {
+        if (auto intTy = llvm::dyn_cast<type::Integer>(term->getType().get())) {
+            return vf->af()->getInteger(oic->getValue(), intTy->getBitsize());
+
+        } else if (llvm::isa<type::Pointer>(term->getType().get())) {
+            return (oic->getValue() == 0) ? vf->af()->getNullptr() : vf->top(term->getType());
+        } else {
+
+            warns() << "Unknown type in OpaqueIntConstant: " << TypeUtils::toString(*term->getType().get()) << endl;
+            return vf->af()->getMachineInt(oic->getValue());
+        };
+
+    } else if (llvm::isa<OpaqueInvalidPtrTerm>(term.get())) {
+        return vf->af()->getNullptr();
+
+    } else if (llvm::isa<OpaqueNullPtrTerm>(term.get())) {
+        return vf->af()->getNullptr();
+
+    } else if (auto* osc = llvm::dyn_cast<OpaqueStringConstantTerm>(term.get())) {
+        if (auto array = llvm::dyn_cast<type::Array>(term->getType())) {
+            std::vector<AbstractDomain::Ptr> elements;
+            for (auto&& it : osc->getValue()) {
+                elements.push_back(vf->af()->getInteger(it, 8));
+            }
+            return vf->af()->getArray(array->getElement(), elements);
+        } else {
+            return vf->top(term->getType());
+        }
+
+    } else if (llvm::isa<OpaqueUndefTerm>(term.get())) {
+        return vf->top(term->getType());
+
+    } else {
+        warns() << "Unknown constant term: " << term->getName() << endl;
+        return nullptr;
+    }
+}
 
 template <typename IntervalT>
 class IntervalDomainImpl : public IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType> {
@@ -61,10 +121,12 @@ public:
         if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
                 [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
-                )) {
+        )) {
 
             return local;
 
+        } else if (auto&& constant = getConstant(vf_, x)) {
+            return constant;
         }
         return nullptr;
     }
@@ -114,6 +176,8 @@ public:
         )) {
             return local;
 
+        } else if (auto&& constant = getConstant(vf_, x)) {
+            return constant;
         }
         return nullptr;
     }
@@ -163,6 +227,8 @@ public:
         )) {
             return local;
 
+        } else if (auto&& constant = getConstant(vf_, x)) {
+            return constant;
         }
         return nullptr;
     }
@@ -254,6 +320,8 @@ AbstractDomain::Ptr DomainStorage::get(Variable x) const {
         return unwrapMemory()->get(x);
     else if (llvm::isa<type::Record>(type.get()))
         return unwrapStruct()->get(x);
+    else if (llvm::isa<type::UnknownType>(type.get()) and llvm::isa<OpaqueNullPtrTerm>(x.get()))
+        return unwrapMemory()->get(x);
     else {
         return nullptr;
     }

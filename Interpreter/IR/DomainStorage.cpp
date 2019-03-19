@@ -494,7 +494,7 @@ std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleInst(con
     else if (auto* binary = llvm::dyn_cast<llvm::BinaryOperator>(target))
         return std::move(handleBinary(binary));
     else {
-        warns() << "Unexpected instruction in split: " << util::toString(*target) << endl;
+//        warns() << "Unexpected instruction in split: " << util::toString(*target) << endl;
         return {};
     }
 }

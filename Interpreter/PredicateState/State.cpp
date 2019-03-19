@@ -17,11 +17,8 @@ State::State(const VariableFactory* vf) :
 State::State(std::shared_ptr<DomainStorage> storage) :
         storage_(storage) {}
 
-State::State(std::shared_ptr<DomainStorage> storage, TermMap constants) :
-        storage_(storage), constants_(std::move(constants)) {}
-
 State::State(const State& other) :
-        storage_(other.storage_->clone()), constants_(other.constants_) {}
+        storage_(other.storage_->clone()) {}
 
 bool State::equals(const State* other) const {
     return this->storage_->equals(other->storage_);
@@ -29,14 +26,6 @@ bool State::equals(const State* other) const {
 
 AbstractDomain::Ptr State::get(Term::Ptr x) const {
     return storage_->get(x);
-}
-
-AbstractDomain::Ptr State::constant(Term::Ptr x) const {
-    return util::at(constants_, x).getUnsafe();
-}
-
-void State::addConstant(Term::Ptr constant, AbstractDomain::Ptr value) {
-    constants_[constant] = value;
 }
 
 void State::assign(Term::Ptr x, Term::Ptr y) {
@@ -84,7 +73,7 @@ void State::merge(State::Ptr other) {
 }
 
 bool State::empty() const {
-    return storage_->empty() and constants_.empty();
+    return storage_->empty();
 }
 
 std::string State::toString() const {

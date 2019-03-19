@@ -113,9 +113,8 @@ public:
 
     void assign(Variable x, Ptr i) override { this->set(x, i); }
 
-    Ptr applyTo(llvm::ConditionType, Variable, Variable) const override {
-        auto&& makeTop = [&]() { return af_->getBool(AbstractFactory::TOP); };
-        return makeTop();
+    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) const override {
+        return this->get(x)->apply(op, this->get(y));
     }
 
     Ptr loadFrom(Type::Ptr type, Variable ptr) const override {
