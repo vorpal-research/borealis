@@ -41,8 +41,8 @@ public:
     using Ptr = std::shared_ptr<State>;
     using TermMap = std::unordered_map<Term::Ptr, AbstractDomain::Ptr, TermHash, TermEqualsWType>;
 
-    State(const VariableFactory* vf);
-    State(std::shared_ptr<DomainStorage> storage);
+    explicit State(const VariableFactory* vf);
+    explicit State(std::shared_ptr<DomainStorage> storage);
     State(const State& other);
 
     bool equals(const State* other) const;

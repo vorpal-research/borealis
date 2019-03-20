@@ -288,13 +288,15 @@ public:
     }
 
     Ptr bound() const {
-        if (isTop()) return factory_->getMachineInt(AbstractFactory::TOP);
+        auto&& type = factory_->tf()->getInteger(AbstractFactory::defaultSize, llvm::Signedness::Unknown);
+        if (isTop()) return factory_->top(type);
 
-        auto result = factory_->getMachineInt(AbstractFactory::BOTTOM);
+        auto result = factory_->bottom(type);
         for (auto&& it : ptsTo_) {
             auto* loc = unwrapLocation(it);
             auto it_off = util::viewContainer(loc->offsets()).reduce(factory_->getMachineInt(AbstractFactory::BOTTOM), LAM2(acc, e, acc->join(e)));
-            result = result->join(loc->length() - it_off);
+            auto&& intOffset = factory_->cast(MITOI, type, it_off);
+            result = result->join(loc->length() - intOffset);
         }
         return result;
     }

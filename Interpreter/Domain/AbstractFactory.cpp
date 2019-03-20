@@ -436,6 +436,18 @@ AbstractDomain::Ptr AbstractFactory::cast(CastOperator op, Type::Ptr target, Abs
             }
         case ITOPTR:
             return PointerT::top();
+        case MITOI:
+            using MInt = Interval<MachineInt>;
+
+            if (auto* mint = llvm::dyn_cast<MInt>(domain.get())) {
+                auto&& casted = util::cast<MInt, SInt>()(*mint);
+                auto&& sint = SInt::interval(casted.lb(), casted.ub());
+                auto&& castedU = util::cast<MInt, UInt>()(*mint);
+                auto&& uint = UInt::interval(castedU.lb(), castedU.ub());
+                return IntT::interval(sint, uint);
+            } else {
+                UNREACHABLE("Unknown machine int");
+            }
         case PTRTOI:
             domain->setTop();
             return IntT::top(sintAdapter(integer->getBitsize()), uintAdapter(integer->getBitsize()));

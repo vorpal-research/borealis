@@ -21,6 +21,7 @@ enum CastOperator {
     ITOFP,
     ITOPTR,
     PTRTOI,
+    MITOI,
     BITCAST
 };
 
