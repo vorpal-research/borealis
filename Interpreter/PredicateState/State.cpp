@@ -11,8 +11,8 @@ namespace borealis {
 namespace absint {
 namespace ps {
 
-State::State(const VariableFactory* vf) :
-        storage_(std::make_shared<DomainStorage>(vf)) {}
+State::State(const VariableFactory* vf, State::Ptr input) :
+        storage_(std::make_shared<DomainStorage>(vf, (input ? input->storage_ : nullptr))) {}
 
 State::State(std::shared_ptr<DomainStorage> storage) :
         storage_(storage) {}

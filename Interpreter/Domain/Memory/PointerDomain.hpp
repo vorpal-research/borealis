@@ -291,14 +291,15 @@ public:
         auto&& type = factory_->tf()->getInteger(AbstractFactory::defaultSize, llvm::Signedness::Unknown);
         if (isTop()) return factory_->top(type);
 
-        auto result = factory_->bottom(type);
+        auto&& makeBottom = [&]() { return factory_->getMachineInt(AbstractFactory::BOTTOM); };
+
+        auto result = makeBottom();
         for (auto&& it : ptsTo_) {
             auto* loc = unwrapLocation(it);
-            auto it_off = util::viewContainer(loc->offsets()).reduce(factory_->getMachineInt(AbstractFactory::BOTTOM), LAM2(acc, e, acc->join(e)));
-            auto&& intOffset = factory_->cast(MITOI, type, it_off);
-            result = result->join(loc->length() - intOffset);
+            auto it_off = util::viewContainer(loc->offsets()).reduce(makeBottom(), LAM2(acc, e, acc->join(e)));
+            result = result->join(loc->length() - it_off);
         }
-        return result;
+        return factory_->cast(MITOI, type, result);
     }
 
     Ptr load(Type::Ptr type, Ptr offset) const override {
@@ -343,13 +344,38 @@ public:
         }
     }
 
+    Ptr apply(llvm::ArithType op, ConstPtr other) const override {
+        auto&& type = factory_->tf()->getInteger(AbstractFactory::defaultSize, llvm::Signedness::Unknown);
+        auto* otherRaw = unwrap(other);
+
+        auto&& makeBottom = [&]() { return factory_->getMachineInt(AbstractFactory::BOTTOM); };
+
+        if (this->isBottom() or this->isTop() or other->isBottom() or other->isTop()) {
+            return factory_->top(type);
+        }
+
+        if (this->ptsTo_.size() != otherRaw->ptsTo_.size()) return factory_->top(type);
+        ASSERTC(op == llvm::ArithType::SUB);
+
+        auto result = makeBottom();
+        for (auto&& it : this->ptsTo_) {
+            auto&& otherIt = otherRaw->ptsTo_.find(it);
+            if (otherIt == otherRaw->ptsTo_.end()) return factory_->top(type);
+            else {
+                auto it_off = util::viewContainer(unwrapLocation(it)->offsets()).reduce(makeBottom(), LAM2(acc, e, acc->join(e)));
+                auto itptr_off = util::viewContainer(unwrapLocation(*otherIt)->offsets()).reduce(makeBottom(), LAM2(acc, e, acc->join(e)));
+                result = result->join(it_off - itptr_off);
+            }
+        }
+
+        return factory_->cast(MITOI, type, result);
+    }
+
     Ptr apply(llvm::ConditionType op, ConstPtr other) const override {
         auto* otherRaw = unwrap(other);
 
-        auto* af = AbstractFactory::get();
-
-        auto&& makeTop = [&]() { return af->getBool(AbstractFactory::TOP); };
-        auto&& makeBool = [&](bool b) { return af->getBool(b); };
+        auto&& makeTop = [&]() { return factory_->getBool(AbstractFactory::TOP); };
+        auto&& makeBool = [&](bool b) { return factory_->getBool(b); };
 
         if (this->isTop() || otherRaw->isTop()) {
             return makeTop();

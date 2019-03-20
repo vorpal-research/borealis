@@ -22,7 +22,7 @@ Interpreter::Interpreter(FactoryNest FN, const VariableFactory* vf)
           ObjectLevelLogging("ps-interpreter"),
           vf_(vf),
           input_(std::make_shared<State>(vf_)),
-          output_(std::make_shared<State>(vf_)),
+          output_(std::make_shared<State>(vf_, input_)),
           equalities_(std::make_shared<TermMap>()) {}
 
 Interpreter::Interpreter(FactoryNest FN, const VariableFactory* vf, State::Ptr input, TermMapPtr equalities)
@@ -30,7 +30,7 @@ Interpreter::Interpreter(FactoryNest FN, const VariableFactory* vf, State::Ptr i
           ObjectLevelLogging("ps-interpreter"),
           vf_(vf),
           input_(input),
-          output_(std::make_shared<State>(vf_)),
+          output_(std::make_shared<State>(vf_, input_)),
           equalities_(equalities) {}
 
 State::Ptr Interpreter::getState() const {

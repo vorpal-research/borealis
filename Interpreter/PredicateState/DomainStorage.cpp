@@ -75,7 +75,7 @@ AbstractDomain::Ptr getConstant(const VariableFactory* vf, Term::Ptr term) {
         return vf->top(term->getType());
 
     } else {
-        warns() << "Unknown constant term: " << term->getName() << endl;
+//        warns() << "Unknown constant term: " << term->getName() << endl;
         return nullptr;
     }
 }
@@ -87,15 +87,26 @@ public:
     using Ptr = AbstractDomain::Ptr;
     using Variable = Term::Ptr;
     using Self = IntervalDomainImpl<IntervalT>;
+    using ParentT = NumericalDomain<Variable>;
     using EnvT = typename IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType>::EnvT;
 
 protected:
 
     const VariableFactory* vf_;
+    const Ptr input_;
+
+private:
+
+    const ParentT* unwrapInput() const {
+        auto* ptr = llvm::dyn_cast<ParentT>(input_.get());
+        ASSERTC(ptr);
+        return ptr;
+    }
 
 public:
 
-    explicit IntervalDomainImpl(const VariableFactory* vf) : IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf) {}
+    explicit IntervalDomainImpl(const VariableFactory* vf, const Ptr input)
+            : IntervalDomain<IntervalT, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf), input_(input) {}
     IntervalDomainImpl(const IntervalDomainImpl&) = default;
     IntervalDomainImpl(IntervalDomainImpl&&) = default;
     IntervalDomainImpl& operator=(const IntervalDomainImpl&) = default;
@@ -118,6 +129,11 @@ public:
     }
 
     Ptr get(Variable x) const override {
+        if (input_ != nullptr) {
+            auto inputValue = unwrapInput()->get(x);
+            if (inputValue != nullptr) return inputValue;
+        }
+
         if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
                 [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
@@ -139,15 +155,26 @@ public:
     using Ptr = AbstractDomain::Ptr;
     using Variable = Term::Ptr;
     using Self = PointsToDomainImpl<MachineInt>;
+    using ParentT = MemoryDomain<MachineInt, Variable>;
     using EnvT = typename PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType>::EnvT;
 
 protected:
 
     const VariableFactory* vf_;
+    const Ptr input_;
+
+private:
+
+    const ParentT* unwrapInput() const {
+        auto* ptr = llvm::dyn_cast<ParentT>(input_.get());
+        ASSERTC(ptr);
+        return ptr;
+    }
 
 public:
 
-    explicit PointsToDomainImpl(const VariableFactory* vf) : PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf) {}
+    explicit PointsToDomainImpl(const VariableFactory* vf, const Ptr input)
+            : PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf), input_(input) {}
     PointsToDomainImpl(const PointsToDomainImpl&) = default;
     PointsToDomainImpl(PointsToDomainImpl&&) = default;
     PointsToDomainImpl& operator=(const PointsToDomainImpl&) = default;
@@ -170,6 +197,11 @@ public:
     }
 
     Ptr get(Variable x) const override {
+        if (input_ != nullptr) {
+            auto inputValue = unwrapInput()->get(x);
+            if (inputValue != nullptr) return inputValue;
+        }
+
         if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return PointerDomain<MachineInt>::bottom(); },
                 [&]() -> AbstractDomain::Ptr { return PointerDomain<MachineInt>::top(); }
@@ -190,15 +222,26 @@ public:
     using Ptr = AbstractDomain::Ptr;
     using Variable = Term::Ptr;
     using Self = AggregateDomainImpl<AggregateT>;
+    using ParentT = Aggregate<Variable>;
     using EnvT = typename AggregateDomain<AggregateT, Term::Ptr, TermHash, TermEqualsWType>::EnvT;
 
 protected:
 
     const VariableFactory* vf_;
+    const Ptr input_;
+
+private:
+
+    const ParentT* unwrapInput() const {
+        auto* ptr = llvm::dyn_cast<ParentT>(input_.get());
+        ASSERTC(ptr);
+        return ptr;
+    }
 
 public:
 
-    explicit AggregateDomainImpl(const VariableFactory* vf) : AggregateDomain<AggregateT, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf) {}
+    explicit AggregateDomainImpl(const VariableFactory* vf, const Ptr input)
+            : AggregateDomain<AggregateT, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf), input_(input) {}
     AggregateDomainImpl(const AggregateDomainImpl&) = default;
     AggregateDomainImpl(AggregateDomainImpl&&) = default;
     AggregateDomainImpl& operator=(const AggregateDomainImpl&) = default;
@@ -221,6 +264,11 @@ public:
     }
 
     Ptr get(Variable x) const override {
+        if (input_ != nullptr) {
+            auto inputValue = unwrapInput()->get(x);
+            if (inputValue != nullptr) return inputValue;
+        }
+
         if (auto&& local = this->unwrapEnv()->get(x,
                 [&]() -> AbstractDomain::Ptr { return vf_->bottom(x->getType()); },
                 [&]() -> AbstractDomain::Ptr { return vf_->top(x->getType()); }
@@ -266,14 +314,15 @@ DomainStorage::AggregateDomainT* DomainStorage::unwrapStruct() const {
     return structure;
 }
 
-DomainStorage::DomainStorage(const VariableFactory* vf) :
+DomainStorage::DomainStorage(const VariableFactory* vf, DomainStorage::Ptr input) :
         ObjectLevelLogging("domain"),
         vf_(vf),
-        bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_)),
-        ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_)),
-        floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_)),
-        memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_)),
-        structs_(std::make_shared<impl_::AggregateDomainImpl<StructDomain<MachineIntT>>>(vf_)) {}
+        input_(input),
+        bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_, (input_ ? input_->bools_ : nullptr))),
+        ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_, (input_ ? input_->ints_ : nullptr))),
+        floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_, (input_ ? input_->floats_ : nullptr))),
+        memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_, (input_ ? input_->memory_ : nullptr))),
+        structs_(std::make_shared<impl_::AggregateDomainImpl<StructDomain<MachineIntT>>>(vf_, (input_ ? input_->structs_ : nullptr))) {}
 
 DomainStorage::Ptr DomainStorage::clone() const {
     return std::make_shared<DomainStorage>(*this);

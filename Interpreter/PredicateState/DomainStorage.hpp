@@ -57,7 +57,7 @@ protected:
 
 public:
 
-    explicit DomainStorage(const VariableFactory* vf);
+    DomainStorage(const VariableFactory* vf, DomainStorage::Ptr input = nullptr);
     DomainStorage(const DomainStorage&) = default;
     DomainStorage(DomainStorage&&) = default;
     DomainStorage& operator=(const DomainStorage&) = default;
@@ -119,6 +119,7 @@ private:
 private:
 
     const VariableFactory* vf_;
+    const Ptr input_;
     AbstractDomain::Ptr bools_;
     AbstractDomain::Ptr ints_;
     AbstractDomain::Ptr floats_;
