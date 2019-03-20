@@ -283,8 +283,11 @@ public:
             case llvm::ArithType::ASHR: return clone(*this >> *otherRaw);
             case llvm::ArithType::LSHR: return clone(lshr(*this, *otherRaw));
             case llvm::ArithType::BAND: return clone(*this & *otherRaw);
+            case llvm::ArithType::LAND: return clone(*this & *otherRaw);
             case llvm::ArithType::BOR: return clone(*this | *otherRaw);
+            case llvm::ArithType::LOR: return clone(*this | *otherRaw);
             case llvm::ArithType::XOR: return clone(*this ^ *otherRaw);
+            case llvm::ArithType::IMPLIES: return top(caster());
             default:
                 UNREACHABLE("Unknown binary operator");
         }
