@@ -4,8 +4,6 @@ pipelines:
   default:
     - step:
         script:
-          - echo "\n[subrepos]\ngit:allowed = true\n" >> ~/.hgrc
-          - hg update
           - mkdir build
           - cd build
           - cmake ..
