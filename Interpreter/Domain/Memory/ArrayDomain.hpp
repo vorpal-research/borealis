@@ -309,10 +309,11 @@ public:
             auto&& lb = bounds.first;
             auto&& ub = bounds.second;
 
-            if (ub >= length) {
-                warns() << "Possible buffer overflow" << endl;
-            } else if (lb >= length) {
-                warns() << "Buffer overflow" << endl;
+//            if (ub >= length) {
+//                warns() << "Possible buffer overflow" << endl;
+//            } else
+            if (lb >= length) {
+//                warns() << "Buffer overflow" << endl;
                 return factory_->top(elementType_);
             }
 
@@ -337,11 +338,11 @@ public:
             auto&& lb = bounds.first;
             auto&& ub = bounds.second;
 
-            if (ub >= length) {
-                warns() << "Possible buffer overflow" << endl;
-            } else if (lb >= length) {
-                warns() << "Buffer overflow" << endl;
-            }
+//            if (ub >= length) {
+//                warns() << "Possible buffer overflow" << endl;
+//            } else if (lb >= length) {
+//                warns() << "Buffer overflow" << endl;
+//            }
 
             for (auto i = lb; i <= ub and i < length; ++i) {
                 auto&& opt = util::at(this->elements_, (size_t) i);

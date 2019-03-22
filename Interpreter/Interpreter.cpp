@@ -333,7 +333,7 @@ void Interpreter::visitCallInst(llvm::CallInst& i) {
 
         auto retval = module_.variableFactory()->bottom(i.getType());
         if (function->isTop() || function->isBottom()) {
-            warns() << "Pointer is TOP: " << ST_->toString(&i) << ", calling all possible functions" << endl;
+//            warns() << "Pointer is TOP: " << ST_->toString(&i) << ", calling all possible functions" << endl;
             std::vector<llvm::Type*> argTypes;
             for (auto&& it : args) argTypes.emplace_back(it.first->getType());
             auto&& prototype = llvm::FunctionType::get(i.getType(),
@@ -439,7 +439,7 @@ AbstractDomain::Ptr Interpreter::handleDeclaration(const llvm::Function* functio
         // just skip llvm debug function, to prevent excess printing to log
         if (function->getName().startswith("llvm.dbg.")) return nullptr;
 
-        warns() << "Unknown function: " << function->getName() << endl;
+//        warns() << "Unknown function: " << function->getName() << endl;
         // Unknown function possibly can do anything with pointer arguments
         // so we set all of them as TOP
         for (auto&& it : args) {

@@ -60,6 +60,7 @@ set(COMPILER_DEFINITIONS
         -D_GLIBCXX_USE_CXX11_ABI=1
         -DGOOGLE_PROTOBUF_NO_RTTI
         -DPROTOBUF_INLINE_NOT_IN_HEADERS=0
+        -DPROTOBUF_MIN_PROTOC_VERSION=1000000   # define this to aviod warnings during protobuf compilation
         -DNO_TRACING)
 
 set(COMPILER_FLAGS
