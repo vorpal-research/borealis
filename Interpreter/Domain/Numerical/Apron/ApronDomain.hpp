@@ -165,7 +165,7 @@ inline Bound<Number> toBBound(ap_scalar_t* scalar, util::Adapter<Number>* caster
 }
 
 template < typename Number >
-inline Interval<Number> toBInterval(ap_interval_t* intv, util::Adapter<Number>* caster) {
+inline typename Interval<Number>::Ptr toBInterval(ap_interval_t* intv, util::Adapter<Number>* caster) {
     using IntervalT = Interval<Number>;
 
     if (ap_interval_is_top(intv)) {
@@ -190,6 +190,7 @@ public:
     using ConstPtr = AbstractDomain::ConstPtr;
 
     using IntervalT = Interval<Number>;
+    using CasterT = typename IntervalT::CasterT;
     using LinearConstSystemT = LinearConstraintSystem<Number, Variable, VarHash, VarEquals>;
     using LinearConstraintT = typename LinearConstSystemT::LinearConstraintT;
     using LinearExprT = typename LinearConstSystemT::LinearExpr;
@@ -200,6 +201,7 @@ private:
 
 private:
 
+    CasterT* caster_;
     VariableMap vars_;
     apron::ApronPtr env_;
 
@@ -210,12 +212,12 @@ private:
         return m;
     }
 
-    util::option<size_t> getOrPutVar(Variable x) const {
+    util::option<size_t> getVarDim(Variable x) const {
         return util::at(vars_, x);
     }
 
-    size_t addVar(Variable x) {
-        auto&& opt = getOrPutVar(x);
+    size_t getOrPutVar(Variable x) {
+        auto&& opt = getVarDim(x);
         if (opt) return opt.getUnsafe();
 
         auto num = static_cast<ap_dim_t>(vars_.size());
@@ -333,6 +335,47 @@ private:
         }
     }
 
+    LinearExprT toLinearExpr(ap_linexpr0_t* expr) const {
+        ASSERTC(ap_linexpr0_is_linear(expr));
+
+        ap_coeff_t* coeff = ap_linexpr0_cstref(expr);
+        LinearExprT e(toBNumber<Number>(coeff, caster_));
+
+        for (auto it = vars_.begin(), et = vars_.end(); it != et; ++it) {
+            coeff = ap_linexpr0_coeffref(expr, it->second);
+
+            if (ap_coeff_zero(coeff)) {
+                continue;
+            }
+
+            e.add(toBNumber<Number>(coeff, caster_), it->first);
+        }
+
+        return e;
+    }
+
+    /// \brief Conversion from ap_lincons0_t to LinearConstraint
+    LinearConstraintT toLinearConstraint(const ap_lincons0_t& cst) const {
+        ASSERTC(cst.scalar == nullptr);
+
+        LinearExprT e = toLinearExpr(cst.linexpr0);
+
+        switch (cst.constyp) {
+            case AP_CONS_EQ:
+                return LinearConstraintT(std::move(e), LinearConstraintT::EQUALITY);
+            case AP_CONS_SUPEQ:
+                return LinearConstraintT(-std::move(e), LinearConstraintT::COMPARSION);
+            case AP_CONS_SUP:
+                return LinearConstraintT(-std::move(e) + 1,
+                                         LinearConstraintT::COMPARSION);
+            case AP_CONS_DISEQ:
+                return LinearConstraintT(std::move(e), LinearConstraintT::INEQUALITY);
+            case AP_CONS_EQMOD:
+            default:
+                UNREACHABLE("unexpected linear constraint");
+        }
+    }
+
 
 private:
     struct TopTag {};
@@ -353,19 +396,28 @@ private:
     }
 
 public:
-    explicit ApronDomain(TopTag) : NumericalDomain<Variable>(class_tag(*this)), env_(newPtr(ap_abstract0_top(manager(), 0, 0))) {}
-    explicit ApronDomain(BottomTag) : NumericalDomain<Variable>(class_tag(*this)), env_(newPtr(ap_abstract0_bottom(manager(), 0, 0))) {}
+    ApronDomain(CasterT* caster, TopTag)
+            : NumericalDomain<Variable>(class_tag(*this)),
+                    caster_(caster),
+                    env_(newPtr(ap_abstract0_top(manager(), 0, 0))) {}
 
-    ApronDomain() : ApronDomain(TopTag{}) {}
-    ApronDomain(VariableMap vars, ApronPtr env) : NumericalDomain<Variable>(class_tag(*this)), vars_(std::move(vars)), env_(env) {}
+    ApronDomain(CasterT* caster, BottomTag)
+            : NumericalDomain<Variable>(class_tag(*this)),
+                    caster_(caster),
+                    env_(newPtr(ap_abstract0_bottom(manager(), 0, 0))) {}
+
+    explicit ApronDomain(CasterT* caster) : ApronDomain(caster, TopTag{}) {}
+    ApronDomain(CasterT* caster, VariableMap vars, ApronPtr env)
+            : NumericalDomain<Variable>(class_tag(*this)), caster_(caster), vars_(std::move(vars)), env_(env) {}
+
     ApronDomain(const ApronDomain&) = default;
     ApronDomain(ApronDomain&&) = default;
     ApronDomain& operator=(const ApronDomain&) = default;
     ApronDomain& operator=(ApronDomain&&) = default;
     virtual ~ApronDomain() = default;
 
-    static Ptr top() { return std::make_shared<ApronDomain>(TopTag{}); }
-    static Ptr bottom() { return std::make_shared<ApronDomain>(BottomTag{}); }
+    static Ptr top(CasterT* caster) { return std::make_shared<ApronDomain>(caster, TopTag{}); }
+    static Ptr bottom(CasterT* caster) { return std::make_shared<ApronDomain>(caster, BottomTag{}); }
 
     static bool classof(const Self*) {
         return true;
@@ -514,7 +566,7 @@ public:
     }
 
     void forget(Variable x) {
-        auto&& has_dim = getOrPutVar(x);
+        auto&& has_dim = getVarDim(x);
 
         if (not has_dim) {
             return;
@@ -550,6 +602,10 @@ public:
         }
     }
 
+    void add(const LinearConstraintT& cst) {
+        add(LinearConstSystemT{ cst });
+    }
+
     void add(const LinearConstSystemT& csts) {
         if (csts.empty()) {
             return;
@@ -567,39 +623,34 @@ public:
         }
 
         this->_inv = newPtr(ap_abstract0_meet_tcons_array(manager(), false, this->env_.get(), &ap_csts));
-
-        // this step allows to improve the precision
-        for (i = 0; i < csts.size() && !this->is_bottom(); i++) {
-            // check satisfiability of ap_csts.p[i]
-            ap_tcons0_t& cst = ap_csts.p[i];
-            auto* ap_intv = ap_abstract0_bound_texpr(manager(), this->env_.get(), cst.texpr0);
-//            IntervalT intv = apron::to_ikos_interval< Number >(ap_intv);
-//
-//            if (intv.is_bottom() ||
-//                (cst.constyp == AP_CONS_EQ && !intv.contains(0)) ||
-//                (cst.constyp == AP_CONS_SUPEQ && intv.ub() < BoundT(0)) ||
-//                (cst.constyp == AP_CONS_DISEQ && intv == IntervalT(0))) {
-//                // cst is not satisfiable
-//                this->set_to_bottom();
-//                return;
-//            }
-//
-//            ap_interval_free(ap_intv);
-        }
-
         ap_tcons0_array_clear(&ap_csts);
     }
 
     Ptr toInterval(Variable x) const override {
-        UNREACHABLE("TODO");
+        if (this->isBottom()) {
+            return IntervalT::bottom(caster_);
+        }
+
+        auto dim = getVarDim(x);
+
+        if (dim) {
+            ap_interval_t* intv = ap_abstract0_bound_dimension(manager(), this->env_.get(), dim.getUnsafe());
+            auto r = toBInterval<Number>(intv, caster_);
+            ap_interval_free(intv);
+            return r;
+        } else {
+            return IntervalT::top(caster_);
+        }
     }
 
     void assign(Variable x, Variable y) override {
-        UNREACHABLE("TODO");
+        LinearExprT xe(x);
+        xe -= y;
+        add(xe == (*caster_)(0));
     }
 
     void assign(Variable x, Ptr i) override {
-        UNREACHABLE("TODO");
+        set(x, i);
     }
 
     void assign(Variable x, const LinearExprT& expr) override {
@@ -613,19 +664,58 @@ public:
         ap_texpr0_free(t);
     }
 
+    void normalize() const {
+        ap_abstract0_canonicalize(manager(), this->env_.get());
+    }
+
+    size_t hashCode() const override {
+        return 0;
+    }
+
+    std::string toString() const override {
+        this->normalize();
+
+        std::stringstream out;
+
+        if (this->isBottom()) {
+            out << "⊥";
+            return out.str();
+        }
+
+        out << "{";
+        ap_lincons0_array_t ap_csts = ap_abstract0_to_lincons_array(manager(), this->env_.get());
+
+        for (auto i = 0U; i < ap_csts.size;) {
+            ap_lincons0_t& ap_cst = ap_csts.p[i];
+
+            if (ap_cst.constyp == AP_CONS_EQMOD) {
+                // LinearConstraintT does not support modular equality
+                ASSERTC(ap_cst.scalar != nullptr);
+
+                auto expr = toLinearExpr(ap_cst.linexpr0);
+                Number mod = toBNumber<Number>(ap_cst.scalar, caster_);
+                out << expr << " = 0 mod " << mod;
+            } else {
+                auto cst = toLinearConstraint(ap_cst);
+                out << cst;
+            }
+
+            i++;
+            if (i < ap_csts.size) {
+                out << "; ";
+            }
+        }
+
+        ap_lincons0_array_clear(&ap_csts);
+        out << "}";
+        return out.str();
+    }
+
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         UNREACHABLE("TODO");
     }
 
     Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
-        UNREACHABLE("TODO");
-    }
-
-    size_t hashCode() const override {
-        UNREACHABLE("TODO");
-    }
-
-    std::string toString() const override {
         UNREACHABLE("TODO");
     }
 
