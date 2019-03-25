@@ -5,6 +5,8 @@
 #ifndef BOREALIS_NUMBER_HPP
 #define BOREALIS_NUMBER_HPP
 
+#include <gmpxx.h>
+
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APFloat.h>
 
@@ -159,6 +161,11 @@ public:
             newInner = inner_.trunc(newWidth);
         }
         return BitInt<newSign>(newInner);
+    }
+
+    mpz_class toGMP() const {
+        // This is generally fucked up, need to find new way to convert llvm::APInt to GMP
+        return mpz_class(toString());
     }
 
 private:
@@ -514,6 +521,7 @@ public:
     Float() : inner_(getLlvmSemantics(), 0.0) {}
     explicit Float(int n) : inner_(getLlvmSemantics(), n) {}
     explicit Float(double n) : inner_(getLlvmSemantics(), n) {}
+    explicit Float(const std::string& n) : inner_(getLlvmSemantics(), n) {}
     Float(const Float&) = default;
     Float(Float&&) = default;
     Float& operator=(const Float&) = default;
@@ -612,6 +620,11 @@ public:
         bool isExact;
         inner_.convertToInteger(value, getRoundingMode(), &isExact);
         return BitInt<sign>(value);
+    }
+
+    mpq_class toGMP() const {
+        // This is generally fucked up, need to find new way to convert llvm::APFloat to GMP
+        return mpq_class(toString());
     }
 
 private:

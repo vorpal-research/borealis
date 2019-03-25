@@ -431,6 +431,10 @@ public:
     absint::BitInt<sign> operator()(double n) const {
         return absint::BitInt<sign>(width_, (int) n);
     }
+
+    absint::BitInt<sign> operator()(const std::string& str) const {
+        return absint::BitInt<sign>(llvm::APInt(width_, str, 10));
+    }
 };
 
 template <bool sign>
@@ -441,7 +445,7 @@ util::cache<size_t, Adapter<absint::BitInt<sign>>*> Adapter<absint::BitInt<sign>
 template <>
 struct Adapter<absint::Float> {
     static Adapter<absint::Float>* get() {
-        static Adapter<absint::Float>* instance = new Adapter<absint::Float>();
+        static auto* instance = new Adapter<absint::Float>();
         return instance;
     }
 
@@ -457,6 +461,10 @@ struct Adapter<absint::Float> {
 
     absint::Float operator()(double n) const {
         return absint::Float(n);
+    }
+
+    absint::Float operator()(const std::string& str) const {
+        return absint::Float(str);
     }
 };
 

@@ -7,6 +7,7 @@
 #include "Interpreter/Domain/VariableFactory.hpp"
 #include "Interpreter/Domain/Numerical/DoubleInterval.hpp"
 #include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
+#include "Interpreter/Domain/Numerical/Apron/OctagonDomain.hpp"
 #include "Interpreter/Domain/Numerical/NumericalDomain.hpp"
 #include "Interpreter/Domain/Memory/AggregateDomain.hpp"
 #include "Interpreter/Domain/Memory/MemoryDomain.hpp"
