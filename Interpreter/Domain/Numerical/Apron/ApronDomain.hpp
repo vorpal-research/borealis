@@ -359,7 +359,6 @@ private:
         return e;
     }
 
-    /// \brief Conversion from ap_lincons0_t to LinearConstraint
     LinearConstraintT toLinearConstraint(const ap_lincons0_t& cst) const {
         ASSERTC(cst.scalar == nullptr);
 
@@ -381,6 +380,46 @@ private:
         }
     }
 
+    bool isSupported(llvm::ArithType op) const {
+        switch (op) {
+            case llvm::ArithType::ADD:
+            case llvm::ArithType::SUB:
+            case llvm::ArithType::MUL:
+            case llvm::ArithType::DIV:
+            case llvm::ArithType::REM:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    void apply(llvm::ArithType op, Variable x, ap_texpr0_t* lhv, ap_texpr0_t* rhv) {
+        ap_texpr0_t* t;
+
+        switch (op) {
+            case llvm::ArithType::ADD: {
+                t = impl_::binopExpr<Number>(AP_TEXPR_ADD, lhv, rhv);
+            } break;
+            case llvm::ArithType::SUB: {
+                t = impl_::binopExpr<Number>(AP_TEXPR_SUB, lhv, rhv);
+            } break;
+            case llvm::ArithType::MUL: {
+                t = impl_::binopExpr<Number>(AP_TEXPR_MUL, lhv, rhv);
+            } break;
+            case llvm::ArithType::DIV: {
+                t = impl_::binopExpr<Number>(AP_TEXPR_DIV, lhv, rhv);
+            } break;
+            case llvm::ArithType::REM: {
+                t = impl_::binopExpr<Number>(AP_TEXPR_MOD, lhv, rhv);
+            } break;
+            default:
+                UNREACHABLE("unsupported operator");
+        }
+
+        ap_dim_t x_dim = var_dim_insert(x);
+        this->env_ = impl_::newPtr(ap_abstract0_assign_texpr(manager(), false, this->env_.get(), x_dim, t, nullptr));
+        ap_texpr0_free(t);
+    }
 
 private:
     struct TopTag {};
@@ -717,11 +756,16 @@ public:
     }
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
-        UNREACHABLE("TODO");
+        if (isSupported(op)) {
+            apply(op, x, toAExpr(y), toAExpr(z));
+        } else {
+            set(x, toInterval(y)->apply(op, toInterval(z)));
+        }
     }
 
     Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
-        UNREACHABLE("TODO");
+        // TODO: implement more precise comparison
+        return toInterval(x)->apply(op, toInterval(y));
     }
 
 };
