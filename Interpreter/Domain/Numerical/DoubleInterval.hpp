@@ -100,7 +100,6 @@ public:
     DoubleInterval(BottomTag, const Caster1* c1, const Caster2* c2) :
             AbstractDomain(class_tag(*this)), first_(Interval1::bottom(c1)), second_(Interval2::bottom(c2)) {}
 
-    DoubleInterval() : DoubleInterval(TopTag{}) {}
     DoubleInterval(int n, const Caster1* c1, const Caster2* c2) :
             AbstractDomain(class_tag(*this)),
             first_(Interval1::constant(n, c1)),

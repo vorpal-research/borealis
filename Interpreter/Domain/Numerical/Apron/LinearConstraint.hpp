@@ -44,12 +44,12 @@ public:
     LinearConstraint& operator=(LinearConstraint&&) = default;
     ~LinearConstraint() = default;
 
-    static LinearConstraint tautology() {
-        return LinearConstraint(LinearExpr(), EQUALITY);
+    static LinearConstraint tautology(const CasterT* caster) {
+        return LinearConstraint(LinearExpr(caster), EQUALITY);
     }
 
-    static LinearConstraint contradiction() {
-        return LinearConstraint(LinearExpr(), INEQUALITY);
+    static LinearConstraint contradiction(const CasterT* caster) {
+        return LinearConstraint(LinearExpr(caster), INEQUALITY);
     }
 
     bool isTautology() const {
@@ -58,9 +58,9 @@ public:
         }
 
         switch (this->kind_) {
-            case EQUALITY: return this->expr_.constant() == 0;
-            case INEQUALITY: return this->expr_.constant() != 0;
-            case COMPARSION: return this->expr_.constant() <= 0;
+            case EQUALITY: return this->expr_.constant() == (*expr_.caster())(0);
+            case INEQUALITY: return this->expr_.constant() != (*expr_.caster())(0);
+            case COMPARSION: return this->expr_.constant() <= (*expr_.caster())(0);
             default: UNREACHABLE("Unexpected kind");
         }
     }
@@ -71,16 +71,16 @@ public:
         }
 
         switch (this->kind_) {
-            case EQUALITY: return this->expr_.constant() != 0;
-            case INEQUALITY: return this->expr_.constant() == 0;
-            case COMPARSION: return this->expr_.constant() > 0;
+            case EQUALITY: return this->expr_.constant() != (*expr_.caster())(0);
+            case INEQUALITY: return this->expr_.constant() == (*expr_.caster())(0);
+            case COMPARSION: return this->expr_.constant() > (*expr_.caster())(0);
             default: UNREACHABLE("Unexpected kind");
         }
     }
 
     bool isEquality() const { return this->kind_ == EQUALITY; }
-    bool isDisequation() const { return this->kind_ == INEQUALITY; }
-    bool is_inequality() const { return this->kind_ == COMPARSION; }
+    bool isInequality() const { return this->kind_ == INEQUALITY; }
+    bool isComparsion() const { return this->kind_ == COMPARSION; }
 
     const LinearExpr& expression() const { return this->expr_; }
 
@@ -98,7 +98,41 @@ public:
 
     auto end() QUICK_RETURN(expr_.end());
     auto end() QUICK_CONST_RETURN(expr_.end());
+
+    std::string toString() const {
+        std::stringstream ss;
+        if (this->isContradiction()) {
+            ss << "false";
+        } else if (this->isTautology()) {
+            ss << "true";
+        } else {
+            LinearExpr e = expr_ - expr_.constant();
+            Number c = expr_.constant();
+
+            ss << e;
+            switch (kind_) {
+                case EQUALITY: ss << " = "; break;
+                case INEQUALITY: ss << " != "; break;
+                case COMPARSION: ss << " <= "; break;
+                default: UNREACHABLE("unexpected kind");
+            }
+            ss << c;
+        }
+        return ss.str();
+    }
 };
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+std::ostream& operator<<(std::ostream& s, const LinearConstraint<Number, Variable, VarHash, VarEquals>& cst) {
+    s << cst.toString();
+    return s;
+}
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const LinearConstraint<Number, Variable, VarHash, VarEquals>& cst) {
+    s << cst.toString();
+    return s;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,7 +150,7 @@ template <typename Number, typename Variable, typename VarHash, typename VarEqua
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator==(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, int n) {
     return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::Equality);
+                          LinearConstraint<Number, Variable, VarHash, VarEquals>::EQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
@@ -124,7 +158,7 @@ inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator==(
         LinearExpression<Number, Variable, VarHash, VarEquals> x,
         const LinearExpression<Number, Variable, VarHash, VarEquals>& y) {
     return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(x) - y,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::Equality);
+                          LinearConstraint<Number, Variable, VarHash, VarEquals>::EQUALITY);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,14 +167,14 @@ template <typename Number, typename Variable, typename VarHash, typename VarEqua
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, const Number& n) {
     return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::Disequation);
+                          LinearConstraint<Number, Variable, VarHash, VarEquals>::INEQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, int n) {
     return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::Disequation);
+                          LinearConstraint<Number, Variable, VarHash, VarEquals>::INEQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
@@ -148,7 +182,31 @@ inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
         LinearExpression<Number, Variable, VarHash, VarEquals> x,
         const LinearExpression<Number, Variable, VarHash, VarEquals>& y) {
     return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(x) - y,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::Disequation);
+                          LinearConstraint<Number, Variable, VarHash, VarEquals>::INEQUALITY);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator<=(
+        LinearExpression<Number, Variable, VarHash, VarEquals> e, const Number& n) {
+    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
+                                                                  LinearConstraint<Number, Variable, VarHash, VarEquals>::COMPARSION);
+}
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator<=(
+        LinearExpression<Number, Variable, VarHash, VarEquals> e, int n) {
+    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
+                                                                  LinearConstraint<Number, Variable, VarHash, VarEquals>::COMPARSION);
+}
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator<=(
+        LinearExpression<Number, Variable, VarHash, VarEquals> x,
+        const LinearExpression<Number, Variable, VarHash, VarEquals>& y) {
+    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(x) - y,
+                                                                  LinearConstraint<Number, Variable, VarHash, VarEquals>::COMPARSION);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,16 +241,16 @@ public:
     static LinearConstraintSystem withinInterval(Variable v, const Interval<Number>& i) {
         LinearConstraintSystem system;
         if (i.isBottom()) {
-            system.add(LinearConstraintT::contradiction());
+            system.add(LinearConstraintT::contradiction(i.caster()));
         } else {
-            LinearExpr expr(v);
+            LinearExpr expr(i.caster(), v);
 
             auto& lb = i.lb();
             auto& ub = i.ub();
             if (i.isConstant()) {
                 system.add(expr == i.asConstant());
             } else {
-                if (lb.isFinite()) system.add(lb.number() <= expr);
+                if (lb.isFinite()) system.add(-expr <= -lb.number());
                 if (ub.isFinite()) system.add(expr <= ub.number());
             }
         }

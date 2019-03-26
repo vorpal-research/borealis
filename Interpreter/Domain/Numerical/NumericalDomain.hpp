@@ -14,7 +14,7 @@ namespace absint {
 template <typename Variable>
 class NumericalDomain : public AbstractDomain {
 public:
-    NumericalDomain(id_t id) : AbstractDomain(id) {}
+    explicit NumericalDomain(id_t id) : AbstractDomain(id) {}
 
     virtual Ptr get(Variable x) const = 0;
     virtual Ptr toInterval(Variable x) const = 0;

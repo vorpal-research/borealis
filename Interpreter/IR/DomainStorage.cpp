@@ -55,9 +55,6 @@ public:
     IntervalDomainImpl& operator=(IntervalDomainImpl&&) = default;
     ~IntervalDomainImpl() override = default;
 
-    static Ptr top() { return std::make_shared<Self>(EnvT::top()); }
-    static Ptr bottom() { return std::make_shared<Self>(EnvT::bottom()); }
-
     static bool classof(const Self*) {
         return true;
     }
@@ -87,6 +84,252 @@ public:
     }
 };
 
+template <typename N1, typename N2>
+class DoubleOctagonImpl : public NumericalDomain<const llvm::Value*> {
+public:
+
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
+    using Variable = const llvm::Value*;
+    using DOctagon = DoubleOctagon<N1, N2, const llvm::Value*, ValueHash, ValueEquals>;
+    using OctagonMap = std::unordered_map<size_t, Ptr>;
+    using Self = DoubleOctagonImpl<N1, N2>;
+
+protected:
+
+    VariableFactory* vf_;
+    mutable OctagonMap octagons_;
+
+private:
+
+    Self* unwrap(Ptr other) const {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    const Self* unwrap(ConstPtr other) const {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
+        ASSERTC(otherRaw);
+
+        return otherRaw;
+    }
+
+    const type::Integer* unwrapType(Variable x) const {
+        auto* integer = llvm::dyn_cast<type::Integer>(vf_->cast(x->getType()));
+        ASSERTC(integer);
+
+        return integer;
+    }
+
+    DOctagon* unwrapOctagon(size_t bitsize) const {
+        auto&& opt = util::at(octagons_, bitsize);
+
+        AbstractDomain::Ptr octagon;
+        if (opt) {
+            octagon = opt.getUnsafe();
+        } else {
+            octagon = std::make_shared<DOctagon>(util::Adapter<N1>::get(bitsize), util::Adapter<N2>::get(bitsize));
+            octagons_[bitsize] = octagon;
+        }
+
+        auto* octagonRaw = llvm::dyn_cast<DOctagon>(octagon.get());
+        ASSERTC(octagonRaw);
+        return octagonRaw;
+    }
+
+public:
+
+    explicit DoubleOctagonImpl(VariableFactory* vf) : NumericalDomain<const llvm::Value*>(class_tag(*this)), vf_(vf) {}
+    DoubleOctagonImpl(const DoubleOctagonImpl&) = default;
+    DoubleOctagonImpl(DoubleOctagonImpl&&) = default;
+    DoubleOctagonImpl& operator=(DoubleOctagonImpl&&) = default;
+    ~DoubleOctagonImpl() override = default;
+
+    DoubleOctagonImpl& operator=(const DoubleOctagonImpl& other) {
+        if (this == &other) {
+            this->vf_ = other.vf_;
+            this->octagons_ = other.octagons_;
+        }
+        return *this;
+    }
+
+    static bool classof(const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
+    bool isTop() const override {
+        bool top = true;
+        for (auto&& it : octagons_)
+            top &= it.second->isTop();
+        return top;
+    }
+
+    bool isBottom() const override {
+        bool top = true;
+        for (auto&& it : octagons_)
+            top &= it.second->isBottom();
+        return top;
+    }
+
+    void setTop() override { UNREACHABLE("TODO"); }
+    void setBottom() override { UNREACHABLE("TODO"); }
+    bool leq(ConstPtr) const override { UNREACHABLE("TODO"); }
+
+    bool equals(ConstPtr other) const override {
+        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+        if (not otherRaw) return false;
+
+        if (this->isBottom()) {
+            return otherRaw->isBottom();
+        } else if (otherRaw->isBottom()) {
+            return false;
+        } else {
+            if (this->octagons_.size() != otherRaw->octagons_.size()) return false;
+
+            for (auto&& it : this->octagons_) {
+                auto&& otherIt = otherRaw->octagons_.find(it.first);
+                if (otherIt == otherRaw->octagons_.end()) return false;
+                else if (not it.second->equals((*otherIt).second)) return false;
+            }
+            return true;
+        }
+    }
+
+    void joinWith(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
+        if (otherRaw->isBottom()) {
+            return;
+        } else if (this->isBottom()) {
+            this->operator=(*otherRaw);
+        } else {
+            for (auto&& it : otherRaw->octagons_) {
+                auto&& cur = octagons_.find(it.first);
+                if (cur == octagons_.end()) octagons_[it.first] = it.second;
+                else octagons_[it.first] = cur->second->join(it.second);
+            }
+            return;
+        }
+    }
+
+    void meetWith(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
+        if (this->isBottom()) {
+            return;
+        } else if (otherRaw->isBottom()) {
+            this->setBottom();
+        } else {
+            for (auto&& it : otherRaw->octagons_) {
+                auto&& cur = octagons_.find(it.first);
+                if (cur == octagons_.end()) octagons_[it.first] = it.second;
+                else octagons_[it.first] = cur->second->meet(it.second);
+            }
+            return;
+        }
+    }
+
+    void widenWith(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
+        if (otherRaw->isBottom()) {
+            return;
+        } else if (this->isBottom()) {
+            this->operator=(*otherRaw);
+        } else {
+            for (auto&& it : otherRaw->octagons_) {
+                auto&& cur = octagons_.find(it.first);
+                if (cur == octagons_.end()) octagons_[it.first] = it.second;
+                else octagons_[it.first] = cur->second->widen(it.second);
+            }
+            return;
+        }
+    }
+
+    Ptr join(ConstPtr other) const override {
+        auto&& result = this->clone();
+        auto* resultRaw = unwrap(result);
+        resultRaw->joinWith(other);
+        return result;
+    }
+
+    Ptr meet(ConstPtr other) const override {
+        auto&& result = this->clone();
+        auto* resultRaw = unwrap(result);
+        resultRaw->meetWith(other);
+        return result;
+    }
+
+    Ptr widen(ConstPtr other) const override {
+        auto&& result = this->clone();
+        auto* resultRaw = unwrap(result);
+        resultRaw->widenWith(other);
+        return result;
+    }
+
+    Ptr toInterval(Variable x) const override { return this->get(x); }
+
+    Ptr get(Variable x) const override {
+        // integer variable can't be global, so it's either constant or local
+        if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
+            return vf_->get(constant);
+
+        } else {
+            auto* integer = unwrapType(x);
+            auto* octagon = unwrapOctagon(integer->getBitsize());
+
+            return octagon->get(x);
+        }
+    }
+
+    void assign(Variable x, Variable y) override {
+        auto* integer = unwrapType(x);
+        auto* octagon = unwrapOctagon(integer->getBitsize());
+        octagon->assign(x, y);
+    }
+
+    void assign(Variable x, Ptr i) override {
+        auto* integer = unwrapType(x);
+        auto* octagon = unwrapOctagon(integer->getBitsize());
+        octagon->assign(x, i);
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
+        auto* integer = unwrapType(x);
+        auto* octagon = unwrapOctagon(integer->getBitsize());
+        octagon->applyTo(op, x, y, z);
+    }
+
+    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
+        auto* integer = unwrapType(x);
+        auto* octagon = unwrapOctagon(integer->getBitsize());
+        return octagon->applyTo(op, x, y);
+    }
+
+    size_t hashCode() const override {
+        return class_tag(*this);
+    }
+
+    std::string toString() const override {
+        std::stringstream ss;
+        for (auto&& it : octagons_) {
+            ss << "Bitsize " << it.first << std::endl;
+            ss << it.second->toString();
+        }
+        return ss.str();
+    }
+};
+
 template <typename MachineInt>
 class PointsToDomainImpl : public PointsToDomain<MachineInt, const llvm::Value*, ValueHash, ValueEquals> {
 public:
@@ -112,9 +355,6 @@ public:
     Ptr clone() const override {
         return std::make_shared<Self>(*this);
     }
-
-    static Ptr top() { return std::make_shared(EnvT::top()); }
-    static Ptr bottom() { return std::make_shared(EnvT::bottom()); }
 
     static bool classof(const Self*) {
         return true;
@@ -167,9 +407,6 @@ public:
     Ptr clone() const override {
         return std::make_shared<Self>(*this);
     }
-
-    static Ptr top() { return std::make_shared(EnvT::top()); }
-    static Ptr bottom() { return std::make_shared(EnvT::bottom()); }
 
     static bool classof(const Self*) {
         return true;
@@ -234,6 +471,7 @@ DomainStorage::DomainStorage(VariableFactory* vf) :
         vf_(vf),
         bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_)),
         ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_)),
+//        ints_(std::make_shared<impl_::DoubleOctagonImpl<SIntT, UIntT>>(vf_)),
         floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_)),
         memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_)),
         structs_(std::make_shared<impl_::AggregateDomainImpl<StructDomain<MachineIntT>>>(vf_)) {}

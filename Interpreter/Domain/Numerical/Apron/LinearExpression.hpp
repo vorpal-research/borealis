@@ -21,14 +21,15 @@ public:
 
 private:
 
-    CasterT* caster_;
+    const CasterT* caster_;
     VariableMap vars_;
     Number constant_;
 
 public:
-    LinearExpression(CasterT* caster, Number n) : caster_(caster), constant_(n) {}
-    LinearExpression(CasterT* caster, int n) : caster_(caster), constant_((*caster_)(n)) {}
-    LinearExpression(CasterT* caster, Variable var) : caster_(caster) {
+    explicit LinearExpression(const CasterT* caster) : LinearExpression(caster, 0) {}
+    LinearExpression(const CasterT* caster, Number n) : caster_(caster), constant_(n) {}
+    LinearExpression(const CasterT* caster, int n) : caster_(caster), constant_((*caster_)(n)) {}
+    LinearExpression(const CasterT* caster, Variable var) : caster_(caster) {
         vars_.emplace(var, (*caster_)(1));
     }
 
@@ -69,14 +70,14 @@ public:
         auto it = this->vars_.find(var);
         if (it != this->vars_.end()) {
             Number r = it->second + cst;
-            if (r == 0) {
-                this->_map.erase(it);
+            if (r == (*caster_)(0)) {
+                this->vars_.erase(it);
             } else {
                 it->second = r;
             }
         } else {
-            if (cst != 0) {
-                this->_map.emplace(var, cst);
+            if (cst != (*caster_)(0)) {
+                this->vars_.emplace(var, cst);
             }
         }
     }
@@ -97,6 +98,10 @@ public:
         } else {
             return (*caster_)(0);
         }
+    }
+
+    const CasterT* caster() const {
+        return caster_;
     }
 
     void operator+=(const Number& n) { this->constant_ += n; }
@@ -135,7 +140,7 @@ public:
             this->vars_.clear();
             this->constant_ = 0;
         } else {
-            for (auto& term : this->_map) {
+            for (auto& term : vars_) {
                 term.second *= n;
             }
             this->constant_ *= n;
@@ -152,7 +157,53 @@ public:
     auto end() QUICK_RETURN(vars_.end());
     auto end() QUICK_CONST_RETURN(vars_.end());
 
+    std::string toString() const {
+        std::stringstream ss;
+
+        auto&& head = util::head(vars_);
+        if (head.second == (*caster_)(-1)) {
+            ss << "-";
+        } else  if (head.second != (*caster_)(0)) {
+            ss << head.second;
+        }
+        ss << util::toString(*head.first);
+
+        for (auto&& it : util::viewContainer(vars_).drop(1)) {
+            auto&& var = it.first;
+            auto&& constant = it.second;
+
+            if (constant > (*caster_)(0)) {
+                ss << "+";
+            }
+            if (constant == (*caster_)(-1)) {
+                ss << "-";
+            } else {
+                ss << constant;
+            }
+            ss << util::toString(*var);
+        }
+        if (constant_ > (*caster_)(0) && not vars_.empty()) {
+            ss << "+";
+        }
+        if (constant_ != (*caster_)(0) || vars_.empty()) {
+            ss << constant_;
+        }
+
+        return ss.str();
+    }
 };
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+std::ostream& operator<<(std::ostream& s, const LinearExpression<Number, Variable, VarHash, VarEquals>& expr) {
+    s << expr.toString();
+    return s;
+}
+
+template <typename Number, typename Variable, typename VarHash, typename VarEquals>
+borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const LinearExpression<Number, Variable, VarHash, VarEquals>& expr) {
+    s << expr.toString();
+    return s;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

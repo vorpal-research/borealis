@@ -37,9 +37,9 @@ using ApronPtr = std::shared_ptr<ap_abstract0_t>;
 inline ap_manager_t* allocate_manager(DomainT domain) {
     switch (domain) {
         case INTERVAL:
-            return box_manager_alloc();
+            return ::box_manager_alloc();
         case OCTAGON:
-            return oct_manager_alloc();
+            return ::oct_manager_alloc();
         default:
             UNREACHABLE("Unknown apron domain");
     }
@@ -120,10 +120,10 @@ inline ap_texpr0_t* toAExpr(const Float& n) {
 }
 
 template <typename Number>
-inline Number toBNumber(ap_scalar_t*, util::Adapter<Number>* caster);
+inline Number toBNumber(ap_scalar_t*, const util::Adapter<Number>* caster);
 
-template <bool sign>
-inline BitInt<sign> toBNumber(ap_scalar_t* scalar, util::Adapter<BitInt<sign>>* caster) {
+template <>
+inline BitInt<true> toBNumber(ap_scalar_t* scalar, const util::Adapter<BitInt<true>>* caster) {
     ASSERTC(ap_scalar_infty(scalar) == 0);
     ASSERTC(scalar->discr == AP_SCALAR_MPQ);
 
@@ -136,7 +136,20 @@ inline BitInt<sign> toBNumber(ap_scalar_t* scalar, util::Adapter<BitInt<sign>>* 
 }
 
 template <>
-inline Float toBNumber(ap_scalar_t* scalar, util::Adapter<Float>* caster) {
+inline BitInt<false> toBNumber(ap_scalar_t* scalar, const util::Adapter<BitInt<false>>* caster) {
+    ASSERTC(ap_scalar_infty(scalar) == 0);
+    ASSERTC(scalar->discr == AP_SCALAR_MPQ);
+
+    auto q = mpq_class(scalar->val.mpq);
+
+    std::stringstream ss;
+    ss << q;
+
+    return (*caster)(ss.str());
+}
+
+template <>
+inline Float toBNumber(ap_scalar_t* scalar, const util::Adapter<Float>* caster) {
     ASSERTC(ap_scalar_infty(scalar) == 0);
     ASSERTC(scalar->discr == AP_SCALAR_MPQ);
 
@@ -148,14 +161,14 @@ inline Float toBNumber(ap_scalar_t* scalar, util::Adapter<Float>* caster) {
 }
 
 template <typename Number>
-inline Number toBNumber(ap_coeff_t* coeff, util::Adapter<Number>* caster) {
+inline Number toBNumber(ap_coeff_t* coeff, const util::Adapter<Number>* caster) {
     ASSERTC(coeff->discr == AP_COEFF_SCALAR);
 
     return toBNumber<Number>(coeff->val.scalar, caster);
 }
 
 template <typename Number>
-inline Bound<Number> toBBound(ap_scalar_t* scalar, util::Adapter<Number>* caster) {
+inline Bound<Number> toBBound(ap_scalar_t* scalar, const util::Adapter<Number>* caster) {
     using BoundT = Bound<Number>;
 
     if (ap_scalar_infty(scalar) == -1) {
@@ -168,7 +181,7 @@ inline Bound<Number> toBBound(ap_scalar_t* scalar, util::Adapter<Number>* caster
 }
 
 template <typename Number>
-inline typename Interval<Number>::Ptr toBInterval(ap_interval_t* intv, util::Adapter<Number>* caster) {
+inline typename Interval<Number>::Ptr toBInterval(ap_interval_t* intv, const util::Adapter<Number>* caster) {
     using IntervalT = Interval<Number>;
 
     if (ap_interval_is_top(intv)) {
@@ -206,7 +219,7 @@ private:
 
 private:
 
-    CasterT* caster_;
+    const CasterT* caster_;
     VariableMap vars_;
     impl_::ApronPtr env_;
 
@@ -217,7 +230,7 @@ private:
         return m;
     }
 
-    util::option<size_t> getVarDim(Variable x) const {
+    util::option_ref<const size_t> getVarDim(Variable x) const {
         return util::at(vars_, x);
     }
 
@@ -225,11 +238,11 @@ private:
         auto&& opt = getVarDim(x);
         if (opt) return opt.getUnsafe();
 
-        auto num = static_cast<ap_dim_t>(vars_.size());
-        env_ = addDimensions(env_.get(), 1);
-        vars_.insert_or_assign(x, num);
+        auto num = vars_.size();
+        env_ = impl_::addDimensions(env_.get(), 1);
+        vars_.insert({ x, num });
 
-        ASSERTC(vars_.size() == dims(env_.get()));
+        ASSERTC(vars_.size() == impl_::dims(env_.get()));
         return num;
     }
 
@@ -240,13 +253,13 @@ private:
         std::vector<bool> index_assigned(n, false);
         std::vector<bool> value_assigned(n, false);
 
-        for (auto it = old_map.begin(); it != old_map.end(); ++it) {
+        for (auto&& it : old_map) {
             auto&& opt = util::at(new_map, it.first);
             ASSERTC(opt);
             auto dim = opt.getUnsafe();
 
-            perm->dim[it->second] = dim;
-            index_assigned[it->second] = true;
+            perm->dim[it.second] = dim;
+            index_assigned[it.second] = true;
             value_assigned[dim] = true;
         }
 
@@ -271,21 +284,21 @@ private:
                                       impl_::ApronPtr& inv_x,
                                       const VariableMap& var_map_y,
                                       impl_::ApronPtr& inv_y) {
-        ikos_assert(var_map_x.size() == impl_::dims(inv_x.get()));
-        ikos_assert(var_map_y.size() == impl_::dims(inv_y.get()));
+        ASSERTC(var_map_x.size() == impl_::dims(inv_x.get()));
+        ASSERTC(var_map_y.size() == impl_::dims(inv_y.get()));
 
         VariableMap result_var_map(var_map_x);
         bool equal = (var_map_x.size() == var_map_y.size());
 
-        for (auto it = var_map_y.begin(); it != var_map_y.end(); ++it) {
+        for (auto&& it : var_map_y) {
             auto&& v_y = it.first;
             auto&& dim_y = it.second;
             auto&& dim_x = util::at(var_map_x, v_y);
             equal = equal && dim_x && dim_x.getUnsafe() == dim_y;
 
             if (not dim_x) {
-                auto dim = static_cast<ap_dim_t>(result_var_map.size());
-                result_var_map.insert_or_assign(v_y, dim);
+                auto dim = result_var_map.size();
+                result_var_map.insert({ v_y, dim });
             }
         }
 
@@ -318,10 +331,10 @@ private:
     }
 
     ap_texpr0_t* toAExpr(const LinearExprT& le) {
-        auto* r = toAExpr(le.constant());
+        auto* r = impl_::toAExpr(le.constant());
 
         for (auto&& it : le) {
-            auto* term = impl_::binopExpr<Number>(AP_TEXPR_MUL, toAExpr(it->second), toAExpr(it->first));
+            auto* term = impl_::binopExpr<Number>(AP_TEXPR_MUL, impl_::toAExpr(it.second), toAExpr(it.first));
             r = impl_::binopExpr<Number>(AP_TEXPR_ADD, r, term);
         }
 
@@ -344,7 +357,7 @@ private:
         ASSERTC(ap_linexpr0_is_linear(expr));
 
         ap_coeff_t* coeff = ap_linexpr0_cstref(expr);
-        LinearExprT e(impl_::toBNumber<Number>(coeff, caster_));
+        LinearExprT e(caster_, impl_::toBNumber<Number>(coeff, caster_));
 
         for (auto it = vars_.begin(), et = vars_.end(); it != et; ++it) {
             coeff = ap_linexpr0_coeffref(expr, it->second);
@@ -393,7 +406,7 @@ private:
         }
     }
 
-    void apply(llvm::ArithType op, Variable x, ap_texpr0_t* lhv, ap_texpr0_t* rhv) {
+    void applyToAExpr(llvm::ArithType op, Variable x, ap_texpr0_t* lhv, ap_texpr0_t* rhv) {
         ap_texpr0_t* t;
 
         switch (op) {
@@ -416,7 +429,7 @@ private:
                 UNREACHABLE("unsupported operator");
         }
 
-        ap_dim_t x_dim = var_dim_insert(x);
+        auto x_dim = getOrPutVar(x);
         this->env_ = impl_::newPtr(ap_abstract0_assign_texpr(manager(), false, this->env_.get(), x_dim, t, nullptr));
         ap_texpr0_free(t);
     }
@@ -440,28 +453,44 @@ private:
     }
 
 public:
-    ApronDomain(CasterT* caster, TopTag)
+    ApronDomain(const CasterT* caster, TopTag)
             : NumericalDomain<Variable>(class_tag(*this)),
                     caster_(caster),
                     env_(impl_::newPtr(ap_abstract0_top(manager(), 0, 0))) {}
 
-    ApronDomain(CasterT* caster, BottomTag)
+    ApronDomain(const CasterT* caster, BottomTag)
             : NumericalDomain<Variable>(class_tag(*this)),
                     caster_(caster),
                     env_(impl_::newPtr(ap_abstract0_bottom(manager(), 0, 0))) {}
 
-    explicit ApronDomain(CasterT* caster) : ApronDomain(caster, TopTag{}) {}
-    ApronDomain(CasterT* caster, VariableMap vars, impl_::ApronPtr env)
+    explicit ApronDomain(const CasterT* caster) : ApronDomain(caster, TopTag{}) {}
+    ApronDomain(const CasterT* caster, VariableMap vars, impl_::ApronPtr env)
             : NumericalDomain<Variable>(class_tag(*this)), caster_(caster), vars_(std::move(vars)), env_(env) {}
 
     ApronDomain(const ApronDomain&) = default;
     ApronDomain(ApronDomain&&) = default;
-    ApronDomain& operator=(const ApronDomain&) = default;
     ApronDomain& operator=(ApronDomain&&) = default;
+    ApronDomain& operator=(const ApronDomain& other) {
+        if (this != &other) {
+            this->caster_ = other.caster_;
+            this->vars_ = other.vars_;
+            this->env_ = other.env_;
+        }
+        return *this;
+    }
+
     virtual ~ApronDomain() = default;
 
-    static Ptr top(CasterT* caster) { return std::make_shared<ApronDomain>(caster, TopTag{}); }
-    static Ptr bottom(CasterT* caster) { return std::make_shared<ApronDomain>(caster, BottomTag{}); }
+    static Ptr top(const CasterT* caster) { return std::make_shared<ApronDomain>(caster, TopTag{}); }
+    static Ptr bottom(const CasterT* caster) { return std::make_shared<ApronDomain>(caster, BottomTag{}); }
+
+    const CasterT* caster() const {
+        return caster_;
+    }
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
 
     static bool classof(const Self*) {
         return true;
@@ -480,11 +509,11 @@ public:
     }
 
     void setTop() override {
-        this->operator=(*unwrap(top()));
+        this->operator=(*unwrap(top(caster_)));
     }
 
     void setBottom() override {
-        this->operator=(*unwrap(bottom()));
+        this->operator=(*unwrap(bottom(caster_)));
     }
 
     bool leq(ConstPtr other) const override {
@@ -591,6 +620,10 @@ public:
         return result;
     }
 
+    Ptr get(Variable x) const override {
+       return toInterval(x);
+    }
+
     void set(Variable x, Ptr value) {
         if (auto* interval = llvm::dyn_cast<IntervalT>(value.get()))
             set(x, *interval);
@@ -617,21 +650,21 @@ public:
         }
 
         auto dim = has_dim.getUnsafe();
-        std::vector< ap_dim_t > vector_dims{dim};
-        this->env_ = newPtr(ap_abstract0_forget_array(manager(), false,
+        std::vector< ap_dim_t > vector_dims{ static_cast<ap_dim_t>(dim) };
+        this->env_ = impl_::newPtr(ap_abstract0_forget_array(manager(), false,
                 this->env_.get(), &vector_dims[0], vector_dims.size(), false));
 
-        this->env_ = removeDimensions(this->env_.get(), vector_dims);
+        this->env_ = impl_::removeDimensions(this->env_.get(), vector_dims);
         this->vars_ = util::viewContainer(vars_).map(
                         [&](const std::pair<Variable, size_t>& it) -> util::option<std::pair<Variable, size_t>> {
-                            if (it.second < dim) it;
-                            else if (it.second == dim) util::nothing();
-                            else std::make_pair(it.first, it.second - 1);
+                            if (it.second < dim) return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second));
+                            else if (it.second == dim) return util::nothing();
+                            else return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second - 1));
                         })
-                        .filter(LAM(a, a))
+                        .filter(LAM(a, (not (not a))))
                         .map(LAM(a, a.getUnsafe()))
                         .template toHashMap<std::pair<Variable, size_t>, Variable, size_t, VarHash, VarEquals>();
-        ASSERTC(this->vars_.size() == dims(this->env_.get()));
+        ASSERTC(this->vars_.size() == impl_::dims(this->env_.get()));
     }
 
     void refine(Variable x, const IntervalT& interval) {
@@ -663,10 +696,10 @@ public:
 
         size_t i = 0;
         for (const LinearConstraintT& cst : csts) {
-            ap_csts.p[i++] = to_ap_constraint(cst);
+            ap_csts.p[i++] = toAConstraint(cst);
         }
 
-        this->_inv = newPtr(ap_abstract0_meet_tcons_array(manager(), false, this->env_.get(), &ap_csts));
+        this->env_ = impl_::newPtr(ap_abstract0_meet_tcons_array(manager(), false, this->env_.get(), &ap_csts));
         ap_tcons0_array_clear(&ap_csts);
     }
 
@@ -688,7 +721,7 @@ public:
     }
 
     void assign(Variable x, Variable y) override {
-        LinearExprT xe(x);
+        LinearExprT xe(caster_, x);
         xe -= y;
         add(xe == (*caster_)(0));
     }
@@ -697,7 +730,7 @@ public:
         set(x, i);
     }
 
-    void assign(Variable x, const LinearExprT& expr) override {
+    void assign(Variable x, const LinearExprT& expr) {
         if (this->isBottom()) {
             return;
         }
@@ -757,7 +790,7 @@ public:
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         if (isSupported(op)) {
-            apply(op, x, toAExpr(y), toAExpr(z));
+            applyToAExpr(op, x, toAExpr(y), toAExpr(z));
         } else {
             set(x, toInterval(y)->apply(op, toInterval(z)));
         }

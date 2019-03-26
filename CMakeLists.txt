@@ -326,7 +326,9 @@ set(SYSTEM_LIBS
         pthread
         z
         m
-        apron)
+        apron
+        octD
+        boxD)
 
 set(CLANG_LIBS
         clangFrontendTool
