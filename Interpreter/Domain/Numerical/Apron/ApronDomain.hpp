@@ -23,27 +23,30 @@
 
 namespace borealis {
 namespace absint {
-
 namespace apron {
-
-using ApronPtr = std::shared_ptr<ap_abstract0_t>;
 
 enum DomainT {
     INTERVAL,
     OCTAGON
 };
 
+namespace impl_ {
+
+using ApronPtr = std::shared_ptr<ap_abstract0_t>;
+
 inline ap_manager_t* allocate_manager(DomainT domain) {
     switch (domain) {
-        case INTERVAL: return box_manager_alloc();
-        case OCTAGON: return oct_manager_alloc();
+        case INTERVAL:
+            return box_manager_alloc();
+        case OCTAGON:
+            return oct_manager_alloc();
         default:
             UNREACHABLE("Unknown apron domain");
     }
 }
 
 inline ApronPtr newPtr(ap_abstract0_t* domain) {
-    return ApronPtr{ domain, LAM(a, ap_abstract0_free(ap_abstract0_manager(a), a)) };
+    return ApronPtr{domain, LAM(a, ap_abstract0_free(ap_abstract0_manager(a), a))};
 }
 
 inline size_t dims(ap_abstract0_t* ptr) {
@@ -55,7 +58,7 @@ inline ApronPtr addDimensions(ap_abstract0_t* ptr, size_t dims) {
 
     auto* dim_change = ap_dimchange_alloc(dims, 0);
     for (auto i = 0U; i < dims; ++i) {
-        dim_change->dim[i] = static_cast<ap_dim_t>(apron::dims(ptr));
+        dim_change->dim[i] = static_cast<ap_dim_t>(impl_::dims(ptr));
     }
 
     auto* manager = ap_abstract0_manager(ptr);
@@ -116,7 +119,7 @@ inline ap_texpr0_t* toAExpr(const Float& n) {
     return ap_texpr0_cst_scalar_mpq(e.get_mpq_t());
 }
 
-template < typename Number >
+template <typename Number>
 inline Number toBNumber(ap_scalar_t*, util::Adapter<Number>* caster);
 
 template <bool sign>
@@ -144,14 +147,14 @@ inline Float toBNumber(ap_scalar_t* scalar, util::Adapter<Float>* caster) {
     return (*caster)(ss.str());
 }
 
-template < typename Number >
+template <typename Number>
 inline Number toBNumber(ap_coeff_t* coeff, util::Adapter<Number>* caster) {
     ASSERTC(coeff->discr == AP_COEFF_SCALAR);
 
     return toBNumber<Number>(coeff->val.scalar, caster);
 }
 
-template < typename Number >
+template <typename Number>
 inline Bound<Number> toBBound(ap_scalar_t* scalar, util::Adapter<Number>* caster) {
     using BoundT = Bound<Number>;
 
@@ -164,7 +167,7 @@ inline Bound<Number> toBBound(ap_scalar_t* scalar, util::Adapter<Number>* caster
     }
 }
 
-template < typename Number >
+template <typename Number>
 inline typename Interval<Number>::Ptr toBInterval(ap_interval_t* intv, util::Adapter<Number>* caster) {
     using IntervalT = Interval<Number>;
 
@@ -178,6 +181,8 @@ inline typename Interval<Number>::Ptr toBInterval(ap_interval_t* intv, util::Ada
 
     return IntervalT::interval(toBBound<Number>(intv->inf, caster), toBBound<Number>(intv->sup, caster));
 }
+
+} // namespace impl_
 
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -203,12 +208,12 @@ private:
 
     CasterT* caster_;
     VariableMap vars_;
-    apron::ApronPtr env_;
+    impl_::ApronPtr env_;
 
 private:
 
     static ap_manager_t* manager() {
-        static auto* m = apron::allocate_manager(domain);
+        static auto* m = impl_::allocate_manager(domain);
         return m;
     }
 
@@ -263,11 +268,11 @@ private:
     }
 
     static VariableMap merge_var_maps(const VariableMap& var_map_x,
-                                      apron::ApronPtr& inv_x,
+                                      impl_::ApronPtr& inv_x,
                                       const VariableMap& var_map_y,
-                                      apron::ApronPtr& inv_y) {
-        ikos_assert(var_map_x.size() == apron::dims(inv_x.get()));
-        ikos_assert(var_map_y.size() == apron::dims(inv_y.get()));
+                                      impl_::ApronPtr& inv_y) {
+        ikos_assert(var_map_x.size() == impl_::dims(inv_x.get()));
+        ikos_assert(var_map_y.size() == impl_::dims(inv_y.get()));
 
         VariableMap result_var_map(var_map_x);
         bool equal = (var_map_x.size() == var_map_y.size());
@@ -289,21 +294,21 @@ private:
         }
 
         if (result_var_map.size() > var_map_x.size()) {
-            inv_x = apron::addDimensions(inv_x.get(), result_var_map.size() - var_map_x.size());
+            inv_x = impl_::addDimensions(inv_x.get(), result_var_map.size() - var_map_x.size());
         }
         if (result_var_map.size() > var_map_y.size()) {
-            inv_y = apron::addDimensions(inv_y.get(), result_var_map.size() - var_map_y.size());
+            inv_y = impl_::addDimensions(inv_y.get(), result_var_map.size() - var_map_y.size());
         }
 
-        ASSERTC(result_var_map.size() == apron::dims(inv_x.get()));
-        ASSERTC(result_var_map.size() == apron::dims(inv_y.get()));
+        ASSERTC(result_var_map.size() == impl_::dims(inv_x.get()));
+        ASSERTC(result_var_map.size() == impl_::dims(inv_y.get()));
 
         auto* perm_y = build_perm_map(var_map_y, result_var_map);
-        inv_y = apron::newPtr(ap_abstract0_permute_dimensions(manager(), false, inv_y.get(), perm_y));
+        inv_y = impl_::newPtr(ap_abstract0_permute_dimensions(manager(), false, inv_y.get(), perm_y));
         ap_dimperm_free(perm_y);
 
-        ASSERTC(result_var_map.size() == apron::dims(inv_x.get()));
-        ASSERTC(result_var_map.size() == apron::dims(inv_y.get()));
+        ASSERTC(result_var_map.size() == impl_::dims(inv_x.get()));
+        ASSERTC(result_var_map.size() == impl_::dims(inv_y.get()));
 
         return result_var_map;
     }
@@ -316,8 +321,8 @@ private:
         auto* r = toAExpr(le.constant());
 
         for (auto&& it : le) {
-            auto* term = binopExpr<Number>(AP_TEXPR_MUL, toAExpr(it->second), toAExpr(it->first));
-            r = binopExpr<Number>(AP_TEXPR_ADD, r, term);
+            auto* term = impl_::binopExpr<Number>(AP_TEXPR_MUL, toAExpr(it->second), toAExpr(it->first));
+            r = impl_::binopExpr<Number>(AP_TEXPR_ADD, r, term);
         }
 
         return r;
@@ -339,7 +344,7 @@ private:
         ASSERTC(ap_linexpr0_is_linear(expr));
 
         ap_coeff_t* coeff = ap_linexpr0_cstref(expr);
-        LinearExprT e(toBNumber<Number>(coeff, caster_));
+        LinearExprT e(impl_::toBNumber<Number>(coeff, caster_));
 
         for (auto it = vars_.begin(), et = vars_.end(); it != et; ++it) {
             coeff = ap_linexpr0_coeffref(expr, it->second);
@@ -348,7 +353,7 @@ private:
                 continue;
             }
 
-            e.add(toBNumber<Number>(coeff, caster_), it->first);
+            e.add(impl_::toBNumber<Number>(coeff, caster_), it->first);
         }
 
         return e;
@@ -399,15 +404,15 @@ public:
     ApronDomain(CasterT* caster, TopTag)
             : NumericalDomain<Variable>(class_tag(*this)),
                     caster_(caster),
-                    env_(newPtr(ap_abstract0_top(manager(), 0, 0))) {}
+                    env_(impl_::newPtr(ap_abstract0_top(manager(), 0, 0))) {}
 
     ApronDomain(CasterT* caster, BottomTag)
             : NumericalDomain<Variable>(class_tag(*this)),
                     caster_(caster),
-                    env_(newPtr(ap_abstract0_bottom(manager(), 0, 0))) {}
+                    env_(impl_::newPtr(ap_abstract0_bottom(manager(), 0, 0))) {}
 
     explicit ApronDomain(CasterT* caster) : ApronDomain(caster, TopTag{}) {}
-    ApronDomain(CasterT* caster, VariableMap vars, ApronPtr env)
+    ApronDomain(CasterT* caster, VariableMap vars, impl_::ApronPtr env)
             : NumericalDomain<Variable>(class_tag(*this)), caster_(caster), vars_(std::move(vars)), env_(env) {}
 
     ApronDomain(const ApronDomain&) = default;
@@ -455,8 +460,8 @@ public:
         } else if (this->isTop()) {
             return false;
         } else {
-            ApronPtr inv_x(this->env_);
-            ApronPtr inv_y(otherRaw->env_);
+            impl_::ApronPtr inv_x(this->env_);
+            impl_::ApronPtr inv_y(otherRaw->env_);
             merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
             return ap_abstract0_is_leq(manager(), inv_x.get(), inv_y.get());
         }
@@ -474,8 +479,8 @@ public:
         } else if (other->isTop()) {
             return false;
         } else {
-            ApronPtr inv_x(this->env_);
-            ApronPtr inv_y(otherRaw->env_);
+            impl_::ApronPtr inv_x(this->env_);
+            impl_::ApronPtr inv_y(otherRaw->env_);
             merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
             return ap_abstract0_is_eq(manager(), inv_x.get(), inv_y.get());
         }
@@ -489,10 +494,10 @@ public:
         } else if (this->isTop() || other->isBottom()) {
             return;
         } else {
-            ApronPtr inv_x(this->env_);
-            ApronPtr inv_y(otherRaw->env_);
+            impl_::ApronPtr inv_x(this->env_);
+            impl_::ApronPtr inv_y(otherRaw->env_);
             VariableMap var_map = merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
-            this->env_ = newPtr(ap_abstract0_join(manager(), false, inv_x.get(), inv_y.get()));
+            this->env_ = impl_::newPtr(ap_abstract0_join(manager(), false, inv_x.get(), inv_y.get()));
         }
     }
 
@@ -504,10 +509,10 @@ public:
         } else if (this->isTop() || other->isBottom()) {
             this->operator=(*otherRaw);
         } else {
-            ApronPtr inv_x(this->env_);
-            ApronPtr inv_y(otherRaw->env_);
+            impl_::ApronPtr inv_x(this->env_);
+            impl_::ApronPtr inv_y(otherRaw->env_);
             VariableMap var_map = merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
-            this->env_ = newPtr(ap_abstract0_meet(manager(), false, inv_x.get(), inv_y.get()));
+            this->env_ = impl_::newPtr(ap_abstract0_meet(manager(), false, inv_x.get(), inv_y.get()));
         }
     }
 
@@ -519,10 +524,10 @@ public:
         } else if (this->isTop() || other->isBottom()) {
             return;
         } else {
-            ApronPtr inv_x(this->env_);
-            ApronPtr inv_y(otherRaw->env_);
+            impl_::ApronPtr inv_x(this->env_);
+            impl_::ApronPtr inv_y(otherRaw->env_);
             VariableMap var_map = merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
-            this->env_ = newPtr(ap_abstract0_widening(manager(), inv_x.get(), inv_y.get()));
+            this->env_ = impl_::newPtr(ap_abstract0_widening(manager(), inv_x.get(), inv_y.get()));
         }
     }
 
@@ -635,7 +640,7 @@ public:
 
         if (dim) {
             ap_interval_t* intv = ap_abstract0_bound_dimension(manager(), this->env_.get(), dim.getUnsafe());
-            auto r = toBInterval<Number>(intv, caster_);
+            auto r = impl_::toBInterval<Number>(intv, caster_);
             ap_interval_free(intv);
             return r;
         } else {
@@ -693,7 +698,7 @@ public:
                 ASSERTC(ap_cst.scalar != nullptr);
 
                 auto expr = toLinearExpr(ap_cst.linexpr0);
-                Number mod = toBNumber<Number>(ap_cst.scalar, caster_);
+                Number mod = impl_::toBNumber<Number>(ap_cst.scalar, caster_);
                 out << expr << " = 0 mod " << mod;
             } else {
                 auto cst = toLinearConstraint(ap_cst);
