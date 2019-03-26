@@ -2,6 +2,7 @@
 // Created by abdullin on 2/14/19.
 //
 
+#include <Config/config.h>
 #include "Interpreter/Domain/AbstractFactory.hpp"
 #include "DomainStorage.hpp"
 #include "Interpreter/Domain/VariableFactory.hpp"
@@ -436,6 +437,23 @@ public:
 
 } // namespace impl_
 
+static config::StringConfigEntry numericalDomain("absint", "numeric");
+
+inline AbstractDomain::Ptr initNumericalDomain(VariableFactory* vf) {
+    auto&& numericalDomainName = numericalDomain.get("interval");
+
+    using SIntT = typename DomainStorage::SIntT;
+    using UIntT = typename DomainStorage::UIntT;
+
+    if (numericalDomainName == "interval") {
+        return std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf);
+    } else if (numericalDomainName == "octagon") {
+        return std::make_shared<impl_::DoubleOctagonImpl<SIntT, UIntT>>(vf);
+    } else {
+        UNREACHABLE("Unknown numerical domain name");
+    }
+}
+
 DomainStorage::NumericalDomainT* DomainStorage::unwrapBool() const {
     auto* bools = llvm::dyn_cast<NumericalDomainT>(bools_.get());
     ASSERTC(bools);
@@ -470,8 +488,7 @@ DomainStorage::DomainStorage(VariableFactory* vf) :
         ObjectLevelLogging("domain"),
         vf_(vf),
         bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_)),
-        ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_)),
-//        ints_(std::make_shared<impl_::DoubleOctagonImpl<SIntT, UIntT>>(vf_)),
+        ints_(initNumericalDomain(vf_)),
         floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_)),
         memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_)),
         structs_(std::make_shared<impl_::AggregateDomainImpl<StructDomain<MachineIntT>>>(vf_)) {}

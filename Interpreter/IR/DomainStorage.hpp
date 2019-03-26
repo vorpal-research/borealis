@@ -32,8 +32,6 @@ public:
     using Ptr = std::shared_ptr<DomainStorage>;
     using Variable = const llvm::Value*;
 
-private:
-
     using SIntT = AbstractFactory::SInt;
     using UIntT = AbstractFactory::UInt;
     using MachineIntT = AbstractFactory::MachineInt;
