@@ -288,6 +288,13 @@ public:
         }
         return vars;
     }
+
+    std::string toString() const {
+        std::stringstream ss;
+        for (auto&& it : constraints_)
+            ss << it << std::endl;
+        return ss.str();
+    }
 };
 
 } // namespace apron

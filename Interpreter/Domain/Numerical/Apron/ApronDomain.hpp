@@ -107,8 +107,14 @@ inline ap_texpr0_t* toAExpr(const Number&) {
     UNREACHABLE("Unimplemented");
 }
 
-template <bool sign>
-inline ap_texpr0_t* toAExpr(const BitInt<sign>& n) {
+template <>
+inline ap_texpr0_t* toAExpr(const BitInt<true>& n) {
+    mpq_class e(n.toGMP());
+    return ap_texpr0_cst_scalar_mpq(e.get_mpq_t());
+}
+
+template <>
+inline ap_texpr0_t* toAExpr(const BitInt<false>& n) {
     mpq_class e(n.toGMP());
     return ap_texpr0_cst_scalar_mpq(e.get_mpq_t());
 }
@@ -125,27 +131,27 @@ inline Number toBNumber(ap_scalar_t*, const util::Adapter<Number>* caster);
 template <>
 inline BitInt<true> toBNumber(ap_scalar_t* scalar, const util::Adapter<BitInt<true>>* caster) {
     ASSERTC(ap_scalar_infty(scalar) == 0);
-    ASSERTC(scalar->discr == AP_SCALAR_MPQ);
+//    ASSERTC(scalar->discr == AP_SCALAR_MPQ);
 
-    auto q = mpq_class(scalar->val.mpq);
+    auto q = mpq_class(scalar->val.dbl);
 
-    std::stringstream ss;
-    ss << q;
+//    std::stringstream ss;
+//    ss << q;
 
-    return (*caster)(ss.str());
+    return (*caster)(q.get_d());
 }
 
 template <>
 inline BitInt<false> toBNumber(ap_scalar_t* scalar, const util::Adapter<BitInt<false>>* caster) {
     ASSERTC(ap_scalar_infty(scalar) == 0);
-    ASSERTC(scalar->discr == AP_SCALAR_MPQ);
+//    ASSERTC(scalar->discr == AP_SCALAR_MPQ);
 
-    auto q = mpq_class(scalar->val.mpq);
+    auto q = mpq_class(scalar->val.dbl);
 
-    std::stringstream ss;
-    ss << q;
+//    std::stringstream ss;
+//    ss << q;
 
-    return (*caster)(ss.str());
+    return (*caster)(q.get_d());
 }
 
 template <>
@@ -566,6 +572,7 @@ public:
             impl_::ApronPtr inv_y(otherRaw->env_);
             VariableMap var_map = merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
             this->env_ = impl_::newPtr(ap_abstract0_join(manager(), false, inv_x.get(), inv_y.get()));
+            this->vars_ = std::move(var_map);
         }
     }
 
@@ -581,6 +588,7 @@ public:
             impl_::ApronPtr inv_y(otherRaw->env_);
             VariableMap var_map = merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
             this->env_ = impl_::newPtr(ap_abstract0_meet(manager(), false, inv_x.get(), inv_y.get()));
+            this->vars_ = std::move(var_map);
         }
     }
 
@@ -596,6 +604,7 @@ public:
             impl_::ApronPtr inv_y(otherRaw->env_);
             VariableMap var_map = merge_var_maps(this->vars_, inv_x, otherRaw->vars_, inv_y);
             this->env_ = impl_::newPtr(ap_abstract0_widening(manager(), inv_x.get(), inv_y.get()));
+            this->vars_ = std::move(var_map);
         }
     }
 
@@ -655,28 +664,34 @@ public:
                 this->env_.get(), &vector_dims[0], vector_dims.size(), false));
 
         this->env_ = impl_::removeDimensions(this->env_.get(), vector_dims);
-        this->vars_ = util::viewContainer(vars_).map(
-                        [&](const std::pair<Variable, size_t>& it) -> util::option<std::pair<Variable, size_t>> {
-                            if (it.second < dim) return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second));
-                            else if (it.second == dim) return util::nothing();
-                            else return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second - 1));
-                        })
-                        .filter(LAM(a, (not (not a))))
-                        .map(LAM(a, a.getUnsafe()))
-                        .template toHashMap<std::pair<Variable, size_t>, Variable, size_t, VarHash, VarEquals>();
+//        this->vars_ = util::viewContainer(vars_).map(
+//                        [&](const std::pair<Variable, size_t>& it) -> util::option<std::pair<Variable, size_t>> {
+//                            if (it.second < dim) return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second));
+//                            else if (it.second == dim) return util::nothing();
+//                            else return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second - 1));
+//                        })
+//                        .filter(LAM(a, (not (not a))))
+//                        .map(LAM(a, a.getUnsafe()))
+//                        .template toHashMap<std::pair<Variable, size_t>, Variable, size_t, VarHash, VarEquals>();
+        VariableMap newVars;
+        for (auto&& it : vars_) {
+            if (it.second < dim) newVars.insert(it);
+            else if (it.second > dim) newVars.insert({ it.first, it.second - 1 });
+        }
+        this->vars_ = std::move(newVars);
         ASSERTC(this->vars_.size() == impl_::dims(this->env_.get()));
     }
 
     void refine(Variable x, const IntervalT& interval) {
-        if (this->isBottom()) {
-            return;
-        } else if (interval.isBottom()) {
-            this->setBottom();
-        } else if (interval.isTop()) {
-            return;
-        } else {
+//        if (this->isBottom()) {
+//            return;
+//        } else if (interval.isBottom()) {
+//            this->setBottom();
+//        } else if (interval.isTop()) {
+//            return;
+//        } else {
             this->add(LinearConstSystemT::withinInterval(x, interval));
-        }
+//        }
     }
 
     void add(const LinearConstraintT& cst) {

@@ -29,7 +29,7 @@ public:
     explicit LinearExpression(const CasterT* caster) : LinearExpression(caster, 0) {}
     LinearExpression(const CasterT* caster, Number n) : caster_(caster), constant_(n) {}
     LinearExpression(const CasterT* caster, int n) : caster_(caster), constant_((*caster_)(n)) {}
-    LinearExpression(const CasterT* caster, Variable var) : caster_(caster) {
+    LinearExpression(const CasterT* caster, Variable var) : caster_(caster), constant_((*caster_)(0)) {
         vars_.emplace(var, (*caster_)(1));
     }
 

@@ -1,11 +1,11 @@
 //
-// Created by abdullin on 3/22/19.
+// Created by abdullin on 3/28/19.
 //
 
 #ifndef BOREALIS_OCTAGONDOMAIN_HPP
 #define BOREALIS_OCTAGONDOMAIN_HPP
 
-#include "Interpreter/Domain/Numerical/Apron/ApronDomain.hpp"
+#include "DoubleOctagon.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -13,209 +13,215 @@
 namespace borealis {
 namespace absint {
 
-template <typename Number, typename Variable, typename VarHash, typename VarEquals>
-using OctagonDomain = apron::ApronDomain<Number, Variable, VarHash, VarEquals, apron::DomainT::OCTAGON>;
-
-
 template <typename N1, typename N2, typename Variable, typename VarHash, typename VarEquals>
-class DoubleOctagon : public NumericalDomain<Variable> {
+class OctagonDomain : public NumericalDomain<const llvm::Value*> {
 public:
 
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
-    using Octagon1 = OctagonDomain<N1, Variable, VarHash, VarEquals>;
-    using Octagon2 = OctagonDomain<N2, Variable, VarHash, VarEquals>;
-    using Interval1 = typename Octagon1::IntervalT;
-    using Interval2 = typename Octagon2::IntervalT;
-    using DInterval = DoubleInterval<N1, N2>;
-    using Caster1 = typename Octagon1::CasterT;
-    using Caster2 = typename Octagon2::CasterT;
-    using Self = DoubleOctagon<N1, N2, Variable, VarHash, VarEquals>;
+    using DOctagon = DoubleOctagon<N1, N2, const llvm::Value*, VarHash, VarEquals>;
+    using OctagonMap = std::unordered_map<size_t, Ptr>;
+    using Self = OctagonDomain<N1, N2, Variable, VarHash, VarEquals>;
 
 protected:
 
-    Ptr first_;
-    Ptr second_;
+    mutable OctagonMap octagons_;
+    bool isBottom_;
 
 private:
 
-    static Self* unwrap(Ptr other) {
+    Self* unwrap(Ptr other) const {
         auto* otherRaw = llvm::dyn_cast<Self>(other.get());
         ASSERTC(otherRaw);
 
         return otherRaw;
     }
 
-    static const Self* unwrap(ConstPtr other) {
-        auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
+    const Self* unwrap(ConstPtr other) const {
+        auto* otherRaw = llvm::dyn_cast<Self>(other.get());
         ASSERTC(otherRaw);
 
         return otherRaw;
     }
 
-    template <typename N>
-    OctagonDomain<N, Variable, VarHash, VarEquals>* unwrapOctagon(Ptr domain) const {
-        auto* raw = llvm::dyn_cast<OctagonDomain<N, Variable, VarHash, VarEquals>>(domain.get());
-        ASSERTC(raw);
+protected:
 
-        return raw;
-    }
+    virtual size_t unwrapTypeSize(Variable x) const = 0;
 
-    const DInterval* unwrapDInterval(Ptr other) {
-        auto* otherRaw = llvm::dyn_cast<DInterval>(other.get());
-        ASSERTC(otherRaw);
+    DOctagon* unwrapOctagon(size_t bitsize) const {
+        auto&& opt = util::at(octagons_, bitsize);
 
-        return otherRaw;
+        AbstractDomain::Ptr octagon;
+        if (opt) {
+            octagon = opt.getUnsafe();
+        } else {
+            octagon = std::make_shared<DOctagon>(util::Adapter<N1>::get(bitsize), util::Adapter<N2>::get(bitsize));
+            octagons_[bitsize] = octagon;
+        }
+
+        auto* octagonRaw = llvm::dyn_cast<DOctagon>(octagon.get());
+        ASSERTC(octagonRaw);
+        return octagonRaw;
     }
 
 public:
-    struct TopTag {};
-    struct BottomTag {};
+    struct TopTag{};
+    struct BottomTag{};
 
-    DoubleOctagon(const Caster1* c1, const Caster2* c2) : DoubleOctagon(TopTag{}, c1, c2) {}
+    explicit OctagonDomain(TopTag) : NumericalDomain<const llvm::Value*>(class_tag(*this)), isBottom_(false) {}
+    explicit OctagonDomain(BottomTag) : NumericalDomain<const llvm::Value*>(class_tag(*this)), isBottom_(true) {}
 
-    DoubleOctagon(TopTag, const Caster1* c1, const Caster2* c2) :
-            NumericalDomain<Variable>(class_tag(*this)), first_(Octagon1::top(c1)), second_(Octagon2::top(c2)) {}
-    DoubleOctagon(BottomTag, const Caster1* c1, const Caster2* c2) :
-            NumericalDomain<Variable>(class_tag(*this)), first_(Octagon1::bottom(c1)), second_(Octagon2::bottom(c2)) {}
+    OctagonDomain() : OctagonDomain(TopTag{}) {}
 
-    DoubleOctagon(AbstractDomain::Ptr first, AbstractDomain::Ptr second) :
-            NumericalDomain<Variable>(class_tag(*this)), first_(first), second_(second) {}
+    OctagonDomain(const OctagonDomain&) = default;
+    OctagonDomain(OctagonDomain&&) = default;
+    OctagonDomain& operator=(OctagonDomain&&) = default;
+    ~OctagonDomain() override = default;
 
-    DoubleOctagon(const DoubleOctagon&) = default;
-    DoubleOctagon(DoubleOctagon&&) = default;
-    DoubleOctagon& operator=(const DoubleOctagon& other) {
-        if (this != &other) {
-            this->first_ = other.first_;
-            this->second_ = other.second_;
+    OctagonDomain& operator=(const OctagonDomain& other) {
+        if (this == &other) {
+            this->octagons_ = other.octagons_;
         }
         return *this;
     }
-    DoubleOctagon& operator=(DoubleOctagon&&) = default;
-    ~DoubleOctagon() override = default;
 
-    static Ptr top(const Caster1* c1, const Caster2* c2) {
-        return std::make_shared<Self>(TopTag{}, c1, c2);
+    static bool classof(const Self*) {
+        return true;
     }
 
-    static Ptr bottom(const Caster1* c1, const Caster2* c2) {
-        return std::make_shared<Self>(BottomTag{}, c1, c2);
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
     }
 
-    static Ptr doctagon(AbstractDomain::Ptr first, AbstractDomain::Ptr second) {
-        return std::make_shared<Self>(first, second);
-    }
+    bool isTop() const override { return not this->isBottom_ && this->octagons_.empty(); }
+    bool isBottom() const override { return this->isBottom_; }
 
-    Ptr clone() const override {
-        return const_cast<Self*>(this)->shared_from_this();
-    }
-
-    bool isTop() const override { return first_->isTop() and second_->isTop(); }
-    bool isBottom() const override { return first_->isBottom() and second_->isBottom(); }
-
-    void setTop() override {
-        first_->setTop();
-        second_->setTop();
-    }
-
-    void setBottom() override {
-        first_->setBottom();
-        second_->setBottom();
-    }
-
-    bool leq(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
-
-        if (this->isBottom()) {
-            return true;
-        } else if (other->isBottom()) {
-            return false;
-        } else {
-            return this->first_->leq(otherRaw->first_) && this->second_->leq(otherRaw->second_);
-        }
-    }
+    void setTop() override { UNREACHABLE("TODO"); }
+    void setBottom() override { UNREACHABLE("TODO"); }
+    bool leq(ConstPtr) const override { UNREACHABLE("TODO"); }
 
     bool equals(ConstPtr other) const override {
-        if (this == other.get()) return true;
-
         auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
         if (not otherRaw) return false;
 
         if (this->isBottom()) {
-            return other->isBottom();
-        } else if (other->isBottom()) {
+            return otherRaw->isBottom();
+        } else if (otherRaw->isBottom()) {
             return false;
         } else {
-            return this->first_->equals(otherRaw->first_) && this->second_->equals(otherRaw->second_);
+            if (this->octagons_.size() != otherRaw->octagons_.size()) return false;
+
+            for (auto&& it : this->octagons_) {
+                auto&& otherIt = otherRaw->octagons_.find(it.first);
+                if (otherIt == otherRaw->octagons_.end()) return false;
+                else if (not it.second->equals((*otherIt).second)) return false;
+            }
+            return true;
+        }
+    }
+
+    void joinWith(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
+        if (otherRaw->isBottom()) {
+            return;
+        } else if (this->isBottom()) {
+            this->operator=(*otherRaw);
+        } else {
+            for (auto&& it : otherRaw->octagons_) {
+                auto&& cur = octagons_.find(it.first);
+                if (cur == octagons_.end()) octagons_[it.first] = it.second;
+                else octagons_[it.first] = cur->second->join(it.second);
+            }
+            return;
+        }
+    }
+
+    void meetWith(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
+        if (this->isBottom()) {
+            return;
+        } else if (otherRaw->isBottom()) {
+            this->setBottom();
+        } else {
+            for (auto&& it : otherRaw->octagons_) {
+                auto&& cur = octagons_.find(it.first);
+                if (cur == octagons_.end()) octagons_[it.first] = it.second;
+                else octagons_[it.first] = cur->second->meet(it.second);
+            }
+            return;
+        }
+    }
+
+    void widenWith(ConstPtr other) {
+        auto* otherRaw = unwrap(other);
+
+        if (otherRaw->isBottom()) {
+            return;
+        } else if (this->isBottom()) {
+            this->operator=(*otherRaw);
+        } else {
+            for (auto&& it : otherRaw->octagons_) {
+                auto&& cur = octagons_.find(it.first);
+                if (cur == octagons_.end()) octagons_[it.first] = it.second;
+                else octagons_[it.first] = cur->second->widen(it.second);
+            }
+            return;
         }
     }
 
     Ptr join(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
-
-        if (this->isBottom()) {
-            return other->clone();
-        } else if (other->isBottom()) {
-            return clone();
-        } else {
-            return doctagon(this->first_->join(otherRaw->first_), this->second_->join(otherRaw->second_));
-        }
+        auto&& result = this->clone();
+        auto* resultRaw = unwrap(result);
+        resultRaw->joinWith(other);
+        return result;
     }
 
-
     Ptr meet(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
-
-        if (this->isBottom() || otherRaw->isBottom()) {
-            auto* tf = unwrapOctagon<N1>(this->first_);
-            auto* ts = unwrapOctagon<N2>(this->second_);
-
-            return bottom(tf->caster(), ts->caster());
-        } else {
-            return doctagon(this->first_->meet(otherRaw->first_), this->second_->meet(otherRaw->second_));
-        }
+        auto&& result = this->clone();
+        auto* resultRaw = unwrap(result);
+        resultRaw->meetWith(other);
+        return result;
     }
 
     Ptr widen(ConstPtr other) const override {
-        auto* otherRaw = unwrap(other);
-
-        if (this->isBottom()) {
-            return other->clone();
-        } else if (other->isBottom()) {
-            return clone();
-        } else {
-            return doctagon(this->first_->widen(otherRaw->first_), this->second_->widen(otherRaw->second_));
-        }
+        auto&& result = this->clone();
+        auto* resultRaw = unwrap(result);
+        resultRaw->widenWith(other);
+        return result;
     }
 
-    Ptr get(Variable x) const override {
-        return toInterval(x);
-    }
+    Ptr toInterval(Variable x) const override { return this->get(x); }
 
-    Ptr toInterval(Variable x) const override {
-        return DInterval::interval(unwrapOctagon<N1>(first_)->toInterval(x), unwrapOctagon<N2>(second_)->toInterval(x));
+    void set(Variable x, Ptr value) {
+        auto bitsize = unwrapTypeSize(x);
+        auto* octagon = unwrapOctagon(bitsize);
+        octagon->assign(x, value);
+        this->isBottom_ = false;
     }
 
     void assign(Variable x, Variable y) override {
-        unwrapOctagon<N1>(first_)->assign(x, y);
-        unwrapOctagon<N2>(second_)->assign(x, y);
+        auto bitsize = unwrapTypeSize(x);
+        auto* octagon = unwrapOctagon(bitsize);
+        octagon->assign(x, y);
+        this->isBottom_ = false;
     }
 
     void assign(Variable x, Ptr i) override {
-        auto* dint = unwrapDInterval(i);
-        unwrapOctagon<N1>(first_)->assign(x, dint->first());
-        unwrapOctagon<N2>(second_)->assign(x, dint->second());
+        set(x, i);
     }
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
-        unwrapOctagon<N1>(first_)->applyTo(op, x, y, z);
-        unwrapOctagon<N2>(second_)->applyTo(op, x, y, z);
+        auto bitsize = unwrapTypeSize(x);
+        auto* octagon = unwrapOctagon(bitsize);
+        octagon->applyTo(op, x, y, z);
     }
 
     Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
-        auto&& first = unwrapOctagon<N1>(first_)->applyTo(op, x, y);
-        auto&& second = unwrapOctagon<N2>(second_)->applyTo(op, x, y);
-        return first->join(second);
+        auto bitsize = unwrapTypeSize(x);
+        auto* octagon = unwrapOctagon(bitsize);
+        return octagon->applyTo(op, x, y);
     }
 
     size_t hashCode() const override {
@@ -224,7 +230,10 @@ public:
 
     std::string toString() const override {
         std::stringstream ss;
-        ss << "{" << std::endl << first_->toString() << ";" << std::endl << second_->toString() << std::endl << "}";
+        for (auto&& it : octagons_) {
+            ss << "Bitsize " << it.first << std::endl;
+            ss << it.second->toString();
+        }
         return ss.str();
     }
 };
