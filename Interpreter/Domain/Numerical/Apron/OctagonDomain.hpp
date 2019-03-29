@@ -71,7 +71,7 @@ public:
     explicit OctagonDomain(TopTag) : NumericalDomain<const llvm::Value*>(class_tag(*this)), isBottom_(false) {}
     explicit OctagonDomain(BottomTag) : NumericalDomain<const llvm::Value*>(class_tag(*this)), isBottom_(true) {}
 
-    OctagonDomain() : OctagonDomain(TopTag{}) {}
+    OctagonDomain() : OctagonDomain(BottomTag{}) {}
 
     OctagonDomain(const OctagonDomain&) = default;
     OctagonDomain(OctagonDomain&&) = default;
@@ -79,8 +79,9 @@ public:
     ~OctagonDomain() override = default;
 
     OctagonDomain& operator=(const OctagonDomain& other) {
-        if (this == &other) {
+        if (this != &other) {
             this->octagons_ = other.octagons_;
+            this->isBottom_ = other.isBottom_;
         }
         return *this;
     }
