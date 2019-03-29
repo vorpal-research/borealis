@@ -664,15 +664,6 @@ public:
                 this->env_.get(), &vector_dims[0], vector_dims.size(), false));
 
         this->env_ = impl_::removeDimensions(this->env_.get(), vector_dims);
-//        this->vars_ = util::viewContainer(vars_).map(
-//                        [&](const std::pair<Variable, size_t>& it) -> util::option<std::pair<Variable, size_t>> {
-//                            if (it.second < dim) return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second));
-//                            else if (it.second == dim) return util::nothing();
-//                            else return util::option<std::pair<Variable, size_t>>(std::make_pair(it.first, it.second - 1));
-//                        })
-//                        .filter(LAM(a, (not (not a))))
-//                        .map(LAM(a, a.getUnsafe()))
-//                        .template toHashMap<std::pair<Variable, size_t>, Variable, size_t, VarHash, VarEquals>();
         VariableMap newVars;
         for (auto&& it : vars_) {
             if (it.second < dim) newVars.insert(it);
@@ -683,15 +674,7 @@ public:
     }
 
     void refine(Variable x, const IntervalT& interval) {
-//        if (this->isBottom()) {
-//            return;
-//        } else if (interval.isBottom()) {
-//            this->setBottom();
-//        } else if (interval.isTop()) {
-//            return;
-//        } else {
-            this->add(LinearConstSystemT::withinInterval(x, interval));
-//        }
+        this->add(LinearConstSystemT::withinInterval(x, interval));
     }
 
     void add(const LinearConstraintT& cst) {

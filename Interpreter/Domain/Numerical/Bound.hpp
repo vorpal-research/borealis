@@ -429,7 +429,8 @@ public:
     }
 
     absint::BitInt<sign> operator()(double n) const {
-        return absint::BitInt<sign>(width_, (int) n);
+        auto in = (unsigned int) n;
+        return absint::BitInt<sign>(width_, in);
     }
 
     absint::BitInt<sign> operator()(const std::string& str) const {
