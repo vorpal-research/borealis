@@ -27,9 +27,9 @@ private:
 
 public:
     explicit LinearExpression(const CasterT* caster) : LinearExpression(caster, 0) {}
-    LinearExpression(const CasterT* caster, Number n) : caster_(caster), constant_(n) {}
-    LinearExpression(const CasterT* caster, int n) : caster_(caster), constant_((*caster_)(n)) {}
-    LinearExpression(const CasterT* caster, Variable var) : caster_(caster), constant_((*caster_)(0)) {
+    LinearExpression(const CasterT* caster, Number n) : caster_(caster), vars_{}, constant_(n) {}
+    LinearExpression(const CasterT* caster, int n) : caster_(caster), vars_{}, constant_((*caster_)(n)) {}
+    LinearExpression(const CasterT* caster, Variable var) : caster_(caster), vars_{}, constant_((*caster_)(0)) {
         vars_.emplace(var, (*caster_)(1));
     }
 
@@ -160,13 +160,15 @@ public:
     std::string toString() const {
         std::stringstream ss;
 
-        auto&& head = util::head(vars_);
-        if (head.second == (*caster_)(-1)) {
-            ss << "-";
-        } else  if (head.second != (*caster_)(0)) {
-            ss << head.second;
+        if (not vars_.empty()) {
+            auto&& head = util::head(vars_);
+            if (head.second == (*caster_)(-1)) {
+                ss << "-";
+            } else if (head.second != (*caster_)(0)) {
+                ss << head.second;
+            }
+            ss << util::toString(*head.first);
         }
-        ss << util::toString(*head.first);
 
         for (auto&& it : util::viewContainer(vars_).drop(1)) {
             auto&& var = it.first;
@@ -182,6 +184,7 @@ public:
             }
             ss << util::toString(*var);
         }
+
         if (constant_ > (*caster_)(0) && not vars_.empty()) {
             ss << "+";
         }

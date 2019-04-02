@@ -392,6 +392,14 @@ struct Adapter {
     Number operator()(double) const {
         UNREACHABLE("Unimplemented");
     }
+
+    Number maxValue() const {
+        UNREACHABLE("Unimplemented");
+    }
+
+    Number minValue() const {
+        UNREACHABLE("Unimplemented");
+    }
 };
 
 template <bool sign>
@@ -436,6 +444,14 @@ public:
     absint::BitInt<sign> operator()(const std::string& str) const {
         return absint::BitInt<sign>(llvm::APInt(width_, str, 10));
     }
+
+    absint::BitInt<sign> maxValue() const {
+        return absint::BitInt<sign> { sign ? llvm::APInt::getSignedMaxValue(width_) : llvm::APInt::getMaxValue(width_) };
+    }
+
+    absint::BitInt<sign> minValue() const {
+        return absint::BitInt<sign> { sign ? llvm::APInt::getSignedMinValue(width_) : llvm::APInt::getMinValue(width_) };
+    }
 };
 
 template <bool sign>
@@ -466,6 +482,14 @@ struct Adapter<absint::Float> {
 
     absint::Float operator()(const std::string& str) const {
         return absint::Float(str);
+    }
+
+    absint::Float maxValue() const {
+        return absint::Float{ llvm::APFloat::getInf(absint::Float::getLlvmSemantics(), false) };
+    }
+
+    absint::Float minValue() const {
+        return absint::Float{ llvm::APFloat::getInf(absint::Float::getLlvmSemantics(), true) };
     }
 };
 

@@ -109,6 +109,32 @@ protected:
         return integer->getBitsize();
     }
 
+    util::option<typename DOctagon::DNumber> unwrapDInterval(const typename DOctagon::DInterval* interval) {
+        using DInt = typename DOctagon::DInterval;
+        using DNum = typename DOctagon::DNumber;
+        auto&& first = llvm::dyn_cast<typename DInt::Interval1>(interval->first().get());
+        auto&& second = llvm::dyn_cast<typename DInt::Interval2>(interval->second().get());
+        ASSERTC(first and second);
+
+        // sometimes interval for llvm::Constant can be non-constant (for example, for constant expressions)
+        if (first->isConstant() and second->isConstant())
+            return util::just( DNum { first->asConstant(), second->asConstant() } );
+        else
+            return util::nothing();
+    }
+
+    util::option<typename DOctagon::DNumber> getConstant(Variable x) {
+        if (auto&& constant = llvm::dyn_cast<llvm::Constant>(x)) {
+            auto&& domain = vf_->get(constant);
+            auto* domainRaw = llvm::dyn_cast<typename DOctagon::DInterval>(domain.get());
+            ASSERTC(domainRaw);
+
+            return unwrapDInterval(domainRaw);
+        } else {
+            return util::nothing();
+        }
+    }
+
 public:
 
     explicit OctagonDomainImpl(VariableFactory* vf) : OctagonDomain<N1, N2, const llvm::Value*, ValueHash, ValueEquals>(), vf_(vf) {}
@@ -140,6 +166,42 @@ public:
             auto* octagon = this->unwrapOctagon(bitsize);
 
             return octagon->get(x);
+        }
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
+        auto bitsize = this->unwrapTypeSize(x);
+        auto* octagon = this->unwrapOctagon(bitsize);
+
+        auto&& yConst = getConstant(y);
+        auto&& zConst = getConstant(z);
+
+        if (yConst && zConst) {
+            octagon->applyTo(op, x, yConst.getUnsafe(), zConst.getUnsafe());
+        } else if (yConst) {
+            octagon->applyTo(op, x, yConst.getUnsafe(), z);
+        } else if (zConst) {
+            octagon->applyTo(op, x, y, zConst.getUnsafe());
+        } else {
+            octagon->applyTo(op, x, y, z);
+        }
+    }
+
+    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
+        auto bitsize = this->unwrapTypeSize(x);
+        auto* octagon = this->unwrapOctagon(bitsize);
+
+        auto&& xConst = getConstant(x);
+        auto&& yConst = getConstant(y);
+
+        if (xConst && yConst) {
+            return octagon->applyTo(op, xConst.getUnsafe(), yConst.getUnsafe());
+        } else if (xConst) {
+            return octagon->applyTo(op, xConst.getUnsafe(), y);
+        } else if (yConst) {
+            return octagon->applyTo(op, x, yConst.getUnsafe());
+        } else {
+            return octagon->applyTo(op, x, y);
         }
     }
 

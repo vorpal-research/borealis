@@ -243,15 +243,27 @@ public:
         if (i.isBottom()) {
             system.add(LinearConstraintT::contradiction(i.caster()));
         } else {
-            LinearExpr expr(i.caster(), v);
+            auto* caster = i.caster();
+            LinearExpr expr(caster, v);
 
             auto& lb = i.lb();
             auto& ub = i.ub();
             if (i.isConstant()) {
                 system.add(expr == i.asConstant());
             } else {
-                if (lb.isFinite()) system.add(-expr <= -lb.number());
-                if (ub.isFinite()) system.add(expr <= ub.number());
+                if (lb.isFinite()) {
+                    system.add(-expr <= -lb.number());
+                } else {
+                    ASSERTC(lb.isMinusInfinity());
+                    system.add(-expr <= caster->minValue());
+                }
+
+                if (ub.isFinite()) {
+                    system.add(expr <= ub.number());
+                } else {
+                    ASSERTC(ub.isPlusInfinity());
+                    system.add(expr <= caster->maxValue());
+                }
             }
         }
         return system;

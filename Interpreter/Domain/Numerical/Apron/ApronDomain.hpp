@@ -458,6 +458,10 @@ private:
         return otherRaw;
     }
 
+    Ptr toInterval(const Number& n) const {
+        return IntervalT::constant(n, caster_);
+    }
+
 public:
     ApronDomain(const CasterT* caster, TopTag)
             : NumericalDomain<Variable>(class_tag(*this)),
@@ -714,7 +718,7 @@ public:
             ap_interval_free(intv);
             return r;
         } else {
-            return IntervalT::top(caster_);
+            return nullptr;//IntervalT::top(caster_);
         }
     }
 
@@ -747,7 +751,7 @@ public:
         return 0;
     }
 
-    std::string toString() const override {
+    std::string toConstraintString() const {
         this->normalize();
 
         std::stringstream out;
@@ -757,7 +761,7 @@ public:
             return out.str();
         }
 
-        out << "{";
+        out << "{" << std::endl;
         ap_lincons0_array_t ap_csts = ap_abstract0_to_lincons_array(manager(), this->env_.get());
 
         for (auto i = 0U; i < ap_csts.size;) {
@@ -786,6 +790,24 @@ public:
         return out.str();
     }
 
+    std::string toString() const override {
+        this->normalize();
+
+        std::stringstream out;
+
+        if (this->isBottom()) {
+            out << "⊥";
+            return out.str();
+        }
+
+        out << "{" << std::endl;
+        for (auto&& it : this->vars_) {
+            out << util::toString(*it.first) << " = " << toInterval(it.first) << std::endl;
+        }
+        out << "}";
+        return out.str();
+    }
+
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         if (isSupported(op)) {
             applyToAExpr(op, x, toAExpr(y), toAExpr(z));
@@ -794,7 +816,46 @@ public:
         }
     }
 
+    void applyTo(llvm::ArithType op, Variable x, const Number& y, Variable z) {
+        if (isSupported(op)) {
+            applyToAExpr(op, x, impl_::toAExpr(y), toAExpr(z));
+        } else {
+            set(x, toInterval(y)->apply(op, toInterval(z)));
+        }
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, Variable y, const Number& z) {
+        if (isSupported(op)) {
+            applyToAExpr(op, x, toAExpr(y), impl_::toAExpr(z));
+        } else {
+            set(x, toInterval(y)->apply(op, toInterval(z)));
+        }
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, const Number& y, const Number& z) {
+        if (isSupported(op)) {
+            applyToAExpr(op, x, impl_::toAExpr(y), impl_::toAExpr(z));
+        } else {
+            set(x, toInterval(y)->apply(op, toInterval(z)));
+        }
+    }
+
     Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
+        // TODO: implement more precise comparison
+        return toInterval(x)->apply(op, toInterval(y));
+    }
+
+    Ptr applyTo(llvm::ConditionType op, const Number& x, Variable y) {
+        // TODO: implement more precise comparison
+        return toInterval(x)->apply(op, toInterval(y));
+    }
+
+    Ptr applyTo(llvm::ConditionType op, Variable x, const Number& y) {
+        // TODO: implement more precise comparison
+        return toInterval(x)->apply(op, toInterval(y));
+    }
+
+    Ptr applyTo(llvm::ConditionType op, const Number& x, const Number& y) {
         // TODO: implement more precise comparison
         return toInterval(x)->apply(op, toInterval(y));
     }

@@ -30,6 +30,7 @@ public:
     using Interval1 = typename Octagon1::IntervalT;
     using Interval2 = typename Octagon2::IntervalT;
     using DInterval = DoubleInterval<N1, N2>;
+    using DNumber = std::pair<N1, N2>;
     using Caster1 = typename Octagon1::CasterT;
     using Caster2 = typename Octagon2::CasterT;
     using Self = DoubleOctagon<N1, N2, Variable, VarHash, VarEquals>;
@@ -195,7 +196,9 @@ public:
     }
 
     Ptr toInterval(Variable x) const override {
-        return DInterval::interval(unwrapOctagon<N1>(first_)->toInterval(x), unwrapOctagon<N2>(second_)->toInterval(x));
+        auto first = unwrapOctagon<N1>(first_)->toInterval(x);
+        auto second = unwrapOctagon<N2>(second_)->toInterval(x);
+        return (first and second) ? DInterval::interval(first, second) : nullptr;
     }
 
     void assign(Variable x, Variable y) override {
@@ -214,9 +217,42 @@ public:
         unwrapOctagon<N2>(second_)->applyTo(op, x, y, z);
     }
 
+    void applyTo(llvm::ArithType op, Variable x, const DNumber& y, Variable z) {
+        unwrapOctagon<N1>(first_)->applyTo(op, x, y.first, z);
+        unwrapOctagon<N2>(second_)->applyTo(op, x, y.second, z);
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, Variable y, const DNumber& z) {
+        unwrapOctagon<N1>(first_)->applyTo(op, x, y, z.first);
+        unwrapOctagon<N2>(second_)->applyTo(op, x, y, z.second);
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, const DNumber& y, const DNumber& z) {
+        unwrapOctagon<N1>(first_)->applyTo(op, x, y.first, z.first);
+        unwrapOctagon<N2>(second_)->applyTo(op, x, y.second, z.second);
+    }
+
     Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
         auto&& first = unwrapOctagon<N1>(first_)->applyTo(op, x, y);
         auto&& second = unwrapOctagon<N2>(second_)->applyTo(op, x, y);
+        return first->join(second);
+    }
+
+    Ptr applyTo(llvm::ConditionType op, const DNumber& x, Variable y) {
+        auto&& first = unwrapOctagon<N1>(first_)->applyTo(op, x.first, y);
+        auto&& second = unwrapOctagon<N2>(second_)->applyTo(op, x.second, y);
+        return first->join(second);
+    }
+
+    Ptr applyTo(llvm::ConditionType op, Variable x, const DNumber& y) {
+        auto&& first = unwrapOctagon<N1>(first_)->applyTo(op, x, y.first);
+        auto&& second = unwrapOctagon<N2>(second_)->applyTo(op, x, y.second);
+        return first->join(second);
+    }
+
+    Ptr applyTo(llvm::ConditionType op, const DNumber& x, const DNumber& y) {
+        auto&& first = unwrapOctagon<N1>(first_)->applyTo(op, x.first, y.first);
+        auto&& second = unwrapOctagon<N2>(second_)->applyTo(op, x.second, y.second);
         return first->join(second);
     }
 

@@ -213,13 +213,13 @@ public:
         set(x, i);
     }
 
-    void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
+    virtual void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         auto bitsize = unwrapTypeSize(x);
         auto* octagon = unwrapOctagon(bitsize);
         octagon->applyTo(op, x, y, z);
     }
 
-    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
+    virtual Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
         auto bitsize = unwrapTypeSize(x);
         auto* octagon = unwrapOctagon(bitsize);
         return octagon->applyTo(op, x, y);

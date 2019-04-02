@@ -94,6 +94,7 @@ void Interpreter::interpretFunction(Function::Ptr function, const std::vector<Ab
 
     while (not context_->deque.empty()) {
         auto&& basicBlock = context_->deque.front();
+        errs() << "Function " << function->getName() << " block " << basicBlock->getName() << endl;
 
         // updating output block with new information
         basicBlock->mergeOutputWithInput();
@@ -410,6 +411,11 @@ AbstractDomain::Ptr Interpreter::handleFunctionCall(
         return handleDeclaration(function, result, args);
     } else {
         auto func = module_.get(function);
+
+        if (context_->function->getName() == "mpc_err_merge" and func->getName() == "mpc_err_or") {
+            auto&& a = 10;
+        }
+
         if (callStack_.count(func))
             return module_.variableFactory()->top(func->getInstance()->getReturnType());
         interpretFunction(func, util::viewContainer(args).map(LAM(a, a.second)).toVector());
