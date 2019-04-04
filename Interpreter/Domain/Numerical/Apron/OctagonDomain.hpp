@@ -99,9 +99,27 @@ public:
 
     void setTop() override { UNREACHABLE("TODO"); }
     void setBottom() override { UNREACHABLE("TODO"); }
-    bool leq(ConstPtr) const override { UNREACHABLE("TODO"); }
 
-    bool equals(ConstPtr other) const override {
+    bool leq(ConstPtr other) const override {
+        auto* otherRaw = unwrap(other);
+
+        if (this->isBottom()) {
+            return true;
+        } else if (other->isBottom()) {
+            return false;
+        } else {
+            if (this->octagons_.size() != otherRaw->octagons_.size()) return false;
+
+            for (auto&& it : this->octagons_) {
+                auto&& otherIt = otherRaw->octagons_.find(it.first);
+                if (otherIt == otherRaw->octagons_.end()) return true;
+                else if (not it.second->leq((*otherIt).second)) return false;
+            }
+            return true;
+        }
+    }
+
+    virtual bool equals(ConstPtr other) const override {
         auto* otherRaw = llvm::dyn_cast<const Self>(other.get());
         if (not otherRaw) return false;
 

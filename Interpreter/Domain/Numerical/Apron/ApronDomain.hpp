@@ -402,7 +402,6 @@ private:
     }
 
     bool isSupported(llvm::ArithType op) const {
-        return false;
         switch (op) {
             case llvm::ArithType::ADD:
             case llvm::ArithType::SUB:

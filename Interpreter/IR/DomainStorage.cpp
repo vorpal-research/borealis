@@ -169,6 +169,12 @@ public:
         }
     }
 
+    bool equals(ConstPtr other) const override {
+        // This is generaly fucked up, but for octagons it should be this way
+        // otherwise interpreter goes to infinite loop
+        return this->leq(other);
+    }
+
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         auto bitsize = this->unwrapTypeSize(x);
         auto* octagon = this->unwrapOctagon(bitsize);
