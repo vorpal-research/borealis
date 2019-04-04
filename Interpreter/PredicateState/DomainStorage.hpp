@@ -60,8 +60,8 @@ public:
     DomainStorage(const VariableFactory* vf, DomainStorage::Ptr input = nullptr);
     DomainStorage(const DomainStorage&) = default;
     DomainStorage(DomainStorage&&) = default;
-    DomainStorage& operator=(const DomainStorage&) = default;
-    DomainStorage& operator=(DomainStorage&&) = default;
+//    DomainStorage& operator=(const DomainStorage&) = default;
+//    DomainStorage& operator=(DomainStorage&&) = default;
 
     DomainStorage::Ptr clone() const;
     bool equals(DomainStorage::Ptr other) const;

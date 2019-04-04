@@ -206,6 +206,8 @@ inline typename Interval<Number>::Ptr toBInterval(ap_interval_t* intv, const uti
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 
+static config::BoolConfigEntry enableOctagonPrint("absint", "enable-octagon-printing");
+
 template <typename Number, typename Variable, typename VarHash, typename VarEquals, apron::DomainT domain>
 class ApronDomain : public NumericalDomain<Variable> {
 public:
@@ -400,6 +402,7 @@ private:
     }
 
     bool isSupported(llvm::ArithType op) const {
+        return false;
         switch (op) {
             case llvm::ArithType::ADD:
             case llvm::ArithType::SUB:
@@ -718,7 +721,7 @@ public:
             ap_interval_free(intv);
             return r;
         } else {
-            return nullptr;//IntervalT::top(caster_);
+            return IntervalT::top(caster_);
         }
     }
 
@@ -804,8 +807,31 @@ public:
         for (auto&& it : this->vars_) {
             out << util::toString(*it.first) << " = " << toInterval(it.first) << std::endl;
         }
+
+        if (enableOctagonPrint.get(false)) {
+            out << dump() << std::endl;
+        }
+
         out << "}";
         return out.str();
+    }
+
+    std::string dump() const {
+        std::stringstream ss;
+        FILE* file = fopen("temp.octagon", "w");
+        ASSERTC(file);
+        ap_abstract0_fdump(file, manager(), env_.get());
+        fclose(file);
+        file = fopen("temp.octagon", "rb");
+
+        char line[256];
+        while (fgets(line, sizeof(line), file)) {
+            /* note that fgets don't strip the terminating \n, checking its
+               presence would allow to handle lines longer that sizeof(line) */
+            ss << line;
+        }
+        fclose(file);
+        return ss.str();
     }
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {

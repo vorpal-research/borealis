@@ -39,9 +39,9 @@ public:
 
     AbstractDomain(AbstractDomain&&) noexcept = default;
 
-    AbstractDomain& operator=(const AbstractDomain&) = default;
+//    AbstractDomain& operator=(const AbstractDomain&) = default;
 
-    AbstractDomain& operator=(AbstractDomain&&) noexcept = default;
+//    AbstractDomain& operator=(AbstractDomain&&) noexcept = default;
 
     virtual ~AbstractDomain() = default;
 

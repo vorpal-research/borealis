@@ -22,7 +22,7 @@ class log_entry {
     logstream log;
 
 public:
-    log_entry(const log_entry&) = default;
+    log_entry(const log_entry&) = delete; // deleted, because unique_ptr has no copy constructor
     log_entry(log_entry&&) = default;
     log_entry(logstream log) : buf(new std::ostringstream()), log(log) {}
 
