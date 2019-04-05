@@ -755,7 +755,7 @@ std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleBinary(c
 
     auto&& lhvDomain = get(lhv);
     auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
+    ASSERT(lhvDomain && rhvDomain, "Unknown values in binary splitter");
 
     std::unordered_map<Variable, Split> values;
 

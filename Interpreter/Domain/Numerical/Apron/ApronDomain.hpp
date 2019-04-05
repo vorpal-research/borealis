@@ -16,8 +16,8 @@
 #include <pkeq.h>
 #include <ap_scalar.h>
 
-#include "LinearExpression.hpp"
-#include "LinearConstraint.hpp"
+#include "Interpreter/Domain/Numerical/LinearExpression.hpp"
+#include "Interpreter/Domain/Numerical/LinearConstraint.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 

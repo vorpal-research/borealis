@@ -12,7 +12,6 @@
 
 namespace borealis {
 namespace absint {
-namespace apron {
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 class LinearConstraint {
@@ -217,6 +216,7 @@ class LinearConstraintSystem {
 public:
 
     using LinearConstraintT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    using CasterT = typename LinearConstraintT::CasterT;
     using LinearExpr = typename LinearConstraintT::LinearExpr;
     using VariableSet = typename LinearConstraintT::VariableSet;
     using Constraints = std::vector<LinearConstraintT>;
@@ -225,7 +225,52 @@ private:
 
     Constraints constraints_;
 
+private:
+
+    static LinearConstraintSystem makeConditionSystem(llvm::ConditionType op, LinearExpr x, LinearExpr y) {
+        LinearConstraintSystem system;
+
+        auto* caster = x.caster();
+        auto&& num = LAM(a, (*caster)(a));
+        switch (op) {
+            case llvm::ConditionType::EQ:
+                // x == y
+                system.add(x == y);
+                break;
+            case llvm::ConditionType::NEQ:
+                // x != y
+                system.add(x != y);
+                break;
+            case llvm::ConditionType::GT:
+            case llvm::ConditionType::UGT:
+                // x > y; -x < -y; -x + 1 <= -y
+                system.add((-x + num(1)) <= -y);
+                break;
+            case llvm::ConditionType::GE:
+            case llvm::ConditionType::UGE:
+                // x >= y; -x <= -y
+                system.add(-x <= -y);
+                break;
+            case llvm::ConditionType::LT:
+            case llvm::ConditionType::ULT:
+                // x < y; x + 1 <= y
+                system.add((x + num(1)) <= y);
+                break;
+            case llvm::ConditionType::LE:
+            case llvm::ConditionType::ULE:
+                // x <= y
+                system.add(x <= y);
+                break;
+            case llvm::ConditionType::TRUE:break;
+            case llvm::ConditionType::FALSE:break;
+            case llvm::ConditionType::UNKNOWN:break;
+        }
+
+        return system;
+    }
+
 public:
+
     LinearConstraintSystem() = default;
     explicit LinearConstraintSystem(LinearConstraintT cst)
             : constraints_{ std::move(cst) } {}
@@ -269,6 +314,18 @@ public:
         return system;
     }
 
+    static LinearConstraintSystem makeCondition(llvm::ConditionType op, const CasterT* caster, Variable x, Variable y) {
+        return makeConditionSystem(op, LinearExpr(caster, x), LinearExpr(caster, y));
+    }
+
+    static LinearConstraintSystem makeCondition(llvm::ConditionType op, const CasterT* caster, const Number& x, Variable y) {
+        return makeConditionSystem(op, LinearExpr(caster, x), LinearExpr(caster, y));
+    }
+
+    static LinearConstraintSystem makeCondition(llvm::ConditionType op, const CasterT* caster, Variable x, const Number& y) {
+        return makeConditionSystem(op, LinearExpr(caster, x), LinearExpr(caster, y));
+    }
+
     bool empty() const { return this->constraints_.empty(); }
     std::size_t size() const { return this->constraints_.size(); }
     void add(LinearConstraintT cst) { this->constraints_.emplace_back(std::move(cst)); }
@@ -309,7 +366,6 @@ public:
     }
 };
 
-} // namespace apron
 } // namespace absint
 } // namespace borealis
 

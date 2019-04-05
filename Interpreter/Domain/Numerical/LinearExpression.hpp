@@ -9,7 +9,6 @@
 
 namespace borealis {
 namespace absint {
-namespace apron {
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 class LinearExpression {
@@ -317,7 +316,6 @@ inline LinearExpression<Number, Variable, VarHash, VarEquals> operator-(
     return x;
 }
 
-} // namespace apron
 } // namespace absint
 } // namespace borealis
 
