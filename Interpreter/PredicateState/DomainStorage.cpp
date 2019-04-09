@@ -146,6 +146,45 @@ public:
         }
         return nullptr;
     }
+
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto&& lhv = this->get(x);
+        auto&& rhv = this->get(y);
+
+        switch (op) {
+            case llvm::ConditionType::EQ: {
+                this->assign(x, lhv->splitByEq(rhv).true_);
+                this->assign(y, rhv->splitByEq(lhv).true_);
+                break;
+            }
+            case llvm::ConditionType::NEQ: {
+                this->assign(x, lhv->splitByEq(rhv).false_);
+                this->assign(y, rhv->splitByEq(lhv).false_);
+                break;
+            }
+            case llvm::ConditionType::GT:
+            case llvm::ConditionType::GE:
+            case llvm::ConditionType::UGT:
+            case llvm::ConditionType::UGE: {
+                this->assign(x, lhv->splitByLess(rhv).false_);
+                this->assign(y, rhv->splitByLess(lhv).true_);
+                break;
+            }
+            case llvm::ConditionType::LT:
+            case llvm::ConditionType::LE:
+            case llvm::ConditionType::ULT:
+            case llvm::ConditionType::ULE: {
+                this->assign(x, lhv->splitByLess(rhv).true_);
+                this->assign(y, rhv->splitByLess(lhv).false_);
+                break;
+            }
+            case llvm::ConditionType::TRUE:break;
+            case llvm::ConditionType::FALSE:break;
+            case llvm::ConditionType::UNKNOWN:break;
+            default:
+                UNREACHABLE("Unknown operation")
+        }
+    }
 };
 
 template <typename MachineInt>
@@ -212,6 +251,38 @@ public:
             return constant;
         }
         return nullptr;
+    }
+
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto&& lhv = this->get(x);
+        auto&& rhv = this->get(y);
+
+        switch (op) {
+            case llvm::ConditionType::EQ: {
+                this->assign(x, lhv->splitByEq(rhv).true_);
+                this->assign(y, rhv->splitByEq(lhv).true_);
+                break;
+            }
+            case llvm::ConditionType::NEQ: {
+                this->assign(x, lhv->splitByEq(rhv).false_);
+                this->assign(y, rhv->splitByEq(lhv).false_);
+                break;
+            }
+                // pointers support only equality/inequality check
+            case llvm::ConditionType::GT:
+            case llvm::ConditionType::GE:
+            case llvm::ConditionType::UGT:
+            case llvm::ConditionType::UGE:
+            case llvm::ConditionType::LT:
+            case llvm::ConditionType::LE:
+            case llvm::ConditionType::ULT:
+            case llvm::ConditionType::ULE:
+            case llvm::ConditionType::TRUE:
+            case llvm::ConditionType::FALSE:
+            case llvm::ConditionType::UNKNOWN:break;
+            default:
+                UNREACHABLE("Unknown operation")
+        }
     }
 };
 
@@ -518,151 +589,6 @@ std::string DomainStorage::toString() const {
     ss << "Memory:" << std::endl << memory_->toString() << std::endl;
     ss << "Structs:" << std::endl << structs_->toString() << std::endl;
     return ss.str();
-}
-
-std::pair<DomainStorage::Ptr, DomainStorage::Ptr> DomainStorage::split(Variable condition) const {
-    auto&& true_ = std::make_shared<DomainStorage>(*this);
-    auto&& false_ = std::make_shared<DomainStorage>(*this);
-
-    auto&& condDomain = get(condition);
-    if (condDomain->isTop() || condDomain->isBottom())
-        return std::make_pair(true_, false_);
-
-    auto&& splitted = std::move(handleTerm(condition.get()));
-    for (auto&& it : splitted) {
-        true_->assign(it.first, it.second.true_);
-        false_->assign(it.first, it.second.false_);
-    }
-    return std::make_pair(true_, false_);
-}
-
-DomainStorage::SplitMap DomainStorage::handleTerm(const Term* term) const {
-    if (auto&& cmp = llvm::dyn_cast<CmpTerm>(term)) {
-        return std::move(handleCmp(cmp));
-    } else if (auto&& bin = llvm::dyn_cast<BinaryTerm>(term)) {
-        return std::move(handleBinary(bin));
-//    } else if (llvm::isa<type::Bool>(term->getType().get())) {
-//        auto condDomain = get(term->shared_from_this());
-//        return ;
-    } else {
-        errs() << "Unknown term in splitter: " << term->getName() << endl;
-        return {};
-    }
-}
-
-#define SPLIT_EQ(lhvDomain, rhvDomain) \
-    values[lhv] = lhvDomain->splitByEq(rhvDomain); \
-    values[rhv] = rhvDomain->splitByEq(lhvDomain);
-
-#define SPLIT_NEQ(lhvDomain, rhvDomain) \
-    values[lhv] = lhvDomain->splitByEq(rhvDomain).swap(); \
-    values[rhv] = rhvDomain->splitByEq(lhvDomain).swap();
-
-#define SPLIT_LESS(lhvDomain, rhvDomain) \
-    values[lhv] = lhvDomain->splitByLess(rhvDomain); \
-    values[rhv] = rhvDomain->splitByLess(lhvDomain).swap();
-
-#define SPLIT_GREATER(lhvDomain, rhvDomain) \
-    values[rhv] = rhvDomain->splitByLess(lhvDomain); \
-    values[lhv] = lhvDomain->splitByLess(rhvDomain).swap();
-
-DomainStorage::SplitMap DomainStorage::handleCmp(const CmpTerm* target) const {
-    auto&& lhv = target->getLhv();
-    auto&& rhv = target->getRhv();
-
-    auto&& lhvDomain = get(lhv);
-    auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
-
-    SplitMap values;
-
-    bool isPtr = llvm::isa<type::Pointer>(lhv->getType().get()) || llvm::isa<type::Pointer>(rhv->getType().get());
-
-    switch (target->getOpcode()) {
-        case llvm::ConditionType::EQ: SPLIT_EQ(lhvDomain, rhvDomain); break;
-        case llvm::ConditionType::NEQ: SPLIT_NEQ(lhvDomain, rhvDomain); break;
-        case llvm::ConditionType::GT:
-        case llvm::ConditionType::GE:
-            if (isPtr) break;
-            SPLIT_GREATER(lhvDomain, rhvDomain);
-            break;
-        case llvm::ConditionType::LT:
-        case llvm::ConditionType::LE:
-            if (isPtr) break;
-            SPLIT_LESS(lhvDomain, rhvDomain);
-            break;
-        case llvm::ConditionType::UGT:
-        case llvm::ConditionType::UGE:
-            if (isPtr) break;
-            SPLIT_GREATER(lhvDomain, rhvDomain);
-            break;
-        case llvm::ConditionType::ULT:
-        case llvm::ConditionType::ULE:
-            if (isPtr) break;
-            SPLIT_LESS(lhvDomain, rhvDomain);
-            break;
-        case llvm::ConditionType::TRUE:
-        case llvm::ConditionType::FALSE:
-            break;
-        default:
-            UNREACHABLE("Unknown operation in cmp term");
-    }
-
-    return std::move(values);
-}
-
-DomainStorage::SplitMap DomainStorage::handleBinary(const BinaryTerm* target) const {
-    auto&& lhv = target->getLhv();
-    auto&& rhv = target->getRhv();
-
-    auto&& lhvDomain = get(lhv);
-    auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
-
-    SplitMap values;
-    auto&& andImpl = [](Split lhv, Split rhv) -> Split {
-        return {lhv.true_->meet(rhv.true_), lhv.false_->join(rhv.false_)};
-    };
-    auto&& orImpl = [](Split lhv, Split rhv) -> Split {
-        return {lhv.true_->join(rhv.true_), lhv.false_->join(rhv.false_)};
-    };
-
-    auto lhvValues = std::move(handleTerm(lhv.get()));
-    auto rhvValues = std::move(handleTerm(rhv.get()));
-
-    for (auto&& it : lhvValues) {
-        auto value = it.first;
-        auto lhvSplit = it.second;
-        auto&& rhvit = util::at(rhvValues, value);
-        if (not rhvit) continue;
-        auto rhvSplit = rhvit.getUnsafe();
-
-        switch (target->getOpcode()) {
-            case llvm::ArithType::LAND:
-            case llvm::ArithType::BAND:
-                values[value] = andImpl(lhvSplit, rhvSplit);
-                break;
-            case llvm::ArithType::LOR:
-            case llvm::ArithType::BOR:
-                values[value] = orImpl(lhvSplit, rhvSplit);
-                break;
-            case llvm::ArithType::XOR: {
-                // XOR = (!lhv AND rhv) OR (lhv AND !rhv)
-                auto&& temp1 = andImpl({lhvSplit.false_, lhvSplit.true_}, rhvSplit);
-                auto&& temp2 = andImpl(lhvSplit, {rhvSplit.false_, rhvSplit.true_});
-                values[value] = orImpl(temp1, temp2);
-                break;
-            }
-            case llvm::ArithType::IMPLIES:
-                // IMPL = (!lhv) OR (rhv)
-                values[value] = orImpl(lhvSplit.swap(), rhvSplit);
-                break;
-            default:
-                UNREACHABLE("Unexpected binary term in splitter");
-        }
-    }
-
-    return std::move(values);
 }
 
 } // namespace ir

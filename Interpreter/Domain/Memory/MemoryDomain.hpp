@@ -14,12 +14,14 @@ namespace absint {
 template <typename MachineInt, typename Variable>
 class MemoryDomain : public AbstractDomain {
 public:
-    MemoryDomain(id_t id) : AbstractDomain(id) {}
+    explicit MemoryDomain(id_t id) : AbstractDomain(id) {}
 
     virtual Ptr get(Variable x) const = 0;
 
     virtual void assign(Variable x, Ptr i) = 0;
     virtual Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) const = 0;
+
+    virtual void addConstraint(llvm::ConditionType op, Variable x, Variable y) = 0;
 
     virtual Ptr loadFrom(Type::Ptr, Variable ptr) const = 0;
     virtual void storeTo(Variable ptr, Ptr x) = 0;

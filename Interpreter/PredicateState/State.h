@@ -66,8 +66,6 @@ public:
     bool empty() const;
     std::string toString() const;
 
-    std::pair<State::Ptr, State::Ptr> split(Term::Ptr condition) const;
-
 private:
 
     std::shared_ptr<DomainStorage> storage_;

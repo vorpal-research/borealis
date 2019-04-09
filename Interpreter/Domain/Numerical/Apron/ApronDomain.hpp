@@ -647,14 +647,14 @@ public:
     }
 
     void set(Variable x, const IntervalT& interval) {
-        if (this->isBottom()) {
-            return;
-        } else if (interval.isBottom()) {
-            this->setBottom();
-        } else {
+//        if (this->isBottom()) {
+//            return;
+//        } else if (interval.isBottom()) {
+//            this->setBottom();
+//        } else {
             this->forget(x);
             this->refine(x, interval);
-        }
+//        }
     }
 
     void forget(Variable x) {
@@ -883,6 +883,10 @@ public:
     Ptr applyTo(llvm::ConditionType op, const Number& x, const Number& y) {
         // TODO: implement more precise comparison
         return toInterval(x)->apply(op, toInterval(y));
+    }
+
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        this->add(LinearConstSystemT::makeCondition(op, caster(), x, y));
     }
 
 };

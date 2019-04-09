@@ -83,6 +83,45 @@ public:
         }
         return nullptr;
     }
+
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto&& lhv = this->get(x);
+        auto&& rhv = this->get(y);
+
+        switch (op) {
+            case llvm::ConditionType::EQ: {
+                this->assign(x, lhv->splitByEq(rhv).true_);
+                this->assign(y, rhv->splitByEq(lhv).true_);
+                break;
+            }
+            case llvm::ConditionType::NEQ: {
+                this->assign(x, lhv->splitByEq(rhv).false_);
+                this->assign(y, rhv->splitByEq(lhv).false_);
+                break;
+            }
+            case llvm::ConditionType::GT:
+            case llvm::ConditionType::GE:
+            case llvm::ConditionType::UGT:
+            case llvm::ConditionType::UGE: {
+                this->assign(x, lhv->splitByLess(rhv).false_);
+                this->assign(y, rhv->splitByLess(lhv).true_);
+                break;
+            }
+            case llvm::ConditionType::LT:
+            case llvm::ConditionType::LE:
+            case llvm::ConditionType::ULT:
+            case llvm::ConditionType::ULE: {
+                this->assign(x, lhv->splitByLess(rhv).true_);
+                this->assign(y, rhv->splitByLess(lhv).false_);
+                break;
+            }
+            case llvm::ConditionType::TRUE:break;
+            case llvm::ConditionType::FALSE:break;
+            case llvm::ConditionType::UNKNOWN:break;
+            default:
+                UNREACHABLE("Unknown operation")
+        }
+    }
 };
 
 template <typename N1, typename N2>
@@ -211,6 +250,24 @@ public:
         }
     }
 
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto bitsize = this->unwrapTypeSize(x);
+        auto* octagon = this->unwrapOctagon(bitsize);
+
+        auto&& xConst = getConstant(x);
+        auto&& yConst = getConstant(y);
+
+        if (xConst && yConst) {
+            return;
+        } else if (xConst) {
+            octagon->addConstraint(op, xConst.getUnsafe(), y);
+        } else if (yConst) {
+            octagon->addConstraint(op, x, yConst.getUnsafe());
+        } else {
+            octagon->addConstraint(op, x, y);
+        }
+    }
+
 };
 
 template <typename MachineInt>
@@ -262,6 +319,38 @@ public:
 
         }
         return nullptr;
+    }
+
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto&& lhv = this->get(x);
+        auto&& rhv = this->get(y);
+
+        switch (op) {
+            case llvm::ConditionType::EQ: {
+                this->assign(x, lhv->splitByEq(rhv).true_);
+                this->assign(y, rhv->splitByEq(lhv).true_);
+                break;
+            }
+            case llvm::ConditionType::NEQ: {
+                this->assign(x, lhv->splitByEq(rhv).false_);
+                this->assign(y, rhv->splitByEq(lhv).false_);
+                break;
+            }
+            // pointers support only equality/inequality check
+            case llvm::ConditionType::GT:
+            case llvm::ConditionType::GE:
+            case llvm::ConditionType::UGT:
+            case llvm::ConditionType::UGE:
+            case llvm::ConditionType::LT:
+            case llvm::ConditionType::LE:
+            case llvm::ConditionType::ULT:
+            case llvm::ConditionType::ULE:
+            case llvm::ConditionType::TRUE:
+            case llvm::ConditionType::FALSE:
+            case llvm::ConditionType::UNKNOWN:break;
+            default:
+                UNREACHABLE("Unknown operation")
+        }
     }
 };
 
@@ -615,192 +704,35 @@ std::pair<DomainStorage::Ptr, DomainStorage::Ptr> DomainStorage::split(Variable 
 
     auto* inst = llvm::dyn_cast<llvm::Instruction>(condition);
     if (not inst) return std::make_pair(true_, false_);
+    else if (auto* icmp = llvm::dyn_cast<llvm::ICmpInst>(inst)) {
+        auto cop = llvm::conditionType(icmp->getPredicate());
+        auto ncop = llvm::makeNot(cop);
 
-    auto&& splitted = std::move(handleInst(inst));
-    for (auto&& it : splitted) {
-        true_->assign(it.first, it.second.true_);
-        false_->assign(it.first, it.second.false_);
+        auto* lhv = icmp->getOperand(0);
+        auto* rhv = icmp->getOperand(1);
+
+        if (icmp->getOperand(0)->getType()->isPointerTy()) {
+            true_->unwrapMemory()->addConstraint(cop, lhv, rhv);
+            false_->unwrapMemory()->addConstraint(ncop, lhv, rhv);
+        } else {
+            true_->unwrapInt()->addConstraint(cop, lhv, rhv);
+            false_->unwrapInt()->addConstraint(ncop, lhv, rhv);
+        }
+
+    } else if (auto* fcmp = llvm::dyn_cast<llvm::FCmpInst>(inst)) {
+        auto cop = llvm::conditionType(fcmp->getPredicate());
+        auto ncop = llvm::makeNot(cop);
+
+        auto* lhv = icmp->getOperand(0);
+        auto* rhv = icmp->getOperand(1);
+
+        true_->unwrapFloat()->addConstraint(cop, lhv, rhv);
+        false_->unwrapFloat()->addConstraint(ncop, lhv, rhv);
+
+    } else {
+        warns() << "Binary operations in cmp are not supported" << endl;
     }
     return std::make_pair(true_, false_);
-}
-
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleInst(const llvm::Instruction* target) const {
-    if (auto* icmp = llvm::dyn_cast<llvm::ICmpInst>(target))
-        return std::move(handleIcmp(icmp));
-    else if (auto* fcmp = llvm::dyn_cast<llvm::FCmpInst>(target))
-        return std::move(handleFcmp(fcmp));
-    else if (auto* binary = llvm::dyn_cast<llvm::BinaryOperator>(target))
-        return std::move(handleBinary(binary));
-    else {
-//        warns() << "Unexpected instruction in split: " << util::toString(*target) << endl;
-        return {};
-    }
-}
-
-#define SPLIT_EQ(lhvDomain, rhvDomain) \
-    values[lhv] = lhvDomain->splitByEq(rhvDomain); \
-    values[rhv] = rhvDomain->splitByEq(lhvDomain);
-
-#define SPLIT_NEQ(lhvDomain, rhvDomain) \
-    values[lhv] = lhvDomain->splitByEq(rhvDomain).swap(); \
-    values[rhv] = rhvDomain->splitByEq(lhvDomain).swap();
-
-#define SPLIT_LESS(lhvDomain, rhvDomain) \
-    values[lhv] = lhvDomain->splitByLess(rhvDomain); \
-    values[rhv] = rhvDomain->splitByLess(lhvDomain).swap();
-
-#define SPLIT_GREATER(lhvDomain, rhvDomain) \
-    values[rhv] = rhvDomain->splitByLess(lhvDomain); \
-    values[lhv] = lhvDomain->splitByLess(rhvDomain).swap();
-
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleIcmp(const llvm::ICmpInst* target) const {
-    auto* lhv = target->getOperand(0);
-    auto* rhv = target->getOperand(1);
-
-    auto&& lhvDomain = get(lhv);
-    auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
-
-    std::unordered_map<Variable, Split> values;
-
-    auto&& predicate = target->getPredicate();
-    switch (predicate) {
-        case llvm::CmpInst::ICMP_EQ:
-        SPLIT_EQ(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::ICMP_NE:
-        SPLIT_NEQ(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::ICMP_ULT:
-        case llvm::CmpInst::ICMP_ULE:
-            if (lhv->getType()->isPointerTy() && rhv->getType()->isPointerTy())
-                break;
-            SPLIT_LESS(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::ICMP_UGT:
-        case llvm::CmpInst::ICMP_UGE:
-            if (lhv->getType()->isPointerTy() && rhv->getType()->isPointerTy())
-                break;
-            SPLIT_GREATER(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::ICMP_SLT:
-        case llvm::CmpInst::ICMP_SLE:
-            values[lhv] = lhvDomain->splitByLess(rhvDomain);
-            values[rhv] = rhvDomain->splitByLess(lhvDomain).swap();
-            break;
-
-        case llvm::CmpInst::ICMP_SGT:
-        case llvm::CmpInst::ICMP_SGE:
-            values[rhv] = rhvDomain->splitByLess(lhvDomain);
-            values[lhv] = lhvDomain->splitByLess(rhvDomain).swap();
-            break;
-
-        default:
-            UNREACHABLE("Unknown operation in icmp");
-    }
-
-    return std::move(values);
-}
-
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleFcmp(const llvm::FCmpInst* target) const {
-    auto* lhv = target->getOperand(0);
-    auto* rhv = target->getOperand(1);
-
-    auto&& lhvDomain = get(lhv);
-    auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in icmp splitter");
-
-    std::unordered_map<Variable, Split> values;
-
-    auto&& predicate = target->getPredicate();
-    switch (predicate) {
-        case llvm::CmpInst::FCMP_OEQ:
-        case llvm::CmpInst::FCMP_UEQ:
-        SPLIT_EQ(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::FCMP_ONE:
-        case llvm::CmpInst::FCMP_UNE:
-        SPLIT_NEQ(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::FCMP_OGT:
-        case llvm::CmpInst::FCMP_UGT:
-        case llvm::CmpInst::FCMP_OGE:
-        case llvm::CmpInst::FCMP_UGE:
-        SPLIT_LESS(lhvDomain, rhvDomain);
-            break;
-
-        case llvm::CmpInst::FCMP_OLT:
-        case llvm::CmpInst::FCMP_ULT:
-        case llvm::CmpInst::FCMP_OLE:
-        case llvm::CmpInst::FCMP_ULE:
-        SPLIT_GREATER(lhvDomain, rhvDomain);
-            break;
-
-        default:
-            UNREACHABLE("Unknown operation in fcmp");
-    }
-
-    return std::move(values);
-}
-
-std::unordered_map<DomainStorage::Variable, Split> DomainStorage::handleBinary(const llvm::BinaryOperator* target) const {
-    auto* lhv = target->getOperand(0);
-    auto* rhv = target->getOperand(1);
-
-    auto&& lhvDomain = get(lhv);
-    auto&& rhvDomain = get(rhv);
-    ASSERT(lhvDomain && rhvDomain, "Unknown values in binary splitter");
-
-    std::unordered_map<Variable, Split> values;
-
-    auto&& andImpl = [](Split lhv, Split rhv) -> Split {
-        return {lhv.true_->meet(rhv.true_), lhv.false_->join(rhv.false_)};
-    };
-    auto&& orImpl = [](Split lhv, Split rhv) -> Split {
-        return {lhv.true_->join(rhv.true_), lhv.false_->join(rhv.false_)};
-    };
-
-    auto* lhvInst = llvm::dyn_cast<llvm::Instruction>(lhv);
-    auto* rhvInst = llvm::dyn_cast<llvm::Instruction>(rhv);
-    if (not lhvInst || not rhvInst) return {};
-
-    auto lhvValues = std::move(handleInst(lhvInst));
-    auto rhvValues = std::move(handleInst(rhvInst));
-
-    for (auto&& it : lhvValues) {
-        auto value = it.first;
-        auto lhvSplit = it.second;
-        auto&& rhvit = util::at(rhvValues, value);
-        if (not rhvit) continue;
-        auto rhvSplit = rhvit.getUnsafe();
-
-        auto&& opcode = target->getOpcode();
-        switch (opcode) {
-            case llvm::Instruction::And:
-                values[value] = andImpl(lhvSplit, rhvSplit);
-                break;
-            case llvm::Instruction::Or:
-                values[value] = orImpl(lhvSplit, rhvSplit);
-                break;
-            case llvm::Instruction::Xor: {
-                // XOR = (!lhv AND rhv) OR (lhv AND !rhv)
-                auto temp1 = andImpl({lhvSplit.false_, lhvSplit.true_}, rhvSplit);
-                auto temp2 = andImpl(lhvSplit, {rhvSplit.false_, rhvSplit.true_});
-                values[value] = orImpl(temp1, temp2);
-                break;
-            }
-            default:
-                UNREACHABLE("Unknown binary operator");
-        }
-    }
-
-    return std::move(values);
 }
 
 } // namespace ir

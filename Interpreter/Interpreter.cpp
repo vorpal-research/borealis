@@ -51,7 +51,6 @@ void Interpreter::run() {
         }
 
     } else {
-        // TODO: add topological sorting of functions to increase effitiency
 
         auto&& total = module_.instance()->getFunctionList().size();
         int progress = 0;

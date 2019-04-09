@@ -84,12 +84,6 @@ bool operator==(const State& lhv, const State& rhv) {
     return lhv.equals(&rhv);
 }
 
-std::pair<State::Ptr, State::Ptr> State::split(Term::Ptr condition) const {
-    auto&& split = storage_->split(condition);
-    return std::make_pair(std::make_shared<State>(split.first), std::make_shared<State>(split.second));
-}
-
-
 std::ostream& operator<<(std::ostream& s, State::Ptr state) {
     s << state->toString();
     return s;

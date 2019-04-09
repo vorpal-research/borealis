@@ -256,6 +256,48 @@ public:
         return first->join(second);
     }
 
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        using LCS1 = LinearConstraintSystem<N1, Variable, VarHash, VarEquals>;
+        using LCS2 = LinearConstraintSystem<N2, Variable, VarHash, VarEquals>;
+
+        auto* oct1 = unwrapOctagon<N1>(first_);
+        auto* oct2 = unwrapOctagon<N2>(second_);
+
+        auto&& csts1 = LCS1::makeCondition(op, oct1->caster(), x, y);
+        auto&& csts2 = LCS2::makeCondition(op, oct2->caster(), x, y);
+
+        oct1->add(csts1);
+        oct2->add(csts2);
+    }
+
+    void addConstraint(llvm::ConditionType op, Variable x, const DNumber& y) {
+        using LCS1 = LinearConstraintSystem<N1, Variable, VarHash, VarEquals>;
+        using LCS2 = LinearConstraintSystem<N2, Variable, VarHash, VarEquals>;
+
+        auto* oct1 = unwrapOctagon<N1>(first_);
+        auto* oct2 = unwrapOctagon<N2>(second_);
+
+        auto&& csts1 = LCS1::makeCondition(op, oct1->caster(), x, y.first);
+        auto&& csts2 = LCS2::makeCondition(op, oct2->caster(), x, y.second);
+
+        oct1->add(csts1);
+        oct2->add(csts2);
+    }
+
+    void addConstraint(llvm::ConditionType op, const DNumber& x, Variable y) {
+        using LCS1 = LinearConstraintSystem<N1, Variable, VarHash, VarEquals>;
+        using LCS2 = LinearConstraintSystem<N2, Variable, VarHash, VarEquals>;
+
+        auto* oct1 = unwrapOctagon<N1>(first_);
+        auto* oct2 = unwrapOctagon<N2>(second_);
+
+        auto&& csts1 = LCS1::makeCondition(op, oct1->caster(), x.first, y);
+        auto&& csts2 = LCS2::makeCondition(op, oct2->caster(), x.second, y);
+
+        oct1->add(csts1);
+        oct2->add(csts2);
+    }
+
     size_t hashCode() const override {
         return class_tag(*this);
     }

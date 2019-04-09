@@ -105,13 +105,6 @@ public:
 
 private:
 
-    std::unordered_map<Variable, Split> handleInst(const llvm::Instruction* target) const;
-    std::unordered_map<Variable, Split> handleIcmp(const llvm::ICmpInst* target) const;
-    std::unordered_map<Variable, Split> handleFcmp(const llvm::FCmpInst* target) const;
-    std::unordered_map<Variable, Split> handleBinary(const llvm::BinaryOperator* target) const;
-
-private:
-
     VariableFactory* vf_;
     AbstractDomain::Ptr bools_;
     AbstractDomain::Ptr ints_;

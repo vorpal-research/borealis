@@ -243,6 +243,12 @@ public:
         return octagon->applyTo(op, x, y);
     }
 
+    virtual void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto bitsize = unwrapTypeSize(x);
+        auto* octagon = unwrapOctagon(bitsize);
+        octagon->addConstraint(op, x, y);
+    }
+
     size_t hashCode() const override {
         return class_tag(*this);
     }

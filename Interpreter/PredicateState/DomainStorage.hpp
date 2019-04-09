@@ -84,8 +84,6 @@ public:
     /// x = cast(op, y)
     void apply(CastOperator op, Variable x, Variable y);
 
-    std::pair<DomainStorage::Ptr, DomainStorage::Ptr> split(Variable condition) const;
-
     /// x = *ptr
     void load(Variable x, Variable ptr);
 
@@ -109,12 +107,6 @@ public:
 
     size_t hashCode() const;
     std::string toString() const;
-
-private:
-
-    SplitMap handleTerm(const Term* term) const;
-    SplitMap handleCmp(const CmpTerm* term) const;
-    SplitMap handleBinary(const BinaryTerm* term) const;
 
 private:
 

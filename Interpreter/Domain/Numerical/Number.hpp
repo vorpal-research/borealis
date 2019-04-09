@@ -39,8 +39,6 @@ private:
 public:
 
     explicit BitInt(llvm::APInt value) : inner_(std::move(value)) {}
-    BitInt() : inner_(defaultSize, 0) {}
-    explicit BitInt(int n) : inner_(defaultSize, n) {}
     BitInt(size_t width, unsigned long long n) : inner_(width, n) {}
     BitInt(const BitInt&) = default;
     BitInt(BitInt&&) = default;
@@ -48,16 +46,6 @@ public:
     BitInt& operator=(BitInt&&) = default;
 
     size_t width() const { return inner_.getBitWidth(); }
-
-    BitInt& operator=(int n) {
-        inner_ = llvm::APInt(defaultSize, n);
-        return *this;
-    }
-
-    BitInt& operator=(long n) {
-        inner_ = llvm::APInt(defaultSize, n);
-        return *this;
-    }
 
     explicit operator size_t() const {
         return ((size_t) *inner_.getRawData());

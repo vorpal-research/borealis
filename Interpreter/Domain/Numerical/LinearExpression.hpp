@@ -137,7 +137,7 @@ public:
     void operator*=(const Number& n) {
         if (n == 0) {
             this->vars_.clear();
-            this->constant_ = 0;
+            this->constant_ = (*caster_)(0);
         } else {
             for (auto& term : vars_) {
                 term.second *= n;
