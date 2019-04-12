@@ -14,12 +14,12 @@ namespace borealis {
 namespace absint {
 
 template <typename N1, typename N2, typename Variable, typename VarHash, typename VarEquals>
-class OctagonDomain : public NumericalDomain<const llvm::Value*> {
+class OctagonDomain : public NumericalDomain<Variable> {
 public:
 
     using Ptr = AbstractDomain::Ptr;
     using ConstPtr = AbstractDomain::ConstPtr;
-    using DOctagon = DoubleOctagon<N1, N2, const llvm::Value*, VarHash, VarEquals>;
+    using DOctagon = DoubleOctagon<N1, N2, Variable, VarHash, VarEquals>;
     using OctagonMap = std::unordered_map<size_t, Ptr>;
     using Self = OctagonDomain<N1, N2, Variable, VarHash, VarEquals>;
 
@@ -55,7 +55,7 @@ protected:
         if (opt) {
             octagon = opt.getUnsafe();
         } else {
-            octagon = std::make_shared<DOctagon>(util::Adapter<N1>::get(bitsize), util::Adapter<N2>::get(bitsize));
+            octagon = DOctagon::top(util::Adapter<N1>::get(bitsize), util::Adapter<N2>::get(bitsize));
             octagons_[bitsize] = octagon;
         }
 
@@ -68,8 +68,8 @@ public:
     struct TopTag{};
     struct BottomTag{};
 
-    explicit OctagonDomain(TopTag) : NumericalDomain<const llvm::Value*>(class_tag(*this)), isBottom_(false) {}
-    explicit OctagonDomain(BottomTag) : NumericalDomain<const llvm::Value*>(class_tag(*this)), isBottom_(true) {}
+    explicit OctagonDomain(TopTag) : NumericalDomain<Variable>(class_tag(*this)), isBottom_(false) {}
+    explicit OctagonDomain(BottomTag) : NumericalDomain<Variable>(class_tag(*this)), isBottom_(true) {}
 
     OctagonDomain() : OctagonDomain(BottomTag{}) {}
 

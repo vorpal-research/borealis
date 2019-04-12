@@ -176,9 +176,10 @@ public:
             if (constant > (*caster_)(0)) {
                 ss << "+";
             }
-            if (constant == (*caster_)(-1)) {
+            if (constant < (*caster_)(0)) {
                 ss << "-";
-            } else {
+            }
+            if (constant != (*caster_)(1) && constant != (*caster_)(-1)) {
                 ss << constant;
             }
             ss << util::toString(*var);

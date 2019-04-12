@@ -37,8 +37,6 @@ public:
     using Variable = Term::Ptr;
     using SplitMap = std::unordered_map<Variable, Split, TermHash, TermEqualsWType>;
 
-private:
-
     using SIntT = AbstractFactory::SInt;
     using UIntT = AbstractFactory::UInt;
     using MachineIntT = AbstractFactory::MachineInt;

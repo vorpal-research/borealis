@@ -22,9 +22,9 @@ public:
     using VariableSet = typename LinearExpr::VariableSet;
 
     enum Kind {
-        EQUALITY,
-        INEQUALITY,
-        COMPARSION
+        EQUALITY, // ==
+        INEQUALITY, // !=
+        COMPARISON // <=
     };
 
 private:
@@ -59,7 +59,7 @@ public:
         switch (this->kind_) {
             case EQUALITY: return this->expr_.constant() == (*expr_.caster())(0);
             case INEQUALITY: return this->expr_.constant() != (*expr_.caster())(0);
-            case COMPARSION: return this->expr_.constant() <= (*expr_.caster())(0);
+            case COMPARISON: return this->expr_.constant() <= (*expr_.caster())(0);
             default: UNREACHABLE("Unexpected kind");
         }
     }
@@ -72,14 +72,14 @@ public:
         switch (this->kind_) {
             case EQUALITY: return this->expr_.constant() != (*expr_.caster())(0);
             case INEQUALITY: return this->expr_.constant() == (*expr_.caster())(0);
-            case COMPARSION: return this->expr_.constant() > (*expr_.caster())(0);
+            case COMPARISON: return this->expr_.constant() > (*expr_.caster())(0);
             default: UNREACHABLE("Unexpected kind");
         }
     }
 
     bool isEquality() const { return this->kind_ == EQUALITY; }
     bool isInequality() const { return this->kind_ == INEQUALITY; }
-    bool isComparsion() const { return this->kind_ == COMPARSION; }
+    bool isComparison() const { return this->kind_ == COMPARISON; }
 
     const LinearExpr& expression() const { return this->expr_; }
 
@@ -106,13 +106,13 @@ public:
             ss << "true";
         } else {
             LinearExpr e = expr_ - expr_.constant();
-            Number c = expr_.constant();
+            Number c = -expr_.constant();
 
             ss << e;
             switch (kind_) {
                 case EQUALITY: ss << " = "; break;
                 case INEQUALITY: ss << " != "; break;
-                case COMPARSION: ss << " <= "; break;
+                case COMPARISON: ss << " <= "; break;
                 default: UNREACHABLE("unexpected kind");
             }
             ss << c;
@@ -139,25 +139,23 @@ borealis::logging::logstream& operator<<(borealis::logging::logstream& s, const 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator==(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, const Number& n) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(
-            std::move(e) - n,
-            LinearConstraint<Number, Variable, VarHash, VarEquals>::EQUALITY
-        );
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(e) - n, ConstT::EQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator==(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, int n) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::EQUALITY);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(e) - n, ConstT::EQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator==(
         LinearExpression<Number, Variable, VarHash, VarEquals> x,
         const LinearExpression<Number, Variable, VarHash, VarEquals>& y) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(x) - y,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::EQUALITY);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(x) - y, ConstT::EQUALITY);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,23 +163,23 @@ inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator==(
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, const Number& n) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::INEQUALITY);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(e) - n, ConstT::INEQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, int n) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::INEQUALITY);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(e) - n, ConstT::INEQUALITY);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
         LinearExpression<Number, Variable, VarHash, VarEquals> x,
         const LinearExpression<Number, Variable, VarHash, VarEquals>& y) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(x) - y,
-                          LinearConstraint<Number, Variable, VarHash, VarEquals>::INEQUALITY);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(x) - y, ConstT::INEQUALITY);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,23 +187,23 @@ inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator!=(
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator<=(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, const Number& n) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                                                                  LinearConstraint<Number, Variable, VarHash, VarEquals>::COMPARSION);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(e) - n, ConstT::COMPARISON);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator<=(
         LinearExpression<Number, Variable, VarHash, VarEquals> e, int n) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(e) - n,
-                                                                  LinearConstraint<Number, Variable, VarHash, VarEquals>::COMPARSION);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(e) - n, ConstT::COMPARISON);
 }
 
 template <typename Number, typename Variable, typename VarHash, typename VarEquals>
 inline LinearConstraint<Number, Variable, VarHash, VarEquals> operator<=(
         LinearExpression<Number, Variable, VarHash, VarEquals> x,
         const LinearExpression<Number, Variable, VarHash, VarEquals>& y) {
-    return LinearConstraint<Number, Variable, VarHash, VarEquals>(std::move(x) - y,
-                                                                  LinearConstraint<Number, Variable, VarHash, VarEquals>::COMPARSION);
+    using ConstT = LinearConstraint<Number, Variable, VarHash, VarEquals>;
+    return ConstT(std::move(x) - y, ConstT::COMPARISON);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -16,6 +16,7 @@
 #include <pkeq.h>
 #include <ap_scalar.h>
 
+#include "Config/config.h"
 #include "Interpreter/Domain/Numerical/LinearExpression.hpp"
 #include "Interpreter/Domain/Numerical/LinearConstraint.hpp"
 #include "Util/sayonara.hpp"
@@ -354,7 +355,7 @@ private:
 
         if (cst.isEquality()) {
             return ap_tcons0_make(AP_CONS_EQ, toAExpr(exp), nullptr);
-        } else if (cst.isInequality()) {
+        } else if (cst.isComparison()) {
             return ap_tcons0_make(AP_CONS_SUPEQ, toAExpr(-exp), nullptr);
         } else {
             return ap_tcons0_make(AP_CONS_DISEQ, toAExpr(exp), nullptr);
@@ -389,10 +390,9 @@ private:
             case AP_CONS_EQ:
                 return LinearConstraintT(std::move(e), LinearConstraintT::EQUALITY);
             case AP_CONS_SUPEQ:
-                return LinearConstraintT(-std::move(e), LinearConstraintT::COMPARSION);
+                return LinearConstraintT(-std::move(e), LinearConstraintT::COMPARISON);
             case AP_CONS_SUP:
-                return LinearConstraintT(-std::move(e) + 1,
-                                         LinearConstraintT::COMPARSION);
+                return LinearConstraintT(-std::move(e) + 1, LinearConstraintT::COMPARISON);
             case AP_CONS_DISEQ:
                 return LinearConstraintT(std::move(e), LinearConstraintT::INEQUALITY);
             case AP_CONS_EQMOD:
@@ -647,14 +647,8 @@ public:
     }
 
     void set(Variable x, const IntervalT& interval) {
-//        if (this->isBottom()) {
-//            return;
-//        } else if (interval.isBottom()) {
-//            this->setBottom();
-//        } else {
-            this->forget(x);
-            this->refine(x, interval);
-//        }
+        this->forget(x);
+        this->refine(x, interval);
     }
 
     void forget(Variable x) {

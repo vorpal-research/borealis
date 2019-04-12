@@ -142,7 +142,7 @@ protected:
 protected:
 
     size_t unwrapTypeSize(Variable x) const override {
-        auto* integer = llvm::dyn_cast<type::Integer>(vf_->cast(x->getType()));
+        auto* integer = llvm::dyn_cast<type::Integer>(vf_->cast(x->getType()).get());
         ASSERTC(integer);
 
         return integer->getBitsize();

@@ -7,6 +7,7 @@
 #include "Interpreter/Domain/VariableFactory.hpp"
 #include "Interpreter/Domain/Numerical/DoubleInterval.hpp"
 #include "Interpreter/Domain/Numerical/IntervalDomain.hpp"
+#include "Interpreter/Domain/Numerical/Apron/OctagonDomain.hpp"
 #include "Interpreter/Domain/Numerical/NumericalDomain.hpp"
 #include "Interpreter/Domain/Memory/AggregateDomain.hpp"
 #include "Interpreter/Domain/Memory/MemoryDomain.hpp"
@@ -187,6 +188,164 @@ public:
     }
 };
 
+template <typename N1, typename N2>
+class OctagonDomainImpl : public OctagonDomain<N1, N2, Term::Ptr, TermHash, TermEqualsWType> {
+public:
+
+    using Ptr = AbstractDomain::Ptr;
+    using ConstPtr = AbstractDomain::ConstPtr;
+    using Variable = Term::Ptr;
+    using DOctagon = DoubleOctagon<N1, N2, Term::Ptr, TermHash, TermEqualsWType>;
+    using OctagonMap = std::unordered_map<size_t, Ptr>;
+    using Self = OctagonDomainImpl<N1, N2>;
+    using ParentT = NumericalDomain<Variable>;
+
+protected:
+
+    const VariableFactory* vf_;
+    const Ptr input_;
+
+protected:
+
+    const ParentT* unwrapInput() const {
+        auto* ptr = llvm::dyn_cast<ParentT>(input_.get());
+        ASSERTC(ptr);
+        return ptr;
+    }
+
+    size_t unwrapTypeSize(Variable x) const override {
+        auto* integer = llvm::dyn_cast<type::Integer>(x->getType().get());
+        ASSERTC(integer);
+
+        return integer->getBitsize();
+    }
+
+    util::option<typename DOctagon::DNumber> unwrapDInterval(const typename DOctagon::DInterval* interval) const {
+        using DInt = typename DOctagon::DInterval;
+        using DNum = typename DOctagon::DNumber;
+        auto&& first = llvm::dyn_cast<typename DInt::Interval1>(interval->first().get());
+        auto&& second = llvm::dyn_cast<typename DInt::Interval2>(interval->second().get());
+        ASSERTC(first and second);
+
+        // sometimes interval for llvm::Constant can be non-constant (for example, for constant expressions)
+        if (first->isConstant() and second->isConstant())
+            return util::just( DNum { first->asConstant(), second->asConstant() } );
+        else
+            return util::nothing();
+    }
+
+    util::option<typename DOctagon::DNumber> getConstant(Variable x) const {
+        if (auto&& constant = impl_::getConstant(vf_, x)) {
+            auto* domainRaw = llvm::dyn_cast<typename DOctagon::DInterval>(constant.get());
+            ASSERTC(domainRaw);
+
+            return unwrapDInterval(domainRaw);
+        } else {
+            return util::nothing();
+        }
+    }
+
+public:
+
+    explicit OctagonDomainImpl(const VariableFactory* vf, const Ptr input)
+        : OctagonDomain<N1, N2, Term::Ptr, TermHash, TermEqualsWType>(), vf_(vf), input_(input) {}
+    OctagonDomainImpl(const OctagonDomainImpl&) = default;
+    OctagonDomainImpl(OctagonDomainImpl&&) = default;
+    OctagonDomainImpl& operator=(const OctagonDomainImpl& other) = default;
+    OctagonDomainImpl& operator=(OctagonDomainImpl&&) = default;
+    ~OctagonDomainImpl() override = default;
+
+    static bool classof(const Self*) {
+        return true;
+    }
+
+    static bool classof(const AbstractDomain* other) {
+        return other->getClassTag() == class_tag<Self>();
+    }
+
+    Ptr clone() const override {
+        return std::make_shared<Self>(*this);
+    }
+
+    Ptr get(Variable x) const override {
+        if (input_ != nullptr) {
+            auto inputValue = unwrapInput()->get(x);
+            if (inputValue != nullptr) return inputValue;
+
+        }
+        if (auto&& constant = impl_::getConstant(vf_, x)) {
+            return constant;
+
+        } else {
+            auto bitsize = unwrapTypeSize(x);
+            auto* octagon = this->unwrapOctagon(bitsize);
+
+            return octagon->get(x);
+        }
+    }
+
+    bool equals(ConstPtr other) const override {
+        // This is generally fucked up, but for octagons it should be this way
+        // otherwise interpreter goes to infinite loop
+        return this->leq(other);
+    }
+
+    void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
+        auto bitsize = this->unwrapTypeSize(x);
+        auto* octagon = this->unwrapOctagon(bitsize);
+
+        auto&& yConst = getConstant(y);
+        auto&& zConst = getConstant(z);
+
+        if (yConst && zConst) {
+            octagon->applyTo(op, x, yConst.getUnsafe(), zConst.getUnsafe());
+        } else if (yConst) {
+            octagon->applyTo(op, x, yConst.getUnsafe(), z);
+        } else if (zConst) {
+            octagon->applyTo(op, x, y, zConst.getUnsafe());
+        } else {
+            octagon->applyTo(op, x, y, z);
+        }
+    }
+
+    Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
+        auto bitsize = this->unwrapTypeSize(x);
+        auto* octagon = this->unwrapOctagon(bitsize);
+
+        auto&& xConst = getConstant(x);
+        auto&& yConst = getConstant(y);
+
+        if (xConst && yConst) {
+            return octagon->applyTo(op, xConst.getUnsafe(), yConst.getUnsafe());
+        } else if (xConst) {
+            return octagon->applyTo(op, xConst.getUnsafe(), y);
+        } else if (yConst) {
+            return octagon->applyTo(op, x, yConst.getUnsafe());
+        } else {
+            return octagon->applyTo(op, x, y);
+        }
+    }
+
+    void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
+        auto bitsize = this->unwrapTypeSize(x);
+        auto* octagon = this->unwrapOctagon(bitsize);
+
+        auto&& xConst = getConstant(x);
+        auto&& yConst = getConstant(y);
+
+        if (xConst && yConst) {
+            return;
+        } else if (xConst) {
+            octagon->addConstraint(op, xConst.getUnsafe(), y);
+        } else if (yConst) {
+            octagon->addConstraint(op, x, yConst.getUnsafe());
+        } else {
+            octagon->addConstraint(op, x, y);
+        }
+    }
+
+};
+
 template <typename MachineInt>
 class PointsToDomainImpl : public PointsToDomain<MachineInt, Term::Ptr, TermHash, TermEqualsWType> {
 public:
@@ -355,6 +514,23 @@ public:
 
 } // namespace impl_
 
+static config::StringConfigEntry numericalDomain("absint", "numeric");
+
+inline AbstractDomain::Ptr initNumericalDomain(const VariableFactory* vf, AbstractDomain::Ptr input) {
+    auto&& numericalDomainName = numericalDomain.get("interval");
+
+    using SIntT = typename DomainStorage::SIntT;
+    using UIntT = typename DomainStorage::UIntT;
+
+    if (numericalDomainName == "interval") {
+        return std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf, input);
+    } else if (numericalDomainName == "octagon") {
+        return std::make_shared<impl_::OctagonDomainImpl<SIntT, UIntT>>(vf, input);
+    } else {
+        UNREACHABLE("Unknown numerical domain name");
+    }
+}
+
 DomainStorage::NumericalDomainT* DomainStorage::unwrapBool() const {
     auto* bools = llvm::dyn_cast<NumericalDomainT>(bools_.get());
     ASSERTC(bools);
@@ -390,7 +566,7 @@ DomainStorage::DomainStorage(const VariableFactory* vf, DomainStorage::Ptr input
         vf_(vf),
         input_(input),
         bools_(std::make_shared<impl_::IntervalDomainImpl<Interval<UIntT>>>(vf_, (input_ ? input_->bools_ : nullptr))),
-        ints_(std::make_shared<impl_::IntervalDomainImpl<DoubleInterval<SIntT, UIntT>>>(vf_, (input_ ? input_->ints_ : nullptr))),
+        ints_(initNumericalDomain(vf_, (input_ ? input_->ints_ : nullptr))),
         floats_(std::make_shared<impl_::IntervalDomainImpl<Interval<Float>>>(vf_, (input_ ? input_->floats_ : nullptr))),
         memory_(std::make_shared<impl_::PointsToDomainImpl<MachineIntT>>(vf_, (input_ ? input_->memory_ : nullptr))),
         structs_(std::make_shared<impl_::AggregateDomainImpl<StructDomain<MachineIntT>>>(vf_, (input_ ? input_->structs_ : nullptr))) {}

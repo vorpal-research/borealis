@@ -69,10 +69,10 @@ bool BasicBlock::empty() const {
 }
 
 bool BasicBlock::atFixpoint() {
-    if (empty() && not visited_) return false;
+    if (outputState_->empty() && not visited_) return false;
     else if (not inputChanged_) return atFixpoint_;
     else {
-        atFixpoint_ = inputState_->equals(outputState_.get());
+        atFixpoint_ = outputState_->equals(inputState_.get());
         inputChanged_ = false;
         return atFixpoint_;
     }
