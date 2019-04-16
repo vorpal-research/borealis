@@ -103,6 +103,11 @@ inline ap_texpr0_t* binopExpr<Float>(ap_texpr_op_t op, ap_texpr0_t* l, ap_texpr0
     return ap_texpr0_binop(op, l, r, AP_RTYPE_REAL, AP_RDIR_NEAREST);
 }
 
+template <>
+inline ap_texpr0_t* binopExpr<mpq_class>(ap_texpr_op_t op, ap_texpr0_t* l, ap_texpr0_t* r) {
+    return ap_texpr0_binop(op, l, r, AP_RTYPE_INT, AP_RDIR_ZERO);
+}
+
 template <typename Number>
 inline ap_texpr0_t* toAExpr(const Number&) {
     UNREACHABLE("Unimplemented");
@@ -124,6 +129,11 @@ template <>
 inline ap_texpr0_t* toAExpr(const Float& n) {
     mpq_class e(n.toGMP());
     return ap_texpr0_cst_scalar_mpq(e.get_mpq_t());
+}
+
+template <>
+inline ap_texpr0_t* toAExpr(const mpq_class& n) {
+    return ap_texpr0_cst_scalar_mpq(const_cast<mpq_class&>(n).get_mpq_t());
 }
 
 template <typename Number>
@@ -221,6 +231,10 @@ public:
     using LinearConstSystemT = LinearConstraintSystem<Number, Variable, VarHash, VarEquals>;
     using LinearConstraintT = typename LinearConstSystemT::LinearConstraintT;
     using LinearExprT = typename LinearConstSystemT::LinearExpr;
+
+    using MpqConstSystemT = LinearConstraintSystem<mpq_class, Variable, VarHash, VarEquals>;
+    using MpqConstraintT = typename MpqConstSystemT::LinearConstraintT;
+    using MpqExprT = typename MpqConstSystemT::LinearExpr;
 
 private:
 
@@ -350,8 +364,31 @@ private:
         return r;
     }
 
+    ap_texpr0_t* toAExpr(const MpqExprT& le) {
+        auto* r = impl_::toAExpr(le.constant());
+
+        for (auto&& it : le) {
+            auto* term = impl_::binopExpr<mpq_class>(AP_TEXPR_MUL, impl_::toAExpr(it.second), toAExpr(it.first));
+            r = impl_::binopExpr<mpq_class>(AP_TEXPR_ADD, r, term);
+        }
+
+        return r;
+    }
+
     ap_tcons0_t toAConstraint(const LinearConstraintT& cst) {
         const LinearExprT& exp = cst.expression();
+
+        if (cst.isEquality()) {
+            return ap_tcons0_make(AP_CONS_EQ, toAExpr(exp), nullptr);
+        } else if (cst.isComparison()) {
+            return ap_tcons0_make(AP_CONS_SUPEQ, toAExpr(-exp), nullptr);
+        } else {
+            return ap_tcons0_make(AP_CONS_DISEQ, toAExpr(exp), nullptr);
+        }
+    }
+
+    ap_tcons0_t toAConstraint(const MpqConstraintT& cst) {
+        const MpqExprT& exp = cst.expression();
 
         if (cst.isEquality()) {
             return ap_tcons0_make(AP_CONS_EQ, toAExpr(exp), nullptr);
@@ -673,8 +710,16 @@ public:
         ASSERTC(this->vars_.size() == impl_::dims(this->env_.get()));
     }
 
+    std::pair<mpq_class, mpq_class> toMInterval(const IntervalT& interval) {
+        auto&& lb = (interval.lb().isFinite()) ? interval.lb().number().toGMP() : interval.caster()->minValue().toGMP();
+        auto&& ub = (interval.ub().isFinite()) ? interval.ub().number().toGMP() : interval.caster()->maxValue().toGMP();
+        return std::make_pair(lb, ub);
+    }
+
     void refine(Variable x, const IntervalT& interval) {
-        this->add(LinearConstSystemT::withinInterval(x, interval));
+        auto&& mint = toMInterval(interval);
+        auto* caster = util::Adapter<mpq_class>::get();
+        this->add(MpqConstSystemT::withinInterval(x, caster, mint));
     }
 
     void add(const LinearConstraintT& cst) {
@@ -699,6 +744,62 @@ public:
 
         this->env_ = impl_::newPtr(ap_abstract0_meet_tcons_array(manager(), false, this->env_.get(), &ap_csts));
         ap_tcons0_array_clear(&ap_csts);
+    }
+
+    void add(const MpqConstSystemT& csts) {
+        if (csts.empty()) {
+            return;
+        }
+
+        if (this->isBottom()) {
+            return;
+        }
+
+        auto ap_csts = ap_tcons0_array_make(csts.size());
+
+        size_t i = 0;
+        for (const MpqConstraintT& cst : csts) {
+            ap_csts.p[i++] = toAConstraint(cst);
+        }
+
+        this->env_ = impl_::newPtr(ap_abstract0_meet_tcons_array(manager(), false, this->env_.get(), &ap_csts));
+        ap_tcons0_array_clear(&ap_csts);
+    }
+
+    bool isSat(const LinearConstSystemT& csts) {
+        if (csts.empty()) {
+            return true;
+        }
+
+        if (this->isBottom()) {
+            return false;
+        }
+
+        bool result = true;
+        for (const LinearConstraintT& cst : csts) {
+            auto acons = toAConstraint(cst);
+            result &= ap_abstract0_sat_tcons(manager(), env_.get(), &acons);
+        }
+
+        return result;
+    }
+
+    bool isSat(const MpqConstSystemT& csts) {
+        if (csts.empty()) {
+            return true;
+        }
+
+        if (this->isBottom()) {
+            return false;
+        }
+
+        bool result = true;
+        for (const MpqConstraintT& cst : csts) {
+            auto acons = toAConstraint(cst);
+            result &= ap_abstract0_sat_tcons(manager(), env_.get(), &acons);
+        }
+
+        return result;
     }
 
     Ptr toInterval(Variable x) const override {
@@ -819,13 +920,28 @@ public:
 
         char line[256];
         while (fgets(line, sizeof(line), file)) {
-            /* note that fgets don't strip the terminating \n, checking its
-               presence would allow to handle lines longer that sizeof(line) */
             ss << line;
         }
         fclose(file);
         return ss.str();
     }
+
+    std::string dump(ap_tcons0_t* tcons) const {
+        std::stringstream ss;
+        FILE* file = fopen("temp.tcons", "w");
+        ASSERTC(file);
+        ap_tcons0_fprint(file, tcons, nullptr);
+        fclose(file);
+        file = fopen("temp.tcons", "rb");
+
+        char line[256];
+        while (fgets(line, sizeof(line), file)) {
+            ss << line;
+        }
+        fclose(file);
+        return ss.str();
+    }
+
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         if (isSupported(op)) {
@@ -859,24 +975,132 @@ public:
         }
     }
 
+    template <typename T1, typename T2>
+    bool checkCondition(llvm::ConditionType op, T1 x, T2 y) {
+        if (op == llvm::ConditionType::NEQ) {
+            bool lt = checkCondition(llvm::ConditionType::LT, x, y);
+            bool gt = checkCondition(llvm::ConditionType::GT, x, y);
+            return lt || gt;
+        } else {
+            auto* caster = util::Adapter<mpq_class>::get();
+            return isSat(MpqConstSystemT::makeCondition(op, caster, x, y));
+        }
+    }
+
     Ptr applyTo(llvm::ConditionType op, Variable x, Variable y) override {
-        // TODO: implement more precise comparison
-        return toInterval(x)->apply(op, toInterval(y));
+        auto&& makeBool = [&] (bool b) -> Ptr {
+            return AbstractFactory::get()->getBool(b);
+        };
+        auto&& makeTop = [&] () -> Ptr {
+            return AbstractFactory::get()->getBool(AbstractFactory::TOP);
+        };
+
+        if (toInterval(x)->isBottom() || toInterval(y)->isBottom()) {
+            return makeTop();
+        }
+
+        auto&& isIntervalSat = toInterval(x)->apply(op, toInterval(y));
+        if (not (isIntervalSat->isTop() || isIntervalSat->isBottom())) {
+            return isIntervalSat;
+        }
+
+        Ptr result;
+        if (checkCondition(op, x, y)) {
+            result = makeBool(true);
+        } else if (checkCondition(llvm::makeNot(op), x, y)) {
+            result = makeBool(false);
+        } else {
+            result = makeTop();
+        }
+
+        return result;
     }
 
     Ptr applyTo(llvm::ConditionType op, const Number& x, Variable y) {
-        // TODO: implement more precise comparison
-        return toInterval(x)->apply(op, toInterval(y));
+        auto&& makeBool = [&] (bool b) -> Ptr {
+            return AbstractFactory::get()->getBool(b);
+        };
+        auto&& makeTop = [&] () -> Ptr {
+            return AbstractFactory::get()->getBool(AbstractFactory::TOP);
+        };
+
+        if (toInterval(x)->isBottom() || toInterval(y)->isBottom()) {
+            return makeTop();
+        }
+
+        auto&& isIntervalSat = toInterval(x)->apply(op, toInterval(y));
+        if (not (isIntervalSat->isTop() || isIntervalSat->isBottom())) {
+            return isIntervalSat;
+        }
+
+        Ptr result;
+        if (checkCondition(op, x.toGMP(), y)) {
+            result = makeBool(true);
+        } else if (checkCondition(llvm::makeNot(op), x.toGMP(), y)) {
+            result = makeBool(false);
+        } else {
+            result = makeTop();
+        }
+
+        return result;
     }
 
     Ptr applyTo(llvm::ConditionType op, Variable x, const Number& y) {
-        // TODO: implement more precise comparison
-        return toInterval(x)->apply(op, toInterval(y));
+        auto&& makeBool = [&] (bool b) -> Ptr {
+            return AbstractFactory::get()->getBool(b);
+        };
+        auto&& makeTop = [&] () -> Ptr {
+            return AbstractFactory::get()->getBool(AbstractFactory::TOP);
+        };
+
+        if (toInterval(x)->isBottom() || toInterval(y)->isBottom()) {
+            return makeTop();
+        }
+
+        auto&& isIntervalSat = toInterval(x)->apply(op, toInterval(y));
+        if (not (isIntervalSat->isTop() || isIntervalSat->isBottom())) {
+            return isIntervalSat;
+        }
+
+        Ptr result;
+        if (checkCondition(op, x, y.toGMP())) {
+            result = makeBool(true);
+        } else if (checkCondition(llvm::makeNot(op), x, y.toGMP())) {
+            result = makeBool(false);
+        } else {
+            result = makeTop();
+        }
+
+        return result;
     }
 
     Ptr applyTo(llvm::ConditionType op, const Number& x, const Number& y) {
-        // TODO: implement more precise comparison
-        return toInterval(x)->apply(op, toInterval(y));
+        auto&& makeBool = [&] (bool b) -> Ptr {
+            return AbstractFactory::get()->getBool(b);
+        };
+        auto&& makeTop = [&] () -> Ptr {
+            return AbstractFactory::get()->getBool(AbstractFactory::TOP);
+        };
+
+        if (toInterval(x)->isBottom() || toInterval(y)->isBottom()) {
+            return makeTop();
+        }
+
+        auto&& isIntervalSat = toInterval(x)->apply(op, toInterval(y));
+        if (not (isIntervalSat->isTop() || isIntervalSat->isBottom())) {
+            return isIntervalSat;
+        }
+
+        Ptr result;
+        if (checkCondition(op, x.toGMP(), y.toGMP())) {
+            result = makeBool(true);
+        } else if (checkCondition(llvm::makeNot(op), x.toGMP(), y.toGMP())) {
+            result = makeBool(false);
+        } else {
+            result = makeTop();
+        }
+
+        return result;
     }
 
     void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {

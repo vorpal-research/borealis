@@ -100,23 +100,14 @@ public:
 
     std::string toString() const {
         std::stringstream ss;
-        if (this->isContradiction()) {
-            ss << "false";
-        } else if (this->isTautology()) {
-            ss << "true";
-        } else {
-            LinearExpr e = expr_ - expr_.constant();
-            Number c = -expr_.constant();
-
-            ss << e;
-            switch (kind_) {
-                case EQUALITY: ss << " = "; break;
-                case INEQUALITY: ss << " != "; break;
-                case COMPARISON: ss << " <= "; break;
-                default: UNREACHABLE("unexpected kind");
-            }
-            ss << c;
+        ss << expr_;
+        switch (kind_) {
+            case EQUALITY: ss << " == "; break;
+            case INEQUALITY: ss << " != "; break;
+            case COMPARISON: ss << " <= "; break;
+            default: UNREACHABLE("unexpected kind");
         }
+        ss << (*expr_.caster())(0);
         return ss.str();
     }
 };
@@ -312,6 +303,23 @@ public:
         return system;
     }
 
+    static LinearConstraintSystem withinInterval(Variable v, const CasterT* caster, const std::pair<Number, Number>& i) {
+        LinearConstraintSystem system;
+        LinearExpr expr(caster, v);
+
+        auto& lb = i.first;
+        auto& ub = i.second;
+        if (lb > ub) {
+            return LinearConstraintSystem(LinearConstraintT::contradiction(caster));
+        } else if (lb == ub) {
+            system.add(expr == LinearExpr(caster, lb));
+        } else {
+            system.add(-expr <= LinearExpr(caster, -lb));
+            system.add(expr <= LinearExpr(caster, ub));
+        }
+        return system;
+    }
+
     static LinearConstraintSystem makeCondition(llvm::ConditionType op, const CasterT* caster, Variable x, Variable y) {
         return makeConditionSystem(op, LinearExpr(caster, x), LinearExpr(caster, y));
     }
@@ -321,6 +329,10 @@ public:
     }
 
     static LinearConstraintSystem makeCondition(llvm::ConditionType op, const CasterT* caster, Variable x, const Number& y) {
+        return makeConditionSystem(op, LinearExpr(caster, x), LinearExpr(caster, y));
+    }
+
+    static LinearConstraintSystem makeCondition(llvm::ConditionType op, const CasterT* caster, const Number& x, const Number& y) {
         return makeConditionSystem(op, LinearExpr(caster, x), LinearExpr(caster, y));
     }
 

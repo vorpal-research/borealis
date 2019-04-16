@@ -513,6 +513,27 @@ struct Adapter<size_t> {
     }
 };
 
+
+template <>
+struct Adapter<mpq_class> {
+    static Adapter<mpq_class>* get() {
+        static auto* instance = new Adapter<mpq_class>();
+        return instance;
+    }
+
+    mpq_class operator()(int n) const {
+        return mpz_class(n);
+    }
+
+    mpq_class operator()(long n) const {
+        return mpz_class(n);
+    }
+
+    mpq_class operator()(double n) const {
+        return mpz_class(n);
+    }
+};
+
 } // namespace util
 } // namespace borealis
 

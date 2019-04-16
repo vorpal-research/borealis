@@ -13,6 +13,7 @@
 #include "Interpreter/Domain/util/Util.hpp"
 
 #include "Util/hash.hpp"
+#include "Util/streams.hpp"
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
 
@@ -738,6 +739,26 @@ inline std::ostream& operator<<(std::ostream& out, const Float& num) {
 }
 
 } // namespace absint
+
+// need for util::toString() to work
+namespace util {
+
+template <bool sign>
+struct Stringifier<absint::BitInt<sign>> {
+    static std::string toString(const absint::BitInt<sign>& t) {
+        return t.toString();
+    }
+};
+
+template <>
+struct Stringifier<absint::Float> {
+    static std::string toString(const absint::Float& t) {
+        return t.toString();
+    }
+};
+
+} // namespace util
+
 } // namespace borealis
 
 
