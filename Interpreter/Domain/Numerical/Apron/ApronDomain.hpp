@@ -228,13 +228,12 @@ public:
 
     using IntervalT = Interval<Number>;
     using CasterT = typename IntervalT::CasterT;
-    using LinearConstSystemT = LinearConstraintSystem<Number, Variable, VarHash, VarEquals>;
-    using LinearConstraintT = typename LinearConstSystemT::LinearConstraintT;
-    using LinearExprT = typename LinearConstSystemT::LinearExpr;
 
-    using MpqConstSystemT = LinearConstraintSystem<mpq_class, Variable, VarHash, VarEquals>;
-    using MpqConstraintT = typename MpqConstSystemT::LinearConstraintT;
-    using MpqExprT = typename MpqConstSystemT::LinearExpr;
+    using ApronNumberT = mpq_class;
+    using ApronCasterT = util::Adapter<mpq_class>;
+    using LinearConstSystemT = LinearConstraintSystem<ApronNumberT, Variable, VarHash, VarEquals>;
+    using LinearConstraintT = typename LinearConstSystemT::LinearConstraintT;
+    using LinearExprT = typename LinearConstraintT::LinearExpr;
 
 private:
 
@@ -243,6 +242,7 @@ private:
 private:
 
     const CasterT* caster_;
+    const ApronCasterT* apronCaster_;
     VariableMap vars_;
     impl_::ApronPtr env_;
 
@@ -357,19 +357,8 @@ private:
         auto* r = impl_::toAExpr(le.constant());
 
         for (auto&& it : le) {
-            auto* term = impl_::binopExpr<Number>(AP_TEXPR_MUL, impl_::toAExpr(it.second), toAExpr(it.first));
-            r = impl_::binopExpr<Number>(AP_TEXPR_ADD, r, term);
-        }
-
-        return r;
-    }
-
-    ap_texpr0_t* toAExpr(const MpqExprT& le) {
-        auto* r = impl_::toAExpr(le.constant());
-
-        for (auto&& it : le) {
-            auto* term = impl_::binopExpr<mpq_class>(AP_TEXPR_MUL, impl_::toAExpr(it.second), toAExpr(it.first));
-            r = impl_::binopExpr<mpq_class>(AP_TEXPR_ADD, r, term);
+            auto* term = impl_::binopExpr<ApronNumberT>(AP_TEXPR_MUL, impl_::toAExpr(it.second), toAExpr(it.first));
+            r = impl_::binopExpr<ApronNumberT>(AP_TEXPR_ADD, r, term);
         }
 
         return r;
@@ -387,23 +376,11 @@ private:
         }
     }
 
-    ap_tcons0_t toAConstraint(const MpqConstraintT& cst) {
-        const MpqExprT& exp = cst.expression();
-
-        if (cst.isEquality()) {
-            return ap_tcons0_make(AP_CONS_EQ, toAExpr(exp), nullptr);
-        } else if (cst.isComparison()) {
-            return ap_tcons0_make(AP_CONS_SUPEQ, toAExpr(-exp), nullptr);
-        } else {
-            return ap_tcons0_make(AP_CONS_DISEQ, toAExpr(exp), nullptr);
-        }
-    }
-
     LinearExprT toLinearExpr(ap_linexpr0_t* expr) const {
         ASSERTC(ap_linexpr0_is_linear(expr));
 
         ap_coeff_t* coeff = ap_linexpr0_cstref(expr);
-        LinearExprT e(caster_, impl_::toBNumber<Number>(coeff, caster_));
+        LinearExprT e(apronCaster_, impl_::toBNumber<ApronNumberT>(coeff, apronCaster_));
 
         for (auto it = vars_.begin(), et = vars_.end(); it != et; ++it) {
             coeff = ap_linexpr0_coeffref(expr, it->second);
@@ -412,7 +389,7 @@ private:
                 continue;
             }
 
-            e.add(impl_::toBNumber<Number>(coeff, caster_), it->first);
+            e.add(impl_::toBNumber<ApronNumberT>(coeff, apronCaster_), it->first);
         }
 
         return e;
@@ -479,6 +456,12 @@ private:
         ap_texpr0_free(t);
     }
 
+    std::pair<ApronNumberT, ApronNumberT> unwrapAInterval(const IntervalT& interval) {
+        auto&& lb = (interval.lb().isFinite()) ? interval.lb().number().toGMP() : interval.caster()->minValue().toGMP();
+        auto&& ub = (interval.ub().isFinite()) ? interval.ub().number().toGMP() : interval.caster()->maxValue().toGMP();
+        return std::make_pair(lb, ub);
+    }
+
 private:
     struct TopTag {};
     struct BottomTag {};
@@ -505,16 +488,18 @@ public:
     ApronDomain(const CasterT* caster, TopTag)
             : NumericalDomain<Variable>(class_tag(*this)),
                     caster_(caster),
+                    apronCaster_(ApronCasterT::get()),
                     env_(impl_::newPtr(ap_abstract0_top(manager(), 0, 0))) {}
 
     ApronDomain(const CasterT* caster, BottomTag)
             : NumericalDomain<Variable>(class_tag(*this)),
                     caster_(caster),
+                    apronCaster_(ApronCasterT::get()),
                     env_(impl_::newPtr(ap_abstract0_bottom(manager(), 0, 0))) {}
 
     explicit ApronDomain(const CasterT* caster) : ApronDomain(caster, TopTag{}) {}
     ApronDomain(const CasterT* caster, VariableMap vars, impl_::ApronPtr env)
-            : NumericalDomain<Variable>(class_tag(*this)), caster_(caster), vars_(std::move(vars)), env_(env) {}
+            : NumericalDomain<Variable>(class_tag(*this)), caster_(caster), apronCaster_(ApronCasterT::get()), vars_(std::move(vars)), env_(env) {}
 
     ApronDomain(const ApronDomain&) = default;
     ApronDomain(ApronDomain&&) = default;
@@ -522,6 +507,7 @@ public:
     ApronDomain& operator=(const ApronDomain& other) {
         if (this != &other) {
             this->caster_ = other.caster_;
+            this->apronCaster_ = other.apronCaster_;
             this->vars_ = other.vars_;
             this->env_ = other.env_;
         }
@@ -535,6 +521,10 @@ public:
 
     const CasterT* caster() const {
         return caster_;
+    }
+
+    const ApronCasterT* apronCaster() const {
+        return apronCaster_;
     }
 
     Ptr clone() const override {
@@ -710,16 +700,9 @@ public:
         ASSERTC(this->vars_.size() == impl_::dims(this->env_.get()));
     }
 
-    std::pair<mpq_class, mpq_class> toMInterval(const IntervalT& interval) {
-        auto&& lb = (interval.lb().isFinite()) ? interval.lb().number().toGMP() : interval.caster()->minValue().toGMP();
-        auto&& ub = (interval.ub().isFinite()) ? interval.ub().number().toGMP() : interval.caster()->maxValue().toGMP();
-        return std::make_pair(lb, ub);
-    }
-
     void refine(Variable x, const IntervalT& interval) {
-        auto&& mint = toMInterval(interval);
-        auto* caster = util::Adapter<mpq_class>::get();
-        this->add(MpqConstSystemT::withinInterval(x, caster, mint));
+        auto&& mint = unwrapAInterval(interval);
+        this->add(LinearConstSystemT::withinInterval(x, apronCaster_, mint));
     }
 
     void add(const LinearConstraintT& cst) {
@@ -746,26 +729,6 @@ public:
         ap_tcons0_array_clear(&ap_csts);
     }
 
-    void add(const MpqConstSystemT& csts) {
-        if (csts.empty()) {
-            return;
-        }
-
-        if (this->isBottom()) {
-            return;
-        }
-
-        auto ap_csts = ap_tcons0_array_make(csts.size());
-
-        size_t i = 0;
-        for (const MpqConstraintT& cst : csts) {
-            ap_csts.p[i++] = toAConstraint(cst);
-        }
-
-        this->env_ = impl_::newPtr(ap_abstract0_meet_tcons_array(manager(), false, this->env_.get(), &ap_csts));
-        ap_tcons0_array_clear(&ap_csts);
-    }
-
     bool isSat(const LinearConstSystemT& csts) {
         if (csts.empty()) {
             return true;
@@ -777,24 +740,6 @@ public:
 
         bool result = true;
         for (const LinearConstraintT& cst : csts) {
-            auto acons = toAConstraint(cst);
-            result &= ap_abstract0_sat_tcons(manager(), env_.get(), &acons);
-        }
-
-        return result;
-    }
-
-    bool isSat(const MpqConstSystemT& csts) {
-        if (csts.empty()) {
-            return true;
-        }
-
-        if (this->isBottom()) {
-            return false;
-        }
-
-        bool result = true;
-        for (const MpqConstraintT& cst : csts) {
             auto acons = toAConstraint(cst);
             result &= ap_abstract0_sat_tcons(manager(), env_.get(), &acons);
         }
@@ -820,9 +765,9 @@ public:
     }
 
     void assign(Variable x, Variable y) override {
-        LinearExprT xe(caster_, x);
+        LinearExprT xe(apronCaster_, x);
         xe -= y;
-        add(xe == (*caster_)(0));
+        add(xe == (*apronCaster_)(0));
     }
 
     void assign(Variable x, Ptr i) override {
@@ -942,6 +887,21 @@ public:
         return ss.str();
     }
 
+    std::string dump(ap_tcons0_array_t* tcons) const {
+        std::stringstream ss;
+        FILE* file = fopen("temp.tcons_array", "w");
+        ASSERTC(file);
+        ap_tcons0_array_fprint(file, tcons, nullptr);
+        fclose(file);
+        file = fopen("temp.tcons", "rb");
+
+        char line[256];
+        while (fgets(line, sizeof(line), file)) {
+            ss << line;
+        }
+        fclose(file);
+        return ss.str();
+    }
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, Variable z) override {
         if (isSupported(op)) {
@@ -979,11 +939,9 @@ public:
     bool checkCondition(llvm::ConditionType op, T1 x, T2 y) {
         if (op == llvm::ConditionType::NEQ) {
             bool lt = checkCondition(llvm::ConditionType::LT, x, y);
-            bool gt = checkCondition(llvm::ConditionType::GT, x, y);
-            return lt || gt;
+            return lt ? true : checkCondition(llvm::ConditionType::GT, x, y);
         } else {
-            auto* caster = util::Adapter<mpq_class>::get();
-            return isSat(MpqConstSystemT::makeCondition(op, caster, x, y));
+            return isSat(LinearConstSystemT::makeCondition(op, apronCaster_, x, y));
         }
     }
 
@@ -1104,7 +1062,7 @@ public:
     }
 
     void addConstraint(llvm::ConditionType op, Variable x, Variable y) override {
-        this->add(LinearConstSystemT::makeCondition(op, caster(), x, y));
+        this->add(LinearConstSystemT::makeCondition(op, apronCaster_, x, y));
     }
 
 };

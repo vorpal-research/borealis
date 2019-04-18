@@ -4,6 +4,7 @@
 
 #include <llvm/IR/DerivedTypes.h>
 #include <Type/TypeUtils.h>
+#include <Config/config.h>
 
 #include "AbstractFactory.hpp"
 #include "GlobalManager.hpp"
@@ -15,6 +16,7 @@
 namespace borealis {
 namespace absint {
 
+static config::BoolConfigEntry initGlobals("absint", "init-globals");
 
 VariableFactory::VariableFactory(const llvm::DataLayout* dl, GlobalManager* gm) :
         af_(AbstractFactory::get()), dl_(dl), gm_(gm) {}
@@ -127,7 +129,7 @@ AbstractDomain::Ptr VariableFactory::get(const llvm::Constant* constant) const {
 
 AbstractDomain::Ptr VariableFactory::get(const llvm::GlobalVariable* global) const {
     AbstractDomain::Ptr globalDomain;
-    if (global->hasInitializer() && global->isConstant()) {
+    if (initGlobals.get(false) and global->hasInitializer() and global->isConstant()) {
         AbstractDomain::Ptr content;
         auto& elementType = *global->getType()->getPointerElementType();
         // If global is simple type, that we should wrap it like array of size 1
