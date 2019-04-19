@@ -433,19 +433,19 @@ private:
 
         switch (op) {
             case llvm::ArithType::ADD: {
-                t = impl_::binopExpr<Number>(AP_TEXPR_ADD, lhv, rhv);
+                t = impl_::binopExpr<ApronNumberT>(AP_TEXPR_ADD, lhv, rhv);
             } break;
             case llvm::ArithType::SUB: {
-                t = impl_::binopExpr<Number>(AP_TEXPR_SUB, lhv, rhv);
+                t = impl_::binopExpr<ApronNumberT>(AP_TEXPR_SUB, lhv, rhv);
             } break;
             case llvm::ArithType::MUL: {
-                t = impl_::binopExpr<Number>(AP_TEXPR_MUL, lhv, rhv);
+                t = impl_::binopExpr<ApronNumberT>(AP_TEXPR_MUL, lhv, rhv);
             } break;
             case llvm::ArithType::DIV: {
-                t = impl_::binopExpr<Number>(AP_TEXPR_DIV, lhv, rhv);
+                t = impl_::binopExpr<ApronNumberT>(AP_TEXPR_DIV, lhv, rhv);
             } break;
             case llvm::ArithType::REM: {
-                t = impl_::binopExpr<Number>(AP_TEXPR_MOD, lhv, rhv);
+                t = impl_::binopExpr<ApronNumberT>(AP_TEXPR_MOD, lhv, rhv);
             } break;
             default:
                 UNREACHABLE("unsupported operator");
@@ -913,7 +913,7 @@ public:
 
     void applyTo(llvm::ArithType op, Variable x, const Number& y, Variable z) {
         if (isSupported(op)) {
-            applyToAExpr(op, x, impl_::toAExpr(y), toAExpr(z));
+            applyToAExpr(op, x, impl_::toAExpr<ApronNumberT>(y.toGMP()), toAExpr(z));
         } else {
             set(x, toInterval(y)->apply(op, toInterval(z)));
         }
@@ -921,7 +921,7 @@ public:
 
     void applyTo(llvm::ArithType op, Variable x, Variable y, const Number& z) {
         if (isSupported(op)) {
-            applyToAExpr(op, x, toAExpr(y), impl_::toAExpr(z));
+            applyToAExpr(op, x, toAExpr(y), impl_::toAExpr<ApronNumberT>(z.toGMP()));
         } else {
             set(x, toInterval(y)->apply(op, toInterval(z)));
         }
@@ -929,7 +929,7 @@ public:
 
     void applyTo(llvm::ArithType op, Variable x, const Number& y, const Number& z) {
         if (isSupported(op)) {
-            applyToAExpr(op, x, impl_::toAExpr(y), impl_::toAExpr(z));
+            applyToAExpr(op, x, impl_::toAExpr<ApronNumberT>(y.toGMP()), impl_::toAExpr<ApronNumberT>(z.toGMP()));
         } else {
             set(x, toInterval(y)->apply(op, toInterval(z)));
         }
