@@ -63,6 +63,9 @@ public:
 
     void merge(State::Ptr other);
 
+    void addConstraint(Term::Ptr condition);
+    void addNotConstraint(Term::Ptr condition);
+
     bool empty() const;
     std::string toString() const;
 

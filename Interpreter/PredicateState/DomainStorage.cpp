@@ -752,6 +752,53 @@ void DomainStorage::allocate(DomainStorage::Variable x, DomainStorage::Variable 
     }
 }
 
+void DomainStorage::assumeTrue(Variable condition) {
+    if (auto* cmp = llvm::dyn_cast<CmpTerm>(condition.get())) {
+        auto cop = cmp->getOpcode();
+
+        auto lhv = cmp->getLhv();
+        auto rhv = cmp->getRhv();
+
+        if (llvm::isa<type::Integer>(lhv->getType().get())) {
+            unwrapInt()->addConstraint(cop, lhv, rhv);
+        } else if (llvm::isa<type::Float>(lhv->getType().get())) {
+            unwrapFloat()->addConstraint(cop, lhv, rhv);
+        } else if (llvm::isa<type::Pointer>(lhv->getType().get())) {
+            unwrapMemory()->addConstraint(cop, lhv, rhv);
+        } else {
+            UNREACHABLE("Unexpected type in constraints");
+        }
+    } else if (llvm::isa<BinaryTerm>(condition.get())) {
+        warns() << "binary operations are not supported in condition splitting: " << condition << endl;
+    } else {
+        warns() << "Unexpected term in assume: " << condition << endl;
+    }
+}
+
+void DomainStorage::assumeFalse(Variable condition) {
+    if (auto* cmp = llvm::dyn_cast<CmpTerm>(condition.get())) {
+        auto cop = cmp->getOpcode();
+        auto ncop = llvm::makeNot(cop);
+
+        auto lhv = cmp->getLhv();
+        auto rhv = cmp->getRhv();
+
+        if (llvm::isa<type::Integer>(lhv->getType().get())) {
+            unwrapInt()->addConstraint(ncop, lhv, rhv);
+        } else if (llvm::isa<type::Float>(lhv->getType().get())) {
+            unwrapFloat()->addConstraint(ncop, lhv, rhv);
+        } else if (llvm::isa<type::Pointer>(lhv->getType().get())) {
+            unwrapMemory()->addConstraint(ncop, lhv, rhv);
+        } else {
+            UNREACHABLE("Unexpected type in constraints");
+        }
+    } else if (llvm::isa<BinaryTerm>(condition.get())) {
+        warns() << "binary operations are not supported in condition splitting: " << condition << endl;
+    } else {
+        warns() << "Unexpected term in assume: " << condition << endl;
+    }
+}
+
 size_t DomainStorage::hashCode() const {
     return util::hash::defaultHasher()(bools_, ints_, floats_, memory_);
 }

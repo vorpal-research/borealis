@@ -72,6 +72,14 @@ void State::merge(State::Ptr other) {
     this->storage_->joinWith(other->storage_);
 }
 
+void State::addConstraint(Term::Ptr condition) {
+    this->storage_->assumeTrue(condition);
+}
+
+void State::addNotConstraint(Term::Ptr condition) {
+    this->storage_->assumeFalse(condition);
+}
+
 bool State::empty() const {
     return storage_->empty();
 }

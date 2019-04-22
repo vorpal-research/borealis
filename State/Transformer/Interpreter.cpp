@@ -2,13 +2,13 @@
 // Created by abdullin on 10/20/17.
 //
 
+#include <Term/TermUtils.hpp>
 #include "Interpreter.h"
 #include "Interpreter/Domain/AbstractFactory.hpp"
 #include "Interpreter/Domain/Memory/PointerDomain.hpp"
 #include "Interpreter/Domain/Numerical/DoubleInterval.hpp"
 #include "Interpreter/Domain/Numerical/Interval.hpp"
 #include "Interpreter/Domain/VariableFactory.hpp"
-#include "Interpreter/PredicateState/ConditionSplitter.hpp"
 #include "Interpreter/PredicateState/State.h"
 
 #include "Util/macros.h"
@@ -142,31 +142,21 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
         auto&& actDomain = getDomain(actualLhv);
         if (actDomain->isTop() or actDomain->isBottom()) {
             if (pred->getRhv()->equals(trueTerm.get())) {
-                for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
-                    output_->assign(it.first, it.second.true_);
-                }
+                output_->addConstraint(actualLhv);
             } else if (pred->getRhv()->equals(falseTerm.get())) {
-                for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
-                    output_->assign(it.first, it.second.false_);
-                }
+                output_->addNotConstraint(actualLhv);
             } else {
                 auto&& cmp = FN.Term->getCmpTerm(llvm::ConditionType::EQ, pred->getLhv(), pred->getRhv());
-                for (auto&& it : ConditionSplitter(cmp, LAM(a, getDomain(a))).apply()) {
-                    output_->assign(it.first, it.second.true_);
-                }
+                output_->addConstraint(cmp);
             }
         }
     } else if (pred->getType() == PredicateType::ASSUME || pred->getType() == PredicateType::REQUIRES) {
         if (actualLhv->equals(trueTerm.get()) || actualLhv->equals(falseTerm.get())) {
             // do nothing if we have smth like (true = true)
         } else if (pred->getRhv()->equals(trueTerm.get())) {
-            for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
-                output_->assign(it.first, it.second.true_);
-            }
+            output_->addConstraint(actualLhv);
         } else if (pred->getRhv()->equals(falseTerm.get())) {
-            for (auto&& it : ConditionSplitter(actualLhv, LAM(a, getDomain(a))).apply()) {
-                output_->assign(it.first, it.second.false_);
-            }
+            output_->addNotConstraint(actualLhv);
         } else {
             warns() << "Unknown assume predicate: " << pred->toString() << endl;
         }

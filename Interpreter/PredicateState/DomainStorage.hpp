@@ -103,6 +103,11 @@ public:
     /// x = allocate<decltype(x)>(size);
     void allocate(Variable x, Variable size);
 
+    /// add constraint 'condition == true'
+    void assumeTrue(Variable condition);
+    /// add constraint 'condition == false'
+    void assumeFalse(Variable condition);
+
     size_t hashCode() const;
     std::string toString() const;
 
