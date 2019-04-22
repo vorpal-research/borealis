@@ -303,19 +303,32 @@ public:
         return system;
     }
 
-    static LinearConstraintSystem withinInterval(Variable v, const CasterT* caster, const std::pair<Number, Number>& i) {
+    static LinearConstraintSystem withinInterval(Variable v, const CasterT* caster,
+            const std::pair<util::option<Number>, util::option<Number>>& i) {
         LinearConstraintSystem system;
         LinearExpr expr(caster, v);
 
         auto& lb = i.first;
         auto& ub = i.second;
-        if (lb > ub) {
-            return LinearConstraintSystem(LinearConstraintT::contradiction(caster));
-        } else if (lb == ub) {
-            system.add(expr == LinearExpr(caster, lb));
+
+        if (lb && ub) {
+            auto&& lbn = lb.getUnsafe();
+            auto&& ubn = ub.getUnsafe();
+            if (lbn > ubn) {
+                return LinearConstraintSystem(LinearConstraintT::contradiction(caster));
+            } else if (lbn == ubn) {
+                system.add(expr == LinearExpr(caster, lbn));
+            } else {
+                system.add(-expr <= LinearExpr(caster, -lbn));
+                system.add(expr <= LinearExpr(caster, ubn));
+            }
         } else {
-            system.add(-expr <= LinearExpr(caster, -lb));
-            system.add(expr <= LinearExpr(caster, ub));
+            if (lb) {
+                system.add(-expr <= LinearExpr(caster, -lb.getUnsafe()));
+            }
+            if (ub) {
+                system.add(expr <= LinearExpr(caster, ub.getUnsafe()));
+            }
         }
         return system;
     }

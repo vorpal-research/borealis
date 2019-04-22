@@ -456,9 +456,9 @@ private:
         ap_texpr0_free(t);
     }
 
-    std::pair<ApronNumberT, ApronNumberT> unwrapAInterval(const IntervalT& interval) {
-        auto&& lb = (interval.lb().isFinite()) ? interval.lb().number().toGMP() : interval.caster()->minValue().toGMP();
-        auto&& ub = (interval.ub().isFinite()) ? interval.ub().number().toGMP() : interval.caster()->maxValue().toGMP();
+    std::pair<util::option<ApronNumberT>, util::option<ApronNumberT>> unwrapAInterval(const IntervalT& interval) {
+        auto&& lb = (interval.lb().isFinite()) ? util::just(ApronNumberT(interval.lb().number().toGMP())) : util::nothing();
+        auto&& ub = (interval.ub().isFinite()) ? util::just(ApronNumberT(interval.ub().number().toGMP())) : util::nothing();
         return std::make_pair(lb, ub);
     }
 
