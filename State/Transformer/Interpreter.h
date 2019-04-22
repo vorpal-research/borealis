@@ -5,7 +5,8 @@
 #ifndef BOREALIS_INTERPRETER_H
 #define BOREALIS_INTERPRETER_H
 
-#include "Interpreter/PredicateState/State.h"
+#include "Interpreter/Domain/AbstractDomain.hpp"
+#include "Interpreter/PredicateState/DomainStorage.hpp"
 #include "Transformer.hpp"
 
 namespace borealis {
@@ -15,6 +16,7 @@ namespace ps {
 class Interpreter : public Transformer<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
     using Base = Transformer<Interpreter>;
+    using State = DomainStorage;
     using Globals = std::unordered_map<std::string, AbstractDomain::Ptr>;
     using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
     using TermMapPtr = std::shared_ptr<TermMap>;

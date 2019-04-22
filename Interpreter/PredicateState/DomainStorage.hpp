@@ -8,7 +8,6 @@
 #include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/Domain/AbstractFactory.hpp"
 #include "Interpreter/Domain/Numerical/Number.hpp"
-#include "State.h"
 #include "Term/Term.h"
 #include "Term/BinaryTerm.h"
 #include "Term/CmpTerm.h"
@@ -28,6 +27,20 @@ template <typename Variable>
 class Aggregate;
 
 namespace ps {
+
+struct TermEqualsWType {
+    bool operator()(Term::Ptr lhv, Term::Ptr rhv) const noexcept {
+        // This is generally fucked up
+        if (lhv->equals(rhv.get())) {
+            if (lhv->getType() == rhv->getType()) return true;
+            auto&& t1 = llvm::dyn_cast<type::Integer>(lhv->getType().get());
+            auto&& t2 = llvm::dyn_cast<type::Integer>(rhv->getType().get());
+            if (t1 && t2) return t1->getBitsize() == t2->getBitsize();
+            else return false;
+        }
+        return false;
+    }
+};
 
 class DomainStorage
         : public logging::ObjectLevelLogging<DomainStorage>, public std::enable_shared_from_this<DomainStorage> {
@@ -55,7 +68,7 @@ protected:
 
 public:
 
-    DomainStorage(const VariableFactory* vf, DomainStorage::Ptr input = nullptr);
+    explicit DomainStorage(const VariableFactory* vf, DomainStorage::Ptr input = nullptr);
     DomainStorage(const DomainStorage&) = default;
     DomainStorage(DomainStorage&&) = default;
 //    DomainStorage& operator=(const DomainStorage&) = default;

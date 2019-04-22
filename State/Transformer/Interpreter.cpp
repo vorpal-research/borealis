@@ -9,7 +9,6 @@
 #include "Interpreter/Domain/Numerical/DoubleInterval.hpp"
 #include "Interpreter/Domain/Numerical/Interval.hpp"
 #include "Interpreter/Domain/VariableFactory.hpp"
-#include "Interpreter/PredicateState/State.h"
 
 #include "Util/macros.h"
 
@@ -33,7 +32,7 @@ Interpreter::Interpreter(FactoryNest FN, const VariableFactory* vf, State::Ptr i
           output_(std::make_shared<State>(vf_, input_)),
           equalities_(equalities) {}
 
-State::Ptr Interpreter::getState() const {
+Interpreter::State::Ptr Interpreter::getState() const {
     return output_;
 }
 
@@ -89,12 +88,12 @@ PredicateState::Ptr Interpreter::transformChoice(PredicateStateChoicePtr choice)
 PredicateState::Ptr Interpreter::transformChain(PredicateStateChainPtr chain) {
     auto baseInterpreter = Interpreter(FN, vf_, input_, equalities_);
     baseInterpreter.transform(chain->getBase());
-    input_->merge(baseInterpreter.getState());
+    input_->joinWith(baseInterpreter.getState());
 
     auto currInterpreter = Interpreter(FN, vf_, input_, equalities_);
     currInterpreter.transform(chain->getCurr());
     if (output_->empty()) output_ = currInterpreter.getState();
-    else output_->merge(currInterpreter.getState());
+    else output_->joinWith(currInterpreter.getState());
     return chain;
 }
 
@@ -102,7 +101,7 @@ void Interpreter::interpretState(PredicateState::Ptr ps) {
     auto interpreter = Interpreter(FN, vf_, input_, equalities_);
     interpreter.transform(ps);
     if (output_->empty()) output_ = interpreter.getState();
-    else output_->merge(interpreter.getState());
+    else output_->joinWith(interpreter.getState());
 }
 
 Predicate::Ptr Interpreter::transformAllocaPredicate(AllocaPredicatePtr pred) {
@@ -142,21 +141,21 @@ Predicate::Ptr Interpreter::transformEqualityPredicate(EqualityPredicatePtr pred
         auto&& actDomain = getDomain(actualLhv);
         if (actDomain->isTop() or actDomain->isBottom()) {
             if (pred->getRhv()->equals(trueTerm.get())) {
-                output_->addConstraint(actualLhv);
+                output_->assumeTrue(actualLhv);
             } else if (pred->getRhv()->equals(falseTerm.get())) {
-                output_->addNotConstraint(actualLhv);
+                output_->assumeFalse(actualLhv);
             } else {
                 auto&& cmp = FN.Term->getCmpTerm(llvm::ConditionType::EQ, pred->getLhv(), pred->getRhv());
-                output_->addConstraint(cmp);
+                output_->assumeTrue(cmp);
             }
         }
     } else if (pred->getType() == PredicateType::ASSUME || pred->getType() == PredicateType::REQUIRES) {
         if (actualLhv->equals(trueTerm.get()) || actualLhv->equals(falseTerm.get())) {
             // do nothing if we have smth like (true = true)
         } else if (pred->getRhv()->equals(trueTerm.get())) {
-            output_->addConstraint(actualLhv);
+            output_->assumeTrue(actualLhv);
         } else if (pred->getRhv()->equals(falseTerm.get())) {
-            output_->addNotConstraint(actualLhv);
+            output_->assumeFalse(actualLhv);
         } else {
             warns() << "Unknown assume predicate: " << pred->toString() << endl;
         }

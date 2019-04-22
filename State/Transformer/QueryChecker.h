@@ -15,6 +15,7 @@ namespace ps {
 class QueryChecker: public Transformer<QueryChecker>, logging::ObjectLevelLogging<QueryChecker> {
 public:
     using Base = Transformer<QueryChecker>;
+    using State = Interpreter::State;
     using TermMap = std::unordered_map<Term::Ptr, Term::Ptr, TermHash, TermEquals>;
 
     QueryChecker(FactoryNest FN, const VariableFactory* vf, State::Ptr state);
