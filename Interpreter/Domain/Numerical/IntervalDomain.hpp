@@ -109,6 +109,10 @@ public:
         return result;
     }
 
+    bool contains(Variable x) const override {
+        return this->get(x) != nullptr;
+    }
+
     void set(Variable x, Ptr value) { return unwrapEnv()->set(x, value); }
     void forget(Variable x) { return unwrapEnv()->forget(x); }
 

@@ -666,6 +666,10 @@ public:
        return toInterval(x);
     }
 
+    bool contains(Variable x) const override {
+        return (bool) getVarDim(x);
+    }
+
     void set(Variable x, Ptr value) {
         if (auto* interval = llvm::dyn_cast<IntervalT>(value.get()))
             set(x, *interval);

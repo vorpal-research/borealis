@@ -195,6 +195,10 @@ public:
         return toInterval(x);
     }
 
+    bool contains(Variable x) const override {
+        return unwrapOctagon<N1>(first_)->contains(x) or unwrapOctagon<N2>(second_)->contains(x);
+    }
+
     Ptr toInterval(Variable x) const override {
         auto first = unwrapOctagon<N1>(first_)->toInterval(x);
         auto second = unwrapOctagon<N2>(second_)->toInterval(x);

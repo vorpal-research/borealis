@@ -17,6 +17,7 @@ public:
     explicit NumericalDomain(id_t id) : AbstractDomain(id) {}
 
     virtual Ptr get(Variable x) const = 0;
+    virtual bool contains(Variable x) const = 0;
     virtual Ptr toInterval(Variable x) const = 0;
 
     virtual void assign(Variable x, Variable y) = 0;

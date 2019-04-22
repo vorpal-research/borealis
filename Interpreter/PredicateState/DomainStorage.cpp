@@ -268,9 +268,8 @@ public:
     }
 
     Ptr get(Variable x) const override {
-        if (input_ != nullptr) {
-            auto inputValue = unwrapInput()->get(x);
-            if (inputValue != nullptr) return inputValue;
+        if (input_ != nullptr and unwrapInput()->contains(x)) {
+            return unwrapInput()->get(x);
 
         }
         if (auto&& constant = impl_::getConstant(vf_, x)) {

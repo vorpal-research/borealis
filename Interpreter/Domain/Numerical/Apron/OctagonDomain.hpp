@@ -5,7 +5,10 @@
 #ifndef BOREALIS_OCTAGONDOMAIN_HPP
 #define BOREALIS_OCTAGONDOMAIN_HPP
 
+#include <unordered_map>
+
 #include "DoubleOctagon.hpp"
+#include "Interpreter/Domain/AbstractFactory.hpp"
 
 #include "Util/sayonara.hpp"
 #include "Util/macros.h"
@@ -212,6 +215,12 @@ public:
     }
 
     Ptr toInterval(Variable x) const override { return this->get(x); }
+
+    bool contains(Variable x) const override {
+        auto bitsize = unwrapTypeSize(x);
+        auto* octagon = unwrapOctagon(bitsize);
+        return octagon->contains(x);
+    }
 
     void set(Variable x, Ptr value) {
         auto bitsize = unwrapTypeSize(x);
