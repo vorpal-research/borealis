@@ -3,6 +3,7 @@
 //
 
 #include "BasicBlock.h"
+#include "DomainStorage.hpp"
 #include "Interpreter/Domain/VariableFactory.hpp"
 
 #include "Util/collections.hpp"
@@ -33,7 +34,7 @@ SlotTracker& BasicBlock::getSlotTracker() const {
     return *tracker_;
 }
 
-State::Ptr BasicBlock::getOutputState() const {
+BasicBlock::State::Ptr BasicBlock::getOutputState() const {
     return outputState_;
 }
 
@@ -72,7 +73,7 @@ bool BasicBlock::atFixpoint() {
     if (outputState_->empty() && not visited_) return false;
     else if (not inputChanged_) return atFixpoint_;
     else {
-        atFixpoint_ = outputState_->equals(inputState_.get());
+        atFixpoint_ = outputState_->equals(inputState_);
         inputChanged_ = false;
         return atFixpoint_;
     }
@@ -87,7 +88,7 @@ void BasicBlock::setVisited() {
 }
 
 void BasicBlock::mergeToInput(State::Ptr input) {
-    inputState_->merge(input);
+    inputState_->joinWith(input);
     inputChanged_ = true;
 }
 
@@ -106,7 +107,7 @@ AbstractDomain::Ptr BasicBlock::getDomainFor(const llvm::Value* value) {
 }
 
 void BasicBlock::mergeOutputWithInput() {
-    outputState_->merge(inputState_);
+    outputState_->joinWith(inputState_);
 }
 
 std::vector<const llvm::Value*> BasicBlock::getGlobals() const {

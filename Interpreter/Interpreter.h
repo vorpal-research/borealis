@@ -11,6 +11,7 @@
 #include <llvm/IR/InstVisitor.h>
 #include <Passes/Checker/CallGraphSlicer.h>
 
+#include "IR/DomainStorage.hpp"
 #include "Interpreter/IR/Function.h"
 #include "Interpreter/IR/Module.h"
 #include "Passes/Misc/FuncInfoProvider.h"
@@ -22,6 +23,8 @@ namespace ir {
 
 class Interpreter : public llvm::InstVisitor<Interpreter>, public logging::ObjectLevelLogging<Interpreter> {
 public:
+
+    using State = Function::State;
 
     Interpreter(const llvm::Module* module, FuncInfoProvider* FIP, SlotTrackerPass* st, CallGraphSlicer* cgs);
 

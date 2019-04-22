@@ -10,7 +10,6 @@
 
 #include "Interpreter/Domain/AbstractDomain.hpp"
 #include "Interpreter/IR/BasicBlock.h"
-#include "State.h"
 #include "Util/slottracker.h"
 
 #include "Util/macros.h"
@@ -27,6 +26,8 @@ public:
 
     using Ptr = std::shared_ptr<Function>;
     using BlockMap = std::unordered_map<const llvm::BasicBlock*, BasicBlock>;
+    using State = BasicBlock::State;
+    using StatePtr = BasicBlock::StatePtr;
 
 private:
 
@@ -36,8 +37,8 @@ private:
     VariableFactory* factory_;
     std::vector<AbstractDomain::Ptr> arguments_;
     BlockMap blocks_;
-    State::Ptr inputState_;
-    State::Ptr outputState_;
+    StatePtr inputState_;
+    StatePtr outputState_;
 
 public:
     /// Assumes that llvm::Function is not a declaration
@@ -56,7 +57,7 @@ public:
     /// Assumes that @args[i] corresponds to i-th argument of the function
     /// Returns true, if arguments were updated and function should be reinterpreted
     bool updateArguments(const std::vector<AbstractDomain::Ptr>& args);
-    void merge(State::Ptr state);
+    void merge(StatePtr state);
 
     BasicBlock* getEntryNode() const;
     BasicBlock* getBasicBlock(const llvm::BasicBlock* bb) const;

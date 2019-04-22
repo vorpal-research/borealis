@@ -2,6 +2,7 @@
 // Created by abdullin on 2/10/17.
 //
 
+#include "DomainStorage.hpp"
 #include "Interpreter/Domain/VariableFactory.hpp"
 #include "Function.h"
 #include "Util/collections.hpp"
@@ -117,7 +118,7 @@ AbstractDomain::Ptr Function::getDomainFor(const llvm::Value* value, const llvm:
 }
 
 void Function::merge(State::Ptr state) {
-    outputState_->merge(state);
+    outputState_->joinWith(state);
 }
 
 size_t Function::hashCode() const {
