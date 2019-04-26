@@ -364,11 +364,11 @@ public:
         auto&& idx_begin = bounds.first;
         auto&& idx_end = bounds.second;
 
-        if (idx_end > length) {
-            warns() << "Possible buffer overflow" << endl;
-        } else if (idx_begin > length) {
-            warns() << "Buffer overflow" << endl;
-        }
+//        if (idx_end > length) {
+//            warns() << "Possible buffer overflow" << endl;
+//        } else if (idx_begin > length) {
+//            warns() << "Buffer overflow" << endl;
+//        }
 
         if (offsets.size() == 1) {
             return factory_->getPointer(type, shared_from_this(), offsets[0]);

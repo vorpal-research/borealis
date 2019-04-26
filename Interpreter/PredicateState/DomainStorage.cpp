@@ -768,10 +768,10 @@ void DomainStorage::assumeTrue(Variable condition) {
         } else {
             UNREACHABLE("Unexpected type in constraints");
         }
-    } else if (llvm::isa<BinaryTerm>(condition.get())) {
-        warns() << "binary operations are not supported in condition splitting: " << condition << endl;
-    } else {
-        warns() << "Unexpected term in assume: " << condition << endl;
+//    } else if (llvm::isa<BinaryTerm>(condition.get())) {
+//        warns() << "binary operations are not supported in condition splitting: " << condition << endl;
+//    } else {
+//        warns() << "Unexpected term in assume: " << condition << endl;
     }
 }
 
@@ -792,10 +792,10 @@ void DomainStorage::assumeFalse(Variable condition) {
         } else {
             UNREACHABLE("Unexpected type in constraints");
         }
-    } else if (llvm::isa<BinaryTerm>(condition.get())) {
-        warns() << "binary operations are not supported in condition splitting: " << condition << endl;
-    } else {
-        warns() << "Unexpected term in assume: " << condition << endl;
+//    } else if (llvm::isa<BinaryTerm>(condition.get())) {
+//        warns() << "binary operations are not supported in condition splitting: " << condition << endl;
+//    } else {
+//        warns() << "Unexpected term in assume: " << condition << endl;
     }
 }
 

@@ -729,8 +729,8 @@ std::pair<DomainStorage::Ptr, DomainStorage::Ptr> DomainStorage::split(Variable 
         true_->unwrapFloat()->addConstraint(cop, lhv, rhv);
         false_->unwrapFloat()->addConstraint(ncop, lhv, rhv);
 
-    } else {
-        warns() << "Binary operations in cmp are not supported" << endl;
+//    } else {
+//        warns() << "Binary operations in cmp are not supported" << endl;
     }
     return std::make_pair(true_, false_);
 }
